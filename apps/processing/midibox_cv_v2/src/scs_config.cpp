@@ -54,6 +54,8 @@ extern "C" {
 static u8 extraPage;
 
 static u8 selectedCv;
+static u8 selectedLfo;
+static u8 selectedEnv; // currently only 1, just to be prepared...
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
@@ -74,6 +76,7 @@ static void stringEmpty(u32 ix, u16 value, char *label)   { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
+static void stringDecPM128(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 128); }
 static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
@@ -149,8 +152,51 @@ static void stringCvPlayMode(u32 ix, u16 value, char *label)
 
 static void stringCvTranspose(u32 ix, u16 value, char *label) { if( value >= 8 ) sprintf(label, " +%d  ", value-8); else sprintf(label, " -%d  ", 8-value); }
 
+static void stringCvPortamentoMode(u32 ix, u16 value, char *label)
+{
+  static const char portamentoMode[4][6] = {
+    "Norm ",
+    "CGld ",
+    "Glis ",
+    "???? ",
+  };
+
+  sprintf(label, portamentoMode[value&3]);
+}
+
 static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CurveNameGet(selectedCv), 5); label[5] = 0; }
 static void stringCvCaliMode(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CaliNameGet(), 5); label[5] = 0; }
+
+static void stringArpDir(u32 ix, u16 value, char *label)
+{
+  const char dirLabel[7][5] = { " Up ", "Down", "Up&D", "D&Up", "U&D2", "D&U2", "Rand" };
+  if( value < 7 )
+    strcpy(label, dirLabel[value]);
+  else
+    sprintf(label, "%3d ", value);
+}
+
+static void stringLfoWave(u32 ix, u16 value, char *label)
+{
+  const char waveLabel[11][5] = {
+    "Off ",
+    "Sine",
+    "Tri.",
+    "Saw.",
+    "Puls",
+    "Rnd.",
+    "PSin",
+    "PTri",
+    "PSaw",
+    "PPul",
+    "S&H ",
+  };
+
+  if( value < 11 )
+    strcpy(label, waveLabel[value]);
+  else
+    sprintf(label, "%3d ", value);
+}
 
 static void stringDIN_SR(u32 ix, u16 value, char *label)  { sprintf(label, "%2d.%d", (value/8)+1, value%8); }
 static void stringDOUT_SR(u32 ix, u16 value, char *label) { sprintf(label, "%2d.%d", (value/8)+1, 7-(value%8)); }
@@ -398,6 +444,27 @@ static void cvTranspOctSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.
 static u16  cvTranspSemiGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceTransposeSemitone + 8; }
 static void cvTranspSemiSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceTransposeSemitone = (int)value - 8; }
 
+static u16  cvFinetuneGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceFinetune + 128; }
+static void cvFinetuneSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceFinetune = (int)value - 128; }
+
+static u16  cvPortamentoGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voicePortamentoRate; }
+static void cvPortamentoSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voicePortamentoRate = value; }
+
+static u16  cvPortamentoModeGet(u32 ix)
+{
+  return
+    (env->mbCv[selectedCv].mbCvVoice.voiceConstantTimeGlide ? 1 : 0) |
+    (env->mbCv[selectedCv].mbCvVoice.voiceGlissandoMode ? 2 : 0);
+}
+static void cvPortamentoModeSet(u32 ix, u16 value)
+{
+  env->mbCv[selectedCv].mbCvVoice.voiceConstantTimeGlide = (value & 1) ? 1 : 0;
+  env->mbCv[selectedCv].mbCvVoice.voiceGlissandoMode = (value & 2) ? 1 : 0;
+}
+
+static u16  cvSusKeyGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceSusKey; }
+static void cvSusKeySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceSusKey = value; }
+
 static u16  cvCCGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber; }
 static void cvCCSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber = value; }
 
@@ -410,6 +477,152 @@ static void cvPortSet(u32 ix, u16 value)
   env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts &= ~(1 << ix);
   env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts |= ((value&1) << ix);
 }
+
+
+static u16  arpOnGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpEnabled; }
+static void arpOnSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpEnabled = value; }
+
+static u16  arpDirGet(u32 ix)
+{
+  if( env->mbCv[selectedCv].mbCvArp.arpRandomNotes )
+    return 6;
+
+  return
+    (env->mbCv[selectedCv].mbCvArp.arpDown ? 1 : 0) |
+    (env->mbCv[selectedCv].mbCvArp.arpUpAndDown ? 2 : 0) |
+    (env->mbCv[selectedCv].mbCvArp.arpPingPong ? 4 : 0);
+    
+}
+static void arpDirSet(u32 ix, u16 value)
+{
+  if( value >= 6 )
+    env->mbCv[selectedCv].mbCvArp.arpRandomNotes = 1;
+  else {
+    env->mbCv[selectedCv].mbCvArp.arpRandomNotes = 0;
+    env->mbCv[selectedCv].mbCvArp.arpDown = (value & 1) ? 1 : 0;
+    env->mbCv[selectedCv].mbCvArp.arpUpAndDown = (value & 2) ? 1 : 0;
+    env->mbCv[selectedCv].mbCvArp.arpPingPong = (value & 4) ? 1 : 0;
+  }
+}
+
+static u16  arpSpeedGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpSpeed; }
+static void arpSpeedSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpSpeed = value; }
+
+static u16  arpGatelenGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpGatelength; }
+static void arpGatelenSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpGatelength = value; }
+
+static u16  arpRangeGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpOctaveRange; }
+static void arpRangeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpOctaveRange = value; }
+
+static u16  arpSortGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpSortedNotes; }
+static void arpSortSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpSortedNotes = value; }
+
+static u16  arpHoldGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpHoldMode; }
+static void arpHoldSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpHoldMode = value; }
+
+static u16  arpSyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpSyncMode; }
+static void arpSyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpSyncMode = value; }
+
+static u16  arpCACGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpConstantCycle; }
+static void arpCACSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpConstantCycle = value; }
+
+static u16  arpOneshotGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpOneshotMode; }
+static void arpOneshotSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpOneshotMode = value; }
+
+static u16  arpEasyChordGet(u32 ix)            { return env->mbCv[selectedCv].mbCvArp.arpEasyChordMode; }
+static void arpEasyChordSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvArp.arpEasyChordMode = value; }
+
+static u16  lfoGet(u32 ix)            { return selectedLfo; }
+static void lfoSet(u32 ix, u16 value) { selectedLfo = value; }
+
+static u16  lfoWaveGet(u32 ix)
+{
+  if( env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE )
+    return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.WAVEFORM + 1;
+  else
+    return 0;
+}
+static void lfoWaveSet(u32 ix, u16 value)
+{
+  if( !value )
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE = 0;
+  else {
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE = 1;
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.WAVEFORM = value - 1;
+  }
+}
+
+static u16  lfoAmplitudeGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoAmplitude + 128; }
+static void lfoAmplitudeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoAmplitude = value - 128; }
+
+static u16  lfoRateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoRate; }
+static void lfoRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoRate = value; }
+
+static u16  lfoClkSyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.CLKSYNC; }
+static void lfoClkSyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.CLKSYNC = value; }
+
+static u16  lfoKeySyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.KEYSYNC; }
+static void lfoKeySyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.KEYSYNC = value; }
+
+static u16  lfoOneshotGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ONESHOT; }
+static void lfoOneshotSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ONESHOT = value; }
+
+static u16  lfoDelayGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDelay; }
+static void lfoDelaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDelay; }
+
+static u16  lfoPhaseGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoPhase; }
+static void lfoPhaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoPhase; }
+
+static u16  lfoDepthCvGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthPitch + 128; }
+static void lfoDepthCvSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthPitch = value - 128; }
+
+static u16  lfoDepthLfoAmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoAmplitude + 128; }
+static void lfoDepthLfoAmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoAmplitude = value - 128; }
+
+static u16  lfoDepthLfoRateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoRate + 128; }
+static void lfoDepthLfoRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoRate = value - 128; }
+
+static u16  lfoDepthEnvAmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnvAmplitude + 128; }
+static void lfoDepthEnvAmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnvAmplitude = value - 128; }
+
+static u16  lfoDepthEnvDecayGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnvDecay + 128; }
+static void lfoDepthEnvDecaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnvDecay = value - 128; }
+
+static u16  envAmplitudeGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envAmplitude + 128; }
+static void envAmplitudeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envAmplitude = value - 128; }
+
+static u16  envDelayGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDelay; }
+static void envDelaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDelay = value; }
+
+static u16  envAttackGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envAttack; }
+static void envAttackSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envAttack = value; }
+
+static u16  envDecayGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDecay; }
+static void envDecaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDecay = value; }
+
+static u16  envSustainGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envSustain; }
+static void envSustainSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envSustain = value; }
+
+static u16  envReleaseGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envRelease; }
+static void envReleaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envRelease = value; }
+
+static u16  envCurveGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envCurve + 128; }
+static void envCurveSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envCurve = value - 128; }
+
+static u16  envDepthCvGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthPitch + 128; }
+static void envDepthCvSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthPitch = value - 128; }
+
+static u16  envDepthLfo1AmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo1Amplitude + 128; }
+static void envDepthLfo1AmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo1Amplitude = value - 128; }
+
+static u16  envDepthLfo1RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo1Rate + 128; }
+static void envDepthLfo1RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo1Rate = value - 128; }
+
+static u16  envDepthLfo2AmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo2Amplitude + 128; }
+static void envDepthLfo2AmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo2Amplitude = value - 128; }
+
+static u16  envDepthLfo2RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo2Rate + 128; }
+static void envDepthLfo2RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthLfo2Rate = value - 128; }
 
 static u16  cvCurveGet(u32 ix)            { return MBCV_MAP_CurveGet(selectedCv); }
 static void cvCurveSet(u32 ix, u16 value) { MBCV_MAP_CurveSet(selectedCv, value); }
@@ -478,6 +691,10 @@ const scs_menu_item_t pageCV[] = {
   SCS_ITEM("PRng ", 0, 24,    cvPitchRangeGet,cvPitchRangeSet,selectNOP, stringDec, NULL),
   SCS_ITEM("Oct. ", 0, 15,    cvTranspOctGet, cvTranspOctSet,selectNOP, stringCvTranspose, NULL),
   SCS_ITEM("Semi ", 0, 15,    cvTranspSemiGet,cvTranspSemiSet,selectNOP,stringCvTranspose, NULL),
+  SCS_ITEM("Fine ", 0, 255,   cvFinetuneGet,  cvFinetuneSet, selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("Port ", 0, 255,   cvPortamentoGet,cvPortamentoSet,selectNOP, stringDec, NULL),
+  SCS_ITEM("PMod ", 0, 2,     cvPortamentoModeGet,cvPortamentoModeSet,selectNOP, stringCvPortamentoMode, NULL),
+  SCS_ITEM("SusK ", 0, 1,     cvSusKeyGet,    cvSusKeySet,    selectNOP, stringOnOff, NULL),
   SCS_ITEM(" CC  ", 0, 127,   cvCCGet,        cvCCSet,       selectNOP,stringDec, stringCCFull),
   SCS_ITEM("USB1 ", 0, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
 #if MIOS32_USB_MIDI_NUM_PORTS >= 2
@@ -501,6 +718,55 @@ const scs_menu_item_t pageCV[] = {
   SCS_ITEM("OSC2 ",13, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC4 ",15, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
+};
+
+const scs_menu_item_t pageARP[] = {
+  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" On  ", 0,  1,          arpOnGet,       arpOnSet,       selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("Mode ", 0,  6,          arpDirGet,      arpDirSet,      selectNOP, stringArpDir, NULL),
+  SCS_ITEM("Sort ", 0,  1,          arpSortGet,     arpSortSet,     selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("Hold ", 0,  1,          arpHoldGet,     arpHoldSet,     selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("Spd. ", 0, 63,          arpSpeedGet,    arpSpeedSet,    selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("GLn. ", 0, 31,          arpGatelenGet,  arpGatelenSet,  selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Rnge ", 0,  7,          arpRangeGet,    arpRangeSet,    selectNOP, stringDecP1,  NULL),
+  SCS_ITEM("Sync ", 0,  1,          arpSyncGet,     arpSyncSet,     selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("CAC  ", 0,  1,          arpCACGet,      arpCACSet,      selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("OSht ", 0,  1,          arpOneshotGet,  arpOneshotSet,  selectNOP, stringOnOff,  NULL),
+  SCS_ITEM("Easy ", 0,  1,          arpEasyChordGet,arpEasyChordSet,selectNOP, stringOnOff,  NULL),
+};
+
+const scs_menu_item_t pageLFO[] = {
+  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM("LFO  ", 0,   1,         lfoGet,         lfoSet,         selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Ampl ", 0, 255,         lfoAmplitudeGet,lfoAmplitudeSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("Rate ", 0, 255,         lfoRateGet,     lfoRateSet,     selectNOP, stringDec, NULL),
+  SCS_ITEM("Wave ", 0,  10,         lfoWaveGet,     lfoWaveSet,     selectNOP, stringLfoWave, NULL),
+  SCS_ITEM("ClkS ", 0,   1,         lfoClkSyncGet,  lfoClkSyncSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("KeyS ", 0,   1,         lfoKeySyncGet,  lfoKeySyncSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("Dely ", 0, 255,         lfoDelayGet,    lfoDelaySet,    selectNOP, stringDec, NULL),
+  SCS_ITEM("Phse ", 0, 255,         lfoPhaseGet,    lfoPhaseSet,    selectNOP, stringDec, NULL),
+  SCS_ITEM("OSht ", 0,   1,         lfoOneshotGet,  lfoOneshotSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("D.CV ", 0, 255,         lfoDepthCvGet,  lfoDepthCvSet,  selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DLAmp", 0, 255,         lfoDepthLfoAmpGet,lfoDepthLfoAmpSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DLRte", 0, 255,         lfoDepthLfoRateGet,lfoDepthLfoRateSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DEAmp", 0, 255,         lfoDepthEnvAmpGet,lfoDepthEnvAmpSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DEDec", 0, 255,         lfoDepthEnvDecayGet,lfoDepthEnvDecaySet,selectNOP, stringDecPM128, NULL),
+};
+
+const scs_menu_item_t pageENV[] = {
+  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Ampl ", 0, 255,         envAmplitudeGet,envAmplitudeSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("Dely ", 0, 255,         envDelayGet,    envDelaySet,    selectNOP, stringDec, NULL),
+  SCS_ITEM("Atk. ", 0, 255,         envAttackGet,   envAttackSet,   selectNOP, stringDec, NULL),
+  SCS_ITEM("Dec. ", 0, 255,         envDecayGet,    envDecaySet,    selectNOP, stringDec, NULL),
+  SCS_ITEM("Sus. ", 0, 255,         envSustainGet,  envSustainSet,  selectNOP, stringDec, NULL),
+  SCS_ITEM("Rel. ", 0, 255,         envReleaseGet,  envReleaseSet,  selectNOP, stringDec, NULL),
+  SCS_ITEM("Crve ", 0, 255,         envCurveGet,    envCurveSet,    selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("D.CV ", 0, 255,         envDepthCvGet,  envDepthCvSet,  selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DL1A ", 0, 255,         envDepthLfo1AmpGet,envDepthLfo1AmpSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DL1R ", 0, 255,         envDepthLfo1RateGet,envDepthLfo1RateSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DL2A ", 0, 255,         envDepthLfo2AmpGet,envDepthLfo2AmpSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DL2R ", 0, 255,         envDepthLfo2RateGet,envDepthLfo2RateSet,selectNOP, stringDecPM128, NULL),
 };
 
 const scs_menu_item_t pageAOUT[] = {
@@ -550,6 +816,9 @@ const scs_menu_item_t pageMON[] = {
 
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE(" CV  ", pageCV),
+  SCS_PAGE("ARP  ", pageARP),
+  SCS_PAGE("LFO  ", pageLFO),
+  SCS_PAGE("ENV  ", pageENV),
   SCS_PAGE("AOUT ", pageAOUT),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),

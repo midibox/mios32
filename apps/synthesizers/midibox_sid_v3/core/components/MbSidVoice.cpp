@@ -333,10 +333,15 @@ void MbSidVoice::pitch(const u8 &updateSpeedFactor, MbSidSe *mbSidSe)
         int delta = (int)pitchbender - 0x80;
         delta += (int)voiceFinetune-0x80;
 
-        if( voiceDetuneDelta ) {
-            int scaled = (voiceDetuneDelta * 4 * (int)voicePitchrange);
+        if( delta ) {
+            int scaled = delta * (int)voicePitchrange;
             target_frq += scaled;
         }
+    }
+
+    if( voiceDetuneDelta ) {
+        int scaled = (voiceDetuneDelta * 4 * (int)voicePitchrange);
+        target_frq += scaled;
     }
 
     // saturate target frequency to 16bit
@@ -484,7 +489,9 @@ bool MbSidVoice::noteOn(u8 note, u8 velocity)
             voicePortamentoActive = 1;
     } else {
         // portamento always activated (will immediately finish if portamento value = 0)
-        voicePortamentoActive = 1;
+        // omit portamento if first key played after patch initialisation
+        if( voicePortamentoInitialized )
+            voicePortamentoActive = 1;
     }
 
     // next key will allow portamento

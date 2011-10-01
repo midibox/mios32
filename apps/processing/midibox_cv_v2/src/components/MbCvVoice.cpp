@@ -58,7 +58,7 @@ void MbCvVoice::init(void)
     voiceSusKey = 0;
     voiceSequencerOnly = 0;
     voicePoly = 0;
-    voiceConstantTimeGlide = 0;
+    voiceConstantTimeGlide = 1;
     voiceGlissandoMode = 0;
     voiceAccentRate = 0;
     voiceTransposeOctave = 0;
@@ -214,11 +214,11 @@ void MbCvVoice::pitch(const u8 &updateSpeedFactor)
     // increase/decrease target frequency by pitchrange
     // depending on pitchbender and finetune value
     if( voicePitchrange ) {
-        int delta = midiVoicePtr->midivoicePitchbender;
-        delta += (int)voiceFinetune-0x80;
+        int delta = midiVoicePtr->midivoicePitchbender; // 14bit
+        delta += (int)voiceFinetune*64; // 8bit -> 14bit
 
         if( delta ) {
-            int scaled = delta * (int)voicePitchrange;
+            int scaled = (delta * (int)voicePitchrange) / 16;
             target_frq += scaled;
         }
     }

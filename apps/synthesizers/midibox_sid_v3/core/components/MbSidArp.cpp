@@ -91,13 +91,12 @@ void MbSidArp::tick(MbSidVoice *v, MbSidSe *mbSidSe)
         arpUp = 0;
         // request first note (for oneshot function)
         firstNoteReq = 1;
-        // reset divider if not disabled or if arp synch on MIDI clock start event
-        if( restartReq || !arpSyncMode ) {
-            arpDivCtr = ~0;
-            arpGatelengthCtr = ~0;
-            // request new note
-            newNoteReq = 1;
-        }
+
+        // reset dividers
+        arpDivCtr = ~0;
+        arpGatelengthCtr = ~0;
+        // request new note
+        newNoteReq = 1;
 
         restartReq = 0;
     }
@@ -215,7 +214,7 @@ void MbSidArp::tick(MbSidVoice *v, MbSidSe *mbSidSe)
                         newNoteUp = !arpUp;
                 } else {
                     // direction depending on arp mode 0 or 1
-                    newNoteUp = arpDown;
+                    newNoteUp = !arpDown;
                 }
 
                 if( newNoteUp )
@@ -298,8 +297,9 @@ void MbSidArp::noteOn(MbSidVoice *v, u8 note, u8 velocity)
     if( NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 ) {
         // clear stack
         NOTESTACK_Clear(&mv->midivoiceNotestack);
-        // synchronize the arpeggiator
-        restartReq = 1;
+        // synchronize the arpeggiator if not synched via MIDI Clock
+        if( !arpSyncMode )
+            restartReq = 1;
     }
 
     // push note into stack - select mode depending on sort/hold mode
@@ -347,7 +347,7 @@ void MbSidArp::noteOff(MbSidVoice *v, u8 note)
     NOTESTACK_Pop(&mv->midivoiceNotestack, note);
 
     // release voice if no note in queue anymore
-    if( NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 )
+    if( !arpHoldMode && NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 )
         v->voiceActive = 0;
 
     // restore notestack mode

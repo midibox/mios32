@@ -16,6 +16,7 @@
 #include "MbCvArp.h"
 #include "MbCvMidiVoice.h"
 #include "MbCvVoice.h"
+#include "MbCv.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,14 +47,14 @@ void MbCvArp::init(void)
     arpUpAndDown = 0;
     arpPingPong = 0;
     arpRandomNotes = 0;
-    arpSortedNotes = 0;
+    arpSortedNotes = 1;
     arpHoldMode = 0;
     arpSyncMode = 0;
     arpConstantCycle = 0;
-    arpEasyChordMode = 0;
+    arpEasyChordMode = 1;
     arpOneshotMode = 0;
-    arpSpeed = 0;
-    arpGatelength = 0;
+    arpSpeed = 31;
+    arpGatelength = 5;
     arpOctaveRange = 0;
 
     restartReq = 0;
@@ -73,7 +74,7 @@ void MbCvArp::init(void)
 /////////////////////////////////////////////////////////////////////////////
 // Arpeggiator handler
 /////////////////////////////////////////////////////////////////////////////
-void MbCvArp::tick(MbCvVoice *v)
+void MbCvArp::tick(MbCvVoice *v, MbCv *mbCv)
 {
     MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
 
@@ -90,13 +91,12 @@ void MbCvArp::tick(MbCvVoice *v)
         arpUp = 0;
         // request first note (for oneshot function)
         firstNoteReq = 1;
-        // reset divider if not disabled or if arp synch on MIDI clock start event
-        if( restartReq || !arpSyncMode ) {
-            arpDivCtr = ~0;
-            arpGatelengthCtr = ~0;
-            // request new note
-            newNoteReq = 1;
-        }
+
+        // reset dividers
+        arpDivCtr = ~0;
+        arpGatelengthCtr = ~0;
+        // request new note
+        newNoteReq = 1;
 
         restartReq = 0;
     }
@@ -152,7 +152,7 @@ void MbCvArp::tick(MbCvVoice *v)
             // clear note stack (especially important in HOLD mode!)
             NOTESTACK_Clear(&mv->midivoiceNotestack);
             // propagate Note Off through trigger matrix
-            //mbCvSe->triggerNoteOff(v, 0);
+            mbCv->triggerNoteOff(v);
             // request gate clear
             v->voiceGateSetReq = 0;
             v->voiceGateClrReq = 1;
@@ -167,7 +167,7 @@ void MbCvArp::tick(MbCvVoice *v)
             // forward this to note handler if gate is not already deactivated
             if( v->voiceGateActive ) {
                 // propagate Note Off through trigger matrix
-                //mbCvSe->triggerNoteOff(v, 0);
+                mbCv->triggerNoteOff(v);
                 // request gate clear
                 v->voiceGateSetReq = 0;
                 v->voiceGateClrReq = 1;
@@ -214,7 +214,7 @@ void MbCvArp::tick(MbCvVoice *v)
                         newNoteUp = !arpUp;
                 } else {
                     // direction depending on arp mode 0 or 1
-                    newNoteUp = arpDown;
+                    newNoteUp = !arpDown;
                 }
 
                 if( newNoteUp )
@@ -266,7 +266,7 @@ void MbCvArp::tick(MbCvVoice *v)
                         v->voiceGateSetReq = 1;
 
                         // propagate Note On through trigger matrix
-                        //mbCvSe->triggerNoteOn(v, 0);
+                        mbCv->triggerNoteOn(v);
                     }
                 }
             }
@@ -297,8 +297,9 @@ void MbCvArp::noteOn(MbCvVoice *v, u8 note, u8 velocity)
     if( NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 ) {
         // clear stack
         NOTESTACK_Clear(&mv->midivoiceNotestack);
-        // synchronize the arpeggiator
-        restartReq = 1;
+        // synchronize the arpeggiator if not synched via MIDI Clock
+        if( !arpSyncMode )
+            restartReq = 1;
     }
 
     // push note into stack - select mode depending on sort/hold mode
@@ -346,7 +347,7 @@ void MbCvArp::noteOff(MbCvVoice *v, u8 note)
     NOTESTACK_Pop(&mv->midivoiceNotestack, note);
 
     // release voice if no note in queue anymore
-    if( NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 )
+    if( !arpHoldMode && NOTESTACK_CountActiveNotes(&mv->midivoiceNotestack) == 0 )
         v->voiceActive = 0;
 
     // restore notestack mode

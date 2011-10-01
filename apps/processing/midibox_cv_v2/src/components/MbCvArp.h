@@ -20,6 +20,7 @@
 #include "MbCvRandomGen.h"
 #include "MbCvVoice.h"
 
+class MbCv; // forward declaration, see also http://www.parashift.com/c++-faq-lite/misc-technical-issues.html#faq-39.11
 
 class MbCvArp
 {
@@ -34,7 +35,7 @@ public:
     void init(void);
 
     // arpeggiator handler
-    void tick(MbCvVoice *v);
+    void tick(MbCvVoice *v, MbCv *mbCv);
 
     // Notestack handling
     void noteOn(MbCvVoice *v, u8 note, u8 velocity);
