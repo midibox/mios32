@@ -195,7 +195,7 @@ s32 MIOS32_TIMER_DeInit(u8 timer)
 //! Interrupt handlers
 //! \note don't call them directly from application
 /////////////////////////////////////////////////////////////////////////////
-#ifndef MIOS32_DONT_ALLOCATE_TIM2_IRQn
+#ifndef MIOS32_DONT_ALLOCATE_TIMER0_IRQ
 TIMER0_IRQ_HANDLER
 {
   // clear all interrupt flags
@@ -205,7 +205,7 @@ TIMER0_IRQ_HANDLER
 }
 #endif
 
-#ifndef MIOS32_DONT_ALLOCATE_TIM3_IRQn
+#ifndef MIOS32_DONT_ALLOCATE_TIMER1_IRQ
 TIMER1_IRQ_HANDLER
 {
   // clear all interrupt flags
@@ -215,7 +215,7 @@ TIMER1_IRQ_HANDLER
 }
 #endif
 
-#ifndef MIOS32_DONT_ALLOCATE_TIM5_IRQn
+#ifndef MIOS32_DONT_ALLOCATE_TIMER2_IRQ
 TIMER2_IRQ_HANDLER
 {
   // clear all interrupt flags
