@@ -12,6 +12,9 @@ MIDIboxSEQ V4.050
    o added LED functions for received MIDI IN/OUT events to MBSEQ_HW.V4
 
    o added BPM LED Digit function to MBSEQ_HW.V4
+     A schematic can be found under http://www.ucapps.de/midibox_seq/mbseq_v4_bpm_digits.pdf
+
+   o SR1 working again (programming error during MBSEQV4L merge)
 
 
 MIDIboxSEQ V4.049

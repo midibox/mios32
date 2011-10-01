@@ -325,17 +325,29 @@ s32 SEQ_UI_UTIL_Clear(void)
 {
   SEQ_UI_UTIL_UndoUpdate();
 
+  // extra for MBSEQ V4L: store current scale selections (we handle it like a global option)
+  u16 force_scale = 0;
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    if( seq_cc_trk[track].mode.FORCE_SCALE )
+      force_scale |= (1 << track);
+
   // copy preset
   u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
   u8 all_triggers_cleared = 0;
   u8 init_assignments = 1;
 
-  u8 track;
-  for(track=0;track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( ui_selected_tracks & (1 << track) ) {
+  for(track=0;track<SEQ_CORE_NUM_TRACKS; ++track) {
+    u16 track_mask = (1 << track);
+
+    if( ui_selected_tracks & track_mask ) {
       // copy preset
       SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
     }
+
+    // extra for MBSEQ V4L: restore scale selections (we handle it like a global option)
+    seq_cc_trk[track].mode.FORCE_SCALE = (force_scale & track_mask) ? 1 : 0;
+  }
 
   return 0; // no error
 }

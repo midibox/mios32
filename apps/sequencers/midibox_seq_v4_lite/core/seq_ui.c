@@ -499,6 +499,8 @@ static s32 SEQ_UI_Button_TrackLFO(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackScale(s32 depressed)
 {
+  // show scale selection when page button pressed
+  seq_ui_button_state.SCALE_PRESSED = depressed == 0;
   if( depressed ) return -1; // ignore when button depressed
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_SCALE);
 }
@@ -957,16 +959,16 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // transfer to GP LEDs
   if( seq_hwcfg_led.gp_dout_l_sr ) {
     if( seq_hwcfg_led.pos_dout_l_sr )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, (ui_page_gp_leds >> 0) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_page_gp_leds >> 0) & 0xff);
     else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
   }
 
   if( seq_hwcfg_led.gp_dout_r_sr ) {
     if( seq_hwcfg_led.pos_dout_r_sr )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, (ui_page_gp_leds >> 8) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, (ui_page_gp_leds >> 8) & 0xff);
     else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
+      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
   }
 
 
@@ -984,8 +986,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
   // pos LEDs
-  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_l_sr, ((pos_marker_mask ^ pos_overlay) >> 0) & 0xff);
-  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_r_sr, ((pos_marker_mask ^ pos_overlay) >> 8) & 0xff);
+  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_l_sr-1, ((pos_marker_mask ^ pos_overlay) >> 0) & 0xff);
+  SEQ_LED_SRSet(seq_hwcfg_led.pos_dout_r_sr-1, ((pos_marker_mask ^ pos_overlay) >> 8) & 0xff);
 
   u8 bar1, bar2, bar3, bar4;
 
