@@ -48,17 +48,24 @@ void MbCvEnv::init(void)
 
     // clear variables
     envMode.ALL = 0;
+    envMode.CURVE_D = 1;
+    envAmplitude = 0;
     envDelay = 0;
-    envAttack = 0;
-    envDecay = 0;
-    envDecayAccented = 0;
-    envSustain = 0;
-    envRelease = 0;
+    envAttack = 48;
+    envDecay = 48;
+    envDecayAccented = 16;
+    envSustain = 64;
+    envRelease = 32;
     envCurve = 0;
 
-    envDepthPitch = 0;
-    envDepthPulsewidth = 0;
-    envDepthFilter = 0;
+    envDepthPitch = 127;
+    envDepthLfo1Amplitude = 0;
+    envDepthLfo1Rate = 0;
+    envDepthLfo2Amplitude = 0;
+    envDepthLfo2Rate = 0;
+
+    envAmplitudeModulation = 0;
+    envDecayModulation = 0;
 
     envOut = 0;
 
@@ -105,14 +112,18 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
                 }
             }
   
-            u8 curve = envMode.CURVE_A ? envCurve : 0x80;
+            s8 curve = envMode.CURVE_A ? envCurve : 0;
             if( step(0xffff, envAttack, curve, updateSpeedFactor) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
   
         case MBCV_ENV_STATE_DECAY: {
-            u8 decay = accentReq ? envDecayAccented : envDecay;
-            u8 curve = envMode.CURVE_D ? envCurve : 0x80;
+            // the decay can be modulated
+            s32 decay = accentReq ? envDecayAccented : envDecay;
+            decay = decay + (envAmplitudeModulation / 512);
+            if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
+
+            s8 curve = envMode.CURVE_D ? envCurve : 0;
             if( step(envSustain << 8, decay, curve, updateSpeedFactor) ) {
                 envState = MBCV_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
@@ -127,7 +138,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             break;
   
         case MBCV_ENV_STATE_RELEASE: {
-            u8 curve = envMode.CURVE_R ? envCurve : 0x80;
+            s8 curve = envMode.CURVE_R ? envCurve : 0;
             if( envCtr )
                 step(0x0000, envRelease, curve, updateSpeedFactor);
         } break;
@@ -137,7 +148,12 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
         }
     }
 
-    envOut = envCtr / 2;
+    // the amplitude can be modulated
+    s32 amplitude = envAmplitude + (envAmplitudeModulation / 512);
+    if( amplitude > 127 ) amplitude = 127; else if( amplitude < -128 ) amplitude = -128;
+
+    // final output value
+    envOut = ((s32)(envCtr / 2) * (s32)amplitude) / 128;
 
     accentReq = false;
 
@@ -146,16 +162,16 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
 
 
 
-bool MbCvEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor)
+bool MbCvEnv::step(const u16 &target, const u8 &rate, const s8 &curve, const u8 &updateSpeedFactor)
 {
     if( target == envCtr )
         return true; // next state
 
     // modify rate if curve != 0x80
     u16 inc_rate;
-    if( curve != 0x80 ) {
+    if( curve ) {
         // this nice trick has been proposed by Razmo
-        int abs_curve = curve - 0x80;
+        int abs_curve = curve;
         if( abs_curve < 0 )
             abs_curve = -abs_curve;
         else
@@ -164,7 +180,7 @@ bool MbCvEnv::step(const u16 &target, const u8 &rate, const u8 &curve, const u8 
         int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
         int feedback = (abs_curve * (envCtr>>8)) >> 8; 
         int ix;
-        if( curve > 0x80 ) { // bend up
+        if( curve > 0 ) { // bend up
             ix = (rate_msbs ^ 0x7f) - feedback;
             if( ix < 0 )
                 ix = 0;

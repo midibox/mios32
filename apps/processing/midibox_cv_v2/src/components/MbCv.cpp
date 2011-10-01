@@ -62,6 +62,22 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
     // LFOs
     MbCvLfo *l = mbCvLfo.first();
     for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
+        if( mbCvClockPtr->eventClock )
+            l->syncClockReq = 1;
+
+        MbCvLfo *buddyLfo = lfo ? &mbCvLfo[0] : &mbCvLfo[1];
+        l->lfoAmplitudeModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoAmplitude / 128;
+        l->lfoRateModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoRate / 128;
+
+        MbCvEnv *e = mbCvEnv.first();
+        if( lfo == 0 ) {
+            l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
+            l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
+        } else {
+            l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
+            l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
+        }
+
         l->tick(updateSpeedFactor);
 
         mbCvVoice.voicePitchModulation += (l->lfoOut * (s32)l->lfoDepthPitch) / 128;
@@ -70,6 +86,17 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
     // ENVs
     MbCvEnv *e = mbCvEnv.first();
     for(int env=0; env < mbCvEnv.size; ++env, ++e) {
+        if( mbCvClockPtr->eventClock )
+            e->syncClockReq = 1;
+
+        e->envAmplitudeModulation = 0;
+        e->envDecayModulation = 0;
+        MbCvLfo *l = mbCvLfo.first();
+        for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
+            e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnvAmplitude / 128;
+            e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+        }
+
         e->tick(updateSpeedFactor);
 
         mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
@@ -78,7 +105,7 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
     // Voice handling
     MbCvVoice *v = &mbCvVoice; // allows to use multiple voices later
     if( mbCvArp.arpEnabled )
-        mbCvArp.tick(v);
+        mbCvArp.tick(v, this);
 
     if( v->gate(updateSpeedFactor) )
         v->pitch(updateSpeedFactor);
@@ -129,12 +156,12 @@ void MbCv::midiReceive(mios32_midi_port_t port, mios32_midi_package_t midi_packa
 /////////////////////////////////////////////////////////////////////////////
 void MbCv::midiReceiveNote(u8 chn, u8 note, u8 velocity)
 {
-    // operation must be atomic!
-    MIOS32_IRQ_Disable();
-
     // check if MIDI channel and splitzone matches
     if( !mbCvMidiVoice.isAssigned(chn, note) )
-        return;
+        return; // note filtered
+
+    // operation must be atomic!
+    MIOS32_IRQ_Disable();
 
     // set note on/off
     if( velocity )

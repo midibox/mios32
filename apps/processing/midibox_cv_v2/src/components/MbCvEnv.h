@@ -48,19 +48,23 @@ public:
 
     // input parameters
     cv_se_env_mode_t envMode;
-    s8 envDepth;
+    s8 envAmplitude;
     u8 envDelay;
     u8 envAttack;
     u8 envDecay;
     u8 envDecayAccented;
     u8 envSustain;
     u8 envRelease;
-    u8 envCurve;
+    s8 envCurve;
 
-    // used by Multi and Bassline engine - too lazy to create a new class for these three variables
     s8 envDepthPitch;
-    s8 envDepthPulsewidth;
-    s8 envDepthFilter;
+    s8 envDepthLfo1Amplitude;
+    s8 envDepthLfo1Rate;
+    s8 envDepthLfo2Amplitude;
+    s8 envDepthLfo2Rate;
+
+    s32 envAmplitudeModulation;
+    s32 envDecayModulation;
 
     // output waveform
     s16 envOut;
@@ -77,7 +81,7 @@ public:
 
 
 protected:
-    bool step(const u16 &target, const u8 &rate, const u8 &curve, const u8 &updateSpeedFactor);
+    bool step(const u16 &target, const u8 &rate, const s8 &curve, const u8 &updateSpeedFactor);
 
     // internal variables
     mbcv_env_state_t envState;

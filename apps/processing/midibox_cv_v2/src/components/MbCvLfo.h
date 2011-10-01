@@ -37,16 +37,19 @@ public:
 
     // input parameters
     cv_se_lfo_mode_t lfoMode;
-    s8 lfoDepth;
+    s8 lfoAmplitude;
     u8 lfoRate;
     u8 lfoDelay;
     u8 lfoPhase;
-    s32 lfoRateModulation;
 
-    // used by Multi and Bassline engine - too lazy to create a new class for these four variables
     s8 lfoDepthPitch;
-    s8 lfoDepthPulsewidth;
-    s8 lfoDepthFilter;
+    s8 lfoDepthLfoAmplitude;
+    s8 lfoDepthLfoRate;
+    s8 lfoDepthEnvAmplitude;
+    s8 lfoDepthEnvDecay;
+
+    s32 lfoAmplitudeModulation;
+    s32 lfoRateModulation;
 
     // output waveform
     s16 lfoOut;

@@ -39,11 +39,11 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void SID_TIMER_SE_Update(void);
-extern "C" s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
-extern "C" s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
-extern "C" s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in);
-extern "C" s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
+void SID_TIMER_SE_Update(void);
+s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
+s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
+s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in);
+s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 extern "C" void MBNET_TASK_Service(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc);
 
@@ -81,14 +81,14 @@ extern "C" void APP_Init(void)
   TASKS_Init(0);
 
   // install MIDI Rx/Tx callback functions
-  MIOS32_MIDI_DirectRxCallback_Init((void *)&NOTIFY_MIDI_Rx);
-  MIOS32_MIDI_DirectTxCallback_Init((void *)&NOTIFY_MIDI_Tx);
+  MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
+  MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
 
   // install MIDI SysEx callback function
-  MIOS32_MIDI_SysExCallback_Init((void *)&NOTIFY_MIDI_SysEx);
+  MIOS32_MIDI_SysExCallback_Init(&NOTIFY_MIDI_SysEx);
 
   // install timeout callback function
-  MIOS32_MIDI_TimeOutCallback_Init((void *)&NOTIFY_MIDI_TimeOut);
+  MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
   // init Stopwatch
   APP_StopwatchInit();
@@ -103,7 +103,7 @@ extern "C" void APP_Init(void)
 
   // start timer
   // TODO: increase  once performance has been evaluated
-  MIOS32_TIMER_Init(2, 2000 / sid_se_speed_factor, (void *)&SID_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
+  MIOS32_TIMER_Init(2, 2000 / sid_se_speed_factor, &SID_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
 }
 
 
@@ -181,7 +181,7 @@ extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 // This timer interrupt periodically calls the sound engine update
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void SID_TIMER_SE_Update(void)
+void SID_TIMER_SE_Update(void)
 {
 #if STOPWATCH_PERFORMANCE_MEASURING >= 1
   APP_StopwatchReset();
@@ -327,7 +327,7 @@ extern "C" void SID_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_DirectRxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-extern "C" s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
+s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // TODO: better port filtering!
   if( port < USB1 || port >= UART0 ) {
@@ -342,7 +342,7 @@ extern "C" s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_DirectTxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-extern "C" s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
+s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
   return 0;
 }
@@ -351,7 +351,7 @@ extern "C" s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t pac
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_SysExCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-extern "C" s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in)
+s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in)
 {
   return mbSidEnvironment.midiReceiveSysEx(port, midi_in);
 }
@@ -360,7 +360,7 @@ extern "C" s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_TimeoutCallback_Init
 /////////////////////////////////////////////////////////////////////////////
-extern "C" s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
+s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 {
   mbSidEnvironment.midiTimeOut(port);
 

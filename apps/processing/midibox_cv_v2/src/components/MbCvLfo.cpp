@@ -46,15 +46,19 @@ void MbCvLfo::init()
 
     // clear variables
     lfoMode.ALL = 0;
-    lfoDepth = 0;
-    lfoRate = 0;
+    lfoMode.ENABLE = 1;
+    lfoAmplitude = 0;
+    lfoRate = 128;
     lfoDelay = 0;
     lfoPhase = 0;
     lfoRateModulation = 0;
+    lfoAmplitudeModulation = 0;
 
-    lfoDepthPitch = 0;
-    lfoDepthPulsewidth = 0;
-    lfoDepthFilter = 0;
+    lfoDepthPitch = 127;
+    lfoDepthLfoAmplitude = 0;
+    lfoDepthLfoRate = 0;
+    lfoDepthEnvAmplitude = 0;
+    lfoDepthEnvDecay = 0;
 
     lfoOut = 0;
 
@@ -131,6 +135,7 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
             }
 
             // map counter to waveform
+            s16 out;
             switch( lfoMode.WAVEFORM ) {
             case 0: { // Sine
                 // sine table contains a quarter of a sine
@@ -139,32 +144,32 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
                 if( lfoCtr & (1 << 14) )
                     ptr ^= 0x7f;
                 ptr &= 0x7f;
-                lfoOut = mbCvSinTable[ptr];
+                out = mbCvSinTable[ptr];
                 if( lfoCtr & (1 << 15) )
-                    lfoOut = -lfoOut;
+                    out = -out;
             } break;  
 
             case 1: { // Triangle
                 // similar to sine, but linear waveform
-                lfoOut = (lfoCtr & 0x3fff) << 1;
+                out = (lfoCtr & 0x3fff) << 1;
                 if( lfoCtr & (1 << 14) )
-                    lfoOut = 0x7fff - lfoOut;
+                    out = 0x7fff - out;
                 if( lfoCtr & (1 << 15) )
-                    lfoOut = -lfoOut;
+                    out = -out;
             } break;  
 
             case 2: { // Saw
-                lfoOut = lfoCtr - 0x8000;
+                out = lfoCtr - 0x8000;
             } break;  
 
             case 3: { // Pulse
-                lfoOut = (lfoCtr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
+                out = (lfoCtr < 0x8000) ? -0x8000 : 0x7fff; // due to historical reasons it's inverted
             } break;  
 
             case 4: { // Random
                 // only on LFO overrun
                 if( overrun )
-                    lfoOut = randomGen.value(0x0000, 0xffff);
+                    out = randomGen.value(0x0000, 0xffff);
             } break;  
 
             case 5: { // Positive Sine
@@ -174,27 +179,34 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
                 if( lfoCtr & (1 << 15) )
                     ptr ^= 0x7f;
                 ptr &= 0x7f;
-                lfoOut = mbCvSinTable[ptr];
+                out = mbCvSinTable[ptr];
             } break;  
 
             case 6: { // Positive Triangle
                 // similar to sine, but linear waveform
-                lfoOut = (lfoCtr & 0x7fff);
+                out = (lfoCtr & 0x7fff);
                 if( lfoCtr & (1 << 15) )
-                    lfoOut = 0x7fff - lfoOut;
+                    out = 0x7fff - out;
             } break;  
 
             case 7: { // Positive Saw
-                lfoOut = lfoCtr >> 1;
+                out = lfoCtr >> 1;
             } break;  
 
             case 8: { // Positive Pulse
-                lfoOut = (lfoCtr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
+                out = (lfoCtr < 0x8000) ? 0 : 0x7fff; // due to historical reasons it's inverted
             } break;  
 
             default: // take saw as default
-                lfoOut = lfoCtr - 0x8000;
+                out = lfoCtr - 0x8000;
             }
+
+            // the amplitude can be modulated
+            s32 amplitude = lfoAmplitude + (lfoAmplitudeModulation / 512);
+            if( amplitude > 127 ) amplitude = 127; else if( amplitude < -128 ) amplitude = -128;
+
+            // final output value
+            lfoOut = ((s32)out * (s32)amplitude) / 128;
         }
     }
 
