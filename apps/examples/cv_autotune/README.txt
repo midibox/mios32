@@ -8,14 +8,14 @@ All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fdoc%2FMEMO
+  -> http://www.ucapps.de/mio32_c.html
 
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or STM32 Primer
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o MBHP_AOUT, MBHP_AOUT_LC or MBHP_AOUT_NG module
-   o a LM339 comparator (see schematics/comparator_circuit.pdf)
+   o a LM339 comparator (see schematics/comparator_circuit*.pdf)
 
 ===============================================================================
 
@@ -23,10 +23,11 @@ This application demonstrates how an Autotune mechanism for analog synthesizers
 could be implemented.
 
 frq_meter.c provides a frequency measurement function which uses a
-capture/compare channel of the STM32 (available at J5B.A0) to deterime
-the frequency of the VCO.
+capture/compare channel of microcontroller to determine the frequency of the VCO.
+  o MBHP_CORE_STM32 module: capture input at J5B.A4 (pin PA0) used
+  o MBHP_CORE_LPC17 module: capture input at J18 (pin 0.4) used
 
-See schematics/comparator_circuit.pdf for details, and 
+See schematics/comparator_circuit*.pdf for details, and 
 schematics/comparator_waveforms.jpg for the expected waveform.
 
 The VCO is controlled by an AOUT module (by default: AOUT_NG, Channel #1)

@@ -51,6 +51,8 @@ s32 FRQ_METER_Init(u32 mode)
 
   frq_meter_current_frq = FRQ_METER_TOO_LOW;
 
+#ifdef MIOS32_FAMILY_STM32F10x
+  // STM32:
   // Timer configuration (we use TIM2)
   // We use TIM2, note that it is normaly assigned to MIOS32_TIMER0 (don't use it in your app)
 
@@ -113,12 +115,43 @@ s32 FRQ_METER_Init(u32 mode)
   TIM_Cmd(TIM2, ENABLE);
 
   // enable global interrupt
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = MIOS32_IRQ_PRIO_MID;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+  MIOS32_IRQ_Install(TIM2_IRQn, MIOS32_IRQ_PRIO_MID);
+#elif MIOS32_FAMILY_LPC17xx
+  // LPC17:
+  // Timer configuration (we use LPC_TIM2)
+  // Note that it is normaly assigned to MIOS32_TIMER2 (don't use it in your app)
+  LPC_TIM_TypeDef *tim = (LPC_TIM_TypeDef *)LPC_TIM2;
+
+  // configure CAP2 input, which is available at P0.4
+  // (J18, a pull-up resistor is already available on this pin)
+  MIOS32_SYS_LPC_PINSEL(0, 4, 3);
+  MIOS32_SYS_LPC_PINMODE(0, 4, 0);
+
+  // reset timer
+  tim->TCR |= (1 << 1);
+  tim->TCR &= ~(1 << 1);
+
+  // time base configuration
+  // we use a prescaler value which results into 2.5 MHz timer clock
+  // Due to the 32 bit timer resolution the lowest frequency which can be measured is much less than 1 Hz! :-)
+  tim->CTCR = 0x00;               // timer mode
+#if MIOS32_SYS_CPU_FREQUENCY != 120000000
+# warning "Adapt here to achieve 2.5 MHz"
+#endif
+  tim->PR = ((MIOS32_SYS_CPU_FREQUENCY/4)/1200000)-1; // 0.25 uS accuracy @ CCLK/4 Peripheral Clock
+  tim->MR0 = 10000000;            // interrupt event when frequency less than 1 Hz
+  tim->MCR = (1 << 1) | (1 << 0); // generate event on match (overrun)
+  tim->CCR = (1 << 1) | (1 << 2); // capture on CAP2.0 falling edge and generate interrupt
+  tim->IR = ~0;                   // clear all interrupts
+
+  // enable timer
+  tim->TCR = 1;
+
+  // enable global interrupt
+  MIOS32_IRQ_Install(TIMER2_IRQn, MIOS32_IRQ_PRIO_MID);
+#else
+# error "frq_meter not adapted to this MIOS32_FAMILY yet!"
+#endif
 
   return 0; // no error
 }
@@ -155,28 +188,80 @@ u32 FRQ_METER_Tick(void)
 /////////////////////////////////////////////////////////////////////////////
 //! Interrupt handler for TIM2
 /////////////////////////////////////////////////////////////////////////////
+#ifdef MIOS32_FAMILY_STM32F10x
 void TIM2_IRQHandler(void)
-{
-  if( TIM_GetITStatus(TIM2, TIM_IT_CC1) != RESET ) {
-    TIM_ClearITPendingBit(TIM2, TIM_IT_CC1);
+#elif MIOS32_FAMILY_LPC17xx
+void TIMER2_IRQHandler(void)
+#else
+# error "frq_meter not adapted to this MIOS32_FAMILY yet!"
+#endif
 
+{
+#ifdef MIOS32_FAMILY_STM32F10x
+  // STM32 capture event handling
+  u8 irq_triggered = TIM_GetITStatus(TIM2, TIM_IT_CC1) != RESET;
+  u16 cap1 = 0;
+  if( irq_triggered ) {
+    TIM_ClearITPendingBit(TIM2, TIM_IT_CC1);
+    cap1 = TIM_GetCapture1(TIM2); // this will clear the CC1 flag
+    //u16 cap2 = TIM_GetCapture2(TIM2); // this will clear the CC2 flag
+  }
+
+  u8 overcaptured = TIM2->SR & TIM_FLAG_CC1OF;
+  if( overcaptured )
+      TIM2->SR = ~TIM_FLAG_CC1OF;
+
+  u8 overrun = TIM2->SR & TIM_FLAG_CC4;
+  if( overrun )
+    TIM2->SR = ~TIM_FLAG_CC4;
+#elif MIOS32_FAMILY_LPC17xx
+  // LPC17 capture event handling
+  // Note: for some reasons it isn't possible to reset the timer on a capture event (unfortunately!!!)
+  // Accordingly we have to use the timer in freerunning mode, and compare the difference between
+  // two capture values to determine the period length.
+  // We also have to handle the overrun (== frequency too low) detection
+  LPC_TIM_TypeDef *tim = (LPC_TIM_TypeDef *)LPC_TIM2;
+  u8 irq_triggered = tim->IR & (1 << 4); // check for CR0 interrupt
+  static u16 prev_cr0 = 0;
+  static u8 event_captured = 0;
+  u32 cap1 = 0;
+  if( irq_triggered ) {
+    tim->IR &= (1 << 4); // clear CR0 flag
+
+    u32 cr0 = tim->CR0; // captured timer value
+    int diff = cr0 - prev_cr0;
+    if( diff < 0 )
+      diff += tim->MR0+1;
+    cap1 = diff;
+    prev_cr0 = cr0;
+    event_captured = 1;
+  }
+
+  u8 overcaptured = 0; // not available for LPC17
+  u8 overrun = 0;
+  if( tim->IR & (1 << 0) ) { // check for MR0 interrupt
+    tim->IR &= (1 << 0); // clear MR0 flag
+    // set overrun if no new capture event within 1 second
+    if( !event_captured )
+      overrun = 1;
+    event_captured = 0;
+  }
+#else
+# error "frq_meter not adapted to this MIOS32_FAMILY yet!"
+#endif
+  
+  if( irq_triggered ) {
     // clear timeout
     timeout_ctr = 0;
 
-    // get the Input Capture value
-    u16 cap1 = TIM_GetCapture1(TIM2); // this will clear the CC1 flag
-    //u16 cap2 = TIM_GetCapture2(TIM2); // this will clear the CC2 flag
-
     // overcaptured? (means: register not read early enough, will happen at frequencies > 20 kHz)
     // SR should be read after Capture1 read
-    if( TIM2->SR & TIM_FLAG_CC1OF ) {
-      TIM2->SR = ~TIM_FLAG_CC1OF;
+    if( overcaptured ) {
       cap_sample_ctr = 0;
       frq_meter_current_frq = FRQ_METER_TOO_HIGH;
       frq_updated = 1;
-    } else if( TIM2->SR & TIM_FLAG_CC4 ) {
+    } else if( overrun ) {
       // timer overrun!
-      TIM2->SR = ~TIM_FLAG_CC4;
       cap_sample_ctr = 0;
       frq_meter_current_frq = FRQ_METER_TOO_LOW;
       frq_updated = 1;
