@@ -1291,17 +1291,7 @@ the gatelength
  would it be possible to get a "tempo" button just in the way of scrub? Just a shortcut to the bpm menu and selecting the current speed as long as it is pressed? This would be very cool for live tempo fades ;-) (i am aware of the very nice tempo preset button and page)
 
 ----------------------------------------------------------
-   o HQ Track Mode
-     It's intended for high-resolution MIDI Event recording of any kind w/o step
-     quantisation.
-     It's especially useful for CC/Pitchbender sweeps and multiple notes played 
-     at any length and velocity per "step".
 
-     Disadvantage: the editing capabilities are very limited! This mode is mainly
-     intended for live recordings or MIDI file imports.
-
-     But all track processing features are working, such as Step Progression,
-     Randomization, Humanizer, Transpose, Force-to-Scale, MIDI Echo, etc etc!
-
-     to be continued...
-----------------------------------------------------------
+Nuke:
+in the fx section , theres the humanizer which now can "randomize" notes, vel/cc and length...but since the whole right screen is empty, wouldn´t it be cool to have the trigger layer "humanized" also?...maybe with a percentage-value like probability...
+so it would be possible to have some nice variation with accent, slide , rolls, random value etc... each with it´s own amount...?! 
