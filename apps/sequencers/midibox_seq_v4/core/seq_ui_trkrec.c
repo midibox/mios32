@@ -22,6 +22,7 @@
 #include "seq_ui.h"
 #include "seq_cc.h"
 #include "seq_trg.h"
+#include "seq_par.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 #include "seq_record.h"
@@ -50,6 +51,12 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 static u8 store_file_required;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 GetNumNoteLayers(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -177,6 +184,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.POLY_RECORD = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.POLY_RECORD ^= 1;
+
+        // print warning if poly mode not possible
+	if( seq_record_options.POLY_RECORD ) {
+	  int num_note_layers = GetNumNoteLayers();
+	  if( num_note_layers < 2 ) {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "No Poly Recording:",
+		       num_note_layers ? "Track has only one Note Layer!" : "Track has no Note Layers!");
+	  }
+	}
       return 1;
 
     case ITEM_AUTO_START:
@@ -370,11 +386,12 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_POLY_MODE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
+    SEQ_LCD_PrintSpaces(5);
   } else {
     SEQ_LCD_PrintString(seq_record_options.POLY_RECORD ? "Poly" : "Mono");
+    SEQ_LCD_PrintChar((seq_record_options.POLY_RECORD && GetNumNoteLayers() < 2) ? '!' : ' ');
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_AUTO_START && ui_cursor_flash ) {
@@ -475,4 +492,24 @@ s32 SEQ_UI_TRKREC_Init(u32 mode)
   seq_record_state.ENABLED = 1;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns != 0 if poly mode possible with currently selected track
+/////////////////////////////////////////////////////////////////////////////
+static s32 GetNumNoteLayers(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  u8 *layer_type_ptr = (u8 *)&seq_cc_trk[visible_track].lay_const[0*16];
+  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+  int par_layer;
+  int note_layers = 0;
+  for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
+      if( *layer_type_ptr == SEQ_PAR_Type_Note )
+	++note_layers;
+  }
+
+  return note_layers;
 }

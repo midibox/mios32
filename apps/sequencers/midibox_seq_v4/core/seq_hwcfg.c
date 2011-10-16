@@ -417,6 +417,16 @@ seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits = {
   .common1_pin = ((( 0   -1)<<3)+    0),
   .common2_pin = ((( 0   -1)<<3)+    0),
   .common3_pin = ((( 0   -1)<<3)+    0),
+  .common4_pin = ((( 0   -1)<<3)+    0),
+};
+
+
+seq_hwcfg_step_digits_t seq_hwcfg_step_digits = {
+  .enabled = 0,
+  .segments_sr = 0,
+  .common1_pin = ((( 0   -1)<<3)+    0),
+  .common2_pin = ((( 0   -1)<<3)+    0),
+  .common3_pin = ((( 0   -1)<<3)+    0),
 };
 
 
@@ -453,6 +463,8 @@ static const mios32_enc_config_t enc_config[SEQ_HWCFG_NUM_ENCODERS] = {
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 9, .cfg.pos=2 }, // GP14
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 9, .cfg.pos=4 }, // GP15
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 9, .cfg.pos=6 }, // GP16
+
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // BPM
 };
 
 

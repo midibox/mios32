@@ -477,8 +477,11 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    break;
 	  cc_last_value[track][par_layer] = value;
 
-	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
-	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	  if(
+#ifndef MBSEQV4L
+	     (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+#endif
+	     (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
 	    p->type     = CC;
 	    p->cable    = track;
 	    p->event    = CC;
@@ -679,14 +682,24 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 #ifndef MBSEQV4L
 	       0
 #else
-	       seq_record_options.STEP_RECORD && tcc->clkdiv.value == 0x03
+	       (seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning()) && tcc->clkdiv.value == 0x03
 #endif
 	       ) {
 	      int i;
 	      for(i=0; i<4; ++i)
 		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.value);
 	    } else {
-	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.value);
+	      // Live Record mode: write into the next 4*resolution steps (till end of track)
+	      int i;
+	      u16 num_p_steps = SEQ_PAR_NumStepsGet(track);
+	      int num_steps = 4;
+	      if( tcc->clkdiv.value <= 0x03 )
+		num_steps = 16;
+	      else if( tcc->clkdiv.value <= 0x07 )
+		num_steps = 8;
+	      for(i=0; i<num_steps && (step+i) < num_p_steps; ++i) {
+		SEQ_PAR_Set(track, step+i, par_layer, instrument, layer_event.midi_package.value);
+	      }
 	    }
 	    return par_layer;
 	  }
@@ -699,7 +712,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 #ifndef MBSEQV4L
 	       0
 #else
-	       seq_record_options.STEP_RECORD && tcc->clkdiv.value == 0x03
+	       (seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning()) && tcc->clkdiv.value == 0x03
 #endif
 	       ) {
 	      int i;
@@ -845,8 +858,15 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
       case SEQ_EVENT_MODE_Chord:
       case SEQ_EVENT_MODE_CC:
       case SEQ_EVENT_MODE_Combined: {
+#ifdef MBSEQV4L
+	// extra for MBSEQ V4L:
+	// CCs disabled and will be assigned during recording
+	for(i=0; i<16; ++i)
+	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 0x80);
+#else
 	for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
+#endif
         } break;
 
       case SEQ_EVENT_MODE_Drum: {

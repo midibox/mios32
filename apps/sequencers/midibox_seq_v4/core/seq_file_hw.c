@@ -617,6 +617,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_enc.datawheel_fast_speed = sr;
 	    continue;
 	  }
+	  if( strcmp(parameter, "BPM_FAST_SPEED") == 0 ) {
+	    seq_hwcfg_enc.bpm_fast_speed = sr;
+	    continue;
+	  }
 	  if( strcmp(parameter, "GP_FAST_SPEED") == 0 ) {
 	    seq_hwcfg_enc.gp_fast_speed = sr;
 	    continue;
@@ -665,6 +669,8 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  if( strcmp(parameter, "DATAWHEEL") == 0 ) {
 	    MIOS32_ENC_ConfigSet(0, enc_config);
+	  } else if( strcmp(parameter, "BPM") == 0 ) {
+	    MIOS32_ENC_ConfigSet(17, enc_config);
 	  } else if( strncmp(parameter, "GP", 2) == 0 ) {
 	    parameter += 2;
 
@@ -877,13 +883,14 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_bpm_digits.segments_sr = value;
 	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
 		     strcmp(parameter, "COMMON2_PIN") == 0 ||
-		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+		     strcmp(parameter, "COMMON3_PIN") == 0 ||
+		     strcmp(parameter, "COMMON4_PIN") == 0 ) {
 	    
 	    word = strtok_r(NULL, separators, &brkt);
 	    s32 pin = get_dec(word);
 	    if( pin < 0 || pin >= 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_DIGITS_%s definition: invalid pin value '%s'!", parameter, word);
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BPM_DIGITS_%s definition: invalid pin value '%s'!", parameter, word);
 #endif
 	      continue;
 	    }
@@ -895,10 +902,62 @@ s32 SEQ_FILE_HW_Read(void)
 	      seq_hwcfg_bpm_digits.common2_pin = dout_value;
 	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common3_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON4_PIN") == 0 ) {
+	      seq_hwcfg_bpm_digits.common4_pin = dout_value;
 	    }
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED_DIGITS_* name '%s'!", parameter);
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BPM_DIGITS_* name '%s'!", parameter);
+#endif
+	  }
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// STEP_DIGITS_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "STEP_DIGITS_", 12) == 0 ) {
+	  parameter += 12;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in STEP_DIGITS_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] STEP_DIGITS_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_step_digits.enabled = value;
+	  } else if( strcmp(parameter, "SEGMENTS_SR") == 0 ) {
+	    seq_hwcfg_step_digits.segments_sr = value;
+	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
+		     strcmp(parameter, "COMMON2_PIN") == 0 ||
+		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	    
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 pin = get_dec(word);
+	    if( pin < 0 || pin >= 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in STEP_DIGITS_%s definition: invalid pin value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+	    u8 dout_value = ((value-1)<<3) | pin;
+
+	    if( strcmp(parameter, "COMMON1_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common1_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON2_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common2_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common3_pin = dout_value;
+	    }
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_DIGITS_* name '%s'!", parameter);
 #endif
 	  }
 

@@ -227,7 +227,9 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
-  static u8 bpm_digit_ctr = 0;
+  static u8 led_digit_ctr = 0;
+  if( ++led_digit_ctr >= 4 )
+    led_digit_ctr = 0;
 
 #ifndef MBSEQV4L
   if( seq_hwcfg_blm.enabled ) {
@@ -247,28 +249,60 @@ void APP_SRIO_ServicePrepare(void)
     // invert for common anodes
     u8 inversion_mask = (seq_hwcfg_bpm_digits.enabled == 2) ? 0xff : 0x00;
 
-    if( ++bpm_digit_ctr >= 3 )
-      bpm_digit_ctr = 0;
-
     int bpm = (int)SEQ_BPM_Get();
-    if( bpm_digit_ctr == 0 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet(bpm % 10);
+    if( led_digit_ctr == 0 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet((bpm*10) % 10);
       SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 0 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
-    } else if( bpm_digit_ctr == 1 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 10) % 10);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+    } else if( led_digit_ctr == 1 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet(bpm % 10) | 0x80; // +dot
       SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 0 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
-    } else if( bpm_digit_ctr == 2 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 100) % 10);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+    } else if( led_digit_ctr == 2 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 10) % 10);
       SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
       SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 0 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+    } else if( led_digit_ctr == 3 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 100) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 0 ^ inversion_mask);
+    }
+  }
+
+  if( seq_hwcfg_step_digits.enabled ) {
+    // invert for common anodes
+    u8 inversion_mask = (seq_hwcfg_step_digits.enabled == 2) ? 0xff : 0x00;
+    int step = (int)ui_selected_step + 1;
+    if( led_digit_ctr == 0 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet(step % 10);
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 0 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 1 ^ inversion_mask);
+    } else if( led_digit_ctr == 1 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet((step / 10) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 0 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 1 ^ inversion_mask);
+    } else if( led_digit_ctr == 2 ) {
+      u8 sr_value = SEQ_LED_DigitPatternGet((step / 100) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 1 ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 0 ^ inversion_mask);
     }
   }
 }
