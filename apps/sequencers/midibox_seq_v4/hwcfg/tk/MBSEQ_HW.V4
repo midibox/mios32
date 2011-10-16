@@ -150,11 +150,35 @@ BPM_DIGITS_ENABLED 0
 BPM_DIGITS_SEGMENTS_SR 0
 
 # define the DOUT SR and pin to which the common pins are connected
-# we are counting from right to left (1=right digit, 2=middle digit, 3=left digit)
+# we are counting from right to left
+# Example: 140.5 BPM: (COMMON1 = 5, COMMON2=0., COMMON3=4, COMMON4=1)
 #                       SR  Pin
 BPM_DIGITS_COMMON1_PIN   0   0
 BPM_DIGITS_COMMON2_PIN   0   0
 BPM_DIGITS_COMMON3_PIN   0   0
+BPM_DIGITS_COMMON4_PIN   0   0
+
+
+##################################################
+# Optional Step digits
+##################################################
+
+# set to 1 or 2 to enable the 3 optional STEP digits
+# 0: STEP digits disabled
+# 1: STEP digits with common cathode
+# 2: STEP digits with common anode
+STEP_DIGITS_ENABLED 0
+
+# define the DOUT shift register to which the segments are connected (0=disabled)
+STEP_DIGITS_SEGMENTS_SR 0
+
+# define the DOUT SR and pin to which the common pins are connected
+# we are counting from right to left
+# Example: Step 123: (COMMON1 = 3, COMMON2=2, COMMON3=1)
+#                       SR  Pin
+STEP_DIGITS_COMMON1_PIN   0   0
+STEP_DIGITS_COMMON2_PIN   0   0
+STEP_DIGITS_COMMON3_PIN   0   0
 
 
 ##################################################
@@ -528,3 +552,10 @@ ENC_GP_FAST_SPEED 3
 # Auto FAST mode: if a layer is assigned to velocity or CC, the fast button will be automatically
 # enabled - in other cases (e.g. Note or Length), the fast button will be automatically disabled
 ENC_AUTO_FAST        1
+
+# optional BPM encoder
+#              SR  Pin  Type
+ENC_BPM         0   0   DETENTED2
+
+# the speed value for the BPM encoder which is used when the "FAST" function is activated
+ENC_BPM_FAST_SPEED 3

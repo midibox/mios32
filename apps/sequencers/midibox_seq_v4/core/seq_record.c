@@ -84,9 +84,7 @@ s32 SEQ_RECORD_Init(u32 mode)
   seq_record_state.ARMED_TRACKS = 0x00ff; // first sequence
 #endif
 
-  u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    SEQ_RECORD_Reset(track);
+  SEQ_RECORD_ResetAllTracks();
 
   SEQ_RECORD_AllNotesOff();
 
@@ -116,6 +114,20 @@ s32 SEQ_RECORD_Reset(u8 track)
   MIOS32_IRQ_Enable();
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// resets the variables of all tracks
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RECORD_ResetAllTracks(void)
+{
+  s32 status = 0;
+
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    status |= SEQ_RECORD_Reset(track);
+
+  return status;
 }
 
 
@@ -165,6 +177,10 @@ s32 SEQ_RECORD_PrintEditScreen(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 {
+  // step recording mode?
+  // Note: if sequencer is not running, "Live Recording" will be handled like "Step Recording"
+  u8 step_record_mode = seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning();
+
 #if MBSEQV4L
   // extra for MBSEQ V4L: seq_record_state.ARMED_TRACKS and auto-assignment
   if( !seq_record_state.ARMED_TRACKS )
@@ -195,14 +211,14 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       int par_layer;
       for(par_layer=0; par_layer<num_p_layers && !free_layer_found; ++par_layer, ++layer_type_ptr, ++layer_cc_ptr) {
 	if( *layer_type_ptr == SEQ_PAR_Type_CC &&
-	    (*layer_cc_ptr == 0 || *layer_cc_ptr == midi_package.cc_number) ) {
+	    (*layer_cc_ptr >= 0x80 || *layer_cc_ptr == midi_package.cc_number) ) {
 
 	  // exit if track not armed
 	  // Note: the current handling doesn't allow to select the track in which a CC will be recorded via ARM flag
 	  if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
 	    return 0;
 
-	  if( !*layer_cc_ptr ) {
+	  if( *layer_cc_ptr >= 0x80 ) {
 	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
 
 	    // initialize whole layer with invalud value 0xc0 (indicates: not recorded)
@@ -280,7 +296,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  // insert length into current step
 	  u8 instrument = 0;
 	  int len;
-	  if( seq_record_options.STEP_RECORD ) {
+	  if( step_record_mode ) {
 	    len = 71; // 75%
 	    if( tcc->event_mode != SEQ_EVENT_MODE_Drum )
 	      len = (duration <= 96) ? duration : 96; // for duration >= 96 the length will be stretched after record
@@ -293,7 +309,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	      len = 95;
 	  }
 
-	  int len_step = seq_record_options.STEP_RECORD ? seq_record_step : t->step;
+	  int len_step = step_record_mode ? seq_record_step : t->step;
 	  u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
 
 	  while( 1 ) {
@@ -312,7 +328,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 		SEQ_PAR_Set(track, len_step, tcc->link_par_layer_length, instrument, len);
 	    }
 
-	    if( !seq_record_options.STEP_RECORD )
+	    if( !step_record_mode )
 	      break;
 	    if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
 	      break;
@@ -343,7 +359,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  MIOS32_IRQ_Enable();
 	}
 
-	if( seq_record_options.STEP_RECORD && seq_record_options.FWD_MIDI ) {
+	if( step_record_mode && seq_record_options.FWD_MIDI ) {
 	  // send Note Off events of current track if no key is played anymore
 	  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
 	  if( !any_note_played )
@@ -352,7 +368,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       } else {
 	MIOS32_IRQ_Disable();
 
-	if( seq_record_options.STEP_RECORD && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
+	if( step_record_mode && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	  // check if another note is already played
 	  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
 	  // if not: clear poly counter and all notes (so that new chord can be entered if all keys were released)
@@ -415,7 +431,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   }
 
   if( rec_event ) {
-    if( !seq_record_options.STEP_RECORD ) {
+    if( !step_record_mode ) {
       u8 prev_step = seq_record_step;
       u8 new_step = t->step;
 
@@ -481,26 +497,31 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	SEQ_BPM_Start();
       }
 
-      if( seq_record_options.STEP_RECORD && seq_record_options.FWD_MIDI ) {
-	seq_layer_evnt_t layer_events[16];
-	u8 record_step = seq_record_step;
+      if( step_record_mode && seq_record_options.FWD_MIDI ) {
+	if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+	  // Drum mode: play only the single note
+	  SEQ_LIVE_PlayEvent(track, midi_package);
+	} else {
+	  seq_layer_evnt_t layer_events[16];
+	  u8 record_step = seq_record_step;
 #ifdef MBSEQV4L
-	// extra MBSEQ V4L if CC track: read 16th step in step record mode
-	// could also be provided for normal MBSEQ V4 later (has to be made more flexible!)
-	if( seq_record_options.STEP_RECORD && tcc->clkdiv.value == 0x03 )
-	  record_step *= 4;
+	  // extra MBSEQ V4L if CC track: read 16th step in step record mode
+	  // could also be provided for normal MBSEQ V4 later (has to be made more flexible!)
+	  if( step_record_mode && tcc->clkdiv.value == 0x03 )
+	    record_step *= 4;
 #endif
 
-	s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
-	if( number_of_events > 0 ) {
-	  int i;
-	  seq_layer_evnt_t *e = &layer_events[0];
-	  for(i=0; i<number_of_events; ++e, ++i)
-	    SEQ_LIVE_PlayEvent(track, e->midi_package);
+	  s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
+	  if( number_of_events > 0 ) {
+	    int i;
+	    seq_layer_evnt_t *e = &layer_events[0];
+	    for(i=0; i<number_of_events; ++e, ++i)
+	      SEQ_LIVE_PlayEvent(track, e->midi_package);
+	  }
 	}
       }
 
-      if( seq_record_options.STEP_RECORD && !seq_record_options.POLY_RECORD ) {
+      if( step_record_mode && !seq_record_options.POLY_RECORD ) {
 	int next_step = (seq_record_step + seq_record_options.STEPS_PER_KEY) % ((int)tcc->length+1);
 
 	int i;
@@ -512,7 +533,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     }
   }
 
-  if( seq_record_options.FWD_MIDI && (!rec_event || !seq_record_options.STEP_RECORD) ) {
+  if( seq_record_options.FWD_MIDI && (!rec_event || !step_record_mode) ) {
     // forward event directly in live mode or if it hasn't been recorded
     SEQ_LIVE_PlayEvent(track, layer_event.midi_package);
   }
@@ -521,7 +542,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   MUTEX_MIDIOUT_GIVE;
 
   // temporary print edit screen
-  SEQ_RECORD_PrintEditScreen();
+  // MBSEQV4L: only if a note ON event has been played
+#ifdef MBSEQV4L
+  if( midi_package.event == NoteOn )
+#endif
+    SEQ_RECORD_PrintEditScreen();
 
   return 0; // no error
 }
@@ -538,6 +563,12 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
   if( seq_record_options.STEP_RECORD )
     return -2; // only in live record mode
+
+  // this is a proper workaround for Auto Start feature in Live Recording mode
+  // t->state.REC_DONT_OVERWRITE_NEXT_STEP has been cleared by SEQ_CORE_Reset(), this
+  // will cause that the first step will be overwritten
+  if( bpm_tick == 0 )
+    return 0; // silently ignore (we don't expect a live recording event at the very first step)
 
 #ifndef MBSEQV4L
   if( track != SEQ_UI_VisibleTrackGet() )

@@ -31,6 +31,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local defines
+/////////////////////////////////////////////////////////////////////////////
+// TK: Mapping disabled, it confuses too much and doesn't work in conjunction with recording
+#define KEYBOARD_DRUM_MAPPING 0
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 seq_live_options_t seq_live_options;
@@ -98,6 +105,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       live_note_played[note_ix32] |= note_mask;
 
       int effective_note;
+#if KEYBOARD_DRUM_MAPPING
       u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	effective_note = (int)p.note % 24;
@@ -105,10 +113,13 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	// each instrument assigned to a button
 	effective_note = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_A1 + effective_note);
       } else {
+#endif
 	effective_note = (int)p.note + 12*seq_live_options.OCT_TRANSPOSE;
 	while( effective_note < 0   ) effective_note += 12;
 	while( effective_note > 127 ) effective_note -= 12;
+#if KEYBOARD_DRUM_MAPPING
       }
+#endif
 
       seq_layer_evnt_t e;
       e.midi_package = p;

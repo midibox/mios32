@@ -6,6 +6,27 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.051
+~~~~~~~~~~~~~~~~~
+
+   o improved live-recording of CCs
+
+   o warning is print on screen if poly recording selected on a track with
+     only one (or none) note layer
+
+   o Drum live/step recording: disabled mapping of drum instruments
+     to keys C/C#/D/D#/... - it was too confusing.
+
+   o BPM LED Digit function: added optional 4th digit to display the value after the dot
+
+   o added optional LED digits to display the current step.
+     Anodes require a dedicated Shift Register, the 3 cathode lines can be shared with
+     the shift register which is used to drive the cathodes of the BPM LED Digits.
+
+   o added optional BPM (Tempo) encoder.
+     As usual the pinning can be configured in the MBSEQ_HW.V4 file
+
+
 MIDIboxSEQ V4.050
 ~~~~~~~~~~~~~~~~~
 

@@ -20,7 +20,7 @@
 
 // changing these constants requires changes in seq_hwcfg.c, seq_file_hw.c and probably seq_ui.c
 
-#define SEQ_HWCFG_NUM_ENCODERS  17
+#define SEQ_HWCFG_NUM_ENCODERS     18
 
 #define SEQ_HWCFG_NUM_GP           16
 #define SEQ_HWCFG_NUM_TRACK         4
@@ -214,6 +214,7 @@ typedef struct {
 
 typedef struct {
   u8 datawheel_fast_speed;
+  u8 bpm_fast_speed;
   u8 gp_fast_speed;
   u8 auto_fast;
 } seq_hwcfg_enc_t;
@@ -238,7 +239,16 @@ typedef struct {
   u8 common1_pin;
   u8 common2_pin;
   u8 common3_pin;
+  u8 common4_pin;
 } seq_hwcfg_bpm_digits_t;
+
+typedef struct {
+  u8 enabled;
+  u8 segments_sr;
+  u8 common1_pin;
+  u8 common2_pin;
+  u8 common3_pin;
+} seq_hwcfg_step_digits_t;
 
 typedef struct {
   u8 key;
@@ -263,6 +273,7 @@ extern seq_hwcfg_blm_t seq_hwcfg_blm;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
 extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
+extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];

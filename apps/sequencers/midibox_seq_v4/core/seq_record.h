@@ -50,6 +50,7 @@ typedef union {
 
 extern s32 SEQ_RECORD_Init(u32 mode);
 extern s32 SEQ_RECORD_Reset(u8 track);
+extern s32 SEQ_RECORD_ResetAllTracks(void);
 extern s32 SEQ_RECORD_AllNotesOff(void);
 
 extern s32 SEQ_RECORD_PrintEditScreen(void);

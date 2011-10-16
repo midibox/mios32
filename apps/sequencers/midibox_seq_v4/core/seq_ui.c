@@ -217,10 +217,13 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
 
   // change for datawheel and GP encoders
   int enc;
-  for(enc=0; enc<17; ++enc) {
+  for(enc=0; enc<SEQ_HWCFG_NUM_ENCODERS; ++enc) {
     enc_config = MIOS32_ENC_ConfigGet(enc);
     enc_config.cfg.speed = (seq_ui_button_state.FAST_ENCODERS || seq_ui_button_state.FAST2_ENCODERS) ? FAST : NORMAL;
-    enc_config.cfg.speed_par = (enc == 0) ? seq_hwcfg_enc.datawheel_fast_speed : seq_hwcfg_enc.gp_fast_speed;
+    enc_config.cfg.speed_par = 
+        (enc == 0)  ? seq_hwcfg_enc.datawheel_fast_speed
+      : (enc == 17) ? seq_hwcfg_enc.bpm_fast_speed
+      : seq_hwcfg_enc.gp_fast_speed;
     MIOS32_ENC_ConfigSet(enc, enc_config);
   }
 
@@ -1860,7 +1863,7 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   if( seq_ui_backup_req || seq_ui_format_req )
     return -1;
 
-  if( encoder > 16 )
+  if( encoder >= SEQ_HWCFG_NUM_ENCODERS )
     return -1; // encoder doesn't exist
 
   // ensure that selections are matching with track constraints
@@ -1874,6 +1877,19 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     incrementer = 3;
   else if( incrementer < -3 )
     incrementer = -3;
+
+  // encoder 17 increments BPM
+  if( encoder == 17 ) {
+    u16 value = (u16)(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num]*10);
+    if( SEQ_UI_Var16_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
+      // set new BPM
+      seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
+      SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+      //store_file_required = 1;
+      seq_ui_display_update_req = 1;      
+    }
+    return 0;
+  }
 
   if( seq_ui_button_state.SCRUB && encoder == 0 ) {
     // if sequencer isn't already running, continue it (don't restart)
