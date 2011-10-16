@@ -29,4 +29,12 @@
 #define MIOS32_I2S_MCLK_ENABLE  1
 //#endif
 
+
+// TK: reduced delay buffer size for LPC1768/LPC1769 to allow compile without linker tricks
+#if defined(MIOS32_PROCESSOR_LPC1768) || defined(MIOS32_PROCESSOR_LPC1769)
+# define DELAY_BUFFER_SIZE 8192
+#else
+# define DELAY_BUFFER_SIZE 16384
+#endif
+
 #endif /* _MIOS32_CONFIG_H */

@@ -134,6 +134,6 @@ const static u16 bcpatterns[15] = {
 };
 	
 static s16 chorusBuffer[4096];
-static s16 delayBuffer[16384];
+static s16 delayBuffer[DELAY_BUFFER_SIZE];
 
 #endif

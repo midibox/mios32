@@ -1345,7 +1345,7 @@ s16 ENGINE_postProcess(s16 sample) {
 
 	// add delay
 	if (p.d.engineFlags.delay) {
-		tout2 = delayBuffer[(delayIndex - p.d.voice.delayTime) & 0x3FFF];
+	        tout2 = delayBuffer[(delayIndex - p.d.voice.delayTime) % DELAY_BUFFER_SIZE];
 		tout2 *= p.d.voice.delayFeedback;
 		tout2 /= 65536;
 		tout += tout2;
@@ -1355,7 +1355,7 @@ s16 ENGINE_postProcess(s16 sample) {
 		if (delaysampled) {
 			delaysampled--;
 		} else {
-			delayBuffer[delayIndex & 0x3FFF] = tout;
+		        delayBuffer[delayIndex % DELAY_BUFFER_SIZE] = tout;
 			delayIndex++;
 			delaysampled = p.d.voice.delayDownsample;
 		}		
