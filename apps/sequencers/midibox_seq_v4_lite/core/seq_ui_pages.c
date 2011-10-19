@@ -82,22 +82,22 @@ seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16] = {
 seq_ui_pages_lfo_presets_t seq_ui_pages_lfo_presets[16] = {
   // waveform amplitude phase steps steps_rst enable_flags cc cc_offset cc_ppqn
   {     0,      128+64,   0,   15,    15,        0x00,     0,    64,       6    }, // GP#1 (off)
-  {     1,      128+12,   0,   15,    15,        0x0e,     0,    64,       6    }, // GP#2
-  {     3,      128+24,   0,   15,    15,        0x0e,     0,    64,       6    }, // GP#3
+  {     1,      128+12,   0,   15,    15,        0x06,     0,    64,       6    }, // GP#2
+  {     3,      128+24,   0,   15,    15,        0x06,     0,    64,       6    }, // GP#3
   {     3,      128-12,   0,   15,    15,        0x06,     0,    64,       6    }, // GP#4
   {     3,      128+24,   0,   15,     3,        0x06,     0,    64,       6    }, // GP#5
   {     3,      128-12,   0,   31,    15,        0x06,     0,    64,       6    }, // GP#6
   {     3,      128+12,   0,   31,    15,        0x06,     0,    64,       6    }, // GP#7
   {     3,      128+12,   0,   63,    31,        0x06,     0,    64,       6    }, // GP#8
 
-  {     1,      128+32,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#9
-  {     3,      128+64,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#10
-  {     3,      128+48,   0,   15,    15,        0x08,     1,    64,       6    }, // GP#11
-  {     3,      128+48,   0,   15,     3,        0x08,     1,    64,       6    }, // GP#12
-  {     3,      128+48,   0,   31,     3,        0x08,     1,    64,       6    }, // GP#13
-  {     3,      128+48,   0,   31,    15,        0x08,     1,    64,       6    }, // GP#14
-  {     3,      128+48,   0,   63,    31,        0x08,     1,    64,       6    }, // GP#15
-  {     1,      128+48,   0,   63,    31,        0x08,     1,    64,       6    }, // GP#16
+  {     1,      128+32,   0,   15,    15,        0x0c,     1,    64,       6    }, // GP#9
+  {     3,      128+64,   0,   15,    15,        0x0c,     1,    64,       6    }, // GP#10
+  {     3,      128+48,   0,   15,    15,        0x0c,     1,    64,       6    }, // GP#11
+  {     3,      128+48,   0,   15,     3,        0x0c,     1,    64,       6    }, // GP#12
+  {     3,      128+48,   0,   31,     3,        0x0c,     1,    64,       6    }, // GP#13
+  {     3,      128+48,   0,   31,    15,        0x0c,     1,    64,       6    }, // GP#14
+  {     3,      128+48,   0,   63,    31,        0x0c,     1,    64,       6    }, // GP#15
+  {     1,      128+48,   0,   63,    31,        0x0c,     1,    64,       6    }, // GP#16
 };
 
 
@@ -211,10 +211,7 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_LOAD:
   case SEQ_UI_PAGE_SAVE: {
-    u8 group = 8;
-    if( ui_selected_tracks & (1 << 0) )
-      group = 0;
-
+    u8 group = 0;
     u16 leds = (1 << ui_selected_pattern[group].group) | (1 << (ui_selected_pattern[group].num+8));
     if( ui_selected_pattern_changing && ui_cursor_flash )
       leds &= 0x00ff;
@@ -435,8 +432,6 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   // no page reacts on depressed buttons
   if( depressed )
     return 0;
@@ -526,12 +521,17 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
     ui_selected_progression_preset = button;
     seq_ui_pages_progression_presets_t *preset = (seq_ui_pages_progression_presets_t *)&seq_ui_pages_progression_presets[ui_selected_progression_preset];
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_FORWARD, (preset->steps_forward > 0) ? (preset->steps_forward-1) : 0);
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_JMPBCK, preset->steps_jump_back);
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_REPLAY, preset->steps_replay);
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_REPEAT, preset->steps_repeat);
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_SKIP, preset->steps_skip);
-    SEQ_CC_Set(visible_track, SEQ_CC_STEPS_RS_INTERVAL, preset->steps_rs_interval);
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+      if( ui_selected_tracks & (1 << track) ) {
+	SEQ_CC_Set(track, SEQ_CC_STEPS_FORWARD, (preset->steps_forward > 0) ? (preset->steps_forward-1) : 0);
+	SEQ_CC_Set(track, SEQ_CC_STEPS_JMPBCK, preset->steps_jump_back);
+	SEQ_CC_Set(track, SEQ_CC_STEPS_REPLAY, preset->steps_replay);
+	SEQ_CC_Set(track, SEQ_CC_STEPS_REPEAT, preset->steps_repeat);
+	SEQ_CC_Set(track, SEQ_CC_STEPS_SKIP, preset->steps_skip);
+	SEQ_CC_Set(track, SEQ_CC_STEPS_RS_INTERVAL, preset->steps_rs_interval);
+      }
+    }
 
     // GP1 also requests synch to measure
     // it's a good idea to do this for all tracks so that both sequences are in synch again
@@ -564,13 +564,18 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
     ui_selected_echo_preset = button;
     seq_ui_pages_echo_presets_t *preset = (seq_ui_pages_echo_presets_t *)&seq_ui_pages_echo_presets[ui_selected_echo_preset];
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_REPEATS, preset->repeats);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_DELAY, preset->delay);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_VELOCITY, preset->velocity);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_VELOCITY, preset->fb_velocity);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_NOTE, preset->fb_note);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_GATELENGTH, preset->fb_gatelength);
-    SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_TICKS, preset->fb_ticks);
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+      if( ui_selected_tracks & (1 << track) ) {
+	SEQ_CC_Set(track, SEQ_CC_ECHO_REPEATS, preset->repeats);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_DELAY, preset->delay);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_VELOCITY, preset->velocity);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_FB_VELOCITY, preset->fb_velocity);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_FB_NOTE, preset->fb_note);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_FB_GATELENGTH, preset->fb_gatelength);
+	SEQ_CC_Set(track, SEQ_CC_ECHO_FB_TICKS, preset->fb_ticks);
+      }
+    }
 
     portEXIT_CRITICAL();
   } break;
@@ -582,8 +587,13 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
     ui_selected_humanizer_preset = button;
     seq_ui_pages_humanizer_presets_t *preset = (seq_ui_pages_humanizer_presets_t *)&seq_ui_pages_humanizer_presets[ui_selected_humanizer_preset];
-    SEQ_CC_Set(visible_track, SEQ_CC_HUMANIZE_MODE, preset->mode);
-    SEQ_CC_Set(visible_track, SEQ_CC_HUMANIZE_VALUE, preset->value);
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+      if( ui_selected_tracks & (1 << track) ) {
+	SEQ_CC_Set(track, SEQ_CC_HUMANIZE_MODE, preset->mode);
+	SEQ_CC_Set(track, SEQ_CC_HUMANIZE_VALUE, preset->value);
+      }
+    }
 
     portEXIT_CRITICAL();
     return 0;
@@ -596,15 +606,20 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
     ui_selected_lfo_preset = button;
     seq_ui_pages_lfo_presets_t *preset = (seq_ui_pages_lfo_presets_t *)&seq_ui_pages_lfo_presets[ui_selected_lfo_preset];
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_WAVEFORM, preset->waveform);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_AMPLITUDE, preset->amplitude);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_PHASE, preset->phase);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_STEPS, preset->steps);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_STEPS_RST, preset->steps_rst);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_ENABLE_FLAGS, preset->enable_flags);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC, preset->cc);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC_OFFSET, preset->cc_offset);
-    SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC_PPQN, preset->cc_ppqn);
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+      if( ui_selected_tracks & (1 << track) ) {
+	SEQ_CC_Set(track, SEQ_CC_LFO_WAVEFORM, preset->waveform);
+	SEQ_CC_Set(track, SEQ_CC_LFO_AMPLITUDE, preset->amplitude);
+	SEQ_CC_Set(track, SEQ_CC_LFO_PHASE, preset->phase);
+	SEQ_CC_Set(track, SEQ_CC_LFO_STEPS, preset->steps);
+	SEQ_CC_Set(track, SEQ_CC_LFO_STEPS_RST, preset->steps_rst);
+	SEQ_CC_Set(track, SEQ_CC_LFO_ENABLE_FLAGS, preset->enable_flags);
+	SEQ_CC_Set(track, SEQ_CC_LFO_CC, preset->cc);
+	SEQ_CC_Set(track, SEQ_CC_LFO_CC_OFFSET, preset->cc_offset);
+	SEQ_CC_Set(track, SEQ_CC_LFO_CC_PPQN, preset->cc_ppqn);
+      }
+    }
 
     portEXIT_CRITICAL();
     return 0;

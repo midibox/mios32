@@ -137,7 +137,16 @@ typedef struct {
   u8 common1_pin;
   u8 common2_pin;
   u8 common3_pin;
+  u8 common4_pin;
 } seq_hwcfg_bpm_digits_t;
+
+typedef struct {
+  u8 enabled;
+  u8 segments_sr;
+  u8 common1_pin;
+  u8 common2_pin;
+  u8 common3_pin;
+} seq_hwcfg_step_digits_t;
 
 typedef struct {
   u8 key;
@@ -159,6 +168,7 @@ extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_led_t seq_hwcfg_led;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
+extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
 
 #endif /* _SEQ_HWCFG_H */
