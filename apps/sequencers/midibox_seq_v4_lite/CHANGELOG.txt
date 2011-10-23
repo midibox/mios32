@@ -6,8 +6,8 @@ Wishlist for future features
 -> see bottom of this document
 
 
-MIDIboxSEQ V4L.000
+MIDIboxSEQ V4L.052
 ~~~~~~~~~~~~~~~~~~
 
-   o initial version
+   o initial version (aligned with MIDIbox SEQ V4.052)
 

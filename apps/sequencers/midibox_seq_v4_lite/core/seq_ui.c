@@ -561,7 +561,7 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   int i;
 
   // ignore as long as hardware config hasn't been read
-  if( !SEQ_FILE_HW_ConfigLocked() )
+  if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification )
     return -1;
 
   // ensure that selections are matching with track constraints
@@ -823,6 +823,56 @@ s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Encoder handler
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
+{
+  // send MIDI event in remote mode and exit
+  if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
+    return SEQ_MIDI_SYSEX_REMOTE_Client_SendEncoder(encoder, incrementer);
+
+  // ignore as long as hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification )
+    return -1;
+
+  // ignore during a backup or format is created
+  //if( seq_ui_backup_req || seq_ui_format_req )
+  //return -1;
+
+  if( encoder >= SEQ_HWCFG_NUM_ENCODERS )
+    return -1; // encoder doesn't exist
+
+  // ensure that selections are matching with track constraints
+  SEQ_UI_CheckSelections();
+
+  // stop current message
+  //SEQ_UI_MsgStop();
+
+  // limit incrementer
+  if( incrementer > 3 )
+    incrementer = 3;
+  else if( incrementer < -3 )
+    incrementer = -3;
+
+  // encoder 0 increments BPM
+  if( encoder == 0 ) {
+    u16 value = (u16)(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num]*10);
+    if( SEQ_UI_Var16_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
+      // set new BPM
+      seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
+      SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
+      //store_file_required = 1;
+      seq_ui_display_update_req = 1;      
+    }
+    return 0;
+  }
+
+  return -1; // not mapped
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -859,7 +909,7 @@ s32 SEQ_UI_LED_Handler(void)
   seq_ui_display_update_req = 0;
 
   // ignore as long as hardware config hasn't been read
-  if( !SEQ_FILE_HW_ConfigLocked() )
+  if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification )
     return -1;
 
   SEQ_LED_PinSet(seq_hwcfg_led.seq1, ui_selected_tracks & (1 << 0));
@@ -914,10 +964,59 @@ s32 SEQ_UI_LED_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler_Periodic()
 {
-  // ignore as long as hardware config hasn't been read
-  if( !SEQ_FILE_HW_ConfigLocked() )
-    return -1;
+  static u16 fx_ctr = 0;
 
+  // ignore as long as hardware config hasn't been read
+  if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification ) {
+    // stupid LED FX during power on as long as HWCFG hasn't been read
+    // just to give the user the message that something is going on (no LCD support...)
+    int delay = 33;
+    if( ++fx_ctr >= 32*delay )
+      fx_ctr = 0;
+
+    int fx_state = fx_ctr / delay;
+    if( seq_file_backup_notification != NULL )
+      fx_state = (15 * seq_file_backup_percentage) / 100;
+
+    if( fx_state < 16 ) {
+      u8 step = fx_state;
+      u8 mask_dot = (1 << (step & 7));
+      u8 mask_full = (1 << ((step & 7)+1))-1;
+      u8 left_half = step < 8;
+      u8 right_half = step >= 8;
+
+      SEQ_LED_SRSet(0, left_half  ? mask_dot : 0x00);
+      SEQ_LED_SRSet(4, right_half ? mask_dot : 0x00);
+
+      SEQ_LED_SRSet(1, left_half  ? mask_full : 0xff);
+      SEQ_LED_SRSet(2, left_half  ? mask_full : 0xff);
+      SEQ_LED_SRSet(5, right_half ? mask_full : 0x00);
+      SEQ_LED_SRSet(6, right_half ? mask_full : 0x00);
+
+      SEQ_LED_SRSet(3, left_half  ? mask_dot : 0x00);
+      SEQ_LED_SRSet(7, right_half ? mask_dot : 0x00);
+    } else {
+      u8 step = fx_state & 0xf;
+      u8 mask_dot = (1 << (7-(step & 7)));
+      u8 mask_full = ~((1 << (((step & 7))+1))-1);
+      u8 left_half = step >= 8;
+      u8 right_half = step < 8;
+
+      SEQ_LED_SRSet(0, left_half  ? mask_dot : 0x00);
+      SEQ_LED_SRSet(4, right_half ? mask_dot : 0x00);
+
+      SEQ_LED_SRSet(1, !left_half  ? mask_full : 0x00);
+      SEQ_LED_SRSet(2, !left_half  ? mask_full : 0x00);
+      SEQ_LED_SRSet(5, !right_half ? mask_full : 0xff);
+      SEQ_LED_SRSet(6, !right_half ? mask_full : 0xff);
+
+      SEQ_LED_SRSet(3, left_half  ? mask_dot : 0x00);
+      SEQ_LED_SRSet(7, right_half ? mask_dot : 0x00);
+    }
+
+    return -1;
+  }
+  
   // GP LEDs are updated when ui_page_gp_leds has changed
   static u16 prev_ui_page_gp_leds = 0x0000;
   u16 ui_page_gp_leds = SEQ_UI_PAGES_GP_LED_Handler();
@@ -1181,6 +1280,50 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
 #endif
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments a 16bit variable within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer)
+{
+  int new_value = *value;
+  int prev_value = new_value;
+
+  // extra: in fast mode increment 16bit values faster!
+  if( max > 0x100 && (seq_ui_button_state.FAST_ENCODERS || seq_ui_button_state.FAST2_ENCODERS) )
+    incrementer *= 10;
+
+  if( incrementer >= 0 ) {
+    if( (new_value += incrementer) >= max )
+      new_value = max;
+  } else {
+    if( (new_value += incrementer) < min )
+      new_value = min;
+  }
+
+  if( new_value == prev_value )
+    return 0; // no change
+
+  *value = new_value;
+
+  return 1; // value changed
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments an 8bit variable within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer)
+{
+  u16 tmp = *value;
+  if( SEQ_UI_Var16_Inc(&tmp, min, max, incrementer) ) {
+    *value = tmp;
+    return 1; // value changed
+  }
+
+  return 0; // value hasn't been changed
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // stores a bookmark

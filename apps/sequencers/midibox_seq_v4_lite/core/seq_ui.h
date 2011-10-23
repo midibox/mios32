@@ -149,6 +149,7 @@ extern s32 SEQ_UI_Init(u32 mode);
 extern s32 SEQ_UI_InitEncSpeed(u32 auto_config);
 
 extern s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value);
+extern s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer);
 extern s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed);
 extern s32 SEQ_UI_REMOTE_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 
@@ -175,6 +176,9 @@ extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);
 
 extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
+
+extern s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
 
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);

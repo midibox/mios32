@@ -104,7 +104,7 @@ s32 MIOS32_UART_MIDI_Init(u32 mode)
     MIOS32_UART_MIDI_RS_Reset(i);
 
   // if any MIDI assignment:
-#if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1 || MIOS32_UART2_ASSIGNMENT == 1
+#if MIOS32_UART0_ASSIGNMENT == 1 || MIOS32_UART1_ASSIGNMENT == 1 || MIOS32_UART2_ASSIGNMENT == 1 || MIOS32_UART3_ASSIGNMENT == 1
   // initialize U(S)ART interface
   if( MIOS32_UART_Init(0) < 0 )
     return -1; // initialisation of U(S)ART Interface failed

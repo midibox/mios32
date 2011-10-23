@@ -134,6 +134,11 @@ seq_hwcfg_led_t seq_hwcfg_led = {
 };
 
 
+seq_hwcfg_enc_t seq_hwcfg_enc = {
+  .bpm_fast_speed = 3,
+};
+
+
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
   .enabled = 0,
   .dout_gp_mapping = 1,
@@ -158,11 +163,25 @@ seq_hwcfg_step_digits_t seq_hwcfg_step_digits = {
   .common3_pin = ((( 0   -1)<<3)+    0),
 };
 
+seq_hwcfg_tpd_t seq_hwcfg_tpd = {
+  .enabled = 0,
+  .columns_sr = 0,
+  .rows_sr = 0,
+};
+
 seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .key = 96, // C-7, on some MIDI monitors displayed as C-6
   .cc = 0, // disabled
 };
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Local constant arrays
+/////////////////////////////////////////////////////////////////////////////
+
+static const mios32_enc_config_t enc_config[SEQ_HWCFG_NUM_ENCODERS] = {
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // BPM
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -170,6 +189,12 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_HWCFG_Init(u32 mode)
 {
+  int i;
+
+  // initialize encoders
+  for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
+    MIOS32_ENC_ConfigSet(i, enc_config[i]);
+
   // initial debounce delay for BLM_X
   blm_x_config_t config = BLM_X_ConfigGet();
   config.debounce_delay = 20; // mS

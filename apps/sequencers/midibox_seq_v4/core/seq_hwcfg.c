@@ -393,6 +393,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
 
 seq_hwcfg_enc_t seq_hwcfg_enc = {
   .datawheel_fast_speed = 3,
+  .bpm_fast_speed = 3,
   .gp_fast_speed = 3,
   .auto_fast = 1,
 };
@@ -427,6 +428,13 @@ seq_hwcfg_step_digits_t seq_hwcfg_step_digits = {
   .common1_pin = ((( 0   -1)<<3)+    0),
   .common2_pin = ((( 0   -1)<<3)+    0),
   .common3_pin = ((( 0   -1)<<3)+    0),
+};
+
+
+seq_hwcfg_tpd_t seq_hwcfg_tpd = {
+  .enabled = 0,
+  .columns_sr = 0,
+  .rows_sr = 0,
 };
 
 

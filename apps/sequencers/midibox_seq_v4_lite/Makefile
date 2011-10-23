@@ -26,6 +26,7 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		core/seq_ui_pages.c \
 		core/seq_ui_util.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_led.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_tpd.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_cv.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_port.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_in.c \

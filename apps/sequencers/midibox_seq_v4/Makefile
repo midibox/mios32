@@ -106,7 +106,8 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_fx_loop.c \
 		core/seq_terminal.c \
 		core/seq_statistics.c \
-		core/seq_led.c
+		core/seq_led.c \
+		core/seq_tpd.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

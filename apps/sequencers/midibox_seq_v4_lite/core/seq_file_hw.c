@@ -449,6 +449,72 @@ s32 SEQ_FILE_HW_Read(void)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	// ENC_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "ENC_", 4) == 0 ) {
+	  parameter += 4;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid first value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  if( strcmp(parameter, "BPM_FAST_SPEED") == 0 ) {
+	    seq_hwcfg_enc.bpm_fast_speed = sr;
+	    continue;
+	  }
+
+	  word = strtok_r(NULL, separators, &brkt);
+	  s32 pin = get_dec(word);
+	  if( pin < 0 || pin >= 8 ) { // should we check for odd pin values (1/3/5/7) as well?
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid pin value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  word = strtok_r(NULL, separators, &brkt);
+	  mios32_enc_type_t enc_type = DISABLED;
+	  if( word == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: missing encoder type!", parameter);
+#endif
+	    continue;
+	  } else if( strcmp(word, "NON_DETENTED") == 0 ) {
+	    enc_type = NON_DETENTED;
+	  } else if( strcmp(word, "DETENTED1") == 0 ) {
+	    enc_type = DETENTED1;
+	  } else if( strcmp(word, "DETENTED2") == 0 ) {
+	    enc_type = DETENTED2;
+	  } else if( strcmp(word, "DETENTED3") == 0 ) {
+	    enc_type = DETENTED3;
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid type '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] ENC %s: SR %d Pin %d Type %d", parameter, sr, pin, enc_type);
+#endif
+
+	  mios32_enc_config_t enc_config = { .cfg.type=enc_type, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=sr, .cfg.pos=pin };
+
+	  if( strcmp(parameter, "BPM") == 0 ) {
+	    MIOS32_ENC_ConfigSet(0, enc_config);
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown ENC name 'ENC_%s'!", parameter);
+#endif
+	  }
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	// GP_DIN_[LR]_SR
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "GP_DIN_L_SR") == 0 || strcmp(parameter, "GP_DIN_R_SR") == 0 ) {
@@ -572,7 +638,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_bpm_digits.segments_sr = value;
 	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
 		     strcmp(parameter, "COMMON2_PIN") == 0 ||
-		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+		     strcmp(parameter, "COMMON3_PIN") == 0 ||
+		     strcmp(parameter, "COMMON4_PIN") == 0 ) {
 	    
 	    word = strtok_r(NULL, separators, &brkt);
 	    s32 pin = get_dec(word);
@@ -590,12 +657,94 @@ s32 SEQ_FILE_HW_Read(void)
 	      seq_hwcfg_bpm_digits.common2_pin = dout_value;
 	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common3_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON4_PIN") == 0 ) {
+	      seq_hwcfg_bpm_digits.common4_pin = dout_value;
 	    }
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED_DIGITS_* name '%s'!", parameter);
 #endif
 	  }
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// STEP_DIGITS_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "STEP_DIGITS_", 12) == 0 ) {
+	  parameter += 12;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in STEP_DIGITS_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] STEP_DIGITS_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_step_digits.enabled = value;
+	  } else if( strcmp(parameter, "SEGMENTS_SR") == 0 ) {
+	    seq_hwcfg_step_digits.segments_sr = value;
+	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
+		     strcmp(parameter, "COMMON2_PIN") == 0 ||
+		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	    
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 pin = get_dec(word);
+	    if( pin < 0 || pin >= 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in STEP_DIGITS_%s definition: invalid pin value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+	    u8 dout_value = ((value-1)<<3) | pin;
+
+	    if( strcmp(parameter, "COMMON1_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common1_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON2_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common2_pin = dout_value;
+	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	      seq_hwcfg_step_digits.common3_pin = dout_value;
+	    }
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_DIGITS_* name '%s'!", parameter);
+#endif
+	  }
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// TPD_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "TPD_", 4) == 0 ) {
+	  parameter += 4;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in TPD_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] TPD_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_tpd.enabled = value;
+	  } else if( strcmp(parameter, "COLUMNS_SR") == 0 ) {
+	    seq_hwcfg_tpd.columns_sr = value;
+	  } else if( strcmp(parameter, "ROWS_SR") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr = value;	    
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_TPM_* name '%s'!", parameter);
+#endif
+	  }	  
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// misc

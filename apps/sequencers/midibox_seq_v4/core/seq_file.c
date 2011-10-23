@@ -458,6 +458,9 @@ SEQ_FILE_Format_failed:
     strcpy(seq_file_session_name, prev_session_name); 
   }
 
+  // stop printing the special message
+  seq_file_backup_notification = NULL;
+
   // in any case invalidate new session name
   seq_file_new_session_name[0] = 0;
 

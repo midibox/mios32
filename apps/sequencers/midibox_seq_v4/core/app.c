@@ -37,6 +37,7 @@
 
 #include "seq_core.h"
 #include "seq_led.h"
+#include "seq_tpd.h"
 #include "seq_ui.h"
 #include "seq_pattern.h"
 #include "seq_mixer.h"
@@ -228,7 +229,7 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 void APP_SRIO_ServicePrepare(void)
 {
   static u8 led_digit_ctr = 0;
-  if( ++led_digit_ctr >= 4 )
+  if( ++led_digit_ctr >= 7 )
     led_digit_ctr = 0;
 
 #ifndef MBSEQV4L
@@ -248,62 +249,80 @@ void APP_SRIO_ServicePrepare(void)
   if( seq_hwcfg_bpm_digits.enabled ) {
     // invert for common anodes
     u8 inversion_mask = (seq_hwcfg_bpm_digits.enabled == 2) ? 0xff : 0x00;
+    u8 common_enable = (seq_hwcfg_bpm_digits.enabled == 2) ? 1 : 0;
 
-    int bpm = (int)SEQ_BPM_Get();
+    float bpm = SEQ_BPM_Get();
     if( led_digit_ctr == 0 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet((bpm*10) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 0 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+      u8 sr_value = SEQ_LED_DigitPatternGet(((int)(bpm*10)) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 1 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet(bpm % 10) | 0x80; // +dot
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 0 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+      u8 sr_value = SEQ_LED_DigitPatternGet((int)bpm % 10) | 0x80; // +dot
+      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 2 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 10) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 0 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 1 ^ inversion_mask);
+      u8 sr_value = SEQ_LED_DigitPatternGet(((int)bpm / 10) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 3 ) {
-      u8 sr_value = SEQ_LED_DigitPatternGet((bpm / 100) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, 0 ^ inversion_mask);
+      u8 sr_value = SEQ_LED_DigitPatternGet(((int)bpm / 100) % 10);
+      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, common_enable);
+    }
+    else { // not displaying bpm digit in this cycle, disable common pins
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     }
   }
 
   if( seq_hwcfg_step_digits.enabled ) {
     // invert for common anodes
     u8 inversion_mask = (seq_hwcfg_step_digits.enabled == 2) ? 0xff : 0x00;
-    int step = (int)ui_selected_step + 1;
-    if( led_digit_ctr == 0 ) {
+    u8 common_enable = (seq_hwcfg_step_digits.enabled == 2) ? 1 : 0;
+    
+    int step = (int)(SEQ_BPM_IsRunning() ? seq_core_trk[SEQ_UI_VisibleTrackGet()].step : ui_selected_step) + 1;
+    if( led_digit_ctr == 4 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(step % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 0 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 1 ^ inversion_mask);
-    } else if( led_digit_ctr == 1 ) {
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+    } else if( led_digit_ctr == 5 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet((step / 10) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 0 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 1 ^ inversion_mask);
-    } else if( led_digit_ctr == 2 ) {
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+    } else if( led_digit_ctr == 6 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet((step / 100) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, 1 ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, 0 ^ inversion_mask);
+      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, common_enable);
     }
+    else { // not displaying step digit in this cycle, disable common pins
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+    }    
+  }
+  
+  if( seq_hwcfg_tpd.enabled ) {
+     SEQ_TPD_LED_Update();     
   }
 }
 
@@ -398,10 +417,8 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
   DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
 #endif
 
-#ifndef MBSEQV4L
   // forward to UI encoder handler
   SEQ_UI_Encoder_Handler(encoder, incrementer);
-#endif
 }
 
 

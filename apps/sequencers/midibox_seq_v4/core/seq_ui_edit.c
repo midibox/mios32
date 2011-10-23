@@ -1003,6 +1003,17 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   if( incrementer > 0 && forced_value < 0 && old_value == 0x00 && (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord) )
     new_value = (layer_type == SEQ_PAR_Type_Note && SEQ_CC_Get(track, SEQ_CC_MODE) != SEQ_CORE_TRKMODE_Arpeggiator) ? 0x3c : 0x40;
 
+  if( !dont_change_gate ) {
+    u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+
+    // we do this always regardless if value has been changed or not (e.g. increment if value already 127)
+    if( event_mode == SEQ_EVENT_MODE_CC && layer_type == SEQ_PAR_Type_CC ) {
+      // in this mode gates are used to disable CC
+      // if a CC value has been changed, set gate
+      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
+    }
+  }
+
   // take over if changed
   if( new_value == old_value )
     return -1;
