@@ -5,6 +5,14 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.052
+~~~~~~~~~~~~~~~~~
+
+   o bugfix: CC values were influenced when they were displayed on the edit page
+
+   o Hawkeye fixed the BPM/STEP digits output and added a "TPD" (track position
+     display) option for those who like to add more blink to their MIDIbox!
+
 
 MIDIboxSEQ V4.051
 ~~~~~~~~~~~~~~~~~
@@ -19,7 +27,7 @@ MIDIboxSEQ V4.051
 
    o BPM LED Digit function: added optional 4th digit to display the value after the dot
 
-   o added optional LED digits to display the current step.
+   o added optional LED digits to display the played step.
      Anodes require a dedicated Shift Register, the 3 cathode lines can be shared with
      the shift register which is used to drive the cathodes of the BPM LED Digits.
 

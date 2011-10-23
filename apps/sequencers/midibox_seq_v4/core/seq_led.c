@@ -74,7 +74,7 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
     return -1; // SR disabled
 
 #ifdef MBSEQV4L
-  if( sr <= 8 )
+  if( sr < 8 )
     return BLM_CHEAPO_DOUT_SRSet(sr, value);
 
   if( sr >= 16 && sr < 24 )
@@ -100,7 +100,7 @@ s32 SEQ_LED_SRGet(u32 sr)
     return 0; // SR disabled
 
 #ifdef MBSEQV4L
-  if( sr <= 8 )
+  if( sr < 8 )
     return BLM_CHEAPO_DOUT_SRGet(sr);
 
   if( sr >= 16 && sr < 24 )

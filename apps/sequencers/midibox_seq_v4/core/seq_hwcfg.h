@@ -251,6 +251,12 @@ typedef struct {
 } seq_hwcfg_step_digits_t;
 
 typedef struct {
+  u8 enabled;
+  u8 columns_sr;
+  u8 rows_sr;
+} seq_hwcfg_tpd_t;
+
+typedef struct {
   u8 key;
   u8 cc;
 } seq_hwcfg_midi_remote_t;
@@ -274,6 +280,7 @@ extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
 extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
 extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
+extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];

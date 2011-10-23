@@ -18,6 +18,10 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// changing these constants requires changes in seq_hwcfg.c, seq_file_hw.c and probably seq_ui.c
+
+#define SEQ_HWCFG_NUM_ENCODERS     1
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -127,6 +131,10 @@ typedef struct {
 
 
 typedef struct {
+  u8 bpm_fast_speed;
+} seq_hwcfg_enc_t;
+
+typedef struct {
   u8 enabled;
   u8 dout_gp_mapping;
 } seq_hwcfg_blm8x8_t;
@@ -149,6 +157,12 @@ typedef struct {
 } seq_hwcfg_step_digits_t;
 
 typedef struct {
+  u8 enabled;
+  u8 columns_sr;
+  u8 rows_sr;
+} seq_hwcfg_tpd_t;
+
+typedef struct {
   u8 key;
   u8 cc;
 } seq_hwcfg_midi_remote_t;
@@ -166,9 +180,11 @@ extern s32 SEQ_HWCFG_Init(u32 mode);
 
 extern seq_hwcfg_button_t seq_hwcfg_button;
 extern seq_hwcfg_led_t seq_hwcfg_led;
+extern seq_hwcfg_enc_t seq_hwcfg_enc;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
 extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
+extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
 
 #endif /* _SEQ_HWCFG_H */

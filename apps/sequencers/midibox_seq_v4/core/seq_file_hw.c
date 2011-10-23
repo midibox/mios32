@@ -960,6 +960,36 @@ s32 SEQ_FILE_HW_Read(void)
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_DIGITS_* name '%s'!", parameter);
 #endif
 	  }
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// TPD_
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "TPD_", 4) == 0 ) {
+	  parameter += 4;
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 value = get_dec(word);
+	  if( value < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in TPD_%s definition: invalid value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] TPD_%s: %d", parameter, value);
+#endif
+
+	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	    seq_hwcfg_tpd.enabled = value;
+	  } else if( strcmp(parameter, "COLUMNS_SR") == 0 ) {
+	    seq_hwcfg_tpd.columns_sr = value;
+	  } else if( strcmp(parameter, "ROWS_SR") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr = value;	    
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_TPM_* name '%s'!", parameter);
+#endif
+	  }	  
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// misc

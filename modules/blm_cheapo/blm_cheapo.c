@@ -283,7 +283,7 @@ s32 BLM_CHEAPO_DOUT_SRSet(u32 row, u8 value)
     return -1;
 
 #if BLM_CHEAPO_RIGHT_HALF_REVERSED
-  if( row > 4 ) {
+  if( row >= 4 ) {
     led_row[row] = mios32_dout_reverse_tab[value];
     return 0;
   }
@@ -306,7 +306,7 @@ u8 BLM_CHEAPO_DOUT_SRGet(u32 row)
     return -1;
 
 #if BLM_CHEAPO_RIGHT_HALF_REVERSED
-  if( row > 4 ) {
+  if( row >= 4 ) {
     return mios32_dout_reverse_tab[led_row[row]];
   }
 #endif
