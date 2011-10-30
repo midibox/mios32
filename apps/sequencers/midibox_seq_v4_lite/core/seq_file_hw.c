@@ -796,7 +796,8 @@ s32 SEQ_FILE_HW_Read(void)
 	  s32 status;
 	  if( (status=MIOS32_MIDI_RS_OptimisationSet(port, enable)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] RS_OPTIMISATION 0x%02x %d failed with status %d!", port, enable, status);
+	    if( port != 0x23 ) // this port is only available for LPC17, not for STM32
+	      DEBUG_MSG("[SEQ_FILE_HW] RS_OPTIMISATION 0x%02x %d failed with status %d!", port, enable, status);
 #endif
 	  }
 

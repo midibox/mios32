@@ -29,11 +29,17 @@ MIDI_REMOTE_CC 0
 # disable/enable the optimisation.
 ##################################################
 
-# OUT1 (MIDI1 port of MBHP_CORE_STM32 module)
+# OUT1 (MIDI1 port of MBHP_CORE_STM32 and MBHP_CORE_LPC17 module)
 RS_OPTIMISATION 0x20 1
 
-# OUT2 (MIDI2 port of MBHP_CORE_STM32 module)
+# OUT2 (MIDI2 port of MBHP_CORE_STM32 and MBHP_CORE_LPC17 module)
 RS_OPTIMISATION 0x21 1
+
+# OUT3 (MIDI3 port of MBHP_CORE_STM32 and MBHP_CORE_LPC17 module)
+RS_OPTIMISATION 0x22 1
+
+# OUT4 (MIDI4 port of MBHP_CORE_LPC17 module)
+RS_OPTIMISATION 0x23 1
 
 
 ##################################################
@@ -144,10 +150,10 @@ BLM8X8_DIN_SR  2
 # 0: BPM digits disabled
 # 1: BPM digits with common cathode
 # 2: BPM digits with common anode
-BPM_DIGITS_ENABLED 1
+BPM_DIGITS_ENABLED 0
 
 # define the DOUT shift register to which the segments are connected (0=disabled)
-BPM_DIGITS_SEGMENTS_SR 2
+BPM_DIGITS_SEGMENTS_SR 0
 
 # define the DOUT SR and pin to which the common pins are connected
 # we are counting from right to left

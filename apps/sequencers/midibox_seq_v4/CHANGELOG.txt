@@ -5,6 +5,12 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.053
+~~~~~~~~~~~~~~~~~
+
+   o bugfix: MIDI IN ports are working again on MBHP_CORE_STM32 build
+
+
 MIDIboxSEQ V4.052
 ~~~~~~~~~~~~~~~~~
 
