@@ -141,8 +141,9 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 
   // inputs with internal pull-up
-  GPIO_InitStructure.GPIO_Pin = MIOS32_UART0_RX_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 #if MIOS32_UART0_ASSIGNMENT != 0
+  GPIO_InitStructure.GPIO_Pin = MIOS32_UART0_RX_PIN;
   GPIO_Init(MIOS32_UART0_RX_PORT, &GPIO_InitStructure);
 #endif
 #if MIOS32_UART_NUM >= 2 && MIOS32_UART1_ASSIGNMENT != 0
