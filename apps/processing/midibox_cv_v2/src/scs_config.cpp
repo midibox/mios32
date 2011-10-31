@@ -28,6 +28,7 @@
 
 #include <app.h>
 #include <MbCvEnvironment.h>
+#include <MbCvTables.h>
 
 // quick&dirty to simplify re-use of C modules without changing header files
 extern "C" {
@@ -84,6 +85,7 @@ static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d",
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
+static void stringExpLin(u32 ix, u16 value, char *label)  { sprintf(label, value ? "Exp. " : "Lin. "); }
 
 static void stringCCFull(u32 ix, u16 value, char *line1, char *line2)
 {
@@ -124,18 +126,20 @@ static void stringAoutIf(u32 ix, u16 value, char *label)
 
 static void stringCvMode(u32 ix, u16 value, char *label)
 {
-  static const char mode[8][6] = {
+  static const char mode[MBCV_MIDI_EVENT_MODE_NUM+1][6] = {
     "Note ",
     "Vel. ",
     "Aft. ",
     " CC  ",
     "NRPN ",
     "PBnd ",
-    "???? ",
+    "CMin ",
+    "CMid ",
+    "CMax ",
     "???? ",
   };
 
-  sprintf(label, mode[value&7]);
+  sprintf(label, mode[(value < MBCV_MIDI_EVENT_MODE_NUM) ? value : MBCV_MIDI_EVENT_MODE_NUM]);
 }
 
 static void stringCvPlayMode(u32 ix, u16 value, char *label)
@@ -176,9 +180,31 @@ static void stringArpDir(u32 ix, u16 value, char *label)
     sprintf(label, "%3d ", value);
 }
 
+static void stringLfoRate(u32 ix, u16 value, char *label)
+{
+#if 0  
+  sprintf(label, "%3d  ", value); 
+#else
+  // rate in Herz
+  float hz = 500.0 / (65536.0 / (float)mbCvLfoTable[value]);
+  if( env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeFast )
+    hz *= env->updateSpeedFactor;
+
+  if( hz < 1.0 ) {
+    sprintf(label, ".%03d ", (int)(hz*1000));
+  } else if( hz < 10.0 ) {
+    sprintf(label, "%d.%02d ", (int)hz, (int)(hz*100) % 100);
+  } else if( hz < 100.0 ) {
+    sprintf(label, "%2d.%d ", (int)hz, (int)((hz*10)) % 10);
+  } else {
+    sprintf(label, "%4d ", (int)hz);
+  }
+#endif
+}
+
 static void stringLfoWave(u32 ix, u16 value, char *label)
 {
-  const char waveLabel[11][5] = {
+  const char waveLabel[10][5] = {
     "Off ",
     "Sine",
     "Tri.",
@@ -189,7 +215,6 @@ static void stringLfoWave(u32 ix, u16 value, char *label)
     "PTri",
     "PSaw",
     "PPul",
-    "S&H ",
   };
 
   if( value < 11 )
@@ -537,18 +562,18 @@ static void lfoSet(u32 ix, u16 value) { selectedLfo = value; }
 
 static u16  lfoWaveGet(u32 ix)
 {
-  if( env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE )
-    return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.WAVEFORM + 1;
+  if( env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeEnable )
+    return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoWaveform + 1;
   else
     return 0;
 }
 static void lfoWaveSet(u32 ix, u16 value)
 {
   if( !value )
-    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE = 0;
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeEnable = 0;
   else {
-    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ENABLE = 1;
-    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.WAVEFORM = value - 1;
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeEnable = 1;
+    env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoWaveform = value - 1;
   }
 }
 
@@ -558,20 +583,23 @@ static void lfoAmplitudeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[s
 static u16  lfoRateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoRate; }
 static void lfoRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoRate = value; }
 
-static u16  lfoClkSyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.CLKSYNC; }
-static void lfoClkSyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.CLKSYNC = value; }
+static u16  lfoClkSyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeClkSync; }
+static void lfoClkSyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeClkSync = value; }
 
-static u16  lfoKeySyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.KEYSYNC; }
-static void lfoKeySyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.KEYSYNC = value; }
+static u16  lfoKeySyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeKeySync; }
+static void lfoKeySyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeKeySync = value; }
 
-static u16  lfoOneshotGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ONESHOT; }
-static void lfoOneshotSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoMode.ONESHOT = value; }
+static u16  lfoOneshotGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeOneshot; }
+static void lfoOneshotSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeOneshot = value; }
+
+static u16  lfoModeFastGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeFast; }
+static void lfoModeFastSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoModeFast = value; }
 
 static u16  lfoDelayGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDelay; }
-static void lfoDelaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDelay; }
+static void lfoDelaySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDelay = value; }
 
 static u16  lfoPhaseGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoPhase; }
-static void lfoPhaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoPhase; }
+static void lfoPhaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoPhase = value; }
 
 static u16  lfoDepthCvGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthPitch + 128; }
 static void lfoDepthCvSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthPitch = value - 128; }
@@ -606,8 +634,8 @@ static void envSustainSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[sel
 static u16  envReleaseGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envRelease; }
 static void envReleaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envRelease = value; }
 
-static u16  envCurveGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envCurve + 128; }
-static void envCurveSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envCurve = value - 128; }
+static u16  envCurveExpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envModeCurveExp; }
+static void envCurveExpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envModeCurveExp = value; }
 
 static u16  envDepthCvGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthPitch + 128; }
 static void envDepthCvSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv[selectedEnv].envDepthPitch = value - 128; }
@@ -739,13 +767,14 @@ const scs_menu_item_t pageLFO[] = {
   SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("LFO  ", 0,   1,         lfoGet,         lfoSet,         selectNOP, stringDecP1, NULL),
   SCS_ITEM("Ampl ", 0, 255,         lfoAmplitudeGet,lfoAmplitudeSet,selectNOP, stringDecPM128, NULL),
-  SCS_ITEM("Rate ", 0, 255,         lfoRateGet,     lfoRateSet,     selectNOP, stringDec, NULL),
-  SCS_ITEM("Wave ", 0,  10,         lfoWaveGet,     lfoWaveSet,     selectNOP, stringLfoWave, NULL),
+  SCS_ITEM("Rate ", 0, 255,         lfoRateGet,     lfoRateSet,     selectNOP, stringLfoRate, NULL),
+  SCS_ITEM("Wave ", 0,   9,         lfoWaveGet,     lfoWaveSet,     selectNOP, stringLfoWave, NULL),
   SCS_ITEM("ClkS ", 0,   1,         lfoClkSyncGet,  lfoClkSyncSet,  selectNOP, stringOnOff, NULL),
   SCS_ITEM("KeyS ", 0,   1,         lfoKeySyncGet,  lfoKeySyncSet,  selectNOP, stringOnOff, NULL),
   SCS_ITEM("Dely ", 0, 255,         lfoDelayGet,    lfoDelaySet,    selectNOP, stringDec, NULL),
   SCS_ITEM("Phse ", 0, 255,         lfoPhaseGet,    lfoPhaseSet,    selectNOP, stringDec, NULL),
   SCS_ITEM("OSht ", 0,   1,         lfoOneshotGet,  lfoOneshotSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("Fast ", 0,   1,         lfoModeFastGet, lfoModeFastSet, selectNOP, stringOnOff, NULL),
   SCS_ITEM("D.CV ", 0, 255,         lfoDepthCvGet,  lfoDepthCvSet,  selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DLAmp", 0, 255,         lfoDepthLfoAmpGet,lfoDepthLfoAmpSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DLRte", 0, 255,         lfoDepthLfoRateGet,lfoDepthLfoRateSet,selectNOP, stringDecPM128, NULL),
@@ -761,7 +790,7 @@ const scs_menu_item_t pageENV[] = {
   SCS_ITEM("Dec. ", 0, 255,         envDecayGet,    envDecaySet,    selectNOP, stringDec, NULL),
   SCS_ITEM("Sus. ", 0, 255,         envSustainGet,  envSustainSet,  selectNOP, stringDec, NULL),
   SCS_ITEM("Rel. ", 0, 255,         envReleaseGet,  envReleaseSet,  selectNOP, stringDec, NULL),
-  SCS_ITEM("Crve ", 0, 255,         envCurveGet,    envCurveSet,    selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("Mode ", 0,   1,         envCurveExpGet, envCurveExpSet, selectNOP, stringExpLin, NULL),
   SCS_ITEM("D.CV ", 0, 255,         envDepthCvGet,  envDepthCvSet,  selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DL1A ", 0, 255,         envDepthLfo1AmpGet,envDepthLfo1AmpSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DL1R ", 0, 255,         envDepthLfo1RateGet,envDepthLfo1RateSet,selectNOP, stringDecPM128, NULL),

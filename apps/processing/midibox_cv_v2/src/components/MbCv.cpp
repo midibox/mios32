@@ -359,7 +359,7 @@ void MbCv::triggerNoteOn(MbCvVoice *v)
 
     MbCvLfo *l = mbCvLfo.first();
     for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l)
-        if( l->lfoMode.KEYSYNC )
+        if( l->lfoModeKeySync )
             l->restartReq = 1;
 
     MbCvEnv *e = mbCvEnv.first();

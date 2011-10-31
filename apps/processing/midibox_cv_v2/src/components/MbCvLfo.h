@@ -36,7 +36,12 @@ public:
     bool tick(const u8 &updateSpeedFactor);
 
     // input parameters
-    cv_se_lfo_mode_t lfoMode;
+    bool lfoModeEnable;
+    bool lfoModeKeySync;
+    bool lfoModeClkSync;
+    bool lfoModeOneshot;
+    bool lfoModeFast;
+    u8 lfoWaveform;
     s8 lfoAmplitude;
     u8 lfoRate;
     u8 lfoDelay;
@@ -51,8 +56,11 @@ public:
     s32 lfoAmplitudeModulation;
     s32 lfoRateModulation;
 
+    // output waveform before amp
+    s16 lfoOutRaw;
+
     // output waveform
-    s16 lfoOut;
+    s32 lfoOut;
 
     // requests a restart
     bool restartReq;

@@ -49,7 +49,7 @@ public:
     s8 lfoDepthFilter;
 
     // output waveform
-    s16 lfoOut;
+    s32 lfoOut;
 
     // requests a restart
     bool restartReq;

@@ -47,8 +47,8 @@ void MbCvEnv::init(void)
     accentReq = false;
 
     // clear variables
-    envMode.ALL = 0;
-    envMode.CURVE_D = 1;
+    envModeClkSync = 0;
+    envModeCurveExp = 0;
     envAmplitude = 0;
     envDelay = 0;
     envAttack = 48;
@@ -56,7 +56,6 @@ void MbCvEnv::init(void)
     envDecayAccented = 16;
     envSustain = 64;
     envRelease = 32;
-    envCurve = 0;
 
     envDepthPitch = 127;
     envDepthLfo1Amplitude = 0;
@@ -94,7 +93,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
     }
 
     // if clock sync enabled: only increment on each 16th clock event
-    if( envMode.CLKSYNC && !syncClockReq ) {
+    if( envModeClkSync && !syncClockReq ) {
         if( envState == MBCV_ENV_STATE_IDLE )
             return false; // nothing to do
     } else {
@@ -112,7 +111,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
                 }
             }
   
-            s8 curve = envMode.CURVE_A ? envCurve : 0;
+            s8 curve = envModeCurveExp ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
             if( step(0xffff, envAttack, curve, updateSpeedFactor) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
@@ -123,7 +122,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             decay = decay + (envAmplitudeModulation / 512);
             if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
 
-            s8 curve = envMode.CURVE_D ? envCurve : 0;
+            s8 curve = envModeCurveExp ? -64 : 0;
             if( step(envSustain << 8, decay, curve, updateSpeedFactor) ) {
                 envState = MBCV_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
@@ -138,7 +137,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             break;
   
         case MBCV_ENV_STATE_RELEASE: {
-            s8 curve = envMode.CURVE_R ? envCurve : 0;
+            s8 curve = envModeCurveExp ? -64 : 0;
             if( envCtr )
                 step(0x0000, envRelease, curve, updateSpeedFactor);
         } break;
@@ -153,7 +152,9 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
     if( amplitude > 127 ) amplitude = 127; else if( amplitude < -128 ) amplitude = -128;
 
     // final output value
-    envOut = ((s32)(envCtr / 2) * (s32)amplitude) / 128;
+    //envOut = ((s32)(envCtr / 2) * (s32)amplitude) / 128;
+    // multiplied by *2 to allow envelopes over full range
+    envOut = ((s32)envCtr * (s32)amplitude) / 128;
 
     accentReq = false;
 
@@ -171,12 +172,7 @@ bool MbCvEnv::step(const u16 &target, const u8 &rate, const s8 &curve, const u8 
     u16 inc_rate;
     if( curve ) {
         // this nice trick has been proposed by Razmo
-        int abs_curve = curve;
-        if( abs_curve < 0 )
-            abs_curve = -abs_curve;
-        else
-            abs_curve ^= 0x7f; // invert if positive range for more logical behaviour of positive/negative curve
-
+        int abs_curve = (curve < 0) ? -curve : (curve ^ 0x7f);
         int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
         int feedback = (abs_curve * (envCtr>>8)) >> 8; 
         int ix;

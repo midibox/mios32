@@ -47,7 +47,8 @@ public:
     virtual bool tick(const u8 &updateSpeedFactor);
 
     // input parameters
-    cv_se_env_mode_t envMode;
+    bool envModeCurveExp;
+    bool envModeClkSync;
     s8 envAmplitude;
     u8 envDelay;
     u8 envAttack;
@@ -55,7 +56,6 @@ public:
     u8 envDecayAccented;
     u8 envSustain;
     u8 envRelease;
-    s8 envCurve;
 
     s8 envDepthPitch;
     s8 envDepthLfo1Amplitude;
@@ -67,7 +67,7 @@ public:
     s32 envDecayModulation;
 
     // output waveform
-    s16 envOut;
+    s32 envOut;
 
     // requests a restart and release phase
     bool restartReq;

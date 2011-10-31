@@ -159,7 +159,7 @@ extern "C" void APP_Init(void)
   MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
 
   // initialize MbCvEnvironment
-  cv_se_speed_factor = 2;
+  cv_se_speed_factor = 10;
   mbCvEnvironment.updateSpeedFactorSet(cv_se_speed_factor);
 
   // initialize tasks

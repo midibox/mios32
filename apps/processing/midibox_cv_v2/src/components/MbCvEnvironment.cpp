@@ -76,6 +76,43 @@ bool MbCvEnvironment::tick(void)
             updateRequired = true;
     }
 
+    if( updateRequired ) {
+        // map engine parameters to CV outputs
+        // we do this as a second step, so that it will be possible to map values
+        // of a single engine to different channels in future
+        cvGates = 0;
+        MbCv *s = mbCv.first();
+        u16 *out = cvOut.first();
+        for(int cv=0; cv < cvOut.size; ++cv, ++s, ++out) {
+            MbCvVoice *v = &s->mbCvVoice;
+            MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
+
+            if( v->voicePhysGateActive )
+                cvGates |= (1 << cv);
+
+            if( v->voiceEventMode == MBCV_MIDI_EVENT_MODE_NOTE ) {
+                *out = v->voiceFrq;
+            } else {
+                s32 value = 0;
+                switch( v->voiceEventMode ) {
+                case MBCV_MIDI_EVENT_MODE_VELOCITY: value = v->voiceVelocity << 9; break;
+                case MBCV_MIDI_EVENT_MODE_AFTERTOUCH: value = mv->midivoiceAftertouch << 9; break;
+                case MBCV_MIDI_EVENT_MODE_CC: value = mv->midivoiceCCValue << 9; break;
+                case MBCV_MIDI_EVENT_MODE_NRPN: value = mv->midivoiceNRPNValue << 2; break;
+                case MBCV_MIDI_EVENT_MODE_PITCHBENDER: value = (mv->midivoicePitchbender + 8192) << 2; break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MIN: value = 0x0000; break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MID: value = 0x8000; break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MAX: value = 0xffff; break;
+                }
+
+                // modulate value based on pitch modulation (so that LFO/ENV/etc. still can be used!)
+                value += v->voicePitchModulation;
+                if( value < 0 ) value = 0x0000; else if( value > 0xffff ) value = 0xffff;
+                *out = value;
+            }
+        }
+    }
+
     return updateRequired;
 }
 
