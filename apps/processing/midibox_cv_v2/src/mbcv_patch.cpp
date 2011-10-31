@@ -118,7 +118,7 @@ u8 MBCV_PATCH_ReadByte(u16 addr)
     switch( addr >> 3 ) {
     case 0x01: return mv->midivoiceChannel ? (mv->midivoiceChannel - 1) : 16; // normaly 0..16 (0 disables channel) - for patch compatibility we take 16 to disable channel
     case 0x02: return (v->voiceEventMode & 0xf) | (v->voiceLegato << 4) | (v->voicePoly << 5);
-    case 0x03: return MBCV_MAP_PitchRangeGet(cv);
+    case 0x03: return v->voicePitchrange;
     case 0x04: return mv->midivoiceSplitLower;
     case 0x05: return mv->midivoiceSplitUpper;
     case 0x06: return (v->voiceTransposeOctave >= 0) ? v->voiceTransposeOctave : (16+v->voiceTransposeOctave);
@@ -166,7 +166,7 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
       v->voiceLegato = (byte & 0x10) ? 1 : 0;
       v->voicePoly = (byte & 0x20) ? 1 : 0;
       return 0;
-    case 0x03: MBCV_MAP_PitchRangeSet(cv, byte); return 0;
+    case 0x03: v->voicePitchrange = byte; return 0;
     case 0x04: mv->midivoiceSplitLower = byte; return 0;
     case 0x05: mv->midivoiceSplitUpper = byte; return 0;
     case 0x06: if( byte < 8 ) v->voiceTransposeOctave = byte; else v->voiceTransposeOctave = 7 - (int)byte; return 0;

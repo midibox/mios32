@@ -60,9 +60,6 @@ extern const char* MBCV_MAP_CaliNameGet(void);
 extern s32 MBCV_MAP_SlewRateSet(u8 cv, u8 value);
 extern s32 MBCV_MAP_SlewRateGet(u8 cv);
 
-extern s32 MBCV_MAP_PitchRangeSet(u8 cv, u8 value);
-extern s32 MBCV_MAP_PitchRangeGet(u8 cv);
-
 extern s32 MBCV_MAP_Update(void);
 
 extern s32 MBCV_MAP_ResetAllChannels(void);

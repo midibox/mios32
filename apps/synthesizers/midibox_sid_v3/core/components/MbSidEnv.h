@@ -63,7 +63,7 @@ public:
     s8 envDepthFilter;
 
     // output waveform
-    s16 envOut;
+    s32 envOut;
 
     // requests a restart and release phase
     bool restartReq;

@@ -34,6 +34,13 @@ public:
     // instantiate the MbCv instances
     array<MbCv, CV_SE_NUM> mbCv;
 
+    // CV Output value (will be mapped in MbCvEnvironment::tick() !!!)
+    array<u16, CV_SE_NUM> cvOut;
+
+    // CV Gates (will be mapped in MbCvEnvironment::tick() !!!)
+    // up to 32 gates should be sufficient for future extensions? (currently we only use 8!)
+    u32 cvGates;
+    
     // sets the update factor
     void updateSpeedFactorSet(u8 _updateSpeedFactor);
 

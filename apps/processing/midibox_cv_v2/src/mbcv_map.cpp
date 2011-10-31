@@ -200,66 +200,6 @@ extern "C" s32 MBCV_MAP_SlewRateGet(u8 cv)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// Get/Set Pitch Range
-/////////////////////////////////////////////////////////////////////////////
-extern "C" s32 MBCV_MAP_PitchRangeSet(u8 cv, u8 value)
-{
-  return AOUT_PinPitchRangeSet(cv, value);
-}
-
-extern "C" s32 MBCV_MAP_PitchRangeGet(u8 cv)
-{
-  return AOUT_PinPitchRangeGet(cv);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// retrieve the AOUT values of all channels
-/////////////////////////////////////////////////////////////////////////////
-static s32 MBCV_MAP_UpdateChannels(void)
-{
-  MbCvEnvironment* env = APP_GetEnv();
-
-  int cv;
-  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv) {
-    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
-    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
-
-    // set gate in any mode
-    AOUT_DigitalPinSet(cv, v->voicePhysGateActive);
-
-    // set CV voltage depending on MIDI mode
-    switch( v->voiceEventMode ) {
-    case MBCV_MIDI_EVENT_MODE_NOTE: {
-      AOUT_PinSet(cv, v->voiceFrq);
-    } break;
-
-    case MBCV_MIDI_EVENT_MODE_VELOCITY:
-      AOUT_PinSet(cv, v->voiceVelocity << 9);
-      break;
-
-    case MBCV_MIDI_EVENT_MODE_AFTERTOUCH:
-      AOUT_PinSet(cv, mv->midivoiceAftertouch << 9);
-      break;
-
-    case MBCV_MIDI_EVENT_MODE_CC:
-      AOUT_PinSet(cv, mv->midivoiceCCValue << 9);
-      break;
-
-    case MBCV_MIDI_EVENT_MODE_NRPN:
-      AOUT_PinSet(cv, mv->midivoiceNRPNValue << 2);
-      break;
-
-    case MBCV_MIDI_EVENT_MODE_PITCHBENDER:
-      AOUT_PinSet(cv, (mv->midivoicePitchbender + 8192) << 2);
-      break;
-    }
-  }
-
-  return 0; // no error
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Updates all CV channels and gates
@@ -270,7 +210,13 @@ extern "C" s32 MBCV_MAP_Update(void)
   static u8 last_start_stop = 0xff; // to force an update
 
   // retrieve the AOUT values of all channels
-  MBCV_MAP_UpdateChannels();
+  MbCvEnvironment* env = APP_GetEnv();
+
+  u16 *out = env->cvOut.first();
+  for(int cv=0; cv<MBCV_PATCH_NUM_CV; ++cv, ++out)
+    AOUT_PinSet(cv, *out);
+
+  AOUT_DigitalPinsSet(env->cvGates);
 
   // Start/Stop at J5C.A9
   u8 start_stop = SEQ_BPM_IsRunning();
