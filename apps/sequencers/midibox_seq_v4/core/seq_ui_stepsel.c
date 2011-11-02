@@ -112,7 +112,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    return SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps/16)-1, incrementer);
+    if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
+      // select step within view
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    } else {
+      return 0;
+    }
   }
 
   return -1; // invalid or unsupported encoder

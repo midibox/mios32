@@ -36,12 +36,26 @@ seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Global Defines
+/////////////////////////////////////////////////////////////////////////////
+#define DATAWHEEL_MODE_SCROLL_CURSOR   0
+#define DATAWHEEL_MODE_SCROLL_VIEW     1
+#define DATAWHEEL_MODE_CHANGE_VALUE    2
+#define DATAWHEEL_MODE_CHANGE_PARLAYER 3
+#define DATAWHEEL_MODE_CHANGE_TRGLAYER 4
+
+#define DATAWHEEL_MODE_NUM             5
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 show_edit_config_page;
 
 static u16 selected_steps = 0xffff; // will only be initialized once after startup
+
+static u8 datawheel_mode = 0; // will only be initialized once after startup
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -133,6 +147,60 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  if( encoder == SEQ_UI_ENCODER_Datawheel ) {
+    u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+    switch( datawheel_mode ) {
+    case DATAWHEEL_MODE_SCROLL_CURSOR:
+      // note: SEQ_UI_CheckSelections() will automatically change the page if required
+      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
+	return 1;
+      else
+	return 0;
+
+    case DATAWHEEL_MODE_SCROLL_VIEW:
+      if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
+	// select step within view
+	ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	return 1;
+      } else {
+	return 0;
+      }
+
+    case DATAWHEEL_MODE_CHANGE_VALUE:
+      break; // drop... continue below with common encoder value change routine
+
+    case DATAWHEEL_MODE_CHANGE_PARLAYER: {
+      u8 num_layers = SEQ_PAR_NumLayersGet(visible_track);
+
+      if( SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, num_layers-1, incrementer) >= 1 )
+	return 1;
+      else
+	return 0;
+    } break;
+
+    case DATAWHEEL_MODE_CHANGE_TRGLAYER: {
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	u8 num_layers = SEQ_TRG_NumInstrumentsGet(visible_track);
+	if( SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_layers-1, incrementer) >= 1 )
+	  return 1;
+	else
+	  return 0;
+      } else {
+	u8 num_layers = SEQ_TRG_NumLayersGet(visible_track);
+	if( SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, num_layers-1, incrementer) >= 1 )
+	  return 1;
+	else
+	  return 0;
+      }
+    } break;
+    }
+  }
+
 #if 0
   // leads to: comparison is always true due to limited range of data type
   if( (encoder >= SEQ_UI_ENCODER_GP1 && encoder <= SEQ_UI_ENCODER_GP16) || encoder == SEQ_UI_ENCODER_Datawheel ) {
@@ -147,7 +215,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP3: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_LAYERS; break;
       case SEQ_UI_ENCODER_GP4: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_303; break;
       case SEQ_UI_ENCODER_GP9: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPSEL; break;
+
+      case SEQ_UI_ENCODER_GP7:
+      case SEQ_UI_ENCODER_GP8: {
+	if( incrementer == 0 ) // button
+	  incrementer = (encoder == SEQ_UI_ENCODER_GP7) ? -1 : 1;
+
+	if( SEQ_UI_Var8_Inc(&datawheel_mode, 0, DATAWHEEL_MODE_NUM-1, incrementer) >= 1 )
+	  return 1;
+	else
+	  return 0;
       }
+      }
+
       show_edit_config_page = 0; // switch back to view
       return 1; // value changed
     }
@@ -160,7 +240,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 1; // value changed
     }
 
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
     if( event_mode != SEQ_EVENT_MODE_Drum &&
@@ -168,7 +247,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
       if( encoder == SEQ_UI_ENCODER_GP1 ) {
-	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps, incrementer) >= 1 )
+	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
 	  return 1;
 	else
 	  return 0;
@@ -219,7 +298,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
       if( encoder == SEQ_UI_ENCODER_GP1 ) {
-	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps, incrementer) >= 1 )
+	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
 	  return 1;
 	else
 	  return 0;
@@ -501,7 +580,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   // layout edit config
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // Step Trg  Layer 303                     Step                                    
+  // Step Trg  Layer 303           Datawheel:Step                                    
   // View View View View                     Select                                  
 
   // layout trigger view
@@ -525,10 +604,20 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
   if( show_edit_config_page ) {
+    const char datawheel_mode_str[DATAWHEEL_MODE_NUM][11] = {
+      " Cursor   ",
+      " StepView ",
+      " Value    ",
+      " ParLayer ",
+      " TrgLayer ",
+    };
+
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("Step Trg  Layer 303                     Step                                    ");
+    SEQ_LCD_PrintString("Step Trg  Layer 303           Datawheel:Step                                    ");
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString("View View View View                     Select                                  ");
+    SEQ_LCD_PrintString("View View View View           ");
+    SEQ_LCD_PrintString((char *)datawheel_mode_str[datawheel_mode]);
+    SEQ_LCD_PrintString("Select                                  ");
     return 0; // no error
   }
 
