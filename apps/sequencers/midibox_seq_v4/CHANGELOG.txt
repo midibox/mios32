@@ -5,6 +5,26 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.054
+~~~~~~~~~~~~~~~~~
+
+   o in edit page the datawheel can now be used for different purposes:
+     it can scroll the cursor, the step view, can change the value (as before)
+     and it can be used to select the parameter/trigger layer.
+     The function can be selected by pressing SELECT + GP7/8
+
+   o Rômulo aka. Midilab started to implement a footswitch function which
+     is especially useful for live recording and track modifications while
+     playing on a keyboard.
+     Press&Hold the footswitch to enable record mode, release it to disable
+     record mode.
+     Tap the footswitch shortly to delete the track.
+     The footswitch can be assigned to a free DIN pin in MBSEQ_HW.V4
+
+   o fixed potential buffer overrun when preset is stored
+
+
+
 MIDIboxSEQ V4.053
 ~~~~~~~~~~~~~~~~~
 

@@ -98,6 +98,7 @@ char ui_global_dir_list[80];
 
 seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -1620,6 +1621,54 @@ static s32 SEQ_UI_Button_ToggleGate(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
+{
+  // static variables (only used here, therefore local)
+  static u32 fs_time_control = 0; // timestamp of last operation
+  static u8  fs_mode = 0; // mode
+
+  // this is used as a constant value
+  u32 fs_time_delay = 1000; // mS - should this be configurable?
+
+
+  // PUNCH_IN, PUNCH_OUT and Delete track data control
+  if( !depressed ) {
+    if( ( fs_time_control > (seq_core_timestamp_ms - fs_time_delay) ) && ( fs_time_control != 0 ) )
+    {
+      // that confirms the delete function
+      fs_mode = 1; // delete
+    } else {
+      // start time in count
+      fs_time_control = seq_core_timestamp_ms;
+    }
+  } else {
+    // if time pressed is less than fs_time_delay miliseconds, we got a possible delete function activation
+    if( fs_time_control > (seq_core_timestamp_ms - fs_time_delay) )
+    {
+      switch( fs_mode ) {
+      case 1: { // delete
+        SEQ_UI_Button_Clear_Track(0);
+        fs_mode = 0; // back to normal mode, later we would increment the value
+      } break;
+      default:
+        fs_mode = 0; // for the case that an invalid mode is selected
+      }
+
+      fs_time_control = seq_core_timestamp_ms;
+    }
+  }
+
+  if( depressed ) {
+    // disable recording
+    seq_record_state.ENABLED = 0;
+  } else {
+    // enable recording
+    seq_record_state.ENABLED = 1;
+    seq_record_state.ARMED_TRACKS = ui_selected_tracks; // not used yet, just preparation for future changes
+  }
+
+  return 0; // no error
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1788,6 +1837,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_TrackMorph(pin_value);
   if( pin == seq_hwcfg_button.track_transpose )
     return SEQ_UI_Button_TrackTranspose(pin_value);
+  if( pin == seq_hwcfg_button.footswitch )
+    return SEQ_UI_Button_FootSwitch(pin_value);
 
   // always print debugging message
 #if 1

@@ -199,6 +199,8 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+
+  .footswitch      = ((( 0   -1)<<3)+    0),
 };
 
 
