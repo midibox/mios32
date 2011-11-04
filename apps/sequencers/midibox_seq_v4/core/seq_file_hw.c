@@ -428,6 +428,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.track_morph = din_value;
 	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_button.track_transpose = din_value;
+	  } else if( strcmp(parameter, "FOOTSWITCH") == 0 ) {
+	    seq_hwcfg_button.footswitch = din_value;
 	  } else if( strncmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
 	    parameter += 15;
 

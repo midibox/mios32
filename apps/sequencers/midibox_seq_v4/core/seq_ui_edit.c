@@ -26,6 +26,7 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_chord.h"
+#include "seq_record.h"
 #include "seq_hwcfg.h"
 
 
@@ -581,7 +582,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // layout edit config
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // Step Trg  Layer 303           Datawheel:Step                                    
-  // View View View View                     Select                                  
+  // View View View View            Scroll   Select                                  
 
   // layout trigger view
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
@@ -755,7 +756,15 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   SEQ_LCD_PrintSpaces(1);
 
-  switch( edit_mode ) {
+
+  if( seq_record_state.ENABLED || edit_mode == SEQ_UI_EDIT_MODE_RECORD ) {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(15);
+    } else {
+      SEQ_LCD_PrintString("RECORDING      ");
+    }
+  } else {
+    switch( edit_mode ) {
     case SEQ_UI_EDIT_MODE_COPY: {
       if( ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(15);
@@ -798,14 +807,6 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
     } break;
 
-    case SEQ_UI_EDIT_MODE_RECORD: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
-	SEQ_LCD_PrintString("RECORDING      ");
-      }
-    } break;
-
     case SEQ_UI_EDIT_MODE_MANUAL: {
       if( ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(15);
@@ -824,6 +825,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       } else {
 	SEQ_LCD_PrintTrackLabel(visible_track, (char *)seq_core_trk[visible_track].name);
       }
+    }
     }
   }
 

@@ -111,6 +111,8 @@ typedef struct {
   u8 track_direction;
   u8 track_morph;
   u8 track_transpose;
+
+  u8 footswitch;
 } seq_hwcfg_button_t;
 
 
