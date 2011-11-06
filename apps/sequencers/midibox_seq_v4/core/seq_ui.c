@@ -1098,13 +1098,23 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
 {
   seq_ui_button_state.EDIT_PRESSED = depressed ? 0 : 1;
 
-  if( depressed ) return -1; // ignore when button depressed
-
   // change to edit page
-  SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
+  if( !depressed ) {
+    SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
-  // set/clear encoder fast function if required
-  SEQ_UI_InitEncSpeed(1); // auto config
+    // set/clear encoder fast function if required
+    SEQ_UI_InitEncSpeed(1); // auto config
+  }
+
+  // EDIT button notification to button callback
+  // currently only used in EDIT page itself!
+  if( depressed && ui_page != SEQ_UI_PAGE_EDIT )
+    return -1;
+
+  if( ui_button_callback != NULL ) {
+    ui_button_callback(SEQ_UI_BUTTON_Edit, depressed);
+    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+  }
 
   return 0; // no error
 }

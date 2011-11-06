@@ -105,7 +105,8 @@ typedef enum {
   SEQ_UI_BUTTON_Left,
   SEQ_UI_BUTTON_Right,
   SEQ_UI_BUTTON_Up,
-  SEQ_UI_BUTTON_Down
+  SEQ_UI_BUTTON_Down,
+  SEQ_UI_BUTTON_Edit  // only used in seq_ui_edit.c
 } seq_ui_button_t;
 
 
