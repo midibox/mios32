@@ -351,7 +351,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 new_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
-      if( ui_selected_step != new_step && edit_passive_mode == 2 ) {
+      if( ui_selected_step != new_step && edit_passive_mode ) {
 	PassiveEditTakeOver();
 	ui_selected_step = new_step;
 	PassiveEditEnter();
@@ -589,8 +589,10 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
       case SEQ_UI_BUTTON_Edit:
 	if( !depressed )
 	  PassiveEditEnter();
-	else
+	else {
 	  PassiveEditTakeOver();
+	  edit_passive_mode = 0;
+	}
 	return 1;
     }
   }
@@ -707,9 +709,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
 
-    u8 note = PassiveEditValid()
-      ? edit_passive_value
-      : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+    u8 note = SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
     u8 note_octave = note / 12;
     u8 note_key = note % 12;
 
@@ -721,7 +721,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       if( i == ui_selected_par_layer && ui_cursor_flash )
 	SEQ_LCD_PrintSpaces(5);
       else {
-	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0);
+	int print_edit_value = PassiveEditValid() ? edit_passive_value : -1;
+	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0, print_edit_value);
 	SEQ_LCD_PrintChar(' ');
       }
 
@@ -776,7 +777,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       if( i == ui_selected_par_layer && ui_cursor_flash )
 	SEQ_LCD_PrintSpaces(5);
       else {
-	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0);
+	int print_edit_value = PassiveEditValid() ? edit_passive_value : -1;
+	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0, print_edit_value);
 	SEQ_LCD_PrintChar(' ');
       }
 
@@ -909,9 +911,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
     else
       SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
-    u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.value;
-    SEQ_LCD_PrintFormattedString(" %3d ", par_value);
-    SEQ_LCD_PrintVBar(par_value >> 4);
+    SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
+    SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
     SEQ_LCD_PrintSpaces(2);
 
@@ -932,8 +933,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
 	SEQ_LCD_PrintNote(par_value);
       }
-      u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.velocity;
-      SEQ_LCD_PrintVBar(par_value >> 4);
+      SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
     }
     else {
       SEQ_LCD_PrintString("....");
@@ -1058,7 +1058,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(' ');
       } else {
-	SEQ_LCD_PrintLayerEvent(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, 1);
+	int print_edit_value = (visible_step == edit_passive_step && PassiveEditValid()) ? edit_passive_value : -1;
+	SEQ_LCD_PrintLayerEvent(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, 1, print_edit_value);
       }
 
       if( !show_drum_triggers ) {
@@ -1205,14 +1206,21 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
 static s32 PassiveEditEnter(void)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
 
-  // enter passive edit mode and store track/step/layer/instrument for later checks
-  edit_passive_mode = 1;
-  edit_passive_track = visible_track;
-  edit_passive_step = ui_selected_step;
-  edit_passive_par_layer = ui_selected_par_layer;
-  edit_passive_instrument = ui_selected_instrument;
-  edit_passive_value = SEQ_PAR_Get(edit_passive_track, edit_passive_step, edit_passive_par_layer, edit_passive_instrument);
+  // passive edit mode currently only supported for notes/chords
+
+  if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord ) {
+    // enter passive edit mode and store track/step/layer/instrument for later checks
+    edit_passive_mode = 1;
+    edit_passive_track = visible_track;
+    edit_passive_step = ui_selected_step;
+    edit_passive_par_layer = ui_selected_par_layer;
+    edit_passive_instrument = ui_selected_instrument;
+    edit_passive_value = SEQ_PAR_Get(edit_passive_track, edit_passive_step, edit_passive_par_layer, edit_passive_instrument);
+  } else {
+    edit_passive_mode = 0;
+  }
 
   return 0; // no error
 }

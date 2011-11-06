@@ -21,6 +21,10 @@ MIDIboxSEQ V4.054
      Tap the footswitch shortly to delete the track.
      The footswitch can be assigned to a free DIN pin in MBSEQ_HW.V4
 
+   o note and chords can now be edited without immediate change by pressing&holding
+     the EDIT button. The new value will be taken over once another step is
+     edited, or the EDIT button is released.
+
    o fixed potential buffer overrun when preset is stored
 
 
