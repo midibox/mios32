@@ -85,6 +85,9 @@ extern u32 FILE_VolumeBytesTotal(void);
 extern char *FILE_VolumeLabel(void);
 extern s32 FILE_UpdateFreeBytes(void);
 
+extern u32 FILE_VolumeSectorsPerCluster(void);
+extern u32 FILE_VolumeCluster2Sector(u32 cluster);
+
 extern s32 FILE_ReadOpen(file_t* file, char *filepath);
 extern s32 FILE_ReadReOpen(file_t* file);
 extern s32 FILE_ReadClose(file_t* file);
