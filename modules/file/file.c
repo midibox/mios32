@@ -384,8 +384,10 @@ s32 FILE_ReadReOpen(file_t* file)
   file_read.dir_sect = file->dir_sect;
   file_read.dir_ptr = file->dir_ptr;
 
+#ifndef FILE_NO_DISK_READ_ON_READREOPEN
   // ensure that the right sector is in cache again
   disk_read(file_read.fs->drive, file_read.buf, file_read.dsect, 1);
+#endif
 
   // file is opened (again)
   file_read_is_open = 1;

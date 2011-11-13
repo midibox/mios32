@@ -25,6 +25,10 @@
 # define MIOS32_SRIO_SPI 0
 #endif
 
+// avoid disk_read in FILE_ReadReOpen
+#define FILE_NO_DISK_READ_ON_READREOPEN 1
+
+
 // I2S support has to be enabled explicitely
 #define MIOS32_USE_I2S
 
