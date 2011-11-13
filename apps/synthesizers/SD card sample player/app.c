@@ -12,8 +12,6 @@
  * ==========================================================================
  */
 
-// Important that this line in file.c is hashed out in FILE_ReadReOpen:
-//disk_read(file_read.fs->drive, file_read.buf, file_read.dsect, 1);
  
 /////////////////////////////////////////////////////////////////////////////
 // Include files
@@ -65,6 +63,11 @@ static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right numb
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
 
 volatile u8 print_msg;
+
+static u8 sdcard_access_allowed; // allow SD Card access for SYNTH_ReloadSampleBuffer
+
+// optionally holds the sample when key released (better for drums)
+#define HOLD_SAMPLE 0
 
 // Call this routine with the sample array number to reference, and the filename to open
 s32 SAMP_FILE_open(u8 sample_n, char fname[])
@@ -184,7 +187,7 @@ void APP_Init(void)
   // Open all sample files and mark all samples as off
  for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
  {
-  if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) { DEBUG_MSG("Open file failed in main routine"); while(1) {}; }
+   if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) { DEBUG_MSG("Open file failed in main routine"); } // TK: removed while( 1 ) to simplify debugging, otherwise we don't have USB access anymore!
   sample_on[samp_no]=0;
  }
 
@@ -192,9 +195,12 @@ void APP_Init(void)
  // init Synth
   SYNTH_Init(0);
   DEBUG_MSG("Synth init done."); 
-  
+
   MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED when done with init
   MIOS32_STOPWATCH_Init(100);		// Use stopwatch in 100uS accuracy
+
+  // allow SD Card access
+  sdcard_access_allowed = 1;
 }
 
 
@@ -222,6 +228,12 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 				 if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
 					{
 					// if(sample_on[samp_no]==2) { DEBUG_MSG("Turning sample %d on , midi note %x hex - already on",samp_no,midi_package.note); }
+#if HOLD_SAMPLE
+					  // if sample already on: restart it
+					  if( sample_on[samp_no] ) {
+					    sample_on[samp_no]=1;
+					  }
+#endif
 						if(!sample_on[samp_no]) { sample_on[samp_no]=1; }							// Mark it as want to play unless it's already on
 					//DEBUG_MSG("Turning sample %d on , midi note %x hex",samp_no,midi_package.note);
 					}
@@ -230,6 +242,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	}
 	else	// We have a note off
 	{
+#if !HOLD_SAMPLE
 			for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
 		{
 		 if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
@@ -238,6 +251,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 				//DEBUG_MSG("Turning sample %d off, midi note %x hex",samp_no,midi_package.note);
 			}
 		}
+#endif
 	}
   }
   else
@@ -278,6 +292,9 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void SYNTH_ReloadSampleBuffer(u32 state)
 {
+
+  if( !sdcard_access_allowed )
+    return; // no access allowed by main thread
 
   // Each sample buffer entry contains the L/R 32 bit values
   // Each call of this routine will need to read in SAMPLE_BUFFER_SIZE/2 samples, each of which requires 16 bits
