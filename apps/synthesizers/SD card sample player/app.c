@@ -47,7 +47,7 @@
 
 // All filenames are supported in 8.3 format
 
-char bankname[13]="bank.1";	// Default sample bank filename on the SD card, needs to have Unix style line feeds
+char bankprefix[13]="bank.";	// Default sample bank filename prefix on the SD card, needs to have Unix style line feeds
 static file_t bank_fileinfo;	// Create the file descriptor for bank file
 
 int sample_to_midinote[NUM_SAMPLES_TO_OPEN];		// Stores midi note mappings from bank file
@@ -139,10 +139,20 @@ s32 SAMP_FILE_seek(u32 pos, u8 sample_n)	// position and the sample number
   return status;
 }
 
-void Open_Bank(char b_file[])	// Open the filename passed and parse the bank information
+void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank information, load samples and set midi notes and number of samples
 {
   u8 samp_no;
   u8 f_line[19];
+  char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file
+  char b_file[13];				// Overall bank name to generate
+  char b_num_char[4];			// Up to 3 digit bank string plus terminator
+
+  strcpy(b_file,bankprefix);		// Get prefix in
+  sprintf(b_num_char,"%d",b_num);	// get bank number as string
+  strcat(b_file,b_num_char);		// Create the final filename
+  
+  no_samples_loaded=0;		// Reset if it's possible to call this function on the fly
+  
   DEBUG_MSG("Opening bank file %s",b_file);
   if(FILE_ReadOpen(&bank_fileinfo, b_file)<0) { DEBUG_MSG("Failed to open bank file."); }
   
@@ -158,15 +168,36 @@ void Open_Bank(char b_file[])	// Open the filename passed and parse the bank inf
 	}
    }
   FILE_ReadClose(&bank_fileinfo);
+    
+ for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// Open all sample files and mark all samples as off
+ {
+  if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) { DEBUG_MSG("Open sample file failed."); }
+  sample_on[samp_no]=0;
+ }
 }
+
+u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as input with pullups, then read bank number (1,2,3,4) based on which of D0, D1 or D2 low
+{
+	 u8 pin_no;
+	 u8 bank_val;
+
+	 for(pin_no=0;pin_no<8;pin_no++)
+	 {
+	  MIOS32_BOARD_J10_PinInit(pin_no, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+	 }
+
+	 bank_val=(u8)(MIOS32_BOARD_J10_Get() & 0x07); // Read all pins, but only care about first 3, 7=1st pos (all high), 6=2nd pos (D0 low), 5=3rd pos (D1 low), 3=4th pos (D2 low)
+	 if(bank_val==3) { return 4; }
+	 if(bank_val==5) { return 3; }
+	 if(bank_val==6) { return 2; }	 
+	 return 1;		// default to bank 1
+ }
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
- u8 samp_no;
-
  // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
   MIOS32_BOARD_LED_Set(0x1, 0x1);	// Turn on LED
@@ -183,14 +214,9 @@ void APP_Init(void)
   //s32 status=FILE_PrintSDCardInfos();	// Print SD card info
   
   // Open bank file
-  Open_Bank(bankname);	// Parse file and set up sample_to_midinote[NUM_SAMPLES_TO_OPEN] and sample_filenames[NUM_SAMPLES_TO_OPEN][10] and no_samples_loaded
-  
-  // Open all sample files and mark all samples as off
- for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
- {
-   if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) { DEBUG_MSG("Open file failed in main routine"); } // TK: removed while( 1 ) to simplify debugging, otherwise we don't have USB access anymore!
-  sample_on[samp_no]=0;
- }
+
+  //Open_Bank(Read_Switch());	// For Lee's temporary bank physical switch on J10
+  Open_Bank(1);	// Read Switch then Parse bank file, open sample files, set midi note mappings and no_samples_loaded
 
   DEBUG_MSG("Initialising synth..."); 
  // init Synth
