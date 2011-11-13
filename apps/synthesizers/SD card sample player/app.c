@@ -37,6 +37,13 @@
 #define DEBUG_VERBOSE_LEVEL 10
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
+// optionally holds the sample when key released (better for drums)
+#define HOLD_SAMPLE 0
+
+// cluster cache activated if size != 0
+#define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = 1 MB !!!
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
@@ -63,12 +70,14 @@ static u8 sample_vel[NUM_SAMPLES_TO_OPEN];	// Sample velocity
 static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right number of file descriptors
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
 
+#if CLUSTER_CACHE_SIZE > 0
+static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];
+#endif
+
 volatile u8 print_msg;
 
 static u8 sdcard_access_allowed; // allow SD Card access for SYNTH_ReloadSampleBuffer
 
-// optionally holds the sample when key released (better for drums)
-#define HOLD_SAMPLE 0
 
 // Call this routine with the sample array number to reference, and the filename to open
 s32 SAMP_FILE_open(u8 sample_n, char fname[])
@@ -96,6 +105,20 @@ s32 SAMP_FILE_open(u8 sample_n, char fname[])
 /////////////////////////////////////////////////////////////////////////////
 u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
 {
+#if CLUSTER_CACHE_SIZE > 0
+  // determine sector based on sample position
+  u32 pos = samplefile_pos[sample_n];
+  u32 sector_ix = pos / 512;
+  u32 sectors_per_cluster = FILE_VolumeSectorsPerCluster();
+  u32 cluster_ix = sector_ix / sectors_per_cluster;
+  if( cluster_ix >= CLUSTER_CACHE_SIZE )
+    return -1;
+  u32 cluster = sample_cluster_cache[sample_n][cluster_ix];
+  u32 phys_sector = FILE_VolumeCluster2Sector(cluster) + (sector_ix % sectors_per_cluster);
+  if( MIOS32_SDCARD_SectorRead(phys_sector, buffer) < 0 )
+    return -2;
+  return len;
+#else
   s32 status;
 
   if( (status=FILE_ReadReOpen(&samplefile_fileinfo[sample_n])) >= 0 ) {
@@ -104,6 +127,7 @@ u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
   }
 
   return (status >= 0) ? len : 0;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,10 +154,14 @@ s32 SAMP_FILE_seek(u32 pos, u8 sample_n)	// position and the sample number
   if( samplefile_pos[sample_n] >= samplefile_len[sample_n] )
     status = -1; // end of file reached
   else {
+#if CLUSTER_CACHE_SIZE > 0
+    // nothing to do here! :-)
+#else
     if( (status=FILE_ReadReOpen(&samplefile_fileinfo[sample_n])) >= 0 ) {
       status = FILE_ReadSeek(pos);    
       FILE_ReadClose(&samplefile_fileinfo[sample_n]);
     }
+#endif
   }
 
   return status;
@@ -171,8 +199,38 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
     
  for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// Open all sample files and mark all samples as off
  {
-  if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) { DEBUG_MSG("Open sample file failed."); }
-  sample_on[samp_no]=0;
+   if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) {
+     DEBUG_MSG("Open sample file failed.");
+   } else {
+#if CLUSTER_CACHE_SIZE > 0
+     u32 num_sectors_per_cluster = FILE_VolumeSectorsPerCluster();
+     u32 cluster_ix;
+     for(cluster_ix=0; cluster_ix < CLUSTER_CACHE_SIZE; ++cluster_ix) {
+       u32 pos = cluster_ix*num_sectors_per_cluster*SAMPLE_BUFFER_SIZE;
+
+       if( pos >= samplefile_len[samp_no] )
+	 break; // end of file reached
+       else {
+	 s32 status;
+	 if( (status=FILE_ReadReOpen(&samplefile_fileinfo[samp_no])) >= 0 ) {
+	   status = FILE_ReadSeek(pos);
+	   if( status >= 0 ) {
+	     u8 dummy; // dummy read to update cluster
+	     status = FILE_ReadBuffer(&dummy, 1);
+	   }
+	   FILE_ReadClose(&samplefile_fileinfo[samp_no]);
+	 }
+	 if( status < 0 )
+	   break;
+       }
+
+       sample_cluster_cache[samp_no][cluster_ix] = samplefile_fileinfo[samp_no].curr_clust;
+       DEBUG_MSG("Cluster %d: %d ", cluster_ix, sample_cluster_cache[samp_no][cluster_ix]);
+     }
+#endif
+   }
+
+   sample_on[samp_no]=0;
  }
 }
 
