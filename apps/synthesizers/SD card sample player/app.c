@@ -28,7 +28,7 @@
 
 #define NUM_SAMPLES_TO_OPEN 64	// Maximum number of file handles to use, and how many samples to open
 #define POLYPHONY 8				// Max voices to sound simultaneously
-#define SAMPLE_SCALING 1		// Number of bits to scale samples down by in order to not distort
+#define SAMPLE_SCALING 8		// Number of bits to scale samples down by in order to not distort
 #define MAX_TIME_IN_DMA 40		// Time (*0.1ms) to read sample data for, e.g. 40 = 4.0 mS
 
 #define SAMPLE_BUFFER_SIZE 512  // -> 512 L/R samples, 80 Hz refill rate (11.6~ mS period). DMA refill routine called every 5.8mS.
@@ -59,6 +59,7 @@ static u32 sample_buffer[SAMPLE_BUFFER_SIZE]; // sample buffer used for DMA
 static u32 samplefile_pos[NUM_SAMPLES_TO_OPEN];	// Current position in the sample file
 static u32 samplefile_len[NUM_SAMPLES_TO_OPEN];	// Length of the sample file
 static u8 sample_on[NUM_SAMPLES_TO_OPEN];	// To track whether each sample should be on or not
+static u8 sample_vel[NUM_SAMPLES_TO_OPEN];	// Sample velocity
 static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right number of file descriptors
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
 
@@ -232,9 +233,14 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 					  // if sample already on: restart it
 					  if( sample_on[samp_no] ) {
 					    sample_on[samp_no]=1;
+						sample_vel[samp_no]=midi_package.velocity; 
 					  }
 #endif
-						if(!sample_on[samp_no]) { sample_on[samp_no]=1; }							// Mark it as want to play unless it's already on
+						if(!sample_on[samp_no]) 
+						{ 
+						 sample_on[samp_no]=1; 
+						 sample_vel[samp_no]=midi_package.velocity; 
+}							// Mark it as want to play unless it's already on
 					//DEBUG_MSG("Turning sample %d on , midi note %x hex",samp_no,midi_package.note);
 					}
 				}
@@ -310,6 +316,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
   u8 voice;
   u8 voice_no=0;	// used to count number of voices to play
   u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
+  s16 voice_velocity[POLYPHONY];	// Store the velocity for each sample
   u32 ms_so_far;		// used to measure time of DMA routine
 
   MIOS32_STOPWATCH_Reset();			// Reset the stopwatch at start of DMA routine
@@ -323,6 +330,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 			 if(sample_on[samp_no])	// We want to play this voice (either newly triggered =1 or continue playing =2)
 				{
 					voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
+					voice_velocity[voice_no]=(s16)sample_vel[samp_no];	// Assign velocity to voice
 					voice_no++;							// And increment number of voices in use
 					if(sample_on[samp_no]==1)					// Newly triggered sample (set to 1 by midi receive routine)
 					{
@@ -362,7 +370,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 				OutWavs32=0;	// zero the voice accumulator for this sample output
 				for(voice=0;voice<voice_no;voice++)
 				{
-						OutWavs32+=(s16)((samplebyte_buf[voice][i+1] << 8) + samplebyte_buf[voice][i]);		// else mix it in
+						OutWavs32+=voice_velocity[voice]*(s16)((samplebyte_buf[voice][i+1] << 8) + samplebyte_buf[voice][i]);		// else mix it in
 				}
 				OutWavs16 = (s16)(OutWavs32>>SAMPLE_SCALING);	// Round down the wave to prevent distortion
 				*buffer++ = (OutWavs16 << 16) | (OutWavs16 & 0xffff);	// make up the 32 bit word for L and R and write into buffer
