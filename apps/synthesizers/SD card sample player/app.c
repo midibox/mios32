@@ -79,7 +79,7 @@ u8 sample_bank_no=1;	// The sample bank number being played
 
 volatile u8 print_msg;
 
-static u8 sdcard_access_allowed; // allow SD Card access for SYNTH_ReloadSampleBuffer
+static u8 sdcard_access_allowed=0; // allow SD Card access for SYNTH_ReloadSampleBuffer
 
 
 // Call this routine with the sample array number to reference, and the filename to open
@@ -126,15 +126,17 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
 {
   u8 samp_no;
   u8 f_line[19];
-  char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file
   char b_file[13];				// Overall bank name to generate
   char b_num_char[4];			// Up to 3 digit bank string plus terminator
+  static char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file, needs to be static to avoid crash
 
   strcpy(b_file,bankprefix);		// Get prefix in
   sprintf(b_num_char,"%d",b_num);	// get bank number as string
   strcat(b_file,b_num_char);		// Create the final filename
   
-  no_samples_loaded=0;		// Reset if it's possible to call this function on the fly
+  MIOS32_BOARD_LED_Set(0x1, 0x1);	// Turn on LED during bank load
+  
+  no_samples_loaded=0;
   
   DEBUG_MSG("Opening bank file %s",b_file);
   if(FILE_ReadOpen(&bank_fileinfo, b_file)<0) { DEBUG_MSG("Failed to open bank file."); }
@@ -186,6 +188,7 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
 
    sample_on[samp_no]=0;	// Set sample to off
  }
+   MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED after bank load
 }
 
 #if LEE_HW
@@ -214,7 +217,6 @@ void APP_Init(void)
 {
  // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
-  MIOS32_BOARD_LED_Set(0x1, 0x1);	// Turn on LED
 
    // print first message
   print_msg = PRINT_MSG_INIT;
@@ -245,7 +247,6 @@ void APP_Init(void)
   SYNTH_Init(0);
   DEBUG_MSG("Synth init done."); 
 
-  MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED when done with init
   MIOS32_STOPWATCH_Init(100);		// Use stopwatch in 100uS accuracy
 }
 
