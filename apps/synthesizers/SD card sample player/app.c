@@ -343,17 +343,22 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void SYNTH_ReloadSampleBuffer(u32 state)
 {
+  // transfer new samples to the lower/upper sample buffer range
+  int i;
+  u32 *buffer = (u32 *)&sample_buffer[state ? (SAMPLE_BUFFER_SIZE/2) : 0];	// point at either 0 or the upper half of buffer
 
-  if( !sdcard_access_allowed )
-    return; // no access allowed by main thread
+  if( !sdcard_access_allowed )	// no access allowed by main thread
+    {
+	 for(i=0; i<SAMPLE_BUFFER_SIZE; i+=2) {	// Fill half the sample buffer with silence
+	   *buffer++ = 0;	// Muted output
+	 }
+	 return; 	 
+	}
 
   // Each sample buffer entry contains the L/R 32 bit values
   // Each call of this routine will need to read in SAMPLE_BUFFER_SIZE/2 samples, each of which requires 16 bits
   // Therefore for mono samples, we'll need to read in SAMPLE_BUFFER_SIZE bytes
 
-  // transfer new samples to the lower/upper sample buffer range
-  int i;
-  u32 *buffer = (u32 *)&sample_buffer[state ? (SAMPLE_BUFFER_SIZE/2) : 0];	// point at either 0 or the upper half of buffer
  
   s16 OutWavs16;	// 16 bit output to DAC
   s32 OutWavs32;	// 32 bit accumulator to mix samples into
