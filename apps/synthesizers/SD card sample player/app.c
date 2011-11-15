@@ -308,13 +308,9 @@ if(this_bank==sample_bank_no) { return; } // Nothing happened as same as global 
 sample_bank_no=this_bank;	// Set new bank
 DEBUG_MSG("Changing bank to %d",sample_bank_no);
 sdcard_access_allowed=0;
-//DEBUG_MSG("Stopping I2S");
-//(void) MIOS32_I2S_Stop;		// Stop transfers
 DEBUG_MSG("Opening new sample bank");
 Open_Bank(sample_bank_no);	// Load relevant bank
-//DEBUG_MSG("Starting I2S");
 sdcard_access_allowed=1;
-//(void) MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &SYNTH_ReloadSampleBuffer);	// Restart transfers 
 #endif
 }
 
