@@ -29,7 +29,7 @@
 #define NUM_SAMPLES_TO_OPEN 64	// Maximum number of file handles to use, and how many samples to open
 #define POLYPHONY 8				// Max voices to sound simultaneously
 #define SAMPLE_SCALING 8		// Number of bits to scale samples down by in order to not distort
-#define MAX_TIME_IN_DMA 40		// Time (*0.1ms) to read sample data for, e.g. 40 = 4.0 mS
+#define MAX_TIME_IN_DMA 45		// Time (*0.1ms) to read sample data for, e.g. 40 = 4.0 mS
 
 #define SAMPLE_BUFFER_SIZE 512  // -> 512 L/R samples, 80 Hz refill rate (11.6~ mS period). DMA refill routine called every 5.8mS.
 // NB sample rate and SPI prescaler set in mios32_config file - at 44.1kHz, reading 2 bytes per sample is SD card average rate of 86.13kB/s for a single sample
@@ -40,9 +40,14 @@
 // optionally holds the sample when key released (better for drums)
 #define HOLD_SAMPLE 0
 
-// cluster cache activated if size != 0
-#define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = 1 MB !!!
+// Now mandatory to have this set as legacy read code removed
+#define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = max sample file length of 1 MB !!!
 
+// set to enable scanning of Lee's temporary bank switch on J10
+#define LEE_HW 1
+
+// set to 1 to perform right channel inversion for PCM1725 DAC
+#define DAC_FIX 0
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -58,7 +63,6 @@ char bankprefix[13]="bank.";	// Default sample bank filename prefix on the SD ca
 static file_t bank_fileinfo;	// Create the file descriptor for bank file
 
 int sample_to_midinote[NUM_SAMPLES_TO_OPEN];		// Stores midi note mappings from bank file
-char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file
 u8 no_samples_loaded;								// Stores number of samples we read in from bank file (and will scan for activity)
 
 static u32 sample_buffer[SAMPLE_BUFFER_SIZE]; // sample buffer used for DMA
@@ -69,10 +73,9 @@ static u8 sample_on[NUM_SAMPLES_TO_OPEN];	// To track whether each sample should
 static u8 sample_vel[NUM_SAMPLES_TO_OPEN];	// Sample velocity
 static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right number of file descriptors
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
+static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];	// Array of sample cluster positions on SD card
 
-#if CLUSTER_CACHE_SIZE > 0
-static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];
-#endif
+u8 sample_bank_no=1;	// The sample bank number being played
 
 volatile u8 print_msg;
 
@@ -105,7 +108,6 @@ s32 SAMP_FILE_open(u8 sample_n, char fname[])
 /////////////////////////////////////////////////////////////////////////////
 u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
 {
-#if CLUSTER_CACHE_SIZE > 0
   // determine sector based on sample position
   u32 pos = samplefile_pos[sample_n];
   u32 sector_ix = pos / 512;
@@ -118,56 +120,9 @@ u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
   if( MIOS32_SDCARD_SectorRead(phys_sector, buffer) < 0 )
     return -2;
   return len;
-#else
-  s32 status;
-
-  if( (status=FILE_ReadReOpen(&samplefile_fileinfo[sample_n])) >= 0 ) {
-    status = FILE_ReadBuffer(buffer, len);
-    FILE_ReadClose(&samplefile_fileinfo[sample_n]);
-  }
-
-  return (status >= 0) ? len : 0;
-#endif
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// returns 1 if end of file reached
-/////////////////////////////////////////////////////////////////////////////
-s32 SAMP_FILE_eof(u8 sample_n)
-{
-  if( samplefile_pos[sample_n] >= samplefile_len[sample_n] )
-    return 1; // end of file reached
-
-  return 0;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// sets file pointer to a specific position
-// returns -1 if end of file reached
-/////////////////////////////////////////////////////////////////////////////
-s32 SAMP_FILE_seek(u32 pos, u8 sample_n)	// position and the sample number
-{
-  s32 status;
-
-  samplefile_pos[sample_n] = pos;
-
-  if( samplefile_pos[sample_n] >= samplefile_len[sample_n] )
-    status = -1; // end of file reached
-  else {
-#if CLUSTER_CACHE_SIZE > 0
-    // nothing to do here! :-)
-#else
-    if( (status=FILE_ReadReOpen(&samplefile_fileinfo[sample_n])) >= 0 ) {
-      status = FILE_ReadSeek(pos);    
-      FILE_ReadClose(&samplefile_fileinfo[sample_n]);
-    }
-#endif
-  }
-
-  return status;
-}
-
-void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank information, load samples and set midi notes and number of samples
+void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank information, load samples, set midi notes, number of samples and cache cluster positions
 {
   u8 samp_no;
   u8 f_line[19];
@@ -202,7 +157,7 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
    if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) {
      DEBUG_MSG("Open sample file failed.");
    } else {
-#if CLUSTER_CACHE_SIZE > 0
+	 // Pre-read all the cluster positions for all samples to open
      u32 num_sectors_per_cluster = FILE_VolumeSectorsPerCluster();
      u32 cluster_ix;
      for(cluster_ix=0; cluster_ix < CLUSTER_CACHE_SIZE; ++cluster_ix) {
@@ -227,13 +182,13 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
        sample_cluster_cache[samp_no][cluster_ix] = samplefile_fileinfo[samp_no].curr_clust;
        DEBUG_MSG("Cluster %d: %d ", cluster_ix, sample_cluster_cache[samp_no][cluster_ix]);
      }
-#endif
    }
 
-   sample_on[samp_no]=0;
+   sample_on[samp_no]=0;	// Set sample to off
  }
 }
 
+#if LEE_HW
 u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as input with pullups, then read bank number (1,2,3,4) based on which of D0, D1 or D2 low
 {
 	 u8 pin_no;
@@ -250,6 +205,7 @@ u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as in
 	 if(bank_val==6) { return 2; }	 
 	 return 1;		// default to bank 1
  }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -273,29 +229,25 @@ void APP_Init(void)
   
   // Open bank file
 
-  //Open_Bank(Read_Switch());	// For Lee's temporary bank physical switch on J10
-  Open_Bank(1);	// Read Switch then Parse bank file, open sample files, set midi note mappings and no_samples_loaded
+#if LEE_HW
+  DEBUG_MSG("Reading J10 switch");
+  sample_bank_no=Read_Switch();	// For Lee's temporary bank physical switch on J10 - read first bank to load on boot
+#endif
 
+  Open_Bank(sample_bank_no);	// Open default bank on boot (1 if Lee's switch not read)
+ 
   DEBUG_MSG("Initialising synth..."); 
- // init Synth
+
+  // allow SD Card access
+  sdcard_access_allowed = 1;  
+
+  // init Synth
   SYNTH_Init(0);
   DEBUG_MSG("Synth init done."); 
 
   MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED when done with init
   MIOS32_STOPWATCH_Init(100);		// Use stopwatch in 100uS accuracy
-
-  // allow SD Card access
-  sdcard_access_allowed = 1;
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This task is running endless in background
-/////////////////////////////////////////////////////////////////////////////
-void APP_Background(void)
-{
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
@@ -312,7 +264,6 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 				{
 				 if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
 					{
-					// if(sample_on[samp_no]==2) { DEBUG_MSG("Turning sample %d on , midi note %x hex - already on",samp_no,midi_package.note); }
 #if HOLD_SAMPLE
 					  // if sample already on: restart it
 					  if( sample_on[samp_no] ) {
@@ -348,7 +299,22 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   {
   // DEBUG_MSG("Other MIDI message received... ignoring.");
   }
-  return;
+
+#if LEE_HW
+// After processing MIDI event, now check for bank switch change  
+u8 this_bank=Read_Switch();	// Get bank value
+if(this_bank==sample_bank_no) { return; } // Nothing happened as same as global var
+sample_bank_no=this_bank;	// Set new bank
+DEBUG_MSG("Changing bank to %d",sample_bank_no);
+sdcard_access_allowed=0;
+//DEBUG_MSG("Stopping I2S");
+//(void) MIOS32_I2S_Stop;		// Stop transfers
+DEBUG_MSG("Opening new sample bank");
+Open_Bank(sample_bank_no);	// Load relevant bank
+//DEBUG_MSG("Starting I2S");
+sdcard_access_allowed=1;
+//(void) MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &SYNTH_ReloadSampleBuffer);	// Restart transfers 
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -358,14 +324,12 @@ void APP_SRIO_ServicePrepare(void)
 {
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a button has been toggled
@@ -414,12 +378,11 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 			 if(sample_on[samp_no])	// We want to play this voice (either newly triggered =1 or continue playing =2)
 				{
 					voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-					voice_velocity[voice_no]=(s16)sample_vel[samp_no];	// Assign velocity to voice
+					voice_velocity[voice_no]=(s16)sample_vel[samp_no];	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
 					voice_no++;							// And increment number of voices in use
 					if(sample_on[samp_no]==1)					// Newly triggered sample (set to 1 by midi receive routine)
 					{
-					 SAMP_FILE_seek(0,samp_no);	// make sure at start of sample
-					 samplefile_pos[samp_no]=0;	// Mark at position zero (used for EOF calculations)
+					 samplefile_pos[samp_no]=0;	// Mark at position zero (used for sector reads and EOF calculations)
 					 sample_on[samp_no]=2;		// Mark as on and don't retrigger on next loop
 					 }
 				}
@@ -435,11 +398,11 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 			SAMP_FILE_read(samplebyte_buf[voice],SAMPLE_BUFFER_SIZE,voice_samples[voice]); 	// Read in the appropriate number of sectors for each sample thats on
 
 			samplefile_pos[voice_samples[voice]]+=SAMPLE_BUFFER_SIZE;	// Move along the file position by the read buffer size
-			if(SAMP_FILE_eof(voice_samples[voice])) 
+			if(samplefile_pos[voice_samples[voice]] >= samplefile_len[voice_samples[voice]]) // We've reached EOF - don't play this sample next time and also free up the voice
 			{ 
 				sample_on[voice_samples[voice]]=0; 
 				// DEBUG_MSG("Reached EOF on sample %d",voice_samples[voice]);
-			}	// if EOF don't play this sample next time and also free up the voice
+			}
 			 ms_so_far= MIOS32_STOPWATCH_ValueGet();	// Check how long we've been in the routine up until this point
 			if(ms_so_far>MAX_TIME_IN_DMA)				
 				{ 
@@ -456,9 +419,16 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 				{
 						OutWavs32+=voice_velocity[voice]*(s16)((samplebyte_buf[voice][i+1] << 8) + samplebyte_buf[voice][i]);		// else mix it in
 				}
-				OutWavs16 = (s16)(OutWavs32>>SAMPLE_SCALING);	// Round down the wave to prevent distortion
+				OutWavs32 = (OutWavs32>>SAMPLE_SCALING);	// Round down the wave to prevent distortion, and factor in the velocity multiply
+				if(OutWavs32>32767) { OutWavs32=32767; }	// Saturate positive
+				if(OutWavs32<-32768) { OutWavs32=-32768; }	// Saturate negative			
+				OutWavs16 = (s16)OutWavs32;					// Required to make following bit shift work correctly including sign bit
+#if DAC_FIX
+				*buffer++ = (OutWavs16 << 16) | (-OutWavs16 & 0xffff);	// make up the 32 bit word for L and R and write into buffer with fix for PCM1725 DAC
+#else
 				*buffer++ = (OutWavs16 << 16) | (OutWavs16 & 0xffff);	// make up the 32 bit word for L and R and write into buffer
-			}
+#endif
+				}
 	}
 	else	// There were no voices on
 	 {	
@@ -468,6 +438,8 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 	 }
 
 	 MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED at end of DMA routine
+	//ms_so_far= MIOS32_STOPWATCH_ValueGet();	// Check how long we've been in the routine up until this point
+	//DEBUG_MSG("DMA fill done after %d.%d ms, %d voices",ms_so_far/10,ms_so_far%10,voice_no);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -477,6 +449,13 @@ s32 SYNTH_Init(u32 mode)
 {
   // start I2S DMA transfers
   return MIOS32_I2S_Start((u32 *)&sample_buffer[0], SAMPLE_BUFFER_SIZE, &SYNTH_ReloadSampleBuffer);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is running endless in background
+/////////////////////////////////////////////////////////////////////////////
+void APP_Background(void)
+{
 }
 
 /////////////////////////////////////////////////////////////////////////////
