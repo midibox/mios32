@@ -81,6 +81,18 @@ volatile u8 print_msg;
 
 static u8 sdcard_access_allowed=0; // allow SD Card access for SYNTH_ReloadSampleBuffer
 
+// Curve to map velocity to volume of samples
+static const u8 velocity_curve[128] = {
+0  ,3  ,5  ,7  ,10 ,12 ,15 ,17 ,19 ,21 ,23 ,25 ,28 ,30 ,32 ,34 ,
+36 ,37 ,39 ,41 ,43 ,45 ,46 ,48 ,50 ,51 ,53 ,55 ,56 ,58 ,59 ,61 ,
+62 ,63 ,65 ,66 ,68 ,69 ,70 ,71 ,73 ,74 ,75 ,76 ,78 ,79 ,80 ,81 ,
+82 ,83 ,84 ,85 ,86 ,87 ,88 ,89 ,90 ,91 ,92 ,93 ,93 ,94 ,94 ,95 ,
+96 ,97 ,98 ,99 ,100,101,101,102,103,103,104,105,105,106,107,107,
+108,109,109,110,110,111,111,112,112,113,113,114,114,115,115,116,
+116,117,117,118,118,118,119,119,120,120,120,121,121,121,122,122,
+122,123,123,123,124,124,124,125,125,125,126,126,126,127,127,127
+};
+
 
 // Call this routine with the sample array number to reference, and the filename to open
 s32 SAMP_FILE_open(u8 sample_n, char fname[])
@@ -269,13 +281,13 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 					  // if sample already on: restart it
 					  if( sample_on[samp_no] ) {
 					    sample_on[samp_no]=1;
-						sample_vel[samp_no]=midi_package.velocity; 
+						sample_vel[samp_no]=velocity_curve[midi_package.velocity]; 
 					  }
 #endif
 						if(!sample_on[samp_no]) 
 						{ 
 						 sample_on[samp_no]=1; 
-						 sample_vel[samp_no]=midi_package.velocity; 
+						 sample_vel[samp_no]=velocity_curve[midi_package.velocity]; 
 }							// Mark it as want to play unless it's already on
 					//DEBUG_MSG("Turning sample %d on , midi note %x hex",samp_no,midi_package.note);
 					}
