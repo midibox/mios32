@@ -28,7 +28,10 @@
 
 #define NUM_SAMPLES_TO_OPEN 64	// Maximum number of file handles to use, and how many samples to open
 #define POLYPHONY 8				// Max voices to sound simultaneously
+
+// Following accounts for: 7 bits (envelope decay) + 7 bits (velocity related volume) + 1-3 bits (mixing up to 8 samples but depends how hot your samples are)
 #define SAMPLE_SCALING 8		// Number of bits to scale samples down by in order to not distort
+
 #define MAX_TIME_IN_DMA 45		// Time (*0.1ms) to read sample data for, e.g. 40 = 4.0 mS
 
 #define SAMPLE_BUFFER_SIZE 512  // -> 512 L/R samples, 80 Hz refill rate (11.6~ mS period). DMA refill routine called every 5.8mS.
@@ -36,9 +39,6 @@
 
 #define DEBUG_VERBOSE_LEVEL 10
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
-
-// optionally holds the sample when key released (better for drums)
-#define HOLD_SAMPLE 0
 
 // Now mandatory to have this set as legacy read code removed
 #define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = max sample file length of 1 MB !!!
@@ -69,8 +69,12 @@ static u32 sample_buffer[SAMPLE_BUFFER_SIZE]; // sample buffer used for DMA
 
 static u32 samplefile_pos[NUM_SAMPLES_TO_OPEN];	// Current position in the sample file
 static u32 samplefile_len[NUM_SAMPLES_TO_OPEN];	// Length of the sample file
-static u8 sample_on[NUM_SAMPLES_TO_OPEN];	// To track whether each sample should be on or not
-static u8 sample_vel[NUM_SAMPLES_TO_OPEN];	// Sample velocity
+static s16 sample_on[NUM_SAMPLES_TO_OPEN];	// To track whether each sample should be on or not
+static s8 sample_vel[NUM_SAMPLES_TO_OPEN];	// Sample velocity
+static u8 sample_decay[NUM_SAMPLES_TO_OPEN];	// Sample decay parameter (used to calculate per sample, based on velocity the decrement value)
+static u8 sample_decval[NUM_SAMPLES_TO_OPEN];	// Decay time read in from bank file
+static u8 no_decay;								// Used to speed up decay routine if this bank has no decay time
+static u8 hold_sample[NUM_SAMPLES_TO_OPEN];		// Used to hold sample (for drums)
 static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right number of file descriptors
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
 static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];	// Array of sample cluster positions on SD card
@@ -137,7 +141,7 @@ u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
 void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank information, load samples, set midi notes, number of samples and cache cluster positions
 {
   u8 samp_no;
-  u8 f_line[19];
+  u8 f_line[25];				// 0..3=0xXX (hex midi note) 4=space 5=sample hold (0 or 1) 6=space 7..10=decay (4 digit decimal) 11=space 12..23=8.3 filename 24=null
   char b_file[13];				// Overall bank name to generate
   char b_num_char[4];			// Up to 3 digit bank string plus terminator
   static char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file, needs to be static to avoid crash
@@ -149,18 +153,22 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
   MIOS32_BOARD_LED_Set(0x1, 0x1);	// Turn on LED during bank load
   
   no_samples_loaded=0;
+  no_decay=1;						// Default to no decay for bank
   
   DEBUG_MSG("Opening bank file %s",b_file);
   if(FILE_ReadOpen(&bank_fileinfo, b_file)<0) { DEBUG_MSG("Failed to open bank file."); }
   
   for(samp_no=0;samp_no<NUM_SAMPLES_TO_OPEN;samp_no++)	// Check for up to the defined maximum of sample mappings (one per line)
   {
-	if(FILE_ReadLine(f_line, 19)) // Read line up to 19 chars long (chars 0-3=0xXX 4th=space or comma, 5th-18th is filename (8.3 format) )
+	if(FILE_ReadLine(f_line, 25)) // Read line up to 23 chars long
 	{
-	   //DEBUG_MSG("Sample no %d, Line is: %s",line_no,f_line);
-	   (void) strncpy(sample_filenames[samp_no],(char *)(f_line+5),13);	// Put name into array of sample names
-	   sample_to_midinote[samp_no]=(int)strtol((char *)(f_line+2),NULL,16); // Convert hex string values to a real number
-	   DEBUG_MSG("Sample no %d, filename is: %s, midi note value=0x%x",samp_no,sample_filenames[samp_no],sample_to_midinote[samp_no]);
+	   //DEBUG_MSG("Sample no %d, Line is: %s",samp_no,f_line);
+	   sample_to_midinote[samp_no]=(int)strtol((char *)(f_line+2),NULL,16); // Convert hex string values to a real number (pos 2 on line, base 16)
+	   hold_sample[samp_no]=(int)strtol((char *)(f_line+5),NULL,10); // Convert sample hold digit
+	   sample_decval[samp_no]=(int)strtol((char *)(f_line+7),NULL,10); // Convert decay number (pos 5 on line, base 10)
+	   if(sample_decval[samp_no]>0) { no_decay=0; }	// At least one of the samples requires decay processing
+	   (void) strncpy(sample_filenames[samp_no],(char *)(f_line+12),12);	// Put name into array of sample names (pos 10 on line), up to 12 chars (8.3)   
+	   DEBUG_MSG("Sample no %d, filename is: %s, midi note value=0x%x, decay value %d, hold=%d",samp_no,sample_filenames[samp_no],sample_to_midinote[samp_no],sample_decval[samp_no],hold_sample[samp_no]);
 	   no_samples_loaded++;	// increment global number of samples we will read in and scan for in play
 	}
    }
@@ -277,18 +285,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 				{
 				 if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
 					{
-#if HOLD_SAMPLE
-					  // if sample already on: restart it
-					  if( sample_on[samp_no] ) {
-					    sample_on[samp_no]=1;
-						sample_vel[samp_no]=velocity_curve[midi_package.velocity]; 
-					  }
-#endif
-						if(!sample_on[samp_no]) 
-						{ 
-						 sample_on[samp_no]=1; 
+						 sample_on[samp_no]=-1; 	// Retrigger the sample
 						 sample_vel[samp_no]=velocity_curve[midi_package.velocity]; 
-}							// Mark it as want to play unless it's already on
+							// Mark it as want to play unless it's already on
 					//DEBUG_MSG("Turning sample %d on , midi note %x hex",samp_no,midi_package.note);
 					}
 				}
@@ -296,16 +295,22 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	}
 	else	// We have a note off
 	{
-#if !HOLD_SAMPLE
-			for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
+		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
 		{
-		 if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
+			if (!hold_sample[samp_no])	// if not holding sample, turn the note off, otherwise do nothing
 			{
-				sample_on[samp_no]=0;							// Mark it as off
-				//DEBUG_MSG("Turning sample %d off, midi note %x hex",samp_no,midi_package.note);
+				if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
+				{
+					if(no_decay || sample_decval[samp_no]==0) { sample_on[samp_no]=0; }		// Turn off immediately if no decay for bank or this sample
+					else
+					{
+						sample_on[samp_no]=sample_decval[samp_no];							// Mark it as decaying with the appropriate time for this sample
+						sample_decay[samp_no]=1+sample_vel[samp_no]/((sample_decval[samp_no]>>3)+1);		// Amount to decay by each 8th time around the DMA routine (big = fast decay)
+					}
+					//DEBUG_MSG("Turning sample %d off, midi note %x hex",samp_no,midi_package.note);
+				}
 			}
 		}
-#endif
 	}
   }
   else
@@ -389,18 +394,51 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 	{
 		if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
 			{
-			 if(sample_on[samp_no])	// We want to play this voice (either newly triggered =1 or continue playing =2)
+			 if(sample_on[samp_no]<0)	// We want to play this voice (either newly triggered =1 or continue playing =2)
 				{
 					voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-					voice_velocity[voice_no]=(s16)sample_vel[samp_no];	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
+					voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
 					voice_no++;							// And increment number of voices in use
-					if(sample_on[samp_no]==1)					// Newly triggered sample (set to 1 by midi receive routine)
+					if(sample_on[samp_no]==-1)					// Newly triggered sample (set to -1 by midi receive routine)
 					{
 					 samplefile_pos[samp_no]=0;	// Mark at position zero (used for sector reads and EOF calculations)
-					 sample_on[samp_no]=2;		// Mark as on and don't retrigger on next loop
+					 sample_on[samp_no]=-2;		// Mark as on and don't retrigger on next loop
 					 }
 				}
+			
 			}
+			else
+			{ break; }		// stop looking if we're full!
+	}
+
+	if(!no_decay || voice_no<POLYPHONY)	// Only process decaying notes if decay is enabled or we have any voices left
+	{
+		// now new notes allocated, fill up any remaining voices with decaying ones
+		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
+		{
+			if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
+				{
+					if(sample_on[samp_no]>0)	// positive number = decaying
+					{
+						voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
+						voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);					
+						voice_no++;							// And increment number of voices in use				
+						sample_on[samp_no]--;				// Decrement decay time
+						if(sample_on[samp_no]<0) { sample_vel[samp_no]=0; sample_on[samp_no]=0;}	// If finished decaying mark as off
+						else
+						{
+							if((sample_on[samp_no]%8)==0) { 
+								sample_vel[samp_no]-=sample_decay[samp_no];		// decrement volume by appropriate amount 
+								//DEBUG_MSG("vel is %d, sample on is %d, sample_decay is %d",sample_vel[samp_no],sample_on[samp_no],sample_decay[samp_no]);
+							   }
+						}
+						if(sample_vel[samp_no]<=0) { sample_vel[samp_no]=0; sample_on[samp_no]=0; }
+					}
+				
+				}
+				else
+				{ break;}	// stop looking if we're full
+		}
 	}
 
 	// Here we have voice_no samples to play simultaneously, and the samples contained in voice_samples array
@@ -409,13 +447,17 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 	{
 		for(voice=0;voice<voice_no;voice++) 	// read up to SAMPLE_BUFFER_SIZE characters into buffer for each voice
 		{
-			SAMP_FILE_read(samplebyte_buf[voice],SAMPLE_BUFFER_SIZE,voice_samples[voice]); 	// Read in the appropriate number of sectors for each sample thats on
-
+			if(SAMP_FILE_read(samplebyte_buf[voice],SAMPLE_BUFFER_SIZE,voice_samples[voice])<0) // Read in the appropriate number of sectors for each sample thats on
+			{	// if <0 then there was an error reading, so turn this sample off and mute it
+			 sample_on[voice_samples[voice]]=0; // Turn sample off
+			 voice_velocity[voice]=0;
+			}
+			
 			samplefile_pos[voice_samples[voice]]+=SAMPLE_BUFFER_SIZE;	// Move along the file position by the read buffer size
 			if(samplefile_pos[voice_samples[voice]] >= samplefile_len[voice_samples[voice]]) // We've reached EOF - don't play this sample next time and also free up the voice
 			{ 
-				sample_on[voice_samples[voice]]=0; 
-				// DEBUG_MSG("Reached EOF on sample %d",voice_samples[voice]);
+				sample_on[voice_samples[voice]]=0; // Turn sample off
+				//DEBUG_MSG("Reached EOF on sample %d",voice_samples[voice]);
 			}
 			 ms_so_far= MIOS32_STOPWATCH_ValueGet();	// Check how long we've been in the routine up until this point
 			if(ms_so_far>MAX_TIME_IN_DMA)				
