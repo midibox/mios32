@@ -22,6 +22,12 @@
 #include <file.h>
 #include <string.h>
 
+// Task stuff - the bank switch scanning is lower priority than the voice processing
+#define PRIORITY_VOICE_TASK	( tskIDLE_PRIORITY + 3 )
+#define PRIORITY_BANKSWITCH_TASK	( tskIDLE_PRIORITY + 2 )
+static void TASK_VOICE_SCAN(void *pvParameters);
+static void TASK_BANKSWITCH_SCAN(void *pvParameters);
+
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -59,6 +65,11 @@
 
 // All filenames are supported in 8.3 format
 
+static  u8 voice_no=0;	// used to count number of voices to play
+static  u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
+static  s16 voice_velocity[POLYPHONY];	// Store the velocity for each sample
+
+
 char bankprefix[13]="bank.";	// Default sample bank filename prefix on the SD card, needs to have Unix style line feeds
 static file_t bank_fileinfo;	// Create the file descriptor for bank file
 
@@ -79,7 +90,7 @@ static file_t samplefile_fileinfo[NUM_SAMPLES_TO_OPEN];	// Create the right numb
 static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for each voice
 static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];	// Array of sample cluster positions on SD card
 
-u8 sample_bank_no=1;	// The sample bank number being played
+static u8 sample_bank_no=1;	// The sample bank number being played
 
 volatile u8 print_msg;
 
@@ -122,7 +133,7 @@ s32 SAMP_FILE_open(u8 sample_n, char fname[])
 // reads <len> bytes from the .mid file into <buffer>
 // returns number of read bytes
 /////////////////////////////////////////////////////////////////////////////
-u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
+int SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
 {
   // determine sector based on sample position
   u32 pos = samplefile_pos[sample_n];
@@ -131,6 +142,7 @@ u32 SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
   u32 cluster_ix = sector_ix / sectors_per_cluster;
   if( cluster_ix >= CLUSTER_CACHE_SIZE )
     return -1;
+
   u32 cluster = sample_cluster_cache[sample_n][cluster_ix];
   u32 phys_sector = FILE_VolumeCluster2Sector(cluster) + (sector_ix % sectors_per_cluster);
   if( MIOS32_SDCARD_SectorRead(phys_sector, buffer) < 0 )
@@ -268,6 +280,10 @@ void APP_Init(void)
   DEBUG_MSG("Synth init done."); 
 
   MIOS32_STOPWATCH_Init(100);		// Use stopwatch in 100uS accuracy
+  
+  // Start tasks for voice processing and bank switch scanning
+  xTaskCreate(TASK_VOICE_SCAN, (signed portCHAR *)"VOICE_SCAN", configMINIMAL_STACK_SIZE, NULL, PRIORITY_VOICE_TASK, NULL);
+  xTaskCreate(TASK_BANKSWITCH_SCAN, (signed portCHAR *)"BANKSWITCH_SCAN", configMINIMAL_STACK_SIZE, NULL, PRIORITY_BANKSWITCH_TASK, NULL);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -317,18 +333,6 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   {
   // DEBUG_MSG("Other MIDI message received... ignoring.");
   }
-
-#if LEE_HW
-// After processing MIDI event, now check for bank switch change  
-u8 this_bank=Read_Switch();	// Get bank value
-if(this_bank==sample_bank_no) { return; } // Nothing happened as same as global var
-sample_bank_no=this_bank;	// Set new bank
-DEBUG_MSG("Changing bank to %d",sample_bank_no);
-sdcard_access_allowed=0;
-DEBUG_MSG("Opening new sample bank");
-Open_Bank(sample_bank_no);	// Load relevant bank
-sdcard_access_allowed=1;
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -376,70 +380,15 @@ void SYNTH_ReloadSampleBuffer(u32 state)
   // Each call of this routine will need to read in SAMPLE_BUFFER_SIZE/2 samples, each of which requires 16 bits
   // Therefore for mono samples, we'll need to read in SAMPLE_BUFFER_SIZE bytes
 
- 
+  u8 voice;
+
   s16 OutWavs16;	// 16 bit output to DAC
   s32 OutWavs32;	// 32 bit accumulator to mix samples into
-  u8 samp_no;
-  u8 voice;
-  u8 voice_no=0;	// used to count number of voices to play
-  u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
-  s16 voice_velocity[POLYPHONY];	// Store the velocity for each sample
   u32 ms_so_far;		// used to measure time of DMA routine
 
   MIOS32_STOPWATCH_Reset();			// Reset the stopwatch at start of DMA routine
   MIOS32_BOARD_LED_Set(0x1, 0x1);	// Turn on LED at start of DMA routine
   
-	// Work out which voices need to play which sample, this has lowest sample number priority
-	for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
-	{
-		if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
-			{
-			 if(sample_on[samp_no]<0)	// We want to play this voice (either newly triggered =1 or continue playing =2)
-				{
-					voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-					voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
-					voice_no++;							// And increment number of voices in use
-					if(sample_on[samp_no]==-1)					// Newly triggered sample (set to -1 by midi receive routine)
-					{
-					 samplefile_pos[samp_no]=0;	// Mark at position zero (used for sector reads and EOF calculations)
-					 sample_on[samp_no]=-2;		// Mark as on and don't retrigger on next loop
-					 }
-				}
-			
-			}
-			else
-			{ break; }		// stop looking if we're full!
-	}
-
-	if(!no_decay || voice_no<POLYPHONY)	// Only process decaying notes if decay is enabled or we have any voices left
-	{
-		// now new notes allocated, fill up any remaining voices with decaying ones
-		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
-		{
-			if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
-				{
-					if(sample_on[samp_no]>0)	// positive number = decaying
-					{
-						voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-						voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);					
-						voice_no++;							// And increment number of voices in use				
-						sample_on[samp_no]--;				// Decrement decay time
-						if(sample_on[samp_no]<0) { sample_vel[samp_no]=0; sample_on[samp_no]=0;}	// If finished decaying mark as off
-						else
-						{
-							if((sample_on[samp_no]%8)==0) { 
-								sample_vel[samp_no]-=sample_decay[samp_no];		// decrement volume by appropriate amount 
-								//DEBUG_MSG("vel is %d, sample on is %d, sample_decay is %d",sample_vel[samp_no],sample_on[samp_no],sample_decay[samp_no]);
-							   }
-						}
-						if(sample_vel[samp_no]<=0) { sample_vel[samp_no]=0; sample_on[samp_no]=0; }
-					}
-				
-				}
-				else
-				{ break;}	// stop looking if we're full
-		}
-	}
 
 	// Here we have voice_no samples to play simultaneously, and the samples contained in voice_samples array
 
@@ -450,7 +399,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 			if(SAMP_FILE_read(samplebyte_buf[voice],SAMPLE_BUFFER_SIZE,voice_samples[voice])<0) // Read in the appropriate number of sectors for each sample thats on
 			{	// if <0 then there was an error reading, so turn this sample off and mute it
 			 sample_on[voice_samples[voice]]=0; // Turn sample off
-			 voice_velocity[voice]=0;
+			 voice_velocity[voice]=0;			// Silence it in the mix as we don't have a complete buffer
 			}
 			
 			samplefile_pos[voice_samples[voice]]+=SAMPLE_BUFFER_SIZE;	// Move along the file position by the read buffer size
@@ -495,7 +444,7 @@ void SYNTH_ReloadSampleBuffer(u32 state)
 
 	 MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED at end of DMA routine
 	//ms_so_far= MIOS32_STOPWATCH_ValueGet();	// Check how long we've been in the routine up until this point
-	//DEBUG_MSG("DMA fill done after %d.%d ms, %d voices",ms_so_far/10,ms_so_far%10,voice_no);
+	//DEBUG_MSG("%d.%d ms,%d.%d ms,%d.%d ms, %d voices",ms2_so_far/10,ms2_so_far%10,ms3_so_far/10,ms3_so_far%10,ms_so_far/10,ms_so_far%10,voice_no);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -528,4 +477,105 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+static void TASK_VOICE_SCAN(void *pvParameters)
+{
+  u8 samp_no;
+
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) 
+  {
+    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);		// Run this every 1 ms, this WILL be interrupted every now and again by the DMA fill interrupt
+
+		// toggle Status LED to as a sign of live
+		//MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+
+		voice_no=0;
+		
+		// Work out which voices need to play which sample, this has lowest sample number priority
+		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
+		{
+			if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
+				{
+				 if(sample_on[samp_no]<0)	// We want to play this voice (either newly triggered =1 or continue playing =2)
+					{
+						voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
+						voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
+						voice_no++;							// And increment number of voices in use
+						if(sample_on[samp_no]==-1)					// Newly triggered sample (set to -1 by midi receive routine)
+						{
+						 samplefile_pos[samp_no]=0;	// Mark at position zero (used for sector reads and EOF calculations)
+						 sample_on[samp_no]=-2;		// Mark as on and don't retrigger on next loop
+						 }
+					}
+				
+				}
+				else
+				{ break; }		// stop looking if we're full!
+		}
+
+		if(!no_decay || voice_no<POLYPHONY)	// Only process decaying notes if decay is enabled or we have any voices left
+		{
+			// now new notes allocated, fill up any remaining voices with decaying ones
+			for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
+			{
+				if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
+					{
+					if(sample_on[samp_no]>0)	// positive number = decaying
+						{
+							voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
+							voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);					
+							voice_no++;							// And increment number of voices in use				
+							sample_on[samp_no]--;				// Decrement decay time
+							if(sample_on[samp_no]<0) { sample_vel[samp_no]=0; sample_on[samp_no]=0;}	// If finished decaying mark as off
+							else
+							{
+								if((sample_on[samp_no]%8)==0) { 
+									sample_vel[samp_no]-=sample_decay[samp_no];		// decrement volume by appropriate amount 
+									//DEBUG_MSG("vel is %d, sample on is %d, sample_decay is %d",sample_vel[samp_no],sample_on[samp_no],sample_decay[samp_no]);
+								   }
+							}
+							if(sample_vel[samp_no]<=0) { sample_vel[samp_no]=0; sample_on[samp_no]=0; }
+						}
+					
+					}
+					else
+					{ break;}	// stop looking if we're full
+			}
+		}
+
+	
+	}
+}
+
+static void TASK_BANKSWITCH_SCAN(void *pvParameters)
+{
+ u8 this_bank;
+  portTickType xLastExecutionTime;
+
+  // Initialise the xLastExecutionTime variable on task entry
+  xLastExecutionTime = xTaskGetTickCount();
+
+  while( 1 ) 
+  {
+	vTaskDelayUntil(&xLastExecutionTime, 500 / portTICK_RATE_MS); // Run this every 0.5s, this WILL be interrupted every now and again by the DMA fill interrupt
+	#if LEE_HW
+	// Now check for bank switch change  
+	this_bank=Read_Switch();	// Get bank value
+	if(this_bank!=sample_bank_no) { 
+		sample_bank_no=this_bank;	// Set new bank
+		DEBUG_MSG("Changing bank to %d",sample_bank_no);
+		sdcard_access_allowed=0;
+		DEBUG_MSG("Opening new sample bank");
+		Open_Bank(sample_bank_no);	// Load relevant bank
+		sdcard_access_allowed=1;
+	}
+	#endif
+	  
+  }
 }
