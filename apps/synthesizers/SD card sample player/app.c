@@ -482,7 +482,8 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 static void TASK_VOICE_SCAN(void *pvParameters)
 {
   u8 samp_no;
-
+  u8 new_voice_no;
+  
   portTickType xLastExecutionTime;
 
   // Initialise the xLastExecutionTime variable on task entry
@@ -495,18 +496,18 @@ static void TASK_VOICE_SCAN(void *pvParameters)
 		// toggle Status LED to as a sign of live
 		//MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
 
-		voice_no=0;
+		new_voice_no=0;
 		
 		// Work out which voices need to play which sample, this has lowest sample number priority
 		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
 		{
-			if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
+			if(new_voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
 				{
 				 if(sample_on[samp_no]<0)	// We want to play this voice (either newly triggered =1 or continue playing =2)
 					{
-						voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-						voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
-						voice_no++;							// And increment number of voices in use
+						voice_samples[new_voice_no]=samp_no;	// Assign the next available voice to this sample number
+						voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
+						new_voice_no++;							// And increment number of voices in use
 						if(sample_on[samp_no]==-1)					// Newly triggered sample (set to -1 by midi receive routine)
 						{
 						 samplefile_pos[samp_no]=0;	// Mark at position zero (used for sector reads and EOF calculations)
@@ -519,18 +520,18 @@ static void TASK_VOICE_SCAN(void *pvParameters)
 				{ break; }		// stop looking if we're full!
 		}
 
-		if(!no_decay || voice_no<POLYPHONY)	// Only process decaying notes if decay is enabled or we have any voices left
+		if(!no_decay || new_voice_no<POLYPHONY)	// Only process decaying notes if decay is enabled or we have any voices left
 		{
 			// now new notes allocated, fill up any remaining voices with decaying ones
 			for(samp_no=0;samp_no<no_samples_loaded;samp_no++)
 			{
-				if(voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
+				if(new_voice_no<POLYPHONY)	// As long as not already at max voices, otherwise don't trigger/play
 					{
 					if(sample_on[samp_no]>0)	// positive number = decaying
 						{
-							voice_samples[voice_no]=samp_no;	// Assign the next available voice to this sample number
-							voice_velocity[voice_no]=(s16)(sample_vel[samp_no]);					
-							voice_no++;							// And increment number of voices in use				
+							voice_samples[new_voice_no]=samp_no;	// Assign the next available voice to this sample number
+							voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]);					
+							new_voice_no++;							// And increment number of voices in use				
 							sample_on[samp_no]--;				// Decrement decay time
 							if(sample_on[samp_no]<0) { sample_vel[samp_no]=0; sample_on[samp_no]=0;}	// If finished decaying mark as off
 							else
@@ -549,6 +550,7 @@ static void TASK_VOICE_SCAN(void *pvParameters)
 			}
 		}
 
+	voice_no=new_voice_no;	// Set the global voice count now we're done
 	
 	}
 }
