@@ -912,8 +912,8 @@ static BOOL HandleCustomRequest(TSetupPacket *pSetup, int *piLen, U8 **ppbData)
       char *product_str_user = (char *)MIOS32_SYS_ADDR_USB_DEV_NAME;
       int j;
       u8 valid_str = 1;
-      for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN && valid_str; ++j) {
-	if( product_str_user[j] != 0x00 && (product_str_user[j] < 0x20 || product_str_user[j] >= 0x80) )
+      for(j=0, len=0; j<MIOS32_SYS_USB_DEV_NAME_LEN && valid_str && product_str_user[j]; ++j, ++len) {
+	if( product_str_user[j] < 0x20 || product_str_user[j] >= 0x80 )
 	  valid_str = 0;
       }
       if( valid_str && len )
