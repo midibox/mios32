@@ -50,7 +50,7 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters);
 #define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = max sample file length of 1 MB !!!
 
 // set to enable scanning of Lee's temporary bank switch on J10
-#define LEE_HW 1
+#define LEE_HW 0
 
 // set to 1 to perform right channel inversion for PCM1725 DAC
 #define DAC_FIX 0
@@ -91,6 +91,7 @@ static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for 
 static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];	// Array of sample cluster positions on SD card
 
 static u8 sample_bank_no=1;	// The sample bank number being played
+static u8 damper_pedal=0;	// Damper pedal on channel 1
 
 volatile u8 print_msg;
 
@@ -313,7 +314,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	{
 		for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// go through array looking for mapped notes
 		{
-			if (!hold_sample[samp_no])	// if not holding sample, turn the note off, otherwise do nothing
+			if (!hold_sample[samp_no] && !damper_pedal)	// if not holding sample or damper pedal not pressed, turn the note off, otherwise do nothing
 			{
 				if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
 				{
@@ -329,9 +330,18 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 		}
 	}
   }
+  else if (midi_package.chn==Chn1 && midi_package.type==ProgramChange)
+    {
+		sample_bank_no=midi_package.evnt1;	// Set new bank
+		DEBUG_MSG("MIDI Program Change received - Changing bank to %d",sample_bank_no);
+		sdcard_access_allowed=0;
+		DEBUG_MSG("Opening new sample bank");
+		Open_Bank(sample_bank_no);	// Load relevant bank
+		sdcard_access_allowed=1;
+	}
   else
   {
-  // DEBUG_MSG("Other MIDI message received... ignoring.");
+  //DEBUG_MSG("Other MIDI message received, channel %d, event %X, type %X, cc number %d, value %d... ignoring.",midi_package.chn,midi_package.event,midi_package.type,midi_package.cc_number,midi_package.value);
   }
 }
 
