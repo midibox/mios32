@@ -49,11 +49,11 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters);
 // Now mandatory to have this set as legacy read code removed
 #define CLUSTER_CACHE_SIZE 32 // typically for 32 * 64*512 bytes = max sample file length of 1 MB !!!
 
-// set to enable scanning of Lee's temporary bank switch on J10
-#define LEE_HW 0
-
 // set to 1 to perform right channel inversion for PCM1725 DAC
 #define DAC_FIX 0
+
+// name of config file on SD card to read
+#define CONFIG_FNAME "player.cfg"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -65,10 +65,12 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters);
 
 // All filenames are supported in 8.3 format
 
+u8 lee_hw=0; // set to enable scanning of Lee's temporary bank switch on J10
+u8 midichannel=1;	// MIDI channel to respond to
+
 static  u8 voice_no=0;	// used to count number of voices to play
 static  u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
 static  s16 voice_velocity[POLYPHONY];	// Store the velocity for each sample
-
 
 char bankprefix[13]="bank.";	// Default sample bank filename prefix on the SD card, needs to have Unix style line feeds
 static file_t bank_fileinfo;	// Create the file descriptor for bank file
@@ -224,7 +226,6 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
    MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED after bank load
 }
 
-#if LEE_HW
 u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as input with pullups, then read bank number (1,2,3,4) based on which of D0, D1 or D2 low
 {
 	 u8 pin_no;
@@ -241,7 +242,31 @@ u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as in
 	 if(bank_val==6) { return 2; }	 
 	 return 1;		// default to bank 1
  }
-#endif
+
+void Read_Config()	// Open the config file on the SD card and (re)set various settings for the player
+{
+  u8 f_line[25];					// parameter and value space separated
+  char *param_name, *param_value;	//
+  static file_t config_fileinfo;	// Create the file descriptor for config file
+  
+  DEBUG_MSG("Opening config file %s",CONFIG_FNAME);
+  if(FILE_ReadOpen(&config_fileinfo, CONFIG_FNAME)<0) { DEBUG_MSG("Failed to open config file."); return; }
+  
+  while(1)	// keep going until we get an EOF
+  {
+	if(FILE_ReadLine(f_line, 25)) // Read line up to 24 chars long
+	{
+	   //DEBUG_MSG("Config Line is: %s",f_line);
+	   param_name=strtok((char *)f_line, " ");	// find param name up to the space
+	   param_value=strtok(NULL,"\n");	// find value
+	   DEBUG_MSG("Found param %s and value %s",param_name,param_value);
+	   if(!strcmp(param_name,"lee_hw")) { lee_hw=(int)strtol((char *)(param_value),NULL,10); } // Set lee_hw param
+	   if(!strcmp(param_name,"midichannel")) { midichannel=((int)strtol((char *)(param_value),NULL,10)-1); } // Set midichannel (midi receive routines need -1 from decimal value)
+	}
+	else { break; }	// Hit EOF
+   }
+  FILE_ReadClose(&config_fileinfo);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -261,14 +286,18 @@ void APP_Init(void)
   if(FILE_Init(0)<0) { DEBUG_MSG("Error initialising SD card"); } // initialise SD card
 
   //s32 status=FILE_PrintSDCardInfos();	// Print SD card info
+
+  // Read config file from SD card
+  Read_Config();
   
   // Open bank file
 
-#if LEE_HW
-  DEBUG_MSG("Reading J10 switch");
-  sample_bank_no=Read_Switch();	// For Lee's temporary bank physical switch on J10 - read first bank to load on boot
-#endif
-
+  if (lee_hw)	// If we have non standard bank switch connected
+  {
+	  DEBUG_MSG("Reading J10 switch");
+	  sample_bank_no=Read_Switch();	// For Lee's temporary bank physical switch on J10 - read first bank to load on boot
+  }
+  
   Open_Bank(sample_bank_no);	// Open default bank on boot (1 if Lee's switch not read)
  
   DEBUG_MSG("Initialising synth..."); 
@@ -294,7 +323,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 {
   u8 samp_no;
 
-  if( midi_package.chn == Chn1 && (midi_package.type == NoteOn || midi_package.type == NoteOff) )	// Only interested in note on/off on chn1
+  if( midi_package.chn == midichannel && (midi_package.type == NoteOn || midi_package.type == NoteOff) )	// Only interested in note on/off on chn1
   {
 	if( midi_package.event == NoteOn && midi_package.velocity > 0 )
 	{
@@ -330,7 +359,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 		}
 	}
   }
-  else if (midi_package.chn==Chn1 && midi_package.type==ProgramChange)
+  else if (midi_package.chn==midichannel && midi_package.type==ProgramChange)
     {
 		sample_bank_no=midi_package.evnt1;	// Set new bank
 		DEBUG_MSG("MIDI Program Change received - Changing bank to %d",sample_bank_no);
@@ -576,18 +605,18 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters)
   while( 1 ) 
   {
 	vTaskDelayUntil(&xLastExecutionTime, 500 / portTICK_RATE_MS); // Run this every 0.5s, this WILL be interrupted every now and again by the DMA fill interrupt
-	#if LEE_HW
-	// Now check for bank switch change  
-	this_bank=Read_Switch();	// Get bank value
-	if(this_bank!=sample_bank_no) { 
-		sample_bank_no=this_bank;	// Set new bank
-		DEBUG_MSG("Changing bank to %d",sample_bank_no);
-		sdcard_access_allowed=0;
-		DEBUG_MSG("Opening new sample bank");
-		Open_Bank(sample_bank_no);	// Load relevant bank
-		sdcard_access_allowed=1;
+	if(lee_hw)	// non standard bank switch connected and enabled in config file
+	{	
+			// Now check for bank switch change  
+			this_bank=Read_Switch();	// Get bank value
+			if(this_bank!=sample_bank_no) { 
+				sample_bank_no=this_bank;	// Set new bank
+				DEBUG_MSG("Changing bank to %d",sample_bank_no);
+				sdcard_access_allowed=0;
+				DEBUG_MSG("Opening new sample bank");
+				Open_Bank(sample_bank_no);	// Load relevant bank
+				sdcard_access_allowed=1;
+			}
 	}
-	#endif
-	  
   }
 }
