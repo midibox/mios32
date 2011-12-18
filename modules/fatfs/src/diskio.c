@@ -240,8 +240,8 @@ DRESULT disk_ioctl (
 
 /*-----------------------------------------------------------------------*/
 /* TK: temporary implemented here                                        */
-
-DWORD get_fattime(void)
+/* can be overruled from external source since it's declared as weak     */
+DWORD __attribute__ ((weak)) get_fattime(void)
 {
   /* 31-25: Year(0-127 org.1980), 24-21: Month(1-12), 20-16: Day(1-31) */
   /* 15-11: Hour(0-23), 10-5: Minute(0-59), 4-0: Second(0-29 *2) */
