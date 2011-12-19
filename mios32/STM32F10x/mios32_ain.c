@@ -13,7 +13,7 @@
 //! After the scan is completed, the DMA channel interrupt will be invoked
 //! to calculate the final (optionally oversampled) values, and to transfer 
 //! them into the ain_pin_values[] array if the value change is greater than 
-//! the defined MIOS32_AIN_DEADBAND.
+//! the defined MIOS32_AIN_DEADBAND (can be changed with MIOS32_AIN_DeadbandSet() during runtime)
 //!
 //! Value changes (within the deadband) will be notified to the MIOS32_AIN_Handler().
 //! This function isn't called directly by the application, but it's part 
@@ -98,6 +98,8 @@ static u16 adc_conversion_values[NUM_CHANNELS_MAX] __attribute__((aligned(4)));
 static u16 adc_conversion_values_sum[NUM_CHANNELS_MAX] __attribute__((aligned(4)));
 #endif
 
+static u8 ain_deadband = MIOS32_AIN_DEADBAND;
+
 static u8  num_used_channels;
 static u8  num_channels;
 
@@ -169,6 +171,8 @@ s32 MIOS32_AIN_Init(u32 mode)
   return -1; // no AIN pins selected
 #else
   int i;
+
+  ain_deadband = MIOS32_AIN_DEADBAND;
 
   // disable service prepare callback function
   service_prepare_callback = NULL;
@@ -381,6 +385,36 @@ s32 MIOS32_AIN_PinGet(u32 pin)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \return the deadband which is used to notify changes
+//! \return < 0 on error
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_AIN_DeadbandGet(void)
+{
+#if !MIOS32_AIN_CHANNEL_MASK
+  return -1; // no analog input selected
+#else
+  return ain_deadband;
+#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the difference between last and current pot value which has to
+//! be achieved to trigger the callback function passed to AINSER_Handler()
+//! \return < 0 on error
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_AIN_DeadbandSet(u8 deadband)
+{
+#if !MIOS32_AIN_CHANNEL_MASK
+  return -1; // no analog input selected
+#else
+  ain_deadband = deadband;
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Checks for pin changes, and calls given callback function with following parameters on pin changes:
 //! \code
 //!   void AIN_NotifyChanged(u32 pin, u16 value)
@@ -491,7 +525,7 @@ void DMA1_Channel1_IRQHandler(void)
 
     for(i=0; i<num_channels; ++i) {
 #if MIOS32_AIN_DEADBAND_IDLE
-      u16 deadband = *idle_ctr_ptr ? (MIOS32_AIN_DEADBAND) : (MIOS32_AIN_DEADBAND_IDLE);
+      u16 deadband = *idle_ctr_ptr ? (ain_deadband) : (MIOS32_AIN_DEADBAND_IDLE);
 #else
       u16 deadband = MIOS32_AIN_DEADBAND;
 #endif
