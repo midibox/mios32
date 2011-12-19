@@ -15,7 +15,7 @@ Required tools:
 Required hardware:
    o MBHP_CORE_STM32 or MBHP_CORE_LPC17
    o one or two MBHP_AIN modules
-   o up to 64 10k pots (alternatively 1k or 4.7k)
+   o up to 64 1k pots (alternatively 4.7k or 10k)
 
 ===============================================================================
 
