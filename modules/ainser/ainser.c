@@ -213,8 +213,8 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
       MIOS32_SPI_TransferByte(AINSER_SPI, 0x06 | (chn>>2));
       // shift in remaining 2 bits of channel selection, shift out MSBs of conversion value
       u8 b1 = MIOS32_SPI_TransferByte(AINSER_SPI, chn << 6);
-      // shift in mux_ctr to 74HC595, shift out LSBs of conversion value
-      u8 b2 = MIOS32_SPI_TransferByte(AINSER_SPI, (chn == 7 ? next_mux_ctr : mux_ctr) << 5);
+      // shift in mux_ctr + "Link LED" status to 74HC595, shift out LSBs of conversion value
+      u8 b2 = MIOS32_SPI_TransferByte(AINSER_SPI, ((chn == 7 ? next_mux_ctr : mux_ctr) << 5) | 1);
 
       // CS=1 (the rising edge will update the 74HC595)
       AINSER_SetCs(module, 1);
