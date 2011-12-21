@@ -21,8 +21,10 @@
 #define MIOS32_SDCARD_SPI_PRESCALER MIOS32_SPI_PRESCALER_4
 
 #if defined(MIOS32_FAMILY_STM32F10x)
-// I2S device connected to J8 (-> SPI1), therefore we have to use SPI0 (-> J16) for SRIO chain
-# define MIOS32_SRIO_SPI 0
+// I2S device connected to J8 (-> SPI1), therefore we have to disable SRIO!
+// DIN/DOUT won't be available for this board
+// there is no suitable alternative port available, e.g. J16 used for SD Card
+#define MIOS32_DONT_USE_SRIO 1
 #endif
 
 // avoid disk_read in FILE_ReadReOpen

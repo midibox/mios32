@@ -281,9 +281,18 @@ void APP_Init(void)
   DEBUG_MSG(MIOS32_LCD_BOOT_MSG_LINE1);
   DEBUG_MSG(MIOS32_LCD_BOOT_MSG_LINE2);  
   DEBUG_MSG("Initialising SD card..");
-  MIOS32_SDCARD_PowerOn();
   
   if(FILE_Init(0)<0) { DEBUG_MSG("Error initialising SD card"); } // initialise SD card
+
+  // wait until SD Card available
+  int timeout_ctr;
+  for(timeout_ctr=0; timeout_ctr<1000; ++timeout_ctr)
+    if( MIOS32_SDCARD_CheckAvailable(0) >= 1 )
+      break;
+
+  if( timeout_ctr == 1000 ) {
+    DEBUG_MSG("SD Card error: connection failed!");
+  }
 
   //s32 status=FILE_PrintSDCardInfos();	// Print SD card info
 
