@@ -322,6 +322,22 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
   // read byte from FIFO
   u8 b = u->RBR;
 
+  // notify MIDI Rx Callback
+  switch( uart ) {
+#if MIOS32_UART0_ASSIGNMENT == 1
+  case 0: MIOS32_MIDI_SendByteToRxCallback(UART0, b); break;
+#endif
+#if MIOS32_UART0_ASSIGNMENT == 1
+  case 1: MIOS32_MIDI_SendByteToRxCallback(UART1, b); break;
+#endif
+#if MIOS32_UART0_ASSIGNMENT == 1
+  case 2: MIOS32_MIDI_SendByteToRxCallback(UART2, b); break;
+#endif
+#if MIOS32_UART0_ASSIGNMENT == 1
+  case 3: MIOS32_MIDI_SendByteToRxCallback(UART3, b); break;
+#endif
+  }
+
   return b; // return received byte
 #endif
 }
