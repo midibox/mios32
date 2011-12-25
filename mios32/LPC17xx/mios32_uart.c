@@ -24,10 +24,8 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_UART)
 
-// using integrated UART FIFOs, no need for SW buffering
-#undef  MIOS32_UART_RX_BUFFER_SIZE
-#define MIOS32_UART_RX_BUFFER_SIZE 16
-
+// RX: buffering incoming events in SW queue (64 bytes by default)
+// TX: using integrated UART FIFOs, no need for SW buffering
 #undef  MIOS32_UART_TX_BUFFER_SIZE
 #define MIOS32_UART_TX_BUFFER_SIZE 16
 
@@ -43,6 +41,8 @@
 // RX MIDI1: P2.1 w/ pull-up enabled
 #define MIOS32_UART0_RX_INIT     { MIOS32_SYS_LPC_PINSEL(2, 1, 2); MIOS32_SYS_LPC_PINMODE(2, 1, 0); }
 #define MIOS32_UART0             LPC_UART1
+#define MIOS32_UART0_IRQ_CHANNEL UART1_IRQn
+#define MIOS32_UART0_IRQHANDLER_FUNC void UART1_IRQHandler(void)
 
 
 // TX MIDI2: P0.0
@@ -50,6 +50,8 @@
 // RX MIDI2: P0.1 w/ pull-up enabled
 #define MIOS32_UART1_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 1, 2); MIOS32_SYS_LPC_PINMODE(0, 1, 0); }
 #define MIOS32_UART1             LPC_UART3
+#define MIOS32_UART1_IRQ_CHANNEL UART3_IRQn
+#define MIOS32_UART1_IRQHANDLER_FUNC void UART3_IRQHandler(void)
 
 
 // TX MIDI3 (optional at J5B.A7): P0.2
@@ -57,6 +59,8 @@
 // RX MIDI3 (optional at J5B.A6): P0.3 w/ pull-up enabled
 #define MIOS32_UART2_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 3, 1); MIOS32_SYS_LPC_PINMODE(0, 3, 0); }
 #define MIOS32_UART2             LPC_UART0
+#define MIOS32_UART2_IRQ_CHANNEL UART0_IRQn
+#define MIOS32_UART2_IRQHANDLER_FUNC void UART0_IRQHandler(void)
 
 
 // TX MIDI4 (optional at J4B.SD): P0.10
@@ -64,6 +68,8 @@
 // RX MIDI3 (optional at J4B.SC): P0.11 w/ pull-up enabled
 #define MIOS32_UART3_RX_INIT     { MIOS32_SYS_LPC_PINSEL(0, 11, 1); MIOS32_SYS_LPC_PINMODE(0, 11, 0); }
 #define MIOS32_UART3             LPC_UART2
+#define MIOS32_UART3_IRQ_CHANNEL UART2_IRQn
+#define MIOS32_UART3_IRQHANDLER_FUNC void UART2_IRQHandler(void)
 
 
 
@@ -86,7 +92,10 @@ static const LPC_UART_TypeDef *uart_base[4] = { (LPC_UART_TypeDef*)MIOS32_UART0,
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
 
-static volatile u8 tx_buffer_size[MIOS32_UART_NUM];
+static u8 rx_buffer[MIOS32_UART_NUM][MIOS32_UART_RX_BUFFER_SIZE];
+static volatile u8 rx_buffer_tail[MIOS32_UART_NUM];
+static volatile u8 rx_buffer_head[MIOS32_UART_NUM];
+static volatile u8 rx_buffer_size[MIOS32_UART_NUM];
 #endif
 
 
@@ -124,10 +133,10 @@ s32 MIOS32_UART_Init(u32 mode)
   MIOS32_UART3_RX_INIT;
 #endif
 
-  // clear size counters
+  // clear buffer counters
   int i;
   for(i=0; i<MIOS32_UART_NUM; ++i) {
-    tx_buffer_size[i] = 0;
+    rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
   }
 
   // UART configuration
@@ -142,6 +151,27 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 #if MIOS32_UART_NUM >=4 && MIOS32_UART3_ASSIGNMENT != 0
   MIOS32_UART_BaudrateSet(3, MIOS32_UART3_BAUDRATE);
+#endif
+
+  // configure and enable UART interrupts
+#if MIOS32_UART0_ASSIGNMENT != 0
+  MIOS32_UART0->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_IRQ_Install(MIOS32_UART0_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
+#endif
+
+#if MIOS32_UART_NUM >= 2 && MIOS32_UART1_ASSIGNMENT != 0
+  MIOS32_UART1->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_IRQ_Install(MIOS32_UART1_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
+#endif
+
+#if MIOS32_UART_NUM >= 3 && MIOS32_UART2_ASSIGNMENT != 0
+  MIOS32_UART2->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_IRQ_Install(MIOS32_UART2_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
+#endif
+
+#if MIOS32_UART_NUM >= 4 && MIOS32_UART2_ASSIGNMENT != 0
+  MIOS32_UART3->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_IRQ_Install(MIOS32_UART3_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
   return 0; // no error
@@ -267,11 +297,8 @@ s32 MIOS32_UART_RxBufferFree(u8 uart)
 #else
   if( uart >= MIOS32_UART_NUM )
     return 0;
-  else {
-    // fake size, since LPC based uart doesn't provide access to the FIFO pointer
-    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-    return (u->LSR & LSR_RDR) ? 0 : MIOS32_UART_RX_BUFFER_SIZE;
-  }
+  else
+    return MIOS32_UART_RX_BUFFER_SIZE - rx_buffer_size[uart];
 #endif
 }
 
@@ -290,11 +317,8 @@ s32 MIOS32_UART_RxBufferUsed(u8 uart)
 #else
   if( uart >= MIOS32_UART_NUM )
     return 0;
-  else {
-    // fake size, since LPC based uart doesn't provide access to the FIFO pointer
-    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-    return (u->LSR & LSR_RDR) ? MIOS32_UART_RX_BUFFER_SIZE : 0;
-  }
+  else
+    return rx_buffer_size[uart];
 #endif
 }
 
@@ -315,28 +339,16 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
-  LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-  if( (u->LSR & LSR_RDR) == 0 )
+  if( !rx_buffer_size[uart] )
     return -2; // nothing new in buffer
 
-  // read byte from FIFO
-  u8 b = u->RBR;
-
-  // notify MIDI Rx Callback
-  switch( uart ) {
-#if MIOS32_UART0_ASSIGNMENT == 1
-  case 0: MIOS32_MIDI_SendByteToRxCallback(UART0, b); break;
-#endif
-#if MIOS32_UART0_ASSIGNMENT == 1
-  case 1: MIOS32_MIDI_SendByteToRxCallback(UART1, b); break;
-#endif
-#if MIOS32_UART0_ASSIGNMENT == 1
-  case 2: MIOS32_MIDI_SendByteToRxCallback(UART2, b); break;
-#endif
-#if MIOS32_UART0_ASSIGNMENT == 1
-  case 3: MIOS32_MIDI_SendByteToRxCallback(UART3, b); break;
-#endif
-  }
+  // get byte - this operation should be atomic!
+  MIOS32_IRQ_Disable();
+  u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
+  if( ++rx_buffer_tail[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
+    rx_buffer_tail[uart] = 0;
+  --rx_buffer_size[uart];
+  MIOS32_IRQ_Enable();
 
   return b; // return received byte
 #endif
@@ -359,12 +371,15 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
-  LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-  if( (u->LSR & LSR_RDR) == 0 )
+  if( !rx_buffer_size[uart] )
     return -2; // nothing new in buffer
 
-  // not supported by LPC based UART
-  return -3;
+  // get byte - this operation should be atomic!
+  MIOS32_IRQ_Disable();
+  u8 b = rx_buffer[uart][rx_buffer_tail[uart]];
+  MIOS32_IRQ_Enable();
+
+  return b; // return received byte
 #endif
 }
 
@@ -380,7 +395,26 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 {
-  return -1; // not applicable
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
+  if( uart >= MIOS32_UART_NUM )
+    return -1; // UART not available
+
+  if( rx_buffer_size[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
+    return -2; // buffer full (retry)
+
+  // copy received byte into receive buffer
+  // this operation should be atomic!
+  MIOS32_IRQ_Disable();
+  rx_buffer[uart][rx_buffer_head[uart]] = b;
+  if( ++rx_buffer_head[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
+    rx_buffer_head[uart] = 0;
+  ++rx_buffer_size[uart];
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+#endif
 }
 
 
@@ -535,5 +569,120 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
 
   return error;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for first UART
+/////////////////////////////////////////////////////////////////////////////
+#if MIOS32_UART_NUM >= 1
+MIOS32_UART0_IRQHANDLER_FUNC
+{
+  u32 iir = MIOS32_UART0->IIR; // IIR will be released with this access
+
+  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+
+    if( (MIOS32_UART0->LSR & LSR_RDR) ) { 
+      u8 b = MIOS32_UART0->RBR;
+
+#if MIOS32_UART2_ASSIGNMENT == 1
+      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART0, b);
+#else
+      s32 status = 0;
+#endif
+
+      // read byte from FIFO and put into SW based ringbuffer
+      if( status == 0 && MIOS32_UART_RxBufferPut(0, b) < 0 ) {
+	// here we could add some error handling
+      }
+    }
+  }
+}
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for second UART
+/////////////////////////////////////////////////////////////////////////////
+#if MIOS32_UART_NUM >= 2
+MIOS32_UART1_IRQHANDLER_FUNC
+{
+  u32 iir = MIOS32_UART1->IIR; // IIR will be released with this access
+
+  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+
+    if( (MIOS32_UART1->LSR & LSR_RDR) ) { 
+      u8 b = MIOS32_UART1->RBR;
+
+#if MIOS32_UART2_ASSIGNMENT == 1
+      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART1, b);
+#else
+      s32 status = 0;
+#endif
+
+      // read byte from FIFO and put into SW based ringbuffer
+      if( status == 0 && MIOS32_UART_RxBufferPut(1, b) < 0 ) {
+	// here we could add some error handling
+      }
+    }
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for third UART
+/////////////////////////////////////////////////////////////////////////////
+#if MIOS32_UART_NUM >= 3
+MIOS32_UART2_IRQHANDLER_FUNC
+{
+  u32 iir = MIOS32_UART2->IIR; // IIR will be released with this access
+
+  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+
+    if( (MIOS32_UART2->LSR & LSR_RDR) ) { 
+      u8 b = MIOS32_UART2->RBR;
+
+#if MIOS32_UART2_ASSIGNMENT == 1
+      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART2, b);
+#else
+      s32 status = 0;
+#endif
+
+      // read byte from FIFO and put into SW based ringbuffer
+      if( status == 0 && MIOS32_UART_RxBufferPut(2, b) < 0 ) {
+	// here we could add some error handling
+      }
+    }
+  }
+}
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Interrupt handler for fourth UART
+/////////////////////////////////////////////////////////////////////////////
+#if MIOS32_UART_NUM >= 4
+MIOS32_UART3_IRQHANDLER_FUNC
+{
+  u32 iir = MIOS32_UART3->IIR; // IIR will be released with this access
+
+  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+
+    if( (MIOS32_UART3->LSR & LSR_RDR) ) { 
+      u8 b = MIOS32_UART3->RBR;
+
+#if MIOS32_UART2_ASSIGNMENT == 1
+      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART3, b);
+#else
+      s32 status = 0;
+#endif
+
+      // read byte from FIFO and put into SW based ringbuffer
+      if( status == 0 && MIOS32_UART_RxBufferPut(3, b) < 0 ) {
+	// here we could add some error handling
+      }
+    }
+  }
+}
+#endif
+
 
 #endif /* MIOS32_DONT_USE_UART */
