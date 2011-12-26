@@ -92,7 +92,14 @@ static const LPC_UART_TypeDef *uart_base[4] = { (LPC_UART_TypeDef*)MIOS32_UART0,
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
 
+// TK: quick fix to ensure that MBSEQV4 can still be compiled: locate rx_buffer in AHB RAM
+// can be optionally disabled if required
+#ifndef MIOS32_DONT_LOCATE_UART_RXBUFFER_IN_AHB_MEMORY
+static u8 __attribute__ ((section (".bss_ahb"))) rx_buffer[MIOS32_UART_NUM][MIOS32_UART_RX_BUFFER_SIZE];
+#else
 static u8 rx_buffer[MIOS32_UART_NUM][MIOS32_UART_RX_BUFFER_SIZE];
+#endif
+
 static volatile u8 rx_buffer_tail[MIOS32_UART_NUM];
 static volatile u8 rx_buffer_head[MIOS32_UART_NUM];
 static volatile u8 rx_buffer_size[MIOS32_UART_NUM];
