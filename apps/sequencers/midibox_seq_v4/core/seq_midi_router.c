@@ -64,6 +64,11 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 {
   u8 node;
 
+  // filter SysEx
+  if( midi_package.cin == 0xf ||
+      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7) )
+    return 0; // no error
+
   mios32_midi_port_t def_port = MIOS32_MIDI_DefaultPortGet();
 
   seq_midi_router_node_t *n = &seq_midi_router_node[0];
@@ -81,7 +86,7 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 	  MUTEX_MIDIOUT_GIVE;
 	}
       } else {
-	if( n->dst_chn >= 17 ) { // SysEx, MIDI Clock, etc... only forwarded if destination channel set to "All"
+	if( n->dst_chn >= 17 ) { // Realtime events, etc... only forwarded if destination channel set to "All"
 	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
 	  MUTEX_MIDIOUT_GIVE;
