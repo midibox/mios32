@@ -788,11 +788,11 @@ static s32 LCD_Handler(u8 high_prio)
       ///////////////////////////////////////////////////////////////////////
       SEQ_LCD_PrintSpaces(1);
       if( ui_selected_item == ITEM_R_NODE && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(2);
+	SEQ_LCD_PrintSpaces(3);
       } else {
-	SEQ_LCD_PrintFormattedString("#%d", selected_router_node+1);
+	SEQ_LCD_PrintFormattedString("#%2d", selected_router_node+1);
       }
-      SEQ_LCD_PrintSpaces(2);
+      SEQ_LCD_PrintSpaces(1);
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_R_SRC_PORT && ui_cursor_flash ) {

@@ -510,9 +510,11 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
 	  // don't send pitchbender if value hasn't changed
-	  if( value >= 0x80 || value == pb_last_value[track] )
-	    break;
-	  pb_last_value[track] = value;
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == pb_last_value[track] )
+	      break;
+	    pb_last_value[track] = value;
+	  }
 
 	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
 	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {

@@ -5,6 +5,20 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.055
+~~~~~~~~~~~~~~~~~
+
+   o LPC17 build: optimized MIDI IN handling
+
+   o LPC17 build: MIDI clock can now be received over MIDI IN1..4
+
+   o SysEx forwarding via MIDI router working (again)
+
+   o MIDI router now supports 16 nodes! (previously only 8)
+
+   o fixed bug in PitchBender Editing mode
+
+
 MIDIboxSEQ V4.054
 ~~~~~~~~~~~~~~~~~
 
