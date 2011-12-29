@@ -265,18 +265,8 @@ s32 APP_LCD_Data(u8 data)
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
     // select LCD depending on current cursor position
-    u8 line = 0;
-    if( mios32_lcd_y >= 3*mios32_lcd_parameters.height )
-      line = 3;
-    else if( mios32_lcd_y >= 2*mios32_lcd_parameters.height )
-      line = 2;
-    else if( mios32_lcd_y >= 1*mios32_lcd_parameters.height )
-      line = 1;
-
-    u8 row = 0;
-    if( mios32_lcd_x >= 1*mios32_lcd_parameters.height )
-      row = 1;
-
+    u8 line = mios32_lcd_y / mios32_lcd_parameters.height;
+    u8 row = mios32_lcd_x / mios32_lcd_parameters.width;
     u8 cs = 2*line + row;
 
     if( cs >= 8 )
@@ -284,7 +274,7 @@ s32 APP_LCD_Data(u8 data)
 
     // chip select and DC
     MIOS32_BOARD_J15_DataSet(~(1 << cs));
-    MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
+    MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control A0
 
     // send data
     MIOS32_BOARD_J15_SerDataShift(data);
@@ -393,7 +383,7 @@ s32 APP_LCD_Cmd(u8 cmd)
   case MIOS32_LCD_TYPE_GLCD_DOG: {
     // select all LCDs
     MIOS32_BOARD_J15_DataSet(0x00);
-    MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
+    MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control A0
 
     // send command
     MIOS32_BOARD_J15_SerDataShift(cmd);
