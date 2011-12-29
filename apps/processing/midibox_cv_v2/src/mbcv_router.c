@@ -73,7 +73,8 @@ s32 MBCV_ROUTER_Init(u32 mode)
 s32 MBCV_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // SysEx handled by APP_SYSEX_Parser()
-  if( midi_package.type >= 4 && midi_package.type <= 7 )
+  if( midi_package.cin == 0xf ||
+      (midi_package.type >= 4 && midi_package.type <= 7) )
     return 0; // no error
 
   int node;
