@@ -108,6 +108,7 @@ extern s32 SEQ_FILE_Init(u32 mode);
 
 extern s32 SEQ_FILE_LoadAllFiles(u8 including_hw);
 extern s32 SEQ_FILE_UnloadAllFiles(void);
+extern s32 SEQ_FILE_SaveAllFiles(void);
 
 extern s32 SEQ_FILE_StoreSessionName(void);
 extern s32 SEQ_FILE_LoadSessionName(void);

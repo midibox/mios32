@@ -56,9 +56,7 @@
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "umm_malloc.h"
-#include "uip.h"
-#include "uip_task.h"
-#include "osc_server.h"
+#include "uip_terminal.h"
 #endif
 
 
@@ -149,7 +147,7 @@ static s32 get_dec(char *word)
 /////////////////////////////////////////////////////////////////////////////
 // Parser
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
+s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, char byte)
 {
   // temporary change debug port (will be restored at the end of this function)
   mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
@@ -184,6 +182,11 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
   char *separators = " \t";
   char *brkt;
   char *parameter;
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+  if( UIP_TERMINAL_ParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed by UIP Terminal
+#endif
 
   if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
@@ -246,41 +249,6 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       if( arg == NULL ) {
 	out("Please enter 'msd on' or 'msd off'\n");
       }
-      
-#if !defined(MIOS32_FAMILY_EMULATION)
-    } else if( strcmp(parameter, "network") == 0 ) {
-      SEQ_TERMINAL_PrintNetworkInfo(out);
-    } else if( strcmp(parameter, "udpmon") == 0 ) {
-      char *arg;
-      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	int level = get_dec(arg);
-	switch( level ) {
-	case UDP_MONITOR_LEVEL_0_OFF:
-	  out("Set UDP monitor level to %d (off)\n", level);
-	  break;
-	case UDP_MONITOR_LEVEL_1_OSC_REC:
-	  out("Set UDP monitor level to %d (received packets assigned to a OSC1..4 port)\n", level);
-	  break;
-	case UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND:
-	  out("Set UDP monitor level to %d (received and sent packets assigned to a OSC1..4 port)\n", level);
-	  break;
-	case UDP_MONITOR_LEVEL_3_ALL_GEQ_1024:
-	  out("Set UDP monitor level to %d (all received and sent packets with port number >= 1024)\n", level);
-	  break;
-	case UDP_MONITOR_LEVEL_4_ALL:
-	  out("Set UDP monitor level to %d (all received and sent packets)\n", level);
-	  break;
-	default:
-	  out("Invalid level %d - please specify monitor level 0..4\n", level);
-	  level = -1; // invalidate level for next if() check
-	}
-	
-	if( level >= 0 )
-	  UIP_TASK_UDP_MonitorLevelSet(level);
-      } else {
-	out("Please specify monitor level (0..4)\n");
-      }
-#endif
     } else if( strcmp(parameter, "sdcard") == 0 ) {
       SEQ_TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "testaoutpin") == 0 ) {
@@ -324,12 +292,28 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	out("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
 	out("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
       }
-    } else if( strcmp(parameter, "play") == 0 ) {
+    } else if( strcmp(parameter, "play") == 0 || strcmp(parameter, "start") == 0 ) { // play or start do the same
       SEQ_UI_Button_Play(0);
       out("Sequencer started...\n");
     } else if( strcmp(parameter, "stop") == 0 ) {
       SEQ_UI_Button_Stop(0);
       out("Sequencer stopped...\n");
+    } else if( strcmp(parameter, "store") == 0 ) {
+      MUTEX_SDCARD_TAKE;
+      if( SEQ_FILE_SaveAllFiles() < 0 ) {
+	out("Failed to store session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      } else {
+	out("Stored complete session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      }
+      MUTEX_SDCARD_GIVE;
+    } else if( strcmp(parameter, "restore") == 0 ) {
+      MUTEX_SDCARD_TAKE;
+      if( SEQ_FILE_LoadAllFiles(1) < 0 ) {
+	out("Failed to restore session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      } else {
+	out("Restored complete session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      }
+      MUTEX_SDCARD_GIVE;
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else {
@@ -361,12 +345,13 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  sdcard:         print SD Card info\n");
   out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
-  out("  network:        print ethernet network info\n");
-  out("  udpmon <0..4>:  enables UDP monitor to check OSC packets (current: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
+  UIP_TERMINAL_Help(_output_function);
 #endif
   out("  testaoutpin:    type this command to get further informations about the testmode.");
-  out("  play:           emulates the PLAY button\n");
+  out("  play or start:  emulates the PLAY button\n");
   out("  stop:           emulates the STOP button\n");
+  out("  store:          stores complete session on SD Card\n");
+  out("  restore:        restores complete session from SD Card\n");
   out("  reset:          resets the MIDIbox SEQ (!)\n");
   out("  help:           this page\n");
   MUTEX_MIDIOUT_GIVE;
@@ -855,68 +840,6 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   }
 
   out("done.\n");
-  MUTEX_MIDIOUT_GIVE;
-
-  return 0; // no error
-}
-
-
-s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function)
-{
-  void (*out)(char *format, ...) = _output_function;
-
-  MUTEX_MIDIOUT_TAKE;
-
-#if defined(MIOS32_FAMILY_EMULATION)
-  out("No network informations available in emulation!");
-#else
-
-  out("Ethernet link available: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
-  if( !UIP_TASK_NetworkDeviceAvailable() ) {
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-    // since MBHP_ETH module is used
-    out("Please reboot your MIDIbox SEQ to restart module detection! (or just type \"reset\")");
-#endif
-  } else {
-    out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
-    out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
-
-    if( UIP_TASK_DHCP_EnableGet() && !UIP_TASK_ServicesRunning() ) {
-      out("IP address: not available yet");
-      out("Netmask: not available yet");
-      out("Default Router (Gateway): not available yet");
-    } else {
-      uip_ipaddr_t ipaddr;
-      uip_gethostaddr(&ipaddr);
-      out("IP address: %d.%d.%d.%d",
-	  uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-	  uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
-
-      uip_ipaddr_t netmask;
-      uip_getnetmask(&netmask);
-      out("Netmask: %d.%d.%d.%d",
-	  uip_ipaddr1(netmask), uip_ipaddr2(netmask),
-	  uip_ipaddr3(netmask), uip_ipaddr4(netmask));
-
-      uip_ipaddr_t draddr;
-      uip_getdraddr(&draddr);
-      out("Default Router (Gateway): %d.%d.%d.%d",
-	  uip_ipaddr1(draddr), uip_ipaddr2(draddr),
-	  uip_ipaddr3(draddr), uip_ipaddr4(draddr));
-    }
-
-    int con;
-    for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
-      u32 osc_remote_ip = OSC_SERVER_RemoteIP_Get(con);
-      out("OSC%d Remote address: %d.%d.%d.%d",
-	  con+1,
-	  (osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
-	  (osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
-      out("OSC%d Remote port: %d", con+1, OSC_SERVER_RemotePortGet(con));
-      out("OSC%d Local port: %d", con+1, OSC_SERVER_LocalPortGet(con));
-    }
-  }
-#endif
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
