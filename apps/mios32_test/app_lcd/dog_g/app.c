@@ -65,13 +65,13 @@ void APP_Background(void)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
     // X/Y "position" of displays (see also comments in $MIOS32_PATH/modules/app_lcd/dog_g/README.txt)
-    const u8 lcd_x[8] = {0, 1, 2, 0, 1, 2, 0, 1}; // CS#0..7
-    const u8 lcd_y[8] = {0, 0, 0, 1, 1, 1, 2, 2};
+    const u8 lcd_x[8] = {0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
+    const u8 lcd_y[8] = {0, 0, 1, 1, 2, 2, 3, 3};
 
     u8 i;
-    for(i=0; i<8; ++i) {
+    for(i=0; i<1; ++i) {
       u16 x_offset = 128*lcd_x[i];
-      u16 y_offset = 8*8*lcd_y[i];
+      u16 y_offset = 64*lcd_y[i];
 
       // print text
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
