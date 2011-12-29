@@ -18,6 +18,10 @@ MIDIboxSEQ V4.055
 
    o fixed bug in PitchBender Editing mode
 
+   o added new MIOS terminal commands to modify network and OSC settings
+
+   o added new MIOS terminal commands to "store" and "restore" the session remotely
+
 
 MIDIboxSEQ V4.054
 ~~~~~~~~~~~~~~~~~

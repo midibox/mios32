@@ -188,6 +188,29 @@ s32 SEQ_FILE_B_UnloadAllBanks(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Saves all banks
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_B_SaveAllBanks(char *session)
+{
+  s32 status = 0;
+
+  u8 bank;
+  for(bank=0; bank<SEQ_FILE_B_NUM_BANKS; ++bank) {
+    s32 error = SEQ_FILE_B_PatternWrite(seq_file_session_name, seq_pattern[bank].bank, seq_pattern[bank].pattern, bank, 1);
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_B] Tried to store bank #%d file, status: %d\n", bank+1, error);
+#endif
+
+    status |= error;
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns number of patterns in bank
 // Returns 0 if bank not valid
 /////////////////////////////////////////////////////////////////////////////

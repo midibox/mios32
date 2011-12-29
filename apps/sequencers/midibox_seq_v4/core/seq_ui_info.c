@@ -27,6 +27,7 @@
 #include "seq_ui.h"
 
 #include "seq_terminal.h"
+#include "uip_terminal.h"
 
 #include "seq_core.h"
 #include "seq_song.h"
@@ -213,7 +214,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       case LIST_ITEM_NETWORK:
-	SEQ_TERMINAL_PrintNetworkInfo(DEBUG_MSG);
+	UIP_TERMINAL_PrintNetwork(DEBUG_MSG);
 	break;
 
       //////////////////////////////////////////////////////////////////////////////////////////////

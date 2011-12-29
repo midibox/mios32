@@ -178,6 +178,32 @@ s32 SEQ_FILE_UnloadAllFiles(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Saves all files
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_SaveAllFiles(void)
+{
+  s32 status = 0;
+
+  status |= SEQ_FILE_B_SaveAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_M_SaveAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_S_SaveAllBanks(seq_file_session_name);
+  status |= SEQ_FILE_G_Write(seq_file_session_name);
+  status |= SEQ_FILE_C_Write(seq_file_session_name);
+  status |= SEQ_FILE_BM_Write(seq_file_session_name, 0); // session
+
+  // store session name if store operations were successfull
+  if( status >= 0 )
+    status |= SEQ_FILE_StoreSessionName();
+
+  // store global files
+  status |= SEQ_FILE_BM_Write(seq_file_session_name, 1); // global
+  status |= SEQ_FILE_GC_Write();
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Stores the current name of the session in a file (/SESSIONS/LAST_ONE.V4), so 
 // that it can be restored after startup
 /////////////////////////////////////////////////////////////////////////////

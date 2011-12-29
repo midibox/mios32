@@ -1,25 +1,23 @@
 // $Id$
 /*
- * Header for file functions
+ * MIOS Terminal interface to UIP parameters
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2010 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _SEQ_FILE_B_H
-#define _SEQ_FILE_B_H
+#ifndef _UIP_TERMINAL_H
+#define _UIP_TERMINAL_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
-
-#define SEQ_FILE_B_NUM_BANKS 4
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -31,20 +29,9 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_FILE_B_Init(u32 mode);
-extern s32 SEQ_FILE_B_LoadAllBanks(char *session);
-extern s32 SEQ_FILE_B_UnloadAllBanks(void);
-extern s32 SEQ_FILE_B_SaveAllBanks(char *session);
-
-extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
-
-extern s32 SEQ_FILE_B_Create(char *session, u8 bank);
-extern s32 SEQ_FILE_B_Open(char *session, u8 bank);
-
-extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
-extern s32 SEQ_FILE_B_PatternWrite(char *session, u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name);
-
-extern s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern_name);
+extern s32 UIP_TERMINAL_Help(void *_output_function);
+extern s32 UIP_TERMINAL_ParseLine(char *input, void *_output_function);
+extern s32 UIP_TERMINAL_PrintNetwork(void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,4 +39,4 @@ extern s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_FILE_B_H */
+#endif /* _UIP_TERMINAL_H */

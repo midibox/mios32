@@ -32,6 +32,7 @@
 extern s32 SEQ_FILE_M_Init(u32 mode);
 extern s32 SEQ_FILE_M_LoadAllBanks(char *session);
 extern s32 SEQ_FILE_M_UnloadAllBanks(void);
+extern s32 SEQ_FILE_M_SaveAllBanks(char *session);
 
 extern s32 SEQ_FILE_M_NumMaps(void);
 

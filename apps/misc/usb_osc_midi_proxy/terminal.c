@@ -21,11 +21,9 @@
 #include "app.h"
 #include "presets.h"
 #include "terminal.h"
+#include "uip_terminal.h"
 #include "midimon.h"
-#include "uip.h"
-#include "uip_task.h"
 #include "tasks.h"
-#include "osc_server.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -47,7 +45,6 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 TERMINAL_PrintSystem(void *_output_function);
-static s32 TERMINAL_PrintIPs(void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -104,37 +101,9 @@ static s32 get_on_off(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses an IP value
-// returns > 0 if value is valid
-// returns 0 if value is invalid
-/////////////////////////////////////////////////////////////////////////////
-static u32 get_ip(char *word)
-{
-  char *brkt;
-  u8 ip[4];
-
-  int i;
-  for(i=0; i<4; ++i) {
-    if( (word = strtok_r((i == 0) ? word : NULL, ".", &brkt)) ) {
-      s32 value = get_dec(word);
-      if( value >= 0 && value <= 255 )
-	ip[i] = value;
-      else
-	return 0;
-    }
-  }
-
-  if( i == 4 )
-    return (ip[0]<<24)|(ip[1]<<16)|(ip[2]<<8)|(ip[3]<<0);
-  else
-    return 0; // invalid IP
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Parser
 /////////////////////////////////////////////////////////////////////////////
-s32 TERMINAL_Parse(mios32_midi_port_t port, u8 byte)
+s32 TERMINAL_Parse(mios32_midi_port_t port, char byte)
 {
   // temporary change debug port (will be restored at the end of this function)
   mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
@@ -170,22 +139,18 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
   char *brkt;
   char *parameter;
 
+  if( UIP_TERMINAL_ParseLine(input, _output_function) > 0 )
+    return 0; // command parsed by UIP Terminal
+
   if( (parameter = strtok_r(input, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
       out("Following commands are available:");
       out("  system:                           print system info");
-      out("  set dhcp <on|off>:                enables/disables DHCP");
-      out("  set ip <address>:                 changes IP address");
-      out("  set netmask <mask>:               changes netmask");
-      out("  set gateway <address>:            changes gateway address");
-      out("  set osc_remote <con> <address>:   changes OSC Remote Address");
-      out("  set osc_remote_port <con> <port>: changes OSC Remote Port (1024..65535)");
-      out("  set osc_local_port <con> <port>:  changes OSC Local Port (1024..65535)");
-      out("  set udpmon <0..4>:                enables UDP monitor (verbose level: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
       out("  set midimon <on|off>:             enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
+      UIP_TERMINAL_Help(_output_function);
       out("  store:                            stores current config as preset");
       out("  restore:                          restores config from preset");
       out("  reset:                            resets the MIDIbox (!)\n");
@@ -211,187 +176,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(parameter, "dhcp") == 0 ) {
-	  s32 on_off = -1;
-	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	    on_off = get_on_off(parameter);
-
-	  if( on_off < 0 ) {
-	    out("Expecting 'on' or 'off'!");
-	  } else {
-	    UIP_TASK_DHCP_EnableSet(on_off);
-	    if( UIP_TASK_DHCP_EnableGet() ) {
-	      out("DHCP enabled - waiting for IP address from server!\n");
-	    } else {
-	      out("DHCP disabled - using predefined values:");
-	      TERMINAL_PrintIPs(_output_function);
-	    }
-	  }
-	} else if( strcmp(parameter, "ip") == 0 ) {
-	  if( UIP_TASK_DHCP_EnableGet() ) {
-	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
-	  } else {
-	    u32 ip = 0;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      ip = get_ip(parameter);
-	    if( !ip ) {
-	      out("Expecting IP address in format a.b.c.d!");
-	    } else {
-	      uip_ipaddr_t ipaddr;
-	      UIP_TASK_IP_AddressSet(ip);
-	      uip_gethostaddr(&ipaddr);
-	      out("Set IP address to %d.%d.%d.%d",
-		  uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-		  uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
-	    }
-	  }
-	} else if( strcmp(parameter, "netmask") == 0 ) {
-	  if( UIP_TASK_DHCP_EnableGet() ) {
-	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
-	  } else {
-	    u32 ip = 0;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      ip = get_ip(parameter);
-	    if( !ip ) {
-	      out("Expecting netmask in format a.b.c.d!");
-	    } else {
-	      uip_ipaddr_t ipaddr;
-	      UIP_TASK_NetmaskSet(ip);
-	      uip_getnetmask(&ipaddr);
-	      out("Set netmask to %d.%d.%d.%d",
-		  uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-		  uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
-	    }
-	  }
-	} else if( strcmp(parameter, "gateway") == 0 ) {
-	  if( UIP_TASK_DHCP_EnableGet() ) {
-	    out("ERROR: DHCP enabled - please disable it first via 'set dhcp off'");
-	  } else {
-	    u32 ip = 0;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      ip = get_ip(parameter);
-	    if( !ip ) {
-	      out("Expecting gateway address in format a.b.c.d!");
-	    } else {
-	      uip_ipaddr_t ipaddr;
-	      UIP_TASK_GatewaySet(ip);
-	      uip_getdraddr(&ipaddr);
-	      out("Set gateway to %d.%d.%d.%d",
-		  uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-		  uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
-	    }
-	  }
-	} else if( strcmp(parameter, "osc_remote") == 0 ) {
-	  if( !UIP_TASK_ServicesRunning() ) {
-	    out("ERROR: Ethernet services not running yet!");
-	  } else {
-	    s32 con = -1;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      con = get_dec(parameter);
-	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
-	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
-	    } else {
-	      con-=1; // the user counts from 1
-
-	      u32 ip = 0;
-	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
-		ip = get_ip(parameter);
-	      if( !ip ) {
-		out("Expecting OSC connection <1..%d> and remote address in format a.b.c.d!", OSC_SERVER_NUM_CONNECTIONS);
-	      } else {
-		if( OSC_SERVER_RemoteIP_Set(con, ip) >= 0 ) {
-		  out("Set OSC%d Remote address to %d.%d.%d.%d",
-		      con+1,
-		      (ip>>24)&0xff, (ip>>16)&0xff, (ip>>8)&0xff, (ip>>0)&0xff);
-		  OSC_SERVER_Init(0);
-		} else
-		  out("ERROR: failed to set OSC%d Remote address!", con+1);
-	      }
-	    }
-	  }
-	} else if( strcmp(parameter, "osc_remote_port") == 0 ) {
-	  if( !UIP_TASK_ServicesRunning() ) {
-	    out("ERROR: Ethernet services not running yet!");
-	  } else {
-	    s32 con = -1;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      con = get_dec(parameter);
-	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
-	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
-	    } else {
-	      con-=1; // the user counts from 1
-
-	      s32 value = -1;
-	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
-		value = get_dec(parameter);
-	      if( value < 1024 || value >= 65535) {
-		out("Expecting OSC connection (1..%d) and remote port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
-	      } else {
-		if( OSC_SERVER_RemotePortSet(con, value) >= 0 ) {
-		  out("Set OSC%d Remote port to %d", con+1, value);
-		  OSC_SERVER_Init(0);
-		} else
-		  out("ERROR: failed to set OSC%d remote port!", con+1);
-	      }
-	    }
-	  }
-	} else if( strcmp(parameter, "osc_local_port") == 0 ) {
-	  if( !UIP_TASK_ServicesRunning() ) {
-	    out("ERROR: Ethernet services not running yet!");
-	  } else {
-	    s32 con = -1;
-	    if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	      con = get_dec(parameter);
-	    if( con < 1 || con >= OSC_SERVER_NUM_CONNECTIONS) {
-	      out("Invalid OSC connection specified as first parameter (expecting 1..%d)!", OSC_SERVER_NUM_CONNECTIONS);
-	    } else {
-	      con-=1; // the user counts from 1
-
-	      s32 value = -1;
-	      if( (parameter = strtok_r(NULL, separators, &brkt)) )
-		value = get_dec(parameter);
-	      if( value < 1024 || value >= 65535) {
-		out("Expecting OSC connection (1..%d) and local port value in range 1024..65535", OSC_SERVER_NUM_CONNECTIONS);
-	      } else {
-		if( OSC_SERVER_LocalPortSet(con+1, value) >= 0 ) {
-		  out("Set OSC%d Local port to %d", con, value);
-		  OSC_SERVER_Init(0);
-		} else
-		  out("ERROR: failed to set OSC%d local port!", con+1);
-	      }
-	    }
-	  }
-	} else if( strcmp(parameter, "udpmon") == 0 ) {
-	  char *arg;
-	  if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	    int level = get_dec(arg);
-	    switch( level ) {
-	    case UDP_MONITOR_LEVEL_0_OFF:
-	      out("Set UDP monitor level to %d (off)\n", level);
-	      break;
-	    case UDP_MONITOR_LEVEL_1_OSC_REC:
-	      out("Set UDP monitor level to %d (received packets assigned to a OSC1..4 port)\n", level);
-	      break;
-	    case UDP_MONITOR_LEVEL_2_OSC_REC_AND_SEND:
-	      out("Set UDP monitor level to %d (received and sent packets assigned to a OSC1..4 port)\n", level);
-	      break;
-	    case UDP_MONITOR_LEVEL_3_ALL_GEQ_1024:
-	      out("Set UDP monitor level to %d (all received and sent packets with port number >= 1024)\n", level);
-	      break;
-	    case UDP_MONITOR_LEVEL_4_ALL:
-	      out("Set UDP monitor level to %d (all received and sent packets)\n", level);
-	      break;
-	    default:
-	      out("Invalid level %d - please specify monitor level 0..4\n", level);
-	      level = -1; // invalidate level for next if() check
-	    }
-	    
-	    if( level >= 0 )
-	      UIP_TASK_UDP_MonitorLevelSet(level);
-	  } else {
-	    out("Please specify monitor level (0..4)\n");
-	  }
-	} else if( strcmp(parameter, "midimon") == 0 ) {
+	if( strcmp(parameter, "midimon") == 0 ) {
 	  s32 on_off = -1;
 	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
 	    on_off = get_on_off(parameter);
@@ -448,64 +233,9 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
 
   out("Application: " MIOS32_LCD_BOOT_MSG_LINE1);
 
-  out("Ethernet module connected: %s", UIP_TASK_NetworkDeviceAvailable() ? "yes" : "no");
-  out("Ethernet services running: %s", UIP_TASK_ServicesRunning() ? "yes" : "no");
-  out("DHCP: %s", UIP_TASK_DHCP_EnableGet() ? "enabled" : "disabled");
-
-  if( UIP_TASK_DHCP_EnableGet() && !UIP_TASK_ServicesRunning() ) {
-    out("IP address: not available yet");
-    out("Netmask: not available yet");
-    out("Default Router (Gateway): not available yet");
-  } else {
-    TERMINAL_PrintIPs(_output_function);
-  }
-
-  int con;
-  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
-    u32 osc_remote_ip = OSC_SERVER_RemoteIP_Get(con);
-    out("OSC%d Remote address: %d.%d.%d.%d",
-	con+1,
-	(osc_remote_ip>>24)&0xff, (osc_remote_ip>>16)&0xff,
-	(osc_remote_ip>>8)&0xff, (osc_remote_ip>>0)&0xff);
-    out("OSC%d Remote port: %d", con+1, OSC_SERVER_RemotePortGet(con));
-    out("OSC%d Local port: %d", con+1, OSC_SERVER_LocalPortGet(con));
-  }
-
-  out("UDP Monitor: verbose level #%d\n", UIP_TASK_UDP_MonitorLevelGet());
-
   out("MIDI Monitor: %s", MIDIMON_ActiveGet() ? "enabled" : "disabled");
   out("MIDI Monitor Filters: %s", MIDIMON_FilterActiveGet() ? "enabled" : "disabled");
   out("MIDI Monitor Tempo Display: %s", MIDIMON_TempoActiveGet() ? "enabled" : "disabled");
-
-  return 0; // no error
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Print IP settings (used by multiple functions)
-/////////////////////////////////////////////////////////////////////////////
-static s32 TERMINAL_PrintIPs(void *_output_function)
-{
-  void (*out)(char *format, ...) = _output_function;
-
-  uip_ipaddr_t ipaddr;
-  uip_gethostaddr(&ipaddr);
-  out("IP address: %d.%d.%d.%d",
-      uip_ipaddr1(ipaddr), uip_ipaddr2(ipaddr),
-      uip_ipaddr3(ipaddr), uip_ipaddr4(ipaddr));
-
-  uip_ipaddr_t netmask;
-  uip_getnetmask(&netmask);
-  out("Netmask: %d.%d.%d.%d",
-      uip_ipaddr1(netmask), uip_ipaddr2(netmask),
-      uip_ipaddr3(netmask), uip_ipaddr4(netmask));
-
-  uip_ipaddr_t draddr;
-  uip_getdraddr(&draddr);
-  out("Default Router (Gateway): %d.%d.%d.%d",
-      uip_ipaddr1(draddr), uip_ipaddr2(draddr),
-      uip_ipaddr3(draddr), uip_ipaddr4(draddr));
 
   return 0; // no error
 }
