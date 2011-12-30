@@ -14,13 +14,15 @@ MIDIboxSEQ V4.055
 
    o SysEx forwarding via MIDI router working (again)
 
-   o MIDI router now supports 16 nodes! (previously only 8)
+   o MIDI router supports 16 nodes now! (previously only 8)
 
    o fixed bug in PitchBender Editing mode
 
-   o added new MIOS terminal commands to modify network and OSC settings
-
-   o added new MIOS terminal commands to "store" and "restore" the session remotely
+   o added new MIOS terminal commands:
+     - display network informations, modify network and OSC settings
+     - display MIDI router informations, modify MIDI router settings
+     - change BLM port remotely
+     - "store" and "restore" the session remotely
 
 
 MIDIboxSEQ V4.054

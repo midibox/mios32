@@ -65,8 +65,8 @@ static const midio_port_entry_t out_ports[MIDIO_PORT_NUM_OUT_PORTS] = {
 static const midio_port_entry_t clk_ports[MIDIO_PORT_NUM_CLK_PORTS] = {
   // port ID  Name
   { USB0,    "USB1" },
-  { UART0,   "OUT1" },
-  { UART1,   "OUT2" },
+  { UART0,   "MID1" },
+  { UART1,   "MID2" },
   { OSC0,    "OSC1" },
   { OSC1,    "OSC2" },
   { OSC2,    "OSC3" },

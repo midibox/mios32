@@ -45,7 +45,7 @@ extern s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function);
 extern s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function);
-extern s32 SEQ_TERMINAL_PrintNetworkInfo(void *_output_function);
+extern s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function);
 extern s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level);
 
 

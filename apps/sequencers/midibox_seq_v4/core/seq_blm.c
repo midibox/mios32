@@ -146,6 +146,8 @@ static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note);
 
 static blm_mode_t blm_mode;
 
+static u8 blm_first_connection;
+
 static const u8 seq_blm_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4e }; // Header of MBHP_BLM_SCALAR
 
 static sysex_state_t sysex_state;
@@ -191,7 +193,8 @@ static u8 blm_shift_active;
 s32 SEQ_BLM_Init(u32 mode)
 {
   seq_blm_port = 0; // disabled
-  blm_mode = BLM_MODE_TRACKS;
+  blm_mode = BLM_MODE_TRACKS; // for compatibility with 4x16 BLM, will be changed to BLM_MODE_GRID on first connection
+  blm_first_connection = 0;
   blm_num_columns = 16;
   blm_num_rows = 16;
   blm_num_colours = 2;
@@ -342,6 +345,12 @@ static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t c
       break;
 
     default: // SYSEX_CMD_STATE_END
+      // if first connection: change to Grid mode
+      if( !blm_first_connection ) {
+	blm_first_connection = 1;
+	blm_mode = BLM_MODE_GRID;
+      }
+
       // update BLM
       blm_force_update = 1;
       // send acknowledge
@@ -928,9 +937,19 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
   if( button_column >= 16 )
     return 0; // only key 0..15 supported
 
-  seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
-  new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
-  SEQ_PATTERN_Change(ui_selected_group, new_pattern, 0);
+  {
+    seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
+    new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+    SEQ_PATTERN_Change(ui_selected_group, new_pattern, 0);
+  }
+
+#ifdef MBSEQV4L
+  {
+    seq_pattern_t new_pattern = seq_pattern[ui_selected_group+1];
+    new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+    SEQ_PATTERN_Change(ui_selected_group+1, new_pattern, 0);
+  }
+#endif
 
   return 0; // no error
 }
@@ -1495,18 +1514,26 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
       // change track if required
       if( blm_mode == BLM_MODE_TRACKS || blm_mode == BLM_MODE_PATTERNS ) {
+	u8 new_track = midi_package.chn;
+
+#ifdef MBSEQV4L
+	if( blm_mode != BLM_MODE_PATTERNS )
+	  ui_selected_tracks = (new_track >= 8) ? 0xff00 : 0x00ff;
+	ui_selected_group = (new_track >= 8) ? 2 : 0;
+#else
 	if( blm_num_rows <= 4 ) {
-	  if( midi_package.chn >= 4 )
+	  if( new_track >= 4 )
 	    return 0; // invalid channel
 	} else if( blm_num_rows <= 8 ) {
-	  if( midi_package.chn >= 8 )
+	  if( new_track >= 8 )
 	    return 0; // invalid channel
-	  ui_selected_group = (ui_selected_group & 2) + (midi_package.chn / 4);
+	  ui_selected_group = (ui_selected_group & 2) + (new_track / 4);
 	} else {
-	  ui_selected_group = (midi_package.chn / 4);
+	  ui_selected_group = (new_track / 4);
 	}
 	if( blm_mode != BLM_MODE_PATTERNS )
-	  ui_selected_tracks = 1 << (4*ui_selected_group + (midi_package.chn % 4));
+	  ui_selected_tracks = 1 << (4*ui_selected_group + (new_track % 4));
+#endif
       }
 
       // request display update
@@ -1547,20 +1574,28 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       // Extra Column
       if( !blm_shift_active ) {
 	if( midi_package.velocity > 0 ) {
-	  u16 track_mask = 1 << midi_package.chn;
+	  u8 new_track = midi_package.chn;
+	  u16 track_mask = 1 << new_track;
 
-	  if( ui_selected_tracks == track_mask ) // track already selected: mute it
+#ifdef MBSEQV4L
+	  if( ui_selected_tracks & track_mask ) // track already selected: mute it
+	    seq_core_trk_muted ^= track_mask;
+	  else { // track not selected yet: select it now
+	    ui_selected_tracks = (new_track >= 8) ? 0xff00 : 0x00ff;
+	    blm_force_update = 1;	
+	  }
+#else
+	  if( ui_selected_tracks & track_mask ) // track already selected: mute it
 	    seq_core_trk_muted ^= track_mask;
 	  else { // track not selected yet: select it now
 	    ui_selected_tracks = track_mask;
-	    ui_selected_group = (midi_package.chn / 4);
+	    ui_selected_group = (new_track / 4);
 	    blm_force_update = 1;	
 
-#ifndef MBSEQV4L
 	    // set/clear encoder fast function if required
 	    SEQ_UI_InitEncSpeed(1); // auto config
-#endif
 	  }
+#endif
 	}
 	return 1; // MIDI event has been taken
       } else {

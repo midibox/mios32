@@ -36,6 +36,7 @@
 #include "seq_layer.h"
 #include "seq_cc.h"
 #include "seq_midi_sysex.h"
+#include "seq_blm.h"
 
 #include "file.h"
 #include "seq_file.h"
@@ -468,6 +469,8 @@ static s32 SEQ_UI_Button_TrackGroove(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackLength(s32 depressed)
 {
+  // show loop point when length button pressed
+  seq_ui_button_state.LENGTH_PRESSED = depressed == 0;
   if( depressed ) return -1; // ignore when button depressed
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_LENGTH);
 }
@@ -499,7 +502,7 @@ static s32 SEQ_UI_Button_TrackLFO(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackScale(s32 depressed)
 {
-  // show scale selection when page button pressed
+  // show scale selection when scale button pressed
   seq_ui_button_state.SCALE_PRESSED = depressed == 0;
   if( depressed ) return -1; // ignore when button depressed
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_SCALE);
@@ -904,8 +907,12 @@ s32 SEQ_UI_LED_Handler(void)
   //u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // check if update requested
-  if( !seq_ui_display_update_req )
+  if( !seq_ui_display_update_req ) {
+    // update BLM LEDs
+    SEQ_BLM_LED_Update();
+
     return 0;
+  }
   seq_ui_display_update_req = 0;
 
   // ignore as long as hardware config hasn't been read
@@ -953,6 +960,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
   SEQ_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
   SEQ_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
+
+  // update BLM LEDs
+  SEQ_BLM_LED_Update();
 
   return 0; // no error
 }
