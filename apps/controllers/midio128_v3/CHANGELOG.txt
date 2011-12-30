@@ -1,5 +1,14 @@
 $Id$
 
+MIDIO128 V3.004
+~~~~~~~~~~~~~~~
+
+   o MIDI router supports 16 nodes now! (previously only 8)
+
+   o added new MIOS terminal commands:
+     - display network informations, modify network and OSC settings
+     - display MIDI router informations, modify MIDI router settings
+
 
 MIDIO128 V3.003
 ~~~~~~~~~~~~~~~

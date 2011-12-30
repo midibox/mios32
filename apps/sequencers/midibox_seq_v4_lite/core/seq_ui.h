@@ -77,6 +77,7 @@ typedef union {
     u32 UP:1;
     u32 DOWN:1;
 
+    u32 LENGTH_PRESSED:1;
     u32 SCALE_PRESSED:1;
   };
 } seq_ui_button_state_t;

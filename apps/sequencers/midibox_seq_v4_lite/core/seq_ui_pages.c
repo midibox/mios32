@@ -260,13 +260,24 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 
   ///////////////////////////////////////////////////////////////////////////
   case SEQ_UI_PAGE_LENGTH: {
+    u16 leds = 0x0000;
     u8 length = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH);
+    u8 loop = SEQ_CC_Get(visible_track, SEQ_CC_LOOP);
+
     if( length >= 16*(ui_selected_step_view+1) )
-      return 0xffff;
+      leds = 0xffff;
     else if( (length >> 4) == ui_selected_step_view )
-      return (1 << ((length % 16)+1))-1;
-    else
-      return 0x0000;
+      leds = (1 << ((length % 16)+1))-1;
+
+    if( ui_cursor_flash ) {
+      if( (loop/16) == ui_selected_step_view )
+	leds &= ~(1 << loop % 16);
+
+      if( (length/16) == ui_selected_step_view )
+	leds &= ~(1 << length % 16);
+    }
+
+    return leds;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
@@ -503,10 +514,17 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     u8 track;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( ui_selected_tracks & (1 << track) ) {
-	if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) )
-	  SEQ_CC_Set(track, SEQ_CC_LENGTH, 16*ui_selected_step_view + button);
-	else
-	  SEQ_CC_Set(track, SEQ_CC_LENGTH, 64*ui_selected_step_view + 4*button + 3); // 4x resolution
+	if( seq_ui_button_state.LENGTH_PRESSED ) {
+	  if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) )
+	    SEQ_CC_Set(track, SEQ_CC_LOOP, 16*ui_selected_step_view + button);
+	  else
+	    SEQ_CC_Set(track, SEQ_CC_LOOP, 64*ui_selected_step_view + 4*button + 3); // 4x resolution
+	} else {
+	  if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) )
+	    SEQ_CC_Set(track, SEQ_CC_LENGTH, 16*ui_selected_step_view + button);
+	  else
+	    SEQ_CC_Set(track, SEQ_CC_LENGTH, 64*ui_selected_step_view + 4*button + 3); // 4x resolution
+	}
       }
     }
 

@@ -24,6 +24,7 @@
 #include "seq_midi_in.h"
 #include "seq_cv.h"
 #include "seq_core.h"
+#include "seq_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -113,10 +114,10 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   { USB1,    "USB2" },
   { USB2,    "USB3" },
   { USB3,    "USB4" },
-  { UART0,   "OUT1" },
-  { UART1,   "OUT2" },
-  { UART2,   "OUT3" },
-  { UART3,   "OUT4" },
+  { UART0,   "MID1" },
+  { UART1,   "MID2" },
+  { UART2,   "MID3" },
+  { UART3,   "MID4" },
   { IIC0,    "IIC1" },
   { IIC1,    "IIC2" },
   { IIC2,    "IIC3" },
@@ -560,7 +561,8 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
       if( seq_midi_port_multi_enable_flags & mask ) {
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
-	MIOS32_MIDI_SendPackage(port, package);
+	if( port != seq_blm_port ) // ensure that no note will be sent to BLM port if enabled
+	  MIOS32_MIDI_SendPackage(port, package);
       }
     }
 

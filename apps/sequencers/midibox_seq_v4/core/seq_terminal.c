@@ -35,6 +35,8 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_midi_port.h"
+#include "seq_midi_router.h"
+#include "seq_blm.h"
 #include "seq_song.h"
 #include "seq_mixer.h"
 
@@ -145,6 +147,22 @@ static s32 get_dec(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses for on or off
+// returns 0 if 'off', 1 if 'on', -1 if invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_on_off(char *word)
+{
+  if( strcmp(word, "on") == 0 )
+    return 1;
+
+  if( strcmp(word, "off") == 0 )
+    return 0;
+
+  return -1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Parser
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, char byte)
@@ -249,8 +267,222 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       if( arg == NULL ) {
 	out("Please enter 'msd on' or 'msd off'\n");
       }
+    } else if( strcmp(parameter, "set") == 0 ) {
+      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(parameter, "router") == 0 ) {
+	  char *arg;
+	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Missing node number!");
+	  } else {
+	    s32 node = get_dec(arg);
+	    if( node < 1 || node > SEQ_MIDI_ROUTER_NUM_NODES ) {
+	      out("Expecting node number between 1..%d!", SEQ_MIDI_ROUTER_NUM_NODES);
+	    } else {
+	      node-=1; // user counts from 1
+
+	      if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+		out("Missing input port!");
+	      } else {
+		mios32_midi_port_t src_port = 0xff;
+		int port_ix;
+		for(port_ix=0; port_ix<SEQ_MIDI_PORT_InNumGet(); ++port_ix) {
+		  // terminate port name at first space
+		  char port_name[10];
+		  strcpy(port_name, SEQ_MIDI_PORT_InNameGet(port_ix));
+		  int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+		  if( strcmp(arg, port_name) == 0 ) {
+		    src_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+		    break;
+		  }
+		}
+
+		if( src_port >= 0xf0 ) {
+		  out("Unknown or invalid MIDI input port!");
+		} else {
+
+		  char *arg_src_chn;
+		  if( !(arg_src_chn = strtok_r(NULL, separators, &brkt)) ) {
+		    out("Missing source channel, expecting off, 1..16 or all!");
+		  } else {
+		    int src_chn = -1;
+
+		    if( strcmp(arg_src_chn, "---") == 0 || strcmp(arg_src_chn, "off") == 0 )
+		      src_chn = 0;
+		    else if( strcmp(arg_src_chn, "All") == 0 || strcmp(arg_src_chn, "all") == 0 )
+		      src_chn = 17;
+		    else {
+		      src_chn = get_dec(arg_src_chn);
+		      if( src_chn > 16 )
+			src_chn = -1;
+		    }
+
+		    if( src_chn < 0 ) {
+		      out("Invalid source channel, expecting off, 1..16 or all!");
+		    } else {
+
+		      if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+			out("Missing output port!");
+		      } else {
+			mios32_midi_port_t dst_port = 0xff;
+			int port_ix;
+			for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
+			  // terminate port name at first space
+			  char port_name[10];
+			  strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
+			  int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+			  if( strcmp(arg, port_name) == 0 ) {
+			    dst_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+			    break;
+			  }
+			}
+
+			if( dst_port >= 0xf0 ) {
+			  out("Unknown or invalid MIDI output port!");
+			} else {
+
+			  char *arg_dst_chn;
+			  if( !(arg_dst_chn = strtok_r(NULL, separators, &brkt)) ) {
+			    out("Missing destination channel, expecting off, 1..16 or all!");
+			  } else {
+			    int dst_chn = -1;
+
+			    if( strcmp(arg_dst_chn, "---") == 0 || strcmp(arg_dst_chn, "off") == 0 )
+			      dst_chn = 0;
+			    else if( strcmp(arg_dst_chn, "All") == 0 || strcmp(arg_dst_chn, "all") == 0 )
+			      dst_chn = 17;
+			    else {
+			      dst_chn = get_dec(arg_dst_chn);
+			      if( dst_chn > 16 )
+				dst_chn = -1;
+			    }
+
+			    if( dst_chn < 0 ) {
+			      out("Invalid destination channel, expecting off, 1..16 or all!");
+			    } else {
+			      //
+			      // finally...
+			      //
+			      seq_midi_router_node_t *n = &seq_midi_router_node[node];
+			      n->src_port = src_port;
+			      n->src_chn = src_chn;
+			      n->dst_port = dst_port;
+			      n->dst_chn = dst_chn;
+
+			      out("Changed Node %d to SRC:%s %s  DST:%s %s",
+				  node+1,
+				  SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(n->src_port)),
+				  arg_src_chn,
+				  SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(n->dst_port)),
+				  arg_dst_chn);
+			    }
+			  }
+			}
+		      }
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	} else if( strcmp(parameter, "mclk_in") == 0 || strcmp(parameter, "mclk_out") == 0 ) {
+	  int mclk_in = strcmp(parameter, "mclk_in") == 0;
+
+	  char *arg;
+	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Missing MIDI clock port!");
+	  } else {
+	    mios32_midi_port_t mclk_port = 0xff;
+	    int port_ix;
+	    for(port_ix=0; port_ix<SEQ_MIDI_PORT_ClkNumGet(); ++port_ix) {
+	      // terminate port name at first space
+	      char port_name[10];
+	      strcpy(port_name, SEQ_MIDI_PORT_ClkNameGet(port_ix));
+	      int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+	      if( strcmp(arg, port_name) == 0 ) {
+		mclk_port = SEQ_MIDI_PORT_ClkPortGet(port_ix);
+		break;
+	      }
+	    }
+
+	    if( mclk_in && mclk_port >= 0xf0 ) {
+	      // extra: allow 'INx' as well
+	      if( strncmp(arg, "IN", 2) == 0 && arg[2] >= '1' && arg[2] <= '4' )
+		mclk_port = UART0 + (arg[2] - '1');
+	    }
+
+	    if( !mclk_in && mclk_port >= 0xf0 ) {
+	      // extra: allow 'OUTx' as well
+	      if( strncmp(arg, "OUT", 3) == 0 && arg[3] >= '1' && arg[3] <= '4' )
+		mclk_port = UART0 + (arg[3] - '1');
+	    }
+
+	    if( mclk_port >= 0xf0 ) {
+	      out("Unknown or invalid MIDI Clock port!");
+	    } else {
+	      int on_off = -1;
+	      char *arg_on_off;
+	      if( !(arg_on_off = strtok_r(NULL, separators, &brkt)) ||
+		  (on_off = get_on_off(arg_on_off)) < 0 ) {
+		out("Missing 'on' or 'off' after port name!");
+	      } else {
+		if( mclk_in ) {
+		  if( SEQ_MIDI_ROUTER_MIDIClockInSet(mclk_port, on_off) < 0 )
+		    out("Failed to set MIDI Clock port %s", arg);
+		  else
+		    out("Set MIDI Clock for IN port %s to %s\n", arg, arg_on_off);
+		} else {
+		  if( SEQ_MIDI_ROUTER_MIDIClockOutSet(mclk_port, on_off) < 0 )
+		    out("Failed to set MIDI Clock port %s", arg);
+		  else
+		    out("Set MIDI Clock for OUT port %s to %s\n", arg, arg_on_off);
+		}
+	      }
+	    }
+	  }
+	} else if( strcmp(parameter, "blm_port") == 0 ) {
+	  char *arg;
+	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specifify BLM MIDI input port or 'off' to disable BLM!");
+	  } else {
+	    if( strcmp(arg, "off") == 0 ) {
+	      seq_blm_port = 0x00;
+	      out("BLM port has been disabled!");
+	    } else {
+	      mios32_midi_port_t blm_port = 0xff;
+	      int port_ix;
+	      for(port_ix=0; port_ix<SEQ_MIDI_PORT_InNumGet(); ++port_ix) {
+		// terminate port name at first space
+		char port_name[10];
+		strcpy(port_name, SEQ_MIDI_PORT_InNameGet(port_ix));
+		int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+		if( strcmp(arg, port_name) == 0 ) {
+		  blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+		  break;
+		}
+	      }
+
+	      if( blm_port >= 0xf0 ) {
+		out("Unknown or invalid BLM input port!");
+	      } else {
+		seq_blm_port = blm_port;
+		out("BLM port set to %s", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
+	      }
+	    }
+	  }
+	} else {
+	  out("Unknown set parameter: '%s'!", parameter);
+	}
+      } else {
+	out("Missing parameter after 'set'!");
+      }
     } else if( strcmp(parameter, "sdcard") == 0 ) {
       SEQ_TERMINAL_PrintSdCardInfo(out);
+    } else if( strcmp(parameter, "router") == 0 ) {
+      SEQ_TERMINAL_PrintRouterInfo(out);
     } else if( strcmp(parameter, "testaoutpin") == 0 ) {
       char *arg;
       int pin_number = -1;
@@ -343,6 +575,11 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  bookmarks:      print bookmarks\n");
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
+  out("  router:         print MIDI router info\n");
+  out("  set router <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
+  out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
+  out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
+  out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
   out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
@@ -845,6 +1082,69 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   return 0; // no error
 }
 
+
+s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  MUTEX_MIDIOUT_TAKE;
+
+  out("MIDI Router Nodes (change with 'set router <in-port> <channel> <out-port> <channel>)");
+
+  u8 node;
+  seq_midi_router_node_t *n = &seq_midi_router_node[0];
+  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+
+    char src_chn[10];
+    if( !n->src_chn )
+      sprintf(src_chn, "off");
+    else if( n->src_chn > 16 )
+      sprintf(src_chn, "all");
+    else
+      sprintf(src_chn, "#%2d", n->src_chn);
+
+    char dst_chn[10];
+    if( !n->dst_chn )
+      sprintf(dst_chn, "off");
+    else if( n->dst_chn > 16 )
+      sprintf(dst_chn, "all");
+    else
+      sprintf(dst_chn, "#%2d", n->dst_chn);
+
+    out("  %2d  SRC:%s %s  DST:%s %s",
+	node+1,
+	SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(n->src_port)),
+	src_chn,
+	SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(n->dst_port)),
+	dst_chn);
+  }
+
+  out("");
+  out("MIDI Clock (change with 'set mclk_in <in-port> <on|off>' resp. 'set mclk_out <out-port> <on|off>')");
+
+  int num_mclk_ports = SEQ_MIDI_PORT_ClkNumGet();
+  int port_ix;
+  for(port_ix=0; port_ix<num_mclk_ports; ++port_ix) {
+    mios32_midi_port_t mclk_port = SEQ_MIDI_PORT_ClkPortGet(port_ix);
+
+    s32 enab_rx = SEQ_MIDI_ROUTER_MIDIClockInGet(mclk_port);
+    if( !SEQ_MIDI_PORT_ClkCheckAvailable(mclk_port) )
+      enab_rx = -1; // MIDI In port not available
+
+    s32 enab_tx = SEQ_MIDI_ROUTER_MIDIClockOutGet(mclk_port);
+    if( !SEQ_MIDI_PORT_ClkCheckAvailable(mclk_port) )
+      enab_tx = -1; // MIDI In port not available
+
+    out("  %s  IN:%s  OUT:%s\n",
+	SEQ_MIDI_PORT_ClkNameGet(port_ix),
+	(enab_rx == 0) ? "off" : ((enab_rx == 1) ? "on " : "---"),
+	(enab_tx == 0) ? "off" : ((enab_tx == 1) ? "on " : "---"));
+  }
+
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
 
 s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
 {
