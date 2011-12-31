@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 
+#include "seq_bpm.h"
 #include "seq_layer.h"
 #include "seq_core.h"
 #include "seq_cc.h"
