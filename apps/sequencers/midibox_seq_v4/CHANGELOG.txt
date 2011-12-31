@@ -24,6 +24,19 @@ MIDIboxSEQ V4.055
      - change BLM port remotely
      - "store" and "restore" the session remotely
 
+   o BLM now supports Lemur on iPad
+     Example configuration (we assume that iPad IP address is 192.168.1.110):
+     - set osc_remote 3 192.168.1.110
+     - set osc_local_port 3 8000
+     - set osc_remote_port 3 8000
+     - set osc_mode 3 1
+     - set blm_port OSC3
+     - store
+     (the commands can be entered in MIOS terminal).
+     On your iPad, set the IP address of your MIDIbox with port 8000
+
+   o BLM now allows to record MIDI notes in the keyboard page
+
 
 MIDIboxSEQ V4.054
 ~~~~~~~~~~~~~~~~~

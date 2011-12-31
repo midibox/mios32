@@ -30,6 +30,8 @@
 #include "seq_pattern.h"
 #include "seq_scale.h"
 #include "seq_midi_in.h"
+#include "seq_record.h"
+#include "osc_server.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +65,15 @@
 
 #define SYSEX_BLM_CMD_REQUEST      0x00
 #define SYSEX_BLM_CMD_LAYOUT       0x01
+
+// connection state
+#define BLM_CONNECTION_IDLE   0
+#define BLM_CONNECTION_SYSEX  1
+#define BLM_CONNECTION_LEMUR  2
+
+
+// optimized transfer: how many MIDI packets should be bundled?
+#define BLM_MAX_PACKETS 8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -138,6 +149,7 @@ static s32 SEQ_BLM_SYSEX_Cmd_Ping(mios32_midi_port_t port, sysex_cmd_state_t cmd
 static s32 SEQ_BLM_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg);
 
 static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note);
+static s32 BLM_SendPackets(mios32_midi_package_t *packets, u8 num_packets);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -146,7 +158,10 @@ static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note);
 
 static blm_mode_t blm_mode;
 
-static u8 blm_first_connection;
+// 0: no contact yet
+// 1: contact via MIDI protocol
+// 2: contach via simplified Lemur protocol
+static u8 blm_connection;
 
 static const u8 seq_blm_sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x4e }; // Header of MBHP_BLM_SCALAR
 
@@ -168,6 +183,10 @@ static u16 blm_leds_extracolumn_green;
 static u16 blm_leds_extracolumn_green_sent;
 static u16 blm_leds_extracolumn_red;
 static u16 blm_leds_extracolumn_red_sent;
+static u16 blm_leds_extracolumn_shift_green;
+static u16 blm_leds_extracolumn_shift_green_sent;
+static u16 blm_leds_extracolumn_shift_red;
+static u16 blm_leds_extracolumn_shift_red_sent;
 static u16 blm_leds_extrarow_green;
 static u16 blm_leds_extrarow_green_sent;
 static u16 blm_leds_extrarow_red;
@@ -194,7 +213,7 @@ s32 SEQ_BLM_Init(u32 mode)
 {
   seq_blm_port = 0; // disabled
   blm_mode = BLM_MODE_TRACKS; // for compatibility with 4x16 BLM, will be changed to BLM_MODE_GRID on first connection
-  blm_first_connection = 0;
+  blm_connection = BLM_CONNECTION_IDLE;
   blm_num_columns = 16;
   blm_num_rows = 16;
   blm_num_colours = 2;
@@ -346,10 +365,9 @@ static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t c
 
     default: // SYSEX_CMD_STATE_END
       // if first connection: change to Grid mode
-      if( !blm_first_connection ) {
-	blm_first_connection = 1;
+      if( !blm_connection )
 	blm_mode = BLM_MODE_GRID;
-      }
+      blm_connection = BLM_CONNECTION_SYSEX;
 
       // update BLM
       blm_force_update = 1;
@@ -640,8 +658,8 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
-    blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -847,8 +865,8 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
-    blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -923,8 +941,8 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
-    blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -1022,8 +1040,8 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
       blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   } else {
-    blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -1043,6 +1061,7 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 #else
   u8 velocity = 8*(15-button_row) + 4;
 #endif
+  u8 should_be_recorded = seq_record_state.ENABLED && (seq_record_state.ARMED_TRACKS & (1 << visible_track));
 
   if( depressed ) {
     // play off event - but only if depressed button matches with last one that played the note
@@ -1091,13 +1110,25 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 
     // play off event if note still active (e.g. different velocity of same note played)
     if( blm_keyboard_velocity[button_column] ) {
+      mios32_midi_package_t p;
+      p.ALL = 0;
+      p.cin = NoteOn;
+      p.event = NoteOn;
+      p.chn = blm_keyboard_chn[button_column];
+      p.note = blm_keyboard_note[button_column];
+      p.velocity = 0x00;
+
       MUTEX_MIDIOUT_TAKE;
-      MIOS32_MIDI_SendNoteOn(blm_keyboard_port[button_column],
-			     blm_keyboard_chn[button_column],
-			     blm_keyboard_note[button_column],
-			     0x00);
+      MIOS32_MIDI_SendPackage(blm_keyboard_port[button_column], p);
       blm_keyboard_velocity[button_column] = 0x00; // to notify that note-off has been played
       MUTEX_MIDIOUT_GIVE;
+
+      if( should_be_recorded ) {
+	u8 fwd_midi = seq_record_options.FWD_MIDI;
+	seq_record_options.FWD_MIDI = 0;
+	SEQ_RECORD_Receive(p, SEQ_UI_VisibleTrackGet());
+	seq_record_options.FWD_MIDI = fwd_midi;
+      }
     }
     
     // set new port/channel/note/velocity
@@ -1110,12 +1141,24 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
   }
 
   if( play_note ) {
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.cin = NoteOn;
+    p.event = NoteOn;
+    p.chn = blm_keyboard_chn[button_column];
+    p.note = blm_keyboard_note[button_column];
+    p.velocity = blm_keyboard_velocity[button_column];
+
     MUTEX_MIDIOUT_TAKE;
-    MIOS32_MIDI_SendNoteOn(blm_keyboard_port[button_column],
-			   blm_keyboard_chn[button_column],
-			   blm_keyboard_note[button_column],
-			   blm_keyboard_velocity[button_column]);
+    MIOS32_MIDI_SendPackage(blm_keyboard_port[button_column], p);
     MUTEX_MIDIOUT_GIVE;
+
+    if( should_be_recorded ) {
+      u8 fwd_midi = seq_record_options.FWD_MIDI;
+      seq_record_options.FWD_MIDI = 0;
+      SEQ_RECORD_Receive(p, SEQ_UI_VisibleTrackGet());
+      seq_record_options.FWD_MIDI = fwd_midi;
+    }
   }
 
   return 0; // no error
@@ -1133,14 +1176,22 @@ static s32 SEQ_BLM_KeyboardAllNotesOff(void)
     if( blm_keyboard_velocity[i] ) {
       blm_keyboard_velocity[i] = 0;
 
+      mios32_midi_package_t p;
+      p.ALL = 0;
+      p.cin = NoteOn;
+      p.event = NoteOn;
+      p.chn = blm_keyboard_chn[i];
+      p.note = blm_keyboard_note[i];
+      p.velocity = blm_keyboard_velocity[i];
+
       MUTEX_MIDIOUT_TAKE;
-      MIOS32_MIDI_SendNoteOn(blm_keyboard_port[i],
-			     blm_keyboard_chn[i],
-			     blm_keyboard_note[i],
-			     blm_keyboard_velocity[i]);
+      MIOS32_MIDI_SendPackage(blm_keyboard_port[i], p);
       MUTEX_MIDIOUT_GIVE;
     }
   }
+
+  // just to ensure...
+  SEQ_RECORD_AllNotesOff();
 
   return 0; // no error
 }
@@ -1246,8 +1297,8 @@ static s32 SEQ_BLM_LED_Update303Mode(void)
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
   } else {
-    blm_leds_extracolumn_green = 0x0000;
-    blm_leds_extracolumn_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
@@ -1333,6 +1384,10 @@ s32 SEQ_BLM_LED_Update(void)
   // row offset is used if BLM supports less than 16 rows
   blm_led_row_offset = 0;
 
+  // (always present)
+  blm_leds_extracolumn_shift_green = 0x0000;
+  blm_leds_extracolumn_shift_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+
   switch( blm_mode ) {
     case BLM_MODE_GRID:
       SEQ_BLM_LED_UpdateGridMode();
@@ -1374,6 +1429,24 @@ s32 SEQ_BLM_LED_Update(void)
   ///////////////////////////////////////////////////////////////////////////
   // send LED changes to BLM16x16
   ///////////////////////////////////////////////////////////////////////////
+  mios32_midi_package_t packets[BLM_MAX_PACKETS];
+  u8 num_packets = 0;
+
+  // help macro to handle packet buffer
+#define SEND_PACKET(p) { \
+    packets[num_packets++] = p;			\
+    if( num_packets >= BLM_MAX_PACKETS ) {	\
+      BLM_SendPackets(packets, num_packets);	\
+      num_packets = 0;				\
+    } \
+  }
+
+
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.cin = CC;
+  p.event = CC;
+
   if( seq_blm_port ) {
     int i;
     for(i=0; i<blm_num_rows; ++i) {
@@ -1385,42 +1458,44 @@ s32 SEQ_BLM_LED_Update(void)
       u16 prev_pattern_red = blm_leds_red_sent[led_row];
 
       if( force_update || pattern_green != prev_pattern_green || pattern_red != prev_pattern_red ) {
-	MUTEX_MIDIOUT_TAKE;
 
 	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
 	if( force_update || (pattern_green ^ prev_pattern_green) & 0x00ff ) {
 	  u8 pattern8 = pattern_green;
-	  MIOS32_MIDI_SendCC(seq_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 17 : 16), // CC number + MSB LED
-			     pattern8 & 0x7f); // remaining 7 LEDs
+	  p.chn = led_row;
+	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 17 : 16); // CC number + MSB LED
+	  p.value = pattern8 & 0x7f; // remaining 7 LEDs
+
+	  SEND_PACKET(p);
 	}
 
 	if( force_update || (pattern_green ^ prev_pattern_green) & 0xff00 ) {
 	  u8 pattern8 = pattern_green >> 8;
-	  MIOS32_MIDI_SendCC(seq_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 19 : 18), // CC number + MSB LED
-			     pattern8 & 0x7f); // remaining 7 LEDs
+	  p.chn = led_row;
+	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 19 : 18); // CC number + MSB LED
+	  p.value = pattern8 & 0x7f; // remaining 7 LEDs
+
+	  SEND_PACKET(p);
 	}	
 
 	if( force_update || (pattern_red ^ prev_pattern_red) & 0x00ff ) {
 	  u8 pattern8 = pattern_red;
-	  MIOS32_MIDI_SendCC(seq_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 33 : 32), // CC number + MSB LED
-			     pattern8 & 0x7f); // remaining 7 LEDs
+	  p.chn = led_row;
+	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 33 : 32); // CC number + MSB LED
+	  p.value = pattern8 & 0x7f; // remaining 7 LEDs
+
+	  SEND_PACKET(p);
 	}
 
 	if( force_update || (pattern_red ^ prev_pattern_red) & 0xff00 ) {
 	  u8 pattern8 = pattern_red >> 8;
-	  MIOS32_MIDI_SendCC(seq_blm_port, // port
-			     led_row, // Channel (== LED Row)
-			     8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 35 : 34), // CC number + MSB LED
-			     pattern8 & 0x7f); // remaining 7 LEDs
+	  p.chn = led_row;
+	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 35 : 34); // CC number + MSB LED
+	  p.value = pattern8 & 0x7f; // remaining 7 LEDs
+
+	  SEND_PACKET(p);
 	}	
 
-	MUTEX_MIDIOUT_GIVE;
 	blm_leds_green_sent[led_row] = pattern_green;
 	blm_leds_red_sent[led_row] = pattern_red;
       }
@@ -1437,42 +1512,106 @@ s32 SEQ_BLM_LED_Update(void)
     blm_leds_extra_green = (sequencer_running && ((seq_core_state.ref_step & 3) == 0)) ? 0x01 : 0x00;
     blm_leds_extra_red = blm_shift_active ? 0x01 : 0x00;
 
-    MUTEX_MIDIOUT_TAKE;
     if( force_update || blm_leds_extra_green != blm_leds_extra_green_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 15, 0x60, blm_leds_extra_green);
+      p.chn = Chn16;
+      p.cc_number = 0x60;
+      p.value = blm_leds_extra_green;
+      MIOS32_MIDI_SendPackage(seq_blm_port, p);
       blm_leds_extra_green_sent = blm_leds_extra_green;
     }
 
     if( force_update || blm_leds_extra_red != blm_leds_extra_red_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 15, 0x68, blm_leds_extra_red);
+      p.chn = Chn16;
+      p.cc_number = 0x68;
+      p.value = blm_leds_extra_red;
+      SEND_PACKET(p);
       blm_leds_extra_red_sent = blm_leds_extra_red;
     }
 
     if( force_update || blm_leds_extracolumn_green != blm_leds_extracolumn_green_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extracolumn_green & 0x0080) ? 0x41 : 0x40, (blm_leds_extracolumn_green >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extracolumn_green & 0x8000) ? 0x43 : 0x42, (blm_leds_extracolumn_green >> 8) & 0x7f);
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extracolumn_green & 0x0080) ? 0x41 : 0x40;
+      p.value = (blm_leds_extracolumn_green >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extracolumn_green & 0x8000) ? 0x43 : 0x42;
+      p.value = (blm_leds_extracolumn_green >> 8) & 0x7f;
+      SEND_PACKET(p);
+
       blm_leds_extracolumn_green_sent = blm_leds_extracolumn_green;
     }
 
     if( force_update || blm_leds_extracolumn_red != blm_leds_extracolumn_red_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extracolumn_red & 0x0080) ? 0x49 : 0x48, (blm_leds_extracolumn_red >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extracolumn_red & 0x8000) ? 0x4b : 0x4a, (blm_leds_extracolumn_red >> 8) & 0x7f);
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extracolumn_red & 0x0080) ? 0x49 : 0x48;
+      p.value = (blm_leds_extracolumn_red >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extracolumn_red & 0x8000) ? 0x4b : 0x4a;
+      p.value = (blm_leds_extracolumn_red >> 8) & 0x7f;
+      SEND_PACKET(p);
+
       blm_leds_extracolumn_red_sent = blm_leds_extracolumn_red;
     }
 
+
+    if( force_update || blm_leds_extracolumn_shift_green != blm_leds_extracolumn_shift_green_sent ) {
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extracolumn_shift_green & 0x0080) ? 0x51 : 0x50;
+      p.value = (blm_leds_extracolumn_shift_green >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extracolumn_shift_green & 0x8000) ? 0x53 : 0x52;
+      p.value = (blm_leds_extracolumn_shift_green >> 8) & 0x7f;
+      SEND_PACKET(p);
+
+      blm_leds_extracolumn_shift_green_sent = blm_leds_extracolumn_shift_green;
+    }
+
+    if( force_update || blm_leds_extracolumn_shift_red != blm_leds_extracolumn_shift_red_sent ) {
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extracolumn_shift_red & 0x0080) ? 0x59 : 0x58;
+      p.value = (blm_leds_extracolumn_shift_red >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extracolumn_shift_red & 0x8000) ? 0x5b : 0x5a;
+      p.value = (blm_leds_extracolumn_shift_red >> 8) & 0x7f;
+      SEND_PACKET(p);
+
+      blm_leds_extracolumn_shift_red_sent = blm_leds_extracolumn_shift_red;
+    }
+
+
     if( force_update || blm_leds_extrarow_green != blm_leds_extrarow_green_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extrarow_green & 0x0080) ? 0x61 : 0x60, (blm_leds_extrarow_green >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extrarow_green & 0x8000) ? 0x63 : 0x62, (blm_leds_extrarow_green >> 8) & 0x7f);
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extrarow_green & 0x0080) ? 0x61 : 0x60;
+      p.value = (blm_leds_extrarow_green >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extrarow_green & 0x8000) ? 0x63 : 0x62;
+      p.value = (blm_leds_extrarow_green >> 8) & 0x7f;
+      SEND_PACKET(p);
+
       blm_leds_extrarow_green_sent = blm_leds_extrarow_green;
     }
 
     if( force_update || blm_leds_extrarow_red != blm_leds_extrarow_red_sent ) {
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extrarow_red & 0x0080) ? 0x69 : 0x68, (blm_leds_extrarow_red >> 0) & 0x7f);
-      MIOS32_MIDI_SendCC(seq_blm_port, 0, (blm_leds_extrarow_red & 0x8000) ? 0x6b : 0x6a, (blm_leds_extrarow_red >> 8) & 0x7f);
+      p.chn = Chn1;
+      p.cc_number = (blm_leds_extrarow_red & 0x0080) ? 0x69 : 0x68;
+      p.value = (blm_leds_extrarow_red >> 0) & 0x7f;
+      SEND_PACKET(p);
+
+      p.cc_number = (blm_leds_extrarow_red & 0x8000) ? 0x6b : 0x6a;
+      p.value = (blm_leds_extrarow_red >> 8) & 0x7f;
+      SEND_PACKET(p);
+
       blm_leds_extrarow_red_sent = blm_leds_extrarow_red;
     }
-    MUTEX_MIDIOUT_GIVE;
   }
+
+  // send remaining packets
+  if( num_packets )
+    BLM_SendPackets(packets, num_packets);
 
   return 0; // no error
 }
@@ -1484,6 +1623,35 @@ s32 SEQ_BLM_LED_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  // extra for Lemur via OSC: simplified handshaking
+  if( (port & 0xf0) == OSC0 ) {
+    if( midi_package.event == CC && midi_package.chn == Chn16 && midi_package.cc_number == 0x7f ) {
+      switch( midi_package.value ) {
+      case 0x01: { // Layout
+	// if first connection: change to Grid mode
+	if( !blm_connection )
+	  blm_mode = BLM_MODE_GRID;
+	blm_connection = BLM_CONNECTION_LEMUR;
+
+	// update BLM
+	blm_force_update = 1;
+	// send acknowledge
+	MIOS32_MIDI_SendCC(port, Chn16, 0x7f, 0x7f);
+	// and reload timeout counter
+	blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+      } break;
+
+      case 0x0f: { // Ping
+	// send acknowledge
+	MIOS32_MIDI_SendCC(port, Chn16, 0x7f, 0x7f);
+
+	// reload timeout counter
+	blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+      } break;
+      }
+    }
+  }
+
   // ignore any event on timeout
   if( !blm_timeout_ctr )
     return -1;
@@ -1520,6 +1688,16 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	if( blm_mode != BLM_MODE_PATTERNS )
 	  ui_selected_tracks = (new_track >= 8) ? 0xff00 : 0x00ff;
 	ui_selected_group = (new_track >= 8) ? 2 : 0;
+
+	// armed tracks handling: alternate and select all tracks depending on seq selection
+	// can be changed in RecArm page
+	if( ui_selected_tracks & 0xff00 ) {
+	  if( (seq_record_state.ARMED_TRACKS & 0x00ff) )
+	    seq_record_state.ARMED_TRACKS = 0xff00;
+	} else {
+	  if( (seq_record_state.ARMED_TRACKS & 0xff00) )
+	    seq_record_state.ARMED_TRACKS = 0x00ff;
+	}
 #else
 	if( blm_num_rows <= 4 ) {
 	  if( new_track >= 4 )
@@ -1564,7 +1742,9 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
       return 1; // MIDI event has been taken
 
-    } else if( midi_package.note == 0x40 ) {
+    } else if( midi_package.note == 0x40 || midi_package.note == 0x50 ) {
+
+      u8 local_shift_active = midi_package.note == 0x50;
 
       if( midi_package.velocity > 0 ) {
 	// disable all keyboard notes (important when switching between modes or tracks!)
@@ -1572,7 +1752,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       }
 
       // Extra Column
-      if( !blm_shift_active ) {
+      if( !blm_shift_active && !local_shift_active ) {
 	if( midi_package.velocity > 0 ) {
 	  u8 new_track = midi_package.chn;
 	  u16 track_mask = 1 << new_track;
@@ -1583,6 +1763,16 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	  else { // track not selected yet: select it now
 	    ui_selected_tracks = (new_track >= 8) ? 0xff00 : 0x00ff;
 	    blm_force_update = 1;	
+
+	    // armed tracks handling: alternate and select all tracks depending on seq selection
+	    // can be changed in RecArm page
+	    if( ui_selected_tracks & 0xff00 ) {
+	      if( (seq_record_state.ARMED_TRACKS & 0x00ff) )
+		seq_record_state.ARMED_TRACKS = 0xff00;
+	    } else {
+	      if( (seq_record_state.ARMED_TRACKS & 0xff00) )
+		seq_record_state.ARMED_TRACKS = 0x00ff;
+	    }
 	  }
 #else
 	  if( ui_selected_tracks & track_mask ) // track already selected: mute it
@@ -1768,4 +1958,43 @@ static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note)
   }
 
   return tr_note;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to send MIDI packets for LED layout changes
+/////////////////////////////////////////////////////////////////////////////
+static s32 BLM_SendPackets(mios32_midi_package_t *packets, u8 num_packets)
+{
+  u8 to_lemur = ((seq_blm_port & 0xf0) == OSC0) && (blm_connection == BLM_CONNECTION_LEMUR);
+
+  MUTEX_MIDIOUT_TAKE;
+
+  if( to_lemur ) {
+    int i;
+    u8 packet[BLM_MAX_PACKETS*4+BLM_MAX_PACKETS+10];
+    u8 *end_ptr = packet;
+    end_ptr = MIOS32_OSC_PutString(end_ptr, "/BLM");
+
+    char buffer[BLM_MAX_PACKETS+2];
+    buffer[0] = ',';
+    for(i=1; i<=num_packets; ++i)
+      buffer[i] = 'i';
+    buffer[i] = 0;
+
+    end_ptr = MIOS32_OSC_PutString(end_ptr, buffer);
+
+    for(i=0; i<num_packets; ++i)
+      end_ptr = MIOS32_OSC_PutInt(end_ptr, packets[i].ALL);
+
+    OSC_SERVER_SendPacket(seq_blm_port & 0x0f, packet, (u32)(end_ptr-packet));
+  } else {
+    int i;
+    for(i=0; i<num_packets; ++i)
+      MIOS32_MIDI_SendPackage(seq_blm_port, packets[i]);
+  }
+
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
 }
