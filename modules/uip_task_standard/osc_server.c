@@ -44,6 +44,7 @@
 static struct uip_udp_conn *osc_conn[OSC_SERVER_NUM_CONNECTIONS];
 
 static mios32_osc_search_tree_t parse_root[];
+static u8 osc_parsed_from_con;
 
 static u8 *osc_send_packet;
 static u32 osc_send_len;
@@ -225,13 +226,24 @@ s32 OSC_SERVER_AppCall(void)
     // check for matching port
     int con;
     u16 search_port = HTONS(uip_udp_conn->lport); // (no error: use lport instead of rport, since UIP inserts it there)
+    u32 search_ip =
+      ((u32)uip_ipaddr1(uip_udp_conn->ripaddr) << 24) |
+      ((u32)uip_ipaddr2(uip_udp_conn->ripaddr) << 16) |
+      ((u32)uip_ipaddr3(uip_udp_conn->ripaddr) <<  8) |
+      ((u32)uip_ipaddr4(uip_udp_conn->ripaddr) <<  0);
 
     u8 port_ok = 0;
-    for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con)
-      if( osc_local_port[con] == search_port ) {
+    for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+      //DEBUG_MSG("Search: %08x Current %08x\n", search_ip, osc_remote_ip[con]);
+      if( osc_local_port[con] == search_port &&
+#if 1
+	  (osc_remote_ip[con] == 0xffffffff || osc_remote_ip[con] == search_ip) // check for matching IP as well if != 0xffffffff (broadcast IP)
+#endif
+	  ) {
 	port_ok = 1;
 	break;
       }
+    }
 
     if( !port_ok ) {
       // forward to monitor
@@ -256,6 +268,8 @@ s32 OSC_SERVER_AppCall(void)
       MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, uip_len);
       UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
+
+      osc_parsed_from_con = con; // used by event propagation
       s32 status = MIOS32_OSC_ParsePacket((u8 *)uip_appdata, uip_len, parse_root);
       if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -484,15 +498,12 @@ static s32 OSC_SERVER_Method_MCMPP(mios32_osc_args_t *osc_args, u32 method_arg)
   // port is located in method argument
 
   // search for ports which are assigned to the MCMPP protocol
-  int osc_port;
-  for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
-    u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( OSC_IGNORE_TRANSFER_MODE || transfer_mode == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
-      UIP_TASK_MUTEX_MIDIIN_TAKE;
-      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
-	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
-      UIP_TASK_MUTEX_MIDIIN_GIVE;
-    }
+  u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_parsed_from_con);
+  if( OSC_IGNORE_TRANSFER_MODE || transfer_mode == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
+    if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_parsed_from_con, p) < 1 )
+      APP_MIDI_NotifyPackage(OSC0 + osc_parsed_from_con, p);
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
   }
 
   return 0; // no error
@@ -542,18 +553,15 @@ static s32 OSC_SERVER_Method_Event(mios32_osc_args_t *osc_args, u32 method_arg)
 
   // propagate to application
   // search for ports which are assigned to the MIDI value protocol
-  int osc_port;
-  for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
-    u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( OSC_IGNORE_TRANSFER_MODE ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
-      UIP_TASK_MUTEX_MIDIIN_TAKE;
-      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
-	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
-      UIP_TASK_MUTEX_MIDIIN_GIVE;
-    }
+  u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_parsed_from_con);
+  if( OSC_IGNORE_TRANSFER_MODE ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
+    if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_parsed_from_con, p) < 1 )
+      APP_MIDI_NotifyPackage(OSC0 + osc_parsed_from_con, p);
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
   }
 
   return 0; // no error
@@ -593,17 +601,93 @@ static s32 OSC_SERVER_Method_EventPB(mios32_osc_args_t *osc_args, u32 method_arg
 
   // propagate to application
   // search for ports which are assigned to the MIDI value protocol
-  int osc_port;
-  for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
-    u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( OSC_IGNORE_TRANSFER_MODE ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
-      UIP_TASK_MUTEX_MIDIIN_TAKE;
-      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
-	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
-      UIP_TASK_MUTEX_MIDIIN_GIVE;
+  u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_parsed_from_con);
+  if( OSC_IGNORE_TRANSFER_MODE ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
+    if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_parsed_from_con, p) < 1 )
+      APP_MIDI_NotifyPackage(OSC0 + osc_parsed_from_con, p);
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
+  }
+
+  return 0; // no error
+}
+
+static s32 OSC_SERVER_Method_EventNRPN(mios32_osc_args_t *osc_args, u32 method_arg)
+{
+#if DEBUG_VERBOSE_LEVEL >= 2
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
+  MIOS32_OSC_SendDebugMessage(osc_args, method_arg);
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
+#endif
+
+  // we expect at least 2 arguments
+  if( osc_args->num_args < 2 )
+    return -1; // wrong number of arguments
+
+  // get channel and status nibble
+  int evnt0 = method_arg & 0xff;
+
+  // get NRPN number
+  int nrpn_number = 0;
+  if( osc_args->arg_type[0] == 'i' )
+    nrpn_number = MIOS32_OSC_GetInt(osc_args->arg_ptr[0]);
+  else if( osc_args->arg_type[0] == 'f' )
+    nrpn_number = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[0]));
+
+  // get NRPN value
+  int nrpn_value = 0;
+  if( osc_args->arg_type[0] == 'i' )
+    nrpn_value = MIOS32_OSC_GetInt(osc_args->arg_ptr[1]);
+  else if( osc_args->arg_type[0] == 'f' )
+    nrpn_value = (int)(MIOS32_OSC_GetFloat(osc_args->arg_ptr[1]));
+
+  // build MIDI package(s)
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.type = evnt0 >> 4;
+  p.evnt0 = evnt0;
+
+  // propagate to application
+  // search for ports which are assigned to the MIDI value protocol
+  u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_parsed_from_con);
+  if( OSC_IGNORE_TRANSFER_MODE ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_INT ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
+
+    // send 4 packages
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
+
+    int i;
+    for(i=0; i<4; ++i) {
+      switch( i ) {
+      case 0: // NRPN Address MSB
+	p.evnt1 = 0x63;
+	p.evnt2 = (nrpn_number >> 7) & 0x7f;
+	break;
+	
+      case 1: // NRPN Address LSB
+	p.evnt1 = 0x62;
+	p.evnt2 = (nrpn_number >> 0) & 0x7f;
+	break;
+	
+      case 2: // NRPN Data MSB
+	p.evnt1 = 0x06;
+	p.evnt2 = (nrpn_value >> 7) & 0x7f;
+	break;
+	
+      case 3: // NRPN Data LSB
+	p.evnt1 = 0x26;
+	p.evnt2 = (nrpn_value >> 0) & 0x7f;
+	break;
+      }
+      
+      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_parsed_from_con, p) < 1 )
+	APP_MIDI_NotifyPackage(OSC0 + osc_parsed_from_con, p);
     }
+    
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
   }
 
   return 0; // no error
@@ -653,16 +737,13 @@ static s32 OSC_SERVER_Method_EventTOSC(mios32_osc_args_t *osc_args, u32 method_a
 
   // propagate to application
   // search for ports which are assigned to the MIDI value protocol
-  int osc_port;
-  for(osc_port=0; osc_port<OSC_CLIENT_NUM_PORTS; ++osc_port) {
-    u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_port);
-    if( OSC_IGNORE_TRANSFER_MODE ||
-	transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
-      UIP_TASK_MUTEX_MIDIIN_TAKE;
-      if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_port, p) < 1 )
-	APP_MIDI_NotifyPackage(OSC0 + osc_port, p);
-      UIP_TASK_MUTEX_MIDIIN_GIVE;
-    }
+  u8 transfer_mode = OSC_CLIENT_TransferModeGet(osc_parsed_from_con);
+  if( OSC_IGNORE_TRANSFER_MODE ||
+      transfer_mode == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
+    UIP_TASK_MUTEX_MIDIIN_TAKE;
+    if( MIOS32_MIDI_SendPackageToRxCallback(OSC0 + osc_parsed_from_con, p) < 1 )
+      APP_MIDI_NotifyPackage(OSC0 + osc_parsed_from_con, p);
+    UIP_TASK_MUTEX_MIDIIN_GIVE;
   }
 
   return 0; // no error
@@ -701,6 +782,7 @@ static mios32_osc_search_tree_t parse_event[] = {
   { "note",          NULL, &OSC_SERVER_Method_Event,   0x00000090 }, // bit [7:4] contains status byte
   { "polypressure",  NULL, &OSC_SERVER_Method_Event,   0x000000a0 }, // bit [7:4] contains status byte
   { "cc",            NULL, &OSC_SERVER_Method_Event,   0x000000b0 }, // bit [7:4] contains status byte
+  { "nrpn",          NULL, &OSC_SERVER_Method_EventNRPN,0x000000b0 }, // bit [7:4] contains status byte
   { "programchange", NULL, &OSC_SERVER_Method_Event,   0x000000c0 }, // bit [7:4] contains status byte
   { "aftertouch",    NULL, &OSC_SERVER_Method_Event,   0x000000b0 }, // bit [7:4] contains status byte
   { "pitchbend",     NULL, &OSC_SERVER_Method_EventPB, 0x000000e0 }, // bit [7:4] contains status byte

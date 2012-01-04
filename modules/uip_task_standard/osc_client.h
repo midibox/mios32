@@ -14,6 +14,9 @@
 #ifndef _OSC_CLIENT_H
 #define _OSC_CLIENT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -51,6 +54,7 @@ extern const char* OSC_CLIENT_TransferModeFullNameGet(u8 mode);
 extern const char* OSC_CLIENT_TransferModeShortNameGet(u8 mode);
 
 extern s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t p);
+extern s32 OSC_CLIENT_SendNRPNEvent(u8 osc_port, u8 chn, u16 nrpn_number, u16 nrpn_value);
 extern s32 OSC_CLIENT_SendSysEx(u8 osc_port, u8 *stream, u32 count);
 extern s32 OSC_CLIENT_SendMIDIEventBundled(u8 osc_port, mios32_midi_package_t *p, u8 num_events, mios32_osc_timetag_t timetag);
 
@@ -58,5 +62,9 @@ extern s32 OSC_CLIENT_SendMIDIEventBundled(u8 osc_port, mios32_midi_package_t *p
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OSC_CLIENT_H */
