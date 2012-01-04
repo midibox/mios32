@@ -402,6 +402,86 @@ s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t package)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Send a NRPN event
+// Path: /midi <midi-package>
+/////////////////////////////////////////////////////////////////////////////
+s32 OSC_CLIENT_SendNRPNEvent(u8 osc_port, u8 chn, u16 nrpn_number, u16 nrpn_value)
+{
+  if( osc_port >= OSC_CLIENT_NUM_PORTS )
+    return -1; // invalid port
+
+  // check if server is running
+  if( !UIP_TASK_ServicesRunning() )
+    return -2; 
+
+  // create the OSC packet
+  u8 packet[128];
+  u8 *end_ptr = packet;
+
+  if( osc_transfer_mode[osc_port] == OSC_CLIENT_TRANSFER_MODE_MCMPP ) {
+    char event_path[30];
+    sprintf(event_path, "/mcmpp/nrpn/%d/%d", nrpn_number, chn+1);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+    end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)nrpn_value/16383.0);
+  } else if( osc_transfer_mode[osc_port] == OSC_CLIENT_TRANSFER_MODE_TOSC ) {
+    char event_path[30];
+    sprintf(event_path, "/%d/nrpn_%d", chn+1, nrpn_number);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
+    end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)nrpn_value/16383.0);
+  } else if( osc_transfer_mode[osc_port] != OSC_CLIENT_TRANSFER_MODE_MIDI ) {
+    char event_path[30];
+    sprintf(event_path, "/%d/nrpn", chn+1);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
+    if( osc_transfer_mode[osc_port] == OSC_CLIENT_TRANSFER_MODE_FLOAT ) {
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",if");
+      end_ptr = MIOS32_OSC_PutInt(end_ptr, nrpn_number);
+      end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)nrpn_value/16383.0);
+    } else {
+      end_ptr = MIOS32_OSC_PutString(end_ptr, ",ii");
+      end_ptr = MIOS32_OSC_PutInt(end_ptr, nrpn_number);
+      end_ptr = MIOS32_OSC_PutInt(end_ptr, nrpn_value);
+    }
+  } else {
+    char midi_path[8];
+    strcpy(midi_path, "/midiX");
+    midi_path[5] = '1' + osc_port;
+    end_ptr = MIOS32_OSC_PutString(end_ptr, midi_path);
+    end_ptr = MIOS32_OSC_PutString(end_ptr, ",mmmm");
+
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.type = 0xb;
+    p.evnt0 = 0xb0 | chn;
+
+    // NRPN Address MSB
+    p.evnt1 = 0x63;
+    p.evnt2 = (nrpn_number >> 7) & 0x7f;
+    end_ptr = MIOS32_OSC_PutMIDI(end_ptr, p);
+
+    // NRPN Address LSB
+    p.evnt1 = 0x62;
+    p.evnt2 = (nrpn_number >> 0) & 0x7f;
+    end_ptr = MIOS32_OSC_PutMIDI(end_ptr, p);
+
+    // NRPN Data LSB
+    p.evnt1 = 0x06;
+    p.evnt2 = (nrpn_value >> 7) & 0x7f;
+    end_ptr = MIOS32_OSC_PutMIDI(end_ptr, p);
+
+    // NRPN Data MSB
+    p.evnt1 = 0x26;
+    p.evnt2 = (nrpn_value >> 0) & 0x7f;
+    end_ptr = MIOS32_OSC_PutMIDI(end_ptr, p);
+  }
+
+  // send packet and exit
+  return OSC_SERVER_SendPacket(osc_port, packet, (u32)(end_ptr-packet));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Send a SysEx stream
 // Path: /midi <midi-package>
 /////////////////////////////////////////////////////////////////////////////
