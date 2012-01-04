@@ -106,21 +106,21 @@ if( x && Direction.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/ModeT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="SemiTransp" x="537" y="28" width="100" height="100" id="13" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.506021" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0021, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0021, round(x*15));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/Setup/SemiTransp/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Knob" text="OctTransp" x="427" y="28" width="100" height="100" id="11" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.504341" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0020, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0020, round(x*15));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/Setup/OctTransp/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="CustomButton" text="Legato" x="101" y="24" width="60" height="48" id="38" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Legato" label_on="Legato" outline="1">
@@ -197,7 +197,7 @@ if( x && PortamentoMode.selection < (sizeof(items)-1) )
 <WINDOW class="Tab" text="LFO" x="0" y="0" width="958" height="676" id="1" state="0" group="0" font="tahoma,11,0" >
 <WINDOW class="Container" text="LFO1" x="119" y="41" width="739" height="287" id="28" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="1" unit="" value="0">
-<PARAM name="x=" value="0.760671" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.760784" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -361,7 +361,7 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 </WINDOW>
 <WINDOW class="Container" text="LFO2" x="119" y="358" width="739" height="287" id="30" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.167141" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.168627" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -1429,8 +1429,8 @@ if( select != 42 ) {
 			else if( par == 0x18 ) Setup.Portamento.x = value / 255;
 			else if( par == 0x19 ) Setup.PortamentoMode.selection = value;
 			else if( par == 0x1a ) Setup.SusKey.x = value;
-			else if( par == 0x20 ) Setup.OctTransp.x = value / 255;
-			else if( par == 0x21 ) Setup.SemiTransp.x = value / 255;
+			else if( par == 0x20 ) Setup.OctTransp.x = value / 16;
+			else if( par == 0x21 ) Setup.SemiTransp.x = value / 16;
 			else if( par == 0x22 ) Setup.Finetune.x = value / 255;
 	} else if( section < 0x100 ) { // ARP:  0x080..0x0ff
 			     if( par == 0x00 ) ARP.On.x = value;
@@ -1558,7 +1558,7 @@ if( select != 42 ) {
 <VARIABLE name="lastReceivedNrpnAddressMsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnAddressMsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="lastReceivedNrpnValueLsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnValueLsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="lastReceivedNrpnValueMsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnValueMsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="timerCounter=" value="39.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="timerCounter=" value="4.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="sendNRPN(nrpnNumber, nrpnValue)" script="decl chn = 0;
 
 decl nrpnNumberMsb = (nrpnNumber >> 7) & 0x7f;
