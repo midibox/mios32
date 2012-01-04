@@ -48,7 +48,7 @@ void MbCvEnv::init(void)
 
     // clear variables
     envModeClkSync = 0;
-    envModeCurveExp = 0;
+    envModeKeySync = 1;
     envAmplitude = 0;
     envDelay = 0;
     envAttack = 48;
@@ -56,6 +56,7 @@ void MbCvEnv::init(void)
     envDecayAccented = 16;
     envSustain = 64;
     envRelease = 32;
+    envCurve = 0;
 
     envDepthPitch = 127;
     envDepthLfo1Amplitude = 0;
@@ -111,7 +112,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
                 }
             }
   
-            s8 curve = envModeCurveExp ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
+            s8 curve = envCurve ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
             if( step(0xffff, envAttack, curve, updateSpeedFactor) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
@@ -122,7 +123,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             decay = decay + (envAmplitudeModulation / 512);
             if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
 
-            s8 curve = envModeCurveExp ? -64 : 0;
+            s8 curve = envCurve ? -64 : 0;
             if( step(envSustain << 8, decay, curve, updateSpeedFactor) ) {
                 envState = MBCV_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
   
@@ -137,7 +138,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             break;
   
         case MBCV_ENV_STATE_RELEASE: {
-            s8 curve = envModeCurveExp ? -64 : 0;
+            s8 curve = envCurve ? -64 : 0;
             if( envCtr )
                 step(0x0000, envRelease, curve, updateSpeedFactor);
         } break;

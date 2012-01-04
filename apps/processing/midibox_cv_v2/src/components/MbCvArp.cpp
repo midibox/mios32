@@ -354,3 +354,33 @@ void MbCvArp::noteOff(MbCvVoice *v, u8 note)
     mv->midivoiceNotestack.mode = saved_mode;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function
+/////////////////////////////////////////////////////////////////////////////
+void MbCvArp::arpDirSet(u8 value)
+{
+    if( value >= 6 )
+        arpRandomNotes = 1;
+    else {
+        arpRandomNotes = 0;
+        arpDown = (value & 1) ? 1 : 0;
+        arpUpAndDown = (value & 2) ? 1 : 0;
+        arpPingPong = (value & 4) ? 1 : 0;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function
+/////////////////////////////////////////////////////////////////////////////
+u8 MbCvArp::arpDirGet(void)
+{
+    if( arpRandomNotes )
+        return 6;
+
+    return
+        (arpDown ? 1 : 0) |
+        (arpUpAndDown ? 2 : 0) |
+        (arpPingPong ? 4 : 0);
+}
+

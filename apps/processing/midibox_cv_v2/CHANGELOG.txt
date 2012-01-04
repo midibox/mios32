@@ -1,6 +1,6 @@
 $Id$
 
-MIDIbox CV V3.000
+MIDIbox CV V2.000
 ~~~~~~~~~~~~~~~~~
 
    o initial version

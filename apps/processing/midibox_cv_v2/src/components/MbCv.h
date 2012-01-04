@@ -92,6 +92,9 @@ public:
     void midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit);
     void midiReceiveAftertouch(u8 chn, u8 value);
 
+    bool setNRPN(u16 nrpnNumber, u16 value);
+    bool getNRPN(u16 nrpnNumber, u16 *value);
+
     // should be called whenver the patch has been changed
     void updatePatch(bool forceEngineInit);
 
@@ -111,7 +114,7 @@ public:
 
     // modulators
     array<MbCvLfo, 2> mbCvLfo;
-    array<MbCvEnv, 2> mbCvEnv;
+    array<MbCvEnv, 1> mbCvEnv1;
     MbCvArp mbCvArp;
 
     // note handling

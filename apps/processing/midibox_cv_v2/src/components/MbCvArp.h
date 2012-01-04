@@ -65,6 +65,10 @@ public:
     // random generator
     MbCvRandomGen randomGen;
 
+    // help functions
+    void arpDirSet(u8 value);
+    u8 arpDirGet(void);
+
 protected:
     // internal variables
     bool arpActive;

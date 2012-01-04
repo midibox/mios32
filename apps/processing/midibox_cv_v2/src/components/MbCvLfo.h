@@ -36,7 +36,6 @@ public:
     bool tick(const u8 &updateSpeedFactor);
 
     // input parameters
-    bool lfoModeEnable;
     bool lfoModeKeySync;
     bool lfoModeClkSync;
     bool lfoModeOneshot;
@@ -50,8 +49,8 @@ public:
     s8 lfoDepthPitch;
     s8 lfoDepthLfoAmplitude;
     s8 lfoDepthLfoRate;
-    s8 lfoDepthEnvAmplitude;
-    s8 lfoDepthEnvDecay;
+    s8 lfoDepthEnv1Amplitude;
+    s8 lfoDepthEnv2Amplitude;
 
     s32 lfoAmplitudeModulation;
     s32 lfoRateModulation;
