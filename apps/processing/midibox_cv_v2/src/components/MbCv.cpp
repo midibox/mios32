@@ -223,8 +223,8 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x18: mbCvVoice.voicePortamentoRate = value; return true;
         case 0x19: mbCvVoice.setPortamentoMode(value); return true;
         case 0x1a: mbCvVoice.voiceSusKey = value; return true;
-        case 0x20: mbCvVoice.voiceTransposeOctave = (int)value - 0x80; return true;
-        case 0x21: mbCvVoice.voiceTransposeSemitone = (int)value - 0x80; return true;
+        case 0x20: mbCvVoice.voiceTransposeOctave = (int)value - 8; return true;
+        case 0x21: mbCvVoice.voiceTransposeSemitone = (int)value - 8; return true;
         case 0x22: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
         }
     } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
@@ -310,8 +310,8 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x18: *value = mbCvVoice.voicePortamentoRate; return true;
         case 0x19: *value = mbCvVoice.getPortamentoMode(); return true;
         case 0x1a: *value = mbCvVoice.voiceSusKey; return true;
-        case 0x20: *value = (int)mbCvVoice.voiceTransposeOctave + 0x80; return true;
-        case 0x21: *value = (int)mbCvVoice.voiceTransposeSemitone + 0x80; return true;
+        case 0x20: *value = (int)mbCvVoice.voiceTransposeOctave + 8; return true;
+        case 0x21: *value = (int)mbCvVoice.voiceTransposeSemitone + 8; return true;
         case 0x22: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
         }
     } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
