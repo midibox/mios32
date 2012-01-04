@@ -110,9 +110,8 @@ void MbCvMidiVoice::setCC(u8 ccNumber, u8 value)
         midivoiceCCValue = value;
 }
 
-void MbCvMidiVoice::setNRPN(u16 nrpnNumber, u16 value)
+void MbCvMidiVoice::setNRPN(u16 value)
 {
-    // currently only a single CC value is supported, but could be more in future?
-    if( nrpnNumber == midivoiceCCNumber ) // using same as CC
-        midivoiceNRPNValue = value; // 14bit
+    // always assigned to NRPN LSB 0, MSB depends on channel (decoded outside)
+    midivoiceNRPNValue = value; // 14bit
 }

@@ -55,7 +55,8 @@ extern "C" {
 #define DEBUG_VERBOSE_LEVEL 2
 
 // measure performance with the stopwatch
-#define STOPWATCH_PERFORMANCE_MEASURING 2
+//#define STOPWATCH_PERFORMANCE_MEASURING 2
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////

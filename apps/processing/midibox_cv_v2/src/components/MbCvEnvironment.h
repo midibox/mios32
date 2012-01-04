@@ -69,6 +69,15 @@ public:
     void midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in);
     void midiTimeOut(mios32_midi_port_t port);
 
+    void midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels);
+    void midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value);
+
+    // MIDI NRPN variables
+    u16 nrpnAddress[16];
+    u16 nrpnValue[16];
+    u8  lastSentNrpnAddressMsb;
+    u8  lastSentNrpnAddressLsb;
+
     // callbacks for MbCvSysEx
     bool sysexSetPatch(u8 cv, cv_patch_t *p, bool toBank, u8 bank, u8 patch); // returns false if CV not available
     bool sysexGetPatch(u8 cv, cv_patch_t *p, bool fromBank, u8 bank, u8 patch); // returns false if CV not available

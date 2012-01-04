@@ -46,7 +46,7 @@ public:
 
     // CC/NRPN handling
     void setCC(u8 ccNumber, u8 value);
-    void setNRPN(u16 nrpnNumber, u16 value);
+    void setNRPN(u16 value);
 
     // parameters
     u16 midivoiceEnabledPorts;

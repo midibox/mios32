@@ -98,6 +98,10 @@ public:
 
     u8  voiceAssignedInstrument;
 
+    // help functions for editor
+    void setPortamentoMode(u8 value);
+    u8 getPortamentoMode(void);
+
 protected:
 };
 
