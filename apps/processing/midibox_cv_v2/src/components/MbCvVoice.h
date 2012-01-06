@@ -41,9 +41,11 @@ public:
     bool voiceSusKey;
     bool voiceSequencerOnly;
     bool voicePoly;
+    bool voiceGateInverted;
     bool voiceConstantTimeGlide;
     bool voiceGlissandoMode;
     u8 voiceAccentRate; // used by Bassline sequencer only
+    s8 voiceKeytrack;
     s8 voiceTransposeOctave;
     s8 voiceTransposeSemitone;
     s8 voiceFinetune;
@@ -99,6 +101,13 @@ public:
     u8  voiceAssignedInstrument;
 
     // help functions for editor
+    void setAoutCurve(u8 value);
+    u8 getAoutCurve(void);
+    const char* getAoutCurveName();
+
+    void setAoutSlewRate(u8 value);
+    u8 getAoutSlewRate(void);
+
     void setPortamentoMode(u8 value);
     u8 getPortamentoMode(void);
 

@@ -82,8 +82,6 @@ extern s32 MBCV_PATCH_Store(char *filename);
 // Exported variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 mbcv_patch_gate_inverted[MBCV_PATCH_NUM_CV/8];
-
 extern mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER];
 extern u32 mbcv_patch_router_mclk_in;
 extern u32 mbcv_patch_router_mclk_out;

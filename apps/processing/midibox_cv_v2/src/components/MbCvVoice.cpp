@@ -17,6 +17,8 @@
 #include "MbCvMidiVoice.h"
 #include "MbCvTables.h"
 
+#include <aout.h>
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -58,6 +60,8 @@ void MbCvVoice::init(void)
     voiceSusKey = 0;
     voiceSequencerOnly = 0;
     voicePoly = 0;
+    voiceGateInverted = 0;
+    voiceKeytrack = 0;
     voiceConstantTimeGlide = 1;
     voiceGlissandoMode = 0;
     voiceAccentRate = 0;
@@ -429,8 +433,63 @@ void MbCvVoice::gateOff(u8 note)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Help function for editor
+// Help functions for editor
 /////////////////////////////////////////////////////////////////////////////
+void MbCvVoice::setAoutCurve(u8 value)
+{
+    u32 mask = 1 << voiceNum;
+    aout_config_t config;
+    config = AOUT_ConfigGet();
+
+    if( value & 1 )
+        config.chn_hz_v |= mask;
+    else
+        config.chn_hz_v &= ~mask;
+
+    if( value & 2 )
+        config.chn_inverted |= mask;
+    else
+        config.chn_inverted &= ~mask;
+
+    AOUT_ConfigSet(config);
+}
+
+u8 MbCvVoice::getAoutCurve(void)
+{
+    u32 mask = 1 << voiceNum;
+    aout_config_t config;
+    config = AOUT_ConfigGet();
+
+    u8 curve = 0;
+    if( config.chn_hz_v & mask )
+        curve |= 1;
+    if( config.chn_inverted & mask )
+        curve |= 2;
+
+    return curve;
+}
+
+// will return 6 characters
+static const char curve_desc[3][7] = {
+    "V/Oct ",
+    "Hz/V  ",
+    "Inv.  ",
+};
+const char* MbCvVoice::getAoutCurveName()
+{
+    return curve_desc[getAoutCurve()];
+}
+
+void MbCvVoice::setAoutSlewRate(u8 value)
+{
+    AOUT_PinSlewRateSet(voiceNum, value);
+}
+
+u8 MbCvVoice::getAoutSlewRate(void)
+{
+    return AOUT_PinSlewRateGet(voiceNum);
+}
+
 void MbCvVoice::setPortamentoMode(u8 value)
 {
     voiceConstantTimeGlide = (value & 1) ? 1 : 0;

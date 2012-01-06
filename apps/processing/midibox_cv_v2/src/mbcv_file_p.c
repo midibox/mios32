@@ -457,35 +457,6 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  } else {
 	    MBCV_MAP_IfSet(aout_type);
 	  }
-	} else if( strcmp(parameter, "AOUT_PinMode") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  int cv;
-	  if( (cv=get_dec(word)) < 1 || cv > MBCV_PATCH_NUM_CV ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid CV channel number parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    --cv; // user counts from 1
-
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int curve;
-	    if( (curve=get_dec(word)) < 0 || curve >= MBCV_MAP_NUM_CURVES ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBCV_FILE_P] ERROR wrong curve %d for parameter '%s', CV channel %d\n", curve, parameter, cv);
-#endif
-	    } else {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int slewrate;
-	      if( (slewrate=get_dec(word)) < 0 || slewrate >= MBCV_MAP_NUM_CURVES ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBCV_FILE_P] ERROR wrong slewrate %d for parameter '%s', CV channel %d\n", curve, slewrate, cv);
-#endif
-	      } else {
-		MBCV_MAP_CurveSet(cv, curve);
-		MBCV_MAP_SlewRateSet(cv, slewrate);
-	      }
-	    }
-	  }
 	} else if( strcmp(parameter, "ExtClkPulsewidth") == 0 ) {
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int pulsewidth;
@@ -685,17 +656,6 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
     }
   }
 #endif
-
-  {
-    sprintf(line_buffer, "\n\n#PinMode;Curve;SlewRate\n");
-    FLUSH_BUFFER;
-
-    int cv;
-    for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv) {
-      sprintf(line_buffer, "AOUT_PinMode;%d;%d;%d\n", cv+1, MBCV_MAP_CurveGet(cv), (int)MBCV_MAP_SlewRateGet(cv));
-      FLUSH_BUFFER;
-    }
-  }
 
   {
     sprintf(line_buffer, "\n\n#ROUTER;Node;SrcPort;Chn.;DstPort;Chn.\n");

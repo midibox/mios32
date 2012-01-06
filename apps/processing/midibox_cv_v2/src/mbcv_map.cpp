@@ -97,69 +97,6 @@ extern "C" const char* MBCV_MAP_IfNameGet(aout_if_t if_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Get/Set/Name CV Curve
-/////////////////////////////////////////////////////////////////////////////
-extern "C" s32 MBCV_MAP_CurveSet(u8 cv, u8 curve)
-{
-  if( cv >= MBCV_PATCH_NUM_CV )
-    return -1; // invalid cv channel selected
-
-  if( curve >= MBCV_MAP_NUM_CURVES )
-    return -2; // invalid curve selected
-
-  u32 mask = 1 << cv;
-  aout_config_t config;
-  config = AOUT_ConfigGet();
-
-  if( curve & 1 )
-    config.chn_hz_v |= mask;
-  else
-    config.chn_hz_v &= ~mask;
-
-  if( curve & 2 )
-    config.chn_inverted |= mask;
-  else
-    config.chn_inverted &= ~mask;
-
-  return AOUT_ConfigSet(config);
-}
-
-extern "C" u8 MBCV_MAP_CurveGet(u8 cv)
-{
-  if( cv >= MBCV_PATCH_NUM_CV )
-    return 0; // invalid cv channel selected, return default curve
-
-  u32 mask = 1 << cv;
-  aout_config_t config;
-  config = AOUT_ConfigGet();
-
-  u8 curve = 0;
-  if( config.chn_hz_v & mask )
-    curve |= 1;
-  if( config.chn_inverted & mask )
-    curve |= 2;
-
-  return curve;
-}
-
-// will return 6 characters
-// located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
-static const char curve_desc[3][7] = {
-  "V/Oct ",
-  "Hz/V  ",
-  "Inv.  ",
-};
-extern "C" const char* MBCV_MAP_CurveNameGet(u8 cv)
-{
-
-  if( cv >= MBCV_PATCH_NUM_CV )
-    return "------";
-
-  return curve_desc[MBCV_MAP_CurveGet(cv)];
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Get/Set/Name Calibration Mode
 /////////////////////////////////////////////////////////////////////////////
 
@@ -184,21 +121,6 @@ extern "C" const char* MBCV_MAP_CaliNameGet(void)
 {
   return AOUT_CaliNameGet(MBCV_MAP_CaliModeGet());
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Get/Set Slewrate
-/////////////////////////////////////////////////////////////////////////////
-extern "C" s32 MBCV_MAP_SlewRateSet(u8 cv, u8 value)
-{
-  return AOUT_PinSlewRateSet(cv, value);
-}
-
-extern "C" s32 MBCV_MAP_SlewRateGet(u8 cv)
-{
-  return AOUT_PinSlewRateGet(cv);
-}
-
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -257,7 +179,7 @@ extern "C" s32 MBCV_MAP_Update(void)
   AOUT_Update();
 
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
-  u8 gates = AOUT_DigitalPinsGet() ^ mbcv_patch_gate_inverted[0];
+  u8 gates = AOUT_DigitalPinsGet();
   if( gates != last_gates ) {
     int i;
 

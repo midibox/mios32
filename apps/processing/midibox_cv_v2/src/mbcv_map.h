@@ -49,16 +49,9 @@ extern s32 MBCV_MAP_IfSet(aout_if_t if_type);
 extern aout_if_t MBCV_MAP_IfGet(void);
 extern const char* MBCV_MAP_IfNameGet(aout_if_t if_type);
 
-extern s32 MBCV_MAP_CurveSet(u8 cv, u8 curve);
-extern u8 MBCV_MAP_CurveGet(u8 cv);
-extern const char* MBCV_MAP_CurveNameGet(u8 cv);
-
 extern s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode);
 extern aout_cali_mode_t MBCV_MAP_CaliModeGet(void);
 extern const char* MBCV_MAP_CaliNameGet(void);
-
-extern s32 MBCV_MAP_SlewRateSet(u8 cv, u8 value);
-extern s32 MBCV_MAP_SlewRateGet(u8 cv);
 
 extern s32 MBCV_MAP_Update(void);
 

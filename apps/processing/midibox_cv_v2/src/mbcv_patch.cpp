@@ -62,8 +62,6 @@ u32 mbcv_patch_router_mclk_out;
 
 mbcv_patch_cfg_t mbcv_patch_cfg;
 
-u8 mbcv_patch_gate_inverted[MBCV_PATCH_NUM_CV/8];
-
 u8 mbcv_patch_gateclr_cycles = 3; // 3 mS
 
 
@@ -85,10 +83,6 @@ s32 MBCV_PATCH_Init(u32 mode)
   //                            all ports
   mbcv_patch_router_mclk_out = 0xffffffff;
 
-  int i;
-  for(i=0; i<(MBCV_PATCH_NUM_CV/8); ++i)
-    mbcv_patch_gate_inverted[i] = 0x00;
-
   return 0; // no error
 }
 
@@ -106,7 +100,15 @@ u8 MBCV_PATCH_ReadByte(u16 addr)
   if( addr < 8 ) {
     switch( addr ) {
     case 0x00: return mbcv_patch_cfg.flags.MERGER_MODE;
-    case 0x02: return mbcv_patch_gate_inverted[0];
+    case 0x02: {
+      MbCvEnvironment* env = APP_GetEnv();
+      u8 gate_inverted = 0x00;
+      int cv = 0;
+      for(MbCv *s = env->mbCv.first(); s != NULL ; s=env->mbCv.next(s), ++cv)
+	if( s->mbCvVoice.voiceGateInverted )
+	  gate_inverted |= (1 << cv);
+      return gate_inverted;
+    }
     case 0x03: return mbcv_patch_cfg.ext_clk_divider; // TODO: convert from old format!
     }
   } else {
@@ -124,8 +126,8 @@ u8 MBCV_PATCH_ReadByte(u16 addr)
     case 0x06: return (v->voiceTransposeOctave >= 0) ? v->voiceTransposeOctave : (16+v->voiceTransposeOctave);
     case 0x07: return (v->voiceTransposeSemitone >= 0) ? v->voiceTransposeSemitone : (16+v->voiceTransposeSemitone);
     case 0x08: return mv->midivoiceCCNumber;
-    case 0x09: return MBCV_MAP_CurveGet(cv);
-    case 0x0a: return MBCV_MAP_SlewRateGet(cv); // TODO: conversion to old format
+    case 0x09: return v->getAoutCurve();
+    case 0x0a: return v->getAoutSlewRate(); // TODO: conversion to the old format
     }
   }
 
@@ -149,7 +151,13 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
   if( addr < 8 ) {
     switch( addr ) {
     case 0x00: mbcv_patch_cfg.flags.MERGER_MODE = byte; return 0;
-    case 0x02: mbcv_patch_gate_inverted[0] = byte; return 0;
+    case 0x02: {
+      MbCvEnvironment* env = APP_GetEnv();
+      int cv = 0;
+      for(MbCv *s = env->mbCv.first(); s != NULL ; s=env->mbCv.next(s), ++cv)
+	s->mbCvVoice.voiceGateInverted = (byte & (1 << cv)) ? 1 : 0;
+      return 0;
+    }
     case 0x03: mbcv_patch_cfg.ext_clk_divider = byte; return 0; // TODO: convert from old format!
     }
     return 0x00;
@@ -172,8 +180,8 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
     case 0x06: if( byte < 8 ) v->voiceTransposeOctave = byte; else v->voiceTransposeOctave = 7 - (int)byte; return 0;
     case 0x07: if( byte < 8 ) v->voiceTransposeSemitone = byte; else v->voiceTransposeSemitone = 7 - (int)byte; return 0;
     case 0x08: mv->midivoiceCCNumber = byte; return 0;
-    case 0x09: MBCV_MAP_CurveSet(cv, byte); return 0;
-    case 0x0a: MBCV_MAP_SlewRateSet(cv, byte); return 0; // TODO: conversion to old format
+    case 0x09: v->setAoutCurve(byte); return 0;
+    case 0x0a: v->setAoutSlewRate(byte); return 0; // TODO: conversion to old format
     }
     return 0x00;
   }

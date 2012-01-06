@@ -252,15 +252,32 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
     u16 par = nrpnNumber & 0x7f;
 
     if( section < 0x080 ) {        // Main: 0x000..0x07f
+        if( par < 0x10 ) {
+            mbCvMidiVoice.setPortEnabled(par, value);
+            return true;
+        }
         switch( par ) {
-        case 0x10: mbCvVoice.voiceLegato = value; return true;
-        case 0x11: mbCvVoice.voicePoly = value; return true;
-        case 0x18: mbCvVoice.voicePortamentoRate = value; return true;
-        case 0x19: mbCvVoice.setPortamentoMode(value); return true;
-        case 0x1a: mbCvVoice.voiceSusKey = value; return true;
-        case 0x20: mbCvVoice.voiceTransposeOctave = (int)value - 8; return true;
-        case 0x21: mbCvVoice.voiceTransposeSemitone = (int)value - 8; return true;
-        case 0x22: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
+        case 0x10: mbCvMidiVoice.midivoiceChannel = value; return true;
+        case 0x11: mbCvVoice.voiceEventMode = (mbcv_midi_event_mode_t)value; return true;
+        case 0x12: mbCvMidiVoice.midivoiceSplitLower = value; return true;
+        case 0x13: mbCvMidiVoice.midivoiceSplitUpper = value; return true;
+        case 0x14: mbCvMidiVoice.midivoiceCCNumber = value; return true;
+
+        case 0x18: mbCvVoice.setAoutCurve(value); return true;
+        case 0x19: mbCvVoice.setAoutSlewRate(value); return true;
+        case 0x1a: mbCvVoice.voiceGateInverted = value; return true;
+
+        case 0x20: mbCvVoice.voiceLegato = value; return true;
+        case 0x21: mbCvVoice.voicePoly = value; return true;
+        case 0x22: mbCvVoice.voiceSusKey = value; return true;
+        case 0x23: mbCvVoice.setPortamentoMode(value); return true;
+
+        case 0x30: mbCvVoice.voicePitchrange = value; return true;
+        case 0x31: mbCvVoice.voiceKeytrack = (int)value - 0x80; return true;
+        case 0x32: mbCvVoice.voiceTransposeOctave = (int)value - 8; return true;
+        case 0x33: mbCvVoice.voiceTransposeSemitone = (int)value - 8; return true;
+        case 0x34: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
+        case 0x35: mbCvVoice.voicePortamentoRate = value; return true;
         }
     } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
         switch( par ) {
@@ -374,15 +391,32 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
     u16 par = nrpnNumber & 0x7f;
 
     if( section < 0x080 ) {        // Main: 0x000..0x07f
+        if( par < 0x10 ) {
+            *value = mbCvMidiVoice.getPortEnabled(par & 0x0f);
+            return true;
+        }
         switch( par ) {
-        case 0x10: *value = mbCvVoice.voiceLegato; return true;
-        case 0x11: *value = mbCvVoice.voicePoly; return true;
-        case 0x18: *value = mbCvVoice.voicePortamentoRate; return true;
-        case 0x19: *value = mbCvVoice.getPortamentoMode(); return true;
-        case 0x1a: *value = mbCvVoice.voiceSusKey; return true;
-        case 0x20: *value = (int)mbCvVoice.voiceTransposeOctave + 8; return true;
-        case 0x21: *value = (int)mbCvVoice.voiceTransposeSemitone + 8; return true;
-        case 0x22: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
+        case 0x10: *value = mbCvMidiVoice.midivoiceChannel; return true;
+        case 0x11: *value = (u16)mbCvVoice.voiceEventMode; return true;
+        case 0x12: *value = mbCvMidiVoice.midivoiceSplitLower; return true;
+        case 0x13: *value = mbCvMidiVoice.midivoiceSplitUpper; return true;
+        case 0x14: *value = mbCvMidiVoice.midivoiceCCNumber; return true;
+
+        case 0x18: *value = mbCvVoice.getAoutCurve(); return true;
+        case 0x19: *value = mbCvVoice.getAoutSlewRate(); return true;
+        case 0x1a: *value = mbCvVoice.voiceGateInverted; return true;
+
+        case 0x20: *value = mbCvVoice.voiceLegato; return true;
+        case 0x21: *value = mbCvVoice.voicePoly; return true;
+        case 0x22: *value = mbCvVoice.voiceSusKey; return true;
+        case 0x23: *value = mbCvVoice.getPortamentoMode(); return true;
+
+        case 0x30: *value = mbCvVoice.voicePitchrange; return true;
+        case 0x31: *value = (int)mbCvVoice.voiceKeytrack + 0x80; return true;
+        case 0x32: *value = (int)mbCvVoice.voiceTransposeOctave + 8; return true;
+        case 0x33: *value = (int)mbCvVoice.voiceTransposeSemitone + 8; return true;
+        case 0x34: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
+        case 0x35: *value = mbCvVoice.voicePortamentoRate; return true;
         }
     } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
         switch( par ) {
