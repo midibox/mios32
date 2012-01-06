@@ -64,6 +64,11 @@ public:
     // stacks
     notestack_t midivoiceNotestack;
     notestack_item_t midivoiceNotestackItems[CV_SE_NOTESTACK_SIZE];
+
+    // help functions for editor
+    void setPortEnabled(const u8& portIx, const bool& enable);
+    bool getPortEnabled(const u8& portIx);
+
 };
 
 #endif /* _MB_CV_MIDI_VOICE_H */

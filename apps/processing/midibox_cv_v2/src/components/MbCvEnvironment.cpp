@@ -98,7 +98,7 @@ bool MbCvEnvironment::tick(void)
             MbCvVoice *v = &s->mbCvVoice;
             MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
 
-            if( v->voicePhysGateActive )
+            if( v->voicePhysGateActive ^ v->voiceGateInverted )
                 cvGates |= (1 << cv);
 
             if( v->voiceEventMode == MBCV_MIDI_EVENT_MODE_NOTE ) {

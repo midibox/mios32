@@ -115,3 +115,19 @@ void MbCvMidiVoice::setNRPN(u16 value)
     // always assigned to NRPN LSB 0, MSB depends on channel (decoded outside)
     midivoiceNRPNValue = value; // 14bit
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// help functions for editor
+/////////////////////////////////////////////////////////////////////////////
+void MbCvMidiVoice::setPortEnabled(const u8& portIx, const bool& enable)
+{
+    if( enable )
+        midivoiceEnabledPorts |= (1 << portIx);
+    else
+        midivoiceEnabledPorts &= ~(1 << portIx);
+}
+
+bool MbCvMidiVoice::getPortEnabled(const u8& portIx)
+{
+    return (midivoiceEnabledPorts & (1 << portIx)) ? 1 : 0;
+}

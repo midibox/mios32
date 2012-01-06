@@ -168,7 +168,7 @@ static void stringCvPortamentoMode(u32 ix, u16 value, char *label)
   sprintf(label, portamentoMode[value&3]);
 }
 
-static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CurveNameGet(selectedCv), 5); label[5] = 0; }
+static void stringCvCurve(u32 ix, u16 value, char *label) { memcpy(label, env->mbCv[selectedCv].mbCvVoice.getAoutCurveName(), 5); label[5] = 0; }
 static void stringCvCaliMode(u32 ix, u16 value, char *label) { memcpy(label, MBCV_MAP_CaliNameGet(), 5); label[5] = 0; }
 
 static void stringArpDir(u32 ix, u16 value, char *label)
@@ -444,14 +444,8 @@ static void cvPlayModeSet(u32 ix, u16 value)
   env->mbCv[selectedCv].mbCvVoice.voicePoly = (value & 2) ? 1 : 0;
 }
 
-static u16  cvInvGateGet(u32 ix)            { return (mbcv_patch_gate_inverted[selectedCv>>8] & (1 << (selectedCv&7))) ? 1 : 0; }
-static void cvInvGateSet(u32 ix, u16 value)
-{
-  if( value )
-    mbcv_patch_gate_inverted[selectedCv>>3] |= (1 << (selectedCv&7));
-  else
-    mbcv_patch_gate_inverted[selectedCv>>3] &= ~(1 << (selectedCv&7));
-}
+static u16  cvInvGateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceGateInverted; }
+static void cvInvGateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceGateInverted = value; }
 
 static u16  cvSplitLowerGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower; }
 static void cvSplitLowerSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower = value; }
@@ -485,12 +479,11 @@ static void cvCCSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.mid
 
 static u16  cvPortGet(u32 ix)
 {
-  return (env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts >> ix) & 0x1;
+  return env->mbCv[selectedCv].mbCvMidiVoice.getPortEnabled(ix);
 }
 static void cvPortSet(u32 ix, u16 value)
 {
-  env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts &= ~(1 << ix);
-  env->mbCv[selectedCv].mbCvMidiVoice.midivoiceEnabledPorts |= ((value&1) << ix);
+  env->mbCv[selectedCv].mbCvMidiVoice.setPortEnabled(ix, value ? 1 : 0);
 }
 
 
@@ -620,11 +613,11 @@ static void envDepthLfo2AmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEn
 static u16  envDepthLfo2RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envDepthLfo2Rate + 128; }
 static void envDepthLfo2RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envDepthLfo2Rate = value - 128; }
 
-static u16  cvCurveGet(u32 ix)            { return MBCV_MAP_CurveGet(selectedCv); }
-static void cvCurveSet(u32 ix, u16 value) { MBCV_MAP_CurveSet(selectedCv, value); }
+static u16  cvCurveGet(u32 ix)            { return (u32)env->mbCv[selectedCv].mbCvVoice.getAoutCurve(); }
+static void cvCurveSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.setAoutCurve(value); }
 
-static u16  cvSlewRateGet(u32 ix)            { return MBCV_MAP_SlewRateGet(selectedCv); }
-static void cvSlewRateSet(u32 ix, u16 value) { MBCV_MAP_SlewRateSet(selectedCv, value); }
+static u16  cvSlewRateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.getAoutSlewRate(); }
+static void cvSlewRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.setAoutSlewRate(value); }
 
 static u16  cvCaliModeGet(u32 ix)            { return MBCV_MAP_CaliModeGet(); }
 static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, (aout_cali_mode_t)value); }
