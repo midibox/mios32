@@ -57,7 +57,7 @@ void MbCvLfo::init()
     lfoRateModulation = 0;
     lfoAmplitudeModulation = 0;
 
-    lfoDepthPitch = 127;
+    lfoDepthPitch = 64;
     lfoDepthLfoAmplitude = 0;
     lfoDepthLfoRate = 0;
     lfoDepthEnv1Amplitude = 0;

@@ -40,38 +40,18 @@ MbCvEnv::~MbCvEnv()
 /////////////////////////////////////////////////////////////////////////////
 void MbCvEnv::init(void)
 {
-    // clear flags
-    restartReq = false;
-    releaseReq = false;
-    syncClockReq = false;
+    MbCvEnvBase::init();
+
+    // clear additional flags
     accentReq = false;
 
     // clear variables
-    envModeClkSync = 0;
-    envModeKeySync = 1;
-    envAmplitude = 0;
     envDelay = 0;
     envAttack = 48;
     envDecay = 48;
     envDecayAccented = 16;
     envSustain = 64;
     envRelease = 32;
-    envCurve = 0;
-
-    envDepthPitch = 127;
-    envDepthLfo1Amplitude = 0;
-    envDepthLfo1Rate = 0;
-    envDepthLfo2Amplitude = 0;
-    envDepthLfo2Rate = 0;
-
-    envAmplitudeModulation = 0;
-    envDecayModulation = 0;
-
-    envOut = 0;
-
-    envState = MBCV_ENV_STATE_IDLE;
-    envCtr = 0;
-    envDelayCtr = 0;
 }
 
 
@@ -80,6 +60,7 @@ void MbCvEnv::init(void)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCvEnv::tick(const u8 &updateSpeedFactor)
 {
+    const bool rateFromEnvTable = true;
     bool sustainPhase = false; // will be the return value
 
     if( restartReq ) {
@@ -103,7 +84,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
         switch( envState ) {
         case MBCV_ENV_STATE_ATTACK: {
             if( envDelayCtr ) {
-                int new_delay_ctr = envDelayCtr + (mbCvEnvTable[envDelay] / updateSpeedFactor);
+                int new_delay_ctr = envDelayCtr + (mbCvEnvTable[envDelay] / (envModeFast ? 1 : updateSpeedFactor));
                 if( new_delay_ctr > 0xffff )
                     envDelayCtr = 0; // delay passed
                 else {
@@ -113,19 +94,19 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             }
   
             s8 curve = envCurve ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
-            if( step(0xffff, envAttack, curve, updateSpeedFactor) )
+            if( step(0xffff, envAttack, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
   
         case MBCV_ENV_STATE_DECAY: {
             // the decay can be modulated
             s32 decay = accentReq ? envDecayAccented : envDecay;
-            decay = decay + (envAmplitudeModulation / 512);
+            decay = decay + (envDecayModulation / 512);
             if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
 
             s8 curve = envCurve ? -64 : 0;
-            if( step(envSustain << 8, decay, curve, updateSpeedFactor) ) {
-                envState = MBCV_ENV_STATE_SUSTAIN; // TODO: Set Phase depending on mode
+            if( step(envSustain << 8, decay, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) ) {
+                envState = envModeOneshot ? MBCV_ENV_STATE_SUSTAIN : MBCV_ENV_STATE_RELEASE;
   
                 // propagate sustain phase to trigger matrix
                 sustainPhase = true;
@@ -140,7 +121,9 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
         case MBCV_ENV_STATE_RELEASE: {
             s8 curve = envCurve ? -64 : 0;
             if( envCtr )
-                step(0x0000, envRelease, curve, updateSpeedFactor);
+                step(0x0000, envRelease, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable);
+            else if( !envModeOneshot )
+                envState = MBCV_ENV_STATE_ATTACK; // restart if not in oneshot mode
         } break;
   
         default: // like MBCV_ENV_STATE_IDLE
@@ -160,54 +143,4 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
     accentReq = false;
 
     return sustainPhase;
-}
-
-
-
-bool MbCvEnv::step(const u16 &target, const u8 &rate, const s8 &curve, const u8 &updateSpeedFactor)
-{
-    if( target == envCtr )
-        return true; // next state
-
-    // modify rate if curve != 0x80
-    u16 inc_rate;
-    if( curve ) {
-        // this nice trick has been proposed by Razmo
-        int abs_curve = (curve < 0) ? -curve : (curve ^ 0x7f);
-        int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
-        int feedback = (abs_curve * (envCtr>>8)) >> 8; 
-        int ix;
-        if( curve > 0 ) { // bend up
-            ix = (rate_msbs ^ 0x7f) - feedback;
-            if( ix < 0 )
-                ix = 0;
-        } else { // bend down
-            ix = (rate_msbs ^ 0x7f) + feedback;
-            if( ix >= 127 )
-                ix = 127;
-        }
-        inc_rate = mbCvFrqTable[ix];
-    } else {
-        inc_rate = mbCvEnvTable[rate];
-    }
-
-    // positive or negative direction?
-    if( target > envCtr ) {
-        s32 newCtr = (s32)envCtr + (inc_rate / updateSpeedFactor);
-        if( newCtr >= target ) {
-            envCtr = target;
-            return true; // next state
-        }
-        envCtr = newCtr;
-        return false; // stay in state
-    }
-
-    s32 newCtr = (s32)envCtr - (inc_rate / updateSpeedFactor);
-    if( newCtr <= target ) {
-        envCtr = target;
-        return true; // next state
-    }
-    envCtr = newCtr;
-
-    return false; // stay in state
 }

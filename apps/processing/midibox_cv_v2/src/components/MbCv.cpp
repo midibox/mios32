@@ -69,13 +69,26 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
         l->lfoAmplitudeModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoAmplitude / 128;
         l->lfoRateModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoRate / 128;
 
-        MbCvEnv *e = mbCvEnv1.first();
-        if( lfo == 0 ) {
-            l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
-            l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
-        } else {
-            l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
-            l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
+        {
+            MbCvEnv *e = mbCvEnv1.first();
+            if( lfo == 0 ) {
+                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
+                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
+            } else {
+                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
+                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
+            }
+        }
+
+        {
+            MbCvEnvMulti *e = mbCvEnv2.first();
+            if( lfo == 0 ) {
+                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
+                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
+            } else {
+                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
+                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
+            }
         }
 
         l->tick(updateSpeedFactor);
@@ -84,22 +97,44 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
     }
 
     // ENVs
-    MbCvEnv *e = mbCvEnv1.first();
-    for(int env=0; env < mbCvEnv1.size; ++env, ++e) {
-        if( mbCvClockPtr->eventClock )
-            e->syncClockReq = 1;
+    {
+        MbCvEnv *e = mbCvEnv1.first();
+        for(int env=0; env < mbCvEnv1.size; ++env, ++e) {
+            if( mbCvClockPtr->eventClock )
+                e->syncClockReq = 1;
 
-        e->envAmplitudeModulation = 0;
-        e->envDecayModulation = 0;
-        MbCvLfo *l = mbCvLfo.first();
-        for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
-            e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnv1Amplitude / 128;
-            //e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+            e->envAmplitudeModulation = 0;
+            e->envDecayModulation = 0;
+            MbCvLfo *l = mbCvLfo.first();
+            for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
+                e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnv1Amplitude / 128;
+                //e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+            }
+
+            e->tick(updateSpeedFactor);
+
+            mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
         }
+    }
 
-        e->tick(updateSpeedFactor);
+    {
+        MbCvEnvMulti *e = mbCvEnv2.first();
+        for(int env=0; env < mbCvEnv2.size; ++env, ++e) {
+            if( mbCvClockPtr->eventClock )
+                e->syncClockReq = 1;
 
-        mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
+            e->envAmplitudeModulation = 0;
+            e->envDecayModulation = 0;
+            MbCvLfo *l = mbCvLfo.first();
+            for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
+                e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnv2Amplitude / 128;
+                //e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+            }
+
+            e->tick(updateSpeedFactor);
+
+            mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
+        }
     }
 
     // Voice handling
@@ -267,15 +302,17 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
 
         switch( par ) {
         case 0x00: e->envAmplitude = (int)value - 0x80; return true;
-        case 0x01: e->envDelay = (int)value; return true;
-        case 0x02: e->envAttack = (int)value; return true;
-        case 0x03: e->envDecay = (int)value; return true;
-        case 0x04: e->envSustain = (int)value; return true;
-        case 0x05: e->envRelease = (int)value; return true;
-        case 0x06: e->envCurve = (int)value; return true;
+        case 0x01: e->envCurve = (int)value; return true;
+        case 0x02: e->envDelay = (int)value; return true;
+        case 0x03: e->envAttack = (int)value; return true;
+        case 0x04: e->envDecay = (int)value; return true;
+        case 0x05: e->envSustain = (int)value; return true;
+        case 0x06: e->envRelease = (int)value; return true;
 
         case 0x10: e->envModeClkSync = (int)value; return true;
         case 0x11: e->envModeKeySync = (int)value; return true;
+        case 0x12: e->envModeOneshot = (int)value; return true;
+        case 0x13: e->envModeFast = (int)value; return true;
 
         case 0x20: e->envDepthPitch = (int)value - 0x80; return true;
         case 0x21: e->envDepthLfo1Amplitude = (int)value - 0x80; return true;
@@ -283,8 +320,41 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
         case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
         }
-    } else if( section < 0x300 ) { // ENV2: 0x200..0x2ff
-        DEBUG_MSG("ENV2 %02x: %04x\n", par, value);
+    } else if( section < 0x300 ) { // ENV1: 0x280..0x2ff
+        MbCvEnvMulti *e = &mbCvEnv2[0];
+
+        switch( par ) {
+        case 0x00: e->envAmplitude = (int)value - 0x80; return true;
+        case 0x01: e->envCurve = (int)value; return true;
+        case 0x02: e->envOffset = (int)value - 0x80; return true;
+        case 0x03: e->envSpeed = (int)value - 0x80; return true;
+
+        case 0x08: e->envLoopAttack = (int)value; return true;
+        case 0x09: e->envSustainStep = (int)value; return true;
+        case 0x0a: e->envLoopRelease = (int)value; return true;
+        case 0x0b: e->envLastStep = (int)value; return true;
+
+        case 0x10: e->envModeClkSync = (int)value; return true;
+        case 0x11: e->envModeKeySync = (int)value; return true;
+        case 0x12: e->envModeOneshot = (int)value; return true;
+        case 0x13: e->envModeFast = (int)value; return true;
+
+        case 0x20: e->envDepthPitch = (int)value - 0x80; return true;
+        case 0x21: e->envDepthLfo1Amplitude = (int)value - 0x80; return true;
+        case 0x22: e->envDepthLfo1Rate = (int)value - 0x80; return true;
+        case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
+        case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
+        }
+
+        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            e->envLevel[step] = value;
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            e->envDelay[step] = value;
+            return true;
+        }
     } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
         u8 mod = (section & 0x060) >> 5;
         DEBUG_MSG("MOD%d %02x: %04x\n", mod, par, value);
@@ -354,15 +424,17 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
 
         switch( par ) {
         case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
-        case 0x01: *value = (int)e->envDelay; return true;
-        case 0x02: *value = (int)e->envAttack; return true;
-        case 0x03: *value = (int)e->envDecay; return true;
-        case 0x04: *value = (int)e->envSustain; return true;
-        case 0x05: *value = (int)e->envRelease; return true;
-        case 0x06: *value = (int)e->envCurve; return true;
+        case 0x01: *value = (int)e->envCurve; return true;
+        case 0x02: *value = (int)e->envDelay; return true;
+        case 0x03: *value = (int)e->envAttack; return true;
+        case 0x04: *value = (int)e->envDecay; return true;
+        case 0x05: *value = (int)e->envSustain; return true;
+        case 0x06: *value = (int)e->envRelease; return true;
 
         case 0x10: *value = (int)e->envModeClkSync; return true;
         case 0x11: *value = (int)e->envModeKeySync; return true;
+        case 0x12: *value = (int)e->envModeOneshot; return true;
+        case 0x13: *value = (int)e->envModeFast; return true;
 
         case 0x20: *value = (int)e->envDepthPitch + 0x80; return true;
         case 0x21: *value = (int)e->envDepthLfo1Amplitude + 0x80; return true;
@@ -370,7 +442,41 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x23: *value = (int)e->envDepthLfo2Amplitude + 0x80; return true;
         case 0x24: *value = (int)e->envDepthLfo2Rate + 0x80; return true;
         }
-    } else if( section < 0x300 ) { // ENV2: 0x200..0x2ff
+    } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
+        MbCvEnvMulti *e = &mbCvEnv2[0];
+
+        switch( par ) {
+        case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
+        case 0x01: *value = e->envCurve; return true;
+        case 0x02: *value = (int)e->envOffset + 0x80; return true;
+        case 0x03: *value = (int)e->envSpeed + 0x80; return true;
+
+        case 0x08: *value = e->envLoopAttack; return true;
+        case 0x09: *value = e->envSustainStep; return true;
+        case 0x0a: *value = e->envLoopRelease; return true;
+        case 0x0b: *value = e->envLastStep; return true;
+
+        case 0x10: *value = e->envModeClkSync; return true;
+        case 0x11: *value = e->envModeKeySync; return true;
+        case 0x12: *value = e->envModeOneshot; return true;
+        case 0x13: *value = e->envModeFast; return true;
+
+        case 0x20: *value = (int)e->envDepthPitch + 0x80; return true;
+        case 0x21: *value = (int)e->envDepthLfo1Amplitude + 0x80; return true;
+        case 0x22: *value = (int)e->envDepthLfo1Rate + 0x80; return true;
+        case 0x23: *value = (int)e->envDepthLfo2Amplitude + 0x80; return true;
+        case 0x24: *value = (int)e->envDepthLfo2Rate + 0x80; return true;
+        }
+
+        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = e->envLevel[step];
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = e->envDelay[step];
+            return true;
+        }
     } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
         u8 mod = (section & 0x060) >> 5;
     }
@@ -536,17 +642,35 @@ void MbCv::triggerNoteOn(MbCvVoice *v)
         if( l->lfoModeKeySync )
             l->restartReq = 1;
 
-    MbCvEnv *e = mbCvEnv1.first();
-    for(int env=0; env < mbCvEnv1.size; ++env, ++e)
-        if( e->envModeKeySync )
-            e->restartReq = 1;
+    {
+        MbCvEnv *e = mbCvEnv1.first();
+        for(int env=0; env < mbCvEnv1.size; ++env, ++e)
+            if( e->envModeKeySync )
+                e->restartReq = 1;
+    }
+
+    {
+        MbCvEnvMulti *e = mbCvEnv2.first();
+        for(int env=0; env < mbCvEnv2.size; ++env, ++e)
+            if( e->envModeKeySync )
+                e->restartReq = 1;
+    }
 }
 
 
 void MbCv::triggerNoteOff(MbCvVoice *v)
 {
-    MbCvEnv *e = mbCvEnv1.first();
-    for(int env=0; env < mbCvEnv1.size; ++env, ++e)
-        if( e->envModeKeySync )
-            e->releaseReq = 1;
+    {
+        MbCvEnv *e = mbCvEnv1.first();
+        for(int env=0; env < mbCvEnv1.size; ++env, ++e)
+            if( e->envModeKeySync )
+                e->releaseReq = 1;
+    }
+
+    {
+        MbCvEnvMulti *e = mbCvEnv2.first();
+        for(int env=0; env < mbCvEnv2.size; ++env, ++e)
+            if( e->envModeKeySync )
+                e->releaseReq = 1;
+    }
 }

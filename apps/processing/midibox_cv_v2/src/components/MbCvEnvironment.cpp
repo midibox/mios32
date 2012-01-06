@@ -265,7 +265,30 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
         } else if( select == 0xf ) { // special commands (0x3c00..0x3fff)
             switch( address & 0x3ff ) {
-            case 0x000: midiSendNRPNDump(port, value); // 0x3c00 <channels>
+            case 0x000: midiSendNRPNDump(port, value); break; // Dump: 0x3c00 <channels>
+
+            case 0x010: {                                     // Play Off: 0x3c10 <channels>
+                MIOS32_IRQ_Disable();
+                int cv = 0;
+                for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
+                    if( value & (1 << cv) )
+                        s->noteAllOff(false);
+                MIOS32_IRQ_Enable();
+            } break;
+
+            case 0x011: {                                     // Play On: 0x3c11 <channels>
+                MIOS32_IRQ_Disable();
+                int cv = 0;
+                for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
+                    if( value & (1 << cv) ) {
+                        s->noteOn(0x3c, 0x7f, false);
+                        if( s->mbCvArp.arpEnabled ) {
+                            s->noteOn(0x3c+4, 0x7f, false);
+                            s->noteOn(0x3c+7, 0x7f, false);
+                        }
+                    }
+                MIOS32_IRQ_Enable();
+            } break;
             }
         }
         return;

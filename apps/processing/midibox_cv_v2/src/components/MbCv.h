@@ -22,6 +22,7 @@
 #include "MbCvVoice.h"
 #include "MbCvLfo.h"
 #include "MbCvEnv.h"
+#include "MbCvEnvMulti.h"
 #include "MbCvArp.h"
 
 
@@ -115,6 +116,7 @@ public:
     // modulators
     array<MbCvLfo, 2> mbCvLfo;
     array<MbCvEnv, 1> mbCvEnv1;
+    array<MbCvEnvMulti, 1> mbCvEnv2;
     MbCvArp mbCvArp;
 
     // note handling
