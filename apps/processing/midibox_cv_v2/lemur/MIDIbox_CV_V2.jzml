@@ -1,8 +1,8 @@
 <JZML>
 <PROJECT version="3020" width="1024" height="724" osc_target="-1" midi_target="0" kbmouse_target="-1"/>
 <WINDOW class="JAZZINTERFACE" text="Default" x="0" y="0" width="1024" height="724" state="1" group="0" font="tahoma,11,0" >
-<WINDOW class="Container" text="CVPanel" x="0" y="0" width="974" height="724" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="1">
-<WINDOW class="Tab" text="Default" x="0" y="0" width="958" height="676" state="1" group="0" font="tahoma,11,0" >
+<WINDOW class="Container" text="CVPanel" x="1" y="0" width="974" height="724" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="1">
+<WINDOW class="Tab" text="Default" x="0" y="0" width="958" height="676" state="0" group="0" font="tahoma,11,0" >
 <WINDOW class="Container" text="ARP" x="95" y="324" width="559" height="143" id="28" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="CustomButton" text="On" x="0" y="25" width="48" height="48" id="4" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="On" label_on="On" outline="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ARP/On/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -106,7 +106,7 @@ if( x && Direction.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/ModeT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="SemiTransp" x="537" y="28" width="100" height="100" id="13" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.506021" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.500000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/SemiTransp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -115,7 +115,7 @@ if( x && Direction.selection < (sizeof(items)-1) )
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/Setup/SemiTransp/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Knob" text="OctTransp" x="427" y="28" width="100" height="100" id="11" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.504341" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.500000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/Setup/OctTransp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -169,7 +169,7 @@ if( x && Direction.selection < (sizeof(items)-1) )
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/Setup/Finetune/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="LemurMenu" text="PortamentoMode" x="184" y="128" width="167" height="50" id="47" state="241" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="32768" scale="0" content="Portamento,Glide,Glissando">
-<PARAM name="selection=" value="0.000000" send="1" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/PortamentoMode/selection" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="selection=" value="1.000000" send="1" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/Setup/PortamentoMode/selection" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="action()" script="sendCVNRPN(0x0019, round(selection));
 " trigger_script="selection" trigger_type="0" trigger="1" osc_message="/CVPanel/Setup/PortamentoMode/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
@@ -197,7 +197,7 @@ if( x && PortamentoMode.selection < (sizeof(items)-1) )
 <WINDOW class="Tab" text="LFO" x="0" y="0" width="958" height="676" id="1" state="0" group="0" font="tahoma,11,0" >
 <WINDOW class="Container" text="LFO1" x="119" y="41" width="739" height="287" id="28" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="1" unit="" value="0">
-<PARAM name="x=" value="0.760784" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Amplitude/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -257,7 +257,7 @@ if( x && PortamentoMode.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/DelayT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="Phase" x="443" y="27" width="100" height="100" id="13" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="0" unit="" value="0">
-<PARAM name="x=" value="0.298039" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Phase/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/Phase/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Phase/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Phase/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/Phase/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -280,7 +280,7 @@ if( x && PortamentoMode.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/WaveformT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="DepthCV" x="0" y="165" width="100" height="100" id="18" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.752941" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO1/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/DepthCV/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/DepthCV/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO1/DepthCV/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -361,7 +361,7 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 </WINDOW>
 <WINDOW class="Container" text="LFO2" x="119" y="358" width="739" height="287" id="30" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.168627" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Amplitude/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -421,7 +421,7 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/DelayT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="Phase" x="443" y="27" width="100" height="100" id="13" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="0" unit="" value="0">
-<PARAM name="x=" value="0.290196" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Phase/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/Phase/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Phase/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Phase/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/Phase/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -439,7 +439,7 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/WaveformT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="DepthCV" x="0" y="165" width="100" height="100" id="18" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.752941" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/LFO2/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/DepthCV/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/DepthCV/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2/DepthCV/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -524,8 +524,8 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/LFO2_T/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 </WINDOW>
-<WINDOW class="Tab" text="ENV" x="0" y="0" width="958" height="676" id="2" state="0" group="0" font="tahoma,11,0" >
-<WINDOW class="Container" text="ENV1" x="106" y="0" width="829" height="287" id="28" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
+<WINDOW class="Tab" text="ENV" x="0" y="0" width="958" height="676" id="2" state="1" group="0" font="tahoma,11,0" >
+<WINDOW class="Container" text="ENV1" x="81" y="0" width="854" height="287" id="28" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
 <PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -538,7 +538,7 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <WINDOW class="Text" text="AmplitudeT" x="0" y="0" width="100" height="25" id="1" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Amplitude">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/AmplitudeT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="ClkSync" x="553" y="188" width="48" height="48" id="4" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Clk Sync" label_on="Clk Sync" outline="1">
+<WINDOW class="CustomButton" text="ClkSync" x="553" y="166" width="48" height="48" id="4" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Clk Sync" label_on="Clk Sync" outline="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/ClkSync/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/ClkSync/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="action()" script="sendCVNRPN(0x0210, round(x));
@@ -550,13 +550,13 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Delay/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Delay/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Delay/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0201, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0202, round(x*255));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Delay/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="DelayT2" x="110" y="0" width="100" height="25" id="6" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Delay">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/DelayT2/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="KeySync" x="605" y="188" width="48" height="48" id="8" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Key Sync" label_on="Key Sync" outline="1">
+<WINDOW class="CustomButton" text="KeySync" x="553" y="218" width="48" height="48" id="8" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Key Sync" label_on="Key Sync" outline="1">
 <PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/KeySync/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/KeySync/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="action()" script="sendCVNRPN(0x0211, round(x));
@@ -568,10 +568,10 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Attack/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Attack/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Attack/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0202, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0203, round(x*255));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Attack/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="AttackT" x="222" y="2" width="100" height="25" id="12" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Attack">
+<WINDOW class="Text" text="AttackT" x="222" y="0" width="100" height="25" id="12" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Attack">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/AttackT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="Decay" x="333" y="27" width="100" height="100" id="13" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="0" unit="" value="0">
@@ -580,17 +580,17 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Decay/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Decay/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Decay/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0203, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0204, round(x*255));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Decay/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="DecayT" x="333" y="2" width="100" height="25" id="14" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Decay">
+<WINDOW class="Text" text="DecayT" x="333" y="0" width="100" height="25" id="14" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Decay">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/DecayT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Text" text="SyncT" x="553" y="140" width="100" height="25" id="16" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Sync">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/SyncT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="DepthCV" x="0" y="165" width="100" height="100" id="18" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.752941" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/DepthCV/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/DepthCV/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/DepthCV/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -655,10 +655,10 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Sustain/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Sustain/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Sustain/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0204, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0205, round(x*255));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Sustain/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="SustainT" x="443" y="1" width="100" height="25" id="29" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Sustain">
+<WINDOW class="Text" text="SustainT" x="443" y="0" width="100" height="25" id="29" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Sustain">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/SustainT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="Release" x="553" y="27" width="100" height="100" id="30" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="0" unit="" value="0">
@@ -667,18 +667,18 @@ if( x && Waveform.selection < (sizeof(items)-1) )
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Release/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Release/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Release/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0205, round(x*255));
+<SCRIPT name="action()" script="sendCVNRPN(0x0206, round(x*255));
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Release/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="ReleaseT" x="553" y="2" width="100" height="25" id="31" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Release">
+<WINDOW class="Text" text="ReleaseT" x="553" y="0" width="100" height="25" id="31" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Release">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/ReleaseT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Text" text="CurveT" x="666" y="2" width="107" height="25" id="33" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Curve">
+<WINDOW class="Text" text="CurveT" x="666" y="0" width="107" height="25" id="33" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Curve">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/CurveT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="LemurMenu" text="Curve" x="666" y="55" width="107" height="50" id="34" state="241" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="32768" scale="0" content="Linear,Exp,Custom1,Custom2,Custom3,Custom4">
 <PARAM name="selection=" value="0.000000" send="1" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/Curve/selection" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0104, round(selection));
+<SCRIPT name="action()" script="sendCVNRPN(0x0201, round(selection));
 " trigger_script="selection" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Curve/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="CustomButton" text="CurveDec" x="773" y="41" width="48" height="48" id="35" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="7,7" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
@@ -697,17 +697,31 @@ if( x && Curve.selection < (sizeof(items)-1) )
   ++Curve.selection;
  " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/CurveInc/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
+<WINDOW class="CustomButton" text="Fast" x="605" y="166" width="48" height="48" id="37" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Fast" label_on="Fast" outline="1">
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/Fast/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Fast/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0213, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Fast/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="ENV1_T" x="25" y="0" width="73" height="32" id="29" state="229" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="ENV1">
+<WINDOW class="CustomButton" text="Oneshot" x="605" y="218" width="48" height="48" id="38" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="One Shot" label_on="One Shot" outline="1">
+<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV1/Oneshot/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1/Oneshot/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0212, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV1/Oneshot/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+</WINDOW>
+</WINDOW>
+<WINDOW class="Text" text="ENV1_T" x="0" y="0" width="73" height="32" id="29" state="229" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="ENV1">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV1_T/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Container" text="ENV2" x="106" y="299" width="829" height="377" id="30" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
+<WINDOW class="Container" text="ENV2" x="81" y="299" width="854" height="377" id="30" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="9440511" label="1" tabbar="1" meta="0">
 <WINDOW class="Knob" text="Amplitude" x="0" y="26" width="100" height="100" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.848100" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Amplitude/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0280, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Amplitude/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="AmplitudeT" x="0" y="0" width="100" height="25" id="1" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Amplitude">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/AmplitudeT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -715,97 +729,129 @@ if( x && Curve.selection < (sizeof(items)-1) )
 <WINDOW class="CustomButton" text="ClkSync" x="14" y="305" width="48" height="48" id="4" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Clk Sync" label_on="Clk Sync" outline="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/ClkSync/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/ClkSync/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0290, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/ClkSync/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="CustomButton" text="KeySync" x="71" y="305" width="48" height="48" id="8" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Key Sync" label_on="Key Sync" outline="1">
 <PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/KeySync/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/KeySync/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0291, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/KeySync/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="SyncT" x="14" y="280" width="105" height="25" id="16" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Sync">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SyncT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="DepthCV" x="331" y="27" width="100" height="100" id="18" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.806839" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.752941" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCV/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x02a0, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/DepthCV/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="DepthCVT" x="331" y="2" width="100" height="25" id="19" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> CV">
+<WINDOW class="Text" text="DepthCVT" x="331" y="0" width="100" height="25" id="19" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> CV">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthCVT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Knob" text="DepthLfoAmp" x="0" y="165" width="100" height="100" id="20" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.514334" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoAmp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoAmp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoAmp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoAmp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoAmp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="Knob" text="DepthLfo1Amp" x="0" y="165" width="100" height="100" id="20" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x02a1, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Amp/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="DepthLfo1AmpT" x="0" y="140" width="100" height="25" id="21" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> LFO1 Amp.">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1AmpT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Knob" text="DepthLfoRate" x="110" y="165" width="100" height="100" id="22" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.494344" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoRate/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoRate/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoRate/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoRate/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfoRate/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="Knob" text="DepthLfo1Rate" x="110" y="165" width="100" height="100" id="22" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x02a2, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1Rate/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="DepthLfo1RateT" x="110" y="140" width="100" height="25" id="23" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> LFO1 Rate">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo1RateT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Knob" text="DepthEnvAmp" x="222" y="166" width="100" height="100" id="24" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.500000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthEnvAmp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthEnvAmp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthEnvAmp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthEnvAmp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthEnvAmp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="Knob" text="DepthLfo2Amp" x="222" y="166" width="100" height="100" id="24" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x02a3, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Amp/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="DepthLFO2AmpT" x="222" y="141" width="100" height="25" id="25" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> LFO2 Amp">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLFO2AmpT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 <WINDOW class="Knob" text="DepthLfo2Rate" x="331" y="166" width="100" height="100" id="26" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.512429" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x02a4, round(x*255));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/DepthLfo2Rate/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="DepthLFO2RateT" x="331" y="140" width="100" height="25" id="27" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="-> LFO2 Rate">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/DepthLFO2RateT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Text" text="CurveT" x="222" y="2" width="100" height="25" id="33" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Curve">
-<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-</WINDOW>
-<WINDOW class="MultiSlider" text="Level" x="469" y="6" width="331" height="159" id="34" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" bipolar="0" capture="1" color="1787903" gradient="1" grid="0" grid_steps="1" horizontal="0" label="1" multicolor="0" nbr="16" physic="0">
-<PARAM name="x=" value="0.114583,0.291667,0.479167,0.583333,0.739583,0.750000,0.541667,0.375000,0.281250,0.270833,0.322917,0.406250,0.322917,0.250000,0.145833,0.031250" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="MultiSlider" text="Level" x="510" y="6" width="328" height="180" id="34" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" bipolar="0" capture="1" color="1787903" gradient="0" grid="0" grid_steps="1" horizontal="0" label="1" multicolor="0" nbr="16" physic="0">
+<PARAM name="x=" value="0.000000,0.125490,0.250980,0.376471,0.501961,0.627451,0.752941,0.878431,1.000000,0.874510,0.749020,0.623529,0.498039,0.372549,0.247059,0.121569" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="tension=0.2" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/tension" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="height=0.5" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/height" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="prev_x=" value="0.000000,0.125490,0.250980,0.376471,0.501961,0.627451,0.752941,0.878431,1.000000,0.874510,0.749020,0.623529,0.498039,0.372549,0.247059,0.121569" send="1" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Level/prev_x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="decl i;
+decl changes = nonnull(x - prev_x);
+for(i=0; i<sizeof(changes); ++i) {
+	decl ix = changes[i];
+	sendCVNRPN(0x02c0+round(ix), round(255*x[ix]));
+}
+prev_x = x;
+
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Level/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="MultiSlider" text="Delay" x="469" y="166" width="331" height="159" id="35" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" bipolar="0" capture="1" color="1787903" gradient="1" grid="0" grid_steps="1" horizontal="0" label="1" multicolor="0" nbr="16" physic="0">
-<PARAM name="x=" value="0.000000,0.185185,0.185185,0.185185,0.192593,0.192593,0.192593,0.200000,0.170370,0.251852,0.318519,0.414815,0.496296,0.585185,0.577778,0.666667" send="17" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="MultiSlider" text="Delay" x="510" y="181" width="328" height="180" id="35" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" bipolar="0" capture="1" color="1787903" gradient="0" grid="0" grid_steps="1" horizontal="0" label="1" multicolor="0" nbr="16" physic="0">
+<PARAM name="x=" value="0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000" send="17" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="tension=0.2" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/tension" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="height=0.5" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/height" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="prev_x=" value="0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000,0.020000" send="1" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Delay/prev_x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="decl i;
+decl changes = nonnull(x - prev_x);
+for(i=0; i<sizeof(changes); ++i) {
+	decl ix = changes[i];
+	sendCVNRPN(0x02e0+round(ix), round(1000*x[ix]));
+}
+prev_x = x;
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Delay/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Knob" text="SpeedFactor" x="110" y="26" width="100" height="100" id="36" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
-<PARAM name="x=" value="0.581523" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedFactor/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedFactor/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedFactor/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedFactor/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedFactor/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="Knob" text="Speed" x="222" y="27" width="100" height="100" id="36" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Speed/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Speed/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Speed/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Speed/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Speed/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0283, round(x*255));" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Speed/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="SpeedT" x="110" y="2" width="100" height="25" id="37" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="SpeedFactor">
+<WINDOW class="Text" text="SpeedT" x="222" y="0" width="100" height="25" id="37" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Speed">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SpeedT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0283, round(x*255));" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/SpeedT/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="LemurMenu" text="Curve" x="314" y="305" width="107" height="50" id="40" state="241" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="32768" scale="0" content="Linear,Exp,Custom1,Custom2,Custom3,Custom4">
+<WINDOW class="LemurMenu" text="Curve" x="257" y="305" width="107" height="50" id="40" state="241" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="32768" scale="0" content="Linear,Exp,Custom1,Custom2,Custom3,Custom4">
 <PARAM name="selection=" value="0.000000" send="1" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Curve/selection" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0104, round(selection));
+<SCRIPT name="action()" script="sendCVNRPN(0x0281, round(selection));
 " trigger_script="selection" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Curve/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="CurveDec" x="421" y="291" width="48" height="48" id="41" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="7,7" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
+<WINDOW class="CustomButton" text="CurveDec" x="364" y="291" width="48" height="48" id="41" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="7,7" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveDec/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveDec/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="action()" script="if( x && Curve.selection > 0 )
@@ -813,7 +859,7 @@ if( x && Curve.selection < (sizeof(items)-1) )
  
 " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/CurveDec/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="CurveInc" x="421" y="322" width="48" height="48" id="42" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="8,8" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
+<WINDOW class="CustomButton" text="CurveInc" x="364" y="322" width="48" height="48" id="42" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="8,8" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveInc/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveInc/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="action()" script="decl items = getattribute(Curve, 'items');
@@ -821,35 +867,70 @@ if( x && Curve.selection < (sizeof(items)-1) )
   ++Curve.selection;
  " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/CurveInc/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="CurveT2" x="314" y="281" width="107" height="25" id="43" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Curve">
+<WINDOW class="Text" text="CurveT2" x="257" y="281" width="107" height="25" id="43" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Curve">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/CurveT2/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="LemurMenu" text="SustainStep" x="145" y="305" width="107" height="50" id="44" state="241" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="32768" scale="0" content="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16">
-<PARAM name="selection=" value="0.000000" send="1" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/selection" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="sendCVNRPN(0x0104, round(selection));
-" trigger_script="selection" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/SustainStep/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<WINDOW class="Knob" text="Steps" x="440" y="6" width="70" height="84" id="44" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="0" unit=" Steps" value="1">
+<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Steps/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=1+round(x*15)" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Steps/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Steps/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Steps/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Steps/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x028b, round(x*15));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Steps/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="SustainStepDec" x="252" y="291" width="48" height="48" id="45" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="7,7" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
-<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStepDec/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStepDec/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="if( x && SustainStep.selection > 0 )
-  --SustainStep.selection;
- 
-" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/SustainStepDec/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<WINDOW class="Knob" text="LoopAttack" x="440" y="97" width="70" height="84" id="45" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="0" unit=" LoopAtt." value="1">
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=round(x*16)" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0288, round(x*16));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/LoopAttack/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="CustomButton" text="SustainStepInc" x="252" y="322" width="48" height="48" id="46" state="241" group="0" font="tahoma,8,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="8,8" capture="1" color="1455616,32768" label_off="" label_on="" outline="0">
-<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStepInc/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStepInc/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<SCRIPT name="action()" script="decl items = getattribute(SustainStep, 'items');
-if( x && SustainStep.selection < (sizeof(items)-1) )
-  ++SustainStep.selection;
- " trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/SustainStepInc/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<WINDOW class="Knob" text="SustainStep" x="440" y="186" width="70" height="84" id="46" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="0" unit=" Sustain" value="1">
+<PARAM name="x=" value="0.500000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=round(x*16)" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStep/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0289, round(x*16));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/SustainStep/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Text" text="SustainStepT" x="145" y="281" width="107" height="25" id="47" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Sustain Step">
-<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/SustainStepT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<WINDOW class="Knob" text="LoopRelease" x="440" y="277" width="70" height="84" id="47" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="0" type="0" unit=" LoopRel." value="1">
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=round(x*16)" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x028a, round(x*16));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/LoopRelease/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+</WINDOW>
+<WINDOW class="Text" text="OffsetT" x="110" y="0" width="100" height="25" id="48" state="245" group="0" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="Offset">
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/OffsetT/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+</WINDOW>
+<WINDOW class="Knob" text="Offset" x="110" y="27" width="100" height="100" id="49" state="1" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="34738,15798528" cursor="0" grid="0" grid_steps="1" label="0" mode="1" physic="1" precision="3" type="1" unit="" value="0">
+<PARAM name="x=" value="0.501961" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Offset/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="value=x" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Offset/value" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="attraction=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Offset/attraction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Offset/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Offset/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0282, round(x*255));" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Offset/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="Fast" x="126" y="305" width="48" height="48" id="50" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="Fast" label_on="Fast" outline="1">
+<PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Fast/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Fast/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0293, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Fast/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+</WINDOW>
+<WINDOW class="CustomButton" text="Oneshot" x="181" y="305" width="48" height="48" id="51" state="241" group="0" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="30928,13304050" label_off="One Shot" label_on="One Shot" outline="1">
+<PARAM name="x=" value="1.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/CVPanel/ENV2/Oneshot/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2/Oneshot/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendCVNRPN(0x0292, round(x));
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/ENV2/Oneshot/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 </WINDOW>
-<WINDOW class="Text" text="ENV2_T" x="25" y="299" width="73" height="32" id="31" state="229" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="ENV2">
+<WINDOW class="Text" text="ENV2_T" x="0" y="299" width="73" height="32" id="31" state="229" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="ENV2">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CVPanel/ENV2_T/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
 </WINDOW>
@@ -1424,79 +1505,116 @@ decl par = nrpnNumber & 0x7f;
 
 if( select != 42 ) {
 	if( section < 0x080 ) {        // Main: 0x000..0x07f
-			     if( par == 0x10 ) Setup.Legato.x = value;
-			else if( par == 0x11 ) Setup.Poly.x = value;
-			else if( par == 0x18 ) Setup.Portamento.x = value / 255;
-			else if( par == 0x19 ) Setup.PortamentoMode.selection = value;
-			else if( par == 0x1a ) Setup.SusKey.x = value;
-			else if( par == 0x20 ) Setup.OctTransp.x = value / 16;
-			else if( par == 0x21 ) Setup.SemiTransp.x = value / 16;
-			else if( par == 0x22 ) Setup.Finetune.x = value / 255;
+		receiveMain(par, value);
 	} else if( section < 0x100 ) { // ARP:  0x080..0x0ff
-			     if( par == 0x00 ) ARP.On.x = value;
-			else if( par == 0x01 ) ARP.Direction.selection = value;
-			else if( par == 0x02 ) ARP.Hold.x = value;
-			else if( par == 0x03 ) ARP.Sort.x = value;
-			else if( par == 0x04 ) ARP.Sync.x = value;
-			else if( par == 0x05 ) ARP.Oneshot.x = value;
-			else if( par == 0x06 ) ARP.CAC.x = value;
-			else if( par == 0x07 ) ARP.Easy.x = value;
-			else if( par == 0x10 ) ARP.Speed.x = value / 255;
-			else if( par == 0x11 ) ARP.Gatelength.x = value / 255;
-    } else if( section < 0x200 ) { // LFO1: 0x100..0x17f, LFO2: 0x180..0x1ff
-        decl lfo = (section >= 0x180) ? 1 : 0;
-		if( lfo == 0 ) {
-			     if( par == 0x00 ) LFO1.Amplitude.x = value / 255;
-			else if( par == 0x01 ) LFO1.Rate.x = value / 255;
-			else if( par == 0x02 ) LFO1.Delay.x = value / 255;
-			else if( par == 0x03 ) LFO1.Phase.x = value / 255;
-			else if( par == 0x04 ) LFO1.Waveform.selection = value;
-			else if( par == 0x10 ) LFO1.ClkSync.x = value;
-			else if( par == 0x11 ) LFO1.KeySync.x = value;
-			else if( par == 0x12 ) LFO1.OneShot.x = value;
-			else if( par == 0x13 ) LFO1.Fast.x = value;
-			else if( par == 0x20 ) LFO1.DepthCV.x = value / 255;
-			else if( par == 0x21 ) LFO1.DepthLfoAmp.x = value / 255;
-			else if( par == 0x22 ) LFO1.DepthLfoRate.x = value / 255;
-			else if( par == 0x23 ) LFO1.DepthEnv1Amp.x = value / 255;
-			else if( par == 0x24 ) LFO1.DepthEnv2Amp.x = value / 255;
-		} else if( lfo == 1 ) {
-			     if( par == 0x00 ) LFO2.Amplitude.x = value / 255;
-			else if( par == 0x01 ) LFO2.Rate.x = value / 255;
-			else if( par == 0x02 ) LFO2.Delay.x = value / 255;
-			else if( par == 0x03 ) LFO2.Phase.x = value / 255;
-			else if( par == 0x04 ) LFO2.Waveform.selection = value;
-			else if( par == 0x10 ) LFO2.ClkSync.x = value;
-			else if( par == 0x11 ) LFO2.KeySync.x = value;
-			else if( par == 0x12 ) LFO2.OneShot.x = value;
-			else if( par == 0x13 ) LFO2.Fast.x = value;
-			else if( par == 0x20 ) LFO2.DepthCV.x = value / 255;
-			else if( par == 0x21 ) LFO2.DepthLfoAmp.x = value / 255;
-			else if( par == 0x22 ) LFO2.DepthLfoRate.x = value / 255;
-			else if( par == 0x23 ) LFO2.DepthEnv1Amp.x = value / 255;
-			else if( par == 0x24 ) LFO2.DepthEnv2Amp.x = value / 255;
-		}
+		receiveARP(par, value);
+    } else if( section < 0x180 ) { // LFO1: 0x100..0x17f
+		receiveLFO(0, par, value);
+    } else if( section < 0x200 ) { // LFO2: 0x180..0x1ff
+		receiveLFO(1, par, value);
     } else if( section < 0x280 ) { // ENV1: 0x200..0x27f
+		receiveENV(0, par, value);
+    } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
+		receiveENV(1, par, value);
+    } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
+        decl mod = (section & 0x060) >> 5;
+		receiveMOD(mod, par, value);
+	}
+}
+" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveNRPN" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="receiveLFO(lfo, par, value)" script="if( lfo == 0 ) {
+	     if( par == 0x00 ) LFO1.Amplitude.x = value / 255;
+	else if( par == 0x01 ) LFO1.Rate.x = value / 255;
+	else if( par == 0x02 ) LFO1.Delay.x = value / 255;
+	else if( par == 0x03 ) LFO1.Phase.x = value / 255;
+	else if( par == 0x04 ) LFO1.Waveform.selection = value;
+	else if( par == 0x10 ) LFO1.ClkSync.x = value;
+	else if( par == 0x11 ) LFO1.KeySync.x = value;
+	else if( par == 0x12 ) LFO1.OneShot.x = value;
+	else if( par == 0x13 ) LFO1.Fast.x = value;
+	else if( par == 0x20 ) LFO1.DepthCV.x = value / 255;
+	else if( par == 0x21 ) LFO1.DepthLfoAmp.x = value / 255;
+	else if( par == 0x22 ) LFO1.DepthLfoRate.x = value / 255;
+	else if( par == 0x23 ) LFO1.DepthEnv1Amp.x = value / 255;
+	else if( par == 0x24 ) LFO1.DepthEnv2Amp.x = value / 255;
+} else if( lfo == 1 ) {
+	     if( par == 0x00 ) LFO2.Amplitude.x = value / 255;
+	else if( par == 0x01 ) LFO2.Rate.x = value / 255;
+	else if( par == 0x02 ) LFO2.Delay.x = value / 255;
+	else if( par == 0x03 ) LFO2.Phase.x = value / 255;
+	else if( par == 0x04 ) LFO2.Waveform.selection = value;
+	else if( par == 0x10 ) LFO2.ClkSync.x = value;
+	else if( par == 0x11 ) LFO2.KeySync.x = value;
+	else if( par == 0x12 ) LFO2.OneShot.x = value;
+	else if( par == 0x13 ) LFO2.Fast.x = value;
+	else if( par == 0x20 ) LFO2.DepthCV.x = value / 255;
+	else if( par == 0x21 ) LFO2.DepthLfoAmp.x = value / 255;
+	else if( par == 0x22 ) LFO2.DepthLfoRate.x = value / 255;
+	else if( par == 0x23 ) LFO2.DepthEnv1Amp.x = value / 255;
+	else if( par == 0x24 ) LFO2.DepthEnv2Amp.x = value / 255;
+}
+" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveLFO" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="receiveARP(par, value)" script="     if( par == 0x00 ) ARP.On.x = value;
+else if( par == 0x01 ) ARP.Direction.selection = value;
+else if( par == 0x02 ) ARP.Hold.x = value;
+else if( par == 0x03 ) ARP.Sort.x = value;
+else if( par == 0x04 ) ARP.Sync.x = value;
+else if( par == 0x05 ) ARP.Oneshot.x = value;
+else if( par == 0x06 ) ARP.CAC.x = value;
+else if( par == 0x07 ) ARP.Easy.x = value;
+else if( par == 0x10 ) ARP.Speed.x = value / 255;
+else if( par == 0x11 ) ARP.Gatelength.x = value / 255;
+" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveARP" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="receiveMain(par, value)" script="     if( par == 0x10 ) Setup.Legato.x = value;
+else if( par == 0x11 ) Setup.Poly.x = value;
+else if( par == 0x18 ) Setup.Portamento.x = value / 255;
+else if( par == 0x19 ) Setup.PortamentoMode.selection = value;
+else if( par == 0x1a ) Setup.SusKey.x = value;
+else if( par == 0x20 ) Setup.OctTransp.x = value / 16;
+else if( par == 0x21 ) Setup.SemiTransp.x = value / 16;
+else if( par == 0x22 ) Setup.Finetune.x = value / 255;
+" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveMain" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="receiveENV(env, par, value)" script="if( env == 0 ) {
 	     if( par == 0x00 ) ENV1.Amplitude.x = value / 255;
-	else if( par == 0x01 ) ENV1.Delay.x = value / 255;
-	else if( par == 0x02 ) ENV1.Attack.x = value / 255;
-	else if( par == 0x03 ) ENV1.Decay.x = value / 255;
-	else if( par == 0x04 ) ENV1.Sustain.x = value / 255;
-	else if( par == 0x05 ) ENV1.Release.x = value / 255;
-	else if( par == 0x06 ) ENV1.Curve.selection = value;
+	else if( par == 0x01 ) ENV1.Curve.selection = value;
+	else if( par == 0x02 ) ENV1.Delay.x = value / 255;
+	else if( par == 0x03 ) ENV1.Attack.x = value / 255;
+	else if( par == 0x04 ) ENV1.Decay.x = value / 255;
+	else if( par == 0x05 ) ENV1.Sustain.x = value / 255;
+	else if( par == 0x06 ) ENV1.Release.x = value / 255;
 	else if( par == 0x10 ) ENV1.ClkSync.x = value;
 	else if( par == 0x11 ) ENV1.KeySync.x = value;
+	else if( par == 0x12 ) ENV1.Oneshot.x = value;
+	else if( par == 0x13 ) ENV1.Fast.x = value;
 	else if( par == 0x20 ) ENV1.DepthCV.x = value / 255;
 	else if( par == 0x21 ) ENV1.DepthLfo1Amp.x = value / 255;
 	else if( par == 0x22 ) ENV1.DepthLfo1Rate.x = value / 255;
 	else if( par == 0x23 ) ENV1.DepthLfo2Amp.x = value / 255;
 	else if( par == 0x24 ) ENV1.DepthLfo2Rate.x = value / 255;
-    } else if( section < 0x300 ) { // ENV2: 0x200..0x2ff
-    } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
-        decl mod = (section & 0x060) >> 5;
-	}
+
+} else if( env == 1 ) {
+	     if( par == 0x00 ) ENV2.Amplitude.x = value / 255;
+	else if( par == 0x01 ) ENV2.Curve.selection = value;
+	else if( par == 0x02 ) ENV2.Offset.x = value / 255;
+	else if( par == 0x03 ) ENV2.Speed.x = value / 255;
+	else if( par == 0x08 ) ENV2.LoopAttack.x = value / 16;
+	else if( par == 0x09 ) ENV2.SustainStep.x = value / 16;
+	else if( par == 0x0a ) ENV2.LoopRelease.x = value / 16;
+	else if( par == 0x0b ) ENV2.Steps.x = value / 15;
+	else if( par == 0x10 ) ENV2.ClkSync.x = value;
+	else if( par == 0x11 ) ENV2.KeySync.x = value;
+	else if( par == 0x12 ) ENV2.Oneshot.x = value;
+	else if( par == 0x13 ) ENV2.Fast.x = value;
+	else if( par == 0x20 ) ENV2.DepthCV.x = value / 255;
+	else if( par == 0x21 ) ENV2.DepthLfo1Amp.x = value / 255;
+	else if( par == 0x22 ) ENV2.DepthLfo1Rate.x = value / 255;
+	else if( par == 0x23 ) ENV2.DepthLfo2Amp.x = value / 255;
+	else if( par == 0x24 ) ENV2.DepthLfo2Rate.x = value / 255;
+	else if( par >= 0x40 && par < 0x50 ) ENV2.Level.x[par & 0xf] = value / 255;
+	else if( par >= 0x60 && par < 0x70 ) ENV2.Delay.x[par & 0xf] = value / 1000;
 }
-" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveNRPN" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveENV" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
+<SCRIPT name="receiveMOD(mod, par, value)" script="" trigger_script="" trigger_type="4" trigger="1" osc_message="/CVPanel/receiveMOD" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="Text" text="CV_T" x="974" y="-8" width="50" height="48" id="1" state="245" group="0" font="tahoma,23,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="8355711" content="CV">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/CV_T/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -1545,6 +1663,8 @@ if( select != 42 ) {
 <WINDOW class="CustomButton" text="Play" x="974" y="537" width="50" height="52" id="10" state="241" group="0" font="tahoma,15,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="0" bitmap="0,0" capture="1" color="3696767,7438125" label_off="Play" label_on="Play" outline="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/Play/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/Play/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<SCRIPT name="action()" script="sendNRPN(x ? 0x3c11 : 0x3c10, selectedCvChannels);
+" trigger_script="x" trigger_type="0" trigger="1" osc_message="/Play/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 <WINDOW class="CustomButton" text="Trg" x="974" y="589" width="50" height="52" id="11" state="241" group="0" font="tahoma,15,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" behavior="1" bitmap="0,0" capture="1" color="3696767,7438125" label_off="Trg" label_on="Trg" outline="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-1" osc_trigger="1" osc_message="/Trg/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -1558,7 +1678,7 @@ if( select != 42 ) {
 <VARIABLE name="lastReceivedNrpnAddressMsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnAddressMsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="lastReceivedNrpnValueLsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnValueLsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="lastReceivedNrpnValueMsb=" value="0.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/lastReceivedNrpnValueMsb" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
-<VARIABLE name="timerCounter=" value="4.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="timerCounter=" value="34.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="sendNRPN(nrpnNumber, nrpnValue)" script="decl chn = 0;
 
 decl nrpnNumberMsb = (nrpnNumber >> 7) & 0x7f;

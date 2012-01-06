@@ -34,7 +34,9 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/components/MbCvRandomGen.cpp \
 		    src/components/MbCvClock.cpp \
 		    src/components/MbCvLfo.cpp \
+		    src/components/MbCvEnvBase.cpp \
 		    src/components/MbCvEnv.cpp \
+		    src/components/MbCvEnvMulti.cpp \
 		    src/components/MbCvArp.cpp \
 		    src/components/MbCvVoice.cpp \
 		    src/components/MbCvVoiceQueue.cpp \
