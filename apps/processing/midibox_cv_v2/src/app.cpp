@@ -56,7 +56,7 @@ extern "C" {
 
 // measure performance with the stopwatch
 //#define STOPWATCH_PERFORMANCE_MEASURING 2
-#define STOPWATCH_PERFORMANCE_MEASURING 2
+#define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
 /////////////////////////////////////////////////////////////////////////////

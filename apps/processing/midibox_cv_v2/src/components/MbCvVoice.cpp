@@ -505,3 +505,23 @@ u8 MbCvVoice::getPortamentoMode(void)
       (voiceConstantTimeGlide ? 1 : 0) |
       (voiceGlissandoMode ? 2 : 0);
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// transpose any value (used by Event modes != Note)
+/////////////////////////////////////////////////////////////////////////////
+u16 MbCvVoice::transpose(u16 value)
+{    
+    s32 out = value;
+
+    out += 512 * (12*(int)voiceTransposeOctave + (int)voiceTransposeSemitone); // 7bit -> 16bit
+    out += 16 * (int)voiceFinetune * (int)voicePitchrange; // 12bit -> 15bit
+    // (with "Middle Value" we are able to sweep over the full range when voicePitchrange is set to maximum value 0x7f)
+
+    // modulate value based on pitch modulation (so that LFO/ENV/etc. still can be used!)
+    out += voicePitchModulation;
+    if( out < 0 ) out = 0x0000; else if( out > 0xffff ) out = 0xffff;
+
+    return out;
+}
+

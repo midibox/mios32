@@ -111,6 +111,9 @@ public:
     void setPortamentoMode(u8 value);
     u8 getPortamentoMode(void);
 
+    // transpose any value (used by Event modes != Note)
+    u16 transpose(u16 value);
+
 protected:
 };
 
