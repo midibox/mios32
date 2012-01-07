@@ -18,16 +18,6 @@
 #include <mios32.h>
 #include "MbCvStructs.h"
 
-typedef enum {
-    MBCV_ENV_STATE_IDLE = 0,
-    MBCV_ENV_STATE_ATTACK,
-    MBCV_ENV_STATE_ATTACK2,
-    MBCV_ENV_STATE_DECAY,
-    MBCV_ENV_STATE_DECAY2,
-    MBCV_ENV_STATE_SUSTAIN,
-    MBCV_ENV_STATE_RELEASE,
-    MBCV_ENV_STATE_RELEASE2
-} mbcv_env_state_t;
 
 class MbCvEnvBase
 {
@@ -43,6 +33,17 @@ public:
 
     // ENV handler (returns true when sustain phase reached)
     virtual bool tick(const u8 &updateSpeedFactor);
+
+    typedef enum {
+        MBCV_ENV_STATE_IDLE = 0,
+        MBCV_ENV_STATE_ATTACK,
+        MBCV_ENV_STATE_ATTACK2,
+        MBCV_ENV_STATE_DECAY,
+        MBCV_ENV_STATE_DECAY2,
+        MBCV_ENV_STATE_SUSTAIN,
+        MBCV_ENV_STATE_RELEASE,
+        MBCV_ENV_STATE_RELEASE2
+    } EnvStateT;
 
     // input parameters
     bool envModeClkSync;
@@ -60,7 +61,7 @@ public:
     s8 envDepthLfo2Rate;
 
     s32 envAmplitudeModulation;
-    s32 envDecayModulation;
+    s32 envRateModulation;
 
     // output waveform
     s32 envOut;
@@ -77,7 +78,7 @@ protected:
     bool step(const u16 &target, const u16 &rate, const s8 &curve, const u8 &updateSpeedFactor, const bool& rateFromEnvTable);
 
     // internal variables
-    mbcv_env_state_t envState;
+    EnvStateT envState;
 
     u16 envCtr;
     u32 envDelayCtr;

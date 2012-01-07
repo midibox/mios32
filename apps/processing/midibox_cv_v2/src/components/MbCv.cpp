@@ -41,6 +41,7 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
     mbCvClockPtr = _mbCvClockPtr;
     mbCvVoice.init(_cvNum, &mbCvMidiVoice);
     mbCvMidiVoice.init();
+    mbCvMod.init(_cvNum);
 
     updatePatch(true);
 }
@@ -51,49 +52,27 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCv::tick(const u8 &updateSpeedFactor)
 {
-    // clear modulation destinations
-    mbCvVoice.voicePitchModulation = 0;
-
     // clock arp
     if( mbCvClockPtr->eventClock ) {
         mbCvArp.clockReq = true;
     }
 
     // LFOs
-    MbCvLfo *l = mbCvLfo.first();
-    for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
-        if( mbCvClockPtr->eventClock )
-            l->syncClockReq = 1;
+    {
+        MbCvLfo *l = mbCvLfo.first();
+        for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
+            if( mbCvClockPtr->eventClock )
+                l->syncClockReq = 1;
 
-        MbCvLfo *buddyLfo = lfo ? &mbCvLfo[0] : &mbCvLfo[1];
-        l->lfoAmplitudeModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoAmplitude / 128;
-        l->lfoRateModulation = buddyLfo->lfoOut * (s32)buddyLfo->lfoDepthLfoRate / 128;
+            l->lfoAmplitudeModulation =  mbCvMod.takeDstValue(MBCV_MOD_DST_LFO1_A + lfo);
+            l->lfoRateModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_LFO1_R + lfo);
 
-        {
-            MbCvEnv *e = mbCvEnv1.first();
-            if( lfo == 0 ) {
-                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
-                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
-            } else {
-                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
-                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
+            if( l->tick(updateSpeedFactor) ) {
+                // trigger[MBCV_TRG_L1P+lfo];
             }
+
+            mbCvMod.modSrc[MBCV_MOD_SRC_LFO1 + lfo] = l->lfoOut;
         }
-
-        {
-            MbCvEnvMulti *e = mbCvEnv2.first();
-            if( lfo == 0 ) {
-                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo1Amplitude / 128;
-                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo1Rate / 128;
-            } else {
-                l->lfoAmplitudeModulation += e->envOut * (s32)e->envDepthLfo2Amplitude / 128;
-                l->lfoRateModulation += e->envOut * (s32)e->envDepthLfo2Rate / 128;
-            }
-        }
-
-        l->tick(updateSpeedFactor);
-
-        mbCvVoice.voicePitchModulation += (l->lfoOut * (s32)l->lfoDepthPitch) / 128;
     }
 
     // ENVs
@@ -103,17 +82,14 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             if( mbCvClockPtr->eventClock )
                 e->syncClockReq = 1;
 
-            e->envAmplitudeModulation = 0;
-            e->envDecayModulation = 0;
-            MbCvLfo *l = mbCvLfo.first();
-            for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
-                e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnv1Amplitude / 128;
-                //e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+            e->envAmplitudeModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_ENV1_A);
+            e->envRateModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_ENV1_R);
+
+            if( e->tick(updateSpeedFactor) ) {
+                // trigger[MBCV_TRG_E1S];
             }
 
-            e->tick(updateSpeedFactor);
-
-            mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
+            mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] = e->envOut;
         }
     }
 
@@ -123,27 +99,95 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             if( mbCvClockPtr->eventClock )
                 e->syncClockReq = 1;
 
-            e->envAmplitudeModulation = 0;
-            e->envDecayModulation = 0;
-            MbCvLfo *l = mbCvLfo.first();
-            for(int lfo=0; lfo < mbCvLfo.size; ++lfo, ++l) {
-                e->envAmplitudeModulation = l->lfoOut * (s32)l->lfoDepthEnv2Amplitude / 128;
-                //e->envDecayModulation = l->lfoOut * (s32)l->lfoDepthEnvDecay / 128;
+            e->envAmplitudeModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_ENV2_A);
+            e->envRateModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_ENV2_R);
+
+            if( e->tick(updateSpeedFactor) ) {
+                // trigger[MBCV_TRG_E2S];
             }
 
-            e->tick(updateSpeedFactor);
-
-            mbCvVoice.voicePitchModulation += (e->envOut * (s32)e->envDepthPitch) / 128;
+            mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] = e->envOut;
         }
     }
 
-    // Voice handling
-    MbCvVoice *v = &mbCvVoice; // allows to use multiple voices later
-    if( mbCvArp.arpEnabled )
-        mbCvArp.tick(v, this);
+    // Modulation Matrix
+    {
+        // since this isn't done anywhere else:
+        // convert linear frequency of voice1 to 15bit signed value (only positive direction)
+        mbCvMod.modSrc[MBCV_MOD_SRC_KEY] = mbCvVoice.voiceLinearFrq >> 1;
 
-    if( v->gate(updateSpeedFactor) )
-        v->pitch(updateSpeedFactor);
+        // do ModMatrix calculations
+        mbCvMod.tick();
+
+        // additional direct modulation paths
+        { // Pitch
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_PITCH];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthPitch) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthPitch) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthPitch) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthPitch) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_PITCH] = mod;
+        }
+
+        { // LFO1 Amp
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_A];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthLfoAmplitude) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo1Amplitude) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo1Amplitude) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_LFO1_A] = mod;
+        }
+
+        { // LFO2 Amp
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_A];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthLfoAmplitude) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo2Amplitude) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo2Amplitude) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_LFO2_A] = mod;
+        }
+
+        { // LFO1 Rate
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_R];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthLfoRate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo1Rate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo1Rate) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_LFO1_R] = mod;
+        }
+
+        { // LFO2 Amp
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_R];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthLfoRate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo2Rate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo2Rate) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_LFO2_R] = mod;
+        }
+
+        { // ENV1 Amp
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV1_R];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv1Rate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv1Rate) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_ENV1_R] = mod;
+        }
+
+        { // ENV1 Amp
+            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV2_R];
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv2Rate) / 128;
+            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv2Rate) / 128;
+            mbCvMod.modDst[MBCV_MOD_DST_ENV2_R] = mod;
+        }
+    }
+
+    {
+        // Voice handling
+        MbCvVoice *v = &mbCvVoice; // allows to use multiple voices later
+
+        v->voicePitchModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_PITCH);
+
+        if( mbCvArp.arpEnabled )
+            mbCvArp.tick(v, this);
+
+        if( v->gate(updateSpeedFactor) )
+            v->pitch(updateSpeedFactor);
+    }
 
     return true;
 }
@@ -199,9 +243,10 @@ void MbCv::midiReceiveNote(u8 chn, u8 note, u8 velocity)
     MIOS32_IRQ_Disable();
 
     // set note on/off
-    if( velocity )
+    if( velocity ) {
+        mbCvMod.modSrc[MBCV_MOD_SRC_VEL] = velocity << 8;
         noteOn(note, velocity, false);
-    else
+    } else
         noteOff(note, false);
 
     MIOS32_IRQ_Enable();
@@ -214,8 +259,12 @@ void MbCv::midiReceiveNote(u8 chn, u8 note, u8 velocity)
 void MbCv::midiReceiveCC(u8 chn, u8 ccNumber, u8 value)
 {
     // take over CC (valid CCs will be checked by MIDI voice)
-    if( mbCvMidiVoice.isAssigned(chn) )
+    if( mbCvMidiVoice.isAssigned(chn) ) {
+        if( ccNumber == 1 )
+            mbCvMod.modSrc[MBCV_MOD_SRC_MDW] = value << 8;
+
         mbCvMidiVoice.setCC(ccNumber, value);
+    }
 }
 
 
@@ -227,6 +276,8 @@ void MbCv::midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit)
     if( mbCvMidiVoice.isAssigned(chn) ) {
         s16 pitchbendValueSigned = (s16)pitchbendValue14bit - 8192;
         mbCvMidiVoice.midivoicePitchbender = pitchbendValueSigned;
+
+        mbCvMod.modSrc[MBCV_MOD_SRC_PBN] = 2*pitchbendValueSigned;
     }
 }
 
@@ -236,8 +287,10 @@ void MbCv::midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit)
 /////////////////////////////////////////////////////////////////////////////
 void MbCv::midiReceiveAftertouch(u8 chn, u8 value)
 {
-    if( mbCvMidiVoice.isAssigned(chn) )
-        mbCvMidiVoice.midivoiceAftertouch = value;
+    if( mbCvMidiVoice.isAssigned(chn) ) {
+        mbCvMidiVoice.midivoiceAftertouch = value << 8;
+        mbCvMod.modSrc[MBCV_MOD_SRC_ATH] = value;
+    }
 }
 
 
@@ -311,8 +364,8 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x20: l->lfoDepthPitch = (int)value - 0x80; return true;
         case 0x21: l->lfoDepthLfoAmplitude = (int)value - 0x80; return true;
         case 0x22: l->lfoDepthLfoRate = (int)value - 0x80; return true;
-        case 0x23: l->lfoDepthEnv1Amplitude = (int)value - 0x80; return true;
-        case 0x24: l->lfoDepthEnv2Amplitude = (int)value - 0x80; return true;
+        case 0x23: l->lfoDepthEnv1Rate = (int)value - 0x80; return true;
+        case 0x24: l->lfoDepthEnv2Rate = (int)value - 0x80; return true;
         }
     } else if( section < 0x280 ) { // ENV1: 0x200..0x27f
         MbCvEnv *e = &mbCvEnv1[0];
@@ -344,7 +397,7 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x00: e->envAmplitude = (int)value - 0x80; return true;
         case 0x01: e->envCurve = (int)value; return true;
         case 0x02: e->envOffset = (int)value - 0x80; return true;
-        case 0x03: e->envSpeed = (int)value - 0x80; return true;
+        case 0x03: e->envRate = (int)value - 0x80; return true;
 
         case 0x08: e->envLoopAttack = (int)value; return true;
         case 0x09: e->envSustainStep = (int)value; return true;
@@ -372,9 +425,25 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
             e->envDelay[step] = value;
             return true;
         }
-    } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
-        u8 mod = (section & 0x060) >> 5;
-        DEBUG_MSG("MOD%d %02x: %04x\n", mod, par, value);
+    } else if( section < 0x380 ) { // MOD1: 0x300..0x30f, ... MOD4: 0x330..0x33f
+        u8 mod = par >> 4;
+
+        if( mod >= MBCV_NUM_MOD )
+            return false; // just to ensure...
+
+        MbCvMod::ModPatchT *mp = (MbCvMod::ModPatchT *)&mbCvMod.modPatch[mod];
+        switch( par & 0x0f ) {
+        case 0x00: mp->depth = (int)value - 0x80; return true;
+        case 0x01: mp->src1 = value; return true;
+        case 0x02: mp->src1_chn = value; return true;
+        case 0x03: mp->src2 = value; return true;
+        case 0x04: mp->src2_chn = value; return true;
+        case 0x05: mp->op &= 0xc0; mp->op |= (value & 0x3f); return true;
+        case 0x06: mp->dst1 = value; return true;
+        case 0x07: mp->op &= ~(1 << 6); mp->op |= ((value&1) << 6); return true;
+        case 0x08: mp->dst2 = value; return true;
+        case 0x09: mp->op &= ~(1 << 7); mp->op |= ((value&1) << 7); return true;
+        }
     }
 
     return false; // parameter not mapped
@@ -450,8 +519,8 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x20: *value = (int)l->lfoDepthPitch + 0x80; return true;
         case 0x21: *value = (int)l->lfoDepthLfoAmplitude + 0x80; return true;
         case 0x22: *value = (int)l->lfoDepthLfoRate + 0x80; return true;
-        case 0x23: *value = (int)l->lfoDepthEnv1Amplitude + 0x80; return true;
-        case 0x24: *value = (int)l->lfoDepthEnv2Amplitude + 0x80; return true;
+        case 0x23: *value = (int)l->lfoDepthEnv1Rate + 0x80; return true;
+        case 0x24: *value = (int)l->lfoDepthEnv2Rate + 0x80; return true;
         }
     } else if( section < 0x280 ) { // ENV1: 0x200..0x27f
         MbCvEnv *e = &mbCvEnv1[0];
@@ -483,7 +552,7 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
         case 0x01: *value = e->envCurve; return true;
         case 0x02: *value = (int)e->envOffset + 0x80; return true;
-        case 0x03: *value = (int)e->envSpeed + 0x80; return true;
+        case 0x03: *value = (int)e->envRate + 0x80; return true;
 
         case 0x08: *value = e->envLoopAttack; return true;
         case 0x09: *value = e->envSustainStep; return true;
@@ -512,7 +581,24 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
             return true;
         }
     } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
-        u8 mod = (section & 0x060) >> 5;
+        u8 mod = par >> 4;
+
+        if( mod >= MBCV_NUM_MOD )
+            return false; // just to ensure...
+        
+        MbCvMod::ModPatchT *mp = (MbCvMod::ModPatchT *)&mbCvMod.modPatch[mod];
+        switch( par & 0x0f ) {
+        case 0x00: *value = mp->depth + 0x80; return true;
+        case 0x01: *value = mp->src1; return true;
+        case 0x02: *value = mp->src1_chn; return true;
+        case 0x03: *value = mp->src2; return true;
+        case 0x04: *value = mp->src2_chn; return true;
+        case 0x05: *value = mp->op & 0x3f; return true;
+        case 0x06: *value = mp->dst1; return true;
+        case 0x07: *value = (mp->op & (1 << 6)) ? 1 : 0; return true;
+        case 0x08: *value = mp->dst2; return true;
+        case 0x09: *value = (mp->op & (1 << 7)) ? 1 : 0; return true;
+        }
     }
 
     return false; // parameter not mapped

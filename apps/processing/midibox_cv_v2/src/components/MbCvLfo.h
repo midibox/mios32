@@ -49,8 +49,8 @@ public:
     s8 lfoDepthPitch;
     s8 lfoDepthLfoAmplitude;
     s8 lfoDepthLfoRate;
-    s8 lfoDepthEnv1Amplitude;
-    s8 lfoDepthEnv2Amplitude;
+    s8 lfoDepthEnv1Rate;
+    s8 lfoDepthEnv2Rate;
 
     s32 lfoAmplitudeModulation;
     s32 lfoRateModulation;

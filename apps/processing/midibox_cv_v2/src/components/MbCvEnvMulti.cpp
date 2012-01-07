@@ -51,7 +51,7 @@ void MbCvEnvMulti::init(void)
     }
 
     envOffset = 0;
-    envSpeed = 0;
+    envRate = 0;
 
     envLoopAttack = 0;
     envSustainStep = 8;
@@ -164,10 +164,10 @@ void MbCvEnvMulti::recalc(const u8 &updateSpeedFactor)
     }
     u16 nextLevel = envLevel[envNextStep] << 8;
 
-    // the speed can be modulated via envDecay (no typo, re-used name from MbCvEnvBase)
+    // the rate can be modulated
     s32 delay = envDelay[envCurrentStep];
-    delay += -envSpeed;
-    delay = delay + (envDecayModulation / 128);
+    delay += -envRate;
+    delay = delay + (envRateModulation / 128);
     if( delay > 1024 ) delay = 1024; else if( delay < 1 ) delay = 1;
 
     envDelayCtr = 0;
