@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.005
+~~~~~~~~~~~~~~~
+
+   o fixed "out of memory" issue in MIDI player
+
+
 MIDIO128 V3.004
 ~~~~~~~~~~~~~~~
 
