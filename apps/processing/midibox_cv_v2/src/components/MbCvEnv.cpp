@@ -92,16 +92,20 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
                     return false; // no error
                 }
             }
+
+            // the rate can be modulated
+            s32 attack = envAttack + (envRateModulation / 512);
+            if( attack > 255 ) attack = 255; else if( attack < 0 ) attack = 0;
   
             s8 curve = envCurve ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
-            if( step(0xffff, envAttack, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) )
+            if( step(0xffff, attack, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
   
         case MBCV_ENV_STATE_DECAY: {
-            // the decay can be modulated
+            // the rate can be modulated
             s32 decay = accentReq ? envDecayAccented : envDecay;
-            decay = decay + (envDecayModulation / 512);
+            decay = decay + (envRateModulation / 512);
             if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
 
             s8 curve = envCurve ? -64 : 0;
@@ -120,9 +124,13 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
   
         case MBCV_ENV_STATE_RELEASE: {
             s8 curve = envCurve ? -64 : 0;
-            if( envCtr )
-                step(0x0000, envRelease, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable);
-            else if( !envModeOneshot )
+            if( envCtr ) {
+                // the rate can be modulated
+                s32 release = envRelease + (envRateModulation / 512);
+                if( release > 255 ) release = 255; else if( release < 0 ) release = 0;
+
+                step(0x0000, release, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable);
+            } else if( !envModeOneshot )
                 envState = MBCV_ENV_STATE_ATTACK; // restart if not in oneshot mode
         } break;
   

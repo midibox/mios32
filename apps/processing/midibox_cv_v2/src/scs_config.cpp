@@ -565,11 +565,11 @@ static void lfoDepthLfoAmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo
 static u16  lfoDepthLfoRateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoRate + 128; }
 static void lfoDepthLfoRateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthLfoRate = value - 128; }
 
-static u16  lfoDepthEnv1AmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv1Amplitude + 128; }
-static void lfoDepthEnv1AmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv1Amplitude = value - 128; }
+static u16  lfoDepthEnv1RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv1Rate + 128; }
+static void lfoDepthEnv1RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv1Rate = value - 128; }
 
-static u16  lfoDepthEnv2AmpGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv2Amplitude + 128; }
-static void lfoDepthEnv2AmpSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv2Amplitude = value - 128; }
+static u16  lfoDepthEnv2RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv2Rate + 128; }
+static void lfoDepthEnv2RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvLfo[selectedLfo].lfoDepthEnv2Rate = value - 128; }
 
 static u16  envAmplitudeGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envAmplitude + 128; }
 static void envAmplitudeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envAmplitude = value - 128; }
@@ -739,8 +739,8 @@ const scs_menu_item_t pageLFO[] = {
   SCS_ITEM("D.CV ", 0, 255,         lfoDepthCvGet,  lfoDepthCvSet,  selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DLAmp", 0, 255,         lfoDepthLfoAmpGet,lfoDepthLfoAmpSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("DLRte", 0, 255,         lfoDepthLfoRateGet,lfoDepthLfoRateSet,selectNOP, stringDecPM128, NULL),
-  SCS_ITEM("DE1Am", 0, 255,         lfoDepthEnv1AmpGet,lfoDepthEnv1AmpSet,selectNOP, stringDecPM128, NULL),
-  SCS_ITEM("DE2Am", 0, 255,         lfoDepthEnv2AmpGet,lfoDepthEnv2AmpSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DE1Rt", 0, 255,         lfoDepthEnv1RateGet,lfoDepthEnv1RateSet,selectNOP, stringDecPM128, NULL),
+  SCS_ITEM("DE2Rt", 0, 255,         lfoDepthEnv2RateGet,lfoDepthEnv2RateSet,selectNOP, stringDecPM128, NULL),
 };
 
 const scs_menu_item_t pageENV1[] = {

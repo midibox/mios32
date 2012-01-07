@@ -42,7 +42,7 @@ public:
     u16 envDelay[MBCV_ENV_MULTI_NUM_STEPS];
 
     s8  envOffset;
-    s8  envSpeed;
+    s8  envRate;
 
     u8  envLoopAttack;
     u8  envSustainStep;

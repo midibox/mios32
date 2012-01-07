@@ -50,18 +50,18 @@ void MbCvLfo::init()
     lfoModeOneshot = 0;
     lfoModeFast = 0;
     lfoWaveform = 0;
-    lfoAmplitude = 0;
+    lfoAmplitude = 64;
     lfoRate = 128;
     lfoDelay = 0;
     lfoPhase = 0;
     lfoRateModulation = 0;
     lfoAmplitudeModulation = 0;
 
-    lfoDepthPitch = 64;
+    lfoDepthPitch = 0;
     lfoDepthLfoAmplitude = 0;
     lfoDepthLfoRate = 0;
-    lfoDepthEnv1Amplitude = 0;
-    lfoDepthEnv2Amplitude = 0;
+    lfoDepthEnv1Rate = 0;
+    lfoDepthEnv2Rate = 0;
 
     lfoOut = 0;
 

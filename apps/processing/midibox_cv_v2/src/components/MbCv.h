@@ -24,6 +24,7 @@
 #include "MbCvEnv.h"
 #include "MbCvEnvMulti.h"
 #include "MbCvArp.h"
+#include "MbCvMod.h"
 
 
 // little helper
@@ -118,6 +119,9 @@ public:
     array<MbCvEnv, 1> mbCvEnv1;
     array<MbCvEnvMulti, 1> mbCvEnv2;
     MbCvArp mbCvArp;
+
+    // modulation matrix
+    MbCvMod mbCvMod;
 
     // note handling
     void noteOn(u8 note, u8 velocity, bool bypassNotestack);

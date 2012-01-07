@@ -50,17 +50,17 @@ void MbCvEnvBase::init(void)
     envModeOneshot = 1;
     envModeFast = 0;
 
-    envAmplitude = 0;
+    envAmplitude = 64;
     envCurve = 0;
 
-    envDepthPitch = 64;
+    envDepthPitch = 0;
     envDepthLfo1Amplitude = 0;
     envDepthLfo1Rate = 0;
     envDepthLfo2Amplitude = 0;
     envDepthLfo2Rate = 0;
 
     envAmplitudeModulation = 0;
-    envDecayModulation = 0;
+    envRateModulation = 0;
 
     envOut = 0;
 
