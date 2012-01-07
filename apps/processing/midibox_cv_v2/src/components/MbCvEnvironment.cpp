@@ -104,22 +104,16 @@ bool MbCvEnvironment::tick(void)
             if( v->voiceEventMode == MBCV_MIDI_EVENT_MODE_NOTE ) {
                 *out = v->voiceFrq;
             } else {
-                s32 value = 0;
                 switch( v->voiceEventMode ) {
-                case MBCV_MIDI_EVENT_MODE_VELOCITY: value = v->voiceVelocity << 9; break;
-                case MBCV_MIDI_EVENT_MODE_AFTERTOUCH: value = mv->midivoiceAftertouch << 9; break;
-                case MBCV_MIDI_EVENT_MODE_CC: value = mv->midivoiceCCValue << 9; break;
-                case MBCV_MIDI_EVENT_MODE_NRPN: value = mv->midivoiceNRPNValue << 2; break;
-                case MBCV_MIDI_EVENT_MODE_PITCHBENDER: value = (mv->midivoicePitchbender + 8192) << 2; break;
-                case MBCV_MIDI_EVENT_MODE_CONST_MIN: value = 0x0000; break;
-                case MBCV_MIDI_EVENT_MODE_CONST_MID: value = 0x8000; break;
-                case MBCV_MIDI_EVENT_MODE_CONST_MAX: value = 0xffff; break;
+                case MBCV_MIDI_EVENT_MODE_VELOCITY: *out = v->transpose(v->voiceVelocity << 9); break;
+                case MBCV_MIDI_EVENT_MODE_AFTERTOUCH: *out = v->transpose(mv->midivoiceAftertouch << 9); break;
+                case MBCV_MIDI_EVENT_MODE_CC: *out = v->transpose(mv->midivoiceCCValue << 9); break;
+                case MBCV_MIDI_EVENT_MODE_NRPN: *out = v->transpose(mv->midivoiceNRPNValue << 2); break;
+                case MBCV_MIDI_EVENT_MODE_PITCHBENDER: *out = v->transpose((mv->midivoicePitchbender + 8192) << 2); break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MIN: *out = v->transpose(0x0000); break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MID: *out = v->transpose(0x8000); break;
+                case MBCV_MIDI_EVENT_MODE_CONST_MAX: *out = v->transpose(0xffff); break;
                 }
-
-                // modulate value based on pitch modulation (so that LFO/ENV/etc. still can be used!)
-                value += v->voicePitchModulation;
-                if( value < 0 ) value = 0x0000; else if( value > 0xffff ) value = 0xffff;
-                *out = value;
             }
         }
     }
