@@ -101,6 +101,10 @@ DRESULT disk_read (
 	MIOS32_MIDI_SendDebugMessage("[disk_read] error while reading sector %d\n", sector+i);
 #endif
 	return RES_ERROR;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 3
+	MIOS32_MIDI_SendDebugMessage("[disk_read] sector %d (#%d/%d) finished\n", sector+i, i+1, count);
+#endif
       }
     }
 
@@ -135,6 +139,10 @@ DRESULT disk_write (
 	MIOS32_MIDI_SendDebugMessage("[disk_write] error while writing to sector %d\n", sector+i);
 #endif
 	return RES_ERROR;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 3
+      MIOS32_MIDI_SendDebugMessage("[disk_write] sector %d (#%d/%d) finished\n", sector+i, i+1, count);
+#endif
       }
     }
 

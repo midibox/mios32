@@ -394,6 +394,9 @@ s32 FILE_ReadReOpen(file_t* file)
     return FILE_ERR_OPEN_READ_WITHOUT_CLOSE;
   }
 
+  // for later check if we need to reload the sector
+  u32 prev_dsect = file_read.dsect;
+
   // restore file variables from file_t
   file_read.fs = &fs;
   file_read.id = fs.id;
@@ -407,10 +410,9 @@ s32 FILE_ReadReOpen(file_t* file)
   file_read.dir_sect = file->dir_sect;
   file_read.dir_ptr = file->dir_ptr;
 
-#ifndef FILE_NO_DISK_READ_ON_READREOPEN
-  // ensure that the right sector is in cache again
-  disk_read(file_read.fs->drive, file_read.buf, file_read.dsect, 1);
-#endif
+  if( prev_dsect != file_read.dsect ) {
+    disk_read(file_read.fs->drive, file_read.buf, file_read.dsect, 1);
+  }
 
   // file is opened (again)
   file_read_is_open = 1;
