@@ -59,3 +59,12 @@ MIDIO128 V3.000
 ~~~~~~~~~~~~~~~
 
    o initial version
+
+
+
+
+Wishlist
+~~~~~~~~
+
+- Whilst playing some of the MIDI files I thought it might be nice 
+if the tempo/playback speed could be varied
