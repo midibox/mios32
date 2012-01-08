@@ -36,7 +36,7 @@ s32 SEQ_TPD_LED_Update(void)
      cycle_ctr = 0;
 
   // Power the corresponding column anode of this cycle
-  SEQ_LED_SRSet(seq_hwcfg_tpd.columns_sr - 1, (1 << cycle_ctr));         
+  MIOS32_DOUT_SRSet(seq_hwcfg_tpd.columns_sr - 1, (1 << cycle_ctr));         
 
   // Determine upper relative track position (tracks 1-8, "fall upward")
   s32 steps = SEQ_CC_Get(cycle_ctr, SEQ_CC_LENGTH);
@@ -54,7 +54,7 @@ s32 SEQ_TPD_LED_Update(void)
      setbyte ^= (1 << relpos_upper);
   if (!(seq_core_trk_muted & (1 << (cycle_ctr + 8))))
      setbyte ^= (1 << relpos_lower);
-  SEQ_LED_SRSet(seq_hwcfg_tpd.rows_sr - 1, setbyte);
+  MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr - 1, setbyte);
   
   return 0; // no error
 }

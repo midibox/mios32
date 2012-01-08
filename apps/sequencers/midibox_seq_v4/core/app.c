@@ -246,6 +246,7 @@ void APP_SRIO_ServicePrepare(void)
     BLM_X_PrepareRow();
   }
 
+  // TK: using MIOS32_DOUT_SRSet/PinSet instead of SEQ_LED_SRSet/PinSet to ensure compatibility with MBSEQV4L
   if( seq_hwcfg_bpm_digits.enabled ) {
     // invert for common anodes
     u8 inversion_mask = (seq_hwcfg_bpm_digits.enabled == 2) ? 0xff : 0x00;
@@ -254,38 +255,38 @@ void APP_SRIO_ServicePrepare(void)
     float bpm = SEQ_BPM_Get();
     if( led_digit_ctr == 0 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(((int)(bpm*10)) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common1_pin, common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 1 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet((int)bpm % 10) | 0x80; // +dot
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common2_pin, common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 2 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(((int)bpm / 10) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common3_pin, common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     } else if( led_digit_ctr == 3 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(((int)bpm / 100) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common4_pin, common_enable);
     }
     else { // not displaying bpm digit in this cycle, disable common pins
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_bpm_digits.common4_pin, !common_enable);
     }
   }
 
@@ -297,27 +298,27 @@ void APP_SRIO_ServicePrepare(void)
     int step = (int)(SEQ_BPM_IsRunning() ? seq_core_trk[SEQ_UI_VisibleTrackGet()].step : ui_selected_step) + 1;
     if( led_digit_ctr == 4 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(step % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common1_pin, common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
     } else if( led_digit_ctr == 5 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet((step / 10) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common2_pin, common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
     } else if( led_digit_ctr == 6 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet((step / 100) % 10);
-      SEQ_LED_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, common_enable);
+      MIOS32_DOUT_SRSet(seq_hwcfg_step_digits.segments_sr - 1, sr_value ^ inversion_mask);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common3_pin, common_enable);
     }
     else { // not displaying step digit in this cycle, disable common pins
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
-      SEQ_LED_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common1_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common2_pin, !common_enable);
+      MIOS32_DOUT_PinSet(seq_hwcfg_step_digits.common3_pin, !common_enable);
     }    
   }
   
