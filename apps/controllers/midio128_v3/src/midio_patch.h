@@ -36,6 +36,7 @@
 #define MIDIO_PATCH_DIN_MODE_TOGGLE        2
 
 #define MIDIO_PATCH_MATRIX_MODE_COMMON     0
+#define MIDIO_PATCH_MATRIX_MODE_MAPPED     1
 
 #define MIDIO_PATCH_MERGER_MODE_DISABLED   0
 #define MIDIO_PATCH_MERGER_MODE_ENABLED    1
@@ -78,6 +79,8 @@ typedef struct {
   u8 arg;
   u8 sr_din;
   u8 sr_dout;
+  u8 map_chn[64];
+  u8 map_evnt1[64];
 } midio_patch_matrix_entry_t;
 
 typedef struct {

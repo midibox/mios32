@@ -382,6 +382,8 @@ midio_patch_matrix_entry_t midio_patch_matrix[MIDIO_PATCH_NUM_MATRIX] = {
   { 0x1011, MIDIO_PATCH_MATRIX_MODE_COMMON,  1, 0x30,     0,     0 },
   { 0x1011, MIDIO_PATCH_MATRIX_MODE_COMMON,  1, 0x30,     0,     0 },
   { 0x1011, MIDIO_PATCH_MATRIX_MODE_COMMON,  1, 0x30,     0,     0 },
+
+  // Note: map_chn and map_evnt1 are initialized in MIDIO_PATCH_Init()
 };
 
 midio_patch_router_entry_t midio_patch_router[MIDIO_PATCH_NUM_ROUTER] = {
@@ -441,6 +443,17 @@ s32 MIDIO_PATCH_Init(u32 mode)
   midio_patch_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
  //                              all ports
   midio_patch_router_mclk_out = 0xffffffff;
+
+
+  int matrix;
+  midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[0];
+  for(matrix=0; matrix<MIDIO_PATCH_NUM_MATRIX; ++matrix, ++m) {
+    int i;
+    for(i=0; i<64; ++i) {
+      m->map_chn[i] = 1;
+      m->map_evnt1[i] = 0x30 + i;
+    }
+  }
 
   return 0; // no error
 }

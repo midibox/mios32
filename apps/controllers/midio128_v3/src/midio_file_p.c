@@ -532,6 +532,90 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      }
 	    }
 	  }	  
+	} else if( strcmp(parameter, "MATRIX_MAP_CHN") == 0 ) {
+	  s32 matrix;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (matrix=get_dec(word)) < 1 || matrix > MIDIO_PATCH_NUM_MATRIX  ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --matrix;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int row;
+	    if( (row=get_dec(word)) < 1 || row > 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid row number for parameter '%s'\n", parameter);
+#endif
+	    } else {
+	      // user counts from 1...
+	      --row;
+
+	      int chn[8];
+	      int col;
+	      for(col=0; col<8; ++col) {
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+		if( (chn[col]=get_dec(word)) < 1 || chn[col] > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid channel number for parameter '%s'\n", parameter);
+#endif
+		  break;
+		}
+	      }
+
+	      // valid line?
+	      if( col == 8 ) {
+		midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[matrix];
+		for(col=0; col<8; ++col) {
+		  m->map_chn[row*8+col] = chn[col];
+		}
+	      }
+	    }
+	  }
+	} else if( strcmp(parameter, "MATRIX_MAP_EVNT1") == 0 ) {
+	  s32 matrix;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (matrix=get_dec(word)) < 1 || matrix > MIDIO_PATCH_NUM_MATRIX  ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --matrix;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int row;
+	    if( (row=get_dec(word)) < 1 || row > 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid row number for parameter '%s'\n", parameter);
+#endif
+	    } else {
+	      // user counts from 1...
+	      --row;
+
+	      int evnt1[8];
+	      int col;
+	      for(col=0; col<8; ++col) {
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+		if( (evnt1[col]=get_dec(word)) < 0 || evnt1[col] > 127 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid evnt1 number for parameter '%s'\n", parameter);
+#endif
+		  break;
+		}
+	      }
+
+	      // valid line?
+	      if( col == 8 ) {
+		midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[matrix];
+		for(col=0; col<8; ++col) {
+		  m->map_evnt1[row*8+col] = evnt1[col];
+		}
+	      }
+	    }
+	  }
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  s32 node;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -850,14 +934,14 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#MATRIX;Number;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;Chn;Arg;DIN_SR;DOUT_SR\n");
-    FLUSH_BUFFER;
-
     int matrix;
     midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[0];
     for(matrix=0; matrix<MIDIO_PATCH_NUM_MATRIX; ++matrix, ++m) {
+      sprintf(line_buffer, "\n\n#MATRIX;Number;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;Chn;Arg;DIN_SR;DOUT_SR\n");
+      FLUSH_BUFFER;
+
       char ports_bin[40];
       int bit;
       for(bit=0; bit<16; ++bit) {
@@ -875,6 +959,45 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
 	      m->sr_din,
 	      m->sr_dout);
       FLUSH_BUFFER;
+
+      sprintf(line_buffer, "\n#MATRIX_MAP_CHN;Number;Row;C1;C2;C3;C4;C5;C6;C7;C8\n");
+      FLUSH_BUFFER;
+      int row;
+      for(row=0; row<8; ++row) {
+	int ix = row*8;
+
+	sprintf(line_buffer, "MATRIX_MAP_CHN;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d\n",
+		matrix+1,
+		row+1,
+		m->map_chn[ix+0],
+		m->map_chn[ix+1],
+		m->map_chn[ix+2],
+		m->map_chn[ix+3],
+		m->map_chn[ix+4],
+		m->map_chn[ix+5],
+		m->map_chn[ix+6],
+		m->map_chn[ix+7]);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "#MATRIX_MAP_EVNT1;Number;Row;C1;C2;C3;C4;C5;C6;C7;C8\n");
+      FLUSH_BUFFER;
+      for(row=0; row<8; ++row) {
+	int ix = row*8;
+
+	sprintf(line_buffer, "MATRIX_MAP_EVNT1;%d;%d;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X\n",
+		matrix+1,
+		row+1,
+		m->map_evnt1[ix+0],
+		m->map_evnt1[ix+1],
+		m->map_evnt1[ix+2],
+		m->map_evnt1[ix+3],
+		m->map_evnt1[ix+4],
+		m->map_evnt1[ix+5],
+		m->map_evnt1[ix+6],
+		m->map_evnt1[ix+7]);
+	FLUSH_BUFFER;
+      }
     }
   }
 
