@@ -50,6 +50,7 @@ static u8 extraPage;
 static u8 selectedDin;
 static u8 selectedDout;
 static u8 selectedMatrix;
+static u8 selectedMatrixPin;
 static u8 selectedAin;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
@@ -104,6 +105,24 @@ static void stringDIN_Mode(u32 ix, u16 value, char *label)
     strcpy(label, dinLabel[value]);
   else
     sprintf(label, "%3d ", value);
+}
+
+static void stringMatrixMode(u32 ix, u16 value, char *label)
+{
+  const char modeLabel[2][5] = { "Norm", "Map " };
+  if( value < 2 )
+    strcpy(label, modeLabel[value]);
+  else
+    sprintf(label, "%3d ", value);
+}
+
+static void stringMatrixPin(u32 ix, u16 value, char *label)
+{
+  if( midio_patch_matrix[selectedMatrix].mode != MIDIO_PATCH_MATRIX_MODE_MAPPED ) {
+    sprintf(label, "n/a ", value);
+  } else {
+    sprintf(label, "%d.%d ", (value / 8)+1, (value % 8)+1);
+  }
 }
 
 static void stringInPort(u32 ix, u16 value, char *label)
@@ -414,11 +433,41 @@ static void doutPortSet(u32 ix, u16 value)
 static u16  matrixGet(u32 ix)                { return selectedMatrix; }
 static void matrixSet(u32 ix, u16 value)     { selectedMatrix = value; }
 
-static u16  matrixChnGet(u32 ix)             { return (midio_patch_matrix[selectedMatrix].chn-1) & 0xf; }
-static void matrixChnSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].chn = value+1; }
+static u16  matrixModeGet(u32 ix)            { return midio_patch_matrix[selectedMatrix].mode; }
+static void matrixModeSet(u32 ix, u16 value) { midio_patch_matrix[selectedMatrix].mode = value; }
 
-static u16  matrixArgGet(u32 ix)             { return midio_patch_matrix[selectedMatrix].arg; }
-static void matrixArgSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].arg = value; }
+static u16  matrixPinGet(u32 ix)             { return selectedMatrixPin; }
+static void matrixPinSet(u32 ix, u16 value)  { selectedMatrixPin = value; }
+
+static u16  matrixChnGet(u32 ix)
+{
+  if( midio_patch_matrix[selectedMatrix].mode == MIDIO_PATCH_MATRIX_MODE_MAPPED )
+    return (midio_patch_matrix[selectedMatrix].map_chn[selectedMatrixPin]-1) & 0xf;
+  else
+    return (midio_patch_matrix[selectedMatrix].chn-1) & 0xf;
+}
+static void matrixChnSet(u32 ix, u16 value)
+{
+  if( midio_patch_matrix[selectedMatrix].mode == MIDIO_PATCH_MATRIX_MODE_MAPPED )
+    midio_patch_matrix[selectedMatrix].map_chn[selectedMatrixPin] = value+1;
+  else
+    midio_patch_matrix[selectedMatrix].chn = value+1;
+}
+
+static u16  matrixArgGet(u32 ix)
+{
+  if( midio_patch_matrix[selectedMatrix].mode == MIDIO_PATCH_MATRIX_MODE_MAPPED )
+    return midio_patch_matrix[selectedMatrix].map_evnt1[selectedMatrixPin];
+  else
+    return midio_patch_matrix[selectedMatrix].arg;
+}
+static void matrixArgSet(u32 ix, u16 value)
+{
+  if( midio_patch_matrix[selectedMatrix].mode == MIDIO_PATCH_MATRIX_MODE_MAPPED )
+    midio_patch_matrix[selectedMatrix].map_evnt1[selectedMatrixPin] = value;
+  else
+    midio_patch_matrix[selectedMatrix].arg = value;
+}
 
 static u16  matrixDinGet(u32 ix)             { return midio_patch_matrix[selectedMatrix].sr_din; }
 static void matrixDinSet(u32 ix, u16 value)  { midio_patch_matrix[selectedMatrix].sr_din = value; }
@@ -579,8 +628,10 @@ const scs_menu_item_t pageDOUT[] = {
 
 const scs_menu_item_t pageM8x8[] = {
   SCS_ITEM("Mat. ", 0, MIDIO_PATCH_NUM_MATRIX-1, matrixGet, matrixSet,selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Mode ", 0,  1,          matrixModeGet,   matrixModeSet,    selectNOP, stringMatrixMode, NULL),
+  SCS_ITEM("Pin  ", 0, 63,          matrixPinGet,    matrixPinSet,    selectNOP, stringMatrixPin, NULL),
   SCS_ITEM("Chn. ", 0, 15,          matrixChnGet,    matrixChnSet,    selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Base ", 0, 127,         matrixArgGet,    matrixArgSet,    selectNOP, stringNote,  NULL),
+  SCS_ITEM("Note ", 0, 127,         matrixArgGet,    matrixArgSet,    selectNOP, stringNote,  NULL),
   SCS_ITEM("DIN  ", 0, 16,          matrixDinGet,    matrixDinSet,    selectNOP, stringDec0Dis, NULL),
   SCS_ITEM("DOUT ", 0, 16,          matrixDoutGet,   matrixDoutSet,   selectNOP, stringDec0Dis, NULL),
   SCS_ITEM("USB1 ", 0, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),

@@ -197,10 +197,19 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 
   if( midio_patch_cfg.global_chn )
     p.chn = midio_patch_cfg.global_chn - 1;
-  else
-    p.chn = m->chn - 1;
+  else {
+    if( m->mode == MIDIO_PATCH_MATRIX_MODE_MAPPED ) {
+      p.chn = m->map_chn[pin] - 1;
+    } else {
+      p.chn = m->chn - 1;
+    }
+  }
 
-  p.evnt1 = (m->arg + pin) & 0x7f;
+  if( m->mode == MIDIO_PATCH_MATRIX_MODE_MAPPED ) {
+    p.evnt1 = m->map_evnt1[pin] & 0x7f;
+  } else {
+    p.evnt1 = (m->arg + pin) & 0x7f;
+  }
   p.evnt2 = (pin_value ? 0x00 : 0x7f);
 
   // send MIDI package over enabled ports
