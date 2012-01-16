@@ -72,6 +72,10 @@ u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
 
 seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
+u8 ui_controller_mode;
+mios32_midi_port_t ui_controller_port;
+u8 ui_controller_chn;
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -110,6 +114,11 @@ s32 SEQ_UI_Init(u32 mode)
   ui_cursor_flash = 0;
 
   seq_ui_display_update_req = 1;
+
+  ui_controller_mode = UI_CONTROLLER_MODE_OFF;
+  //ui_controller_port = 0xc0; // combined
+  ui_controller_port = UART1; // OUT2
+  ui_controller_chn = Chn16;
 
   resetTapTempo();
 
@@ -449,6 +458,15 @@ static s32 SEQ_UI_Button_TrackTrigger(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackMute(s32 depressed)
 {
+  seq_ui_button_state.MUTE_PRESSED = depressed == 0;
+
+  // special key combination to toggle controller mode
+  if( seq_ui_button_state.MUTE_PRESSED && seq_ui_button_state.MIDICHN_PRESSED ) {
+    if( ++ui_controller_mode >= UI_CONTROLLER_MODE_NUM )
+      ui_controller_mode = 0;
+    return 1;
+  }
+
   if( depressed ) return -1; // ignore when button depressed
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_MUTE);
 }
@@ -456,6 +474,15 @@ static s32 SEQ_UI_Button_TrackMute(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackMidiChn(s32 depressed)
 {
+  seq_ui_button_state.MIDICHN_PRESSED = depressed == 0;
+
+  // special key combination to toggle controller mode
+  if( seq_ui_button_state.MUTE_PRESSED && seq_ui_button_state.MIDICHN_PRESSED ) {
+    if( ++ui_controller_mode >= UI_CONTROLLER_MODE_NUM )
+      ui_controller_mode = 0;
+    return 1;
+  }
+
   if( depressed ) return -1; // ignore when button depressed
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_MIDICHN);
 }
@@ -557,7 +584,50 @@ static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Button handler
+// Button handler for controller mode
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_Button_Handler_Controller(u32 pin, u32 pin_value)
+{
+  mios32_midi_port_t port = ui_controller_port;
+  u8 chn = ui_controller_chn;
+
+  switch( ui_controller_mode ) {
+  case UI_CONTROLLER_MODE_MAQ16_3:
+    // only react on pressed buttons
+    if( pin_value == 1 )
+      return 0;
+
+    if( pin == seq_hwcfg_button.bar1 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x00); return 1; } // Select Row1
+    if( pin == seq_hwcfg_button.bar2 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x01); return 1; } // Select Row2
+    if( pin == seq_hwcfg_button.bar3 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x02); return 1; } // Select Row2
+    if( pin == seq_hwcfg_button.bar4 ) { return 1; } // not assigned
+
+    if( pin == seq_hwcfg_button.seq1 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x03); return 1; } // Disable Row
+    if( pin == seq_hwcfg_button.seq2 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x04); return 1; } // Enable Row
+    if( pin == seq_hwcfg_button.load ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x05); return 1; } // Steps on
+    if( pin == seq_hwcfg_button.save ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x06); return 1; } // Steps off?
+
+    if( pin == seq_hwcfg_button.copy  ) { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.paste ) { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.clear ) { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.undo  ) { return 1; } // not assigned
+
+    // note: master/tempo/stop/play still working as usual
+
+    // note: UI pages handled in seq_ui_pages.c
+
+    if( pin == seq_hwcfg_button.rec_poly )  { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.inout_fwd ) { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.transpose ) { return 1; } // not assigned
+
+    break;
+  }
+
+  return -1; // button not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Button handler for normal mode
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 {
@@ -577,10 +647,12 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   // here, but this "spagetthi code" simplifies the configuration and
   // the resulting ASM doesn't look that bad!
 
-
   if( pin != seq_hwcfg_button.tap_tempo )
     resetTapTempo();
 
+  // controller mode?
+  if( ui_controller_mode && SEQ_UI_Button_Handler_Controller(pin, pin_value) >= 0 )
+    return 1;
 
   for(i=0; i<8; ++i)
     if( pin == (8*(seq_hwcfg_button.gp_din_l_sr-1) + i) )
@@ -919,18 +991,45 @@ s32 SEQ_UI_LED_Handler(void)
   if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification )
     return -1;
 
-  SEQ_LED_PinSet(seq_hwcfg_led.seq1, ui_selected_tracks & (1 << 0));
-  SEQ_LED_PinSet(seq_hwcfg_led.seq2, ui_selected_tracks & (1 << 8));
-
-  SEQ_LED_PinSet(seq_hwcfg_led.load, ui_page == SEQ_UI_PAGE_LOAD);
-  SEQ_LED_PinSet(seq_hwcfg_led.save, ui_page == SEQ_UI_PAGE_SAVE);
-
-  SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
-  SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
-  SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
-  SEQ_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
-
   u8 seq_running = SEQ_BPM_IsRunning() && (!seq_core_slaveclk_mute || ((seq_core_state.ref_step & 3) == 0));
+
+  switch( ui_controller_mode ) {
+  case UI_CONTROLLER_MODE_OFF:
+    SEQ_LED_PinSet(seq_hwcfg_led.seq1, ui_selected_tracks & (1 << 0));
+    SEQ_LED_PinSet(seq_hwcfg_led.seq2, ui_selected_tracks & (1 << 8));
+
+    SEQ_LED_PinSet(seq_hwcfg_led.load, ui_page == SEQ_UI_PAGE_LOAD);
+    SEQ_LED_PinSet(seq_hwcfg_led.save, ui_page == SEQ_UI_PAGE_SAVE);
+
+    SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);
+    SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
+    SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
+    SEQ_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
+
+    SEQ_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
+    SEQ_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
+    SEQ_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
+    break;
+
+  case UI_CONTROLLER_MODE_MAQ16_3:
+    // no special LED functions...
+    SEQ_LED_PinSet(seq_hwcfg_led.seq1, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.seq2, 0);
+
+    SEQ_LED_PinSet(seq_hwcfg_led.load, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.save, 0);
+
+    SEQ_LED_PinSet(seq_hwcfg_led.copy, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.paste, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.clear, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.undo, 0);
+
+    SEQ_LED_PinSet(seq_hwcfg_led.rec_poly, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.inout_fwd, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.transpose, 0);
+    break;
+  }
+
   SEQ_LED_PinSet(seq_hwcfg_led.master, SEQ_BPM_IsMaster());
   // SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, 0); // handled in SEQ_UI_LED_Handler_Periodic()
   SEQ_LED_PinSet(seq_hwcfg_led.stop, 0);
@@ -942,24 +1041,23 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.metronome, seq_core_state.METRONOME);
   SEQ_LED_PinSet(seq_hwcfg_led.ext_restart, seq_core_state.EXT_RESTART_REQ);
 
-  SEQ_LED_PinSet(seq_hwcfg_led.trigger, ui_page == SEQ_UI_PAGE_TRIGGER);
-  SEQ_LED_PinSet(seq_hwcfg_led.length, ui_page == SEQ_UI_PAGE_LENGTH);
-  SEQ_LED_PinSet(seq_hwcfg_led.progression, ui_page == SEQ_UI_PAGE_PROGRESSION);
-  SEQ_LED_PinSet(seq_hwcfg_led.groove, ui_page == SEQ_UI_PAGE_GROOVE);
-  SEQ_LED_PinSet(seq_hwcfg_led.echo, ui_page == SEQ_UI_PAGE_ECHO);
-  SEQ_LED_PinSet(seq_hwcfg_led.humanizer, ui_page == SEQ_UI_PAGE_HUMANIZER);
-  SEQ_LED_PinSet(seq_hwcfg_led.lfo, ui_page == SEQ_UI_PAGE_LFO);
-  SEQ_LED_PinSet(seq_hwcfg_led.scale, ui_page == SEQ_UI_PAGE_SCALE);
-  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE);
-  SEQ_LED_PinSet(seq_hwcfg_led.midichn, ui_page == SEQ_UI_PAGE_MIDICHN);
+  {
+    u8 flash = ui_controller_mode && ui_cursor_flash;
+    SEQ_LED_PinSet(seq_hwcfg_led.trigger, (!flash && ui_page == SEQ_UI_PAGE_TRIGGER) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.length, (!flash && ui_page == SEQ_UI_PAGE_LENGTH) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.progression, (!flash && ui_page == SEQ_UI_PAGE_PROGRESSION) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.groove, (!flash && ui_page == SEQ_UI_PAGE_GROOVE) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.echo, (!flash && ui_page == SEQ_UI_PAGE_ECHO) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.humanizer, (!flash && ui_page == SEQ_UI_PAGE_HUMANIZER) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.lfo, (!flash && ui_page == SEQ_UI_PAGE_LFO) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.scale, (!flash && ui_page == SEQ_UI_PAGE_SCALE) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.mute, (!flash && ui_page == SEQ_UI_PAGE_MUTE) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.midichn, (!flash && ui_page == SEQ_UI_PAGE_MIDICHN) ? 1 : 0);
 
-  SEQ_LED_PinSet(seq_hwcfg_led.rec_arm, ui_page == SEQ_UI_PAGE_REC_ARM);
-  SEQ_LED_PinSet(seq_hwcfg_led.rec_step, ui_page == SEQ_UI_PAGE_REC_STEP);
-  SEQ_LED_PinSet(seq_hwcfg_led.rec_live, ui_page == SEQ_UI_PAGE_REC_LIVE);
-
-  SEQ_LED_PinSet(seq_hwcfg_led.rec_poly, seq_record_options.POLY_RECORD);
-  SEQ_LED_PinSet(seq_hwcfg_led.inout_fwd, seq_record_options.FWD_MIDI);
-  SEQ_LED_PinSet(seq_hwcfg_led.transpose, seq_core_global_transpose_enabled);
+    SEQ_LED_PinSet(seq_hwcfg_led.rec_arm, (!flash && ui_page == SEQ_UI_PAGE_REC_ARM) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.rec_step, (!flash && ui_page == SEQ_UI_PAGE_REC_STEP) ? 1 : 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.rec_live, (!flash && ui_page == SEQ_UI_PAGE_REC_LIVE) ? 1 : 0);
+  }
 
   // update BLM LEDs
   SEQ_BLM_LED_Update();
@@ -1066,14 +1164,14 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
   // transfer to GP LEDs
-  if( seq_hwcfg_led.gp_dout_l_sr ) {
+  if( seq_hwcfg_led.pos_dout_l_sr ) {
     if( seq_hwcfg_led.pos_dout_l_sr )
       SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_page_gp_leds >> 0) & 0xff);
     else
       SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
   }
 
-  if( seq_hwcfg_led.gp_dout_r_sr ) {
+  if( seq_hwcfg_led.pos_dout_r_sr ) {
     if( seq_hwcfg_led.pos_dout_r_sr )
       SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, (ui_page_gp_leds >> 8) & 0xff);
     else
@@ -1134,10 +1232,23 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	bar4 ^= 1;
     }
   }
-  SEQ_LED_PinSet(seq_hwcfg_led.bar1, bar1);
-  SEQ_LED_PinSet(seq_hwcfg_led.bar2, bar2);
-  SEQ_LED_PinSet(seq_hwcfg_led.bar3, bar3);
-  SEQ_LED_PinSet(seq_hwcfg_led.bar4, bar4);
+
+  switch( ui_controller_mode ) {
+  case UI_CONTROLLER_MODE_OFF:
+    SEQ_LED_PinSet(seq_hwcfg_led.bar1, bar1);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar2, bar2);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar3, bar3);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar4, bar4);
+    break;
+
+  case UI_CONTROLLER_MODE_MAQ16_3:
+    // no LED function defined...
+    SEQ_LED_PinSet(seq_hwcfg_led.bar1, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar2, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar3, 0);
+    SEQ_LED_PinSet(seq_hwcfg_led.bar4, 0);
+    break;
+  }
 
   return 0; // no error
 }
