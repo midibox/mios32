@@ -588,13 +588,28 @@ static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_Button_Handler_Controller(u32 pin, u32 pin_value)
 {
+  u8 depressed = pin_value == 1;
   mios32_midi_port_t port = ui_controller_port;
   u8 chn = ui_controller_chn;
+
+  if( pin == seq_hwcfg_button.mute )
+    seq_ui_button_state.MUTE_PRESSED = depressed == 0;
+  if( pin == seq_hwcfg_button.midichn )
+    seq_ui_button_state.MIDICHN_PRESSED = depressed == 0;
+
+  if( pin == seq_hwcfg_button.mute || pin == seq_hwcfg_button.midichn ) {
+    // special key combination to toggle controller mode
+    if( seq_ui_button_state.MUTE_PRESSED && seq_ui_button_state.MIDICHN_PRESSED ) {
+      if( ++ui_controller_mode >= UI_CONTROLLER_MODE_NUM )
+	ui_controller_mode = 0;
+      return 0;
+    }
+  }
 
   switch( ui_controller_mode ) {
   case UI_CONTROLLER_MODE_MAQ16_3:
     // only react on pressed buttons
-    if( pin_value == 1 )
+    if( depressed )
       return 0;
 
     if( pin == seq_hwcfg_button.bar1 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x00); return 1; } // Select Row1
