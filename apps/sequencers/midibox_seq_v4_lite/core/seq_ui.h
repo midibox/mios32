@@ -30,6 +30,14 @@
 #define UI_QUICKSEL_NUM_PRESETS 8
 
 
+// Controller modes
+#define UI_CONTROLLER_MODE_OFF     0
+#define UI_CONTROLLER_MODE_MAQ16_3 1
+
+// number of controller modes
+#define UI_CONTROLLER_MODE_NUM     2
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -79,6 +87,7 @@ typedef union {
 
     u32 LENGTH_PRESSED:1;
     u32 SCALE_PRESSED:1;
+    u32 MIDICHN_PRESSED:1;
   };
 } seq_ui_button_state_t;
 
@@ -223,5 +232,9 @@ extern u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
 extern u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
 
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
+
+extern u8 ui_controller_mode;
+extern mios32_midi_port_t ui_controller_port;
+extern u8 ui_controller_chn;
 
 #endif /* _SEQ_UI_H */

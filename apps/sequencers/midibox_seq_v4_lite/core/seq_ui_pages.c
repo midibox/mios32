@@ -157,6 +157,13 @@ static u16 load_save_notifier_ctr;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// local functions
+/////////////////////////////////////////////////////////////////////////////
+static u16 SEQ_UI_PAGES_GP_LED_Handler_Controller(void);
+static s32 SEQ_UI_PAGES_GP_Button_Handler_Controller(u8 button, u8 depressed);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Selects a new page
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_PAGES_Set(seq_ui_page_t page)
@@ -195,6 +202,9 @@ s32 SEQ_UI_PAGES_Set(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 {
+  if( ui_controller_mode )
+    return SEQ_UI_PAGES_GP_LED_Handler_Controller();
+
   static u16 check_100mS_ctr = 0;
 
   if( load_save_notifier_ctr )
@@ -443,6 +453,9 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 {
+  if( ui_controller_mode )
+    return SEQ_UI_PAGES_GP_Button_Handler_Controller(button, depressed);
+
   // no page reacts on depressed buttons
   if( depressed )
     return 0;
@@ -750,3 +763,75 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
   return -1; // unsupported page
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Frequently called to return the status of GP LEDs in Controller mode
+/////////////////////////////////////////////////////////////////////////////
+static u16 SEQ_UI_PAGES_GP_LED_Handler_Controller(void)
+{
+
+  switch( ui_controller_mode ) {
+  case UI_CONTROLLER_MODE_MAQ16_3:
+    switch( ui_page ) {
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_MIDICHN: {
+      return (1 << ui_controller_chn);
+    }
+    }
+  }
+
+  return 0x0000; // not assigned
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called when a GP button has been toggled in Controller Mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_PAGES_GP_Button_Handler_Controller(u8 button, u8 depressed)
+{
+  // no page reacts on depressed buttons
+  if( depressed )
+    return 0;
+
+  switch( ui_controller_mode ) {
+  case UI_CONTROLLER_MODE_MAQ16_3:
+
+    switch( ui_page ) {
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_TRIGGER: {
+      // step on
+      MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x10 + button);
+      return 0;
+    } break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_LENGTH: {
+      // step off
+      MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x20 + button);
+      return 0;
+    } break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_PROGRESSION: {
+      switch( button ) {
+      case 0: MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x08); break; // Fwd
+      case 1: MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x09); break; // Bwd
+      case 2: MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x0a); break; // Pendulum
+      case 3: MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x0b); break; // Random
+      }
+      return 0;
+    } break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_MIDICHN: {
+      ui_controller_chn = button;
+      return 0;
+    } break;
+    }
+  }
+
+  return -1; // unsupported page
+}
