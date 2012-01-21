@@ -16,13 +16,13 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = app.c \
                   uip_task.c \
-		          httpd.c \
-		          httpd-cgi.c \
-				  fs.c \
-		          http-strings.c \
-				  dhcpc.c \
-				  ntpclient.c \
-				  clock-arch.c 
+	          httpd.c \
+	          httpd-cgi.c \
+		  fs.c \
+	          http-strings.c \
+		  dhcpc.c \
+		  ntpclient.c \
+		  clock-arch.c 
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -43,7 +43,7 @@ LIBS =
 LD_FILE   = 	$(MIOS32_PATH)/etc/ld/$(FAMILY)/$(PROCESSOR).ld
 PROJECT   = 	project
 
-DEBUG     =	-g -Werror
+DEBUG     =	-g
 OPTIMIZE  =	-Os 
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)
