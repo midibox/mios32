@@ -259,7 +259,9 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
         } else if( select == 0xf ) { // special commands (0x3c00..0x3fff)
             switch( address & 0x3ff ) {
-            case 0x000: midiSendNRPNDump(port, value); break; // Dump: 0x3c00 <channels>
+            case 0x000: midiSendNRPNDump(port, value, 0); break; // Dump All: 0x3c00 <channels>
+
+            case 0x001: midiSendNRPNDump(port, value, 1); break; // Dump Seq Only: 0x3c00 <channels>
 
             case 0x010: {                                     // Play Off: 0x3c10 <channels>
                 MIOS32_IRQ_Disable();
@@ -303,17 +305,20 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 /////////////////////////////////////////////////////////////////////////////
 // sends a NRPN dump for selected CV channels
 /////////////////////////////////////////////////////////////////////////////
-void MbCvEnvironment::midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels)
+void MbCvEnvironment::midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, bool seqOnly)
 {
     // ensure that we are starting with MSB/LSB address
     lastSentNrpnAddressMsb = 0xff;
     lastSentNrpnAddressLsb = 0xff;
 
+    const int parBegin = seqOnly ? 0x0c0 : 0x000;
+    const int parEnd = seqOnly ? 0x0ff : 0x3ff;
+
     int cv = 0;
     for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv) {
         if( cvChannels & (1 << cv) ) {
             u16 par;
-            for(par=0; par<0x400; ++par) {
+            for(par=parBegin; par<=parEnd; ++par) {
                 u16 value;
                 if( s->getNRPN(par, &value) ) {
                     u16 nrpnNumber = (cv << 10) | par;

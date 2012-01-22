@@ -429,6 +429,13 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
   if( MBCV_ROUTER_MIDIClockInGet(port) == 1 )
     SEQ_BPM_NotifyMIDIRx(midi_byte);
 
+  // TODO: better port filtering!
+  if( port < USB1 || port >= UART0 ) {
+    if( midi_byte >= 0xf8 ) {
+      mbCvEnvironment.midiReceiveRealTimeEvent(port, midi_byte);
+    }
+  }
+
   return 0; // no error, no filtering
 }
 

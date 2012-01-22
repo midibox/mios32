@@ -154,7 +154,7 @@ void MbSidClock::midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in)
 {
     // TMP:
     // we filter out USB2..15 to ensure that USB interface won't clock multiple times
-    if( (port & 0xf0) == USB0 && (port & 0x0f) != USB0 )
+    if( (port & 0xf0) == USB0 && (port & 0x0f) != 0 )
         return;
 
     // ensure that following operations are atomic

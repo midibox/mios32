@@ -69,7 +69,7 @@ public:
     void midiReceiveRealTimeEvent(mios32_midi_port_t port, u8 midi_in);
     void midiTimeOut(mios32_midi_port_t port);
 
-    void midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels);
+    void midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, bool seqOnly);
     void midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value);
 
     // MIDI NRPN variables

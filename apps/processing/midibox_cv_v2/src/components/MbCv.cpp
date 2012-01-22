@@ -52,9 +52,19 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCv::tick(const u8 &updateSpeedFactor)
 {
-    // clock arp
+    // clock
+    if( mbCvClockPtr->eventStart ) {
+        mbCvSeqBassline.seqRestartReq = true;
+    }
+
+    if( mbCvClockPtr->eventStop ) {
+        mbCvSeqBassline.seqStopReq = true;
+    }
+
+    // clock arp and sequencers
     if( mbCvClockPtr->eventClock ) {
         mbCvArp.clockReq = true;
+        mbCvSeqBassline.seqClockReq = true;
     }
 
     // LFOs
@@ -153,7 +163,7 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             mbCvMod.modDst[MBCV_MOD_DST_LFO1_R] = mod;
         }
 
-        { // LFO2 Amp
+        { // LFO2 Rate
             s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_R];
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthLfoRate) / 128;
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo2Rate) / 128;
@@ -161,14 +171,14 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             mbCvMod.modDst[MBCV_MOD_DST_LFO2_R] = mod;
         }
 
-        { // ENV1 Amp
+        { // ENV1 Rate
             s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV1_R];
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv1Rate) / 128;
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv1Rate) / 128;
             mbCvMod.modDst[MBCV_MOD_DST_ENV1_R] = mod;
         }
 
-        { // ENV1 Amp
+        { // ENV2 Rate
             s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV2_R];
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv2Rate) / 128;
             mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv2Rate) / 128;
@@ -182,8 +192,15 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
 
         v->voicePitchModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_PITCH);
 
-        if( mbCvArp.arpEnabled )
+        if( mbCvArp.arpEnabled ) {
             mbCvArp.tick(v, this);
+            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ENVMOD] = mbCvSeqBassline.seqEnvMod << 7; // just pass current value
+            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ACCENT] = mbCvSeqBassline.seqAccent << 7; // just pass current value (not effective value)
+        } else {
+            mbCvSeqBassline.tick(v, this);
+            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ENVMOD] = mbCvSeqBassline.seqEnvMod << 7;
+            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ACCENT] = mbCvSeqBassline.seqAccentEffective << 7; // effective value is only != 0 when accent flag is set
+        }
 
         if( v->gate(updateSpeedFactor) )
             v->pitch(updateSpeedFactor);
@@ -332,7 +349,18 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x34: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
         case 0x35: mbCvVoice.voicePortamentoRate = value; return true;
         }
-    } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
+    } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
+
+        if( par >= 0x40 && par < (0x40+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            mbCvSeqBassline.seqBasslineKey[mbCvSeqBassline.seqPatternNumber][step] = value;
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            mbCvSeqBassline.seqBasslineArgs[mbCvSeqBassline.seqPatternNumber][step].ALL = value;
+            return true;
+        }
+
         switch( par ) {
         case 0x00: mbCvArp.arpEnabled = value; return true;
         case 0x01: mbCvArp.arpDirSet(value); return true;
@@ -344,6 +372,15 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x07: mbCvArp.arpEasyChordMode = value; return true;
         case 0x10: mbCvArp.arpSpeed = value; return true;
         case 0x11: mbCvArp.arpGatelength = value; return true;
+
+        case 0x20: mbCvSeqBassline.seqEnabled = value; return true;
+        case 0x21: mbCvSeqBassline.seqPatternNumber = value; return true;
+        case 0x22: mbCvSeqBassline.seqPatternLength = value; return true;
+        case 0x23: mbCvSeqBassline.seqResolution = value; return true;
+        case 0x24: mbCvSeqBassline.seqGateLength = value; return true;
+
+        case 0x28: mbCvSeqBassline.seqEnvMod = value; return true;
+        case 0x29: mbCvSeqBassline.seqAccent = value; return true;
         }
     } else if( section < 0x200 ) { // LFO1: 0x100..0x17f, LFO2: 0x180..0x1ff
         u8 lfo = (section >= 0x180) ? 1 : 0;
@@ -390,8 +427,18 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
         case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
         }
-    } else if( section < 0x300 ) { // ENV1: 0x280..0x2ff
+    } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
         MbCvEnvMulti *e = &mbCvEnv2[0];
+
+        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            e->envLevel[step] = value;
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            e->envDelay[step] = value;
+            return true;
+        }
 
         switch( par ) {
         case 0x00: e->envAmplitude = (int)value - 0x80; return true;
@@ -414,16 +461,6 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x22: e->envDepthLfo1Rate = (int)value - 0x80; return true;
         case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
         case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
-        }
-
-        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            e->envLevel[step] = value;
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            e->envDelay[step] = value;
-            return true;
         }
     } else if( section < 0x380 ) { // MOD1: 0x300..0x30f, ... MOD4: 0x330..0x33f
         u8 mod = par >> 4;
@@ -487,7 +524,18 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x34: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
         case 0x35: *value = mbCvVoice.voicePortamentoRate; return true;
         }
-    } else if( section < 0x100 ) { // ARP:  0x080..0x0ff
+    } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
+
+        if( par >= 0x40 && par < (0x40+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = mbCvSeqBassline.seqBasslineKey[mbCvSeqBassline.seqPatternNumber][step];
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = mbCvSeqBassline.seqBasslineArgs[mbCvSeqBassline.seqPatternNumber][step].ALL;
+            return true;
+        }
+
         switch( par ) {
         case 0x00: *value = mbCvArp.arpEnabled; return true;
         case 0x01: *value = mbCvArp.arpDirGet(); return true;
@@ -499,6 +547,15 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x07: *value = mbCvArp.arpEasyChordMode; return true;
         case 0x10: *value = mbCvArp.arpSpeed; return true;
         case 0x11: *value = mbCvArp.arpGatelength; return true;
+
+        case 0x20: *value = mbCvSeqBassline.seqEnabled; return true;
+        case 0x21: *value = mbCvSeqBassline.seqPatternNumber; return true;
+        case 0x22: *value = mbCvSeqBassline.seqPatternLength; return true;
+        case 0x23: *value = mbCvSeqBassline.seqResolution; return true;
+        case 0x24: *value = mbCvSeqBassline.seqGateLength; return true;
+
+        case 0x28: *value = mbCvSeqBassline.seqEnvMod; return true;
+        case 0x29: *value = mbCvSeqBassline.seqAccent; return true;
         }
     } else if( section < 0x200 ) { // LFO1: 0x100..0x17f, LFO2: 0x180..0x1ff
         u8 lfo = (section >= 0x180) ? 1 : 0;
@@ -548,6 +605,16 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
     } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
         MbCvEnvMulti *e = &mbCvEnv2[0];
 
+        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = e->envLevel[step];
+            return true;
+        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
+            u8 step = par & 0x1f;
+            *value = e->envDelay[step];
+            return true;
+        }
+
         switch( par ) {
         case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
         case 0x01: *value = e->envCurve; return true;
@@ -569,16 +636,6 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x22: *value = (int)e->envDepthLfo1Rate + 0x80; return true;
         case 0x23: *value = (int)e->envDepthLfo2Amplitude + 0x80; return true;
         case 0x24: *value = (int)e->envDepthLfo2Rate + 0x80; return true;
-        }
-
-        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = e->envLevel[step];
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = e->envDelay[step];
-            return true;
         }
     } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
         u8 mod = par >> 4;
@@ -617,7 +674,8 @@ void MbCv::updatePatch(bool forceEngineInit)
     mbCvMidiVoice.init();
     mbCvVoice.init();
     mbCvArp.init();
-
+    mbCvSeqBassline.init();
+    
     for(int lfo=0; lfo<mbCvLfo.size; ++lfo)
         mbCvLfo[lfo].init();
 

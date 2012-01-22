@@ -52,8 +52,10 @@
 #define MBCV_MOD_SRC_AIN6     26
 #define MBCV_MOD_SRC_AIN7     27
 #define MBCV_MOD_SRC_AIN8     28
+#define MBCV_MOD_SRC_SEQ_ENVMOD 29
+#define MBCV_MOD_SRC_SEQ_ACCENT 30
 
-#define MBCV_NUM_MOD_SRC      29
+#define MBCV_NUM_MOD_SRC      31
 
 
 // Modulation destination assignments
@@ -102,7 +104,7 @@ public:
     ModPatchT modPatch[MBCV_NUM_MOD];
 
     // Values of modulation sources
-    s16 modSrc[MBCV_NUM_MOD_SRC];
+    s32 modSrc[MBCV_NUM_MOD_SRC];
 
     // Values of modulation destinations
     s32 modDst[MBCV_NUM_MOD_DST];
