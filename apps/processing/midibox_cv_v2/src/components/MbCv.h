@@ -24,6 +24,7 @@
 #include "MbCvEnv.h"
 #include "MbCvEnvMulti.h"
 #include "MbCvArp.h"
+#include "MbCvSeqBassline.h"
 #include "MbCvMod.h"
 
 
@@ -119,6 +120,7 @@ public:
     array<MbCvEnv, 1> mbCvEnv1;
     array<MbCvEnvMulti, 1> mbCvEnv2;
     MbCvArp mbCvArp;
+    MbCvSeqBassline mbCvSeqBassline;
 
     // modulation matrix
     MbCvMod mbCvMod;

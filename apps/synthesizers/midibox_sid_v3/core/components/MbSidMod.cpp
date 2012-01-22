@@ -72,7 +72,7 @@ void MbSidMod::tick(void)
     // calculate modulation pathes
     sid_se_mod_patch_t *mp = modPatch;
     for(int i=0; i<8; ++i, ++mp) {
-        if( mp->depth != 0 ) {
+        if( mp->depth != 128 ) {
 
             // first source
             s32 mod_src1_value;

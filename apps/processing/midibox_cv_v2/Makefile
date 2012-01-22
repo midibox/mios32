@@ -42,6 +42,8 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/components/MbCvVoice.cpp \
 		    src/components/MbCvVoiceQueue.cpp \
 		    src/components/MbCvMidiVoice.cpp \
+		    src/components/MbCvSeq.cpp \
+		    src/components/MbCvSeqBassline.cpp \
 		    src/components/MbCvTables.cpp
 
 
