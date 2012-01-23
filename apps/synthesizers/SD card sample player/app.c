@@ -115,6 +115,7 @@ static const u8 velocity_curve[128] = {
 // Call this routine with the sample array number to reference, and the filename to open
 s32 SAMP_FILE_open(u8 sample_n, char fname[])
 {
+  DEBUG_MSG("Filename is %s.",fname);
   s32 status = FILE_ReadOpen(&samplefile_fileinfo[sample_n], fname);
   FILE_ReadClose(&samplefile_fileinfo[sample_n]); // close again - file will be reopened by read handler
 
@@ -156,10 +157,10 @@ int SAMP_FILE_read(void *buffer, u32 len, u8 sample_n)
 void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank information, load samples, set midi notes, number of samples and cache cluster positions
 {
   u8 samp_no;
-  u8 f_line[25];				// 0..3=0xXX (hex midi note) 4=space 5=sample hold (0 or 1) 6=space 7..10=decay (4 digit decimal) 11=space 12..23=8.3 filename 24=null
+  u8 f_line[63];				// 0..3=0xXX (hex midi note) 4=space 5=sample hold (0 or 1) 6=space 7..10=decay (4 digit decimal) 11=space 12..23=8.3 filename 24=null
   char b_file[13];				// Overall bank name to generate
   char b_num_char[4];			// Up to 3 digit bank string plus terminator
-  static char sample_filenames[NUM_SAMPLES_TO_OPEN][13];		// Stores sample mappings from bank file, needs to be static to avoid crash
+  static char sample_filenames[NUM_SAMPLES_TO_OPEN][30];		// Stores sample mappings from bank file, needs to be static to avoid crash
 
   strcpy(b_file,bankprefix);		// Get prefix in
   sprintf(b_num_char,"%d",b_num);	// get bank number as string
@@ -172,75 +173,82 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
   
   DEBUG_MSG("Opening bank file %s",b_file);
   if(FILE_ReadOpen(&bank_fileinfo, b_file)<0) { DEBUG_MSG("Failed to open bank file."); }
-  
-  for(samp_no=0;samp_no<NUM_SAMPLES_TO_OPEN;samp_no++)	// Check for up to the defined maximum of sample mappings (one per line)
+   else
   {
-	if(FILE_ReadLine(f_line, 25)) // Read line up to 23 chars long
-	{
-	   //DEBUG_MSG("Sample no %d, Line is: %s",samp_no,f_line);
-	   sample_to_midinote[samp_no]=(int)strtol((char *)(f_line+2),NULL,16); // Convert hex string values to a real number (pos 2 on line, base 16)
-	   hold_sample[samp_no]=(int)strtol((char *)(f_line+5),NULL,10); // Convert sample hold digit
-	   sample_decval[samp_no]=(int)strtol((char *)(f_line+7),NULL,10); // Convert decay number (pos 5 on line, base 10)
-	   if(sample_decval[samp_no]>0) { no_decay=0; }	// At least one of the samples requires decay processing
-	   (void) strncpy(sample_filenames[samp_no],(char *)(f_line+12),12);	// Put name into array of sample names (pos 10 on line), up to 12 chars (8.3)   
-	   DEBUG_MSG("Sample no %d, filename is: %s, midi note value=0x%x, decay value %d, hold=%d",samp_no,sample_filenames[samp_no],sample_to_midinote[samp_no],sample_decval[samp_no],hold_sample[samp_no]);
-	   no_samples_loaded++;	// increment global number of samples we will read in and scan for in play
+		  for(samp_no=0;samp_no<NUM_SAMPLES_TO_OPEN;samp_no++)	// Check for up to the defined maximum of sample mappings (one per line)
+		  {
+			if(FILE_ReadLine(f_line, 63)) // Read line up to 63 chars long
+			{
+			   //DEBUG_MSG("Sample no %d, Line is: %s",samp_no,f_line);
+			   sample_to_midinote[samp_no]=(int)strtol((char *)(f_line+2),NULL,16); // Convert hex string values to a real number (pos 2 on line, base 16)
+			   hold_sample[samp_no]=(int)strtol((char *)(f_line+5),NULL,10); // Convert sample hold digit
+			   sample_decval[samp_no]=(int)strtol((char *)(f_line+7),NULL,10); // Convert decay number (pos 5 on line, base 10)
+			   if(sample_decval[samp_no]>0) { no_decay=0; }	// At least one of the samples requires decay processing
+			   (void) strncpy(sample_filenames[samp_no],(char *)(f_line+12),30);	// Put name into array of sample names (pos 10 on line), up to 12 chars (8.3)   
+			   DEBUG_MSG("Sample no %d, filename is: %s, midi note value=0x%x, decay value %d, hold=%d",samp_no,sample_filenames[samp_no],sample_to_midinote[samp_no],sample_decval[samp_no],hold_sample[samp_no]);
+			   no_samples_loaded++;	// increment global number of samples we will read in and scan for in play
+			}
+		   }
+		  FILE_ReadClose(&bank_fileinfo);
+			
+		 for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// Open all sample files and mark all samples as off
+		 {
+		   if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) {
+		   DEBUG_MSG("Open sample file failed.");
+		   } else {
+			 // Pre-read all the cluster positions for all samples to open
+			 u32 num_sectors_per_cluster = FILE_VolumeSectorsPerCluster();
+			 u32 cluster_ix;
+			 for(cluster_ix=0; cluster_ix < CLUSTER_CACHE_SIZE; ++cluster_ix) {
+			   u32 pos = cluster_ix*num_sectors_per_cluster*SAMPLE_BUFFER_SIZE;
+
+			   if( pos >= samplefile_len[samp_no] )
+			 break; // end of file reached
+			   else {
+			 s32 status;
+			 if( (status=FILE_ReadReOpen(&samplefile_fileinfo[samp_no])) >= 0 ) {
+			   status = FILE_ReadSeek(pos);
+			   if( status >= 0 ) {
+				 u8 dummy; // dummy read to update cluster
+				 status = FILE_ReadBuffer(&dummy, 1);
+			   }
+			   FILE_ReadClose(&samplefile_fileinfo[samp_no]);
+			 }
+			 if( status < 0 )
+			   break;
+			   }
+
+			   sample_cluster_cache[samp_no][cluster_ix] = samplefile_fileinfo[samp_no].curr_clust;
+			   DEBUG_MSG("Cluster %d: %d ", cluster_ix, sample_cluster_cache[samp_no][cluster_ix]);
+			 }
+		   }
+
+		   sample_on[samp_no]=0;	// Set sample to off
+		 }
 	}
-   }
-  FILE_ReadClose(&bank_fileinfo);
-    
- for(samp_no=0;samp_no<no_samples_loaded;samp_no++)	// Open all sample files and mark all samples as off
- {
-   if(SAMP_FILE_open(samp_no,sample_filenames[samp_no])) {
-     DEBUG_MSG("Open sample file failed.");
-   } else {
-	 // Pre-read all the cluster positions for all samples to open
-     u32 num_sectors_per_cluster = FILE_VolumeSectorsPerCluster();
-     u32 cluster_ix;
-     for(cluster_ix=0; cluster_ix < CLUSTER_CACHE_SIZE; ++cluster_ix) {
-       u32 pos = cluster_ix*num_sectors_per_cluster*SAMPLE_BUFFER_SIZE;
-
-       if( pos >= samplefile_len[samp_no] )
-	 break; // end of file reached
-       else {
-	 s32 status;
-	 if( (status=FILE_ReadReOpen(&samplefile_fileinfo[samp_no])) >= 0 ) {
-	   status = FILE_ReadSeek(pos);
-	   if( status >= 0 ) {
-	     u8 dummy; // dummy read to update cluster
-	     status = FILE_ReadBuffer(&dummy, 1);
-	   }
-	   FILE_ReadClose(&samplefile_fileinfo[samp_no]);
-	 }
-	 if( status < 0 )
-	   break;
-       }
-
-       sample_cluster_cache[samp_no][cluster_ix] = samplefile_fileinfo[samp_no].curr_clust;
-       DEBUG_MSG("Cluster %d: %d ", cluster_ix, sample_cluster_cache[samp_no][cluster_ix]);
-     }
-   }
-
-   sample_on[samp_no]=0;	// Set sample to off
- }
-   MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED after bank load
+	MIOS32_BOARD_LED_Set(0x1, 0x0);	// Turn off LED after bank load
 }
 
-u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as input with pullups, then read bank number (1,2,3,4) based on which of D0, D1 or D2 low
+u8 Read_Switch(void) // Lee's temp hardware: Set up inputs for bank switch as input with pullups, and find if any lines pulled low to select bank 
 {
-	 u8 pin_no;
-	 u8 bank_val;
+     u8 pin_no;
+     u8 bank_val;
 
-	 for(pin_no=0;pin_no<8;pin_no++)
-	 {
-	  MIOS32_BOARD_J10_PinInit(pin_no, MIOS32_BOARD_PIN_MODE_INPUT_PU);
-	 }
+     for(pin_no=0;pin_no<8;pin_no++)
+     {
+      MIOS32_BOARD_J10_PinInit(pin_no, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+     }
 
-	 bank_val=(u8)(MIOS32_BOARD_J10_Get() & 0x07); // Read all pins, but only care about first 3, 7=1st pos (all high), 6=2nd pos (D0 low), 5=3rd pos (D1 low), 3=4th pos (D2 low)
-	 if(bank_val==3) { return 4; }
-	 if(bank_val==5) { return 3; }
-	 if(bank_val==6) { return 2; }	 
-	 return 1;		// default to bank 1
+     bank_val=(u8)MIOS32_BOARD_J10_Get(); // Read all pins, if all pins high, val=0 meaning bank 1, otherwise one pin should be pulled low eg bank_index 0 = bank_val=1 so bank 2
+	 if(bank_val==127) { return 9; }	// D7 = 128 low
+	 if(bank_val==191) { return 8; }	// D6 = 64 low
+	 if(bank_val==223) { return 7; }	// D5 = 32 low
+	 if(bank_val==239) { return 6; }	// D4 = 16 low
+	 if(bank_val==247) { return 5; }	// D3 = 8 low
+	 if(bank_val==251) { return 4; }	// D2 = 4 low
+	 if(bank_val==253) { return 3; }	// D1 = 2 low
+	 if(bank_val==254) { return 2; }	// D0 = 1 low
+     return 1;      // default to bank 1 (bank val 255)
  }
 
 void Read_Config()	// Open the config file on the SD card and (re)set various settings for the player
