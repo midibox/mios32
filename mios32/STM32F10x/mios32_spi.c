@@ -430,11 +430,11 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_RCLK2_PIN;
 	GPIO_Init(MIOS32_SPI1_RCLK2_PORT, &GPIO_InitStructure);
 #endif
-    
-	// DIN is input with pull-up
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+
+	// DOUT is output assigned to alternate function
+	GPIO_InitStructure.GPIO_Mode = af_mode;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_MISO_PIN;
-	GPIO_Init(MIOS32_SPI1_MISO_PORT, &GPIO_InitStructure);
+	GPIO_Init(MIOS32_SPI1_MISO_PORT, &GPIO_InitStructure);    
       } else {
 	// SCLK and DIN are inputs
 	GPIO_InitStructure.GPIO_Mode = af_mode;
@@ -453,8 +453,8 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_Init(MIOS32_SPI1_RCLK2_PORT, &GPIO_InitStructure);
 #endif
     
-	// DOUT is output assigned to alternate function
-	GPIO_InitStructure.GPIO_Mode = af_mode;
+	// DIN is input with pull-up
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_MISO_PIN;
 	GPIO_Init(MIOS32_SPI1_MISO_PORT, &GPIO_InitStructure);
       }
