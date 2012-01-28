@@ -826,6 +826,20 @@ static s32 SEQ_UI_PAGES_GP_Button_Handler_Controller(u8 button, u8 depressed)
     } break;
 
     ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_GROOVE: {
+      // first step
+      MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x30 + button);
+      return 0;
+    } break;
+
+    ///////////////////////////////////////////////////////////////////////////
+    case SEQ_UI_PAGE_ECHO: {
+      // last step
+      MIOS32_MIDI_SendProgramChange(ui_controller_port, ui_controller_chn, 0x40 + button);
+      return 0;
+    } break;
+
+    ///////////////////////////////////////////////////////////////////////////
     case SEQ_UI_PAGE_MIDICHN: {
       ui_controller_chn = button;
       return 0;
