@@ -617,8 +617,8 @@ s32 SEQ_UI_Button_Handler_Controller(u32 pin, u32 pin_value)
     if( pin == seq_hwcfg_button.bar3 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x02); return 1; } // Select Row2
     if( pin == seq_hwcfg_button.bar4 ) { return 1; } // not assigned
 
-    if( pin == seq_hwcfg_button.seq1 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x03); return 1; } // Disable Row
-    if( pin == seq_hwcfg_button.seq2 ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x04); return 1; } // Enable Row
+    if( pin == seq_hwcfg_button.seq1  ) { return 1; } // not assigned
+    if( pin == seq_hwcfg_button.seq2  ) { return 1; } // not assigned
     if( pin == seq_hwcfg_button.load ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x05); return 1; } // Steps on
     if( pin == seq_hwcfg_button.save ) { MIOS32_MIDI_SendProgramChange(port, chn, 0x06); return 1; } // Steps off?
 
