@@ -131,12 +131,13 @@ static void SPI_Callback(void)
 {
   // called after SPI transfer:
 
-  ++data_received;
-
   // copy RX values
   int i;
   for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
     rx_buffer[i] = rx_buffer_tmp[i];
+
+  // notify new values to TASK_SPI_Handler
+  ++data_received;
   
   // change TX values
   for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
