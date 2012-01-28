@@ -129,9 +129,6 @@ static void SPI_Callback(void)
 {
   // called after SPI transfer:
 
-  // print received bytes
-  MIOS32_MIDI_SendDebugHexDump((u8 *)rx_buffer, TRANSFER_BUFFER_SIZE);
-
   // change TX values
   int i;
   for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
@@ -158,5 +155,8 @@ static void TASK_SPI_Handler(void *pvParameters)
     }
 
     SPI_Callback();
+
+    // print received bytes
+    MIOS32_MIDI_SendDebugHexDump((u8 *)rx_buffer, TRANSFER_BUFFER_SIZE);
   }
 }

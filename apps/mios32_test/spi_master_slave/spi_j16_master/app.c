@@ -39,8 +39,8 @@ static void TASK_SPI_Handler(void *pvParameters);
 #define MASTER_SPI     0 // @J16
 #define MASTER_CS_PIN  0 // =RC1
 #define TRANSFER_BUFFER_SIZE 16
-u8 rx_buffer[TRANSFER_BUFFER_SIZE];
-u8 tx_buffer[TRANSFER_BUFFER_SIZE];
+volatile u8 rx_buffer[TRANSFER_BUFFER_SIZE];
+volatile u8 tx_buffer[TRANSFER_BUFFER_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
