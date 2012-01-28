@@ -39,6 +39,7 @@ static void TASK_SPI_Handler(void *pvParameters);
 #define SLAVE_SPI     0 // @J16
 #define TRANSFER_BUFFER_SIZE 16
 volatile u8 data_received;
+u8 rx_buffer_tmp[TRANSFER_BUFFER_SIZE];
 u8 rx_buffer[TRANSFER_BUFFER_SIZE];
 u8 tx_buffer[TRANSFER_BUFFER_SIZE];
 
@@ -132,13 +133,17 @@ static void SPI_Callback(void)
 
   ++data_received;
 
-  // change TX values
+  // copy RX values
   int i;
+  for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
+    rx_buffer[i] = rx_buffer_tmp[i];
+  
+  // change TX values
   for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
     tx_buffer[i] += 0x10;
 
   // prepare next transfer
-  MIOS32_SPI_TransferBlock(SLAVE_SPI, tx_buffer, rx_buffer, TRANSFER_BUFFER_SIZE, SPI_Callback);
+  MIOS32_SPI_TransferBlock(SLAVE_SPI, tx_buffer, rx_buffer_tmp, TRANSFER_BUFFER_SIZE, SPI_Callback);
 }
 
 static void TASK_SPI_Handler(void *pvParameters)
