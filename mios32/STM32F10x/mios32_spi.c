@@ -268,7 +268,6 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(1, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-
 #endif /* MIOS32_DONT_USE_SPI1 */
 
 
@@ -438,7 +437,7 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_Init(MIOS32_SPI1_MISO_PORT, &GPIO_InitStructure);
       } else {
 	// SCLK and DIN are inputs
-	GPIO_InitStructure.GPIO_Mode = gp_mode;
+	GPIO_InitStructure.GPIO_Mode = af_mode;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_SCLK_PIN;
 	GPIO_Init(MIOS32_SPI1_SCLK_PORT, &GPIO_InitStructure);
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_MOSI_PIN;
