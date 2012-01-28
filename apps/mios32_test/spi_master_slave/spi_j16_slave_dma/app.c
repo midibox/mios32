@@ -39,8 +39,8 @@ static void TASK_SPI_Handler(void *pvParameters);
 #define SLAVE_SPI     0 // @J16
 #define TRANSFER_BUFFER_SIZE 16
 volatile u8 data_received;
-volatile u8 rx_buffer[TRANSFER_BUFFER_SIZE];
-volatile u8 tx_buffer[TRANSFER_BUFFER_SIZE];
+u8 rx_buffer[TRANSFER_BUFFER_SIZE];
+u8 tx_buffer[TRANSFER_BUFFER_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -130,12 +130,15 @@ static void SPI_Callback(void)
 {
   // called after SPI transfer:
 
-  data_received = 1;
+  ++data_received;
 
   // change TX values
   int i;
   for(i=0; i<TRANSFER_BUFFER_SIZE; ++i)
     tx_buffer[i] += 0x10;
+
+  // prepare next transfer
+  MIOS32_SPI_TransferBlock(SLAVE_SPI, tx_buffer, rx_buffer, TRANSFER_BUFFER_SIZE, SPI_Callback);
 }
 
 static void TASK_SPI_Handler(void *pvParameters)
@@ -147,16 +150,16 @@ static void TASK_SPI_Handler(void *pvParameters)
       tx_buffer[i] = i;
   }
 
+  // initial transfer
+  u8 last_data_received = data_received = 0;
+  SPI_Callback();
+
   while( 1 ) {
     // toggle Status LED to as a sign of live
     MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
 
-    data_received = 0;
-
-    // receive bytes
-    MIOS32_SPI_TransferBlock(SLAVE_SPI, tx_buffer, rx_buffer, TRANSFER_BUFFER_SIZE, SPI_Callback);
-
-    while( !data_received );
+    while( last_data_received == data_received );
+    last_data_received = data_received;
 
     // print received bytes
     MIOS32_MIDI_SendDebugHexDump((u8 *)rx_buffer, TRANSFER_BUFFER_SIZE);
