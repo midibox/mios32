@@ -1018,6 +1018,7 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 len, void *callback)
 {
+  SPI_TypeDef *spi_ptr;
   DMA_Channel_TypeDef *dma_tx_ptr, *dma_rx_ptr;
 
   switch( spi ) {
@@ -1025,6 +1026,7 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #ifdef MIOS32_DONT_USE_SPI0
       return -1; // disabled SPI port
 #else
+      spi_ptr = MIOS32_SPI0_PTR;
       dma_tx_ptr = MIOS32_SPI0_DMA_TX_PTR;
       dma_rx_ptr = MIOS32_SPI0_DMA_RX_PTR;
       break;
@@ -1034,6 +1036,7 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
+      spi_ptr = MIOS32_SPI1_PTR;
       dma_tx_ptr = MIOS32_SPI1_DMA_TX_PTR;
       dma_rx_ptr = MIOS32_SPI1_DMA_RX_PTR;
       break;
@@ -1085,6 +1088,9 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 
   // set callback function
   spi_callback[spi] = callback;
+
+  // ensure that previously received value doesn't cause DMA access
+  if( spi_ptr->DR );
 
   // configure Rx channel
   // TK: optimization method: read rx_CCR once, write back only when required
