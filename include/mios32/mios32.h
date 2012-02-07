@@ -37,7 +37,8 @@ extern "C" {
 #elif defined(MIOS32_FAMILY_MIOSJUCE)
 # include <mios32_datatypes.h>
 #else
-# error "Unsupported MIOS32_FAMILY selected!"
+# include <mios32_datatypes.h>
+# warning "Unsupported MIOS32_FAMILY selected!"
 #endif
 
 
