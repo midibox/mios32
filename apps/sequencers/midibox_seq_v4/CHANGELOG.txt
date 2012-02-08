@@ -5,6 +5,15 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.056
+~~~~~~~~~~~~~~~~~
+
+   o in pattern menu, the ALL button now allows to change all patterns 
+     to the same number at once (banks won't be influenced by ALL button)
+     
+   o the ALL function will always be turned off when changing to another page
+   
+
 MIDIboxSEQ V4.055
 ~~~~~~~~~~~~~~~~~
 

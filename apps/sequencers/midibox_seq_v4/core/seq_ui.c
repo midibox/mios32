@@ -208,11 +208,11 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_PAR_Type_PitchBend:
       case SEQ_PAR_Type_Probability:
       case SEQ_PAR_Type_Delay:
-	seq_ui_button_state.FAST_ENCODERS = 1;
-	break;
+      	seq_ui_button_state.FAST_ENCODERS = 1;
+      	break;
 
       default:
-	seq_ui_button_state.FAST_ENCODERS = 0;
+      	seq_ui_button_state.FAST_ENCODERS = 0;
     }
   }
 
@@ -312,6 +312,10 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_delayed_action_callback = NULL;
     portEXIT_CRITICAL();
 
+    // always disable ALL button when changing page
+    seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE = 0;
+    seq_ui_button_state.CHANGE_ALL_STEPS = 0;
+
     // request display initialisation
     seq_ui_display_init_req = 1;
   }
@@ -319,6 +323,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
   // for MENU button:
   if( seq_hwcfg_button_beh.menu )
     seq_ui_button_state.MENU_PRESSED = 0; // MENU page selection finished
+
   // first page has been selected - display new screen
   seq_ui_button_state.MENU_FIRST_PAGE_SELECTED = 1;
 

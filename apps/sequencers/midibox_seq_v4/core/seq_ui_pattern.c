@@ -18,9 +18,11 @@
 #include <mios32.h>
 #include "seq_lcd.h"
 #include "seq_ui.h"
+#include "tasks.h"
 
 #include "seq_file.h"
 #include "seq_file_b.h"
+#include "seq_bpm.h"
 #include "seq_core.h"
 
 
@@ -118,7 +120,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // take over new group
   ui_selected_group = ui_selected_item;
 
-  // change bank/pattern number
+  // change bank/pattern number(s)
   seq_pattern_t *pattern = &selected_pattern[ui_selected_group];
   if( encoder & 1 ) {
     u8 tmp = pattern->pattern;
@@ -136,7 +138,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     pattern->bank = tmp;
   }
 
-  SEQ_PATTERN_Change(ui_selected_group, *pattern, 0);
+  u8 is_critical = SEQ_BPM_IsRunning();
+  if( is_critical )
+    portENTER_CRITICAL();
+  int group;
+  for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+    if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
+      if( encoder & 1 ) {
+	selected_pattern[group].pattern = pattern->pattern;
+      } else {
+	// in order to avoid accidents the bank won't be changed
+	// because normally each group has it's dedicated bank
+#if 0
+	selected_pattern[group].bank = pattern->bank;
+#endif
+      }
+
+      SEQ_PATTERN_Change(group, selected_pattern[group], 0);
+    }
+  }
+  if( is_critical )
+    portEXIT_CRITICAL();
 
   return 1; // value as been changed
 }
@@ -171,12 +193,24 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     } else {
       selected_pattern[ui_selected_group].group = button;
     }
+
+    if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+      int group;
+      for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
+	selected_pattern[group].pattern = selected_pattern[ui_selected_group].pattern;
+    }
+
     return 1; // value always changed
   }
 
   if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 ) {
-    selected_pattern[ui_selected_group].num = button-8;
-    SEQ_PATTERN_Change(ui_selected_group, selected_pattern[ui_selected_group], 0);
+    int group;
+    for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+      if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
+	selected_pattern[group].num = button-8;
+	SEQ_PATTERN_Change(group, selected_pattern[group], 0);
+      }
+    }
 
     return 1; // value always changed
   }
@@ -281,7 +315,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( group % 1 )
 	SEQ_LCD_PrintSpaces(1);
 
-      if( group == ui_selected_group )
+      if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group )
 	SEQ_LCD_PrintString(">>>");
       else
 	SEQ_LCD_PrintSpaces(3);
@@ -292,7 +326,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 
       // shortly show current pattern
-      seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + group) && ui_cursor_flash) ? seq_pattern[group] : selected_pattern[group];
+      seq_pattern_t pattern = ((seq_ui_button_state.CHANGE_ALL_STEPS || (ui_selected_item == (ITEM_PATTERN_G1 + group))) && ui_cursor_flash) ? seq_pattern[group] : selected_pattern[group];
       SEQ_LCD_PrintFormattedString("%d:", pattern.bank + 1);
 
       if( pattern.pattern < SEQ_FILE_B_NumPatterns(pattern.bank) )
