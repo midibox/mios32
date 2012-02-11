@@ -289,6 +289,11 @@ s32 SEQ_CORE_Handler(void)
       SEQ_SONG_Reset(0);
       SEQ_CORE_Reset(0);
       SEQ_MIDPLY_Reset();
+
+      // song page: start song at current edit position
+      if( ui_page == SEQ_UI_PAGE_SONG ) {
+	SEQ_SONG_PosSet(ui_song_edit_pos);
+      }
     }
 
     u16 new_song_pos;

@@ -77,6 +77,9 @@
 #define SLAVE_CLK_TIMEOUT_DELAY 11000
 
 
+// the timer rate in slave mode
+#define TIMER_RATE_SLAVE_MODE_US 250
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -112,7 +115,10 @@ static u16 ppqn;
 
 static u32 incoming_clk_ctr;
 static u32 incoming_clk_delay;
+static u32 incoming_clk_delay_beat;
+static u32 incoming_clk_delay_beat_latched;
 static u32 sent_clk_ctr;
+static u32 received_clk_beat_ctr;
 static u32 sent_clk_delay;
 
 static u16 new_song_pos;
@@ -141,7 +147,10 @@ s32 SEQ_BPM_Init(u32 mode)
   slave_clk = 0;
   incoming_clk_ctr = 0;
   incoming_clk_delay = 0;
+  incoming_clk_delay_beat = 0;
+  incoming_clk_delay_beat_latched = 0;
   sent_clk_ctr = 0;
+  received_clk_beat_ctr = 0;
   sent_clk_delay = 0;
 
   // start clock generator with 140 BPM/384 ppqn in Auto mode
@@ -187,6 +196,22 @@ s32 SEQ_BPM_ModeSet(seq_bpm_mode_t mode)
 /////////////////////////////////////////////////////////////////////////////
 float SEQ_BPM_Get(void)
 {
+  return bpm;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the effective BPM rate (Master mode: selected BPM, Slave mode: received BPM)
+//! \return effective bpm rate as float
+/////////////////////////////////////////////////////////////////////////////
+float SEQ_BPM_EffectiveGet(void)
+{
+  if( slave_clk ) {
+    if( incoming_clk_ctr >= SLAVE_CLK_TIMEOUT_DELAY )
+      return 0.0;
+
+    return (60.0 * 1E6) / (float)(incoming_clk_delay_beat_latched * TIMER_RATE_SLAVE_MODE_US);
+  }
+
   return bpm;
 }
 
@@ -331,7 +356,7 @@ static s32 SEQ_BPM_TimerInit(void)
     // two clocks to generate 16 internal clocks (@384ppqn) on every F8 event.
     // using 250 uS as reference
     // using highest priority for best accuracy (routine is very short, so that this doesn't hurt)
-    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 250, SEQ_BPM_Timer_Slave, MIOS32_IRQ_PRIO_HIGHEST);
+    MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, TIMER_RATE_SLAVE_MODE_US, SEQ_BPM_Timer_Slave, MIOS32_IRQ_PRIO_HIGHEST);
   } else {
     // initial timer configuration for master mode -- calls the core clk routine directly
     MIOS32_TIMER_Init(SEQ_BPM_MIOS32_TIMER_NUM, 1000, SEQ_BPM_Timer_Master, MIOS32_IRQ_PRIO_HIGHEST);
@@ -420,6 +445,14 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
 
       // we've measured a new delay between two F8 events
       incoming_clk_delay = incoming_clk_ctr;
+      ++received_clk_beat_ctr;
+      if( received_clk_beat_ctr < (4*6) )
+    	incoming_clk_delay_beat += incoming_clk_ctr;
+      else {
+	received_clk_beat_ctr = 0;
+    	incoming_clk_delay_beat_latched = incoming_clk_delay_beat;
+    	incoming_clk_delay_beat = incoming_clk_ctr;
+      }
       incoming_clk_ctr = 0;
 
       // get new SENT_CLK delay
@@ -457,6 +490,8 @@ s32 SEQ_BPM_NotifyMIDIRx(u8 midi_byte)
       // cancel all requested clocks
       bpm_req_clk_ctr = 0;
       sent_clk_ctr = (ppqn/24);
+      received_clk_beat_ctr = 0;
+      incoming_clk_delay_beat = 0;
 
       // reset BPM tick value
       bpm_tick = 0;
@@ -696,7 +731,7 @@ s32 SEQ_BPM_ChkReqSongPos(u16 *song_pos)
 u32 SEQ_BPM_TicksFor_mS(u16 time_ms)
 {
   if( slave_clk ) {
-    float time_per_tick = 0.25 * incoming_clk_delay / (ppqn/24);
+    float time_per_tick = (TIMER_RATE_SLAVE_MODE_US*0.001) * incoming_clk_delay_beat_latched / ppqn;
     return (u32)((float)time_ms / time_per_tick);
   }
 

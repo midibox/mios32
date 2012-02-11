@@ -34,7 +34,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-  SEQ_SONG_ACTION_Stop,
+  SEQ_SONG_ACTION_End,
   SEQ_SONG_ACTION_Loop1,
   SEQ_SONG_ACTION_Loop2,
   SEQ_SONG_ACTION_Loop3,

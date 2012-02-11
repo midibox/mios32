@@ -252,7 +252,7 @@ void APP_SRIO_ServicePrepare(void)
     u8 inversion_mask = (seq_hwcfg_bpm_digits.enabled == 2) ? 0xff : 0x00;
     u8 common_enable = (seq_hwcfg_bpm_digits.enabled == 2) ? 1 : 0;
 
-    float bpm = SEQ_BPM_Get();
+    float bpm = SEQ_BPM_EffectiveGet();
     if( led_digit_ctr == 0 ) {
       u8 sr_value = SEQ_LED_DigitPatternGet(((int)(bpm*10)) % 10);
       MIOS32_DOUT_SRSet(seq_hwcfg_bpm_digits.segments_sr - 1, sr_value ^ inversion_mask);
