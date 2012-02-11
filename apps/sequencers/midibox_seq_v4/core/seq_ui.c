@@ -89,6 +89,8 @@ u8 ui_edit_preset_num_drum;
 
 u8 ui_seq_pause;
 
+u8 ui_song_edit_pos;
+
 u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 u8 seq_ui_saveall_req;
@@ -154,6 +156,8 @@ s32 SEQ_UI_Init(u32 mode)
   seq_ui_button_state.ALL = 0;
 
   ui_seq_pause = 0;
+
+  ui_song_edit_pos = 0;
 
   // visible GP pattern
   ui_gp_leds = 0x0000;

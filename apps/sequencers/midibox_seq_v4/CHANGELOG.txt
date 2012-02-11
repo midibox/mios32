@@ -8,11 +8,35 @@ Wishlist for future features
 MIDIboxSEQ V4.056
 ~~~~~~~~~~~~~~~~~
 
-   o in pattern menu, the ALL button now allows to change all patterns 
-     to the same number at once (banks won't be influenced by ALL button)
+   o pattern page: the ALL button now allows to change all patterns 
+     to the same number at once (banks won't be influenced by ALL button).
      
-   o the ALL function will always be turned off when changing to another page
+   o the ALL function will always be turned off when changing to another page.
    
+   o song page: the previously "Stop" action has been renamed to "End" - it doesn't
+     stop the sequencer anymore, instead it only exits song mode and loops the
+     current pattern set endless (e.g. to fade out or as bridge before you select
+     the next song).
+     
+   o song page: press SELECT+GP16 to take over the current pattern set into the
+     selected song position - this function can be used for quick song/phrase edits.
+     
+   o song page: in song mode it's now possible to select a phrase with GP buttons
+     (like in Phrase mode).
+     Difference: the song positions will be played until they are looping or "End"
+     is reached. This allows to split a song into multiple parts which are 
+     interactively selected.
+
+   o song page: Fwd/Rwd button change also the edit position in song page
+ 
+   o if the sequencer is started in song page, the song will directly jump to the
+     current edit position
+
+   o the main page now displays the effective BPM. If in slave mode, the received
+     BPM will be displayed.
+     
+   o the BPM digit display shows the received BPM in slave mode.
+
 
 MIDIboxSEQ V4.055
 ~~~~~~~~~~~~~~~~~

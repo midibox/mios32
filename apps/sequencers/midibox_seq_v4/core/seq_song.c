@@ -48,6 +48,7 @@ char seq_song_name[21];
 
 static u8 song_num;
 static u8 song_active; // switches between song/phrase mode
+static u8 song_finished; // don't increment song position anymore
 
 static u8 song_pos;
 static u8 song_loop_ctr;
@@ -70,6 +71,7 @@ s32 SEQ_SONG_Init(u32 mode)
   // select initial song number and phrase mode
   song_num = 0;
   song_active = 0;
+  song_finished = 0;
 
   // initialise song steps
   int step;
@@ -159,7 +161,7 @@ s32 SEQ_SONG_StepEntryClear(u32 step)
     return -1; // invalid step number
 
   seq_song_step_t *s = (seq_song_step_t *)&seq_song_steps[step];
-  s->action = SEQ_SONG_ACTION_Stop;
+  s->action = SEQ_SONG_ACTION_End;
   s->action_value = 0;
   s->pattern_g1 = 0x80;
   s->bank_g1 = 0;
@@ -187,6 +189,7 @@ s32 SEQ_SONG_PosGet(void)
 
 s32 SEQ_SONG_PosSet(u32 pos)
 {
+  song_finished = 0;
   song_pos = pos % SEQ_SONG_NUM_STEPS;
   return SEQ_SONG_FetchPos(0);
 }
@@ -214,9 +217,11 @@ s32 SEQ_SONG_Reset(u32 bpm_start)
   // TODO: take bpm_start into account!
 
   // reset song position and loop counter
-  song_pos = 0;
+  song_pos = (ui_page == SEQ_UI_PAGE_SONG) ? ui_song_edit_pos : 0;
   song_loop_ctr = 0;
   song_loop_ctr_max = 0;
+
+  song_finished = 0;
 
   // if not in phrase mode: fetch new entries
   if( song_active ) {
@@ -259,9 +264,13 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 
     // branch depending on action
     switch( s->action ) {
-      case SEQ_SONG_ACTION_Stop:
+      case SEQ_SONG_ACTION_End:
+#if 0
 	if( song_active ) // not in phrase mode
 	  SEQ_BPM_Stop();
+#else
+	song_finished = 1; // deactivate song incrementer
+#endif
 	break;
 
       case SEQ_SONG_ACTION_JmpPos:
@@ -363,6 +372,9 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_NextPos(void)
 {
+  if( song_finished )
+    return 0;
+
   if( song_loop_ctr < song_loop_ctr_max )
     ++song_loop_ctr;
   else {
@@ -389,6 +401,8 @@ s32 SEQ_SONG_NextPos(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_PrevPos(void)
 {
+  song_finished = 0;
+
   if( song_loop_ctr )
     --song_loop_ctr;
   else {
@@ -423,14 +437,33 @@ s32 SEQ_SONG_PrevPos(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_Fwd(void)
 {
-  u32 bpm_tick = SEQ_BPM_TickGet();
-  u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
-  u32 measure = bpm_tick / ticks_per_pattern;
-  u32 next_bpm_tick = (measure+1) * ticks_per_pattern;
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    song_pos = ui_song_edit_pos;
+    song_loop_ctr = 0;
+    SEQ_SONG_NextPos();
+    if( ui_song_edit_pos != song_pos )
+      ui_song_edit_pos = song_pos;
+    else {
+      // increment if possible
+      if( song_pos < SEQ_SONG_NUM_STEPS ) {
+	++song_pos;
+	SEQ_SONG_FetchPos(0);
+	ui_song_edit_pos = song_pos;
 
-  SEQ_CORE_Reset(next_bpm_tick);
-  SEQ_SONG_NextPos();
-  SEQ_BPM_TickSet(next_bpm_tick);
+	// update display immediately
+	seq_ui_display_update_req = 1;
+      }
+    }
+  } else {
+    u32 bpm_tick = SEQ_BPM_TickGet();
+    u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
+    u32 measure = bpm_tick / ticks_per_pattern;
+    u32 next_bpm_tick = (measure+1) * ticks_per_pattern;
+
+    SEQ_CORE_Reset(next_bpm_tick);
+    SEQ_SONG_NextPos();
+    SEQ_BPM_TickSet(next_bpm_tick);
+  }
 
   return 0; // no error
 }
@@ -440,14 +473,21 @@ s32 SEQ_SONG_Fwd(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_SONG_Rew(void)
 {
-  u32 bpm_tick = SEQ_BPM_TickGet();
-  u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
-  u32 measure = bpm_tick / ticks_per_pattern;
-  u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_pattern) : 0;
+  if( ui_page == SEQ_UI_PAGE_SONG ) {
+    song_pos = ui_song_edit_pos;
+    song_loop_ctr = 0;
+    SEQ_SONG_PrevPos();
+    ui_song_edit_pos = song_pos;
+  } else {
+    u32 bpm_tick = SEQ_BPM_TickGet();
+    u32 ticks_per_pattern = ((u32)seq_core_steps_per_pattern+1) * (SEQ_BPM_PPQN_Get()/4);
+    u32 measure = bpm_tick / ticks_per_pattern;
+    u32 next_bpm_tick = measure ? ((measure-1) * ticks_per_pattern) : 0;
 
-  SEQ_CORE_Reset(next_bpm_tick);
-  SEQ_SONG_PrevPos();
-  SEQ_BPM_TickSet(next_bpm_tick);
+    SEQ_CORE_Reset(next_bpm_tick);
+    SEQ_SONG_PrevPos();
+    SEQ_BPM_TickSet(next_bpm_tick);
+  }
 
   return 0; // no error
 }

@@ -880,7 +880,6 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
   return 0; // no error
 }
 
-extern void * ptr_array[256];
 s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function)
 {
   //void (*out)(char *format, ...) = _output_function;

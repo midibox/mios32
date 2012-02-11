@@ -498,7 +498,7 @@ static s32 LCD_Handler(u8 high_prio)
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
     // <--------------------------------------><-------------------------------------->
-    // MIDIbox SEQ V4.0Beta17         1.  1.  0/SESSION/20100309                       
+    // MIDIbox SEQ V4.0Beta17         1.  1.  0/SESSION/20100309              140.0 BPM
     //        Edit             Mute Tracks     Open Save SaveAs New               Info 
 
     if( high_prio ) {
@@ -513,6 +513,10 @@ static s32 LCD_Handler(u8 high_prio)
       u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
       u32 microstep = tick % ticks_per_step;
       SEQ_LCD_PrintFormattedString("%8u.%3d.%3d", measure, step, microstep);
+
+      SEQ_LCD_CursorSet(40+31, 0);
+      float bpm = SEQ_BPM_EffectiveGet();
+      SEQ_LCD_PrintFormattedString("%3d.%d BPM", (int)bpm, (int)(10*bpm)%10);
       return 0;
     }
 
@@ -526,6 +530,10 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_CursorSet(40, 0);
     SEQ_LCD_PrintFormattedString("%s/%s", SEQ_FILE_SESSION_PATH, seq_file_session_name);
     SEQ_LCD_PrintSpaces(40);
+
+    SEQ_LCD_CursorSet(40+31, 0);
+    float bpm = SEQ_BPM_EffectiveGet();
+    SEQ_LCD_PrintFormattedString("%3d.%d BPM", (int)bpm, (int)(10*bpm)%10);
 
 
     ///////////////////////////////////////////////////////////////////////////

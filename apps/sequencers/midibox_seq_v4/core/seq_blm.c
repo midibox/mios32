@@ -1460,7 +1460,7 @@ s32 SEQ_BLM_LED_Update(void)
       if( force_update || pattern_green != prev_pattern_green || pattern_red != prev_pattern_red ) {
 
 	// Note: the MIOS32 MIDI driver will take care about running status to optimize the stream
-	if( force_update || (pattern_green ^ prev_pattern_green) & 0x00ff ) {
+	if( force_update || ((pattern_green ^ prev_pattern_green) & 0x00ff) ) {
 	  u8 pattern8 = pattern_green;
 	  p.chn = led_row;
 	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 17 : 16); // CC number + MSB LED
@@ -1469,7 +1469,7 @@ s32 SEQ_BLM_LED_Update(void)
 	  SEND_PACKET(p);
 	}
 
-	if( force_update || (pattern_green ^ prev_pattern_green) & 0xff00 ) {
+	if( force_update || ((pattern_green ^ prev_pattern_green) & 0xff00) ) {
 	  u8 pattern8 = pattern_green >> 8;
 	  p.chn = led_row;
 	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 19 : 18); // CC number + MSB LED
@@ -1478,7 +1478,7 @@ s32 SEQ_BLM_LED_Update(void)
 	  SEND_PACKET(p);
 	}	
 
-	if( force_update || (pattern_red ^ prev_pattern_red) & 0x00ff ) {
+	if( force_update || ((pattern_red ^ prev_pattern_red) & 0x00ff) ) {
 	  u8 pattern8 = pattern_red;
 	  p.chn = led_row;
 	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 33 : 32); // CC number + MSB LED
@@ -1487,7 +1487,7 @@ s32 SEQ_BLM_LED_Update(void)
 	  SEND_PACKET(p);
 	}
 
-	if( force_update || (pattern_red ^ prev_pattern_red) & 0xff00 ) {
+	if( force_update || ((pattern_red ^ prev_pattern_red) & 0xff00) ) {
 	  u8 pattern8 = pattern_red >> 8;
 	  p.chn = led_row;
 	  p.cc_number = 8*blm_leds_rotate_view + ((pattern8 & 0x80) ? 35 : 34); // CC number + MSB LED
