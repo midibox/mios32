@@ -43,6 +43,9 @@ volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
 // change notification flags
 volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
+// actual scanned SRs (MIOS32_SRIO_NUM_SR by default, but can be changed to lower value during runtime)
+static u8 num_sr;
+
 // for debouncing
 static u8 debounce_time;
 static u8 debounce_ctr;
@@ -81,6 +84,9 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // disable notification hook
   srio_scan_finished_hook = NULL;
 
+  // actual scanned SRs (MIOS32_SRIO_NUM_SR by default, but can be changed to lower value during runtime)
+  num_sr = MIOS32_SRIO_NUM_SR;
+
   // clear chains
   // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
   // we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
@@ -118,6 +124,33 @@ s32 MIOS32_SRIO_Init(u32 mode)
   debounce_ctr = 0;
   
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the number of SRs which will be scanned by the SRIO driver
+//! \return number of SRs
+/////////////////////////////////////////////////////////////////////////////
+u8 MIOS32_SRIO_ScanNumGet(void)
+{
+  return num_sr;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Allows to change the number of SRs which will be scanned by the SRIO driver
+//! during runtime.\n
+//! \param[in] new_num_sr must be lower or equal MIOS32_SRIO_NUM_SR
+//! \return != 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SRIO_ScanNumSet(u8 new_num_sr)
+{
+  if( new_num_sr > MIOS32_SRIO_NUM_SR )
+    num_sr = MIOS32_SRIO_NUM_SR;
+  else
+    num_sr = new_num_sr;
+
+  return 0; // no error
 }
 
 
@@ -196,6 +229,9 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   return -1; // no SRIO scan required
 #endif
 
+  if( num_sr == 0 )
+    return -1; // SRIO disabled during runtime
+
   // exit if previous stream hasn't been sent yet (no additional transfer required)
   // THIS IS A FAILSAVE MEASURE ONLY!
   // should never happen if MIOS32_SRIO_ScanStart is called each mS
@@ -225,7 +261,7 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   // start DMA transfer
   MIOS32_SPI_TransferBlock(MIOS32_SRIO_SPI,
 			   (u8 *)&mios32_srio_dout[0], (u8 *)&mios32_srio_din_buffer[0],
-			   MIOS32_SRIO_NUM_SR,
+			   num_sr,
 			   MIOS32_SRIO_DMA_Callback);
 
   return 0;
@@ -254,7 +290,7 @@ static void MIOS32_SRIO_DMA_Callback(void)
 
   // copy/or buffered DIN values/changed flags
   int i;
-  for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+  for(i=0; i<num_sr; ++i) {
     mios32_srio_din_changed[i] |= mios32_srio_din[i] ^ mios32_srio_din_buffer[i];
     mios32_srio_din[i] = mios32_srio_din_buffer[i];
   }
@@ -275,7 +311,7 @@ static void MIOS32_SRIO_DMA_Callback(void)
   if( debounce_time && debounce_ctr ) {
     --debounce_ctr;
 
-    for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+    for(i=0; i<num_sr; ++i) {
       mios32_srio_din[i] ^= mios32_srio_din_changed[i];
       mios32_srio_din_changed[i] = 0;
     }
