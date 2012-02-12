@@ -117,6 +117,7 @@ static const u8 seq_layer_preset_table_drum_notes[16] = {
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 static u8 pb_last_value[SEQ_CORE_NUM_TRACKS];
+static u8 pc_last_value[SEQ_CORE_NUM_TRACKS];
 static u8 cc_last_value[SEQ_CORE_NUM_TRACKS][16];
 
 
@@ -153,13 +154,14 @@ s32 SEQ_LAYER_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function clears the latched pitchbender and CC values
+// This function clears the latched pitchbender, program change and CC values
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LAYER_ResetLatchedValues(void)
 {
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     pb_last_value[track] = 0xff; // invalid value - PB value will be send in any case
+    pc_last_value[track] = 0xff; // invalid value - PC value will be send in any case
 
     int i;
     for(i=0; i<16; ++i)
@@ -539,6 +541,40 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
 	} break;
 
+        case SEQ_PAR_Type_ProgramChange: {
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+	  // don't send program change if value hasn't changed
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == pc_last_value[track] )
+	      break;
+	    pc_last_value[track] = value;
+	  }
+
+	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	    p->type     = ProgramChange;
+	    p->cable    = track;
+	    p->event    = ProgramChange;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = value;
+	    p->evnt2    = 0x00; // don't care
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventProgramChange(track, step, e, instrument, par_layer);
+
+	    if( handle_vu_meter )
+	      seq_layer_vu_meter[par_layer] = p->evnt1 | 0x80;
+	  }
+
+	} break;
+
       }
 
       if( num_events >= 16 )
@@ -563,7 +599,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(track); // we assume, that PAR layer has same number of instruments!
 
-    // all events but Notes are ignored (CC/PitchBend are working channel based, and not drum instr. based)
+    // all events but Notes are ignored (CC/PitchBend/ProgramChange are working channel based, and not drum instr. based)
     if( layer_event.midi_package.event == NoteOn ) {
       u8 drum;
       for(drum=0; drum<num_instruments; ++drum) {
@@ -725,6 +761,26 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
 	    } else {
 	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
+	      return par_layer;
+	    }
+	  }
+	} break;
+
+        case SEQ_PAR_Type_ProgramChange: {
+	  if( layer_event.midi_package.event == ProgramChange ) {
+	    // extra MBSEQ V4L: write into whole 16th step in step record mode
+	    if(
+#ifndef MBSEQV4L
+	       0
+#else
+	       (seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning()) && tcc->clkdiv.value == 0x03
+#endif
+	       ) {
+	      int i;
+	      for(i=0; i<4; ++i)
+		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.evnt1);
+	    } else {
+	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt1);
 	      return par_layer;
 	    }
 	  }

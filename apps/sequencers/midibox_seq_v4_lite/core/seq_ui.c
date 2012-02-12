@@ -66,6 +66,8 @@ u8 seq_ui_display_update_req;
 
 u8 ui_seq_pause;
 
+u8 ui_song_edit_pos;
+
 u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
 u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
 u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
@@ -108,6 +110,7 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step = 0;
   ui_selected_step_view = 0;
   ui_seq_pause = 0;
+  ui_song_edit_pos = 0;
   ui_selected_gp_buttons = 0;
 
   ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
@@ -310,6 +313,9 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
   seq_ui_button_state.TAP_TEMPO = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
+
+  // enter tempo page
+  SEQ_UI_PAGES_Set(SEQ_UI_PAGE_TEMPO);
 
   // determine current timestamp
   u32 timestamp = seq_core_timestamp_ms;
@@ -1147,7 +1153,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   // beat LED
   u8 sequencer_running = SEQ_BPM_IsRunning();
   u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step & 3) == 0);
-  SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, beat_led_on);
+  SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, (ui_page == SEQ_UI_PAGE_TEMPO) ? 1 : beat_led_on);
 
   // mirror to status LED (inverted, so that LED is normaly on)
   MIOS32_BOARD_LED_Set(0xffffffff, beat_led_on ? 0 : 1);

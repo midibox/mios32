@@ -33,7 +33,7 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_PAR_NUM_TYPES 11
+#define SEQ_PAR_NUM_TYPES 12
 typedef enum {
   SEQ_PAR_Type_None=0,
   SEQ_PAR_Type_Note=1,
@@ -45,7 +45,8 @@ typedef enum {
   SEQ_PAR_Type_Probability=7,
   SEQ_PAR_Type_Delay=8,
   SEQ_PAR_Type_Roll=9,
-  SEQ_PAR_Type_Roll2=10
+  SEQ_PAR_Type_Roll2=10,
+  SEQ_PAR_Type_ProgramChange=11
 } seq_par_layer_type_t;
 
 

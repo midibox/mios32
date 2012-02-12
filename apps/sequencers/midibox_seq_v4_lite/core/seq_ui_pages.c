@@ -121,6 +121,25 @@ seq_ui_pages_humanizer_presets_t seq_ui_pages_humanizer_presets[16] = {
   {  0x07,   36   }, // GP#16
 };
 
+seq_ui_pages_tempo_presets_t seq_ui_pages_tempo_presets[16] = {
+  {   3, 0 }, // 64
+  {   7, 0 }, // 32
+  {  15, 0 }, // 16
+  {  31, 0 }, // 8
+  {  63, 0 }, // 4
+  { 127, 0 }, // 2
+  { 255, 0 }, // 1
+  { 255, 0 }, // 1 (dummy)
+
+  {   3, 1 }, // 64T
+  {   7, 1 }, // 32T
+  {  15, 1 }, // 16T
+  {  31, 1 }, // 8T
+  {  63, 1 }, // 4T
+  { 127, 1 }, // 2T
+  { 255, 1 }, // 1T
+  { 255, 1 }, // 1T (dummy)
+};
 
 u8 seq_ui_pages_scale_presets[16] = {
    0, // reserved, first position not used as it disabled force-to-scale
@@ -150,6 +169,7 @@ static u8 ui_selected_progression_preset;
 static u8 ui_selected_echo_preset;
 static u8 ui_selected_lfo_preset;
 static u8 ui_selected_humanizer_preset;
+static u8 ui_selected_tempo_preset;
 static u8 ui_selected_scale;
 static seq_pattern_t ui_selected_pattern[SEQ_CORE_NUM_GROUPS];
 static u8 ui_selected_pattern_changing;
@@ -442,6 +462,24 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
     return seq_record_state.ARMED_TRACKS;
   } break;
 
+  ///////////////////////////////////////////////////////////////////////////
+  case SEQ_UI_PAGE_TEMPO: {
+    // check if selection still valid
+    if( check_100mS_ctr == 0 ) {
+      seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+      seq_ui_pages_tempo_presets_t *preset = (seq_ui_pages_tempo_presets_t *)&seq_ui_pages_tempo_presets[0];
+      int i;
+      for(i=0; i<16; ++i, ++preset) {
+	if( tcc->clkdiv.value == preset->clkdiv &&
+	    tcc->clkdiv.TRIPLETS == preset->triplets ) {
+	  ui_selected_tempo_preset = i;
+	  break;
+	}
+      }
+    }
+
+    return (1 << ui_selected_tempo_preset);
+  } break;
   }
 
   return 0x0000;
@@ -754,6 +792,33 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
 	SEQ_RECORD_Reset(track);
       }
+
+    portEXIT_CRITICAL();
+    return 0;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case SEQ_UI_PAGE_TEMPO: {
+    // should be atomic
+    portENTER_CRITICAL();
+
+    ui_selected_tempo_preset = button;
+    seq_ui_pages_tempo_presets_t *preset = (seq_ui_pages_tempo_presets_t *)&seq_ui_pages_tempo_presets[ui_selected_tempo_preset];
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+      if( ui_selected_tracks & (1 << track) ) {
+	seq_cc_trk_t *tcc = &seq_cc_trk[track];
+	if( tcc->event_mode != SEQ_EVENT_MODE_CC ) {
+	  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+	  tcc->clkdiv.value = (tcc->event_mode == SEQ_EVENT_MODE_CC) ? (((preset->clkdiv+1) / 4)-1) : preset->clkdiv;
+	  tcc->clkdiv.TRIPLETS = preset->triplets;
+	}
+      }
+    }
+
+    // we also request synch to measure
+    // it's a good idea to do this for all tracks so that both sequences are in synch again
+    SEQ_CORE_ManualSynchToMeasure(0xffff);
 
     portEXIT_CRITICAL();
     return 0;

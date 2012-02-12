@@ -725,11 +725,12 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     break;
 
   case SEQ_PAR_Type_CC:
+  case SEQ_PAR_Type_ProgramChange:
   case SEQ_PAR_Type_PitchBend: {
     if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
       SEQ_LCD_PrintString("----");
     } else {
-      u8 value = layer_event.midi_package.value;
+      u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;
       SEQ_LCD_PrintFormattedString("%3d", value);
       SEQ_LCD_PrintVBar(value >> 4);
     }
