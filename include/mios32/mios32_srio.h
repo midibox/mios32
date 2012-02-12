@@ -70,6 +70,9 @@
 
 extern s32 MIOS32_SRIO_Init(u32 mode);
 
+extern u8  MIOS32_SRIO_ScanNumGet(void);
+extern s32 MIOS32_SRIO_ScanNumSet(u8 new_num_sr);
+
 extern u32 MIOS32_SRIO_DebounceGet(void);
 extern s32 MIOS32_SRIO_DebounceSet(u8 debounce_time);
 extern s32 MIOS32_SRIO_DebounceStart(void);

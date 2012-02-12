@@ -93,12 +93,14 @@ s32 MIOS32_DOUT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_PinGet(u32 pin)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if pin available
-  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= num_sr )
     return -1;
 
   // NOTE: DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
-  return (mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] & (1 << ((pin&7)^7))) ? 1 : 0;
+  return (mios32_srio_dout[num_sr - (pin>>3) - 1] & (1 << ((pin&7)^7))) ? 1 : 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -109,15 +111,17 @@ s32 MIOS32_DOUT_PinGet(u32 pin)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if pin available
-  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= num_sr )
     return -1;
 
   MIOS32_IRQ_Disable(); // this should be atomic
   if( value )
-    mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] |= (u8)(1 << ((pin&7)^7));
+    mios32_srio_dout[num_sr - (pin>>3) - 1] |= (u8)(1 << ((pin&7)^7));
   else
-    mios32_srio_dout[MIOS32_SRIO_NUM_SR - (pin>>3) - 1] &= ~(u8)(1 << ((pin&7)^7));
+    mios32_srio_dout[num_sr - (pin>>3) - 1] &= ~(u8)(1 << ((pin&7)^7));
   MIOS32_IRQ_Enable();
 
   return 0;
@@ -131,11 +135,13 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_SRGet(u32 sr)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if SR available
-  if( sr >= MIOS32_SRIO_NUM_SR )
+  if( sr >= num_sr )
     return -1;
 
-  return mios32_dout_reverse_tab[mios32_srio_dout[MIOS32_SRIO_NUM_SR - sr - 1]];
+  return mios32_dout_reverse_tab[mios32_srio_dout[num_sr - sr - 1]];
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -146,11 +152,13 @@ s32 MIOS32_DOUT_SRGet(u32 sr)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if SR available
-  if( sr >= MIOS32_SRIO_NUM_SR )
+  if( sr >= num_sr )
     return -1;
 
-  mios32_srio_dout[MIOS32_SRIO_NUM_SR - sr - 1] = mios32_dout_reverse_tab[value];
+  mios32_srio_dout[num_sr - sr - 1] = mios32_dout_reverse_tab[value];
 
   return 0;
 }

@@ -55,8 +55,10 @@ s32 MIOS32_DIN_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_PinGet(u32 pin)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if pin available
-  if( (pin/8) >= MIOS32_SRIO_NUM_SR )
+  if( (pin/8) >= num_sr )
     return -1;
 
   return (mios32_srio_din[pin >> 3] & (1 << (pin&7))) ? 1 : 0;
@@ -70,8 +72,10 @@ s32 MIOS32_DIN_PinGet(u32 pin)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DIN_SRGet(u32 sr)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
   // check if SR available
-  if( sr >= MIOS32_SRIO_NUM_SR )
+  if( sr >= num_sr )
     return -1;
 
   return mios32_srio_din[sr];
@@ -107,10 +111,11 @@ s32 MIOS32_DIN_SRGet(u32 sr)
 /////////////////////////////////////////////////////////////////////////////
 u8 MIOS32_DIN_SRChangedGetAndClear(u32 sr, u8 mask)
 {
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
   u8 changed;
 
   // check if SR available
-  if( sr >= MIOS32_SRIO_NUM_SR )
+  if( sr >= num_sr )
     return 0x00;
 
   // get and clear changed flags - must be atomic!
@@ -137,18 +142,22 @@ s32 MIOS32_DIN_Handler(void *_callback)
   s32 sr_pin;
   u8 changed;
   void (*callback)(u32 pin, u32 value) = _callback;
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
 
   // no SRIOs?
 #if MIOS32_SRIO_NUM_SR == 0
   return -1;
 #endif
 
+  if( num_sr == 0 )
+    return -1;
+
   // no callback function?
   if( _callback == NULL )
     return -1;
 
   // check all shift registers for DIN pin changes
-  for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr) {
+  for(sr=0; sr<num_sr; ++sr) {
     
     // check if there are pin changes (mask all pins)
     changed = MIOS32_DIN_SRChangedGetAndClear(sr, 0xff);
