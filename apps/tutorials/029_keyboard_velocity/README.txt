@@ -1,6 +1,6 @@
 $Id$
 
-MIOS32 Tutorial #029: Keyboard Velocity
+MIOS32 Tutorial #029: Fast Scan Matrix for velocity sensitive Keyboard
 ===============================================================================
 Copyright (C) 2012 Thorsten Klose(tk@midibox.org)
 Licensed for personal non-commercial use only.
