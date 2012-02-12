@@ -296,7 +296,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value)
     int delay = timestamp_final - timestamp_early;
 
     int velocity = 127;
-    if( delay > delay-keyboard_delay_fastest ) {
+    if( delay > keyboard_delay_fastest ) {
       // determine velocity depending on delay
       // lineary scaling - here we could also apply a curve table
       velocity = 127 - (((delay-keyboard_delay_fastest) * 127) / (keyboard_delay_slowest-keyboard_delay_fastest));
