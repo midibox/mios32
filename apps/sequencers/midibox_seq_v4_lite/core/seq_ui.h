@@ -227,6 +227,8 @@ extern u8 seq_ui_display_update_req;
 
 extern u8 ui_seq_pause;
 
+extern u8 ui_song_edit_pos;
+
 extern u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
 extern u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
 extern u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];

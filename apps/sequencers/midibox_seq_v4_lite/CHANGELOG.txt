@@ -5,6 +5,17 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4L.056
+~~~~~~~~~~~~~~~~~~
+
+   o the step lengths (clock divider) can now be configured in new "Tempo" page
+     (press Tempo button)
+     Following step lengths are available:
+     GP button 1..7: 64th, 32th, 16th (default), 8th, 4th, 2th, 1
+     GP button 9..15: 64T, 32T, 16T, 8T, 4T, 2T, 1T (triplets)
+     The tracks will be automatically re-synchronized to the measure on divider changes.
+
+
 MIDIboxSEQ V4L.055
 ~~~~~~~~~~~~~~~~~~
 

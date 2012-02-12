@@ -961,7 +961,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? e->layer_tag : 0;
 
 	    if( p->type != NoteOn ) {
-	      // e.g. CC or PitchBend
+	      // e.g. CC, PitchBend, ProgramChange
 	      if( loopback_port )
 		SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1); // forward to MIDI IN handler immediately
 	      else
@@ -1328,9 +1328,9 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
 {
-  u8 is_cc = p->type != NoteOn && p->type != NoteOff; // CC or Pitchbender
+  u8 is_cc = p->type != NoteOn && p->type != NoteOff; // CC, Pitchbender, Programchange
 
-  if( is_cc && tcc->event_mode != SEQ_EVENT_MODE_CC ) // only transpose CC/Pitchbender in CC mode
+  if( is_cc && tcc->event_mode != SEQ_EVENT_MODE_CC ) // only transpose CC/Pitchbender/Program Change in CC mode
     return -1;
 
   int note = is_cc ? p->value : p->note;
@@ -1409,7 +1409,7 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
     }
   }
 
-  if( is_cc ) // if CC and Pitchbender
+  if( is_cc ) // if CC, Pitchbender, ProgramChange
     p->value = note;
   else
     p->note = note;
@@ -1612,7 +1612,7 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
   }
 
   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnOffEvent;
-  if( (p.type == CC || p.type == PitchBend) && !gatelength )
+  if( (p.type == CC || p.type == PitchBend || p.type == ProgramChange) && !gatelength )
     event_type = SEQ_MIDI_OUT_CCEvent;
 
   // for the case that force-to-scale is activated

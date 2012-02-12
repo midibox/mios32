@@ -55,6 +55,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Delay", // 8
   "Roll ", // 9
   "Roll2", // 10
+  "PrgCh", // 11
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -69,6 +70,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Delay
   0,    // Roll
   0,    // Roll2
+  0,    // PrgCh
 };
 
 

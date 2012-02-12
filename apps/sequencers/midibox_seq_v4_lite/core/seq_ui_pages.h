@@ -36,6 +36,7 @@ typedef enum {
   SEQ_UI_PAGE_REC_ARM,
   SEQ_UI_PAGE_REC_STEP,
   SEQ_UI_PAGE_REC_LIVE,
+  SEQ_UI_PAGE_TEMPO,
 } seq_ui_page_t;
 
 #define SEQ_UI_PAGES (SEQ_UI_PAGE_SAVE+1)
@@ -82,6 +83,10 @@ typedef struct {
   u8 value;
 } seq_ui_pages_humanizer_presets_t;
 
+typedef struct {
+  u8 clkdiv;
+  u8 triplets;
+} seq_ui_pages_tempo_presets_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -103,7 +108,8 @@ extern seq_ui_pages_progression_presets_t seq_ui_pages_progression_presets[16];
 extern seq_ui_pages_echo_presets_t seq_ui_pages_echo_presets[16];
 extern seq_ui_pages_lfo_presets_t seq_ui_pages_lfo_presets[16];
 extern seq_ui_pages_humanizer_presets_t seq_ui_pages_humanizer_presets[16];
-u8 seq_ui_pages_scale_presets[16];
+extern seq_ui_pages_tempo_presets_t seq_ui_pages_tempo_presets[16];
+extern u8 seq_ui_pages_scale_presets[16];
 
 #endif /* _SEQ_PAGES_H */
 

@@ -212,6 +212,7 @@ s32 SEQ_UI_InitEncSpeed(u32 auto_config)
       case SEQ_PAR_Type_PitchBend:
       case SEQ_PAR_Type_Probability:
       case SEQ_PAR_Type_Delay:
+      case SEQ_PAR_Type_ProgramChange:
       	seq_ui_button_state.FAST_ENCODERS = 1;
       	break;
 

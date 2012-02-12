@@ -36,6 +36,8 @@ MIDIboxSEQ V4.056
      BPM will be displayed.
      
    o the BPM digit display shows the received BPM in slave mode.
+   
+   o new layer type: program change
 
 
 MIDIboxSEQ V4.055
