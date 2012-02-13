@@ -39,7 +39,7 @@ MIOS32_SRIO_ScanStart is now called immediately (again) when a scan has finished
 accordingly only the transfer rate limits the scan speed. It has been set to
 MIOS32_SPI_PRESCALER_64 (0.64 uS on a 120 MHz LPC1769).
 
-The resulting matrix scan speed is ca. 300 uS for 16 rows and 8 columns (= 512 contacts)
+The resulting matrix scan speed is ca. 300 uS for 16 rows and 8 columns (= 128 contacts)
 
 For comparison: the original firmware of Korg microKONTROL scans the matrix each
 500 uS, which means that the accuracy of our own solution is even better than the
