@@ -175,17 +175,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 workaround_applied = 0;
-
 static u8 tx_dummy_byte;
 static u8 rx_dummy_byte;
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local prototypes
-/////////////////////////////////////////////////////////////////////////////
-
-static s32 MIOS32_SPI_LPC17Workaround(u8 spi);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -469,11 +460,6 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
     // before the application activates chip select.
     // this solves a dependency between SDCard and ENC28J60 driver
     MIOS32_SPI_TransferByte(spi, 0xff);
-  }
-
-  if( !(workaround_applied & (1 << spi)) ) {
-    MIOS32_SPI_LPC17Workaround(spi);
-    workaround_applied |= (1 << spi);
   }
 
   return 0; // no error
@@ -780,114 +766,6 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   // if no callback: wait until unmasked terminal count interrupt flag set
   if( callback == NULL )
     while( !(LPC_GPDMA->DMACRawIntTCStat & (1 << rx_chn)) ); // wait until terminal count interrupt is active
-
-  return 0; // no error
-}
-
-
-
-
-// TK: it isn't clear too me why this workaround is required for bidirectional DMA based SSP transfers:
-// Without this workaround, the "terminal interrupt" of the DMA channel assigned to SSP RX
-// will be triggered one byte too early
-// To overcome this issue, the DMA channel is configured so that two TX requests to SSP are triggered,
-// and that DMA waits for 3 RX requests
-// The DMA channel will be stopped once 2 RX requests have been received (the third won't happen)
-// After this configuration has been executed, we can use MIOS32_SPI_TransferBlock as usual, the
-// RX terminal count interrupt will be triggered after the correct number of bytes.
-// This workaround is applied a single time after reset in MIOS32_SPI_TransferModeInit
-static s32 MIOS32_SPI_LPC17Workaround(u8 spi)
-{
-  LPC_SSP_TypeDef *ssp_ptr = NULL;
-  u8 rx_chn, tx_chn;
-  u32 rx_chn_req, tx_chn_req;
-  u8 send_buffer[16], receive_buffer[16];
-  u16 len = 2;
-  u16 rx_len = 3;
-
-  switch( spi ) {
-    case 0:
-#ifdef MIOS32_DONT_USE_SPI0
-      return -1; // disabled SPI port
-#else
-      // provide pointers to Rx/Tx DMA channel and SSP peripheral
-      ssp_ptr = MIOS32_SPI0_PTR;
-      rx_chn = MIOS32_SPI0_DMA_RX_CHN;
-      tx_chn = MIOS32_SPI0_DMA_TX_CHN;
-      rx_chn_req = MIOS32_SPI0_DMA_RX_REQ;
-      tx_chn_req = MIOS32_SPI0_DMA_TX_REQ;
-      break;
-#endif
-
-    case 1:
-#ifdef MIOS32_DONT_USE_SPI1
-      return -1; // disabled SPI port
-#else
-      // provide pointers to Rx/Tx DMA channel and SSP peripheral
-      ssp_ptr = MIOS32_SPI1_PTR;
-      rx_chn = MIOS32_SPI1_DMA_RX_CHN;
-      tx_chn = MIOS32_SPI1_DMA_TX_CHN;
-      rx_chn_req = MIOS32_SPI1_DMA_RX_REQ;
-      tx_chn_req = MIOS32_SPI1_DMA_TX_REQ;
-      break;
-#endif
-
-    case 2:
-#ifdef MIOS32_DONT_USE_SPI2
-      return -1; // disabled SPI port
-#else
-      return 0; // no workaround required
-#endif
-
-    default:
-      return -2; // unsupported SPI port
-  }
-
-  if( len >= 0x1000 )
-    return -4; // too many bytes (len too long)
-
-  LPC_GPDMACH_TypeDef *rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + rx_chn*0x20);
-  LPC_GPDMACH_TypeDef *tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + tx_chn*0x20);
-
-  // disable callback
-  MIOS32_SYS_DMA_CallbackSet(0, rx_chn, NULL);
-
-  // disable DMA channels
-  rx_chn_ptr->DMACCConfig = 0;
-  tx_chn_ptr->DMACCConfig = 0;
-
-  // enable Rx/Tx DMA request
-  ssp_ptr->DMACR = 0x3;
-
-  // clear pending interrupt requests
-  LPC_GPDMA->DMACIntTCClear = (1 << rx_chn) | (1 << tx_chn);
-  LPC_GPDMA->DMACIntErrClr = (1 << rx_chn) | (1 << tx_chn);
-
-  // set source/destination address
-  rx_chn_ptr->DMACCSrcAddr = (u32)(&ssp_ptr->DR);
-  rx_chn_ptr->DMACCDestAddr = (u32)receive_buffer;
-  // no linked list
-  rx_chn_ptr->DMACCLLI = 0;
-  // set transfer size, enable increment for destination address, enable terminal count interrupt
-  rx_chn_ptr->DMACCControl = (rx_len << 0) | (0 << 26) | (1 << 27) | (1 << 31);
-  // enable channel, source peripheral is SSP1 Rx, destination is ignored, peripheral-to-memory, enable mask for terminal count irq
-  rx_chn_ptr->DMACCConfig = (1 << 0) | (rx_chn_req << 1) | (0 << 6) | (2 << 11);
-
-  // set source/destination address
-  tx_chn_ptr->DMACCSrcAddr = (u32)send_buffer;
-  tx_chn_ptr->DMACCDestAddr = (u32)(&ssp_ptr->DR);
-  // no linked list
-  tx_chn_ptr->DMACCLLI = 0;
-  // set transfer size, enable increment for source address
-  tx_chn_ptr->DMACCControl = (len << 0) | (1 << 26) | (0 << 27);
-  // enable channel, dest. peripheral is SSP1 Tx, source is ignored, memory-to-peripheral
-  tx_chn_ptr->DMACCConfig = (1 << 0) | (0 << 1) | (tx_chn_req << 6) | (1 << 11);
-
-  // start DMA via soft request on Tx channel
-  LPC_GPDMA->DMACSoftSReq = (1 << tx_chn);
-
-  // if no callback: wait until all bytes have been received
-  while( (rx_chn_ptr->DMACCControl & 0xfff) != 1 ); // wait until TransferSize field is 0
 
   return 0; // no error
 }
