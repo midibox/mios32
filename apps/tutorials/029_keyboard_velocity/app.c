@@ -74,9 +74,18 @@ static u8 selected_row;
 static u8 din_value[MATRIX_NUM_ROWS];
 static u8 din_value_changed[MATRIX_NUM_ROWS];
 
-static u32 timestamp;
-static u32 din_activated_timestamp[KEYBOARD_NUM_PINS];
+// for velocity
+static u16 timestamp;
+static u16 din_activated_timestamp[KEYBOARD_NUM_PINS];
 
+// for debouncing each pin has a flag which notifies if the Note On/Off value has already been sent
+#if (KEYBOARD_NUM_PINS % 8)
+# error "KEYBOARD_NUM_PINS must be dividable by 8!"
+#endif
+static u8 din_note_on_sent[KEYBOARD_NUM_PINS / 8];
+static u8 din_note_off_sent[KEYBOARD_NUM_PINS / 8];
+
+// soft-configuration (could be changed during runtime)
 static u32 keyboard_delay_fastest;
 static u32 keyboard_delay_slowest;
 
@@ -103,6 +112,11 @@ void APP_Init(void)
   timestamp = 0;
   for(i=0; i<KEYBOARD_NUM_PINS; ++i) {
     din_activated_timestamp[i] = 0;
+  }
+
+  for(i=0; i<KEYBOARD_NUM_PINS/8; ++i) {
+    din_note_on_sent[i] = 0x00;
+    din_note_off_sent[i] = 0x00;
   }
 
   // initialize keyboard delay values
@@ -255,63 +269,110 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 
 // will be called on button pin changes (see TASK_BLM_Check)
-void BUTTON_NotifyToggle(u8 row, u8 column, u8 pin_value)
+void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
 {
   // determine pin number based on row/column
 
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("row=%d, column=%d, pin_value=%d\n", row, column, pin_value);
-#endif
-
   // each key has two contacts, I call them "early contact" and "final contact"
   // the assignments can be determined by setting DEBUG_VERBOSE_LEVEL to 2
+
+#if 1
+  // default: linear addressing (e.g. Fatar Keyboards?)
+  // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
+
+  // determine key number:
+  int key = 8*(row / 2) + column;
+
+  // check if key is assigned to an "early contact"
+  u8 early_contact = !(row & 1); // even numbers
+
+  // determine note number (here we could insert an octave shift)
+  int note_number = key + 36;
+#else
+  // Korg microKONTROL:
   // the early contacts are at row 1, 3, 5, 7, 9
   // the final contacts are at row 2, 4, 6, 8, 10
 
-  u8 early_contact = (row & 1); // odd numbers
-  // we ignore button changes on the early contacts:
-  if( early_contact )
-    return;
+  // determine key number:
+  int key = 8*((row-1) / 2) + column;
 
-  // determine pin number:
-  int pin = 8*(row / 2) + column;
+  // check if key is assigned to an "early contact"
+  u8 early_contact = (row & 1); // odd numbers
 
   // determine note number (here we could insert an octave shift)
-  // substracted -11 because this is the first pin which can be played
-  int note_number = (pin-11) + 36;
+  // substracted -3 because this is the first key which can be played
+  int note_number = (key - 3) + 36;
+#endif
+
+  // ensure valid note range
+  if( note_number > 127 )
+    note_number = 127;
+  else if( note_number < 0 )
+    note_number = 0;
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("row=%d, column=%d, depressed=%d  -->  key=%d, early_contact:%d, note_number=%d\n",
+	    row, column, depressed, key, early_contact, note_number);
+#endif
+
+  // determine key mask and pointers for access to combined arrays
+  u8 key_mask = (1 << (key % 8));
+  u8 *note_on_sent = (u8 *)&din_note_on_sent[key / 8];
+  u8 *note_off_sent = (u8 *)&din_note_off_sent[key / 8];
+
+
+  // early contacts don't send MIDI notes, but they are used for delay measurements,
+  // and they release the Note On/Off debouncing mechanism
+  if( early_contact ) {
+    if( depressed ) {
+      *note_on_sent &= ~key_mask;
+      *note_off_sent &= ~key_mask;
+    }
+    return;
+  }
 
   // branch depending on pressed or released key
-  if( pin_value == 1 ) {
+  if( depressed ) {
+    if( !(*note_off_sent & key_mask) ) {
+      *note_off_sent |= key_mask;
+
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("DEPRESSED pin=%d\n", pin);
+      DEBUG_MSG("DEPRESSED key=%d\n", key);
 #endif
 
-    MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, 0x00); // velocity 0
-
-  } else {
-    // determine timestamps between early and final contact
-    u32 timestamp_early = din_activated_timestamp[(row-1)*8 + column];
-    u32 timestamp_final = din_activated_timestamp[(row)*8 + column];
-    // and the delta delay
-    int delay = timestamp_final - timestamp_early;
-
-    int velocity = 127;
-    if( delay > keyboard_delay_fastest ) {
-      // determine velocity depending on delay
-      // lineary scaling - here we could also apply a curve table
-      velocity = 127 - (((delay-keyboard_delay_fastest) * 127) / (keyboard_delay_slowest-keyboard_delay_fastest));
-      // saturate to ensure that range 1..127 won't be exceeded
-      if( velocity < 1 )
-	velocity = 1;
-      if( velocity > 127 )
-	velocity = 127;
+      MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, 0x00); // velocity 0
     }
 
+  } else {
+
+    if( !(*note_on_sent & key_mask) ) {
+      *note_on_sent |= key_mask;
+
+      // determine timestamps between early and final contact
+      u16 timestamp_early = din_activated_timestamp[(row-1)*8 + column];
+      u16 timestamp_final = din_activated_timestamp[(row)*8 + column];
+      // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
+      s16 delay = timestamp_final - timestamp_early;
+
+      int velocity = 127;
+      if( delay > keyboard_delay_fastest ) {
+	// determine velocity depending on delay
+	// lineary scaling - here we could also apply a curve table
+	velocity = 127 - (((delay-keyboard_delay_fastest) * 127) / (keyboard_delay_slowest-keyboard_delay_fastest));
+	// saturate to ensure that range 1..127 won't be exceeded
+	if( velocity < 1 )
+	  velocity = 1;
+	if( velocity > 127 )
+	  velocity = 127;
+      }
+
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("PRESSED pin=%d, delay=%d, velocity=%d\n", pin, delay, velocity);
+      DEBUG_MSG("PRESSED key=%d, delay=%d, velocity=%d\n", key, delay, velocity);
 #endif
 
-    MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, velocity);
+      MIOS32_MIDI_SendNoteOn(KEYBOARD_MIDI_PORT, KEYBOARD_MIDI_CHN, note_number, velocity);
+    }
   }
 }
 

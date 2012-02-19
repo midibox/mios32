@@ -102,11 +102,11 @@ to transpose the note:
 
 -------------------------------------------------------------------------------
   // determine pin number:
-  int pin = 8*(row / 2) + column;
+  int pin = 8*((row-1) / 2) + column;
 
   // determine note number (here we could insert an octave shift)
-  // substracted -11 because this is the first pin which can be played
-  int note_number = (pin-11) + 36;
+  // substracted -3 because this is the first pin which can be played
+  int note_number = (pin-3) + 36;
 -------------------------------------------------------------------------------
 
 This code probably has to be adapted for other keyboards.
@@ -124,6 +124,14 @@ by Robin some time ago)
 
 Once the adaption has been finished, you can set DEBUG_VERBOSE_LEVEL to 1 in app.c
 so that no debug messages are displayed anymore.
+
+
+For debouncing the keys a note based locking mechanism has been implemented:
+- whenever a key plays a Note On event, no additional Note On will be played
+  until the "early contact" has been released
+- whenever a key plays a Note Off event, no additional Note Off will be played
+  until the "early contact" has been released
+
 Enjoy your keyboard! :-)
 
 ===============================================================================
