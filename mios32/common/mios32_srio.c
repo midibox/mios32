@@ -252,7 +252,8 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 0); // spi, rc_pin, pin_value
 #endif
-  MIOS32_DELAY_Wait_uS(1); // TODO: variable delay for touch sensors
+  // delay disabled - the delay caused by MIOS32_SPI_RC_PinSet function calls is sufficient
+  //MIOS32_DELAY_Wait_uS(1);
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
@@ -282,7 +283,8 @@ static void MIOS32_SRIO_DMA_Callback(void)
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 0); // spi, rc_pin, pin_value
 #endif
-  MIOS32_DELAY_Wait_uS(1);
+  // delay disabled - the delay caused by MIOS32_SPI_RC_PinSet function calls is sufficient
+  //MIOS32_DELAY_Wait_uS(1);
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
