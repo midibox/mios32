@@ -113,11 +113,11 @@ void APP_Init(void)
   led_trigger[0] = LED_PWM_PERIOD; // trigger LED on startup for complete PWM cycle
 
   // initialize additional LEDs connected to J5A
-  for(i=0; i<4; ++i) {
-    led_pwm_counter[1+i] = LED_PWM_PERIOD;
-    led_trigger[1+i] = LED_PWM_PERIOD; // trigger LED on startup for complete PWM cycle
-    MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-    MIOS32_BOARD_J5_PinSet(i, 0);
+  for(i=1; i<NUM_LED_TRIGGERS; ++i) {
+    led_pwm_counter[i] = LED_PWM_PERIOD;
+    led_trigger[i] = LED_PWM_PERIOD; // trigger LED on startup for complete PWM cycle
+    MIOS32_BOARD_J5_PinInit(i-1, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    MIOS32_BOARD_J5_PinSet(i-1, 0);
   }
 
   // initialize J5B/J5C pins as inputs with pull-up enabled
