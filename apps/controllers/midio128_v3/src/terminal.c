@@ -394,7 +394,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 			      //
 			      // finally...
 			      //
-			      midio_patch_router_entry_t *n = &midio_patch_router[0];
+			      midio_patch_router_entry_t *n = &midio_patch_router[node];
 			      n->src_port = src_port;
 			      n->src_chn = src_chn;
 			      n->dst_port = dst_port;

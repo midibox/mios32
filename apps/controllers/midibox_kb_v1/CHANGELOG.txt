@@ -1,0 +1,19 @@
+$Id$
+
+MIDIbox KB V1.000
+~~~~~~~~~~~~~~~~~
+
+This is the initial version with only a subset of planned functions:
+  - scans up to two keyboards with optional velocity and individually assignable types
+  - supports seven different keyboard types: NoVel8x8, NoVel16x8, NoVel16x16, Vel8x8, Vel16x8, Vel16x16, KorgMicroKontrol
+    (list can be easily enhanced in future)
+  - 4 USB-MIDI Ports and 4 UART based MIDI IN/OUT
+  - integrated MIDI router with 16 nodes
+  - OSC via Ethernet
+
+Next steps:
+  - PitchBender connected to J5A.A0
+  - Modulation wheel connected to J5A.A1
+  - 4 additional pots/faders connected to J5A.A2, J5A.A3, J5B.A4 and J5B.A5
+  - MIDI channel, MIDI Port destinations and CC numbers can be configured in MIOS Terminal
+  - settings are stored in on-board EEPROM of LPCXPRESSO module
