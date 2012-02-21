@@ -8,9 +8,8 @@
 //! specific mios32_config.h file.
 //!
 //! Conversion results are transfered into the adc_conversion_values[] array
-//! by DMA1 Channel 1 to relieve the CPU.
-//!
-//! After the scan is completed, the DMA channel interrupt will be invoked
+//! after a burst scan
+//! After the scan is completed, the ADC interrupt will be invoked
 //! to calculate the final (optionally oversampled) values, and to transfer 
 //! them into the ain_pin_values[] array if the value change is greater than 
 //! the defined MIOS32_AIN_DEADBAND (can be changed with MIOS32_AIN_DeadbandSet() during runtime)
@@ -29,10 +28,6 @@
 //! Usually the 3 selection lines are connected to J5C.A0/1/2 of the core module.
 //! Together with the 8 analog channels at J5A/B this results into 64 analog pins.
 //!
-//! The AIN driver is flexible enough to increase the number of ADC channels
-//! to not less than 16 (connected to J5A/B/C and J16). Together with 4 AINX4 
-//! multiplexers this results into 128 analog channels.
-//!
 //! It's possible to define an oversampling rate, which leads to an accumulation 
 //! of conversion results to increase the resolution and to improve the accuracy.
 //!
@@ -45,6 +40,10 @@
 //! MIOS32_AIN_DEADBAND again once MIOS32_AIN_DEADBAND_IDLE has been exceeded.<BR>
 //! This feature can be disabled by setting MIOS32_AIN_DEADBAND_IDLE to 0
 //! in your mios32_config.h file.
+//!
+//! Especially due to the bad layout of the LPCXPRESSO board a simple spike
+//! filter has been added which filters values which are much higher (> 64) than
+//! the previous value. This filter is currently always enabled (no MIOS32_* flag)
 //!
 //! \{
 /* ==========================================================================
@@ -94,6 +93,12 @@
 // each word contains 32 bits, therefore:
 #define NUM_CHANGE_WORDS (1 + (NUM_AIN_PINS>>5))
 
+// we always enable a spike filter which is required due to the bad LPCXPRESSO layout!
+#define SPIKE_FILTER 1
+// if spike filter enabled: filter if the difference of two consecutive values is greater than SPIKE_FILTER_DIFF
+#define SPIKE_FILTER_DIFF 64
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +119,11 @@ static u32 ain_pin_changed[NUM_CHANGE_WORDS];
 
 #if MIOS32_AIN_DEADBAND_IDLE
 static u16 ain_pin_idle_ctr[NUM_AIN_PINS];
+#endif
+
+#if SPIKE_FILTER
+// last conversion result before spike filtering
+static u16 ain_pin_spike_last_value[NUM_AIN_PINS];
 #endif
 
 #endif
@@ -164,6 +174,9 @@ s32 MIOS32_AIN_Init(u32 mode)
 #if MIOS32_AIN_DEADBAND_IDLE
     ain_pin_idle_ctr[i] = 0;
 #endif
+#if SPIKE_FILTER
+    ain_pin_spike_last_value[i] = 0;
+#endif
   }
   for(i=0; i<NUM_CHANGE_WORDS; ++i) {
     ain_pin_changed[i] = 0;
@@ -184,25 +197,38 @@ s32 MIOS32_AIN_Init(u32 mode)
     return -2; // no (valid) channel selected for conversion
 
   // enable ADC pins (let unselected pins untouched)
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 0) )
-    MIOS32_SYS_LPC_PINSEL(0, 23, 1); // AD0.0
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 1) )
-    MIOS32_SYS_LPC_PINSEL(0, 24, 1); // AD0.1
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 2) )
-    MIOS32_SYS_LPC_PINSEL(0, 25, 1); // AD0.2
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 3) )
-    MIOS32_SYS_LPC_PINSEL(0, 26, 1); // AD0.3
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 4) )
-    MIOS32_SYS_LPC_PINSEL(1, 30, 3); // AD0.4
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 5) )
-    MIOS32_SYS_LPC_PINSEL(1, 31, 3); // AD0.5
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 6) )
-    MIOS32_SYS_LPC_PINSEL(0,  3, 2); // AD0.6
-  if( MIOS32_AIN_CHANNEL_MASK & (1 << 7) )
-    MIOS32_SYS_LPC_PINSEL(0,  2, 2); // AD0.7
-
-  // reset previous ADC settings
-  LPC_ADC->ADCR = 0;
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 0) ) {
+    MIOS32_SYS_LPC_PINSEL (0, 23, 1); // AD0.0
+    MIOS32_SYS_LPC_PINMODE(0, 23, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 1) ) {
+    MIOS32_SYS_LPC_PINSEL (0, 24, 1); // AD0.1
+    MIOS32_SYS_LPC_PINMODE(0, 24, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 2) ) {
+    MIOS32_SYS_LPC_PINSEL (0, 25, 1); // AD0.2
+    MIOS32_SYS_LPC_PINMODE(0, 25, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 3) ) {
+    MIOS32_SYS_LPC_PINSEL (0, 26, 1); // AD0.3
+    MIOS32_SYS_LPC_PINMODE(0, 26, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 4) ) {
+    MIOS32_SYS_LPC_PINSEL (1, 30, 3); // AD0.4
+    MIOS32_SYS_LPC_PINMODE(1, 30, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 5) ) {
+    MIOS32_SYS_LPC_PINSEL (1, 31, 3); // AD0.5
+    MIOS32_SYS_LPC_PINMODE(1, 31, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 6) ) {
+    MIOS32_SYS_LPC_PINSEL (0,  3, 2); // AD0.6
+    MIOS32_SYS_LPC_PINMODE(0,  3, 2);
+  }
+  if( MIOS32_AIN_CHANNEL_MASK & (1 << 7) ) {
+    MIOS32_SYS_LPC_PINSEL (0,  2, 2); // AD0.7
+    MIOS32_SYS_LPC_PINMODE(0,  2, 2);
+  }
 
   // select channels, clock divider; enable BURST mode and disable power-down mode
   LPC_ADC->ADCR = (((MIOS32_AIN_CHANNEL_MASK)&0xff) << 0) | ((ADC_CLKDIV) << 8) | (1 << 16) | (1 << 21);
@@ -393,6 +419,9 @@ void ADC_IRQHandler(void)
 #if MIOS32_AIN_DEADBAND_IDLE
     u16 *idle_ctr_ptr = (u16 *)&ain_pin_idle_ctr[pin_offset];
 #endif
+#if SPIKE_FILTER
+    u16 *spike_last_value_ptr = (u16 *)&ain_pin_spike_last_value[pin_offset];
+#endif
 
     for(i=0; i<num_used_channels; ++i) {
 #if MIOS32_AIN_DEADBAND_IDLE
@@ -401,22 +430,36 @@ void ADC_IRQHandler(void)
       u16 deadband = ain_deadband;
 #endif
 
-      // takeover new value if difference to old value is outside the deadband
-#if MIOS32_MF_NUM && !defined(MIOS32_DONT_USE_MF)
-      if( (*ain_deltas_ptr++ = abs(*src_ptr - *dst_ptr)) > deadband ) {
+#if SPIKE_FILTER
+      int spike_delta = 0;
+      spike_delta = *spike_last_value_ptr - *src_ptr;
+      if( spike_delta < 0 ) spike_delta = -spike_delta;
+      *spike_last_value_ptr = *src_ptr;
+
+      if( spike_delta < SPIKE_FILTER_DIFF ) {
 #else
-      if( abs(*src_ptr - *dst_ptr) > deadband ) {
+      if( 1 ) {
 #endif
-	*dst_ptr = *src_ptr;
-	ain_pin_changed[word_offset] |= (1 << bit_offset);
+	// takeover new value if difference to old value is outside the deadband
+        int delta = *src_ptr - *dst_ptr;
+        if( delta < 0 ) delta = -delta;
+
+#if MIOS32_MF_NUM && !defined(MIOS32_DONT_USE_MF)
+	if( (*ain_deltas_ptr++ = delta) > deadband ) {
+#else
+	if( delta > deadband ) {
+#endif
+	  *dst_ptr = *src_ptr;
+	  ain_pin_changed[word_offset] |= (1 << bit_offset);
 #if MIOS32_AIN_DEADBAND_IDLE
-	*idle_ctr_ptr = MIOS32_AIN_IDLE_CTR;
+	  *idle_ctr_ptr = MIOS32_AIN_IDLE_CTR;
 #endif
-      } else {
+	} else {
 #if MIOS32_AIN_DEADBAND_IDLE
-	if( *idle_ctr_ptr )
-	  *idle_ctr_ptr -= 1;
+	  if( *idle_ctr_ptr )
+	    *idle_ctr_ptr -= 1;
 #endif
+	}
       }
 
       // switch to next results
@@ -424,6 +467,9 @@ void ADC_IRQHandler(void)
       ++src_ptr;
 #if MIOS32_AIN_DEADBAND_IDLE
       ++idle_ctr_ptr;
+#endif
+#if SPIKE_FILTER
+      ++spike_last_value_ptr;
 #endif
 
       // switch to next bit/word offset for "changed" flags
