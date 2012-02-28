@@ -365,9 +365,9 @@ void KEYBOARD_Periodic_1mS(void)
       if( !changed )
 	continue;
 
-      // check all 8 pins of the SR
+      // check the 16 captured pins of the two SRs
       int sr_pin;
-      u8 mask = 0x01;
+      u16 mask = 0x01;
       for(sr_pin=0; sr_pin<16; ++sr_pin, mask <<= 1)
 	if( changed & mask )
 	  KEYBOARD_NotifyToggle(kb, row, sr_pin, (din_value[kb][row] & mask) ? 1 : 0);
