@@ -126,7 +126,7 @@ void APP_Init(void)
   MIOS32_MIDI_SendDebugMessage("\n");
 
   // limit the number of DIN/DOUT SRs which will be scanned for faster scan rate
-  MIOS32_SRIO_ScanNumSet(4);
+  MIOS32_SRIO_ScanNumSet(2);
 
   // speed up SPI transfer rate (was MIOS32_SPI_PRESCALER_128, initialized by MIOS32_SRIO_Init())
   MIOS32_SPI_TransferModeInit(MIOS32_SRIO_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_64);
