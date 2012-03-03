@@ -52,6 +52,7 @@ It's organized the following way:
 
 1st Socket with 10 pins:
 Pin  1 of the keyboard row -> connected to 1st DOUT, Pin D7
+Pin  1 of the keyboard row -> connected to 1st DOUT, Pin D7
 Pin  2 of the keyboard row -> connected to 1st DOUT, Pin D6
 Pin  3 of the keyboard row -> connected to 1st DOUT, Pin D5
 Pin  4 of the keyboard row -> connected to 1st DOUT, Pin D4
@@ -81,8 +82,8 @@ First I set the DEBUG_VERBOSE_LEVEL to 2 in order to print the row/column
 number on each key press, the results were:
 
 -------------------------------------------------------------------------------
-  // the early contacts are at row 1, 3, 5, 7, 9
-  // the final contacts are at row 2, 4, 6, 8, 10
+  // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
 -------------------------------------------------------------------------------
 
 The "early contacts" don't lead to a note event, we only need them later
@@ -101,12 +102,14 @@ the first pin to 0. Finally an octave offset will be added to the note_number
 to transpose the note:
 
 -------------------------------------------------------------------------------
-  // determine pin number:
-  int pin = 8*((row-1) / 2) + column;
+  // determine key number:
+  int key = 8*(row / 2) + column;
+
+  // check if key is assigned to an "early contact"
+  u8 early_contact = !(row & 1); // even numbers
 
   // determine note number (here we could insert an octave shift)
-  // substracted -3 because this is the first pin which can be played
-  int note_number = (pin-3) + 36;
+  int note_number = key + 36;
 -------------------------------------------------------------------------------
 
 This code probably has to be adapted for other keyboards.

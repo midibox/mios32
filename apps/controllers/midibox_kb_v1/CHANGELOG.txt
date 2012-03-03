@@ -9,6 +9,7 @@ This is the initial version with only a subset of planned functions:
     (list can be easily enhanced in future)
   - 4 USB-MIDI Ports and 4 UART based MIDI IN/OUT
   - integrated MIDI router with 16 nodes
+  - integrated MIDI monitor
   - OSC via Ethernet
 
 Next steps:
