@@ -117,7 +117,7 @@ s32 KEYBOARD_Init(u32 mode)
     } else {
       kc->dout_sr1 = 0;
       kc->dout_sr2 = 0;
-      kc->din_sr1 = 3;
+      kc->din_sr1 = 2;
       kc->din_sr2 = 0;
     }
 

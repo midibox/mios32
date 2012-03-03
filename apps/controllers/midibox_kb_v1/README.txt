@@ -48,3 +48,65 @@ are not displayed by the MIDI monitor to avoid data corruption (the SysEx
 stream would interfere with monitor messages)
 
 ===============================================================================
+
+Connection Plan for Yamaha P80:
+
+Two DOUT and two DIN Shift registers are required.
+
+Pin b00 of the keyboard row -> connected to 1st DOUT, Pin D7
+Pin b01 of the keyboard row -> connected to 1st DOUT, Pin D6
+Pin b02 of the keyboard row -> connected to 1st DOUT, Pin D5
+Pin b03 of the keyboard row -> connected to 1st DOUT, Pin D4
+Pin b04 of the keyboard row -> connected to 1st DOUT, Pin D3
+Pin b05 of the keyboard row -> connected to 1st DOUT, Pin D2
+Pin b06 of the keyboard row -> connected to 1st DOUT, Pin D1
+Pin b07 of the keyboard row -> connected to 1st DOUT, Pin D0
+Pin b08 of the keyboard row -> connected to 1st DOUT, Pin D7
+Pin b09 of the keyboard row -> connected to 1st DOUT, Pin D6
+Pin b10 of the keyboard row -> connected to 1st DOUT, Pin D5
+Pin b11 of the keyboard row -> connected to 1st DOUT, Pin D4
+Pin b12 of the keyboard row -> connected to 1st DOUT, Pin D3
+Pin b13 of the keyboard row -> connected to 1st DOUT, Pin D2
+Pin b14 of the keyboard row -> connected to 1st DOUT, Pin D1
+
+Pin n10 of the keyboard column -> connected to 1st DIN, Pin D0
+Pin n11 of the keyboard column -> connected to 1st DIN, Pin D1
+Pin n12 of the keyboard column -> connected to 1st DIN, Pin D2
+Pin n13 of the keyboard column -> connected to 1st DIN, Pin D3
+Pin n14 of the keyboard column -> connected to 1st DIN, Pin D4
+Pin n15 of the keyboard column -> connected to 1st DIN, Pin D5
+
+Pin n20 of the keyboard column -> connected to 2nd DIN, Pin D0
+Pin n21 of the keyboard column -> connected to 2nd DIN, Pin D1
+Pin n22 of the keyboard column -> connected to 2nd DIN, Pin D2
+Pin n23 of the keyboard column -> connected to 2nd DIN, Pin D3
+Pin n24 of the keyboard column -> connected to 2nd DIN, Pin D4
+Pin n25 of the keyboard column -> connected to 2nd DIN, Pin D5
+
+===============================================================================
+
+Connection Plan for Korg microKONTROL:
+
+1st Socket with 10 pins:
+Pin  1 of the keyboard row -> connected to 1st DOUT, Pin D7
+Pin  2 of the keyboard row -> connected to 1st DOUT, Pin D6
+Pin  3 of the keyboard row -> connected to 1st DOUT, Pin D5
+Pin  4 of the keyboard row -> connected to 1st DOUT, Pin D4
+Pin  5 of the keyboard row -> connected to 1st DOUT, Pin D3
+Pin  6 of the keyboard row -> connected to 1st DOUT, Pin D2
+Pin  7 of the keyboard row -> connected to 1st DOUT, Pin D1
+Pin  8 of the keyboard row -> connected to 1st DOUT, Pin D0
+Pin  9 of the keyboard row -> connected to 2nd DOUT, Pin D7
+Pin 10 of the keyboard row -> connected to 2nd DOUT, Pin D6
+
+2nd socket with 8 pins:
+Pin 1 of the keyboard column -> connected to DIN, Pin D0
+Pin 2 of the keyboard column -> connected to DIN, Pin D1
+Pin 3 of the keyboard column -> connected to DIN, Pin D2
+Pin 4 of the keyboard column -> connected to DIN, Pin D3
+Pin 5 of the keyboard column -> connected to DIN, Pin D4
+Pin 6 of the keyboard column -> connected to DIN, Pin D5
+Pin 7 of the keyboard column -> connected to DIN, Pin D6
+Pin 8 of the keyboard column -> connected to DIN, Pin D7
+
+===============================================================================
