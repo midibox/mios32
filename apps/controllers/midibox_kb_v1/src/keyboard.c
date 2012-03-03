@@ -95,7 +95,7 @@ s32 KEYBOARD_Init(u32 mode)
   selected_row = 0;
 
   // number of connected keyboards
-  connected_keyboards_num = 1;
+  connected_keyboards_num = 2;
 
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
