@@ -276,7 +276,6 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
   // each key has two contacts, I call them "early contact" and "final contact"
   // the assignments can be determined by setting DEBUG_VERBOSE_LEVEL to 2
 
-#if 1
   // default: linear addressing (e.g. Fatar Keyboards?)
   // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
   // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
@@ -289,21 +288,6 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + 36;
-#else
-  // Korg microKONTROL:
-  // the early contacts are at row 1, 3, 5, 7, 9
-  // the final contacts are at row 2, 4, 6, 8, 10
-
-  // determine key number:
-  int key = 8*((row-1) / 2) + column;
-
-  // check if key is assigned to an "early contact"
-  u8 early_contact = (row & 1); // odd numbers
-
-  // determine note number (here we could insert an octave shift)
-  // substracted -3 because this is the first key which can be played
-  int note_number = (key - 3) + 36;
-#endif
 
   // ensure valid note range
   if( note_number > 127 )

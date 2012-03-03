@@ -59,6 +59,8 @@ keyboard_config_t keyboard_config[KEYBOARD_NUM];
 
 static u8 verbose_level;
 
+static u8 connected_keyboards_num;
+
 static u8 selected_row;
 static u16 din_value[KEYBOARD_NUM][MATRIX_NUM_ROWS];
 static u16 din_value_changed[KEYBOARD_NUM][MATRIX_NUM_ROWS];
@@ -92,31 +94,31 @@ s32 KEYBOARD_Init(u32 mode)
   // start with first column
   selected_row = 0;
 
+  // number of connected keyboards
+  connected_keyboards_num = 1;
+
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
-#if 0
-    kc->type = KEYBOARD_TYPE_16x16;
-#else
-    kc->type = KEYBOARD_TYPE_KORG_MICROKONTROL;
-#endif
-
-    kc->midi_chn = kb+1;
     kc->enabled_ports = 0x1011; // OSC1, OUT1 and USB1
+    kc->midi_chn = kb+1;
+    kc->note_offset = 36;
 
     kc->delay_fastest = 4;
     kc->delay_slowest = 200;
+
+    kc->scan_velocity = 1;
 
     if( kb == 0 ) {
       kc->dout_sr1 = 1;
       kc->dout_sr2 = 2;
       kc->din_sr1 = 1;
-      kc->din_sr2 = 2;
+      kc->din_sr2 = 0;
     } else {
       kc->dout_sr1 = 0;
       kc->dout_sr2 = 0;
       kc->din_sr1 = 3;
-      kc->din_sr2 = 4;
+      kc->din_sr2 = 0;
     }
 
     // initialize DIN arrays
@@ -156,6 +158,23 @@ u8 KEYBOARD_VerboseLevelGet(void)
   return verbose_level;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Sets/Gets number of connected keyboards
+/////////////////////////////////////////////////////////////////////////////
+s32 KEYBOARD_ConnectedNumSet(u8 num)
+{
+  if( num > KEYBOARD_NUM )
+     num = KEYBOARD_NUM;
+
+  connected_keyboards_num = num;
+
+  return 0; // no error
+}
+
+u8 KEYBOARD_ConnectedNumGet(void)
+{
+  return connected_keyboards_num;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called before the shift register chain is scanned
@@ -175,7 +194,7 @@ void KEYBOARD_SRIO_ServicePrepare(void)
 
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
-  for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+  for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
     if( kc->dout_sr1 )
       MIOS32_DOUT_SRSet(kc->dout_sr1-1, (selection_mask >> 0) & 0xff);
     if( kc->dout_sr2 )
@@ -191,7 +210,7 @@ void KEYBOARD_SRIO_ServiceFinish(void)
   // check DINs
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
-  for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+  for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
     u16 sr_value = 0;
 
     if( kc->din_sr1 ) {
@@ -218,12 +237,15 @@ void KEYBOARD_SRIO_ServiceFinish(void)
       // store new value
       din_value[kb][selected_row] = sr_value;
 
+      // number of pins per row depends on assigned DINs:
+      int pins_per_row = kc->din_sr2 ? 16 : 8;
+
       // store timestamp for changed pin on 1->0 transition
       u8 sr_pin;
       u16 mask = 0x01;
-      for(sr_pin=0; sr_pin<16; ++sr_pin, mask <<= 1) {
+      for(sr_pin=0; sr_pin<pins_per_row; ++sr_pin, mask <<= 1) {
 	if( (changed & mask) && !(sr_value & mask) ) {
-	  din_activated_timestamp[kb][selected_row*16 + sr_pin] = timestamp;
+	  din_activated_timestamp[kb][selected_row*pins_per_row + sr_pin] = timestamp;
 	}
       }
     }
@@ -241,43 +263,20 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 
   // each key has two contacts, I call them "early contact" and "final contact"
   // the assignments can be determined by setting verbose_level to 2
+  // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
 
-  int key;
-  u8 early_contact;
-  int note_number;
+  // number of pins per row depends on assigned DINs:
+  int pins_per_row = kc->din_sr2 ? 16 : 8;
 
-  if( kc->type == KEYBOARD_TYPE_VEL16x16 ) {
-    // default: linear addressing (e.g. Fatar Keyboards?)
-    // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
-    // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
+  // determine key number:
+  int key = pins_per_row*(row / 2) + column;
 
-    // determine key number:
-    key = 8*(row / 2) + column;
+  // check if key is assigned to an "early contact"
+  u8 early_contact = !(row & 1); // even numbers
 
-    // check if key is assigned to an "early contact"
-    early_contact = !(row & 1); // even numbers
-
-    // determine note number (here we could insert an octave shift)
-    note_number = key + 36;
-  } else if( kc->type == KEYBOARD_TYPE_KORG_MICROKONTROL ) {
-    // Korg microKONTROL:
-    // the early contacts are at row 1, 3, 5, 7, 9
-    // the final contacts are at row 2, 4, 6, 8, 10
-
-    // determine key number:
-    key = 8*((row-1) / 2) + column;
-
-    // check if key is assigned to an "early contact"
-    early_contact = (row & 1); // odd numbers
-
-    // determine note number (here we could insert an octave shift)
-    // substracted -3 because this is the first key which can be played
-    note_number = (key - 3) + 36;
-  } else {
-    if( verbose_level >= 1 )
-      DEBUG_MSG("ERROR: Keyboard type %d not supported yet!", kc->type);
-    return;
-  }
+  // determine note number (here we could insert an octave shift)
+  int note_number = key + kc->note_offset;
 
   // ensure valid note range
   if( note_number > 127 )
@@ -321,8 +320,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
       *note_on_sent |= key_mask;
 
       // determine timestamps between early and final contact
-      u16 timestamp_early = din_activated_timestamp[kb][(row-1)*8 + column];
-      u16 timestamp_final = din_activated_timestamp[kb][(row)*8 + column];
+      u16 timestamp_early = din_activated_timestamp[kb][(row-1)*pins_per_row + column];
+      u16 timestamp_final = din_activated_timestamp[kb][row*pins_per_row + column];
+
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
       s16 delay = timestamp_final - timestamp_early;
 
@@ -352,7 +352,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 void KEYBOARD_Periodic_1mS(void)
 {
   int kb;
-  for(kb=0; kb<KEYBOARD_NUM; ++kb) {
+  for(kb=0; kb<connected_keyboards_num; ++kb) {
     int row;
     for(row=0; row<MATRIX_NUM_ROWS; ++row) {
       // check if there are pin changes - must be atomic!

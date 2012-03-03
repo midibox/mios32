@@ -22,28 +22,24 @@
 // number of keyboards handled in parallel
 #define KEYBOARD_NUM 2
 
-#define KEYBOARD_TYPE_NOVEL16x16        0
-#define KEYBOARD_TYPE_NOVEL16x8         1
-#define KEYBOARD_TYPE_NOVEL8x8          2
-#define KEYBOARD_TYPE_VEL16x16          3
-#define KEYBOARD_TYPE_VEL16x8           4
-#define KEYBOARD_TYPE_VEL8x8            5
-#define KEYBOARD_TYPE_KORG_MICROKONTROL 6
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-  u8 type;
-  u8 midi_chn;
-  u16 enabled_ports;
 
-  u8 dout_sr1;
-  u8 dout_sr2;
-  u8 din_sr1;
-  u8 din_sr2;
+typedef struct {
+
+  u16 enabled_ports;
+  u8  midi_chn;
+  u8  note_offset;
+
+  u8  dout_sr1;
+  u8  dout_sr2;
+  u8  din_sr1;
+  u8  din_sr2;
+
+  u8  scan_velocity:1;
 
   u16 delay_fastest;
   u16 delay_slowest;
@@ -57,7 +53,10 @@ typedef struct {
 extern s32 KEYBOARD_Init(u32 mode);
 
 extern s32 KEYBOARD_VerboseLevelSet(u8 mode);
-extern u8 KEYBOARD_VerboseLevelGet(void);
+extern u8  KEYBOARD_VerboseLevelGet(void);
+
+extern s32 KEYBOARD_ConnectedNumSet(u8 num);
+extern u8  KEYBOARD_ConnectedNumGet(void);
 
 extern void KEYBOARD_SRIO_ServicePrepare(void);
 extern void KEYBOARD_SRIO_ServiceFinish(void);
