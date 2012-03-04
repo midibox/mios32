@@ -175,6 +175,8 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 workaround_applied = 0;
+
 static u8 tx_dummy_byte;
 static u8 rx_dummy_byte;
 
@@ -182,7 +184,8 @@ static u8 rx_dummy_byte;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_SPI_DmaInit(u8 spi);
+
+static s32 MIOS32_SPI_LPC17Workaround(u8 spi);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -209,9 +212,6 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(0, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-
-  // prepare DMA channels
-  MIOS32_SPI_DmaInit(0);
 #endif /* MIOS32_DONT_USE_SPI0 */
 
 
@@ -228,9 +228,6 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(1, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-
-  // prepare DMA channels
-  MIOS32_SPI_DmaInit(1);
 #endif /* MIOS32_DONT_USE_SPI1 */
 
 
@@ -247,9 +244,6 @@ s32 MIOS32_SPI_Init(u32 mode)
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(2, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-
-  // prepare DMA channels (note: call not required for SPI2 as DMA isn't used - just for consistency)
-  MIOS32_SPI_DmaInit(2);
 #endif /* MIOS32_DONT_USE_SPI2 */
 
 
@@ -477,6 +471,11 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
     MIOS32_SPI_TransferByte(spi, 0xff);
   }
 
+  if( !(workaround_applied & (1 << spi)) ) {
+    MIOS32_SPI_LPC17Workaround(spi);
+    workaround_applied |= (1 << spi);
+  }
+
   return 0; // no error
 }
 
@@ -648,23 +647,21 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 len, void *callback)
 {
+  LPC_SSP_TypeDef *ssp_ptr = NULL;
   u8 rx_chn, tx_chn;
   u32 rx_chn_req, tx_chn_req;
-  LPC_GPDMACH_TypeDef *rx_chn_ptr;
-  LPC_GPDMACH_TypeDef *tx_chn_ptr;
 
   switch( spi ) {
     case 0:
 #ifdef MIOS32_DONT_USE_SPI0
       return -1; // disabled SPI port
 #else
-      // provide pointers to Rx/Tx DMA channel
+      // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI0_PTR;
       rx_chn = MIOS32_SPI0_DMA_RX_CHN;
       tx_chn = MIOS32_SPI0_DMA_TX_CHN;
       rx_chn_req = MIOS32_SPI0_DMA_RX_REQ;
       tx_chn_req = MIOS32_SPI0_DMA_TX_REQ;
-      rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI0_DMA_RX_CHN*0x20);
-      tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI0_DMA_TX_CHN*0x20);
       break;
 #endif
 
@@ -672,13 +669,12 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
-      // provide pointers to Rx/Tx DMA channel
+      // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI1_PTR;
       rx_chn = MIOS32_SPI1_DMA_RX_CHN;
       tx_chn = MIOS32_SPI1_DMA_TX_CHN;
       rx_chn_req = MIOS32_SPI1_DMA_RX_REQ;
       tx_chn_req = MIOS32_SPI1_DMA_TX_REQ;
-      rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI1_DMA_RX_CHN*0x20);
-      tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI1_DMA_TX_CHN*0x20);
       break;
 #endif
 
@@ -731,35 +727,50 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   if( len == 0 )
     return -5; // len is 0
 
+  LPC_GPDMACH_TypeDef *rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + rx_chn*0x20);
+  LPC_GPDMACH_TypeDef *tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + tx_chn*0x20);
+
+  // disable callback
+  MIOS32_SYS_DMA_CallbackSet(0, rx_chn, NULL);
+
   // disable DMA channels
   rx_chn_ptr->DMACCConfig = 0;
   tx_chn_ptr->DMACCConfig = 0;
 
+  // clear pending interrupt requests
+  LPC_GPDMA->DMACIntTCClear = (1 << rx_chn) | (1 << tx_chn);
+  LPC_GPDMA->DMACIntErrClr = (1 << rx_chn) | (1 << tx_chn);
+
   // install DMA callback for receive channel
   MIOS32_SYS_DMA_CallbackSet(0, rx_chn, callback);
   
-  // set destination address for incoming bytes
-  if( receive_buffer != NULL ) {
-    rx_chn_ptr->DMACCDestAddr = (u32)receive_buffer;
-    rx_chn_ptr->DMACCControl = (len << 0) | (0 << 26) | (1 << 27) | (1 << 31);
-  } else {
-    rx_chn_ptr->DMACCDestAddr = (u32)&rx_dummy_byte;
-    rx_chn_ptr->DMACCControl = (len << 0) | (0 << 26) | (0 << 27) | (1 << 31);
-  }
+  // enable Rx/Tx DMA request
+  ssp_ptr->DMACR = 0x3;
 
+  // set source/destination address
+  rx_chn_ptr->DMACCSrcAddr = (u32)(&ssp_ptr->DR);
+  rx_chn_ptr->DMACCDestAddr = (receive_buffer != NULL) ? (u32)receive_buffer : (u32)&rx_dummy_byte;
+  // no linked list
+  rx_chn_ptr->DMACCLLI = 0;
+  // set transfer size, enable increment for destination address, enable terminal count interrupt
+  if( receive_buffer != NULL )
+    rx_chn_ptr->DMACCControl = (len << 0) | (0 << 26) | (1 << 27) | (1 << 31);
+  else
+    rx_chn_ptr->DMACCControl = (len << 0) | (0 << 26) | (0 << 27) | (1 << 31);
   // enable channel, source peripheral is SSP1 Rx, destination is ignored, peripheral-to-memory, enable mask for terminal count irq
   u32 itc = (callback != NULL) ? (1 << 15) : 0; // enable terminal count interrupt only if callback enabled
   rx_chn_ptr->DMACCConfig = (1 << 0) | (rx_chn_req << 1) | (0 << 6) | (2 << 11) | itc;
 
-  // set source address for outgoing bytes
-  if( send_buffer != NULL ) {
-    tx_chn_ptr->DMACCSrcAddr = (u32)send_buffer;
+  // set source/destination address
+  tx_chn_ptr->DMACCSrcAddr = (send_buffer != NULL) ? (u32)send_buffer : (u32)&tx_dummy_byte;
+  tx_chn_ptr->DMACCDestAddr = (u32)(&ssp_ptr->DR);
+  // no linked list
+  tx_chn_ptr->DMACCLLI = 0;
+  // set transfer size, enable increment for source address
+  if( send_buffer != NULL )
     tx_chn_ptr->DMACCControl = (len << 0) | (1 << 26) | (0 << 27);
-  } else {
-    tx_chn_ptr->DMACCSrcAddr = (u32)&tx_dummy_byte;
+  else
     tx_chn_ptr->DMACCControl = (len << 0) | (0 << 26) | (0 << 27);
-  }
-
   // enable channel, dest. peripheral is SSP1 Tx, source is ignored, memory-to-peripheral
   tx_chn_ptr->DMACCConfig = (1 << 0) | (0 << 1) | (tx_chn_req << 6) | (1 << 11);
 
@@ -773,53 +784,70 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
   return 0; // no error
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// Basic DMA configuration
-/////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_SPI_DmaInit(u8 spi)
+
+
+
+// TK: it isn't clear too me why this workaround is required for bidirectional DMA based SSP transfers:
+// Without this workaround, the "terminal interrupt" of the DMA channel assigned to SSP RX
+// will be triggered one byte too early
+// To overcome this issue, the DMA channel is configured so that two TX requests to SSP are triggered,
+// and that DMA waits for 3 RX requests
+// The DMA channel will be stopped once 2 RX requests have been received (the third won't happen)
+// After this configuration has been executed, we can use MIOS32_SPI_TransferBlock as usual, the
+// RX terminal count interrupt will be triggered after the correct number of bytes.
+// This workaround is applied a single time after reset in MIOS32_SPI_TransferModeInit
+static s32 MIOS32_SPI_LPC17Workaround(u8 spi)
 {
   LPC_SSP_TypeDef *ssp_ptr = NULL;
-   u8 rx_chn, tx_chn;
-   LPC_GPDMACH_TypeDef *rx_chn_ptr;
-   LPC_GPDMACH_TypeDef *tx_chn_ptr;
+  u8 rx_chn, tx_chn;
+  u32 rx_chn_req, tx_chn_req;
+  u8 send_buffer[16], receive_buffer[16];
+  u16 len = 2;
+  u16 rx_len = 3;
 
-   switch( spi ) {
-     case 0:
- #ifdef MIOS32_DONT_USE_SPI0
-       return -1; // disabled SPI port
- #else
-       // provide pointers to Rx/Tx DMA channel and SSP peripheral
-       ssp_ptr = MIOS32_SPI0_PTR;
-       rx_chn = MIOS32_SPI0_DMA_RX_CHN;
-       tx_chn = MIOS32_SPI0_DMA_TX_CHN;
-       rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI0_DMA_RX_CHN*0x20);
-       tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI0_DMA_TX_CHN*0x20);
-       break;
- #endif
+  switch( spi ) {
+    case 0:
+#ifdef MIOS32_DONT_USE_SPI0
+      return -1; // disabled SPI port
+#else
+      // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI0_PTR;
+      rx_chn = MIOS32_SPI0_DMA_RX_CHN;
+      tx_chn = MIOS32_SPI0_DMA_TX_CHN;
+      rx_chn_req = MIOS32_SPI0_DMA_RX_REQ;
+      tx_chn_req = MIOS32_SPI0_DMA_TX_REQ;
+      break;
+#endif
 
-     case 1:
- #ifdef MIOS32_DONT_USE_SPI1
-       return -1; // disabled SPI port
- #else
-       // provide pointers to Rx/Tx DMA channel and SSP peripheral
-       ssp_ptr = MIOS32_SPI1_PTR;
-       rx_chn = MIOS32_SPI1_DMA_RX_CHN;
-       tx_chn = MIOS32_SPI1_DMA_TX_CHN;
-       rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI1_DMA_RX_CHN*0x20);
-       tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + MIOS32_SPI1_DMA_TX_CHN*0x20);
-       break;
- #endif
+    case 1:
+#ifdef MIOS32_DONT_USE_SPI1
+      return -1; // disabled SPI port
+#else
+      // provide pointers to Rx/Tx DMA channel and SSP peripheral
+      ssp_ptr = MIOS32_SPI1_PTR;
+      rx_chn = MIOS32_SPI1_DMA_RX_CHN;
+      tx_chn = MIOS32_SPI1_DMA_TX_CHN;
+      rx_chn_req = MIOS32_SPI1_DMA_RX_REQ;
+      tx_chn_req = MIOS32_SPI1_DMA_TX_REQ;
+      break;
+#endif
 
-     case 2:
- #ifdef MIOS32_DONT_USE_SPI2
-       return -1; // disabled SPI port
- #else
-       return 0; // DMA not used
- #endif
+    case 2:
+#ifdef MIOS32_DONT_USE_SPI2
+      return -1; // disabled SPI port
+#else
+      return 0; // no workaround required
+#endif
 
-     default:
-       return -2; // unsupported SPI port
-   }
+    default:
+      return -2; // unsupported SPI port
+  }
+
+  if( len >= 0x1000 )
+    return -4; // too many bytes (len too long)
+
+  LPC_GPDMACH_TypeDef *rx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + rx_chn*0x20);
+  LPC_GPDMACH_TypeDef *tx_chn_ptr = (LPC_GPDMACH_TypeDef *)(LPC_GPDMACH0_BASE + tx_chn*0x20);
 
   // disable callback
   MIOS32_SYS_DMA_CallbackSet(0, rx_chn, NULL);
@@ -828,24 +856,38 @@ static s32 MIOS32_SPI_DmaInit(u8 spi)
   rx_chn_ptr->DMACCConfig = 0;
   tx_chn_ptr->DMACCConfig = 0;
 
+  // enable Rx/Tx DMA request
+  ssp_ptr->DMACR = 0x3;
+
   // clear pending interrupt requests
   LPC_GPDMA->DMACIntTCClear = (1 << rx_chn) | (1 << tx_chn);
   LPC_GPDMA->DMACIntErrClr = (1 << rx_chn) | (1 << tx_chn);
 
-  // enable Rx/Tx DMA request
-  ssp_ptr->DMACR = 0x3;
-
   // set source/destination address
   rx_chn_ptr->DMACCSrcAddr = (u32)(&ssp_ptr->DR);
-  rx_chn_ptr->DMACCDestAddr = (u32)&rx_dummy_byte;
+  rx_chn_ptr->DMACCDestAddr = (u32)receive_buffer;
   // no linked list
   rx_chn_ptr->DMACCLLI = 0;
+  // set transfer size, enable increment for destination address, enable terminal count interrupt
+  rx_chn_ptr->DMACCControl = (rx_len << 0) | (0 << 26) | (1 << 27) | (1 << 31);
+  // enable channel, source peripheral is SSP1 Rx, destination is ignored, peripheral-to-memory, enable mask for terminal count irq
+  rx_chn_ptr->DMACCConfig = (1 << 0) | (rx_chn_req << 1) | (0 << 6) | (2 << 11);
 
   // set source/destination address
-  tx_chn_ptr->DMACCSrcAddr = (u32)&tx_dummy_byte;
+  tx_chn_ptr->DMACCSrcAddr = (u32)send_buffer;
   tx_chn_ptr->DMACCDestAddr = (u32)(&ssp_ptr->DR);
   // no linked list
   tx_chn_ptr->DMACCLLI = 0;
+  // set transfer size, enable increment for source address
+  tx_chn_ptr->DMACCControl = (len << 0) | (1 << 26) | (0 << 27);
+  // enable channel, dest. peripheral is SSP1 Tx, source is ignored, memory-to-peripheral
+  tx_chn_ptr->DMACCConfig = (1 << 0) | (0 << 1) | (tx_chn_req << 6) | (1 << 11);
+
+  // start DMA via soft request on Tx channel
+  LPC_GPDMA->DMACSoftSReq = (1 << tx_chn);
+
+  // if no callback: wait until all bytes have been received
+  while( (rx_chn_ptr->DMACCControl & 0xfff) != 1 ); // wait until TransferSize field is 0
 
   return 0; // no error
 }
