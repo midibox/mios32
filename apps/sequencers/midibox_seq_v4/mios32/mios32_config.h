@@ -51,6 +51,10 @@
 #endif
 
 
+// to save some RAM (only 128 bytes, but "Kleinvieh macht auch Mist" - especially for LPC17)
+#define MIOS32_ENC_NUM_MAX 32
+
+
 // optional performance measuring
 // see documentation under http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
 #define configGENERATE_RUN_TIME_STATS           0
