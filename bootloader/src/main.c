@@ -289,7 +289,13 @@ int main(void)
   u32 *reset_vector = (u32 *)0x00004004;
   if( (*reset_vector >> 24) == 0x00 ) {
     // reset all peripherals
-    // TODO?
+    // -> no reset triggers available!!! :-(
+
+    // ensure that at least commonly used interrupt functions are disabled
+    LPC_UART0->IER = 0;
+    LPC_UART1->IER = 0;
+    LPC_UART2->IER = 0;
+    LPC_UART3->IER = 0;
 
     // change stack pointer
     u32 *stack_pointer = (u32 *)0x00004000;

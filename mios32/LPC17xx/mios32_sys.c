@@ -228,6 +228,7 @@ s32 MIOS32_SYS_Reset(void)
   // reset some peripherals (unfortunately there is no system reset available)
   LPC_GPDMA->DMACConfig = 0; // disable DMA
 
+  LPC_ADC->ADINTEN = 0; // ADC: disable interrupts
   LPC_ADC->ADCR = 0; // ADC: clear the PDN flag #21 (Power Down)
 
   LPC_CAN1->MOD = (1 << 0); // enter reset mode
@@ -244,8 +245,20 @@ s32 MIOS32_SYS_Reset(void)
   // SPI: no reset
   // UART: no reset
 
-  LPC_I2S->I2SDAO = (1 << 4); // set asynchronous reset
+  // ensure that at least UART interrupts are disabled
+  LPC_UART0->IER = 0;
+  LPC_UART1->IER = 0;
+  LPC_UART2->IER = 0;
+  LPC_UART3->IER = 0;
 
+  // disable timer interrupts
+  LPC_TIM0->MCR = 0;
+  LPC_TIM1->MCR = 0;
+  LPC_TIM2->MCR = 0;
+
+  // I2S
+  LPC_I2S->I2SDAO = (1 << 4); // set asynchronous reset
+  
   // reset GPIOs?
   // yes! Otherwise the Boot Hold pin could be driven (for example)
   // Exception: leave USB pins at P0.29, P0.30 abd P2,9 untouched

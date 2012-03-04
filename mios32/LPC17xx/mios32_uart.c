@@ -24,11 +24,6 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_UART)
 
-// RX: buffering incoming events in SW queue (64 bytes by default)
-// TX: using integrated UART FIFOs, no need for SW buffering
-#undef  MIOS32_UART_TX_BUFFER_SIZE
-#define MIOS32_UART_TX_BUFFER_SIZE 16
-
 /////////////////////////////////////////////////////////////////////////////
 // Pin definitions and UART mappings
 /////////////////////////////////////////////////////////////////////////////
@@ -103,6 +98,15 @@ static u8 rx_buffer[MIOS32_UART_NUM][MIOS32_UART_RX_BUFFER_SIZE];
 static volatile u8 rx_buffer_tail[MIOS32_UART_NUM];
 static volatile u8 rx_buffer_head[MIOS32_UART_NUM];
 static volatile u8 rx_buffer_size[MIOS32_UART_NUM];
+
+#ifndef MIOS32_DONT_LOCATE_UART_TXBUFFER_IN_AHB_MEMORY
+static u8 __attribute__ ((section (".bss_ahb"))) tx_buffer[MIOS32_UART_NUM][MIOS32_UART_TX_BUFFER_SIZE];
+#else
+static u8 tx_buffer[MIOS32_UART_NUM][MIOS32_UART_TX_BUFFER_SIZE];
+#endif
+static volatile u8 tx_buffer_tail[MIOS32_UART_NUM];
+static volatile u8 tx_buffer_head[MIOS32_UART_NUM];
+static volatile u8 tx_buffer_size[MIOS32_UART_NUM];
 #endif
 
 
@@ -144,6 +148,7 @@ s32 MIOS32_UART_Init(u32 mode)
   int i;
   for(i=0; i<MIOS32_UART_NUM; ++i) {
     rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
+    tx_buffer_tail[i] = tx_buffer_head[i] = tx_buffer_size[i] = 0;
   }
 
   // UART configuration
@@ -162,22 +167,22 @@ s32 MIOS32_UART_Init(u32 mode)
 
   // configure and enable UART interrupts
 #if MIOS32_UART0_ASSIGNMENT != 0
-  MIOS32_UART0->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_UART0->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART0_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
 #if MIOS32_UART_NUM >= 2 && MIOS32_UART1_ASSIGNMENT != 0
-  MIOS32_UART1->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_UART1->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART1_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
 #if MIOS32_UART_NUM >= 3 && MIOS32_UART2_ASSIGNMENT != 0
-  MIOS32_UART2->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_UART2->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART2_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
 #if MIOS32_UART_NUM >= 4 && MIOS32_UART2_ASSIGNMENT != 0
-  MIOS32_UART3->IER = (1 << 0); // enable RBR (receive buffer) interrupt only
+  MIOS32_UART3->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART3_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
@@ -424,7 +429,6 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 #endif
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 //! returns number of free bytes in transmit buffer
 //! \param[in] uart UART number (0..2)
@@ -439,11 +443,8 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 #else
   if( uart >= MIOS32_UART_NUM )
     return 0;
-  else {
-    // fake size, since LPC based uart doesn't provide access to the FIFO pointer
-    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-    return (u->LSR & LSR_THRE) ? MIOS32_UART_TX_BUFFER_SIZE : 0;
-  }
+  else
+    return MIOS32_UART_TX_BUFFER_SIZE - tx_buffer_size[uart];
 #endif
 }
 
@@ -462,11 +463,8 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 #else
   if( uart >= MIOS32_UART_NUM )
     return 0;
-  else {
-    // fake size, since LPC based uart doesn't provide access to the FIFO pointer
-    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-    return (u->LSR & LSR_THRE) ? 0 : MIOS32_UART_TX_BUFFER_SIZE;
-  }
+  else
+    return tx_buffer_size[uart];
 #endif
 }
 
@@ -481,7 +479,25 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferGet(u8 uart)
 {
-  return -1; // not applicable
+#if MIOS32_UART_NUM == 0
+  return -1; // no UART available
+#else
+  if( uart >= MIOS32_UART_NUM )
+    return -1; // UART not available
+
+  if( !tx_buffer_size[uart] )
+    return -2; // nothing new in buffer
+
+  // get byte - this operation should be atomic!
+  MIOS32_IRQ_Disable();
+  u8 b = tx_buffer[uart][tx_buffer_tail[uart]];
+  if( ++tx_buffer_tail[uart] >= MIOS32_UART_TX_BUFFER_SIZE )
+    tx_buffer_tail[uart] = 0;
+  --tx_buffer_size[uart];
+  MIOS32_IRQ_Enable();
+
+  return b; // return transmitted byte
+#endif
 }
 
 
@@ -504,16 +520,35 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
   if( uart >= MIOS32_UART_NUM )
     return -1; // UART not available
 
-  LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
-  if( (u->LSR & LSR_THRE) == 0 )
+  if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
     return -2; // buffer full or cannot get all requested bytes (retry)
 
   // copy bytes to be transmitted into transmit buffer
-  u16 i;
-  for(i=0; i<len; ++i) {
-    while( (u->LSR & LSR_THRE) == 0 ); // blocking... :-/
+  // this operation should be atomic!
+  MIOS32_IRQ_Disable();
+
+  // unfortunately LPC based uart doesn't provide access to the FIFO pointer,
+  // currently I don't see another way than using only a single byte of the FIFO, and to push the remaining bytes into the ringbuffer
+
+  int start_byte = 0;
+  if( !tx_buffer_size[uart] ) {
+    start_byte = 1;
+
+    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
     u->THR = *buffer++;
   }
+
+  // put remaining bytes into ringbuffer
+  int i;
+  for(i=start_byte; i<len; ++i) {
+    tx_buffer[uart][tx_buffer_head[uart]] = *buffer++;
+    ++tx_buffer_size[uart];
+
+    if( ++tx_buffer_head[uart] >= MIOS32_UART_TX_BUFFER_SIZE )
+      tx_buffer_head[uart] = 0;
+  }
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 #endif
@@ -577,20 +612,21 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
   return error;
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Interrupt handler for first UART
 /////////////////////////////////////////////////////////////////////////////
 #if MIOS32_UART_NUM >= 1
 MIOS32_UART0_IRQHANDLER_FUNC
 {
-  u32 iir = MIOS32_UART0->IIR; // IIR will be released with this access
+  u32 iir_intid = MIOS32_UART0->IIR & 0xe; // IIR will be released with this access
 
-  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+  if( iir_intid == 0x4 ) { // IntId = 0x2 (RDA)
 
     if( (MIOS32_UART0->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART0->RBR;
 
-#if MIOS32_UART2_ASSIGNMENT == 1
+#if MIOS32_UART0_ASSIGNMENT == 1
       s32 status = MIOS32_MIDI_SendByteToRxCallback(UART0, b);
 #else
       s32 status = 0;
@@ -600,6 +636,15 @@ MIOS32_UART0_IRQHANDLER_FUNC
       if( status == 0 && MIOS32_UART_RxBufferPut(0, b) < 0 ) {
 	// here we could add some error handling
       }
+    }
+  } else if( iir_intid == 0x2 ) { // IntId = 0x1 (THRE)
+    if( MIOS32_UART_TxBufferUsed(0) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(0);
+      if( b < 0 ) {
+	// here we could add some error handling
+	b = 0xff;
+      }
+      MIOS32_UART0->THR = b;
     }
   }
 }
@@ -611,14 +656,14 @@ MIOS32_UART0_IRQHANDLER_FUNC
 #if MIOS32_UART_NUM >= 2
 MIOS32_UART1_IRQHANDLER_FUNC
 {
-  u32 iir = MIOS32_UART1->IIR; // IIR will be released with this access
+  u32 iir_intid = MIOS32_UART1->IIR & 0xe; // IIR will be released with this access
 
-  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+  if( iir_intid == 0x4 ) { // IntId = 0x2 (RDA)
 
     if( (MIOS32_UART1->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART1->RBR;
 
-#if MIOS32_UART2_ASSIGNMENT == 1
+#if MIOS32_UART1_ASSIGNMENT == 1
       s32 status = MIOS32_MIDI_SendByteToRxCallback(UART1, b);
 #else
       s32 status = 0;
@@ -628,6 +673,15 @@ MIOS32_UART1_IRQHANDLER_FUNC
       if( status == 0 && MIOS32_UART_RxBufferPut(1, b) < 0 ) {
 	// here we could add some error handling
       }
+    }
+  } else if( iir_intid == 0x2 ) { // IntId = 0x1 (THRE)
+    if( MIOS32_UART_TxBufferUsed(1) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(1);
+      if( b < 0 ) {
+	// here we could add some error handling
+	b = 0xff;
+      }
+      MIOS32_UART1->THR = b;
     }
   }
 }
@@ -640,9 +694,9 @@ MIOS32_UART1_IRQHANDLER_FUNC
 #if MIOS32_UART_NUM >= 3
 MIOS32_UART2_IRQHANDLER_FUNC
 {
-  u32 iir = MIOS32_UART2->IIR; // IIR will be released with this access
+  u32 iir_intid = MIOS32_UART2->IIR & 0xe; // IIR will be released with this access
 
-  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+  if( iir_intid == 0x4 ) { // IntId = 0x2 (RDA)
 
     if( (MIOS32_UART2->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART2->RBR;
@@ -658,6 +712,15 @@ MIOS32_UART2_IRQHANDLER_FUNC
 	// here we could add some error handling
       }
     }
+  } else if( iir_intid == 0x2 ) { // IntId = 0x1 (THRE)
+    if( MIOS32_UART_TxBufferUsed(2) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(2);
+      if( b < 0 ) {
+	// here we could add some error handling
+	b = 0xff;
+      }
+      MIOS32_UART2->THR = b;
+    }
   }
 }
 #endif
@@ -669,14 +732,14 @@ MIOS32_UART2_IRQHANDLER_FUNC
 #if MIOS32_UART_NUM >= 4
 MIOS32_UART3_IRQHANDLER_FUNC
 {
-  u32 iir = MIOS32_UART3->IIR; // IIR will be released with this access
+  u32 iir_intid = MIOS32_UART3->IIR & 0xe; // IIR will be released with this access
 
-  if( (iir & 0xf) == 0x4 ) { // IntStatus=0 (low active), IntId = 0x2 (RDA)
+  if( iir_intid == 0x4 ) { // IntId = 0x2 (RDA)
 
     if( (MIOS32_UART3->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART3->RBR;
 
-#if MIOS32_UART2_ASSIGNMENT == 1
+#if MIOS32_UART3_ASSIGNMENT == 1
       s32 status = MIOS32_MIDI_SendByteToRxCallback(UART3, b);
 #else
       s32 status = 0;
@@ -686,6 +749,15 @@ MIOS32_UART3_IRQHANDLER_FUNC
       if( status == 0 && MIOS32_UART_RxBufferPut(3, b) < 0 ) {
 	// here we could add some error handling
       }
+    }
+  } else if( iir_intid == 0x2 ) { // IntId = 0x1 (THRE)
+    if( MIOS32_UART_TxBufferUsed(3) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(3);
+      if( b < 0 ) {
+	// here we could add some error handling
+	b = 0xff;
+      }
+      MIOS32_UART3->THR = b;
     }
   }
 }
