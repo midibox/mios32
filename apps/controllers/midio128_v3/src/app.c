@@ -130,6 +130,8 @@ void APP_Init(void)
   for(pin=0; pin<8; ++pin)
     MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
 
+  // initialize the AINSER module(s)
+  AINSER_Init(0);
 
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -286,6 +288,15 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when an AINSER pot has been moved
+/////////////////////////////////////////////////////////////////////////////
+static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
+{
+  // -> MIDIO_AIN once enabled
+  if( hw_enabled )
+    MIDIO_AIN_NotifyChange_SER64(module, pin, pin_value);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -447,6 +458,9 @@ static void TASK_Period_1mS(void *pvParameters)
 
     // Scan Matrix button handler
     MIDIO_MATRIX_ButtonHandler();
+
+    // scan AINSER pins
+    AINSER_Handler(APP_AINSER_NotifyChange);
   }
 }
 

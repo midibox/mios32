@@ -30,6 +30,7 @@
 
 extern s32 MIDIO_AIN_Init(u32 mode);
 extern s32 MIDIO_AIN_NotifyChange(u32 pin, u32 pin_value);
+extern s32 MIDIO_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

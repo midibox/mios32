@@ -22,8 +22,10 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+// local prototypes
 /////////////////////////////////////////////////////////////////////////////
+
+static s32 MIDIO_AIN_SendMIDIEvent(midio_patch_ain_entry_t *ain_cfg, u8 value_7bit);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +59,38 @@ s32 MIDIO_AIN_NotifyChange(u32 pin, u32 pin_value)
   // get pin configuration from patch structure
   midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ain[pin];
 
+  return MIDIO_AIN_SendMIDIEvent(ain_cfg, value_7bit);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when an AINSER pot has been moved
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
+{
+  int midio_pin = module*64 + pin;
+  if( midio_pin >= MIDIO_PATCH_NUM_AINSER )
+    return -1; // invalid pin
+
+#if 0
+  DEBUG_MSG("MIDIO_AIN_NotifyChange_SER64(%d, %d, %d)\n", module, pin, pin_value);
+#endif
+
+  // convert 12bit value to 7bit value
+  u8 value_7bit = pin_value >> 5;
+
+  // get pin configuration from patch structure
+  midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[midio_pin];
+
+  return MIDIO_AIN_SendMIDIEvent(ain_cfg, value_7bit);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends the MIDI event based on AIN pin configuration
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIDIO_AIN_SendMIDIEvent(midio_patch_ain_entry_t *ain_cfg, u8 value_7bit)
+{
   // silently ignore if pin not mapped (default)
   if( !ain_cfg->enabled_ports )
     return 0;

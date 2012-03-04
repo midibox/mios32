@@ -14,5 +14,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "AINSER JitterMon"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
+// enable two AINSER modules
+#define AINSER_NUM_MODULES 2
 
 #endif /* _MIOS32_CONFIG_H */

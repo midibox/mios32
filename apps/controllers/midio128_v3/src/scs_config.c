@@ -52,6 +52,7 @@ static u8 selectedDout;
 static u8 selectedMatrix;
 static u8 selectedMatrixPin;
 static u8 selectedAin;
+static u8 selectedAinser;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
@@ -123,6 +124,11 @@ static void stringMatrixPin(u32 ix, u16 value, char *label)
   } else {
     sprintf(label, "%d.%d ", (value / 8)+1, (value % 8)+1);
   }
+}
+
+static void stringAINSER_Pin(u32 ix, u16 value, char *label)
+{
+  sprintf(label, "%c%d.%d", 'A' + (value / 64), ((value % 64)/8)+1, value%8);
 }
 
 static void stringInPort(u32 ix, u16 value, char *label)
@@ -521,6 +527,40 @@ static void ainPortSet(u32 ix, u16 value)
 }
 
 
+static u16  ainserGet(u32 ix)               { return selectedAinser; }
+static void ainserSet(u32 ix, u16 value)    { selectedAinser = value; }
+
+static u16  ainserEvntGet(u32 ix)
+{
+  midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[selectedAinser];
+  switch( ix ) {
+  case 0: return ain_cfg->evnt0;
+  case 1: return ain_cfg->evnt1;
+  }
+  return 0; // error...
+}
+static void ainserEvntSet(u32 ix, u16 value)
+{
+  midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[selectedAinser];
+  switch( ix ) {
+  case 0: ain_cfg->evnt0 = value; break;
+  case 1: ain_cfg->evnt1 = value; break;
+  }
+}
+
+static u16  ainserPortGet(u32 ix)
+{
+  midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[selectedAinser];
+  return (ain_cfg->enabled_ports >> ix) & 1;
+}
+static void ainserPortSet(u32 ix, u16 value)
+{
+  midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[selectedAinser];
+  ain_cfg->enabled_ports &= ~(1 << ix);
+  ain_cfg->enabled_ports |= ((value&1) << ix);
+}
+
+
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -681,6 +721,30 @@ const scs_menu_item_t pageAIN[] = {
   SCS_ITEM("OSC4 ",15, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
 };
 
+const scs_menu_item_t pageAINSER[] = {
+  SCS_ITEM("Pin# ", 0, MIDIO_PATCH_NUM_AINSER-1, ainserGet, ainserSet,    selectNOP, stringDec,  NULL),
+  SCS_ITEM("AINS",  0, MIDIO_PATCH_NUM_AINSER-1, ainserGet, ainserSet,    selectNOP, stringAINSER_Pin,  NULL),
+  SCS_ITEM("Evn0 ", 0, 0x7f,        ainserEvntGet,     ainserEvntSet,     selectNOP, stringHex2O80, NULL),
+  SCS_ITEM("Evn1 ", 1, 0x7f,        ainserEvntGet,     ainserEvntSet,     selectNOP, stringHex2, NULL),
+  SCS_ITEM("USB1 ", 0, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#if MIOS32_USB_MIDI_NUM_PORTS >= 2
+  SCS_ITEM("USB2 ", 1, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 3
+  SCS_ITEM("USB3 ", 2, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_USB_MIDI_NUM_PORTS >= 4
+  SCS_ITEM("USB4 ", 3, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+  SCS_ITEM("OUT1 ", 4, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT2 ", 5, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT3 ", 6, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC1 ",12, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC2 ",13, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC3 ",14, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OSC4 ",15, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+};
+
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDIO_PATCH_NUM_ROUTER-1, routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDIO_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -729,6 +793,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DOUT ", pageDOUT),
   SCS_PAGE("M8x8 ", pageM8x8),
   SCS_PAGE("AIN  ", pageAIN),
+  SCS_PAGE("AINS ", pageAINSER),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),

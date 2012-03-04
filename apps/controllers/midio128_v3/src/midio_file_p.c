@@ -479,6 +479,54 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    }
 	    
 	  }	  
+	} else if( strcmp(parameter, "AINSER") == 0 ) {
+	  s32 ain;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (ain=get_dec(word)) < 0 || ain >= MIDIO_PATCH_NUM_AINSER  ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid AINSER pin for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    s32 enabled_ports = 0;
+	    int bit;
+	    for(bit=0; bit<16; ++bit) {
+	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	      int enable = get_dec(word);
+	      if( enable < 0 )
+		break;
+	      if( enable >= 1 )
+		enabled_ports |= (1 << bit);
+	    }
+
+	    if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, ain);
+#endif
+	    } else {
+	      u8 events[2];
+	      int i;
+	      for(i=0; i<2; ++i) {
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+		if( (events[i]=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid Event format for parameter '%s %d'\n", parameter, ain);
+#endif
+		  break;
+		} else {
+		  events[i] &= 0x7f;
+		}
+	      }
+
+	      if( i == 2 ) {
+		// finally a valid line!
+		midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[ain];
+		ain_cfg->enabled_ports = enabled_ports;
+		ain_cfg->evnt0 = events[0];
+		ain_cfg->evnt1 = events[1];
+	      }
+	    }
+	    
+	  }	  
 	} else if( strcmp(parameter, "MATRIX") == 0 ) {
 	  s32 matrix;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -926,6 +974,31 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
       ports_bin[2*16-1] = 0; // removes also last semicolon
 
       sprintf(line_buffer, "AIN;%d;%s;0x%02X;0x%02X\n",
+	      ain,
+	      ports_bin,
+	      ain_cfg->evnt0 | 0x80, ain_cfg->evnt1);
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#AINSER;Pin;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Evnt0;Evnt1\n");
+    FLUSH_BUFFER;
+
+    int ain;
+    midio_patch_ain_entry_t *ain_cfg = (midio_patch_ain_entry_t *)&midio_patch_ainser[0];
+    for(ain=0; ain<MIDIO_PATCH_NUM_AINSER; ++ain, ++ain_cfg) {
+      char ports_bin[40];
+      int bit;
+      for(bit=0; bit<16; ++bit) {
+	ports_bin[2*bit+0] = (ain_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
+	ports_bin[2*bit+1] = ';';
+      }
+      ports_bin[2*16-1] = 0; // removes also last semicolon
+
+      sprintf(line_buffer, "AINSER;%d;%s;0x%02X;0x%02X\n",
 	      ain,
 	      ports_bin,
 	      ain_cfg->evnt0 | 0x80, ain_cfg->evnt1);

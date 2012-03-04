@@ -14,8 +14,8 @@ Required tools:
 
 Required hardware:
    o MBHP_CORE_STM32 or MBHP_CORE_LPC17
-   o a MBHP_AINSER64 module
-   o up to 64 1k pots (alternatively 4.7k or 10k)
+   o one or two MBHP_AINSER64 module
+   o up to 2 * 64 10k pots (alternatively 4.7k or 1k)
 
 ===============================================================================
 
@@ -30,5 +30,7 @@ cc <on|off>:              send CC on AIN pin changes
 deadband <0..255>:        sets the AIN deadband (should be 0 for jitter checks!)
 reset:                    resets the MIDIbox (!)
 help:                     the help page
+
+See also http://www.ucapps.de/mbhp_ainser64.html for further explanations.
 
 ===============================================================================

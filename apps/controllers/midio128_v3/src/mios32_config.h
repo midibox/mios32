@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.005b"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.006"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
 
 // define a unique VID/PID for this application
@@ -47,6 +47,8 @@
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
+// enable two AINSER modules
+#define AINSER_NUM_MODULES 2
 
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 14*1024
