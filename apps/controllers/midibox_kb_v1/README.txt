@@ -61,13 +61,13 @@ Pin b04 of the keyboard row -> connected to 1st DOUT, Pin D3
 Pin b05 of the keyboard row -> connected to 1st DOUT, Pin D2
 Pin b06 of the keyboard row -> connected to 1st DOUT, Pin D1
 Pin b07 of the keyboard row -> connected to 1st DOUT, Pin D0
-Pin b08 of the keyboard row -> connected to 1st DOUT, Pin D7
-Pin b09 of the keyboard row -> connected to 1st DOUT, Pin D6
-Pin b10 of the keyboard row -> connected to 1st DOUT, Pin D5
-Pin b11 of the keyboard row -> connected to 1st DOUT, Pin D4
-Pin b12 of the keyboard row -> connected to 1st DOUT, Pin D3
-Pin b13 of the keyboard row -> connected to 1st DOUT, Pin D2
-Pin b14 of the keyboard row -> connected to 1st DOUT, Pin D1
+Pin b08 of the keyboard row -> connected to 2nd DOUT, Pin D7
+Pin b09 of the keyboard row -> connected to 2nd DOUT, Pin D6
+Pin b10 of the keyboard row -> connected to 2nd DOUT, Pin D5
+Pin b11 of the keyboard row -> connected to 2nd DOUT, Pin D4
+Pin b12 of the keyboard row -> connected to 2nd DOUT, Pin D3
+Pin b13 of the keyboard row -> connected to 2nd DOUT, Pin D2
+Pin b14 of the keyboard row -> connected to 2nd DOUT, Pin D1
 
 Pin n10 of the keyboard column -> connected to 1st DIN, Pin D0
 Pin n11 of the keyboard column -> connected to 1st DIN, Pin D1
