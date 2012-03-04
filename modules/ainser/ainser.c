@@ -184,9 +184,11 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
 {
   // the mux_ctr -> pin mappin is layout dependend
   //const u8 mux_pin_map[8] = {0, 1, 2, 3, 4, 5, 6, 7 };
-  const u8 mux_pin_map[8] = {1, 4, 3, 5, 2, 7, 0, 6 }; // order of MUX channels: 6, 0, 4, 2, 1, 3, 7, 5
+  //const u8 mux_pin_map[8] = {1, 4, 3, 5, 2, 7, 0, 6 }; // reversed pins
+  const u8 mux_pin_map[8] = {6, 3, 4, 2, 5, 0, 7, 1 }; // order of MUX channels
   static u8 mux_ctr = 0; // will be incremented on each update to select the next AIN pin
   static u8 first_scan_done = 0;
+  static u16 link_status_ctr = 0;
   s32 status = 0;
 
   // init SPI port for fast frequency access
@@ -197,6 +199,15 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
 
   // determine next MUX selection
   int next_mux_ctr = (mux_ctr + 1) % 8;
+
+  // link LED will flash with PWM effect
+  ++link_status_ctr;
+  const u32 pwm_period = 20;       // *1 mS -> 20 mS
+  const u32 pwm_sweep_steps = 100; // *20 mS -> 2000 mS
+  u32 pwm_duty = ((link_status_ctr / pwm_period) % pwm_sweep_steps) / (pwm_sweep_steps/pwm_period);
+  if( (link_status_ctr % (2*pwm_period*pwm_sweep_steps)) > pwm_period*pwm_sweep_steps )
+    pwm_duty = pwm_period-pwm_duty; // negative direction each 20*25 ticks
+  u32 link_status = ((link_status_ctr % pwm_period) > pwm_duty) ? 1 : 0;
 
   // loop over connected modules
   int module;
@@ -214,7 +225,7 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
       // shift in remaining 2 bits of channel selection, shift out MSBs of conversion value
       u8 b1 = MIOS32_SPI_TransferByte(AINSER_SPI, chn << 6);
       // shift in mux_ctr + "Link LED" status to 74HC595, shift out LSBs of conversion value
-      u8 b2 = MIOS32_SPI_TransferByte(AINSER_SPI, ((chn == 7 ? next_mux_ctr : mux_ctr) << 5) | 1);
+      u8 b2 = MIOS32_SPI_TransferByte(AINSER_SPI, ((chn == 7 ? next_mux_ctr : mux_ctr) << 5) | link_status);
 
       // CS=1 (the rising edge will update the 74HC595)
       AINSER_SetCs(module, 1);

@@ -1,5 +1,13 @@
 $Id$
 
+MIDIO128 V3.006
+~~~~~~~~~~~~~~~
+
+   o support for two MBHP_AINSER64 modules: up to 128 analog pins can be scanned!
+
+   o improved MIDI OUT throughput
+
+
 MIDIO128 V3.005
 ~~~~~~~~~~~~~~~
 

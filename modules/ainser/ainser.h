@@ -45,13 +45,13 @@ extern "C" {
 // Which RC pin of the SPI port should be used for the first module
 // allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
 #ifndef AINSER_SPI_RC_PIN_MODULE1
-#define AINSER_SPI_RC_PIN_MODULE1 1
+#define AINSER_SPI_RC_PIN_MODULE1 0
 #endif
 
 // Which RC pin of the SPI port should be used for the second module
 // allowed values: 0 or 1 for SPI0 (J16:RC1, J16:RC2), 0 for SPI1 (J8/9:RC), 0 or 1 for SPI2 (J19:RC1, J19:RC2)
 #ifndef AINSER_SPI_RC_PIN_MODULE2
-#define AINSER_SPI_RC_PIN_MODULE2 0
+#define AINSER_SPI_RC_PIN_MODULE2 1
 #endif
 // more CS lines are possible, but not prepared yet (AINSER_SetCs() has to be enhanced)
 
