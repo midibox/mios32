@@ -5,6 +5,12 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4L.057
+~~~~~~~~~~~~~~~~~~
+
+   o improved MIDI OUT throughput
+
+
 MIDIboxSEQ V4L.056
 ~~~~~~~~~~~~~~~~~~
 

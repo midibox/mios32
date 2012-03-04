@@ -5,6 +5,12 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.057
+~~~~~~~~~~~~~~~~~
+
+   o improved MIDI OUT throughput for LPC17
+
+
 MIDIboxSEQ V4.056
 ~~~~~~~~~~~~~~~~~
 
