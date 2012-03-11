@@ -1042,7 +1042,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 
     int num_maps = SEQ_FILE_M_NumMaps();
     if( num_maps )
-      out("File /SESSIONS/%sMBSEQ_M.V4: valid (%d mixer maps)\n", seq_file_session_name, num_maps);
+      out("File /SESSIONS/%s/MBSEQ_M.V4: valid (%d mixer maps)\n", seq_file_session_name, num_maps);
     else
       out("File /SESSIONS/%s/MBSEQ_M.V4: doesn't exist\n", seq_file_session_name);
     
