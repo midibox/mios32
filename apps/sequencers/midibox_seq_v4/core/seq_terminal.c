@@ -1057,21 +1057,36 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
     else
       out("File /SESSIONS/%s/MBSEQ_G.V4: doesn't exist\n", seq_file_session_name);
     
+    if( SEQ_FILE_BM_Valid(0) )
+      out("File /SESSIONS/%s/MBSEQ_BM.V4: valid\n", seq_file_session_name);
+    else
+      out("File /SESSIONS/%s/MBSEQ_BM.V4: doesn't exist\n", seq_file_session_name);
+    
     if( SEQ_FILE_C_Valid() )
       out("File /SESSIONS/%s/MBSEQ_C.V4: valid\n", seq_file_session_name);
     else
       out("File /SESSIONS/%s/MBSEQ_C.V4: doesn't exist\n", seq_file_session_name);
 
+    if( SEQ_FILE_GC_Valid() )
+      out("File /MBSEQ_C.V4: valid\n");
+    else
+      out("File /MBSEQ_C.V4: doesn't exist\n");
+
+    if( SEQ_FILE_BM_Valid(1) )
+      out("File /MBSEQ_BM.V4: valid\n");
+    else
+      out("File /MBSEQ_BM.V4: doesn't exist\n");
+
 #ifndef MBSEQV4L    
     if( SEQ_FILE_HW_Valid() )
-      out("File /SESSIONS/%s/MBSEQ_HW.V4: valid\n", seq_file_session_name);
+      out("File /MBSEQ_HW.V4: valid\n");
     else
-      out("File /SESSIONS/%s/MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n", seq_file_session_name);
+      out("File /MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
 #else
     if( SEQ_FILE_HW_Valid() )
-      out("File /SESSIONS/%s/MBSEQ_HW.V4L: valid\n", seq_file_session_name);
+      out("File /MBSEQ_HW.V4L: valid\n");
     else
-      out("File /SESSIONS/%s/MBSEQ_HW.V4L: doesn't exist or hasn't been re-loaded\n", seq_file_session_name);
+      out("File /MBSEQ_HW.V4L: doesn't exist or hasn't been re-loaded\n");
 #endif
   }
 
