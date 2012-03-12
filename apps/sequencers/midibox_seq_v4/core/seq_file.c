@@ -91,7 +91,11 @@ s32 SEQ_FILE_Init(u32 mode)
 {
   s32 status = 0;
 
+#ifdef MBSEQV4L
   strcpy(seq_file_session_name, "DEF_V4L");
+#else
+  strcpy(seq_file_session_name, "DEFAULT");
+#endif
   seq_file_new_session_name[0] = 0; // invalidate
   
   seq_file_backup_notification = NULL;
