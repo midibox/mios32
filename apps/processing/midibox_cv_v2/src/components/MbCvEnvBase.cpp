@@ -14,6 +14,7 @@
 
 #include "MbCvEnvBase.h"
 #include "MbCvTables.h"
+#include "CapChargeCurve.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,6 +67,7 @@ void MbCvEnvBase::init(void)
 
     envState = MBCV_ENV_STATE_IDLE;
     envCtr = 0;
+    envWaveOut = 0;
     envDelayCtr = 0;
 }
 
@@ -82,50 +84,46 @@ bool MbCvEnvBase::tick(const u8 &updateSpeedFactor)
 
 
 
-bool MbCvEnvBase::step(const u16 &target, const u16 &rate, const s8 &curve, const u8 &updateSpeedFactor, const bool& rateFromEnvTable)
+/////////////////////////////////////////////////////////////////////////////
+// Calculates a step
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvBase::step(const u16& startValue, const u16& targetValue, const u16& incrementer, const bool& constantDelay)
 {
-    if( target == envCtr )
-        return true; // next state
+    bool curveInverted = targetValue < startValue;
 
-    // modify rate if curve != 0x80
-    u16 inc_rate;
-    if( curve ) {
-        // this nice trick has been proposed by Razmo
-        int abs_curve = (curve < 0) ? -curve : (curve ^ 0x7f);
-        int rate_msbs = (rate >> 1); // TODO: we could increase resolution by using an enhanced frq_table
-        int feedback = (abs_curve * (envCtr>>8)) >> 8; 
-        int ix;
-        if( curve > 0 ) { // bend up
-            ix = (rate_msbs ^ 0x7f) - feedback;
-            if( ix < 0 )
-                ix = 0;
-        } else { // bend down
-            ix = (rate_msbs ^ 0x7f) + feedback;
-            if( ix >= 127 )
-                ix = 127;
-        }
-        inc_rate = mbCvFrqTable[ix];
+    if( !constantDelay &&
+        ((!curveInverted && startValue >= targetValue) || ( curveInverted && startValue <= targetValue)) ) {
+        envCtr = 0xffff; // next stage
     } else {
-        inc_rate = mbCvEnvTable[rate];
+        s32 newCtr = (s32)envCtr + incrementer;
+        if( newCtr < 0xffff )
+            envCtr = newCtr;
+        else
+            envCtr = 0xffff; // next stage
     }
 
-    // positive or negative direction?
-    if( target > envCtr ) {
-        s32 newCtr = (s32)envCtr + (inc_rate / updateSpeedFactor);
-        if( newCtr >= target ) {
-            envCtr = target;
-            return true; // next state
-        }
-        envCtr = newCtr;
-        return false; // stay in state
+
+    // Waveshape depending on envCurve
+    u16 curveValue = envCtr; // MBCV_ENV_CURVE_LINEAR and other unimplemented
+    if( envCurve == MBCV_ENV_CURVE_EXP ) {
+        curveValue = capChargeCurve[curveValue / (65536 / CAP_CHARGE_CURVE_STEPS)];
+    }
+    // TODO: MBCV_ENV_CURVE_CUSTOM*
+
+    // scale over range
+    if( curveInverted ) {
+        u32 scaledValue = ((startValue - targetValue + 1) * (u32)(65535 - curveValue)) >> 16;
+        envWaveOut = targetValue + scaledValue;
+    } else {
+        u32 scaledValue = ((targetValue - startValue + 1) * (u32)curveValue) >> 16;
+        envWaveOut = startValue + scaledValue;
     }
 
-    s32 newCtr = (s32)envCtr - (inc_rate / updateSpeedFactor);
-    if( newCtr <= target ) {
-        envCtr = target;
-        return true; // next state
+    // next stage?
+    if( envCtr == 0xffff ) {
+        envCtr = 0;
+        return true;
     }
-    envCtr = newCtr;
 
-    return false; // stay in state
+    return false; // continue with current stage
 }

@@ -39,10 +39,9 @@ public:
 
     // additional input parameters (see also MbCvEnvBase.h)
     u8  envLevel[MBCV_ENV_MULTI_NUM_STEPS];
-    u16 envDelay[MBCV_ENV_MULTI_NUM_STEPS];
 
     s8  envOffset;
-    s8  envRate;
+    u8  envRate;
 
     u8  envLoopAttack;
     u8  envSustainStep;
@@ -52,8 +51,6 @@ public:
 protected:
     u8  envCurrentStep;
     u8  envNextStep;
-    s32 envIncrementer;
-    u32 envDelayCtrMax;
 
     void recalc(const u8 &updateSpeedFactor);
 };

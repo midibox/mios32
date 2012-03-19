@@ -45,6 +45,15 @@ public:
         MBCV_ENV_STATE_RELEASE2
     } EnvStateT;
 
+    typedef enum {
+        MBCV_ENV_CURVE_LINEAR = 0,
+        MBCV_ENV_CURVE_EXP,
+        MBCV_ENV_CURVE_CUSTOM1,
+        MBCV_ENV_CURVE_CUSTOM2,
+        MBCV_ENV_CURVE_CUSTOM3,
+        MBCV_ENV_CURVE_CUSTOM4,
+    } EnvCurveT;
+
     // input parameters
     bool envModeClkSync;
     bool envModeKeySync;
@@ -75,12 +84,13 @@ public:
 
 
 protected:
-    bool step(const u16 &target, const u16 &rate, const s8 &curve, const u8 &updateSpeedFactor, const bool& rateFromEnvTable);
+    bool step(const u16& startValue, const u16& targetValue, const u16& incrementer, const bool& constantDelay);
 
     // internal variables
     EnvStateT envState;
 
     u16 envCtr;
+    u16 envWaveOut;
     u32 envDelayCtr;
 
 };
