@@ -15,6 +15,7 @@
 #include <string.h>
 #include "MbCvEnv.h"
 #include "MbCvTables.h"
+#include "CapChargeCurve.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,9 +61,7 @@ void MbCvEnv::init(void)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCvEnv::tick(const u8 &updateSpeedFactor)
 {
-    const bool rateFromEnvTable = true;
     bool sustainPhase = false; // will be the return value
-
     if( restartReq ) {
         restartReq = false;
         envState = MBCV_ENV_STATE_ATTACK;
@@ -84,11 +83,11 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
         switch( envState ) {
         case MBCV_ENV_STATE_ATTACK: {
             if( envDelayCtr ) {
-                int new_delay_ctr = envDelayCtr + (mbCvEnvTable[envDelay] / (envModeFast ? 1 : updateSpeedFactor));
-                if( new_delay_ctr > 0xffff )
+                int newDelayCtr = envDelayCtr + (mbCvEnvTable[envDelay] / (envModeFast ? 1 : updateSpeedFactor));
+                if( newDelayCtr > 0xffff )
                     envDelayCtr = 0; // delay passed
                 else {
-                    envDelayCtr = new_delay_ctr; // delay not passed
+                    envDelayCtr = newDelayCtr; // delay not passed
                     return false; // no error
                 }
             }
@@ -97,8 +96,8 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             s32 attack = envAttack + (envRateModulation / 512);
             if( attack > 255 ) attack = 255; else if( attack < 0 ) attack = 0;
   
-            s8 curve = envCurve ? ((envAttack < 64) ? (128-envAttack) : 64) : 0;
-            if( step(0xffff, attack, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) )
+            u16 incrementer = mbCvEnvTable[attack] / (envModeFast ? 1 : updateSpeedFactor);
+            if( step(0x0000, 0xffff, incrementer, false) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
   
@@ -108,8 +107,8 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             decay = decay + (envRateModulation / 512);
             if( decay > 255 ) decay = 255; else if( decay < 0 ) decay = 0;
 
-            s8 curve = envCurve ? -64 : 0;
-            if( step(envSustain << 8, decay, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable) ) {
+            u16 incrementer = mbCvEnvTable[decay] / (envModeFast ? 1 : updateSpeedFactor);
+            if( step(0xffff, envSustain << 8, incrementer, false) ) {
                 envState = envModeOneshot ? MBCV_ENV_STATE_SUSTAIN : MBCV_ENV_STATE_RELEASE;
   
                 // propagate sustain phase to trigger matrix
@@ -119,19 +118,22 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
   
         case MBCV_ENV_STATE_SUSTAIN:
             // always update sustain level
-            envCtr = envSustain << 8;
+            envWaveOut = envSustain << 8;
             break;
   
         case MBCV_ENV_STATE_RELEASE: {
-            s8 curve = envCurve ? -64 : 0;
-            if( envCtr ) {
-                // the rate can be modulated
-                s32 release = envRelease + (envRateModulation / 512);
-                if( release > 255 ) release = 255; else if( release < 0 ) release = 0;
+            // the rate can be modulated
+            s32 release = envRelease + (envRateModulation / 512);
+            if( release > 255 ) release = 255; else if( release < 0 ) release = 0;
 
-                step(0x0000, release, curve, envModeFast ? 1 : updateSpeedFactor, rateFromEnvTable);
-            } else if( !envModeOneshot )
-                envState = MBCV_ENV_STATE_ATTACK; // restart if not in oneshot mode
+            u16 incrementer = mbCvEnvTable[release] / (envModeFast ? 1 : updateSpeedFactor);
+            if( step(envSustain << 8, 0x0000, incrementer, false) ) {
+                if( envModeOneshot ) {
+                    envState = MBCV_ENV_STATE_IDLE;
+                } else {
+                    envState = MBCV_ENV_STATE_ATTACK;
+                }
+            }
         } break;
   
         default: // like MBCV_ENV_STATE_IDLE
@@ -144,9 +146,9 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
     if( amplitude > 127 ) amplitude = 127; else if( amplitude < -128 ) amplitude = -128;
 
     // final output value
-    //envOut = ((s32)(envCtr / 2) * (s32)amplitude) / 128;
+    //envOut = ((s32)(envWaveOut / 2) * (s32)amplitude) / 128;
     // multiplied by *2 to allow envelopes over full range
-    envOut = ((s32)envCtr * (s32)amplitude) / 128;
+    envOut = ((s32)envWaveOut * (s32)amplitude) / 128;
 
     accentReq = false;
 

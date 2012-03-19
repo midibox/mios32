@@ -435,16 +435,15 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
             e->envLevel[step] = value;
             return true;
         } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            e->envDelay[step] = value;
-            return true;
+            // spare
+            return false;
         }
 
         switch( par ) {
         case 0x00: e->envAmplitude = (int)value - 0x80; return true;
         case 0x01: e->envCurve = (int)value; return true;
         case 0x02: e->envOffset = (int)value - 0x80; return true;
-        case 0x03: e->envRate = (int)value - 0x80; return true;
+        case 0x03: e->envRate = (int)value; return true;
 
         case 0x08: e->envLoopAttack = (int)value; return true;
         case 0x09: e->envSustainStep = (int)value; return true;
@@ -610,16 +609,15 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
             *value = e->envLevel[step];
             return true;
         } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = e->envDelay[step];
-            return true;
+            // spare
+            return false;
         }
 
         switch( par ) {
         case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
         case 0x01: *value = e->envCurve; return true;
         case 0x02: *value = (int)e->envOffset + 0x80; return true;
-        case 0x03: *value = (int)e->envRate + 0x80; return true;
+        case 0x03: *value = e->envRate; return true;
 
         case 0x08: *value = e->envLoopAttack; return true;
         case 0x09: *value = e->envSustainStep; return true;

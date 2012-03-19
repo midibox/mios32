@@ -22,7 +22,8 @@ THUMB_SOURCE    = src/tasks.c \
 		  src/mbcv_file_p.c \
 		  src/cc_labels.c \
                   src/midimon.c \
-                  src/terminal.c
+                  src/terminal.c \
+		  src/components/CapChargeCurve.c
 
 THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/scs_config.cpp \
