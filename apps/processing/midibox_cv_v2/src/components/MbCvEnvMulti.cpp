@@ -112,9 +112,7 @@ bool MbCvEnvMulti::tick(const u8 &updateSpeedFactor)
             if( step(envLevel[envCurrentStep] << 8, envLevel[envNextStep] << 8, incrementer, true) ) {
                 envCurrentStep = envNextStep;
 
-                if( (envSustainStep && envCurrentStep == (envSustainStep-1)) ||
-                    (envLastStep < (MBCV_ENV_MULTI_NUM_STEPS-1) && envCurrentStep == envLastStep) ) {
-
+                if( (envSustainStep && envCurrentStep == (envSustainStep-1)) ) {
                     if( envLoopAttack ) {
                         envState = MBCV_ENV_STATE_ATTACK;
                         envCurrentStep = envLoopAttack;
