@@ -48,7 +48,7 @@ void MbCvEnv::init(void)
 
     // clear variables
     envDelay = 0;
-    envAttack = 48;
+    envAttack = 0;
     envDecay = 48;
     envDecayAccented = 16;
     envSustain = 64;
