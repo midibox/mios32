@@ -263,6 +263,10 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
             case 0x001: midiSendNRPNDump(port, value, 1); break; // Dump Seq Only: 0x3c00 <channels>
 
+            case 0x008: channelCopy(value);  break;
+            case 0x009: channelPaste(value); midiSendNRPNDump(port, 1 << value, 0); break;
+            case 0x00a: channelClear(value); midiSendNRPNDump(port, 1 << value, 0); break;
+
             case 0x010: {                                     // Play Off: 0x3c10 <channels>
                 MIOS32_IRQ_Disable();
                 int cv = 0;
@@ -410,6 +414,41 @@ float MbCvEnvironment::bpmGet(void)
 void MbCvEnvironment::bpmRestart(void)
 {
     mbCvClock.bpmRestart();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Copy/Paste/Clear operations
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::channelCopy(u8 channel)
+{
+    if( channel < mbCv.size ) {
+        MbCv *s = &mbCv[channel];
+
+        for(int par=0; par<MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE; ++par) {
+            u16 value = 0;
+            s->getNRPN(par, &value);
+            copyBuffer[par] = value;
+        }
+    }
+}
+
+void MbCvEnvironment::channelPaste(u8 channel)
+{
+    if( channel < mbCv.size ) {
+        MbCv *s = &mbCv[channel];
+
+        for(int par=0; par<MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE; ++par) {
+            s->setNRPN(par, copyBuffer[par]);
+        }
+    }
+}
+
+void MbCvEnvironment::channelClear(u8 channel)
+{
+    if( channel < mbCv.size ) {
+        mbCv[channel].updatePatch(false);
+    }
 }
 
 

@@ -51,7 +51,7 @@ void MbCvLfo::init()
     lfoModeFast = 0;
     lfoWaveform = 0;
     lfoAmplitude = 64;
-    lfoRate = 128;
+    lfoRate = 64;
     lfoDelay = 0;
     lfoPhase = 0;
     lfoRateModulation = 0;
