@@ -29,7 +29,7 @@ MbCvClock::MbCvClock()
     bpmCtr = 0;
     bpmSet(120.0);
 
-    clockSlaveMode = false;
+    clockSlaveMode = true; //false;
 
     midiStartReq = false;
     midiContinueReq = false;

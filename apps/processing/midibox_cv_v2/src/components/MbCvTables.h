@@ -20,8 +20,8 @@
 extern const u16 mbCvFrqTable[128];
 extern const u16 mbCvEnvTable[256];
 extern const u16 mbCvLfoTable[256];
-extern const u16 mbCvLfoTableMclk[11];
+extern const u16 mbCvMclkTable[32];
 extern const u16 mbCvSinTable[128];
-extern const u8 mbCvPatchPresetBassline[512];
+extern const u8  mbCvPatchPresetBassline[512];
 
 #endif /* _MBCV_TABLES_H */

@@ -551,21 +551,43 @@ const u16 mbCvLfoTable[256] = {
 };
 
 
-// alternative table for MIDI clock
-// (overrules entries 245-255 of normal LFO table if CV_I_LFO_MODE_CLKSYNC flag is set)
-const u16 mbCvLfoTableMclk[11] = {
-  16,	// 245: 64/1
-  32,	// 246: 32/1
-  64,	// 247: 16/1
-  128,	// 248: 8/1
-  256,	// 249: 4/1
-  512,	// 250: 2/1
-  1024,	// 251: 1/1
-  2048,	// 252: 1/2
-  4096,	// 253: 1/4
-  8192,	// 254: 1/8
-  16384,// 255: 1/16
+// alternative table for MIDI clock (32 entries selected with rate/8)
+// Table taken from Waldorf Blofeld - Thank You guys, I like your synths!!! :-)
+const u16 mbCvMclkTable[32] = {
+          0, //  0: LFO disabled
+    256*4*6, //  1: 16 bars
+    224*4*6, //  2: 14 bars
+    192*4*6, //  3: 12 bars
+    160*4*6, //  4: 10 bars
+    136*4*6, //  5: 9 bars
+    128*4*6, //  6: 8 bars
+    112*4*6, //  7: 7 bars
+     96*4*6, //  8: 6 bars
+     80*4*6, //  9: 5 bars
+     64*4*6, // 10: 4 bars
+     56*4*6, // 11: 3.5 bars
+     48*4*6, // 12: 3 bars
+     40*4*6, // 13: 2.5 bars
+     32*4*6, // 14: 2 bars
+     24*4*6, // 15: 1.5 bars
+     16*4*6, // 16: 1 bar
+      8*4*9, // 17: 1/2.
+     16*4*4, // 18: 1/1T
+      8*4*6, // 19: 1/2
+      4*4*9, // 20: 1/4.
+      8*4*4, // 21: 1/2T
+      4*4*6, // 22: 1/4
+      2*4*9, // 23: 1/8.
+      4*4*4, // 24: 1/4T
+      2*4*6, // 25: 1/8
+      1*4*9, // 26: 1/16.
+      2*4*4, // 27: 1/8T
+      1*4*6, // 28: 1/16
+      1*2*9, // 29: 1/32.
+      1*4*4, // 30: 1/16T
+      1*2*4, // 31: 1/48
 };
+
 	
 const u16 mbCvSinTable[128] = {
   0x0000,
