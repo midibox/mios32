@@ -74,6 +74,8 @@ protected:
     // internal variables
     u16 lfoCtr;
     u16 lfoDelayCtr;
+
+    u16 lfoMidiClockCtr;
 };
 
 #endif /* _MB_CV_LFO_H */

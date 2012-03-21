@@ -45,7 +45,7 @@ void MbCvSeq::init(void)
 
     seqPatternNumber = 0;
     seqPatternLength = 15;
-    seqResolution = 5;
+    seqResolution = 28; // 1/16th
     seqSynchToMeasure = false;
 
     seqRunning = 0;

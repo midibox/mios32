@@ -67,6 +67,7 @@ void MbCvLfo::init()
 
     lfoCtr = 0;
     lfoDelayCtr = 0;
+    lfoMidiClockCtr = 0;
 }
 
 
@@ -86,6 +87,9 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
 
         // check if LFO should be delayed - set delay counter to 0x0001 in this case
         lfoDelayCtr = lfoDelay ? 1 : 0;
+
+        // clear midi clock counter (used when synched to MIDI clock)
+        lfoMidiClockCtr = 0;
     }
 
     // set wave register to initial value and skip LFO if not enabled
@@ -116,11 +120,19 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
             s32 rate = lfoRate + (lfoRateModulation / 256);
             if( rate > 255 ) rate = 255; else if( rate < 0 ) rate = 0;
 
-            // if LFO synched via clock, replace 245-255 by MIDI clock optimized incrementers
+            // if LFO synched via clock, take rate value from alternative table
             u16 inc;
-            if( lfoModeClkSync && rate >= 245 )
-                inc = mbCvLfoTableMclk[rate-245]; // / updateSpeedFactor;
-            else {
+            bool resync = false;
+            if( lfoModeClkSync ) {
+                u16 ticks = mbCvMclkTable[rate/8]; // we support 32 clock settings
+
+                if( ++lfoMidiClockCtr >= ticks ) {
+                    lfoMidiClockCtr = 0;
+                    resync = true;
+                }
+
+                inc = 65536 / ticks;
+            } else {
                 inc = mbCvLfoTable[rate];
                 if( !lfoModeFast )
                     inc /= updateSpeedFactor;
@@ -128,11 +140,13 @@ bool MbCvLfo::tick(const u8 &updateSpeedFactor)
 
             // add to counter and check for overrun
             s32 newCtr = lfoCtr + inc;
-            if( newCtr > 0xffff ) {
+            if( newCtr > 0xffff || resync ) {
                 overrun = true;
 
                 if( lfoModeOneshot )
                     newCtr = 0xffff; // stop at end position
+                else if( resync )
+                    newCtr = 0x0000; // resynched via MIDI clock
             }
             lfoCtr = (u16)newCtr;
         }
