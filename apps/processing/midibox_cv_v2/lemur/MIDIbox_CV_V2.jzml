@@ -628,7 +628,7 @@ else if( x == 27 ) RateM2.value = '1/8T';
 else if( x == 28 ) RateM2.value = '1/16';
 else if( x == 29 ) RateM2.value = '1/32.';
 else if( x == 30 ) RateM2.value = '1/16T';
-else if( x == 31 ) RateM2.value = '1/48';
+else if( x == 31 ) RateM2.value = '1/32';
 else RateM2.value = '---';
 
 }
@@ -903,7 +903,7 @@ else if( x == 27 ) RateM2.value = '1/8T';
 else if( x == 28 ) RateM2.value = '1/16';
 else if( x == 29 ) RateM2.value = '1/32.';
 else if( x == 30 ) RateM2.value = '1/16T';
-else if( x == 31 ) RateM2.value = '1/48';
+else if( x == 31 ) RateM2.value = '1/32';
 else RateM2.value = '---';
 
 }
@@ -2811,7 +2811,7 @@ else if( x == 27 ) value = '1/8T';
 else if( x == 28 ) value = '1/16';
 else if( x == 29 ) value = '1/32.';
 else if( x == 30 ) value = '1/16T';
-else if( x == 31 ) value = '1/48';
+else if( x == 31 ) value = '1/32';
 else value = '---';
 
 setattribute(Resolution, 'content', value);" trigger_script="x" trigger_type="0" trigger="1" osc_message="/CVPanel/SetupPanel/Resolution/action" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
