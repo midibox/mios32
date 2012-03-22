@@ -29,14 +29,13 @@ MbCvClock::MbCvClock()
     bpmCtr = 0;
     bpmSet(120.0);
 
-    clockSlaveMode = true; //false;
+    clockSlaveMode = false;
 
     midiStartReq = false;
     midiContinueReq = false;
     midiStopReq = false;
 
-    clkCtr6 = 0;
-    clkCtr24 = 0;
+    clkTickCtr = 0;
 
     incomingClkCtr = 0;
     incomingClkDelay = 0;
@@ -99,9 +98,8 @@ void MbCvClock::tick(void)
         midiStartReq = false;
         eventStart = true;
 
-        // reset counters
-        clkCtr6 = 0;
-        clkCtr24 = 0;
+        // reset clock counter
+        clkTickCtr = 0;
     }
 
     // handle MIDI Stop Event
@@ -136,14 +134,8 @@ void MbCvClock::tick(void)
         }
     }
 
-    if( eventClock ) {
-        // increment clock counter (for Clk/6 and Clk/24 divider)
-        if( ++clkCtr6 >= 6 ) {
-            clkCtr6 = 0;
-            if( ++clkCtr24 >= 4 )
-                clkCtr24 = 0;
-        }
-    }
+    if( eventClock )
+        ++clkTickCtr;
 }
 
 
@@ -209,16 +201,21 @@ void MbCvClock::bpmSet(float bpm)
 {
     // ensure that BPM doesn't lead to integer overflow
     if( bpm < 1 )
-        bpm = 120;
+        bpm = 120.0;
+    else if( bpm > 300 )
+        bpm = 300.0;
 
     // how many CV SE ticks for next 96ppqn event?
     // result is fixed point arithmetic * 10000000 (for higher accuracy)
     bpmCtrMod = (u32)(((60.0/bpm) / (2E-3 / (float)updateSpeedFactor)) * (1000000.0/96.0));
+
+    // TODO: not in slave mode
+    effectiveBpm = bpm;
 }
 
 float MbCvClock::bpmGet(void)
 {
-    return 0.0;
+    return effectiveBpm;
 }
 
 
@@ -236,7 +233,8 @@ void MbCvClock::bpmRestart(void)
 /////////////////////////////////////////////////////////////////////////////
 void MbCvClock::clockModeSet(mbcv_clock_mode_t mode)
 {
-    clockMode = mode;
+    if( mode < 3 )
+        clockMode = mode;
 }
 
 mbcv_clock_mode_t MbCvClock::clockModeGet(void)

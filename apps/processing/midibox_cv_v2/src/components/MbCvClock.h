@@ -19,9 +19,9 @@
 
 
 typedef enum {
+    MBCV_CLOCK_MODE_AUTO,
     MBCV_CLOCK_MODE_MASTER,
-    MBCV_CLOCK_MODE_SLAVE,
-    MBCV_CLOCK_MODE_AUTO
+    MBCV_CLOCK_MODE_SLAVE
 } mbcv_clock_mode_t;
 
 
@@ -62,10 +62,11 @@ public:
 
     u8 updateSpeedFactor;
 
-    u8 clkCtr6;
-    u8 clkCtr24;
+    u32 clkTickCtr;
 
 protected:
+    float effectiveBpm;
+
     // clock mode Master/Slave/Auto
     mbcv_clock_mode_t clockMode;
 

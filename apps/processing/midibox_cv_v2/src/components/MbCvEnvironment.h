@@ -21,6 +21,7 @@
 #include "MbCvStructs.h"
 //#include "MbCvSysEx.h"
 #include "MbCvClock.h"
+#include "MbCvPatch.h"
 
 #define MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE 0x400
 
@@ -42,6 +43,9 @@ public:
     // CV Gates (will be mapped in MbCvEnvironment::tick() !!!)
     // up to 32 gates should be sufficient for future extensions? (currently we only use 8!)
     u32 cvGates;
+
+    // sound patch
+    MbCvPatch mbCvPatch;
     
     // sets the update factor
     void updateSpeedFactorSet(u8 _updateSpeedFactor);
@@ -49,6 +53,9 @@ public:
     // Sound Engines Update Cycle
     // returns true if CV registers have to be updated
     bool tick(void);
+
+    // Should be called each mS from a thread, e.g. for synchronized patch changes
+    void tick_1mS(void);
 
     // speed factor compared to MBCVV2
     u8 updateSpeedFactor;
@@ -61,8 +68,8 @@ public:
     void bpmRestart(void);
 
     // bank access
-    s32 bankSave(u8 cv, u8 bank, u8 patch);
-    s32 bankLoad(u8 cv, u8 bank, u8 patch);
+    s32 bankSave(u8 bank, u8 patch);
+    s32 bankLoad(u8 bank, u8 patch, bool forceImmediateChange = false);
     s32 bankPatchNameGet(u8 bank, u8 patch, char *buffer);
 
     // MIDI
@@ -72,6 +79,7 @@ public:
     void midiTimeOut(mios32_midi_port_t port);
 
     void midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, bool seqOnly);
+    void midiSendGlobalNRPNDump(mios32_midi_port_t port);
     void midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value);
 
     // Copy/Paste/Clear operations
@@ -95,6 +103,10 @@ public:
 
     // Tempo Clock
     MbCvClock mbCvClock;
+
+    // last port and CV channels used for NRPN communication
+    mios32_midi_port_t lastNrpnMidiPort;
+    u16 lastNrpnCvChannels;
 
 protected:
     u16 copyBuffer[MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE];
