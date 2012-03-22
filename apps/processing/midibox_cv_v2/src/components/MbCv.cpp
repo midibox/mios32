@@ -685,46 +685,6 @@ void MbCv::updatePatch(bool forceEngineInit)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// Callback from MbCvSysEx to take over a received patch
-// returns false if initialisation failed
-/////////////////////////////////////////////////////////////////////////////
-bool MbCv::sysexSetPatch(cv_patch_t *p)
-{
-    mbCvPatch.copyToPatch(p);
-    updatePatch(false);
-    return true;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Callback from MbCvSysEx to return the current patch
-// returns false if patch not available
-/////////////////////////////////////////////////////////////////////////////
-bool MbCv::sysexGetPatch(cv_patch_t *p)
-{
-    // TODO: bank read
-    mbCvPatch.copyFromPatch(p);
-    return true;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Callback from MbCvSysEx to set a dedicated SysEx parameter
-// returns false on invalid access
-/////////////////////////////////////////////////////////////////////////////
-bool MbCv::sysexSetParameter(u16 addr, u8 data)
-{
-    // exit if address range not valid (just to ensure)
-    if( addr >= sizeof(cv_patch_t) )
-        return false;
-
-    // change value in patch
-    mbCvPatch.body.ALL[addr] = data;
-
-    return false; // TODO
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Play a note independent from channel

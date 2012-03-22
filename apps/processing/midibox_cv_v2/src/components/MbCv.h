@@ -17,7 +17,6 @@
 
 #include <mios32.h>
 #include "MbCvClock.h"
-#include "MbCvPatch.h"
 #include "MbCvMidiVoice.h"
 #include "MbCvVoice.h"
 #include "MbCvLfo.h"
@@ -100,14 +99,6 @@ public:
 
     // should be called whenver the patch has been changed
     void updatePatch(bool forceEngineInit);
-
-    // callbacks for MbCvSysEx (forwarded from MbCvEnvironment)
-    bool sysexSetPatch(cv_patch_t *p); // returns false if initialisation failed
-    bool sysexGetPatch(cv_patch_t *p); // returns false if patch not available
-    bool sysexSetParameter(u16 addr, u8 data); // returns false on invalid access
-
-    // sound patch
-    MbCvPatch mbCvPatch;
 
     // MIDI voice (only one per channel)
     MbCvMidiVoice mbCvMidiVoice;

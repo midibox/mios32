@@ -39,6 +39,10 @@ MbCvEnvironment::MbCvEnvironment()
     lastSentNrpnAddressMsb = 0xff;
     lastSentNrpnAddressLsb = 0xff;
 
+    // for delayed ack messages (only used if lastNrpnMidiPort != 0)
+    lastNrpnMidiPort = DEFAULT;
+    lastNrpnCvChannels = (1 << 0);
+
     // initialize structures of each CV channel
     MbCv *s = mbCv.first();
     for(int cv=0; cv < mbCv.size; ++cv, ++s) {
@@ -80,6 +84,15 @@ bool MbCvEnvironment::tick(void)
 
     // Tempo Clock
     mbCvClock.tick();
+
+    // Synchronized patch change request?
+    if( mbCvClock.eventClock && mbCvPatch.reqChange ) {
+        u32 tick = mbCvClock.clkTickCtr;
+        u32 atStep = (u32)mbCvPatch.synchedChangeStep + 1;
+
+        if( ((tick/24) % atStep) == 0 )
+            mbCvPatch.reqChangeAck = true;
+    }
 
     // Engines
     for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s)) {
@@ -123,12 +136,33 @@ bool MbCvEnvironment::tick(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Should be called each mS from a thread, e.g. for synchronized patch changes
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::tick_1mS(void)
+{
+    // synchronized patch change?
+    if( mbCvPatch.reqChangeAck )
+        bankLoad(mbCvPatch.nextBankNum, mbCvPatch.nextPatchNum, true);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Write a patch
 /////////////////////////////////////////////////////////////////////////////
-s32 MbCvEnvironment::bankSave(u8 cv, u8 bank, u8 patch)
+s32 MbCvEnvironment::bankSave(u8 bank, u8 patch)
 {
-    if( cv >= mbCv.size )
-        return -1; // CV not available
+#if 1
+    DEBUG_MSG("[CV_BANK_PatchSave] write patch %c%03d\n", 'A'+bank, patch);
+#endif
+
+    // change to new bank/patch
+    mbCvPatch.bankNum = bank;
+    mbCvPatch.patchNum = patch;
+
+    // send confirmation (e.g. to Lemur)
+    if( lastNrpnMidiPort ) {
+        midiSendGlobalNRPNDump(lastNrpnMidiPort);
+    }
 
     return -2; // not supported yet
 }
@@ -136,36 +170,47 @@ s32 MbCvEnvironment::bankSave(u8 cv, u8 bank, u8 patch)
 /////////////////////////////////////////////////////////////////////////////
 // Read a patch
 /////////////////////////////////////////////////////////////////////////////
-s32 MbCvEnvironment::bankLoad(u8 cv, u8 bank, u8 patch)
+s32 MbCvEnvironment::bankLoad(u8 bank, u8 patch, bool forceImmediateChange)
 {
-    if( cv >= mbCv.size )
-        return -1; // CV not available
-
-    MbCv *s = &mbCv[cv];
-
     if( bank >= CV_BANK_NUM )
         return -2; // invalid bank
 
     if( patch >= 128 )
         return -3; // invalid patch
 
-#if 0
-    DEBUG_MSG("[CV_BANK_PatchRead] CV %d reads patch %c%03d\n", cv, 'A'+bank, patch);
+#if 1
+    DEBUG_MSG("[CV_BANK_PatchRead] read patch %c%03d\n", 'A'+bank, patch);
 #endif
 
-#if 0
-    switch( bank ) {
-    case 0: {
-        cv_patch_t *bankPatch = (cv_patch_t *)cv_bank_preset_0[patch];
-        s->mbCvPatch.copyToPatch(bankPatch);
-    } break;
+    if( mbCvPatch.synchedChange && !forceImmediateChange ) {
+        // request change
+        MIOS32_IRQ_Disable();
+        mbCvPatch.reqChange = true;
+        mbCvPatch.nextBankNum = bank;
+        mbCvPatch.nextPatchNum = patch;
+        MIOS32_IRQ_Enable();
+    } else {
+        // do immediate change
+        mbCvPatch.bankNum = bank;
+        mbCvPatch.patchNum = patch;
 
-    default:
-        return -4; // no bank in ROM
+        MbCv *s = mbCv.first();
+        for(int cv=0; cv < mbCv.size; ++cv, ++s) {
+            s->updatePatch(false);
+        }
+
+        // send confirmation (e.g. to Lemur)
+        if( lastNrpnMidiPort ) {
+            midiSendNRPNDump(lastNrpnMidiPort, lastNrpnCvChannels, 0);
+            midiSendGlobalNRPNDump(lastNrpnMidiPort);
+        }
+
+        // change done
+        MIOS32_IRQ_Disable();
+        mbCvPatch.reqChange = false;
+        mbCvPatch.reqChangeAck = false;
+        MIOS32_IRQ_Enable();
     }
-#endif
-
-    s->updatePatch(false);
 
     return 0; // no error
 }
@@ -258,10 +303,20 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
             mbCv[select].setNRPN(address, value);
 
         } else if( select == 0xf ) { // special commands (0x3c00..0x3fff)
-            switch( address & 0x3ff ) {
-            case 0x000: midiSendNRPNDump(port, value, 0); break; // Dump All: 0x3c00 <channels>
+            // remember this port for delayed ack messages
+            lastNrpnMidiPort = port;
 
-            case 0x001: midiSendNRPNDump(port, value, 1); break; // Dump Seq Only: 0x3c00 <channels>
+            switch( address & 0x3ff ) {
+            case 0x000: { // Dump All: 0x3c00 <channels>
+                lastNrpnCvChannels = value; // for delayed ack messages
+                midiSendNRPNDump(port, value, 0);
+                midiSendGlobalNRPNDump(port);
+            } break;
+
+            case 0x001: { // Dump Seq Only: 0x3c00 <channels>
+                lastNrpnCvChannels = value; // for delayed ack messages
+                midiSendNRPNDump(port, value, 1);
+            } break;
 
             case 0x008: channelCopy(value);  break;
             case 0x009: channelPaste(value); midiSendNRPNDump(port, 1 << value, 0); break;
@@ -289,6 +344,49 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
                     }
                 MIOS32_IRQ_Enable();
             } break;
+
+            case 0x018: {                                     // Tempo: 0x3c18 <tempo>
+                mbCvClock.bpmSet((float)value);
+            } break;
+
+            case 0x019: {                                     // TempoMode: 0x3c19 <tempoMode>
+                mbCvClock.clockModeSet((mbcv_clock_mode_t)value);                
+            } break;
+
+            case 0x01a: {                                     // Seq Start/Stop/Continue: 0x3c1a <1|0|2>
+                mios32_midi_port_t dummyPort = (mios32_midi_port_t)0xff;
+
+                if( value == 0 )
+                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfc); // stop
+                else if( value == 1 )
+                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfa); // start
+                else if( value == 2 )
+                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfb); // continue
+            } break;
+
+            case 0x020: {                                     // Patch load
+                bankLoad(mbCvPatch.bankNum, value);
+            } break;
+
+            case 0x021: {                                     // Bank load
+                bankLoad(value, mbCvPatch.patchNum);
+            } break;
+
+            case 0x022: {                                     // Patch and Bank load
+                bankLoad(value >> 7, value & 0x7f);
+            } break;
+
+            case 0x023: {                                     // Patch and Bank save
+                bankSave(value >> 7, value & 0x7f);
+            } break;
+
+            case 0x024: {                                     // Synched Change
+                mbCvPatch.synchedChange = value;
+            } break;
+
+            case 0x025: {                                     // Synch Change Step
+                mbCvPatch.synchedChangeStep = value;
+            } break;
             }
         }
         return;
@@ -296,9 +394,7 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
     if( midi_package.event == ProgramChange ) {
         // TODO: check port and channel for program change
-        int cv = 0;
-        for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
-            bankLoad(cv, s->mbCvPatch.bankNum, midi_package.evnt1);
+        bankLoad(mbCvPatch.bankNum, midi_package.evnt1);
     } else {
         for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s))
             s->midiReceive(port, midi_package);
@@ -331,6 +427,22 @@ void MbCvEnvironment::midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, 
             }
         }
     }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// sends global parameters
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::midiSendGlobalNRPNDump(mios32_midi_port_t port)
+{
+    midiSendNRPN(port, 0x3c18, (u16)mbCvClock.bpmGet());
+    midiSendNRPN(port, 0x3c19, (u16)mbCvClock.clockModeGet());
+
+    midiSendNRPN(port, 0x3c20, mbCvPatch.patchNum);
+    midiSendNRPN(port, 0x3c21, mbCvPatch.bankNum);
+    //midiSendNRPN(port, 0x3c22, ((u16)mbCvPatch.bankNum << 7) | mbCvPatch.patchNum);
+    midiSendNRPN(port, 0x3c24, mbCvPatch.synchedChange);
+    midiSendNRPN(port, 0x3c25, mbCvPatch.synchedChangeStep);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -461,12 +573,14 @@ bool MbCvEnvironment::sysexSetPatch(u8 cv, cv_patch_t *p, bool toBank, u8 bank, 
     if( cv >= mbCv.size )
         return false;
 
+#if 0
     if( toBank ) {
-        bankSave(cv, bank, patch);
+        bankSave(bank, patch);
     } else {
         // forward to selected CV
         return mbCv[cv].sysexSetPatch(p);
     }
+#endif
 	
 	return true;
 }
@@ -480,10 +594,13 @@ bool MbCvEnvironment::sysexGetPatch(u8 cv, cv_patch_t *p, bool fromBank, u8 bank
     if( cv >= mbCv.size )
         return false;
 
+#if 0
     if( fromBank )
-        bankLoad(cv, bank, patch);
+        bankLoad(bank, patch);
 
     return mbCv[cv].sysexGetPatch(p);
+#endif
+    return false;
 }
 
 
@@ -496,6 +613,9 @@ bool MbCvEnvironment::sysexSetParameter(u8 cv, u16 addr, u8 data)
     if( cv >= mbCv.size )
         return false;
 
+#if 0
     // forward to selected CV (no [cv] range checking required, this is done by array template)
     return mbCv[cv].sysexSetParameter(addr, data);
+#endif
+    return false;
 }

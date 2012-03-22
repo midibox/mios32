@@ -393,10 +393,13 @@ void APP_TASK_Period_1mS_SD(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS to handle AOUTs
+// This task is called periodically each mS
 /////////////////////////////////////////////////////////////////////////////
 void APP_TASK_Period_1mS(void)
 {
+  // e.g. for synched pattern changes
+  mbCvEnvironment.tick_1mS();
+
   if( hw_enabled ) {
     // nothing to do... yet
   }

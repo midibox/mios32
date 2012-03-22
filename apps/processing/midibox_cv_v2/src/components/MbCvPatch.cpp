@@ -32,6 +32,14 @@ MbCvPatch::MbCvPatch()
     bankNum = 0;
     patchNum = 0;
 
+    synchedChange = false;
+    synchedChangeStep = 0; // step number - 1
+
+    reqChange = false;
+    reqChangeAck = false;
+    nextBankNum = 0;
+    nextPatchNum = 0;
+
     copyPreset();
 }
 

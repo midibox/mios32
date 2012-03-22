@@ -37,6 +37,16 @@ public:
     u8 bankNum;
     u8 patchNum;
 
+    // synched change?
+    bool synchedChange;
+    u8   synchedChangeStep; // step number - 1
+
+    // request sync
+    bool reqChange;
+    bool reqChangeAck;
+    u8 nextBankNum;
+    u8 nextPatchNum;
+
     // the patch
     cv_patch_t body;
 };
