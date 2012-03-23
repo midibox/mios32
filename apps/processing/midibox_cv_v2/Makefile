@@ -20,6 +20,7 @@ THUMB_SOURCE    = src/tasks.c \
 		  src/mbcv_port.c \
 		  src/mbcv_file.c \
 		  src/mbcv_file_p.c \
+		  src/mbcv_file_b.c \
 		  src/cc_labels.c \
                   src/midimon.c \
                   src/terminal.c \

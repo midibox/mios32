@@ -40,6 +40,7 @@ extern "C" {
 
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
+#include "mbcv_file_b.h"
 
 #include "terminal.h"
 #include "midimon.h"
@@ -381,6 +382,27 @@ void APP_TASK_Period_1mS_SD(void)
 	    DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	  }
 	}
+
+	// check if bank files exist
+	for(int bank=0; bank<MBCV_FILE_B_NUM_BANKS; ++bank) {
+	  if( !MBCV_FILE_B_NumPatches(bank) ) {
+	    // create new one
+	    DEBUG_MSG("Creating MBCV_B%d.V2 file\n", bank+1);
+	  
+	    if( (status=MBCV_FILE_B_Create(bank)) < 0 ) {
+	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+	    } else {
+	      for(int patch=0; patch<MBCV_FILE_B_NumPatches(bank); ++patch) {
+		DEBUG_MSG("Creating MBCV_B%d.V2 patch %c%03d\n", bank+1, 'A'+bank, patch);
+		if( (status=MBCV_FILE_B_PatchWrite(bank, patch, 0)) < 0 ) {
+		  DEBUG_MSG("Failed to create patch! (status: %d)\n", status);
+		}
+	      }
+	    }
+	  }
+	}
+
+	MBCV_FILE_B_LoadAllBanks();
 
 	// disable status message and print patch
 	MBCV_FILE_StatusMsgSet(NULL);

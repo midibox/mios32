@@ -23,8 +23,6 @@
 #include "MbCvClock.h"
 #include "MbCvPatch.h"
 
-#define MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE 0x400
-
 class MbCvEnvironment
 {
 public:
@@ -83,9 +81,12 @@ public:
     void midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value);
 
     // Copy/Paste/Clear operations
-    void channelCopy(u8 channel);
-    void channelPaste(u8 channel);
+    void channelCopy(u8 channel, u16* buffer);
+    void channelPaste(u8 channel, u16* buffer);
     void channelClear(u8 channel);
+
+    // also used for load/store operations
+    u16 copyBuffer[CV_PATCH_SIZE];
 
     // MIDI NRPN variables
     u16 nrpnAddress[16];
@@ -108,8 +109,6 @@ public:
     mios32_midi_port_t lastNrpnMidiPort;
     u16 lastNrpnCvChannels;
 
-protected:
-    u16 copyBuffer[MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE];
 };
 
 #endif /* _MB_CV_ENVIRONMENT_H */

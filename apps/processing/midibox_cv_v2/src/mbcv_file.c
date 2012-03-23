@@ -25,6 +25,7 @@
 
 #include "file.h"
 #include "mbcv_file.h"
+#include "mbcv_file_b.h"
 #include "mbcv_file_p.h"
 
 
@@ -59,6 +60,7 @@ s32 MBCV_FILE_Init(u32 mode)
   strcpy(sd_card_msg, "SD Card?"); // 12 chars maximum
 
   status |= FILE_Init(0);
+  status |= MBCV_FILE_B_Init(0);
   status |= MBCV_FILE_P_Init(0);
 
   return status;
@@ -76,6 +78,7 @@ s32 MBCV_FILE_LoadAllFiles(u8 including_hw)
     //status |= MBCV_FILE_HW_Load();
   }
 
+  status |= MBCV_FILE_B_LoadAllBanks();
   status |= MBCV_FILE_P_Load("DEFAULT");
 
   return status;
@@ -88,6 +91,7 @@ s32 MBCV_FILE_LoadAllFiles(u8 including_hw)
 s32 MBCV_FILE_UnloadAllFiles(void)
 {
   s32 status = 0;
+  status |= MBCV_FILE_B_UnloadAllBanks();
   status |= MBCV_FILE_P_Unload();
   return status;
 }

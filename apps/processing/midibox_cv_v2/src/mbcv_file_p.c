@@ -341,72 +341,6 @@ s32 MBCV_FILE_P_Read(char *filename)
 
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "CV") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  int cv;
-	  if( (cv=get_dec(word)) < 1 || cv > MBCV_PATCH_NUM_CV ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid CV channel number parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    --cv; // user counts from 1
-
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
-		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, cv+1);
-#endif
-	    } else {
-	      int values[10];
-	      int i;
-	      for(i=0; i<11; ++i) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		u8 failed = 0;
-		if( i == 8 || i == 9 )
-		  failed = (values[i]=get_int(word)) == INT_MIN;
-		else
-		  failed = (values[i]=get_dec(word)) < 0;
-		if( failed ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBCV_FILE_P] ERROR invalid value format for parameter '%s %d'\n", parameter, cv+1);
-#endif
-		  break;
-		}
-	      }
-
-	      if( i == 11 ) {
-#if 0
-		// finally a valid line!
-		mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[cv];
-		cv_cfg->enabled_ports = enabled_ports;
-		cv_cfg->chn = values[0];
-		cv_cfg->midi_mode.event = values[1];
-		cv_cfg->midi_mode.LEGATO = values[2] ? 1 : 0;
-		cv_cfg->midi_mode.POLY = values[3] ? 1 : 0;
-		if( values[4] )
-		  mbcv_patch_gate_inverted[cv>>3] |= (1 << (cv&7));
-		else
-		  mbcv_patch_gate_inverted[cv>>3] &= ~(1 << (cv&7));
-		MBCV_MAP_PitchRangeSet(cv, values[5]);
-		cv_cfg->split_l = values[6];
-		cv_cfg->split_u = values[7];
-		cv_cfg->transpose_oct = values[8];
-		cv_cfg->transpose_semi = values[9];
-		cv_cfg->cc_number = values[10];
-#endif
-	      }
-	    }
-	  }
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  s32 node;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -456,26 +390,6 @@ s32 MBCV_FILE_P_Read(char *filename)
 #endif
 	  } else {
 	    MBCV_MAP_IfSet(aout_type);
-	  }
-	} else if( strcmp(parameter, "ExtClkPulsewidth") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  int pulsewidth;
-	  if( (pulsewidth=get_dec(word)) < 0 || pulsewidth > 255 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid pulsewidth %d for parameter '%s'\n", pulsewidth, parameter);
-#endif
-	  } else {
-	    mbcv_patch_cfg.ext_clk_pulsewidth = pulsewidth;
-	  }
-	} else if( strcmp(parameter, "ExtClkDivider") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  int clkdiv;
-	  if( (clkdiv=get_dec(word)) < 0 || clkdiv > 255 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid clockdivider %d for parameter '%s'\n", clkdiv, parameter);
-#endif
-	  } else {
-	    mbcv_patch_cfg.ext_clk_divider = clkdiv;
 	  }
 
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -618,45 +532,6 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
-#if 0
-  {
-    sprintf(line_buffer, "#CV;Pin;USB1;USB2;USB3;USB4;OUT1;OUT2;OUT3;OUT4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Chn;Event;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "Legato;Poly;InvGate;PitchRng;SplitL;SplitU;TrOctave;TrSemitones;CCNumber\n");
-    FLUSH_BUFFER;
-
-    int cv;
-    mbcv_patch_cv_entry_t *cv_cfg = (mbcv_patch_cv_entry_t *)&mbcv_patch_cv[0];
-    for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv, ++cv_cfg) {
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (cv_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "CV;%d;%s;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d\n",
-	      cv+1,
-	      ports_bin,
-	      cv_cfg->chn,
-	      cv_cfg->midi_mode.event,
-	      cv_cfg->midi_mode.LEGATO,
-	      cv_cfg->midi_mode.POLY,
-	      (mbcv_patch_gate_inverted[cv>>3] & (1 << (cv&7))) ? 1 : 0,
-	      MBCV_MAP_PitchRangeGet(cv),
-	      cv_cfg->split_l,
-	      cv_cfg->split_u,
-	      cv_cfg->transpose_oct,
-	      cv_cfg->transpose_semi,
-	      cv_cfg->cc_number);
-      FLUSH_BUFFER;
-    }
-  }
-#endif
-
   {
     sprintf(line_buffer, "\n\n#ROUTER;Node;SrcPort;Chn.;DstPort;Chn.\n");
     FLUSH_BUFFER;
@@ -736,12 +611,6 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "AOUT_Type;%s\n", (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()));
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "ExtClkPulsewidth %d\n", mbcv_patch_cfg.ext_clk_pulsewidth);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "ExtClkDivider %d\n", mbcv_patch_cfg.ext_clk_divider);
   FLUSH_BUFFER;
 
   return status;
