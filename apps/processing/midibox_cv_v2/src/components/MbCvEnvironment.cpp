@@ -16,6 +16,8 @@
 #include "MbCvEnvironment.h"
 #include <string.h>
 
+#include <mbcv_patch.h>
+
 #include <osc_client.h>
 
 
@@ -54,6 +56,9 @@ MbCvEnvironment::MbCvEnvironment()
 
     // restart clock generator
     bpmRestart();
+
+    // default content of copy buffer
+    channelCopy(0, copyBuffer);
 }
 
 
@@ -90,8 +95,14 @@ bool MbCvEnvironment::tick(void)
         u32 tick = mbCvClock.clkTickCtr;
         u32 atStep = (u32)mbCvPatch.synchedChangeStep + 1;
 
-        if( ((tick/24) % atStep) == 0 )
+#if 0
+        if( (tick % 24) == 0 && ((tick/24) % atStep) == 0 )
             mbCvPatch.reqChangeAck = true;
+#else
+        // change 8 ticks before step change
+        if( (tick % 24) == 16 && ((tick/24) % atStep) == (atStep-1) )
+            mbCvPatch.reqChangeAck = true;        
+#endif
     }
 
     // Engines
@@ -159,6 +170,9 @@ s32 MbCvEnvironment::bankSave(u8 bank, u8 patch)
     mbCvPatch.bankNum = bank;
     mbCvPatch.patchNum = patch;
 
+    // file operation
+    MBCV_PATCH_Store(bank, patch);
+
     // send confirmation (e.g. to Lemur)
     if( lastNrpnMidiPort ) {
         midiSendGlobalNRPNDump(lastNrpnMidiPort);
@@ -194,10 +208,16 @@ s32 MbCvEnvironment::bankLoad(u8 bank, u8 patch, bool forceImmediateChange)
         mbCvPatch.bankNum = bank;
         mbCvPatch.patchNum = patch;
 
+        // file operation
+        MBCV_PATCH_Load(bank, patch);
+
+#if 0
+        // update patch structures
         MbCv *s = mbCv.first();
         for(int cv=0; cv < mbCv.size; ++cv, ++s) {
             s->updatePatch(false);
         }
+#endif
 
         // send confirmation (e.g. to Lemur)
         if( lastNrpnMidiPort ) {
@@ -222,7 +242,6 @@ s32 MbCvEnvironment::bankLoad(u8 bank, u8 patch, bool forceImmediateChange)
 s32 MbCvEnvironment::bankPatchNameGet(u8 bank, u8 patch, char *buffer)
 {
     int i;
-    cv_patch_t *p;
 
     if( bank >= CV_BANK_NUM ) {
         sprintf(buffer, "<Invalid Bank %c>", 'A'+bank);
@@ -235,20 +254,10 @@ s32 MbCvEnvironment::bankPatchNameGet(u8 bank, u8 patch, char *buffer)
     }
 
 #if 0
-    switch( bank ) {
-    case 0:
-        p = (cv_patch_t *)&cv_bank_preset_0[patch];
-        break;
-
-    default:
-        sprintf(buffer, "<Empty Bank %c>  ", 'A'+bank);
-        return -3; // no bank in ROM
-    }
-#endif
-
     for(i=0; i<16; ++i)
         buffer[i] = p->name[i] >= 0x20 ? p->name[i] : ' ';
     buffer[i] = 0;
+#endif
 
     return 0; // no error
 }
@@ -306,7 +315,7 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
             // remember this port for delayed ack messages
             lastNrpnMidiPort = port;
 
-            switch( address & 0x3ff ) {
+            switch( address % CV_PATCH_SIZE ) {
             case 0x000: { // Dump All: 0x3c00 <channels>
                 lastNrpnCvChannels = value; // for delayed ack messages
                 midiSendNRPNDump(port, value, 0);
@@ -318,8 +327,8 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
                 midiSendNRPNDump(port, value, 1);
             } break;
 
-            case 0x008: channelCopy(value);  break;
-            case 0x009: channelPaste(value); midiSendNRPNDump(port, 1 << value, 0); break;
+            case 0x008: channelCopy(value, copyBuffer);  break;
+            case 0x009: channelPaste(value, copyBuffer); midiSendNRPNDump(port, 1 << value, 0); break;
             case 0x00a: channelClear(value); midiSendNRPNDump(port, 1 << value, 0); break;
 
             case 0x010: {                                     // Play Off: 0x3c10 <channels>
@@ -532,26 +541,26 @@ void MbCvEnvironment::bpmRestart(void)
 /////////////////////////////////////////////////////////////////////////////
 // Copy/Paste/Clear operations
 /////////////////////////////////////////////////////////////////////////////
-void MbCvEnvironment::channelCopy(u8 channel)
+void MbCvEnvironment::channelCopy(u8 channel, u16* buffer)
 {
     if( channel < mbCv.size ) {
         MbCv *s = &mbCv[channel];
 
-        for(int par=0; par<MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE; ++par) {
+        for(int par=0; par<CV_PATCH_SIZE; ++par) {
             u16 value = 0;
             s->getNRPN(par, &value);
-            copyBuffer[par] = value;
+            buffer[par] = value;
         }
     }
 }
 
-void MbCvEnvironment::channelPaste(u8 channel)
+void MbCvEnvironment::channelPaste(u8 channel, u16* buffer)
 {
     if( channel < mbCv.size ) {
         MbCv *s = &mbCv[channel];
 
-        for(int par=0; par<MB_CV_ENVIRONMENT_COPY_BUFFER_SIZE; ++par) {
-            s->setNRPN(par, copyBuffer[par]);
+        for(int par=0; par<CV_PATCH_SIZE; ++par) {
+            s->setNRPN(par, buffer[par]);
         }
     }
 }

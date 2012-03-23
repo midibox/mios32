@@ -30,6 +30,7 @@
 extern "C" {
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
+#include "mbcv_file_b.h"
 }
 
 
@@ -60,9 +61,10 @@ mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER] = {
 u32 mbcv_patch_router_mclk_in;
 u32 mbcv_patch_router_mclk_out;
 
-mbcv_patch_cfg_t mbcv_patch_cfg;
-
 u8 mbcv_patch_gateclr_cycles = 3; // 3 mS
+
+                       // <------------------>
+u8 mbcv_patch_name[21] = "BasicDefault Patch  ";
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -72,11 +74,6 @@ s32 MBCV_PATCH_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
-
-  // init remaining config values
-  mbcv_patch_cfg.flags.ALL = 0;
-  mbcv_patch_cfg.ext_clk_divider = 16; // 24 ppqn
-  mbcv_patch_cfg.ext_clk_pulsewidth = 1;
 
   //                           USB0 only     UART0..3       IIC0..3      OSC0..3
   mbcv_patch_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
@@ -88,105 +85,42 @@ s32 MBCV_PATCH_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns a byte from patch structure in RAM
+// This function returns a parameter from patch structure in RAM
 /////////////////////////////////////////////////////////////////////////////
-u8 MBCV_PATCH_ReadByte(u16 addr)
+u16 MBCV_PATCH_ReadPar(u16 addr)
 {
-  if( addr >= MBCV_PATCH_SIZE )
+  int cv = addr / CV_PATCH_SIZE;
+
+  if( cv >= CV_SE_NUM )
     return 0;
 
-  // Note: this patch structure only exists for compatibility reasons with MBCV V1
-  // Don't enhance it! Meanwhile the complete patch can only be edited via SD Card!
-  if( addr < 8 ) {
-    switch( addr ) {
-    case 0x00: return mbcv_patch_cfg.flags.MERGER_MODE;
-    case 0x02: {
-      MbCvEnvironment* env = APP_GetEnv();
-      u8 gate_inverted = 0x00;
-      int cv = 0;
-      for(MbCv *s = env->mbCv.first(); s != NULL ; s=env->mbCv.next(s), ++cv)
-	if( s->mbCvVoice.voiceGateInverted )
-	  gate_inverted |= (1 << cv);
-      return gate_inverted;
-    }
-    case 0x03: return mbcv_patch_cfg.ext_clk_divider; // TODO: convert from old format!
-    }
-  } else {
-    u8 cv = addr & 0x7;
-    MbCvEnvironment* env = APP_GetEnv();
-    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
-    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
+  u16 nrpnNumber = addr % CV_PATCH_SIZE;
 
-    switch( addr >> 3 ) {
-    case 0x01: return mv->midivoiceChannel ? (mv->midivoiceChannel - 1) : 16; // normaly 0..16 (0 disables channel) - for patch compatibility we take 16 to disable channel
-    case 0x02: return (v->voiceEventMode & 0xf) | (v->voiceLegato << 4) | (v->voicePoly << 5);
-    case 0x03: return v->voicePitchrange;
-    case 0x04: return mv->midivoiceSplitLower;
-    case 0x05: return mv->midivoiceSplitUpper;
-    case 0x06: return (v->voiceTransposeOctave >= 0) ? v->voiceTransposeOctave : (16+v->voiceTransposeOctave);
-    case 0x07: return (v->voiceTransposeSemitone >= 0) ? v->voiceTransposeSemitone : (16+v->voiceTransposeSemitone);
-    case 0x08: return mv->midivoiceCCNumber;
-    case 0x09: return v->getAoutCurve();
-    case 0x0a: return v->getAoutSlewRate(); // TODO: conversion to the old format
-    }
-  }
+  MbCvEnvironment* env = APP_GetEnv();
+  MbCv *s = &env->mbCv[cv];
 
-  return 0x00;
+  u16 value = 0;
+  s->getNRPN(nrpnNumber, &value);
+  return value;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function writes a byte into patch structure in RAM
+// This function writes a parameter into patch structure in RAM
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
+s32 MBCV_PATCH_WritePar(u16 addr, u8 value)
 {
-  if( addr >= MBCV_PATCH_SIZE )
+  int cv = addr / CV_PATCH_SIZE;
+
+  if( cv >= CV_SE_NUM )
     return -1; // invalid address
 
-  if( addr >= MBCV_PATCH_SIZE )
-    return 0;
+  u16 nrpnNumber = addr % CV_PATCH_SIZE;
 
-  // Note: this patch structure only exists for compatibility reasons with MBCV V1
-  // Don't enhance it! Meanwhile the complete patch can only be edited via SD Card!
-  if( addr < 8 ) {
-    switch( addr ) {
-    case 0x00: mbcv_patch_cfg.flags.MERGER_MODE = byte; return 0;
-    case 0x02: {
-      MbCvEnvironment* env = APP_GetEnv();
-      int cv = 0;
-      for(MbCv *s = env->mbCv.first(); s != NULL ; s=env->mbCv.next(s), ++cv)
-	s->mbCvVoice.voiceGateInverted = (byte & (1 << cv)) ? 1 : 0;
-      return 0;
-    }
-    case 0x03: mbcv_patch_cfg.ext_clk_divider = byte; return 0; // TODO: convert from old format!
-    }
-    return 0x00;
-  } else if( addr < 0x100 ) {
-    u8 cv = addr & 0x7;
-    MbCvEnvironment* env = APP_GetEnv();
-    MbCvVoice *v = &env->mbCv[cv].mbCvVoice;
-    MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
+  MbCvEnvironment* env = APP_GetEnv();
+  MbCv *s = &env->mbCv[cv];
 
-    switch( addr >> 3 ) {
-    case 0x01: mv->midivoiceChannel = (byte < 16) ? (byte+1) : 0; return 0;
-    case 0x02:
-      v->voiceEventMode = (mbcv_midi_event_mode_t)(byte & 0xf);
-      v->voiceLegato = (byte & 0x10) ? 1 : 0;
-      v->voicePoly = (byte & 0x20) ? 1 : 0;
-      return 0;
-    case 0x03: v->voicePitchrange = byte; return 0;
-    case 0x04: mv->midivoiceSplitLower = byte; return 0;
-    case 0x05: mv->midivoiceSplitUpper = byte; return 0;
-    case 0x06: if( byte < 8 ) v->voiceTransposeOctave = byte; else v->voiceTransposeOctave = 7 - (int)byte; return 0;
-    case 0x07: if( byte < 8 ) v->voiceTransposeSemitone = byte; else v->voiceTransposeSemitone = 7 - (int)byte; return 0;
-    case 0x08: mv->midivoiceCCNumber = byte; return 0;
-    case 0x09: v->setAoutCurve(byte); return 0;
-    case 0x0a: v->setAoutSlewRate(byte); return 0; // TODO: conversion to old format
-    }
-    return 0x00;
-  }
-
-  return -2; // value not mapped
+  return s->setNRPN(nrpnNumber, value) ? 0 : -1; // value not mapped
 }
 
 
@@ -194,7 +128,35 @@ s32 MBCV_PATCH_WriteByte(u16 addr, u8 byte)
 // This function loads the patch from SD Card
 // Returns != 0 if Load failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_PATCH_Load(char *filename)
+s32 MBCV_PATCH_Load(u8 bank, u8 patch)
+{
+  MUTEX_SDCARD_TAKE;
+  s32 status = MBCV_FILE_B_PatchRead(bank, patch);
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function stores the patch on SD Card
+// Returns != 0 if Store failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_PATCH_Store(u8 bank, u8 patch)
+{
+  MUTEX_SDCARD_TAKE;
+  s32 status = MBCV_FILE_B_PatchWrite(bank, patch, 1);
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function loads the patch from SD Card
+// Returns != 0 if Load failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_PATCH_LoadGlobal(char *filename)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = MBCV_FILE_P_Read(filename);
@@ -208,11 +170,42 @@ s32 MBCV_PATCH_Load(char *filename)
 // This function stores the patch on SD Card
 // Returns != 0 if Store failed
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_PATCH_Store(char *filename)
+s32 MBCV_PATCH_StoreGlobal(char *filename)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = MBCV_FILE_P_Write(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Link to MBCV Environment
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_PATCH_Copy(u8 channel, u16* buffer)
+{
+  MbCvEnvironment* env = APP_GetEnv();
+  env->channelCopy(channel, buffer);
+  return 0;
+}
+
+s32 MBCV_PATCH_Paste(u8 channel, u16* buffer)
+{
+  MbCvEnvironment* env = APP_GetEnv();
+  env->channelPaste(channel, buffer);
+  return 0;
+}
+
+s32 MBCV_PATCH_Clear(u8 channel)
+{
+  MbCvEnvironment* env = APP_GetEnv();
+  env->channelClear(channel);
+  return 0;
+}
+
+u16* MBCV_PATCH_CopyBufferGet(void)
+{
+  MbCvEnvironment* env = APP_GetEnv();
+  return (u16 *)env->copyBuffer;
 }

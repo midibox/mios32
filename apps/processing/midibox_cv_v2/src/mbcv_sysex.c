@@ -30,7 +30,7 @@
 
 
 // help constant - don't change!
-#define MBCV_SYSEX_PATCH_DUMP_SIZE  (MBCV_PATCH_SIZE)
+#define MBCV_SYSEX_PATCH_DUMP_SIZE  0x100
 
 // command states
 #define MBCV_SYSEX_CMD_STATE_BEGIN 0
@@ -165,14 +165,17 @@ s32 MBCV_SYSEX_Send(mios32_midi_port_t port, u8 patch)
   // send patch number
   sysex_buffer[sysex_buffer_ix++] = patch;
 
+#if 0
+  // TODO
   // send patch content
-  for(checksum=0, i=0; i<MBCV_PATCH_SIZE; ++i) {
+  for(checksum=0, i=0; i<MBCV_SYSEX_PATCH_DUMP_SIZE; ++i) {
     c = MBCV_PATCH_ReadByte(i);
 
     // 7bit format - 8th bit discarded
     sysex_buffer[sysex_buffer_ix++] = c & 0x7f;
     checksum += c & 0x7f;
   }
+#endif
 
   // send checksum
   sysex_buffer[sysex_buffer_ix++] = -checksum & 0x7f;
@@ -406,8 +409,11 @@ s32 MBCV_SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
 
 	  // new byte has been received - put it into patch structure
 
+#if 0
+	  // TODO
 	  // 7bit format - 8th bit discarded
 	  MBCV_PATCH_WriteByte(sysex_receive_ctr, midi_in);
+#endif
 
 	  // add to checksum
 	  sysex_checksum += midi_in;
@@ -439,7 +445,7 @@ s32 MBCV_SYSEX_Cmd_WritePatch(u8 cmd_state, u8 midi_in)
       } else {
 	// write patch
 	s32 error;
-	if( (error = MBCV_PATCH_Store(mbcv_file_p_patch_name)) ) {
+	if( (error = MBCV_PATCH_StoreGlobal(mbcv_file_p_patch_name)) ) {
 	  // write failed (bankstick not available)
 	  MBCV_SYSEX_SendAck(sysex_port, MBCV_SYSEX_DISACK, MBCV_SYSEX_DISACK_BS_NOT_AVAILABLE);
 	} else {

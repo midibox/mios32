@@ -102,7 +102,7 @@ extern "C" const char* MBCV_MAP_IfNameGet(aout_if_t if_type)
 
 extern "C" s32 MBCV_MAP_CaliModeSet(u8 cv, aout_cali_mode_t mode)
 {
-  if( cv >= MBCV_PATCH_NUM_CV )
+  if( cv >= CV_SE_NUM )
     return -1; // invalid cv channel selected
 
   if( mode >= MBCV_MAP_NUM_CALI_MODES )
@@ -135,7 +135,7 @@ extern "C" s32 MBCV_MAP_Update(void)
   MbCvEnvironment* env = APP_GetEnv();
 
   u16 *out = env->cvOut.first();
-  for(int cv=0; cv<MBCV_PATCH_NUM_CV; ++cv, ++out)
+  for(int cv=0; cv<CV_SE_NUM; ++cv, ++out)
     AOUT_PinSet(cv, *out);
 
   AOUT_DigitalPinsSet(env->cvGates);
@@ -214,11 +214,11 @@ extern "C" s32 MBCV_MAP_ResetAllChannels(void)
   MbCvEnvironment* env = APP_GetEnv();
   int cv;
 
-  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv)
+  for(cv=0; cv<CV_SE_NUM; ++cv)
     env->mbCv[cv].noteAllOff(false);
 
   // reset AOUT voltages
-  for(cv=0; cv<MBCV_PATCH_NUM_CV; ++cv) {
+  for(cv=0; cv<CV_SE_NUM; ++cv) {
     AOUT_PinPitchSet(cv, 0x0000);
     AOUT_PinSet(cv, 0x0000);
   }

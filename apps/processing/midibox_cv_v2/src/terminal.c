@@ -28,6 +28,7 @@
 #include "tasks.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
+#include "mbcv_file_b.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -205,7 +206,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	if( strlen(parameter) > 8 ) {
 	  out("ERROR: 8 characters maximum!");
 	} else {
-	  s32 status = MBCV_PATCH_Store(parameter);
+	  s32 status = MBCV_PATCH_StoreGlobal(parameter);
 	  if( status >= 0 ) {
 	    out("Patch '%s' stored on SD Card!", parameter);
 	  } else {
@@ -220,7 +221,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	if( strlen(parameter) > 8 ) {
 	  out("ERROR: 8 characters maximum!");
 	} else {
-	  s32 status = MBCV_PATCH_Load(parameter);
+	  s32 status = MBCV_PATCH_LoadGlobal(parameter);
 	  if( status >= 0 ) {
 	    out("Patch '%s' loaded from SD Card!", parameter);
 	  } else {

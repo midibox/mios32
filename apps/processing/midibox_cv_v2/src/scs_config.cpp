@@ -326,7 +326,7 @@ static void selectSAVE_Callback(char *newString)
 {
   s32 status;
 
-  if( (status=MBCV_PATCH_Store(newString)) < 0 ) {
+  if( (status=MBCV_PATCH_StoreGlobal(newString)) < 0 ) {
     char buffer[100];
     sprintf(buffer, "Patch %s", newString);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
@@ -346,7 +346,7 @@ static void selectLOAD_Callback(char *newString)
   s32 status;
 
   if( newString[0] != 0 ) {
-    if( (status=MBCV_PATCH_Load(newString)) < 0 ) {
+    if( (status=MBCV_PATCH_LoadGlobal(newString)) < 0 ) {
       char buffer[100];
       sprintf(buffer, "Patch %s", newString);
       SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
@@ -670,7 +670,7 @@ static void MSD_EnableReq(u32 enable)
 /////////////////////////////////////////////////////////////////////////////
 
 const scs_menu_item_t pageCV[] = {
-  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Chn  ", 0, 16,    cvChnGet,      cvChnSet,      selectNOP, stringDec0Dis, NULL),
   SCS_ITEM("Mode ", 0, MBCV_MIDI_EVENT_MODE_NUM-1,    cvEventGet,     cvEventSet,     selectNOP, stringCvMode, NULL),
   SCS_ITEM("Play ", 0, 2,     cvPlayModeGet, cvPlayModeSet, selectNOP, stringCvPlayMode, NULL),
@@ -710,7 +710,7 @@ const scs_menu_item_t pageCV[] = {
 };
 
 const scs_menu_item_t pageARP[] = {
-  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM(" On  ", 0,  1,          arpOnGet,       arpOnSet,       selectNOP, stringOnOff,  NULL),
   SCS_ITEM("Mode ", 0,  6,          arpDirGet,      arpDirSet,      selectNOP, stringArpDir, NULL),
   SCS_ITEM("Sort ", 0,  1,          arpSortGet,     arpSortSet,     selectNOP, stringOnOff,  NULL),
@@ -725,7 +725,7 @@ const scs_menu_item_t pageARP[] = {
 };
 
 const scs_menu_item_t pageLFO[] = {
-  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("LFO  ", 0,   1,         lfoGet,         lfoSet,         selectNOP, stringDecP1, NULL),
   SCS_ITEM("Ampl ", 0, 255,         lfoAmplitudeGet,lfoAmplitudeSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("Rate ", 0, 255,         lfoRateGet,     lfoRateSet,     selectNOP, stringLfoRate, NULL),
@@ -744,7 +744,7 @@ const scs_menu_item_t pageLFO[] = {
 };
 
 const scs_menu_item_t pageENV1[] = {
-  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Ampl ", 0, 255,         envAmplitudeGet,envAmplitudeSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("Dely ", 0, 255,         envDelayGet,    envDelaySet,    selectNOP, stringDec, NULL),
   SCS_ITEM("Atk. ", 0, 255,         envAttackGet,   envAttackSet,   selectNOP, stringDec, NULL),
@@ -762,7 +762,7 @@ const scs_menu_item_t pageENV1[] = {
 };
 
 const scs_menu_item_t pageAOUT[] = {
-  SCS_ITEM(" CV  ", 0, MBCV_PATCH_NUM_CV-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
+  SCS_ITEM(" CV  ", 0, CV_SE_NUM-1, cvGet, cvSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("Curve", 0, MBCV_MAP_NUM_CURVES-1, cvCurveGet, cvCurveSet, selectNOP, stringCvCurve, NULL),
   SCS_ITEM(" Slew", 0, 255,   cvSlewRateGet, cvSlewRateSet, selectNOP, stringDec4, NULL),
   SCS_ITEM(" Cali", 0, MBCV_MAP_NUM_CALI_MODES-1, cvCaliModeGet, cvCaliModeSet, selectNOP, stringCvCaliMode, NULL),
