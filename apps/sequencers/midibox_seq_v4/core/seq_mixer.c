@@ -155,6 +155,19 @@ s32 SEQ_MIXER_Send(u8 chn, seq_mixer_par_t par)
   return 0;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Sends all mixer values for a specified Channel
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIXER_SendAllByChannel(u8 chn)
+{
+  seq_mixer_par_t par;
+  s32 status = 0;
+	
+  for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
+    status |= SEQ_MIXER_Send(chn, par);
+	
+  return status;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Sends all mixer values

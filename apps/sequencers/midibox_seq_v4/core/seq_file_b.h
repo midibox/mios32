@@ -41,7 +41,7 @@ extern s32 SEQ_FILE_B_NumPatterns(u8 bank);
 extern s32 SEQ_FILE_B_Create(char *session, u8 bank);
 extern s32 SEQ_FILE_B_Open(char *session, u8 bank);
 
-extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group);
+extern s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group,  u16 remix_map);
 extern s32 SEQ_FILE_B_PatternWrite(char *session, u8 bank, u8 pattern, u8 source_group, u8 rename_if_empty_name);
 
 extern s32 SEQ_FILE_B_PatternPeekName(u8 bank, u8 pattern, u8 non_cached, char *pattern_name);

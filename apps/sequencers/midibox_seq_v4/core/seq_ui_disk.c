@@ -1963,7 +1963,7 @@ static s32 DoSessionCopyPatterns(char *from_session, u16 from_pattern, char *to_
 
     // read pattern
     group = 0;
-    status = SEQ_FILE_B_PatternRead(s_bank, s_pattern, group);
+    status = SEQ_FILE_B_PatternRead(s_bank, s_pattern, group, 0);
 
     // switch to destination session
     status = SEQ_FILE_B_Open(to_session, d_bank);
@@ -2002,7 +2002,7 @@ static s32 DoSessionCopyPatterns(char *from_session, u16 from_pattern, char *to_
 
   // reload patterns of all groups
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
-    status = SEQ_FILE_B_PatternRead(seq_pattern[group].bank, seq_pattern[group].pattern, group);
+    status = SEQ_FILE_B_PatternRead(seq_pattern[group].bank, seq_pattern[group].pattern, group, 0);
     if( status < 0 )
       break;
   }

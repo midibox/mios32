@@ -52,12 +52,19 @@ seq_pattern_t seq_pattern[SEQ_CORE_NUM_GROUPS];
 seq_pattern_t seq_pattern_req[SEQ_CORE_NUM_GROUPS];
 char seq_pattern_name[SEQ_CORE_NUM_GROUPS][21];
 
+mios32_sys_time_t seq_pattern_start_time;
+u8 seq_pattern_mixer_num;
+u16 seq_pattern_remix_map;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_PATTERN_Init(u32 mode)
 {
+  seq_pattern_start_time.seconds = 0;
+  seq_pattern_mixer_num = 0;
+  seq_pattern_remix_map = 0;
+	
   // pre-init pattern numbers
   u8 group;
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
@@ -175,6 +182,37 @@ s32 SEQ_PATTERN_Handler(void)
       seq_pattern_req[group].REQ = 0;
       portEXIT_CRITICAL();
 
+			
+      if (group == 0) {
+				
+			  u8 mixer_num = 0;
+				u8 track;
+				
+				if (seq_pattern_req[0].lower) {
+				  mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
+				} else {
+				  mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
+				}
+				
+        // setup our requested pattern mixer map
+        SEQ_MIXER_NumSet(mixer_num);
+				SEQ_MIXER_Load(mixer_num);
+        //SEQ_MIXER_SendAll();
+				
+        // mixer_map support
+        for(track=0; track<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track) {
+					
+          // if we got the track bit setup inside our remix_map, them do not send mixer data for that track channel, let it be mixed down
+          if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
+            // do nothing for now...
+          } else {
+            SEQ_MIXER_SendAllByChannel(track);
+          }
+					
+        }
+				
+      }
+			
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
 
       // restart *all* patterns?
@@ -205,10 +243,10 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   SEQ_STATISTICS_StopwatchReset();
 #endif
-
-  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 )
+  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group, seq_pattern_remix_map)) < 0 )
     SEQ_UI_SDCardErrMsg(2000, status);
-
+	
+  seq_pattern_start_time = MIOS32_SYS_TimeGet();
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   SEQ_STATISTICS_StopwatchCapture();
 #endif
@@ -270,7 +308,7 @@ s32 SEQ_PATTERN_Fix(u8 group, seq_pattern_t pattern)
   MUTEX_SDCARD_TAKE;
 
   MIOS32_MIDI_SendDebugMessage("Loading bank #%d pattern %d\n", pattern.bank+1, pattern.pattern+1);
-  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group)) < 0 ) {
+  if( (status=SEQ_FILE_B_PatternRead(pattern.bank, pattern.pattern, group, 0)) < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
     MIOS32_MIDI_SendDebugMessage("Read failed with status: %d\n", status);
   } else {

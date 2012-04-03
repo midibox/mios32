@@ -67,6 +67,7 @@ extern s32 SEQ_MIXER_Get(u8 chn, seq_mixer_par_t par);
 
 extern s32 SEQ_MIXER_Send(u8 chn, seq_mixer_par_t par);
 extern s32 SEQ_MIXER_SendAll(void);
+extern s32 SEQ_MIXER_SendAllByChannel(u8 chn);
 
 extern s32 SEQ_MIXER_Clear(void);
 

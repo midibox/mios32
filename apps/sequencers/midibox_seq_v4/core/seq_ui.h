@@ -381,4 +381,6 @@ extern seq_ui_edit_view_t seq_ui_edit_view;
 
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
+extern mios32_sys_time_t seq_play_timer;
+
 #endif /* _SEQ_UI_H */
