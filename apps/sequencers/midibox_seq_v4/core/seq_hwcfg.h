@@ -113,6 +113,7 @@ typedef struct {
   u8 track_transpose;
 
   u8 footswitch;
+  u8 pattern_remix;
 } seq_hwcfg_button_t;
 
 

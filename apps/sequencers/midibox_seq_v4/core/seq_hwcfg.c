@@ -201,6 +201,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .track_transpose = ((( 0   -1)<<3)+    0),
 
   .footswitch      = ((( 0   -1)<<3)+    0),
+  .pattern_remix   = ((( 0   -1)<<3)+    0),
 };
 
 

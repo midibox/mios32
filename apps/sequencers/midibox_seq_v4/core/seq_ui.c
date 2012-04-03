@@ -124,6 +124,7 @@ static u16 ui_delayed_action_ctr;
 
 static seq_ui_page_t ui_page_before_bookmark;
 
+mios32_sys_time_t seq_play_timer;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -452,6 +453,8 @@ s32 SEQ_UI_Button_Stop(s32 depressed)
     SEQ_MIDPLY_Reset();
   }
 
+	seq_play_timer.seconds = 0;
+	
   return 0; // no error
 }
 
@@ -519,6 +522,8 @@ s32 SEQ_UI_Button_Play(s32 depressed)
 #endif
   }
 
+	seq_play_timer = MIOS32_SYS_TimeGet();
+	
   return 0; // no error
 }
 
@@ -1149,6 +1154,22 @@ static s32 SEQ_UI_Button_Pattern(s32 depressed)
   SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN);
 
   return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Pattern_Remix(s32 depressed)
+{
+	
+	if ( ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
+		// to avoid race conditions using the same button(any other way of solving that?)
+		vTaskDelay(60);
+		// a trick to use the same button with 2 functionalitys
+		ui_button_callback(SEQ_UI_BUTTON_Edit, depressed);
+	} else {
+		SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN_RMX);
+	}
+ 
+	return 0; // no error
+	
 }
 
 static s32 SEQ_UI_Button_Song(s32 depressed)
@@ -1859,7 +1880,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_TrackTranspose(pin_value);
   if( pin == seq_hwcfg_button.footswitch )
     return SEQ_UI_Button_FootSwitch(pin_value);
-
+  if( pin == seq_hwcfg_button.pattern_remix )
+    return SEQ_UI_Button_Pattern_Remix(pin_value);
   // always print debugging message
 #if 1
   MUTEX_MIDIOUT_TAKE;

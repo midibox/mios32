@@ -25,6 +25,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_mute.c \
 		core/seq_ui_pmute.c \
 		core/seq_ui_pattern.c \
+                core/seq_ui_pattern_remix.c \
 		core/seq_ui_song.c \
 		core/seq_ui_trkevnt.c \
 		core/seq_ui_trkmode.c \

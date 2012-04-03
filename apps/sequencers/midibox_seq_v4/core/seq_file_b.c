@@ -386,7 +386,7 @@ s32 SEQ_FILE_B_Open(char *session, u8 bank)
 // reads a pattern from bank into given group
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
+s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group, u16 remix_map)
 {
   if( bank >= SEQ_FILE_B_NUM_BANKS )
     return SEQ_FILE_B_ERR_INVALID_BANK;
@@ -444,6 +444,13 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
   u8 track_i;
   u8 track = target_group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
   for(track_i=0; track_i<num_tracks; ++track_i, ++track) {
+		
+    // if we got the track bit setup inside our remix_map, them do not change him, let it be mixed down
+    if ( ((1 << track) | remix_map) == remix_map ) {
+      // Mixed down! no need to change the track pattern
+      // but we need to state our file pointer... jump to the next track data
+    } else {
+			
     status |= FILE_ReadBuffer((u8 *)seq_core_trk[track].name, 80);
     seq_core_trk[track].name[80] = 0;
 
@@ -524,6 +531,8 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group)
     // finally update CC links again, because some of them depend on SEQ_PAR_NumLayersGet()!!!
     SEQ_CC_LinkUpdate(track);
 
+		}
+			
   }
 
   // close file (so that it can be re-opened)
