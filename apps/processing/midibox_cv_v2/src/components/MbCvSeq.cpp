@@ -51,7 +51,6 @@ void MbCvSeq::init(void)
     seqRunning = 0;
     seqPos = 0;
     seqDivCtr = 0;
-    seqSubCtr = 0;
 
     seqEnabledSaved = false;
 }

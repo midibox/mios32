@@ -59,7 +59,6 @@
 #define CV_NUM_PATCHES    128
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
@@ -120,6 +119,9 @@ static mbcv_file_b_info_t mbcv_file_b_info[MBCV_FILE_B_NUM_BANKS];
 static u8 cached_patch_name[21];
 static u8 cached_bank;
 static u8 cached_patch;
+
+// TODO: only temporary used - make this global?
+static u16 patch_buffer[CV_PATCH_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -385,7 +387,7 @@ s32 MBCV_FILE_B_PatchRead(u8 bank, u8 patch)
   if( status >= 0 ) {
     u8 cv;
     for(cv=0; cv<CV_PATCH_CHANNELS; ++cv) {
-      status |= FILE_ReadBuffer((u8 *)MBCV_PATCH_CopyBufferGet(), 2*CV_PATCH_SIZE);
+      status |= FILE_ReadBuffer((u8 *)patch_buffer, 2*CV_PATCH_SIZE);
 
       // check status before pasting into CV channel
       if( status < 0 ) {
@@ -395,7 +397,7 @@ s32 MBCV_FILE_B_PatchRead(u8 bank, u8 patch)
 	break;
       }
 
-      MBCV_PATCH_Paste(cv, (u8 *)MBCV_PATCH_CopyBufferGet());
+      MBCV_PATCH_Paste(cv, (u8 *)patch_buffer);
     }
   }
 
@@ -510,8 +512,8 @@ s32 MBCV_FILE_B_PatchWrite(u8 bank, u8 patch, u8 rename_if_empty_name)
   // write patches
   u8 cv;
   for(cv=0; cv<num_channels; ++cv) {
-    MBCV_PATCH_Copy(cv, (u8 *)MBCV_PATCH_CopyBufferGet());
-    status |= FILE_WriteBuffer((u8 *)MBCV_PATCH_CopyBufferGet(), 2*CV_PATCH_SIZE);
+    MBCV_PATCH_Copy(cv, patch_buffer);
+    status |= FILE_WriteBuffer((u8 *)patch_buffer, 2*CV_PATCH_SIZE);
   }
 
 
