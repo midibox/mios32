@@ -163,7 +163,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show:                             shows the current configuration file");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  router:                           print MIDI router info\n");
-      out("  set router <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
+      out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
       out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
       out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
       out("  reset:                            resets the MIDIbox (!)\n");

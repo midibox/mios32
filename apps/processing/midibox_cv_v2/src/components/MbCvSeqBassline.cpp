@@ -15,12 +15,14 @@
 #include <string.h>
 #include "MbCvSeqBassline.h"
 #include "MbCv.h"
+#include "MbCvTables.h"
 
 #define TRIGGER_CV2_AND_CV3 1
 #if TRIGGER_CV2_AND_CV3
 #include <app.h>
 #include "MbCvEnvironment.h"
 #endif
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,8 +68,6 @@ void MbCvSeqBassline::init(void)
 /////////////////////////////////////////////////////////////////////////////
 void MbCvSeqBassline::tick(MbCvVoice *v, MbCv *cv)
 {
-    u8 seqClockDivider = 3;
-
     // always bypass the notestack when triggering instruments
     //bool bypassNotestack = true;
 
@@ -108,7 +108,6 @@ void MbCvSeqBassline::tick(MbCvVoice *v, MbCv *cv)
 
         // next clock event will increment to 0
         seqDivCtr = ~0;
-        seqSubCtr = ~0;
         // next step will increment to start position
         seqPos = ~0;
         seqCurrentPattern = seqPatternNumber;
@@ -122,105 +121,103 @@ void MbCvSeqBassline::tick(MbCvVoice *v, MbCv *cv)
 
         // increment clock divider
         // reset divider if it already has reached the target value
-        if( ++seqDivCtr == 0 || seqDivCtr > seqClockDivider ) {
+        // 0: new note & gate set
+        // offTick: gate clear
+        u32 seqClockDivider = mbCvMclkTable[seqResolution % 32]; // we support 32 clock settings
+        u32 offTick = (seqClockDivider * seqGateLength) / 100;
+        if( offTick == 0 ) offTick = 1; else if( offTick >= seqClockDivider ) offTick = seqClockDivider - 1;
+
+        if( ++seqDivCtr == 0 || seqDivCtr >= seqClockDivider )
             seqDivCtr = 0;
 
-            // increment subcounter and check for state
-            // 0: new note & gate set
-            // 4: gate clear
-            // >= 6: reset to 0, new note & gate set
-            if( ++seqSubCtr >= 6 )
-                seqSubCtr = 0;
+        if( seqDivCtr == 0 ) { // set gate
+            // increment position counter, reset at end position
+            seqPos = (seqPos & 0x1f) + 1;
+            if( seqPos > seqPatternLength )
+                seqPos = 0;
+            else
+                seqPos %= MBCV_SEQ_BASSLINE_NUM_STEPS; // just to ensure...
 
-            if( seqSubCtr == 0 ) { // set gate
-                // increment position counter, reset at end position
-                seqPos = (seqPos & 0x1f) + 1;
-                if( seqPos > seqPatternLength )
-                    seqPos = 0;
-                else
-                    seqPos %= MBCV_SEQ_BASSLINE_NUM_STEPS; // just to ensure...
+            // change to new sequence number immediately if SYNCH_TO_MEASURE flag not set, or first step reached
+            if( !seqSynchToMeasure || seqPos == 0 )
+                seqCurrentPattern = seqPatternNumber % MBCV_SEQ_BASSLINE_NUM_PATTERNS; // just to ensure...
 
-                // change to new sequence number immediately if SYNCH_TO_MEASURE flag not set, or first step reached
-                if( !seqSynchToMeasure || seqPos == 0 )
-                    seqCurrentPattern = seqPatternNumber % MBCV_SEQ_BASSLINE_NUM_PATTERNS; // just to ensure...
+            // play the step
 
-                // play the step
-
-                // gate off (without slide) if invalid song number (stop feature: seq >= 8)
-                if( seqPatternNumber >= 8 ) {
-                    if( v->voiceGateActive ) {
-                        v->voiceGateClrReq = 1;
-                        v->voiceGateSetReq = 0;
-                        cv->triggerNoteOff(v); // propagate to trigger matrix
-                    }
-                } else {
-                    // get note/par value
-                    u8 keyItem = seqBasslineKey[seqCurrentPattern][seqPos];
-                    BasslineArgsT argItem;
-                    argItem.ALL = seqBasslineArgs[seqCurrentPattern][seqPos].ALL;
-
-#if 0
-                    DEBUG_MSG("SEQ %d@%d/%d: 0x%02x 0x%02x\n", 0, seqCurrentPattern, seqPos, keyItem, argItem);
-#endif
-
-                    // transfer note to voice
-                    v->voiceNote = keyItem;
-
-                    // set accent
-                    // ignore if slide has been set by previous step
-                    // (important for SID sustain: transition from sustain < 0xf to 0xf will reset the VCA)
-                    if( !v->voiceSlideActive ) {
-                        // take over accent
-                        v->voiceAccentActive = argItem.accent;
-
-                        // for MOD matrix
-                        seqAccentEffective = argItem.accent ? seqAccent : 0;
-                    }
-
-                    // activate portamento if slide has been set by previous step
-                    v->voicePortamentoActive = v->voiceSlideActive;
-
-                    // set slide flag of current flag
-                    v->voiceSlideActive = argItem.glide;
-
-                    // set gate if flag is set
-                    if( argItem.gate && v->voiceActive ) {
-                        if( !v->voiceGateActive ) {
-                            v->voiceGateClrReq = 0;
-                            v->voiceGateSetReq = 1;
-                            cv->triggerNoteOn(v); // propagate to trigger matrix
-#if TRIGGER_CV2_AND_CV3
-                            {
-                                // TMP as long as trigger matrix isn't available
-                                MbCvEnvironment* env = APP_GetEnv();
-                                if( env ) {
-                                    env->mbCv[1].triggerNoteOn(v);
-                                    env->mbCv[2].triggerNoteOn(v);
-                                }
-                            }
-#endif
-                            v->voiceNoteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
-                        }
-                    }
-
-                }
-            } else if( seqSubCtr == 4 ) { // clear gate
-                // don't clear if slide flag is set!
-                if( !v->voiceSlideActive ) {
+            // gate off (without slide) if invalid song number (stop feature: seq >= 8)
+            if( seqPatternNumber >= 8 ) {
+                if( v->voiceGateActive ) {
                     v->voiceGateClrReq = 1;
                     v->voiceGateSetReq = 0;
                     cv->triggerNoteOff(v); // propagate to trigger matrix
-#if TRIGGER_CV2_AND_CV3
-                    {
-                        // TMP as long as trigger matrix isn't available
-                        MbCvEnvironment* env = APP_GetEnv();
-                        if( env ) {
-                            env->mbCv[1].triggerNoteOff(v);
-                            env->mbCv[2].triggerNoteOff(v);
-                        }
-                    }
-#endif
                 }
+            } else {
+                // get note/par value
+                u8 keyItem = seqBasslineKey[seqCurrentPattern][seqPos];
+                BasslineArgsT argItem;
+                argItem.ALL = seqBasslineArgs[seqCurrentPattern][seqPos].ALL;
+
+#if 0
+                DEBUG_MSG("SEQ %d@%d/%d: 0x%02x 0x%02x\n", 0, seqCurrentPattern, seqPos, keyItem, argItem);
+#endif
+
+                // transfer note to voice
+                v->voiceNote = keyItem;
+
+                // set accent
+                // ignore if slide has been set by previous step
+                // (important for SID sustain: transition from sustain < 0xf to 0xf will reset the VCA)
+                if( !v->voiceSlideActive ) {
+                    // take over accent
+                    v->voiceAccentActive = argItem.accent;
+
+                    // for MOD matrix
+                    seqAccentEffective = argItem.accent ? seqAccent : 0;
+                }
+
+                // activate portamento if slide has been set by previous step
+                v->voicePortamentoActive = v->voiceSlideActive;
+
+                // set slide flag of current flag
+                v->voiceSlideActive = argItem.glide;
+
+                // set gate if flag is set
+                if( argItem.gate && v->voiceActive ) {
+                    if( !v->voiceGateActive ) {
+                        v->voiceGateClrReq = 0;
+                        v->voiceGateSetReq = 1;
+                        cv->triggerNoteOn(v); // propagate to trigger matrix
+#if TRIGGER_CV2_AND_CV3
+                        {
+                            // TMP as long as trigger matrix isn't available
+                            MbCvEnvironment* env = APP_GetEnv();
+                            if( env ) {
+                                env->mbCv[1].triggerNoteOn(v);
+                                env->mbCv[2].triggerNoteOn(v);
+                            }
+                        }
+#endif
+                        v->voiceNoteRestartReq = false; // clear note restart request which has been set by trigger function - gate already set!
+                    }
+                }
+
+            }
+        } else if( seqDivCtr == offTick ) { // clear gate
+            // don't clear if slide flag is set!
+            if( !v->voiceSlideActive ) {
+                v->voiceGateClrReq = 1;
+                v->voiceGateSetReq = 0;
+                cv->triggerNoteOff(v); // propagate to trigger matrix
+#if TRIGGER_CV2_AND_CV3
+                {
+                    // TMP as long as trigger matrix isn't available
+                    MbCvEnvironment* env = APP_GetEnv();
+                    if( env ) {
+                        env->mbCv[1].triggerNoteOff(v);
+                        env->mbCv[2].triggerNoteOff(v);
+                    }
+                }
+#endif
             }
         }
     }

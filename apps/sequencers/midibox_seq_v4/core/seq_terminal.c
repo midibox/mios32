@@ -576,7 +576,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  memory:         print memory allocation info\n");
   out("  sdcard:         print SD Card info\n");
   out("  router:         print MIDI router info\n");
-  out("  set router <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
+  out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");

@@ -46,8 +46,7 @@ public:
     bool seqRunning;
     u8 seqPos;
     u8 seqCurrentPattern;
-    u8 seqDivCtr;
-    u8 seqSubCtr;
+    u16 seqDivCtr;
 
 protected:
     bool seqEnabledSaved;
