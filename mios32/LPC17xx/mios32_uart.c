@@ -531,10 +531,10 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
   // currently I don't see another way than using only a single byte of the FIFO, and to push the remaining bytes into the ringbuffer
 
   int start_byte = 0;
-  if( !tx_buffer_size[uart] ) {
+  LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
+  if( !tx_buffer_size[uart] && (u->LSR & LSR_THRE) ) {
     start_byte = 1;
 
-    LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
     u->THR = *buffer++;
   }
 
