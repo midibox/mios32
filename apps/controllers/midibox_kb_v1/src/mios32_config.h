@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.000"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.001"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application

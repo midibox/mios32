@@ -39,6 +39,8 @@ typedef struct {
   u8  din_sr1;
   u8  din_sr2;
 
+  u8 inversion_mask;
+
   u8  scan_velocity:1;
 
   u16 delay_fastest;
