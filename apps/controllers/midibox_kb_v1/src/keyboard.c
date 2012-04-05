@@ -107,6 +107,8 @@ s32 KEYBOARD_Init(u32 mode)
     kc->delay_fastest = 4;
     kc->delay_slowest = 200;
 
+    kc->inversion_mask = 0x00;
+
     kc->scan_velocity = 1;
 
     if( kb == 0 ) {
@@ -196,9 +198,9 @@ void KEYBOARD_SRIO_ServicePrepare(void)
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
     if( kc->dout_sr1 )
-      MIOS32_DOUT_SRSet(kc->dout_sr1-1, (selection_mask >> 0) & 0xff);
+      MIOS32_DOUT_SRSet(kc->dout_sr1-1, ((selection_mask >> 0) & 0xff) ^ kc->inversion_mask);
     if( kc->dout_sr2 )
-      MIOS32_DOUT_SRSet(kc->dout_sr2-1, (selection_mask >> 8) & 0xff);
+      MIOS32_DOUT_SRSet(kc->dout_sr2-1, ((selection_mask >> 8) & 0xff) ^ kc->inversion_mask);
   }
 }
 
@@ -215,14 +217,14 @@ void KEYBOARD_SRIO_ServiceFinish(void)
 
     if( kc->din_sr1 ) {
       MIOS32_DIN_SRChangedGetAndClear(kc->din_sr1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value |= MIOS32_DIN_SRGet(kc->din_sr1-1);
+      sr_value |= (MIOS32_DIN_SRGet(kc->din_sr1-1) ^ kc->inversion_mask);
     } else {
       sr_value |= 0x00ff;
     }
 
     if( kc->din_sr2 ) {
       MIOS32_DIN_SRChangedGetAndClear(kc->din_sr2-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value |= (u16)MIOS32_DIN_SRGet(kc->din_sr2-1) << 8;
+      sr_value |= ((u16)MIOS32_DIN_SRGet(kc->din_sr2-1) ^ kc->inversion_mask) << 8;
     } else {
       sr_value |= 0xff00;
     }

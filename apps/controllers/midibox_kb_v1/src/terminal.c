@@ -157,7 +157,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set keyboard_debug <on|off>:      enables debug messages");
       UIP_TERMINAL_Help(_output_function);
       out("  router:                           print MIDI router info\n");
-      out("  set router <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
+      out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
       out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
       out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
       out("  store:                            stores current config as preset");
