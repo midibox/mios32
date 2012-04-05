@@ -25,6 +25,9 @@ TIP: always remember to save your work, if you are like me(no good short term me
   - Holded Pattern Remix Page Button: Go to pattern remix setup page
   - Holded Select Button: Go to options page
 
++ Configuration
+You need to add the BUTTON_PATTERN_RMX reference to your MBSEQ_HW.V4 and assign a free button pin to it.
+
 (MAIN PAGE)
 
 - Normal State -
@@ -77,12 +80,14 @@ To do this, just press again the GP Button of the selected track.
 Its usefull for smooth changes of patterns in live sessions. you could select what track of the pattern being played it will continue to be played and what track it will be replaced by the tracks of the selected pattern.
 To do this press and hold the pattern remix page button, and it will guide you to the Remix Page, where you can select the tracks to be mixed down before fire up the new pattern.
 
-- Normal State Remix Page -
+- Normal State Remix Page in Preview Mode(some pattern selected to be mixed down) -
 ----------------------------------------  ----------------------------------------
  1    2    3    4    5    6    7    8      9    10   11   12   13  14   15   16
 
 ----------------------------------------  ----------------------------------------
 Each GP Button are assigned to one of 16 tracks. If you select some track it will be marked with a "M" stated that this track are holed to be mixed when we change the pattern. Lets mix the track 1 and 6 as a example.
+
+PS: you will only see the "M" if you already have selected some pattern to be mixed down(since it does not make sense to state some track to be mixed if you have no pattern selected to remix.
 
 - Normal State Remix Page with tracks 1 and 6 selected -
 ----------------------------------------  ----------------------------------------
@@ -185,8 +190,8 @@ TIPs: The mixdown process is also good to arranje new ideas in a easy way. You c
 
 Pattern Options                           Remixer Options
 ----------------------------------------  ----------------------------------------
- a1: Acid Mountain (Gm)                                       Live API  Auto Save 
- Save SaveAs Name Copy Paste                                     ON        OFF   
+ a1: Acid Mountain (Gm)                                       Auto Save Abtn. API
+ Save SaveAs Name Copy Paste                                     OFF       ON   
 ----------------------------------------  ----------------------------------------
 Press and hold Select Button to get into this options page.
 
