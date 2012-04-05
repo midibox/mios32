@@ -449,90 +449,127 @@ s32 SEQ_FILE_B_PatternRead(u8 bank, u8 pattern, u8 target_group, u16 remix_map)
     if ( ((1 << track) | remix_map) == remix_map ) {
       // Mixed down! no need to change the track pattern
       // but we need to state our file pointer... jump to the next track data
+
+DEBUG_MSG("Skipping Track %d\n", track);
+      u8 dummy_name[80];
+      status |= FILE_ReadBuffer(dummy_name, 80); // dummy! don't take over track name
+
+      u8 num_p_instruments;
+      status |= FILE_ReadByte(&num_p_instruments);
+
+      u8 num_t_instruments;
+      status |= FILE_ReadByte(&num_t_instruments);
+
+      u8 num_p_layers;
+      status |= FILE_ReadByte(&num_p_layers);
+
+      u8 num_t_layers;
+      status |= FILE_ReadByte(&num_t_layers);
+
+      u16 p_layer_size;
+      status |= FILE_ReadHWord(&p_layer_size);
+
+      u16 t_layer_size;
+      status |= FILE_ReadHWord(&t_layer_size);
+
+      // skip CC and Par/Trg layer
+      u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
+      u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
+      u32 new_pos = FILE_ReadGetCurrentPosition() + 128 + par_size + trg_size;
+ DEBUG_MSG("Pos change: %d -> %d\n", FILE_ReadGetCurrentPosition(), new_pos);
+      if( (status=FILE_ReadSeek(new_pos)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[SEQ_FILE_B] failed to change pattern offset in file, status: %d\n", status);
+#endif
+	// close file (so that it can be re-opened)
+	FILE_ReadClose((file_t*)&info->file);
+	return SEQ_FILE_B_ERR_READ;
+      }
+ DEBUG_MSG("New pos: %d\n", FILE_ReadGetCurrentPosition());
+
     } else {
 			
-    status |= FILE_ReadBuffer((u8 *)seq_core_trk[track].name, 80);
-    seq_core_trk[track].name[80] = 0;
+      status |= FILE_ReadBuffer((u8 *)seq_core_trk[track].name, 80);
+      seq_core_trk[track].name[80] = 0;
 
-    u8 num_p_instruments;
-    status |= FILE_ReadByte(&num_p_instruments);
+      u8 num_p_instruments;
+      status |= FILE_ReadByte(&num_p_instruments);
 
-    u8 num_t_instruments;
-    status |= FILE_ReadByte(&num_t_instruments);
+      u8 num_t_instruments;
+      status |= FILE_ReadByte(&num_t_instruments);
 
-    u8 num_p_layers;
-    status |= FILE_ReadByte(&num_p_layers);
+      u8 num_p_layers;
+      status |= FILE_ReadByte(&num_p_layers);
 
-    u8 num_t_layers;
-    status |= FILE_ReadByte(&num_t_layers);
+      u8 num_t_layers;
+      status |= FILE_ReadByte(&num_t_layers);
 
-    u16 p_layer_size;
-    status |= FILE_ReadHWord(&p_layer_size);
+      u16 p_layer_size;
+      status |= FILE_ReadHWord(&p_layer_size);
 
-    u16 t_layer_size;
-    status |= FILE_ReadHWord(&t_layer_size);
+      u16 t_layer_size;
+      status |= FILE_ReadHWord(&t_layer_size);
 
-    u8 cc_buffer[128];
-    status |= FILE_ReadBuffer(cc_buffer, 128);
+      u8 cc_buffer[128];
+      status |= FILE_ReadBuffer(cc_buffer, 128);
     
-    // before changing CCs: we should stop here on error if read failed
-    if( status < 0 ) {
+      // before changing CCs: we should stop here on error if read failed
+      if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n", track+1, track+1, status);
+	DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) failed due to file access error, status: %d\n", track+1, track+1, status);
 #endif
-      break;
-    }
+	break;
+      }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, track+1, seq_core_trk[track].name);
-    DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d instruments P:%d,T:%d layers P:%d,T:%d steps\n", 
-	   num_p_instruments, num_t_instruments,
-	   num_p_layers, num_t_layers,
-	   p_layer_size, 8*t_layer_size);
+      DEBUG_MSG("[SEQ_FILE_B] read track #%d (-> %d) '%s'\n", track+1, track+1, seq_core_trk[track].name);
+      DEBUG_MSG("[SEQ_FILE_B] P:%d,T:%d instruments P:%d,T:%d layers P:%d,T:%d steps\n", 
+		num_p_instruments, num_t_instruments,
+		num_p_layers, num_t_layers,
+		p_layer_size, 8*t_layer_size);
 #endif
 
-    // reading CCs
-    u8 cc;
-    for(cc=0; cc<128; ++cc)
-      SEQ_CC_Set(track, cc, cc_buffer[cc]);
+      // reading CCs
+      u8 cc;
+      for(cc=0; cc<128; ++cc)
+	SEQ_CC_Set(track, cc, cc_buffer[cc]);
 
-    // partitionate parameter layer and clear all steps
-    SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers, num_p_instruments);
+      // partitionate parameter layer and clear all steps
+      SEQ_PAR_TrackInit(track, p_layer_size, num_p_layers, num_p_instruments);
 
-    // reading Parameter layers
-    u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
-    u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
-    if( par_size_taken )
-      FILE_ReadBuffer((u8 *)&seq_par_layer_value[track], par_size_taken);
+      // reading Parameter layers
+      u32 par_size = num_p_instruments * num_p_layers * p_layer_size;
+      u32 par_size_taken = (par_size > SEQ_PAR_MAX_BYTES) ? SEQ_PAR_MAX_BYTES : par_size;
+      if( par_size_taken )
+	FILE_ReadBuffer((u8 *)&seq_par_layer_value[track], par_size_taken);
 
-    // read remaining bytes into dummy buffer
-    while( par_size > par_size_taken ) {
-      u8 dummy;
-      FILE_ReadByte(&dummy);
-      ++par_size_taken;
+      // read remaining bytes into dummy buffer
+      while( par_size > par_size_taken ) {
+	u8 dummy;
+	FILE_ReadByte(&dummy);
+	++par_size_taken;
+      }
+
+      // partitionate trigger layer and clear all steps
+      SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers, num_t_instruments);
+
+      // reading Trigger layers
+      u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
+      u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
+      if( trg_size_taken )
+	FILE_ReadBuffer((u8 *)&seq_trg_layer_value[track], trg_size_taken);
+
+      // read remaining bytes into dummy buffer
+      while( trg_size > trg_size_taken ) {
+	u8 dummy;
+	FILE_ReadByte(&dummy);
+	++trg_size_taken;
+      }
+
+      // finally update CC links again, because some of them depend on SEQ_PAR_NumLayersGet()!!!
+      SEQ_CC_LinkUpdate(track);
+
     }
-
-    // partitionate trigger layer and clear all steps
-    SEQ_TRG_TrackInit(track, t_layer_size*8, num_t_layers, num_t_instruments);
-
-    // reading Trigger layers
-    u32 trg_size = num_t_instruments * num_t_layers * t_layer_size;
-    u32 trg_size_taken = (trg_size > SEQ_TRG_MAX_BYTES) ? SEQ_TRG_MAX_BYTES : trg_size;
-    if( trg_size_taken )
-      FILE_ReadBuffer((u8 *)&seq_trg_layer_value[track], trg_size_taken);
-
-    // read remaining bytes into dummy buffer
-    while( trg_size > trg_size_taken ) {
-      u8 dummy;
-      FILE_ReadByte(&dummy);
-      ++trg_size_taken;
-    }
-
-    // finally update CC links again, because some of them depend on SEQ_PAR_NumLayersGet()!!!
-    SEQ_CC_LinkUpdate(track);
-
-		}
-			
   }
 
   // close file (so that it can be re-opened)
