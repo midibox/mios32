@@ -476,6 +476,8 @@ BUTTON_UNDO      0   0
 #                SR  Pin
 BUTTON_MIXER      0   0
 
+#                   SR  Pin
+BUTTON_PATTERN_RMX   0   0
 
 #                 SR  Pin
 BUTTON_FOOTSWITCH  0   0
