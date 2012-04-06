@@ -464,6 +464,9 @@ BUTTON_TRACK_SEL     2   4
 BUTTON_PAR_LAYER_SEL  0   0
 
 #                   SR  Pin
+BUTTON_PATTERN_RMX   0   0
+
+#                   SR  Pin
 BUTTON_TAP_TEMPO     0   0
 BUTTON_TEMPO_PRESET  0   0
 BUTTON_EXT_RESTART   0   0

@@ -5,6 +5,29 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.058
+~~~~~~~~~~~~~~~~~
+
+   o a new Pattern Remix feature has been implemented by Midilab.
+
+     It's optimized for live sessions and got a special page:
+        - pattern names can be previewed before they are selected
+        - patterns change when the selection button is pressed a second time
+        - mixer maps are dumped with pattern change
+        - the "Remix" function allows to select tracks which should be kept
+          (not overwritten by pattern changes)
+        - allows to synchronize with Ableton Live clips
+
+     The full documentation can be found under:
+     http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fapps%2Fsequencers%2Fmidibox_seq_v4%2Fdoc%2Fpattern_remix_manual.txt
+
+     Note that the correct function of this feature requires, that the remix page
+     is assigned to a dedicated button. This has to be done in the MBSEQ_HW.V4 file
+     (new entry: BUTTON_PATTERN_RMX) - e.g. you could assign it to F4
+
+   o corrected SysEx output for LPC17
+
+
 MIDIboxSEQ V4.057
 ~~~~~~~~~~~~~~~~~
 
