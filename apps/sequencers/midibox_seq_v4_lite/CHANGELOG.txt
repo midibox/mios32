@@ -5,7 +5,7 @@ Wishlist for future features
 
 -> see bottom of this document
 
-MIDIboxSEQ V4L.057
+MIDIboxSEQ V4L.058
 ~~~~~~~~~~~~~~~~~~
 
    o corrected SysEx output for LPC17
