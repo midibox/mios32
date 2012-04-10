@@ -45,6 +45,7 @@ MiosStudio::MiosStudio()
     setApplicationCommandManagerToWatch(commandManager);
 
     //                             num   min   max  prefered  
+#if 0
     horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
     horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
     horizontalLayout.setItemLayout(2, -0.005, -0.9, -0.30); // Upload Window
@@ -52,6 +53,16 @@ MiosStudio::MiosStudio()
     horizontalLayout.setItemLayout(4, -0.005, -0.9, -0.25); // MIOS Terminal
     horizontalLayout.setItemLayout(5,    8,      8,     8); // Resizer
     horizontalLayout.setItemLayout(6, -0.005, -0.2, -0.20); // MIDI Keyboard
+#else
+    // new: fixed size of Upload window and MIDI keyboard window, so that MIDI IN/OUT and MIOS Terminal can be enlarged easier
+    horizontalLayout.setItemLayout(0,    50, -0.9, -0.25); // MIDI In/Out Monitors
+    horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(2,   186,    186,  186); // Upload Window
+    horizontalLayout.setItemLayout(3,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(4,   50, -0.9, -0.25); // MIOS Terminal
+    horizontalLayout.setItemLayout(5,    8,      8,     8); // Resizer
+    horizontalLayout.setItemLayout(6,   124,    124,  124); // MIDI Keyboard
+#endif
 
     horizontalDividerBar1 = new StretchableLayoutResizerBar(&horizontalLayout, 1, false);
     addAndMakeVisible(horizontalDividerBar1);
@@ -426,19 +437,19 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
         break;
 
     case showMidio128Tool:
-        result.setInfo(T("MIDIO128 Tool"), T("Allows to configure a MIDIO128"), toolsCategory, 0);
+        result.setInfo(T("MIDIO128 V2 Tool"), T("Allows to configure a MIDIO128 V2"), toolsCategory, 0);
         result.setTicked(midio128ToolWindow && midio128ToolWindow->isVisible());
         result.addDefaultKeypress(T('2'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbCvTool:
-        result.setInfo(T("MIDIbox CV Tool"), T("Allows to configure a MIDIbox CV"), toolsCategory, 0);
+        result.setInfo(T("MIDIbox CV V1 Tool"), T("Allows to configure a MIDIbox CV V1"), toolsCategory, 0);
         result.setTicked(mbCvToolWindow && mbCvToolWindow->isVisible());
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbhpMfTool:
-        result.setInfo(T("MBHP_MF V3 Tool"), T("Allows to configure the MBHP_MF firmware"), toolsCategory, 0);
+        result.setInfo(T("MBHP_MF_NG Tool"), T("Allows to configure the MBHP_MF_NG firmware"), toolsCategory, 0);
         result.setTicked(mbhpMfToolWindow && mbhpMfToolWindow->isVisible());
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;

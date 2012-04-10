@@ -48,6 +48,9 @@ protected:
     Label* midiPortLabel;
 
     //==============================================================================
+    char* getNoteString(uint8 note, char* strBuffer);
+
+    //==============================================================================
     MiosStudio *miosStudio;
     bool inPort;
 

@@ -124,6 +124,38 @@ void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
     }
 }
 
+
+//==============================================================================
+char* MidiMonitor::getNoteString(uint8 note, char* strBuffer)
+{
+    const char note_tab[12][3] = { "c-", "c#", "d-", "d#", "e-", "f-", "f#", "g-", "g#", "a-", "a#", "b-" };
+    
+    // print "---" if note number is 0
+    if( note == 0 ) {
+        strBuffer[0] = '-';
+        strBuffer[1] = '-';
+        strBuffer[2] = '-';
+    } else {
+        // determine octave, note contains semitone number thereafter
+        uint8 octave = note / 12;
+        note %= 12;
+        
+        // semitone (capital letter if octave >= 2)
+        strBuffer[0] = octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0];
+        strBuffer[1] = note_tab[note][1];
+        
+        // octave
+        switch( octave ) {
+            case 0:  strBuffer[2] = '2'; break; // -2
+            case 1:  strBuffer[2] = '1'; break; // -1
+            default: strBuffer[2] = '0' + (octave-2); // 0..7
+        }
+    }
+    strBuffer[3] = 0;
+    
+    return strBuffer;
+}
+
 //==============================================================================
 void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
@@ -145,6 +177,66 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
 
         String hexStr = String::toHexString(data, size);
 
-        monitorLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + hexStr);
+        String descStr;
+        char strBuffer[4];
+        switch( data[0] & 0xf0 ) {
+            case 0x80:
+                descStr = String::formatted(T("   Chn#%2d  Note Off %s  Vel:%d"),
+                                            (data[0] & 0x0f) + 1,
+                                            getNoteString(data[1], strBuffer),
+                                            data[2]);
+                break;
+
+            case 0x90:
+                if( data[2] == 0 ) {
+                    descStr = String::formatted(T("   Chn#%2d  Note Off %s (optimized)"),
+                                                (data[0] & 0x0f) + 1,
+                                                getNoteString(data[1], strBuffer),
+                                                data[2]);
+                } else {
+                    descStr = String::formatted(T("   Chn#%2d  Note On  %s  Vel:%d"),
+                                                (data[0] & 0x0f) + 1,
+                                                getNoteString(data[1], strBuffer),
+                                                data[2]);
+                }
+                break;
+                
+            case 0xa0:
+                descStr = String::formatted(T("   Chn#%2d  Aftertouch %s %d"),
+                                            (data[0] & 0x0f) + 1,
+                                            getNoteString(data[1], strBuffer),
+                                            data[2]);
+                break;
+                
+            case 0xb0:
+                descStr = String::formatted(T("   Chn#%2d  CC#%3d = %d"),
+                                            (data[0] & 0x0f) + 1,
+                                            data[1],
+                                            data[2]);
+                break;
+                
+            case 0xc0:
+                descStr = String::formatted(T("   Chn#%2d  Program Change %d"),
+                                            (data[0] & 0x0f) + 1,
+                                            data[1]);
+                break;
+                
+            case 0xd0:
+                descStr = String::formatted(T("   Chn#%2d  Aftertouch %s"),
+                                            (data[0] & 0x0f) + 1,
+                                            getNoteString(data[1], strBuffer));
+                break;
+                
+            case 0xe0:
+                descStr = String::formatted(T("   Chn#%2d  Pitchbend %d"),
+                                            (data[0] & 0x0f) + 1,
+                                            (int)((data[1] & 0x7f) | ((data[2] & 0x7f) << 7)) - 8192);
+                break;
+                
+            default:
+                descStr = String::formatted(T("")); // nothing to add here
+        }
+        
+        monitorLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + hexStr + descStr);
     }
 }
