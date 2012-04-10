@@ -227,7 +227,7 @@ class MbCvToolWindow
 {
 public:
     MbCvToolWindow(MiosStudio *_miosStudio)
-        : DocumentWindow(T("MIDIbox CV Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
+        : DocumentWindow(T("MIDIbox CV V1 Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         mbCvTool = new MbCvTool(_miosStudio);
         setContentComponent(mbCvTool, true, true);

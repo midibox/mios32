@@ -271,7 +271,7 @@ class Midio128ToolWindow
 {
 public:
     Midio128ToolWindow(MiosStudio *_miosStudio)
-        : DocumentWindow(T("MIDIO128 Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
+        : DocumentWindow(T("MIDIO128 V2 Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         midio128Tool = new Midio128Tool(_miosStudio);
         setContentComponent(midio128Tool, true, true);

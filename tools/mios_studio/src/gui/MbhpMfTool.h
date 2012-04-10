@@ -330,7 +330,7 @@ class MbhpMfToolWindow
 {
 public:
     MbhpMfToolWindow(MiosStudio *_miosStudio)
-        : DocumentWindow(T("MBHP_MF V3 Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
+        : DocumentWindow(T("MBHP_MF_NG Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
     {
         mbhpMfTool = new MbhpMfTool(_miosStudio);
         setContentComponent(mbhpMfTool, true, true);
