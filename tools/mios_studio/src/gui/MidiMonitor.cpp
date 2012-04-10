@@ -126,32 +126,27 @@ void MidiMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 
 
 //==============================================================================
-char* MidiMonitor::getNoteString(uint8 note, char* strBuffer)
+String MidiMonitor::getNoteString(uint8 note)
 {
+    String strBuffer;
     const char note_tab[12][3] = { "c-", "c#", "d-", "d#", "e-", "f-", "f#", "g-", "g#", "a-", "a#", "b-" };
     
-    // print "---" if note number is 0
-    if( note == 0 ) {
-        strBuffer[0] = '-';
-        strBuffer[1] = '-';
-        strBuffer[2] = '-';
-    } else {
-        // determine octave, note contains semitone number thereafter
-        uint8 octave = note / 12;
-        note %= 12;
+    // determine octave, note contains semitone number thereafter
+    uint8 octave = note / 12;
+    note %= 12;
         
-        // semitone (capital letter if octave >= 2)
-        strBuffer[0] = octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0];
-        strBuffer[1] = note_tab[note][1];
-        
-        // octave
-        switch( octave ) {
-            case 0:  strBuffer[2] = '2'; break; // -2
-            case 1:  strBuffer[2] = '1'; break; // -1
-            default: strBuffer[2] = '0' + (octave-2); // 0..7
-        }
+    // octave
+    char octaveChr;
+    switch( octave ) {
+        case 0:  octaveChr = '2'; break; // -2
+        case 1:  octaveChr = '1'; break; // -1
+        default: octaveChr = '0' + (octave-2); // 0..7
     }
-    strBuffer[3] = 0;
+
+    // semitone (capital letter if octave >= 2)
+    strBuffer = String::formatted(T("%c%c%c"), octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0],
+                                  note_tab[note][1],
+                                  octaveChr);
     
     return strBuffer;
 }
@@ -178,34 +173,28 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
         String hexStr = String::toHexString(data, size);
 
         String descStr;
-        char strBuffer[4];
         switch( data[0] & 0xf0 ) {
             case 0x80:
-                descStr = String::formatted(T("   Chn#%2d  Note Off %s  Vel:%d"),
-                                            (data[0] & 0x0f) + 1,
-                                            getNoteString(data[1], strBuffer),
-                                            data[2]);
+                descStr = String::formatted(T("   Chn#%2d  Note Off "), (data[0] & 0x0f) + 1);
+                descStr += getNoteString(data[1]);
+                descStr += String::formatted(T("  Vel:%d"), data[2]);
                 break;
 
             case 0x90:
                 if( data[2] == 0 ) {
-                    descStr = String::formatted(T("   Chn#%2d  Note Off %s (optimized)"),
-                                                (data[0] & 0x0f) + 1,
-                                                getNoteString(data[1], strBuffer),
-                                                data[2]);
+                    descStr = String::formatted(T("   Chn#%2d  Note Off "), (data[0] & 0x0f) + 1);
+                    descStr += getNoteString(data[1]) + " (optimized)";
                 } else {
-                    descStr = String::formatted(T("   Chn#%2d  Note On  %s  Vel:%d"),
-                                                (data[0] & 0x0f) + 1,
-                                                getNoteString(data[1], strBuffer),
-                                                data[2]);
+                    descStr = String::formatted(T("   Chn#%2d  Note On  "), (data[0] & 0x0f) + 1);
+                    descStr += getNoteString(data[1]);
+                    descStr += String::formatted(T("  Vel:%d"), data[2]);
                 }
                 break;
                 
             case 0xa0:
-                descStr = String::formatted(T("   Chn#%2d  Aftertouch %s %d"),
-                                            (data[0] & 0x0f) + 1,
-                                            getNoteString(data[1], strBuffer),
-                                            data[2]);
+                descStr = String::formatted(T("   Chn#%2d  Aftertouch "), (data[0] & 0x0f) + 1);
+                descStr += getNoteString(data[1]);
+                descStr += String::formatted(T(" %d"), data[2]);
                 break;
                 
             case 0xb0:
@@ -222,9 +211,8 @@ void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 ru
                 break;
                 
             case 0xd0:
-                descStr = String::formatted(T("   Chn#%2d  Aftertouch %s"),
-                                            (data[0] & 0x0f) + 1,
-                                            getNoteString(data[1], strBuffer));
+                descStr = String::formatted(T("   Chn#%2d  Aftertouch "), (data[0] & 0x0f) + 1);
+                descStr += getNoteString(data[1]);
                 break;
                 
             case 0xe0:
