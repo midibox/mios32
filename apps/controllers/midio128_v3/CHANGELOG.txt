@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.007
+~~~~~~~~~~~~~~~
+
+   o corrected SysEx output for LPC17
+
+
 MIDIO128 V3.006
 ~~~~~~~~~~~~~~~
 
