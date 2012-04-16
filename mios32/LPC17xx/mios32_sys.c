@@ -309,8 +309,11 @@ u32 MIOS32_SYS_ChipIDGet(void)
   unsigned param_table[5];
   unsigned result_table[5];
 
+  MIOS32_IRQ_Disable();
   param_table[0] = READ_PART_ID;
   iap_entry(param_table, result_table);
+  MIOS32_IRQ_Enable();
+
   return result_table[1];
 }
 
@@ -347,8 +350,10 @@ s32 MIOS32_SYS_SerialNumberGet(char *str)
   unsigned param_table[5];
   unsigned result_table[5];
 
+  MIOS32_IRQ_Disable();
   param_table[0] = 58; // READ_DEVICE_SERIAL_NUMBER not documented in iap.h
   iap_entry(param_table, result_table);
+  MIOS32_IRQ_Enable();
 
   // store 32 digits
   int i, j;
