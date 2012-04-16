@@ -104,22 +104,28 @@ s32 KEYBOARD_Init(u32 mode)
     kc->midi_chn = kb+1;
     kc->note_offset = 36;
 
+#if 0
     kc->delay_fastest = 4;
     kc->delay_slowest = 200;
+#else
+    kc->delay_fastest = 20;
+    kc->delay_slowest = 150;
+#endif
 
-    kc->inversion_mask = 0x00;
+    kc->inversion_mask = 0xff;
 
     kc->scan_velocity = 1;
 
     if( kb == 0 ) {
       kc->dout_sr1 = 1;
-      kc->dout_sr2 = 2;
+      //kc->dout_sr2 = 2;
       kc->din_sr1 = 1;
-      kc->din_sr2 = 0;
+      kc->din_sr2 = 2;
     } else {
-      kc->dout_sr1 = 0;
+      //kc->dout_sr1 = 2;
+      kc->dout_sr1 = 2;
       kc->dout_sr2 = 0;
-      kc->din_sr1 = 2;
+      kc->din_sr1 = 0;
       kc->din_sr2 = 0;
     }
 
@@ -261,6 +267,8 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 {
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
+  row -= 1;
+
   // determine pin number based on row/column
 
   // each key has two contacts, I call them "early contact" and "final contact"
@@ -271,11 +279,37 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   // number of pins per row depends on assigned DINs:
   int pins_per_row = kc->din_sr2 ? 16 : 8;
 
+#if 0
   // determine key number:
   int key = pins_per_row*(row / 2) + column;
 
   // check if key is assigned to an "early contact"
   u8 early_contact = !(row & 1); // even numbers
+
+  // reference to early and final pin
+  int pin_early = (row-1)*pins_per_row + column;
+  int pin_final = row*pins_per_row + column;
+#else
+  // determine key number:
+  int key = 8*(column / 2) + row;
+
+  // check if key is assigned to an "early contact"
+  u8 early_contact = (column & 1); // even numbers
+
+  // reference to early and final pin
+  //  int pin_early = (row+1)*pins_per_row + (column&0x7f) + 1;
+  // int pin_final = (row+1)*pins_per_row + (column&0x7f) + 1;
+  int pin_early = (row+1)*pins_per_row + (column&0x7e) + 1;
+  int pin_final = (row+1)*pins_per_row + (column&0x7e) + 0;
+#if 0
+  DEBUG_MSG("Using: %d %d\n", pin_early, pin_final);
+  {
+    int i;
+    for(i=0; i<32; ++i)
+      DEBUG_MSG("[%d] %5d\n", i, din_activated_timestamp[kb][i]);
+  }
+#endif
+#endif
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + kc->note_offset;
@@ -322,8 +356,8 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
       *note_on_sent |= key_mask;
 
       // determine timestamps between early and final contact
-      u16 timestamp_early = din_activated_timestamp[kb][(row-1)*pins_per_row + column];
-      u16 timestamp_final = din_activated_timestamp[kb][row*pins_per_row + column];
+      u16 timestamp_early = din_activated_timestamp[kb][pin_early];
+      u16 timestamp_final = din_activated_timestamp[kb][pin_final];
 
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
       s16 delay = timestamp_final - timestamp_early;
