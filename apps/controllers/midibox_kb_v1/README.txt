@@ -110,3 +110,10 @@ Pin 7 of the keyboard column -> connected to DIN, Pin D6
 Pin 8 of the keyboard column -> connected to DIN, Pin D7
 
 ===============================================================================
+
+Test procedure:
+- connect all DOUTs
+- connect DIN one by one to check the order
+
+
+===============================================================================
