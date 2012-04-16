@@ -5,6 +5,14 @@ Wishlist for future features
 
 -> see bottom of this document
 
+
+MIDIboxSEQ V4.059
+~~~~~~~~~~~~~~~~~
+
+   o fixed stack overflow which happened when incoming OSC messages were forwarded
+     to OSC in Live mode (they are now automatically filtered to avoid feedback loops)
+
+
 MIDIboxSEQ V4.058
 ~~~~~~~~~~~~~~~~~
 

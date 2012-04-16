@@ -70,6 +70,9 @@ extern seq_midi_port_mon_filter_t SEQ_MIDI_PORT_MonFilterGet(void);
 
 extern s32 SEQ_MIDI_PORT_Period1mS(void);
 
+extern s32 SEQ_MIDI_PORT_FilterOscPacketsSet(u8 filter);
+extern s32 SEQ_MIDI_PORT_FilterOscPacketsGet(void);
+
 extern s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t package);
 extern s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_package_t package);
 

@@ -81,6 +81,11 @@ s32 MBCV_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   mbcv_patch_router_entry_t *n = (mbcv_patch_router_entry_t *)&mbcv_patch_router[0];
   for(node=0; node<MBCV_PATCH_NUM_ROUTER; ++node, ++n) {
     if( n->src_chn && n->dst_chn && (n->src_port == port) ) {
+
+      // forwarding OSC to OSC will very likely result into a stack overflow (or feedback loop) -> avoid this!
+      if( ((port ^ n->dst_port) & 0xf0) == OSC0 )
+	continue;
+
       if( midi_package.event >= NoteOff && midi_package.event <= PitchBend ) {
 	if( n->src_chn == 17 || midi_package.chn == (n->src_chn-1) ) {
 	  mios32_midi_package_t fwd_package = midi_package;
