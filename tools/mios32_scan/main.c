@@ -428,7 +428,12 @@ static void scan_handler(void)
 	    case 6: printf("Flash Memory Size: %s bytes\n", query_response); break;
 	    case 7: printf("RAM Size: %s bytes\n", query_response); break;
 	    case 8: printf("%s\n", query_response); break;
-	    case 9: printf("%s\n", query_response); break;
+	    case 9: printf("%s\n", query_response);
+#if 0
+	      // quick & dirty "flood" to generate a lot of MIDI traffic
+	      query = 0;
+#endif
+	            break;
 	    default: printf("Response #%d: %s\n", query, query_response);
 	  }
 	}
