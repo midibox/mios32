@@ -39,6 +39,8 @@ u32 seq_midi_port_multi_enable_flags;
 u8 seq_midi_port_out_combined_ctr;
 u8 seq_midi_port_in_combined_ctr;
 
+// optional OSC packet filter
+u8 filter_osc_packets;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -154,6 +156,9 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
 
   // unmute all Out ports
   muted_out = 0;
+
+  // OSC packet filter only tmp. enabled
+  filter_osc_packets = 0;
 
   // init MIDI In/Out monitor variables
   for(i=0; i<NUM_OUT_PORTS; ++i) {
@@ -512,6 +517,22 @@ s32 SEQ_MIDI_PORT_Period1mS(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// OSC packets are tmp. not sent if this flag is set
+// Can be used to avoid feedback loops or stack overflows (e.g. used from seq_live.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_FilterOscPacketsSet(u8 filter)
+{
+  filter_osc_packets = filter;
+  return 0;
+}
+
+s32 SEQ_MIDI_PORT_FilterOscPacketsGet(void)
+{
+  return filter_osc_packets;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Called by MIDI Tx Notificaton hook if a MIDI event should be sent
 // Allows to provide additional MIDI ports
 // If 1 is returned, package will be filtered!
@@ -549,7 +570,8 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
   }
 
   if( (port & 0xf0) == OSC0 ) { // OSC1..4 port
-    if( OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
+    // avoid OSC feedback in seq_live.c (can cause infinite loops or stack overflows)
+    if( filter_osc_packets || OSC_CLIENT_SendMIDIEvent(port & 0xf, package) >= 0 )
       return 1; // filter package
   } else if( port == 0x80 ) { // AOUT port
     if( SEQ_CV_SendPackage(port & 0xf, package) )

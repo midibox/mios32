@@ -92,10 +92,12 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
     if( live_note_played[note_ix32] & note_mask ) {
       // send velocity off
       MUTEX_MIDIOUT_TAKE;
+      SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
       MIOS32_MIDI_SendNoteOn(live_keyboard_port[p.note],
 			     live_keyboard_chn[p.note],
 			     live_keyboard_note[p.note],
 			     0x00);
+      SEQ_MIDI_PORT_FilterOscPacketsSet(0);
       MUTEX_MIDIOUT_GIVE;
     }
 
@@ -168,7 +170,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       live_keyboard_note[p.note] = e.midi_package.note;
 
       MUTEX_MIDIOUT_TAKE;
+      SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
       MIOS32_MIDI_SendPackage(port, e.midi_package);
+      SEQ_MIDI_PORT_FilterOscPacketsSet(0);
       MUTEX_MIDIOUT_GIVE;
 
       // adding echo?
@@ -183,7 +187,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
     // just forward event over right channel...
     p.chn = chn;
     MUTEX_MIDIOUT_TAKE;
+    SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
     MIOS32_MIDI_SendPackage(port, p);
+    SEQ_MIDI_PORT_FilterOscPacketsSet(0);
     MUTEX_MIDIOUT_GIVE;
   }
 
