@@ -23,6 +23,10 @@
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
+// TMP:
+#define FATAR_KEYBOARD 1
+
+
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 
@@ -104,30 +108,47 @@ s32 KEYBOARD_Init(u32 mode)
     kc->midi_chn = kb+1;
     kc->note_offset = 36;
 
-#if 0
-    kc->delay_fastest = 4;
-    kc->delay_slowest = 200;
-#else
+#if FATAR_KEYBOARD
     kc->delay_fastest = 20;
     kc->delay_slowest = 150;
-#endif
 
     kc->inversion_mask = 0xff;
+#else
+    kc->delay_fastest = 4;
+    kc->delay_slowest = 200;
+
+    kc->inversion_mask = 0x00;
+#endif
 
     kc->scan_velocity = 1;
 
+#if FATAR_KEYBOARD
+    // only temporary used to mirror SR1 to a second SR (via kb==1)
     if( kb == 0 ) {
       kc->dout_sr1 = 1;
       //kc->dout_sr2 = 2;
+      kc->dout_sr2 = 0;
       kc->din_sr1 = 1;
       kc->din_sr2 = 2;
     } else {
-      //kc->dout_sr1 = 2;
       kc->dout_sr1 = 2;
       kc->dout_sr2 = 0;
       kc->din_sr1 = 0;
       kc->din_sr2 = 0;
     }
+#else
+    if( kb == 0 ) {
+      kc->dout_sr1 = 1;
+      kc->dout_sr2 = 0;
+      kc->din_sr1 = 1;
+      kc->din_sr2 = 2;
+    } else {
+      kc->dout_sr1 = 2;
+      kc->dout_sr2 = 0;
+      kc->din_sr1 = 0;
+      kc->din_sr2 = 0;
+    }
+#endif
 
     // initialize DIN arrays
     int row;
@@ -215,6 +236,9 @@ void KEYBOARD_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 void KEYBOARD_SRIO_ServiceFinish(void)
 {
+  // the DIN scan was done with previous row selection, not the current one:
+  u8 prev_row = (selected_row-1) % MATRIX_NUM_ROWS;
+
   // check DINs
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
@@ -236,14 +260,14 @@ void KEYBOARD_SRIO_ServiceFinish(void)
     }
 
     // determine pin changes
-    u16 changed = sr_value ^ din_value[kb][selected_row];
+    u16 changed = sr_value ^ din_value[kb][prev_row];
 
     if( changed ) {
       // add them to existing notifications
-      din_value_changed[kb][selected_row] |= changed;
+      din_value_changed[kb][prev_row] |= changed;
 
       // store new value
-      din_value[kb][selected_row] = sr_value;
+      din_value[kb][prev_row] = sr_value;
 
       // number of pins per row depends on assigned DINs:
       int pins_per_row = kc->din_sr2 ? 16 : 8;
@@ -253,7 +277,7 @@ void KEYBOARD_SRIO_ServiceFinish(void)
       u16 mask = 0x01;
       for(sr_pin=0; sr_pin<pins_per_row; ++sr_pin, mask <<= 1) {
 	if( (changed & mask) && !(sr_value & mask) ) {
-	  din_activated_timestamp[kb][selected_row*pins_per_row + sr_pin] = timestamp;
+	  din_activated_timestamp[kb][prev_row*pins_per_row + sr_pin] = timestamp;
 	}
       }
     }
@@ -267,8 +291,6 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 {
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
-  row -= 1;
-
   // determine pin number based on row/column
 
   // each key has two contacts, I call them "early contact" and "final contact"
@@ -279,36 +301,26 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   // number of pins per row depends on assigned DINs:
   int pins_per_row = kc->din_sr2 ? 16 : 8;
 
-#if 0
+#if FATAR_KEYBOARD
   // determine key number:
-  int key = pins_per_row*(row / 2) + column;
+  int key = 8*(column / 2) + row;
+
+  // check if key is assigned to an "early contact"
+  u8 early_contact = (column & 1); // odd numbers
+
+  // reference to early and final pin
+  int pin_early = row*pins_per_row + (column&0x7e) + 1;
+  int pin_final = row*pins_per_row + (column&0x7e) + 0;
+#else
+  // determine key number:
+  int key = (pins_per_row/2)*(row / 2) + column;
 
   // check if key is assigned to an "early contact"
   u8 early_contact = !(row & 1); // even numbers
 
   // reference to early and final pin
   int pin_early = (row-1)*pins_per_row + column;
-  int pin_final = row*pins_per_row + column;
-#else
-  // determine key number:
-  int key = 8*(column / 2) + row;
-
-  // check if key is assigned to an "early contact"
-  u8 early_contact = (column & 1); // even numbers
-
-  // reference to early and final pin
-  //  int pin_early = (row+1)*pins_per_row + (column&0x7f) + 1;
-  // int pin_final = (row+1)*pins_per_row + (column&0x7f) + 1;
-  int pin_early = (row+1)*pins_per_row + (column&0x7e) + 1;
-  int pin_final = (row+1)*pins_per_row + (column&0x7e) + 0;
-#if 0
-  DEBUG_MSG("Using: %d %d\n", pin_early, pin_final);
-  {
-    int i;
-    for(i=0; i<32; ++i)
-      DEBUG_MSG("[%d] %5d\n", i, din_activated_timestamp[kb][i]);
-  }
-#endif
+  int pin_final = (row)*pins_per_row + column;
 #endif
 
   // determine note number (here we could insert an octave shift)
