@@ -203,26 +203,29 @@ void APP_SRIO_ServiceFinish(void)
 {
   // check DINs
 #if MATRIX_DIN_SR
+  // the DIN scan was done with previous row selection, not the current one:
+  u8 prev_row = (selected_row-1) % MATRIX_NUM_ROWS;
+
   u8 sr = MATRIX_DIN_SR;
   MIOS32_DIN_SRChangedGetAndClear(sr-1, 0xff); // ensure that change won't be propagated to normal DIN handler
   u8 sr_value = MIOS32_DIN_SRGet(sr-1);
 
   // determine pin changes
-  u8 changed = sr_value ^ din_value[selected_row];
+  u8 changed = sr_value ^ din_value[prev_row];
 
   if( changed ) {
     // add them to existing notifications
-    din_value_changed[selected_row] |= changed;
+    din_value_changed[prev_row] |= changed;
 
     // store new value
-    din_value[selected_row] = sr_value;
+    din_value[prev_row] = sr_value;
 
     // store timestamp for changed pin on 1->0 transition
     u8 sr_pin;
     u8 mask = 0x01;
     for(sr_pin=0; sr_pin<8; ++sr_pin, mask <<= 1) {
       if( (changed & mask) && !(sr_value & mask) ) {
-	din_activated_timestamp[selected_row*8 + sr_pin] = timestamp;
+	din_activated_timestamp[prev_row*8 + sr_pin] = timestamp;
       }
     }
   }
@@ -289,6 +292,10 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
   // determine note number (here we could insert an octave shift)
   int note_number = key + 36;
 
+  // reference to early and final pin
+  int pin_early = (row-1)*8 + column;
+  int pin_final = (row)*8 + column;
+
   // ensure valid note range
   if( note_number > 127 )
     note_number = 127;
@@ -334,8 +341,8 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
       *note_on_sent |= key_mask;
 
       // determine timestamps between early and final contact
-      u16 timestamp_early = din_activated_timestamp[(row-1)*8 + column];
-      u16 timestamp_final = din_activated_timestamp[(row)*8 + column];
+      u16 timestamp_early = din_activated_timestamp[pin_early];
+      u16 timestamp_final = din_activated_timestamp[pin_final];
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
       s16 delay = timestamp_final - timestamp_early;
 
