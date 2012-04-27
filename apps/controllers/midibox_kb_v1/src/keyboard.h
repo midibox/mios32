@@ -30,9 +30,13 @@
 
 typedef struct {
 
-  u16 enabled_ports;
+  u16 midi_ports;
   u8  midi_chn;
   u8  note_offset;
+
+  u8  num_rows;
+  u8  selected_row;
+  u8  verbose_level;
 
   u8  dout_sr1;
   u8  dout_sr2;
@@ -54,15 +58,16 @@ typedef struct {
 
 extern s32 KEYBOARD_Init(u32 mode);
 
-extern s32 KEYBOARD_VerboseLevelSet(u8 mode);
-extern u8  KEYBOARD_VerboseLevelGet(void);
-
 extern s32 KEYBOARD_ConnectedNumSet(u8 num);
 extern u8  KEYBOARD_ConnectedNumGet(void);
 
 extern void KEYBOARD_SRIO_ServicePrepare(void);
 extern void KEYBOARD_SRIO_ServiceFinish(void);
 extern void KEYBOARD_Periodic_1mS(void);
+
+extern s32 KEYBOARD_TerminalHelp(void *_output_function);
+extern s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function);
+extern s32 KEYBOARD_TerminalPrintConfig(void *_output_function);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

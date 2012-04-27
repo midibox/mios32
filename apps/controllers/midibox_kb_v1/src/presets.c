@@ -22,6 +22,7 @@
 #include "midimon.h"
 #include "uip_task.h"
 #include "osc_server.h"
+#include "keyboard.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,25 @@ s32 PRESETS_Init(u32 mode)
 					   PRESETS_Read16(PRESETS_ADDR_OSC0_REMOTE_PORT + offset),
 					   PRESETS_Read16(PRESETS_ADDR_OSC0_LOCAL_PORT + offset));
     }
+
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      int offset = kb*PRESETS_OFFSET_BETWEEN_KB_RECORDS;
+      kc->midi_ports = PRESETS_Read16(PRESETS_ADDR_KB1_MIDI_PORTS + offset);
+      kc->midi_chn = PRESETS_Read16(PRESETS_ADDR_KB1_MIDI_CHN + offset);
+      kc->note_offset = PRESETS_Read16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset);
+      kc->num_rows = PRESETS_Read16(PRESETS_ADDR_KB1_ROWS + offset);
+      kc->scan_velocity = PRESETS_Read16(PRESETS_ADDR_KB1_VELOCITY + offset);
+      kc->dout_sr1 = PRESETS_Read16(PRESETS_ADDR_KB1_DOUT_SR1 + offset);
+      kc->dout_sr2 = PRESETS_Read16(PRESETS_ADDR_KB1_DOUT_SR2 + offset);
+      kc->din_sr1 = PRESETS_Read16(PRESETS_ADDR_KB1_DIN_SR1 + offset);
+      kc->din_sr2 = PRESETS_Read16(PRESETS_ADDR_KB1_DIN_SR2 + offset);
+      kc->inversion_mask = PRESETS_Read16(PRESETS_ADDR_KB1_INVERTED + offset);
+      kc->delay_fastest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
+      kc->delay_slowest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
+    }
+
   }
 
   return 0; // no error
@@ -153,6 +173,24 @@ s32 PRESETS_StoreAll(void)
     status |= PRESETS_Write16(PRESETS_ADDR_OSC0_REMOTE_PORT + offset, OSC_SERVER_RemotePortGet(con));
     status |= PRESETS_Write16(PRESETS_ADDR_OSC0_LOCAL_PORT + offset, OSC_SERVER_LocalPortGet(con));
   }
+
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      int offset = kb*PRESETS_OFFSET_BETWEEN_KB_RECORDS;
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_MIDI_PORTS + offset, kc->midi_ports);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_MIDI_CHN + offset, kc->midi_chn);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset, kc->note_offset);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_ROWS + offset, kc->num_rows);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_VELOCITY + offset, kc->scan_velocity);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DOUT_SR1 + offset, kc->dout_sr1);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DOUT_SR2 + offset, kc->dout_sr2);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DIN_SR1 + offset, kc->din_sr1);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DIN_SR2 + offset, kc->din_sr2);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_INVERTED + offset, kc->inversion_mask);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset, kc->delay_fastest);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset, kc->delay_slowest);
+    }
 
   return 0; // no error
 }
