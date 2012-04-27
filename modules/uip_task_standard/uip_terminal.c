@@ -58,10 +58,10 @@ static s32 get_dec(char *word)
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_on_off(char *word)
 {
-  if( strcmp(word, "on") == 0 )
+  if( strcmp(word, "on") == 0 || strcmp(word, "1") == 0 )
     return 1;
 
-  if( strcmp(word, "off") == 0 )
+  if( strcmp(word, "off") == 0 || strcmp(word, "0") == 0 )
     return 0;
 
   return -1;
@@ -134,11 +134,15 @@ s32 UIP_TERMINAL_ParseLine(char *input, void *_output_function)
   u8 input_line_parsed = 1;
   int input_len = strlen(input);
 
-  if( (parameter = strtok_r(input, separators, &brkt)) ) {
+  if( !(parameter = strtok_r(input, separators, &brkt)) ) {
+    input_line_parsed = 0; // input line has to be restored
+  } else {
     if( strcmp(parameter, "network") == 0 ) {
       UIP_TERMINAL_PrintNetwork(_output_function);
     } else if( strcmp(parameter, "set") == 0 ) {
-      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Missing parameter after 'set'!");
+      } else {
 	if( strcmp(parameter, "dhcp") == 0 ) {
 	  s32 on_off = -1;
 	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
@@ -354,15 +358,11 @@ s32 UIP_TERMINAL_ParseLine(char *input, void *_output_function)
 	  // out("Unknown set parameter: '%s'!", parameter);
 	  input_line_parsed = 0; // input line has to be restored
 	}
-      } else {
-	out("Missing parameter after 'set'!");
       }
     } else {
       // out("Unknown command - type 'help' to list available commands!");
       input_line_parsed = 0; // input line has to be restored
     }
-  } else {
-    input_line_parsed = 0; // input line has to be restored
   }
 
   if( !input_line_parsed ) {
