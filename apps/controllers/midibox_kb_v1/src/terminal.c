@@ -146,6 +146,9 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
   if( UIP_TERMINAL_ParseLine(input, _output_function) > 0 )
     return 0; // command parsed by UIP Terminal
 
+  if( KEYBOARD_TerminalParseLine(input, _output_function) > 0 )
+    return 0; // command parsed by Keyboard Terminal
+
   if( (parameter = strtok_r(input, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
@@ -154,7 +157,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set midimon <on|off>:             enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
-      out("  set keyboard_debug <on|off>:      enables debug messages");
+      KEYBOARD_TerminalHelp(_output_function);
+      out("  set srio_num <1..16>:             max. number of scanned DIN/DOUT registers (currently: %d)", MIOS32_SRIO_ScanNumGet());
       UIP_TERMINAL_Help(_output_function);
       out("  router:                           print MIDI router info\n");
       out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
@@ -220,16 +224,18 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    MIDIMON_TempoActiveSet(on_off);
 	    out("MIDI Monitor Tempo Display %s!", MIDIMON_TempoActiveGet() ? "enabled" : "disabled");
 	  }
-	} else if( strcmp(parameter, "keyboard_debug") == 0 ) {
-	  s32 on_off = -1;
-	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
-	    on_off = get_on_off(parameter);
-
-	  if( on_off < 0 ) {
-	    out("Expecting 'on' or 'off'!");
+	} else if( strcmp(parameter, "srio_num") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the number of DIN/DOUTs which should be scanned (1..16)!");
 	  } else {
-	    KEYBOARD_VerboseLevelSet(on_off ? 2 : 1);
-	    out("Keyboard Debugging messages %s!", on_off ? "enabled" : "disabled");
+	    int srs = get_dec(parameter);
+
+	    if( srs < 1 || srs > 16 ) {
+	      out("Number of DIN/DOUTs should be in the range between 1..16!");
+	    } else {
+	      MIOS32_SRIO_ScanNumSet(srs);
+	      out("%d DINs and DOUTs will be scanned!", MIOS32_SRIO_ScanNumGet());
+	    }
 	  }
         } else if( strcmp(parameter, "router") == 0 ) {
           char *arg;

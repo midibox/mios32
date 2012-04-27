@@ -96,6 +96,12 @@ void APP_Init(void)
   // install timeout callback function
   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
+  // limit the number of DIN/DOUT SRs which will be scanned for faster scan rate
+  MIOS32_SRIO_ScanNumSet(2);
+
+  // init keyboard functions
+  KEYBOARD_Init(0);
+
   // read EEPROM content
   PRESETS_Init(0);
 
@@ -109,9 +115,6 @@ void APP_Init(void)
   // init MIDImon
   MIDIMON_Init(0);
 
-  // init keyboard functions
-  KEYBOARD_Init(0);
-
   // start uIP task
   UIP_TASK_Init(0);
 
@@ -124,9 +127,6 @@ void APP_Init(void)
   MIOS32_MIDI_SendDebugMessage("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
   MIOS32_MIDI_SendDebugMessage("=================\n");
   MIOS32_MIDI_SendDebugMessage("\n");
-
-  // limit the number of DIN/DOUT SRs which will be scanned for faster scan rate
-  MIOS32_SRIO_ScanNumSet(2);
 
   // speed up SPI transfer rate (was MIOS32_SPI_PRESCALER_128, initialized by MIOS32_SRIO_Init())
   MIOS32_SPI_TransferModeInit(MIOS32_SRIO_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_64);
