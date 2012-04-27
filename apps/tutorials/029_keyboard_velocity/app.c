@@ -204,7 +204,7 @@ void APP_SRIO_ServiceFinish(void)
   // check DINs
 #if MATRIX_DIN_SR
   // the DIN scan was done with previous row selection, not the current one:
-  u8 prev_row = (selected_row-1) % MATRIX_NUM_ROWS;
+  int prev_row = selected_row ? (selected_row - 1) : (MATRIX_NUM_ROWS - 1);
 
   u8 sr = MATRIX_DIN_SR;
   MIOS32_DIN_SRChangedGetAndClear(sr-1, 0xff); // ensure that change won't be propagated to normal DIN handler
@@ -280,21 +280,21 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
   // the assignments can be determined by setting DEBUG_VERBOSE_LEVEL to 2
 
   // default: linear addressing (e.g. Fatar Keyboards?)
-  // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
-  // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
+  // the final contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the early contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
 
   // determine key number:
   int key = 8*(row / 2) + column;
 
   // check if key is assigned to an "early contact"
-  u8 early_contact = !(row & 1); // even numbers
+  u8 early_contact = (row & 1); // odd numbers
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + 36;
 
   // reference to early and final pin
-  int pin_early = (row-1)*8 + column;
   int pin_final = (row)*8 + column;
+  int pin_early = (row+1)*8 + column;
 
   // ensure valid note range
   if( note_number > 127 )
