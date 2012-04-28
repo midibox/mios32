@@ -46,25 +46,29 @@ static u8 selected_page = PAGE_MAIN;
 
 static seq_pattern_t selected_pattern[SEQ_CORE_NUM_GROUPS];
 
+// default ableton api port insi
+// TODO: put this inside options page to be selected by the user
+static mios32_midi_port_t ableton_port = USB0;
+
 // preview function
-static u8 preview_mode;
-static u8 remix_mode;
+static u8 preview_mode = 0;
+static u8 remix_mode = 0;
 static u8 preview_bank;
 static u8 preview_num;
 static char preview_name[21];
 static char pattern_name[21];
 static char pattern_name_copypaste[21];
-static u16 seq_pattern_demix_map;
+static u16 seq_pattern_demix_map = 0;
 
 // option parameters
-static u8 auto_save;
-static u8 auto_reset;
-static u8 ableton_api;
+static u8 auto_save = 0;
+//static u8 auto_reset = 0;
+static u8 ableton_api = 1;
 
 // static variables (only used here, therefore local)
 static u32 pc_time_control = 0; // timestamp of last operation
 
-static mios32_sys_time_t pattern_timer;
+//static mios32_sys_time_t pattern_timer;
 static mios32_sys_time_t pattern_remix_timer;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -88,9 +92,7 @@ static s32 LED_Handler(u16 *gp_leds)
     // REMIX PAGE
     case PAGE_REMIX: {
 
-      //if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
 			*gp_leds = seq_pattern_remix_map;
-      //}			
 			
     } break;
 
@@ -116,7 +118,6 @@ static s32 LED_Handler(u16 *gp_leds)
     // MAIN PAGE
     case PAGE_MAIN: {
 
-      //seq_pattern_t pattern = (ui_selected_item == (ITEM_PATTERN_G1 + ui_selected_group) && ui_cursor_flash) 
       seq_pattern_t pattern = (ui_selected_item == (ui_selected_group) && ui_cursor_flash) 
 
         ? seq_pattern[ui_selected_group] : selected_pattern[ui_selected_group];
@@ -155,17 +156,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     ///////////////////////////////////////////////////////////////////////////
     // REMIX PAGE
     case PAGE_REMIX: {
-
-      // all that algorithm requires that we have done this things before runs here
-      // after pattern_change();
-      // before preview_mode = 1;
-      // seq_pattern_demix_map = seq_pattern_remix_map;
 			
       // TODO: finish the incrementer helper for gp encoders
       if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 		
-				//u8 group;
-				
 				if ( preview_mode ) { // the remix state
 						
 					if( ((1 << encoder) | seq_pattern_remix_map) == seq_pattern_remix_map ) { // if we already got the requested bit setup
@@ -189,9 +183,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 						
 			  }
 				
-				if ( !preview_mode ) {
+				if ( !preview_mode && ableton_api) {
 					// send slot play envet to ableton cc (111 + track) with value 127 to channel 16
-					MIOS32_MIDI_SendCC(MIOS32_MIDI_DefaultPortGet(), 15, (111 + encoder), 127);	
+					MIOS32_MIDI_SendCC(ableton_port, 15, (111 + encoder), 127);	
 				}
 				
       }			
@@ -330,9 +324,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 							 // do nothing...
 						 } else {
 							 // delay our task for ableton get a breath before change the pattern line
-							 //vTaskDelay(50);
-							 // send slot play envet to ableton cc (111 + track) with value 127 to channel 16
-							 MIOS32_MIDI_SendCC(MIOS32_MIDI_DefaultPortGet(), 15, (111 + track), 127);
+							 vTaskDelay(50);
+							 // send slot play envet to ableton: cc (111 + track) with value 127 to channel 16
+							 MIOS32_MIDI_SendCC(ableton_port, 15, (111 + track), 127);
 						 }
 						 
 						}           
@@ -397,7 +391,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 			
   }
 
-  if( depressed ) return 0; // ignore when button depressed if its not SEQ_UI_BUTTON_Select or SEQ_UI_BUTTON_PATTERN
+  if( depressed ) return 0; // ignore when button depressed if its not SEQ_UI_BUTTON_Select or SEQ_UI_BUTTON_Edit
 	
   switch( selected_page ) {
 
@@ -419,7 +413,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       switch( button ) {
 
         case SEQ_UI_BUTTON_GP1:
-          // Save Pattern
+          // Save Pattern(all 4 groups at once)
           for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
 						
             if( (status=SEQ_PATTERN_Save(group, seq_pattern[group])) < 0 ) {
@@ -564,7 +558,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
           SEQ_PATTERN_PeekName(selected_pattern[0], preview_name);
           preview_mode = 1;
 					
-					// for security reasons in live environment, we can not accept rapid press of pattern button.
+					// for security reasons in live environment, we can not accept rapid 2x press of pattern button.
 					// if the buttons are not good quality they can send a 2x rapid signal os pressing in just one physical pressing
 					// the time we need is bassicly the human time to read the name of patterns requested
 			    // start time in count
@@ -575,12 +569,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 					// 
 					if ( remix_mode == 0 ) {
 					
+						//char str[30];
+						//sprintf(str, "%d = %d %d = %d", selected_pattern[0].num, preview_num, selected_pattern[0].group, preview_bank);
+						//SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, "debug");
+						
 						// Check for remix state
 						if ( (selected_pattern[0].num == preview_num) &&  (selected_pattern[0].group == preview_bank) ) {
 						
-							if ( pc_time_control >= seq_core_timestamp_ms )
-								return 0; // do nothing, just to be shure we are not handle acidental double clicks, it happens!					
-			
+							//if ( pc_time_control >= seq_core_timestamp_ms )
+							//	return 0; // do nothing, just to be shure we are not handle acidental double clicks, it happens!					
+							
 							// if we got some remix bit setup, enter in remix mode
 							if (seq_pattern_remix_map != 0) {
 								// set the remix mode
@@ -594,8 +592,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
           // Change Pattern
           if ( (selected_pattern[0].num == preview_num) &&  (selected_pattern[0].group == preview_bank) ) {
 
-  	        //if ( pc_time_control >= seq_core_timestamp_ms )
-	          //  return 0; // do nothing, just to be shure we are not handle acidental double clicks
+  	        if ( pc_time_control >= seq_core_timestamp_ms )
+	            return 0; // do nothing, just to be shure we are not handle acidental double clicks
 
 						if (ableton_api) {
 							
@@ -613,15 +611,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 							
 							// midi_cc to send = 110
 							// midi_chn = 16
-							// midi_port = MIOS32_MIDI_DefaultPortGet()
+							// midi_port = ableton_port
 							// here we need to send a clip line change request
-							MIOS32_MIDI_SendCC(MIOS32_MIDI_DefaultPortGet(), 15, 110, ableton_pattern_number);
+							MIOS32_MIDI_SendCC(ableton_port, 15, 110, ableton_pattern_number);
 						
 							// delay our task for ableton get a breath before change the pattern line
 							vTaskDelay(50);
-					
-            	// TODO: implements the mixer matrix here when ask ableton to change some track clip
-            	// mixer_map support
+
+							// clip triggering
 							u8 track;
             	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
               
@@ -629,17 +626,17 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
               	if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
                 	// do nothing...
               	} else {
-    		          // delay our task for ableton get a breath before change the pattern line
-		              //vTaskDelay(10);
-									// send slot play envet to ableton cc (111 + track) with value 127 to channel 16
-                	MIOS32_MIDI_SendCC(MIOS32_MIDI_DefaultPortGet(), 15, (111 + track), 127);
+									// delay our task for ableton get a breath before change the pattern line
+									vTaskDelay(50);									
+									// send clip slot play envet to ableton cc (111 + track) with value 127 to channel 16
+                	MIOS32_MIDI_SendCC(ableton_port, 15, (111 + track), 127);
               	}
               
             	}           
 
 							// send a global clip change(all clips in the clip line)	
 							// send play envet to ableton cc 20 with value 127 to channel 16
-							//MIOS32_MIDI_SendCC(MIOS32_MIDI_DefaultPortGet(), 15, 20, 127);
+							//MIOS32_MIDI_SendCC(ableton_port, 15, 20, 127);
 
 						}
 						
@@ -648,10 +645,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 						//
 						if (auto_save) {
 							
-							// Autosave all patterns
+							// Autosave all 4 group of patterns
 							for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
 								
-								// the autosave part seq_pattern
+								// Save to SD Card
 								if( (status=SEQ_PATTERN_Save(group, seq_pattern[group])) < 0 ) {
 									SEQ_UI_SDCardErrMsg(2000, status);
 								}
@@ -707,11 +704,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
             preview_num = button-8;
             SEQ_PATTERN_PeekName(selected_pattern[0], preview_name);
 
-        	  // for security reasons in live environment, we can not accept rapid press of pattern button.
+        	  // for security reasons in live environment, we can not accept 2x rapid press of pattern button.
       	    // if the buttons are not good quality they can send a 2x rapid signal os pressing in just one physical pressing
     	      // the time we need is bassicly the human time to read the name of patterns requested
   	        // start time in count
-	          pc_time_control = seq_core_timestamp_ms + 500;
+	          pc_time_control = seq_core_timestamp_ms + 200;
 
           }
 
@@ -982,11 +979,15 @@ static s32 LCD_Handler(u8 high_prio)
 
 			SEQ_LCD_Clear();
 			
+			SEQ_UI_KeyPad_LCD_Msg();
+      SEQ_LCD_CursorSet(76, 1);
+      SEQ_LCD_PrintString("Back");
+			
+			// Print the pattern name
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintPattern(seq_pattern[0]);
       SEQ_LCD_PrintString(": ");
 
-      // Print the pattern name
       for(i=0; i<20; ++i)
         SEQ_LCD_PrintChar(seq_pattern_name[ui_selected_group][i]);
 
@@ -995,10 +996,6 @@ static s32 LCD_Handler(u8 high_prio)
         SEQ_LCD_CursorSet(3 + ((ui_edit_name_cursor < 5) ? 1 : 2) + ui_edit_name_cursor, 0);
         SEQ_LCD_PrintChar('*');
       }
-
-      SEQ_UI_KeyPad_LCD_Msg();
-      SEQ_LCD_CursorSet(76, 1);
-      SEQ_LCD_PrintString("Back");
 
       //return 0;
 
@@ -1273,24 +1270,14 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_PATTERN_RMX_Init(u32 mode)
 {
-
-  // init local vars
-  preview_mode = 0;
-	remix_mode = 0;
-  preview_bank = 0;
-  preview_num = 0;
-
-  auto_save = 0;
-  auto_reset = 0;
-  ableton_api = 1;
 	
-  seq_pattern_demix_map = 0;
-	
-	pattern_timer.seconds = 0;
-	//pattern_remix_timer = MIOS32_SYS_TimeGet();
+	// init with our preview reference with the actucal pattern values
+	preview_num = seq_pattern[0].num;
+	preview_bank = seq_pattern[0].group;
+	//pattern_timer.seconds = 0;
 	
 	// clean our string memory space
-	sprintf(pattern_name_copypaste, "");
+	//sprintf(pattern_name_copypaste, "");
 
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
