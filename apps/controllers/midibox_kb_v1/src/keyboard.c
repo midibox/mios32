@@ -71,6 +71,7 @@ static u8 key_note_off_sent[KEYBOARD_NUM][KEYBOARD_NUM_PINS / 8];
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity);
+static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u32 ain_value);
 static char *KEYBOARD_GetNoteName(u8 note, char str[4]);
 
 
@@ -99,9 +100,8 @@ s32 KEYBOARD_Init(u32 mode)
       // set low verbose level by default (only warnings)
       kc->verbose_level = 1;
 
-      kc->inversion_mask = 0x00;
-
       kc->scan_velocity = 1;
+      kc->scan_optimized = 0;
 
       if( kb == 0 ) {
 	kc->num_rows = 8;
@@ -109,24 +109,37 @@ s32 KEYBOARD_Init(u32 mode)
 	kc->dout_sr2 = 2; // with num_rows<=8 the SR2 will mirror SR1
 	kc->din_sr1 = 1;
 	kc->din_sr2 = 2;
+	kc->din_key_offset = 32;
+	kc->din_inverted = 0;
+	kc->ain_pitchwheel = 0;
+	kc->ctrl_pitchwheel = 0x80;
+	kc->ain_modwheel = 0;
+	kc->ctrl_modwheel = 1;
       } else {
 	kc->num_rows = 0;
 	kc->dout_sr1 = 0;
 	kc->dout_sr2 = 0;
 	kc->din_sr1 = 0;
 	kc->din_sr2 = 0;
+	kc->din_key_offset = 32;
+	kc->din_inverted = 0;
+	kc->ain_pitchwheel = 0;
+	kc->ctrl_pitchwheel = 0x80;
+	kc->ain_modwheel = 0;
+	kc->ctrl_modwheel = 1;
       }
     }
 
     // runtime variables:
     kc->selected_row = 0;
+    kc->prev_row = 0xff;
 
     if( kc->num_rows )
       connected_keyboards_num = kb + 1;
 
     // initialize DIN arrays
     int row;
-    u16 inversion = (u16)kc->inversion_mask << 8 | kc->inversion_mask;
+    u16 inversion = kc->din_inverted ? 0xffff : 0x0000;
     for(row=0; row<MATRIX_NUM_ROWS; ++row) {
       din_value[kb][row] = 0xffff ^ inversion; // default state: buttons depressed
       din_value_changed[kb][row] = 0x0000;
@@ -179,20 +192,50 @@ void KEYBOARD_SRIO_ServicePrepare(void)
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
-    // select next column, wrap at num_rows
-    if( ++kc->selected_row >= kc->num_rows ) {
-      kc->selected_row = 0;
+
+    // optional scan optimization for break/make: if break not active, we don't need to scan make
+    if( kc->scan_velocity && !kc->break_inverted && kc->scan_optimized ) {
+      u8 skip_make = 0;
+
+      if( kc->prev_row & 1 ) { // last scan was break contact
+	if( (!kc->din_inverted && din_value[kb][kc->prev_row] == 0xffff) ||
+	    ( kc->din_inverted && din_value[kb][kc->prev_row] == 0x0000) ) {
+	  // skip scan of make contacts
+	  skip_make = 1;
+	}
+      }
+
+      // if scan optimization active: scan break before make
+      if( (kc->selected_row & 1) ) { // break
+	if( skip_make ) {
+	  if( (kc->selected_row += 2) >= kc->num_rows ) // switch to next break
+	    kc->selected_row = 1; // restart at first break
+	} else {
+	  kc->selected_row -= 1; // switch to make
+	}
+      } else {
+	if( (kc->selected_row+=3) >= kc->num_rows ) {
+	  kc->selected_row = 1; // restart at first break
+	}
+      }
+    } else {
+      // select next column, wrap at num_rows
+      if( ++kc->selected_row >= kc->num_rows ) {
+	kc->selected_row = 0;
+      }
     }
 
     // selection pattern (active selection is 0, all other outputs 1)
     u16 selection_mask = ~(1 << (u16)kc->selected_row);
+    if( kc->din_inverted )
+      selection_mask ^= 0xffff;
 
     if( kc->dout_sr1 )
-      MIOS32_DOUT_SRSet(kc->dout_sr1-1, ((selection_mask >> 0) & 0xff) ^ kc->inversion_mask);
+      MIOS32_DOUT_SRSet(kc->dout_sr1-1, selection_mask >> 0);
 
     // mirror selection if <= 8 rows for second SR, otherwise output remaining 8 selection lines
     if( kc->dout_sr2 )
-      MIOS32_DOUT_SRSet(kc->dout_sr2-1, ((selection_mask >> ((kc->num_rows <= 8) ? 0 : 8)) & 0xff) ^ kc->inversion_mask);
+      MIOS32_DOUT_SRSet(kc->dout_sr2-1, selection_mask >> ((kc->num_rows <= 8) ? 0 : 8));
   }
 }
 
@@ -208,21 +251,30 @@ void KEYBOARD_SRIO_ServiceFinish(void)
     u16 sr_value = 0;
 
     // the DIN scan was done with previous row selection, not the current one:
-    int prev_row = kc->selected_row ? (kc->selected_row - 1) : (kc->num_rows - 1);
+    int prev_row = kc->prev_row;
+
+    // store new previous row for next scan
+    kc->prev_row = kc->selected_row;
+
+    if( prev_row == 0xff ) // not scanned yet
+      continue;
 
     if( kc->din_sr1 ) {
       MIOS32_DIN_SRChangedGetAndClear(kc->din_sr1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value |= (MIOS32_DIN_SRGet(kc->din_sr1-1) ^ kc->inversion_mask);
+      sr_value |= MIOS32_DIN_SRGet(kc->din_sr1-1);
     } else {
-      sr_value |= (u16)(0xff ^ kc->inversion_mask) << 0;
+      sr_value |= 0x00ff;
     }
 
     if( kc->din_sr2 ) {
       MIOS32_DIN_SRChangedGetAndClear(kc->din_sr2-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-      sr_value |= (u16)((MIOS32_DIN_SRGet(kc->din_sr2-1) ^ kc->inversion_mask)) << 8;
+      sr_value |= (u16)MIOS32_DIN_SRGet(kc->din_sr2-1) << 8;
     } else {
-      sr_value |= (u16)(0xff ^ kc->inversion_mask) << 8;
+      sr_value |= 0xff00;
     }
+
+    if( kc->din_inverted )
+      sr_value ^= 0xffff;
 
     // determine pin changes
     u16 changed = sr_value ^ din_value[kb][prev_row];
@@ -266,30 +318,39 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   }
 #endif
 
-  // determine pin number based on row/column
-
-  // each key has two contacts, I call them "early contact" and "final contact"
-  // the assignments can be determined by setting verbose_level to 2
-  // the final contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
-  // the early contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
-
-  // does the second DOUT mirror the first DOUT?
-  // in this case key +=64 if DIN (column) >= 8
-  int dout_sr2_mirrored = kc->num_rows <= 8;
-
-  // determine key number:
+  // determine key number based on row/column
   int key;
-  key = (32 * (column/8)) + 8*(row/2) + (column % 8);
+  if( kc->scan_velocity ) {
+    key = ((column >= 8) ? kc->din_key_offset : 0) + 8*(row/2) + (column % 8);
+  } else {
+    key = ((column >= 8) ? kc->din_key_offset : 0) + 8*(row) + (column % 8);
+  }
 
-  // check if key is assigned to an "early contact"
-  u8 early_contact = (row & 1); // odd numbers
-
-  // reference to early and final pin (valid when final pin active)
-  int pin_final = (row)*MATRIX_NUM_ROWS + column;
-  int pin_early = (row+1)*MATRIX_NUM_ROWS + column;
+  // ensure valid range
+  if( key > 127 )
+    key = 127;
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + kc->note_offset;
+
+  // check if key is assigned to an "break contact"
+  // and determine reference to break and make pin (valid when make pin active)
+  u8 break_contact = (row & 1); // odd numbers
+  int pin_make, pin_break;
+  if( kc->scan_velocity ) {
+    break_contact = (row & 1); // odd numbers
+    pin_make  = (row)*MATRIX_NUM_ROWS + column;
+    pin_break = (row+1)*MATRIX_NUM_ROWS + column;
+  } else {
+    break_contact = 0;
+    pin_make  = (row)*MATRIX_NUM_ROWS + column;
+    pin_break = pin_make; // just use the same pin...
+  }
+
+
+  // break pin inverted?
+  if( break_contact && kc->scan_velocity && kc->break_inverted )
+    depressed = depressed ? 0 : 1;
 
   // ensure valid note range
   if( note_number > 127 )
@@ -298,13 +359,13 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
     note_number = 0;
 
   if( kc->verbose_level >= 2 )
-    DEBUG_MSG("KB%d: DOUT#%d.D%d / DIN#%d.D%d: %s  -->  key=%d, %s, note=%s (%d)\n",
+    DEBUG_MSG("KB%d: DOUT#%d.D%d / DIN#%d.D%d: %s  -->  key=%2d, %s, note=%s (%d)\n",
 	      kb+1,
 	      (row < 8) ? kc->dout_sr1 : kc->dout_sr2, 7 - (row % 8),
 	      (column < 8) ? kc->din_sr1 : kc->din_sr2, column % 8,
 	      depressed ? "depressed" : "pressed  ",
 	      key,
-	      early_contact ? "early contact" : "final contact",
+	      break_contact ? "break contact" : "make contact",
 	      KEYBOARD_GetNoteName(note_number, note_str), note_number);
 
   // determine key mask and pointers for access to combined arrays
@@ -313,19 +374,23 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   u8 *note_off_sent = (u8 *)&key_note_off_sent[kb][key / 8];
 
 
-  // early contacts don't send MIDI notes, but they are used for delay measurements,
-  // and they release the Note On/Off debouncing mechanism
-  if( early_contact ) {
-    if( depressed ) {
-      *note_on_sent &= ~key_mask;
-      *note_off_sent &= ~key_mask;
+  if( kc->scan_velocity ) {
+    // break contacts don't send MIDI notes, but they are used for delay measurements,
+    // and they release the Note On/Off debouncing mechanism
+    if( break_contact ) {
+      if( depressed ) {
+	*note_on_sent &= ~key_mask;
+	*note_off_sent &= ~key_mask;
+      }
+      return;
     }
-    return;
+  } else {
+    // no velocity: no debouncing yet, we could use the timestamp...
   }
 
   // branch depending on pressed or released key
   if( depressed ) {
-    if( !(*note_off_sent & key_mask) ) {
+    if( !kc->scan_velocity || !(*note_off_sent & key_mask) ) {
       *note_off_sent |= key_mask;
 
       if( kc->verbose_level >= 2 )
@@ -336,30 +401,36 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 
   } else {
 
-    if( !(*note_on_sent & key_mask) ) {
+    if( !kc->scan_velocity || !(*note_on_sent & key_mask) ) {
       *note_on_sent |= key_mask;
 
-      // determine timestamps between early and final contact
-      u16 timestamp_early = din_activated_timestamp[kb][pin_early];
-      u16 timestamp_final = din_activated_timestamp[kb][pin_final];
-
-      // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
-      s16 delay = timestamp_final - timestamp_early;
-
       int velocity = 127;
-      if( delay > kc->delay_fastest ) {
-        // determine velocity depending on delay
-        // lineary scaling - here we could also apply a curve table
-        velocity = 127 - (((delay-kc->delay_fastest) * 127) / (kc->delay_slowest-kc->delay_fastest));
-        // saturate to ensure that range 1..127 won't be exceeded
-        if( velocity < 1 )
-          velocity = 1;
-        if( velocity > 127 )
-          velocity = 127;
-      }
 
-      if( kc->verbose_level >= 2 )
-	DEBUG_MSG("PRESSED note=%s, delay=%d, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), delay, velocity);
+      if( !kc->scan_velocity ) {
+	if( kc->verbose_level >= 2 )
+	  DEBUG_MSG("PRESSED note=%s, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), velocity);
+      } else {
+	// determine timestamps between break and make contact
+	u16 timestamp_break = din_activated_timestamp[kb][pin_break];
+	u16 timestamp_make  = din_activated_timestamp[kb][pin_make];
+
+	// and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
+	s16 delay = timestamp_make - timestamp_break;
+
+	if( delay > kc->delay_fastest ) {
+	  // determine velocity depending on delay
+	  // lineary scaling - here we could also apply a curve table
+	  velocity = 127 - (((delay-kc->delay_fastest) * 127) / (kc->delay_slowest-kc->delay_fastest));
+	  // saturate to ensure that range 1..127 won't be exceeded
+	  if( velocity < 1 )
+	    velocity = 1;
+	  if( velocity > 127 )
+	    velocity = 127;
+	}
+
+	if( kc->verbose_level >= 2 )
+	  DEBUG_MSG("PRESSED note=%s, delay=%d, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), delay, velocity);
+      }
 
       KEYBOARD_MIDI_SendNote(kb, note_number, velocity);
     }
@@ -402,6 +473,23 @@ void KEYBOARD_Periodic_1mS(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function should be called from AIN_NotifyChange in app.c
+/////////////////////////////////////////////////////////////////////////////
+void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
+{
+  int kb;
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+  for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
+    if( pin == ((int)kc->ain_pitchwheel - 1) )
+      KEYBOARD_MIDI_SendCtrl(kb, kc->ctrl_pitchwheel, pin_value);
+
+    if( pin == ((int)kc->ain_modwheel - 1) )
+      KEYBOARD_MIDI_SendCtrl(kb, kc->ctrl_modwheel, pin_value);
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Help function to send a MIDI note over given ports
 /////////////////////////////////////////////////////////////////////////////
 static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity)
@@ -416,6 +504,39 @@ static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity)
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
 	MIOS32_MIDI_SendNoteOn(port, kc->midi_chn-1, note_number, velocity);
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function to send a MIDI controller over given ports
+/////////////////////////////////////////////////////////////////////////////
+static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u32 ain_value)
+{
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
+
+  int value7bit = ain_value >> 5;
+
+  if( kc->midi_chn ) {
+    int i;
+    u16 mask = 1;
+    for(i=0; i<16; ++i, mask <<= 1) {
+      if( kc->midi_ports & mask ) {
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
+
+	if( ctrl_number < 128 )
+	  MIOS32_MIDI_SendCC(port, kc->midi_chn-1, ctrl_number, value7bit);
+	else if( ctrl_number == 128 ) {
+	  u16 pb_value = (value7bit == 0x40) ? 0x2000 : ((value7bit << 7) | value7bit);
+	  MIOS32_MIDI_SendPitchBend(port, kc->midi_chn-1, pb_value);
+	} else if( ctrl_number == 129 ) {
+	  MIOS32_MIDI_SendAftertouch(port, kc->midi_chn-1, value7bit);
+	}
       }
     }
   }
@@ -492,20 +613,27 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  out("  keyboard:                         print current keyboard configuration");
+  out("  keyboard <1|2> (or kb <1|2>):     print current configuration of given keyboard number");
+  out("  set kb <1|2> debug <on|off>:      enables/disables debug mode (not stored in EEPROM)");
   out("  set kb <1|2> midi_ports <ports>   selects the MIDI ports (values: see documentation)");
   out("  set kb <1|2> midi_chn <0-16>      selects the MIDI channel (0=off)");
-  out("  set kb <1|2> note_offset <0-127>  selects the Note Offset (transpose)");
-  out("  set kb <1|2> debug <on|off>:      enables/disables debug mode (not stored in EEPROM)");
+  out("  set kb <1|2> note_offset <0-127>  selects the note offset (transpose)");
   out("  set kb <1|2> rows <0-%d>:         how many rows should be scanned? (0=off)", MATRIX_NUM_ROWS);
   out("  set kb <1|2> velocity <on|off>:   keyboard supports break and make contacts?");
+  out("  set kb <1|2> optimized <on|off>:  make contacts only scanned if break contacts activated");
   out("  set kb <1|2> dout_sr1 <0-%d>:     selects first DOUT shift register (0=off)", MIOS32_SRIO_ScanNumGet());
   out("  set kb <1|2> dout_sr2 <0-%d>:     selects second DOUT shift register (0=off)", MIOS32_SRIO_ScanNumGet());
   out("  set kb <1|2> din_sr1 <0-%d>:      selects first DIN shift register (0=off)", MIOS32_SRIO_ScanNumGet());
   out("  set kb <1|2> din_sr2 <0-%d>:      selects second DIN shift register (0=off)", MIOS32_SRIO_ScanNumGet());
-  out("  set kb <1|2> inverted <on|off>:   DINs inverted?");
+  out("  set kb <1|2> din_key_offset <0-127> selects the key offset between DIN1 and DIN2");
+  out("  set kb <1|2> din_inverted <on|off>: DINs inverted?");
+  out("  set kb <1|2> break_inverted <on|off>: Only break contacts inverted?");
   out("  set kb <1|2> delay_fastest <0-65535>: fastest delay for velocity calculation");
   out("  set kb <1|2> delay_slowest <0-65535>: slowest delay for velocity calculation");
+  out("  set kb <1|2> ain_pitchwheel <0..5> or off: assigns pitchwheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_pitchwheel <0-129>: assigns CC/PB(=128)/AT(=129) to PitchWheel");
+  out("  set kb <1|2> ain_modwheel <0..5> or off: assigns modwheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_modwheel <0-129>:   assigns CC/PB(=128)/AT(=129) to ModWheel");
 
   return 0; // no error
 }
@@ -530,8 +658,18 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
   if( !(parameter = strtok_r(input, separators, &brkt)) ) {
     input_line_parsed = 0; // input line has to be restored
   } else {
-    if( strcmp(parameter, "keyboard") == 0 ) {
-      KEYBOARD_TerminalPrintConfig(_output_function);
+    if( strcmp(parameter, "kb") == 0 || strcmp(parameter, "keyboard") == 0 ) {
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Missing keyboard number (1..%d)!", KEYBOARD_NUM);
+	return 1; // command taken
+      }
+
+      int kb = get_dec(parameter);
+      if( kb < 1 || kb > KEYBOARD_NUM) {
+	out("Invalid Keyboard number specified as first parameter (expecting kb 1..%d)!", KEYBOARD_NUM);
+	return 1; // command taken
+      }
+      KEYBOARD_TerminalPrintConfig(kb-1, _output_function);
     } else if( strcmp(parameter, "set") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("Missing parameter after 'set'!");
@@ -609,6 +747,23 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("Keyboard #%d: Note Offset %d", kb+1, kc->note_offset);
 	  }
 	/////////////////////////////////////////////////////////////////////
+        } else if( strcmp(parameter, "din_key_offset") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the key offset!");
+	    return 1; // command taken
+	  }
+
+	  int offset = get_dec(parameter);
+
+	  if( offset < 0 || offset > 127 ) {
+	    out("Key Offset should be in the range between 0 and 127!");
+	    return 1; // command taken
+	  } else {
+	    kc->din_key_offset = offset;
+	    out("Keyboard #%d: DIN Key Offset %d", kb+1, kc->din_key_offset);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+	  }
+	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "debug") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify on or off (alternatively 1 or 0)");
@@ -639,6 +794,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  } else {
 	    kc->num_rows = rows;
 	    out("Keyboard #%d: %d rows will be scanned!", kb+1, kc->num_rows);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "dout_sr1") == 0 ) {
@@ -655,6 +811,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  } else {
 	    kc->dout_sr1 = sr;
 	    out("Keyboard #%d: dout_sr1 assigned to %d!", kb+1, kc->dout_sr1);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "dout_sr2") == 0 ) {
@@ -671,6 +828,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  } else {
 	    kc->dout_sr2 = sr;
 	    out("Keyboard #%d: dout_sr2 assigned to %d!", kb+1, kc->dout_sr2);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "din_sr1") == 0 ) {
@@ -687,6 +845,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  } else {
 	    kc->din_sr1 = sr;
 	    out("Keyboard #%d: din_sr1 assigned to %d!", kb+1, kc->din_sr1);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "din_sr2") == 0 ) {
@@ -703,6 +862,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  } else {
 	    kc->din_sr2 = sr;
 	    out("Keyboard #%d: din_sr2 assigned to %d!", kb+1, kc->din_sr2);
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "velocity") == 0 ) {
@@ -719,9 +879,10 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    kc->scan_velocity = on_off;
 
 	    out("Keyboard #%d: velocity mode %s", kb+1, on_off ? "enabled" : "disabled");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "inverted") == 0 ) {
+	} else if( strcmp(parameter, "optimized") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify on or off (alternatively 1 or 0)");
 	    return 1; // command taken
@@ -732,9 +893,44 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  if( on_off < 0 ) {
 	    out("Expecting 'on' or 'off' (alternatively 1 or 0)!");
 	  } else {
-	    kc->inversion_mask = on_off ? 0xff : 0x00;
+	    kc->scan_optimized = on_off;
 
-	    out("Keyboard #%d: DIN values are %sinverted", kb+1, on_off ? "" : "not ");
+	    out("Keyboard #%d: optimized scan %s", kb+1, on_off ? "enabled" : "disabled");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+	  }
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "din_inverted") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off (alternatively 1 or 0)");
+	    return 1; // command taken
+	  }
+
+	  int on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off' (alternatively 1 or 0)!");
+	  } else {
+	    kc->din_inverted = on_off;
+
+	    out("Keyboard #%d: DIN values are %sinverted", kb+1, kc->din_inverted ? "" : "not ");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+	  }
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "break_inverted") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off (alternatively 1 or 0)");
+	    return 1; // command taken
+	  }
+
+	  int on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off' (alternatively 1 or 0)!");
+	  } else {
+	    kc->break_inverted = on_off;
+
+	    out("Keyboard #%d: Break contacts are %sinverted", kb+1, kc->break_inverted ? "" : "not ");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "delay_fastest") == 0 ) {
@@ -768,6 +964,72 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    kc->delay_slowest = delay;
 	    out("Keyboard #%d: delay_slowest set to %d!", kb+1, kc->delay_slowest);
 	  }
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "ain_pitchwheel") == 0 || strcmp(parameter, "ain_modwheel") == 0 ) {
+	  u8 pitchwheel = strcmp(parameter, "ain_pitchwheel") == 0;
+
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify J5.Ax number (0..5) or off!");
+	    return 1; // command taken
+	  }
+
+	  int ain=0;
+	  if( strcmp(parameter, "off") != 0 ) {
+	    ain = get_dec(parameter);
+
+	    if( ain < 0 || ain >= 6 ) {
+	      out("AIN pin should be in the range of 0..5");
+	      return 1; // command taken
+	    }
+	    ain += 1;
+	  }
+
+	  char wheel_name[20];
+	  if( pitchwheel ) {
+	    strcpy(wheel_name, "PitchWheel");
+	    kc->ain_pitchwheel = ain;
+	  } else {
+	    strcpy(wheel_name, "ModWheel");
+	    kc->ain_modwheel = ain;
+	  }
+
+	  if( ain ) {
+	    out("Keyboard #%d: %s assigned to J5.A%d!", kb+1, wheel_name, ain-1);
+	  } else {
+	    out("Keyboard #%d: %s disabled!", kb+1, wheel_name);
+	  }
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "ctrl_pitchwheel") == 0 || strcmp(parameter, "ctrl_modwheel") == 0 ) {
+	  u8 pitchwheel = strcmp(parameter, "ctrl_pitchwheel") == 0;
+
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the CC number (or 128 for PitchBend or 129 for Aftertouch)!");
+	    return 1; // command taken
+	  }
+
+	  int ctrl = get_dec(parameter);
+
+	  if( ctrl < 0 || ctrl > 129 ) {
+	    out("Controller Number should be in the range between 0 and 129!");
+	    return 1; // command taken
+	  } else {
+	    char wheel_name[20];
+	    if( pitchwheel ) {
+	      strcpy(wheel_name, "PitchWheel");
+	      kc->ctrl_pitchwheel = ctrl;
+	    } else {
+	      strcpy(wheel_name, "ModWheel");
+	      kc->ctrl_modwheel = ctrl;
+	    }
+	    if( ctrl < 128 )
+	      out("Keyboard #%d: %s sends CC#%d", kb+1, wheel_name, ctrl);
+	    else if( ctrl == 128 )
+	      out("Keyboard #%d: %s sends PitchBend", kb+1, wheel_name);
+	    else
+	      out("Keyboard #%d: %s sends Aftertouch", kb+1, wheel_name);
+	  }
 	/////////////////////////////////////////////////////////////////////
 	} else {
 	  out("Unknown parameter for keyboard configuration - type 'help' to list available parameters!");
@@ -798,27 +1060,42 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 /////////////////////////////////////////////////////////////////////////////
 // Keyboard Configuration (can also be called from external)
 /////////////////////////////////////////////////////////////////////////////
-s32 KEYBOARD_TerminalPrintConfig(void *_output_function)
+s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  int kb;
-  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
-  for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
-    out("kb %d debug %s", kb+1, (kc->verbose_level >= 2) ? "on" : "off");
-    out("kb %d midi_ports 0x%04x", kb+1, kc->midi_ports);
-    out("kb %d midi_chn %d", kb+1, kc->midi_chn);
-    out("kb %d note_offset %d", kb+1, kc->note_offset);
-    out("kb %d rows %d", kb+1, kc->num_rows);
-    out("kb %d velocity %s", kb+1, kc->scan_velocity ? "on" : "off");
-    out("kb %d dout_sr1 %d", kb+1, kc->dout_sr1);
-    out("kb %d dout_sr2 %d", kb+1, kc->dout_sr2);
-    out("kb %d din_sr1 %d", kb+1, kc->din_sr1);
-    out("kb %d din_sr2 %d", kb+1, kc->din_sr2);
-    out("kb %d inverted %s", kb+1, kc->inversion_mask ? "on" : "off");
-    out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
-    out("kb %d delay_slowest %d", kb+1, kc->delay_slowest);
-  }
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
+
+  out("kb %d debug %s", kb+1, (kc->verbose_level >= 2) ? "on" : "off");
+  out("kb %d midi_ports 0x%04x", kb+1, kc->midi_ports);
+  out("kb %d midi_chn %d", kb+1, kc->midi_chn);
+  out("kb %d note_offset %d", kb+1, kc->note_offset);
+  out("kb %d rows %d", kb+1, kc->num_rows);
+  out("kb %d velocity %s", kb+1, kc->scan_velocity ? "on" : "off");
+  out("kb %d optimized %s", kb+1, kc->scan_optimized ? "on" : "off");
+  out("kb %d dout_sr1 %d", kb+1, kc->dout_sr1);
+  out("kb %d dout_sr2 %d", kb+1, kc->dout_sr2);
+  out("kb %d din_sr1 %d", kb+1, kc->din_sr1);
+  out("kb %d din_sr2 %d", kb+1, kc->din_sr2);
+  out("kb %d din_key_offset %d", kb+1, kc->din_key_offset);
+  out("kb %d din_inverted %s", kb+1, kc->din_inverted ? "on" : "off");
+  out("kb %d break_inverted %s", kb+1, kc->break_inverted ? "on" : "off");
+  out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
+  out("kb %d delay_slowest %d", kb+1, kc->delay_slowest);
+
+  if( kc->ain_pitchwheel )
+    out("kb %d ain_pitchwheel %d", kb+1, kc->ain_pitchwheel-1);
+  else
+    out("kb %d ain_pitchwheel off", kb+1);
+  out("kb %d ctrl_pitchwheel %d (%s)", kb+1, kc->ctrl_pitchwheel,
+      (kc->ctrl_pitchwheel < 128) ? "CC" : (kc->ctrl_pitchwheel == 128 ? "PitchBend" : "Aftertouch"));
+
+  if( kc->ain_modwheel )
+    out("kb %d ain_modwheel %d", kb+1, kc->ain_modwheel-1);
+  else
+    out("kb %d ain_modwheel off", kb+1);
+  out("kb %d ctrl_modwheel %d (%s)", kb+1, kc->ctrl_modwheel,
+      (kc->ctrl_modwheel < 128) ? "CC" : (kc->ctrl_modwheel == 128 ? "PitchBend" : "Aftertouch"));
 
   return 0; // no error
 }

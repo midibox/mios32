@@ -99,17 +99,35 @@ s32 PRESETS_Init(u32 mode)
       int offset = kb*PRESETS_OFFSET_BETWEEN_KB_RECORDS;
       kc->midi_ports = PRESETS_Read16(PRESETS_ADDR_KB1_MIDI_PORTS + offset);
       kc->midi_chn = PRESETS_Read16(PRESETS_ADDR_KB1_MIDI_CHN + offset);
-      kc->note_offset = PRESETS_Read16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset);
+
+      u16 note_offsets = PRESETS_Read16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset);
+      kc->note_offset = (note_offsets >> 0) & 0xff;
+      kc->din_key_offset = (note_offsets >> 8) & 0xff;
+
       kc->num_rows = PRESETS_Read16(PRESETS_ADDR_KB1_ROWS + offset);
-      kc->scan_velocity = PRESETS_Read16(PRESETS_ADDR_KB1_VELOCITY + offset);
       kc->dout_sr1 = PRESETS_Read16(PRESETS_ADDR_KB1_DOUT_SR1 + offset);
       kc->dout_sr2 = PRESETS_Read16(PRESETS_ADDR_KB1_DOUT_SR2 + offset);
       kc->din_sr1 = PRESETS_Read16(PRESETS_ADDR_KB1_DIN_SR1 + offset);
       kc->din_sr2 = PRESETS_Read16(PRESETS_ADDR_KB1_DIN_SR2 + offset);
-      kc->inversion_mask = PRESETS_Read16(PRESETS_ADDR_KB1_INVERTED + offset);
+
+      u16 misc = PRESETS_Read16(PRESETS_ADDR_KB1_MISC + offset);
+      kc->din_inverted   = (misc & (1 << 0)) ? 1 : 0;
+      kc->break_inverted = (misc & (1 << 1)) ? 1 : 0;
+      kc->scan_velocity  = (misc & (1 << 2)) ? 1 : 0;
+      kc->scan_optimized = (misc & (1 << 3)) ? 1 : 0;
+
       kc->delay_fastest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
       kc->delay_slowest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
+
+      u16 ain_assign = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_ASSIGN + offset);
+      kc->ain_pitchwheel = (ain_assign >> 0) & 0xff;
+      kc->ain_modwheel   = (ain_assign >> 8) & 0xff;
+
+      u16 ctrl_assign = PRESETS_Read16(PRESETS_ADDR_KB1_CTRL_ASSIGN + offset);
+      kc->ctrl_pitchwheel = (ctrl_assign >> 0) & 0xff;
+      kc->ctrl_modwheel   = (ctrl_assign >> 8) & 0xff;
     }
+    KEYBOARD_Init(1); // without overwriting default configuration
 
   }
 
@@ -180,16 +198,33 @@ s32 PRESETS_StoreAll(void)
       int offset = kb*PRESETS_OFFSET_BETWEEN_KB_RECORDS;
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_MIDI_PORTS + offset, kc->midi_ports);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_MIDI_CHN + offset, kc->midi_chn);
-      status |= PRESETS_Write16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset, kc->note_offset);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_NOTE_OFFSET + offset, kc->note_offset | ((u16)kc->din_key_offset << 8));
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_ROWS + offset, kc->num_rows);
-      status |= PRESETS_Write16(PRESETS_ADDR_KB1_VELOCITY + offset, kc->scan_velocity);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DOUT_SR1 + offset, kc->dout_sr1);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DOUT_SR2 + offset, kc->dout_sr2);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DIN_SR1 + offset, kc->din_sr1);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DIN_SR2 + offset, kc->din_sr2);
-      status |= PRESETS_Write16(PRESETS_ADDR_KB1_INVERTED + offset, kc->inversion_mask);
+
+      u16 misc =
+	(kc->din_inverted   << 0) |
+	(kc->break_inverted << 1) |
+	(kc->scan_velocity  << 2) |
+	(kc->scan_optimized << 3);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_MISC + offset, misc);
+
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset, kc->delay_fastest);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset, kc->delay_slowest);
+
+      u16 ain_assign =
+	(kc->ain_pitchwheel << 0) |
+	(kc->ain_modwheel   << 8);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_ASSIGN + offset, ain_assign);
+
+      u16 ctrl_assign =
+	(kc->ctrl_pitchwheel << 0) |
+	(kc->ctrl_modwheel   << 8);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_CTRL_ASSIGN + offset, ctrl_assign);
+
     }
 
   return 0; // no error
