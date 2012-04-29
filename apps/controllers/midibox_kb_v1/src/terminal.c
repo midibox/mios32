@@ -157,6 +157,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set midimon <on|off>:             enables/disables the MIDI monitor");
       out("  set midimon_filter <on|off>:      enables/disables MIDI monitor filters");
       out("  set midimon_tempo <on|off>:       enables/disables the tempo display");
+      out("  set srio_num <1..16>:             max. number of scanned DIN/DOUT registers (currently: %d)", MIOS32_SRIO_ScanNumGet());
       KEYBOARD_TerminalHelp(_output_function);
       out("  set srio_num <1..16>:             max. number of scanned DIN/DOUT registers (currently: %d)", MIOS32_SRIO_ScanNumGet());
       UIP_TERMINAL_Help(_output_function);

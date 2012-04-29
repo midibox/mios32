@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.003"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.004"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application
@@ -37,7 +37,7 @@
 #endif
 
 // magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
-#define EEPROM_MAGIC_NUMBER 0x47114221
+#define EEPROM_MAGIC_NUMBER 0x47114224
 
 // AIN configuration:
 // Pin mapping on MBHP_CORE_LPC17 module:

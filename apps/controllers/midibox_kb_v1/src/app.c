@@ -242,6 +242,8 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+  // -> keyboard
+  KEYBOARD_AIN_NotifyChange(pin, pin_value);
 #if 0
   MIOS32_MIDI_SendCC(DEFAULT, Chn1, 0x10 + pin, pin_value >> 5);
 #endif
