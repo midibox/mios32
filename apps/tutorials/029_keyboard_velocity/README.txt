@@ -24,10 +24,10 @@ This application demonstrates how to midify a keyboard with velocity sensitivity
 The keyboard of a Korg microKONTROL has been used for testing.
 Each key has two contacts: one which closes early when you are starting to press
 the key, and another contact which closes when the key is completely pressed.
-(I call them "early" and "final" contact below)
+They are called "break" and "make" contact below.
 
 In order to determine the velocity, we've to measure the time between the closing
-early and final contact. Via experiments I found out, that the minimum delay
+break and make contact. Via experiments I found out, that the minimum delay
 (key pressed fast) is ca. 1.2 mS, and the maximum delay is ca. 60 mS
 
 Since a common SRIO scan is only performed each mS, which is too slow for high
@@ -82,17 +82,17 @@ First I set the DEBUG_VERBOSE_LEVEL to 2 in order to print the row/column
 number on each key press, the results were:
 
 -------------------------------------------------------------------------------
-  // the early contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
-  // the final contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
+  // the make  contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the break contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
 -------------------------------------------------------------------------------
 
-The "early contacts" don't lead to a note event, we only need them later
+The "break contacts" don't lead to a note event, we only need them later
 to calculate the delay:
 
 -------------------------------------------------------------------------------
-  u8 early_contact = (row & 1); // odd numbers
-  // we ignore button changes on the early contacts:
-  if( early_contact )
+  u8 break_contact = (row & 1); // odd numbers
+  // we ignore button changes on the break contacts:
+  if( break_contact )
     return;
 -------------------------------------------------------------------------------
 
@@ -105,8 +105,8 @@ to transpose the note:
   // determine key number:
   int key = 8*(row / 2) + column;
 
-  // check if key is assigned to an "early contact"
-  u8 early_contact = !(row & 1); // even numbers
+  // check if key is assigned to an "break contact"
+  u8 break_contact = (row & 1); // odd numbers
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + 36;
@@ -131,10 +131,21 @@ so that no debug messages are displayed anymore.
 
 For debouncing the keys a note based locking mechanism has been implemented:
 - whenever a key plays a Note On event, no additional Note On will be played
-  until the "early contact" has been released
+  until the "break contact" has been released
 - whenever a key plays a Note Off event, no additional Note Off will be played
-  until the "early contact" has been released
+  until the "break contact" has been released
 
 Enjoy your keyboard! :-)
+
+===============================================================================
+
+Please note: the MIDIbox KB application contains a more sophisticated
+scanning routine which also considers different keyboard types (e.g. Fatar keyboards)
+
+-> see http://www.ucapps.de/midibox_kb.html
+Sources are located under $MIOS32_PATH/apps/controllers/midibox_kb_v1/src/keyboard.c
+
+This scanning routine uses a special optimisation algorithm which allows to scan
+a keyboard with 65 uS (as long as no key is pressed)
 
 ===============================================================================

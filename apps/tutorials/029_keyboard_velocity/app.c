@@ -276,25 +276,25 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
 {
   // determine pin number based on row/column
 
-  // each key has two contacts, I call them "early contact" and "final contact"
+  // each key has two contacts, I call them "break contact" and "make contact"
   // the assignments can be determined by setting DEBUG_VERBOSE_LEVEL to 2
 
   // default: linear addressing (e.g. Fatar Keyboards?)
-  // the final contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
-  // the early contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
+  // the make contacts are at row 0, 2, 4, 6, 8, 10, 12, 14
+  // the break contacts are at row 1, 3, 5, 7, 9, 11, 13, 15
 
   // determine key number:
   int key = 8*(row / 2) + column;
 
-  // check if key is assigned to an "early contact"
-  u8 early_contact = (row & 1); // odd numbers
+  // check if key is assigned to an "break contact"
+  u8 break_contact = (row & 1); // odd numbers
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + 36;
 
-  // reference to early and final pin
-  int pin_final = (row)*8 + column;
-  int pin_early = (row+1)*8 + column;
+  // reference to break and make pin
+  int pin_make = (row)*8 + column;
+  int pin_break = (row+1)*8 + column;
 
   // ensure valid note range
   if( note_number > 127 )
@@ -303,8 +303,8 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
     note_number = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("row=%d, column=%d, depressed=%d  -->  key=%d, early_contact:%d, note_number=%d\n",
-	    row, column, depressed, key, early_contact, note_number);
+  DEBUG_MSG("row=%d, column=%d, depressed=%d  -->  key=%d, break_contact:%d, note_number=%d\n",
+	    row, column, depressed, key, break_contact, note_number);
 #endif
 
   // determine key mask and pointers for access to combined arrays
@@ -313,9 +313,9 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
   u8 *note_off_sent = (u8 *)&din_note_off_sent[key / 8];
 
 
-  // early contacts don't send MIDI notes, but they are used for delay measurements,
+  // break contacts don't send MIDI notes, but they are used for delay measurements,
   // and they release the Note On/Off debouncing mechanism
-  if( early_contact ) {
+  if( break_contact ) {
     if( depressed ) {
       *note_on_sent &= ~key_mask;
       *note_off_sent &= ~key_mask;
@@ -340,11 +340,11 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
     if( !(*note_on_sent & key_mask) ) {
       *note_on_sent |= key_mask;
 
-      // determine timestamps between early and final contact
-      u16 timestamp_early = din_activated_timestamp[pin_early];
-      u16 timestamp_final = din_activated_timestamp[pin_final];
+      // determine timestamps between break and make contact
+      u16 timestamp_break = din_activated_timestamp[pin_break];
+      u16 timestamp_make = din_activated_timestamp[pin_make];
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
-      s16 delay = timestamp_final - timestamp_early;
+      s16 delay = timestamp_make - timestamp_break;
 
       int velocity = 127;
       if( delay > keyboard_delay_fastest ) {
