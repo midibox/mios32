@@ -226,6 +226,7 @@ extern s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port);
 extern s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port);
 
 extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
+extern s32 MIOS32_MIDI_SendDebugString(char *str);
 extern s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len);
 
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event);
