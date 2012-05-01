@@ -745,7 +745,8 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   // other the other hand we don't want to allocate too many byte for buffer[] to save stack
   char *str = (char *)((size_t)buffer+sizeof(mios32_midi_sysex_header)+3);
   if( strlen(format) > 100 ) {
-    strcpy(str, "(ERROR: string passed to MIOS32_MIDI_SendDebugMessage() is longer than 100 chars!\n");
+    // exit with less costly message
+    return MIOS32_MIDI_SendDebugString("(ERROR: string passed to MIOS32_MIDI_SendDebugMessage() is longer than 100 chars!\n");
   } else {
     // transform formatted string into string
     va_start(args, format);
@@ -777,6 +778,97 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   ++len;
 
   return MIOS32_MIDI_SendSysEx(debug_port, buffer, len);
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a string to the MIOS Terminal in MIOS Studio.
+//!
+//! In distance to MIOS32_MIDI_SendDebugMessage this version is less costly (it
+//! doesn't consume so much stack space), but the string must already be prepared.
+//!
+//! Example:
+//! \code
+//!   MIOS32_MIDI_SendDebugString("ERROR: something strange happened in myFunction()!");
+//! \endcode
+//!
+//! The string size isn't limited.
+//!
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugString(char *str)
+{
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
+  s32 status = 0;
+  mios32_midi_package_t package;
+
+// unfortunately doesn't work, and runtime check would be unnecessary costly
+//#if sizeof(mios32_midi_sysex_header) != 5
+//# error "Please adapt MIOS32_MIDI_SendDebugString"
+//#endif
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[0];
+  package.evnt1 = mios32_midi_sysex_header[1];
+  package.evnt2 = mios32_midi_sysex_header[2];
+  status |= MIOS32_MIDI_SendPackage(debug_port, package);
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[3];
+  package.evnt1 = mios32_midi_sysex_header[4];
+  package.evnt2 = MIOS32_MIDI_DeviceIDGet();
+  status |= MIOS32_MIDI_SendPackage(debug_port, package);
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = MIOS32_MIDI_SYSEX_DEBUG;
+  package.evnt1 = 0x40; // output string
+  package.evnt2 = str[0]; // will be 0x00 if string already ends (""), thats ok, MIOS Studio can handle this
+  status |= MIOS32_MIDI_SendPackage(debug_port, package);
+
+  u32 len = strlen(str);
+  if( len > 0 ) {
+    int i = 1; // because str[0] has already been sent
+    for(i=1; i<len; i+=3) {
+      u8 b;
+      u8 terminated = 0;
+
+      package.type = 0x4; // SysEx starts or continues
+      if( (b=str[i+0]) ) {
+	package.evnt0 = b & 0x7f;
+      } else {
+	package.evnt0 = 0x00;
+	terminated = 1;
+      }
+
+      if( !terminated && (b=str[i+1]) ) {
+	package.evnt1 = b & 0x7f;
+      } else {
+	package.evnt1 = 0x00;
+	terminated = 1;
+      }
+
+      if( !terminated && (b=str[i+2]) ) {
+	package.evnt2 = b & 0x7f;
+      } else {
+	package.evnt2 = 0x00;
+	terminated = 1;
+      }
+
+      status |= MIOS32_MIDI_SendPackage(debug_port, package);
+    }
+  }
+
+  package.type = 0x5; // SysEx ends with following single byte. 
+  package.evnt0 = 0xf7;
+  package.evnt1 = 0x00;
+  package.evnt2 = 0x00;
+  status |= MIOS32_MIDI_SendPackage(debug_port, package);
+
+  return status;
 #endif
 }
 
@@ -1634,7 +1726,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
 	if( debug_req == 0 && debug_command_callback_func == NULL ) {
 	  mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
 	  MIOS32_MIDI_DebugPortSet(port);
-	  MIOS32_MIDI_SendDebugMessage("[MIOS32_MIDI_SYSEX_Cmd_Debug] command handler not implemented by application\n", port);
+	  MIOS32_MIDI_SendDebugString("[MIOS32_MIDI_SYSEX_Cmd_Debug] command handler not implemented by application\n");
 	  MIOS32_MIDI_DebugPortSet(prev_debug_port);
 	}
 
