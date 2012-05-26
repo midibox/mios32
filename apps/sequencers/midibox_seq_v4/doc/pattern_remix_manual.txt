@@ -66,7 +66,7 @@ PATTERN INFO                              PREVIEW AND GENERAL INFO
  a1: Acid Mountain (Gm) 120       02:56    g4: Stair. to heaven (Eb) 124 00:24:23
  ____ ____ ____ ____ T01: 303 Acid Line                                   125 BPM
 ----------------------------------------  ----------------------------------------
-Thats the screen you get when you press some one of the GP Buttons to select the next pattern to be played.
+Thats the screen you get when you press one of the GP Buttons to select the next pattern to be played.
 
 If you press any GP Button once to select a pattern, that pattern it wont be fired up as normally do in the pattern page of seqV4, instead of that it will only show up the name of the selected pattern to you. This is very usefull in live environment to decide what it would be the next pattern to be played before you fired up him. just like a DJ search in his Vinyl library for the next track to be played(much less live surprisses!).
 
@@ -77,7 +77,7 @@ This is the normal behaviour of most midi sequencers.
 To do this, just press again the GP Button of the selected track.
 
 2) mix the patterns(remix)
-Its usefull for smooth changes of patterns in live sessions. you could select what track of the pattern being played it will continue to be played and what track it will be replaced by the tracks of the selected pattern.
+Its usefull for smooth changes of patterns in live sessions. you could select what track(s) of the pattern being played it will continue to be played and what track(s) it will be replaced by the tracks of the selected pattern.
 To do this press and hold the pattern remix page button, and it will guide you to the Remix Page, where you can select the tracks to be mixed down before fire up the new pattern.
 
 - Normal State Remix Page in Preview Mode(some pattern selected to be mixed down) -
@@ -85,9 +85,9 @@ To do this press and hold the pattern remix page button, and it will guide you t
  1    2    3    4    5    6    7    8      9    10   11   12   13  14   15   16
 
 ----------------------------------------  ----------------------------------------
-Each GP Button are assigned to one of 16 tracks. If you select some track it will be marked with a "M" stated that this track are holed to be mixed when we change the pattern. Lets mix the track 1 and 6 as a example.
+Each GP Button are assigned to one of 16 tracks. If you select a track it will be marked with a "M" stated that this track are holed to be mixed when we change the pattern. Lets mix the track 1 and 6 as a example.
 
-PS: you will only see the "M" if you already have selected some pattern to be mixed down(since it does not make sense to state some track to be mixed if you have no pattern selected to remix.
+PS: you will only see the "M" if you already have selected a pattern to be mixed down(since it does not make sense to state some track to be mixed if you have no pattern selected to remix.
 
 - Normal State Remix Page with tracks 1 and 6 selected -
 ----------------------------------------  ----------------------------------------
@@ -101,7 +101,7 @@ PATTERN INFO                              TO BE MIXED PATTERN DATA AND GENERAL I
  a1: Acid Mountain (Gm)           03:26    g4: Stair. to heaven (Eb) 124 00:24:53
  ____ ____ ____ ____ T01: 303 Acid Line    X___ _X__ ____ ____            125 BPM
 ----------------------------------------  ----------------------------------------
-When you get to the main page again, it will show you in the left bottom of rigth lcd a "X" marked on the rigth VU METTERS on tracks 1 and 6, to inform you that if you chooose patter g4 to be play, it will keep the tracks 1 and 6 of pattern a1 and load all the others from g4 to sequencer memory.
+When you get to the main page again, it will show you in the left bottom of rigth lcd a "X" marked on the rigth VU METTERS on tracks 1 and 6, to inform you that if you chooose pattern g4 to be played, the sequencer will keep the tracks 1 and 6 of pattern a1 and load all the others from g4 to sequencer memory.
 
 To do that, just press the GP pattern button of g4 pattern again.
 
@@ -225,12 +225,12 @@ Good option when you are composing, its easy to change the pattern and forgot to
 TIPs: its a good idea to turn this auto save option to Off when doind live sessions, you could mess with you ready to go material.
 
 Ableton Live API
-A integration between midibox and ableton live are planned. but need more study about what and how we going to control ableton. bassicly we need to handle the clips together with midibox patterns, and will be a good option to control also audio dada inside clips(if its a audio clip).
+A integration between midibox and ableton live are planned. but need more study about what to control and how we going to control ableton. bassicly we need to handle the clips together with midibox patterns, and will be a good option to control also audio dada inside clips(if its a audio clip).
 
 But for now you can at last trigger ableton live clips assign a CC for each of clip launcher butttons, i do not plan to relase this without the remote script, but if you cant wait for, it will just need some tweeking inside ableton.
 
 To made a analogy, each pattern here is treat as a Scene in ableton.
-Create exactly 128 Scenes and assign the CC 110 Channel 16 to "Scene select".
+Create exactly 128 Scenes and assign the CC 110 Channel 16 to "Scene select" inside ableton midi mapping screen(Press the button "MIDI" on the top o rigth screen corner).
 Create 16 tracks and set the CC 111 Channel 16 to the first clip launch button of track 1. Do the same for track 2 using CC 112 and so on... CC 113... 114.. 127.
 
 Now each time you choose a new pattern, the related scene will be handle too by midibox. the same for remixes with alone tracks.
