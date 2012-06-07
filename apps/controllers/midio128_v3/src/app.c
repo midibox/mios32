@@ -67,6 +67,13 @@ static void TASK_Period_1mS(void *pvParameters);
 static void TASK_Period_1mS_LP(void *pvParameters);
 static void TASK_Period_1mS_SD(void *pvParameters);
 
+
+// Extra hack: optionally map 16 encoders to the first DINX4 module (SR1..4)
+// they send relative events CC16..CC23 over MIDI channel #2
+#define ENABLE_ROTARY_ENCODERS 0
+#define NUM_ROTARY_ENCODERS 16
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local types
 /////////////////////////////////////////////////////////////////////////////
@@ -165,6 +172,25 @@ void APP_Init(void)
   MIDIO_FILE_Init(0);
   SEQ_MIDI_OUT_Init(0);
   SEQ_Init(0);
+
+#if ENABLE_ROTARY_ENCODERS
+  // optionally enable rotary encoders
+  int enc;
+  for(enc=0; enc<NUM_ROTARY_ENCODERS; ++enc) {
+    u8 pin_sr = enc >> 2; // each DIN SR has 4 encoders connected
+    u8 pin_pos = (enc & 0x3) << 1; // Pin position of first ENC channel: either 0, 2, 4 or 6
+
+    mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(enc);
+    enc_config.cfg.type = DETENTED3; // see mios32_enc.h for available types
+    enc_config.cfg.sr = pin_sr;
+    enc_config.cfg.pos = pin_pos;
+    enc_config.cfg.speed = NORMAL;
+    enc_config.cfg.speed_par = 0;
+
+    // EXTRA: assign encoder to +1, since the first encoder entry is allocated by the SCS!
+    MIOS32_ENC_ConfigSet(enc+1, enc_config);
+  }
+#endif
 
   // install timer function which is called each 100 uS
   MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
@@ -274,6 +300,21 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
   // pass encoder event to SCS handler
   if( encoder == SCS_ENC_MENU_ID )
     SCS_ENC_MENU_NotifyChange(incrementer);
+  else {
+#if ENABLE_ROTARY_ENCODERS
+    // determine relative value: 64 +/- <incrementer>
+    int value = 64 + incrementer;
+
+    // ensure that value is in range of 0..127
+    if( value < 0 )
+      value = 0;
+    else if( value > 127 )
+      value = 127;
+
+    // send event
+    MIOS32_MIDI_SendCC(DEFAULT, Chn2, 0x10 + encoder - 1, value);
+#endif
+  }
 }
 
 
