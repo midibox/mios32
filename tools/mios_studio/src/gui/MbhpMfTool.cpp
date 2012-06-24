@@ -59,10 +59,12 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     operationModeComboBox->addItem(T("CC#104..#111 Chn#1"), 18);
     operationModeComboBox->addItem(T("CC#112..#119 Chn#1"), 19);
     operationModeComboBox->addItem(T("CC#120..#127 Chn#1"), 20);
-    operationModeComboBox->addItem(T("Faked Logic Control"), 21);
-    operationModeComboBox->addItem(T("Faked Logic Control Extension"), 22);
-    operationModeComboBox->addItem(T("Faked Mackie Control"), 23);
-    operationModeComboBox->addItem(T("Faked Mackie Control Extension"), 24);
+    operationModeComboBox->addItem(T("Emulated Logic Control"), 21);
+    operationModeComboBox->addItem(T("Emulated Logic Control Extension"), 22);
+    operationModeComboBox->addItem(T("Emulated Mackie Control"), 23);
+    operationModeComboBox->addItem(T("Emulated Mackie Control Extension"), 24);
+    operationModeComboBox->addItem(T("Emulated Mackie HUI"), 25);
+    operationModeComboBox->addItem(T("Emulated Motormix"), 26);
     operationModeComboBox->setSelectedId(1, true);
     operationModeComboBox->addListener(this);
 
