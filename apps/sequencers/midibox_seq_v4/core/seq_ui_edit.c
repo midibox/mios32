@@ -228,10 +228,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP2: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_TRG; break;
       case SEQ_UI_ENCODER_GP3: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_LAYERS; break;
       case SEQ_UI_ENCODER_GP4: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_303; break;
-      case SEQ_UI_ENCODER_GP9: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPSEL; break;
+      case SEQ_UI_ENCODER_GP8: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPSEL; break;
 
-      case SEQ_UI_ENCODER_GP7:
-      case SEQ_UI_ENCODER_GP8: {
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10: {
 	if( incrementer == 0 ) // button
 	  incrementer = (encoder == SEQ_UI_ENCODER_GP7) ? -1 : 1;
 
@@ -240,6 +240,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	else
 	  return 0;
       }
+
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14:
+	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKRND);
+	break;
+
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16:
+	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKEUCLID);
+	break;
       }
 
       show_edit_config_page = 0; // switch back to view
@@ -626,8 +636,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   // layout edit config
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // Step Trg  Layer 303           Datawheel:Step                                    
-  // View View View View            Scroll   Select                                  
+  // Step Trg  Layer 303                Step Datawheel:           Random    Euclid   
+  // View View View View               Select Scroll             Generator Generator 
 
   // layout trigger view
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
@@ -659,11 +669,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     };
 
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("Step Trg  Layer 303           Datawheel:Step                                    ");
+    SEQ_LCD_PrintString("Step Trg  Layer 303                Step Datawheel:           Random    Euclid   ");
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString("View View View View           ");
+    SEQ_LCD_PrintString("View View View View               Select");
     SEQ_LCD_PrintString((char *)datawheel_mode_str[datawheel_mode]);
-    SEQ_LCD_PrintString("Select                                  ");
+    SEQ_LCD_PrintString("          Generator Generator ");
     return 0; // no error
   }
 

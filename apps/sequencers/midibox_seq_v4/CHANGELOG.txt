@@ -9,6 +9,9 @@ Wishlist for future features
 MIDIboxSEQ V4.059
 ~~~~~~~~~~~~~~~~~
 
+   o added Euclidean Rhythm Generator for drum and synth sequences.
+     The page can be entered by pressing&holding SELECT in the edit menu -> GP16
+
    o fixed stack overflow which happened when incoming OSC messages were forwarded
      to OSC in Live mode (they are now automatically filtered to avoid feedback loops)
 
