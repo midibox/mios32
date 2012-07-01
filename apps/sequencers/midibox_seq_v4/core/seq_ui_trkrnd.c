@@ -70,7 +70,7 @@ static u8 par_layer_range[16] = { 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
 // 0..14, 15=ALL
 static u8 trg_layer_range[16] = { 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-u8 scroll_offset = 0;
+static u8 scroll_offset = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -495,6 +495,9 @@ static s32 RandomGenerator(u32 req)
 	if( !par_layer_range[layer] )
 	  continue;
 
+	// select parameter layer
+	ui_selected_par_layer = layer;
+
 	// determine range
 	u8 base, range;
 	seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, layer);
@@ -520,22 +523,26 @@ static s32 RandomGenerator(u32 req)
       ///////////////////////////////////////////////////////////////////////
       } else {
 	u8 layer = i-16;
-	u8 instrument = ui_selected_instrument;
 
 	if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	  layer = 0;
-	  instrument = i - 16;
+	  ui_selected_instrument = i - 16;
+	} else {
+	  ui_selected_trg_layer = layer;
 	}
 
+	u8 instrument = ui_selected_instrument;
+
 	// don't touch if probability is 0
-	u8 probability = trg_layer_range[layer];
+	u8 probability = trg_layer_range[i-16];
 	if( !probability )
 	  continue;
 
+	// select trigger layer
 	u16 step;
 	u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 	for(step=0; step<num_steps; ++step) {
-	  if( probability == 15 ) // set all steps
+	  if( probability >= 15 ) // set all steps
 	    SEQ_TRG_Set(visible_track, step, layer, instrument, 1);
 	  else {
 	    u8 rnd = SEQ_RANDOM_Gen_Range(1, 14);
