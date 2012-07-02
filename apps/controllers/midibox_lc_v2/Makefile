@@ -14,19 +14,19 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = app.c \
-	          lc_hwcfg.c \
-	          lc_midi.c \
-	          lc_sysex.c \
-	          lc_mf.c \
-	          lc_dio.c \
-	          lc_dio_table.c \
-	          lc_gpc.c \
-	          lc_gpc_lables.c \
-	          lc_lcd.c \
-	          lc_leddigits.c \
-	          lc_meters.c \
-	          lc_vpot.c
+THUMB_SOURCE    = src/app.c \
+	          src/lc_hwcfg.c \
+	          src/lc_midi.c \
+	          src/lc_sysex.c \
+	          src/lc_mf.c \
+	          src/lc_dio.c \
+	          src/lc_dio_table.c \
+	          src/lc_gpc.c \
+	          src/lc_gpc_lables.c \
+	          src/lc_lcd.c \
+	          src/lc_leddigits.c \
+	          src/lc_meters.c \
+	          src/lc_vpot.c
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -34,8 +34,8 @@ THUMB_AS_SOURCE =
 ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
-C_INCLUDE = 	-I .
-A_INCLUDE = 	-I .
+C_INCLUDE = 	-I src
+A_INCLUDE = 	-I src
 
 LIBS = 		
 
