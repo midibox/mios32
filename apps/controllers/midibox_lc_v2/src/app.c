@@ -40,12 +40,16 @@
 // RTOS tasks
 /////////////////////////////////////////////////////////////////////////////
 
-// define priority level for VUMeters task:
-// use same priority as MIOS32 specific tasks (3)
-#define PRIORITY_TASK_VU_METERS	( tskIDLE_PRIORITY + 3 )
+// define priority level for periodic handler
+// use same priority as MIOS32 specific tasks
+#define PRIORITY_TASK_PERIOD_1mS ( tskIDLE_PRIORITY + 3 )
 
-// local prototype of the task function
-static void TASK_VUMeters(void *pvParameters);
+// low-prio thread for LCD output
+#define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
+
+// local prototype of the task functions
+static void TASK_Period_1mS(void *pvParameters);
+static void TASK_Period_1mS_LP(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,8 +78,9 @@ void APP_Init(void)
   //  MIOS32_SRIO_TS_SensitivitySet(TOUCHSENSOR_SENSITIVITY); // TODO
   MIOS32_SRIO_DebounceSet(SRIO_DEBOUNCE_CTR);
 
-  // start task
-  xTaskCreate(TASK_VUMeters, (signed portCHAR *)"VUMeters", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_VU_METERS, NULL);
+  // start tasks
+  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -83,26 +88,6 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // init LCD
-  LC_LCD_Init(0);
-
-  // endless loop
-  while( 1 ) {
-    // toggle Status LED to as a sign of live
-    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
-
-    // handles the update requests for VPOT LEDrings
-    LC_VPOT_LEDRing_CheckUpdates();
-
-    // handles the update requests for meters
-    LC_METERS_CheckUpdates();
-
-    // handles the update requests for LEDs
-    LC_DIO_LED_CheckUpdate();
-
-    // call LCD screen handler
-    LC_LCD_Update(0);
-  }
 }
 
 
@@ -118,22 +103,32 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     // forward MIDI event to GPC handler
     LC_GPC_Received(midi_package);
 
-    // pitchbend events are also forwarded to MBHP_MF_V3 module
-    if( midi_package.type == PitchBend )
-      MIOS32_MIDI_SendPackage(UART2, midi_package);
+    // pitchbend events are also forwarded to MBHP_MF_NG module
+    if( midi_package.type == PitchBend ) {
+      MIOS32_MIDI_SendPackage(UART2, midi_package); // STM32 and LPC17
+      MIOS32_MIDI_SendPackage(UART3, midi_package); // LPC17
+    }
   }
 
   // forward packages USB1<->UART0, USB2<->UART1 and USB3<->UART2
   switch( port ) {
   case USB1:  MIOS32_MIDI_SendPackage(UART0, midi_package); break;
   case USB2:  MIOS32_MIDI_SendPackage(UART1, midi_package); break;
-  case USB3:  MIOS32_MIDI_SendPackage(UART2, midi_package); break;
+
+  // extra for MBHP_MF_NG: messages received via USB3 are forwarded to UART2 and UART3
+  case USB3: {
+    MIOS32_MIDI_SendPackage(UART2, midi_package);
+    MIOS32_MIDI_SendPackage(UART3, midi_package);
+  } break;
+
   case UART0: MIOS32_MIDI_SendPackage(USB1, midi_package); break;
   case UART1: MIOS32_MIDI_SendPackage(USB2, midi_package); break;
-  case UART2: {
+
+  // extra for MBHP_MF_NG: PitchBend and Note Events are also forwarded to default port
+  case UART2:
+  case UART3: {
     MIOS32_MIDI_SendPackage(USB3, midi_package);
 
-    // extra for MBHP_MF_V3: PitchBend and Note Events are also forwarded to default port
     if( midi_package.type == NoteOff || midi_package.type == NoteOn || midi_package.type == PitchBend )
       MIOS32_MIDI_SendPackage(USB0, midi_package);
   } break;
@@ -148,6 +143,9 @@ void APP_SRIO_ServicePrepare(void)
 {
   // sets the LEDring (and Meter) patterns
   LC_VPOT_LEDRing_SRHandler();
+
+  // updates the MTC display
+  LC_LEDDIGITS_SRHandler();
 }
 
 
@@ -223,19 +221,48 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task handles the VU meters each 20 mS
+// This task is called periodically each mS to handle LC functions
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_VUMeters(void *pvParameters)
+static void TASK_Period_1mS(void *pvParameters)
 {
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
+  u8 counter_20ms = 0;
 
   while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 20 / portTICK_RATE_MS);
+    vTaskDelay(1 / portTICK_RATE_MS);
 
-    // call the meter timer
-    LC_METERS_Timer();
+    // toggle Status LED to as a sign of live
+    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+
+    // call the meter timer each 20 mS
+    if( ++counter_20ms >= 20 ) {
+      counter_20ms = 0;
+      LC_METERS_Timer();
+    }
+
+    // handles the update requests for VPOT LEDrings
+    LC_VPOT_LEDRing_CheckUpdates();
+
+    // handles the update requests for meters
+    LC_METERS_CheckUpdates();
+
+    // handles the update requests for LEDs
+    LC_DIO_LED_CheckUpdate();
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This low-prio task handles the LCD
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period_1mS_LP(void *pvParameters)
+{
+  // init LCD
+  LC_LCD_Init(0);
+
+  while( 1 ) {
+    vTaskDelay(1 / portTICK_RATE_MS);
+
+    // call LCD screen handler
+    LC_LCD_Update(0);
   }
 }

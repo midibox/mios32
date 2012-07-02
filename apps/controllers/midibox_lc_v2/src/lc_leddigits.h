@@ -30,5 +30,6 @@ extern u8 lc_leddigits_status[2];
 extern s32 LC_LEDDIGITS_Init(u32 mode);
 extern s32 LC_LEDDIGITS_MTCSet(u8 number, u8 pattern);
 extern s32 LC_LEDDIGITS_StatusSet(u8 number, u8 pattern);
+extern s32 LC_LEDDIGITS_SRHandler(void);
 
 #endif /* _LC_LEDDIGITS_H */

@@ -54,33 +54,6 @@ s32 LC_DIO_ButtonHandler(u8 button, u8 pin_value)
     return LC_DIO_SFBHandler(button_id, pin_value);
   }
 
-#if TOUCH_SENSOR_MODE >= 1
-  // if note event matches with any ID_FADER_TOUCH_CHNx, use the MIOS function
-  // to suspend the faders
-#if    ID_FADER_TOUCH_CHN1 != 0x68 || ID_FADER_TOUCH_CHN2 != 0x69 || ID_FADER_TOUCH_CHN3 != 0x6a || ID_FADER_TOUCH_CHN4 != 0x6b
-# error "inconsistency in ID_FADER_TOUCH_CHNx - the TOUCH_SENSOR_MODE won't work properly!";
-#elif ID_FADER_TOUCH_CHN5 != 0x6c || ID_FADER_TOUCH_CHN6 != 0x6d || ID_FADER_TOUCH_CHN7 != 0x6e || ID_FADER_TOUCH_CHN8 != 0x6f
-# error "inconsistency in ID_FADER_TOUCH_CHNx - the TOUCH_SENSOR_MODE won't work properly!";
-#endif
-
-  if( (button_id & 0xf8) == ID_FADER_TOUCH_CHN1 ) {
-    if( pin_value )
-      MIOS32_MF_SuspendDisable(button_id & 0x07);
-    else
-      MIOS32_MF_SuspendEnable(button_id & 0x07);
-  }
-
-#if MOTORFADER0_IS_MASTERFADER
-  if( button_id == ID_FADER_TOUCH_MASTER ) {
-    if( pin_value )
-      MIOS32_MF_SuspendDisable(0);
-    else
-      MIOS32_MF_SuspendEnable(0);
-  }
-#endif
-
-#endif
-
   // send button event
 #if 0
   if( pin_value )

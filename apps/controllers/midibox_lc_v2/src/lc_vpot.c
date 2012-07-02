@@ -20,6 +20,7 @@
 
 #include "app.h"
 #include "lc_hwcfg.h"
+#include "lc_lcd.h"
 #include "lc_vpot.h"
 #include "lc_gpc.h"
 #include "lc_mf.h"
@@ -152,17 +153,6 @@ static const u16 preset_patterns_gpc[32] = {
   0x07ff, //   b'0000011111111111'
   };
 
-// this table defines the cathode patterns (a 0 selects a LED)
-static const u8 cathode_patterns[8] = {
-  0xfe, // b'11111110'
-  0xfd, // b'11111101'
-  0xfb, // b'11111011'
-  0xf7, // b'11110111'
-  0xef, // b'11101111'
-  0xdf, // b'11011111'
-  0xbf, // b'10111111'
-  0x7f, // b'01111111'
-};
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the LEDring handler and the encoder speed modes
@@ -281,13 +271,16 @@ s32 LC_VPOT_SendJogWheelEvent(s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 LC_VPOT_SendFADEREvent(u8 encoder, s32 incrementer)
 {
-  u16 value;
-
   // add incrementer to absolute value
-  value = LC_MF_FaderPosGet(encoder);
-  if( MIOS_HLP_16bitAddSaturate(incrementer, &value, 0x3ff) ) {
+  int prev_value = LC_MF_FaderPosGet(encoder);
+  int new_value = prev_value + incrementer;
+  
+  if( new_value < 0 ) { new_value = 0; }
+  else if( new_value >= 0x3ff ) { new_value = 0x3ff; }
+
+  if( new_value != prev_value ) {
     // send fader event
-    LC_MF_FaderEvent(encoder, value);
+    LC_MF_FaderEvent(encoder, new_value);
   }
 
   return 0; // no error
@@ -337,7 +330,7 @@ s32 LC_VPOT_LEDRing_CheckUpdates(void)
 s32 LC_VPOT_LEDRing_SRHandler(void)
 {
   // we have different code depending on LEDRINGS_ENABLED and METERS_ENABLED
-#if LEDRINGS_ENABLED == 0 && METERS_ENABLED == 0
+#if LEDRINGS_CATHODES_SR == 0 && METERS_CATHODES_SR == 0
 
   return 0; // nothing to do here...
 
@@ -346,62 +339,95 @@ s32 LC_VPOT_LEDRing_SRHandler(void)
   static u8 sr_ctr = 0;
   u16 anode_pattern;
 
-#if LEDRINGS_ENABLED && METERS_ENABLED == 0
+#if LEDRINGS_CATHODES_SR && METERS_CATHODES_SR == 0
 
   // increment the counter which selects the ledring/meter that will be visible during
   // the next SRIO update cycle --- wrap at 8 (0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, ...)
   sr_ctr = ++sr_ctr & 0x07;
 
+  // the cathode selection pattern
+  u8 select_mask = ~(1 << sr_ctr);
+
   // select the cathode of the LEDring (set the appr. pin to 0, and all others to 1)
-  MIOS32_DOUT_SRSet(LEDRINGS_SR_CATHODES, cathode_patterns[sr_ctr]);
+#if LEDRINGS_CATHODES_SR
+  MIOS32_DOUT_SRSet(LEDRINGS_CATHODES_SR-1, select_mask);
+#endif
 
   // set the LEDring pattern on the anodes
   anode_pattern = lc_flags.LEDRING_METERS ? meter_pattern[sr_ctr] : ledring_pattern[sr_ctr];
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_1, anode_pattern & 0xff);
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_2, (anode_pattern >> 8) & 0xff);
+#if LEDRINGS_METERS_ANODES_SR1
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR1-1, anode_pattern & 0xff);
+#endif
+#if LEDRINGS_METERS_ANODES_SR2
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR2-1, (anode_pattern >> 8) & 0xff);
+#endif
 
-#elif METERS_ENABLED && LEDRINGS_ENABLED == 0
+#elif METERS_CATHODES_SR && LEDRINGS_CATHODES_SR == 0
 
   // increment the counter which selects the ledring/meter that will be visible during
   // the next SRIO update cycle --- wrap at 8 (0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, ...)
   sr_ctr = ++sr_ctr & 0x07;
 
+  // the cathode selection pattern
+  u8 select_mask = ~(1 << sr_ctr);
+
   // select the cathode of the meter (set the appr. pin to 0, and all others to 1)
-  MIOS32_DOUT_SRSet(METERS_SR_CATHODES, cathode_patterns[sr_ctr]);
+#if METERS_CATHODES_SR
+  MIOS32_DOUT_SRSet(METERS_CATHODES_SR-1, select_mask);
+#endif
 
   // set the meter pattern on the anodes
   anode_pattern = lc_flags.LEDRING_METERS ? ledring_pattern[sr_ctr] : meter_pattern[sr_ctr];
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_1, anode_pattern & 0xff);
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_2, (anode_pattern >> 8) & 0xff);
+#if LEDRINGS_METERS_ANODES_SR1
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR1-1, anode_pattern & 0xff);
+#endif
+#if LEDRINGS_METERS_ANODES_SR2
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR2-1, (anode_pattern >> 8) & 0xff);
+#endif
 
-#else // LEDRINGS_ENABLED && METERS_ENABLED
+#else // LEDRINGS_CATHODES_SR && METERS_CATHODES_SR
 
   // increment the counter which selects the ledring/meter that will be visible during
   // the next SRIO update cycle --- wrap at 8 (0, 1, 2, 3, ..., 15, 0, 1, 2, ...)
   sr_ctr = ++sr_ctr & 0x0f;
 
+  // the cathode selection pattern
+  u8 select_mask = ~(1 << (sr_ctr & 0x7));
+
   if( sr_ctr < 8 ) {
     // select the cathode of the ledring (set the appr. pin to 0, and all others to 1)
-    MIOS32_DOUT_SRSet(LEDRINGS_SR_CATHODES, cathode_patterns[sr_ctr & 0x07]);
-    MIOS32_DOUT_SRSet(METERS_SR_CATHODES, 0xff);
+#if LEDRINGS_CATHODES_SR
+    MIOS32_DOUT_SRSet(LEDRINGS_CATHODES_SR-1, select_mask);
+#endif
+#if METERS_CATHODES_SR
+    MIOS32_DOUT_SRSet(METERS_CATHODES_SR-1, 0xff);
+#endif
 
     // set the LEDring pattern on the anodes
     anode_pattern = lc_flags.LEDRING_METERS ? meter_pattern[sr_ctr] : ledring_pattern[sr_ctr];
   } else {
     // select the cathode of the meter (set the appr. pin to 0, and all others to 1)
-    MIOS32_DOUT_SRSet(LEDRINGS_SR_CATHODES, 0xff);
-    MIOS32_DOUT_SRSet(METERS_SR_CATHODES, cathode_patterns[sr_ctr & 0x07]);
+#if LEDRINGS_CATHODES_SR
+    MIOS32_DOUT_SRSet(LEDRINGS_CATHODES_SR-1, 0xff);
+#endif
+#if METERS_CATHODES_SR
+    MIOS32_DOUT_SRSet(METERS_CATHODES_SR-1, select_mask);
+#endif
 
     // set the meter pattern on the anodes
     anode_pattern = lc_flags.LEDRING_METERS ? ledring_pattern[sr_ctr] : meter_pattern[sr_ctr];
   }
 
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_1, anode_pattern & 0xff);
-  MIOS32_DOUT_SRSet(LEDRINGS_METERS_SR_ANODES_2, (anode_pattern >> 8) & 0xff);
+#if LEDRINGS_METERS_ANODES_SR1
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR1-1, anode_pattern & 0xff);
+#endif
+#if LEDRINGS_METERS_ANODES_SR2
+  MIOS32_DOUT_SRSet(LEDRINGS_METERS_ANODES_SR2-1, (anode_pattern >> 8) & 0xff);
+#endif
 
 #endif
 
-#endif /* LEDRINGS_ENABLED == 0 && METERS_ENABLED == 0 */
+#endif /* LEDRINGS_CATHODES_SR == 0 && METERS_CATHODES_SR == 0 */
 
   return 0; // no error
 }

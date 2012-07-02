@@ -26,10 +26,7 @@
 #include "lc_meters.h"
 #include "lc_vpot.h"
 #include "lc_leddigits.h"
-
-#if LCD_USE_GLCD
 #include <glcd_font.h>
-#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -155,7 +152,11 @@ s32 LC_LCD_Init(u32 mode)
   int i;
 
   // init display mode
-  LC_LCD_DisplayPageSet(INITIAL_DISPLAY_PAGE);
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    LC_LCD_DisplayPageSet(INITIAL_DISPLAY_PAGE_GLCD);
+  } else {
+    LC_LCD_DisplayPageSet(INITIAL_DISPLAY_PAGE_CLCD);
+  }
 
   lcd_charset = 0xff; // force refresh
   LC_LCD_SpecialCharsInit(1); // select horizontal bars
@@ -200,11 +201,12 @@ s32 LC_LCD_DisplayPageSet(u8 page)
   // clear screen
   MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_Clear();
-#if LCD_USE_GLCD == 0
-  MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_Clear();
-  MIOS32_LCD_DeviceSet(0);
-#endif
+
+  if( !MIOS32_LCD_TypeIsGLCD() ) {
+    MIOS32_LCD_DeviceSet(1);
+    MIOS32_LCD_Clear();
+    MIOS32_LCD_DeviceSet(0);
+  }
 
   // set layout
   // possible x coordinates: x = 0..39 (0xff to disable message)
@@ -215,239 +217,269 @@ s32 LC_LCD_DisplayPageSet(u8 page)
   //    3: second LCD, second line
   switch( page ) {
     case 0:
-#if LCD_USE_GLCD
-      // status digits at 12/4 (16 pixels between chars)
-      lay_status.font = (u8 *)GLCD_FONT_BIG;
-      lay_status.x = 12; lay_status.y = 4; lay_status.d = 16;
 
-      // print "SMPTE/BEATS" at 56/5
-      lay_smpte_beats.font = (u8 *)GLCD_FONT_SMALL;
-      lay_smpte_beats.x = 56; lay_smpte_beats.y = 5; lay_smpte_beats.d = 5;
+      if( MIOS32_LCD_TypeIsGLCD() ) {
 
-      // print MTC digits at 70/4 (12 pixels between chars)
-      lay_mtc.font = (u8 *)GLCD_FONT_BIG;
-      lay_mtc.x = 70; lay_mtc.y = 4; lay_mtc.d = 12;
+	// GLCD
 
-      // print host message at 2/1 (4 pixels between chars)
-      lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
-      lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 1;
+	// status digits at 12/4 (16 pixels between chars)
+	lay_status.font = (u8 *)GLCD_FONT_BIG;
+	lay_status.x = 12; lay_status.y = 4; lay_status.d = 16;
 
-      // don't print meters
-      lay_meters.font = NULL;
-      lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 0;
+	// print "SMPTE/BEATS" at 56/5
+	lay_smpte_beats.font = (u8 *)GLCD_FONT_SMALL;
+	lay_smpte_beats.x = 56; lay_smpte_beats.y = 5; lay_smpte_beats.d = 5;
 
-      // don't print rec/solo/mute status
-      lay_rsm.font = NULL;
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// print MTC digits at 70/4 (12 pixels between chars)
+	lay_mtc.font = (u8 *)GLCD_FONT_BIG;
+	lay_mtc.x = 70; lay_mtc.y = 4; lay_mtc.d = 12;
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#else
-      // status digits at 38/2
-      lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
+	// print host message at 2/1 (4 pixels between chars)
+	lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
+	lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 1;
 
-      // print "SMPTE/BEATS" at 28/2
-      lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+	// don't print meters
+	lay_meters.font = NULL;
+	lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 0;
 
-      // print MTC digits at 27/3
-      lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+	// don't print rec/solo/mute status
+	lay_rsm.font = NULL;
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
 
-      // print host message at 12/0 (normal spacing, both lines)
-      lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 1;
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
 
-      // don't print meters
-      lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 7;
-      LC_LCD_SpecialCharsInit(1); // select horizontal bars
+      } else {
 
-      // print rec/solo/mute status at 0/0
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 1;
+	// CLCD:
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#endif
+	// status digits at 38/2
+	lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
+
+	// print "SMPTE/BEATS" at 28/2
+	lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+
+	// print MTC digits at 27/3
+	lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+
+	// print host message at 12/0 (normal spacing, both lines)
+	lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 1;
+
+	// don't print meters
+	lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 0;
+	LC_LCD_SpecialCharsInit(1); // select horizontal bars
+
+	// print rec/solo/mute status at 0/0
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 1;
+
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
+      }
       break;
 
     case 1:
-#if LCD_USE_GLCD
-      // status digits at 12/4 (16 pixels between chars)
-      lay_status.font = (u8 *)GLCD_FONT_BIG;
-      lay_status.x = 12; lay_status.y = 4; lay_status.d = 16;
 
-      // print "SMPTE/BEATS" at 56/5
-      lay_smpte_beats.font = (u8 *)GLCD_FONT_SMALL;
-      lay_smpte_beats.x = 56; lay_smpte_beats.y = 5; lay_smpte_beats.d = 5;
+      if( MIOS32_LCD_TypeIsGLCD() ) {
 
-      // print MTC digits at 70/4 (12 pixels between chars)
-      lay_mtc.font = (u8 *)GLCD_FONT_BIG;
-      lay_mtc.x = 70; lay_mtc.y = 4; lay_mtc.d = 12;
+	// GLCD
 
-      // print host message at 2/1 (4 pixels between chars)
-      lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
-      lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 1;
+	// status digits at 12/4 (16 pixels between chars)
+	lay_status.font = (u8 *)GLCD_FONT_BIG;
+	lay_status.x = 12; lay_status.y = 4; lay_status.d = 16;
 
-      // print horizontal meters at position 10/0 (28 pixels between icons)
-      lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_H;
-      lay_meters.x = 10; lay_meters.y = 0; lay_meters.d = 28;
+	// print "SMPTE/BEATS" at 56/5
+	lay_smpte_beats.font = (u8 *)GLCD_FONT_SMALL;
+	lay_smpte_beats.x = 56; lay_smpte_beats.y = 5; lay_smpte_beats.d = 5;
 
-      // don't print rec/solo/mute status
-      lay_rsm.font = NULL;
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// print MTC digits at 70/4 (12 pixels between chars)
+	lay_mtc.font = (u8 *)GLCD_FONT_BIG;
+	lay_mtc.x = 70; lay_mtc.y = 4; lay_mtc.d = 12;
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#else
-      // status digits at 38/2
-      lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
+	// print host message at 2/1 (4 pixels between chars)
+	lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
+	lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 1;
 
-      // print "SMPTE/BEATS" at 28/2
-      lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+	// print horizontal meters at position 10/0 (28 pixels between icons)
+	lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_H;
+	lay_meters.x = 10; lay_meters.y = 0; lay_meters.d = 28;
 
-      // print MTC digits at 27/3
-      lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+	// don't print rec/solo/mute status
+	lay_rsm.font = NULL;
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
 
-      // print host message at 12/0 (normal spacing, only first line)
-      lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 0;
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
 
-      // print meters at position 12/1 (distance between meters: 7)
-      lay_meters.x = 12; lay_meters.y = 1; lay_meters.d = 7;
-      LC_LCD_SpecialCharsInit(1); // select horizontal bars
+      } else {
 
-      // print rec/solo/mute status at 0/0
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 1;
+	// status digits at 38/2
+	lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#endif
+	// print "SMPTE/BEATS" at 28/2
+	lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+
+	// print MTC digits at 27/3
+	lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+
+	// print host message at 12/0 (normal spacing, only first line)
+	lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 0;
+
+	// print meters at position 12/1 (distance between meters: 7)
+	lay_meters.x = 12; lay_meters.y = 1; lay_meters.d = 7;
+	LC_LCD_SpecialCharsInit(1); // select horizontal bars
+
+	// print rec/solo/mute status at 0/0
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 1;
+
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
+      }
       break;
 
     case 2:
-#if LCD_USE_GLCD
-      // status digits at 12/7 (8 pixels between chars)
-      lay_status.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_status.x = 12; lay_status.y = 7; lay_status.d = 8;
 
-      // print "SMPTE/BEATS" at 92/7
-      lay_smpte_beats.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_smpte_beats.x = 92; lay_smpte_beats.y = 7; lay_smpte_beats.d = 6;
+      if( MIOS32_LCD_TypeIsGLCD() ) {
 
-      // print MTC digits at 124/7 (8 pixels between chars)
-      lay_mtc.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_mtc.x = 124; lay_mtc.y = 7; lay_mtc.d = 8;
+	// GLCD
 
-      // print host message at 2/1 (4 pixels between chars)
-      lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
-      lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 1;
+	// status digits at 12/7 (8 pixels between chars)
+	lay_status.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_status.x = 12; lay_status.y = 7; lay_status.d = 8;
 
-      // print vertical meters at position 18/3 (28 pixels between icons)
-      lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_V;
-      lay_meters.x = 18; lay_meters.y = 3; lay_meters.d = 28;
+	// print "SMPTE/BEATS" at 92/7
+	lay_smpte_beats.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_smpte_beats.x = 92; lay_smpte_beats.y = 7; lay_smpte_beats.d = 6;
 
-      // don't print rec/solo/mute status
-      lay_rsm.font = NULL;
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// print MTC digits at 124/7 (8 pixels between chars)
+	lay_mtc.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_mtc.x = 124; lay_mtc.y = 7; lay_mtc.d = 8;
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#else
-      // don't print status digits
-      lay_status.x = 0; lay_status.y = 0; lay_status.d = 0;
+	// print host message at 2/1 (4 pixels between chars)
+	lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
+	lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 1;
 
-      // don't print "SMPTE/BEATS"
-      lay_smpte_beats.x = 0; lay_smpte_beats.y = 0; lay_smpte_beats.d = 0;
+	// print vertical meters at position 18/3 (28 pixels between icons)
+	lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_V;
+	lay_meters.x = 18; lay_meters.y = 3; lay_meters.d = 28;
 
-      // don't print MTC digits
-      lay_mtc.x = 0; lay_mtc.y = 0; lay_mtc.d = 0;
+	// don't print rec/solo/mute status
+	lay_rsm.font = NULL;
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
 
-      // print host message at 0/0 (large spacing, both lines)
-      lay_host_msg.x = 0; lay_host_msg.y = 0; lay_host_msg.d = 1;
-      display_mode.LARGE_SCREEN = 1;
-      display_mode.SECOND_LINE = 1;
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
 
-      // don't print meters
-      lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 1;
-      LC_LCD_SpecialCharsInit(1); // select horizontal bars
+      } else {
 
-      // don't print rec/solo/mute
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// CLCD
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#endif
+	// don't print status digits
+	lay_status.x = 0; lay_status.y = 0; lay_status.d = 0;
+
+	// don't print "SMPTE/BEATS"
+	lay_smpte_beats.x = 0; lay_smpte_beats.y = 0; lay_smpte_beats.d = 0;
+
+	// don't print MTC digits
+	lay_mtc.x = 0; lay_mtc.y = 0; lay_mtc.d = 0;
+
+	// print host message at 0/0 (large spacing, both lines)
+	lay_host_msg.x = 0; lay_host_msg.y = 0; lay_host_msg.d = 1;
+	display_mode.LARGE_SCREEN = 1;
+	display_mode.SECOND_LINE = 1;
+
+	// don't print meters
+	lay_meters.x = 0; lay_meters.y = 0; lay_meters.d = 0;
+	LC_LCD_SpecialCharsInit(1); // select horizontal bars
+
+	// don't print rec/solo/mute
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
+      }
       break;
 
     default: // 3
-#if LCD_USE_GLCD
-      // status digits at 12/7 (8 pixels between chars)
-      lay_status.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_status.x = 12; lay_status.y = 7; lay_status.d = 8;
 
-      // print "SMPTE/BEATS" at 86/7
-      lay_smpte_beats.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_smpte_beats.x = 86; lay_smpte_beats.y = 7; lay_smpte_beats.d = 6;
+      if( MIOS32_LCD_TypeIsGLCD() ) {
 
-      // print MTC digits at 124/7 (8 pixels between chars)
-      lay_mtc.font = (u8 *)GLCD_FONT_NORMAL;
-      lay_mtc.x = 124; lay_mtc.y = 7; lay_mtc.d = 8;
+	// GLCD
 
-      // print host message at 2/1 (4 pixels between chars)
-      lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
-      lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
-      display_mode.LARGE_SCREEN = 0;
-      display_mode.SECOND_LINE = 1;
+	// status digits at 12/7 (8 pixels between chars)
+	lay_status.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_status.x = 12; lay_status.y = 7; lay_status.d = 8;
 
-      // print horizontal meters at position 10/3 (28 pixels between icons)
-      lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_H;
-      lay_meters.x = 10; lay_meters.y = 3; lay_meters.d = 28;
+	// print "SMPTE/BEATS" at 86/7
+	lay_smpte_beats.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_smpte_beats.x = 86; lay_smpte_beats.y = 7; lay_smpte_beats.d = 6;
 
-      // don't print rec/solo/mute status
-      lay_rsm.font = NULL;
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// print MTC digits at 124/7 (8 pixels between chars)
+	lay_mtc.font = (u8 *)GLCD_FONT_NORMAL;
+	lay_mtc.x = 124; lay_mtc.y = 7; lay_mtc.d = 8;
 
-      // print knobs at position 8/4 (28 pixels between icons)
-      lay_knobs.font = (u8 *)GLCD_FONT_KNOB_ICONS;
-      lay_knobs.x = 8; lay_knobs.y = 4; lay_knobs.d = 28;
-#else
-      // don't print status digits
-      lay_status.x = 0; lay_status.y = 0; lay_status.d = 0;
+	// print host message at 2/1 (4 pixels between chars)
+	lay_host_msg.font = (u8 *)GLCD_FONT_SMALL;
+	lay_host_msg.x = 2; lay_host_msg.y = 1; lay_host_msg.d = 4;
+	display_mode.LARGE_SCREEN = 0;
+	display_mode.SECOND_LINE = 1;
 
-      // don't print "SMPTE/BEATS"
-      lay_smpte_beats.x = 0; lay_smpte_beats.y = 0; lay_smpte_beats.d = 0;
+	// print horizontal meters at position 10/3 (28 pixels between icons)
+	lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_H;
+	lay_meters.x = 10; lay_meters.y = 3; lay_meters.d = 28;
 
-      // don't print MTC digits
-      lay_mtc.x = 0; lay_mtc.y = 0; lay_mtc.d = 0;
+	// don't print rec/solo/mute status
+	lay_rsm.font = NULL;
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
 
-      // print host message at 0/0 (large spacing, only one line)
-      lay_host_msg.x = 0; lay_host_msg.y = 0; lay_host_msg.d = 1;
-      display_mode.LARGE_SCREEN = 1;
-      display_mode.SECOND_LINE = 0;
+	// print knobs at position 8/4 (28 pixels between icons)
+	lay_knobs.font = (u8 *)GLCD_FONT_KNOB_ICONS;
+	lay_knobs.x = 8; lay_knobs.y = 4; lay_knobs.d = 28;
 
-      // print meters at position 2/1 (distance between meters: 10)
-      lay_meters.x = 2; lay_meters.y = 1; lay_meters.d = 10;
-      LC_LCD_SpecialCharsInit(1); // select horizontal bars
+      } else {
 
-      // don't print rec/solo/mute
-      lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+	// CLCD
 
-      // don't print knobs
-      lay_knobs.font = NULL;
-      lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
-#endif
+	// don't print status digits
+	lay_status.x = 0; lay_status.y = 0; lay_status.d = 0;
+
+	// don't print "SMPTE/BEATS"
+	lay_smpte_beats.x = 0; lay_smpte_beats.y = 0; lay_smpte_beats.d = 0;
+
+	// don't print MTC digits
+	lay_mtc.x = 0; lay_mtc.y = 0; lay_mtc.d = 0;
+
+	// print host message at 0/0 (large spacing, only one line)
+	lay_host_msg.x = 0; lay_host_msg.y = 0; lay_host_msg.d = 1;
+	display_mode.LARGE_SCREEN = 1;
+	display_mode.SECOND_LINE = 0;
+
+	// print meters at position 2/1 (distance between meters: 10)
+	lay_meters.x = 2; lay_meters.y = 1; lay_meters.d = 10;
+	LC_LCD_SpecialCharsInit(1); // select horizontal bars
+
+	// don't print rec/solo/mute
+	lay_rsm.x = 0; lay_rsm.y = 0; lay_rsm.d = 0;
+
+	// don't print knobs
+	lay_knobs.font = NULL;
+	lay_knobs.x = 0; lay_knobs.y = 0; lay_knobs.d = 0;
+      }
   }
 
   return 0; // no error
@@ -464,17 +496,15 @@ s32 LC_LCD_Update(u8 force)
 
   // host message
   if( lay_host_msg.d ) {
-    int i;
-
     MIOS32_IRQ_Disable();
     u8 local_force = force || lay_host_msg.update_req;
     lay_host_msg.update_req = 0;
     MIOS32_IRQ_Enable();
 
-#if LCD_USE_GLCD
-    if( lay_host_msg.font )
-      MIOS32_LCD_FontInit(lay_host_msg.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_host_msg.font )
+	MIOS32_LCD_FontInit(lay_host_msg.font);
+    }
 
     int next_x = -1;
     int next_y = -1;
@@ -496,23 +526,23 @@ s32 LC_LCD_Update(u8 force)
 	  }
 
 	  if( lcd_x != next_x || lcd_y != next_y ) {
-#if LCD_USE_GLCD
-	    MIOS32_LCD_CursorSet(lcd_x, lcd_y);
-#else
-	    MIOS32_LCD_DeviceSet((lcd_x >= 40) ? 1 : 0);
-	    MIOS32_LCD_CursorSet(lcd_x % 40, lcd_y);
-#endif
+	    if( MIOS32_LCD_TypeIsGLCD() ) {
+	      MIOS32_LCD_CursorSet(lcd_x, lcd_y);
+	    } else {
+	      MIOS32_LCD_DeviceSet((lcd_x >= 40) ? 1 : 0);
+	      MIOS32_LCD_CursorSet(lcd_x % 40, lcd_y);
+	    }
 	  }
 	  MIOS32_LCD_PrintChar(*msg & 0x7f);
 	  *msg |= 0x80;
 	  next_y = lcd_y;
 	  next_x = lcd_x + 1;
 
-#if LCD_USE_GLCD == 0
-	  // for 2 * 2x40 LCDs: ensure that cursor is set when we reach the second half
-	  if( next_x == 40 )
-	    next_x = -1;
-#endif
+	  if( !MIOS32_LCD_TypeIsGLCD() ) {
+	    // for 2 * 2x40 LCDs: ensure that cursor is set when we reach the second half
+	    if( next_x == 40 )
+	      next_x = -1;
+	  }
 	}
       }
     }
@@ -527,10 +557,10 @@ s32 LC_LCD_Update(u8 force)
     // done for each single meter
     // lay_meters.update_req = 0;
 
-#if LCD_USE_GLCD
-    if( lay_meters.font )
-      MIOS32_LCD_FontInit(lay_meters.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_meters.font )
+	MIOS32_LCD_FontInit(lay_meters.font);
+    }
 
     for(meter=0; meter<8; ++meter) {
       if( force || (lay_meters.update_req & (1 << meter)) ) {
@@ -542,23 +572,30 @@ s32 LC_LCD_Update(u8 force)
 
 	u8 level = LC_METERS_LevelGet(meter);
 
-#if LCD_USE_GLCD
-	// set cursor depending on layout constraints
-	LC_LCD_PhysCursorSet(lay_meters.x + meter * lay_meters.d, lay_meters.y);
-	// print icon (if bit 7 is set: overrun, add 14)
-	MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
-#else
-	// set cursor depending on layout constraints
-	LC_LCD_PhysCursorSet(lay_meters.x + meter * lay_meters.d, lay_meters.y);
+	if( MIOS32_LCD_TypeIsGLCD() ) {
+	  // set cursor depending on layout constraints
+	  LC_LCD_PhysCursorSet(lay_meters.x + meter * lay_meters.d, lay_meters.y);
+	  // print icon (if bit 7 is set: overrun, add 14)
+	  MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
+	} else {
+	  // set cursor depending on layout constraints
+	  int x = lay_meters.x + meter * lay_meters.d;
+	  int y = lay_meters.y;
 
-	// print string
-	int map_offset = 5 * (level & 0x7f);
-	for(i=0; i<5; ++i)
-	  MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
+	  if( x >= 40 ) {
+	    x %= 40;
+	    y += 2;
+	  }
+	  LC_LCD_PhysCursorSet(x, y);
 
-	// print overrun flag if bit 7 of level is set, else space
-	MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
-#endif
+	  // print string
+	  int map_offset = 5 * (level & 0x7f);
+	  for(i=0; i<5; ++i)
+	    MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
+
+	  // print overrun flag if bit 7 of level is set, else space
+	  MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
+	}
       }
     }
   }
@@ -569,10 +606,10 @@ s32 LC_LCD_Update(u8 force)
   if( lay_smpte_beats.d && (lay_smpte_beats.update_req || force) ) {
     lay_smpte_beats.update_req = 0;
 
-#if LCD_USE_GLCD
-    if( lay_smpte_beats.font )
-      MIOS32_LCD_FontInit(lay_smpte_beats.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_smpte_beats.font )
+	MIOS32_LCD_FontInit(lay_smpte_beats.font);
+    }
 
     // set cursor depending on layout constraints
     LC_LCD_PhysCursorSet(lay_smpte_beats.x, lay_smpte_beats.y);
@@ -585,14 +622,12 @@ s32 LC_LCD_Update(u8 force)
 
   // MTC
   if( lay_mtc.d && (lay_mtc.update_req || force) ) {
-    int i;
-
     lay_mtc.update_req = 0;
 
-#if LCD_USE_GLCD
-    if( lay_mtc.font )
-      MIOS32_LCD_FontInit(lay_mtc.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_mtc.font )
+	MIOS32_LCD_FontInit(lay_mtc.font);
+    }
 
     // print a space at first position (will be overwritten in BEATS mode)
 
@@ -661,10 +696,10 @@ s32 LC_LCD_Update(u8 force)
 
     lay_status.update_req = 0;
     
-#if LCD_USE_GLCD
-    if( lay_status.font )
-      MIOS32_LCD_FontInit(lay_status.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_status.font )
+	MIOS32_LCD_FontInit(lay_status.font);
+    }
 
     // print digits
     for(i=0; i<2; ++i) {
@@ -678,10 +713,10 @@ s32 LC_LCD_Update(u8 force)
   if( lay_rsm.d && (lay_rsm.update_req || force) ) {
     lay_rsm.update_req = 0;
 
-#if LCD_USE_GLCD
-    if( lay_rsm.font )
-      MIOS32_LCD_FontInit(lay_rsm.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_rsm.font )
+	MIOS32_LCD_FontInit(lay_rsm.font);
+    }
   }
 
 
@@ -692,10 +727,10 @@ s32 LC_LCD_Update(u8 force)
     // done for each single knob
     // lay_knobs.update_req = 0;
 
-#if LCD_USE_GLCD
-    if( lay_knobs.font )
-      MIOS32_LCD_FontInit(lay_knobs.font);
-#endif
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      if( lay_knobs.font )
+	MIOS32_LCD_FontInit(lay_knobs.font);
+    }
 
     for(knob=0; knob<8; ++knob) {
       if( force || (lay_knobs.update_req & (1 << knob)) ) {
@@ -707,23 +742,23 @@ s32 LC_LCD_Update(u8 force)
 
 	u8 level = (lc_flags.GPC_SEL ? (LC_GPC_VPotValueGet(knob) >> 3) : LC_VPOT_ValueGet(knob)) & 0x0f; // 16 icons available
 
-#if LCD_USE_GLCD
-	// set cursor depending on layout constraints
-	LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
-	// print icon (if bit 7 is set: overrun, add 14)
-	MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
-#else
-	// set cursor depending on layout constraints
-	LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
+	if( MIOS32_LCD_TypeIsGLCD() ) {
+	  // set cursor depending on layout constraints
+	  LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
+	  // print icon (if bit 7 is set: overrun, add 14)
+	  MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
+	} else {
+	  // set cursor depending on layout constraints
+	  LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
 
-	// print string
-	int map_offset = 5 * (level & 0x7f);
-	for(i=0; i<5; ++i)
-	  MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
+	  // print string
+	  int map_offset = 5 * (level & 0x7f);
+	  for(i=0; i<5; ++i)
+	    MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
 
-	// print overrun flag if bit 7 of level is set, else space
-	MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
-#endif
+	  // print overrun flag if bit 7 of level is set, else space
+	  MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
+	}
       }
     }
   }
@@ -741,12 +776,12 @@ s32 LC_LCD_Update(u8 force)
 /////////////////////////////////////////////////////////////////////////////
 s32 LC_LCD_PhysCursorSet(u8 cursor_pos_x, u8 cursor_pos_y)
 {
-#if LCD_USE_GLCD
-  return MIOS32_LCD_GCursorSet(cursor_pos_x, cursor_pos_y*8);
-#else
-  MIOS32_LCD_DeviceSet((cursor_pos_y >= 2) ? 1 : 0);
-  return MIOS32_LCD_CursorSet(cursor_pos_x, cursor_pos_y % 2);
-#endif
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    return MIOS32_LCD_GCursorSet(cursor_pos_x, cursor_pos_y*8);
+  } else {
+    MIOS32_LCD_DeviceSet((cursor_pos_y >= 2) ? 1 : 0);
+    return MIOS32_LCD_CursorSet(cursor_pos_x, cursor_pos_y % 2);
+  }
 }
 
 
@@ -794,21 +829,21 @@ s32 LC_LCD_SpecialCharsInit(u8 charset)
   // else initialize special characters
   lcd_charset = charset;
 
-#if LCD_USE_GLCD
-  // not relevant
-#else
-  for(lcd=0; lcd<2; ++lcd) {
-    MIOS32_LCD_DeviceSet(lcd);
-    MIOS32_LCD_CursorSet(0, 0);
-    switch( charset ) {
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    // not relevant
+  } else {
+    for(lcd=0; lcd<2; ++lcd) {
+      MIOS32_LCD_DeviceSet(lcd);
+      MIOS32_LCD_CursorSet(0, 0);
+      switch( charset ) {
       case 1: // horizontal bars
 	MIOS32_LCD_SpecialCharsInit((u8 *)charset_horiz_bars);
 	break;
       default: // vertical bars
 	MIOS32_LCD_SpecialCharsInit((u8 *)charset_vert_bars);
+      }
     }
   }
-#endif
 
   MIOS32_LCD_DeviceSet(0);
 
