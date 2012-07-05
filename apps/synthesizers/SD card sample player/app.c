@@ -36,7 +36,7 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters);
 #define POLYPHONY 8				// Max voices to sound simultaneously
 
 // Following accounts for: 7 bits (envelope decay) + 7 bits (velocity related volume) + 1-3 bits (mixing up to 8 samples but depends how hot your samples are)
-#define SAMPLE_SCALING 8		// Number of bits to scale samples down by in order to not distort
+#define SAMPLE_SCALING 15        // Number of bits to scale samples down by in order to not distort - added 7 bits for midi volume now
 
 #define MAX_TIME_IN_DMA 45		// Time (*0.1ms) to read sample data for, e.g. 40 = 4.0 mS
 
@@ -71,6 +71,7 @@ u8 midichannel=1;	// MIDI channel to respond to
 static  u8 voice_no=0;	// used to count number of voices to play
 static  u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
 static  s16 voice_velocity[POLYPHONY];	// Store the velocity for each sample
+static s16 midi_volume=127;	// 7 bit value to scale the volume of all samples by - needs to be s16 to make multiplies work
 
 char bankprefix[13]="bank.";	// Default sample bank filename prefix on the SD card, needs to have Unix style line feeds
 static file_t bank_fileinfo;	// Create the file descriptor for bank file
@@ -162,6 +163,8 @@ void Open_Bank(u8 b_num)	// Open the bank number passed and parse the bank infor
   char b_num_char[4];			// Up to 3 digit bank string plus terminator
   static char sample_filenames[NUM_SAMPLES_TO_OPEN][30];		// Stores sample mappings from bank file, needs to be static to avoid crash
 
+  midi_volume=127;		// Reset midi volume to default value
+  
   strcpy(b_file,bankprefix);		// Get prefix in
   sprintf(b_num_char,"%d",b_num);	// get bank number as string
   strcat(b_file,b_num_char);		// Create the final filename
@@ -385,6 +388,11 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 		Open_Bank(sample_bank_no);	// Load relevant bank
 		sdcard_access_allowed=1;
 	}
+  else if (midi_package.chn==midichannel && midi_package.type==CC && midi_package.evnt1==7) // Volume message
+  {
+   midi_volume=midi_package.evnt2;  // Set new global midi volume
+   //DEBUG_MSG("Midi volume set to %d\n", midi_volume);
+  }
   else
   {
   //DEBUG_MSG("Other MIDI message received, channel %d, event %X, type %X, cc number %d, value %d... ignoring.",midi_package.chn,midi_package.event,midi_package.type,midi_package.cc_number,midi_package.value);
@@ -562,7 +570,8 @@ static void TASK_VOICE_SCAN(void *pvParameters)
 				 if(sample_on[samp_no]<0)	// We want to play this voice (either newly triggered =1 or continue playing =2)
 					{
 						voice_samples[new_voice_no]=samp_no;	// Assign the next available voice to this sample number
-						voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
+						//voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]);	// Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
+						voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]*midi_volume);    // Assign velocity to voice - cast required to ensure the voice accumulation multiply is fast signed 16 bit
 						new_voice_no++;							// And increment number of voices in use
 						if(sample_on[samp_no]==-1)					// Newly triggered sample (set to -1 by midi receive routine)
 						{
@@ -621,7 +630,7 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters)
 
   while( 1 ) 
   {
-	vTaskDelayUntil(&xLastExecutionTime, 500 / portTICK_RATE_MS); // Run this every 0.5s, this WILL be interrupted every now and again by the DMA fill interrupt
+	vTaskDelayUntil(&xLastExecutionTime, 100 / portTICK_RATE_MS); // Run this every 0.1s, this WILL be interrupted every now and again by the DMA fill interrupt
 	if(lee_hw)	// non standard bank switch connected and enabled in config file
 	{	
 			// Now check for bank switch change  
