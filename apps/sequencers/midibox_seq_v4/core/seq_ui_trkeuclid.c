@@ -44,9 +44,10 @@
 #define ITEM_DRUM_NOTE       3
 #define ITEM_DRUM_VEL_N      4
 #define ITEM_DRUM_VEL_A      5
-#define ITEM_EUCLID_LENGTH   6
-#define ITEM_EUCLID_PULSES   7
-#define ITEM_EUCLID_OFFSET   8
+#define ITEM_RND_ACC_PROB    6
+#define ITEM_EUCLID_LENGTH   7
+#define ITEM_EUCLID_PULSES   8
+#define ITEM_EUCLID_OFFSET   9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,13 +59,16 @@
 static u8 euclid_length[NUM_EUCLID_CFG] = {15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15};
 static u8 euclid_pulses[NUM_EUCLID_CFG] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0};
 static u8 euclid_offset[NUM_EUCLID_CFG] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0};
-
+static u8 rnd_acc_probability = 50;
+static u8 rnd_acc_n = 100; // only for non-drum layers
+static u8 rnd_acc_a = 127; // only for non-drum layers
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset);
+static s32 AccentGenerator(u8 track, u16 steps);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,6 +86,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_DRUM_NOTE:     *gp_leds = 0x0010; break;
     case ITEM_DRUM_VEL_N:    *gp_leds = 0x0020; break;
     case ITEM_DRUM_VEL_A:    *gp_leds = 0x0040; break;
+    case ITEM_RND_ACC_PROB:  *gp_leds = 0x0080; break;
     case ITEM_EUCLID_LENGTH: *gp_leds = 0x0100; break;
     case ITEM_EUCLID_PULSES: *gp_leds = 0x0200; break;
     case ITEM_EUCLID_OFFSET: *gp_leds = 0x0400; break;
@@ -133,7 +138,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP8:
-      return 0; // no encoder function
+      ui_selected_item = ITEM_RND_ACC_PROB;
+      break;
 
     case SEQ_UI_ENCODER_GP9:
       ui_selected_item = ITEM_EUCLID_LENGTH;
@@ -192,15 +198,25 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_instrument, 0, 127, incrementer);
     } else {
-      return -1; // not supported
+      return SEQ_UI_Var8_Inc(&rnd_acc_n, 0, 127, incrementer);
     }
+  } break;
+
+  case ITEM_RND_ACC_PROB: {
+    incrementer *= 10; // more comfortable to do this in bigger steps...
+    SEQ_UI_Var8_Inc(&rnd_acc_probability, 0, 100, incrementer);
+
+    // generate new pattern
+    AccentGenerator(visible_track, (int)euclid_length[euclid_layer]+1);
+
+    return 1;
   } break;
 
   case ITEM_DRUM_VEL_A: {
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_instrument, 0, 127, incrementer);
+      return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + ui_selected_instrument, 0, 127, incrementer);
     } else {
-      return -1; // not supported
+      return SEQ_UI_Var8_Inc(&rnd_acc_a, 0, 127, incrementer);
     }
   } break;
 
@@ -218,6 +234,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // generate new pattern
     EuclidGenerator(visible_track, (int)euclid_length[euclid_layer]+1, euclid_pulses[euclid_layer], euclid_offset[euclid_layer]);
+    // +accent
+    AccentGenerator(visible_track, (int)euclid_length[euclid_layer]+1);
 
     return 1;
   } break;
@@ -291,14 +309,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. TrkLength Drum Note VelN VelA      Len Pulses Offs.    *.**.**.**.**.*.*.*.
-  // G3T2   64/128   CH   F#1  100  127       20   12     0                          
+  // Trk. TrkLength Drum Note VelN VelA RndA Len Pulses Offs.    *.**.**.**.**.*.*.*.
+  // G3T2   64/128   CH   F#1  100  127  50%  20   12     0                          
 
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. TrkLength Trg.                     Len Pulses Offs.    *..*..*..*..*.*.*..*
-  // G1T1   64/128  Gate                      16    6     0                          
+  // Trk. TrkLength Trg.      VelN VelA RndA Len Pulses Offs.    *..*..*..*..*.*.*..*
+  // G1T1   64/128  Gate       100  127  50%  16    6     0                          
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -309,7 +327,7 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintString("Trk. TrkLength ");
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
-    SEQ_LCD_PrintString("Drum Note VelN VelA      ");
+    SEQ_LCD_PrintString("Drum Note VelN VelA RndA ");
   } else {
     SEQ_LCD_PrintString("Trg.                     ");
   }
@@ -319,12 +337,24 @@ static s32 LCD_Handler(u8 high_prio)
   {
     u16 len = SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1;
     u8 max_trigger = (len > 20) ? 20 : len;
+    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];    
 
     int i;
     for(i=0; i<max_trigger; ++i) {
-      u8 gate_accent = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
-      gate_accent |= SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument) << 1;
-      SEQ_LCD_PrintChar(gate_accent);
+      u8 gate = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
+      u8 accent = !gate ? 0 : SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument);
+
+      if( gate && !accent && tcc->link_par_layer_velocity >= 0 ) {
+	u8 min = rnd_acc_n;
+	u8 max = rnd_acc_a;
+	if( min > max ) {
+	  u8 tmp;
+	  tmp = min; max = min; min = tmp; // swap
+	}
+	if( SEQ_PAR_Get(visible_track, i, tcc->link_par_layer_velocity, ui_selected_instrument) >= max )
+	  accent |= 1;
+      }
+      SEQ_LCD_PrintChar(gate | (accent << 1));
     }
 
     for(;i<20; ++i) {
@@ -377,21 +407,33 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(1);
 
   /////////////////////////////////////////////////////////////////////////
-  if( event_mode != SEQ_EVENT_MODE_Drum || (ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash) ) {
+  if( ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_instrument));
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_instrument));
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d ", rnd_acc_n);
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////
-  if( event_mode != SEQ_EVENT_MODE_Drum || (ui_selected_item == ITEM_DRUM_VEL_A && ui_cursor_flash) ) {
+  if( ui_selected_item == ITEM_DRUM_VEL_A && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
     SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_C1 + ui_selected_instrument));
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d ", rnd_acc_a);
+    }
   }
 
   /////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(6);
+  if( ui_selected_item == ITEM_RND_ACC_PROB && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(6);
+  } else {
+    SEQ_LCD_PrintFormattedString(" %3d%% ", rnd_acc_probability);
+  }
 
   /////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_EUCLID_LENGTH && ui_cursor_flash ) {
@@ -442,7 +484,7 @@ s32 SEQ_UI_TRKEUCLID_Init(u32 mode)
 // The Euclid Generator
 // Algorithm from crx (http://crx091081gb.net/?p=189)
 /////////////////////////////////////////////////////////////////////////////
-  static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
+static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
 {
   u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
   u16 num_steps = SEQ_TRG_NumStepsGet(track);
@@ -550,6 +592,48 @@ s32 SEQ_UI_TRKEUCLID_Init(u32 mode)
     }
   }
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Random Accent Generator
+/////////////////////////////////////////////////////////////////////////////
+static s32 AccentGenerator(u8 track, u16 steps)
+{
+  u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+  u16 num_steps = SEQ_TRG_NumStepsGet(track);
+  u8 instrument = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+
+  int loop_offset; // fill whole track with repeating pattern
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];    
+
+  for(loop_offset=0; loop_offset<num_steps; loop_offset += steps) {
+    u8 step;
+    for(step=0; step<steps; ++step) {
+      if( loop_offset == 0 ) {
+	// generate random accent
+	u8 rnd = SEQ_RANDOM_Gen_Range(0, 100);
+	u8 accent = rnd < rnd_acc_probability;
+
+	if( tcc->link_par_layer_velocity >= 0 ) {
+	  SEQ_PAR_Set(track, step, tcc->link_par_layer_velocity, instrument,
+		      accent ? rnd_acc_a : rnd_acc_n);
+	} else {
+	  SEQ_TRG_AccentSet(track, step, instrument, accent);
+	}
+      } else {
+	// copy first loop to remaining loop ranges
+	if( tcc->link_par_layer_velocity >= 0 ) {
+	  SEQ_PAR_Set(track, loop_offset+step, tcc->link_par_layer_velocity, instrument,
+		      SEQ_PAR_Get(track, step, tcc->link_par_layer_velocity, instrument));
+	} else {
+	  SEQ_TRG_AccentSet(track, loop_offset+step, instrument,
+			    SEQ_TRG_AccentGet(track, step, instrument));
+	}
+      }
+    }
+  }
 
   return 0; // no error
 }
