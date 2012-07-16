@@ -181,8 +181,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 num_drums = SEQ_TRG_NumInstrumentsGet(visible_track);
       return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_drums-1, incrementer);
     } else {
-      u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
-      return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, num_t_layers-1, incrementer);
+      //u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+      //return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, num_t_layers-1, incrementer);
+      return -1;
     }
   } break;
 
@@ -315,8 +316,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. TrkLength Trg.      VelN VelA RndA Len Pulses Offs.    *..*..*..*..*.*.*..*
-  // G1T1   64/128  Gate       100  127  50%  16    6     0                          
+  // Trk. TrkLength           VelN VelA RndA Len Pulses Offs.    *..*..*..*..*.*.*..*
+  // G1T1   64/128             100  127  50%  16    6     0                          
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -329,7 +330,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
     SEQ_LCD_PrintString("Drum Note VelN VelA RndA ");
   } else {
-    SEQ_LCD_PrintString("Trg.                     ");
+    SEQ_LCD_PrintString("          VelN VelA RndA ");
   }
   SEQ_LCD_PrintString("Len Pulses Offs.    ");
 
@@ -345,14 +346,14 @@ static s32 LCD_Handler(u8 high_prio)
       u8 accent = !gate ? 0 : SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument);
 
       if( gate && !accent && tcc->link_par_layer_velocity >= 0 ) {
-	u8 min = rnd_acc_n;
-	u8 max = rnd_acc_a;
-	if( min > max ) {
-	  u8 tmp;
-	  tmp = min; max = min; min = tmp; // swap
+	u8 value = SEQ_PAR_Get(visible_track, i, tcc->link_par_layer_velocity, ui_selected_instrument);
+	if( rnd_acc_n <= rnd_acc_a ) {
+	  if( value >= rnd_acc_a )
+	    accent |= 1;
+	} else {
+	  if( value <= rnd_acc_a )
+	    accent |= 1;
 	}
-	if( SEQ_PAR_Get(visible_track, i, tcc->link_par_layer_velocity, ui_selected_instrument) >= max )
-	  accent |= 1;
       }
       SEQ_LCD_PrintChar(gate | (accent << 1));
     }
@@ -393,7 +394,8 @@ static s32 LCD_Handler(u8 high_prio)
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
     } else {
-      SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+      //SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
+      SEQ_LCD_PrintSpaces(5);
     }
   }
 
@@ -404,7 +406,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
   }
-  SEQ_LCD_PrintSpaces(1);
+  SEQ_LCD_PrintSpaces(2);
 
   /////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash ) {
@@ -424,15 +426,15 @@ static s32 LCD_Handler(u8 high_prio)
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
     SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_C1 + ui_selected_instrument));
     } else {
-      SEQ_LCD_PrintFormattedString("%3d ", rnd_acc_a);
+      SEQ_LCD_PrintFormattedString(" %3d ", rnd_acc_a);
     }
   }
 
   /////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_RND_ACC_PROB && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    SEQ_LCD_PrintFormattedString(" %3d%% ", rnd_acc_probability);
+    SEQ_LCD_PrintFormattedString("%3d%% ", rnd_acc_probability);
   }
 
   /////////////////////////////////////////////////////////////////////////
