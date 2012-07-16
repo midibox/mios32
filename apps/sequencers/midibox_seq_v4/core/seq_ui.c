@@ -1373,6 +1373,7 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 track_button)
   if( button_state == (~(1 << track_button) & 0xffff) ) {
     // if only one select button pressed: radio-button function (1 of 16)
     ui_selected_tracks = 1 << track_button;
+    ui_selected_group = track_button / 4;
   } else {
     // if more than one select button pressed: toggle function (16 of 16)
     ui_selected_tracks ^= 1 << track_button;
