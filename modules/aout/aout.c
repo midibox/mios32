@@ -140,6 +140,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include "aout.h"
 
@@ -157,6 +158,35 @@ typedef struct {
   u8   slewrate;
   u8   pitchrange;
 } aout_channel_t;
+
+
+
+// for AOUT interface testmode
+// TODO: allow access to these pins via MIOS32_SPI driver
+#if defined(MIOS32_FAMILY_STM32F10x)
+#define MIOS32_SPI2_HIGH_VOLTAGE 4
+
+#define MIOS32_SPI2_SCLK_PORT  GPIOB
+#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_SPI2_MOSI_PORT  GPIOB
+#define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
+
+#define MIOS32_SPI2_SCLK_INIT   { } // already configured as GPIO
+#define MIOS32_SPI2_SCLK_SET(b) { MIOS32_SPI2_SCLK_PORT->BSRR = (b) ? MIOS32_SPI2_SCLK_PIN : (MIOS32_SPI2_SCLK_PIN << 16); }
+#define MIOS32_SPI2_MOSI_INIT   { } // already configured as GPIO
+#define MIOS32_SPI2_MOSI_SET(b) { MIOS32_SPI2_MOSI_PORT->BSRR = (b) ? MIOS32_SPI2_MOSI_PIN : (MIOS32_SPI2_MOSI_PIN << 16); }
+
+#elif defined(MIOS32_FAMILY_LPC17xx)
+#define MIOS32_SPI2_HIGH_VOLTAGE 5
+
+#define MIOS32_SPI2_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 15, 0); MIOS32_SYS_LPC_PINDIR(0, 15, 1); }
+#define MIOS32_SPI2_SCLK_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 15, v); }
+#define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 0); MIOS32_SYS_LPC_PINDIR(0, 18, 1); }
+#define MIOS32_SPI2_MOSI_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 18, v); }
+#else
+# error "Please adapt MIOS32_SPI settings!"
+#endif
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1083,6 +1113,193 @@ s32 AOUT_Update(void)
 
   return status ? -4 : 0; // SPI transfer error?
 }
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which tests an AOUT pin
+/////////////////////////////////////////////////////////////////////////////
+static s32 AOUT_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
+{
+  void (*out)(char *format, ...) = _output_function;
+  s32 status = 0;
+
+  switch( pin_number ) {
+  case 0:
+    AOUT_SuspendSet(0);
+    out("Module has been re-initialized and can be used again!\n");
+    break;
+
+  case 1:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:CS pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    MIOS32_SPI_RC_PinSet(2, 0, level ? 1 : 0); // spi, rc_pin, pin_value
+#endif
+    break;
+
+  case 2:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:SI pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    MIOS32_SPI2_MOSI_INIT;
+    MIOS32_SPI2_MOSI_SET(level ? 1 : 0);
+#endif
+    break;
+
+  case 3:
+    AOUT_SuspendSet(1);
+    out("Setting AOUT:SC pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
+#if !defined(MIOS32_FAMILY_EMULATION)
+    MIOS32_SPI2_SCLK_INIT;
+    MIOS32_SPI2_SCLK_SET(level ? 1 : 0);
+#endif
+    break;
+
+  default:
+    out("ERROR: unsupported pin #%d", pin_number);
+  }
+
+  return status;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a decimal or hex value
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  return l; // value is valid
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses for on or off
+// returns 0 if 'off', 1 if 'on', -1 if invalid
+/////////////////////////////////////////////////////////////////////////////
+//static s32 get_on_off(char *word)
+//{
+//  if( strcmp(word, "on") == 0 || strcmp(word, "1") == 0 )
+//    return 1;
+//
+//  if( strcmp(word, "off") == 0 || strcmp(word, "0") == 0 )
+//    return 0;
+//
+//  return -1;
+//}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns help page for implemented terminal commands of this module
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_TerminalHelp(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  out("  testaoutpin:    type this command to get further informations about the testmode.");
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Parser for a complete line
+// Returns > 0 if command line matches with UIP terminal commands
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_TerminalParseLine(char *input, void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+  char *separators = " \t";
+  char *brkt;
+  char *parameter;
+
+  // since strtok_r works destructive (separators in *input replaced by NUL), we have to restore them
+  // on an unsuccessful call (whenever this function returns < 1)
+  int input_len = strlen(input);
+
+  if( (parameter = strtok_r(input, separators, &brkt)) ) {
+    if( strcmp(parameter, "testaoutpin") == 0 ) {
+      char *arg;
+      int pin_number = -1;
+      int level = -1;
+      
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(arg, "cs") == 0 )
+	  pin_number = 1;
+	else if( strcmp(arg, "si") == 0 )
+	  pin_number = 2;
+	else if( strcmp(arg, "sc") == 0 )
+	  pin_number = 3;
+	else if( strcmp(arg, "reset") == 0 ) {
+	  pin_number = 0;
+	  level = 0; // dummy
+	}
+      }
+      
+      if( pin_number < 0 ) {
+	out("Please specifiy valid AOUT pin name: cs, si or sc\n");
+      }
+
+      if( (arg = strtok_r(NULL, separators, &brkt)) )
+	level = get_dec(arg);
+	
+      if( level != 0 && level != 1 ) {
+	out("Please specifiy valid logic level for AOUT pin: 0 or 1\n");
+      }
+
+      if( pin_number >= 0 && level >= 0 ) {
+	AOUT_TestAoutPin(out, pin_number, level);
+      } else {
+	out("Following commands are supported:\n");
+	out("testaoutpin cs 0  -> sets AOUT:CS to 0.4V");
+	out("testaoutpin cs 1  -> sets AOUT:CS to ca. 4V");
+	out("testaoutpin si 0  -> sets AOUT:SI to ca. 0.4V");
+	out("testaoutpin si 1  -> sets AOUT:SI to ca. 4V");
+	out("testaoutpin sc 0  -> sets AOUT:SC to ca. 0.4V");
+	out("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
+	out("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
+      }
+      return 1; // command taken
+    }
+
+  }
+
+  // restore input line (replace NUL characters by spaces)
+  int i;
+  char *input_ptr = input;
+  for(i=0; i<input_len; ++i, ++input_ptr)
+    if( !*input_ptr )
+      *input_ptr = ' ';
+
+  return 0; // command not taken
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Keyboard Configuration (can also be called from external)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_TerminalPrintConfig(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  out("Print AOUT Config: TODO");
+
+  return 0; // no error
+}
+
+
 
 
 //! \}

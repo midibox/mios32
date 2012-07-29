@@ -135,6 +135,10 @@ extern s32 AOUT_SuspendGet(void);
 
 extern s32 AOUT_Update(void);
 
+extern s32 AOUT_TerminalHelp(void *_output_function);
+extern s32 AOUT_TerminalParseLine(char *input, void *_output_function);
+extern s32 AOUT_TerminalPrintConfig(void *_output_function);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
