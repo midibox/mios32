@@ -62,38 +62,6 @@
 #endif
 
 
-#if !defined(MIOS32_FAMILY_EMULATION)
-// for AOUT interface testmode
-// TODO: allow access to these pins via MIOS32_SPI driver
-#if defined(MIOS32_FAMILY_STM32F10x)
-#define MIOS32_SPI2_HIGH_VOLTAGE 4
-
-#define MIOS32_SPI2_SCLK_PORT  GPIOB
-#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
-#define MIOS32_SPI2_MOSI_PORT  GPIOB
-#define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
-
-#define MIOS32_SPI2_SCLK_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_SCLK_SET(b) { MIOS32_SPI2_SCLK_PORT->BSRR = (b) ? MIOS32_SPI2_SCLK_PIN : (MIOS32_SPI2_SCLK_PIN << 16); }
-#define MIOS32_SPI2_MOSI_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_MOSI_SET(b) { MIOS32_SPI2_MOSI_PORT->BSRR = (b) ? MIOS32_SPI2_MOSI_PIN : (MIOS32_SPI2_MOSI_PIN << 16); }
-
-#elif defined(MIOS32_FAMILY_LPC17xx)
-#define MIOS32_SPI2_HIGH_VOLTAGE 5
-
-#define MIOS32_SPI2_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 15, 0); MIOS32_SYS_LPC_PINDIR(0, 15, 1); }
-#define MIOS32_SPI2_SCLK_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 15, v); }
-#define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 0); MIOS32_SYS_LPC_PINDIR(0, 18, 1); }
-#define MIOS32_SPI2_MOSI_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 18, v); }
-#else
-# error "Please adapt MIOS32_SPI settings!"
-#endif
-#else
-# define MIOS32_SPI2_HIGH_VOLTAGE 5
-#endif
-
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
@@ -204,6 +172,11 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 #if !defined(MIOS32_FAMILY_EMULATION)
   if( UIP_TERMINAL_ParseLine(input, _output_function) >= 1 )
     return 0; // command parsed by UIP Terminal
+#endif
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+  if( AOUT_TerminalParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed
 #endif
 
   if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
@@ -483,47 +456,6 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "router") == 0 ) {
       SEQ_TERMINAL_PrintRouterInfo(out);
-    } else if( strcmp(parameter, "testaoutpin") == 0 ) {
-      char *arg;
-      int pin_number = -1;
-      int level = -1;
-      
-      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(arg, "cs") == 0 )
-	  pin_number = 1;
-	else if( strcmp(arg, "si") == 0 )
-	  pin_number = 2;
-	else if( strcmp(arg, "sc") == 0 )
-	  pin_number = 3;
-	else if( strcmp(arg, "reset") == 0 ) {
-	  pin_number = 0;
-	  level = 0; // dummy
-	}
-      }
-      
-      if( pin_number < 0 ) {
-	out("Please specifiy valid AOUT pin name: cs, si or sc\n");
-      } else {
-	if( (arg = strtok_r(NULL, separators, &brkt)) )
-	  level = get_dec(arg);
-	
-	if( level != 0 && level != 1 ) {
-	  out("Please specifiy valid logic level for AOUT pin: 0 or 1\n");
-	}
-      }
-
-      if( pin_number >= 0 && level >= 0 ) {
-	SEQ_TERMINAL_TestAoutPin(out, pin_number, level);
-      } else {
-	out("Following commands are supported:\n");
-	out("testaoutpin cs 0  -> sets AOUT:CS to 0.4V");
-	out("testaoutpin cs 1  -> sets AOUT:CS to ca. 4V");
-	out("testaoutpin si 0  -> sets AOUT:SI to ca. 0.4V");
-	out("testaoutpin si 1  -> sets AOUT:SI to ca. 4V");
-	out("testaoutpin sc 0  -> sets AOUT:SC to ca. 0.4V");
-	out("testaoutpin sc 1  -> sets AOUT:SC to ca. 4V");
-	out("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
-      }
     } else if( strcmp(parameter, "play") == 0 || strcmp(parameter, "start") == 0 ) { // play or start do the same
       SEQ_UI_Button_Play(0);
       out("Sequencer started...\n");
@@ -582,9 +514,11 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
   out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
+  AOUT_TerminalHelp(_output_function);
+#endif
+#if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
 #endif
-  out("  testaoutpin:    type this command to get further informations about the testmode.");
   out("  play or start:  emulates the PLAY button\n");
   out("  stop:           emulates the STOP button\n");
   out("  store:          stores complete session on SD Card\n");
@@ -1159,52 +1093,3 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
 
   return 0; // no error
 }
-
-s32 SEQ_TERMINAL_TestAoutPin(void *_output_function, u8 pin_number, u8 level)
-{
-  void (*out)(char *format, ...) = _output_function;
-  s32 status = 0;
-
-  MUTEX_MIDIOUT_TAKE;
-
-  switch( pin_number ) {
-  case 0:
-    AOUT_SuspendSet(0);
-    out("Module has been re-initialized and can be used again!\n");
-    break;
-
-  case 1:
-    AOUT_SuspendSet(1);
-    out("Setting AOUT:CS pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
-#if !defined(MIOS32_FAMILY_EMULATION)
-    MIOS32_SPI_RC_PinSet(2, 0, level ? 1 : 0); // spi, rc_pin, pin_value
-#endif
-    break;
-
-  case 2:
-    AOUT_SuspendSet(1);
-    out("Setting AOUT:SI pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
-#if !defined(MIOS32_FAMILY_EMULATION)
-    MIOS32_SPI2_MOSI_INIT;
-    MIOS32_SPI2_MOSI_SET(level ? 1 : 0);
-#endif
-    break;
-
-  case 3:
-    AOUT_SuspendSet(1);
-    out("Setting AOUT:SC pin to ca. %dV - please measure now!\n", level ? MIOS32_SPI2_HIGH_VOLTAGE : 0);
-#if !defined(MIOS32_FAMILY_EMULATION)
-    MIOS32_SPI2_SCLK_INIT;
-    MIOS32_SPI2_SCLK_SET(level ? 1 : 0);
-#endif
-    break;
-
-  default:
-    out("ERROR: unsupported pin #%d", pin_number);
-  }
-
-  MUTEX_MIDIOUT_GIVE;
-
-  return status;
-}
-

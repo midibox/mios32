@@ -30,20 +30,21 @@
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 
+#include <midi_port.h>
+#include <midi_router.h>
+#include <midimon.h>
+
 // quick&dirty to simplify re-use of C modules without changing header files
 extern "C" {
 #include "mbcv_sysex.h"
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
-#include "mbcv_router.h"
-#include "mbcv_port.h"
 
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
 
 #include "terminal.h"
-#include "midimon.h"
 
 #include "uip_task.h"
 #include "osc_client.h"
@@ -144,10 +145,10 @@ extern "C" void APP_Init(void)
   AOUT_IF_Init(0);
 
   // initialize code modules
-  MBCV_PORT_Init(0);
+  MIDI_PORT_Init(0);
   MBCV_SYSEX_Init(0);
   MBCV_MAP_Init(0);
-  MBCV_ROUTER_Init(0);
+  MIDI_ROUTER_Init(0);
   MBCV_PATCH_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
@@ -195,10 +196,10 @@ extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_pack
   mbCvEnvironment.midiReceive(port, midi_package);
 
   // -> MIDI Router
-  MBCV_ROUTER_Receive(port, midi_package);
+  MIDI_ROUTER_Receive(port, midi_package);
 
   // -> MIDI Port Handler (used for MIDI monitor function)
-  MBCV_PORT_NotifyMIDIRx(port, midi_package);
+  MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -216,7 +217,7 @@ extern "C" s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   MBCV_SYSEX_Parser(port, midi_in);
 
   // -> MIDI Router
-  MBCV_ROUTER_ReceiveSysEx(port, midi_in);
+  MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
   return 0; // no error
 }
@@ -315,7 +316,7 @@ void APP_TASK_Period_1mS_LP(void)
   SCS_Tick();
 
   // MIDI In/Out monitor
-  MBCV_PORT_Period1mS();
+  MIDI_PORT_Period1mS();
 
   // output and reset current stopwatch max value each second
   if( ++performance_print_ctr >= 1000 ) {
@@ -451,7 +452,7 @@ static void APP_Periodic_100uS(void)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MBCV_ROUTER_MIDIClockInGet(port) == 1 )
+  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 )
     SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   // TODO: better port filtering!
@@ -469,7 +470,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  return MBCV_PORT_NotifyMIDITx(port, package);
+  return MIDI_PORT_NotifyMIDITx(port, package);
 }
 
 /////////////////////////////////////////////////////////////////////////////

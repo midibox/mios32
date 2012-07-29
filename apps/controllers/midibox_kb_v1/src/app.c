@@ -23,13 +23,13 @@
 #include <task.h>
 #include <queue.h>
 
+#include <midi_port.h>
+#include <midi_router.h>
+#include <midimon.h>
 
 #include "app.h"
 #include "presets.h"
-#include "mbkb_port.h"
-#include "mbkb_router.h"
 #include "terminal.h"
-#include "midimon.h"
 #include "tasks.h"
 #include "uip_task.h"
 #include "osc_client.h"
@@ -106,8 +106,8 @@ void APP_Init(void)
   PRESETS_Init(0);
 
   // init MIDI port/router handling
-  MBKB_PORT_Init(0);
-  MBKB_ROUTER_Init(0);
+  MIDI_PORT_Init(0);
+  MIDI_ROUTER_Init(0);
 
   // init terminal
   TERMINAL_Init(0);
@@ -168,10 +168,10 @@ void APP_Background(void)
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // -> MIDI Router
-  MBKB_ROUTER_Receive(port, midi_package);
+  MIDI_ROUTER_Receive(port, midi_package);
 
   // -> MIDI Port Handler (used for MIDI monitor function)
-  MBKB_PORT_NotifyMIDIRx(port, midi_package);
+  MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -187,7 +187,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
   // -> MIDI Router
-  MBKB_ROUTER_ReceiveSysEx(port, midi_in);
+  MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
   return 0; // no error
 }
@@ -291,7 +291,7 @@ static void TASK_Period_1mS(void *pvParameters)
 
     // MIDI In/Out monitor
     // TODO: call from low-prio task
-    MBKB_PORT_Period1mS();
+    MIDI_PORT_Period1mS();
   }
 }
 
@@ -301,7 +301,7 @@ static void TASK_Period_1mS(void *pvParameters)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MBKB_ROUTER_MIDIClockInGet(port) == 1 ) {
+  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 ) {
    // SEQ_BPM_NotifyMIDIRx(midi_byte);
   }
 
@@ -313,7 +313,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  return MBKB_PORT_NotifyMIDITx(port, package);
+  return MIDI_PORT_NotifyMIDITx(port, package);
 }
 
 /////////////////////////////////////////////////////////////////////////////
