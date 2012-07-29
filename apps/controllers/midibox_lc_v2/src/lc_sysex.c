@@ -52,17 +52,10 @@ s32 LC_SYSEX_Init(u32 mode)
   int i;
 
   sysex_state.ALL = 0;
-#if LC_EMULATION_ID < 0x80
-  sysex_id = LC_EMULATION_ID;
-#else
-  sysex_id = 0;
-#endif
+  sysex_id = (lc_hwcfg_emulation_id < 0x80) ? lc_hwcfg_emulation_id : 0;
 
   for(i=0; i<8; ++i)
     serial_number[i] = '1' + i;
-
-  // install SysEx parser
-  MIOS32_MIDI_SysExCallback_Init(LC_SYSEX_Parser);
 
   return 0; // no error
 }
@@ -80,17 +73,15 @@ s32 LC_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   if( !sysex_state.MY_SYSEX ) {
 
     // Auto ID feature enabled?
-#if LC_EMULATION_ID == 0x80
-    if( !sysex_id && sysex_state.CTR == sizeof(sysex_header) && (midi_in == 0x10 || midi_in == 0x14) ) {
-      sysex_id = midi_in;
+    if( lc_hwcfg_emulation_id == 0x80 ) {
+      if( !sysex_id && sysex_state.CTR == sizeof(sysex_header) && (midi_in == 0x10 || midi_in == 0x14) ) {
+	sysex_id = midi_in;
+      }
+    } else if( lc_hwcfg_emulation_id == 0x81 ) {
+      if( !sysex_id && sysex_state.CTR == sizeof(sysex_header) && (midi_in == 0x11 || midi_in == 0x15) ) {
+	sysex_id = midi_in;
+      }
     }
-#endif
-
-#if LC_EMULATION_ID == 0x81
-    if( !sysex_id && sysex_state.CTR == sizeof(sysex_header) && (midi_in == 0x11 || midi_in == 0x15) ) {
-      sysex_id = midi_in;
-    }
-#endif
 
 
     if( (sysex_state.CTR < sizeof(sysex_header) && midi_in != sysex_header[sysex_state.CTR] ) ||
@@ -139,6 +130,22 @@ s32 LC_SYSEX_CmdFinished(void)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Call this function on a timeout
+/////////////////////////////////////////////////////////////////////////////
+s32 LC_SYSEX_TimeOut(mios32_midi_port_t port)
+{
+  s32 status = 0;
+
+  if( port == MIOS32_MIDI_DefaultPortGet() ) {
+    status = LC_SYSEX_CmdFinished();
+  }
+
+  return status;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function sends the SysEx header if merger disabled
