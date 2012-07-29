@@ -16,13 +16,10 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = src/tasks.c \
 		  src/mbcv_sysex.c \
-		  src/mbcv_router.c \
-		  src/mbcv_port.c \
 		  src/mbcv_file.c \
 		  src/mbcv_file_p.c \
 		  src/mbcv_file_b.c \
 		  src/cc_labels.c \
-                  src/midimon.c \
                   src/terminal.c \
 		  src/components/CapChargeCurve.c
 
@@ -84,6 +81,12 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# MIDI Router (and port handling)
+include $(MIOS32_PATH)/modules/midi_router/midi_router.mk
+
+# MIDImon
+include $(MIOS32_PATH)/modules/midimon/midimon.mk
 
 # UIP driver
 include $(MIOS32_PATH)/modules/uip/uip.mk

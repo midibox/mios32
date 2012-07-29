@@ -17,11 +17,8 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    = src/app.c \
 		  src/presets.c \
 		  src/keyboard.c \
-		  src/mbkb_port.c \
-		  src/mbkb_router.c \
 		  src/terminal.c \
-		  src/shell.c \
-		  src/midimon.c
+		  src/shell.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -56,6 +53,12 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# MIDI Router (and port handling)
+include $(MIOS32_PATH)/modules/midi_router/midi_router.mk
+
+# MIDImon
+include $(MIOS32_PATH)/modules/midimon/midimon.mk
 
 # UIP driver
 include $(MIOS32_PATH)/modules/uip/uip.mk

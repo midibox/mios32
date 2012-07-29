@@ -19,6 +19,8 @@
 #include <string.h>
 #include "tasks.h"
 
+#include <midi_port.h>
+
 #include <uip.h>
 #include "uip_task.h"
 #include "osc_client.h"
@@ -31,7 +33,6 @@
 #include "seq.h"
 #include "mid_file.h"
 
-#include "midio_port.h"
 #include "midio_dout.h"
 
 #include <file.h>
@@ -133,12 +134,12 @@ static void stringAINSER_Pin(u32 ix, u16 value, char *label)
 
 static void stringInPort(u32 ix, u16 value, char *label)
 {
-  sprintf(label, MIDIO_PORT_InNameGet(value));
+  sprintf(label, MIDI_PORT_InNameGet(value));
 }
 
 static void stringOutPort(u32 ix, u16 value, char *label)
 {
-  sprintf(label, MIDIO_PORT_OutNameGet(value));
+  sprintf(label, MIDI_PORT_OutNameGet(value));
 }
 
 static void stringRouterChn(u32 ix, u16 value, char *label)
@@ -564,14 +565,14 @@ static void ainserPortSet(u32 ix, u16 value)
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
-static u16  routerSrcPortGet(u32 ix)             { return MIDIO_PORT_InIxGet(midio_patch_router[selectedRouterNode].src_port); }
-static void routerSrcPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].src_port = MIDIO_PORT_InPortGet(value); }
+static u16  routerSrcPortGet(u32 ix)             { return MIDI_PORT_InIxGet(midio_patch_router[selectedRouterNode].src_port); }
+static void routerSrcPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].src_port = MIDI_PORT_InPortGet(value); }
 
 static u16  routerSrcChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].src_chn; }
 static void routerSrcChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].src_chn = value; }
 
-static u16  routerDstPortGet(u32 ix)             { return MIDIO_PORT_OutIxGet(midio_patch_router[selectedRouterNode].dst_port); }
-static void routerDstPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].dst_port = MIDIO_PORT_OutPortGet(value); }
+static u16  routerDstPortGet(u32 ix)             { return MIDI_PORT_OutIxGet(midio_patch_router[selectedRouterNode].dst_port); }
+static void routerDstPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].dst_port = MIDI_PORT_OutPortGet(value); }
 
 static u16  routerDstChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].dst_chn; }
 static void routerDstChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].dst_chn = value; }
@@ -747,9 +748,9 @@ const scs_menu_item_t pageAINSER[] = {
 
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDIO_PATCH_NUM_ROUTER-1, routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
-  SCS_ITEM("SrcP", 0, MIDIO_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
+  SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
   SCS_ITEM("Chn.", 0, 17,                       routerSrcChnGet, routerSrcChnSet,selectNOP, stringRouterChn, NULL),
-  SCS_ITEM("SrcD", 0, MIDIO_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),
+  SCS_ITEM("SrcD", 0, MIDI_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),
   SCS_ITEM("Chn.", 0, 17,                       routerDstChnGet, routerDstChnSet,selectNOP, stringRouterChn, NULL),
 };
 
@@ -881,21 +882,21 @@ static s32 displayHook(char *line1, char *line2)
       u8 portIx = 1 + i + monPageOffset;
 
       if( fastRefresh ) { // no MSD overlay?
-	mios32_midi_port_t port = MIDIO_PORT_InPortGet(portIx);
-	mios32_midi_package_t package = MIDIO_PORT_InPackageGet(port);
+	mios32_midi_port_t port = MIDI_PORT_InPortGet(portIx);
+	mios32_midi_package_t package = MIDI_PORT_InPackageGet(port);
 	if( port == 0xff ) {
 	  strcat(line1, "     ");
 	} else if( package.type ) {
 	  char buffer[6];
-	  MIDIO_PORT_EventNameGet(package, buffer, 5);
+	  MIDI_PORT_EventNameGet(package, buffer, 5);
 	  strcat(line1, buffer);
 	} else {
-	  strcat(line1, MIDIO_PORT_InNameGet(portIx));
+	  strcat(line1, MIDI_PORT_InNameGet(portIx));
 	  strcat(line1, " ");
 	}
 
 	// insert arrow at upper right corner
-	int numItems = MIDIO_PORT_OutNumGet() - 1;
+	int numItems = MIDI_PORT_OutNumGet() - 1;
 	if( monPageOffset == 0 )
 	  line1[19] = 3; // right arrow
 	else if( monPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
@@ -905,16 +906,16 @@ static s32 displayHook(char *line1, char *line2)
 
       }
 
-      mios32_midi_port_t port = MIDIO_PORT_OutPortGet(portIx);
-      mios32_midi_package_t package = MIDIO_PORT_OutPackageGet(port);
+      mios32_midi_port_t port = MIDI_PORT_OutPortGet(portIx);
+      mios32_midi_package_t package = MIDI_PORT_OutPackageGet(port);
       if( port == 0xff ) {
 	strcat(line2, "     ");
       } else if( package.type ) {
 	char buffer[6];
-	MIDIO_PORT_EventNameGet(package, buffer, 5);
+	MIDI_PORT_EventNameGet(package, buffer, 5);
 	strcat(line2, buffer);
       } else {
-	strcat(line2, MIDIO_PORT_OutNameGet(portIx));
+	strcat(line2, MIDI_PORT_OutNameGet(portIx));
 	strcat(line2, " ");
       }
     }
@@ -942,7 +943,7 @@ static s32 encHook(s32 incrementer)
 
   // encoder overlayed in monitor page to scroll through port list
   if( SCS_MenuPageGet() == pageMON ) {
-    int numItems = MIDIO_PORT_OutNumGet() - 1;
+    int numItems = MIDI_PORT_OutNumGet() - 1;
     int newOffset = monPageOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;

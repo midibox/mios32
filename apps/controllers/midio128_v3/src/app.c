@@ -20,14 +20,16 @@
 #include "app.h"
 #include "tasks.h"
 
+#include <midi_port.h>
+#include <midi_router.h>
+#include <midimon.h>
+
 #include "midio_sysex.h"
 #include "midio_patch.h"
 #include "midio_din.h"
 #include "midio_dout.h"
 #include "midio_ain.h"
 #include "midio_matrix.h"
-#include "midio_router.h"
-#include "midio_port.h"
 
 // include source of the SCS
 #include <scs.h>
@@ -43,7 +45,6 @@
 #include "mid_file.h"
 
 #include "terminal.h"
-#include "midimon.h"
 
 #include "uip_task.h"
 #include "osc_client.h"
@@ -156,9 +157,9 @@ void APP_Init(void)
   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
   // initialize code modules
-  MIDIO_PORT_Init(0);
+  MIDI_PORT_Init(0);
   MIDIO_SYSEX_Init(0);
-  MIDIO_ROUTER_Init(0);
+  MIDI_ROUTER_Init(0);
   MIDIO_PATCH_Init(0);
   MIDIO_DIN_Init(0);
   MIDIO_DOUT_Init(0);
@@ -225,10 +226,10 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   MIDIO_DOUT_MIDI_NotifyPackage(port, midi_package);
 
   // -> MIDI Router
-  MIDIO_ROUTER_Receive(port, midi_package);
+  MIDI_ROUTER_Receive(port, midi_package);
 
   // -> MIDI Port Handler (used for MIDI monitor function)
-  MIDIO_PORT_NotifyMIDIRx(port, midi_package);
+  MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -246,7 +247,7 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   MIDIO_SYSEX_Parser(port, midi_in);
 
   // -> MIDI Router
-  MIDIO_ROUTER_ReceiveSysEx(port, midi_in);
+  MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
   return 0; // no error
 }
@@ -354,7 +355,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     SCS_Tick();
 
     // MIDI In/Out monitor
-    MIDIO_PORT_Period1mS();
+    MIDI_PORT_Period1mS();
   }
 
 }
@@ -529,7 +530,7 @@ static void APP_Periodic_100uS(void)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MIDIO_ROUTER_MIDIClockInGet(port) == 1 )
+  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 )
     SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering
@@ -540,7 +541,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  return MIDIO_PORT_NotifyMIDITx(port, package);
+  return MIDI_PORT_NotifyMIDITx(port, package);
 }
 
 /////////////////////////////////////////////////////////////////////////////

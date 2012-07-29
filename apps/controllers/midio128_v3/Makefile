@@ -21,13 +21,10 @@ THUMB_SOURCE    = src/app.c \
 		  src/midio_dout.c \
 		  src/midio_ain.c \
 		  src/midio_matrix.c \
-		  src/midio_router.c \
-		  src/midio_port.c \
 		  src/midio_file.c \
 		  src/midio_file_p.c \
 		  src/mid_file.c \
 		  src/seq.c \
-                  src/midimon.c \
                   src/terminal.c \
 		  src/scs_config.c
 
@@ -65,6 +62,12 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# MIDI Router (and port handling)
+include $(MIOS32_PATH)/modules/midi_router/midi_router.mk
+
+# MIDImon
+include $(MIOS32_PATH)/modules/midimon/midimon.mk
 
 # UIP driver
 include $(MIOS32_PATH)/modules/uip/uip.mk
