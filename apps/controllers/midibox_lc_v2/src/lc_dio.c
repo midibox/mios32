@@ -49,6 +49,10 @@ s32 LC_DIO_ButtonHandler(u8 button, u8 pin_value)
     default: button_id = lc_dio_table_layer0[button << 1];
   }
 
+  if( lc_hwcfg_verbose_level >= 2 ) {
+    MIOS32_MIDI_SendDebugMessage("LC_DIO_ButtonHandler: button ID 0x%02x\n", button_id);
+  }
+
   // branch to special function handler if id >= 0x80
   if( button_id >= 0x80 ) {
     return LC_DIO_SFBHandler(button_id, pin_value);
@@ -177,21 +181,21 @@ s32 LC_DIO_SFBHandler(u8 button_id, u8 pin_value)
   LC_VPOT_LEDRingUpdateSet(0xff);
 
   // optional: send MIDI event which notifies if GPC mode is activated or not
-#if GPC_BUTTON_SENDS_MIDI_EVENT
-  if( !pin_value || gpc_hold_flag ) {
-    u8 evnt0 = lc_flags.GPC_SEL ? (GPC_BUTTON_ON_EVNT0) : (GPC_BUTTON_OFF_EVNT0);
-    u8 evnt1 = lc_flags.GPC_SEL ? (GPC_BUTTON_ON_EVNT1) : (GPC_BUTTON_OFF_EVNT1);
-    u8 evnt2 = lc_flags.GPC_SEL ? (GPC_BUTTON_ON_EVNT2) : (GPC_BUTTON_OFF_EVNT2);
+  if( lc_hwcfg_gpc.enabled ) {
+    if( !pin_value || gpc_hold_flag ) {
+      u8 evnt0 = lc_flags.GPC_SEL ? lc_hwcfg_gpc.on_evnt[0] : lc_hwcfg_gpc.off_evnt[0];
+      u8 evnt1 = lc_flags.GPC_SEL ? lc_hwcfg_gpc.on_evnt[1] : lc_hwcfg_gpc.off_evnt[1];
+      u8 evnt2 = lc_flags.GPC_SEL ? lc_hwcfg_gpc.on_evnt[2] : lc_hwcfg_gpc.off_evnt[2];
 
-    mios32_midi_package_t p;
-    p.ALL = 0;
-    p.type = (evnt0 >> 4) & 0xf;
-    p.evnt0 = evnt0;
-    p.evnt1 = evnt1;
-    p.evnt2 = evnt2;
-    MIOS32_MIDI_SendPackage(DEFAULT, p);
+      mios32_midi_package_t p;
+      p.ALL = 0;
+      p.type = (evnt0 >> 4) & 0xf;
+      p.evnt0 = evnt0;
+      p.evnt1 = evnt1;
+      p.evnt2 = evnt2;
+      MIOS32_MIDI_SendPackage(DEFAULT, p);
+    }
   }
-#endif
 
   // update message if button pressed and GPC selected
   if( !pin_value && lc_flags.GPC_SEL )

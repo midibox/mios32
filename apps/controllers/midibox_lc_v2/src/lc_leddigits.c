@@ -140,27 +140,23 @@ s32 LC_LEDDIGITS_SRHandler(void)
 
   // increment the counter which selects the ledring/meter that will be visible during
   // the next SRIO update cycle --- wrap at 8 (0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, ...)
-  sr_ctr = ++sr_ctr & 0x07;
+  sr_ctr = (sr_ctr + 1) & 0x07;
 
   // the anode selection pattern
   u8 select_mask = (1 << sr_ctr);
-#if !LEDDIGITS_COMMON_ANODE
-  select_mask ^= 0xff;
-#endif
+  if( !lc_hwcfg_leddigits.common_anode )
+    select_mask ^= 0xff;
 
-#if LEDDIGITS_SELECT_SR1
-  MIOS32_DOUT_SRSet(LEDDIGITS_SELECT_SR1-1, select_mask);
-#endif
-#if LEDDIGITS_SELECT_SR2
-  MIOS32_DOUT_SRSet(LEDDIGITS_SELECT_SR2-1, select_mask);
-#endif
+  if( lc_hwcfg_leddigits.select_sr1 )
+    MIOS32_DOUT_SRSet(lc_hwcfg_leddigits.select_sr1-1, select_mask);
+  if( lc_hwcfg_leddigits.select_sr2 )
+    MIOS32_DOUT_SRSet(lc_hwcfg_leddigits.select_sr2-1, select_mask);
 
   // which digits should be print?
   u8 digit1 = lc_leddigits_mtc[sr_ctr & 0x7];
   u8 digit1_pattern = digit_patterns[digit1 & 0x3f] & ((digit1 & 0x40) ? 0x7f : 0xff);
-#if !LEDDIGITS_COMMON_ANODE
-  digit1_pattern ^= 0xff;
-#endif
+  if( !lc_hwcfg_leddigits.common_anode )
+    digit1_pattern ^= 0xff;
 
   u8 digit2 = 0x00;
   if( sr_ctr < 2 ) {
@@ -172,16 +168,13 @@ s32 LC_LEDDIGITS_SRHandler(void)
   }
   // note: digit 2..5 not used yet
   u8 digit2_pattern = digit_patterns[digit2 & 0x3f] & ((digit2 & 0x40) ? 0x7f : 0xff);
-#if !LEDDIGITS_COMMON_ANODE
-  digit2_pattern ^= 0xff;
-#endif
+  if( !lc_hwcfg_leddigits.common_anode )
+    digit2_pattern ^= 0xff;
 
-#if LEDDIGITS_SEGMENTS_SR1
-  MIOS32_DOUT_SRSet(LEDDIGITS_SEGMENTS_SR1-1, digit1_pattern);
-#endif
-#if LEDDIGITS_SEGMENTS_SR2
-  MIOS32_DOUT_SRSet(LEDDIGITS_SEGMENTS_SR2-1, digit2_pattern);
-#endif
+  if( lc_hwcfg_leddigits.segments_sr1 )
+    MIOS32_DOUT_SRSet(lc_hwcfg_leddigits.segments_sr1-1, digit1_pattern);
+  if( lc_hwcfg_leddigits.segments_sr2 )
+    MIOS32_DOUT_SRSet(lc_hwcfg_leddigits.segments_sr2-1, digit2_pattern);
 
   return 0; // no error
 }

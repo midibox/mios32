@@ -74,6 +74,7 @@ typedef union {
 extern s32 LC_SYSEX_Init(u32 mode);
 extern s32 LC_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in);
 extern s32 LC_SYSEX_CmdFinished(void);
+extern s32 LC_SYSEX_TimeOut(mios32_midi_port_t port);
 extern s32 LC_SYSEX_SendResponse(u8 *buffer, u8 len);
 extern s32 LC_SYSEX_Cmd(u8 cmd_state, u8 midi_in);
 extern s32 LC_SYSEX_Cmd_Query(u8 cmd_state, u8 midi_in);

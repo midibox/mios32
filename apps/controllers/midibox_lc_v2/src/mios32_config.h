@@ -27,5 +27,11 @@
 // STM32: use the third UART available at port J5B.A6 and A7
 #define MIOS32_UART_NUM 4
 
+// EEPROM emulation
+// SIZE == 256 halfwords -> 512 bytes
+#define EEPROM_EMULATED_SIZE 512
+
+// magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
+#define EEPROM_MAGIC_NUMBER 0x47115200
 
 #endif /* _MIOS32_CONFIG_H */

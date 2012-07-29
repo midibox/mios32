@@ -153,13 +153,16 @@ s32 LC_LCD_Init(u32 mode)
 
   // init display mode
   if( MIOS32_LCD_TypeIsGLCD() ) {
-    LC_LCD_DisplayPageSet(INITIAL_DISPLAY_PAGE_GLCD);
+    LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_glcd);
   } else {
-    LC_LCD_DisplayPageSet(INITIAL_DISPLAY_PAGE_CLCD);
+    LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_clcd);
   }
 
   lcd_charset = 0xff; // force refresh
   LC_LCD_SpecialCharsInit(1); // select horizontal bars
+
+  // initial cursor
+  msg_cursor = 0;
 
   // initialize msg array
   for(i=0; i<0x80; ++i) {
@@ -514,7 +517,7 @@ s32 LC_LCD_Update(u8 force)
     for(y=0; y<2; ++y) {
       u8 *msg = lc_flags.GPC_SEL ? (u8 *)&gpc_msg[y*0x40] : (u8 *)&msg_host[y*0x40];
 
-      for(x=0; x<LCD_EMU_COL; ++x, ++msg) {
+      for(x=0; x<lc_hwcfg_display_cfg.num_columns; ++x, ++msg) {
 
 	if( local_force || !(*msg & 0x80) ) {
 	  if( display_mode.LARGE_SCREEN ) {
@@ -809,9 +812,24 @@ u8 LC_LCD_Msg_CursorGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 LC_LCD_Msg_PrintHost(char c)
 {
+  static u8 first_host_char = 0;
+
+  if( !first_host_char ) {
+    first_host_char = 1;
+    // clear welcome message
+    int i;
+    for(i=0; i<0x80; ++i) {
+      msg_host[i] = ' ';
+    }
+  }
+
+  if( msg_cursor >= 128 )
+    return -1; // invalid pos
+
   msg_host[msg_cursor] = c;    // save character
   ++msg_cursor;                // increment message cursor
   lay_host_msg.update_req = 1; // request update
+
   return 0; // no error
 }
 
