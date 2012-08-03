@@ -41,6 +41,8 @@ seq_song_step_t seq_song_steps[SEQ_SONG_NUM_STEPS];
 
 char seq_song_name[21];
 
+u8 seq_song_guide_track;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -72,6 +74,8 @@ s32 SEQ_SONG_Init(u32 mode)
   song_num = 0;
   song_active = 0;
   song_finished = 0;
+
+  seq_song_guide_track = 0;
 
   // initialise song steps
   int step;
@@ -129,6 +133,28 @@ s32 SEQ_SONG_ActiveGet(void)
 s32 SEQ_SONG_ActiveSet(u8 active)
 {
   song_active = active ? 1 : 0;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Get/Set guide track
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SONG_GuideTrackGet(void)
+{
+  return seq_song_guide_track;
+}
+
+s32 SEQ_SONG_GuideTrackSet(u8 track)
+{
+  if( track > SEQ_CORE_NUM_TRACKS ) // 0..16, 0 disables guide track
+    return -1; // invalid track
+
+  seq_song_guide_track = track;
+
+  // for auto-save operation
+  something_has_been_changed = 1;
 
   return 0; // no error
 }

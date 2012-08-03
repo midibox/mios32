@@ -96,6 +96,9 @@ extern s32 SEQ_SONG_NumSet(u32 num);
 extern s32 SEQ_SONG_ActiveGet(void);
 extern s32 SEQ_SONG_ActiveSet(u8 active);
 
+extern s32 SEQ_SONG_GuideTrackGet(void);
+extern s32 SEQ_SONG_GuideTrackSet(u8 track);
+
 extern seq_song_step_t SEQ_SONG_StepEntryGet(u32 step);
 extern s32 SEQ_SONG_StepEntrySet(u32 step, seq_song_step_t step_entry);
 extern s32 SEQ_SONG_StepEntryClear(u32 step);
@@ -130,5 +133,6 @@ extern seq_song_step_t seq_song_steps[SEQ_SONG_NUM_STEPS];
 
 extern char seq_song_name[21];
 
+extern u8 seq_song_guide_track;
 
 #endif /* _SEQ_SONG_H */

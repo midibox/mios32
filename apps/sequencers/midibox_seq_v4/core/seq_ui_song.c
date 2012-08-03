@@ -95,6 +95,9 @@ static s32 LED_Handler(u16 *gp_leds)
   if( SEQ_FILE_FormattingRequired() )
     return 0; // no LED action as long as files not available
 
+  if( show_song_util_page )
+    return 0; // no LEDs in util page
+
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
@@ -110,7 +113,6 @@ static s32 LED_Handler(u16 *gp_leds)
       break;
 
     case ITEM_ACTION:
-      if( show_song_util_page ) break;
       *gp_leds = 0x0004;
       break;
 
@@ -118,7 +120,6 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_G2:
     case ITEM_G3:
     case ITEM_G4: {
-      if( show_song_util_page ) break;
       switch( s.action ) {
         case SEQ_SONG_ACTION_End:
 	  *gp_leds = 1 << ui_selected_item;
@@ -170,7 +171,6 @@ static s32 LED_Handler(u16 *gp_leds)
     } break;
 
     case ITEM_SEL_BANK:
-      if( show_song_util_page ) break;
       *gp_leds = 0x0080;
       break;
 
@@ -197,69 +197,140 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   seq_song_step_t s = SEQ_SONG_StepEntryGet(ui_song_edit_pos);
 
-  switch( encoder ) {
-    case SEQ_UI_ENCODER_GP1:
-      ui_selected_item = ITEM_SONG;
-      break;
 
-    case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_POS;
-      break;
+  if( show_song_util_page ) {
+    switch( encoder ) {
+      case SEQ_UI_ENCODER_GP1:
+        ui_selected_item = ITEM_SONG;
+	break;
 
-    case SEQ_UI_ENCODER_GP3:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP2:
+	ui_selected_item = ITEM_POS;
+	break;
 
-      ui_selected_item = ITEM_ACTION;
-      break;
+      case SEQ_UI_ENCODER_GP3: // Copy
+	// copy position
+	SEQ_UI_SONG_Copy();
+	// print message
+	in_menu_msg = MSG_COPY & 0x7f;
+	ui_hold_msg_ctr = 1000;
+	return 1;
 
-    case SEQ_UI_ENCODER_GP4:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP4: // Paste
+	// paste position
+	SEQ_UI_SONG_Paste();
+	// print message
+	in_menu_msg = MSG_PASTE & 0x7f;
+	ui_hold_msg_ctr = 1000;
+	return 1;
 
-      ui_selected_item = ITEM_G1;
-      break;
+      case SEQ_UI_ENCODER_GP5: // Clear
+	// clear position
+	SEQ_UI_SONG_Clear();
+	// print message
+	in_menu_msg = MSG_CLEAR & 0x7f;
+	ui_hold_msg_ctr = 1000;
+	return 1;
 
-    case SEQ_UI_ENCODER_GP5:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP6: // Insert
+	// insert position
+	SEQ_UI_SONG_Insert();
+	// print message
+	in_menu_msg = MSG_INSERT & 0x7f;
+	ui_hold_msg_ctr = 1000;
+	return 1;
 
-      ui_selected_item = ITEM_G2;
-      break;
+      case SEQ_UI_ENCODER_GP7: // Delete
+	// delete position
+	SEQ_UI_SONG_Delete();
+	// print message
+	in_menu_msg = MSG_DELETE & 0x7f;
+	ui_hold_msg_ctr = 1000;
+	return 1;
 
-    case SEQ_UI_ENCODER_GP6:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP8:
+	return -1; // not used
 
-      ui_selected_item = ITEM_G3;
-      break;
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10:
+	ui_selected_item = ITEM_MODE;
+	break;
 
-    case SEQ_UI_ENCODER_GP7:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12:
+	if( SEQ_SONG_ActiveGet() ) {
+	  u8 guide = SEQ_SONG_GuideTrackGet();
 
-      ui_selected_item = ITEM_G4;
-      break;
+	  if( incrementer == 0 ) {
+	    // button pressed: cycle through selections
+	    if( guide == SEQ_CORE_NUM_TRACKS ) { // 0..16, 0 disables track
+	      SEQ_SONG_GuideTrackSet(0);
+	      return 1;
+	    }
+	    incrementer = 1;
+	  }
+	  if( SEQ_UI_Var8_Inc(&guide, 0, SEQ_CORE_NUM_TRACKS, incrementer) ) { // 0..16, 0 disables guide track
+	    SEQ_SONG_GuideTrackSet(guide);
+	    return 1;
+	  }
+	  return -1;
+	}
+	return -1; // only used in song mode
 
-    case SEQ_UI_ENCODER_GP8:
-      if( show_song_util_page ) // -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16:
+	takeoverCurrentPatterns();
+	return 1;
+    }
+  } else {
+    switch( encoder ) {
+      case SEQ_UI_ENCODER_GP1:
+        ui_selected_item = ITEM_SONG;
+        break;
 
-      ui_selected_item = ITEM_SEL_BANK;
-      break;
+      case SEQ_UI_ENCODER_GP2:
+        ui_selected_item = ITEM_POS;
+        break;
 
-    case SEQ_UI_ENCODER_GP9:
-    case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_MODE;
-      break;
+      case SEQ_UI_ENCODER_GP3:
+	ui_selected_item = ITEM_ACTION;
+	break;
 
-    case SEQ_UI_ENCODER_GP11:
-    case SEQ_UI_ENCODER_GP12:
-    case SEQ_UI_ENCODER_GP13:
-    case SEQ_UI_ENCODER_GP14:
-    case SEQ_UI_ENCODER_GP15:
-    case SEQ_UI_ENCODER_GP16:
-      return -1; // not mapped to encoder
+      case SEQ_UI_ENCODER_GP4:
+	ui_selected_item = ITEM_G1;
+	break;
+
+      case SEQ_UI_ENCODER_GP5:
+	ui_selected_item = ITEM_G2;
+	break;
+
+      case SEQ_UI_ENCODER_GP6:
+	ui_selected_item = ITEM_G3;
+	break;
+
+      case SEQ_UI_ENCODER_GP7:
+	ui_selected_item = ITEM_G4;
+	break;
+
+      case SEQ_UI_ENCODER_GP8:
+	ui_selected_item = ITEM_SEL_BANK;
+	break;
+
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10:
+        ui_selected_item = ITEM_MODE;
+        break;
+
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12:
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16:
+	return -1; // not mapped to encoder
+    }
   }
 
   // for GP encoders and Datawheel
@@ -325,9 +396,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    s.action_value = val;
 	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
 
-	    // in phrase mode and no song pos selected: fetch patterns immediately
-	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos(0);
+	    // in phrase mode and no song pos selected: fetch patterns immediately if SynchChange not set
+	    if( !SEQ_SONG_ActiveGet() ) {
+	      u8 force_immediate_change = seq_core_options.SYNCHED_PATTERN_CHANGE ? 0 : 1;
+	      SEQ_SONG_FetchPos(force_immediate_change);
+	      SEQ_CORE_ManualSynchToMeasure(0xffff); // ensure that the new selection is in sync
+	    }
 	    return 1; // value has been changed
 	  }
 	  return 0; // no change
@@ -461,7 +535,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 1; // value has been changed
 
     case ITEM_MODE:
-      SEQ_SONG_ActiveSet((incrementer > 0) ? 1 : 0);
+      if( incrementer == 0 ) // button: toggle
+	SEQ_SONG_ActiveSet(SEQ_SONG_ActiveGet() ? 0 : 1);
+      else
+	SEQ_SONG_ActiveSet((incrementer > 0) ? 1 : 0);
       return 1; // value has been changed
   }
 
@@ -491,199 +568,126 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     if( depressed ) return 0; // ignore when button depressed
 
     if( show_song_util_page ) {
-      if( depressed ) return 0; // ignore when button depressed
+      // re-use encoder handler - only select/select UI item, don't increment
+      return Encoder_Handler((int)button, 0);
+    }
+      
+      
+    seq_song_step_t s = SEQ_SONG_StepEntryGet(ui_song_edit_pos);
 
-      switch( button ) {
-        case SEQ_UI_BUTTON_GP1:
-          ui_selected_item = ITEM_SONG;
-          return 1;
-
-        case SEQ_UI_BUTTON_GP2:
-          ui_selected_item = ITEM_POS;
-          return 1;
-
-        case SEQ_UI_BUTTON_GP3: // Copy
-	  // copy position
-	  SEQ_UI_SONG_Copy();
-	  // print message
-	  in_menu_msg = MSG_COPY & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP4: // Paste
-	  // paste position
-	  SEQ_UI_SONG_Paste();
-	  // print message
-	  in_menu_msg = MSG_PASTE & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP5: // Clear
-	  // clear position
-	  SEQ_UI_SONG_Clear();
-	  // print message
-	  in_menu_msg = MSG_CLEAR & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP6: // Insert
-	  // insert position
-	  SEQ_UI_SONG_Insert();
-	  // print message
-	  in_menu_msg = MSG_INSERT & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP7: // Delete
-	  // delete position
-	  SEQ_UI_SONG_Delete();
-	  // print message
-	  in_menu_msg = MSG_DELETE & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP8:
-	  return -1; // not used
-
-        case SEQ_UI_BUTTON_GP9:
-        case SEQ_UI_BUTTON_GP10:
-          ui_selected_item = ITEM_MODE;
-	  SEQ_SONG_ActiveSet(SEQ_SONG_ActiveGet() ? 0 : 1);
-          return 1;
-
-        case SEQ_UI_BUTTON_GP13:
-        case SEQ_UI_BUTTON_GP14:
-        case SEQ_UI_BUTTON_GP15:
-        case SEQ_UI_BUTTON_GP16:
-          takeoverCurrentPatterns();
-          return 1;
-      }
-
-      return -1; // not used
-    } else {
-      seq_song_step_t s = SEQ_SONG_StepEntryGet(ui_song_edit_pos);
-
-      switch( ui_selected_item ) {
-        case ITEM_POS:
-	  ui_song_edit_pos = (u8)button << 3;
+    switch( ui_selected_item ) {
+    case ITEM_POS:
+      ui_song_edit_pos = (u8)button << 3;
   
-	  // set song position and fetch patterns
-	  SEQ_SONG_PosSet(ui_song_edit_pos);
-	  SEQ_SONG_FetchPos(0);
-	  ui_song_edit_pos = SEQ_SONG_PosGet();
-	  return 1;
+      // set song position and fetch patterns
+      SEQ_SONG_PosSet(ui_song_edit_pos);
+      SEQ_SONG_FetchPos(0);
+      ui_song_edit_pos = SEQ_SONG_PosGet();
+      return 1;
   
-        case ITEM_G1:
-        case ITEM_G2:
-        case ITEM_G3:
-        case ITEM_G4: {
-	  switch( s.action ) {
-	    case SEQ_SONG_ACTION_End:
-	      return 0; // do nothing
+      case ITEM_G1:
+      case ITEM_G2:
+      case ITEM_G3:
+      case ITEM_G4: {
+	switch( s.action ) {
+	  case SEQ_SONG_ACTION_End:
+	    return 0; // do nothing
   
-    	    case SEQ_SONG_ACTION_JmpPos:
-  	    case SEQ_SONG_ACTION_JmpSong:
-	    case SEQ_SONG_ACTION_SelMixerMap:
-	      if( button <= SEQ_UI_BUTTON_GP8 )
-		s.action_value = (s.action_value & 0x07) | ((u8)button << 3);
-	      else
-		s.action_value = (s.action_value & 0xf8) | ((u8)button & 0x7);
-	      SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+	  case SEQ_SONG_ACTION_JmpPos:
+	  case SEQ_SONG_ACTION_JmpSong:
+	  case SEQ_SONG_ACTION_SelMixerMap:
+	    if( button <= SEQ_UI_BUTTON_GP8 )
+	      s.action_value = (s.action_value & 0x07) | ((u8)button << 3);
+	    else
+	      s.action_value = (s.action_value & 0xf8) | ((u8)button & 0x7);
+	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
 	      
-	      // in phrase mode and no song pos selected: fetch patterns immediately
-	      if( !SEQ_SONG_ActiveGet() && s.action != SEQ_SONG_ACTION_JmpSong )
-		SEQ_SONG_FetchPos(0);
-	      return 1; // value has been changed
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() && s.action != SEQ_SONG_ACTION_JmpSong )
+	      SEQ_SONG_FetchPos(0);
+	    return 1; // value has been changed
 	      
-  	    case SEQ_SONG_ACTION_Tempo:
-	      s.action_value = 75 + 5*button;
-	      SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
-  
-	      // in phrase mode and no song pos selected: fetch patterns immediately
-	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos(0);
-	      return 1; // value has been changed
+	  case SEQ_SONG_ACTION_Tempo:
+	    s.action_value = 75 + 5*button;
+	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos(0);
+	    return 1; // value has been changed
 	      
-  	    case SEQ_SONG_ACTION_Mutes:
-	      if( button <= SEQ_UI_BUTTON_GP4 )
-		s.pattern_g1 = (s.pattern_g1 & 0x0f) ^ (1 << (button&3));
-	      else if( button <= SEQ_UI_BUTTON_GP8 )
-		s.pattern_g2 = (s.pattern_g2 & 0x0f) ^ (1 << (button&3));
-	      else if( button <= SEQ_UI_BUTTON_GP12 )
-		s.pattern_g3 = (s.pattern_g3 & 0x0f) ^ (1 << (button&3));
-	      else if( button <= SEQ_UI_BUTTON_GP16 )
-		s.pattern_g4 = (s.pattern_g4 & 0x0f) ^ (1 << (button&3));
-	      else
-		return 0; // never reached...
-	      SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+	  case SEQ_SONG_ACTION_Mutes:
+	    if( button <= SEQ_UI_BUTTON_GP4 )
+	      s.pattern_g1 = (s.pattern_g1 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP8 )
+	      s.pattern_g2 = (s.pattern_g2 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP12 )
+	      s.pattern_g3 = (s.pattern_g3 & 0x0f) ^ (1 << (button&3));
+	    else if( button <= SEQ_UI_BUTTON_GP16 )
+	      s.pattern_g4 = (s.pattern_g4 & 0x0f) ^ (1 << (button&3));
+	    else
+	      return 0; // never reached...
+	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
   
-	      // in phrase mode and no song pos selected: fetch patterns immediately
-	      if( !SEQ_SONG_ActiveGet() )
-		SEQ_SONG_FetchPos(1);
-	      return 1; // value has been changed
+	    // in phrase mode and no song pos selected: fetch patterns immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos(1);
+	    return 1; // value has been changed
   
-	    default:
-	      if( s.action >= SEQ_SONG_ACTION_Loop1 && s.action <= SEQ_SONG_ACTION_Loop16 ) {
-		u8 val_bank;
-		switch( ui_selected_item - ITEM_G1 ) {
-		  case 0: val_bank = s.bank_g1; break;
-    	          case 1: val_bank = s.bank_g2; break;
-  	          case 2: val_bank = s.bank_g3; break;
-  	          case 3: val_bank = s.bank_g4; break;
-  	          default: return 0; // invalid bank selection
-  	        }
-  
-		u8 val_pattern;
-		switch( ui_selected_item - ITEM_G1 ) {
-  	          case 0: val_pattern = s.pattern_g1; break;
-  	          case 1: val_pattern = s.pattern_g2; break;
-  	          case 2: val_pattern = s.pattern_g3; break;
-  	          case 3: val_pattern = s.pattern_g4; break;
-  	          default: return 0; // invalid bank selection
-		}
-  
-		if( sel_bank ) {
-		  if( button <= SEQ_UI_BUTTON_GP8 ) {
-		    val_bank = (u8)button;
-		    switch( ui_selected_item - ITEM_G1 ) {
-  		      case 0: s.bank_g1 = val_bank; break;
-  		      case 1: s.bank_g2 = val_bank; break;
-  		      case 2: s.bank_g3 = val_bank; break;
-  		      case 3: s.bank_g4 = val_bank; break;
-     	              default: return 0; // invalid bank selection
-  		    }
-  		    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
-  		    checkChangePattern(ui_selected_item - ITEM_G1, val_bank, val_pattern);
-		  }
-		  return 1; // value has been changed
-		} else {
-		  if( button <= SEQ_UI_BUTTON_GP8 )
-		    val_pattern = (val_pattern & 0x07) | ((u8)button << 3);
-		  else
-		    val_pattern = (val_pattern & 0x38) | ((u8)button & 0x7);
-		  switch( ui_selected_item - ITEM_G1 ) {
-  		    case 0: s.pattern_g1 = val_pattern; break;
-  		    case 1: s.pattern_g2 = val_pattern; break;
-  		    case 2: s.pattern_g3 = val_pattern; break;
-  		    case 3: s.pattern_g4 = val_pattern; break;
-     	            default: return 0; // invalid bank selection
-  		  }
-  		  SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
-  		  checkChangePattern(ui_selected_item - ITEM_G1, val_bank, val_pattern);
-  		  return 1; // value has been changed
-		}
-		return 0; // no change
+	  default:
+	    if( s.action >= SEQ_SONG_ACTION_Loop1 && s.action <= SEQ_SONG_ACTION_Loop16 ) {
+	      u8 val_bank;
+	      switch( ui_selected_item - ITEM_G1 ) {
+	      case 0: val_bank = s.bank_g1; break;
+	      case 1: val_bank = s.bank_g2; break;
+	      case 2: val_bank = s.bank_g3; break;
+	      case 3: val_bank = s.bank_g4; break;
+	      default: return 0; // invalid bank selection
 	      }
-	  }
-        } break;
- 	  
-        case ITEM_SEL_BANK:
-	  if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
-	    return 0; // no change
   
-	  sel_bank ^= 1;
-	  return 1; // value has been changed
-      }
+	      u8 val_pattern;
+	      switch( ui_selected_item - ITEM_G1 ) {
+	      case 0: val_pattern = s.pattern_g1; break;
+	      case 1: val_pattern = s.pattern_g2; break;
+	      case 2: val_pattern = s.pattern_g3; break;
+	      case 3: val_pattern = s.pattern_g4; break;
+	      default: return 0; // invalid bank selection
+	      }
+  
+	      if( sel_bank ) {
+		if( button <= SEQ_UI_BUTTON_GP8 ) {
+		  val_bank = (u8)button;
+		  switch( ui_selected_item - ITEM_G1 ) {
+		  case 0: s.bank_g1 = val_bank; break;
+		  case 1: s.bank_g2 = val_bank; break;
+		  case 2: s.bank_g3 = val_bank; break;
+		  case 3: s.bank_g4 = val_bank; break;
+		  default: return 0; // invalid bank selection
+		  }
+		  SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+		  checkChangePattern(ui_selected_item - ITEM_G1, val_bank, val_pattern);
+		}
+		return 1; // value has been changed
+	      } else {
+		if( button <= SEQ_UI_BUTTON_GP8 )
+		  val_pattern = (val_pattern & 0x07) | ((u8)button << 3);
+		else
+		  val_pattern = (val_pattern & 0x38) | ((u8)button & 0x7);
+		switch( ui_selected_item - ITEM_G1 ) {
+		case 0: s.pattern_g1 = val_pattern; break;
+		case 1: s.pattern_g2 = val_pattern; break;
+		case 2: s.pattern_g3 = val_pattern; break;
+		case 3: s.pattern_g4 = val_pattern; break;
+		default: return 0; // invalid bank selection
+		}
+		SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+		checkChangePattern(ui_selected_item - ITEM_G1, val_bank, val_pattern);
+		return 1; // value has been changed
+	      }
+	      return 0; // no change
+	    }
+	}
+      } break;
     }
   }
 
@@ -806,8 +810,12 @@ static s32 LCD_Handler(u8 high_prio)
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
     // <--------------------------------------><-------------------------------------->
-    // Song  Pos     Utility Functions         Phrase                Take over current
+    // Song  Pos     Utility Functions         Phrase                Take over current 
     //   1    A1  Copy Paste Clr Ins. Del.      Mode                 Patterns into song
+
+    // Song  Pos     Utility Functions          Song   GuideTrack    Take over current 
+    //   1    A1  Copy Paste Clr Ins. Del.      Mode      G1T1       Patterns into song
+
     SEQ_LCD_CursorSet(0, 0);
     SEQ_LCD_PrintFormattedString("Song  Pos    Utility Functions  ");
     if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
@@ -816,8 +824,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(8);
     }
 
-    SEQ_LCD_PrintString(SEQ_SONG_ActiveGet() ? " Song " : "Phrase");
-    SEQ_LCD_PrintString("                Take over current ");
+    if( SEQ_SONG_ActiveGet() ) {
+      SEQ_LCD_PrintString(" Song   GuideTrack    Take over current ");
+    } else {
+      SEQ_LCD_PrintString("Phrase                Take over current ");
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
@@ -838,7 +849,17 @@ static s32 LCD_Handler(u8 high_prio)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_PrintFormattedString("  Copy Paste Clr Ins. Del.     ");
-    SEQ_LCD_PrintString(" Mode                 Patterns into song");
+    SEQ_LCD_PrintString(" Mode      ");
+    if( SEQ_SONG_ActiveGet() ) {
+      if( SEQ_SONG_GuideTrackGet() ) {
+	u8 track = SEQ_SONG_GuideTrackGet()-1;
+	SEQ_LCD_PrintGxTy(track / 4, (1 << track));
+      } else
+	SEQ_LCD_PrintString("----");
+    } else {
+      SEQ_LCD_PrintSpaces(4);
+    }
+    SEQ_LCD_PrintString("       Patterns into song");
   } else {
     if( high_prio ) {
       ///////////////////////////////////////////////////////////////////////////
@@ -1128,7 +1149,7 @@ static s32 LCD_Handler(u8 high_prio)
     for(group=0; group<4; ++group) {
       SEQ_LCD_CursorSet(40 + 10*group, 1);
   
-      seq_pattern_t pattern = seq_pattern[group];
+      seq_pattern_t pattern = ui_cursor_flash ? seq_pattern_req[group] : seq_pattern[group];
       SEQ_LCD_PrintFormattedString(" %d:", pattern.bank + 1);
   
       if( pattern.pattern < SEQ_FILE_B_NumPatterns(pattern.bank) )
@@ -1136,7 +1157,11 @@ static s32 LCD_Handler(u8 high_prio)
       else
         SEQ_LCD_PrintString("!!"); // covers the case that bank is not available, or that pattern number too high
   
-      SEQ_LCD_PrintChar(' ');
+      if( seq_pattern_req[group].pattern != seq_pattern[group].pattern ||
+	  seq_pattern_req[group].bank != seq_pattern[group].bank )
+	SEQ_LCD_PrintChar('*');
+      else
+	SEQ_LCD_PrintChar(' ');
   
       // (VU meters print in high_prio branch)
   

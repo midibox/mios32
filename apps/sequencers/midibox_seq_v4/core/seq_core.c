@@ -368,13 +368,27 @@ s32 SEQ_CORE_Handler(void)
 
 	  // load new pattern/song step if reference step reached measure
 	  // (this code is outside SEQ_CORE_Tick() to save stack space!)
-	  if( seq_core_state.ref_step == seq_core_steps_per_pattern && (bpm_tick % 96) == 20 ) {
+	  if( (bpm_tick % 96) == 20 ) {
 	    if( SEQ_SONG_ActiveGet() ) {
-	      SEQ_SONG_NextPos();
-	    } else if( seq_core_options.SYNCHED_PATTERN_CHANGE ) {
-	      SEQ_PATTERN_Handler();
-	    }
+	      if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
+		    seq_core_state.ref_step == seq_cc_trk[seq_song_guide_track-1].length) ||
+		  (!seq_song_guide_track && seq_core_state.ref_step == seq_core_steps_per_pattern) ) {
 
+		if( seq_song_guide_track ) {
+		  // reset reference step if guide track is used for consistent sync
+		  seq_core_state.ref_step = seq_core_steps_per_measure;
+		  // request synch-to-measure for all tracks
+		  SEQ_CORE_ManualSynchToMeasure(0xffff);
+		}
+
+		SEQ_SONG_NextPos();
+	      }
+	    } else {
+	      if( seq_core_options.SYNCHED_PATTERN_CHANGE &&
+		  seq_core_state.ref_step == seq_core_steps_per_pattern ) {
+		SEQ_PATTERN_Handler();
+	      }
+	    }
 	  }
 	}
 

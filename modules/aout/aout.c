@@ -325,9 +325,6 @@ s32 AOUT_IF_Init(u32 mode)
     // pins in push-poll mode (3.3V output voltage)
     status |= MIOS32_SPI_IO_Init(AOUT_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
 #endif
-
-    // init SPI port for fast frequency access
-    status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
   }
 
   switch( aout_config.if_type ) {
@@ -342,6 +339,10 @@ s32 AOUT_IF_Init(u32 mode)
 
       // ensure that CS is deactivated
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+      // init SPI
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
+      
     } break;
 
     case AOUT_IF_74HC595: {
@@ -352,6 +353,9 @@ s32 AOUT_IF_Init(u32 mode)
 
       // set RCLK=0
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+
+      // init SPI
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
     } break;
 
     case AOUT_IF_TLV5630: {
@@ -359,6 +363,9 @@ s32 AOUT_IF_Init(u32 mode)
       aout_num_devices = aout_config.num_channels / 8;
       if( aout_config.num_channels % 8 )
 	++aout_num_devices;
+
+      // init SPI
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
 
       // initialize CTRL0
       // DO=1 (DOUT Enable), R=3 (internal reference, 2V)

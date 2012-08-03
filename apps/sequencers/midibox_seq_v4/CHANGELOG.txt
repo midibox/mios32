@@ -6,6 +6,25 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.060
+~~~~~~~~~~~~~~~~~
+
+   o fixed initialisation of MBHP_AOUT module
+
+   o Song Mode now provides a "Guide Track" which can be configured
+     by pressing SELECT in SONG page: the length of this track defines
+     the loop length and once the last loop has been played, all tracks
+     will be synchronized to step 1.
+     This allows to program breaks with a step length which is independent
+     from the measure.
+
+   o Phrase Mode now syncs the pattern changes to the measure of SyncChange
+     is set in the UTIL->OPT page
+
+   o Phrase Mode manually triggers the "synch-to-measure" option for all tracks
+     to ensure that all tracks are re-synchronized to step 1
+
+
 MIDIboxSEQ V4.059
 ~~~~~~~~~~~~~~~~~
 

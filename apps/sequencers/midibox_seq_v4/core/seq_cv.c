@@ -31,6 +31,7 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
+static u8 gates;
 static u8 gate_inversion_mask;
 
 static u8 sync_clk_pulsewidth;
@@ -48,6 +49,7 @@ s32 SEQ_CV_Init(u32 mode)
 {
   int i;
 
+  gates = 0;
   gate_inversion_mask = 0x00;
 
   // initialize J5 pins
@@ -351,21 +353,20 @@ s32 SEQ_CV_Update(void)
     seq_core_din_sync_pulse_ctr = 0;
   }
 
-  // update AOUTs
-  AOUT_Update();
-
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
-  u8 gates = AOUT_DigitalPinsGet() ^ gate_inversion_mask;
-  if( gates != last_gates ) {
-    last_gates = gates;
+  u8 new_gates = gates ^ gate_inversion_mask;
+  if( new_gates != last_gates ) {
+    last_gates = new_gates;
 
+    AOUT_DigitalPinsSet(new_gates);
 #ifndef MBSEQV4L
     // MBSEQV4L: allocated by BLM_CHEAPO driver
     int i;
+    u8 tmp = new_gates;
     for(i=0; i<6; ++i) {
-      MIOS32_BOARD_J5_PinSet(i, gates & 1);
-      gates >>= 1;
+      MIOS32_BOARD_J5_PinSet(i, tmp & 1);
+      tmp >>= 1;
     }
 #endif
 
@@ -373,28 +374,31 @@ s32 SEQ_CV_Update(void)
 #ifndef MBSEQV4L
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
-    MIOS32_BOARD_J5_PinSet(10, (last_gates & 0x40) ? 1 : 0);
-    MIOS32_BOARD_J5_PinSet(11, (last_gates & 0x80) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(10, (new_gates & 0x40) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(11, (new_gates & 0x80) ? 1 : 0);
 #else
     // MBSEQV4L: Gate 1 and 2 are routed to J5C.A10 and J5C.A11
-    MIOS32_BOARD_J5_PinSet(10, (last_gates & 0x01) ? 1 : 0);
-    MIOS32_BOARD_J5_PinSet(11, (last_gates & 0x02) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(10, (new_gates & 0x01) ? 1 : 0);
+    MIOS32_BOARD_J5_PinSet(11, (new_gates & 0x02) ? 1 : 0);
 #endif
 #elif defined(MIOS32_FAMILY_LPC17xx)
 #ifndef MBSEQV4L
     // J5B.A6 and J5B.A7 allocated by MIDI OUT3
     // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
-    MIOS32_BOARD_J28_PinSet(2, (last_gates & 0x40) ? 1 : 0);
-    MIOS32_BOARD_J28_PinSet(3, (last_gates & 0x80) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x40) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x80) ? 1 : 0);
 #else
     // MBSEQV4L: Gate 1 and 2 are routed to J28.WS and J28.MCLK
-    MIOS32_BOARD_J28_PinSet(2, (last_gates & 0x01) ? 1 : 0);
-    MIOS32_BOARD_J28_PinSet(3, (last_gates & 0x02) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x01) ? 1 : 0);
+    MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x02) ? 1 : 0);
 #endif
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
   }
+
+  // update AOUTs
+  AOUT_Update();
 
   return 0; // no error
 }
@@ -475,11 +479,11 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 
 	// set gate pin
 	if( gate_pin >= 0 )
-	  AOUT_DigitalPinSet(gate_pin, 1);
+	  gates |= (1 << gate_pin);
       } else {
 	// clear gate pin
 	if( gate_pin >= 0 )
-	  AOUT_DigitalPinSet(gate_pin, 0);
+	  gates &= ~(1 << gate_pin);
       }
     }
   } else if( package.event == CC ) {
@@ -501,7 +505,7 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
       AOUT_PinSet(aout_chn, package.value << 9);
 
     // Gate is always set (useful for controlling pitch of an analog synth where gate is connected as well)
-    AOUT_DigitalPinSet(gate_pin, 1);
+    gates |= (1 << gate_pin);
 #if 0
     // not here - all pins are updated at once after AOUT_Update() (see SEQ_TASK_MIDI() in app.c)
     MIOS32_BOARD_J5_PinSet(gate_pin, 1);
@@ -545,7 +549,7 @@ s32 SEQ_CV_ResetAllChannels(void)
     AOUT_PinPitchSet(cv, 0x0000);
   }
 
-  AOUT_DigitalPinsSet(0x00);
+  gates = 0x00;
 
 #ifndef MBSEQV4L
   int sr;
