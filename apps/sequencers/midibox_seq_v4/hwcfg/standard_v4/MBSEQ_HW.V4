@@ -555,28 +555,28 @@ BUTTON_BEH_ALL_WITH_TRIGGERS 0
 ##################################################
 
 #              SR  Pin  Type
-ENC_DATAWHEEL   1   0   DETENTED2
+ENC_DATAWHEEL   1   0   DETENTED3
 
 # the speed value for the datawheel which is used when the "FAST" button is activated:
 ENC_DATAWHEEL_FAST_SPEED 3
 
 #        SR  Pin  Type
-ENC_GP1   5   0   DETENTED2
-ENC_GP2   5   2   DETENTED2
-ENC_GP3   5   4   DETENTED2
-ENC_GP4   5   6   DETENTED2
-ENC_GP5   6   0   DETENTED2
-ENC_GP6   6   2   DETENTED2
-ENC_GP7   6   4   DETENTED2
-ENC_GP8   6   6   DETENTED2
-ENC_GP9   8   0   DETENTED2
-ENC_GP10  8   2   DETENTED2
-ENC_GP11  8   4   DETENTED2
-ENC_GP12  8   6   DETENTED2
-ENC_GP13  9   0   DETENTED2
-ENC_GP14  9   2   DETENTED2
-ENC_GP15  9   4   DETENTED2
-ENC_GP16  9   6   DETENTED2
+ENC_GP1   5   0   DETENTED3
+ENC_GP2   5   2   DETENTED3
+ENC_GP3   5   4   DETENTED3
+ENC_GP4   5   6   DETENTED3
+ENC_GP5   6   0   DETENTED3
+ENC_GP6   6   2   DETENTED3
+ENC_GP7   6   4   DETENTED3
+ENC_GP8   6   6   DETENTED3
+ENC_GP9   8   0   DETENTED3
+ENC_GP10  8   2   DETENTED3
+ENC_GP11  8   4   DETENTED3
+ENC_GP12  8   6   DETENTED3
+ENC_GP13  9   0   DETENTED3
+ENC_GP14  9   2   DETENTED3
+ENC_GP15  9   4   DETENTED3
+ENC_GP16  9   6   DETENTED3
 
 # the speed value for GP encoders which is used when the "FAST" button is activated:
 ENC_GP_FAST_SPEED 3
@@ -587,7 +587,7 @@ ENC_AUTO_FAST        1
 
 # optional BPM encoder
 #              SR  Pin  Type
-ENC_BPM         0   0   DETENTED2
+ENC_BPM         0   0   DETENTED3
 
 # the speed value for the BPM encoder which is used when the "FAST" function is activated
 ENC_BPM_FAST_SPEED 3
