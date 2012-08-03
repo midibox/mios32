@@ -29,6 +29,7 @@
 #include "seq_file_b.h"
 #include "seq_statistics.h"
 #include "seq_song.h"
+#include "seq_mixer.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,20 +184,19 @@ s32 SEQ_PATTERN_Handler(void)
       portEXIT_CRITICAL();
 
 			
-      if (group == 0) {
-				
-			  u8 mixer_num = 0;
-				u8 track;
-				
-				if (seq_pattern_req[0].lower) {
-				  mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
-				} else {
-				  mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
-				}
-				
+      if( group == 0 ) {
+	u8 mixer_num = 0;
+	u8 track;
+
+	if (seq_pattern_req[0].lower) {
+	  mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
+	} else {
+	  mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
+	}
+
         // setup our requested pattern mixer map
         SEQ_MIXER_NumSet(mixer_num);
-				SEQ_MIXER_Load(mixer_num);
+	SEQ_MIXER_Load(mixer_num);
         //SEQ_MIXER_SendAll();
 				
         // mixer_map support
@@ -208,9 +208,7 @@ s32 SEQ_PATTERN_Handler(void)
           } else {
             SEQ_MIXER_SendAllByChannel(track);
           }
-					
         }
-				
       }
 			
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);

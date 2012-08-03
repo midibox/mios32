@@ -28,6 +28,7 @@
 #include "seq_file.h"
 #include "seq_file_s.h"
 
+#include "seq_core.h"
 #include "seq_song.h"
 
 
@@ -346,6 +347,10 @@ s32 SEQ_FILE_S_SongRead(u8 song)
   }
 
   status |= FILE_ReadBuffer((u8 *)seq_song_name, 20);
+  seq_song_guide_track = seq_song_name[19]; // workaround: the last byte of the song name stores seq_song_guide_track
+  if( seq_song_guide_track > SEQ_CORE_NUM_GROUPS )
+    seq_song_guide_track = 0; // 0..16 (0 disables guide track)
+  seq_song_name[19] = 0;
   seq_song_name[20] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -450,7 +455,9 @@ s32 SEQ_FILE_S_SongWrite(char *session, u8 song, u8 rename_if_empty_name)
   }
 
   // write song name w/o zero terminator
+  seq_song_name[19] = seq_song_guide_track; // workaround: the last byte of the song name stores seq_song_guide_track
   status |= FILE_WriteBuffer((u8 *)seq_song_name, 20);
+  seq_song_name[19] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[SEQ_FILE_S] writing song #%d '%s'...\n", song+1, seq_song_name);
