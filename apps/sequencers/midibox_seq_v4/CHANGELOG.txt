@@ -24,6 +24,10 @@ MIDIboxSEQ V4.060
    o Phrase Mode manually triggers the "synch-to-measure" option for all tracks
      to ensure that all tracks are re-synchronized to step 1
 
+   o MBSEQ_HW.V4 files: changed encoder mode to MIOS_ENC_MODE_DETENTED3
+     since it's compatible with most encoders
+
+
 
 MIDIboxSEQ V4.059
 ~~~~~~~~~~~~~~~~~
