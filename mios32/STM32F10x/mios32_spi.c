@@ -603,7 +603,7 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
-      u16 prev_cr1 = MIOS32_SPI0_PTR->CR1;
+      u16 prev_cr1 = MIOS32_SPI1_PTR->CR1;
 
       // SPI2 perpipheral is located in APB1 domain and clocked at half speed
       if( spi_prescaler == 0 )
@@ -613,7 +613,7 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
       SPI_Init(MIOS32_SPI1_PTR, &SPI_InitStructure);
 
       if( SPI_InitStructure.SPI_Mode == SPI_Mode_Master ) {
-	if( (prev_cr1 ^ MIOS32_SPI0_PTR->CR1) & 3 ) { // CPOL and CPHA located at bit #1 and #0
+	if( (prev_cr1 ^ MIOS32_SPI1_PTR->CR1) & 3 ) { // CPOL and CPHA located at bit #1 and #0
 	  // clock configuration has been changed - we should send a dummy byte
 	  // before the application activates chip select.
 	  // this solves a dependency between SDCard and ENC28J60 driver
@@ -975,7 +975,7 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
   // send byte
   spi_ptr->DR = b;
 
-  if( spi_ptr->SR ); // dummy read due to undocumented pipelining issue :-/
+  //if( spi_ptr->SR ); // dummy read due to undocumented pipelining issue :-/
   // TK: without this read (which can be done to any bus location) we could sporadically
   // get the status byte at the moment where DR is written. Accordingly, the busy bit 
   // will be 0.
@@ -986,12 +986,15 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
   // over AHB (if SPI1/SPI2 pointers are used, there is still a risk for such a scenario,
   // e.g. if DMA loads the bus!)
 
-#if 0
+  // TK update: the dummy read above becomes obsolete since we are checking for SPI Master mode now
+  // which requires a read operation as well
+
   // wait until SPI transfer finished
-  while( spi_ptr->SR & SPI_I2S_FLAG_BSY );
-#else
-  while( !(spi_ptr->SR & SPI_I2S_FLAG_RXNE) );
-#endif
+  if( spi_ptr->CR1 & SPI_Mode_Master ) {
+    while( spi_ptr->SR & SPI_I2S_FLAG_BSY );
+  } else {
+    while( !(spi_ptr->SR & SPI_I2S_FLAG_RXNE) );
+  }
 
   // return received byte
   return spi_ptr->DR;
