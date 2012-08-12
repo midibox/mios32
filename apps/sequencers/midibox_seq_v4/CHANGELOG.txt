@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.061
+~~~~~~~~~~~~~~~~~
+
+   o STM32: MBHP_ETH module working properly again
+
+
 MIDIboxSEQ V4.060
 ~~~~~~~~~~~~~~~~~
 
