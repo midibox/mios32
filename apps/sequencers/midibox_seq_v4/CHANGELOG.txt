@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.062
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential hard fault when storing preset pattern
+
+
 MIDIboxSEQ V4.061
 ~~~~~~~~~~~~~~~~~
 
