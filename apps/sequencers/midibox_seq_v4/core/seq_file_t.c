@@ -426,8 +426,8 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
 {
   s32 status = 0;
-  char line_buffer[128];
-  char str_buffer[128];
+  char line_buffer[100];
+  char str_buffer[100];
   int i, j;
 
   if( track > SEQ_CORE_NUM_TRACKS )
