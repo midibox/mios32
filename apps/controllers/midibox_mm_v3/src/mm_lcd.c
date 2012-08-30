@@ -28,11 +28,25 @@
 #include <glcd_font.h>
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Local Defines
+/////////////////////////////////////////////////////////////////////////////
+
+// will later be configurable during runtime, e.g. stored in EEPROM or SD Card
+#define USE_TWO_LCDS 0
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 lcd_charset;
+
+static u8 lcd_lay_offset;
+static u8 lcd_lay_blocksize;
+static u8 lcd_lay_spaces_between_blocks;
+
 static u8 msg_cursor;
 
 static u8 msg_host[128];
@@ -66,6 +80,19 @@ s32 MM_LCD_Init(u32 mode)
   // initial cursor
   msg_cursor = 0;
 
+  // initial LCD layout
+#if USE_TWO_LCDS
+  // +---------+---------+---------+---------#---------+---------+---------+---------
+  //    01234     01234     01234     01234     01234     01234     01234     01234
+  lcd_lay_offset = 3;
+  lcd_lay_blocksize = 5;
+  lcd_lay_spaces_between_blocks = 5;
+#else
+  lcd_lay_offset = 0;
+  lcd_lay_blocksize = 40;
+  lcd_lay_spaces_between_blocks = 0;
+#endif
+
   // initialize msg array
   for(i=0; i<0x80; ++i) {
     msg_host[i] = ' ';
@@ -96,6 +123,29 @@ s32 MM_LCD_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This local function prints a character and takes two LCDs into account
+/////////////////////////////////////////////////////////////////////////////
+static s32 MM_LCD_PrintChar(char c)
+{
+  if( MIOS32_LCD_TypeIsGLCD() )
+    return MIOS32_LCD_PrintChar(c);
+
+  // switch LCD depending on column
+  s32 status = MIOS32_LCD_DeviceSet((mios32_lcd_column >= 40) ? 1 : 0);
+
+  // print char
+  status |= MIOS32_LCD_PrintChar(c);
+
+  // right side reached?
+  if( mios32_lcd_column == 40 ) {
+    status |= MIOS32_LCD_CursorSet(0, mios32_lcd_line); // set physical cursor to 0
+    mios32_lcd_column = 40; // switch back logical cursor to 40
+  }
+
+  return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // This function updates the LCD
 /////////////////////////////////////////////////////////////////////////////
 s32 MM_LCD_Update(u8 force)
@@ -109,23 +159,47 @@ s32 MM_LCD_Update(u8 force)
   u8 *msg = mm_flags.GPC_SEL ? (u8 *)&gpc_msg[0] : (u8 *)&msg_host[0];
 
   // set msg_cursor to first line and update cursor position
+  MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 0);
 
   // print first line
-  int i;
-  for(i=0x00; i<0x00+40; ++i) // 1st line of host message
-    MIOS32_LCD_PrintChar(msg[i]);
+  int msg_ix;
+  for(msg_ix=0; msg_ix<40; ++msg_ix) { // 1st line of host message
+    int i;
+    if( msg_ix == 0 ) {
+      for(i=0; i<lcd_lay_offset; ++i)
+	MM_LCD_PrintChar(' ');
+    } else if( (msg_ix % lcd_lay_blocksize) == 0 ) {
+      for(i=0; i<lcd_lay_spaces_between_blocks; ++i)
+	MM_LCD_PrintChar(' ');
+    }
+
+    MM_LCD_PrintChar(msg[msg_ix]);
+  }
 
   // set msg_cursor to second line and update cursor position
+  MIOS32_LCD_DeviceSet(0);
   MIOS32_LCD_CursorSet(0, 1);
 
   // print second line
   if( mm_flags.PRINT_POINTERS ) {
+    int i;
     for(i=0; i<8; ++i)
       MM_LCD_PointerPrint(i);
   } else {
-    for(i=0x40; i<0x40+40; ++i) // 2nd line of host message
-      MIOS32_LCD_PrintChar(msg[i]);
+    int msg_ix;
+    for(msg_ix=0; msg_ix<40; ++msg_ix) { // 1st line of host message
+      int i;
+      if( msg_ix == 0 ) {
+	for(i=0; i<lcd_lay_offset; ++i)
+	  MM_LCD_PrintChar(' ');
+      } else if( (msg_ix % lcd_lay_blocksize) == 0 ) {
+	for(i=0; i<lcd_lay_spaces_between_blocks; ++i)
+	  MM_LCD_PrintChar(' ');
+      }
+
+      MM_LCD_PrintChar(msg[msg_ix + 40]);
+    }
   }
 
   return 0; // no error
@@ -220,15 +294,19 @@ s32 MM_LCD_PointerPrint(u8 pointer)
   value = MM_VPOT_ValueGet(pointer);
 
   // set cursor
-  MIOS32_LCD_CursorSet(pointer*5, 1);
+  int x = lcd_lay_offset + (pointer*(lcd_lay_blocksize+lcd_lay_spaces_between_blocks));
 
   // print value depending on display and pointer type
   if( MIOS32_LCD_TypeIsGLCD() ) {
     // graphical LCD - here we could add some nice graphic icons
     // currently we just only print a number and a vertical bar...
+    MIOS32_LCD_CursorSet(x, 1);
     MIOS32_LCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
   } else {
     // character LCD
+    MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
+    MIOS32_LCD_CursorSet(x % 40, 1);
+
     switch( MM_VPOT_DisplayTypeGet() ) {
       case 0: // "Left justified horizontal bar graph (Aux pots)"
       case 1: // "Centered horizontal Bar graph"
