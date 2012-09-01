@@ -98,9 +98,6 @@ u8 lc_hwcfg_emulation_id = 0x80;
 // Display Config
 /////////////////////////////////////////////////////////////////////////////
 lc_hwcfg_display_cfg_t lc_hwcfg_display_cfg = {
-  .num_columns = 55, // number of emulated columns (characters per line)
-                     //    o one 2x40 LCD: use 40   (unfortunately..)
-                     //    o two 2x40 LCDs: use 55  (like a Logic Control)
   .initial_page_clcd = 0, // initial display page after startup (choose your favourite one: 0-3)
   .initial_page_glcd = 3, // initial display page after startup (choose your favourite one: 0-3)
 };

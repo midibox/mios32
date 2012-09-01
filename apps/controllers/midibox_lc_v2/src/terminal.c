@@ -28,6 +28,7 @@
 #include "uip_terminal.h"
 #include "tasks.h"
 #include "lc_hwcfg.h"
+#include "lc_lcd.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -164,6 +165,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
       out("  set srio_num <1..16>:             max. number of scanned DIN/DOUT registers (currently: %d)", MIOS32_SRIO_ScanNumGet());
+      out("  set lc_page <1..4>:               sets the MBLC display page (currently: %d)\n", LC_LCD_DisplayPageGet());
       LC_HWCFG_TerminalHelp(_output_function);
       out("  store:                            stores current config as preset");
       out("  restore:                          restores config from preset");
@@ -201,6 +203,19 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    } else {
 	      MIOS32_SRIO_ScanNumSet(srs);
 	      out("%d DINs and DOUTs will be scanned!", MIOS32_SRIO_ScanNumGet());
+	    }
+	  }
+	} else if( strcmp(parameter, "lc_page") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the LCD page which should be displayed (1..4)!");
+	  } else {
+	    int page = get_dec(parameter);
+
+	    if( page < 1 || page > 4 ) {
+	      out("Page number should be in the range between 1..4!");
+	    } else {
+	      LC_LCD_DisplayPageSet(page - 1);
+	      out("Page %d selected.", page);
 	    }
 	  }
         } else {

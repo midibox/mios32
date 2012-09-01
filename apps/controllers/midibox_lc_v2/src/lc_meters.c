@@ -194,6 +194,7 @@ s32 LC_METERS_Timer(void)
 	MIOS32_IRQ_Disable();
 	meter_update_req |= (1 << meter); // request update
 	MIOS32_IRQ_Enable();
+	LC_LCD_Update_Meter(meter); // request update on LCD
       }
     }
   }
