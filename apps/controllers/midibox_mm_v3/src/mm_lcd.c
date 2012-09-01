@@ -138,6 +138,7 @@ static s32 MM_LCD_PrintChar(char c)
 
   // right side reached?
   if( mios32_lcd_column == 40 ) {
+    MIOS32_LCD_DeviceSet(1);
     status |= MIOS32_LCD_CursorSet(0, mios32_lcd_line); // set physical cursor to 0
     mios32_lcd_column = 40; // switch back logical cursor to 40
   }
@@ -198,7 +199,7 @@ s32 MM_LCD_Update(u8 force)
 	  MM_LCD_PrintChar(' ');
       }
 
-      MM_LCD_PrintChar(msg[msg_ix + 40]);
+      MM_LCD_PrintChar(msg[msg_ix + 64]);
     }
   }
 
@@ -307,6 +308,7 @@ s32 MM_LCD_PointerPrint(u8 pointer)
     MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
     MIOS32_LCD_CursorSet(x % 40, 1);
 
+    char buffer[10];
     switch( MM_VPOT_DisplayTypeGet() ) {
       case 0: // "Left justified horizontal bar graph (Aux pots)"
       case 1: // "Centered horizontal Bar graph"
@@ -317,12 +319,16 @@ s32 MM_LCD_PointerPrint(u8 pointer)
       case 6: // "Ascending bar graph (Channel Meters)"
       case 7: // "Descending bar graph (Gaon reduction)"
 	// different pointer types not implemented yet
-	MIOS32_LCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
+	sprintf(buffer, "%3d%c ", value, (value >> 4) & 7);
 	break;
 
       default:
-	MIOS32_LCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
+	sprintf(buffer, "%3d%c ", value, (value >> 4) & 7);
     }
+
+    int i;
+    for(i=0; i<5; ++i)
+      MM_LCD_PrintChar(buffer[i]);
   }
 
   return 0; // no error
