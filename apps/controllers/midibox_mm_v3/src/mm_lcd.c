@@ -18,6 +18,8 @@
 
 #include <mios32.h>
 
+#include <buflcd.h>
+
 #include "app.h"
 #include "mm_hwcfg.h"
 #include "mm_lcd.h"
@@ -74,6 +76,9 @@ s32 MM_LCD_Init(u32 mode)
 {
   int i;
 
+  // init buffered LCD output
+  BUFLCD_Init(0);
+
   lcd_charset = 0xff; // force refresh
   MM_LCD_SpecialCharsInit(0); // select vertical bars
 
@@ -103,48 +108,12 @@ s32 MM_LCD_Init(u32 mode)
     msg_host[i] = welcome_msg[i];
   }
 
-  // clear screen
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_Clear();
-
-  if( !MIOS32_LCD_TypeIsGLCD() ) {
-    MIOS32_LCD_DeviceSet(1);
-    MIOS32_LCD_Clear();
-    MIOS32_LCD_DeviceSet(0);
-  } else {
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  }
-
   // request display update
   mm_flags.MSG_UPDATE_REQ = 1;
 
   return 0; // no error
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// This local function prints a character and takes two LCDs into account
-/////////////////////////////////////////////////////////////////////////////
-static s32 MM_LCD_PrintChar(char c)
-{
-  if( MIOS32_LCD_TypeIsGLCD() )
-    return MIOS32_LCD_PrintChar(c);
-
-  // switch LCD depending on column
-  s32 status = MIOS32_LCD_DeviceSet((mios32_lcd_column >= 40) ? 1 : 0);
-
-  // print char
-  status |= MIOS32_LCD_PrintChar(c);
-
-  // right side reached?
-  if( mios32_lcd_column == 40 ) {
-    MIOS32_LCD_DeviceSet(1);
-    status |= MIOS32_LCD_CursorSet(0, mios32_lcd_line); // set physical cursor to 0
-    mios32_lcd_column = 40; // switch back logical cursor to 40
-  }
-
-  return status;
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // This function updates the LCD
@@ -160,27 +129,25 @@ s32 MM_LCD_Update(u8 force)
   u8 *msg = mm_flags.GPC_SEL ? (u8 *)&gpc_msg[0] : (u8 *)&msg_host[0];
 
   // set msg_cursor to first line and update cursor position
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 0);
+  BUFLCD_CursorSet(0, 0);
 
-  // print first line
+  // transfer first line to buffer
   int msg_ix;
   for(msg_ix=0; msg_ix<40; ++msg_ix) { // 1st line of host message
     int i;
     if( msg_ix == 0 ) {
       for(i=0; i<lcd_lay_offset; ++i)
-	MM_LCD_PrintChar(' ');
+	BUFLCD_PrintChar(' ');
     } else if( (msg_ix % lcd_lay_blocksize) == 0 ) {
       for(i=0; i<lcd_lay_spaces_between_blocks; ++i)
-	MM_LCD_PrintChar(' ');
+	BUFLCD_PrintChar(' ');
     }
 
-    MM_LCD_PrintChar(msg[msg_ix]);
+    BUFLCD_PrintChar(msg[msg_ix]);
   }
 
   // set msg_cursor to second line and update cursor position
-  MIOS32_LCD_DeviceSet(0);
-  MIOS32_LCD_CursorSet(0, 1);
+  BUFLCD_CursorSet(0, 1);
 
   // print second line
   if( mm_flags.PRINT_POINTERS ) {
@@ -193,15 +160,18 @@ s32 MM_LCD_Update(u8 force)
       int i;
       if( msg_ix == 0 ) {
 	for(i=0; i<lcd_lay_offset; ++i)
-	  MM_LCD_PrintChar(' ');
+	  BUFLCD_PrintChar(' ');
       } else if( (msg_ix % lcd_lay_blocksize) == 0 ) {
 	for(i=0; i<lcd_lay_spaces_between_blocks; ++i)
-	  MM_LCD_PrintChar(' ');
+	  BUFLCD_PrintChar(' ');
       }
 
-      MM_LCD_PrintChar(msg[msg_ix + 64]);
+      BUFLCD_PrintChar(msg[msg_ix + 64]);
     }
   }
+
+  // transfer changed characters to screen
+  BUFLCD_Update(force);
 
   return 0; // no error
 }
@@ -301,14 +271,12 @@ s32 MM_LCD_PointerPrint(u8 pointer)
   if( MIOS32_LCD_TypeIsGLCD() ) {
     // graphical LCD - here we could add some nice graphic icons
     // currently we just only print a number and a vertical bar...
-    MIOS32_LCD_CursorSet(x, 1);
-    MIOS32_LCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
+    BUFLCD_CursorSet(x, 1);
+    BUFLCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
   } else {
     // character LCD
-    MIOS32_LCD_DeviceSet((x >= 40) ? 1 : 0);
-    MIOS32_LCD_CursorSet(x % 40, 1);
+    BUFLCD_CursorSet(x % 40, 1);
 
-    char buffer[10];
     switch( MM_VPOT_DisplayTypeGet() ) {
       case 0: // "Left justified horizontal bar graph (Aux pots)"
       case 1: // "Centered horizontal Bar graph"
@@ -319,16 +287,12 @@ s32 MM_LCD_PointerPrint(u8 pointer)
       case 6: // "Ascending bar graph (Channel Meters)"
       case 7: // "Descending bar graph (Gaon reduction)"
 	// different pointer types not implemented yet
-	sprintf(buffer, "%3d%c ", value, (value >> 4) & 7);
+	BUFLCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
 	break;
 
       default:
-	sprintf(buffer, "%3d%c ", value, (value >> 4) & 7);
+	BUFLCD_PrintFormattedString("%3d%c ", value, (value >> 4) & 7);
     }
-
-    int i;
-    for(i=0; i<5; ++i)
-      MM_LCD_PrintChar(buffer[i]);
   }
 
   return 0; // no error

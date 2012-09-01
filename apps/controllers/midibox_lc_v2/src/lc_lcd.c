@@ -18,6 +18,8 @@
 
 #include <mios32.h>
 
+#include <buflcd.h>
+
 #include "app.h"
 #include "lc_hwcfg.h"
 #include "lc_lcd.h"
@@ -48,6 +50,7 @@ typedef struct {
 
 static u8 lcd_charset;
 static u8 msg_cursor;
+static u8 force_lcd_update;
 
 static u8 msg_host[128];
 
@@ -151,9 +154,16 @@ s32 LC_LCD_Init(u32 mode)
 {
   int i;
 
+  // init buffered LCD output
+  BUFLCD_Init(0);
+
   // init display mode
   if( MIOS32_LCD_TypeIsGLCD() ) {
     LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_glcd);
+
+    // buffered LCD is only used to print host message
+    BUFLCD_NumDevicesSet(1);
+    BUFLCD_ColumnsPerDeviceSet(56);
   } else {
     LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_clcd);
   }
@@ -200,6 +210,7 @@ s32 LC_LCD_DisplayPageSet(u8 page)
   lay_status.update_req = 1;
   lay_smpte_beats.update_req = 1;
   lay_rsm.update_req = 1;
+  force_lcd_update = 1; // page has changed -> complete LCD screen has to be updated
 
   // clear screen
   MIOS32_LCD_DeviceSet(0);
@@ -210,6 +221,9 @@ s32 LC_LCD_DisplayPageSet(u8 page)
     MIOS32_LCD_Clear();
     MIOS32_LCD_DeviceSet(0);
   }
+
+  // ...and buffer
+  BUFLCD_Clear();
 
   // set layout
   // possible x coordinates: x = 0..39 (0xff to disable message)
@@ -259,14 +273,14 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 
 	// CLCD:
 
-	// status digits at 38/2
-	lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
+	// status digits at 78/0
+	lay_status.x = 78; lay_status.y = 0; lay_status.d = 1;
 
-	// print "SMPTE/BEATS" at 28/2
-	lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+	// print "SMPTE/BEATS" at 68/0
+	lay_smpte_beats.x = 68; lay_smpte_beats.y = 0; lay_smpte_beats.d = 1;
 
-	// print MTC digits at 27/3
-	lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+	// print MTC digits at 67/1
+	lay_mtc.x = 67; lay_mtc.y = 1; lay_mtc.d = 1;
 
 	// print host message at 12/0 (normal spacing, both lines)
 	lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
@@ -292,7 +306,7 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 
 	// GLCD
 
-	// status digits at 12/4 (16 pixels between chars)
+	// status digits at 12/1 (16 pixels between chars)
 	lay_status.font = (u8 *)GLCD_FONT_BIG;
 	lay_status.x = 12; lay_status.y = 4; lay_status.d = 16;
 
@@ -324,14 +338,14 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 
       } else {
 
-	// status digits at 38/2
-	lay_status.x = 38; lay_status.y = 2; lay_status.d = 1;
+	// status digits at 78/0
+	lay_status.x = 78; lay_status.y = 0; lay_status.d = 1;
 
-	// print "SMPTE/BEATS" at 28/2
-	lay_smpte_beats.x = 28; lay_smpte_beats.y = 2; lay_smpte_beats.d = 1;
+	// print "SMPTE/BEATS" at 68/0
+	lay_smpte_beats.x = 68; lay_smpte_beats.y = 0; lay_smpte_beats.d = 1;
 
-	// print MTC digits at 27/3
-	lay_mtc.x = 27; lay_mtc.y = 3; lay_mtc.d = 1;
+	// print MTC digits at 67/1
+	lay_mtc.x = 67; lay_mtc.y = 1; lay_mtc.d = 1;
 
 	// print host message at 12/0 (normal spacing, only first line)
 	lay_host_msg.x = 12; lay_host_msg.y = 0; lay_host_msg.d = 1;
@@ -442,9 +456,9 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 	display_mode.LARGE_SCREEN = 0;
 	display_mode.SECOND_LINE = 1;
 
-	// print horizontal meters at position 10/3 (28 pixels between icons)
+	// print horizontal meters at position 10/0 (28 pixels between icons)
 	lay_meters.font = (u8 *)GLCD_FONT_METER_ICONS_H;
-	lay_meters.x = 10; lay_meters.y = 3; lay_meters.d = 28;
+	lay_meters.x = 10; lay_meters.y = 0; lay_meters.d = 28;
 
 	// don't print rec/solo/mute status
 	lay_rsm.font = NULL;
@@ -472,8 +486,8 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 	display_mode.LARGE_SCREEN = 1;
 	display_mode.SECOND_LINE = 0;
 
-	// print meters at position 2/1 (distance between meters: 10)
-	lay_meters.x = 2; lay_meters.y = 1; lay_meters.d = 10;
+	// print meters at position 8/1 (distance between meters: 8)
+	lay_meters.x = 8; lay_meters.y = 1; lay_meters.d = 8;
 	LC_LCD_SpecialCharsInit(1); // select horizontal bars
 
 	// don't print rec/solo/mute
@@ -495,7 +509,8 @@ s32 LC_LCD_DisplayPageSet(u8 page)
 s32 LC_LCD_Update(u8 force)
 {
   // update screen whenever required (or forced)
-
+  force |= force_lcd_update; // set whenever page has changed
+  force_lcd_update = 0;
 
   // host message
   if( lay_host_msg.d ) {
@@ -504,54 +519,46 @@ s32 LC_LCD_Update(u8 force)
     lay_host_msg.update_req = 0;
     MIOS32_IRQ_Enable();
 
-    if( MIOS32_LCD_TypeIsGLCD() ) {
-      if( lay_host_msg.font )
-	MIOS32_LCD_FontInit(lay_host_msg.font);
-    }
-
     int next_x = -1;
     int next_y = -1;
     int x, y;
     int lcd_x, lcd_y;
+    int offset_x, offset_y;
 
-    for(y=0; y<2; ++y) {
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      // GLCD: BUFLCD only used to print host message; the x/y offset is set differently:
+      offset_x = 0;
+      offset_y = 0;
+    } else {
+      offset_x = lay_host_msg.x;
+      offset_y = lay_host_msg.y;
+    }
+
+    for(y=0; y<(display_mode.SECOND_LINE ? 2 : 1); ++y) {
       u8 *msg = lc_flags.GPC_SEL ? (u8 *)&gpc_msg[y*0x40] : (u8 *)&msg_host[y*0x40];
 
-      for(x=0; x<lc_hwcfg_display_cfg.num_columns; ++x, ++msg) {
+      for(x=0; x<56; ++x, ++msg) {
 
 	if( local_force || !(*msg & 0x80) ) {
 	  if( display_mode.LARGE_SCREEN ) {
-	    lcd_x = lay_host_msg.x + (large_screen_cursor_map[x] & 0x7f) + ((large_screen_cursor_map[x] & 0x80) ? 40 : 0);
-	    lcd_y = lay_host_msg.y + y;
+	    lcd_x = offset_x + (large_screen_cursor_map[x] & 0x7f) + ((large_screen_cursor_map[x] & 0x80) ? 40 : 0);
+	    lcd_y = offset_y + y;
 	  } else {
-	    lcd_x = lay_host_msg.x + x;
-	    lcd_y = lay_host_msg.y + y;
+	    lcd_x = offset_x + x;
+	    lcd_y = offset_y + y;
 	  }
 
 	  if( lcd_x != next_x || lcd_y != next_y ) {
-	    if( MIOS32_LCD_TypeIsGLCD() ) {
-	      MIOS32_LCD_CursorSet(lcd_x, lcd_y);
-	    } else {
-	      MIOS32_LCD_DeviceSet((lcd_x >= 40) ? 1 : 0);
-	      MIOS32_LCD_CursorSet(lcd_x % 40, lcd_y);
-	    }
+	    BUFLCD_CursorSet(lcd_x, lcd_y);
 	  }
-	  MIOS32_LCD_PrintChar(*msg & 0x7f);
+	  BUFLCD_PrintChar(*msg & 0x7f);
 	  *msg |= 0x80;
 	  next_y = lcd_y;
 	  next_x = lcd_x + 1;
-
-	  if( !MIOS32_LCD_TypeIsGLCD() ) {
-	    // for 2 * 2x40 LCDs: ensure that cursor is set when we reach the second half
-	    if( next_x == 40 )
-	      next_x = -1;
-	  }
 	}
       }
     }
   }
-
-
 
   // meters
   if( lay_meters.d && (lay_meters.update_req || force) ) {
@@ -576,28 +583,24 @@ s32 LC_LCD_Update(u8 force)
 	u8 level = LC_METERS_LevelGet(meter);
 
 	if( MIOS32_LCD_TypeIsGLCD() ) {
+	  // GLCD: BUFLCD not used here, only the host message is buffered
 	  // set cursor depending on layout constraints
-	  LC_LCD_PhysCursorSet(lay_meters.x + meter * lay_meters.d, lay_meters.y);
+	  MIOS32_LCD_GCursorSet(lay_meters.x + meter * lay_meters.d, lay_meters.y*8);
 	  // print icon (if bit 7 is set: overrun, add 14)
 	  MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
 	} else {
 	  // set cursor depending on layout constraints
 	  int x = lay_meters.x + meter * lay_meters.d;
 	  int y = lay_meters.y;
-
-	  if( x >= 40 ) {
-	    x %= 40;
-	    y += 2;
-	  }
-	  LC_LCD_PhysCursorSet(x, y);
+	  BUFLCD_CursorSet(x, y);
 
 	  // print string
 	  int map_offset = 5 * (level & 0x7f);
 	  for(i=0; i<5; ++i)
-	    MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
+	    BUFLCD_PrintChar(hmeter_map[map_offset + i]);
 
 	  // print overrun flag if bit 7 of level is set, else space
-	  MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
+	  BUFLCD_PrintChar((level & (1 << 7)) ? 0x04 : ' ');
 	}
       }
     }
@@ -610,15 +613,22 @@ s32 LC_LCD_Update(u8 force)
     lay_smpte_beats.update_req = 0;
 
     if( MIOS32_LCD_TypeIsGLCD() ) {
+      // GLCD: BUFLCD not used here, only the host message is buffered
       if( lay_smpte_beats.font )
 	MIOS32_LCD_FontInit(lay_smpte_beats.font);
+
+      // set cursor depending on layout constraints
+      MIOS32_LCD_GCursorSet(lay_smpte_beats.x, lay_smpte_beats.y*8);
+
+      // print SMPTE or BEATS
+      MIOS32_LCD_PrintString(display_mode.SMPTE_VIEW ? "SMPTE" : "BEATS");
+    } else {
+      // set cursor depending on layout constraints
+      BUFLCD_CursorSet(lay_smpte_beats.x, lay_smpte_beats.y);
+
+      // print SMPTE or BEATS
+      BUFLCD_PrintString(display_mode.SMPTE_VIEW ? "SMPTE" : "BEATS");
     }
-
-    // set cursor depending on layout constraints
-    LC_LCD_PhysCursorSet(lay_smpte_beats.x, lay_smpte_beats.y);
-
-    // print SMPTE or BEATS
-    MIOS32_LCD_PrintString(display_mode.SMPTE_VIEW ? "SMPTE" : "BEATS");
   }
 
 
@@ -627,68 +637,57 @@ s32 LC_LCD_Update(u8 force)
   if( lay_mtc.d && (lay_mtc.update_req || force) ) {
     lay_mtc.update_req = 0;
 
-    if( MIOS32_LCD_TypeIsGLCD() ) {
-      if( lay_mtc.font )
-	MIOS32_LCD_FontInit(lay_mtc.font);
+    // create string depending on beat/SMPTE view
+    char mtc[13];
+    mtc[12] = 0;
+
+    if( display_mode.SMPTE_VIEW ) { // SMPTE View
+      mtc[0] = ' ';
+      mtc[1] = ((lc_leddigits_mtc[0] & 0x3f) ^ 0x20) + 0x20;
+      mtc[2] = ((lc_leddigits_mtc[1] & 0x3f) ^ 0x20) + 0x20;
+      mtc[3] = ((lc_leddigits_mtc[2] & 0x3f) ^ 0x20) + 0x20;
+      mtc[4] = ':';
+      mtc[5] = ((lc_leddigits_mtc[3] & 0x3f) ^ 0x20) + 0x20;
+      mtc[6] = ((lc_leddigits_mtc[4] & 0x3f) ^ 0x20) + 0x20;
+      mtc[7] = ':';
+      mtc[8] = ((lc_leddigits_mtc[5] & 0x3f) ^ 0x20) + 0x20;
+      mtc[9] = ((lc_leddigits_mtc[6] & 0x3f) ^ 0x20) + 0x20;
+      mtc[10] = ':'; // digit 7 not used
+      mtc[11] = ((lc_leddigits_mtc[8] & 0x3f) ^ 0x20) + 0x20;
+      mtc[12] = ((lc_leddigits_mtc[9] & 0x3f) ^ 0x20) + 0x20;
+    } else { // Beats View
+      mtc[0] = ((lc_leddigits_mtc[0] & 0x3f) ^ 0x20) + 0x20;
+      mtc[1] = ((lc_leddigits_mtc[1] & 0x3f) ^ 0x20) + 0x20;
+      mtc[2] = ((lc_leddigits_mtc[2] & 0x3f) ^ 0x20) + 0x20;
+      mtc[3] = ':';
+      mtc[4] = ((lc_leddigits_mtc[3] & 0x3f) ^ 0x20) + 0x20;
+      mtc[5] = ((lc_leddigits_mtc[4] & 0x3f) ^ 0x20) + 0x20;
+      mtc[6] = ':';
+      mtc[7] = ((lc_leddigits_mtc[5] & 0x3f) ^ 0x20) + 0x20;
+      mtc[8] = ((lc_leddigits_mtc[6] & 0x3f) ^ 0x20) + 0x20;
+      mtc[9] = ':';
+      mtc[10] = ((lc_leddigits_mtc[7] & 0x3f) ^ 0x20) + 0x20;
+      mtc[11] = ((lc_leddigits_mtc[8] & 0x3f) ^ 0x20) + 0x20;
+      mtc[12] = ((lc_leddigits_mtc[9] & 0x3f) ^ 0x20) + 0x20;
     }
 
-    // print a space at first position (will be overwritten in BEATS mode)
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      // GLCD: BUFLCD not used here, only the host message is buffered
 
-    // print digits and colons
-    if( display_mode.SMPTE_VIEW ) { // SMPTE View
-      LC_LCD_PhysCursorSet(lay_mtc.x + 0*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(' ');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 1*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[0] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 2*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[1] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 3*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[2] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 4*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 5*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[3] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 6*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[4] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 7*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 8*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[5] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 9*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[6] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 10*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':'); // digit 7 not used
-      LC_LCD_PhysCursorSet(lay_mtc.x + 11*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[8] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 12*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[9] & 0x3f) ^ 0x20) + 0x20);
-    } else { // Beats View
-      LC_LCD_PhysCursorSet(lay_mtc.x + 0*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[0] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 1*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[1] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 2*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[2] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 3*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 4*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[3] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 5*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[4] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 6*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 7*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[5] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 8*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[6] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 9*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(':');
-      LC_LCD_PhysCursorSet(lay_mtc.x + 10*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[7] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 11*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[8] & 0x3f) ^ 0x20) + 0x20);
-      LC_LCD_PhysCursorSet(lay_mtc.x + 12*lay_mtc.d, lay_mtc.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_mtc[9] & 0x3f) ^ 0x20) + 0x20);
+      if( lay_mtc.font )
+	MIOS32_LCD_FontInit(lay_mtc.font);
+
+      int i;
+      for(i=0; mtc[i] != 0; ++i) {
+	MIOS32_LCD_GCursorSet(lay_mtc.x + i*lay_mtc.d, lay_mtc.y*8);
+	MIOS32_LCD_PrintChar(mtc[i]);
+      }
+    } else {
+      int i;
+      for(i=0; mtc[i] != 0; ++i) {
+	BUFLCD_CursorSet(lay_mtc.x + i*lay_mtc.d, lay_mtc.y);
+	BUFLCD_PrintChar(mtc[i]);
+      }
     }
   }
 
@@ -700,14 +699,23 @@ s32 LC_LCD_Update(u8 force)
     lay_status.update_req = 0;
     
     if( MIOS32_LCD_TypeIsGLCD() ) {
+      // GLCD: BUFLCD not used here, only the host message is buffered
+
       if( lay_status.font )
 	MIOS32_LCD_FontInit(lay_status.font);
-    }
 
-    // print digits
-    for(i=0; i<2; ++i) {
-      LC_LCD_PhysCursorSet(lay_status.x + i*lay_status.d, lay_status.y);
-      MIOS32_LCD_PrintChar(((lc_leddigits_status[i] & 0x3f) ^ 0x20) + 0x20);
+      // print digits
+      for(i=0; i<2; ++i) {
+	MIOS32_LCD_GCursorSet(lay_status.x + i*lay_status.d, lay_status.y*8);
+	MIOS32_LCD_PrintChar(((lc_leddigits_status[i] & 0x3f) ^ 0x20) + 0x20);
+      }
+    } else {
+
+      // print digits
+      for(i=0; i<2; ++i) {
+	BUFLCD_CursorSet(lay_status.x + i*lay_status.d, lay_status.y);
+	BUFLCD_PrintChar(((lc_leddigits_status[i] & 0x3f) ^ 0x20) + 0x20);
+      }
     }
   }
 
@@ -747,45 +755,39 @@ s32 LC_LCD_Update(u8 force)
 
 	if( MIOS32_LCD_TypeIsGLCD() ) {
 	  // set cursor depending on layout constraints
-	  LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
+	  MIOS32_LCD_GCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y*8);
 	  // print icon (if bit 7 is set: overrun, add 14)
 	  MIOS32_LCD_PrintChar((level & 0x0f) + ((level & 0x80) ? 14 : 0));
 	} else {
 	  // set cursor depending on layout constraints
-	  LC_LCD_PhysCursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
+	  BUFLCD_CursorSet(lay_knobs.x + knob * lay_knobs.d, lay_knobs.y);
 
 	  // print string
 	  int map_offset = 5 * (level & 0x7f);
 	  for(i=0; i<5; ++i)
-	    MIOS32_LCD_PrintChar(hmeter_map[map_offset + i]);
+	    BUFLCD_PrintChar(hmeter_map[map_offset + i]);
 
 	  // print overrun flag if bit 7 of level is set, else space
-	  MIOS32_LCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
+	  BUFLCD_PrintChar(level & (1 << 7) ? 0x04 : ' ');
 	}
       }
     }
   }
 
+  // output buffer
+  // if GLCD: only host message is buffered
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    BUFLCD_OffsetXSet(lay_host_msg.x);
+    BUFLCD_OffsetYSet(lay_host_msg.y);
 
+    if( lay_host_msg.font )
+      MIOS32_LCD_FontInit(lay_host_msg.font);
+  }
+  BUFLCD_Update(force);
 
   return 0; // no error
 }
 
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This functions sets the cursor with x/y coordinate to the physical
-// position (x, y, first or second display)
-/////////////////////////////////////////////////////////////////////////////
-s32 LC_LCD_PhysCursorSet(u8 cursor_pos_x, u8 cursor_pos_y)
-{
-  if( MIOS32_LCD_TypeIsGLCD() ) {
-    return MIOS32_LCD_GCursorSet(cursor_pos_x, cursor_pos_y*8);
-  } else {
-    MIOS32_LCD_DeviceSet((cursor_pos_y >= 2) ? 1 : 0);
-    return MIOS32_LCD_CursorSet(cursor_pos_x, cursor_pos_y % 2);
-  }
-}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -827,7 +829,8 @@ s32 LC_LCD_Msg_PrintHost(char c)
     return -1; // invalid pos
 
   msg_host[msg_cursor] = c;    // save character
-  ++msg_cursor;                // increment message cursor
+  if( ++msg_cursor == 56 )     // increment message cursor
+    msg_cursor = 0x40;         // -> second line
   lay_host_msg.update_req = 1; // request update
 
   return 0; // no error

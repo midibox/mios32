@@ -42,7 +42,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u8 num_columns;
   u8 initial_page_clcd;
   u8 initial_page_glcd;
 } lc_hwcfg_display_cfg_t;

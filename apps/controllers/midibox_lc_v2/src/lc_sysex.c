@@ -361,7 +361,7 @@ s32 LC_SYSEX_Cmd_WriteLCD(u8 cmd_state, u8 midi_in)
       if( !sysex_state.CURSOR_POS_RECEIVED ) {
 	// set cursor
 	sysex_state.CURSOR_POS_RECEIVED = 1;
-	LC_LCD_Msg_CursorSet(midi_in < 56 ? midi_in : (midi_in - 56 + 0x40));
+	LC_LCD_Msg_CursorSet((midi_in < 56) ? midi_in : (midi_in - 56 + 0x40));
       } else {
 	// print character
 	LC_LCD_Msg_PrintHost(midi_in);

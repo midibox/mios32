@@ -49,7 +49,6 @@ extern s32 LC_LCD_Update(u8 force);
 
 extern u8 LC_LCD_DisplayPageGet(void);
 extern s32 LC_LCD_DisplayPageSet(u8 page);
-extern s32 LC_LCD_PhysCursorSet(u8 cursor_pos_x, u8 cursor_pos_y);
 
 extern s32 LC_LCD_Msg_CursorSet(u8 cursor_pos);
 extern u8 LC_LCD_Msg_CursorGet(void);
