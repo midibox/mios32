@@ -43,7 +43,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
     addAndMakeVisible(queryButton = new TextButton(T("Query Button")));
     queryButton->setButtonText(T("Query"));
-    queryButton->addButtonListener(this);
+    queryButton->addListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID")));
     deviceIdLabel->setJustificationType(Justification::centred);
@@ -63,12 +63,12 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
 
     addAndMakeVisible(startButton = new TextButton(T("Start Button")));
     startButton->setButtonText(T("Start"));
-    startButton->addButtonListener(this);
+    startButton->addListener(this);
     startButton->setEnabled(false);
 
     addAndMakeVisible(stopButton = new TextButton(T("Stop Button")));
     stopButton->setButtonText(T("Stop"));
-    stopButton->addButtonListener(this);
+    stopButton->addListener(this);
     stopButton->setEnabled(false);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));

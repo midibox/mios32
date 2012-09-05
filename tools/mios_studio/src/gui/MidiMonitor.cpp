@@ -86,11 +86,13 @@ void MidiMonitor::scanMidiDevices()
     midiPortSelector->setSelectedId(current, true);
     midiPortSelector->setEnabled(true);
 
-    if( current == -1 )
-        if( inPort )
+    if( current == -1 ) {
+        if( inPort ) {
             miosStudio->setMidiInput(String::empty);
-        else
+        } else {
             miosStudio->setMidiOutput(String::empty);
+        }
+    }
 
     monitorLogBox->addEntry(Colours::grey, T("MIDI Monitor ready."));
 }

@@ -100,7 +100,7 @@ ConfigTableToggleButton::ConfigTableToggleButton(ConfigTableController& _owner)
     : owner(_owner)
 {
     addAndMakeVisible(toggleButton = new ToggleButton(String::empty));
-    toggleButton->addButtonListener(this);
+    toggleButton->addListener(this);
 }
 
 ConfigTableToggleButton::~ConfigTableToggleButton()
@@ -123,4 +123,38 @@ void ConfigTableToggleButton::setRowAndColumn(const int newRow, const int newCol
 void ConfigTableToggleButton::buttonClicked(Button *button)
 {
     owner.setTableValue(row, columnId, button->getToggleState());
+}
+
+
+//==============================================================================
+//==============================================================================
+//==============================================================================
+ConfigTableLabel::ConfigTableLabel(ConfigTableController& _owner)
+    : owner(_owner)
+{
+    addAndMakeVisible(label = new Label(String::empty));
+    label->setEditable(true);
+    label->addListener(this);
+}
+
+ConfigTableLabel::~ConfigTableLabel()
+{
+    deleteAllChildren();
+}
+
+void ConfigTableLabel::resized()
+{
+    label->setBoundsInset(BorderSize(2));
+}
+
+void ConfigTableLabel::setRowAndColumn(const int newRow, const int newColumn)
+{
+    row = newRow;
+    columnId = newColumn;
+    label->setText(owner.getTableString(row, columnId), false);
+}
+
+void ConfigTableLabel::labelTextChanged(Label *labelThatHasBeenChanged)
+{
+    owner.setTableString(row, columnId, label->getText());
 }

@@ -29,6 +29,8 @@ public:
     //==============================================================================
     virtual int getTableValue(const int rowNumber, const int columnId) = 0;
     virtual void setTableValue(const int rowNumber, const int columnId, const int newValue) = 0;
+    virtual String getTableString(const int rowNumber, const int columnId) = 0;
+    virtual void setTableString(const int rowNumber, const int columnId, const String newString) = 0;
 };
 
 
@@ -105,6 +107,31 @@ public:
 private:
     ConfigTableController& owner;
     ToggleButton* toggleButton;
+    int row, columnId;
+};
+
+
+//==============================================================================
+//==============================================================================
+//==============================================================================
+class ConfigTableLabel
+    : public Component
+    , public LabelListener
+{
+public:
+    ConfigTableLabel(ConfigTableController& _owner);
+    ~ConfigTableLabel();
+
+    void resized();
+
+    void setRowAndColumn(const int newRow, const int newColumn);
+
+    //==============================================================================
+    void labelTextChanged(Label *labelThatHasBeenChanged);
+
+private:
+    Label* label;
+    ConfigTableController& owner;
     int row, columnId;
 };
 

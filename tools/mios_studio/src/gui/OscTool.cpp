@@ -63,12 +63,12 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
 
     addAndMakeVisible(connectButton = new TextButton(T("Connect Button")));
     connectButton->setButtonText(T("Connect"));
-    connectButton->addButtonListener(this);
+    connectButton->addListener(this);
 
     addAndMakeVisible(disconnectButton = new TextButton(T("Disconnect Button")));
     disconnectButton->setButtonText(T("Disconnect"));
     disconnectButton->setEnabled(false);
-    disconnectButton->addButtonListener(this);
+    disconnectButton->addListener(this);
 
     // restore settings
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
@@ -184,11 +184,11 @@ OscToolSend::OscToolSend(MiosStudio *_miosStudio, OscToolConnect *_oscToolConnec
 {
     addAndMakeVisible(sendStartButton = new TextButton(T("Send Button")));
     sendStartButton->setButtonText(T("Send"));
-    sendStartButton->addButtonListener(this);
+    sendStartButton->addListener(this);
 
     addAndMakeVisible(sendClearButton = new TextButton(T("Clear Button")));
     sendClearButton->setButtonText(T("Clear"));
-    sendClearButton->addButtonListener(this);
+    sendClearButton->addListener(this);
 
     addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
     statusLabel->setJustificationType(Justification::right);

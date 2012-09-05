@@ -711,10 +711,10 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     , checksumError(false)
 {
     addAndMakeVisible(loadButton = new TextButton(T("Load")));
-    loadButton->addButtonListener(this);
+    loadButton->addListener(this);
 
     addAndMakeVisible(saveButton = new TextButton(T("Save")));
-    saveButton->addButtonListener(this);
+    saveButton->addListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
     deviceIdLabel->setJustificationType(Justification::right);
@@ -726,10 +726,10 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     deviceIdSlider->setDoubleClickReturnValue(true, 0);
 
     addAndMakeVisible(receiveButton = new TextButton(T("Receive")));
-    receiveButton->addButtonListener(this);
+    receiveButton->addListener(this);
 
     addAndMakeVisible(sendButton = new TextButton(T("Send")));
-    sendButton->addButtonListener(this);
+    sendButton->addListener(this);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
@@ -811,6 +811,7 @@ void Midio128ToolControl::buttonClicked(Button* buttonThatWasClicked)
         receiveButton->setEnabled(false);
         syxBlock = 0;
         progress = 0;
+        checksumError = false;
         if( buttonThatWasClicked == receiveButton ) {
             receiveDump = true;
             currentSyxDump.clear();

@@ -27,6 +27,8 @@
 #include "Midio128Tool.h"
 #include "MbCvTool.h"
 #include "MbhpMfTool.h"
+#include "SysexLibrarian.h"
+#include "../SysexPatchDb.h"
 #include "../UploadHandler.h"
 
 class MiosStudio
@@ -44,6 +46,7 @@ public:
         showMidio128Tool           = 0x2002,
         showMbCvTool               = 0x2003,
         showMbhpMfTool             = 0x2004,
+        showSysexLibrarian         = 0x2005,
         showMiosStudioPage         = 0x3000,
         showTroubleshootingPage    = 0x3001,
     };
@@ -92,7 +95,12 @@ public:
     Midio128ToolWindow *midio128ToolWindow;
     MbCvToolWindow *mbCvToolWindow;
     MbhpMfToolWindow *mbhpMfToolWindow;
+    SysexLibrarianWindow *sysexLibrarianWindow;
 
+    //==============================================================================
+    SysexPatchDb *sysexPatchDb;
+
+    //==============================================================================
 	// This is needed by MSVC in debug mode (please #ifdef if it causes Mac problems)
     juce_UseDebuggingNewOperator
 protected:

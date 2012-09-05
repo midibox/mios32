@@ -570,31 +570,31 @@ MbhpMfToolCalibration::MbhpMfToolCalibration(MbhpMfTool* _mbhpMfTool)
     directMoveSlider->addListener(this);
 
     addAndMakeVisible(upperButton = new TextButton(T("Upper")));
-    upperButton->addButtonListener(this);
+    upperButton->addListener(this);
 
     addAndMakeVisible(middleButton = new TextButton(T("Middle")));
-    middleButton->addButtonListener(this);
+    middleButton->addListener(this);
 
     addAndMakeVisible(lowerButton = new TextButton(T("Lower")));
-    lowerButton->addButtonListener(this);
+    lowerButton->addListener(this);
 
     addAndMakeVisible(slashButton = new TextButton(T("Slash")));
-    slashButton->addButtonListener(this);
+    slashButton->addListener(this);
 
     addAndMakeVisible(backslashButton = new TextButton(T("Backslash")));
-    backslashButton->addButtonListener(this);
+    backslashButton->addListener(this);
 
     addAndMakeVisible(slowUpperButton = new TextButton(T("Slow Upper")));
-    slowUpperButton->addButtonListener(this);
+    slowUpperButton->addListener(this);
 
     addAndMakeVisible(slowMiddleButton = new TextButton(T("Slow Middle")));
-    slowMiddleButton->addButtonListener(this);
+    slowMiddleButton->addListener(this);
 
     addAndMakeVisible(slowLowerButton = new TextButton(T("Slow Lower")));
-    slowLowerButton->addButtonListener(this);
+    slowLowerButton->addListener(this);
 
     addAndMakeVisible(slowSineButton = new TextButton(T("Slow Sine")));
-    slowSineButton->addButtonListener(this);
+    slowSineButton->addListener(this);
 
     addAndMakeVisible(delayLabel = new Label(String::empty, T("Slow Delay:")));
     delayLabel->setJustificationType(Justification::left);
@@ -957,10 +957,10 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
     , dumpSent(false)
 {
     addAndMakeVisible(loadButton = new TextButton(T("Load")));
-    loadButton->addButtonListener(this);
+    loadButton->addListener(this);
 
     addAndMakeVisible(saveButton = new TextButton(T("Save")));
-    saveButton->addButtonListener(this);
+    saveButton->addListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
     deviceIdLabel->setJustificationType(Justification::right);
@@ -983,10 +983,10 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
     patchSlider->setVisible(false); // no patches provided by MBHP_MF
 
     addAndMakeVisible(receiveButton = new TextButton(T("Receive")));
-    receiveButton->addButtonListener(this);
+    receiveButton->addListener(this);
 
     addAndMakeVisible(sendButton = new TextButton(T("Send")));
-    sendButton->addButtonListener(this);
+    sendButton->addListener(this);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
@@ -1079,6 +1079,7 @@ void MbhpMfToolControl::buttonClicked(Button* buttonThatWasClicked)
         sendButton->setEnabled(false);
         receiveButton->setEnabled(false);
         progress = 0;
+        checksumError = false;
         if( buttonThatWasClicked == receiveButton ) {
             dumpRequested = false;
             receiveDump = true;

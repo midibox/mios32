@@ -469,10 +469,10 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     , dumpSent(false)
 {
     addAndMakeVisible(loadButton = new TextButton(T("Load")));
-    loadButton->addButtonListener(this);
+    loadButton->addListener(this);
 
     addAndMakeVisible(saveButton = new TextButton(T("Save")));
-    saveButton->addButtonListener(this);
+    saveButton->addListener(this);
 
     addAndMakeVisible(deviceIdLabel = new Label(T("Device ID"), T("Device ID:")));
     deviceIdLabel->setJustificationType(Justification::right);
@@ -493,10 +493,10 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     patchSlider->setDoubleClickReturnValue(true, 0);
 
     addAndMakeVisible(receiveButton = new TextButton(T("Receive")));
-    receiveButton->addButtonListener(this);
+    receiveButton->addListener(this);
 
     addAndMakeVisible(sendButton = new TextButton(T("Send")));
-    sendButton->addButtonListener(this);
+    sendButton->addListener(this);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
@@ -581,6 +581,7 @@ void MbCvToolControl::buttonClicked(Button* buttonThatWasClicked)
         sendButton->setEnabled(false);
         receiveButton->setEnabled(false);
         progress = 0;
+        checksumError = false;
         if( buttonThatWasClicked == receiveButton ) {
             dumpRequested = false;
             receiveDump = true;

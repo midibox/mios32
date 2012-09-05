@@ -342,7 +342,7 @@ bool SysexHelper::isValidMidio128Acknowledge(const uint8 *data, const uint32 &si
 Array<uint8> SysexHelper::createMidio128Ping(const uint8 &deviceId)
 {
     Array<uint8> dataArray = createMidio128Header();
-    uint8 checksum = 0x00;
+    //uint8 checksum = 0x00;
 
     uint8 cmd = 0x0f | ((deviceId << 4) & 0x70);
     dataArray.add(cmd);
@@ -426,7 +426,7 @@ bool SysexHelper::isValidMbCvAcknowledge(const uint8 *data, const uint32 &size, 
 Array<uint8> SysexHelper::createMbCvPing(const uint8 &deviceId)
 {
     Array<uint8> dataArray = createMbCvHeader(deviceId);
-    uint8 checksum = 0x00;
+    //uint8 checksum = 0x00;
 
     dataArray.add(0x0f);
     dataArray.add(0xf7);
@@ -609,7 +609,7 @@ bool SysexHelper::isValidMbhpMfAcknowledge(const uint8 *data, const uint32 &size
 Array<uint8> SysexHelper::createMbhpMfPing(const uint8 &deviceId)
 {
     Array<uint8> dataArray = createMbhpMfHeader(deviceId);
-    uint8 checksum = 0x00;
+    //uint8 checksum = 0x00;
 
     dataArray.add(0x0f);
     dataArray.add(0xf7);

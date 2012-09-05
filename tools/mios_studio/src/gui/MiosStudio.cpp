@@ -24,6 +24,7 @@ MiosStudio::MiosStudio()
     , initialMidiScanCounter(1) // start step-wise MIDI port scan
 {
     uploadHandler = new UploadHandler(this);
+    sysexPatchDb = new SysexPatchDb();
 
     addAndMakeVisible(uploadWindow = new UploadWindow(this));
     addAndMakeVisible(midiInMonitor = new MidiMonitor(this, true));
@@ -37,6 +38,7 @@ MiosStudio::MiosStudio()
     midio128ToolWindow = 0;
     mbCvToolWindow = 0;
     mbhpMfToolWindow = 0;
+    sysexLibrarianWindow = 0;
 
     commandManager = new ApplicationCommandManager();
     commandManager->registerAllCommandsForTarget(this);
@@ -100,6 +102,8 @@ MiosStudio::~MiosStudio()
         deleteAndZero(mbCvToolWindow);
     if( mbhpMfToolWindow )
         deleteAndZero(mbhpMfToolWindow);
+    if( sysexLibrarianWindow )
+        deleteAndZero(sysexLibrarianWindow);
 
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
     closeMidiPorts();
@@ -273,6 +277,8 @@ void MiosStudio::timerCallback()
                         mbCvToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     if( mbhpMfToolWindow )
                         mbhpMfToolWindow->handleIncomingMidiMessage(message, runningStatus);
+                    if( sysexLibrarianWindow )
+                        sysexLibrarianWindow->handleIncomingMidiMessage(message, runningStatus);
                     miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                     midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
                 }
@@ -364,6 +370,7 @@ const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String&
     } else if( topLevelMenuIndex == 1 ) {
         // "Tools" menu
         menu.addCommandItem(commandManager, showSysexTool);
+        menu.addCommandItem(commandManager, showSysexLibrarian);
         menu.addCommandItem(commandManager, showOscTool);
         menu.addCommandItem(commandManager, showMidio128Tool);
         menu.addCommandItem(commandManager, showMbCvTool);
@@ -402,6 +409,7 @@ void MiosStudio::getAllCommands(Array <CommandID>& commands)
                               showMidio128Tool,
                               showMbCvTool,
                               showMbhpMfTool,
+                              showSysexLibrarian,
                               rescanDevices,
                               showMiosStudioPage,
                               showTroubleshootingPage
@@ -452,6 +460,12 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
         result.setInfo(T("MBHP_MF_NG Tool"), T("Allows to configure the MBHP_MF_NG firmware"), toolsCategory, 0);
         result.setTicked(mbhpMfToolWindow && mbhpMfToolWindow->isVisible());
         result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case showSysexLibrarian:
+        result.setInfo(T("SysEx Librarian"), T("Allows to manage SysEx files"), toolsCategory, 0);
+        result.setTicked(sysexLibrarianWindow && sysexLibrarianWindow->isVisible());
+        result.addDefaultKeypress(T('2'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMiosStudioPage:
@@ -508,6 +522,13 @@ bool MiosStudio::perform(const InvocationInfo& info)
             mbhpMfToolWindow = new MbhpMfToolWindow(this);
         mbhpMfToolWindow->setVisible(true);
         mbhpMfToolWindow->toFront(true);
+        break;
+
+    case showSysexLibrarian:
+        if( !sysexLibrarianWindow )
+            sysexLibrarianWindow = new SysexLibrarianWindow(this);
+        sysexLibrarianWindow->setVisible(true);
+        sysexLibrarianWindow->toFront(true);
         break;
 
     case showMiosStudioPage: {
