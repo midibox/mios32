@@ -1,66 +1,50 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIDIbox CV Tool Window
+ * SysEx Librarian Window
  *
  * ==========================================================================
  *
- *  Copyright (C) 2010 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _MB_CV_TOOL_H
-#define _MB_CV_TOOL_H
+#ifndef _SYSEX_LIBRARIAN_H
+#define _SYSEX_LIBRARIAN_H
 
 #include "../includes.h"
-#include "../SysexHelper.h"
 #include "ConfigTableComponents.h"
 
 class MiosStudio; // forward declaration
-
-class MbCvToolConfigGlobals
-    : public Component
-{
-public:
-    //==============================================================================
-    MbCvToolConfigGlobals();
-    ~MbCvToolConfigGlobals();
-
-    //==============================================================================
-    void resized();
-
-    //==============================================================================
-    void getDump(Array<uint8> &syxDump);
-    void setDump(const Array<uint8> &syxDump);
-
-protected:
-    //==============================================================================
-    Label* mergerLabel;
-    ComboBox* mergerComboBox;
-    Label* clockDividerLabel;
-    ComboBox* clockDividerComboBox;
-    Label* nameLabel;
-    TextEditor* nameEditor;
-};
+class SysexLibrarian;
+class SysexPatchDb;
 
 
 //==============================================================================
 //==============================================================================
 //==============================================================================
-class MbCvToolConfigChannels
+class SysexLibrarianBank
     : public Component
     , public TableListBoxModel
     , public ConfigTableController
 {
 public:
     //==============================================================================
-    MbCvToolConfigChannels();
-    ~MbCvToolConfigChannels();
+    SysexLibrarianBank(MiosStudio *_miosStudio);
+    ~SysexLibrarianBank();
 
     int getNumRows();
+    void setNumRows(const int& rows);
+
+    void initBank(const unsigned& patchSpec);
+
+    unsigned getSelectedPatch(void);
+    bool isSelectedPatch(const unsigned& patch);
+    void selectPatch(const unsigned& patch);
+
     void paintRowBackground(Graphics &g, int rowNumber, int width, int height, bool rowIsSelected);
     void paintCell(Graphics &g, int rowNumber, int columnId, int width, int height, bool rowIsSelected);
     Component* refreshComponentForCell(int rowNumber, int columnId, bool isRowSelected, Component* existingComponentToUpdate);
@@ -70,56 +54,24 @@ public:
     //==============================================================================
     int getTableValue(const int rowNumber, const int columnId);
     void setTableValue(const int rowNumber, const int columnId, const int newValue);
-    String getTableString(const int rowNumber, const int columnId) { return String(T("???")); };
-    void setTableString(const int rowNumber, const int columnId, const String newString) { };
+    String getTableString(const int rowNumber, const int columnId);
+    void setTableString(const int rowNumber, const int columnId, const String newString);
 
     //==============================================================================
-    void getDump(Array<uint8> &syxDump);
-    void setDump(const Array<uint8> &syxDump);
+    Array<uint8>* getPatch(const uint8& patch);
+    void setPatch(const uint8& patch, const Array<uint8> &payload);
 
 protected:
     //==============================================================================
     TableListBox* table;
+
+    unsigned patchSpec;
+    StringArray patchName;
+    OwnedArray<Array<uint8> > patchStorage;
+
     Font font;
 
-    Array<uint8> cvChannel;
-    Array<uint8> cvEvent;
-    Array<uint8> cvLegato;
-    Array<uint8> cvPoly;
-    Array<uint8> cvGateInverted;
-    Array<uint8> cvPitchrange;
-    Array<uint8> cvSplitLower;
-    Array<uint8> cvSplitUpper;
-    Array<int> cvTransposeOctave;
-    Array<int> cvTransposeSemitones;
-    Array<uint8> cvCcNumber;
-    Array<uint8> cvCurve;
-    Array<uint8> cvSlewRate;
-
     int numRows;
-};
-
-
-
-//==============================================================================
-//==============================================================================
-//==============================================================================
-class MbCvToolConfig
-    : public TabbedComponent
-{
-public:
-    //==============================================================================
-    MbCvToolConfig(MiosStudio *_miosStudio);
-    ~MbCvToolConfig();
-
-    //==============================================================================
-    void getDump(Array<uint8> &syxDump);
-    void setDump(const Array<uint8> &syxDump);
-
-protected:
-    //==============================================================================
-    MbCvToolConfigGlobals* configGlobals;
-    MbCvToolConfigChannels* configChannels;
 
     //==============================================================================
     MiosStudio *miosStudio;
@@ -129,16 +81,17 @@ protected:
 //==============================================================================
 //==============================================================================
 //==============================================================================
-class MbCvToolControl
+class SysexLibrarianControl
     : public Component
     , public ButtonListener
     , public SliderListener
+    , public ComboBoxListener
     , public Timer
 {
 public:
     //==============================================================================
-    MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvToolConfig);
-    ~MbCvToolControl();
+    SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibrarian *_sysexLibrarian);
+    ~SysexLibrarianControl();
 
     //==============================================================================
     void paint(Graphics& g);
@@ -147,46 +100,64 @@ public:
     //==============================================================================
     void buttonClicked (Button* buttonThatWasClicked);
     void sliderValueChanged(Slider* slider);
+    void comboBoxChanged(ComboBox*);
 
     //==============================================================================
+    void stopTransfer(void);
     void timerCallback();
 
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
-
     //==============================================================================
-    bool loadSyx(File &syxFile);
-    bool saveSyx(File &syxFile);
-
-    //==============================================================================
-    void getDump(Array<uint8> &syxDump);
-    void setDump(const Array<uint8> &syxDump);
+    bool loadSyx(File &syxFile, const bool& loadBank);
+    bool saveSyx(File &syxFile, const bool& saveBank);
 
 protected:
     //==============================================================================
-    Button* loadButton;
-    Button* saveButton;
-    Button* sendButton;
-    Button* receiveButton;
+    Label*      deviceTypeLabel;
+    ComboBox*   deviceTypeSelector;
+
     Label*      deviceIdLabel;
     Slider*     deviceIdSlider;
-    Label*      patchLabel;
-    Slider*     patchSlider;
+
+    Label*      bankSelectLabel;
+    Slider*     bankSelectSlider;
+
+    Button* loadBankButton;
+    Button* saveBankButton;
+    Button* sendBankButton;
+    Button* receiveBankButton;
+
+    Button* loadPatchButton;
+    Button* savePatchButton;
+    Button* sendPatchButton;
+    Button* receivePatchButton;
+
+    Label*      bufferLabel;
+    Slider*     bufferSlider;
+
+    Button* sendBufferButton;
+    Button* receiveBufferButton;
+
+    Button* stopButton;
     ProgressBar* progressBar;
 
     //==============================================================================
+    SysexLibrarian *sysexLibrarian;
+
+    //==============================================================================
     File syxFile;
+    int currentPatch;
+    bool handleSinglePatch;
+    bool bufferTransfer;
     bool receiveDump;
-    bool dumpRequested;
     bool dumpReceived;
     bool checksumError;
-    bool dumpSent;
-    Array<uint8> currentSyxDump;
+    bool errorResponse;
 
     //==============================================================================
     MiosStudio *miosStudio;
-    MbCvToolConfig *mbCvToolConfig;
 
     //==============================================================================
     double progress;
@@ -196,20 +167,20 @@ protected:
 //==============================================================================
 //==============================================================================
 //==============================================================================
-class MbCvTool
+class SysexLibrarian
     : public Component
 {
 public:
     //==============================================================================
-    MbCvTool(MiosStudio *_miosStudio);
-    ~MbCvTool();
+    SysexLibrarian(MiosStudio *_miosStudio);
+    ~SysexLibrarian();
 
     //==============================================================================
     void paint(Graphics& g);
     void resized();
 
-    MbCvToolControl* mbCvToolControl;
-    MbCvToolConfig* mbCvToolConfig;
+    SysexLibrarianControl* sysexLibrarianControl;
+    SysexLibrarianBank* sysexLibrarianBank;
 
 protected:
     //==============================================================================
@@ -224,32 +195,32 @@ protected:
 //==============================================================================
 //==============================================================================
 //==============================================================================
-class MbCvToolWindow
+class SysexLibrarianWindow
     : public DocumentWindow
 {
 public:
-    MbCvToolWindow(MiosStudio *_miosStudio)
-        : DocumentWindow(T("MIDIbox CV V1 Tool"), Colours::lightgrey, DocumentWindow::allButtons, true)
+    SysexLibrarianWindow(MiosStudio *_miosStudio)
+        : DocumentWindow(T("SysEx Librarian"), Colours::lightgrey, DocumentWindow::allButtons, true)
     {
-        mbCvTool = new MbCvTool(_miosStudio);
-        setContentComponent(mbCvTool, true, true);
+        sysexLibrarian = new SysexLibrarian(_miosStudio);
+        setContentComponent(sysexLibrarian, true, true);
         setUsingNativeTitleBar(true);
         centreWithSize(getWidth(), getHeight());
         setVisible(false); // will be made visible by clicking on the tools button
     }
 
-    ~MbCvToolWindow()
+    ~SysexLibrarianWindow()
     {
         // (the content component will be deleted automatically, so no need to do it here)
     }
 
-    MbCvTool *mbCvTool;
+    SysexLibrarian *sysexLibrarian;
 
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
     {
         if( isVisible() )
-            mbCvTool->mbCvToolControl->handleIncomingMidiMessage(message, runningStatus);
+            sysexLibrarian->sysexLibrarianControl->handleIncomingMidiMessage(message, runningStatus);
     }
 
     void closeButtonPressed()
@@ -259,4 +230,4 @@ public:
 
 };
 
-#endif /* _MB_CV_TOOL_H */
+#endif /* _SYSEX_LIBRARIAN_H */

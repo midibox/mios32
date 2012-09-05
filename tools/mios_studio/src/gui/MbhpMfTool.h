@@ -88,6 +88,8 @@ public:
     //==============================================================================
     int getTableValue(const int rowNumber, const int columnId);
     void setTableValue(const int rowNumber, const int columnId, const int newValue);
+    String getTableString(const int rowNumber, const int columnId) { return String(T("???")); };
+    void setTableString(const int rowNumber, const int columnId, const String newString) { };
 
     //==============================================================================
     Array<uint8> mfMode;

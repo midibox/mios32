@@ -161,9 +161,9 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
         hexDumpAddressBlocks.push_back(blockAddress);
 
         if( checkMios8Ranges &&
-            (blockAddress >= HEX_RANGE_MIOS8_FLASH_START && blockAddress <= HEX_RANGE_MIOS8_FLASH_END) ||
-            (blockAddress >= HEX_RANGE_MIOS8_EEPROM_START && blockAddress <= HEX_RANGE_MIOS8_EEPROM_END) ||
-            (blockAddress >= HEX_RANGE_MIOS8_BANKSTICK_START && blockAddress <= HEX_RANGE_MIOS8_BANKSTICK_END) ) {
+            ((blockAddress >= HEX_RANGE_MIOS8_FLASH_START && blockAddress <= HEX_RANGE_MIOS8_FLASH_END) ||
+             (blockAddress >= HEX_RANGE_MIOS8_EEPROM_START && blockAddress <= HEX_RANGE_MIOS8_EEPROM_END) ||
+             (blockAddress >= HEX_RANGE_MIOS8_BANKSTICK_START && blockAddress <= HEX_RANGE_MIOS8_BANKSTICK_END)) ) {
             qualifiedForMios8 = true;
             disqualifiedForMios32_STM32 = true;
             disqualifiedForMios32_LPC17 = true;

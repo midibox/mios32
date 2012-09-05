@@ -39,16 +39,16 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
 
     addAndMakeVisible(sendStartButton = new TextButton(T("Send Button")));
     sendStartButton->setButtonText(T("Send"));
-    sendStartButton->addButtonListener(this);
+    sendStartButton->addListener(this);
 
     addAndMakeVisible(sendStopButton = new TextButton(T("Stop Button")));
     sendStopButton->setButtonText(T("Stop"));
     sendStopButton->setEnabled(false);
-    sendStopButton->addButtonListener(this);
+    sendStopButton->addListener(this);
 
     addAndMakeVisible(sendClearButton = new TextButton(T("Clear Button")));
     sendClearButton->setButtonText(T("Clear"));
-    sendClearButton->addButtonListener(this);
+    sendClearButton->addListener(this);
 
     addAndMakeVisible(sendDelayLabel = new Label(T("Send Delay"), T("Send Delay:")));
     sendDelayLabel->setJustificationType(Justification::centred);
@@ -258,16 +258,16 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     addAndMakeVisible(receiveStartButton = new TextButton(T("Receive Button")));
     receiveStartButton->setButtonText(T("Receive"));
     receiveStartButton->setEnabled(true);
-    receiveStartButton->addButtonListener(this);
+    receiveStartButton->addListener(this);
 
     addAndMakeVisible(receiveStopButton = new TextButton(T("Stop Button")));
     receiveStopButton->setButtonText(T("Stop"));
     receiveStopButton->setEnabled(false);
-    receiveStopButton->addButtonListener(this);
+    receiveStopButton->addListener(this);
 
     addAndMakeVisible(receiveClearButton = new TextButton(T("Clear Button")));
     receiveClearButton->setButtonText(T("Clear"));
-    receiveClearButton->addButtonListener(this);
+    receiveClearButton->addListener(this);
 
     // restore settings
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);

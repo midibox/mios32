@@ -15,6 +15,7 @@
 		526D2C5A1135BEE8004A1521 /* Midio128Tool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D2C581135BEE8004A1521 /* Midio128Tool.cpp */; };
 		526D2D87113871BA004A1521 /* ConfigTableComponents.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D2D85113871BA004A1521 /* ConfigTableComponents.cpp */; };
 		526D317A1139CC9B004A1521 /* MbCvTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 526D31781139CC9B004A1521 /* MbCvTool.cpp */; };
+		5276439F15F526AF00EAC9C1 /* SysexLibrarian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5276439D15F526AF00EAC9C1 /* SysexLibrarian.cpp */; };
 		527D1040111F2CDD002A091B /* SysexHelper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 527D103E111F2CDD002A091B /* SysexHelper.cpp */; };
 		5287EE06113076F50001BFBD /* HexTextEditor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5287EE04113076F50001BFBD /* HexTextEditor.cpp */; };
 		5297D6EF12C0D49800112FC4 /* MbhpMfTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5297D6ED12C0D49800112FC4 /* MbhpMfTool.cpp */; };
@@ -30,6 +31,7 @@
 		52B71594111DF8B6000B8F5A /* MidiSlider.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52B71592111DF8B6000B8F5A /* MidiSlider.cpp */; };
 		52C01556117CF0AA00562B7C /* OscTool.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C01554117CF0AA00562B7C /* OscTool.cpp */; };
 		52C4601F111EF90D00F179A8 /* HexFileLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */; };
+		52C9637C15F68A00003E0CB8 /* SysexPatchDb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */; };
 		52E2183911404AE40030AD40 /* MIOS_Studio.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52E2183811404AE40030AD40 /* MIOS_Studio.icns */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
 		841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8411369F0D0480DE0054B790 /* OpenGL.framework */; };
@@ -65,6 +67,8 @@
 		526D2D86113871BA004A1521 /* ConfigTableComponents.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConfigTableComponents.h; path = ../../src/gui/ConfigTableComponents.h; sourceTree = SOURCE_ROOT; };
 		526D31781139CC9B004A1521 /* MbCvTool.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MbCvTool.cpp; path = ../../src/gui/MbCvTool.cpp; sourceTree = SOURCE_ROOT; };
 		526D31791139CC9B004A1521 /* MbCvTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MbCvTool.h; path = ../../src/gui/MbCvTool.h; sourceTree = SOURCE_ROOT; };
+		5276439D15F526AF00EAC9C1 /* SysexLibrarian.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexLibrarian.cpp; path = ../../src/gui/SysexLibrarian.cpp; sourceTree = "<group>"; };
+		5276439E15F526AF00EAC9C1 /* SysexLibrarian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexLibrarian.h; path = ../../src/gui/SysexLibrarian.h; sourceTree = "<group>"; };
 		527D103E111F2CDD002A091B /* SysexHelper.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexHelper.cpp; path = ../../src/SysexHelper.cpp; sourceTree = SOURCE_ROOT; };
 		527D103F111F2CDD002A091B /* SysexHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexHelper.h; path = ../../src/SysexHelper.h; sourceTree = SOURCE_ROOT; };
 		527DEE55113AD42600226EF2 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = version.h; path = ../../src/version.h; sourceTree = SOURCE_ROOT; };
@@ -96,6 +100,8 @@
 		52C01555117CF0AA00562B7C /* OscTool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscTool.h; path = ../../src/gui/OscTool.h; sourceTree = SOURCE_ROOT; };
 		52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = HexFileLoader.cpp; path = ../../src/HexFileLoader.cpp; sourceTree = SOURCE_ROOT; };
 		52C4601E111EF90D00F179A8 /* HexFileLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = HexFileLoader.h; path = ../../src/HexFileLoader.h; sourceTree = SOURCE_ROOT; };
+		52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexPatchDb.cpp; path = ../../src/SysexPatchDb.cpp; sourceTree = "<group>"; };
+		52C9637B15F68A00003E0CB8 /* SysexPatchDb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexPatchDb.h; path = ../../src/SysexPatchDb.h; sourceTree = "<group>"; };
 		52E2183811404AE40030AD40 /* MIOS_Studio.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = MIOS_Studio.icns; path = ../../icon/MIOS_Studio.icns; sourceTree = SOURCE_ROOT; };
 		8407902A09E6B5BD004E7BCD /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		8411369F0D0480DE0054B790 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
@@ -203,6 +209,10 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */,
+				52C9637B15F68A00003E0CB8 /* SysexPatchDb.h */,
+				5276439D15F526AF00EAC9C1 /* SysexLibrarian.cpp */,
+				5276439E15F526AF00EAC9C1 /* SysexLibrarian.h */,
 				5297D6ED12C0D49800112FC4 /* MbhpMfTool.cpp */,
 				5297D6EE12C0D49800112FC4 /* MbhpMfTool.h */,
 				5224B2FB117E4F9400CFB9D3 /* OscHelper.cpp */,
@@ -341,6 +351,8 @@
 				5224B2D4117E4A4800CFB9D3 /* OscTextEditor.cpp in Sources */,
 				5224B2FD117E4F9400CFB9D3 /* OscHelper.cpp in Sources */,
 				5297D6EF12C0D49800112FC4 /* MbhpMfTool.cpp in Sources */,
+				5276439F15F526AF00EAC9C1 /* SysexLibrarian.cpp in Sources */,
+				52C9637C15F68A00003E0CB8 /* SysexPatchDb.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

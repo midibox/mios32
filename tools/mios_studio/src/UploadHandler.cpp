@@ -306,7 +306,7 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
             if( out ) {
                 *out = String::empty;
                 for(int i=7; i<size; ++i)
-                    if( data[i] != 0xf7 && data[i] != '\n' || size < (i+1) )
+                    if( (data[i] != 0xf7 && data[i] != '\n') || size < (i+1) )
                         *out += String::formatted(T("%c"), data[i] & 0x7f);
             }
 
@@ -793,8 +793,8 @@ void UploadHandlerThread::run()
             if( uploadErrorCode >= 0 )
                 ++uploadHandler->recoveredErrorsCounter; // counter is only relevant if the procedure passes
 
-        } while( (forMios32 && mios32UploadRequest ||
-                  !forMios32 && mios8UploadRequest ||
+        } while( ((forMios32 && mios32UploadRequest) ||
+                  (!forMios32 && mios8UploadRequest) ||
                   uploadErrorCode >= 0) && ++retry < maxRetries );
 
         // got error acknowledge? (note: up to 16 retries on error acknowledge)
