@@ -535,7 +535,7 @@ void SysexLibrarianControl::setSpec(const unsigned& spec)
 {
     if( spec < miosStudio->sysexPatchDb->getNumSpecs() ) {
         sysexLibrarian->sysexLibrarianBank->initBank(spec);
-        sysexLibrarian->sysexLibrarianAssemblingBank->initBank(spec);
+        sysexLibrarian->sysexLibrarianAssemblyBank->initBank(spec);
         bankSelectSlider->setRange(1, miosStudio->sysexPatchDb->getNumBanks(spec), 1);
 
         String bufferName(miosStudio->sysexPatchDb->getBufferName(spec));
@@ -914,25 +914,25 @@ bool SysexLibrarianControl::saveSyx(File &syxFile, const bool& saveBank)
 SysexLibrarian::SysexLibrarian(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(sysexLibrarianAssemblingBank = new SysexLibrarianBank(miosStudio, String(T("Assembling Bank"))));
+    addAndMakeVisible(sysexLibrarianAssemblyBank = new SysexLibrarianBank(miosStudio, String(T("Assembly Bank"))));
     addAndMakeVisible(sysexLibrarianBank = new SysexLibrarianBank(miosStudio, String(T("Transaction Bank"))));
     addAndMakeVisible(sysexLibrarianControl = new SysexLibrarianControl(miosStudio, this));
 
     addAndMakeVisible(transferBankRButton = new TextButton(T("==>")));
     transferBankRButton->addListener(this);
-    transferBankRButton->setTooltip(T("Move all patches from Transaction to Assembling Bank"));
+    transferBankRButton->setTooltip(T("Move all patches from Transaction to Assembly Bank"));
 
     addAndMakeVisible(transferPatchRButton = new TextButton(T("-->")));
     transferPatchRButton->addListener(this);
-    transferPatchRButton->setTooltip(T("Move selected patches from Transaction to Assembling Bank"));
+    transferPatchRButton->setTooltip(T("Move selected patches from Transaction to Assembly Bank"));
 
     addAndMakeVisible(transferPatchLButton = new TextButton(T("<--")));
     transferPatchLButton->addListener(this);
-    transferPatchLButton->setTooltip(T("Move selected patches from Assembling to Transaction Bank"));
+    transferPatchLButton->setTooltip(T("Move selected patches from Assembly to Transaction Bank"));
 
     addAndMakeVisible(transferBankLButton = new TextButton(T("<==")));
     transferBankLButton->addListener(this);
-    transferBankLButton->setTooltip(T("Move all patches from Assembling to Transaction Bank"));
+    transferBankLButton->setTooltip(T("Move all patches from Assembly to Transaction Bank"));
 
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
@@ -942,7 +942,7 @@ SysexLibrarian::SysexLibrarian(MiosStudio *_miosStudio)
     // initial bank
     unsigned spec = 0;
     sysexLibrarianBank->initBank(spec);
-    sysexLibrarianAssemblingBank->initBank(spec);
+    sysexLibrarianAssemblyBank->initBank(spec);
     sysexLibrarianControl->setSpec(spec);
 }
 
@@ -961,7 +961,7 @@ void SysexLibrarian::resized()
 {
     sysexLibrarianControl->setBounds       (0, 0, 225, getHeight());
     sysexLibrarianBank->setBounds          (220, 0, 225, getHeight());
-    sysexLibrarianAssemblingBank->setBounds(500, 0, 225, getHeight());
+    sysexLibrarianAssemblyBank->setBounds(500, 0, 225, getHeight());
 
     unsigned buttonYOffset = (getHeight()-4*24)/2 - 4;
 
@@ -991,8 +991,8 @@ void SysexLibrarian::buttonClicked (Button* buttonThatWasClicked)
         (buttonThatWasClicked == transferBankLButton);
 
     if( transfer ) {
-        SysexLibrarianBank* srcBank = transferRight ? sysexLibrarianBank : sysexLibrarianAssemblingBank;
-        SysexLibrarianBank* dstBank = transferRight ? sysexLibrarianAssemblingBank : sysexLibrarianBank;
+        SysexLibrarianBank* srcBank = transferRight ? sysexLibrarianBank : sysexLibrarianAssemblyBank;
+        SysexLibrarianBank* dstBank = transferRight ? sysexLibrarianAssemblyBank : sysexLibrarianBank;
 
         if( transferBank )
             dstBank->initBank(srcBank->getPatchSpec());

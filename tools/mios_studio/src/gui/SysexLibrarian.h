@@ -196,7 +196,7 @@ public:
 
     SysexLibrarianControl* sysexLibrarianControl;
     SysexLibrarianBank* sysexLibrarianBank;
-    SysexLibrarianBank* sysexLibrarianAssemblingBank;
+    SysexLibrarianBank* sysexLibrarianAssemblyBank;
 
     //==============================================================================
     void buttonClicked (Button* buttonThatWasClicked);
