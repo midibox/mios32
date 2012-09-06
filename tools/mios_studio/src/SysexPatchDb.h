@@ -22,6 +22,10 @@
 #define SYSEX_PATCH_DB_TOKEN_BANK   0x82
 #define SYSEX_PATCH_DB_TOKEN_PATCH  0x83
 
+#define SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED    0
+#define SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT 1
+
+
 class SysexPatchDb
 {
 public:
@@ -37,6 +41,7 @@ public:
         unsigned numPatchesPerBank;
 
         unsigned patchSize;
+        unsigned checksumType;
 
         unsigned delayBetweenReads;
         unsigned delayBetweenWrites;
@@ -63,6 +68,9 @@ public:
         unsigned bankPos;
         unsigned patchPos;
 
+        unsigned bankBuffer;
+        unsigned patchBuffer;
+
         unsigned payloadBegin;
         unsigned payloadEnd;
 
@@ -73,6 +81,9 @@ public:
         unsigned namePosInPayload;
         unsigned nameLength;
         bool nameInNibbles;
+
+        unsigned numBuffers;
+        String bufferName;
     } PatchSpecT;
 
 
@@ -99,6 +110,12 @@ public:
 
     //! delay between writes (in mS)
     unsigned getDelayBetweenWrites(const unsigned& spec);
+
+    //! number of available buffers
+    unsigned getNumBuffers(const unsigned& spec);
+
+    //! name of the buffer (e.g. "SID" or "Instruments")
+    String getBufferName(const unsigned& spec);
 
     //! various check/create functions
     bool isValidHeader(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId);

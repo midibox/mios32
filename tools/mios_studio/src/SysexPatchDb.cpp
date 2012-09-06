@@ -57,16 +57,23 @@ SysexPatchDb::SysexPatchDb()
         ps.bankPos          = 8;
         ps.patchPos         = 9;
 
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
         ps.payloadBegin     = 10;
         ps.payloadEnd       = 10 + 2*512-1;
         ps.checksumBegin    = ps.payloadBegin;
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 10 + 2*512;
         ps.patchSize        = 10 + 2*512 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
 
         ps.namePosInPayload = 0; // 0x10 in whole dump
         ps.nameLength = 16;
         ps.nameInNibbles = true;
+
+        ps.numBuffers = 4;
+        ps.bufferName = String(T("SID"));
 
         patchSpec.add(ps);
     }
@@ -109,23 +116,30 @@ SysexPatchDb::SysexPatchDb()
         ps.bankPos          = 8;
         ps.patchPos         = 9;
 
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
         ps.payloadBegin     = 10;
         ps.payloadEnd       = 10 + 512-1;
         ps.checksumBegin    = ps.payloadBegin;
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 10 + 512;
         ps.patchSize        = 10 + 512 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
 
         ps.namePosInPayload = 0;
         ps.nameLength = 0; // none
         ps.nameInNibbles = true;
+
+        ps.numBuffers = 1;
+        ps.bufferName = String(T("Ensemble"));
 
         patchSpec.add(ps);
     }
 
     {
         PatchSpecT ps;
-        ps.specName       = String(T("MIDIbox FM V1 Patch"));
+        ps.specName       = String(T("MIDIbox FM V1 Voice"));
         ps.numBanks          = 8;
         ps.numPatchesPerBank = 128;
         ps.delayBetweenReads  = 1000;
@@ -160,16 +174,23 @@ SysexPatchDb::SysexPatchDb()
         ps.bankPos          = 8;
         ps.patchPos         = 9;
 
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
         ps.payloadBegin     = 10;
         ps.payloadEnd       = 10 + 256-1;
         ps.checksumBegin    = ps.payloadBegin;
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 10 + 256;
         ps.patchSize        = 10 + 256 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
 
         ps.namePosInPayload = 0; // 0x10 in whole dump
         ps.nameLength = 16;
         ps.nameInNibbles = false;
+
+        ps.numBuffers = 4;
+        ps.bufferName = String(T("Instrument"));
 
         patchSpec.add(ps);
     }
@@ -211,16 +232,23 @@ SysexPatchDb::SysexPatchDb()
         ps.bankPos          = 8;
         ps.patchPos         = 9;
 
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
         ps.payloadBegin     = 10;
         ps.payloadEnd       = 10 + 256-1;
         ps.checksumBegin    = ps.payloadBegin;
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 10 + 256;
         ps.patchSize        = 10 + 256 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
 
         ps.namePosInPayload = 0;
         ps.nameLength = 0; // no name
         ps.nameInNibbles = false;
+
+        ps.numBuffers = 1;
+        ps.bufferName = String(T("Drumset"));
 
         patchSpec.add(ps);
     }
@@ -262,16 +290,135 @@ SysexPatchDb::SysexPatchDb()
         ps.bankPos          = 8;
         ps.patchPos         = 9;
 
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
         ps.payloadBegin     = 10;
         ps.payloadEnd       = 10 + 256-1;
         ps.checksumBegin    = ps.payloadBegin;
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 10 + 256;
         ps.patchSize        = 10 + 256 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
 
         ps.namePosInPayload = 0;
         ps.nameLength = 0; // no name
         ps.nameInNibbles = false;
+
+        ps.numBuffers = 1;
+        ps.bufferName = String(T("Ensemble"));
+
+        patchSpec.add(ps);
+    }
+
+    {
+        PatchSpecT ps;
+        ps.specName       = String(T("MIDIbox 808/Dr Pattern"));
+        ps.numBanks          = 7;
+        ps.numPatchesPerBank = 128;
+        ps.delayBetweenReads  = 1000;
+        ps.delayBetweenWrites = 1000;
+
+        ps.patchHeader.add(0xf0);
+        ps.patchHeader.add(0x00);
+        ps.patchHeader.add(0x00);
+        ps.patchHeader.add(0x7e);
+        ps.patchHeader.add(0x4c);
+
+        ps.deviceIdAfterHeader = true;
+        ps.deviceIdInCmd       = false;
+
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_CMD);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_BANK);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_PATCH);
+
+        ps.cmdPos           = 6;
+        ps.cmdPatchRead     = 0x01;
+        ps.cmdPatchWrite    = 0x02;
+        ps.cmdBufferRead    = 0x01;
+        ps.cmdBufferWrite   = 0x02;
+        ps.cmdErrorAcknowledge = 0x0e;
+        ps.cmdAcknowledge   = 0x0f;
+
+        ps.typePos          = 0;
+        ps.typeOffsetPatch  = 0;
+        ps.typeOffsetBuffer = 0;
+
+        ps.bankPos          = 7;
+        ps.patchPos         = 8;
+
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
+        ps.payloadBegin     = 9;
+        ps.payloadEnd       = 9 + 1024-1;
+        ps.checksumBegin    = ps.payloadBegin;
+        ps.checksumEnd      = ps.payloadEnd;
+        ps.checksumPos      = 9 + 1024;
+        ps.patchSize        = 9 + 1024 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT;
+
+        ps.namePosInPayload = 0;
+        ps.nameLength = 0; // no name
+        ps.nameInNibbles = false;
+
+        ps.numBuffers = 0;
+        ps.bufferName = String::empty;
+
+        patchSpec.add(ps);
+    }
+
+    {
+        PatchSpecT ps;
+        ps.specName       = String(T("Waldorf Blofeld Patch"));
+        ps.numBanks          = 8;
+        ps.numPatchesPerBank = 128;
+        ps.delayBetweenReads  = 1000;
+        ps.delayBetweenWrites = 1000;
+
+        ps.patchHeader.add(0xf0);
+        ps.patchHeader.add(0x3e);
+        ps.patchHeader.add(0x13);
+
+        ps.deviceIdAfterHeader = true;
+        ps.deviceIdInCmd       = false;
+
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_CMD);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_BANK);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_PATCH);
+
+        ps.cmdPos           = 4;
+        ps.cmdPatchRead     = 0x00;
+        ps.cmdPatchWrite    = 0x10;
+        ps.cmdBufferRead    = 0x00;
+        ps.cmdBufferWrite   = 0x10;
+        ps.cmdErrorAcknowledge = 0x00; // actually not available
+        ps.cmdAcknowledge   = 0x00; // actually not available
+
+        ps.typePos          = 0;
+        ps.typeOffsetPatch  = 0x00;
+        ps.typeOffsetBuffer = 0x00;
+
+        ps.bankPos          = 5;
+        ps.patchPos         = 6;
+
+        ps.bankBuffer       = 0x7f;
+        ps.patchBuffer      = 0x00;
+
+        ps.payloadBegin     = 7;
+        ps.payloadEnd       = 7 + 383-1;
+        ps.checksumBegin    = ps.payloadBegin;
+        ps.checksumEnd      = ps.payloadEnd;
+        ps.checksumPos      = 7 + 383;
+        ps.patchSize        = 7 + 383 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED;
+
+        ps.namePosInPayload = 363;
+        ps.nameLength = 16;
+        ps.nameInNibbles = false;
+
+        ps.numBuffers = 1;
+        ps.bufferName = String(T("Buffer"));
 
         patchSpec.add(ps);
     }
@@ -315,6 +462,17 @@ unsigned SysexPatchDb::getPatchSize(const unsigned& spec)
 {
     return patchSpec[spec].patchSize;
 }
+
+unsigned SysexPatchDb::getNumBuffers(const unsigned& spec)
+{
+    return patchSpec[spec].numBuffers;
+}
+
+String SysexPatchDb::getBufferName(const unsigned& spec)
+{
+    return patchSpec[spec].bufferName;
+}
+
 
 bool SysexPatchDb::isValidHeader(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId)
 {
@@ -421,7 +579,14 @@ Array<uint8> SysexPatchDb::createCmd(const unsigned& spec, const uint8 &deviceId
             for(int pos=ps->payloadBegin; pos<=ps->payloadEnd; ++pos) {
                 checksum += dataArray[pos];
             }
-            dataArray.add(-(int)checksum & 0x7f);
+
+            switch( ps->checksumType ) {
+            case SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT:
+                dataArray.add(-(int)checksum & 0x7f);
+                break;
+            default: // SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED:
+                dataArray.add(checksum & 0x7f);
+            }
         }
     }
 
@@ -458,26 +623,30 @@ Array<uint8> SysexPatchDb::createWritePatch(const unsigned& spec, const uint8 &d
 
 bool SysexPatchDb::isValidReadBuffer(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch)
 {
+    // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferRead, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, bank, patch);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferRead, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer);
 }
 
 Array<uint8> SysexPatchDb::createReadBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch)
 {
+    // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdBufferRead, patchType + ps->typeOffsetBuffer, bank, patch, NULL, 0);
+    return createCmd(spec, deviceId, ps->cmdBufferRead, patchType + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer, NULL, 0);
 }
 
 bool SysexPatchDb::isValidWriteBuffer(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch)
 {
+    // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, bank, patch);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer);
 }
 
 Array<uint8> SysexPatchDb::createWriteBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch, const uint8 *data, const uint32& size)
 {
+    // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdBufferWrite, patchType + ps->typeOffsetBuffer, bank, patch, data, size);
+    return createCmd(spec, deviceId, ps->cmdBufferWrite, patchType + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer, data, size);
 }
 
 bool SysexPatchDb::isValidErrorAcknowledge(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId)
@@ -506,8 +675,14 @@ bool SysexPatchDb::hasValidChecksum(const unsigned& spec, const uint8 *data, con
         for(pos=ps->checksumBegin; pos<=ps->checksumEnd; ++pos)
             checksum += data[pos];
 
-        if( data[pos] != (-(int)checksum & 0x7f) )
-            return false;
+        switch( ps->checksumType ) {
+        case SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT:
+            if( data[pos] != (-(int)checksum & 0x7f) )
+                return false;
+        default: // SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED:
+            if( data[pos] != (checksum & 0x7f) )
+                return false;
+        }
     }
 
     return true;
