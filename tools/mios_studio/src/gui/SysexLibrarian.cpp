@@ -15,10 +15,28 @@
 #include "SysexLibrarian.h"
 #include "MiosStudio.h"
 
-SysexLibrarianBank::SysexLibrarianBank(MiosStudio *_miosStudio)
+SysexLibrarianBank::SysexLibrarianBank(MiosStudio *_miosStudio, const String& bankName)
     : miosStudio(_miosStudio)
     , font(14.0f)
 {
+    addAndMakeVisible(bankHeaderLabel = new Label(bankName, bankName));
+    bankHeaderLabel->setJustificationType(Justification::centred);
+
+    addAndMakeVisible(moveDownButton = new TextButton(T("Down")));
+    moveDownButton->addListener(this);
+
+    addAndMakeVisible(moveUpButton = new TextButton(T("Up")));
+    moveUpButton->addListener(this);
+
+    addAndMakeVisible(insertButton = new TextButton(T("Insert")));
+    insertButton->addListener(this);
+
+    addAndMakeVisible(deleteButton = new TextButton(T("Delete")));
+    deleteButton->addListener(this);
+
+    addAndMakeVisible(clearButton = new TextButton(T("Clear")));
+    clearButton->addListener(this);
+
     addAndMakeVisible(table = new TableListBox(T("Bank"), this));
     table->setColour(ListBox::outlineColourId, Colours::grey);
     table->setOutlineThickness(1);
@@ -29,7 +47,7 @@ SysexLibrarianBank::SysexLibrarianBank(MiosStudio *_miosStudio)
 
     initBank(0);
 
-    setSize(120, 200);
+    setSize(225, 200);
 }
 
 SysexLibrarianBank::~SysexLibrarianBank()
@@ -66,6 +84,11 @@ void SysexLibrarianBank::initBank(const unsigned& _patchSpec)
         setNumRows(miosStudio->sysexPatchDb->getNumPatchesPerBank(patchSpec));
         table->selectRow(0);
     }
+}
+
+unsigned SysexLibrarianBank::getPatchSpec(void)
+{
+    return patchSpec;
 }
 
 unsigned SysexLibrarianBank::getSelectedPatch(void)
@@ -119,6 +142,7 @@ Component* SysexLibrarianBank::refreshComponentForCell(int rowNumber, int column
         }
 
         label->setRowAndColumn(rowNumber, columnId);
+
         return label;
     } break;
     }
@@ -130,8 +154,18 @@ Component* SysexLibrarianBank::refreshComponentForCell(int rowNumber, int column
 //==============================================================================
 void SysexLibrarianBank::resized()
 {
-    // position our table with a gap around its edge
-    table->setBoundsInset(BorderSize(8));
+    bankHeaderLabel->setBounds(0, 0, getWidth(), 20);
+
+    //unsigned buttonWidth = getWidth() / 5;
+    unsigned buttonWidth = 200 / 5;
+
+    moveDownButton->setBounds (0*buttonWidth+8, 20, buttonWidth-8, 16);
+    moveUpButton->setBounds   (1*buttonWidth+8, 20, buttonWidth-8, 16);
+    insertButton->setBounds   (2*buttonWidth+8, 20, buttonWidth-8, 16);
+    deleteButton->setBounds   (3*buttonWidth+8, 20, buttonWidth-8, 16);
+    clearButton->setBounds    (4*buttonWidth+8, 20, buttonWidth-8, 16);
+
+    table->setBounds          (8, 40, getWidth()-16-16, getHeight()-40-8);
 }
 
 
@@ -184,9 +218,71 @@ void SysexLibrarianBank::setPatch(const uint8& patch, const Array<uint8> &payloa
         //juce_free(patchStorage[patch]);
     }
     patchStorage.set(patch, new Array<uint8>(payload));
-    patchName.set(patch, miosStudio->sysexPatchDb->getPatchNameFromPayload(patchSpec, payload));
+    if( payload.size() ) {
+        patchName.set(patch, miosStudio->sysexPatchDb->getPatchNameFromPayload(patchSpec, payload));
+    } else {
+        patchName.set(patch, String::empty);
+    }
 
     table->resized(); // will do the trick, repaint() doesn't cause update
+}
+
+
+//==============================================================================
+void SysexLibrarianBank::buttonClicked(Button* buttonThatWasClicked)
+{
+    Array<uint8> emptyArray;
+    int maxPatches=getNumRows();
+
+    if( buttonThatWasClicked == clearButton ) {
+        initBank(patchSpec);
+    } else if( buttonThatWasClicked == moveDownButton ) {
+        for(int patch=maxPatches-2; patch >= 0; --patch) { // last patch won't be moved
+            if( isSelectedPatch(patch) ) {
+                Array<uint8>* p = getPatch(patch);
+                Array<uint8> storage((p != NULL) ? *p : emptyArray);
+                Array<uint8>* p2 = getPatch(patch+1);
+                setPatch(patch, (p2 != NULL) ? *p2 : emptyArray);
+                setPatch(patch+1, storage);
+                table->deselectRow(patch);
+                table->selectRow(patch+1, false, false);
+            }
+        }
+    } else if( buttonThatWasClicked == moveUpButton ) {
+        for(int patch=1; patch <maxPatches; ++patch) { // first patch won't be moved
+            if( isSelectedPatch(patch) ) {
+                Array<uint8>* p = getPatch(patch-1);
+                Array<uint8> storage((p != NULL) ? *p : emptyArray);
+                Array<uint8>* p2 = getPatch(patch);
+                setPatch(patch-1, (p2 != NULL) ? *p2 : emptyArray);
+                setPatch(patch, storage);
+                table->deselectRow(patch);
+                table->selectRow(patch-1, false, false);
+            }
+        }
+    } else if( buttonThatWasClicked == insertButton ) {
+        for(int patch=0; patch<maxPatches; ++patch) {
+            if( isSelectedPatch(patch) ) {
+                for(int i=maxPatches-2; i >= patch; --i) {
+                    Array<uint8>* p = getPatch(i);
+                    setPatch(i+1, (p != NULL) ? *p : emptyArray);
+                }
+                setPatch(patch, emptyArray);
+                table->selectRow(patch, false, false); // to ensure table update
+            }
+        }
+    } else if( buttonThatWasClicked == deleteButton ) {
+        for(int patch=0; patch<maxPatches; ++patch) {
+            if( isSelectedPatch(patch) ) {
+                for(int i=patch; i < (maxPatches-1); ++i) {
+                    Array<uint8>* p = getPatch(i+1);
+                    setPatch(i, (p != NULL) ? *p : emptyArray);
+                }
+                setPatch(maxPatches-1, emptyArray);
+                table->selectRow(patch, false, false); // to ensure table update
+            }
+        }
+    }
 }
 
 
@@ -430,10 +526,31 @@ void SysexLibrarianControl::sliderValueChanged(Slider* slider)
 void SysexLibrarianControl::comboBoxChanged(ComboBox* comboBox)
 {
     if( comboBox == deviceTypeSelector ) {
-        int spec = comboBox->getSelectedId()-1;
-        if( spec >= 0 && spec < miosStudio->sysexPatchDb->getNumSpecs() ) {
-            sysexLibrarian->sysexLibrarianBank->initBank(spec);
-            bankSelectSlider->setRange(1, miosStudio->sysexPatchDb->getNumBanks(spec), 1);
+        setSpec(comboBox->getSelectedId()-1);
+    }
+}
+
+//==============================================================================
+void SysexLibrarianControl::setSpec(const unsigned& spec)
+{
+    if( spec < miosStudio->sysexPatchDb->getNumSpecs() ) {
+        sysexLibrarian->sysexLibrarianBank->initBank(spec);
+        sysexLibrarian->sysexLibrarianAssemblingBank->initBank(spec);
+        bankSelectSlider->setRange(1, miosStudio->sysexPatchDb->getNumBanks(spec), 1);
+
+        String bufferName(miosStudio->sysexPatchDb->getBufferName(spec));
+        if( bufferName.isEmpty() )
+            bufferLabel->setText(bufferName, true); // empty...
+        else
+            bufferLabel->setText(bufferName + String(T(":")), true); // empty...
+
+        int numBuffers = miosStudio->sysexPatchDb->getNumBuffers(spec);
+        if( numBuffers ) {
+            bufferSlider->setRange(1, numBuffers, 1);
+            bufferSlider->setEnabled(true);
+        } else {
+            bufferSlider->setRange(1, 1, 1);
+            bufferSlider->setEnabled(false);
         }
     }
 }
@@ -640,7 +757,7 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
 
             // trigger timer immediately
             stopTimer();
-            startTimer(1);
+            startTimer(100);
         }
     } else if( isTimerRunning() ) {
         if( miosStudio->sysexPatchDb->isValidErrorAcknowledge(spec, data, size, (int)deviceIdSlider->getValue()) ) {
@@ -797,17 +914,36 @@ bool SysexLibrarianControl::saveSyx(File &syxFile, const bool& saveBank)
 SysexLibrarian::SysexLibrarian(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
 {
-    addAndMakeVisible(sysexLibrarianBank = new SysexLibrarianBank(miosStudio));
+    addAndMakeVisible(sysexLibrarianAssemblingBank = new SysexLibrarianBank(miosStudio, String(T("Assembling Bank"))));
+    addAndMakeVisible(sysexLibrarianBank = new SysexLibrarianBank(miosStudio, String(T("Transaction Bank"))));
     addAndMakeVisible(sysexLibrarianControl = new SysexLibrarianControl(miosStudio, this));
+
+    addAndMakeVisible(transferBankRButton = new TextButton(T("==>")));
+    transferBankRButton->addListener(this);
+    transferBankRButton->setTooltip(T("Move all patches from Transaction to Assembling Bank"));
+
+    addAndMakeVisible(transferPatchRButton = new TextButton(T("-->")));
+    transferPatchRButton->addListener(this);
+    transferPatchRButton->setTooltip(T("Move selected patches from Transaction to Assembling Bank"));
+
+    addAndMakeVisible(transferPatchLButton = new TextButton(T("<--")));
+    transferPatchLButton->addListener(this);
+    transferPatchLButton->setTooltip(T("Move selected patches from Assembling to Transaction Bank"));
+
+    addAndMakeVisible(transferBankLButton = new TextButton(T("<==")));
+    transferBankLButton->addListener(this);
+    transferBankLButton->setTooltip(T("Move all patches from Assembling to Transaction Bank"));
 
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(450, 500);
+    setSize(725, 500);
 
     // initial bank
     unsigned spec = 0;
     sysexLibrarianBank->initBank(spec);
+    sysexLibrarianAssemblingBank->initBank(spec);
+    sysexLibrarianControl->setSpec(spec);
 }
 
 SysexLibrarian::~SysexLibrarian()
@@ -823,7 +959,67 @@ void SysexLibrarian::paint (Graphics& g)
 
 void SysexLibrarian::resized()
 {
-    sysexLibrarianControl->setBounds(0, 0, 225, getHeight());
-    sysexLibrarianBank->setBounds(220, 0, 225, getHeight());
+    sysexLibrarianControl->setBounds       (0, 0, 225, getHeight());
+    sysexLibrarianBank->setBounds          (220, 0, 225, getHeight());
+    sysexLibrarianAssemblingBank->setBounds(500, 0, 225, getHeight());
+
+    unsigned buttonYOffset = (getHeight()-4*24)/2 - 4;
+
+    transferBankRButton->setBounds         (445, buttonYOffset + 0*24 + 4, 45, 16);
+    transferPatchRButton->setBounds        (445, buttonYOffset + 1*24 + 4, 45, 16);
+    transferPatchLButton->setBounds        (445, buttonYOffset + 2*24 + 4, 45, 16);
+    transferBankLButton->setBounds         (445, buttonYOffset + 3*24 + 4, 45, 16);
+
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
 }
+
+//==============================================================================
+void SysexLibrarian::buttonClicked (Button* buttonThatWasClicked)
+{
+    bool transfer =
+        (buttonThatWasClicked == transferBankRButton) ||
+        (buttonThatWasClicked == transferPatchRButton) ||
+        (buttonThatWasClicked == transferPatchLButton) ||
+        (buttonThatWasClicked == transferBankLButton);
+
+    bool transferRight =
+        (buttonThatWasClicked == transferBankRButton) ||
+        (buttonThatWasClicked == transferPatchRButton);
+
+    bool transferBank =
+        (buttonThatWasClicked == transferBankRButton) ||
+        (buttonThatWasClicked == transferBankLButton);
+
+    if( transfer ) {
+        SysexLibrarianBank* srcBank = transferRight ? sysexLibrarianBank : sysexLibrarianAssemblingBank;
+        SysexLibrarianBank* dstBank = transferRight ? sysexLibrarianAssemblingBank : sysexLibrarianBank;
+
+        if( transferBank )
+            dstBank->initBank(srcBank->getPatchSpec());
+
+        int dstPatch = -1;
+        int lastDstPatch = -1;
+        int maxPatches = srcBank->getNumRows();
+        for(int srcPatch=0; srcPatch<maxPatches; ++srcPatch) {
+            if( transferBank || srcBank->isSelectedPatch(srcPatch) ) {
+                if( transferBank ) {
+                    dstPatch = srcPatch;
+                } else {
+                    while( ++dstPatch < maxPatches && !dstBank->isSelectedPatch(dstPatch) );
+                    if( dstPatch >= maxPatches )
+                        dstPatch = lastDstPatch + 1;
+                }
+
+                if( dstPatch >= maxPatches )
+                    break;
+
+                Array<uint8>* p = srcBank->getPatch(srcPatch);
+                if( p != NULL ) {
+                    dstBank->setPatch(dstPatch, *p);
+                }
+                lastDstPatch = dstPatch;
+            }
+        }
+    }
+}
+

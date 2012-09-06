@@ -30,16 +30,18 @@ class SysexLibrarianBank
     : public Component
     , public TableListBoxModel
     , public ConfigTableController
+    , public ButtonListener
 {
 public:
     //==============================================================================
-    SysexLibrarianBank(MiosStudio *_miosStudio);
+    SysexLibrarianBank(MiosStudio *_miosStudio, const String& bankName);
     ~SysexLibrarianBank();
 
     int getNumRows();
     void setNumRows(const int& rows);
 
     void initBank(const unsigned& patchSpec);
+    unsigned getPatchSpec(void);
 
     unsigned getSelectedPatch(void);
     bool isSelectedPatch(const unsigned& patch);
@@ -61,8 +63,17 @@ public:
     Array<uint8>* getPatch(const uint8& patch);
     void setPatch(const uint8& patch, const Array<uint8> &payload);
 
+    //==============================================================================
+    void buttonClicked (Button* buttonThatWasClicked);
+
 protected:
     //==============================================================================
+    Label* bankHeaderLabel;
+    Button* moveDownButton;
+    Button* moveUpButton;
+    Button* insertButton;
+    Button* deleteButton;
+    Button* clearButton;
     TableListBox* table;
 
     unsigned patchSpec;
@@ -101,6 +112,9 @@ public:
     void buttonClicked (Button* buttonThatWasClicked);
     void sliderValueChanged(Slider* slider);
     void comboBoxChanged(ComboBox*);
+
+    //==============================================================================
+    void setSpec(const unsigned& spec);
 
     //==============================================================================
     void stopTransfer(void);
@@ -169,6 +183,7 @@ protected:
 //==============================================================================
 class SysexLibrarian
     : public Component
+    , public ButtonListener
 {
 public:
     //==============================================================================
@@ -181,11 +196,20 @@ public:
 
     SysexLibrarianControl* sysexLibrarianControl;
     SysexLibrarianBank* sysexLibrarianBank;
+    SysexLibrarianBank* sysexLibrarianAssemblingBank;
+
+    //==============================================================================
+    void buttonClicked (Button* buttonThatWasClicked);
 
 protected:
     //==============================================================================
     ResizableCornerComponent *resizer;
     ComponentBoundsConstrainer resizeLimits;
+
+    TextButton *transferBankRButton;
+    TextButton *transferPatchRButton;
+    TextButton *transferPatchLButton;
+    TextButton *transferBankLButton;
 
     //==============================================================================
     MiosStudio *miosStudio;

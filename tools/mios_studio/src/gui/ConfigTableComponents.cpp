@@ -151,7 +151,17 @@ void ConfigTableLabel::setRowAndColumn(const int newRow, const int newColumn)
 {
     row = newRow;
     columnId = newColumn;
-    label->setText(owner.getTableString(row, columnId), false);
+
+    String content(owner.getTableString(row, columnId));
+
+    label->setText(content, false);
+    if( !content.compare(T("no name available")) ) {
+        label->setEnabled(false);
+        label->setEditable(false);
+    } else {
+        label->setEnabled(true);
+        label->setEditable(true);
+    }
 }
 
 void ConfigTableLabel::labelTextChanged(Label *labelThatHasBeenChanged)
