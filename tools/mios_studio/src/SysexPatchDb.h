@@ -21,6 +21,8 @@
 #define SYSEX_PATCH_DB_TOKEN_TYPE   0x81
 #define SYSEX_PATCH_DB_TOKEN_BANK   0x82
 #define SYSEX_PATCH_DB_TOKEN_PATCH  0x83
+#define SYSEX_PATCH_DB_TOKEN_BUFFER 0x84
+#define SYSEX_PATCH_DB_TOKEN_LEFTSHIFTED_BUFFER 0x85
 
 #define SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED    0
 #define SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT 1
@@ -84,6 +86,7 @@ public:
 
         unsigned numBuffers;
         String bufferName;
+        Array<uint8> selectBufferCmd;
     } PatchSpecT;
 
 
@@ -135,6 +138,7 @@ public:
 
     bool isValidWriteBuffer(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch);
     Array<uint8> createWriteBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch, const uint8 *data, const uint32& size);
+    Array<uint8> createSelectBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &buffer);
 
     bool isValidErrorAcknowledge(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId);
     bool isValidAcknowledge(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId);

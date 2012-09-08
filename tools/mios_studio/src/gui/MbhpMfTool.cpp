@@ -68,6 +68,16 @@ MbhpMfToolConfigGlobals::MbhpMfToolConfigGlobals(MbhpMfTool* _mbhpMfTool)
     operationModeComboBox->setSelectedId(1, true);
     operationModeComboBox->addListener(this);
 
+    addAndMakeVisible(midiChannelLabel = new Label(String::empty, T("MIDI Channel:")));
+    midiChannelLabel->setJustificationType(Justification::right);
+    addAndMakeVisible(midiChannelSlider = new Slider(T("MIDI Channel")));
+    midiChannelSlider->setWantsKeyboardFocus(true);
+    midiChannelSlider->setSliderStyle(Slider::LinearHorizontal);
+    midiChannelSlider->setTextBoxStyle(Slider::TextBoxLeft, false, 80, 20);
+    midiChannelSlider->setRange(1, 16, 1);
+    midiChannelSlider->setValue(1);
+    midiChannelSlider->addListener(this);
+
     addAndMakeVisible(mergerLabel = new Label(String::empty, T("MIDI Merger:")));
     mergerLabel->setJustificationType(Justification::right);
     addAndMakeVisible(mergerComboBox = new ComboBox(String::empty));
@@ -161,23 +171,26 @@ void MbhpMfToolConfigGlobals::resized()
     operationModeLabel->setBounds(labelX, labelY0 + 2*labelYOffset, labelWidth, labelHeight);
     operationModeComboBox->setBounds(controlX, controlY0 + 2*controlYOffset, controlWidth, controlHeight);
 
-    mergerLabel->setBounds(labelX, labelY0 + 3*labelYOffset, labelWidth, labelHeight);
-    mergerComboBox->setBounds(controlX, controlY0 + 3*controlYOffset, controlWidth, controlHeight);
+    midiChannelLabel->setBounds(labelX, labelY0 + 3*labelYOffset, labelWidth, labelHeight);
+    midiChannelSlider->setBounds(controlX, controlY0 + 3*controlYOffset, controlWidth, controlHeight);
 
-    pwmStepsLabel->setBounds(labelX, labelY0 + 4*labelYOffset, labelWidth, labelHeight);
-    pwmStepsSlider->setBounds(controlX, controlY0 + 4*controlYOffset, controlWidth, controlHeight);
+    mergerLabel->setBounds(labelX, labelY0 + 4*labelYOffset, labelWidth, labelHeight);
+    mergerComboBox->setBounds(controlX, controlY0 + 4*controlYOffset, controlWidth, controlHeight);
 
-    ainDeadbandLabel->setBounds(labelX, labelY0 + 5*labelYOffset, labelWidth, labelHeight);
-    ainDeadbandSlider->setBounds(controlX, controlY0 + 5*controlYOffset, controlWidth, controlHeight);
+    pwmStepsLabel->setBounds(labelX, labelY0 + 5*labelYOffset, labelWidth, labelHeight);
+    pwmStepsSlider->setBounds(controlX, controlY0 + 5*controlYOffset, controlWidth, controlHeight);
 
-    mfDeadbandLabel->setBounds(labelX, labelY0 + 6*labelYOffset, labelWidth, labelHeight);
-    mfDeadbandSlider->setBounds(controlX, controlY0 + 6*controlYOffset, controlWidth, controlHeight);
+    ainDeadbandLabel->setBounds(labelX, labelY0 + 6*labelYOffset, labelWidth, labelHeight);
+    ainDeadbandSlider->setBounds(controlX, controlY0 + 6*controlYOffset, controlWidth, controlHeight);
 
-    touchSensorModeLabel->setBounds(labelX, labelY0 + 7*labelYOffset, labelWidth, labelHeight);
-    touchSensorModeComboBox->setBounds(controlX, controlY0 + 7*controlYOffset, controlWidth, controlHeight);
+    mfDeadbandLabel->setBounds(labelX, labelY0 + 7*labelYOffset, labelWidth, labelHeight);
+    mfDeadbandSlider->setBounds(controlX, controlY0 + 7*controlYOffset, controlWidth, controlHeight);
 
-    touchSensorSensitivityLabel->setBounds(labelX, labelY0 + 8*labelYOffset, labelWidth, labelHeight);
-    touchSensorSensitivitySlider->setBounds(controlX, controlY0 + 8*controlYOffset, controlWidth, controlHeight);
+    touchSensorModeLabel->setBounds(labelX, labelY0 + 8*labelYOffset, labelWidth, labelHeight);
+    touchSensorModeComboBox->setBounds(controlX, controlY0 + 8*controlYOffset, controlWidth, controlHeight);
+
+    touchSensorSensitivityLabel->setBounds(labelX, labelY0 + 9*labelYOffset, labelWidth, labelHeight);
+    touchSensorSensitivitySlider->setBounds(controlX, controlY0 + 9*controlYOffset, controlWidth, controlHeight);
 
 }
 
@@ -194,7 +207,7 @@ void MbhpMfToolConfigGlobals::sliderValueChanged(Slider* slider)
         mbhpMfTool->mbhpMfToolControl->sysexUpdateRequest();
 }
 
-void MbhpMfToolConfigGlobals::comboBoxChanged(ComboBox*)
+void MbhpMfToolConfigGlobals::comboBoxChanged(ComboBox* comboBox)
 {
     // request SysEx update
     if( mbhpMfTool->mbhpMfToolControl != NULL )
@@ -207,6 +220,7 @@ void MbhpMfToolConfigGlobals::getDump(Array<uint8> &syxDump)
 {
     int numberFaders = numberFadersSlider->getValue();
     int operationMode = operationModeComboBox->getSelectedId()-1;
+    int midiChannel = midiChannelSlider->getValue()-1;
     int merger = mergerComboBox->getSelectedId()-1;
     int pwmSteps = pwmStepsSlider->getValue();
     int ainDeadband = ainDeadbandSlider->getValue();
@@ -230,7 +244,7 @@ void MbhpMfToolConfigGlobals::getDump(Array<uint8> &syxDump)
     syxDump.set(0x15, mfDeadband);
     syxDump.set(0x16, touchSensorMode);
     syxDump.set(0x17, touchSensorSensitivity);
-    
+    syxDump.set(0x18, midiChannel);
 }
 
 void MbhpMfToolConfigGlobals::setDump(const Array<uint8> &syxDump)
@@ -243,6 +257,7 @@ void MbhpMfToolConfigGlobals::setDump(const Array<uint8> &syxDump)
     int mfDeadband = syxDump[0x15];
     int touchSensorMode = syxDump[0x16];
     int touchSensorSensitivity = syxDump[0x17];
+    int midiChannel = syxDump[0x18] & 0x0f;
 
     String txt;
     for(int i=0; i<16 && syxDump[i]; ++i) {
@@ -259,6 +274,7 @@ void MbhpMfToolConfigGlobals::setDump(const Array<uint8> &syxDump)
     mfDeadbandSlider->setValue(mfDeadband);
     touchSensorModeComboBox->setSelectedId(touchSensorMode+1);
     touchSensorSensitivitySlider->setValue(touchSensorSensitivity);
+    midiChannelSlider->setValue(midiChannel+1);
 }
 
 

@@ -106,6 +106,24 @@ void SysexLibrarianBank::selectPatch(const unsigned& patch)
     table->selectRow(patch);
 }
 
+bool SysexLibrarianBank::isSingleSelection(void)
+{
+    int numSelected = 0;
+
+    for(int patch=0; patch<numRows; ++patch)
+        if( isSelectedPatch(patch) )
+            ++numSelected;
+
+    return numSelected == 1;
+}
+
+void SysexLibrarianBank::incPatchIfSingleSelection(void)
+{
+    if( !isSelectedPatch(numRows-1) && isSingleSelection() )
+        selectPatch(getSelectedPatch()+1);
+}
+
+
 void SysexLibrarianBank::paintRowBackground(Graphics &g, int rowNumber, int width, int height, bool rowIsSelected)
 {
     if( rowIsSelected )
@@ -365,6 +383,7 @@ SysexLibrarianControl::SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibra
 
     addAndMakeVisible(stopButton = new TextButton(T("Stop")));
     stopButton->addListener(this);
+    stopButton->setEnabled(false);
 
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
@@ -428,8 +447,8 @@ void SysexLibrarianControl::resized()
     receiveBufferButton->setBounds(buttonX0 + 0*buttonXOffset, buttonY + 11*buttonYOffset, buttonWidth, buttonHeight);
     sendBufferButton->setBounds   (buttonX0 + 1*buttonXOffset, buttonY + 11*buttonYOffset, buttonWidth, buttonHeight);
 
-    progressBar->setBounds(buttonX0 + 0*buttonXOffset + 45 + 10, getHeight()-buttonY-buttonHeight, (buttonWidth-45-10)+buttonWidth+10, buttonHeight);
-    stopButton->setBounds(buttonX0 + 0*buttonXOffset, getHeight()-buttonY-buttonHeight, 45, buttonHeight);
+    progressBar->setBounds(buttonX0, getHeight()-buttonY-buttonHeight, 2*buttonWidth-45, buttonHeight);
+    stopButton->setBounds(buttonX0 + 2*buttonWidth-45+10, getHeight()-buttonY-buttonHeight, 45, buttonHeight);
 }
 
 //==============================================================================
@@ -610,7 +629,7 @@ void SysexLibrarianControl::timerCallback()
             int spec = deviceTypeSelector->getSelectedId()-1;
             if( spec < 0 || spec >= miosStudio->sysexPatchDb->getNumSpecs() ) {
                 transferFinished = true;
-            } else if( (handleSinglePatch && currentPatch != sysexLibrarian->sysexLibrarianBank->getSelectedPatch()) ||
+            } else if( (handleSinglePatch && !sysexLibrarian->sysexLibrarianBank->isSelectedPatch(currentPatch)) ||
                        (currentPatch >= miosStudio->sysexPatchDb->getNumPatchesPerBank(spec)) ) {
                 transferFinished = true;
             } else {
@@ -624,11 +643,22 @@ void SysexLibrarianControl::timerCallback()
                     Array<uint8> data;
 
                     if( bufferTransfer ) {
+                        uint8 bufferNum = (uint8)bufferSlider->getValue() - 1;
+                        Array<uint8> selectBuffer = miosStudio->sysexPatchDb->createSelectBuffer(spec,
+                                                                                                 (uint8)deviceIdSlider->getValue(),
+                                                                                                 bufferNum);
+                        if( selectBuffer.size() ) {
+                            Array<uint8> data(selectBuffer);
+                            MidiMessage message = SysexHelper::createMidiMessage(data);
+                            miosStudio->sendMidiMessage(message);
+                            bufferNum = 0; // don't transfer offset in this case
+                        }
+
                         data = miosStudio->sysexPatchDb->createReadBuffer(spec,
-                                                                         (uint8)deviceIdSlider->getValue(),
-                                                                         0,
-                                                                         (uint8)bankSelectSlider->getValue()-1,
-                                                                         currentPatch);
+                                                                          (uint8)deviceIdSlider->getValue(),
+                                                                          bufferNum,
+                                                                          (uint8)bankSelectSlider->getValue()-1,
+                                                                          currentPatch);
                     } else {
                         data = miosStudio->sysexPatchDb->createReadPatch(spec,
                                                                          (uint8)deviceIdSlider->getValue(),
@@ -678,9 +708,20 @@ void SysexLibrarianControl::timerCallback()
                         Array<uint8> data;
 
                         if( bufferTransfer ) {
+                            uint8 bufferNum = (uint8)bufferSlider->getValue() - 1;
+                            Array<uint8> selectBuffer = miosStudio->sysexPatchDb->createSelectBuffer(spec,
+                                                                                                     (uint8)deviceIdSlider->getValue(),
+                                                                                                     bufferNum);
+                            if( selectBuffer.size() ) {
+                                Array<uint8> data(selectBuffer);
+                                MidiMessage message = SysexHelper::createMidiMessage(data);
+                                miosStudio->sendMidiMessage(message);
+                                bufferNum = 0; // don't transfer offset in this case
+                            }
+
                             data = miosStudio->sysexPatchDb->createWriteBuffer(spec,
                                                                               (uint8)deviceIdSlider->getValue(),
-                                                                              0,
+                                                                              bufferNum,
                                                                               (uint8)bankSelectSlider->getValue()-1,
                                                                               currentPatch,
                                                                               &p->getReference(0),
@@ -702,8 +743,10 @@ void SysexLibrarianControl::timerCallback()
 
                         if( handleSinglePatch )
                             progress = 1;
-                        else
+                        else {
                             progress = (double)currentPatch / (double)miosStudio->sysexPatchDb->getNumPatchesPerBank(spec);
+                            sysexLibrarian->sysexLibrarianBank->selectPatch(currentPatch-1);
+                        }
 
                         startTimer(miosStudio->sysexPatchDb->getDelayBetweenWrites(spec));
                     }
@@ -729,10 +772,18 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
 
     if( receiveDump ) {
         int receivedPatch = currentPatch-1;
+        uint8 bufferNum = (uint8)bufferSlider->getValue() - 1;
+        Array<uint8> selectBuffer = miosStudio->sysexPatchDb->createSelectBuffer(spec,
+                                                                                 (uint8)deviceIdSlider->getValue(),
+                                                                                 bufferNum);
+        if( selectBuffer.size() ) {
+            bufferNum = 0; // offset not transfered in this case
+        }
+
         if( (bufferTransfer && miosStudio->sysexPatchDb->isValidWriteBuffer(spec,
                                                                             data, size,
                                                                             (int)deviceIdSlider->getValue(),
-                                                                            0,
+                                                                            bufferNum,
                                                                             -1,
                                                                             -1))
             ||
@@ -740,8 +791,8 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
                                                                             data, size,
                                                                             (int)deviceIdSlider->getValue(),
                                                                             0,
-                                                                            bankSelectSlider->getValue()-1,
-                                                                            receivedPatch))
+                                                                            -1,
+                                                                            -1))
             ) {
 
             dumpReceived = true;
@@ -753,6 +804,8 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
                 Array<uint8> payload(miosStudio->sysexPatchDb->getPayload(spec, data, size));
                 sysexLibrarian->sysexLibrarianBank->setPatch(receivedPatch, payload);
                 sysexLibrarian->sysexLibrarianBank->selectPatch(receivedPatch);
+                // leads to endless download if a single patch is selected and received, since the handler checks for the selection...
+                //sysexLibrarian->sysexLibrarianBank->incPatchIfSingleSelection();
             }
 
             // trigger timer immediately
@@ -829,8 +882,10 @@ bool SysexLibrarianControl::loadSyx(File &syxFile, const bool& loadBank)
 
                 Array<uint8> payload(miosStudio->sysexPatchDb->getPayload(spec, patchPtr, patchSize));
                 sysexLibrarian->sysexLibrarianBank->setPatch(patch, payload);
-                if( loadBank )
+                if( loadBank ) {
                     sysexLibrarian->sysexLibrarianBank->selectPatch(patch);
+                }
+                sysexLibrarian->sysexLibrarianBank->incPatchIfSingleSelection();
 
                 ++numPatches;
                 ++patch;
@@ -1019,6 +1074,11 @@ void SysexLibrarian::buttonClicked (Button* buttonThatWasClicked)
                 }
                 lastDstPatch = dstPatch;
             }
+        }
+
+        if( !transferBank ) {
+            srcBank->incPatchIfSingleSelection();
+            dstBank->incPatchIfSingleSelection();
         }
     }
 }

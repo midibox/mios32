@@ -74,6 +74,9 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 4;
         ps.bufferName = String(T("SID"));
+        ps.selectBufferCmd.add(0x0c);
+        ps.selectBufferCmd.add(0x00);
+        ps.selectBufferCmd.add(SYSEX_PATCH_DB_TOKEN_LEFTSHIFTED_BUFFER);
 
         patchSpec.add(ps);
     }
@@ -133,6 +136,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 1;
         ps.bufferName = String(T("Ensemble"));
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
@@ -191,6 +195,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 4;
         ps.bufferName = String(T("Instrument"));
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
@@ -249,6 +254,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 1;
         ps.bufferName = String(T("Drumset"));
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
@@ -307,11 +313,16 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 1;
         ps.bufferName = String(T("Ensemble"));
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
 
     {
+        // Attention:
+        // Firmware version prior v1.2 had a bug which was leading to wrong SysEx dumps:
+        // Always dump of pattern 0 bank 0 was sent!
+        // An update is strongly recommended, otherwise patterns could be overwritten with the wrong content!!!
         PatchSpecT ps;
         ps.specName       = String(T("MIDIbox 808/Dr Pattern"));
         ps.numBanks          = 7;
@@ -364,6 +375,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 0;
         ps.bufferName = String::empty;
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
@@ -419,6 +431,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.numBuffers = 1;
         ps.bufferName = String(T("Buffer"));
+        ps.selectBufferCmd.clear();
 
         patchSpec.add(ps);
     }
@@ -567,7 +580,7 @@ Array<uint8> SysexPatchDb::createCmd(const unsigned& spec, const uint8 &deviceId
 
         default:
             if( b < 0x80 )
-                dataArray.add(patch);
+                dataArray.add(b);
         }
     }
 
@@ -639,7 +652,7 @@ bool SysexPatchDb::isValidWriteBuffer(const unsigned& spec, const uint8 *data, c
 {
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, -1, -1);
 }
 
 Array<uint8> SysexPatchDb::createWriteBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch, const uint8 *data, const uint32& size)
@@ -647,6 +660,39 @@ Array<uint8> SysexPatchDb::createWriteBuffer(const unsigned& spec, const uint8 &
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
     return createCmd(spec, deviceId, ps->cmdBufferWrite, patchType + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer, data, size);
+}
+
+Array<uint8> SysexPatchDb::createSelectBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &buffer)
+{
+    PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
+
+    if( ps->selectBufferCmd.size() > 0 ) {
+        Array<uint8> dataArray = createHeader(spec, deviceId);
+
+        for(int i=0; i<ps->selectBufferCmd.size(); ++i) {
+            uint8 b = ps->selectBufferCmd[i];
+
+            switch( b ) {
+            case SYSEX_PATCH_DB_TOKEN_BUFFER:
+                dataArray.add(buffer);
+                break;
+            case SYSEX_PATCH_DB_TOKEN_LEFTSHIFTED_BUFFER:
+                dataArray.add((1 << buffer) & 0x7f);
+                break;
+
+            default:
+                if( b < 0x80 )
+                    dataArray.add(b);
+            }
+        }
+
+        dataArray.add(0xf7);
+
+        return dataArray;
+    }
+
+    Array<uint8> emptyArray;
+    return emptyArray;
 }
 
 bool SysexPatchDb::isValidErrorAcknowledge(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId)
@@ -677,8 +723,9 @@ bool SysexPatchDb::hasValidChecksum(const unsigned& spec, const uint8 *data, con
 
         switch( ps->checksumType ) {
         case SYSEX_PATCH_DB_CHECKSUM_TWO_COMPLEMENT:
-            if( data[pos] != (-(int)checksum & 0x7f) )
+            if( data[pos] != ((-(int)checksum) & 0x7f) )
                 return false;
+            break;
         default: // SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED:
             if( data[pos] != (checksum & 0x7f) )
                 return false;
