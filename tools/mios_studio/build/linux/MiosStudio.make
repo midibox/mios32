@@ -40,6 +40,7 @@ endif
 
 OBJECTS := \
 	$(OBJDIR)/OscHelper.o \
+	$(OBJDIR)/SysexPatchDb.o \
 	$(OBJDIR)/HexFileLoader.o \
 	$(OBJDIR)/UdpSocket.o \
 	$(OBJDIR)/juce_LibrarySource.o \
@@ -51,6 +52,7 @@ OBJECTS := \
 	$(OBJDIR)/OscMonitor.o \
 	$(OBJDIR)/LogBox.o \
 	$(OBJDIR)/MbhpMfTool.o \
+	$(OBJDIR)/SysexLibrarian.o \
 	$(OBJDIR)/ConfigTableComponents.o \
 	$(OBJDIR)/MidiMonitor.o \
 	$(OBJDIR)/OscTool.o \
@@ -108,6 +110,11 @@ $(OBJDIR)/OscHelper.o: ../../src/OscHelper.cpp
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
+$(OBJDIR)/SysexPatchDb.o: ../../src/SysexPatchDb.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
 $(OBJDIR)/HexFileLoader.o: ../../src/HexFileLoader.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
@@ -159,6 +166,11 @@ $(OBJDIR)/LogBox.o: ../../src/gui/LogBox.cpp
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
 $(OBJDIR)/MbhpMfTool.o: ../../src/gui/MbhpMfTool.cpp
+	-@$(CMD_MKOBJDIR)
+	@echo $(notdir $<)
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
+
+$(OBJDIR)/SysexLibrarian.o: ../../src/gui/SysexLibrarian.cpp
 	-@$(CMD_MKOBJDIR)
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
