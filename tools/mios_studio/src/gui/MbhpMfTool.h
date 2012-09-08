@@ -50,6 +50,8 @@ protected:
     Slider* numberFadersSlider;
     Label* operationModeLabel;
     ComboBox* operationModeComboBox;
+    Label* midiChannelLabel;
+    Slider* midiChannelSlider;
     Label* mergerLabel;
     ComboBox* mergerComboBox;
     Label* pwmStepsLabel;

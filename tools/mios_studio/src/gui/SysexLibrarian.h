@@ -46,6 +46,8 @@ public:
     unsigned getSelectedPatch(void);
     bool isSelectedPatch(const unsigned& patch);
     void selectPatch(const unsigned& patch);
+    bool isSingleSelection(void);
+    void incPatchIfSingleSelection(void);
 
     void paintRowBackground(Graphics &g, int rowNumber, int width, int height, bool rowIsSelected);
     void paintCell(Graphics &g, int rowNumber, int columnId, int width, int height, bool rowIsSelected);
