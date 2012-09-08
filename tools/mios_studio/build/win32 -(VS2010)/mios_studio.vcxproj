@@ -74,7 +74,7 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level1</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)$(ProjectName).exe</OutputFile>
@@ -89,11 +89,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\gui\MbhpMfTool.cpp" />
+    <ClCompile Include="..\..\src\gui\SysexLibrarian.cpp" />
     <ClCompile Include="..\..\src\HexFileLoader.cpp" />
     <ClCompile Include="..\..\src\juce_LibrarySource.cpp" />
     <ClCompile Include="..\..\src\Main.cpp" />
     <ClCompile Include="..\..\src\OscHelper.cpp" />
     <ClCompile Include="..\..\src\SysexHelper.cpp" />
+    <ClCompile Include="..\..\src\SysexPatchDb.cpp" />
     <ClCompile Include="..\..\src\UdpSocket.cpp" />
     <ClCompile Include="..\..\src\UploadHandler.cpp" />
     <ClCompile Include="..\..\src\gui\ConfigTableComponents.cpp" />
@@ -114,10 +116,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\gui\MbhpMfTool.h" />
+    <ClInclude Include="..\..\src\gui\SysexLibrarian.h" />
     <ClInclude Include="..\..\src\HexFileLoader.h" />
     <ClInclude Include="..\..\src\includes.h" />
     <ClInclude Include="..\..\src\juce_AppConfig.h" />
     <ClInclude Include="..\..\src\OscHelper.h" />
+    <ClInclude Include="..\..\src\SysexPatchDb.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="..\..\src\SysexHelper.h" />
     <ClInclude Include="..\..\src\UdpSocket.h" />

@@ -90,6 +90,12 @@
     <ClCompile Include="..\..\src\gui\MbhpMfTool.cpp">
       <Filter>Source Files\gui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gui\SysexLibrarian.cpp">
+      <Filter>Source Files\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\SysexPatchDb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\HexFileLoader.h">
@@ -157,6 +163,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\gui\MbhpMfTool.h">
       <Filter>Header Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\gui\SysexLibrarian.h">
+      <Filter>Source Files\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\SysexPatchDb.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
