@@ -371,14 +371,16 @@ s32 SEQ_CORE_Handler(void)
 	  if( (bpm_tick % 96) == 20 ) {
 	    if( SEQ_SONG_ActiveGet() ) {
 	      if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
-		    seq_core_state.ref_step == seq_cc_trk[seq_song_guide_track-1].length) ||
-		  (!seq_song_guide_track && seq_core_state.ref_step == seq_core_steps_per_pattern) ) {
+		    seq_core_state.ref_step_song == seq_cc_trk[seq_song_guide_track-1].length) ||
+		  (!seq_song_guide_track && seq_core_state.ref_step_song == seq_core_steps_per_pattern) ) {
 
 		if( seq_song_guide_track ) {
-		  // reset reference step if guide track is used for consistent sync
-		  seq_core_state.ref_step = seq_core_steps_per_measure;
 		  // request synch-to-measure for all tracks
 		  SEQ_CORE_ManualSynchToMeasure(0xffff);
+
+		  // corner case: we will load new tracks and the length of the guide track could change
+		  // in order to ensure that the reference step jumps back to 0, we've to force this here:
+		  seq_core_state.FORCE_REF_STEP_RESET = 1;
 		}
 
 		SEQ_SONG_NextPos();
@@ -483,7 +485,12 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
 
   // reset reference step
-  seq_core_state.ref_step = (u8)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
+  seq_core_state.ref_step = (u16)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
+  if( seq_song_guide_track ) {
+    seq_core_state.ref_step_song = (u16)((bpm_start / 96) % ((u32)seq_cc_trk[seq_song_guide_track-1].length+1));
+  } else {
+    seq_core_state.ref_step_song = seq_core_state.ref_step;
+  }
 
   return 0; // no error
 }
@@ -505,11 +512,33 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
-  if( (bpm_tick % (384/4)) == 0 &&
-      (seq_core_state.FIRST_CLK || ++seq_core_state.ref_step > seq_core_steps_per_measure) ) {
-    if( !seq_core_state.FIRST_CLK )
+  if( (bpm_tick % (384/4)) == 0 ) {
+    if( seq_core_state.FIRST_CLK || seq_core_state.FORCE_REF_STEP_RESET ) {
+      seq_core_state.FORCE_REF_STEP_RESET = 0;
+      synch_to_measure_req = 1;
       seq_core_state.ref_step = 0;
-    synch_to_measure_req = 1;
+      seq_core_state.ref_step_song = 0;
+    } else {
+      if( ++seq_core_state.ref_step > seq_core_steps_per_measure ) {
+	seq_core_state.ref_step = 0;
+      }
+
+      if( seq_song_guide_track ) {
+	if( ++seq_core_state.ref_step_song > seq_cc_trk[seq_song_guide_track-1].length ) {
+	  seq_core_state.ref_step_song = 0;
+	}
+      } else {
+	seq_core_state.ref_step_song = seq_core_state.ref_step;
+      }
+
+      if( SEQ_SONG_ActiveGet() ) {
+	if( seq_core_state.ref_step_song == 0 )
+	  synch_to_measure_req = 1;
+      } else {
+	if( seq_core_state.ref_step == 0 )
+	  synch_to_measure_req = 1;
+      }
+    }
   }
 
   // disable slave clock mute if not in slave mode anymore

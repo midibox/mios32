@@ -44,8 +44,10 @@ typedef union {
   u32 ALL;
   struct {
     u16 ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
+    u16 ref_step_song; // reference step can be different in song mode if a guide track is used
 
     u8  FIRST_CLK:1;
+    u8  FORCE_REF_STEP_RESET:1;
     u8  METRONOME:1;
     u8  MANUAL_TRIGGER_STOP_REQ:1;
     u8  MANUAL_TRIGGER_STEP_REQ:1;
