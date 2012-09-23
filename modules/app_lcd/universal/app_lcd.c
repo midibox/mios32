@@ -127,6 +127,11 @@ s32 APP_LCD_Init(u32 mode)
     if( MIOS32_BOARD_J15_PortInit(0) < 0 )
       return -2; // failed to initialize J15
 
+    // wait 500 mS to ensure that the reset is released
+    int i;
+    for(i=0; i<500; ++i)
+      MIOS32_DELAY_Wait_uS(1000);
+
     // select all LCDs
     MIOS32_BOARD_J15_DataSet(0x00);
 
