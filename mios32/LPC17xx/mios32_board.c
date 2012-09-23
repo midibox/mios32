@@ -844,6 +844,7 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
   MIOS32_BOARD_PinInitHlp(J15_RW_PORT,   J15_RW_PIN,   mode ? MIOS32_BOARD_PIN_MODE_OUTPUT_OD : MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
 
   // configure "busy" input: let it float, otherwise it could activate D7 if RW=1 (and therefore 74HC595 drivers disabled)
+  // pull-up will be dynamically enabled in MIOS32_BOARD_J15_PollUnbusy()
   MIOS32_BOARD_PinInitHlp(J15_D7_PORT,   J15_D7_PIN,   MIOS32_BOARD_PIN_MODE_INPUT);
 
   return 0; // no error
@@ -1056,6 +1057,9 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
   // select command register (RS=0)
   MIOS32_BOARD_J15_RS_Set(0);
 
+  // enable pull-up
+  MIOS32_BOARD_PinInitHlp(J15_D7_PORT, J15_D7_PIN, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+
   // select read (will also disable output buffer of 74HC595)
   MIOS32_BOARD_J15_RW_Set(1);
 
@@ -1077,6 +1081,9 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
     if( !busy )
       break;
   }
+
+  // disable pull-up
+  MIOS32_BOARD_PinInitHlp(J15_D7_PORT, J15_D7_PIN, MIOS32_BOARD_PIN_MODE_INPUT);
 
   // deselect read (output buffers of 74HC595 enabled again)
   MIOS32_BOARD_J15_RW_Set(0);
