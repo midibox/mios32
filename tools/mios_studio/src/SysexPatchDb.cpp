@@ -485,7 +485,7 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetBuffer = 0x00;
 
         ps.bankPos           = 7;
-        ps.bankSelectOffset  = 0;
+        ps.bankSelectOffset  = 1;
         ps.patchPos          = 8;
         ps.patchSelectOffset = 0;
 
