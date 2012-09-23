@@ -843,8 +843,8 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
   MIOS32_BOARD_PinInitHlp(J15_E2_PORT,   J15_E2_PIN,   mode ? MIOS32_BOARD_PIN_MODE_OUTPUT_OD : MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
   MIOS32_BOARD_PinInitHlp(J15_RW_PORT,   J15_RW_PIN,   mode ? MIOS32_BOARD_PIN_MODE_OUTPUT_OD : MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
 
-  // configure "busy" input with pull-up
-  MIOS32_BOARD_PinInitHlp(J15_D7_PORT,   J15_D7_PIN,   MIOS32_BOARD_PIN_MODE_INPUT_PU);
+  // configure "busy" input: let it float, otherwise it could activate D7 if RW=1 (and therefore 74HC595 drivers disabled)
+  MIOS32_BOARD_PinInitHlp(J15_D7_PORT,   J15_D7_PIN,   MIOS32_BOARD_PIN_MODE_INPUT);
 
   return 0; // no error
 #endif
