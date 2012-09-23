@@ -54,8 +54,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x00;
         ps.typeOffsetBuffer = 0x08;
 
-        ps.bankPos          = 8;
-        ps.patchPos         = 9;
+        ps.bankPos           = 8;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 9;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -116,8 +118,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x70;
         ps.typeOffsetBuffer = 0x78;
 
-        ps.bankPos          = 8;
-        ps.patchPos         = 9;
+        ps.bankPos           = 8;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 9;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -175,8 +179,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x00;
         ps.typeOffsetBuffer = 0x08;
 
-        ps.bankPos          = 8;
-        ps.patchPos         = 9;
+        ps.bankPos           = 8;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 9;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -234,8 +240,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x10;
         ps.typeOffsetBuffer = 0x18;
 
-        ps.bankPos          = 8;
-        ps.patchPos         = 9;
+        ps.bankPos           = 8;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 9;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -293,8 +301,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x70;
         ps.typeOffsetBuffer = 0x78;
 
-        ps.bankPos          = 8;
-        ps.patchPos         = 9;
+        ps.bankPos           = 8;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 9;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -355,8 +365,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0;
         ps.typeOffsetBuffer = 0;
 
-        ps.bankPos          = 7;
-        ps.patchPos         = 8;
+        ps.bankPos           = 7;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 8;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x00;
         ps.patchBuffer      = 0x00;
@@ -411,8 +423,10 @@ SysexPatchDb::SysexPatchDb()
         ps.typeOffsetPatch  = 0x00;
         ps.typeOffsetBuffer = 0x00;
 
-        ps.bankPos          = 5;
-        ps.patchPos         = 6;
+        ps.bankPos           = 5;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 6;
+        ps.patchSelectOffset = 0;
 
         ps.bankBuffer       = 0x7f;
         ps.patchBuffer      = 0x00;
@@ -430,6 +444,67 @@ SysexPatchDb::SysexPatchDb()
         ps.nameInNibbles = false;
 
         ps.numBuffers = 1;
+        ps.bufferName = String(T("Buffer"));
+        ps.selectBufferCmd.clear();
+
+        patchSpec.add(ps);
+    }
+
+
+    {
+        PatchSpecT ps;
+        ps.specName       = String(T("Access Virus B & C"));
+        ps.numBanks          = 8; // Virus A: only 3
+        ps.numPatchesPerBank = 128;
+        ps.delayBetweenReads  = 1000;
+        ps.delayBetweenWrites = 1000;
+
+        ps.patchHeader.add(0xf0);
+        ps.patchHeader.add(0x00);
+        ps.patchHeader.add(0x20);
+        ps.patchHeader.add(0x33);
+        ps.patchHeader.add(0x01);
+
+        ps.deviceIdAfterHeader = true;
+        ps.deviceIdInCmd       = false;
+
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_CMD);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_BANK);
+        ps.patchCmd.add(SYSEX_PATCH_DB_TOKEN_PATCH);
+
+        ps.cmdPos           = 6;
+        ps.cmdPatchRead     = 0x30;
+        ps.cmdPatchWrite    = 0x10;
+        ps.cmdBufferRead    = 0x30;
+        ps.cmdBufferWrite   = 0x10;
+        ps.cmdErrorAcknowledge = 0x00; // actually not available
+        ps.cmdAcknowledge   = 0x00; // actually not available
+
+        ps.typePos          = 0;
+        ps.typeOffsetPatch  = 0x00;
+        ps.typeOffsetBuffer = 0x00;
+
+        ps.bankPos           = 7;
+        ps.bankSelectOffset  = 0;
+        ps.patchPos          = 8;
+        ps.patchSelectOffset = 0;
+
+        ps.bankBuffer       = 0x00;
+        ps.patchBuffer      = 0x00;
+
+        ps.payloadBegin     = 9;
+        ps.payloadEnd       = 9 + 256-1;
+        ps.checksumBegin    = ps.payloadBegin;
+        ps.checksumEnd      = ps.payloadEnd;
+        ps.checksumPos      = 9 + 256;
+        ps.patchSize        = 9 + 256 + 1 + 1;
+        ps.checksumType     = SYSEX_PATCH_DB_CHECKSUM_ACCUMULATED;
+
+        ps.namePosInPayload = 240;
+        ps.nameLength = 10;
+        ps.nameInNibbles = false;
+
+        ps.numBuffers = 16;
         ps.bufferName = String(T("Buffer"));
         ps.selectBufferCmd.clear();
 
@@ -612,25 +687,39 @@ Array<uint8> SysexPatchDb::createCmd(const unsigned& spec, const uint8 &deviceId
 bool SysexPatchDb::isValidReadPatch(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch)
 {
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdPatchRead, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetPatch, bank, patch);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdPatchRead,
+                      ((patchType >= 0) ? patchType : 0) + ps->typeOffsetPatch,
+                      (bank >= 0) ? ((bank + ps->bankSelectOffset) & 0x7f) : bank,
+                      (patch >= 0) ? ((patch + ps->patchSelectOffset) & 0x7f) : patch);
 }
 
 Array<uint8> SysexPatchDb::createReadPatch(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch)
 {
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdPatchRead, patchType + ps->typeOffsetPatch, bank, patch, NULL, 0);
+    return createCmd(spec, deviceId, ps->cmdPatchRead,
+                     patchType + ps->typeOffsetPatch,
+                     (bank + ps->bankSelectOffset) & 0x7f,
+                     (patch + ps->patchSelectOffset) & 0x7f,
+                     NULL, 0);
 }
 
 bool SysexPatchDb::isValidWritePatch(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch)
 {
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdPatchWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetPatch, bank, patch);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdPatchWrite,
+                      ((patchType >= 0) ? patchType : 0) + ps->typeOffsetPatch,
+                      (bank >= 0) ? ((bank + ps->bankSelectOffset) & 0x7f) : bank,
+                      (patch >= 0) ? ((patch + ps->patchSelectOffset) & 0x7f) : patch);
 }
 
 Array<uint8> SysexPatchDb::createWritePatch(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch, const uint8 *data, const uint32& size)
 {
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdPatchWrite, patchType + ps->typeOffsetPatch, bank, patch, data, size);
+    return createCmd(spec, deviceId, ps->cmdPatchWrite,
+                     patchType + ps->typeOffsetPatch,
+                     (bank + ps->bankSelectOffset) & 0x7f,
+                     (patch + ps->patchSelectOffset) & 0x7f,
+                     data, size);
 }
 
 
@@ -638,28 +727,42 @@ bool SysexPatchDb::isValidReadBuffer(const unsigned& spec, const uint8 *data, co
 {
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferRead, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferRead,
+                      ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer,
+                      ps->bankBuffer,
+                      ps->patchBuffer);
 }
 
 Array<uint8> SysexPatchDb::createReadBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch)
 {
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdBufferRead, patchType + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer, NULL, 0);
+    return createCmd(spec, deviceId, ps->cmdBufferRead,
+                     patchType + ps->typeOffsetBuffer,
+                     ps->bankBuffer,
+                     ps->patchBuffer,
+                     NULL, 0);
 }
 
 bool SysexPatchDb::isValidWriteBuffer(const unsigned& spec, const uint8 *data, const uint32 &size, const int &deviceId, const int &patchType, const int &bank, const int &patch)
 {
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite, ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer, -1, -1);
+    return isValidCmd(spec, data, size, deviceId, ps->cmdBufferWrite,
+                      ((patchType >= 0) ? patchType : 0) + ps->typeOffsetBuffer,
+                      -1,
+                      -1);
 }
 
 Array<uint8> SysexPatchDb::createWriteBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &patchType, const uint8 &bank, const uint8 &patch, const uint8 *data, const uint32& size)
 {
     // note: bank and patch are currently ignored - we take bankBuffer and patchBuffer instead. Could be made optional in future
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
-    return createCmd(spec, deviceId, ps->cmdBufferWrite, patchType + ps->typeOffsetBuffer, ps->bankBuffer, ps->patchBuffer, data, size);
+    return createCmd(spec, deviceId, ps->cmdBufferWrite,
+                     patchType + ps->typeOffsetBuffer,
+                     ps->bankBuffer,
+                     ps->patchBuffer,
+                     data, size);
 }
 
 Array<uint8> SysexPatchDb::createSelectBuffer(const unsigned& spec, const uint8 &deviceId, const uint8 &buffer)
@@ -759,11 +862,17 @@ String SysexPatchDb::getPatchNameFromPayload(const unsigned& spec, Array<uint8> 
         String tmp;
         uint8 *name = (uint8 *)&payload.getReference(ps->namePosInPayload);
         for(int i=0; i<ps->nameLength; ++i) {
+            char c;
             if( ps->nameInNibbles ) {
-                tmp += (char)((name[2*i+0] & 0xf) | ((name[2*i+1] & 0xf) << 4));
+                c = (char)((name[2*i+0] & 0xf) | ((name[2*i+1] & 0xf) << 4));
             } else {
-                tmp += (char)name[i];
+                c = (char)name[i];
             }
+
+            if( !c )
+                break;
+
+            tmp += c;
         }
 
         return tmp;

@@ -158,6 +158,13 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
     std::map<uint32, uint32>::iterator it = addressBlocks.begin();
     for(; it!=addressBlocks.end(); ++it) {
         uint32 blockAddress = (*it).first;
+
+        // filter PIC config block
+        if( checkMios8Ranges &&
+            (blockAddress >= HEX_RANGE_PIC_CONFIG_START && blockAddress <= HEX_RANGE_PIC_CONFIG_END) ) {
+            continue;
+        }
+
         hexDumpAddressBlocks.push_back(blockAddress);
 
         if( checkMios8Ranges &&

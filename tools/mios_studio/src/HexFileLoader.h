@@ -55,6 +55,8 @@ public:
     static const uint32 HEX_RANGE_MIOS8_FLASH_END          = 0x0003ffff;
     static const uint32 HEX_RANGE_MIOS8_EEPROM_START       = 0x00f00000;
     static const uint32 HEX_RANGE_MIOS8_EEPROM_END         = 0x00f00fff;
+    static const uint32 HEX_RANGE_PIC_CONFIG_START         = 0x00300000; // PIC config range will be filtered (not transfered via MIDI)
+    static const uint32 HEX_RANGE_PIC_CONFIG_END           = 0x003000ff;
     static const uint32 HEX_RANGE_MIOS8_BANKSTICK_START    = 0x00400000;
     static const uint32 HEX_RANGE_MIOS8_BANKSTICK_END      = 0x0047ffff;
 
