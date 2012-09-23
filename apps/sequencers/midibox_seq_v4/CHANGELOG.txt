@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.063
+~~~~~~~~~~~~~~~~~
+
+   o The "Guide Track" now synchronizes tracks and pattern changes independent
+     from the "steps per measure" option
+
+
 MIDIboxSEQ V4.062
 ~~~~~~~~~~~~~~~~~
 

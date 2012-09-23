@@ -883,7 +883,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("%c%d.", 'A' + (song_pos>>3), (song_pos&7)+1);
 
       if( SEQ_BPM_IsRunning() || ui_seq_pause )
-	SEQ_LCD_PrintFormattedString("%3d", seq_core_state.ref_step + 1);
+	SEQ_LCD_PrintFormattedString("%3d", seq_core_state.ref_step_song + 1);
       else
 	SEQ_LCD_PrintString("---");
 
