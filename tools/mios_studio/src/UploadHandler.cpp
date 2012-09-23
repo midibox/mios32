@@ -175,7 +175,8 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
                startAddress >= hexFileLoader.HEX_RANGE_MIOS8_FLASH_START &&
                endAddress <= hexFileLoader.HEX_RANGE_MIOS8_FLASH_END ) {
 
-        if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_OS_END ) {
+        if( startAddress <= hexFileLoader.HEX_RANGE_MIOS8_OS_END &&
+            endAddress > hexFileLoader.HEX_RANGE_MIOS8_OS_END ) {
             logbox->addEntry(Colours::black, String::formatted(T("Range 0x%08x-0x%08x (%u bytes) - MIOS8 area"),
                                                                hexFileLoader.HEX_RANGE_MIOS8_OS_START,
                                                                hexFileLoader.HEX_RANGE_MIOS8_OS_END,
@@ -194,6 +195,11 @@ bool UploadHandler::checkAndDisplaySingleRange(LogBox* logbox, uint32 startAddre
                startAddress >= hexFileLoader.HEX_RANGE_MIOS8_BANKSTICK_START &&
                endAddress <= hexFileLoader.HEX_RANGE_MIOS8_BANKSTICK_END ) {
         rangeName = T("PIC BankStick");
+        checkOk = true;
+    } else if( hexFileLoader.checkMios8Ranges &&
+               startAddress >= hexFileLoader.HEX_RANGE_PIC_CONFIG_START &&
+               endAddress <= hexFileLoader.HEX_RANGE_PIC_CONFIG_END ) {
+        rangeName = T("PIC Config");
         checkOk = true;
     } else if( startAddress >= hexFileLoader.HEX_RANGE_MIOS32_STM32_FLASH_START &&
                endAddress <= hexFileLoader.HEX_RANGE_MIOS32_STM32_FLASH_END ) {
@@ -281,12 +287,14 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
 
         if( SysexHelper::isValidMios8DebugMessage(data, size, currentDeviceId) ) {
             uploadHandlerThread->detectedMios8FeedbackLoop = 1;
+            uploadHandlerThread->mios8QueryRequest = 0;
             //printf("Mios8 Feedback\n");
         } else if( uploadHandlerThread->mios8QueryRequest && SysexHelper::isValidMios8Acknowledge(data, size, currentDeviceId) ) {
             uploadHandlerThread->mios8QueryRequest = 0;
             hexFileLoader.checkMios8Ranges = true;
         } else if( SysexHelper::isValidMios32Query(data, size, currentDeviceId) ) {
             uploadHandlerThread->detectedMios32FeedbackLoop = 1;
+            uploadHandlerThread->mios32QueryRequest = 0;
             //printf("Mios32 Feedback\n");
         } else if( uploadHandlerThread->mios32QueryRequest && SysexHelper::isValidMios32Acknowledge(data, size, currentDeviceId) ) {
             String *out = 0;
@@ -726,7 +734,8 @@ void UploadHandlerThread::run()
             errorStatusMessage = "MIOS32 Bootloader Mode cannot be entered - try again?";
             return;
         }
-    } else if( uploadHandler->hexFileLoader.requiresMios8Reboot ) {
+    } else if( uploadHandler->hexFileLoader.requiresMios8Reboot &&
+               !detectedMios8UploadRequest ) { // note: the !detectedMios8UploadRequest is important for the case that a non-MIOS8 firmware has been installed through the bootloader which doesn't support MIOS8 SysEx (e.g. the midimerger)
         mios8RebootRequest = 1;
         detectedMios8UploadRequest = 0;
         sendMios8RebootCore();

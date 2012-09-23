@@ -68,7 +68,9 @@ public:
         unsigned typeOffsetBuffer;
 
         unsigned bankPos;
+        unsigned bankSelectOffset;
         unsigned patchPos;
+        unsigned patchSelectOffset;
 
         unsigned bankBuffer;
         unsigned patchBuffer;
