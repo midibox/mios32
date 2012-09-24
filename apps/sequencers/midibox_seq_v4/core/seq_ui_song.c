@@ -884,7 +884,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( SEQ_SONG_ActiveGet() ) {
       if( SEQ_SONG_GuideTrackGet() ) {
 	u8 track = SEQ_SONG_GuideTrackGet()-1;
-	SEQ_LCD_PrintGxTy(track / 4, (1 << (track % 4)));
+	SEQ_LCD_PrintGxTy(track / 4, (1 << track));
       } else
 	SEQ_LCD_PrintString("----");
     } else {
@@ -1148,7 +1148,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintSpaces(4);
         } else {
 	  if( s.action_value )
-	    SEQ_LCD_PrintGxTy((s.action_value-1)/4, (1 << ((s.action_value-1) % 4)));
+	    SEQ_LCD_PrintGxTy((s.action_value-1)/4, (1 << (s.action_value-1)));
 	  else
 	    SEQ_LCD_PrintString("----");
         }
