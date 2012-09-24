@@ -141,6 +141,12 @@ static s32 LED_Handler(u16 *gp_leds)
 	  *gp_leds = ((s.pattern_g4&0xf) << 12) | ((s.pattern_g3&0xf) << 8) | ((s.pattern_g2&0xf) << 4) | (s.pattern_g1&0xf);
 	} break;
 
+        case SEQ_SONG_ACTION_GuideTrack: {
+	  u8 val = (u8)s.action_value;
+	  *gp_leds = (val && val <= 16) ? (1 << (val-1)) : 0x0000;
+	  break;
+	}
+
         default:
 	  if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 ) {
 	    *gp_leds = 1 << ui_selected_item;
@@ -462,6 +468,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 0; // no change
 	}
 
+        case SEQ_SONG_ACTION_GuideTrack: {
+	  if( s.action_value > 16 )
+	    s.action_value = 0;
+	  u8 val = (u8)s.action_value;
+	  if( SEQ_UI_Var8_Inc(&val, 0, 16, incrementer) >= 0 ) {
+	    s.action_value = val;
+	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+	    return 1; // value has been changed
+	  }
+	  return 0; // no change
+	}
+
         default:
 	  if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
 	    return 0; // no change
@@ -634,6 +652,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      SEQ_SONG_FetchPos(1);
 	    return 1; // value has been changed
   
+	  case SEQ_SONG_ACTION_GuideTrack:
+	    if( s.action_value && button == (s.action_value-1) )
+	      s.action_value = 0;
+	    else
+	      s.action_value = button+1;
+
+	    SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
+	      
+	    // in phrase mode: change guide track immediately
+	    if( !SEQ_SONG_ActiveGet() )
+	      SEQ_SONG_FetchPos(1);
+	    return 1; // value has been changed
+
 	  default:
 	    if( s.action >= SEQ_SONG_ACTION_Loop1 && s.action <= SEQ_SONG_ACTION_Loop16 ) {
 	      u8 val_bank;
@@ -853,7 +884,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( SEQ_SONG_ActiveGet() ) {
       if( SEQ_SONG_GuideTrackGet() ) {
 	u8 track = SEQ_SONG_GuideTrackGet()-1;
-	SEQ_LCD_PrintGxTy(track / 4, (1 << track));
+	SEQ_LCD_PrintGxTy(track / 4, (1 << (track % 4)));
       } else
 	SEQ_LCD_PrintString("----");
     } else {
@@ -948,6 +979,11 @@ static s32 LCD_Handler(u8 high_prio)
         SEQ_LCD_PrintString(" G1   G2   G3   G4      ");
         break;
   
+      case SEQ_SONG_ACTION_GuideTrack:
+        SEQ_LCD_PrintString(" -> Guide Track");
+        SEQ_LCD_PrintSpaces(9);
+        break;
+  
       default:
         if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
   	SEQ_LCD_PrintSpaces(24);
@@ -1009,6 +1045,10 @@ static s32 LCD_Handler(u8 high_prio)
   
         case SEQ_SONG_ACTION_Mutes:
 	  SEQ_LCD_PrintString("Mutes");
+	  break;
+  
+        case SEQ_SONG_ACTION_GuideTrack:
+	  SEQ_LCD_PrintString(" G.T.");
 	  break;
   
         default:
@@ -1102,6 +1142,19 @@ static s32 LCD_Handler(u8 high_prio)
         SEQ_LCD_PrintSpaces(5);
         break;
   
+      case SEQ_SONG_ACTION_GuideTrack:
+        SEQ_LCD_PrintSpaces(5);
+        if( ui_selected_item >= ITEM_G1 && ui_selected_item <= ITEM_G4 && ui_cursor_flash ) {
+	  SEQ_LCD_PrintSpaces(4);
+        } else {
+	  if( s.action_value )
+	    SEQ_LCD_PrintGxTy((s.action_value-1)/4, (1 << ((s.action_value-1) % 4)));
+	  else
+	    SEQ_LCD_PrintString("----");
+        }
+        SEQ_LCD_PrintSpaces(11);
+        break;
+
       default:
         if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
 	  SEQ_LCD_PrintSpaces(20);

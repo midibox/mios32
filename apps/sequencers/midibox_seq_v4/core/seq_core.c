@@ -513,6 +513,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
   if( (bpm_tick % (384/4)) == 0 ) {
+    if( seq_core_state.RESET_TRKPOS_REQ ) {
+      seq_core_state.RESET_TRKPOS_REQ = 0;
+      SEQ_CORE_ResetTrkPosAll();
+    }
+
     if( seq_core_state.FIRST_CLK || seq_core_state.FORCE_REF_STEP_RESET ) {
       seq_core_state.FORCE_REF_STEP_RESET = 0;
       synch_to_measure_req = 1;

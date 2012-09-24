@@ -348,6 +348,13 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 	again = 1;
       } break;
 
+      case SEQ_SONG_ACTION_GuideTrack: {
+	if( s->action_value <= 16 )
+	  seq_song_guide_track = s->action_value;
+	++song_pos;
+	again = 1;
+      } break;
+
       default:
 	if( s->action >= SEQ_SONG_ACTION_Loop1 && s->action <= SEQ_SONG_ACTION_Loop16 ) {
 	  song_loop_ctr = 0;
@@ -441,7 +448,8 @@ s32 SEQ_SONG_PrevPos(void)
       while( song_pos && // on certain actions we should go back one additional step
 	     (s->action == SEQ_SONG_ACTION_SelMixerMap ||
 	      s->action == SEQ_SONG_ACTION_Tempo ||
-	      s->action == SEQ_SONG_ACTION_Mutes ) ) {
+	      s->action == SEQ_SONG_ACTION_Mutes ||
+	      s->action == SEQ_SONG_ACTION_GuideTrack ) ) {
 	--song_pos;
 	--s;
       }
