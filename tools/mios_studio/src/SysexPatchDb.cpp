@@ -494,7 +494,7 @@ SysexPatchDb::SysexPatchDb()
 
         ps.payloadBegin     = 9;
         ps.payloadEnd       = 9 + 256-1;
-        ps.checksumBegin    = ps.payloadBegin;
+        ps.checksumBegin    = 5; // includes device ID, command, bank and patch
         ps.checksumEnd      = ps.payloadEnd;
         ps.checksumPos      = 9 + 256;
         ps.patchSize        = 9 + 256 + 1 + 1;
