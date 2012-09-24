@@ -12,6 +12,11 @@ MIDIboxSEQ V4.063
    o The "Guide Track" now synchronizes tracks and pattern changes independent
      from the "steps per measure" option
 
+   o it's now possible to change or disable a guide track from a song position entry
+
+   o the "RATOPC" (restart all tracks on pattern change) option now resets the track
+     synchronously with the next step
+
 
 MIDIboxSEQ V4.062
 ~~~~~~~~~~~~~~~~~
