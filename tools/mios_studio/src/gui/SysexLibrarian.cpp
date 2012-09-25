@@ -390,10 +390,11 @@ SysexLibrarianControl::SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibra
     // restore settings
     PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
-        deviceIdSlider->setValue(propertiesFile->getIntValue(T("sysexLibrarianDeviceId"), 0) & 7);
+        deviceIdSlider->setValue(propertiesFile->getIntValue(T("sysexLibrarianDeviceId"), 0));
         String syxFileName(propertiesFile->getValue(T("sysexLibrarianSyxFile"), String::empty));
         if( syxFileName != String::empty )
             syxFile = File(syxFileName);
+        deviceTypeSelector->setSelectedId(propertiesFile->getIntValue(T("sysexLibrarianDevice"), 1), true);
     }
 
     setSize(300, 200);
@@ -546,6 +547,11 @@ void SysexLibrarianControl::comboBoxChanged(ComboBox* comboBox)
 {
     if( comboBox == deviceTypeSelector ) {
         setSpec(comboBox->getSelectedId()-1);
+
+        // store setting
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile )
+            propertiesFile->setValue(T("sysexLibrarianDevice"), (int)comboBox->getSelectedId());
     }
 }
 
@@ -613,7 +619,7 @@ void SysexLibrarianControl::timerCallback()
             if( !dumpReceived ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                            T("No response from core."),
+                                            T("No response from device."),
                                             T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIbox firmware has been uploaded"),
                                             String::empty);
             } else if( checksumError ) {
@@ -817,11 +823,11 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
             // trigger timer immediately
             errorResponse = true;
             stopTimer();
-            startTimer(1);
+            startTimer(100);
         } else if( miosStudio->sysexPatchDb->isValidAcknowledge(spec, data, size, (int)deviceIdSlider->getValue()) ) {
             // trigger timer immediately
             stopTimer();
-            startTimer(1);
+            startTimer(100);
         }
     }
 }
