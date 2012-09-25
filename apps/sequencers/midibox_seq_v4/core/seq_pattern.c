@@ -214,8 +214,11 @@ s32 SEQ_PATTERN_Handler(void)
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
 
       // restart *all* patterns?
-      if( seq_core_options.RATOPC )
-	seq_core_state.RESET_TRKPOS_REQ = 1;
+      if( seq_core_options.RATOPC ) {
+	MIOS32_IRQ_Disable(); // must be atomic
+	seq_core_state.reset_trkpos_req |= (0xf << (4*group));
+	MIOS32_IRQ_Enable();
+      }
     }
   }
 
