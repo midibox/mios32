@@ -456,7 +456,7 @@ SysexPatchDb::SysexPatchDb()
         ps.specName       = String(T("Access Virus B & C"));
         ps.numBanks          = 8; // Virus A: only 3
         ps.numPatchesPerBank = 128;
-        ps.delayBetweenReads  = 1000;
+        ps.delayBetweenReads  = 3000;
         ps.delayBetweenWrites = 1000;
 
         ps.patchHeader.add(0xf0);
