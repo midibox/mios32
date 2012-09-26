@@ -637,6 +637,7 @@ void SysexLibrarianControl::timerCallback()
                     timerRestartDelay = 100*retryCtr; // delay increases with each retry
                 } else {
                     transferFinished = true;
+                    timerRestartDelay = 10; // next time we will start with short delay again
                     AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                                 T("No response from device."),
                                                 T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIbox firmware has been uploaded"),
