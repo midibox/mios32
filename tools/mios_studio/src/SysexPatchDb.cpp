@@ -631,6 +631,7 @@ Array<uint8> SysexPatchDb::createCmd(const unsigned& spec, const uint8 &deviceId
 {
     PatchSpecT *ps = (PatchSpecT *)&patchSpec.getReference(spec); // we assume that the user has checked the 'spec' index!
     Array<uint8> dataArray = createHeader(spec, deviceId);
+    uint8 checksum = 0x00;
 
     for(int i=0; i<ps->patchCmd.size(); ++i) {
         uint8 b = ps->patchCmd[i];
@@ -663,8 +664,7 @@ Array<uint8> SysexPatchDb::createCmd(const unsigned& spec, const uint8 &deviceId
         dataArray.addArray(data, size);
 
         if( ps->checksumPos ) {
-            uint8 checksum = 0x00;
-            for(int pos=ps->payloadBegin; pos<=ps->payloadEnd; ++pos) {
+            for(int pos=ps->checksumBegin; pos<=ps->checksumEnd; ++pos) {
                 checksum += dataArray[pos];
             }
 
