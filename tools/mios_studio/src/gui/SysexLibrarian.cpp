@@ -311,6 +311,8 @@ SysexLibrarianControl::SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibra
     : miosStudio(_miosStudio)
     , sysexLibrarian(_sysexLibrarian)
     , currentPatch(0)
+    , timerRestartDelay(10)
+    , retryCtr(0)
     , progress(0)
     , receiveDump(false)
     , handleSinglePatch(false)
@@ -395,6 +397,7 @@ SysexLibrarianControl::SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibra
         if( syxFileName != String::empty )
             syxFile = File(syxFileName);
         deviceTypeSelector->setSelectedId(propertiesFile->getIntValue(T("sysexLibrarianDevice"), 1), true);
+        setSpec(deviceTypeSelector->getSelectedId()-1);
     }
 
     setSize(300, 200);
@@ -507,8 +510,11 @@ void SysexLibrarianControl::buttonClicked(Button* buttonThatWasClicked)
 
         currentPatch = (buttonThatWasClicked == sendBankButton || buttonThatWasClicked == receiveBankButton) ? 0 : sysexLibrarian->sysexLibrarianBank->getSelectedPatch();
         progress = 0;
+        dumpRequested = false;
         errorResponse = false;
         checksumError = false;
+
+        retryCtr = 0; // no retry yet
 
         handleSinglePatch =
             buttonThatWasClicked == sendPatchButton ||
@@ -577,6 +583,9 @@ void SysexLibrarianControl::setSpec(const unsigned& spec)
             bufferSlider->setRange(1, 1, 1);
             bufferSlider->setEnabled(false);
         }
+
+        // starting delay - will be increased if synth needs more time
+        timerRestartDelay = 10;
     }
 }
 
@@ -615,19 +624,24 @@ void SysexLibrarianControl::timerCallback()
     bool transferFinished = false;
 
     if( receiveDump ) {
-        if( currentPatch > 0 ) {
-            if( !dumpReceived ) {
-                transferFinished = true;
-                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                            T("No response from device."),
-                                            T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIbox firmware has been uploaded"),
-                                            String::empty);
-            } else if( checksumError ) {
+        if( dumpRequested ) {
+            if( checksumError ) {
                 transferFinished = true;
                 AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                             T("Detected checksum error!"),
                                             T("Check:\n- MIDI In/Out connections\n- your MIDI interface"),
                                             String::empty);
+            } else if( !dumpReceived ) {
+                if( ++retryCtr < 16 ) {
+                    --currentPatch;
+                    timerRestartDelay = 100*retryCtr; // delay increases with each retry
+                } else {
+                    transferFinished = true;
+                    AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                                T("No response from device."),
+                                                T("Check:\n- MIDI In/Out connections\n- Device ID\n- that MIDIbox firmware has been uploaded"),
+                                                String::empty);
+                }
             }
         }
 
@@ -675,6 +689,7 @@ void SysexLibrarianControl::timerCallback()
                     MidiMessage message = SysexHelper::createMidiMessage(data);
                     miosStudio->sendMidiMessage(message);
 
+                    dumpRequested = true;
                     ++currentPatch;
 
                     if( handleSinglePatch )
@@ -814,9 +829,9 @@ void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message
                 //sysexLibrarian->sysexLibrarianBank->incPatchIfSingleSelection();
             }
 
-            // trigger timer immediately
+            // trigger timer immediately with variable delay (will be increased if timeouts have been notified)
             stopTimer();
-            startTimer(100);
+            startTimer(timerRestartDelay);
         }
     } else if( isTimerRunning() ) {
         if( miosStudio->sysexPatchDb->isValidErrorAcknowledge(spec, data, size, (int)deviceIdSlider->getValue()) ) {
@@ -999,12 +1014,6 @@ SysexLibrarian::SysexLibrarian(MiosStudio *_miosStudio)
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
     setSize(725, 500);
-
-    // initial bank
-    unsigned spec = 0;
-    sysexLibrarianBank->initBank(spec);
-    sysexLibrarianAssemblyBank->initBank(spec);
-    sysexLibrarianControl->setSpec(spec);
 }
 
 SysexLibrarian::~SysexLibrarian()

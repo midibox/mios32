@@ -165,9 +165,12 @@ protected:
     //==============================================================================
     File syxFile;
     int currentPatch;
+    unsigned timerRestartDelay;
+    unsigned retryCtr;
     bool handleSinglePatch;
     bool bufferTransfer;
     bool receiveDump;
+    bool dumpRequested;
     bool dumpReceived;
     bool checksumError;
     bool errorResponse;
