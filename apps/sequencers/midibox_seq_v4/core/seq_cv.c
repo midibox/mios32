@@ -26,6 +26,14 @@
 #include "seq_core.h"
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Local defines
+/////////////////////////////////////////////////////////////////////////////
+
+// for smokestacksproductions:
+// mirror J5.A0 at P0.4 (J18, CAN port) since the original IO doesn't work on his LPCXPRESSO anymore
+#define MIRROR_J5_A0_AT_J18 1
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -69,6 +77,14 @@ s32 SEQ_CV_Init(u32 mode)
 #elif defined(MIOS32_FAMILY_LPC17xx)
   for(i=0; i<4; ++i)
     MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+
+# if MIRROR_J5_A0_AT_J18
+  MIOS32_SYS_LPC_PINSEL(0, 4, 0); // GPIO
+  MIOS32_SYS_LPC_PINMODE(0, 4, 0); // doesn't matter
+  MIOS32_SYS_LPC_PINDIR(0, 4, 1); // output mode
+  MIOS32_SYS_LPC_PINMODE_OD(0, 4, 0); // push-pull
+# endif
+
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
@@ -368,6 +384,10 @@ s32 SEQ_CV_Update(void)
       MIOS32_BOARD_J5_PinSet(i, tmp & 1);
       tmp >>= 1;
     }
+#endif
+
+#if MIRROR_J5_A0_AT_J18 && defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_SYS_LPC_PINSET(0, 4, (new_gates & 1));
 #endif
 
 #if defined(MIOS32_FAMILY_STM32F10x)
