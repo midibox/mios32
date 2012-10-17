@@ -945,30 +945,35 @@ static void SEQ_UI_Button_Clear_Track(u32 dummy)
 
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
+#if 0
+  u32 clear_delay = 2000;
+#else
+  u32 clear_delay = 50; // TK: I prefer a much faster clear
+#endif
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Mixer Map");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Mixer Map");
     }
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear SongPos");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
     }
     return 1;
   } else {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Track);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Track");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Track");
     }
     return 1;
   }
