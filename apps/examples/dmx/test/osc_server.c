@@ -37,7 +37,7 @@
 
 static struct uip_udp_conn *osc_conn = NULL;
 
-static mios32_osc_search_tree_t parse_root[];
+const static mios32_osc_search_tree_t parse_root[];
 
 static u8 *osc_send_packet;
 static u32 osc_send_len;
@@ -480,19 +480,19 @@ static const char str_pwm_duty_cycle_down[] = "pwm_duty_cycle_down";
 static const char str_pwm_duty_cycle_up[] = "pwm_duty_cycle_up";
 
 
-static mios32_osc_search_tree_t parse_cs_led[] = {
+const static mios32_osc_search_tree_t parse_cs_led[] = {
   { str_set, NULL, &OSC_SERVER_Method_LED_Set, 0x00000000 },
   { str_set_all, NULL, &OSC_SERVER_Method_LED_SetAll, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_cs_mf[] = {
+const static mios32_osc_search_tree_t parse_cs_mf[] = {
   { str_set, NULL, &OSC_SERVER_Method_MF_Set, 0x00000000 },
   { str_set_all, NULL, &OSC_SERVER_Method_MF_SetAll, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_cfg_mf[] = { // using same method with different args to select the parameter
+const static mios32_osc_search_tree_t parse_cfg_mf[] = { // using same method with different args to select the parameter
   { str_deadband, NULL, &OSC_SERVER_Method_MF_Config, 0x00000000 },
   { str_pwm_period, NULL, &OSC_SERVER_Method_MF_Config, 0x00000001 },
   { str_pwm_duty_cycle_down, NULL, &OSC_SERVER_Method_MF_Config, 0x00000002 },
@@ -502,20 +502,20 @@ static mios32_osc_search_tree_t parse_cfg_mf[] = { // using same method with dif
 
 
 
-static mios32_osc_search_tree_t parse_cs[] = {
+const static mios32_osc_search_tree_t parse_cs[] = {
   { str_led, parse_cs_led, NULL, 0 },
   { str_mf, parse_cs_mf, NULL, 0 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_cfg[] = {
+const static mios32_osc_search_tree_t parse_cfg[] = {
   { str_mf, parse_cfg_mf, NULL, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
 
 
-static mios32_osc_search_tree_t parse_root[] = {
+const static mios32_osc_search_tree_t parse_root[] = {
   { str_cs, parse_cs, NULL, 0x00000000 },
   { str_cfg, parse_cfg, NULL, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator

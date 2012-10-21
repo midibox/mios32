@@ -41,7 +41,7 @@
 
 static struct uip_udp_conn *osc_conn = NULL;
 
-static mios32_osc_search_tree_t parse_root[];
+const static mios32_osc_search_tree_t parse_root[];
 
 static u8 *osc_send_packet;
 static u32 osc_send_len;
@@ -643,7 +643,7 @@ static const char str_adsr[] = "adsr";
 static const char str_gates[] = "gates";
 
 
-static mios32_osc_search_tree_t parse_sid_osc[] = {
+const static mios32_osc_search_tree_t parse_sid_osc[] = {
   { str_transpose,  NULL, &OSC_SERVER_Method_OscPM7D, 0x00000008 }, // bit [11:0] selects offset in OSC address range
   { str_finetune,   NULL, &OSC_SERVER_Method_OscPM8, 0x00000009 }, // bit [11:0] selects offset in OSC address range
   { str_pulsewidth, NULL, &OSC_SERVER_Method_Osc12,  0x00000004 }, // bit [11:0] selects offset in OSC address range
@@ -651,14 +651,14 @@ static mios32_osc_search_tree_t parse_sid_osc[] = {
 };
 
 
-static mios32_osc_search_tree_t parse_sid_filter[] = {
+const static mios32_osc_search_tree_t parse_sid_filter[] = {
   { str_cutoff,    NULL, &OSC_SERVER_Method_Fil12, 0x00000001 }, // bit [11:0] selects offset in Filter address range
   { str_resonance, NULL, &OSC_SERVER_Method_Fil8,  0x00000003 }, // bit [11:0] selects offset in Filter address range
   { NULL, NULL, NULL, 0 } // terminator
 };
 
 
-static mios32_osc_search_tree_t parse_sid_direct[] = {
+const static mios32_osc_search_tree_t parse_sid_direct[] = {
   { str_frq,        NULL, &OSC_SERVER_Method_DirectFrq,   0x00000000 }, // bit [11:0] selects offset in SID address range
   { str_pulsewidth, NULL, &OSC_SERVER_Method_Direct16,    0x00000002 }, // bit [11:0] selects offset in SID address range
   { str_ctrl,       NULL, &OSC_SERVER_Method_Direct8,     0x00000004 }, // bit [11:0] selects offset in SID address range
@@ -667,14 +667,14 @@ static mios32_osc_search_tree_t parse_sid_direct[] = {
 };
 
 
-static mios32_osc_search_tree_t parse_sid_123[] = {
+const static mios32_osc_search_tree_t parse_sid_123[] = {
   { str_osc,    parse_sid_osc,    NULL, 0x00000000 },
   { str_direct, parse_sid_direct, NULL, 0x00000000 },
   { NULL, NULL, NULL, 0 } // terminator
 };
 
 
-static mios32_osc_search_tree_t parse_sid_lr[] = {
+const static mios32_osc_search_tree_t parse_sid_lr[] = {
   { str_1, parse_sid_123, NULL, 0x00000000 }, // bit [30:28] selects Voice1
   { str_2, parse_sid_123, NULL, 0x10000000 }, // bit [30:28] selects Voice2
   { str_3, parse_sid_123, NULL, 0x20000000 }, // bit [30:28] selects Voice3
@@ -682,7 +682,7 @@ static mios32_osc_search_tree_t parse_sid_lr[] = {
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_sid[] = {
+const static mios32_osc_search_tree_t parse_sid[] = {
   { str_l, parse_sid_lr, NULL, 0x00000000 }, // bit [31] selects L
   { str_r, parse_sid_lr, NULL, 0x80000000 }, // bit [31] selects R
   { NULL, NULL, NULL, 0 } // terminator
@@ -690,7 +690,7 @@ static mios32_osc_search_tree_t parse_sid[] = {
 
 
 
-static mios32_osc_search_tree_t parse_root[] = {
+const static mios32_osc_search_tree_t parse_root[] = {
   { str_sid1,  parse_sid, NULL, 0x00000000 }, // bit [27:24] selects SID1
   { str_sid2,  parse_sid, NULL, 0x01000000 }, // bit [27:24] selects SID2
   { str_sid3,  parse_sid, NULL, 0x02000000 }, // bit [27:24] selects SID3
