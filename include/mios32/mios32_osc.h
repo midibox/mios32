@@ -42,7 +42,7 @@
 
 typedef struct mios32_osc_search_tree_t {
   const char                     *address;    // OSC address part or NULL if there are no more address parts/methods in the "OSC container"
-  struct mios32_osc_search_tree_t *next;      // link to the next address part or NULL if the leaf has been reached (method reached)
+  const struct mios32_osc_search_tree_t *next;      // link to the next address part or NULL if the leaf has been reached (method reached)
   void                           *osc_method; // if leaf: pointer to function which dispatches the addressed OSC method
   u32                            method_arg;  // optional argument for methods (32bit)
 } mios32_osc_search_tree_t;
@@ -103,7 +103,7 @@ extern u8 *MIOS32_OSC_PutChar(u8 *buffer, char c);
 extern mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer);
 extern u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p);
 
-extern s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search_tree);
+extern s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, const mios32_osc_search_tree_t *search_tree);
 
 extern s32 MIOS32_OSC_SendDebugMessage(mios32_osc_args_t *osc_args, u32 method_arg);
 
