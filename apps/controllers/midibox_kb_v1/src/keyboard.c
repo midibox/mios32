@@ -312,9 +312,33 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 #if 0
   // Display status of all rows
   {
-    int i;
-    for(i=0; i<MATRIX_NUM_ROWS; ++i)
-      DEBUG_MSG("Row %2d: 0x%04x\n", i, din_value[kb][i]);
+    DEBUG_MSG("---\n");
+    int i;    
+    for(i=0; i<MATRIX_NUM_ROWS; ++i) {
+      int v = ~din_value[kb][i];
+      DEBUG_MSG("DOUT SR%d.%d:  %c%c%c%c%c%c%c%c  %c%c%c%c%c%c%c%c\n",
+		(i / 8)+1,
+		7 - (i % 8),
+		(v & 0x0001) ? '1' : '0',
+		(v & 0x0002) ? '1' : '0',
+		(v & 0x0004) ? '1' : '0',
+		(v & 0x0008) ? '1' : '0',
+		(v & 0x0010) ? '1' : '0',
+		(v & 0x0020) ? '1' : '0',
+		(v & 0x0040) ? '1' : '0',
+		(v & 0x0080) ? '1' : '0',
+		(v & 0x0100) ? '1' : '0',
+		(v & 0x0200) ? '1' : '0',
+		(v & 0x0400) ? '1' : '0',
+		(v & 0x0800) ? '1' : '0',
+		(v & 0x1000) ? '1' : '0',
+		(v & 0x2000) ? '1' : '0',
+		(v & 0x4000) ? '1' : '0',
+		(v & 0x8000) ? '1' : '0'
+		);
+    }
+
+
   }
 #endif
 

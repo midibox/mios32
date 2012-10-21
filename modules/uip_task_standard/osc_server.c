@@ -43,7 +43,7 @@
 
 static struct uip_udp_conn *osc_conn[OSC_SERVER_NUM_CONNECTIONS];
 
-static mios32_osc_search_tree_t parse_root[];
+const static mios32_osc_search_tree_t parse_root[];
 static u8 osc_parsed_from_con;
 
 static u8 *osc_send_packet;
@@ -755,13 +755,13 @@ static s32 OSC_SERVER_Method_EventTOSC(mios32_osc_args_t *osc_args, u32 method_a
 /////////////////////////////////////////////////////////////////////////////
 
 
-static mios32_osc_search_tree_t parse_mcmpp_value[] = {
+const static mios32_osc_search_tree_t parse_mcmpp_value[] = {
   { "*", NULL, &OSC_SERVER_Method_MCMPP, 0x00000000 },
 
   { NULL, NULL, NULL, 0 } // terminator
 };
 
-static mios32_osc_search_tree_t parse_mcmpp[] = {
+const static mios32_osc_search_tree_t parse_mcmpp[] = {
   { "key",           parse_mcmpp_value, NULL, 0x00000090 }, // bit [7:4] contains status byte
   { "polypressure",  parse_mcmpp_value, NULL, 0x000000a0 }, // bit [7:4] contains status byte
   { "cc",            parse_mcmpp_value, NULL, 0x000000b0 }, // bit [7:4] contains status byte
@@ -773,7 +773,7 @@ static mios32_osc_search_tree_t parse_mcmpp[] = {
 };
 
 
-static mios32_osc_search_tree_t parse_event[] = {
+const static mios32_osc_search_tree_t parse_event[] = {
   { "note_*",        NULL, &OSC_SERVER_Method_EventTOSC,0x00000090 }, // bit [7:4] contains status byte
   { "polypressure_*",NULL, &OSC_SERVER_Method_EventTOSC,0x000000a0 }, // bit [7:4] contains status byte
   { "cc_*",          NULL, &OSC_SERVER_Method_EventTOSC,0x000000b0 }, // bit [7:4] contains status byte
@@ -791,7 +791,7 @@ static mios32_osc_search_tree_t parse_event[] = {
 };
 
 
-static mios32_osc_search_tree_t parse_root[] = {
+const static mios32_osc_search_tree_t parse_root[] = {
   { "midi",  NULL, &OSC_SERVER_Method_MIDI, OSC0 },
   { "midi1", NULL, &OSC_SERVER_Method_MIDI, OSC0 },
   { "midi2", NULL, &OSC_SERVER_Method_MIDI, OSC1 },

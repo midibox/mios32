@@ -148,8 +148,8 @@
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree);
-static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, mios32_osc_search_tree_t *search_tree);
+static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, const mios32_osc_search_tree_t *search_tree);
+static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, const mios32_osc_search_tree_t *search_tree);
 
 static size_t my_strnlen(char *str, size_t max_len);
 
@@ -487,7 +487,7 @@ u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p)
 //! \return -3 if the packet contains an OSC element with an unsupported format
 //! returns -4 if MIOS32_OSC_MAX_PATH_PARTS has been exceeded
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search_tree)
+s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, const mios32_osc_search_tree_t *search_tree)
 {
   // store osc arguments (and more...) into osc_args variable
   mios32_osc_args_t osc_args;
@@ -547,7 +547,7 @@ s32 MIOS32_OSC_ParsePacket(u8 *packet, u32 len, mios32_osc_search_tree_t *search
 // returns -3 if element contains an unsupported format
 // returns -4 if MIOS32_OSC_MAX_PATH_PARTS has been exceeded
 /////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, mios32_osc_search_tree_t *search_tree)
+static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_args, const mios32_osc_search_tree_t *search_tree)
 {
   // exit immediately if element is empty
   if( !len )
@@ -685,7 +685,7 @@ static s32 MIOS32_OSC_SearchElement(u8 *buffer, u32 len, mios32_osc_args_t *osc_
 // searches in search_tree for matching OSC addresses
 // returns -4 if MIOS32_OSC_MAX_PATH_PARTS has been exceeded
 /////////////////////////////////////////////////////////////////////////////
-static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, mios32_osc_search_tree_t *search_tree)
+static s32 MIOS32_OSC_SearchPath(char *path, mios32_osc_args_t *osc_args, u32 method_arg, const mios32_osc_search_tree_t *search_tree)
 {
   if( osc_args->num_path_parts >= MIOS32_OSC_MAX_PATH_PARTS )
     return -4; // maximum number of path parts exceeded
