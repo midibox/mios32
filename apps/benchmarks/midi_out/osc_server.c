@@ -38,7 +38,7 @@
 
 static struct uip_udp_conn *osc_conn = NULL;
 
-static mios32_osc_search_tree_t parse_root[];
+const static mios32_osc_search_tree_t parse_root[];
 
 static u8 *osc_send_packet;
 static u32 osc_send_len;
@@ -276,7 +276,7 @@ static s32 OSC_SERVER_Method_SendMIDI(mios32_osc_args_t *osc_args, u32 method_ar
 
 
 
-static mios32_osc_search_tree_t parse_root[] = {
+const static mios32_osc_search_tree_t parse_root[] = {
   { "midi", NULL, &OSC_SERVER_Method_SendMIDI, 0x00000000 },
 
   { "midi_usb0", NULL, &OSC_SERVER_Method_SendMIDI, USB0 },
