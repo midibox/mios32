@@ -68,7 +68,7 @@ static file_t midifile_fi;
 s32 MID_FILE_Init(u32 mode)
 {
   // initial midifile name and size
-  strcpy(ui_midifile_name, "Waiting...");
+  ui_midifile_name[0] = 0;
   midifile_len = 0;
 
   return 0; // no error

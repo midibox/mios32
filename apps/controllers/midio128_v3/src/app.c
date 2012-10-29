@@ -421,6 +421,8 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
 	// reset sequencer
 	SEQ_Reset(0);
+	// but enable pause mode
+	seq_pause = 1;
       }
 
       MUTEX_SDCARD_GIVE;

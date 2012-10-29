@@ -115,6 +115,14 @@ s32 MID_PARSER_InstallEventCallbacks(void *mid_parser_playevent, void *mid_parse
 
 
 /////////////////////////////////////////////////////////////////////////////
+// returns 1 if the previous MID_PARSER_Read() got a valid file
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_PARSER_FileIsValid(void)
+{
+  return file_valid;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Opens a .mid file and parses for available header/track chunks
 /////////////////////////////////////////////////////////////////////////////
 s32 MID_PARSER_Read(void)
@@ -207,7 +215,20 @@ s32 MID_PARSER_Read(void)
 	     chunk_type[0], chunk_type[1], chunk_type[2], chunk_type[3],
 	     chunk_len);
 #endif
+
+#if 0
       return -1;
+#else
+      // TK: don't return invalid status if we already found some tracks
+      // E.g. kpete sent me a format #0 .mid file which contains an invalid chunk identifier at the end
+      // Some MIDI players accept this (e.g. MDF2 or Logic Studio), some others reject it (e.g. Quicktime)
+      // We accept it... :-)
+      if( midi_tracks_num >= 1 ) {
+	break;
+      } else {
+	return -1;
+      }
+#endif
     }
   }
 

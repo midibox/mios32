@@ -51,7 +51,7 @@ extern s32 SEQ_MidiPlayModeSet(u8 mode);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 seq_pause;
+extern u8 seq_pause;
 
 
 #endif /* _SEQ_H */

@@ -1,5 +1,16 @@
 $Id$
 
+MIDIO128 V3.008
+~~~~~~~~~~~~~~~
+
+   o MIDI file player: accept invalid .mid files when they contain at least one valid track
+
+   o MIDI file player: selected All/Single mode stored in .MIO file
+
+   o MIDI file player: no auto-play if sequencer is stopped and the next file is selected
+
+
+
 MIDIO128 V3.007
 ~~~~~~~~~~~~~~~
 

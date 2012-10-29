@@ -16,6 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
+
 #include "tasks.h"
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
@@ -62,6 +64,9 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+// pause mode (will be controlled from user interface)
+u8 seq_pause;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -69,9 +74,6 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
 
 // the pattern position
 static u8 seq_step_pos;
-
-// pause mode (will be controlled from user interface)
-static u8 seq_pause = 0;
 
 // for FFWD function
 static u8 ffwd_silent_mode;
@@ -116,6 +118,9 @@ s32 SEQ_Init(u32 mode)
 
   // reset sequencer
   SEQ_Reset(0);
+
+  // start with pause after power-on
+  seq_pause = 1;
 
   // init BPM generator
   SEQ_BPM_Init(0);
@@ -189,7 +194,6 @@ s32 SEQ_Handler(void)
     u32 bpm_tick;
     if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
       again = 1; // check all requests again after execution of this part
-
       SEQ_Tick(bpm_tick);
     }
   } while( again && num_loops < 10 );
@@ -306,6 +310,10 @@ s32 SEQ_PlayFile(char *midifile)
   // play off events before loading new file
   SEQ_PlayOffEvents();
 
+  // reset BPM tick (to ensure that next file will start at 0 if we are currently in pause mode)
+  SEQ_BPM_TickSet(0);
+  next_prefetch = prefetch_offset = 0;
+
   if( MID_FILE_open(midifile) ) { // try to open next file
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ] file %s cannot be opened (wrong directory?)\n", midifile);
@@ -318,7 +326,10 @@ s32 SEQ_PlayFile(char *midifile)
 #endif
     return -2; // file is invalid
   } 
-  SEQ_BPM_Start();          // start BPM generator
+
+  // restart BPM generator if not in pause mode
+  if( !seq_pause )
+    SEQ_BPM_Start();
 
   return 0; // no error
 }
@@ -335,7 +346,12 @@ static s32 SEQ_PlayNextFile(s8 next)
   char next_file[13];
   next_file[0] = 0;
 
-  if( next < 0 &&
+  if( next == 0 && MID_FILE_UI_NameGet()[0] != 0 ) {
+    memcpy(next_file, MID_FILE_UI_NameGet(), 13);
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[SEQ] play current file '%s'\n", next_file);
+#endif
+  } else if( next < 0 &&
       (MID_FILE_FindPrev(MID_FILE_UI_NameGet(), next_file) == 1 ||
        MID_FILE_FindNext(NULL, next_file) == 1) ) { // if previous file not found, try first file
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -621,15 +637,20 @@ s32 SEQ_PlayStopButton(void)
       SEQ_BPM_Cont();
     } else {
       MUTEX_SDCARD_TAKE;
+
       // if in auto mode and BPM generator is clocked in slave mode:
       // change to master mode
       SEQ_BPM_CheckAutoMaster();
-      // first song
+
+      // request to play currently selected file
       SEQ_PlayFileReq(0, 1);
+
       // reset sequencer
       SEQ_Reset(1);
+
       // start sequencer
       SEQ_BPM_Start();
+
       MUTEX_SDCARD_GIVE;
     }
   }
