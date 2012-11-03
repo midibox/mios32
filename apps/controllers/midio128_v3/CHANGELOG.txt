@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.009
+~~~~~~~~~~~~~~~
+
+   o MIDI file player: in single mode the player now doesn't loop the song anymore
+
+
 MIDIO128 V3.008
 ~~~~~~~~~~~~~~~
 
