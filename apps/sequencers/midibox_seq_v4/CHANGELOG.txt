@@ -17,8 +17,10 @@ MIDIboxSEQ V4.063
    o the "RATOPC" (restart all tracks on pattern change) option now resets the track
      synchronously with the next step
 
-   o the clear button now clears the track immediately again (2 second delay has been
+   o the clear button now clears the track immediately (2 second delay has been
      removed). Please discuss in the MIDIbox forum if you don't like this change.
+
+   o the copy/paste/undo functions now also copy the track and drum instrument names
 
 
 MIDIboxSEQ V4.062

@@ -69,6 +69,7 @@ static u8 copypaste_track = 0;
 static u8 copypaste_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 copypaste_trg_layer[SEQ_TRG_MAX_BYTES];
 static u8 copypaste_cc[128];
+static u8 copypaste_trk_name[81];
 static u8 copypaste_par_layers;
 static u16 copypaste_par_steps;
 static u8 copypaste_trg_layers;
@@ -80,6 +81,7 @@ static u8 undo_track = 0;
 static u8 undo_par_layer[SEQ_PAR_MAX_BYTES];
 static u8 undo_trg_layer[SEQ_TRG_MAX_BYTES];
 static u8 undo_cc[128];
+static u8 undo_trk_name[81];
 static u8 undo_par_layers;
 static u16 undo_par_steps;
 static u8 undo_trg_layers;
@@ -547,6 +549,10 @@ static s32 COPY_Track(u8 track)
   memcpy((u8 *)copypaste_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)copypaste_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
 
+  // copy track name
+  memcpy((u8 *)copypaste_trk_name, (u8 *)seq_core_trk[track].name, 81);
+
+  // copy CCs
   for(i=0; i<128; ++i)
     copypaste_cc[i] = SEQ_CC_Get(track, i);
 
@@ -641,6 +647,10 @@ static s32 PASTE_Track(u8 track)
     }
   }
 
+  // copy track name
+  memcpy((u8 *)seq_core_trk[track].name, (u8 *)copypaste_trk_name, 81);
+
+
   return 0; // no error
 }
 
@@ -679,6 +689,10 @@ static s32 UNDO_Track(void)
   memcpy((u8 *)&seq_par_layer_value[undo_track], (u8 *)undo_par_layer, SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)&seq_trg_layer_value[undo_track], (u8 *)undo_trg_layer, SEQ_TRG_MAX_BYTES);
 
+  // copy track name
+  memcpy((u8 *)seq_core_trk[undo_track].name, (u8 *)undo_trk_name, 81);
+
+  // copy CCs
   if( seq_core_options.PASTE_CLR_ALL ) {
     int i;
 
@@ -703,6 +717,10 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
   memcpy((u8 *)undo_par_layer, (u8 *)&seq_par_layer_value[track], SEQ_PAR_MAX_BYTES);
   memcpy((u8 *)undo_trg_layer, (u8 *)&seq_trg_layer_value[track], SEQ_TRG_MAX_BYTES);
 
+  // copy track name
+  memcpy((u8 *)undo_trk_name, (u8 *)seq_core_trk[undo_track].name, 81);
+
+  // copy CCs
   for(i=0; i<128; ++i)
     undo_cc[i] = SEQ_CC_Get(track, i);
 

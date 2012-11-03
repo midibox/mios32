@@ -33,6 +33,7 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midply.h"
+#include "seq_mixer.h"
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_par.h"
@@ -348,6 +349,32 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 {
   return (char *)ui_menu_pages[page].name;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local help functions for copy/paste/clear/undo operations
+/////////////////////////////////////////////////////////////////////////////
+static void SEQ_UI_Msg_Track(char *line2)
+{
+  char buffer[20];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  sprintf(buffer, "Track G%dT%d", 1 + (visible_track / 4), 1 + (visible_track % 4));
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+static void SEQ_UI_Msg_MixerMap(char *line2)
+{
+  char buffer[20];
+  sprintf(buffer, "Mixer Map #%d", SEQ_MIXER_NumGet()+1);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+static void SEQ_UI_Msg_SongPos(char *line2)
+{
+  char buffer[20];
+  sprintf(buffer, "Song Position %c%d", 'A' + (ui_song_edit_pos >> 3), (ui_song_edit_pos&7)+1);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
 
@@ -796,12 +823,12 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Copy();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "copied");
+    SEQ_UI_Msg_MixerMap("copied");
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed ) return -1;
     SEQ_UI_SONG_Copy();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "copied");
+    SEQ_UI_Msg_SongPos("copied");
     return 1;
   } else {
     if( !depressed ) {
@@ -815,7 +842,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "copied");
+      SEQ_UI_Msg_Track("copied");
     }
 
     return status;
@@ -894,12 +921,12 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Paste();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "pasted");
+    SEQ_UI_Msg_MixerMap("pasted");
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed ) return -1;
     SEQ_UI_SONG_Paste();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "pasted");
+    SEQ_UI_Msg_SongPos("pasted");
     return 1;
   } else {
     if( !depressed ) {
@@ -913,7 +940,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "pasted");
+      SEQ_UI_Msg_Track("pasted");
     }
 
     return status;
@@ -925,14 +952,14 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 static void SEQ_UI_Button_Clear_Mixer(u32 dummy)
 {
   SEQ_UI_MIXER_Clear();
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
+  SEQ_UI_Msg_MixerMap("cleared");
 }
 
 // callback function for delayed Clear SongPos function
 static void SEQ_UI_Button_Clear_SongPos(u32 dummy)
 {
   SEQ_UI_SONG_Clear();
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
+  SEQ_UI_Msg_SongPos("cleared");
 }
 
 // callback function for clear track
@@ -940,7 +967,7 @@ static void SEQ_UI_Button_Clear_Track(u32 dummy)
 {
   SEQ_UI_UTIL_ClearButton(0); // button pressed
   SEQ_UI_UTIL_ClearButton(1); // button depressed
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+  SEQ_UI_Msg_Track("cleared");
 }
 
 static s32 SEQ_UI_Button_Clear(s32 depressed)
@@ -989,7 +1016,7 @@ static s32 SEQ_UI_Button_Undo(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Undo();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "Undo applied");
+    SEQ_UI_Msg_MixerMap("Undo applied");
     return 1;
   } else {
     if( !depressed ) {
@@ -1003,7 +1030,7 @@ static s32 SEQ_UI_Button_Undo(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "Undo applied");
+      SEQ_UI_Msg_Track("Undo applied");
     }
 
     return status;
