@@ -436,11 +436,22 @@ static s32 SEQ_Tick(u32 bpm_tick)
 #endif
 
     if( MID_PARSER_FetchEvents(prefetch_offset, prefetch_ticks) == 0 ) {
+
+      if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
+	DEBUG_MSG("[SEQ] End of song reached after %u ticks - stopping sequencer!\n", bpm_tick);
 #endif
 
-      SEQ_PlayFileReq(1, 0);
+	SEQ_BPM_Stop();
+	SEQ_Reset(1);
+	seq_pause = 1;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+	DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
+#endif
+
+	SEQ_PlayFileReq(1, 0);
+      }
     } else {
       prefetch_offset += prefetch_ticks;
     }
