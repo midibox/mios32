@@ -552,9 +552,9 @@ void SEQ_TASK_Period1S(void)
       SEQ_FILE_HW_LockConfig(); // lock configuration
     } else {
       char str1[30];
-      sprintf(str1, "Banks: ........");
+      sprintf(str1, "Banks: ....");
       u8 bank;
-      for(bank=0; bank<8; ++bank)
+      for(bank=0; bank<4; ++bank)
 	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
       char str2[30];
       sprintf(str2, 
