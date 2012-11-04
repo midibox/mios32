@@ -20,6 +20,7 @@
 #include "tasks.h"
 
 #include <midi_port.h>
+#include <midi_router.h>
 
 #include <uip.h>
 #include "uip_task.h"
@@ -565,17 +566,17 @@ static void ainserPortSet(u32 ix, u16 value)
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
-static u16  routerSrcPortGet(u32 ix)             { return MIDI_PORT_InIxGet(midio_patch_router[selectedRouterNode].src_port); }
-static void routerSrcPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].src_port = MIDI_PORT_InPortGet(value); }
+static u16  routerSrcPortGet(u32 ix)             { return MIDI_PORT_InIxGet(midi_router_node[selectedRouterNode].src_port); }
+static void routerSrcPortSet(u32 ix, u16 value)  { midi_router_node[selectedRouterNode].src_port = MIDI_PORT_InPortGet(value); }
 
-static u16  routerSrcChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].src_chn; }
-static void routerSrcChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].src_chn = value; }
+static u16  routerSrcChnGet(u32 ix)              { return midi_router_node[selectedRouterNode].src_chn; }
+static void routerSrcChnSet(u32 ix, u16 value)   { midi_router_node[selectedRouterNode].src_chn = value; }
 
-static u16  routerDstPortGet(u32 ix)             { return MIDI_PORT_OutIxGet(midio_patch_router[selectedRouterNode].dst_port); }
-static void routerDstPortSet(u32 ix, u16 value)  { midio_patch_router[selectedRouterNode].dst_port = MIDI_PORT_OutPortGet(value); }
+static u16  routerDstPortGet(u32 ix)             { return MIDI_PORT_OutIxGet(midi_router_node[selectedRouterNode].dst_port); }
+static void routerDstPortSet(u32 ix, u16 value)  { midi_router_node[selectedRouterNode].dst_port = MIDI_PORT_OutPortGet(value); }
 
-static u16  routerDstChnGet(u32 ix)              { return midio_patch_router[selectedRouterNode].dst_chn; }
-static void routerDstChnSet(u32 ix, u16 value)   { midio_patch_router[selectedRouterNode].dst_chn = value; }
+static u16  routerDstChnGet(u32 ix)              { return midi_router_node[selectedRouterNode].dst_chn; }
+static void routerDstChnSet(u32 ix, u16 value)   { midi_router_node[selectedRouterNode].dst_chn = value; }
 
 static u16  oscPortGet(u32 ix)            { return selectedOscPort; }
 static void oscPortSet(u32 ix, u16 value) { selectedOscPort = value; }
@@ -747,7 +748,7 @@ const scs_menu_item_t pageAINSER[] = {
 };
 
 const scs_menu_item_t pageROUT[] = {
-  SCS_ITEM("Node", 0, MIDIO_PATCH_NUM_ROUTER-1, routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
   SCS_ITEM("Chn.", 0, 17,                       routerSrcChnGet, routerSrcChnSet,selectNOP, stringRouterChn, NULL),
   SCS_ITEM("SrcD", 0, MIDI_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),

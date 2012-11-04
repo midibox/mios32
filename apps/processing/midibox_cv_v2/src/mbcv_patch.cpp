@@ -38,29 +38,6 @@ extern "C" {
 // Preset patch
 /////////////////////////////////////////////////////////////////////////////
 
-mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER] = {
-  // src chn   dst chn
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-  { 0x10,  0, 0x20, 17 },
-};
-
-u32 mbcv_patch_router_mclk_in;
-u32 mbcv_patch_router_mclk_out;
-
 u8 mbcv_patch_gateclr_cycles = 3; // 3 mS
 
                        // <------------------>
@@ -74,11 +51,6 @@ s32 MBCV_PATCH_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
-
-  //                           USB0 only     UART0..3       IIC0..3      OSC0..3
-  mbcv_patch_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
-  //                            all ports
-  mbcv_patch_router_mclk_out = 0xffffffff;
 
   return 0; // no error
 }
