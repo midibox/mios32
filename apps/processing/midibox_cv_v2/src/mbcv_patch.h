@@ -18,8 +18,6 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define MBCV_PATCH_NUM_ROUTER  16
-
 #define MBCV_PATCH_CV_CURVE_V_OCTAVE    0
 #define MBCV_PATCH_CV_CURVE_HZ_V        1
 #define MBCV_PATCH_CV_CURVE_INVERTED    2
@@ -30,13 +28,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
 /////////////////////////////////////////////////////////////////////////////
-
-typedef struct {
-  u8 src_port; // don't use mios32_midi_port_t, since data width is important for save/restore function
-  u8 src_chn;  // 0 == Off, 1..16: specific source channel, 17 == All
-  u8 dst_port;
-  u8 dst_chn;  // 0 == Off, 1..16: specific source channel, 17 == All
-} mbcv_patch_router_entry_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -69,9 +60,6 @@ extern u16* MBCV_PATCH_CopyBufferGet(void);
 /////////////////////////////////////////////////////////////////////////////
 
 extern u8 mbcv_patch_name[21];
-extern mbcv_patch_router_entry_t mbcv_patch_router[MBCV_PATCH_NUM_ROUTER];
-extern u32 mbcv_patch_router_mclk_in;
-extern u32 mbcv_patch_router_mclk_out;
 
 extern u8 mbcv_patch_gateclr_cycles;
 

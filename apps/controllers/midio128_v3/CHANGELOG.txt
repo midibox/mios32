@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.010
+~~~~~~~~~~~~~~~
+
+   o MIDI Router: corrected editing of node entries from SCS
+
+
 MIDIO128 V3.009
 ~~~~~~~~~~~~~~~
 

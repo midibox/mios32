@@ -25,6 +25,8 @@
 
 #include <string.h>
 
+#include <midi_router.h>
+
 #include "file.h"
 #include "midio_file.h"
 #include "midio_file_p.h"
@@ -668,7 +670,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  s32 node;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (node=get_dec(word)) < 1 || node > MIDIO_PATCH_NUM_ROUTER  ) {
+	  if( (node=get_dec(word)) < 1 || node > MIDI_ROUTER_NUM_NODES  ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid node number for parameter '%s'\n", parameter);
 #endif
@@ -692,7 +694,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    
 	    if( i == 4 ) {
 	      // finally a valid line!
-	      midio_patch_router_entry_t *n = (midio_patch_router_entry_t *)&midio_patch_router[node];
+	      midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[node];
 	      n->src_port = values[0];
 	      n->src_chn = values[1];
 	      n->dst_port = values[2];
@@ -1088,8 +1090,8 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
 
     int node;
-    midio_patch_router_entry_t *n = (midio_patch_router_entry_t *)&midio_patch_router[0];
-    for(node=0; node<MIDIO_PATCH_NUM_ROUTER; ++node, ++n) {
+    midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
+    for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
       sprintf(line_buffer, "ROUTER;%d;0x%02X;%d;0x%02X;%d\n",
 	      node+1,
 	      n->src_port,
