@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.064
+~~~~~~~~~~~~~~~~~
+
+   o corrected tap tempo function
+
+
 MIDIboxSEQ V4.063
 ~~~~~~~~~~~~~~~~~
 
