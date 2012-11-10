@@ -1060,7 +1060,13 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
+	  // common DINs
 	  MIOS32_SRIO_DebounceSet(delay);
+
+	  // BLM_X based DINs
+	  blm_x_config_t config = BLM_X_ConfigGet();
+	  config.debounce_delay = delay;
+	  BLM_X_ConfigSet(config);
 
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!

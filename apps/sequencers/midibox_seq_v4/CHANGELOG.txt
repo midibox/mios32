@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.065
+~~~~~~~~~~~~~~~~~
+
+   o the DEBOUNCE_DELAY parameter of the MBSEQ_HW.V4 file will now be also taken
+     for the BLM8X8 (Wilba's Frontpanel)
+
+   o Mixer: setup now automatically loaded when a new mixer map is selected
+
+   o Sessions: the SAVE function now also stores the current mixer map
+
+
 MIDIboxSEQ V4.064
 ~~~~~~~~~~~~~~~~~
 
