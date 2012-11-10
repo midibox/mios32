@@ -118,6 +118,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	u8 mixer_map = SEQ_MIXER_NumGet();
         if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
 	  SEQ_MIXER_NumSet(mixer_map);
+
+	  // load page
+	  SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+	  // print message
+	  in_menu_msg = MSG_LOAD & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+
 	  return 1; // value changed
 	}
 	return 0; // no change

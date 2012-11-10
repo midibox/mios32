@@ -361,7 +361,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	// print message immediately for better "look&feel"
 	// otherwise we could think that the button isn't working
-	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Complete session", "stored!");
       }
       return 1;
 

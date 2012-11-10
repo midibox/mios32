@@ -63,7 +63,11 @@
 
 
 // maximum idle counter value to be expected
-#define MAX_IDLE_CTR 223000
+#if defined(MIOS32_FAMILY_LPC17xx)
+#define MAX_IDLE_CTR 908500 // LPC1769@120 MHz
+#else
+#define MAX_IDLE_CTR 228000 // STM32F103RE@80 MHz
+#endif
 
 
 // memory alloccation method:
