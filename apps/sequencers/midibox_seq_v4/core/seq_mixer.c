@@ -30,7 +30,10 @@
 
 // should only be directly accessed by SEQ_FILE_M, remaining functions should
 // use SEQ_MIXER_Get/Set
-u8 seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
+#ifndef AHB_SECTION
+#define AHB_SECTION
+#endif
+u8 AHB_SECTION seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 char seq_mixer_map_name[21];
 
 

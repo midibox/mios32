@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.066
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential stack overflow in LPC17 build
+
+
 MIDIboxSEQ V4.065
 ~~~~~~~~~~~~~~~~~
 
