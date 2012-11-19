@@ -427,3 +427,30 @@ void HardFault_Handler(void)
   __asm("B HardFault_Handler_c");
 }
 
+// used if configCHECK_FOR_STACK_OVERFLOW enabled (set to 1 or 2) in FreeRTOSConfig.h
+#if configCHECK_FOR_STACK_OVERFLOW
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed portCHAR *pcTaskName)
+{
+  MIOS32_MIDI_SendDebugMessage("======================\n");
+  MIOS32_MIDI_SendDebugMessage("!!! STACK OVERFLOW !!!\n");
+  MIOS32_MIDI_SendDebugMessage("======================\n");
+  MIOS32_MIDI_SendDebugMessage("Function: %s\n", pcTaskName);
+
+#ifndef MIOS32_DONT_USE_LCD
+  // TODO: here we should select the normal font - but only if available!
+  // MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  MIOS32_LCD_BColourSet(0xffffff);
+  MIOS32_LCD_FColourSet(0x000000);
+
+  MIOS32_LCD_DeviceSet(0);
+  MIOS32_LCD_Clear();
+  MIOS32_LCD_CursorSet(0, 0);
+  MIOS32_LCD_PrintString("!! STACK OVERFLOW !!");
+  MIOS32_LCD_CursorSet(0, 1);
+  MIOS32_LCD_PrintFormattedString("in Task %s", pcTaskName);
+#endif
+
+  _abort();
+}
+#endif
+
