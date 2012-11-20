@@ -1,5 +1,14 @@
 $Id$
 
+MIDIO128 V3.011
+~~~~~~~~~~~~~~~
+
+   o It's now possible to record MIDI files!
+     Press EXIT + first softbutton (under REC)
+
+   o Fast Forward and Fast Rewind are now available by pressing EXIT
+
+
 MIDIO128 V3.010
 ~~~~~~~~~~~~~~~
 
