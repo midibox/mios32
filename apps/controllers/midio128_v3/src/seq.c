@@ -492,7 +492,7 @@ s32 SEQ_MidiRecReceive(mios32_midi_port_t port, mios32_midi_package_t package)
 
   u32 seq_tick = SEQ_BPM_TickGet();
 
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 3
   DEBUG_MSG("[SEQ:%u] P:%s  M:%02X %02X %02X\n",
 	    seq_tick,
 	    MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(port)),
@@ -519,7 +519,9 @@ s32 SEQ_MidiRecReceive(mios32_midi_port_t port, mios32_midi_package_t package)
   }
 
   if( num_bytes ) {
-    u32 delta = seq_tick - seq_record_last_tick;
+    int delta = seq_tick - seq_record_last_tick;
+    if( delta < 0 )
+      delta = 0;
 
     MUTEX_SDCARD_TAKE;
     seq_record_trk_size += SEQ_MidiRecWriteVarLen(delta);
