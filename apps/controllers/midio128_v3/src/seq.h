@@ -39,7 +39,19 @@ extern s32 SEQ_Handler(void);
 
 extern s32 SEQ_PlayFileReq(s8 next, u8 force);
 
+extern s32 SEQ_MidiRecReceive(mios32_midi_port_t port, mios32_midi_package_t package);
+
+extern s32 SEQ_PauseEnabled(void);
+extern s32 SEQ_RecordingEnabled(void);
+extern char *SEQ_RecordingFilename(void);
+extern u32 SEQ_LastRecordedTick(void);
+extern mios32_midi_port_t SEQ_LastRecordedPort(void);
+extern mios32_midi_package_t SEQ_LastRecordedEvent(void);
+
 extern s32 SEQ_PlayStopButton(void);
+extern s32 SEQ_RecStopButton(void);
+extern s32 SEQ_FFwdButton(void);
+extern s32 SEQ_FRewButton(void);
 
 extern s32 SEQ_PlayFile(char *midifile);
 
@@ -50,8 +62,6 @@ extern s32 SEQ_MidiPlayModeSet(u8 mode);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
-
-extern u8 seq_pause;
 
 
 #endif /* _SEQ_H */

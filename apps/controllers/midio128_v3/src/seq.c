@@ -21,12 +21,15 @@
 #include "tasks.h"
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
+#include <midi_port.h>
+#include <file.h>
 #include <osc_client.h>
 
 #include <mid_parser.h>
 
 #include "seq.h"
 #include "mid_file.h"
+#include "midio_file.h"
 
 #include "midio_dout.h"
 
@@ -54,7 +57,11 @@ static s32 SEQ_PlayOffEvents(void);
 static s32 SEQ_SongPos(u16 new_song_pos);
 static s32 SEQ_Tick(u32 bpm_tick);
 
+static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
+
 static s32 SEQ_PlayNextFile(s8 next);
+
+static s32 SEQ_SetRecordMode(u8 enable);
 
 static s32 SEQ_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick);
 static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
@@ -64,16 +71,10 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-// pause mode (will be controlled from user interface)
-u8 seq_pause;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-
-// the pattern position
-static u8 seq_step_pos;
 
 // for FFWD function
 static u8 ffwd_silent_mode;
@@ -93,7 +94,18 @@ static u16 enabled_ports;
 // the MIDI play mode
 static u8 midi_play_mode;
 
-static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
+// pause mode
+static u8 seq_pause;
+
+// for recording
+static u8 seq_record;
+static char seq_record_filename[13];
+static u32 seq_record_last_tick;
+static mios32_midi_port_t seq_record_last_port;
+static mios32_midi_package_t seq_record_last_event;
+static u32 seq_record_trk_header_filepos;
+static u32 seq_record_trk_size;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -121,6 +133,9 @@ s32 SEQ_Init(u32 mode)
 
   // start with pause after power-on
   seq_pause = 1;
+
+  // recording disabled
+  seq_record = 0;
 
   // init BPM generator
   SEQ_BPM_Init(0);
@@ -174,6 +189,7 @@ s32 SEQ_Handler(void)
     // so long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_PlayOffEvents();
+      SEQ_SetRecordMode(0);
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -191,10 +207,12 @@ s32 SEQ_Handler(void)
       SEQ_SongPos(new_song_pos);
     }
 
-    u32 bpm_tick;
-    if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
-      again = 1; // check all requests again after execution of this part
-      SEQ_Tick(bpm_tick);
+    if( !SEQ_RecordingEnabled() ) {
+      u32 bpm_tick;
+      if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
+	again = 1; // check all requests again after execution of this part
+	SEQ_Tick(bpm_tick);
+      }
     }
   } while( again && num_loops < 10 );
 
@@ -266,7 +284,12 @@ s32 SEQ_Reset(u8 play_off_events)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_SongPos(u16 new_song_pos)
 {
+  if( SEQ_RecordingEnabled() )
+    return 0; // nothing to do
+
   u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
+
+  portENTER_CRITICAL();
 
   // set new tick value
   SEQ_BPM_TickSet(new_tick);
@@ -295,6 +318,8 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   // when do we expect the next prefetch:
   next_prefetch = new_tick;
   prefetch_offset = new_tick;
+
+  portEXIT_CRITICAL();
 
   return 0; // no error
 }
@@ -411,6 +436,248 @@ s32 SEQ_PlayFileReq(s8 next, u8 force)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help functions
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MidiRecWriteWord(u32 word, u8 len)
+{
+  int i;
+  s32 status = 0;
+
+  // ensure big endian coding, therefore byte writes
+  for(i=0; i<len; ++i)
+    status |= FILE_WriteByte((u8)(word >> (8*(len-1-i))));
+
+  return (status < 0) ? status : len;
+}
+
+
+static s32 SEQ_MidiRecWriteVarLen(u32 value)
+{
+  // based on code example from MIDI file spec
+  s32 status = 0;
+  u32 buffer;
+
+  buffer = value & 0x7f;
+  while( (value >>= 7) > 0 ) {
+    buffer <<= 8;
+    buffer |= 0x80 | (value & 0x7f);
+  }
+
+  int num_bytes = 0;
+  while( 1 ) {
+    ++num_bytes;
+    status |= FILE_WriteByte((u8)(buffer & 0xff));
+    if( buffer & 0x80 )
+      buffer >>= 8;
+    else
+      break;
+  }
+
+  return (status < 0) ? status : num_bytes;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called from when a MIDI event is received
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MidiRecReceive(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // ignore if recording mode not enabled
+  if( !SEQ_RecordingEnabled() )
+    return 0;
+
+  // ignore realtime events (like MIDI clock)
+  if( package.evnt0 >= 0xf8 )
+    return 0;
+
+  u32 seq_tick = SEQ_BPM_TickGet();
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[SEQ:%u] P:%s  M:%02X %02X %02X\n",
+	    seq_tick,
+	    MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(port)),
+	    package.evnt0, package.evnt1, package.evnt2);
+#endif
+
+  u32 word = 0;
+  u8 num_bytes = 0;
+  switch( package.event ) {
+    case NoteOff:
+    case NoteOn:
+    case PolyPressure:
+    case CC:
+    case PitchBend:
+      word = ((u32)package.evnt0 << 16) | ((u32)package.evnt1 << 8) | ((u32)package.evnt2 << 0);
+      num_bytes = 3;
+      break;
+
+    case ProgramChange:
+    case Aftertouch:
+      word = ((u32)package.evnt0 << 8) | ((u32)package.evnt1 << 0);
+      num_bytes = 2;
+      break;
+  }
+
+  if( num_bytes ) {
+    u32 delta = seq_tick - seq_record_last_tick;
+
+    MUTEX_SDCARD_TAKE;
+    seq_record_trk_size += SEQ_MidiRecWriteVarLen(delta);
+    seq_record_trk_size += SEQ_MidiRecWriteWord(word, num_bytes);
+    MUTEX_SDCARD_GIVE;
+
+    seq_record_last_tick = seq_tick;
+    seq_record_last_port = port;
+    seq_record_last_event = package;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// enters/exits record mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_SetRecordMode(u8 enable)
+{
+  s32 status = 0;
+
+  if( (!seq_record && !enable) || (seq_record && enable) )
+    return 0; // nothing to do
+
+  seq_record = enable;
+
+  MUTEX_SDCARD_TAKE;
+
+  if( seq_record ) {
+    // start recording
+    seq_record_trk_size = 0;
+    seq_record_last_tick = 0;
+    seq_record_last_port = 0;
+    seq_record_last_event.ALL = 0;
+
+    // determine filename
+    u32 rec_num = 0;
+    while( 1 ) {
+      ++rec_num;
+      sprintf(seq_record_filename, "REC%d.MID", rec_num);
+      if( !FILE_FileExists(seq_record_filename) )
+	break;
+    }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ] Recording to '%s' started\n", seq_record_filename);
+#endif
+
+    if( (status=FILE_WriteOpen(seq_record_filename, 1)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[SEQ] Failed to open/create %s, status: %d\n", seq_record_filename, status);
+#endif
+    } else {
+      // write file header
+      u32 header_size = 6;
+      status |= FILE_WriteBuffer((u8*)"MThd", 4);
+      status |= SEQ_MidiRecWriteWord(header_size, 4);
+      status |= SEQ_MidiRecWriteWord(1, 2); // MIDI File Format
+      status |= SEQ_MidiRecWriteWord(1, 2); // Number of Tracks
+      status |= SEQ_MidiRecWriteWord(SEQ_BPM_PPQN_Get(), 2); // PPQN
+
+      // write Track header
+      seq_record_trk_header_filepos = FILE_WriteGetCurrentSize();
+      status |= FILE_WriteBuffer((u8*)"MTrk", 4);
+      status |= SEQ_MidiRecWriteWord(seq_record_trk_size, 4); // Placeholder
+    }
+
+    // disable recording on error
+    if( status < 0 ) {
+      seq_record = 0;
+      MIDIO_FILE_StatusMsgSet("SDCard Err!");
+    }
+  } else {
+    // stop recording
+    status |= FILE_WriteClose();
+
+    if( seq_record_trk_size ) {
+      // switch back to first byte of track and write final track size
+      if( (status=FILE_WriteOpen(seq_record_filename, 0)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[SEQ] Failed to open %s again, status: %d\n", seq_record_filename, status);
+#endif
+	MIDIO_FILE_StatusMsgSet("SDCard Err!");
+	status = -3; // file re-open error
+      } else {
+	status |= FILE_WriteSeek(seq_record_trk_header_filepos + 4);
+	status |= SEQ_MidiRecWriteWord(seq_record_trk_size, 4);
+	status |= FILE_WriteClose();
+
+	// take over new filename, but pause sequencer
+	seq_pause = 1;
+	SEQ_PlayFile(seq_record_filename);
+	MIDIO_FILE_StatusMsgSet(NULL);
+      }
+    }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ] Recording to '%s' stopped. Track size: %d bytes\n", seq_record_filename, seq_record_trk_size);
+#endif
+  }
+
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if pause enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PauseEnabled(void)
+{
+  return seq_pause;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if record mode enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RecordingEnabled(void)
+{
+  return seq_record;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the record filename (up to 12 chars)
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_RecordingFilename(void)
+{
+  return seq_record_filename;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns timestamp of last recorded MIDI event
+/////////////////////////////////////////////////////////////////////////////
+u32 SEQ_LastRecordedTick(void)
+{
+  return seq_record_last_tick;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the last recorded MIDI port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t SEQ_LastRecordedPort(void)
+{
+  return seq_record_last_port;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the last recorded MIDI event
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_package_t SEQ_LastRecordedEvent(void)
+{
+  return seq_record_last_event;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // performs a single bpm tick
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_Tick(u32 bpm_tick)
@@ -496,7 +763,7 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
   switch( meta ) {
     case 0x00: // Sequence Number
       if( len == 2 ) {
-	u32 seq_number = (*buffer++ << 8) | *buffer;
+	u32 seq_number = (*buffer++ << 8) | (*buffer);
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[SEQ:%d:%u] Meta - Sequence Number %u\n", track, tick, seq_number);
 #endif
@@ -641,6 +908,7 @@ s32 SEQ_PlayStopButton(void)
   if( SEQ_BPM_IsRunning() ) {
     SEQ_BPM_Stop();          // stop sequencer
     seq_pause = 1;
+    SEQ_SetRecordMode(0);
   } else {
     if( seq_pause ) {
       // continue sequencer
@@ -668,3 +936,66 @@ s32 SEQ_PlayStopButton(void)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// To control the rec/stop button function
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RecStopButton(void)
+{
+  if( SEQ_BPM_IsRunning() ) {
+    SEQ_BPM_Stop();          // stop sequencer
+    seq_pause = 1;
+    SEQ_SetRecordMode(0);
+  } else {
+    seq_pause = 0;
+
+    MUTEX_SDCARD_TAKE;
+
+    // if in auto mode and BPM generator is clocked in slave mode:
+    // change to master mode
+    SEQ_BPM_CheckAutoMaster();
+
+    // enter record mode
+    SEQ_SetRecordMode(1);
+
+    // reset sequencer
+    SEQ_Reset(1);
+
+    // start sequencer
+    SEQ_BPM_Start();
+
+    MUTEX_SDCARD_GIVE;
+  }
+
+  return 0; // no error
+}
+
+s32 SEQ_FFwdButton(void)
+{
+  u32 tick = SEQ_BPM_TickGet();
+  u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+  u32 ticks_per_measure = ticks_per_step * 16;
+
+  int measure = tick / ticks_per_measure;
+  int song_pos = 16 * (measure + 1);
+  if( song_pos > 65535 )
+    song_pos = 65535;
+
+  return SEQ_SongPos(song_pos);
+}
+
+s32 SEQ_FRewButton(void)
+{
+  u32 tick = SEQ_BPM_TickGet();
+  u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+  u32 ticks_per_measure = ticks_per_step * 16;
+
+  int measure = tick / ticks_per_measure;
+  int song_pos = 16 * (measure - 1);
+  if( song_pos < 0 )
+    song_pos = 0;
+
+  return SEQ_SongPos(song_pos);
+}
+

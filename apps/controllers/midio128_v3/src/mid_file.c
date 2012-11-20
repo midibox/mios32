@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "file.h"
+#include "midio_file.h"
 #include "mid_file.h"
 
 

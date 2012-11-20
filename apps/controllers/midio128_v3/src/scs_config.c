@@ -820,7 +820,7 @@ static s32 displayHook(char *line1, char *line2)
 
     sprintf(line1, "MIDI DOUT MSD  ");
     sprintf(line2, "%s Off  %s",
-	    SEQ_BPM_IsRunning() ? "STOP" : "PLAY",
+	    SEQ_BPM_IsRunning() ? "STOP" : (SEQ_RecordingEnabled() ? "REC!" : "PLAY"),
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
   }
@@ -835,6 +835,7 @@ static s32 displayHook(char *line1, char *line2)
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
     u8 fastRefresh = line1[0] == 0;
+    u8 exitButtonPressed = SCS_PinGet(SCS_PIN_EXIT) ? 0 : 1;
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
     u32 ticks_per_measure = ticks_per_step * 16;
@@ -842,9 +843,35 @@ static s32 displayHook(char *line1, char *line2)
     u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
     // print SD Card status message or patch
-    if( line1[0] == 0 ) // no MSD overlay?
-      sprintf(line1, "%-12s %4u.%2d", MIDIO_FILE_StatusMsgGet() ? MIDIO_FILE_StatusMsgGet() : MID_FILE_UI_NameGet(), measure, step);
-    sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    if( line1[0] == 0 ) { // no MSD overlay?
+      if( SEQ_RecordingEnabled() ) {
+	if( (tick % (8*ticks_per_step)) >= (4*ticks_per_step) ) {
+	  sprintf(line1, "*RECORDING*  %4u.%2d", measure, step);
+	} else {
+	  sprintf(line1, "%-12s %4u.%2d", SEQ_RecordingFilename(), measure, step);
+	}
+      } else {
+	sprintf(line1, "%-12s %4u.%2d", MIDIO_FILE_StatusMsgGet() ? MIDIO_FILE_StatusMsgGet() : MID_FILE_UI_NameGet(), measure, step);
+      }
+    }
+
+    if( SEQ_RecordingEnabled() ) {
+      mios32_midi_port_t port = SEQ_LastRecordedPort();
+      mios32_midi_package_t p = SEQ_LastRecordedEvent();
+      char event_str[12];
+      event_str[0] = 0;
+
+      int time_passed = tick - SEQ_LastRecordedTick();
+      if( time_passed > 0 && time_passed < (ticks_per_measure/4) ) {
+	sprintf(event_str, "%s:%02X%02X%02X", MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(port)), p.evnt0, p.evnt1, p.evnt2);
+      }
+
+      sprintf(line2, "%s  %-11s   ", SEQ_BPM_IsRunning() ? "STOP" : "REC ", event_str[0] ? event_str : "----:------" );
+    } else if( exitButtonPressed ) {
+      sprintf(line2, "%s FRew FFwd      ", SEQ_BPM_IsRunning() ? "STOP" : "REC ");
+    } else {
+      sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    }
 
     // request LCD update - this will lead to fast refresh rate in main screen
     if( fastRefresh )
@@ -1014,24 +1041,48 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       if( depressed )
 	return 0;
 
-      switch( scsButton ) {
-      case SCS_PIN_SOFT1: // Play/Stop
-	SEQ_PlayStopButton();
-	return 1;
+      u8 exitButtonPressed = SCS_PinGet(SCS_PIN_EXIT) ? 0 : 1;
 
-      case SCS_PIN_SOFT2: { // previous song
-	MUTEX_SDCARD_TAKE;
-	SEQ_PlayFileReq(-1, 1);
-	MUTEX_SDCARD_GIVE;
-	return 1;
-      }
+      if( exitButtonPressed || SEQ_RecordingEnabled() ) {
+	switch( scsButton ) {
+	case SCS_PIN_SOFT1: // Rec/Stop
+	  SEQ_RecStopButton();
+	  return 1;
 
-      case SCS_PIN_SOFT3: { // next song
-	MUTEX_SDCARD_TAKE;
-	SEQ_PlayFileReq(1, 1);
-	MUTEX_SDCARD_GIVE;
-	return 1;
-      }
+	case SCS_PIN_SOFT2: { // Fast Rewind
+	  SEQ_FRewButton();
+	  return 1;
+	}
+
+	case SCS_PIN_SOFT3: { // Fast Forward
+	  SEQ_FFwdButton();
+	  return 1;
+	}
+
+	case SCS_PIN_SOFT4: { // Menu disabled
+	  return 1;
+	}
+	}
+      } else {
+	switch( scsButton ) {
+	case SCS_PIN_SOFT1: // Play/Stop
+	  SEQ_PlayStopButton();
+	  return 1;
+
+	case SCS_PIN_SOFT2: { // previous song
+	  MUTEX_SDCARD_TAKE;
+	  SEQ_PlayFileReq(-1, 1);
+	  MUTEX_SDCARD_GIVE;
+	  return 1;
+	}
+
+	case SCS_PIN_SOFT3: { // next song
+	  MUTEX_SDCARD_TAKE;
+	  SEQ_PlayFileReq(1, 1);
+	  MUTEX_SDCARD_GIVE;
+	  return 1;
+	}
+	}
       }
     }
   }

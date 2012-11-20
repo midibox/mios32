@@ -20,6 +20,7 @@
 #include "app.h"
 #include "tasks.h"
 
+#include <ainser.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
@@ -231,6 +232,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // -> MIDI Port Handler (used for MIDI monitor function)
   MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
+  // -> MIDI file recorder
+  SEQ_MidiRecReceive(port, midi_package);
+
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
@@ -421,8 +425,6 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
 	// reset sequencer
 	SEQ_Reset(0);
-	// but enable pause mode
-	seq_pause = 1;
       }
 
       MUTEX_SDCARD_GIVE;
