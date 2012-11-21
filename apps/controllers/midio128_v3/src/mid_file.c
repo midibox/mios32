@@ -26,6 +26,7 @@
 #include "file.h"
 #include "midio_file.h"
 #include "mid_file.h"
+#include "seq.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +64,16 @@ static char ui_midifile_name[MAX_PATH];
 // MIDI file references
 static file_t midifile_fi;
 
+// for recording
+static u8 record_mode;
+static char record_filename[13];
+static u32 record_last_tick;
+static mios32_midi_port_t record_last_port;
+static mios32_midi_package_t record_last_event;
+static u32 record_trk_header_filepos;
+static u32 record_trk_size;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
@@ -71,6 +82,9 @@ s32 MID_FILE_Init(u32 mode)
   // initial midifile name and size
   ui_midifile_name[0] = 0;
   midifile_len = 0;
+
+  // recording disabled
+  record_mode = 0;
 
   return 0; // no error
 }
@@ -171,7 +185,7 @@ s32 MID_FILE_open(char *filename)
     ui_midifile_name[MAX_PATH-1] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[SEQ_MIDFILE] opened '%s' of length %u\n", filepath, midifile_len);
+    DEBUG_MSG("[MID_FILE] opened '%s' of length %u\n", filepath, midifile_len);
 #endif
   }
 
@@ -240,4 +254,249 @@ s32 MID_FILE_seek(u32 pos)
   MUTEX_SDCARD_GIVE;
 
   return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help functions
+/////////////////////////////////////////////////////////////////////////////
+static s32 MID_FILE_WriteWord(u32 word, u8 len)
+{
+  int i;
+  s32 status = 0;
+
+  // ensure big endian coding, therefore byte writes
+  for(i=0; i<len; ++i)
+    status |= FILE_WriteByte((u8)(word >> (8*(len-1-i))));
+
+  return (status < 0) ? status : len;
+}
+
+
+static s32 MID_FILE_WriteVarLen(u32 value)
+{
+  // based on code example from MIDI file spec
+  s32 status = 0;
+  u32 buffer;
+
+  buffer = value & 0x7f;
+  while( (value >>= 7) > 0 ) {
+    buffer <<= 8;
+    buffer |= 0x80 | (value & 0x7f);
+  }
+
+  int num_bytes = 0;
+  while( 1 ) {
+    ++num_bytes;
+    status |= FILE_WriteByte((u8)(buffer & 0xff));
+    if( buffer & 0x80 )
+      buffer >>= 8;
+    else
+      break;
+  }
+
+  return (status < 0) ? status : num_bytes;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called from when a MIDI event is received
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package)
+{
+  // ignore if recording mode not enabled
+  if( !MID_FILE_RecordingEnabled() )
+    return 0;
+
+  // ignore realtime events (like MIDI clock)
+  if( package.evnt0 >= 0xf8 )
+    return 0;
+
+  u32 seq_tick = SEQ_BPM_TickGet();
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+  DEBUG_MSG("[MID_FILE:%u] P:%s  M:%02X %02X %02X\n",
+	    seq_tick,
+	    MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(port)),
+	    package.evnt0, package.evnt1, package.evnt2);
+#endif
+
+  u32 word = 0;
+  u8 num_bytes = 0;
+  switch( package.event ) {
+    case NoteOff:
+    case NoteOn:
+    case PolyPressure:
+    case CC:
+    case PitchBend:
+      word = ((u32)package.evnt0 << 16) | ((u32)package.evnt1 << 8) | ((u32)package.evnt2 << 0);
+      num_bytes = 3;
+      break;
+
+    case ProgramChange:
+    case Aftertouch:
+      word = ((u32)package.evnt0 << 8) | ((u32)package.evnt1 << 0);
+      num_bytes = 2;
+      break;
+  }
+
+  if( num_bytes ) {
+    int delta = seq_tick - record_last_tick;
+    if( delta < 0 )
+      delta = 0;
+
+    MUTEX_SDCARD_TAKE;
+    record_trk_size += MID_FILE_WriteVarLen(delta);
+    record_trk_size += MID_FILE_WriteWord(word, num_bytes);
+    MUTEX_SDCARD_GIVE;
+
+    record_last_tick = seq_tick;
+    record_last_port = port;
+    record_last_event = package;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// enters/exits record mode
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_SetRecordMode(u8 enable)
+{
+  s32 status = 0;
+
+  if( (!record_mode && !enable) || (record_mode && enable) )
+    return 0; // nothing to do
+
+  record_mode = enable;
+
+  MUTEX_SDCARD_TAKE;
+
+  if( record_mode ) {
+    // start recording
+    record_trk_size = 0;
+    record_last_tick = 0;
+    record_last_port = 0;
+    record_last_event.ALL = 0;
+
+    // determine filename
+    u32 rec_num = 0;
+    while( 1 ) {
+      ++rec_num;
+      sprintf(record_filename, "REC%d.MID", rec_num);
+      if( !FILE_FileExists(record_filename) )
+	break;
+    }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MID_FILE] Recording to '%s' started\n", record_filename);
+#endif
+
+    if( (status=FILE_WriteOpen(record_filename, 1)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MID_FILE] Failed to open/create %s, status: %d\n", record_filename, status);
+#endif
+    } else {
+      // write file header
+      u32 header_size = 6;
+      status |= FILE_WriteBuffer((u8*)"MThd", 4);
+      status |= MID_FILE_WriteWord(header_size, 4);
+      status |= MID_FILE_WriteWord(1, 2); // MIDI File Format
+      status |= MID_FILE_WriteWord(1, 2); // Number of Tracks
+      status |= MID_FILE_WriteWord(SEQ_BPM_PPQN_Get(), 2); // PPQN
+
+      // write Track header
+      record_trk_header_filepos = FILE_WriteGetCurrentSize();
+      status |= FILE_WriteBuffer((u8*)"MTrk", 4);
+      status |= MID_FILE_WriteWord(record_trk_size, 4); // Placeholder
+
+      // set initial BPM
+      record_trk_size += MID_FILE_WriteVarLen(0); // initial delta
+      record_trk_size += MID_FILE_WriteWord(0xff, 1); // meta event
+      record_trk_size += MID_FILE_WriteWord(0x51, 1); // set tempo
+      record_trk_size += MID_FILE_WriteVarLen(3);     // 3 bytes
+      u32 tempo_us = (u32)(1E6 / (SEQ_BPM_Get() / 60.0));
+      record_trk_size += MID_FILE_WriteWord(tempo_us, 3);
+    }
+
+    // disable recording on error
+    if( status < 0 ) {
+      record_mode = 0;
+      MIDIO_FILE_StatusMsgSet("SDCard Err!");
+    }
+  } else {
+    // stop recording
+    status |= FILE_WriteClose();
+
+    if( record_trk_size ) {
+      // switch back to first byte of track and write final track size
+      if( (status=FILE_WriteOpen(record_filename, 0)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MID_FILE] Failed to open %s again, status: %d\n", record_filename, status);
+#endif
+	MIDIO_FILE_StatusMsgSet("SDCard Err!");
+	status = -3; // file re-open error
+      } else {
+	status |= FILE_WriteSeek(record_trk_header_filepos + 4);
+	status |= MID_FILE_WriteWord(record_trk_size, 4);
+	status |= FILE_WriteClose();
+
+	// take over new filename, but pause sequencer
+	SEQ_SetPauseMode(1);
+	SEQ_PlayFile(record_filename);
+	MIDIO_FILE_StatusMsgSet(NULL);
+      }
+    }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MID_FILE] Recording to '%s' stopped. Track size: %d bytes\n", record_filename, record_trk_size);
+#endif
+  }
+
+  MUTEX_SDCARD_GIVE;
+
+  return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns 1 if record mode enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_RecordingEnabled(void)
+{
+  return record_mode;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the record filename (up to 12 chars)
+/////////////////////////////////////////////////////////////////////////////
+char *MID_FILE_RecordingFilename(void)
+{
+  return record_filename;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns timestamp of last recorded MIDI event
+/////////////////////////////////////////////////////////////////////////////
+u32 MID_FILE_LastRecordedTick(void)
+{
+  return record_last_tick;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the last recorded MIDI port
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t MID_FILE_LastRecordedPort(void)
+{
+  return record_last_port;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the last recorded MIDI event
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_package_t MID_FILE_LastRecordedEvent(void)
+{
+  return record_last_event;
 }

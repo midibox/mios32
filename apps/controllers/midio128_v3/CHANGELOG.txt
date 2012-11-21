@@ -1,7 +1,28 @@
 $Id$
 
-MIDIO128 V3.011
-~~~~~~~~~~~~~~~
+MIDIO128 V3.011pre2
+~~~~~~~~~~~~~~~~~~~
+
+   o rotary encoder now selects the tempo (BPM) in main page
+
+   o BPM mode can be switched between Auto/Master/Slave by pressing
+     shift button + soft button 2
+
+   o MIDI recorder: tempo now stored in MIDI file
+
+   o record event monitor: display input port name instead of output port name
+
+   o record event monitor: display "DIN" instead of "Def"(ault) when DIN
+     generated events are recorded
+
+   o only in this pre2 release: whenever the next/previous file is selected,
+     the searched files are listed in the MIOS terminal
+
+   o MIDI router config: renamed SrcP to DstP
+
+
+MIDIO128 V3.011pre1
+~~~~~~~~~~~~~~~~~~~
 
    o It's now possible to record MIDI files!
      Press EXIT + first softbutton (under REC)

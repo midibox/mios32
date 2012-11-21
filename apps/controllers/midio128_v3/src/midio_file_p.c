@@ -773,6 +773,23 @@ s32 MIDIO_FILE_P_Read(char *filename)
 #endif
 	  }
 
+	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
+	  u32 value;
+	  if( (value=get_dec(brkt)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid BPM for parameter '%s'\n", parameter);
+#endif
+	  }
+	  SEQ_BPM_Set((float)value);
+
+	} else if( strcmp(parameter, "BPM_Mode") == 0 ) {
+	  u32 value;
+	  if( (value=get_dec(brkt)) < 0 || SEQ_BPM_ModeSet(value) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid BPM Mode for parameter '%s'\n", parameter);
+#endif
+	  }
+
 #if !defined(MIOS32_FAMILY_EMULATION)
 	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
 	  u32 value;
@@ -1178,6 +1195,10 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "AllNotesOffChannel;%d\n", midio_patch_cfg.all_notes_off_chn);
   FLUSH_BUFFER;
   sprintf(line_buffer, "MidiFilePlayMode;%d\n", SEQ_MidiPlayModeGet());
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "BPM_Preset;%d\n", (int)SEQ_BPM_Get());
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "BPM_Mode;%d\n", SEQ_BPM_ModeGet());
   FLUSH_BUFFER;
 
 
