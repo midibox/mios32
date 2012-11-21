@@ -233,7 +233,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
   // -> MIDI file recorder
-  SEQ_MidiRecReceive(port, midi_package);
+  MID_FILE_Receive(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption

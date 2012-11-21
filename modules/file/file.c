@@ -1042,16 +1042,17 @@ s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_f
       if( ext_filter && strncasecmp(p, ext_filter, 3) != 0 )
 	continue;
 
+      if( take_next || filename == NULL ) {
+	memcpy((char *)next_filename, (char *)&de.fname[0], 13);
+	return 1; // file found
+      }
+
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("--> %s\n", de.fname);
 #endif
 
-      if( take_next || filename == NULL ) {
-	memcpy((char *)next_filename, (char *)&de.fname[0], 13);
-	return 1; // file found
-      } else if( filename_matches ) {
+      if( filename_matches )
 	take_next = 1;
-      }
     }
   }
 
@@ -1064,7 +1065,7 @@ s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_f
 //! Returns a previous file of the given filename with the given extension
 //! if filename == NULL, no first file will be returned in prev_filename
 //! \param[in] path directory in which we want to search
-//! \param[in] filename current file (if NULL, the first file will be returned)
+//! \param[in] filename current file (if NULL, the last file will be returned)
 //! \param[in] ext_filter optional extension filter (if NULL: no extension)
 //! \param[out] prev_filename the previous file if return status is 1
 //! \return < 0 on errors (error codes are documented in file.h)
@@ -1119,16 +1120,18 @@ s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, char *pr
       DEBUG_MSG("--> %s\n", de.fname);
 #endif
 
-      if( filename_matches ) {
-	if( p_check == NULL ) // first file
-	  memcpy((char *)prev_filename, (char *)&de.fname[0], 13);
-	return (prev_filename[0] == 0) ? 0 : 1;
+      if( p_check != NULL && filename_matches ) { // if not the last file should be returned
+	return prev_filename[0] ? 1 : 0; // return this one
       }
 
       // copy filename into prev_filename for next iteration
       memcpy((char *)prev_filename, (char *)&de.fname[0], 13);
     }
   }
+
+  // last file?
+  if( filename == NULL && prev_filename[0] != 0 )
+    return 1;
 
   prev_filename[0] = 0; // set terminator (empty string)
   return 0; // file not found

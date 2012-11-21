@@ -1363,6 +1363,10 @@ s32 SCS_Tick(void)
 
       int line;
       for(line=0; line<2; ++line) {
+
+	if( scsMsg[line][0] == 0 )
+	  continue;
+
 	SCS_LCD_CursorSet(msg_x, line);
 
 	// ensure that both lines are padded with same number of spaces

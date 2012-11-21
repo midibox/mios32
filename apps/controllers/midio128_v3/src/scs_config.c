@@ -44,10 +44,11 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local defines
+// Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 extraPage;
+static u8 altMainPage;
 
 static u8 selectedDin;
 static u8 selectedDout;
@@ -59,11 +60,6 @@ static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
 static u8 monPageOffset;
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Local parameter variables
-/////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -751,7 +747,7 @@ const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
   SCS_ITEM("Chn.", 0, 17,                       routerSrcChnGet, routerSrcChnSet,selectNOP, stringRouterChn, NULL),
-  SCS_ITEM("SrcD", 0, MIDI_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),
+  SCS_ITEM("DstP", 0, MIDI_PORT_NUM_OUT_PORTS-1, routerDstPortGet, routerDstPortSet,selectNOP, stringOutPort, NULL),
   SCS_ITEM("Chn.", 0, 17,                       routerDstChnGet, routerDstChnSet,selectNOP, stringRouterChn, NULL),
 };
 
@@ -818,9 +814,11 @@ static s32 displayHook(char *line1, char *line2)
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
 
-    sprintf(line1, "MIDI DOUT MSD  ");
-    sprintf(line2, "%s Off  %s",
-	    SEQ_BPM_IsRunning() ? "STOP" : (SEQ_RecordingEnabled() ? "REC!" : "PLAY"),
+    seq_bpm_mode_t bpmMode = SEQ_BPM_ModeGet();
+    sprintf(line1, "MIDI BPM  DOUT MSD  ");
+    sprintf(line2, "%s %s Off  %s",
+	    SEQ_BPM_IsRunning() ? "STOP" : (MID_FILE_RecordingEnabled() ? "REC!" : "PLAY"),
+	    (bpmMode == SEQ_BPM_MODE_Slave) ? "Slve" : ((bpmMode == SEQ_BPM_MODE_Master) ? "Mstr" : "Auto"),
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
   }
@@ -835,7 +833,6 @@ static s32 displayHook(char *line1, char *line2)
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
     u8 fastRefresh = line1[0] == 0;
-    u8 exitButtonPressed = SCS_PinGet(SCS_PIN_EXIT) ? 0 : 1;
     u32 tick = SEQ_BPM_TickGet();
     u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
     u32 ticks_per_measure = ticks_per_step * 16;
@@ -844,31 +841,37 @@ static s32 displayHook(char *line1, char *line2)
 
     // print SD Card status message or patch
     if( line1[0] == 0 ) { // no MSD overlay?
-      if( SEQ_RecordingEnabled() ) {
+      if( MID_FILE_RecordingEnabled() ) {
 	if( (tick % (8*ticks_per_step)) >= (4*ticks_per_step) ) {
 	  sprintf(line1, "*RECORDING*  %4u.%2d", measure, step);
 	} else {
-	  sprintf(line1, "%-12s %4u.%2d", SEQ_RecordingFilename(), measure, step);
+	  sprintf(line1, "%-12s  %4u.%2d", MID_FILE_RecordingFilename(), measure, step);
 	}
       } else {
-	sprintf(line1, "%-12s %4u.%2d", MIDIO_FILE_StatusMsgGet() ? MIDIO_FILE_StatusMsgGet() : MID_FILE_UI_NameGet(), measure, step);
+	if( altMainPage ) {
+	  sprintf(line1, "%-12s     BPM", MIDIO_FILE_StatusMsgGet() ? MIDIO_FILE_StatusMsgGet() : MID_FILE_UI_NameGet());
+	} else {
+	  sprintf(line1, "%-12s %4u.%2d", MIDIO_FILE_StatusMsgGet() ? MIDIO_FILE_StatusMsgGet() : MID_FILE_UI_NameGet(), measure, step);
+	}
       }
     }
 
-    if( SEQ_RecordingEnabled() ) {
-      mios32_midi_port_t port = SEQ_LastRecordedPort();
-      mios32_midi_package_t p = SEQ_LastRecordedEvent();
+    if( MID_FILE_RecordingEnabled() ) {
+      mios32_midi_port_t port = MID_FILE_LastRecordedPort();
+      mios32_midi_package_t p = MID_FILE_LastRecordedEvent();
       char event_str[12];
       event_str[0] = 0;
 
-      int time_passed = tick - SEQ_LastRecordedTick();
+      int time_passed = tick - MID_FILE_LastRecordedTick();
       if( time_passed > 0 && time_passed < (ticks_per_measure/4) ) {
-	sprintf(event_str, "%s:%02X%02X%02X", MIDI_PORT_OutNameGet(MIDI_PORT_OutIxGet(port)), p.evnt0, p.evnt1, p.evnt2);
+	sprintf(event_str, "%s:%02X%02X%02X",
+		(port == DEFAULT) ? "DIN " : MIDI_PORT_InNameGet(MIDI_PORT_InIxGet(port)),
+		p.evnt0, p.evnt1, p.evnt2);
       }
 
       sprintf(line2, "%s  %-11s   ", SEQ_BPM_IsRunning() ? "STOP" : "REC ", event_str[0] ? event_str : "----:------" );
-    } else if( exitButtonPressed ) {
-      sprintf(line2, "%s FRew FFwd      ", SEQ_BPM_IsRunning() ? "STOP" : "REC ");
+    } else if( altMainPage ) {
+      sprintf(line2, "%s  FRew FFwd  %3d", SEQ_BPM_IsRunning() ? "STOP" : "REC ", (int)SEQ_BPM_EffectiveGet());
     } else {
       sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
     }
@@ -983,6 +986,31 @@ static s32 encHook(s32 incrementer)
     monPageOffset = newOffset;
   }
 
+  // main page
+  else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+
+    if( SEQ_BPM_ModeGet() == SEQ_BPM_MODE_Slave ) {
+      SCS_Msg(SCS_MSG_L, 200, "No BPM change", "in Slave Mode!");
+    } else {
+      int bpm = (int)SEQ_BPM_Get() + incrementer;
+    
+      if( bpm < 1 )
+	bpm = 1;
+      else if( bpm > 300 )
+	bpm = 300;
+
+      SEQ_BPM_Set((float)bpm);
+
+      if( !altMainPage ) {
+	char buffer[21];
+	sprintf(buffer, "Tempo: %3d BPM", bpm);
+	SCS_Msg(SCS_MSG_L, 200, "", buffer);
+      }
+    }
+
+    return 1;
+  }
+
   return 0;
 }
 
@@ -995,6 +1023,8 @@ static s32 encHook(s32 incrementer)
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
   if( extraPage ) {
+    altMainPage = 0;
+
     if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
       extraPage = 0;
     else {
@@ -1008,11 +1038,20 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       case SCS_PIN_SOFT2:
 	if( depressed )
 	  return 1;
+	if( SEQ_BPM_ModeGet() > 2 )
+	  SEQ_BPM_ModeSet(0);
+	else
+	  SEQ_BPM_ModeSet(SEQ_BPM_ModeGet() + 1);
+	break;
+
+      case SCS_PIN_SOFT3:
+	if( depressed )
+	  return 1;
 	MIDIO_DOUT_Init(0);
 	SCS_Msg(SCS_MSG_L, 1000, "All DOUT pins", "deactivated");
 	break;
 
-      case SCS_PIN_SOFT3: {
+      case SCS_PIN_SOFT4: {
 	u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
 	if( depressed )
 	  SCS_UnInstallDelayedActionCallback(MSD_EnableReq);
@@ -1038,12 +1077,15 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
     }
 
     if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+
+      if( scsButton == SCS_PIN_EXIT ) {
+	altMainPage = !depressed;
+      }
+
       if( depressed )
 	return 0;
 
-      u8 exitButtonPressed = SCS_PinGet(SCS_PIN_EXIT) ? 0 : 1;
-
-      if( exitButtonPressed || SEQ_RecordingEnabled() ) {
+      if( altMainPage || MID_FILE_RecordingEnabled() ) {
 	switch( scsButton ) {
 	case SCS_PIN_SOFT1: // Rec/Stop
 	  SEQ_RecStopButton();
@@ -1110,6 +1152,7 @@ s32 SCS_CONFIG_Init(u32 mode)
     SCS_InstallEncHook(encHook);
     SCS_InstallButtonHook(buttonHook);
     monPageOffset = 0;
+    altMainPage = 0;
     break;
   }
   default: return -1; // mode not supported

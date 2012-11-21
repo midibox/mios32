@@ -21,7 +21,7 @@
 #include "midio_dout.h"
 #include "midio_patch.h"
 
-#include "seq.h"
+#include "mid_file.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ s32 MIDIO_DIN_NotifyToggle(u32 pin, u32 pin_value)
   }
 
   // send MIDI message to MIDI file recorder
-  SEQ_MidiRecReceive(DEFAULT, p);
+  MID_FILE_Receive(DEFAULT, p);
 
   return 0; // no error
 }
