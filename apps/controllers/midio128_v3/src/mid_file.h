@@ -31,6 +31,7 @@
 extern s32 MID_FILE_Init(u32 mode);
 
 extern char *MID_FILE_UI_NameGet(void);
+extern s32 MID_FILE_UI_NameClear(void);
 extern s32 MID_FILE_FindNext(char *filename, char *next_file);
 extern s32 MID_FILE_FindPrev(char *filename, char *prev_file);
 

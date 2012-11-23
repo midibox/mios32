@@ -101,6 +101,15 @@ char *MID_FILE_UI_NameGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Clears the current midi file name
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_UI_NameClear(void)
+{
+  ui_midifile_name[0] = 0;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Returns the .mid file next to the given filename
 // returns < 0 on errors
 // returns 1 if a new file has been found, otherwise 0
@@ -220,8 +229,8 @@ u32 MID_FILE_read(void *buffer, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 s32 MID_FILE_eof(void)
 {
-  if( midifile_pos >= midifile_len )
-    return 1; // end of file reached
+  if( midifile_pos >= midifile_len || !FILE_SDCardAvailable() )
+    return 1; // end of file reached or SD card disconnected
 
   return 0;
 }
@@ -246,7 +255,7 @@ s32 MID_FILE_seek(u32 pos)
     status = -1; // end of file reached
   else {
     if( (status=FILE_ReadReOpen(&midifile_fi)) >= 0 ) {
-      status = FILE_ReadSeek(pos);    
+      status = FILE_ReadSeek(pos);
       FILE_ReadClose(&midifile_fi);
     }
   }
@@ -307,6 +316,20 @@ s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package)
   // ignore if recording mode not enabled
   if( !MID_FILE_RecordingEnabled() )
     return 0;
+
+  // port enabled?
+  if( port == DEFAULT ) {
+    if( !seq_rec_enable_din )
+      return 0;
+  } else {
+    // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+    if( port < USB0 || port > OSC3 )
+      return 0;
+    u16 port_ix = ((port-USB0) >> 2) | (port & 0x03);
+    u16 port_mask = (1 << port_ix);
+    if( !(seq_rec_enabled_ports & port_mask) )
+      return 0;
+  }
 
   // ignore realtime events (like MIDI clock)
   if( package.evnt0 >= 0xf8 )
@@ -385,19 +408,22 @@ s32 MID_FILE_SetRecordMode(u8 enable)
     while( 1 ) {
       ++rec_num;
       sprintf(record_filename, "REC%d.MID", rec_num);
-      if( !FILE_FileExists(record_filename) )
+      if( (status=FILE_FileExists(record_filename)) <= 0 )
 	break;
     }
 
+    if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MID_FILE] Recording to '%s' started\n", record_filename);
+      DEBUG_MSG("[MID_FILE] Recording failed, status: %d\n", status);
 #endif
-
-    if( (status=FILE_WriteOpen(record_filename, 1)) < 0 ) {
+    } else if( (status=FILE_WriteOpen(record_filename, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MID_FILE] Failed to open/create %s, status: %d\n", record_filename, status);
 #endif
     } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MID_FILE] Recording to '%s' started\n", record_filename);
+#endif
       // write file header
       u32 header_size = 6;
       status |= FILE_WriteBuffer((u8*)"MThd", 4);
@@ -416,15 +442,10 @@ s32 MID_FILE_SetRecordMode(u8 enable)
       record_trk_size += MID_FILE_WriteWord(0xff, 1); // meta event
       record_trk_size += MID_FILE_WriteWord(0x51, 1); // set tempo
       record_trk_size += MID_FILE_WriteVarLen(3);     // 3 bytes
-      u32 tempo_us = (u32)(1E6 / (SEQ_BPM_Get() / 60.0));
+      u32 tempo_us = (u32)(1E6 / (SEQ_BPM_EffectiveGet() / 60.0));
       record_trk_size += MID_FILE_WriteWord(tempo_us, 3);
     }
 
-    // disable recording on error
-    if( status < 0 ) {
-      record_mode = 0;
-      MIDIO_FILE_StatusMsgSet("SDCard Err!");
-    }
   } else {
     // stop recording
     status |= FILE_WriteClose();
@@ -455,6 +476,13 @@ s32 MID_FILE_SetRecordMode(u8 enable)
   }
 
   MUTEX_SDCARD_GIVE;
+
+  // disable recording on error
+  if( status < 0 ) {
+    record_mode = 0;
+    MIDIO_FILE_StatusMsgSet("SDCard Err!");
+    SEQ_BPM_Stop();
+  }
 
   return status;
 }

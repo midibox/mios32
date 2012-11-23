@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <midi_router.h>
+#include <seq_bpm.h>
 
 #include "file.h"
 #include "midio_file.h"
@@ -784,11 +785,123 @@ s32 MIDIO_FILE_P_Read(char *filename)
 
 	} else if( strcmp(parameter, "BPM_Mode") == 0 ) {
 	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 || SEQ_BPM_ModeSet(value) < 0 ) {
+	  if( (value=get_dec(brkt)) < 0 || SEQ_ClockModeSet(value) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid BPM Mode for parameter '%s'\n", parameter);
 #endif
 	  }
+
+	} else if( strcmp(parameter, "MidiFilePlayPorts") == 0 ) {
+	  s32 enabled_ports = 0;
+	  int bit;
+	  for(bit=0; bit<17; ++bit) {
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int enable = get_dec(word);
+	    if( enable < 0 )
+	      break;
+	    if( enable >= 1 )
+	      enabled_ports |= (1 << bit);
+	  }
+
+	  if( bit != 17 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    seq_play_enable_dout = enabled_ports & 1;
+	    seq_play_enabled_ports = enabled_ports >> 1;
+	  }	  
+
+	} else if( strcmp(parameter, "MidiFileRecPorts") == 0 ) {
+	  s32 enabled_ports = 0;
+	  int bit;
+	  for(bit=0; bit<17; ++bit) {
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int enable = get_dec(word);
+	    if( enable < 0 )
+	      break;
+	    if( enable >= 1 )
+	      enabled_ports |= (1 << bit);
+	  }
+
+	  if( bit != 17 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    seq_rec_enable_din = enabled_ports & 1;
+	    seq_rec_enabled_ports = enabled_ports >> 1;
+	  }	  
+
+	} else if( strcmp(parameter, "MidiFileClkOutPorts") == 0 ) {
+	  s32 enabled_ports = 0;
+	  int bit;
+	  for(bit=0; bit<16; ++bit) {
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int enable = get_dec(word);
+	    if( enable < 0 )
+	      break;
+	    if( enable >= 1 )
+	      enabled_ports |= (1 << bit);
+	  }
+
+	  if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+	  }	  
+
+	} else if( strcmp(parameter, "MidiFileClkInPorts") == 0 ) {
+	  s32 enabled_ports = 0;
+	  int bit;
+	  for(bit=0; bit<16; ++bit) {
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    int enable = get_dec(word);
+	    if( enable < 0 )
+	      break;
+	    if( enable >= 1 )
+	      enabled_ports |= (1 << bit);
+	  }
+
+	  if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
+	    MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+	  }	  
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
@@ -1198,9 +1311,98 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "BPM_Preset;%d\n", (int)SEQ_BPM_Get());
   FLUSH_BUFFER;
-  sprintf(line_buffer, "BPM_Mode;%d\n", SEQ_BPM_ModeGet());
+  sprintf(line_buffer, "BPM_Mode;%d\n", SEQ_ClockModeGet());
   FLUSH_BUFFER;
 
+  {
+    sprintf(line_buffer, "\n\n#MidiFilePlayPorts;DOUT;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4\n");
+    FLUSH_BUFFER;
+
+    char ports_bin[40];
+    int bit;
+    for(bit=0; bit<16; ++bit) {
+      ports_bin[2*bit+0] = (seq_play_enabled_ports & (1 << bit)) ? '1' : '0';
+      ports_bin[2*bit+1] = ';';
+    }
+    ports_bin[2*16-1] = 0; // removes also last semicolon
+
+    sprintf(line_buffer, "MidiFilePlayPorts;%c;%s\n",
+	    seq_play_enable_dout ? '1' : '0',
+	    ports_bin);
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#MidiFileRecPorts;DIN;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4\n");
+    FLUSH_BUFFER;
+
+    char ports_bin[40];
+    int bit;
+    for(bit=0; bit<16; ++bit) {
+      ports_bin[2*bit+0] = (seq_rec_enabled_ports & (1 << bit)) ? '1' : '0';
+      ports_bin[2*bit+1] = ';';
+    }
+    ports_bin[2*16-1] = 0; // removes also last semicolon
+
+    sprintf(line_buffer, "MidiFileRecPorts;%c;%s\n",
+	    seq_rec_enable_din ? '1' : '0',
+	    ports_bin);
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#MidiFileClkOutPorts;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4\n");
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "MidiFileClkOutPorts;"); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(USB0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(USB1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(USB2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(USB3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(UART0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(UART1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(UART2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(UART3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(IIC0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(IIC1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(IIC2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(IIC3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(OSC0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(OSC1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockOutGet(OSC2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c\n", MIDI_ROUTER_MIDIClockOutGet(OSC3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#MidiFileClkInPorts;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4\n");
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "MidiFileClkInPorts;"); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(USB0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(USB1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(USB2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(USB3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(UART0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(UART1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(UART2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(UART3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(IIC0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(IIC1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(IIC2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(IIC3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(OSC0) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(OSC1) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c;", MIDI_ROUTER_MIDIClockInGet(OSC2) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+    sprintf(line_buffer, "%c\n", MIDI_ROUTER_MIDIClockInGet(OSC3) >= 1 ? '1' : '0'); FLUSH_BUFFER;
+  }
 
   return status;
 }

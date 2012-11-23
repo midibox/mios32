@@ -24,6 +24,7 @@
 #include <midi_port.h>
 #include <file.h>
 #include <osc_client.h>
+#include <midi_router.h>
 
 #include <mid_parser.h>
 
@@ -69,6 +70,12 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick);
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
+u16 seq_play_enabled_ports;
+u16 seq_rec_enabled_ports;
+
+u8 seq_play_enable_dout;
+u8 seq_rec_enable_din;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -86,15 +93,14 @@ static u32 prefetch_offset;
 // request to play the next file
 static s8 next_file_req;
 
-// output port flags
-static u16 enabled_ports;
-
 // the MIDI play mode
 static u8 midi_play_mode;
 
 // pause mode
 static u8 seq_pause;
 
+// lock BPM, so that it can't be changed from MIDI player
+static u8 seq_clk_locked;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -103,9 +109,17 @@ s32 SEQ_Init(u32 mode)
 {
   // play mode
   midi_play_mode = SEQ_MIDI_PLAY_MODE_ALL;
+  seq_clk_locked = 0;
 
   // play over USB0 and UART0/1
-  enabled_ports = 0x01 | (0x03 << 4);
+  seq_play_enabled_ports = 0x01 | (0x03 << 4);
+
+  // record over USB0 and UART0/1
+  seq_rec_enabled_ports = 0x01 | (0x03 << 4);
+
+  // play/record over DOUT/DIN
+  seq_play_enable_dout = 1;
+  seq_rec_enable_din = 1;
   
   // init MIDI file handler
   MID_FILE_Init(0);
@@ -125,6 +139,7 @@ s32 SEQ_Init(u32 mode)
 
   // init BPM generator
   SEQ_BPM_Init(0);
+  SEQ_BPM_Set(120.0);
 
   // scheduler should send packages to private hook
   SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(Hook_MIDI_SendPackage);
@@ -132,6 +147,33 @@ s32 SEQ_Init(u32 mode)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// set/get Clock mode
+// adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_ClockModeGet(void)
+{
+  if( seq_clk_locked )
+    return 3;
+
+  return SEQ_BPM_ModeGet();
+}
+
+s32 SEQ_ClockModeSet(u8 mode)
+{
+  if( mode > 3 )
+    return -1; // invalid mode
+
+  if( mode == 3 ) {
+    SEQ_BPM_ModeSet(SEQ_BPM_MODE_Master);
+    seq_clk_locked = 1;
+  } else {
+    SEQ_BPM_ModeSet(mode);
+    seq_clk_locked = 0;
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // set/get MIDI play mode
@@ -176,14 +218,19 @@ s32 SEQ_Handler(void)
     if( SEQ_BPM_ChkReqStop() ) {
       SEQ_PlayOffEvents();
       MID_FILE_SetRecordMode(0);
+
+      MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
       // release pause mode
       SEQ_SetPauseMode(0);
+
+      MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
+      MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_Reset(1);
       SEQ_SongPos(0);
     }
@@ -198,8 +245,11 @@ s32 SEQ_Handler(void)
       if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
 
 	// set initial BPM according to MIDI spec
-	if( bpm_tick == 0 )
+	if( bpm_tick == 0 && !seq_clk_locked )
 	  SEQ_BPM_Set(120.0);
+
+	if( bpm_tick == 0 ) // send start (again) to synchronize with new MIDI songs
+	  MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
 
 	again = 1; // check all requests again after execution of this part
 	SEQ_Tick(bpm_tick);
@@ -354,11 +404,11 @@ s32 SEQ_PlayFile(char *midifile)
 
 /////////////////////////////////////////////////////////////////////////////
 // Plays the first .mid file if next == 0, the next file if next > 0, the
-// 0: plays the first .mid file
+// 0: plays the current .mid file
 // 1: plays the next .mid file
 // -1: plays the previous .mid file
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_PlayNextFile(s8 next)
+s32 SEQ_PlayNextFile(s8 next)
 {
   char next_file[13];
   next_file[0] = 0;
@@ -448,6 +498,10 @@ s32 SEQ_PauseEnabled(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_Tick(u32 bpm_tick)
 {
+  // send MIDI clock on each 16th tick (since we are working at 384ppqn)
+  if( (bpm_tick % 16) == 0 )
+    MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+
   if( bpm_tick >= next_prefetch ) {
     // get number of prefetch ticks depending on current BPM
     u32 prefetch_ticks = SEQ_BPM_TicksFor_mS(PREFETCH_TIME_MS);
@@ -478,6 +532,11 @@ static s32 SEQ_Tick(u32 bpm_tick)
 	SEQ_BPM_Stop();
 	SEQ_Reset(1);
 	SEQ_SetPauseMode(1);
+      } else if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE_LOOP ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+	DEBUG_MSG("[SEQ] End of song reached after %u ticks - restarting song!\n", bpm_tick);
+#endif
+	SEQ_Reset(1);
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
@@ -607,18 +666,21 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	float bpm = 60.0 * (1E6 / (float)tempo_us);
 	SEQ_BPM_PPQN_Set(MIDI_PARSER_PPQN_Get());
 
-	// set tempo immediately on first tick
-	if( tick == 0 ) {
-	  SEQ_BPM_Set(bpm);
-	} else {
-	  // put tempo change request into the queue
-	  mios32_midi_package_t tempo_package; // or Softis?
-	  tempo_package.ALL = (u32)bpm;
-	  SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick, 0);
+	if( !seq_clk_locked ) {
+	  // set tempo immediately on first tick
+	  if( tick == 0 ) {
+	    SEQ_BPM_Set(bpm);
+	  } else {
+	    // put tempo change request into the queue
+	    mios32_midi_package_t tempo_package; // or Softis?
+	    tempo_package.ALL = (u32)bpm;
+	    SEQ_MIDI_OUT_Send(DEFAULT, tempo_package, SEQ_MIDI_OUT_TempoEvent, tick, 0);
+	  }
 	}
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ:%d:%u] Meta - Tempo to %u uS -> %u BPM\n", track, tick, tempo_us, (u32)bpm);
+	DEBUG_MSG("[SEQ:%d:%u] Meta - Tempo to %u uS -> %u BPM%s\n", track, tick, tempo_us, (u32)bpm,
+		  seq_clk_locked ? " IGNORED (locked)" : "");
 #endif
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -648,17 +710,23 @@ static s32 SEQ_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package)
 {
-  // forward to MIDIO
-  MIDIO_DOUT_MIDI_NotifyPackage(port, package);
+  // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
+  if( package.evnt0 >= 0xf8 ) {
+    MIOS32_MIDI_SendPackage(port, package);
+  } else {
+    // forward to MIDIO
+    if( seq_play_enable_dout )
+      MIDIO_DOUT_MIDI_NotifyPackage(port, package);
 
-  // forward to enabled MIDI ports
-  int i;
-  u16 mask = 1;
-  for(i=0; i<16; ++i, mask <<= 1) {
-    if( enabled_ports & mask ) {
-      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
-      MIOS32_MIDI_SendPackage(port, package);
+    // forward to enabled MIDI ports
+    int i;
+    u16 mask = 1;
+    for(i=0; i<16; ++i, mask <<= 1) {
+      if( seq_play_enabled_ports & mask ) {
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	MIOS32_MIDI_SendPackage(port, package);
+      }
     }
   }
 
@@ -716,22 +784,18 @@ s32 SEQ_RecStopButton(void)
   } else {
     SEQ_SetPauseMode(0);
 
-    MUTEX_SDCARD_TAKE;
-
     // if in auto mode and BPM generator is clocked in slave mode:
     // change to master mode
     SEQ_BPM_CheckAutoMaster();
 
     // enter record mode
-    MID_FILE_SetRecordMode(1);
+    if( MID_FILE_SetRecordMode(1) >= 0 ) {
+      // reset sequencer
+      SEQ_Reset(1);
 
-    // reset sequencer
-    SEQ_Reset(1);
-
-    // start sequencer
-    SEQ_BPM_Start();
-
-    MUTEX_SDCARD_GIVE;
+      // start sequencer
+      SEQ_BPM_Start();
+    }
   }
 
   return 0; // no error

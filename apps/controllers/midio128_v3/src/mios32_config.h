@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.011pre2"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.011pre3"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application
@@ -52,5 +52,9 @@
 
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 14*1024
+
+
+// combine MIDI router with SEQ module
+#define MIDI_ROUTER_COMBINED_WITH_SEQ 1
 
 #endif /* _MIOS32_CONFIG_H */

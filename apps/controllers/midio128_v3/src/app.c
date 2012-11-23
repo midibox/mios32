@@ -370,6 +370,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_SD(void *pvParameters)
 {
+  const u16 sdcard_check_delay = 1000;
   u16 sdcard_check_ctr = 0;
   u8 lun_available = 0;
 
@@ -377,7 +378,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // each second: check if SD Card (still) available
-    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= 1000 ) {
+    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay ) {
       sdcard_check_ctr = 0;
 
       MUTEX_SDCARD_TAKE;
@@ -387,8 +388,15 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
       if( status == 1 ) {
 	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+
 	// load all file infos
 	MIDIO_FILE_LoadAllFiles(1); // including HW info
+
+	// immediately go to next step
+	sdcard_check_ctr = sdcard_check_delay;
       } else if( status == 2 ) {
 	DEBUG_MSG("SD Card disconnected\n");
 	// invalidate all file infos
@@ -417,14 +425,11 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	    }
 	  }
 
-	  // disable status message and print patch
-	  //MIDIO_FILE_StatusMsgSet(NULL);
-	  // extra MIDIO: print SDCard found until MIDI file played
-	  MIDIO_FILE_StatusMsgSet("SDCard found");
+	  // load first MIDI file
+	  MID_FILE_UI_NameClear();
+	  SEQ_SetPauseMode(1);
+	  SEQ_PlayFileReq(0, 1);
 	}
-
-	// reset sequencer
-	SEQ_Reset(0);
       }
 
       MUTEX_SDCARD_GIVE;

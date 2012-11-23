@@ -218,7 +218,7 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
   for(i=0; i<16; ++i, mask <<= 1) {
     if( m->enabled_ports & mask ) {
       // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
+      mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
       MIOS32_MIDI_SendPackage(port, p);
     }
   }

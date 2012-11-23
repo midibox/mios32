@@ -24,6 +24,9 @@
 #include "midi_router.h"
 #include "midi_port.h"
 
+#if MIDI_ROUTER_COMBINED_WITH_SEQ
+#include <seq_midi_out.h>
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // local defines
@@ -76,9 +79,9 @@ s32 MIDI_ROUTER_Init(u32 mode)
     return -1; // only mode 0 supported
 
   //                     USB0 only     UART0..3       IIC0..3      OSC0..3
-  midi_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x01 << 24);
+  midi_router_mclk_in = (0x01 << 0) | (0x0f << 8) | (0x0f << 16) | (0x00 << 24);
   //                      all ports
-  midi_router_mclk_out = 0xffffffff;
+  midi_router_mclk_out = 0x00ffffff;
 
   // clear SysEx buffers and assign ports
   int i;
@@ -293,7 +296,9 @@ s32 MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
       // TODO: special check for OSC, since MIOS32_MIDI_CheckAvailable() won't work here
       if( MIOS32_MIDI_CheckAvailable(port) ) {
 	if( bpm_tick ) {
-	  //SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+#if MIDI_ROUTER_COMBINED_WITH_SEQ
+	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+#endif
 	} else {
 	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(port, p);

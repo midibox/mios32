@@ -1,5 +1,27 @@
 $Id$
 
+MIDIO128 V3.011pre3
+~~~~~~~~~~~~~~~~~~~
+
+   o application doesn't hang-up anymore if recording is enabled while
+     no SD Card connected
+
+   o first MIDI song already selected after boot
+
+   o play modes: aside from All and Single, we've now also a "Loop" mode
+     which repeats the selected song
+
+   o a fourth clock mode has been added: "Lock". It prevents tempo changes
+     from the MIDI file. The BPM generator is always in master mode.
+
+   o the "MIDI" page has been renamed to ".MID"
+
+   o if you scroll the .MID page to the right side, you will find configuration
+     options for MIDI ports assigned to the Rec/Play/Clock IN and Clock OUT functions
+
+   o all new options can now be stored/restored into/from .MIO files
+
+
 MIDIO128 V3.011pre2
 ~~~~~~~~~~~~~~~~~~~
 

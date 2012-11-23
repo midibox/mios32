@@ -18,10 +18,11 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define SEQ_MIDI_PLAY_MODE_NUM    2 // two available modes
+#define SEQ_MIDI_PLAY_MODE_NUM    3 // three available modes
 
-#define SEQ_MIDI_PLAY_MODE_ALL    0
-#define SEQ_MIDI_PLAY_MODE_SINGLE 1
+#define SEQ_MIDI_PLAY_MODE_ALL         0
+#define SEQ_MIDI_PLAY_MODE_SINGLE      1
+#define SEQ_MIDI_PLAY_MODE_SINGLE_LOOP 2
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -33,6 +34,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SEQ_Init(u32 mode);
+
+extern u8 SEQ_ClockModeGet(void);
+extern s32 SEQ_ClockModeSet(u8 mode);
 
 extern s32 SEQ_Reset(u8 play_off_events);
 extern s32 SEQ_Handler(void);
@@ -57,5 +61,10 @@ extern s32 SEQ_MidiPlayModeSet(u8 mode);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u16 seq_play_enabled_ports;
+extern u16 seq_rec_enabled_ports;
+
+extern u8 seq_play_enable_dout;
+extern u8 seq_rec_enable_din;
 
 #endif /* _SEQ_H */

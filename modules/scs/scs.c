@@ -319,7 +319,7 @@ s32 SCS_EncButtonUpdate_Tick(void)
     encoderState |= 1;
   if( scsPinState & maskEncB )
     encoderState |= 2;
-  MIOS32_ENC_StateSet(SCS_ENC_MENU_ID, scsPinState);
+  MIOS32_ENC_StateSet(SCS_ENC_MENU_ID, encoderState);
 
   // ensure that change won't be propagated to DIN handler
   scsPinState &= ~(maskEncA | maskEncB);
