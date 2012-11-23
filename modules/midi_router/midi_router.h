@@ -31,6 +31,11 @@ extern "C" {
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 1024
 #endif
 
+// enable this define in mios32_defines.h to allow MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
+// with bpm_tick > 0
+#ifndef MIDI_ROUTER_COMBINED_WITH_SEQ
+#define MIDI_ROUTER_COMBINED_WITH_SEQ 0
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions

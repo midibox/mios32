@@ -59,6 +59,7 @@ static u8 selectedAinser;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
+static u8 selectedMidiPlayerPort;
 static u8 monPageOffset;
 
 
@@ -68,14 +69,22 @@ static u8 monPageOffset;
 static void stringEmpty(u32 ix, u16 value, char *label)   { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
-static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
-static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
+//static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
+//static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
-static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
+//static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
 static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
 static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
+
+static void stringOnOffMidiIo(u32 ix, u16 value, char *label)
+{
+  if( selectedMidiPlayerPort == 0 )
+    sprintf(label, " --- ");
+  else
+    sprintf(label, " [%c] ", value ? 'x' : ' ');
+}
 
 static void stringNote(u32 ix, u16 value, char *label)
 {
@@ -137,6 +146,18 @@ static void stringInPort(u32 ix, u16 value, char *label)
 static void stringOutPort(u32 ix, u16 value, char *label)
 {
   sprintf(label, MIDI_PORT_OutNameGet(value));
+}
+
+static void stringMidiIoPort(u32 ix, u16 value, char *label)
+{
+  mios32_midi_port_t port = MIDI_PORT_OutPortGet(value);
+
+  if( port == DEFAULT )
+    sprintf(label, "DI/O");
+  else if( (port & 0xf0) == UART0 )
+    sprintf(label, "MIDI%d", (port & 0x0f)+1);
+  else
+    sprintf(label, MIDI_PORT_OutNameGet(value));
 }
 
 static void stringRouterChn(u32 ix, u16 value, char *label)
@@ -214,7 +235,7 @@ static void stringIp(u32 ix, u16 value, char *label)
 
 static void stringMidiMode(u32 ix, u16 value, char *label)
 {
-  const char midiModeLabel[SEQ_MIDI_PLAY_MODE_NUM][6] = { "All ", "Sngl" };
+  const char midiModeLabel[SEQ_MIDI_PLAY_MODE_NUM][6] = { "All ", "Sngl", "Loop" };
   strcpy(label, midiModeLabel[value < SEQ_MIDI_PLAY_MODE_NUM ? value : 0]);  
 }
 
@@ -594,7 +615,89 @@ static void selIpParSet(u32 ix, u16 value)
 static u16  midiPlayModeGet(u32 ix)            { return SEQ_MidiPlayModeGet(); }
 static void midiPlayModeSet(u32 ix, u16 value) { SEQ_MidiPlayModeSet(value); }
 
+static u16 midiPlayMaskGet(void)
+{
+  mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort);
+  u16 port_ix = ((port-USB0) >> 2) | (port & 0x03);
+  return 1 << port_ix;
+}
 
+static u16  midiPlayPortGet(u32 ix)            { return selectedMidiPlayerPort; };
+static void midiPlayPortSet(u32 ix, u16 value) { selectedMidiPlayerPort = value; }
+
+static u16  midiPlayPortRecGet(u32 ix)
+{
+  if( selectedMidiPlayerPort == 0 )
+    return seq_rec_enable_din;
+
+  u16 mask = midiPlayMaskGet();
+  return (seq_rec_enabled_ports & mask) ? 1 : 0;
+}
+static void midiPlayPortRecSet(u32 ix, u16 value)
+{
+  if( selectedMidiPlayerPort == 0 )
+    seq_rec_enable_din = value;
+  else {
+    u16 mask = midiPlayMaskGet();
+    seq_rec_enabled_ports &= ~mask;
+    if( value )
+      seq_rec_enabled_ports |= mask;
+  }
+}
+
+static u16  midiPlayPortPlayGet(u32 ix)
+{
+  if( selectedMidiPlayerPort == 0 )
+    return seq_play_enable_dout;
+
+  u16 mask = midiPlayMaskGet();
+  return (seq_play_enabled_ports & mask) ? 1 : 0;
+}
+static void midiPlayPortPlaySet(u32 ix, u16 value)
+{
+  if( selectedMidiPlayerPort == 0 )
+    seq_play_enable_dout = value;
+  else {
+    u16 mask = midiPlayMaskGet();
+    seq_play_enabled_ports &= ~mask;
+    if( value )
+      seq_play_enabled_ports |= mask;
+  }
+}
+
+static u16  midiPlayPortClkIGet(u32 ix)
+{
+  if( selectedMidiPlayerPort == 0 )
+    return 0;
+  else {
+    mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort); // no typo, we only use OUT port
+    return MIDI_ROUTER_MIDIClockInGet(port);
+  }
+}
+static void midiPlayPortClkISet(u32 ix, u16 value)
+{
+  if( selectedMidiPlayerPort != 0 ) {
+    mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort); // no typo, we only use OUT port
+    MIDI_ROUTER_MIDIClockInSet(port, value);
+  }
+}
+
+static u16  midiPlayPortClkOGet(u32 ix)
+{
+  if( selectedMidiPlayerPort == 0 )
+    return 0;
+  else {
+    mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort);
+    return MIDI_ROUTER_MIDIClockOutGet(port);
+  }
+}
+static void midiPlayPortClkOSet(u32 ix, u16 value)
+{
+  if( selectedMidiPlayerPort != 0 ) {
+    mios32_midi_port_t port = MIDI_PORT_OutPortGet(selectedMidiPlayerPort);
+    MIDI_ROUTER_MIDIClockOutSet(port, value);
+  }
+}
 
 static void MSD_EnableReq(u32 enable)
 {
@@ -775,10 +878,15 @@ const scs_menu_item_t pageNetw[] = {
 };
 
 const scs_menu_item_t pageMIDI[] = {
-  SCS_ITEM("Mode ", 0, 1,           midiPlayModeGet, midiPlayModeSet, selectNOP,  stringMidiMode, NULL),
+  SCS_ITEM("Mode ", 0, 2,           midiPlayModeGet, midiPlayModeSet, selectNOP,  stringMidiMode, NULL),
   SCS_ITEM("Filen", 0, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("ame  ", 1, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+  SCS_ITEM("Port ", 0, MIDI_PORT_NUM_OUT_PORTS-1, midiPlayPortGet, midiPlayPortSet, selectNOP, stringMidiIoPort, NULL),
+  SCS_ITEM("REC  ", 0, 1,           midiPlayPortRecGet, midiPlayPortRecSet, selectNOP, stringOnOff, NULL),
+  SCS_ITEM("PLAY ", 0, 1,           midiPlayPortPlayGet, midiPlayPortPlaySet, selectNOP, stringOnOff, NULL),
+  SCS_ITEM("ClkI ", 0, 1,           midiPlayPortClkIGet, midiPlayPortClkISet, selectNOP, stringOnOffMidiIo, NULL),
+  SCS_ITEM("ClkO ", 0, 1,           midiPlayPortClkOGet, midiPlayPortClkOSet, selectNOP, stringOnOffMidiIo, NULL),
 };
 
 const scs_menu_item_t pageMON[] = {
@@ -795,7 +903,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
-  SCS_PAGE("MIDI ", pageMIDI),
+  SCS_PAGE(".MID ", pageMIDI),
   SCS_PAGE("Mon. ", pageMON),
   SCS_PAGE("Disk ", pageDsk),
 };
@@ -814,11 +922,11 @@ static s32 displayHook(char *line1, char *line2)
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
 
-    seq_bpm_mode_t bpmMode = SEQ_BPM_ModeGet();
+    u8 clkMode = SEQ_ClockModeGet();
     sprintf(line1, "MIDI BPM  DOUT MSD  ");
     sprintf(line2, "%s %s Off  %s",
 	    SEQ_BPM_IsRunning() ? "STOP" : (MID_FILE_RecordingEnabled() ? "REC!" : "PLAY"),
-	    (bpmMode == SEQ_BPM_MODE_Slave) ? "Slve" : ((bpmMode == SEQ_BPM_MODE_Master) ? "Mstr" : "Auto"),
+	    (clkMode == 3) ? "Lock" : ((clkMode == SEQ_BPM_MODE_Slave) ? "Slve" : ((clkMode == SEQ_BPM_MODE_Master) ? "Mstr" : "Auto")),
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
   }
@@ -845,7 +953,7 @@ static s32 displayHook(char *line1, char *line2)
 	if( (tick % (8*ticks_per_step)) >= (4*ticks_per_step) ) {
 	  sprintf(line1, "*RECORDING*  %4u.%2d", measure, step);
 	} else {
-	  sprintf(line1, "%-12s  %4u.%2d", MID_FILE_RecordingFilename(), measure, step);
+	  sprintf(line1, "%-12s %4u.%2d", MID_FILE_RecordingFilename(), measure, step);
 	}
       } else {
 	if( altMainPage ) {
@@ -989,11 +1097,11 @@ static s32 encHook(s32 incrementer)
   // main page
   else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
 
-    if( SEQ_BPM_ModeGet() == SEQ_BPM_MODE_Slave ) {
+    if( SEQ_ClockModeGet() == SEQ_BPM_MODE_Slave ) {
       SCS_Msg(SCS_MSG_L, 200, "No BPM change", "in Slave Mode!");
     } else {
       int bpm = (int)SEQ_BPM_Get() + incrementer;
-    
+
       if( bpm < 1 )
 	bpm = 1;
       else if( bpm > 300 )
@@ -1038,10 +1146,10 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       case SCS_PIN_SOFT2:
 	if( depressed )
 	  return 1;
-	if( SEQ_BPM_ModeGet() > 2 )
-	  SEQ_BPM_ModeSet(0);
+	if( SEQ_ClockModeGet() >= 3 )
+	  SEQ_ClockModeSet(0);
 	else
-	  SEQ_BPM_ModeSet(SEQ_BPM_ModeGet() + 1);
+	  SEQ_ClockModeSet(SEQ_ClockModeGet() + 1);
 	break;
 
       case SCS_PIN_SOFT3:

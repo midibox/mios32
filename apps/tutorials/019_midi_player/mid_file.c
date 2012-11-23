@@ -175,8 +175,8 @@ u32 MID_FILE_read(void *buffer, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 s32 MID_FILE_eof(void)
 {
-  if( midifile_pos >= midifile_len )
-    return 1; // end of file reached
+  if( midifile_pos >= midifile_len || !FILE_SDCardAvailable() )
+    return 1; // end of file reached or SD card disconnected
 
   return 0;
 }

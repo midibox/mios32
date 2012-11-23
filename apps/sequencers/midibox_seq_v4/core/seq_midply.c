@@ -579,8 +579,8 @@ static u32 SEQ_MIDPLY_read(void *buffer, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDPLY_eof(void)
 {
-  if( midifile_pos >= midifile_len )
-    return 1; // end of file reached
+  if( midifile_pos >= midifile_len || !FILE_SDCardAvailable() )
+    return 1; // end of file reached or SD card disconnected
 
   return 0;
 }
