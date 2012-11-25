@@ -89,6 +89,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\gui\MbhpMfTool.cpp" />
+    <ClCompile Include="..\..\src\gui\MiosFileBrowser.cpp" />
     <ClCompile Include="..\..\src\gui\SysexLibrarian.cpp" />
     <ClCompile Include="..\..\src\HexFileLoader.cpp" />
     <ClCompile Include="..\..\src\juce_LibrarySource.cpp" />
@@ -116,6 +117,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\gui\MbhpMfTool.h" />
+    <ClInclude Include="..\..\src\gui\MiosFileBrowser.h" />
     <ClInclude Include="..\..\src\gui\SysexLibrarian.h" />
     <ClInclude Include="..\..\src\HexFileLoader.h" />
     <ClInclude Include="..\..\src\includes.h" />

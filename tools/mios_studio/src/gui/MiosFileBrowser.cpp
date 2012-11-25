@@ -424,8 +424,11 @@ bool MiosFileBrowser::uploadFile(void)
             currentWriteError = false;
             currentWriteStartTime = Time::currentTimeMillis();
             sendCommand(T("write ") + currentWriteFile + T(" ") + String(currentWriteSize));
-            startTimer(1000);
+            startTimer(3000);
         }
+
+        if( inFileStream )
+            delete inFileStream;
     }
 
     return true;
@@ -456,7 +459,7 @@ void MiosFileBrowser::sendCommand(const String& command)
     dataArray.add(0xf7);
     MidiMessage message = SysexHelper::createMidiMessage(dataArray);
     miosStudio->sendMidiMessage(message);
-    startTimer(1000);
+    startTimer(3000);
 }
 
 //==============================================================================
@@ -522,7 +525,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     currentReadInProgress = true;
                     currentReadError = false;
                     currentReadStartTime = Time::currentTimeMillis();
-                    startTimer(1000);
+                    startTimer(3000);
                 } else {
                     statusMessage = String(currentReadFile + T(" is empty!"));
                 }
@@ -569,7 +572,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                                                String::formatted(T(" (%d%%, %2.1f kb/s)"),
                                                                  (int)(100.0*(float)receivedSize/(float)currentReadSize),
                                                                  dataRate));
-                        startTimer(1000);
+                        startTimer(3000);
                     }
                 }
             }
@@ -616,7 +619,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                                        String::formatted(T(" (%d%%, %2.1f kb/s)"),
                                                          (int)(100.0*(float)addressOffset/(float)currentWriteSize),
                                                          dataRate));
-                startTimer(1000);
+                startTimer(3000);
             }
         } break;
 
