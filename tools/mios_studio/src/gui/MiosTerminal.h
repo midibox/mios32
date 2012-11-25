@@ -53,7 +53,6 @@ protected:
 
     //==============================================================================
     bool gotFirstMessage;
-    bool ongoingMidiMessage;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
