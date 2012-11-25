@@ -721,7 +721,7 @@ bool MbCvToolControl::loadSyx(File &syxFile)
 {
     FileInputStream *inFileStream = syxFile.createInputStream();
 
-    if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+    if( !inFileStream ) {
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("The file ") + syxFile.getFileName(),
                                     T("doesn't exist!"),

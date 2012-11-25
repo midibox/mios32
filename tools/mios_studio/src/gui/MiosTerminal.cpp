@@ -19,7 +19,6 @@
 //==============================================================================
 MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
-    , ongoingMidiMessage(0)
     , gotFirstMessage(0)
 {
     addAndMakeVisible(terminalLogBox = new LogBox(T("MIOS Terminal")));
@@ -110,20 +109,19 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
     uint32 size = message.getRawDataSize();
     int messageOffset = 0;
 
-    if( runningStatus == 0xf0 && !ongoingMidiMessage &&
-        SysexHelper::isValidMios32DebugMessage(data, size, -1) ) {
-            ongoingMidiMessage = 1;
+    bool messageReceived = false;
+    if( runningStatus == 0xf0 &&
+        SysexHelper::isValidMios32DebugMessage(data, size, -1) &&
+        data[7] == 0x40 ) {
             messageOffset = 8;
-    } else
-        ongoingMidiMessage = 0;
+            messageReceived = true;
+    }
 
-    if( ongoingMidiMessage ) {
+    if( messageReceived ) {
         String str = "";
 
         for(int i=messageOffset; i<size; ++i) {
-            if( data[i] == 0xf7 ) {
-                ongoingMidiMessage = 0;
-            } else {
+            if( data[i] < 0x80 ) {
                 if( data[i] != '\n' || size < (i+1) )
                     str += String::formatted(T("%c"), data[i] & 0x7f);
             }

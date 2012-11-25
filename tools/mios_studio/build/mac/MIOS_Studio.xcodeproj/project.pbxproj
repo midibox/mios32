@@ -33,6 +33,7 @@
 		52C4601F111EF90D00F179A8 /* HexFileLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C4601D111EF90D00F179A8 /* HexFileLoader.cpp */; };
 		52C9637C15F68A00003E0CB8 /* SysexPatchDb.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */; };
 		52E2183911404AE40030AD40 /* MIOS_Studio.icns in Resources */ = {isa = PBXBuildFile; fileRef = 52E2183811404AE40030AD40 /* MIOS_Studio.icns */; };
+		52E5C17716614D44002129D1 /* MiosFileBrowser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 52E5C17516614D44002129D1 /* MiosFileBrowser.cpp */; };
 		8407902B09E6B5BD004E7BCD /* QuickTime.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8407902A09E6B5BD004E7BCD /* QuickTime.framework */; };
 		841136A00D0480DE0054B790 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8411369F0D0480DE0054B790 /* OpenGL.framework */; };
 		84204DA50FDEFA3800FA4ABC /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84204DA40FDEFA3800FA4ABC /* Carbon.framework */; };
@@ -103,6 +104,8 @@
 		52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = SysexPatchDb.cpp; path = ../../src/SysexPatchDb.cpp; sourceTree = "<group>"; };
 		52C9637B15F68A00003E0CB8 /* SysexPatchDb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SysexPatchDb.h; path = ../../src/SysexPatchDb.h; sourceTree = "<group>"; };
 		52E2183811404AE40030AD40 /* MIOS_Studio.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = MIOS_Studio.icns; path = ../../icon/MIOS_Studio.icns; sourceTree = SOURCE_ROOT; };
+		52E5C17516614D44002129D1 /* MiosFileBrowser.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = MiosFileBrowser.cpp; path = ../../src/gui/MiosFileBrowser.cpp; sourceTree = "<group>"; };
+		52E5C17616614D44002129D1 /* MiosFileBrowser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MiosFileBrowser.h; path = ../../src/gui/MiosFileBrowser.h; sourceTree = "<group>"; };
 		8407902A09E6B5BD004E7BCD /* QuickTime.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickTime.framework; path = /System/Library/Frameworks/QuickTime.framework; sourceTree = "<absolute>"; };
 		8411369F0D0480DE0054B790 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = /System/Library/Frameworks/OpenGL.framework; sourceTree = "<absolute>"; };
 		84204DA40FDEFA3800FA4ABC /* Carbon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Carbon.framework; path = System/Library/Frameworks/Carbon.framework; sourceTree = SDKROOT; };
@@ -209,6 +212,8 @@
 		52B71392111DB603000B8F5A /* GUI */ = {
 			isa = PBXGroup;
 			children = (
+				52E5C17516614D44002129D1 /* MiosFileBrowser.cpp */,
+				52E5C17616614D44002129D1 /* MiosFileBrowser.h */,
 				52C9637A15F68A00003E0CB8 /* SysexPatchDb.cpp */,
 				52C9637B15F68A00003E0CB8 /* SysexPatchDb.h */,
 				5276439D15F526AF00EAC9C1 /* SysexLibrarian.cpp */,
@@ -353,6 +358,7 @@
 				5297D6EF12C0D49800112FC4 /* MbhpMfTool.cpp in Sources */,
 				5276439F15F526AF00EAC9C1 /* SysexLibrarian.cpp in Sources */,
 				52C9637C15F68A00003E0CB8 /* SysexPatchDb.cpp in Sources */,
+				52E5C17716614D44002129D1 /* MiosFileBrowser.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -28,6 +28,7 @@
 #include "MbCvTool.h"
 #include "MbhpMfTool.h"
 #include "SysexLibrarian.h"
+#include "MiosFileBrowser.h"
 #include "../SysexPatchDb.h"
 #include "../UploadHandler.h"
 
@@ -47,6 +48,7 @@ public:
         showMbCvTool               = 0x2003,
         showMbhpMfTool             = 0x2004,
         showSysexLibrarian         = 0x2005,
+        showMiosFileBrowser        = 0x2006,
         showMiosStudioPage         = 0x3000,
         showTroubleshootingPage    = 0x3001,
     };
@@ -96,6 +98,7 @@ public:
     MbCvToolWindow *mbCvToolWindow;
     MbhpMfToolWindow *mbhpMfToolWindow;
     SysexLibrarianWindow *sysexLibrarianWindow;
+    MiosFileBrowserWindow *miosFileBrowserWindow;
 
     //==============================================================================
     SysexPatchDb *sysexPatchDb;
