@@ -139,6 +139,7 @@ static s32 (*direct_tx_callback_func)(mios32_midi_port_t port, mios32_midi_packa
 static s32 (*sysex_callback_func)(mios32_midi_port_t port, u8 sysex_byte);
 static s32 (*timeout_callback_func)(mios32_midi_port_t port);
 static s32 (*debug_command_callback_func)(mios32_midi_port_t port, char c);
+static s32 (*filebrowser_command_callback_func)(mios32_midi_port_t port, char c);
 
 static sysex_state_t sysex_state;
 static u8 sysex_device_id;
@@ -202,6 +203,7 @@ s32 MIOS32_MIDI_Init(u32 mode)
   sysex_callback_func = NULL;
   timeout_callback_func = NULL;
   debug_command_callback_func = NULL;
+  filebrowser_command_callback_func = NULL;
 
   // initialize interfaces
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
@@ -705,6 +707,174 @@ s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sends the header of a debug string
+//!
+//! Example (implementation of MIOS32_MIDI_SendDebugString)
+//! \code
+//!   u32 len = strlen(str);
+//!  
+//!   MIOS32_MIDI_SendDebugStringHeader(port, 0x40, str[0]);
+//!   if( len >= 2 )
+//!     MIOS32_MIDI_SendDebugStringBody(port, (char *)&str[1], len-1);
+//!   MIOS32_MIDI_SendDebugStringFooter(port);
+//! \endcode
+//!
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugStringHeader(mios32_midi_port_t port, char command, char first_byte)
+{
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
+  s32 status = 0;
+  mios32_midi_package_t package;
+
+// unfortunately doesn't work, and runtime check would be unnecessary costly
+//#if sizeof(mios32_midi_sysex_header) != 5
+//# error "Please adapt MIOS32_MIDI_SendDebugString"
+//#endif
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[0];
+  package.evnt1 = mios32_midi_sysex_header[1];
+  package.evnt2 = mios32_midi_sysex_header[2];
+  status |= MIOS32_MIDI_SendPackage(port, package);
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[3];
+  package.evnt1 = mios32_midi_sysex_header[4];
+  package.evnt2 = MIOS32_MIDI_DeviceIDGet();
+  status |= MIOS32_MIDI_SendPackage(port, package);
+
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = MIOS32_MIDI_SYSEX_DEBUG;
+  package.evnt1 = command; // output string, usually 0x40
+  package.evnt2 = first_byte; // will be 0x00 if string already ends (""), thats ok, MIOS Studio can handle this
+  status |= MIOS32_MIDI_SendPackage(port, package);
+
+  return status;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends the body of a debug string
+//!
+//! Example: see MIOS32_MIDI_SendDebugStringHeader
+//!
+//! The string size isn't limited.
+//!
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugStringBody(mios32_midi_port_t port, char *str, u32 len)
+{
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
+  s32 status = 0;
+  mios32_midi_package_t package;
+
+  if( len > 0 ) {
+    int i = 0;
+    for(i=0; i<len; i+=3) {
+      u8 b;
+      u8 terminated = 0;
+
+      package.type = 0x4; // SysEx starts or continues
+      if( (b=str[i+0]) ) {
+	package.evnt0 = b & 0x7f;
+      } else {
+	package.evnt0 = 0x00;
+	terminated = 1;
+      }
+
+      if( !terminated && (b=str[i+1]) ) {
+	package.evnt1 = b & 0x7f;
+      } else {
+	package.evnt1 = 0x00;
+	terminated = 1;
+      }
+
+      if( !terminated && (b=str[i+2]) ) {
+	package.evnt2 = b & 0x7f;
+      } else {
+	package.evnt2 = 0x00;
+	terminated = 1;
+      }
+
+      status |= MIOS32_MIDI_SendPackage(port, package);
+    }
+  }
+
+  return status;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends the footer of a debug string
+//!
+//! Example: see MIOS32_MIDI_SendDebugStringHeader
+//!
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugStringFooter(mios32_midi_port_t port)
+{
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
+  s32 status = 0;
+  mios32_midi_package_t package;
+
+  package.type = 0x5; // SysEx ends with following single byte. 
+  package.evnt0 = 0xf7;
+  package.evnt1 = 0x00;
+  package.evnt2 = 0x00;
+  status |= MIOS32_MIDI_SendPackage(port, package);
+
+  return status;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a string to the MIOS Terminal in MIOS Studio.
+//!
+//! In distance to MIOS32_MIDI_SendDebugMessage this version is less costly (it
+//! doesn't consume so much stack space), but the string must already be prepared.
+//!
+//! Example:
+//! \code
+//!   MIOS32_MIDI_SendDebugString("ERROR: something strange happened in myFunction()!");
+//! \endcode
+//!
+//! The string size isn't limited.
+//!
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_SendDebugString(char *str)
+{
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // for bootloader to save memory
+  return -1;
+#else
+  s32 status = 0;
+  u32 len = strlen(str);
+
+  status |= MIOS32_MIDI_SendDebugStringHeader(debug_port, 0x40, str[0]);
+  if( len >= 2 )
+    status |= MIOS32_MIDI_SendDebugStringBody(debug_port, (char *)&str[1], len-1);
+  status |= MIOS32_MIDI_SendDebugStringFooter(debug_port);
+
+  return status;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Sends a formatted Debug Message to the MIOS Terminal in MIOS Studio.
 //!
 //! Formatting parameters are like known from printf, e.g.
@@ -735,15 +905,13 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
   // for bootloader to save memory
   return -1;
 #else
-  u8 buffer[128+5+3+1]; // 128 chars allowed + 5 for header + 3 for command + F7
+  char str[128]; // 128 chars allowed
   va_list args;
-  int i;
 
   // failsave: if format string is longer than 100 chars, break here
   // note that this is a weak protection: if %s is used, or a lot of other format tokens,
   // the resulting string could still lead to a buffer overflow
   // other the other hand we don't want to allocate too many byte for buffer[] to save stack
-  char *str = (char *)((size_t)buffer+sizeof(mios32_midi_sysex_header)+3);
   if( strlen(format) > 100 ) {
     // exit with less costly message
     return MIOS32_MIDI_SendDebugString("(ERROR: string passed to MIOS32_MIDI_SendDebugMessage() is longer than 100 chars!\n");
@@ -753,122 +921,14 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
     vsprintf(str, format, args);
   }
 
-  u8 *sysex_buffer_ptr = buffer;
-  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
-    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
-
-  // device ID
-  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
-
-  // debug message: ack code
-  *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
-
-  // command identifier
-  *sysex_buffer_ptr++ = 0x40; // output string
-
-  // search end of string and determine length
-  u16 len = sizeof(mios32_midi_sysex_header) + 3;
-  for(i=0; i<128 && (*sysex_buffer_ptr != 0); ++i) {
-    *sysex_buffer_ptr++ &= 0x7f; // ensure that MIDI protocol won't be violated
-    ++len;
-  }
-
-  // send footer
-  *sysex_buffer_ptr++ = 0xf7;
-  ++len;
-
-  return MIOS32_MIDI_SendSysEx(debug_port, buffer, len);
-#endif
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! Sends a string to the MIOS Terminal in MIOS Studio.
-//!
-//! In distance to MIOS32_MIDI_SendDebugMessage this version is less costly (it
-//! doesn't consume so much stack space), but the string must already be prepared.
-//!
-//! Example:
-//! \code
-//!   MIOS32_MIDI_SendDebugString("ERROR: something strange happened in myFunction()!");
-//! \endcode
-//!
-//! The string size isn't limited.
-//!
-//! \return < 0 on errors
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendDebugString(char *str)
-{
-#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
-  // for bootloader to save memory
-  return -1;
-#else
-  s32 status = 0;
-  mios32_midi_package_t package;
-
-// unfortunately doesn't work, and runtime check would be unnecessary costly
-//#if sizeof(mios32_midi_sysex_header) != 5
-//# error "Please adapt MIOS32_MIDI_SendDebugString"
-//#endif
-
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = mios32_midi_sysex_header[0];
-  package.evnt1 = mios32_midi_sysex_header[1];
-  package.evnt2 = mios32_midi_sysex_header[2];
-  status |= MIOS32_MIDI_SendPackage(debug_port, package);
-
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = mios32_midi_sysex_header[3];
-  package.evnt1 = mios32_midi_sysex_header[4];
-  package.evnt2 = MIOS32_MIDI_DeviceIDGet();
-  status |= MIOS32_MIDI_SendPackage(debug_port, package);
-
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = MIOS32_MIDI_SYSEX_DEBUG;
-  package.evnt1 = 0x40; // output string
-  package.evnt2 = str[0]; // will be 0x00 if string already ends (""), thats ok, MIOS Studio can handle this
-  status |= MIOS32_MIDI_SendPackage(debug_port, package);
-
   u32 len = strlen(str);
-  if( len > 0 ) {
-    int i = 1; // because str[0] has already been sent
-    for(i=1; i<len; i+=3) {
-      u8 b;
-      u8 terminated = 0;
-
-      package.type = 0x4; // SysEx starts or continues
-      if( (b=str[i+0]) ) {
-	package.evnt0 = b & 0x7f;
-      } else {
-	package.evnt0 = 0x00;
-	terminated = 1;
-      }
-
-      if( !terminated && (b=str[i+1]) ) {
-	package.evnt1 = b & 0x7f;
-      } else {
-	package.evnt1 = 0x00;
-	terminated = 1;
-      }
-
-      if( !terminated && (b=str[i+2]) ) {
-	package.evnt2 = b & 0x7f;
-      } else {
-	package.evnt2 = 0x00;
-	terminated = 1;
-      }
-
-      status |= MIOS32_MIDI_SendPackage(debug_port, package);
-    }
+  u8 *str_ptr = (u8 *)str;
+  int i;
+  for(i=0; i<len; ++i) {
+    *str_ptr++ &= 0x7f; // ensure that MIDI protocol won't be violated
   }
 
-  package.type = 0x5; // SysEx ends with following single byte. 
-  package.evnt0 = 0xf7;
-  package.evnt1 = 0x00;
-  package.evnt2 = 0x00;
-  status |= MIOS32_MIDI_SendPackage(debug_port, package);
-
-  return status;
+  return MIOS32_MIDI_SendDebugString(str);
 #endif
 }
 
@@ -890,6 +950,8 @@ s32 MIOS32_MIDI_SendDebugString(char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 {
+  s32 status = 0;
+
   // check if any byte has to be sent
   if( !len )
     return 0;
@@ -898,47 +960,34 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
   u8 *src_begin = src;
   u8 *src_end;
   for(src_end=(u8 *)((size_t)src + len - 1); src < src_end;) {
-    u8 buffer[80+5+3+1]; // we need at least 8+2+3*16+2+16+1 chars + 5 for header + 3 for command + F7
+    char str[80];
+    char* str_ptr = (char *)str;
     int i;
-
-    // create SysEx header
-    u8 *sysex_buffer_ptr = buffer;
-    for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
-      *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
-
-    // device ID
-    *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
-
-    // debug message: ack code
-    *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_DEBUG;
-
-    // command identifier
-    *sysex_buffer_ptr++ = 0x40; // output string
 
     // build line:
     // add source address
-    sprintf((char *)sysex_buffer_ptr, "%08X ", (u32)(src-src_begin));
-    sysex_buffer_ptr += 9;
+    sprintf((char *)str_ptr, "%08X ", (u32)(src-src_begin));
+    str_ptr += 9;
 
     // add up to 16 bytes
     u8 *src_chars = src; // for later
     for(i=0; i<16; ++i) {
-      sprintf((char *)sysex_buffer_ptr, (src <= src_end) ? " %02X" : "   ", *src);
-      sysex_buffer_ptr += 3;
+      sprintf((char *)str_ptr, (src <= src_end) ? " %02X" : "   ", *src);
+      str_ptr += 3;
 
       ++src;
     }
 
     // add two spaces
     for(i=0; i<2; ++i)
-      *sysex_buffer_ptr++ = ' ';
+      *str_ptr++ = ' ';
 
     // add characters
     for(i=0; i<16; ++i) {
       if( *src_chars < 32 || *src_chars >= 128 )
-	*sysex_buffer_ptr++ = '.';
+	*str_ptr++ = '.';
       else
-	*sysex_buffer_ptr++ = *src_chars;
+	*str_ptr++ = *src_chars;
 
       if( src_chars == src_end )
 	break;
@@ -947,17 +996,15 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
     }
 
     // linebreak
-    *sysex_buffer_ptr++ = '\n';
+    *str_ptr++ = '\n';
 
-    // add F7
-    *sysex_buffer_ptr++ = 0xf7;
+    // terminator
+    *str_ptr++ = 0;
 
-    s32 status = MIOS32_MIDI_SendSysEx(debug_port, buffer, (u32)(sysex_buffer_ptr-buffer));
-    if( status < 0 )
-      return status;
+    status |= MIOS32_MIDI_SendDebugString(str);
   }
 
-  return 0; // no error
+  return status;
 }
 
 
@@ -1707,7 +1754,13 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
 	      debug_command_callback_func(last_sysex_port, (char)midi_in);
 	    break;
 
+	  case 0x01: // input string to filebrowser
+	    if( filebrowser_command_callback_func != NULL )
+	      filebrowser_command_callback_func(last_sysex_port, (char)midi_in);
+	    break;
+
 	  case 0x40: // output string
+	  case 0x41: // output string for filebrowser
 	    // not supported - DisAck will be sent
 	    break;
 
@@ -1730,6 +1783,8 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
 	  MIOS32_MIDI_DebugPortSet(prev_debug_port);
 	}
 
+      } else if( debug_req == 0x01 && filebrowser_command_callback_func != NULL ) {
+	// we expect that the filebrowser handler sends back a string
       } else {
 	// send disacknowledge
 	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_UNSUPPORTED_DEBUG);
@@ -1849,6 +1904,27 @@ static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 s32 MIOS32_MIDI_DebugCommandCallback_Init(s32 (*callback_debug_command)(mios32_midi_port_t port, char c))
 {
   debug_command_callback_func = callback_debug_command;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs the filebrowser command callback function which is executed on incoming
+//! characters from aMIOS  Filebrowser
+//!
+//! Usage example: see terminal.c of $MIOS32_PATH/apps/controllers/midio128
+//!
+//! The callback function has been installed in an Init() function with:
+//! \code
+//!   MIOS32_MIDI_FilebrowserCommandCallback_Init(CONSOLE_Parse);
+//! \endcode
+//! \param[in] callback_debug_command the callback function (NULL disables the callback)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_FilebrowserCommandCallback_Init(s32 (*filebrowser_debug_command)(mios32_midi_port_t port, char c))
+{
+  filebrowser_command_callback_func = filebrowser_debug_command;
 
   return 0; // no error
 }

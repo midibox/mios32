@@ -106,6 +106,10 @@ static u8 status_msg_ctr;
 #define TMP_BUFFER_SIZE _MAX_SS
 static u8 tmp_buffer[TMP_BUFFER_SIZE];
 
+// for FILE_BrowserHandler
+static u32 browser_write_file_size;
+static u32 browser_write_file_pos;
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initialisation
@@ -827,6 +831,26 @@ s32 FILE_MakeDir(char *path)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Removes a file or directory
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_Remove(char *path)
+{
+  // exit if volume not available
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_MakeDir] ERROR: volume doesn't exist!\n");
+#endif
+    return FILE_ERR_NO_VOLUME;
+  }
+
+  if( (file_dfs_errno=f_unlink(path)) != FR_OK )
+    return FILE_ERR_REMOVE;
+
+  return 0; // directory created
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Returns 1 if file exists, 0 if it doesn't exist, < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 FILE_FileExists(char *filepath)
@@ -1322,5 +1346,264 @@ s32 FILE_SendErrorMessage(s32 error_status)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Handler for MIOS Studio Filebrowser accesses.\n
+//! See $MIOS32_PATH/apps/controllers/midio128/src/terminal.c for usage example.
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command)
+{
+  s32 status = 0;
+  char *separators = " ";
+  char *brkt;
+  char *parameter;
+  u8 command_taken = 0;
+  u8 send_footer = 1;
+
+  if( (parameter = strtok_r(command, separators, &brkt)) ) {
+    if( strcmp(parameter, "dir") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'D');
+
+      char *path = (char *)&command[4];
+      s32 status = 0;
+      DIR di;
+      FILINFO de;
+
+      if( !volume_available ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+      } else {
+	if( f_opendir(&di, path) != FR_OK ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "-", 1); // failed to access directory
+	} else {
+	  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+	    if( de.fname[0] && de.fname[0] != '.' && !(de.fattrib & AM_HID) ) {
+	      char str[20];
+	      str[0] = ',';
+	      str[1] = (de.fattrib & AM_DIR) ? 'D' : 'F';
+	      strcpy((char *)&str[2], (char *)&de.fname[0]);
+	      status |= MIOS32_MIDI_SendDebugStringBody(port, str, strlen(str));
+	    }
+	  }
+	}
+      }
+
+    } else if( strcmp(parameter, "mkdir") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'M');
+
+      char *path = (char *)&command[6];
+      s32 status = 0;
+
+      if( !volume_available ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+      } else {
+	if( FILE_MakeDir(path) < 0 ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "-", 1); // failed to create directory
+	} else {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "#", 1); // success
+	}
+      }
+
+    } else if( strcmp(parameter, "del") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'X');
+
+      char *path = (char *)&command[4];
+      s32 status = 0;
+
+      if( !volume_available ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+      } else {
+	if( FILE_Remove(path) < 0 ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "-", 1); // failed to remove file/directory
+	} else {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "#", 1); // success
+	}
+      }
+
+    } else if( strcmp(parameter, "read") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'R');
+
+      if( !volume_available ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+      } else {
+	file_t file;
+	char *filepath = brkt;
+
+	if( FILE_ReadOpen(&file, filepath) < 0 ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "-", 1); // can't access file
+	} else {
+	  char str[64 + 20]; // at least 8 bytes address + space + 32*2 bytes payload
+	  u32 len = FILE_ReadGetCurrentSize();
+	  sprintf(str, "%d", len);
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, str, strlen(str));
+
+	  if( len ) {
+	    status |= MIOS32_MIDI_SendDebugStringFooter(port);
+	    send_footer = 0; // done
+
+	    // send 32 byte blocks
+	    int pos = 0;
+	    for(pos=0; pos<len; pos+=32) {
+	      char *str_ptr = (char *)str;
+
+	      // send status message to MIOS terminal for the case that MIOS Studio has been started
+	      // while read operation in progress
+	      if( (pos % (320*32)) == 0 ) {
+		DEBUG_MSG("[FILE] Download of %d bytes in progress (%d%%)", len, (int)((100.0*(float)pos)/(float)len));
+	      }
+
+
+	      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'r');
+	      sprintf(str_ptr, "%08X ", pos);
+	      str_ptr += 9;
+
+	      int i;
+	      for(i=0; i<32 && (pos+i)<len; ++i) {
+		u8 b;
+		FILE_ReadByte(&b);
+		sprintf(str_ptr, "%02X", b);
+		str_ptr += 2;
+	      }
+	      status |= MIOS32_MIDI_SendDebugStringBody(port, str, strlen(str));
+	      status |= MIOS32_MIDI_SendDebugStringFooter(port);
+	    }
+	    DEBUG_MSG("[FILE] Download of %d bytes finished.", len);
+	  }
+	}
+
+	FILE_ReadClose(&file);
+      }
+    } else if( strcmp(parameter, "write") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'W');
+      u8 parameters_valid = 1;
+
+
+      char *filename = NULL;
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	parameters_valid = 0;
+      } else {
+	filename = parameter;
+	if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	  parameters_valid = 0;
+	} else {
+	  char *next;
+	  long l = strtol(parameter, &next, 0);
+	  if( parameter == next ) {
+	    parameters_valid = 0;
+	  } else {
+	    browser_write_file_size = l;
+	  }
+	}
+      }
+
+      if( !parameters_valid ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "~", 1); // missing or invalid parameter
+      } else {
+	browser_write_file_pos = 0;
+
+	// try to open file
+	if( !volume_available ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+	} else {
+	  FILE_WriteClose(); // just to ensure...
+	  if( FILE_WriteOpen(filename, 1) < 0 ) {
+	    status |= MIOS32_MIDI_SendDebugStringBody(port, "-", 1); // failed to open file
+	  } else {
+	    // initial request
+	    status |= MIOS32_MIDI_SendDebugStringBody(port, "00000000", 8);
+	    status |= MIOS32_MIDI_SendDebugStringFooter(port);
+	    send_footer = 0;
+
+	    DEBUG_MSG("[FILE] Uploading %s with %d bytes\n", filename, browser_write_file_size);
+	  }
+	}
+      }
+    } else if( strcmp(parameter, "writedata") == 0 ) {
+      command_taken = 1;
+      status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'W');
+      u8 parameters_valid = 1;
+
+      u32 address_offset = 0;
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	parameters_valid = 0;
+      } else {
+	char *next;
+	long l = strtol(parameter, &next, 16);
+	if( parameter == next ) {
+	  parameters_valid = 0;
+	} else {
+	  address_offset = l;
+	}
+      }
+
+      if( !parameters_valid || address_offset != browser_write_file_pos ) {
+	status |= MIOS32_MIDI_SendDebugStringBody(port, "~", 1); // missing or invalid parameter
+      } else {
+	if( !volume_available ) {
+	  status |= MIOS32_MIDI_SendDebugStringBody(port, "!", 1); // SD Card not mounted
+	} else {
+
+	  char *str_ptr = brkt;
+	  int num_bytes;
+	  for(num_bytes=0; *str_ptr; ++num_bytes) { // we can receive any number of bytes
+	    u8 b;
+	    if( *str_ptr >= '0' && *str_ptr <= '9' )
+	      b = (*str_ptr - '0') << 4;
+	    else if( *str_ptr >= 'A' && *str_ptr <= 'F' )
+	      b = (*str_ptr - 'A' + 10) << 4;
+	    else
+	      break;
+	    ++str_ptr;
+
+	    if( *str_ptr >= '0' && *str_ptr <= '9' )
+	      b |= (*str_ptr - '0');
+	    else if( *str_ptr >= 'A' && *str_ptr <= 'F' )
+	      b |= (*str_ptr - 'A' + 10);
+	    else
+	      break;
+	    ++str_ptr;
+
+	    FILE_WriteByte(b);
+	  }
+
+	  browser_write_file_pos += num_bytes;
+	  if( browser_write_file_pos >= browser_write_file_size ) {
+	    FILE_WriteClose();
+	    status |= MIOS32_MIDI_SendDebugStringBody(port, "#", 1); // done
+	    status |= MIOS32_MIDI_SendDebugStringFooter(port);
+	    send_footer = 0;
+
+	    DEBUG_MSG("[FILE] Upload of %d bytes finished.", browser_write_file_size);
+	  } else {
+	    // next request
+	    char str[20];
+	    sprintf(str, "%08X", browser_write_file_pos);
+	    status |= MIOS32_MIDI_SendDebugStringBody(port, str, strlen(str));
+	    status |= MIOS32_MIDI_SendDebugStringFooter(port);
+	    send_footer = 0;
+
+	    if( (browser_write_file_pos % (320*32)) == 0 ) {
+	      DEBUG_MSG("[FILE] Upload of %d bytes in progress (%d%%)", browser_write_file_size, (int)((100.0*(float)browser_write_file_pos)/(float)browser_write_file_size));
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  if( !command_taken ) {
+    status |= MIOS32_MIDI_SendDebugStringHeader(port, 0x41, (u8)'?');
+  }
+
+  if( send_footer ) {
+    status |= MIOS32_MIDI_SendDebugStringFooter(port);
+  }
+
+  return status;
+}
 
 //! \}
