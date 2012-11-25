@@ -225,6 +225,10 @@ extern s32 MIOS32_MIDI_SendContinue(mios32_midi_port_t port);
 extern s32 MIOS32_MIDI_SendActiveSense(mios32_midi_port_t port);
 extern s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port);
 
+extern s32 MIOS32_MIDI_SendDebugStringHeader(mios32_midi_port_t port, char command, char first_byte);
+extern s32 MIOS32_MIDI_SendDebugStringBody(mios32_midi_port_t port, char *str_from_second_byte, u32 len);
+extern s32 MIOS32_MIDI_SendDebugStringFooter(mios32_midi_port_t port);
+
 extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
 extern s32 MIOS32_MIDI_SendDebugString(char *str);
 extern s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len);
@@ -251,6 +255,7 @@ extern u8  MIOS32_MIDI_DeviceIDGet(void);
 extern s32 MIOS32_MIDI_SysExCallback_Init(s32 (*callback_sysex)(mios32_midi_port_t port, u8 sysex_byte));
 
 extern s32 MIOS32_MIDI_DebugCommandCallback_Init(s32 (*callback_debug_command)(mios32_midi_port_t port, char c));
+extern s32 MIOS32_MIDI_FilebrowserCommandCallback_Init(s32 (*callback_filebrowser_command)(mios32_midi_port_t port, char c));
 
 extern s32 MIOS32_MIDI_TimeOutCallback_Init(s32 (*callback_timeout)(mios32_midi_port_t port));
 

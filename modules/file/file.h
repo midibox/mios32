@@ -50,6 +50,7 @@ extern "C" {
 #define FILE_ERR_MKDIR            -23 // FILE_MakeDir() failed
 #define FILE_ERR_INVALID_SESSION_NAME -24 // FILE_LoadSessionName()
 #define FILE_ERR_UPDATE_FREE      -25 // FILE_UpdateFreeBytes()
+#define FILE_ERR_REMOVE           -26 // FILE_Remove() failed
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -128,6 +129,8 @@ extern s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port);
 extern s32 FILE_PrintSDCardInfos(void);
 
 extern s32 FILE_SendErrorMessage(s32 error_status);
+
+extern s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command);
 
 
 /////////////////////////////////////////////////////////////////////////////
