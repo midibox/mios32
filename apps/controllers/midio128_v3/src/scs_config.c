@@ -1194,6 +1194,12 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 	return 0;
 
       if( altMainPage || MID_FILE_RecordingEnabled() ) {
+	u32 tick = SEQ_BPM_TickGet();
+	u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+	u32 ticks_per_measure = ticks_per_step * 16;
+	u32 measure = (tick / ticks_per_measure) + 1;
+	u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
+
 	switch( scsButton ) {
 	case SCS_PIN_SOFT1: // Rec/Stop
 	  SEQ_RecStopButton();
@@ -1201,11 +1207,19 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 
 	case SCS_PIN_SOFT2: { // Fast Rewind
 	  SEQ_FRewButton();
+
+	  char buffer[21];
+	  sprintf(buffer, "Rwd %u.%2d", measure, step);
+	  SCS_Msg(SCS_MSG_L, 200, "", buffer);
 	  return 1;
 	}
 
 	case SCS_PIN_SOFT3: { // Fast Forward
 	  SEQ_FFwdButton();
+
+	  char buffer[21];
+	  sprintf(buffer, "Fwd %u.%2d", measure, step);
+	  SCS_Msg(SCS_MSG_L, 200, "", buffer);
 	  return 1;
 	}
 
