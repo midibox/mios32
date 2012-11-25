@@ -21,6 +21,7 @@
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
+#include <file.h>
 
 #include "app.h"
 #include "midio_patch.h"
@@ -29,12 +30,14 @@
 #include "tasks.h"
 #include "midio_file.h"
 #include "midio_file_p.h"
+#include "mid_file.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-#define STRING_MAX 80
+#define STRING_MAX 100 // recommended size for file transfers via FILE_BrowserHandler()
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -49,6 +52,7 @@ static u16 line_ix;
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
 static s32 TERMINAL_PrintSystem(void *_output_function);
 
 
@@ -57,9 +61,11 @@ static s32 TERMINAL_PrintSystem(void *_output_function);
 /////////////////////////////////////////////////////////////////////////////
 s32 TERMINAL_Init(u32 mode)
 {
-  // install the callback function which is called on incoming characters
-  // from MIOS Terminal
+  // install the callback function which is called on incoming characters from MIOS Terminal
   MIOS32_MIDI_DebugCommandCallback_Init(TERMINAL_Parse);
+
+  // install the callback function which is called on incoming characters from MIOS Filebrowser
+  MIOS32_MIDI_FilebrowserCommandCallback_Init(TERMINAL_ParseFilebrowser);
 
   // clear line buffer
   line_buffer[0] = 0;
@@ -129,6 +135,36 @@ s32 TERMINAL_Parse(mios32_midi_port_t port, char byte)
 
   // restore debug port
   MIOS32_MIDI_DebugPortSet(prev_debug_port);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Parser for Filebrowser
+/////////////////////////////////////////////////////////////////////////////
+s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
+{
+  if( byte == '\r' ) {
+    // ignore
+  } else if( byte == '\n' ) {
+
+    // extra for MIDIO128: ensure that recording not active to avoid conflict with write operations!
+    if( MID_FILE_RecordingEnabled() ) {
+      MID_FILE_SetRecordMode(0);
+    }
+
+    MUTEX_MIDIOUT_TAKE;
+    MUTEX_SDCARD_TAKE;
+    FILE_BrowserHandler(port, line_buffer);
+    MUTEX_SDCARD_GIVE;
+    MUTEX_MIDIOUT_GIVE;
+    line_ix = 0;
+    line_buffer[line_ix] = 0;
+  } else if( line_ix < (STRING_MAX-1) ) {
+    line_buffer[line_ix++] = byte;
+    line_buffer[line_ix] = 0;
+  }
 
   return 0; // no error
 }
