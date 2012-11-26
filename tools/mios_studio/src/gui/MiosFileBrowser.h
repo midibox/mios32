@@ -110,7 +110,12 @@ protected:
     String       currentWriteFile;
     unsigned     currentWriteSize;
     Array<uint8> currentWriteData;
+    unsigned     currentWriteFirstBlockOffset;
+    unsigned     currentWriteBlockCtr;
     uint32       currentWriteStartTime;
+
+    unsigned     writeBlockCtrDefault;
+    unsigned     writeBlockSizeDefault;
 
     //==============================================================================
     MiosStudio *miosStudio;

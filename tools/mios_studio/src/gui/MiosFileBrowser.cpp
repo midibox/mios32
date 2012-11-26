@@ -152,6 +152,8 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     , currentReadError(false)
     , currentWriteInProgress(false)
     , currentWriteError(false)
+    , writeBlockCtrDefault(32) // send 32 blocks (=two 512 byte SD Card Sectors) at once to speed-up write operations
+    , writeBlockSizeDefault(32) // send 32 bytes per block
 {
     addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
     statusLabel->setJustificationType(Justification::left);
@@ -235,6 +237,8 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
         // ensure that we see the first position of the treeview
         treeView->clearSelectedItems();
         treeView->scrollToKeepItemVisible(rootItem);
+        // change label
+        statusLabel->setText(T(""), true);
         // request update
         requestUpdateTreeView();
     } else if( buttonThatWasClicked == downloadButton || 
@@ -359,7 +363,6 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
 
         if( accessPossible ) {
             if( currentDirOpenStates ) {
-                printf("Restore\n");
                 treeView->restoreOpennessState(*currentDirOpenStates);
                 deleteAndZero(currentDirOpenStates);
             }
@@ -475,6 +478,8 @@ bool MiosFileBrowser::uploadFile(void)
 
             currentWriteInProgress = true;
             currentWriteError = false;
+            currentWriteFirstBlockOffset = 0;
+            currentWriteBlockCtr = writeBlockCtrDefault;
             currentWriteStartTime = Time::currentTimeMillis();
             sendCommand(T("write ") + currentWriteFile + T(" ") + String(currentWriteSize));
             startTimer(3000);
@@ -537,7 +542,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
             } else if( command[1] == '-' ) {
                 statusMessage = String(T("Failed to access directory!"));
             } else {
-                statusMessage = String(T("Received directory structure."));
+                //statusMessage = String(T("Received directory structure."));
 
                 int posStartName = 2;
                 for(int pos=2; pos<command.length(); ++pos) {
@@ -645,7 +650,9 @@ void MiosFileBrowser::receiveCommand(const String& command)
 
         ////////////////////////////////////////////////////////////////////
         case 'W': {
-            if( !currentWriteInProgress ) {
+            if( currentWriteError ) {
+                // ignore
+            } else if( !currentWriteInProgress ) {
                 statusMessage = String(T("There is a write operation in progress - please wait!"));
             } else if( command[1] == '!' ) {
                 statusMessage = String(T("SD Card not mounted!"));
@@ -668,22 +675,44 @@ void MiosFileBrowser::receiveCommand(const String& command)
             } else {
                 unsigned addressOffset = command.substring(1).getHexValue32();
 
-                String writeCommand(String::formatted(T("writedata %08X "), addressOffset));
-                for(int i=0; i<32 && (i+addressOffset)<currentWriteSize; ++i) {
-                    writeCommand += String::formatted(T("%02X"), currentWriteData[addressOffset + i]);
+                if( currentWriteBlockCtr < writeBlockCtrDefault ) {
+                    // check for valid response
+                    unsigned expectedOffset = currentWriteFirstBlockOffset + (writeBlockSizeDefault*(currentWriteBlockCtr+1));
+                    if( addressOffset != expectedOffset ) {
+                        currentWriteError = true;
+                        statusLabel->setText(String::formatted(T("ERROR: the application has requested file position 0x%08X, but filebrowser expected 0x%08X! Please check with TK!"), addressOffset, expectedOffset), true);
+                    } else {
+                        ++currentWriteBlockCtr; // block received
+                    }                    
                 }
-                sendCommand(writeCommand);
 
-                uint32 currentWriteFinished = Time::currentTimeMillis();
-                float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
-                float dataRate = ((float)addressOffset/1000.0) / downloadTime;
+                // new burst?
+                if( currentWriteBlockCtr >= writeBlockCtrDefault ) {
+                    currentWriteFirstBlockOffset = addressOffset;
+                    currentWriteBlockCtr = 0;
 
-                statusMessage = String(T("Uploading ") + currentWriteFile + T(": ") +
-                                       String(addressOffset) + T(" bytes transmitted") +
-                                       String::formatted(T(" (%d%%, %2.1f kb/s)"),
-                                                         (int)(100.0*(float)addressOffset/(float)currentWriteSize),
-                                                         dataRate));
-                startTimer(3000);
+                    for(unsigned block=0; block<writeBlockCtrDefault; ++block, addressOffset += writeBlockSizeDefault) {
+                        String writeCommand(String::formatted(T("writedata %08X "), addressOffset));
+                        for(int i=0; i<writeBlockSizeDefault && (i+addressOffset)<currentWriteSize; ++i) {
+                            writeCommand += String::formatted(T("%02X"), currentWriteData[addressOffset + i]);
+                        }
+                        sendCommand(writeCommand);
+
+                        if( (writeBlockSizeDefault+addressOffset) >= currentWriteSize )
+                            break;
+                    }
+
+                    uint32 currentWriteFinished = Time::currentTimeMillis();
+                    float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
+                    float dataRate = ((float)addressOffset/1000.0) / downloadTime;
+
+                    statusMessage = String(T("Uploading ") + currentWriteFile + T(": ") +
+                                           String(addressOffset) + T(" bytes transmitted") +
+                                           String::formatted(T(" (%d%%, %2.1f kb/s)"),
+                                                             (int)(100.0*(float)addressOffset/(float)currentWriteSize),
+                                                             dataRate));
+                    startTimer(3000);
+                }
             }
         } break;
 
