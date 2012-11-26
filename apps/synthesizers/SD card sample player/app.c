@@ -595,7 +595,7 @@ static void TASK_VOICE_SCAN(void *pvParameters)
 					if(sample_on[samp_no]>0)	// positive number = decaying
 						{
 							voice_samples[new_voice_no]=samp_no;	// Assign the next available voice to this sample number
-							voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]);					
+							voice_velocity[new_voice_no]=(s16)(sample_vel[samp_no]*midi_volume);					
 							new_voice_no++;							// And increment number of voices in use				
 							sample_on[samp_no]--;				// Decrement decay time
 							if(sample_on[samp_no]<0) { sample_vel[samp_no]=0; sample_on[samp_no]=0;}	// If finished decaying mark as off
