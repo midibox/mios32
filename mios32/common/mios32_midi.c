@@ -1183,16 +1183,18 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
 	    }
 
-	    if( sysex_callback_func != NULL ) {
-	      filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
-	      if( package.type != 0x0f ) {
-		filter_sysex |= sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
-		filter_sysex |= sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
+	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	      if( sysex_callback_func != NULL ) {
+		filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
+		if( package.type != 0x0f ) {
+		  filter_sysex |= sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
+		  filter_sysex |= sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
+		}
 	      }
-	    }
 
-	    if( callback_package != NULL && !filter_sysex )
-	      callback_package(port, package);
+	      if( callback_package != NULL && !filter_sysex )
+		callback_package(port, package);
+	    }
 
 	    break;
 
@@ -1212,32 +1214,42 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	    if( num_bytes >= 1 ) {
 	      current_byte = package.evnt0;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( sysex_callback_func != NULL )
-		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+
+	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+		if( sysex_callback_func != NULL )
+		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	      }
 	    }
 
 	    if( num_bytes >= 2 ) {
 	      current_byte = package.evnt1;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( sysex_callback_func != NULL )
-		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+
+	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+		if( sysex_callback_func != NULL )
+		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	      }
 	    }
 
 	    if( num_bytes >= 3 ) {
 	      current_byte = package.evnt2;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-	      if( sysex_callback_func != NULL )
-		filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+
+	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+		if( sysex_callback_func != NULL )
+		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	      }
 	    }
 
 	    // reset timeout protection if required
 	    if( current_byte == 0xf7 )
 	      sysex_timeout_ctr_flags.ALL = 0;
 
-	    // forward as package if not filtered
-	    if( callback_package != NULL && !filter_sysex )
-	      callback_package(port, package);
-	    
+	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	      // forward as package if not filtered
+	      if( callback_package != NULL && !filter_sysex )
+		callback_package(port, package);
+	    }	    
 	  } break;
 	}	  
       }
