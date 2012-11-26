@@ -31,6 +31,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// 1: Endpoint 1 used for IN and OUT
+// 0: Endpoint 1 used for IN (Tx), Endpoint 2 used for OUT (Rx)
+/////////////////////////////////////////////////////////////////////////////
+#define LEGACY_ENDPOINT_ASSIGNMENTS 0
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -266,7 +273,11 @@ s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
   if( transfer_possible ) {
     // check for received packages
+#if LEGACY_ENDPOINT_ASSIGNMENTS
     MIOS32_USB_MIDI_RxBufferHandler(0x01);
+#else
+    MIOS32_USB_MIDI_RxBufferHandler(0x02);
+#endif
   
     // check for packages which should be transmitted
     MIOS32_USB_MIDI_TxBufferHandler(0x81);

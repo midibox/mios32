@@ -779,7 +779,6 @@ s32 MIOS32_USB_Init(u32 mode)
   USBHwRegisterEPIntHandler(0x01, MIOS32_USB_MIDI_EP2_OUT_Callback); // (no error, function has been renamed)
 #else
   USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback);
-  // note: shared callback, IN and OUT irq will trigger MIOS32_USB_MIDI_EP1_OUT_Callback
   USBHwRegisterEPIntHandler(0x02, MIOS32_USB_MIDI_EP2_OUT_Callback);
 #endif
 #endif
