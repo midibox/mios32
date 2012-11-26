@@ -568,7 +568,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x01,				// Out Endpoint 1
+  0x02,				// Out Endpoint 2
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -691,10 +691,10 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   MIOS32_USB_COM_CC_INTERFACE_IX,   /* bMasterInterface: Communication class interface */
   MIOS32_USB_COM_CD_INTERFACE_IX,   /* bSlaveInterface0: Data Class Interface */
 
-  /*Endpoint 2 Descriptor*/
+  /*Endpoint 5 Descriptor*/
   0x07,   /* bLength: Endpoint Descriptor size */
   DSCR_ENDPNT,  /* bDescriptorType: Endpoint */
-  0x82,   /* bEndpointAddress: (IN2) */
+  0x85,   /* bEndpointAddress: (IN2) */
   0x03,   /* bmAttributes: Interrupt */
   MIOS32_USB_COM_INT_IN_SIZE,      /* wMaxPacketSize: */
   0x00,
@@ -843,7 +843,7 @@ s32 MIOS32_USB_Init(u32 mode)
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
     pEpInt_IN[0]  = (void*)MIOS32_USB_MIDI_EP1_IN_Callback;  // IN  EP1
-    pEpInt_OUT[0] = (void*)MIOS32_USB_MIDI_EP1_OUT_Callback; // OUT EP1
+    pEpInt_OUT[1] = (void*)MIOS32_USB_MIDI_EP2_OUT_Callback; // OUT EP2
 #endif
 
 #ifdef MIOS32_USE_USB_COM
@@ -876,13 +876,13 @@ s32 MIOS32_USB_Init(u32 mode)
     // Init EP1 IN again
     OTG_DEV_EP_Init(EP1_IN, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_IN_SIZE);
   
-    // Init EP1 OUT again
-    OTG_DEV_EP_Init(EP1_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
+    // Init EP2 OUT again
+    OTG_DEV_EP_Init(EP2_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
 #else
 #ifndef MIOS32_DONT_USE_USB_MIDI
     // release ENDP1 Rx/Tx
     SetEPTxStatus(ENDP1, EP_TX_NAK);
-    SetEPRxValid(ENDP1);
+    SetEPRxValid(ENDP2);
 #endif
 #endif
 
@@ -1275,19 +1275,20 @@ static void MIOS32_USB_CB_Reset(void)
   // Init EP1 IN
   OTG_DEV_EP_Init(EP1_IN, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_IN_SIZE);
   
-  // Init EP1 OUT
-  OTG_DEV_EP_Init(EP1_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
+  // Init EP2 OUT
+  OTG_DEV_EP_Init(EP2_OUT, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_OUT_SIZE);
 # else
-  // Initialize Endpoint 1
+  // Initialize Endpoint 1/2
   SetEPType(ENDP1, EP_BULK);
+  SetEPType(ENDP2, EP_BULK);
 
   SetEPTxAddr(ENDP1, MIOS32_USB_ENDP1_TXADDR);
   SetEPTxCount(ENDP1, MIOS32_USB_MIDI_DATA_OUT_SIZE);
   SetEPTxStatus(ENDP1, EP_TX_NAK);
 
-  SetEPRxAddr(ENDP1, MIOS32_USB_ENDP1_RXADDR);
-  SetEPRxCount(ENDP1, MIOS32_USB_MIDI_DATA_IN_SIZE);
-  SetEPRxValid(ENDP1);
+  SetEPRxAddr(ENDP2, MIOS32_USB_ENDP2_RXADDR);
+  SetEPRxCount(ENDP2, MIOS32_USB_MIDI_DATA_IN_SIZE);
+  SetEPRxValid(ENDP2);
 # endif
 #endif
 
@@ -1296,11 +1297,11 @@ static void MIOS32_USB_CB_Reset(void)
 # ifdef STM32F10X_CL   
   // TODO...
 # else
-  // Initialize Endpoint 2
-  SetEPType(ENDP2, EP_INTERRUPT);
-  SetEPTxAddr(ENDP2, MIOS32_USB_ENDP2_TXADDR);
-  SetEPRxStatus(ENDP2, EP_RX_DIS);
-  SetEPTxStatus(ENDP2, EP_TX_NAK);
+  // Initialize Endpoint 5
+  SetEPType(ENDP5, EP_INTERRUPT);
+  SetEPTxAddr(ENDP5, MIOS32_USB_ENDP5_TXADDR);
+  SetEPRxStatus(ENDP5, EP_RX_DIS);
+  SetEPTxStatus(ENDP5, EP_TX_NAK);
 
   // Initialize Endpoint 3
   SetEPType(ENDP3, EP_BULK);

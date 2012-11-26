@@ -337,7 +337,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
   // check if we can receive new data and get packages to be received from OUT pipe
 #ifdef STM32F10X_CL
-  USB_OTG_EP *ep = PCD_GetOutEP(EP1_OUT & 0x7f);
+  USB_OTG_EP *ep = PCD_GetOutEP(EP2_OUT & 0x7f);
   if( rx_buffer_new_data && (count=ep->xfer_len>>2) ) {
     // check if buffer is free
     if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
@@ -365,17 +365,17 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       ep->xfer_len = 0; // OTGD_FS_EPStartXfer will set maximum size in this case
       ep->xfer_count = 0; // clear counter to ensure that it will be set by LLD again
       ep->is_in = 0; // out endpoint
-      ep->num = EP1_OUT & 0x7F;
+      ep->num = EP2_OUT & 0x7F;
 
       OTGD_FS_EPStartXfer(ep);
     }
   }
 #else
-  if( rx_buffer_new_data && (count=GetEPRxCount(ENDP1)>>2) ) {
+  if( rx_buffer_new_data && (count=GetEPRxCount(ENDP2)>>2) ) {
 
     // check if buffer is free
     if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
-      u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP1_RXADDR<<1));
+      u32 *pma_addr = (u32 *)(PMAAddr + (MIOS32_USB_ENDP2_RXADDR<<1));
 
       // copy received packages into receive buffer
       // this operation should be atomic
@@ -398,7 +398,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       rx_buffer_new_data = 0;
 
       // release OUT pipe
-      SetEPRxValid(ENDP1);
+      SetEPRxValid(ENDP2);
     }
   }
 #endif
@@ -425,7 +425,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 //! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_MIDI_EP1_OUT_Callback(u8 bEP, u8 bEPStatus)
+void MIOS32_USB_MIDI_EP2_OUT_Callback(u8 bEP, u8 bEPStatus)
 {
   // put package into buffer
   rx_buffer_new_data = 1;
