@@ -46,6 +46,9 @@ public:
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
     //==============================================================================
+    String getSelectedPath(void);
+
+    //==============================================================================
     void disableFileButtons(void);
     void enableFileButtons(void);
     void enableDirButtons(void);
@@ -88,6 +91,10 @@ protected:
     TreeViewItem* rootItem;
 
     MiosFileBrowserFileItem* rootFileItem;
+
+    String       currentDirPath;
+    MiosFileBrowserFileItem*        currentDirItem;
+    Array<MiosFileBrowserFileItem*> currentDirFetchItems;
 
     bool         currentReadInProgress;
     bool         currentReadError;
