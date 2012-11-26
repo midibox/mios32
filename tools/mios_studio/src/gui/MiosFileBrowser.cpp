@@ -111,8 +111,6 @@ public:
                 for(int i=0; i<fileItem->childs.size(); ++i) {
                     MiosFileBrowserItem* item;
                     addSubItem(item = new MiosFileBrowserItem(fileItem->childs[i], browser));
-                    if( fileItem->isDirectory )
-                        item->setOpen(true);
                 }
             }
         } else {
@@ -149,6 +147,7 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     : miosStudio(_miosStudio)
     , rootItem(NULL)
     , rootFileItem(NULL)
+    , currentDirOpenStates(NULL)
     , currentReadInProgress(false)
     , currentReadError(false)
     , currentWriteInProgress(false)
@@ -233,17 +232,11 @@ void MiosFileBrowser::resized()
 void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 {
     if( buttonThatWasClicked == updateButton ) {
-        if( rootFileItem )
-            delete rootFileItem;
-        rootFileItem = new MiosFileBrowserFileItem(T(""), T("/"), true);
-        currentDirItem = rootFileItem;
-
-        updateTreeView(false);
-
-        disableFileButtons();
-        currentDirFetchItems.clear();
-        currentDirPath = T("/");
-        sendCommand(T("dir ") + currentDirPath);
+        // ensure that we see the first position of the treeview
+        treeView->clearSelectedItems();
+        treeView->scrollToKeepItemVisible(rootItem);
+        // request update
+        requestUpdateTreeView();
     } else if( buttonThatWasClicked == downloadButton || 
                buttonThatWasClicked == editTextButton ||
                buttonThatWasClicked == editHexButton ) {
@@ -335,14 +328,26 @@ void MiosFileBrowser::enableDirButtons(void)
 }
 
 //==============================================================================
+void MiosFileBrowser::requestUpdateTreeView(void)
+{
+    currentDirOpenStates = treeView->getOpennessState(true); // including scroll position
+
+    if( rootFileItem )
+        delete rootFileItem;
+    rootFileItem = new MiosFileBrowserFileItem(T(""), T("/"), true);
+    currentDirItem = rootFileItem;
+
+    updateTreeView(false);
+
+    disableFileButtons();
+    currentDirFetchItems.clear();
+    currentDirPath = T("/");
+    sendCommand(T("dir ") + currentDirPath);
+}
+
 void MiosFileBrowser::updateTreeView(bool accessPossible)
 {
     disableFileButtons();
-
-#if 0
-    // TK: currently crashes for whatever reason...
-    XmlElement* openStates = treeView->getOpennessState(true); // including scroll position
-#endif
 
     if( rootItem )
         treeView->deleteRootItem();
@@ -352,19 +357,13 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
         rootItem->setOpen(true);
         treeView->setRootItem(rootItem);
 
-#if 0
-        if( !treeView->getSelectedItem(0) )
-            treeView->scrollToKeepItemVisible(rootItem);
-#endif
-
-#if 0
-        if( openStates ) {
-            treeView->restoreOpennessState(*openStates);
-            delete openStates;
-        }
-#endif
-
         if( accessPossible ) {
+            if( currentDirOpenStates ) {
+                printf("Restore\n");
+                treeView->restoreOpennessState(*currentDirOpenStates);
+                deleteAndZero(currentDirOpenStates);
+            }
+
             uploadButton->setEnabled(true);
             createDirButton->setEnabled(true);
         }
@@ -665,8 +664,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                                        T(" (") + String(currentWriteSize) + T(" bytes) completed in ") +
                                        String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate));
 
-                // emulate "update" button
-                buttonClicked(updateButton);
+                requestUpdateTreeView();
             } else {
                 unsigned addressOffset = command.substring(1).getHexValue32();
 
@@ -698,8 +696,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 statusMessage = String(T("Failed to create directory!"));
             } else if( command[1] == '#' ) {
                 statusMessage = String(T("Directory has been created!"));
-                // emulate "update" button
-                buttonClicked(updateButton);
+                requestUpdateTreeView();
             } else {
                 statusMessage = String(T("Unsupported response from mkdir command!"));
             }
@@ -714,8 +711,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 statusMessage = String(T("Failed to delete file!"));
             } else if( command[1] == '#' ) {
                 statusMessage = String(T("File has been removed!"));
-                // emulate "update" button
-                buttonClicked(updateButton);
+                requestUpdateTreeView();
             } else {
                 statusMessage = String(T("Unsupported response from del command!"));
             }
