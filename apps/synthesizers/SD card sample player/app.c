@@ -94,6 +94,7 @@ static u8 samplebyte_buf[POLYPHONY][SAMPLE_BUFFER_SIZE];	// Create a buffer for 
 static u32 sample_cluster_cache[NUM_SAMPLES_TO_OPEN][CLUSTER_CACHE_SIZE];	// Array of sample cluster positions on SD card
 
 static u8 sample_bank_no=1;	// The sample bank number being played
+static u8 switch_bank_no=1;	// The sample bank selected via switch for J10 
 static u8 damper_pedal=0;	// Damper pedal on channel 1
 
 volatile u8 print_msg;
@@ -635,7 +636,8 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters)
 	{	
 			// Now check for bank switch change  
 			this_bank=Read_Switch();	// Get bank value
-			if(this_bank!=sample_bank_no) { 
+			if(this_bank!=switch_bank_no) { 
+				switch_bank_no=this_bank;	// Set new bank to compare on switch - this is now separate to not interfere with MIDI program changes
 				sample_bank_no=this_bank;	// Set new bank
 				DEBUG_MSG("Changing bank to %d",sample_bank_no);
 				sdcard_access_allowed=0;
