@@ -19,13 +19,15 @@
 class MiosFileBrowserFileItem
 {
 public:
+    String parentPath;
     String name;
     bool isDirectory;
 
     OwnedArray<MiosFileBrowserFileItem> childs;
 
-    MiosFileBrowserFileItem(String _itemName, bool _isDirectory)
-        : name(_itemName)
+    MiosFileBrowserFileItem(String _parentPath, String _itemName, bool _isDirectory)
+        : parentPath(_parentPath)
+        , name(_itemName)
         , isDirectory(_isDirectory)
     {
     }
@@ -34,9 +36,10 @@ public:
     {
     }
 
-    void createChild(String childName, bool isDirectory) {
-        MiosFileBrowserFileItem* child = new MiosFileBrowserFileItem(childName, isDirectory);
+    MiosFileBrowserFileItem* createChild(String parentPath, String childName, bool isDirectory) {
+        MiosFileBrowserFileItem* child = new MiosFileBrowserFileItem(parentPath, childName, isDirectory);
         childs.add(child);
+        return child;
     }
 };
 
@@ -65,7 +68,14 @@ public:
 
     const String getUniqueName() const
     {
-        return fileItem->name;
+        if( fileItem->parentPath.compare(T("/")) == 0 ) {
+            return T("/") + fileItem->name;
+        } else {
+            if( fileItem->name.compare(T("/")) == 0 )
+                return T("/");
+            else
+                return fileItem->parentPath + T("/") + fileItem->name;
+        }
     }
 
     bool mightContainSubItems()
@@ -86,9 +96,6 @@ public:
 
         // draw the item name
         String name(fileItem->name);
-        if( name.compare(T("/")) != 0 ) {
-            name = name.substring(name.lastIndexOfChar('/')+1);
-        }
         g.drawText(name,
                    4, 0, width - 4, height,
                    Justification::centredLeft, true);
@@ -102,7 +109,10 @@ public:
             // in your app.
             if( getNumSubItems() == 0 ) {
                 for(int i=0; i<fileItem->childs.size(); ++i) {
-                    addSubItem(new MiosFileBrowserItem(fileItem->childs[i], browser));
+                    MiosFileBrowserItem* item;
+                    addSubItem(item = new MiosFileBrowserItem(fileItem->childs[i], browser));
+                    if( fileItem->isDirectory )
+                        item->setOpen(true);
                 }
             }
         } else {
@@ -176,10 +186,11 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     removeButton->setButtonText(T("Remove"));
     removeButton->addListener(this);
 
-    addAndMakeVisible(treeView = new TreeView());
+    addAndMakeVisible(treeView = new TreeView(T("SD Card")));
     treeView->setMultiSelectEnabled(false);
 
-    rootFileItem = new MiosFileBrowserFileItem(T("/"), true);
+    rootFileItem = new MiosFileBrowserFileItem(T(""), T("/"), true);
+    currentDirItem = rootFileItem;
     updateTreeView(false);
 
     resizeLimits.setSizeLimits(100, 300, 2048, 2048);
@@ -224,12 +235,15 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
     if( buttonThatWasClicked == updateButton ) {
         if( rootFileItem )
             delete rootFileItem;
-        rootFileItem = new MiosFileBrowserFileItem(T("/"), true);
+        rootFileItem = new MiosFileBrowserFileItem(T(""), T("/"), true);
+        currentDirItem = rootFileItem;
 
         updateTreeView(false);
 
         disableFileButtons();
-        sendCommand(T("dir /"));
+        currentDirFetchItems.clear();
+        currentDirPath = T("/");
+        sendCommand(T("dir ") + currentDirPath);
     } else if( buttonThatWasClicked == downloadButton || 
                buttonThatWasClicked == editTextButton ||
                buttonThatWasClicked == editHexButton ) {
@@ -247,7 +261,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
         }
     } else if( buttonThatWasClicked == createDirButton ) {
         disableFileButtons();
-        sendCommand(T("mkdir /test")); // tmp.
+        sendCommand(T("mkdir ") + getSelectedPath() + T("test")); // tmp.
     } else if( buttonThatWasClicked == removeButton ) {
         if( treeView->getNumSelectedItems() ) {
             TreeViewItem* selectedItem = treeView->getSelectedItem(0);
@@ -268,6 +282,28 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 //==============================================================================
 void MiosFileBrowser::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
 {
+}
+
+//==============================================================================
+String MiosFileBrowser::getSelectedPath(void)
+{
+    String selectedPath(T("/"));
+
+    TreeViewItem* selectedItem = treeView->getSelectedItem(0);
+    if( selectedItem ) {
+        selectedPath = selectedItem->getUniqueName();
+        if( selectedPath.compare(T("/")) != 0 ) {
+            if( !selectedItem->mightContainSubItems() ) {
+                selectedPath = selectedPath.substring(0, selectedPath.lastIndexOfChar('/')) + T("/");
+            } else {
+                selectedPath += T("/");
+            }
+        }
+    }
+
+    //std::cout << "Selected Path: " << selectedPath << std::endl;
+
+    return selectedPath;
 }
 
 //==============================================================================
@@ -293,6 +329,7 @@ void MiosFileBrowser::enableFileButtons(void)
 
 void MiosFileBrowser::enableDirButtons(void)
 {
+    uploadButton->setEnabled(true);
     createDirButton->setEnabled(true);
     removeButton->setEnabled(true);
 }
@@ -302,6 +339,11 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
 {
     disableFileButtons();
 
+#if 0
+    // TK: currently crashes for whatever reason...
+    XmlElement* openStates = treeView->getOpennessState(true); // including scroll position
+#endif
+
     if( rootItem )
         treeView->deleteRootItem();
 
@@ -309,6 +351,18 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
         rootItem = new MiosFileBrowserItem(rootFileItem, this);
         rootItem->setOpen(true);
         treeView->setRootItem(rootItem);
+
+#if 0
+        if( !treeView->getSelectedItem(0) )
+            treeView->scrollToKeepItemVisible(rootItem);
+#endif
+
+#if 0
+        if( openStates ) {
+            treeView->restoreOpennessState(*openStates);
+            delete openStates;
+        }
+#endif
 
         if( accessPossible ) {
             uploadButton->setEnabled(true);
@@ -413,7 +467,7 @@ bool MiosFileBrowser::uploadFile(void)
             uint64 size = inFileStream->getTotalLength();
             uint8 *buffer = (uint8 *)juce_malloc(size);
             currentWriteSize = inFileStream->read(buffer, size);
-            currentWriteFile = "/" + inFile.getFileName();
+            currentWriteFile = getSelectedPath() + inFile.getFileName();
             //currentWriteData.resize(currentWriteSize); // doesn't exist in Juce 1.53
             Array<uint8> dummy(buffer, currentWriteSize);
             currentWriteData = dummy;
@@ -493,11 +547,11 @@ void MiosFileBrowser::receiveCommand(const String& command)
                         String fileName(command.substring(posStartName, pos));
                         //std::cout << "XXX " << fileName << std::endl;
                         if( fileName[0] == 'F' ) {
-                            rootFileItem->createChild("/" + fileName.substring(1), false);
+                            currentDirItem->createChild(currentDirPath, fileName.substring(1), false);
                         } else if( fileName[0] == 'D' ) {
-                            rootFileItem->createChild("/" + fileName.substring(1), true);
+                            currentDirFetchItems.add(currentDirItem->createChild(currentDirPath, fileName.substring(1), true));
                         } else {
-                            std::cout << "INVALID Response: " << fileName << std::endl;
+                            std::cout << "INVALID Response: " << currentDirPath << fileName << std::endl;
                             statusMessage = String(T("Invalid Response!"));
                             break;
                         }
@@ -508,7 +562,19 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     }
                 }
             }
-            updateTreeView(true);
+
+            // do we have to fetch some additional subdirectories?
+            if( currentDirFetchItems.size() ) {
+                currentDirItem = currentDirFetchItems.remove(0);
+                if( currentDirItem->parentPath.compare(T("/")) == 0 )
+                    currentDirPath = currentDirItem->parentPath + currentDirItem->name;
+                else
+                    currentDirPath = currentDirItem->parentPath + T("/") + currentDirItem->name;
+                //std::cout << "Fetch " << currentDirPath << std::endl;
+                sendCommand(T("dir ") + currentDirPath);
+            } else {
+                updateTreeView(true);
+            }
         } break;
 
         ////////////////////////////////////////////////////////////////////
