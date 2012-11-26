@@ -54,6 +54,7 @@ public:
     void enableDirButtons(void);
 
     //==============================================================================
+    void requestUpdateTreeView(void);
     void updateTreeView(bool accessPossible);
 
     void treeItemClicked(MiosFileBrowserItem* item);
@@ -95,6 +96,7 @@ protected:
     String       currentDirPath;
     MiosFileBrowserFileItem*        currentDirItem;
     Array<MiosFileBrowserFileItem*> currentDirFetchItems;
+    XmlElement*  currentDirOpenStates;
 
     bool         currentReadInProgress;
     bool         currentReadError;
