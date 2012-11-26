@@ -55,7 +55,7 @@ extern s32 MIOS32_USB_MIDI_Init(u32 mode);
 
 extern s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected);
 extern void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus);
-extern void MIOS32_USB_MIDI_EP1_OUT_Callback(u8 bEP, u8 bEPStatus);
+extern void MIOS32_USB_MIDI_EP2_OUT_Callback(u8 bEP, u8 bEPStatus);
 
 extern s32 MIOS32_USB_MIDI_CheckAvailable(u8 cable);
 

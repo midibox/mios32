@@ -399,7 +399,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 //! Called by USB driver to check for OUT streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 /////////////////////////////////////////////////////////////////////////////
-void MIOS32_USB_MIDI_EP1_OUT_Callback(u8 bEP, u8 bEPStatus)
+void MIOS32_USB_MIDI_EP2_OUT_Callback(u8 bEP, u8 bEPStatus)
 {
   // package has been sent
   if( bEP & 0x80 ) {

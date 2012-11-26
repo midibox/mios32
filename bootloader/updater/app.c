@@ -351,7 +351,7 @@ static s32 RetrieveBootInfos(void)
   BSL_lcd_parameters.lcd_type = MIOS32_LCD_TYPE_CLCD;
   BSL_lcd_parameters.num_x = 2; // since MBHP_CORE_STM32 and MBHP_CORE_LPC17 has two J15 ports
   BSL_lcd_parameters.num_y = 1;
-  BSL_lcd_parameters.width = 20; // since most people will (probably) build the SCS
+  BSL_lcd_parameters.width = 16; // take most common LCD size by default
   BSL_lcd_parameters.height = 2;
 
   u8 *lcd_par_confirm = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_CONFIRM;

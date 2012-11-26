@@ -49,12 +49,12 @@
 
 // EP1 Rx/Tx buffer base address for MIDI driver
 #define MIOS32_USB_ENDP1_TXADDR        0x0c0
-#define MIOS32_USB_ENDP1_RXADDR        0x100
+#define MIOS32_USB_ENDP2_RXADDR        0x100
 
-// EP2/3/4 buffer base addresses for COM driver
-#define MIOS32_USB_ENDP2_TXADDR        0x140
-#define MIOS32_USB_ENDP3_RXADDR        0x180
-#define MIOS32_USB_ENDP4_TXADDR        0x1c0
+// EP3/4/5 buffer base addresses for COM driver
+#define MIOS32_USB_ENDP3_RXADDR        0x140
+#define MIOS32_USB_ENDP4_TXADDR        0x180
+#define MIOS32_USB_ENDP5_TXADDR        0x1c0
 
 
 
