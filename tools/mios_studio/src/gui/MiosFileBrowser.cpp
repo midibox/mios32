@@ -148,56 +148,93 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     , rootItem(NULL)
     , rootFileItem(NULL)
     , currentDirOpenStates(NULL)
+    , transferSelectionCtr(0)
+    , openTextEditorAfterRead(false)
+    , openHexEditorAfterRead(false)
     , currentReadInProgress(false)
+    , currentReadFileStream(NULL)
     , currentReadError(false)
     , currentWriteInProgress(false)
     , currentWriteError(false)
     , writeBlockCtrDefault(32) // send 32 blocks (=two 512 byte SD Card Sectors) at once to speed-up write operations
     , writeBlockSizeDefault(32) // send 32 bytes per block
 {
+    addAndMakeVisible(editLabel = new Label(T("Edit"), String::empty));
+    editLabel->setJustificationType(Justification::left);
+    editLabel->setText(String::empty, true);
+
     addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
     statusLabel->setJustificationType(Justification::left);
     statusLabel->setText(T("Please connect to MIOS32 core by pressing the Update button!"), true);
 
-    addAndMakeVisible(updateButton = new TextButton(T("Update Button")));
-    updateButton->setButtonText(T("Update"));
+    addAndMakeVisible(updateButton = new TextButton(T("Update")));
     updateButton->addListener(this);
 
-    addAndMakeVisible(uploadButton = new TextButton(T("Upload Button")));
-    uploadButton->setButtonText(T("Upload"));
+    addAndMakeVisible(uploadButton = new TextButton(T("Upload")));
     uploadButton->addListener(this);
 
-    addAndMakeVisible(downloadButton = new TextButton(T("Download Button")));
-    downloadButton->setButtonText(T("Download"));
+    addAndMakeVisible(downloadButton = new TextButton(T("Download")));
     downloadButton->addListener(this);
 
-    addAndMakeVisible(editTextButton = new TextButton(T("EditText Button")));
-    editTextButton->setButtonText(T("Edit Text"));
+    addAndMakeVisible(editTextButton = new TextButton(T("Edit Text")));
     editTextButton->addListener(this);
 
-    addAndMakeVisible(editHexButton = new TextButton(T("EditHex Button")));
-    editHexButton->setButtonText(T("Edit Hex"));
+    addAndMakeVisible(editHexButton = new TextButton(T("Edit Hex")));
     editHexButton->addListener(this);
 
-    addAndMakeVisible(createDirButton = new TextButton(T("CreateDir Button")));
-    createDirButton->setButtonText(T("Create Dir"));
+    addAndMakeVisible(createDirButton = new TextButton(T("Create Dir")));
     createDirButton->addListener(this);
 
     addAndMakeVisible(removeButton = new TextButton(T("Remove Button")));
     removeButton->setButtonText(T("Remove"));
     removeButton->addListener(this);
 
+    addAndMakeVisible(cancelButton = new TextButton(T("Cancel")));
+    cancelButton->addListener(this);
+    cancelButton->setEnabled(false);
+
+    addAndMakeVisible(saveButton = new TextButton(T("Save")));
+    saveButton->addListener(this);
+    saveButton->setEnabled(false);
+
     addAndMakeVisible(treeView = new TreeView(T("SD Card")));
-    treeView->setMultiSelectEnabled(false);
+    treeView->setMultiSelectEnabled(true);
+
+    addAndMakeVisible(hexEditor = new HexTextEditor(statusLabel));
+    hexEditor->setReadOnly(true);
+
+    addAndMakeVisible(textEditor = new TextEditor(String::empty));
+    textEditor->setMultiLine(true);
+    textEditor->setReturnKeyStartsNewLine(true);
+    textEditor->setReadOnly(false);
+    textEditor->setScrollbarsShown(true);
+    textEditor->setCaretVisible(true);
+    textEditor->setPopupMenuEnabled(true);
+    textEditor->setReadOnly(true);
+    textEditor->setVisible(false); // either hex or text editor visible
+#if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
+#if defined(JUCE_WIN32)
+    textEditor->setFont(Font(Typeface::defaultTypefaceNameMono, 10.0, 0));
+#else
+    textEditor->setFont(Font(Typeface::defaultTypefaceNameMono, 13.0, 0));
+#endif
+#else
+#if defined(JUCE_WIN32)
+    textEditor->setFont(Font(Font::getDefaultMonospacedFontName(), 10.0, 0));
+#else
+    textEditor->setFont(Font(Font::getDefaultMonospacedFontName(), 13.0, 0));
+#endif
+#endif
+    textEditor->addListener(this);
 
     rootFileItem = new MiosFileBrowserFileItem(T(""), T("/"), true);
     currentDirItem = rootFileItem;
     updateTreeView(false);
 
-    resizeLimits.setSizeLimits(100, 300, 2048, 2048);
+    resizeLimits.setSizeLimits(500, 320, 2048, 2048);
     addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
 
-    setSize(860, 500);
+    setSize(950, 500);
 }
 
 MiosFileBrowser::~MiosFileBrowser()
@@ -219,12 +256,22 @@ void MiosFileBrowser::resized()
     updateButton->setBounds   (10 , sendButtonY + 0*32 + 0*16, sendButtonWidth, 24);
     downloadButton->setBounds (10 , sendButtonY + 1*32 + 1*16, sendButtonWidth, 24);
     uploadButton->setBounds   (10 , sendButtonY + 2*32 + 1*16, sendButtonWidth, 24);
-    editTextButton->setBounds (10 , sendButtonY + 3*32 + 2*16, sendButtonWidth, 24);
-    editHexButton->setBounds  (10 , sendButtonY + 4*32 + 2*16, sendButtonWidth, 24);
     createDirButton->setBounds(10 , sendButtonY + 5*32 + 3*16, sendButtonWidth, 24);
     removeButton->setBounds   (10 , sendButtonY + 6*32 + 4*16, sendButtonWidth, 24);
 
-    treeView->setBounds(10 + 80, 16, getWidth(), getHeight()-32-24);
+    treeView->setBounds(10 + 80, 16, 210, getHeight()-32-24);
+
+    hexEditor->setBounds      (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
+    textEditor->setBounds     (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
+
+    editTextButton->setBounds (10+80+220 + 0*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    editHexButton->setBounds  (10+80+220 + 1*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    cancelButton->setBounds   (getWidth()-10-sendButtonWidth, sendButtonY, sendButtonWidth, 24);
+    saveButton->setBounds     (getWidth()-10-2*sendButtonWidth-10, sendButtonY, sendButtonWidth, 24);
+
+    unsigned editLabelLeft  = editHexButton->getX()+editHexButton->getWidth() + 10;
+    unsigned editLabelRight = saveButton->getX() - 10;
+    editLabel->setBounds      (editLabelLeft, sendButtonY, editLabelRight-editLabelLeft, 24);
 
     statusLabel->setBounds(10, getHeight()-24, getWidth()-20, 24);
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
@@ -245,31 +292,69 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
                buttonThatWasClicked == editTextButton ||
                buttonThatWasClicked == editHexButton ) {
 
-        if( treeView->getNumSelectedItems() ) {
-            TreeViewItem* selectedItem = treeView->getSelectedItem(0);
-            currentReadFile = selectedItem->getUniqueName();
-            disableFileButtons();
-            sendCommand(T("read ") + currentReadFile);
+        // extra: if data is edited, switch between hex/text view
+        if( saveButton->isEnabled() ) {
+            if( buttonThatWasClicked == editTextButton && hexEditor->isVisible() ) {
+                Array<uint8> tmpHex = hexEditor->getBinary();
+                String tmpStr((char *)&tmpHex.getReference(0), tmpHex.size());
+                hexEditor->clear();
+                hexEditor->setReadOnly(true);
+                hexEditor->setVisible(false);
+                textEditor->setVisible(true);
+                textEditor->setReadOnly(false);
+                textEditor->clear();
+                textEditor->setText(tmpStr, true);
+                statusLabel->setText(T("Editing ") + currentReadFileName + T(" in text mode."), true);
+            } else if( buttonThatWasClicked == editHexButton && textEditor->isVisible() ) {
+                String tmpStr(textEditor->getText());
+                textEditor->clear();
+                textEditor->setReadOnly(true);
+                textEditor->setVisible(false);
+                hexEditor->setVisible(true);
+                hexEditor->setReadOnly(false);
+                hexEditor->clear();
+                hexEditor->addBinary((uint8 *)tmpStr.toUTF8(), tmpStr.length());
+                statusLabel->setText(T("Editing ") + currentReadFileName + T(" in hex mode."), true);
+            }
+        } else {
+            if( treeView->getNumSelectedItems() ) {
+                openTextEditorAfterRead = buttonThatWasClicked == editTextButton;
+                openHexEditorAfterRead = buttonThatWasClicked == editHexButton;
+                transferSelectionCtr = 0;
+                downloadFileSelection(transferSelectionCtr);
+            }
         }
     } else if( buttonThatWasClicked == uploadButton ) {
-        disableFileButtons();
-        if( !uploadFile() ) {
-            enableFileButtons();
-        }
+        uploadFile();
     } else if( buttonThatWasClicked == createDirButton ) {
-        disableFileButtons();
-        sendCommand(T("mkdir ") + getSelectedPath() + T("test")); // tmp.
+        createDir();
     } else if( buttonThatWasClicked == removeButton ) {
         if( treeView->getNumSelectedItems() ) {
-            TreeViewItem* selectedItem = treeView->getSelectedItem(0);
-            String fileName(selectedItem->getUniqueName());
-            if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
-                                             T("Removing ") + fileName,
-                                             T("Do you really want to remove\n") + fileName + T("?"),
-                                             T("Remove"),
-                                             T("Cancel")) ) {
-                disableFileButtons();
-                sendCommand(T("del ") + fileName);
+            transferSelectionCtr = 0;
+            deleteFileSelection(transferSelectionCtr);
+        }
+    } else if( buttonThatWasClicked == cancelButton ||
+               buttonThatWasClicked == saveButton ) {
+
+        if( buttonThatWasClicked == cancelButton ) {
+            enableFileButtons();
+            hexEditor->clear();
+            hexEditor->setReadOnly(true);
+            textEditor->clear();
+            textEditor->setReadOnly(true);
+            editLabel->setText(String::empty, true);
+
+            disableFileButtons(); // to disable also editor buttons
+            enableFileButtons();
+        } else if( buttonThatWasClicked == saveButton ) {
+            if( hexEditor->isVisible() ) {
+                // write back the read file
+                uploadBuffer(currentReadFileName, hexEditor->getBinary());
+            } else if( textEditor->isVisible() ) {
+                // write back the read file
+                String txt(textEditor->getText());
+                Array<uint8> tmp((uint8 *)txt.toUTF8(), txt.length());
+                uploadBuffer(currentReadFileName, tmp);
             }
         }
     }
@@ -277,9 +362,28 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 
 
 //==============================================================================
-void MiosFileBrowser::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
+void MiosFileBrowser::textEditorTextChanged(TextEditor &editor)
+{
+    // unfortunately not updated on any cursor move...
+#if 0
+    int pos = editor.getCaretPosition();
+    String txt(editor.getText());
+    statusLabel->setText(String::formatted(T("(%d/%d)"), pos, txt.length()), true);
+#endif
+}
+
+void MiosFileBrowser::textEditorReturnKeyPressed(TextEditor &editor)
 {
 }
+
+void MiosFileBrowser::textEditorEscapeKeyPressed(TextEditor &editor)
+{
+}
+
+void MiosFileBrowser::textEditorFocusLost(TextEditor &editor)
+{
+}
+
 
 //==============================================================================
 String MiosFileBrowser::getSelectedPath(void)
@@ -306,16 +410,28 @@ String MiosFileBrowser::getSelectedPath(void)
 //==============================================================================
 void MiosFileBrowser::disableFileButtons(void)
 {
+    updateButton->setEnabled(true);
     uploadButton->setEnabled(false);
     downloadButton->setEnabled(false);
-    editTextButton->setEnabled(false);
-    editHexButton->setEnabled(false);
     createDirButton->setEnabled(false);
     removeButton->setEnabled(false);
+
+    // important: don't disable save/cancel button as long as an open editor has content
+    // (in case of write error)
+    if( !(textEditor->isVisible() && textEditor->getText().length()) &&
+        !(hexEditor->isVisible() && hexEditor->getBinary().size()) ) {
+        editTextButton->setEnabled(false);
+        editHexButton->setEnabled(false);
+        hexEditor->setReadOnly(true);
+        textEditor->setReadOnly(true);
+        saveButton->setEnabled(false);
+        cancelButton->setEnabled(false);
+    }
 }
 
 void MiosFileBrowser::enableFileButtons(void)
 {
+    updateButton->setEnabled(true);
     uploadButton->setEnabled(true);
     downloadButton->setEnabled(true);
     editTextButton->setEnabled(true);
@@ -326,14 +442,27 @@ void MiosFileBrowser::enableFileButtons(void)
 
 void MiosFileBrowser::enableDirButtons(void)
 {
+    updateButton->setEnabled(true);
     uploadButton->setEnabled(true);
     createDirButton->setEnabled(true);
     removeButton->setEnabled(true);
 }
 
+void MiosFileBrowser::enableEditorButtons(void)
+{
+    treeView->setEnabled(false);
+    updateButton->setEnabled(false);
+    editTextButton->setEnabled(true);
+    editHexButton->setEnabled(true);
+    cancelButton->setEnabled(true);
+    saveButton->setEnabled(true);
+}
+
+
 //==============================================================================
 void MiosFileBrowser::requestUpdateTreeView(void)
 {
+    treeView->setEnabled(true);
     currentDirOpenStates = treeView->getOpennessState(true); // including scroll position
 
     if( rootFileItem )
@@ -389,51 +518,170 @@ void MiosFileBrowser::treeItemDoubleClicked(MiosFileBrowserItem* item)
 }
 
 //==============================================================================
-bool MiosFileBrowser::storeDownloadedFile(void)
+bool MiosFileBrowser::downloadFileSelection(unsigned selection)
 {
-    if( !currentReadData.size() )
-        return false;
+    treeView->setEnabled(false);
+    TreeViewItem* selectedItem = treeView->getSelectedItem(selection);
 
-    // restore default path
-    String defaultPath(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
-    if( propertiesFile ) {
-        defaultPath = propertiesFile->getValue(T("defaultFilebrowserPath"), defaultPath);
-    }
-    String readFileName(currentReadFile.substring(currentReadFile.lastIndexOfChar('/')+1));
-    File defaultPathFile(defaultPath + "/" + readFileName);
-    FileChooser myChooser(T("Store ") + currentReadFile, defaultPathFile);
-    if( !myChooser.browseForFileToSave(true) ) {
-        statusLabel->setText(T("Cancled save operation for ") + currentReadFile, true);
-        return false;
-    } else {
-        File outFile(myChooser.getResult());
+    if( selectedItem ) {
+        currentReadFileName = selectedItem->getUniqueName();
 
-        // store default path
-        if( propertiesFile ) {
-            propertiesFile->setValue(T("defaultFilebrowserPath"), outFile.getParentDirectory().getFullPathName());
-        }
-
-        FileOutputStream *outFileStream = NULL;
-        outFile.deleteFile();
-        if( !(outFileStream=outFile.createOutputStream()) ||
-            outFileStream->failedToOpen() ) {
-            AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                        String::empty,
-                                        T("File cannot be created!"),
-                                        String::empty);
-            statusLabel->setText(T("Failed to save ") + defaultPathFile.getFullPathName(), true);
-            return false;
+        if( openHexEditorAfterRead || openTextEditorAfterRead ) {
+            disableFileButtons();
+            sendCommand(T("read ") + currentReadFileName);
+            return true;
         } else {
-            outFileStream->write((uint8 *)&currentReadData.getReference(0), currentReadData.size());
-            delete outFileStream;
-            statusLabel->setText(T("Saved ") + defaultPathFile.getFullPathName(), true);
+            // restore default path
+            String defaultPath(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
+            PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+            if( propertiesFile ) {
+                defaultPath = propertiesFile->getValue(T("defaultFilebrowserPath"), defaultPath);
+            }
+
+            String readFileName(currentReadFileName.substring(currentReadFileName.lastIndexOfChar('/')+1));
+            File defaultPathFile(defaultPath + "/" + readFileName);
+            FileChooser myChooser(T("Store ") + currentReadFileName, defaultPathFile);
+            if( !myChooser.browseForFileToSave(true) ) {
+                statusLabel->setText(T("Cancled save operation for ") + currentReadFileName, true);
+            } else {
+                currentReadFile = myChooser.getResult();
+
+                // store default path
+                if( propertiesFile ) {
+                    propertiesFile->setValue(T("defaultFilebrowserPath"), currentReadFile.getParentDirectory().getFullPathName());
+                }
+
+                currentReadFileStream = NULL;
+                currentReadFile.deleteFile();
+                if( !(currentReadFileStream=currentReadFile.createOutputStream()) ||
+                    currentReadFileStream->failedToOpen() ) {
+                    AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                                String::empty,
+                                                T("File cannot be created!"),
+                                                String::empty);
+                    statusLabel->setText(T("Failed to open ") + currentReadFile.getFullPathName(), true);
+                } else {
+                    disableFileButtons();
+                    sendCommand(T("read ") + currentReadFileName);
+                    return true;
+                }
+            }
         }
+    }
+
+    // operation not successfull (or no more files)
+    treeView->setEnabled(true);
+    enableFileButtons();
+
+    return false;
+}
+
+bool MiosFileBrowser::downloadFinished(void)
+{
+    if( openHexEditorAfterRead ) {
+        disableFileButtons();
+        enableEditorButtons();
+
+        hexEditor->setVisible(true);
+        textEditor->setVisible(false);
+
+        hexEditor->setReadOnly(false);
+        hexEditor->clear();
+        hexEditor->addBinary((uint8 *)&currentReadData.getReference(0), currentReadData.size());
+        statusLabel->setText(T("Editing ") + currentReadFileName, true);
+        editLabel->setText(currentReadFileName, true);
+    } else if( openTextEditorAfterRead ) {
+        disableFileButtons();
+        enableEditorButtons();
+
+        textEditor->setVisible(true);
+        hexEditor->setVisible(false);
+
+        textEditor->setReadOnly(false);
+        textEditor->clear();
+        String tmpStr((char *)&currentReadData.getReference(0), currentReadData.size());
+        textEditor->setText(tmpStr, true);
+        statusLabel->setText(T("Editing ") + currentReadFileName, true);
+        editLabel->setText(currentReadFileName, true);
+    } else if( currentReadFileStream ) {
+        currentReadFileStream->write((uint8 *)&currentReadData.getReference(0), currentReadData.size());
+        delete currentReadFileStream;
+        statusLabel->setText(T("Saved ") + currentReadFile.getFullPathName(), true);
+
+        // try next file (if there is still another selection
+        downloadFileSelection(++transferSelectionCtr);
     }
 
     return true;
 }
 
+//==============================================================================
+bool MiosFileBrowser::deleteFileSelection(unsigned selection)
+{
+    treeView->setEnabled(false);
+    TreeViewItem* selectedItem = treeView->getSelectedItem(selection);
+
+    if( selectedItem ) {
+        String fileName(selectedItem->getUniqueName());
+        if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
+                                         T("Removing ") + fileName,
+                                         T("Do you really want to remove\n") + fileName + T("?"),
+                                         T("Remove"),
+                                         T("Cancel")) ) {
+            disableFileButtons();
+            sendCommand(T("del ") + fileName);
+            return true;
+        }
+    }
+
+    // operation finished
+    requestUpdateTreeView();
+
+    return false;
+}
+
+bool MiosFileBrowser::deleteFinished(void)
+{
+    statusLabel->setText(T("File has been removed!"), true);
+
+    // try next file (if there is still another selection
+    deleteFileSelection(++transferSelectionCtr);
+
+    return true;
+}
+
+//==============================================================================
+bool MiosFileBrowser::createDir(void)
+{
+    AlertWindow enterName(T("Creating new Directory"),
+                          T("Please enter directory name:"),
+                          AlertWindow::QuestionIcon);
+
+    enterName.addButton(T("Create"), 1);
+    enterName.addButton(T("Cancel"), 0);
+    enterName.addTextEditor(T("Name"), String::empty);
+
+    if( enterName.runModalLoop() ) {
+        String name(enterName.getTextEditorContents(T("Name")));
+        std::cout << ">>>" << name << std::endl;
+        if( name.length() ) {
+            sendCommand(T("mkdir ") + getSelectedPath() + name);
+        }        
+    }
+
+    return false;
+}
+
+bool MiosFileBrowser::createDirFinished(void)
+{
+    statusLabel->setText(T("Directory has been created!"), true);
+
+    requestUpdateTreeView();
+
+    return true;
+}
+
+//==============================================================================
 bool MiosFileBrowser::uploadFile(void)
 {
     // restore default path
@@ -466,28 +714,67 @@ bool MiosFileBrowser::uploadFile(void)
                                         T("is empty!"),
                                         String::empty);
         } else {
+            disableFileButtons();
+
             uint64 size = inFileStream->getTotalLength();
             uint8 *buffer = (uint8 *)juce_malloc(size);
-            currentWriteSize = inFileStream->read(buffer, size);
-            currentWriteFile = getSelectedPath() + inFile.getFileName();
+            size = inFileStream->read(buffer, size);
             //currentWriteData.resize(currentWriteSize); // doesn't exist in Juce 1.53
-            Array<uint8> dummy(buffer, currentWriteSize);
-            currentWriteData = dummy;
+            Array<uint8> tmp(buffer, size);
             juce_free(buffer);
-            statusLabel->setText(T("Uploading ") + currentWriteFile + T(" (") + String(currentWriteSize) + T(" bytes)"), true);
-
-            currentWriteInProgress = true;
-            currentWriteError = false;
-            currentWriteFirstBlockOffset = 0;
-            currentWriteBlockCtr = writeBlockCtrDefault;
-            currentWriteStartTime = Time::currentTimeMillis();
-            sendCommand(T("write ") + currentWriteFile + T(" ") + String(currentWriteSize));
-            startTimer(3000);
+            uploadBuffer(getSelectedPath() + inFile.getFileName(), tmp);
         }
 
         if( inFileStream )
             delete inFileStream;
     }
+
+    return true;
+}
+
+bool MiosFileBrowser::uploadBuffer(String filename, const Array<uint8>& buffer)
+{
+    currentWriteFileName = filename;
+    currentWriteData = buffer;
+    currentWriteSize = buffer.size();
+
+    statusLabel->setText(T("Uploading ") + currentWriteFileName + T(" (") + String(currentWriteSize) + T(" bytes)"), true);
+
+    currentWriteInProgress = true;
+    currentWriteError = false;
+    currentWriteFirstBlockOffset = 0;
+    currentWriteBlockCtr = writeBlockCtrDefault;
+    currentWriteStartTime = Time::currentTimeMillis();
+    sendCommand(T("write ") + currentWriteFileName + T(" ") + String(currentWriteSize));
+    startTimer(3000);
+
+    return true;
+}
+
+bool MiosFileBrowser::uploadFinished(void)
+{
+    currentWriteInProgress = false;
+
+    // finished edit operation?
+    if( openHexEditorAfterRead || openTextEditorAfterRead ) {
+        openHexEditorAfterRead = false;
+        openTextEditorAfterRead = false;
+        hexEditor->clear();
+        hexEditor->setReadOnly(true);
+        textEditor->clear();
+        textEditor->setReadOnly(true);
+        editLabel->setText(String::empty, true);
+    }
+
+    uint32 currentWriteFinished = Time::currentTimeMillis();
+    float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
+    float dataRate = ((float)currentWriteSize/1000.0) / downloadTime;
+
+    statusLabel->setText(T("Upload of ") + currentWriteFileName +
+                         T(" (") + String(currentWriteSize) + T(" bytes) completed in ") +
+                         String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate), true);
+
+    requestUpdateTreeView();
 
     return true;
 }
@@ -586,18 +873,18 @@ void MiosFileBrowser::receiveCommand(const String& command)
             if( command[1] == '!' ) {
                 statusMessage = String(T("SD Card not mounted!"));
             } else if( command[1] == '-' ) {
-                statusMessage = String(T("Failed to access " + currentReadFile + "!"));
+                statusMessage = String(T("Failed to access " + currentReadFileName + "!"));
             } else {
                 currentReadSize = (command.substring(1)).getIntValue();
                 currentReadData.clear();
                 if( currentReadSize ) {
-                    statusMessage = String(T("Receiving ") + currentReadFile + T(" with ") + String(currentReadSize) + T(" bytes."));
+                    statusMessage = String(T("Receiving ") + currentReadFileName + T(" with ") + String(currentReadSize) + T(" bytes."));
                     currentReadInProgress = true;
                     currentReadError = false;
                     currentReadStartTime = Time::currentTimeMillis();
                     startTimer(3000);
                 } else {
-                    statusMessage = String(currentReadFile + T(" is empty!"));
+                    statusMessage = String(currentReadFileName + T(" is empty!"));
                 }
             }
         } break;
@@ -613,7 +900,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                 unsigned address = strAddress.getHexValue32();
 
                 if( address >= currentReadSize ) {
-                    statusMessage = String(currentReadFile + T(" received invalid payload!"));
+                    statusMessage = String(currentReadFileName + T(" received invalid payload!"));
                     currentReadError = true;
                 } else {
                     for(int pos=0; pos<strPayload.length(); pos+=2) {
@@ -626,18 +913,16 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     float downloadTime = (float)(currentReadFinished-currentReadStartTime) / 1000.0;
                     float dataRate = ((float)receivedSize/1000.0) / downloadTime;
                     if( receivedSize >= currentReadSize ) {
-                        statusMessage = String(T("Download of ") + currentReadFile +
+                        statusMessage = String(T("Download of ") + currentReadFileName +
                                                T(" (") + String(receivedSize) + T(" bytes) completed in ") +
                                                String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate));
                         currentReadInProgress = false;
 
                         statusLabel->setText(statusMessage, true);
-                        storeDownloadedFile();
-                        statusMessage = String::empty; // status has been updated by storeDownloadedFile()
-
-                        enableFileButtons();
+                        downloadFinished();
+                        statusMessage = String::empty; // status has been updated by downloadFinished()
                     } else {
-                        statusMessage = String(T("Downloading ") + currentReadFile + T(": ") +
+                        statusMessage = String(T("Downloading ") + currentReadFileName + T(": ") +
                                                String(receivedSize) + T(" bytes received") +
                                                String::formatted(T(" (%d%%, %2.1f kb/s)"),
                                                                  (int)(100.0*(float)receivedSize/(float)currentReadSize),
@@ -657,21 +942,12 @@ void MiosFileBrowser::receiveCommand(const String& command)
             } else if( command[1] == '!' ) {
                 statusMessage = String(T("SD Card not mounted!"));
             } else if( command[1] == '-' ) {
-                statusMessage = String(T("Failed to access " + currentWriteFile + "!"));
+                statusMessage = String(T("Failed to access " + currentWriteFileName + "!"));
             } else if( command[1] == '~' ) {
                 statusMessage = String(T("FATAL: invalid parameters for write operation!"));
             } else if( command[1] == '#' ) {
-                currentWriteInProgress = false;
-
-                uint32 currentWriteFinished = Time::currentTimeMillis();
-                float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
-                float dataRate = ((float)currentWriteSize/1000.0) / downloadTime;
-
-                statusMessage = String(T("Upload of ") + currentWriteFile +
-                                       T(" (") + String(currentWriteSize) + T(" bytes) completed in ") +
-                                       String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate));
-
-                requestUpdateTreeView();
+                uploadFinished();
+                statusMessage = String::empty; // status has been updated by uploadFinished()
             } else {
                 unsigned addressOffset = command.substring(1).getHexValue32();
 
@@ -706,7 +982,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
                     float dataRate = ((float)addressOffset/1000.0) / downloadTime;
 
-                    statusMessage = String(T("Uploading ") + currentWriteFile + T(": ") +
+                    statusMessage = String(T("Uploading ") + currentWriteFileName + T(": ") +
                                            String(addressOffset) + T(" bytes transmitted") +
                                            String::formatted(T(" (%d%%, %2.1f kb/s)"),
                                                              (int)(100.0*(float)addressOffset/(float)currentWriteSize),
@@ -724,8 +1000,8 @@ void MiosFileBrowser::receiveCommand(const String& command)
             } else if( command[1] == '-' ) {
                 statusMessage = String(T("Failed to create directory!"));
             } else if( command[1] == '#' ) {
-                statusMessage = String(T("Directory has been created!"));
-                requestUpdateTreeView();
+                createDirFinished();
+                statusMessage = String::empty; // status has been updated by createDirFinished()
             } else {
                 statusMessage = String(T("Unsupported response from mkdir command!"));
             }
@@ -739,8 +1015,8 @@ void MiosFileBrowser::receiveCommand(const String& command)
             } else if( command[1] == '-' ) {
                 statusMessage = String(T("Failed to delete file!"));
             } else if( command[1] == '#' ) {
-                statusMessage = String(T("File has been removed!"));
-                requestUpdateTreeView();
+                deleteFinished();
+                statusMessage = String::empty; // status has been updated by deleteFinished()
             } else {
                 statusMessage = String(T("Unsupported response from del command!"));
             }
