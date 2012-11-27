@@ -1,5 +1,38 @@
 $Id$
 
+MIDIO128 V3.011pre4
+~~~~~~~~~~~~~~~~~~~
+
+   o USB device settings have been changed.
+     IMPORTANT: please install MIOS32 Bootloader V1.009 before uploading
+     the application! Otherwise code upload via USB won't work anymore!
+     (Backup: upload via MIDI IN1/OUT1)
+
+   o 4 USB ports are enabled now.
+     Note: if your operating system still displays only a single MIDI port for USB,
+     then unplug the USB cable and remove the USB MIDI driver in your system setup,
+     so that the driver be installed again once the core module has been re-connected.
+     E.g. under MacOS this can be done with the Audio-MIDI Setup application
+     (search for "Audio" in Spotlight)
+
+   o 4 MIDI IN/OUT ports are enabled now.
+     Pin mapping for LPC17 (see also http://www.ucapps.de/mbhp/mbhp_core_lpc17_midi3_midi4_extension.pdf):
+     - MIDI OUT3 is available at J5B.A7
+     - MIDI IN3 is available at J5B.A6
+     - MIDI OUT4 is available at J4B.SD
+     - MIDI IN4 is available at J4B.SC
+
+     since MIDI IN3/OUT3 allocate analog input pins, AIN Pin #6 and #7 is
+     not available anymore!
+
+   o support for MIOS Filebrowser, which will be part of MIOS Studio 2.4
+
+   o fixed FFwd/FRwd function
+
+   o song not set back to 1.1 if song position was changed while 
+     sequencer was paused
+
+
 MIDIO128 V3.011pre3
 ~~~~~~~~~~~~~~~~~~~
 

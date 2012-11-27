@@ -440,7 +440,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  if( (ain=get_dec(word)) < 0 || ain >= MIDIO_PATCH_NUM_AIN  ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid AIN pin for parameter '%s'\n", parameter);
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid AIN pin #%d for parameter '%s'\n", ain, parameter);
 #endif
 	  } else {
 	    s32 enabled_ports = 0;
