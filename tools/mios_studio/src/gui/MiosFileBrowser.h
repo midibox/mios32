@@ -17,6 +17,7 @@
 
 #include "../includes.h"
 #include "../SysexHelper.h"
+#include "HexTextEditor.h"
 
 class MiosStudio; // forward declaration
 class MiosFileBrowserItem;
@@ -29,7 +30,7 @@ class MiosFileBrowserFileItem;
 class MiosFileBrowser
     : public Component
     , public ButtonListener
-    , public FilenameComponentListener
+    , public TextEditorListener
     , public Timer
 {
 public:
@@ -43,7 +44,12 @@ public:
 
     //==============================================================================
     void buttonClicked (Button* buttonThatWasClicked);
-    void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
+
+    //==============================================================================
+    void textEditorTextChanged(TextEditor &editor);
+    void textEditorReturnKeyPressed(TextEditor &editor);
+    void textEditorEscapeKeyPressed(TextEditor &editor);
+    void textEditorFocusLost(TextEditor &editor);
 
     //==============================================================================
     String getSelectedPath(void);
@@ -52,6 +58,7 @@ public:
     void disableFileButtons(void);
     void enableFileButtons(void);
     void enableDirButtons(void);
+    void enableEditorButtons(void);
 
     //==============================================================================
     void requestUpdateTreeView(void);
@@ -61,8 +68,21 @@ public:
     void treeItemDoubleClicked(MiosFileBrowserItem* item);
 
     //==============================================================================
-    bool storeDownloadedFile(void);
+    bool downloadFileSelection(unsigned selection);
+    bool downloadFinished(void);
+
+    //==============================================================================
+    bool deleteFileSelection(unsigned selection);
+    bool deleteFinished(void);
+
+    //==============================================================================
+    bool createDir(void);
+    bool createDirFinished(void);
+
+    //==============================================================================
     bool uploadFile(void);
+    bool uploadBuffer(String filename, const Array<uint8>& buffer);
+    bool uploadFinished(void);
 
     //==============================================================================
     void timerCallback();
@@ -79,6 +99,7 @@ protected:
     ResizableCornerComponent *resizer;
     ComponentBoundsConstrainer resizeLimits;
 
+    Label*  editLabel;
     Label*  statusLabel;
     Button* updateButton;
     Button* uploadButton;
@@ -87,6 +108,9 @@ protected:
     Button* editHexButton;
     Button* createDirButton;
     Button* removeButton;
+
+    Button* cancelButton;
+    Button* saveButton;
 
     TreeView* treeView;
     TreeViewItem* rootItem;
@@ -98,16 +122,22 @@ protected:
     Array<MiosFileBrowserFileItem*> currentDirFetchItems;
     XmlElement*  currentDirOpenStates;
 
+    unsigned     transferSelectionCtr;
+    bool         openTextEditorAfterRead;
+    bool         openHexEditorAfterRead;
+
     bool         currentReadInProgress;
     bool         currentReadError;
-    String       currentReadFile;
+    File         currentReadFile;
+    FileOutputStream *currentReadFileStream;
+    String       currentReadFileName;
     unsigned     currentReadSize;
     Array<uint8> currentReadData;
     uint32       currentReadStartTime;
 
     bool         currentWriteInProgress;
     bool         currentWriteError;
-    String       currentWriteFile;
+    String       currentWriteFileName;
     unsigned     currentWriteSize;
     Array<uint8> currentWriteData;
     unsigned     currentWriteFirstBlockOffset;
@@ -116,6 +146,9 @@ protected:
 
     unsigned     writeBlockCtrDefault;
     unsigned     writeBlockSizeDefault;
+
+    HexTextEditor* hexEditor;
+    TextEditor*    textEditor;
 
     //==============================================================================
     MiosStudio *miosStudio;
