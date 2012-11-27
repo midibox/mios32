@@ -329,7 +329,7 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   if( MID_FILE_RecordingEnabled() )
     return 0; // nothing to do
 
-  u16 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
+  u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
 
   portENTER_CRITICAL();
 
@@ -348,6 +348,7 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   MID_PARSER_RestartSong();
 
   // release pause
+  u8 pause = SEQ_PauseEnabled();
   SEQ_SetPauseMode(0);
 
   if( new_song_pos > 1 ) {
@@ -360,6 +361,9 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   // when do we expect the next prefetch:
   next_prefetch = new_tick;
   prefetch_offset = new_tick;
+
+  // restore pause mode
+  SEQ_SetPauseMode(pause);
 
   portEXIT_CRITICAL();
 

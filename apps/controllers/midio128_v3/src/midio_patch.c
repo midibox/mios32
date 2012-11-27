@@ -360,8 +360,12 @@ midio_patch_ain_entry_t midio_patch_ain[MIDIO_PATCH_NUM_AIN] = {
   {  0x0000, 0xb3, 0x07 }, // 3
   {  0x0000, 0xb4, 0x07 }, // 4
   {  0x0000, 0xb5, 0x07 }, // 5
+#if MIDIO_PATCH_NUM_AIN >= 7
   {  0x0000, 0xb6, 0x07 }, // 6
+#endif
+#if MIDIO_PATCH_NUM_AIN >= 8
   {  0x0000, 0xb7, 0x07 }, // 7
+#endif
 };
 
 midio_patch_ain_entry_t midio_patch_ainser[MIDIO_PATCH_NUM_AINSER] = {

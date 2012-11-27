@@ -17,8 +17,18 @@
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIO128"
 
-// only enable a single USB port by default to avoid USB issue under Win7 64bit
-#define MIOS32_USB_MIDI_NUM_PORTS 1
+// enable 4 USB ports
+#define MIOS32_USB_MIDI_NUM_PORTS 4
+
+
+// enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
+#if defined(MIOS32_FAMILY_STM32F10x)
+// enable third UART
+# define MIOS32_UART_NUM 3
+#else
+// enable third and fourth UART
+# define MIOS32_UART_NUM 4
+#endif
 
 
 // AIN configuration:
@@ -37,7 +47,7 @@
 //   mask 0x0f00 will enable all J5C channels
 //   mask 0x0fff will enable all J5A/B/C channels
 // (all channels are disabled by default)
-#define MIOS32_AIN_CHANNEL_MASK 0x00ff
+#define MIOS32_AIN_CHANNEL_MASK 0x003f
 
 // define the deadband (min. difference to report a change to the application hook)
 // typically set to (2^(12-desired_resolution)-1)
