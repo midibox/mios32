@@ -760,7 +760,12 @@ const scs_menu_item_t pageDOUT[] = {
 #endif
   SCS_ITEM(" IN1 ", 4, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM(" IN2 ", 5, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
   SCS_ITEM(" IN3 ", 6, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM(" IN4 ", 7, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OSC1 ",12, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
@@ -791,7 +796,7 @@ const scs_menu_item_t pageM8x8[] = {
   SCS_ITEM("OUT3 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
 #endif
 #if MIOS32_UART_NUM >= 4
-  SCS_ITEM("OUT4 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
+  SCS_ITEM("OUT4 ", 7, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
 #endif
   SCS_ITEM("OSC1 ",12, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
@@ -815,7 +820,12 @@ const scs_menu_item_t pageAIN[] = {
 #endif
   SCS_ITEM("OUT1 ", 4, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT2 ", 5, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
   SCS_ITEM("OUT3 ", 6, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM("OUT4 ", 7, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OSC1 ",12, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
@@ -839,7 +849,12 @@ const scs_menu_item_t pageAINSER[] = {
 #endif
   SCS_ITEM("OUT1 ", 4, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OUT2 ", 5, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#if MIOS32_UART_NUM >= 3
   SCS_ITEM("OUT3 ", 6, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#endif
+#if MIOS32_UART_NUM >= 4
+  SCS_ITEM("OUT4 ", 7, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
+#endif
   SCS_ITEM("OSC1 ",12, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC2 ",13, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
   SCS_ITEM("OSC3 ",14, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),

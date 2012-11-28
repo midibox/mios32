@@ -1,5 +1,13 @@
 $Id$
 
+MIDIO128 V3.011pre5
+~~~~~~~~~~~~~~~~~~~
+
+   o Number of USB devices temporary set to 1 again
+
+   o OUT4 can now be selected in all config pages
+
+
 MIDIO128 V3.011pre4
 ~~~~~~~~~~~~~~~~~~~
 

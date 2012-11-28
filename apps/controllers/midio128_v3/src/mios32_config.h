@@ -11,14 +11,16 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.011pre4"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.011pre5"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIO128"
 
 // enable 4 USB ports
-#define MIOS32_USB_MIDI_NUM_PORTS 4
+//#define MIOS32_USB_MIDI_NUM_PORTS 4
+// TK: tmp. 1 port again
+#define MIOS32_USB_MIDI_NUM_PORTS 1
 
 
 // enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
