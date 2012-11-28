@@ -86,14 +86,16 @@ void HexTextEditor::textEditorTextChanged(TextEditor &editor)
     if( charCounter > 0 )
         ++numBytes;
 
-    if( invalidBytesFound )
-        statusLabel->setText(T("Invalid Syntax!"), true);
-    else if( numBytes == 0 )
-        statusLabel->setText(String::empty, true);
-    else if( numBytes == 1 )
-        statusLabel->setText(T("1 byte"), true);
-    else
-        statusLabel->setText(String(numBytes) + T(" bytes"), true);
+    if( isEnabled() && isVisible() ) {
+        if( invalidBytesFound )
+            statusLabel->setText(T("Invalid Syntax!"), true);
+        else if( numBytes == 0 )
+            statusLabel->setText(String::empty, true);
+        else if( numBytes == 1 )
+            statusLabel->setText(T("1 byte"), true);
+        else
+            statusLabel->setText(String(numBytes) + T(" bytes"), true);
+    }
 }
 
 void HexTextEditor::textEditorReturnKeyPressed(TextEditor &editor)
