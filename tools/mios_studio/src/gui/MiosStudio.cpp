@@ -498,6 +498,28 @@ bool MiosStudio::perform(const InvocationInfo& info)
 {
     switch( info.commandID ) {
     case rescanDevices:
+
+        // TK: doesn't always work, therefore some warnings ;-)
+        if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
+                                         T("Rescan MIDI Devices"),
+                                         T("Please note that the rescan function\nmostly doesn't work properly!\nIt's better to restart MIOS Studio!\n"),
+                                         T("I've no idea what this means"),
+                                         T("Understood")) ) {
+            if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
+                                             T("Rescan MIDI Devices"),
+                                             T("This means that it's better to quit MIOS Studio now, and open it again!\n"),
+                                             T("I've still no idea what this means"),
+                                             T("Understood")) ) {
+                AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
+                                             T("Rescan MIDI Devices"),
+                                             T("Switched to Newbie Mode:\n"),
+                                             T("Quit"),
+                                             T("Quit"));
+                // ;-)
+                JUCEApplication::quit();
+            }
+        }
+        
         closeMidiPorts();
         initialMidiScanCounter = 1;
         break;

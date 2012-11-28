@@ -61,6 +61,12 @@ public:
     void enableEditorButtons(void);
 
     //==============================================================================
+    String convertToString(const Array<uint8>& data, bool& hasBinaryData);
+    bool updateEditors(const Array<uint8>& data);
+    void openTextEditor(const Array<uint8>& data);
+    void openHexEditor(const Array<uint8>& data);
+
+    //==============================================================================
     void requestUpdateTreeView(void);
     void updateTreeView(bool accessPossible);
 
@@ -78,6 +84,9 @@ public:
     //==============================================================================
     bool createDir(void);
     bool createDirFinished(void);
+
+    //==============================================================================
+    bool createFile(void);
 
     //==============================================================================
     bool uploadFile(void);
@@ -107,6 +116,7 @@ protected:
     Button* editTextButton;
     Button* editHexButton;
     Button* createDirButton;
+    Button* createFileButton;
     Button* removeButton;
 
     Button* cancelButton;
@@ -128,6 +138,7 @@ protected:
 
     bool         currentReadInProgress;
     bool         currentReadError;
+    TreeViewItem* currentReadFileBrowserItem;
     File         currentReadFile;
     FileOutputStream *currentReadFileStream;
     String       currentReadFileName;
