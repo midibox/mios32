@@ -123,13 +123,15 @@ public:
 
     void itemClicked (const MouseEvent& e)
     {
-        browser->treeItemClicked(this);
+        if( getOwnerView()->isEnabled() )
+            browser->treeItemClicked(this);
     }
 
     void itemDoubleClicked (const MouseEvent& e)
     {
         TreeViewItem::itemDoubleClicked(e);
-        browser->treeItemDoubleClicked(this);
+        if( getOwnerView()->isEnabled() )
+            browser->treeItemDoubleClicked(this);
     }
 
     const String getDragSourceDescription()
@@ -152,6 +154,7 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
     , openTextEditorAfterRead(false)
     , openHexEditorAfterRead(false)
     , currentReadInProgress(false)
+    , currentReadFileBrowserItem(NULL)
     , currentReadFileStream(NULL)
     , currentReadError(false)
     , currentWriteInProgress(false)
@@ -184,6 +187,9 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
 
     addAndMakeVisible(createDirButton = new TextButton(T("Create Dir")));
     createDirButton->addListener(this);
+
+    addAndMakeVisible(createFileButton = new TextButton(T("Create File")));
+    createFileButton->addListener(this);
 
     addAndMakeVisible(removeButton = new TextButton(T("Remove Button")));
     removeButton->setButtonText(T("Remove"));
@@ -252,26 +258,27 @@ void MiosFileBrowser::resized()
 {
     int sendButtonY = 16;
     int sendButtonWidth = 72;
+ 
+    updateButton->setBounds    (10 , sendButtonY + 0*32 + 0*16, sendButtonWidth, 24);
+    downloadButton->setBounds  (10 , sendButtonY + 1*32 + 1*16, sendButtonWidth, 24);
+    uploadButton->setBounds    (10 , sendButtonY + 2*32 + 1*16, sendButtonWidth, 24);
+    createDirButton->setBounds (10 , sendButtonY + 3*32 + 3*16, sendButtonWidth, 24);
+    createFileButton->setBounds(10 , sendButtonY + 4*32 + 3*16, sendButtonWidth, 24);
+    removeButton->setBounds    (10 , sendButtonY + 5*32 + 4*16, sendButtonWidth, 24);
 
-    updateButton->setBounds   (10 , sendButtonY + 0*32 + 0*16, sendButtonWidth, 24);
-    downloadButton->setBounds (10 , sendButtonY + 1*32 + 1*16, sendButtonWidth, 24);
-    uploadButton->setBounds   (10 , sendButtonY + 2*32 + 1*16, sendButtonWidth, 24);
-    createDirButton->setBounds(10 , sendButtonY + 5*32 + 3*16, sendButtonWidth, 24);
-    removeButton->setBounds   (10 , sendButtonY + 6*32 + 4*16, sendButtonWidth, 24);
+    treeView->setBounds        (10 + 80, 16, 210, getHeight()-32-24);
 
-    treeView->setBounds(10 + 80, 16, 210, getHeight()-32-24);
+    hexEditor->setBounds       (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
+    textEditor->setBounds      (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
 
-    hexEditor->setBounds      (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
-    textEditor->setBounds     (10+80+220, 48, getWidth()-10-80-220-10, getHeight()-32-32-24);
-
-    editTextButton->setBounds (10+80+220 + 0*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
-    editHexButton->setBounds  (10+80+220 + 1*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
-    cancelButton->setBounds   (getWidth()-10-sendButtonWidth, sendButtonY, sendButtonWidth, 24);
-    saveButton->setBounds     (getWidth()-10-2*sendButtonWidth-10, sendButtonY, sendButtonWidth, 24);
+    editTextButton->setBounds  (10+80+220 + 0*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    editHexButton->setBounds   (10+80+220 + 1*(sendButtonWidth+10), sendButtonY, sendButtonWidth, 24);
+    cancelButton->setBounds    (getWidth()-10-sendButtonWidth, sendButtonY, sendButtonWidth, 24);
+    saveButton->setBounds      (getWidth()-10-2*sendButtonWidth-10, sendButtonY, sendButtonWidth, 24);
 
     unsigned editLabelLeft  = editHexButton->getX()+editHexButton->getWidth() + 10;
     unsigned editLabelRight = saveButton->getX() - 10;
-    editLabel->setBounds      (editLabelLeft, sendButtonY, editLabelRight-editLabelLeft, 24);
+    editLabel->setBounds       (editLabelLeft, sendButtonY, editLabelRight-editLabelLeft, 24);
 
     statusLabel->setBounds(10, getHeight()-24, getWidth()-20, 24);
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
@@ -294,26 +301,25 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 
         // extra: if data is edited, switch between hex/text view
         if( saveButton->isEnabled() ) {
+            // ensure that no tree item is selected to avoid confusion (selection is possible even if treeView is disabled!)
+            if( currentReadFileBrowserItem ) {
+                currentReadFileBrowserItem->setSelected(true, true);
+                treeView->scrollToKeepItemVisible(currentReadFileBrowserItem);
+            }
+
             if( buttonThatWasClicked == editTextButton && hexEditor->isVisible() ) {
-                Array<uint8> tmpHex = hexEditor->getBinary();
-                String tmpStr((char *)&tmpHex.getReference(0), tmpHex.size());
-                hexEditor->clear();
-                hexEditor->setReadOnly(true);
-                hexEditor->setVisible(false);
-                textEditor->setVisible(true);
-                textEditor->setReadOnly(false);
-                textEditor->clear();
-                textEditor->setText(tmpStr, true);
+                openTextEditor(hexEditor->getBinary());
                 statusLabel->setText(T("Editing ") + currentReadFileName + T(" in text mode."), true);
             } else if( buttonThatWasClicked == editHexButton && textEditor->isVisible() ) {
-                String tmpStr(textEditor->getText());
-                textEditor->clear();
-                textEditor->setReadOnly(true);
-                textEditor->setVisible(false);
-                hexEditor->setVisible(true);
-                hexEditor->setReadOnly(false);
-                hexEditor->clear();
-                hexEditor->addBinary((uint8 *)tmpStr.toUTF8(), tmpStr.length());
+                if( textEditor->isVisible() && !textEditor->isReadOnly() ) {
+                    // visible & read only mode means, that binary data is edited -> transfer to Hex Editor only in this case!
+                    String tmpStr(textEditor->getText());
+                    Array<uint8> data((uint8 *)tmpStr.toCString(), tmpStr.length());
+                    openHexEditor(data);
+                } else {
+                    // otherwise re-use data in hex editor
+                    openHexEditor(hexEditor->getBinary());
+                }
                 statusLabel->setText(T("Editing ") + currentReadFileName + T(" in hex mode."), true);
             }
         } else {
@@ -328,6 +334,8 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
         uploadFile();
     } else if( buttonThatWasClicked == createDirButton ) {
         createDir();
+    } else if( buttonThatWasClicked == createFileButton ) {
+        createFile();
     } else if( buttonThatWasClicked == removeButton ) {
         if( treeView->getNumSelectedItems() ) {
             transferSelectionCtr = 0;
@@ -353,7 +361,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
             } else if( textEditor->isVisible() ) {
                 // write back the read file
                 String txt(textEditor->getText());
-                Array<uint8> tmp((uint8 *)txt.toUTF8(), txt.length());
+                Array<uint8> tmp((uint8 *)txt.toCString(), txt.length());
                 uploadBuffer(currentReadFileName, tmp);
             }
         }
@@ -414,6 +422,7 @@ void MiosFileBrowser::disableFileButtons(void)
     uploadButton->setEnabled(false);
     downloadButton->setEnabled(false);
     createDirButton->setEnabled(false);
+    createFileButton->setEnabled(false);
     removeButton->setEnabled(false);
 
     // important: don't disable save/cancel button as long as an open editor has content
@@ -437,6 +446,7 @@ void MiosFileBrowser::enableFileButtons(void)
     editTextButton->setEnabled(true);
     editHexButton->setEnabled(true);
     createDirButton->setEnabled(true);
+    createFileButton->setEnabled(true);
     removeButton->setEnabled(true);
 }
 
@@ -445,12 +455,14 @@ void MiosFileBrowser::enableDirButtons(void)
     updateButton->setEnabled(true);
     uploadButton->setEnabled(true);
     createDirButton->setEnabled(true);
+    createFileButton->setEnabled(true); // no error: we want to create a file in the selected directory
     removeButton->setEnabled(true);
 }
 
 void MiosFileBrowser::enableEditorButtons(void)
 {
     treeView->setEnabled(false);
+
     updateButton->setEnabled(false);
     editTextButton->setEnabled(true);
     editHexButton->setEnabled(true);
@@ -458,6 +470,82 @@ void MiosFileBrowser::enableEditorButtons(void)
     saveButton->setEnabled(true);
 }
 
+//==============================================================================
+String MiosFileBrowser::convertToString(const Array<uint8>& data, bool& hasBinaryData)
+{
+    String str;
+    hasBinaryData = false;
+    
+    uint8 *ptr = (uint8 *)&data.getReference(0);
+    for(int i=0; i<data.size(); ++i, ++ptr) {
+        if( *ptr == 0 ) {
+            hasBinaryData = true; // full conversion to string not possible
+            str += T("\\0"); // show \0 instead
+        } else {
+            str += (char)*ptr;
+        }
+    }
+
+    return str;
+}
+
+bool MiosFileBrowser::updateEditors(const Array<uint8>& data)
+{
+    // transfer data into both editors, make them read-only and invisible
+    hexEditor->setReadOnly(false);
+    hexEditor->clear();
+    hexEditor->addBinary((uint8 *)&data.getReference(0), data.size());
+    hexEditor->setReadOnly(true);
+    hexEditor->setVisible(false);
+
+    bool hasBinaryData = false;
+    String tmpStr(convertToString(data, hasBinaryData));
+    textEditor->setReadOnly(false);
+    textEditor->clear();
+    textEditor->setText(tmpStr, true);
+    textEditor->setReadOnly(true);
+    textEditor->setVisible(false);
+
+    // ensure that no tree item is selected to avoid confusion (selection is possible even if treeView is disabled!)
+    if( currentReadFileBrowserItem ) {
+        currentReadFileBrowserItem->setSelected(true, true);
+        treeView->scrollToKeepItemVisible(currentReadFileBrowserItem);
+    }
+
+    return hasBinaryData;
+}
+
+void MiosFileBrowser::openTextEditor(const Array<uint8>& data)
+{
+    // transfer data to both editors
+    bool hasBinaryData = updateEditors(data);
+
+    disableFileButtons();
+    enableEditorButtons();
+
+    // make text editor visible and enable read access if no binary data
+    textEditor->setVisible(true);
+    if( !hasBinaryData ) {
+        textEditor->setReadOnly(false);
+    } else {
+        AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                    T("Found binary data!"),
+                                    T("This file contains binary data, therefore it\nisn't possible modify it with the text editor!\nPlease use the hex editor instead!"),
+                                    T("Ok"));
+    }
+}
+
+void MiosFileBrowser::openHexEditor(const Array<uint8>& data)
+{
+    // transfer data to both editors
+    updateEditors(data);
+
+    disableFileButtons();
+    enableEditorButtons();
+
+    hexEditor->setVisible(true);
+    hexEditor->setReadOnly(false);
+}
 
 //==============================================================================
 void MiosFileBrowser::requestUpdateTreeView(void)
@@ -498,6 +586,7 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
 
             uploadButton->setEnabled(true);
             createDirButton->setEnabled(true);
+            createFileButton->setEnabled(true);
         }
     }
 }
@@ -522,6 +611,7 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
 {
     treeView->setEnabled(false);
     TreeViewItem* selectedItem = treeView->getSelectedItem(selection);
+    currentReadFileBrowserItem = selectedItem;
 
     if( selectedItem ) {
         currentReadFileName = selectedItem->getUniqueName();
@@ -579,28 +669,11 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
 bool MiosFileBrowser::downloadFinished(void)
 {
     if( openHexEditorAfterRead ) {
-        disableFileButtons();
-        enableEditorButtons();
-
-        hexEditor->setVisible(true);
-        textEditor->setVisible(false);
-
-        hexEditor->setReadOnly(false);
-        hexEditor->clear();
-        hexEditor->addBinary((uint8 *)&currentReadData.getReference(0), currentReadData.size());
+        openHexEditor(currentReadData);
         statusLabel->setText(T("Editing ") + currentReadFileName, true);
         editLabel->setText(currentReadFileName, true);
     } else if( openTextEditorAfterRead ) {
-        disableFileButtons();
-        enableEditorButtons();
-
-        textEditor->setVisible(true);
-        hexEditor->setVisible(false);
-
-        textEditor->setReadOnly(false);
-        textEditor->clear();
-        String tmpStr((char *)&currentReadData.getReference(0), currentReadData.size());
-        textEditor->setText(tmpStr, true);
+        openTextEditor(currentReadData);
         statusLabel->setText(T("Editing ") + currentReadFileName, true);
         editLabel->setText(currentReadFileName, true);
     } else if( currentReadFileStream ) {
@@ -663,9 +736,11 @@ bool MiosFileBrowser::createDir(void)
 
     if( enterName.runModalLoop() ) {
         String name(enterName.getTextEditorContents(T("Name")));
-        std::cout << ">>>" << name << std::endl;
         if( name.length() ) {
-            sendCommand(T("mkdir ") + getSelectedPath() + name);
+            if( name[0] == '/' )
+                sendCommand(T("mkdir ") + name);
+            else
+                sendCommand(T("mkdir ") + getSelectedPath() + name);
         }        
     }
 
@@ -679,6 +754,31 @@ bool MiosFileBrowser::createDirFinished(void)
     requestUpdateTreeView();
 
     return true;
+}
+
+//==============================================================================
+bool MiosFileBrowser::createFile(void)
+{
+    AlertWindow enterName(T("Creating new File"),
+                          T("Please enter filename:"),
+                          AlertWindow::QuestionIcon);
+
+    enterName.addButton(T("Create"), 1);
+    enterName.addButton(T("Cancel"), 0);
+    enterName.addTextEditor(T("Name"), String::empty);
+
+    if( enterName.runModalLoop() ) {
+        String name(enterName.getTextEditorContents(T("Name")));
+        if( name.length() ) {
+            Array<uint8> emptyBuffer;
+            if( name[0] == '/' )
+                return uploadBuffer(name, emptyBuffer);
+            else
+                return uploadBuffer(getSelectedPath() + name, emptyBuffer);
+        }        
+    }
+
+    return false;
 }
 
 //==============================================================================
@@ -708,10 +808,10 @@ bool MiosFileBrowser::uploadFile(void)
                                         T("The file ") + inFile.getFileName(),
                                         T("doesn't exist!"),
                                         String::empty);
-        } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        } else if( inFileStream->isExhausted() ) { // || !inFileStream->getTotalLength() -> disabled, we also want to handle zero-length files
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
-                                        T("is empty!"),
+                                        T("can't be read!"),
                                         String::empty);
         } else {
             disableFileButtons();
@@ -885,6 +985,13 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     startTimer(3000);
                 } else {
                     statusMessage = String(currentReadFileName + T(" is empty!"));
+                    // ok, we accept this to edit zero-length files
+                    // fake transfer:
+                    currentReadInProgress = false;
+                    currentReadData.clear();
+                    statusLabel->setText(statusMessage, true);
+                    downloadFinished();
+                    statusMessage = String::empty; // status has been updated by downloadFinished()
                 }
             }
         } break;
