@@ -14,11 +14,12 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.067"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.068"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T. Klose"
 
 // USB settings
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
+#define MIOS32_USB_PRODUCT_ID     1022
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
 // port used for debugging via MIDI
