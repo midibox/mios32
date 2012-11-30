@@ -6,6 +6,18 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.068
+~~~~~~~~~~~~~~~~~
+
+   o support for GM5 driver under Windows.
+     MacOS and Linux users: just install this update, no additional changes required.
+     Windows users:
+     - upload the application with MIOS Studio
+     - close MIOS Studio
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mbhp_usb_gm5.html
+     - start MIOS Studio -> 4 "GM5" USB ports should be visible
+
+
 MIDIboxSEQ V4.067
 ~~~~~~~~~~~~~~~~~
 
