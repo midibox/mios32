@@ -10,7 +10,7 @@ MEMORY
 {
   RAM (xrw) :     ORIGIN = 0x10000000, LENGTH = 32K
   RAMAHB (xrw) :  ORIGIN = 0x2007c000, LENGTH = 32K
-  FLASH (rx) :    ORIGIN = 0x00000000, LENGTH = 16K
+  FLASH (rx) :    ORIGIN = 0x00000000, LENGTH = 0x3f00
 }
 
 /* higher address of the user mode stack */
