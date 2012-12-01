@@ -50,7 +50,6 @@
 #define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
 #define MIOS32_USB_VENDOR_STR   "ander.fm" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "Knoepfli"      // you will see this in the MIDI device list
-#define MIOS32_USB_PRODUCT_ID   0x03ff        // ==1023; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
 #define MIOS32_USB_VERSION_ID   0x0100        // v1.00
 
 // The boot message which is print during startup and returned on a SysEx query
