@@ -33,6 +33,8 @@
 // maximum number of supported contacts
 #define KEYBOARD_NUM_PINS (KEYBOARD_NUM*8*16)
 
+// for FantomXR's Yamaha keyboard - currently only a hardcoded option
+#define FANTOM_XR_VARIANT 0
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -309,9 +311,8 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
   char note_str[4];
 
-#if 0
   // Display status of all rows
-  {
+  if( kc->verbose_level >= 2 ) {
     DEBUG_MSG("---\n");
     int i;    
     for(i=0; i<MATRIX_NUM_ROWS; ++i) {
@@ -337,11 +338,25 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 		(v & 0x8000) ? '1' : '0'
 		);
     }
-
-
   }
-#endif
 
+#if FANTOM_XR_VARIANT
+  // determine key number based on row/column
+  int key = row*8 + (column % 8);
+
+  // ensure valid range
+  if( key > 127 )
+    key = 127;
+
+  // determine note number (here we could insert an octave shift)
+  int note_number = key + kc->note_offset;
+
+  u8 break_contact = column < 8;
+  int pin_break = row*MATRIX_NUM_ROWS + ((column % 8) + 0);
+  int pin_make  = row*MATRIX_NUM_ROWS + ((column % 8) + 8);
+
+  //DEBUG_MSG("key:%d %c note:%d break:%d pin_make:%d pin_break:%d\n", key, depressed ? 'o' : '*', note_number, break_contact, pin_make, pin_break);
+#else
   // determine key number based on row/column
   int key;
   if( kc->scan_velocity ) {
@@ -370,7 +385,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
     pin_make  = (row)*MATRIX_NUM_ROWS + column;
     pin_break = pin_make; // just use the same pin...
   }
-
+#endif
 
   // break pin inverted?
   if( break_contact && kc->scan_velocity && kc->break_inverted )
@@ -403,6 +418,15 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
     // and they release the Note On/Off debouncing mechanism
     if( break_contact ) {
       if( depressed ) {
+#if FANTOM_XR_VARIANT
+	// for this variant we have to play Note Off when Break is released, because make is bouncing
+	*note_off_sent |= key_mask;
+
+	if( kc->verbose_level >= 2 )
+	  DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
+
+	KEYBOARD_MIDI_SendNote(kb, note_number, 0x00);
+#endif
 	*note_on_sent &= ~key_mask;
 	*note_off_sent &= ~key_mask;
       }
@@ -415,12 +439,15 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   // branch depending on pressed or released key
   if( depressed ) {
     if( !kc->scan_velocity || !(*note_off_sent & key_mask) ) {
+#if !FANTOM_XR_VARIANT
+      // (in FANTOM_XR variant the note off is played with depressed break)
       *note_off_sent |= key_mask;
 
       if( kc->verbose_level >= 2 )
 	DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 
       KEYBOARD_MIDI_SendNote(kb, note_number, 0x00);
+#endif      
     }
 
   } else {
