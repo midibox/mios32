@@ -19,7 +19,6 @@
 
 // USB settings
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
-#define MIOS32_USB_PRODUCT_ID     1022
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
 // port used for debugging via MIDI

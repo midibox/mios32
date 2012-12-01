@@ -1183,6 +1183,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
 	    }
 
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
 	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 	      if( sysex_callback_func != NULL ) {
 		filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
@@ -1195,7 +1196,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      if( callback_package != NULL && !filter_sysex )
 		callback_package(port, package);
 	    }
-
+#endif
 	    break;
 
 	  case 0x5:   // Single-byte System Common Message or SysEx ends with following single byte. 
@@ -1215,41 +1216,49 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      current_byte = package.evnt0;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
 	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
+#endif
 	    }
 
 	    if( num_bytes >= 2 ) {
 	      current_byte = package.evnt1;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
 	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
+#endif
 	    }
 
 	    if( num_bytes >= 3 ) {
 	      current_byte = package.evnt2;
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
 	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
+#endif
 	    }
 
 	    // reset timeout protection if required
 	    if( current_byte == 0xf7 )
 	      sysex_timeout_ctr_flags.ALL = 0;
 
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
 	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 	      // forward as package if not filtered
 	      if( callback_package != NULL && !filter_sysex )
 		callback_package(port, package);
-	    }	    
+	    }	  
+#endif  
 	  } break;
 	}	  
       }
@@ -1867,28 +1876,37 @@ static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ac
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 {
-  u8 sysex_buffer[128]; // should be enough?
-  u8 *sysex_buffer_ptr = &sysex_buffer[0];
-  int i;
+  s32 status = 0;
+  mios32_midi_package_t package;
 
-  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
-    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[0];
+  package.evnt1 = mios32_midi_sysex_header[1];
+  package.evnt2 = mios32_midi_sysex_header[2];
+  status |= MIOS32_MIDI_SendPackage(port, package);
 
-  // device ID
-  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = mios32_midi_sysex_header[3];
+  package.evnt1 = mios32_midi_sysex_header[4];
+  package.evnt2 = MIOS32_MIDI_DeviceIDGet();
+  status |= MIOS32_MIDI_SendPackage(port, package);
 
-  // send ack code
-  *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_ACK;
+  package.type = 0x4; // SysEx starts or continues
+  package.evnt0 = MIOS32_MIDI_SYSEX_ACK;
+  package.evnt1 = str[0]; // first char or string terminator 0
+  package.evnt2 = str[1]; // second char, string terminator 0 or irrelevant char
+  status |= MIOS32_MIDI_SendPackage(port, package);
 
-  // send string
-  for(i=0; i<100 && (str[i] != 0); ++i)
-    *sysex_buffer_ptr++ = str[i];
+  // more chars?
+  u32 len = strlen(str);
+  if( len >= 2 ) {
+    status |= MIOS32_MIDI_SendDebugStringBody(port, (char *)&str[2], len-2);
+  }
 
-  // send footer
-  *sysex_buffer_ptr++ = 0xf7;
+  // footer
+  status |= MIOS32_MIDI_SendDebugStringFooter(port);
 
-  // finally send SysEx stream
-  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
+  return status;
 }
 
 
