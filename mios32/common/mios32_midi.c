@@ -1757,6 +1757,11 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in)
 {
+#ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
+  // send disacknowledge
+  if( cmd_state == MIOS32_MIDI_SYSEX_CMD_STATE_END )
+    MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_UNSUPPORTED_DEBUG);
+#else
   static u8 debug_req = 0xff;
 
   switch( cmd_state ) {
@@ -1813,6 +1818,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Debug(mios32_midi_port_t port, mios32_midi_syse
   }
 
   return 0; // no error
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1876,37 +1882,28 @@ static s32 MIOS32_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ac
 /////////////////////////////////////////////////////////////////////////////
 static s32 MIOS32_MIDI_SYSEX_SendAckStr(mios32_midi_port_t port, char *str)
 {
-  s32 status = 0;
-  mios32_midi_package_t package;
+  u8 sysex_buffer[128]; // should be enough?
+  u8 *sysex_buffer_ptr = &sysex_buffer[0];
+  int i;
 
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = mios32_midi_sysex_header[0];
-  package.evnt1 = mios32_midi_sysex_header[1];
-  package.evnt2 = mios32_midi_sysex_header[2];
-  status |= MIOS32_MIDI_SendPackage(port, package);
+  for(i=0; i<sizeof(mios32_midi_sysex_header); ++i)
+    *sysex_buffer_ptr++ = mios32_midi_sysex_header[i];
 
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = mios32_midi_sysex_header[3];
-  package.evnt1 = mios32_midi_sysex_header[4];
-  package.evnt2 = MIOS32_MIDI_DeviceIDGet();
-  status |= MIOS32_MIDI_SendPackage(port, package);
+  // device ID
+  *sysex_buffer_ptr++ = MIOS32_MIDI_DeviceIDGet();
 
-  package.type = 0x4; // SysEx starts or continues
-  package.evnt0 = MIOS32_MIDI_SYSEX_ACK;
-  package.evnt1 = str[0]; // first char or string terminator 0
-  package.evnt2 = str[1]; // second char, string terminator 0 or irrelevant char
-  status |= MIOS32_MIDI_SendPackage(port, package);
+  // send ack code
+  *sysex_buffer_ptr++ = MIOS32_MIDI_SYSEX_ACK;
 
-  // more chars?
-  u32 len = strlen(str);
-  if( len >= 2 ) {
-    status |= MIOS32_MIDI_SendDebugStringBody(port, (char *)&str[2], len-2);
-  }
+  // send string
+  for(i=0; i<100 && (str[i] != 0); ++i)
+    *sysex_buffer_ptr++ = str[i];
 
-  // footer
-  status |= MIOS32_MIDI_SendDebugStringFooter(port);
+  // send footer
+  *sysex_buffer_ptr++ = 0xf7;
 
-  return status;
+  // finally send SysEx stream
+  return MIOS32_MIDI_SendSysEx(port, (u8 *)sysex_buffer, (u32)sysex_buffer_ptr - ((u32)&sysex_buffer[0]));
 }
 
 
@@ -2011,7 +2008,7 @@ static s32 MIOS32_MIDI_TimeOut(mios32_midi_port_t port)
   if( timeout_callback_func != NULL )
     timeout_callback_func(port);
 
-#if 1
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
   // this debug message should always be active, so that common users are informed about the exception
   MIOS32_MIDI_SendDebugMessage("[MIOS32_MIDI_Receive_Handler] Timeout on port 0x%02x\n", port);
 #endif
