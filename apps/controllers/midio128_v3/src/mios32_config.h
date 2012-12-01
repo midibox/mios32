@@ -18,7 +18,6 @@
 #define MIOS32_USB_PRODUCT_STR  "MIDIO128"
 
 // enable 4 USB ports
-#define MIOS32_USB_PRODUCT_ID     1022
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
 
