@@ -18,7 +18,6 @@
 #define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox MM V3" // you will see this in the MIDI device list
-#define MIOS32_USB_PRODUCT_ID   1006          // 1000..1009 are free for lab use
 
 #define MIOS32_USB_MIDI_NUM_PORTS 4           // we provide 4 USB ports
 

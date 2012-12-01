@@ -58,7 +58,7 @@
 #define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "MIOS32 Bootloader"  // you will see this in the MIDI device list
-#define MIOS32_USB_PRODUCT_ID   0x0400        // ==1024; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use
+#define MIOS32_USB_PRODUCT_ID   0x03fe        // ==1022; 1020-1029 reserved for T.Klose, 1000 - 1009 free for lab use... 0x3fe is required if the GM5 driver should be used
 #define MIOS32_USB_VERSION_ID   0x1010        // v1.010
 
 
