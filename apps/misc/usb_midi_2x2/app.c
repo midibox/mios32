@@ -17,8 +17,10 @@
 
 #include <mios32.h>
 
+#include <midimon.h>
+
 #include "app.h"
-#include "midimon.h"
+#include "terminal.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,6 +55,9 @@ void APP_Init(void)
 
   // clear mS counter
   ms_counter = 0;
+
+  // init terminal
+  TERMINAL_Init(0);
 
   // init MIDImon
   MIDIMON_Init(0);

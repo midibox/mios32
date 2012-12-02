@@ -186,6 +186,12 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 
   midio_patch_matrix_entry_t *m = (midio_patch_matrix_entry_t *)&midio_patch_matrix[matrix];
 
+  // button depressed? (take INVERSE_DIN flag into account)
+  // note: on a common configuration (MBHP_DINX4 module used with pull-ups), pins are inverse
+  u8 depressed = pin_value ? 0 : 1;
+  if( midio_patch_cfg.flags.INVERSE_DIN )
+    depressed ^= 1;
+
   // here we could differ between matrix modes
   // currently only MIDIO_PATCH_MATRIX_MODE_COMMON supported (sending note events)
 
@@ -210,7 +216,7 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
   } else {
     p.evnt1 = (m->arg + pin) & 0x7f;
   }
-  p.evnt2 = (pin_value ? 0x00 : 0x7f);
+  p.evnt2 = (depressed ? 0x00 : 0x7f);
 
   // send MIDI package over enabled ports
   int i;

@@ -14,8 +14,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.004"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
-// define a unique VID/PID for this application
-#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
+// Following settings allow to customize the USB device descriptor
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "MIDIboxKB"   // you will see this in the MIDI device list
 

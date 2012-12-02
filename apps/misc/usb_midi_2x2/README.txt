@@ -33,18 +33,7 @@ An integrated MIDI monitor is provided which sends incoming MIDI events to
 a MIOS terminal (part of MIOS Studio) in plain text format via the first 
 USB port for diagnosis.
 
-This function can be activated by jumpering J5B.A4 to ground.
-
-By jumpering J5B.A5 to ground, Active Sense, MIDI Clock and MTC messages
-are filtered.
-
-By jumpering J5B.A6 to ground, the beat number and tempo (BPM) is displayed
-on each beat when a MIDI clock is received.
-
-By jumpering J5B.A7 to ground, the MIDI time code (MTC) is displayed 
-in plain text format whenever all 8 MTC messages have been received.
-(NOT IMPLEMENTED YET)
-
+This function can be activated in the MIDI terminal (type 'help' for commands)
 
 4 LEDs can be connected to J5A.A0..A3 to display the receive/transmit
 status. The cathodes (short legs) have to be connected to Ground (J5A.Vs),
