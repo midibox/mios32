@@ -14,7 +14,7 @@ MIDIboxSEQ V4.068
      Windows users:
      - upload the application with MIOS Studio
      - close MIOS Studio
-     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mbhp_usb_gm5.html
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mios32_download.html
      - start MIOS Studio -> 4 "GM5" USB ports should be visible
 
 
@@ -22,7 +22,7 @@ MIDIboxSEQ V4.067
 ~~~~~~~~~~~~~~~~~
 
    o USB device settings have been changed.
-     IMPORTANT: please install MIOS32 Bootloader V1.009 before uploading
+     IMPORTANT: please install MIOS32 Bootloader V1.010 before uploading
      the application! Otherwise code upload via USB won't work anymore!
      (Backup: upload via MIDI IN1/OUT1)
 

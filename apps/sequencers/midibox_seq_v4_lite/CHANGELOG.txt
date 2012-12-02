@@ -6,6 +6,29 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4L.068
+~~~~~~~~~~~~~~~~~~
+
+   o support for GM5 driver under Windows.
+     MacOS and Linux users: just install this update, no additional changes required.
+     Windows users:
+     - upload the application with MIOS Studio
+     - close MIOS Studio
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mios32_download.html
+     - start MIOS Studio -> 4 "GM5" USB ports should be visible
+
+
+MIDIboxSEQ V4L.067
+~~~~~~~~~~~~~~~~~~
+
+   o USB device settings have been changed.
+     IMPORTANT: please install MIOS32 Bootloader V1.010 before uploading
+     the application! Otherwise code upload via USB won't work anymore!
+     (Backup: upload via MIDI IN1/OUT1)
+
+   o support for MIOS Filebrowser, which will be part of MIOS Studio 2.4
+
+
 MIDIboxSEQ V4L.064
 ~~~~~~~~~~~~~~~~~~
 
