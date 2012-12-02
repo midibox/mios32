@@ -97,9 +97,10 @@ s32 MIDI_ROUTER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // SysEx handled by APP_SYSEX_Parser()
-  if( midi_package.cin == 0xf ||
-      (midi_package.type >= 4 && midi_package.type <= 7) )
+  // filter SysEx which is handled by separate parser
+  if( midi_package.evnt0 < 0xf8 &&
+      (midi_package.cin == 0xf ||
+      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7)) )
     return 0; // no error
 
   int node;
