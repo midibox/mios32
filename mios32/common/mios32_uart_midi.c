@@ -415,6 +415,14 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	    *package = midix->package;
 	    package_complete = 1; // -> forward to caller
 	    midix->sysex_ctr = 0x00; // ensure that next F7 will just send F7
+	  } else if( !midix->expected_bytes ) {
+	    // e.g. tune request (with no additional byte)
+	    midix->package.cin = 5; // 5: SysEx ends with single byte
+	    midix->package.evnt0 = byte;
+	    midix->package.evnt1 = 0x00;
+	    midix->package.evnt2 = 0x00;
+	    *package = midix->package;
+	    package_complete = 1; // -> forward to caller
 	  }
 	}
 
