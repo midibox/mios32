@@ -342,7 +342,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 
 #if FANTOM_XR_VARIANT
   // determine key number based on row/column
-  int key = row*8 + (column % 8);
+  int key = row*6 + (column % 8); // (6 keys are connected to each DIN)
 
   // ensure valid range
   if( key > 127 )
