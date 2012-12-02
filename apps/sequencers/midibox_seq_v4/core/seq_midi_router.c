@@ -62,13 +62,13 @@ s32 SEQ_MIDI_ROUTER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  u8 node;
-
-  // filter SysEx
-  if( midi_package.cin == 0xf ||
-      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7) )
+  // filter SysEx which is handled by separate parser
+  if( midi_package.evnt0 < 0xf8 &&
+      (midi_package.cin == 0xf ||
+      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7)) )
     return 0; // no error
 
+  u8 node;
   mios32_midi_port_t def_port = MIOS32_MIDI_DefaultPortGet();
 
   seq_midi_router_node_t *n = &seq_midi_router_node[0];

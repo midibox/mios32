@@ -30,7 +30,7 @@
 
 
 // jumper options (all pin states are low-active, and will be inverted here)
-#define JUMPER_MIDIMON_ACTIVE  1
+#define JUMPER_MIDIMON_ACTIVE  0
 #define JUMPER_FILTER_ACTIVE   1
 #define JUMPER_TEMPO_ACTIVE    0
 #define JUMPER_MTC_ACTIVE      0
