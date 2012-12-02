@@ -47,7 +47,6 @@
 #define MIOS32_LCD_BOOT_MSG_DELAY 0
 
 // Following settings allow to customize the USB device descriptor
-#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
 #define MIOS32_USB_VENDOR_STR   "ander.fm" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "Knoepfli"      // you will see this in the MIDI device list
 #define MIOS32_USB_VERSION_ID   0x0100        // v1.00

@@ -14,8 +14,7 @@
 #define MIOS32_LCD_BOOT_MSG_LINE1 "USB OSC MIDI Proxy"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2010 T.Klose"
 
-// define a unique VID/PID for this application
-#define MIOS32_USB_VENDOR_ID    0x16c0        // sponsored by voti.nl! see http://www.voti.nl/pids
+// Following settings allow to customize the USB device descriptor
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
 #define MIOS32_USB_PRODUCT_STR  "USB OSC MIDI Proxy" // you will see this in the MIDI device list
 

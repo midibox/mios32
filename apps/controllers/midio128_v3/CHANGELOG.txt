@@ -1,32 +1,10 @@
 $Id$
 
-MIDIO128 V3.011pre6
-~~~~~~~~~~~~~~~~~~~
-
-   o Number of USB devices set to 4 again
-
-   o support for GM5 driver under Windows.
-     MacOS and Linux users: just install this update, no additional changes required.
-     Windows users:
-     - upload the application with MIOS Studio
-     - close MIOS Studio
-     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mbhp_usb_gm5.html
-     - start MIOS Studio -> 4 "GM5" USB ports should be visible
-
-
-MIDIO128 V3.011pre5
-~~~~~~~~~~~~~~~~~~~
-
-   o Number of USB devices temporary set to 1 again
-
-   o OUT4 can now be selected in all config pages
-
-
-MIDIO128 V3.011pre4
-~~~~~~~~~~~~~~~~~~~
+MIDIO128 V3.011
+~~~~~~~~~~~~~~~
 
    o USB device settings have been changed.
-     IMPORTANT: please install MIOS32 Bootloader V1.009 before uploading
+     IMPORTANT: please install MIOS32 Bootloader V1.010 before uploading
      the application! Otherwise code upload via USB won't work anymore!
      (Backup: upload via MIDI IN1/OUT1)
 
@@ -36,6 +14,12 @@ MIDIO128 V3.011pre4
      so that the driver be installed again once the core module has been re-connected.
      E.g. under MacOS this can be done with the Audio-MIDI Setup application
      (search for "Audio" in Spotlight)
+
+   o support for GM5 driver under Windows.
+     - upload the application with MIOS Studio
+     - close MIOS Studio
+     - install the GM5 driver which can be downloaded from http://www.ucapps.de/mios32_download.html
+     - start MIOS Studio -> 4 "GM5" USB ports should be visible
 
    o 4 MIDI IN/OUT ports are enabled now.
      Pin mapping for LPC17 (see also http://www.ucapps.de/mbhp/mbhp_core_lpc17_midi3_midi4_extension.pdf):
@@ -47,64 +31,32 @@ MIDIO128 V3.011pre4
      since MIDI IN3/OUT3 allocate analog input pins, AIN Pin #6 and #7 is
      not available anymore!
 
+   o Matrix DINs are now also inverted with the InverseDIN flag in the
+     .MIO configuration file
+
    o support for MIOS Filebrowser, which will be part of MIOS Studio 2.4
-
-   o fixed FFwd/FRwd function
-
-   o song not set back to 1.1 if song position was changed while 
-     sequencer was paused
-
-
-MIDIO128 V3.011pre3
-~~~~~~~~~~~~~~~~~~~
-
-   o application doesn't hang-up anymore if recording is enabled while
-     no SD Card connected
-
-   o first MIDI song already selected after boot
-
-   o play modes: aside from All and Single, we've now also a "Loop" mode
-     which repeats the selected song
-
-   o a fourth clock mode has been added: "Lock". It prevents tempo changes
-     from the MIDI file. The BPM generator is always in master mode.
-
-   o the "MIDI" page has been renamed to ".MID"
-
-   o if you scroll the .MID page to the right side, you will find configuration
-     options for MIDI ports assigned to the Rec/Play/Clock IN and Clock OUT functions
-
-   o all new options can now be stored/restored into/from .MIO files
-
-
-MIDIO128 V3.011pre2
-~~~~~~~~~~~~~~~~~~~
-
-   o rotary encoder now selects the tempo (BPM) in main page
-
-   o BPM mode can be switched between Auto/Master/Slave by pressing
-     shift button + soft button 2
-
-   o MIDI recorder: tempo now stored in MIDI file
-
-   o record event monitor: display input port name instead of output port name
-
-   o record event monitor: display "DIN" instead of "Def"(ault) when DIN
-     generated events are recorded
-
-   o only in this pre2 release: whenever the next/previous file is selected,
-     the searched files are listed in the MIOS terminal
-
-   o MIDI router config: renamed SrcP to DstP
-
-
-MIDIO128 V3.011pre1
-~~~~~~~~~~~~~~~~~~~
 
    o It's now possible to record MIDI files!
      Press EXIT + first softbutton (under REC)
 
    o Fast Forward and Fast Rewind are now available by pressing EXIT
+
+   o rotary encoder now selects the tempo (BPM) in main page
+
+   o BPM mode can be switched between Auto/Master/Slave/Lock by pressing
+     shift button + soft button 2
+     "Lock" prevents tempo changes from the MIDI file. The BPM generator
+     is always in master mode.
+
+   o play modes: aside from All and Single, we've now also a "Loop" mode
+     which repeats the selected song
+
+   o first MIDI song already selected after boot
+
+   o if you scroll the .MID page to the right side, you will find configuration
+     options for MIDI ports assigned to the Rec/Play/Clock IN and Clock OUT functions
+
+   o a couple of minor bugfixes
 
 
 MIDIO128 V3.010

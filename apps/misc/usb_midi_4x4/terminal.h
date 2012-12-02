@@ -1,18 +1,18 @@
-// $Id$
+// $Id: terminal.h 1333 2011-09-22 22:13:49Z tk $
 /*
- * Header file for MIDI monitor module
+ * The command/configuration Terminal
  *
  * ==========================================================================
  *
- *  Copyright (C) 2009 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2010 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _MIDIMON_H
-#define _MIDIMON_H
+#ifndef _TERMINAL_H
+#define _TERMINAL_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -29,8 +29,9 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MIDIMON_Init(u32 mode);
-extern s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message);
+extern s32 TERMINAL_Init(u32 mode);
+extern s32 TERMINAL_Parse(mios32_midi_port_t port, char byte);
+extern s32 TERMINAL_ParseLine(char *input, void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,4 +39,4 @@ extern s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t packag
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _MIDIMON_H */
+#endif /* _TERMINAL_H */
