@@ -193,10 +193,45 @@ const scs_menu_item_t pageMsg[] = {
   SCS_ITEM("Str. ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
 };
 
+const scs_menu_item_t pageSubA[] = {
+  SCS_ITEM("Msg1 ", 0, 1, dummyGet, dummySet, selectMsg1, stringEmpty,  NULL),
+};
+
+const scs_menu_item_t pageSubB[] = {
+  SCS_ITEM("Msg2 ", 0, 1, dummyGet, dummySet, selectMsg2, stringEmpty,  NULL),
+};
+
+const scs_menu_item_t pageSubC[] = {
+  SCS_ITEM("Msg3 ", 0, 1, dummyGet, dummySet, selectMsg3, stringEmpty,  NULL),
+};
+
+const scs_menu_item_t pageSubD[] = {
+  SCS_ITEM("Msg4 ", 0, 1, dummyGet, dummySet, selectMsg4, stringEmpty,  NULL),
+};
+
+const scs_menu_item_t pageSubE[] = {
+  SCS_ITEM("Msg5 ", 0, 1, dummyGet, dummySet, selectMsg5, stringEmpty,  NULL),
+};
+
+const scs_menu_item_t pageSubF[] = {
+  SCS_ITEM("Msg6 ", 0, 1, dummyGet, dummySet, selectMsg6, stringEmpty,  NULL),
+  SCS_ITEM("Str. ", 0, 1, dummyGet, dummySet, selectString, stringEmpty,  NULL),
+};
+
+const scs_menu_page_t subpageDeep[] = {
+  SCS_PAGE("SubA ", pageSubA),
+  SCS_PAGE("SubB ", pageSubB),
+  SCS_PAGE("SubC ", pageSubC),
+  SCS_PAGE("SubD ", pageSubD),
+  SCS_PAGE("SubE ", pageSubE),
+  SCS_PAGE("SubF ", pageSubF),
+};
+
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Knob ", pageKnb),
   SCS_PAGE("Cfg. ", pageCfg),
   SCS_PAGE("Msg. ", pageMsg),
+  SCS_SUBPAGE("Deep ", subpageDeep),
 };
 
 

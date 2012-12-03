@@ -892,11 +892,14 @@ const scs_menu_item_t pageNetw[] = {
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectIpEnter,stringIp, NULL),
 };
 
-const scs_menu_item_t pageMIDI[] = {
+const scs_menu_item_t pageMIDIFile[] = {
   SCS_ITEM("Mode ", 0, 2,           midiPlayModeGet, midiPlayModeSet, selectNOP,  stringMidiMode, NULL),
   SCS_ITEM("Filen", 0, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("ame  ", 1, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
   SCS_ITEM("     ", 2, 0,           dummyGet,        dummySet,        selectMidiFile, stringMidiFileName, NULL),
+};
+
+const scs_menu_item_t pageMIDIPorts[] = {
   SCS_ITEM("Port ", 0, MIDI_PORT_NUM_OUT_PORTS-1, midiPlayPortGet, midiPlayPortSet, selectNOP, stringMidiIoPort, NULL),
   SCS_ITEM("REC  ", 0, 1,           midiPlayPortRecGet, midiPlayPortRecSet, selectNOP, stringOnOff, NULL),
   SCS_ITEM("PLAY ", 0, 1,           midiPlayPortPlayGet, midiPlayPortPlaySet, selectNOP, stringOnOff, NULL),
@@ -909,6 +912,11 @@ const scs_menu_item_t pageMON[] = {
   SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
 };
 
+const scs_menu_page_t subpageMIDI[] = {
+  SCS_PAGE("Play ", pageMIDIFile),
+  SCS_PAGE("Ports", pageMIDIPorts),
+};
+
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("DIN  ", pageDIN),
   SCS_PAGE("DOUT ", pageDOUT),
@@ -918,7 +926,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
-  SCS_PAGE(".MID ", pageMIDI),
+  SCS_SUBPAGE(".MID ", subpageMIDI),
   SCS_PAGE("Mon. ", pageMON),
   SCS_PAGE("Disk ", pageDsk),
 };

@@ -153,8 +153,12 @@ static u8 scsButtonDebounceCtr;
 
 static scs_menu_page_t *rootTable;
 static u8 rootTableNumItems;
-static u8 rootTableSelectedPage;
-static u8 rootTableSelectedItem;
+
+static scs_menu_page_t *previousMenuTable;
+static scs_menu_page_t *currentMenuTable;
+static u8 currentMenuTableNumItems;
+static u8 currentMenuTableSelectedPagePos;
+static u8 currentMenuTableSelectedItemPos;
 
 //                                             00112233
 static const char animation_l_arrows[2*4+1] = "   >>>> ";
@@ -228,7 +232,11 @@ s32 SCS_Init(u32 mode)
 
   rootTable = NULL;
   rootTableNumItems = 0;
-  rootTableSelectedPage = 0;
+
+  previousMenuTable = NULL;
+  currentMenuTable = NULL;
+  currentMenuTableNumItems = 0;
+  currentMenuTableSelectedPagePos = 0;
 
   scsDisplayHook = NULL;
   scsEncHook = NULL;
@@ -421,8 +429,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     } else if( newCursorPos >= SCS_NUM_MENU_ITEMS ) {
       newCursorPos = SCS_NUM_MENU_ITEMS-1;
       pageOffsetIncrementer = 1;
-    } else if( newCursorPos >= rootTableNumItems ) {
-      newCursorPos = rootTableNumItems-1;
+    } else if( newCursorPos >= currentMenuTableNumItems ) {
+      newCursorPos = currentMenuTableNumItems-1;
       pageOffsetIncrementer = 0; // NOP
     }
 
@@ -437,8 +445,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     int newOffset = displayRootOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
-    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= rootTableNumItems ) {
-      newOffset = rootTableNumItems - SCS_NUM_MENU_ITEMS;
+    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= currentMenuTableNumItems ) {
+      newOffset = currentMenuTableNumItems - SCS_NUM_MENU_ITEMS;
       if( newOffset < 0 )
 	newOffset = 0;
     }
@@ -446,9 +454,9 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
   } break;
 
   case SCS_MENU_STATE_INSIDE_PAGE: {
-    if( rootTableSelectedPage >= rootTableNumItems )
+    if( currentMenuTableSelectedPagePos >= currentMenuTableNumItems )
       return -1; // fail safe
-    scs_menu_page_t *selectedPage = (scs_menu_page_t *)&rootTable[rootTableSelectedPage];
+    scs_menu_page_t *selectedPage = (scs_menu_page_t *)&currentMenuTable[currentMenuTableSelectedPagePos];
 
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
     // move cursor with encoder
@@ -488,11 +496,11 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
 
   case SCS_MENU_STATE_EDIT_ITEM: {
     scs_menu_item_t *pageItem = NULL;
-    if( rootTableSelectedPage < rootTableNumItems ) {
-      scs_menu_item_t *pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
-      u8 numItems = rootTable[rootTableSelectedPage].numItems;
-      if( rootTableSelectedItem < numItems )
-	pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
+    if( currentMenuTableSelectedPagePos < currentMenuTableNumItems ) {
+      scs_menu_item_t *pageItems = (scs_menu_item_t *)currentMenuTable[currentMenuTableSelectedPagePos].page;
+      u8 numItems = currentMenuTable[currentMenuTableSelectedPagePos].numItems;
+      if( currentMenuTableSelectedItemPos < numItems )
+	pageItem = (scs_menu_item_t *)&pageItems[currentMenuTableSelectedItemPos];
     }
 
     if( pageItem ) {
@@ -655,7 +663,19 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 
     switch( scsMenuState ) {
     case SCS_MENU_STATE_SELECT_PAGE: {
-      scsMenuState = SCS_MENU_STATE_MAINPAGE;
+      if( previousMenuTable == NULL ) {
+	scsMenuState = SCS_MENU_STATE_MAINPAGE;
+      } else {
+	displayRootOffset = 0; // currently not recursively stored...
+	if( previousMenuTable == rootTable ) {
+	  previousMenuTable = NULL;
+	  currentMenuTable = rootTable;
+	  currentMenuTableNumItems = rootTableNumItems;
+	} else {
+	  currentMenuTableNumItems = currentMenuTable->numItems;
+	  currentMenuTable = previousMenuTable;
+	}
+      }
       displayInitReq = 1;
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
       displayCursorPos = 0;
@@ -740,13 +760,20 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
       newPage += displayCursorPos;
 #endif
-      if( newPage < rootTableNumItems ) {
+      if( newPage < currentMenuTableNumItems ) {
 #if !SCS_MENU_NO_SOFT_BUTTON_MODE
 	displayCursorPos = softButton;
 #endif
-	rootTableSelectedPage = newPage;
-	displayPageOffset = 0; // optionally we got store the last offset somewhere?
-	scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+	if( currentMenuTable[newPage].isSubPage ) {
+	  previousMenuTable = currentMenuTable;
+	  currentMenuTable = (scs_menu_page_t *)previousMenuTable[newPage].page;
+	  currentMenuTableNumItems = previousMenuTable[newPage].numItems;
+	  displayRootOffset = 0;
+	} else {
+	  currentMenuTableSelectedPagePos = newPage;
+	  displayPageOffset = 0; // optionally we got store the last offset somewhere?
+	  scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+	}
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
 	displayCursorPos = 0;
 #endif
@@ -758,9 +785,9 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     case SCS_MENU_STATE_EDIT_ITEM: {
       scs_menu_item_t *pageItems = NULL;
       u8 numItems = 0;
-      if( rootTableSelectedPage < rootTableNumItems ) {
-	pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
-	numItems = rootTable[rootTableSelectedPage].numItems;
+      if( currentMenuTableSelectedPagePos < currentMenuTableNumItems ) {
+	pageItems = (scs_menu_item_t *)currentMenuTable[currentMenuTableSelectedPagePos].page;
+	numItems = currentMenuTable[currentMenuTableSelectedPagePos].numItems;
       }
 
       int itemPos = displayPageOffset + softButton;
@@ -776,7 +803,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 #if !SCS_MENU_NO_SOFT_BUTTON_MODE
 	  displayCursorPos = softButton;
 #endif
-	  rootTableSelectedItem = itemPos;
+	  currentMenuTableSelectedItemPos = itemPos;
 
 	  if( scsMenuState == SCS_MENU_STATE_INSIDE_PAGE ) {
 	    scsMenuState = SCS_MENU_STATE_EDIT_ITEM;
@@ -910,6 +937,13 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
     default: { // SCS_MENU_STATE_MAINPAGE
       displayInitReq = 1;
       scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
+      if( previousMenuTable == NULL ) { // root directory
+	currentMenuTable = rootTable;
+	currentMenuTableNumItems = rootTableNumItems;
+      } else {
+	currentMenuTable = previousMenuTable;
+	currentMenuTableNumItems = previousMenuTable->numItems;
+      }
     }
     }
     displayUpdateReq = 1;
@@ -1029,23 +1063,23 @@ s32 SCS_Tick(void)
 	int i;
 	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	  u8 page = displayRootOffset + i;
-	  if( page >= rootTableNumItems
+	  if( page >= currentMenuTableNumItems
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
 	      || (page == (displayRootOffset+displayCursorPos) && (!displayCursorOn || !displayLabelOn))
 #endif
 	      )
 	    SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	  else {
-	    SCS_LCD_PrintStringPadded(rootTable[page].name, SCS_MENU_ITEM_WIDTH);
+	    SCS_LCD_PrintStringPadded(currentMenuTable[page].name, SCS_MENU_ITEM_WIDTH);
 	  }
 	}
 
 	// print arrow at upper right corner
-	if( rootTableNumItems > SCS_NUM_MENU_ITEMS ) {
+	if( currentMenuTableNumItems > SCS_NUM_MENU_ITEMS ) {
 	  SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
 	  if( displayRootOffset == 0 )
 	    SCS_LCD_PrintChar(3); // right arrow
-	  else if( displayRootOffset >= (rootTableNumItems-SCS_NUM_MENU_ITEMS) )
+	  else if( displayRootOffset >= (currentMenuTableNumItems-SCS_NUM_MENU_ITEMS) )
 	    SCS_LCD_PrintChar(1); // left arrow
 	  else
 	    SCS_LCD_PrintChar(2); // left/right arrow
@@ -1058,9 +1092,9 @@ s32 SCS_Tick(void)
     case SCS_MENU_STATE_EDIT_ITEM: {
       scs_menu_item_t *pageItems = NULL;
       u8 numItems = 0;
-      if( rootTableSelectedPage < rootTableNumItems ) {
-	pageItems = (scs_menu_item_t *)rootTable[rootTableSelectedPage].page;
-	numItems = rootTable[rootTableSelectedPage].numItems;
+      if( currentMenuTableSelectedPagePos < currentMenuTableNumItems ) {
+	pageItems = (scs_menu_item_t *)currentMenuTable[currentMenuTableSelectedPagePos].page;
+	numItems = currentMenuTable[currentMenuTableSelectedPagePos].numItems;
       }
 
       if( !pageItems ) {
@@ -1077,8 +1111,8 @@ s32 SCS_Tick(void)
 	u8 printCommonPage = 1;
 	if( scsMenuState == SCS_MENU_STATE_EDIT_ITEM ) {
 	  scs_menu_item_t *pageItem = NULL;
-	  if( rootTableSelectedItem < numItems )
-	    pageItem = (scs_menu_item_t *)&pageItems[rootTableSelectedItem];
+	  if( currentMenuTableSelectedItemPos < numItems )
+	    pageItem = (scs_menu_item_t *)&pageItems[currentMenuTableSelectedItemPos];
 
 	  if( pageItem && pageItem->stringFullFunct ) {
 	    printCommonPage = 0;
@@ -1113,7 +1147,7 @@ s32 SCS_Tick(void)
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
 		  (!editMode && (item == displayPageOffset+displayCursorPos) && (!displayCursorOn || !displayLabelOn)) ||
 #endif
-		  (editMode && item == rootTableSelectedItem && !displayLabelOn ) )
+		  (editMode && item == currentMenuTableSelectedItemPos && !displayLabelOn ) )
 		SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	      else {
 		SCS_LCD_PrintStringPadded(pageItems[item].name, SCS_MENU_ITEM_WIDTH);
@@ -1129,7 +1163,7 @@ s32 SCS_Tick(void)
 	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
 	      u8 item = displayPageOffset + i;
 	      if( item >= numItems ||
-		  (editMode && item == rootTableSelectedItem && !displayCursorOn ) )
+		  (editMode && item == currentMenuTableSelectedItemPos && !displayCursorOn ) )
 		SCS_LCD_PrintSpaces(SCS_MENU_ITEM_WIDTH);
 	      else {
 		scs_menu_item_t *pageItem = (scs_menu_item_t *)&pageItems[item];
@@ -1413,6 +1447,12 @@ s32 SCS_InstallRoot(scs_menu_page_t *_rootTable, u8 numItems)
   rootTable = _rootTable;
   rootTableNumItems = numItems;
 
+  previousMenuTable = NULL;
+  currentMenuTable = rootTable;
+  currentMenuTableNumItems = rootTableNumItems;
+  currentMenuTableSelectedPagePos = 0;
+  currentMenuTableSelectedItemPos = 0;
+
   return 0; // no error
 }
 
@@ -1497,10 +1537,10 @@ scs_menu_item_t *SCS_MenuPageGet(void)
       scsMenuState != SCS_MENU_STATE_EDIT_ITEM )
     return NULL;
 
-  if( !rootTable || !rootTableNumItems || rootTableSelectedPage >= rootTableNumItems )
+  if( !rootTable || !currentMenuTableNumItems || currentMenuTableSelectedPagePos >= currentMenuTableNumItems )
     return NULL;
 
-  return rootTable[rootTableSelectedPage].page;
+  return (scs_menu_item_t *)currentMenuTable[currentMenuTableSelectedPagePos].page;
 }
 
 /////////////////////////////////////////////////////////////////////////////
