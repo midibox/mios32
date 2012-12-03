@@ -1,0 +1,6 @@
+$Id$
+
+MIDIbox NG V1.000
+~~~~~~~~~~~~~~~~~
+
+   o initial version

@@ -1,10 +1,10 @@
 // $Id$
 /*
- * DIN access functions for MIDIO128 V3
+ * DIN access functions for MIDIbox NG
  *
  * ==========================================================================
  *
- *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
@@ -17,30 +17,28 @@
 
 #include <mios32.h>
 
-#include "midio_din.h"
-#include "midio_dout.h"
-#include "midio_patch.h"
-
-#include "mid_file.h"
+#include "mbng_din.h"
+#include "mbng_dout.h"
+#include "mbng_patch.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 toggle_flags[MIDIO_PATCH_NUM_DIN/32];
+static u32 toggle_flags[MBNG_PATCH_NUM_DIN/32];
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the DIN handler
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_DIN_Init(u32 mode)
+s32 MBNG_DIN_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
 
   int i;
-  for(i=0; i<MIDIO_PATCH_NUM_DIN/32; ++i)
+  for(i=0; i<MBNG_PATCH_NUM_DIN/32; ++i)
     toggle_flags[i] = 0;
 
   return 0; // no error
@@ -51,26 +49,26 @@ s32 MIDIO_DIN_Init(u32 mode)
 // This function should be called from APP_DIN_NotifyToggle when an input
 // has been toggled
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIO_DIN_NotifyToggle(u32 pin, u32 pin_value)
+s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-  if( pin >= MIDIO_PATCH_NUM_DIN )
+  if( pin >= MBNG_PATCH_NUM_DIN )
     return -1; // invalid pin
 
 #if 0
-  DEBUG_MSG("MIDIO_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
+  DEBUG_MSG("MBNG_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
 #endif
 
   // get pin configuration from patch structure
-  midio_patch_din_entry_t *din_cfg = (midio_patch_din_entry_t *)&midio_patch_din[pin];
+  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[pin];
 
   // button depressed? (take INVERSE_DIN flag into account)
   // note: on a common configuration (MBHP_DINX4 module used with pull-ups), pins are inverse
   u8 depressed = pin_value ? 0 : 1;
-  if( midio_patch_cfg.flags.INVERSE_DIN )
+  if( mbng_patch_cfg.flags.INVERSE_DIN )
     depressed ^= 1;
 
   // toggle mode?
-  if( din_cfg->mode == MIDIO_PATCH_DIN_MODE_TOGGLE ) {
+  if( din_cfg->mode == MBNG_PATCH_DIN_MODE_TOGGLE ) {
     if( depressed )
       return 0;
 
@@ -88,11 +86,11 @@ s32 MIDIO_DIN_NotifyToggle(u32 pin, u32 pin_value)
   mios32_midi_event_t event = ((depressed ? din_cfg->evnt0_off : din_cfg->evnt0_on) >> 4) | 0x8;
 
   // forward to DOUT if enabled
-  if( midio_patch_cfg.flags.FORWARD_IO )
-    MIDIO_DOUT_PinSet(pin, depressed ? 0 : 1);
+  if( mbng_patch_cfg.flags.FORWARD_IO )
+    MBNG_DOUT_PinSet(pin, depressed ? 0 : 1);
 
   // in ON only mode: don't send MIDI event if button depressed
-  if( din_cfg->mode == MIDIO_PATCH_DIN_MODE_ON_ONLY && depressed )
+  if( din_cfg->mode == MBNG_PATCH_DIN_MODE_ON_ONLY && depressed )
     return 0;
 
   // create MIDI package
@@ -101,8 +99,8 @@ s32 MIDIO_DIN_NotifyToggle(u32 pin, u32 pin_value)
   p.type = event;
   p.event = event;
 
-  if( midio_patch_cfg.global_chn )
-    p.chn = midio_patch_cfg.global_chn - 1;
+  if( mbng_patch_cfg.global_chn )
+    p.chn = mbng_patch_cfg.global_chn - 1;
   else
     p.chn = (depressed ? din_cfg->evnt0_off : din_cfg->evnt0_on);
 
@@ -119,9 +117,6 @@ s32 MIDIO_DIN_NotifyToggle(u32 pin, u32 pin_value)
       MIOS32_MIDI_SendPackage(port, p);
     }
   }
-
-  // send MIDI message to MIDI file recorder
-  MID_FILE_Receive(DEFAULT, p);
 
   return 0; // no error
 }
