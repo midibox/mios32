@@ -153,7 +153,8 @@ extern "C" {
 /////////////////////////////////////////////////////////////////////////////
 
 #define SCS_INSTALL_ROOT(rootTable) SCS_InstallRoot((scs_menu_page_t *)rootTable, sizeof(rootTable)/sizeof(scs_menu_page_t))
-#define SCS_PAGE(name, items) { name, (scs_menu_item_t *)items, sizeof(items)/sizeof(scs_menu_item_t) }
+#define SCS_PAGE(name, items) { name, (scs_menu_item_t *)items, 0, sizeof(items)/sizeof(scs_menu_item_t) }
+#define SCS_SUBPAGE(name, pages) { name, (scs_menu_page_t *)pages, 1, sizeof(pages)/sizeof(scs_menu_page_t) }
 #define SCS_ITEM(name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct) { name, id, maxValue, setFunct, getFunct, selectFunct, stringFunct, stringFullFunct }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -178,7 +179,8 @@ typedef struct scs_menu_item_t {
 
 typedef struct scs_menu_page_t {
   char             name[SCS_MENU_ITEM_WIDTH+1];
-  scs_menu_item_t  *page;
+  void             *page; // either scs_menu_item_t or scs_menu_page_t
+  u8               isSubPage;
   u8               numItems;
 } scs_menu_page_t;
 
