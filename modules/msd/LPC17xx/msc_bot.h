@@ -27,7 +27,7 @@
 
 //#include <type.h>
 
-#define MSC_BULK_OUT_EP		0x02
+#define MSC_BULK_OUT_EP		0x04
 #define MSC_BULK_IN_EP		0x85
 
 void MSCBotReset(void);
