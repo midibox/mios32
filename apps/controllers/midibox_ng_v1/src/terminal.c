@@ -28,6 +28,7 @@
 #include "terminal.h"
 #include "uip_terminal.h"
 #include "tasks.h"
+#include "mbng_event.h"
 #include "mbng_file.h"
 #include "mbng_file_p.h"
 
@@ -191,6 +192,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
       out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
+      out("  set debug <on|off>:               enables debug messages (current: %s)", debug_verbose_level ? "on" : "off");
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
       out("  show:                             shows the current configuration file");
@@ -294,6 +296,18 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      }
 	    }
 	  }
+
+	} else if( strcmp(parameter, "debug") == 0 ) {
+	  int on_off = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off'");
+	  } else {
+	    debug_verbose_level = on_off ? DEBUG_VERBOSE_LEVEL_INFO : DEBUG_VERBOSE_LEVEL_ERROR;
+	    out("Debug mode turned %s", on_off ? "on" : "off");
+	  }
 	} else {
 	  out("Unknown set parameter: '%s'!", parameter);
 	}
@@ -320,5 +334,11 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
 
   MIDIMON_TerminalPrintConfig(out);
 
+  out("Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
+  u32 pool_size = MBNG_EVENT_PoolSizeGet();
+  u32 pool_max_size = MBNG_EVENT_PoolMaxSizeGet();
+  out("Event Pool Allocation: %d of %d bytes (%d%%)",
+      pool_size, pool_max_size, (100*pool_size)/pool_max_size);
+      
   return 0; // no error
 }

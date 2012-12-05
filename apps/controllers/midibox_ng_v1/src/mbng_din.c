@@ -17,14 +17,17 @@
 
 #include <mios32.h>
 
+#include "app.h"
 #include "mbng_din.h"
-#include "mbng_dout.h"
+#include "mbng_event.h"
 #include "mbng_patch.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
+
+static u8 button_group;
 
 static u32 toggle_flags[MBNG_PATCH_NUM_DIN/32];
 
@@ -36,6 +39,8 @@ s32 MBNG_DIN_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  button_group = 0;
 
   int i;
   for(i=0; i<MBNG_PATCH_NUM_DIN/32; ++i)
@@ -54,21 +59,32 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
   if( pin >= MBNG_PATCH_NUM_DIN )
     return -1; // invalid pin
 
-#if 0
-  DEBUG_MSG("MBNG_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
-#endif
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
+  }
 
-  // get pin configuration from patch structure
-  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[pin];
+  // search for DIN
+  int button_ix = button_group * mbng_patch_cfg.button_group_size + pin;
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_BUTTON + button_ix, &item) < 0 ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("No event assigned to BUTTON %d\n", button_ix);
+    }
+    return -2; // no event assigned
+  }
 
-  // button depressed? (take INVERSE_DIN flag into account)
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MBNG_EVENT_ItemPrint(&item);
+  }
+
+  // button depressed? (take inverse flag into account)
   // note: on a common configuration (MBHP_DINX4 module used with pull-ups), pins are inverse
   u8 depressed = pin_value ? 0 : 1;
-  if( mbng_patch_cfg.flags.INVERSE_DIN )
+  if( item.flags.DIN.inverse )
     depressed ^= 1;
 
   // toggle mode?
-  if( din_cfg->mode == MBNG_PATCH_DIN_MODE_TOGGLE ) {
+  if( item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
     if( depressed )
       return 0;
 
@@ -76,47 +92,28 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     int mask = (1 << (pin % 32));
     toggle_flags[ix] ^= mask;
     depressed = (toggle_flags[ix] & mask) ? 0 : 1;
+
+  } else if( depressed && item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
+    return 0; // don't send if button depressed
   }
 
-  // pin function disabled?
-  if( din_cfg->evnt0_on == 0x7f && din_cfg->evnt1_on == 0x7f && din_cfg->evnt2_on == 0x7f )
-    return 0;
+  // send MIDI event
+  return MBNG_EVENT_ItemSend(&item, depressed ? item.min : item.max);
+}
 
-  // determine MIDI event type
-  mios32_midi_event_t event = ((depressed ? din_cfg->evnt0_off : din_cfg->evnt0_on) >> 4) | 0x8;
 
-  // forward to DOUT if enabled
-  if( mbng_patch_cfg.flags.FORWARD_IO )
-    MBNG_DOUT_PinSet(pin, depressed ? 0 : 1);
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+{
+  int button_ix = item->id & 0xfff;
 
-  // in ON only mode: don't send MIDI event if button depressed
-  if( din_cfg->mode == MBNG_PATCH_DIN_MODE_ON_ONLY && depressed )
-    return 0;
-
-  // create MIDI package
-  mios32_midi_package_t p;
-  p.ALL = 0;
-  p.type = event;
-  p.event = event;
-
-  if( mbng_patch_cfg.global_chn )
-    p.chn = mbng_patch_cfg.global_chn - 1;
-  else
-    p.chn = (depressed ? din_cfg->evnt0_off : din_cfg->evnt0_on);
-
-  p.evnt1 = (depressed ? din_cfg->evnt1_off : din_cfg->evnt1_on);
-  p.evnt2 = (depressed ? din_cfg->evnt2_off : din_cfg->evnt2_on);
-
-  // send MIDI package over enabled ports
-  int i;
-  u16 mask = 1;
-  for(i=0; i<16; ++i, mask <<= 1) {
-    if( din_cfg->enabled_ports & mask ) {
-      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-      MIOS32_MIDI_SendPackage(port, p);
-    }
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_DIN_NotifyReceivedValue(%d, %d)\n", button_ix, value);
   }
 
   return 0; // no error
 }
+
