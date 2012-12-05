@@ -129,7 +129,7 @@ void APP_Init(void)
   MIOS32_MIDI_SendDebugMessage("\n");
 
   // speed up SPI transfer rate (was MIOS32_SPI_PRESCALER_128, initialized by MIOS32_SRIO_Init())
-  MIOS32_SPI_TransferModeInit(MIOS32_SRIO_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_64);
+  MIOS32_SPI_TransferModeInit(MIOS32_SRIO_SPI, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
   // prescaler 64 results into a transfer rate of 0.64 uS per bit
   // when 2 SRs are transfered, we are able to scan the whole 16x8 matrix in 300 uS
 
