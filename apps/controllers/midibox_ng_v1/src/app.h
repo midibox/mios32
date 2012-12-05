@@ -19,6 +19,13 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#define DEBUG_VERBOSE_LEVEL_OFF     0
+#define DEBUG_VERBOSE_LEVEL_FATAL   1
+#define DEBUG_VERBOSE_LEVEL_ERROR   2
+#define DEBUG_VERBOSE_LEVEL_WARNING 3
+#define DEBUG_VERBOSE_LEVEL_INFO    4
+#define DEBUG_VERBOSE_LEVEL_DEBUG   5
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -44,5 +51,6 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 debug_verbose_level;
 
 #endif /* _APP_H */

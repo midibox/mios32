@@ -48,12 +48,6 @@
 static u8 extraPage;
 static u8 altMainPage;
 
-static u8 selectedDin;
-static u8 selectedDout;
-static u8 selectedMatrix;
-static u8 selectedMatrixPin;
-static u8 selectedAin;
-static u8 selectedAinser;
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
@@ -91,40 +85,6 @@ static void stringNote(u32 ix, u16 value, char *label)
 	    noteTab[note],
 	    (int)octave-2);
   }
-}
-
-static void stringDIN_SR(u32 ix, u16 value, char *label)  { sprintf(label, "%2d.%d", (value/8)+1, value%8); }
-static void stringDOUT_SR(u32 ix, u16 value, char *label) { sprintf(label, "%2d.%d", (value/8)+1, 7-(value%8)); }
-static void stringDIN_Mode(u32 ix, u16 value, char *label)
-{
-  const char dinLabel[3][5] = { "Norm", "OnOf", "Togl" };
-  if( value < 3 )
-    strcpy(label, dinLabel[value]);
-  else
-    sprintf(label, "%3d ", value);
-}
-
-static void stringMatrixMode(u32 ix, u16 value, char *label)
-{
-  const char modeLabel[2][5] = { "Norm", "Map " };
-  if( value < 2 )
-    strcpy(label, modeLabel[value]);
-  else
-    sprintf(label, "%3d ", value);
-}
-
-static void stringMatrixPin(u32 ix, u16 value, char *label)
-{
-  if( mbng_patch_matrix[selectedMatrix].mode != MBNG_PATCH_MATRIX_MODE_MAPPED ) {
-    sprintf(label, "n/a ", value);
-  } else {
-    sprintf(label, "%d.%d ", (value / 8)+1, (value % 8)+1);
-  }
-}
-
-static void stringAINSER_Pin(u32 ix, u16 value, char *label)
-{
-  sprintf(label, "%c%d.%d", 'A' + (value / 64), ((value % 64)/8)+1, value%8);
 }
 
 static void stringInPort(u32 ix, u16 value, char *label)
@@ -314,208 +274,6 @@ static u16 selectIpEnter(u32 ix, u16 value)
 static u16  dummyGet(u32 ix)              { return 0; }
 static void dummySet(u32 ix, u16 value)   { }
 
-static u16  dinGet(u32 ix)                { return selectedDin; }
-static void dinSet(u32 ix, u16 value)     { selectedDin = value; }
-
-static u16  dinModeGet(u32 ix)            { return mbng_patch_din[selectedDin].mode; }
-static void dinModeSet(u32 ix, u16 value) { mbng_patch_din[selectedDin].mode = value; }
-
-static u16  dinEvntGet(u32 ix)
-{
-  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[selectedDin];
-  switch( ix ) {
-  case 0: return din_cfg->evnt0_on;
-  case 1: return din_cfg->evnt1_on;
-  case 2: return din_cfg->evnt2_on;
-  case 3: return din_cfg->evnt0_off;
-  case 4: return din_cfg->evnt1_off;
-  case 5: return din_cfg->evnt2_off;
-  }
-  return 0; // error...
-}
-static void dinEvntSet(u32 ix, u16 value)
-{
-  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[selectedDin];
-  switch( ix ) {
-  case 0: din_cfg->evnt0_on = value; break;
-  case 1: din_cfg->evnt1_on = value; break;
-  case 2: din_cfg->evnt2_on = value; break;
-  case 3: din_cfg->evnt0_off = value; break;
-  case 4: din_cfg->evnt1_off = value; break;
-  case 5: din_cfg->evnt2_off = value; break;
-  }
-}
-
-static u16  dinPortGet(u32 ix)
-{
-  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[selectedDin];
-  return (din_cfg->enabled_ports >> ix) & 0x1;
-}
-static void dinPortSet(u32 ix, u16 value)
-{
-  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[selectedDin];
-  din_cfg->enabled_ports &= ~(1 << ix);
-  din_cfg->enabled_ports |= ((value&1) << ix);
-}
-
-static u16  doutGet(u32 ix)               { return selectedDout; }
-static void doutSet(u32 ix, u16 value)    { selectedDout = value; }
-
-static u16  doutEvntGet(u32 ix)
-{
-  mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[selectedDout];
-  switch( ix ) {
-  case 0: return dout_cfg->evnt0;
-  case 1: return dout_cfg->evnt1;
-  }
-  return 0; // error...
-}
-static void doutEvntSet(u32 ix, u16 value)
-{
-  mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[selectedDout];
-  switch( ix ) {
-  case 0: dout_cfg->evnt0 = value; break;
-  case 1: dout_cfg->evnt1 = value; break;
-  }
-}
-
-static u16  doutPortGet(u32 ix)
-{
-  mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[selectedDout];
-  return (dout_cfg->enabled_ports >> ix) & 1;
-}
-static void doutPortSet(u32 ix, u16 value)
-{
-  mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[selectedDout];
-  dout_cfg->enabled_ports &= ~(1 << ix);
-  dout_cfg->enabled_ports |= ((value&1) << ix);
-}
-
-static u16  matrixGet(u32 ix)                { return selectedMatrix; }
-static void matrixSet(u32 ix, u16 value)     { selectedMatrix = value; }
-
-static u16  matrixModeGet(u32 ix)            { return mbng_patch_matrix[selectedMatrix].mode; }
-static void matrixModeSet(u32 ix, u16 value) { mbng_patch_matrix[selectedMatrix].mode = value; }
-
-static u16  matrixPinGet(u32 ix)             { return selectedMatrixPin; }
-static void matrixPinSet(u32 ix, u16 value)  { selectedMatrixPin = value; }
-
-static u16  matrixChnGet(u32 ix)
-{
-  if( mbng_patch_matrix[selectedMatrix].mode == MBNG_PATCH_MATRIX_MODE_MAPPED )
-    return (mbng_patch_matrix[selectedMatrix].map_chn[selectedMatrixPin]-1) & 0xf;
-  else
-    return (mbng_patch_matrix[selectedMatrix].chn-1) & 0xf;
-}
-static void matrixChnSet(u32 ix, u16 value)
-{
-  if( mbng_patch_matrix[selectedMatrix].mode == MBNG_PATCH_MATRIX_MODE_MAPPED )
-    mbng_patch_matrix[selectedMatrix].map_chn[selectedMatrixPin] = value+1;
-  else
-    mbng_patch_matrix[selectedMatrix].chn = value+1;
-}
-
-static u16  matrixArgGet(u32 ix)
-{
-  if( mbng_patch_matrix[selectedMatrix].mode == MBNG_PATCH_MATRIX_MODE_MAPPED )
-    return mbng_patch_matrix[selectedMatrix].map_evnt1[selectedMatrixPin];
-  else
-    return mbng_patch_matrix[selectedMatrix].arg;
-}
-static void matrixArgSet(u32 ix, u16 value)
-{
-  if( mbng_patch_matrix[selectedMatrix].mode == MBNG_PATCH_MATRIX_MODE_MAPPED )
-    mbng_patch_matrix[selectedMatrix].map_evnt1[selectedMatrixPin] = value;
-  else
-    mbng_patch_matrix[selectedMatrix].arg = value;
-}
-
-static u16  matrixDinGet(u32 ix)             { return mbng_patch_matrix[selectedMatrix].sr_din; }
-static void matrixDinSet(u32 ix, u16 value)  { mbng_patch_matrix[selectedMatrix].sr_din = value; }
-
-static u16  matrixDoutGet(u32 ix)            { return mbng_patch_matrix[selectedMatrix].sr_dout; }
-static void matrixDoutSet(u32 ix, u16 value) { mbng_patch_matrix[selectedMatrix].sr_dout = value; }
-
-static u16  matrixPortGet(u32 ix)
-{
-  mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[selectedMatrix];
-  return (m->enabled_ports >> ix) & 0x1;
-}
-static void matrixPortSet(u32 ix, u16 value)
-{
-  mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[selectedMatrix];
-  m->enabled_ports &= ~(1 << ix);
-  m->enabled_ports |= ((value&1) << ix);
-}
-
-static u16  ainGet(u32 ix)               { return selectedAin; }
-static void ainSet(u32 ix, u16 value)    { selectedAin = value; }
-
-static u16  ainEvntGet(u32 ix)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[selectedAin];
-  switch( ix ) {
-  case 0: return ain_cfg->evnt0;
-  case 1: return ain_cfg->evnt1;
-  }
-  return 0; // error...
-}
-static void ainEvntSet(u32 ix, u16 value)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[selectedAin];
-  switch( ix ) {
-  case 0: ain_cfg->evnt0 = value; break;
-  case 1: ain_cfg->evnt1 = value; break;
-  }
-}
-
-static u16  ainPortGet(u32 ix)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[selectedAin];
-  return (ain_cfg->enabled_ports >> ix) & 1;
-}
-static void ainPortSet(u32 ix, u16 value)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[selectedAin];
-  ain_cfg->enabled_ports &= ~(1 << ix);
-  ain_cfg->enabled_ports |= ((value&1) << ix);
-}
-
-
-static u16  ainserGet(u32 ix)               { return selectedAinser; }
-static void ainserSet(u32 ix, u16 value)    { selectedAinser = value; }
-
-static u16  ainserEvntGet(u32 ix)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[selectedAinser];
-  switch( ix ) {
-  case 0: return ain_cfg->evnt0;
-  case 1: return ain_cfg->evnt1;
-  }
-  return 0; // error...
-}
-static void ainserEvntSet(u32 ix, u16 value)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[selectedAinser];
-  switch( ix ) {
-  case 0: ain_cfg->evnt0 = value; break;
-  case 1: ain_cfg->evnt1 = value; break;
-  }
-}
-
-static u16  ainserPortGet(u32 ix)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[selectedAinser];
-  return (ain_cfg->enabled_ports >> ix) & 1;
-}
-static void ainserPortSet(u32 ix, u16 value)
-{
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[selectedAinser];
-  ain_cfg->enabled_ports &= ~(1 << ix);
-  ain_cfg->enabled_ports |= ((value&1) << ix);
-}
-
-
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -559,158 +317,6 @@ static void MSD_EnableReq(u32 enable)
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
-const scs_menu_item_t pageDIN[] = {
-  SCS_ITEM("Pin# ", 0, MBNG_PATCH_NUM_DIN-1, dinGet,         dinSet,         selectNOP, stringDec,  NULL),
-  SCS_ITEM(" DIN ", 0, MBNG_PATCH_NUM_DIN-1, dinGet,         dinSet,         selectNOP, stringDIN_SR,  NULL),
-  SCS_ITEM("Mode ", 0, 2,           dinModeGet,      dinModeSet,      selectNOP, stringDIN_Mode,NULL),
-  SCS_ITEM("E0On ", 0, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2O80, NULL),
-  SCS_ITEM("E1On ", 1, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
-  SCS_ITEM("E2On ", 2, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
-  SCS_ITEM("E0Of ", 3, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2O80, NULL),
-  SCS_ITEM("E1Of ", 4, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
-  SCS_ITEM("E2Of ", 5, 0x7f,        dinEvntGet,      dinEvntSet,      selectNOP, stringHex2, NULL),
-  SCS_ITEM("USB1 ", 0, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#if MIOS32_USB_MIDI_NUM_PORTS >= 2
-  SCS_ITEM("USB2 ", 1, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 3
-  SCS_ITEM("USB3 ", 2, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 4
-  SCS_ITEM("USB4 ", 3, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OUT1 ", 4, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OUT2 ", 5, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#if MIOS32_UART_NUM >= 3
-  SCS_ITEM("OUT3 ", 6, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_UART_NUM >= 4
-  SCS_ITEM("OUT4 ", 7, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OSC1 ",12, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC2 ",13, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC3 ",14, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC4 ",15, 1,           dinPortGet,      dinPortSet,      selectNOP, stringOnOff, NULL),
-};
-
-const scs_menu_item_t pageDOUT[] = {
-  SCS_ITEM("Pin# ", 0, MBNG_PATCH_NUM_DOUT-1, doutGet,         doutSet,         selectNOP, stringDec,  NULL),
-  SCS_ITEM("DOUT ", 0, MBNG_PATCH_NUM_DOUT-1, doutGet,         doutSet,         selectNOP, stringDOUT_SR,  NULL),
-  SCS_ITEM("Evn0 ", 0, 0x7f,        doutEvntGet,     doutEvntSet,     selectNOP, stringHex2O80, NULL),
-  SCS_ITEM("Evn1 ", 1, 0x7f,        doutEvntGet,     doutEvntSet,     selectNOP, stringHex2, NULL),
-  SCS_ITEM("USB1 ", 0, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_USB_MIDI_NUM_PORTS >= 2
-  SCS_ITEM("USB2 ", 1, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 3
-  SCS_ITEM("USB3 ", 2, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 4
-  SCS_ITEM("USB4 ", 3, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM(" IN1 ", 4, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM(" IN2 ", 5, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_UART_NUM >= 3
-  SCS_ITEM(" IN3 ", 6, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_UART_NUM >= 4
-  SCS_ITEM(" IN4 ", 7, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OSC1 ",12, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC2 ",13, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC3 ",14, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC4 ",15, 1,           doutPortGet,     doutPortSet,     selectNOP, stringOnOff, NULL),
-};
-
-const scs_menu_item_t pageM8x8[] = {
-  SCS_ITEM("Mat. ", 0, MBNG_PATCH_NUM_MATRIX-1, matrixGet, matrixSet,selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Mode ", 0,  1,          matrixModeGet,   matrixModeSet,    selectNOP, stringMatrixMode, NULL),
-  SCS_ITEM("Pin  ", 0, 63,          matrixPinGet,    matrixPinSet,    selectNOP, stringMatrixPin, NULL),
-  SCS_ITEM("Chn. ", 0, 15,          matrixChnGet,    matrixChnSet,    selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Note ", 0, 127,         matrixArgGet,    matrixArgSet,    selectNOP, stringNote,  NULL),
-  SCS_ITEM("DIN  ", 0, 16,          matrixDinGet,    matrixDinSet,    selectNOP, stringDec0Dis, NULL),
-  SCS_ITEM("DOUT ", 0, 16,          matrixDoutGet,   matrixDoutSet,   selectNOP, stringDec0Dis, NULL),
-  SCS_ITEM("USB1 ", 0, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#if MIOS32_USB_MIDI_NUM_PORTS >= 2
-  SCS_ITEM("USB2 ", 1, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 3
-  SCS_ITEM("USB3 ", 2, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 4
-  SCS_ITEM("USB4 ", 3, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OUT1 ", 4, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OUT2 ", 5, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#if MIOS32_UART_NUM >= 3
-  SCS_ITEM("OUT3 ", 6, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_UART_NUM >= 4
-  SCS_ITEM("OUT4 ", 7, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OSC1 ",12, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC2 ",13, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC3 ",14, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC4 ",15, 1,           matrixPortGet,   matrixPortSet,   selectNOP, stringOnOff, NULL),
-};
-
-const scs_menu_item_t pageAIN[] = {
-  SCS_ITEM("Pin# ", 0, MBNG_PATCH_NUM_AIN-1, ainGet,   ainSet,     selectNOP, stringDec,  NULL),
-  SCS_ITEM("Evn0 ", 0, 0x7f,        ainEvntGet,     ainEvntSet,     selectNOP, stringHex2O80, NULL),
-  SCS_ITEM("Evn1 ", 1, 0x7f,        ainEvntGet,     ainEvntSet,     selectNOP, stringHex2, NULL),
-  SCS_ITEM("USB1 ", 0, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_USB_MIDI_NUM_PORTS >= 2
-  SCS_ITEM("USB2 ", 1, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 3
-  SCS_ITEM("USB3 ", 2, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 4
-  SCS_ITEM("USB4 ", 3, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OUT1 ", 4, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OUT2 ", 5, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_UART_NUM >= 3
-  SCS_ITEM("OUT3 ", 6, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_UART_NUM >= 4
-  SCS_ITEM("OUT4 ", 7, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OSC1 ",12, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC2 ",13, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC3 ",14, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC4 ",15, 1,           ainPortGet,     ainPortSet,     selectNOP, stringOnOff, NULL),
-};
-
-const scs_menu_item_t pageAINSER[] = {
-  SCS_ITEM("Pin# ", 0, MBNG_PATCH_NUM_AINSER-1, ainserGet, ainserSet,    selectNOP, stringDec,  NULL),
-  SCS_ITEM("AINS",  0, MBNG_PATCH_NUM_AINSER-1, ainserGet, ainserSet,    selectNOP, stringAINSER_Pin,  NULL),
-  SCS_ITEM("Evn0 ", 0, 0x7f,        ainserEvntGet,     ainserEvntSet,     selectNOP, stringHex2O80, NULL),
-  SCS_ITEM("Evn1 ", 1, 0x7f,        ainserEvntGet,     ainserEvntSet,     selectNOP, stringHex2, NULL),
-  SCS_ITEM("USB1 ", 0, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_USB_MIDI_NUM_PORTS >= 2
-  SCS_ITEM("USB2 ", 1, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 3
-  SCS_ITEM("USB3 ", 2, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_USB_MIDI_NUM_PORTS >= 4
-  SCS_ITEM("USB4 ", 3, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OUT1 ", 4, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OUT2 ", 5, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#if MIOS32_UART_NUM >= 3
-  SCS_ITEM("OUT3 ", 6, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-#if MIOS32_UART_NUM >= 4
-  SCS_ITEM("OUT4 ", 7, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-#endif
-  SCS_ITEM("OSC1 ",12, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC2 ",13, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC3 ",14, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-  SCS_ITEM("OSC4 ",15, 1,           ainserPortGet,     ainserPortSet,     selectNOP, stringOnOff, NULL),
-};
-
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -749,11 +355,6 @@ const scs_menu_item_t pageMON[] = {
 
 
 const scs_menu_page_t rootMode0[] = {
-  SCS_PAGE("DIN  ", pageDIN),
-  SCS_PAGE("DOUT ", pageDOUT),
-  SCS_PAGE("M8x8 ", pageM8x8),
-  SCS_PAGE("AIN  ", pageAIN),
-  SCS_PAGE("AINS ", pageAINSER),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
@@ -803,9 +404,9 @@ static s32 displayHook(char *line1, char *line2)
     // print SD Card status message or patch
     if( line1[0] == 0 ) { // no MSD overlay?
       if( altMainPage ) {
-	sprintf(line1, "%-12s     BPM", mbng_file_p_patch_name);
+	sprintf(line1, "%-12s     BPM", MBNG_FILE_StatusMsgGet() ? MBNG_FILE_StatusMsgGet() : mbng_file_p_patch_name);
       } else {
-	sprintf(line1, "%-12s %4u.%2d", mbng_file_p_patch_name, measure, step);
+	sprintf(line1, "%-12s %4u.%2d", MBNG_FILE_StatusMsgGet() ? MBNG_FILE_StatusMsgGet() : mbng_file_p_patch_name, measure, step);
       }
     }
 

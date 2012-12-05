@@ -14,6 +14,8 @@
 #ifndef _MBNG_ENC_H
 #define _MBNG_ENC_H
 
+#include "mbng_event.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -34,6 +36,7 @@ extern s32 MBNG_ENC_GroupGet(void);
 extern s32 MBNG_ENC_GroupSet(u8 new_group);
 
 extern s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer);
+extern s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

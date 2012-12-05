@@ -11,6 +11,9 @@
  * ==========================================================================
  */
 
+// prints execution time on each received event
+#define DEBUG_EVENT_HANDLER_PERFORMANCE 0
+
 /////////////////////////////////////////////////////////////////////////////
 // Include files
 /////////////////////////////////////////////////////////////////////////////
@@ -27,6 +30,7 @@
 
 #include "mbng_sysex.h"
 #include "mbng_patch.h"
+#include "mbng_event.h"
 #include "mbng_din.h"
 #include "mbng_dout.h"
 #include "mbng_enc.h"
@@ -82,6 +86,11 @@ typedef enum {
 
 
 /////////////////////////////////////////////////////////////////////////////
+// global variables
+/////////////////////////////////////////////////////////////////////////////
+u8 debug_verbose_level;
+
+/////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 static u8 hw_enabled;
@@ -120,6 +129,12 @@ void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
+  // initialize stopwatch for measuring delays
+  MIOS32_STOPWATCH_Init(100);
+
+  // only print error messages by default
+  debug_verbose_level = DEBUG_VERBOSE_LEVEL_ERROR;
+
   // disable MSD by default (has to be enabled in SHIFT menu)
   msd_state = MSD_DISABLED;
 
@@ -155,6 +170,7 @@ void APP_Init(void)
   MBNG_SYSEX_Init(0);
   MIDI_ROUTER_Init(0);
   MBNG_PATCH_Init(0);
+  MBNG_EVENT_Init(0);
   MBNG_DIN_Init(0);
   MBNG_DOUT_Init(0);
   MBNG_ENC_Init(0);
@@ -197,8 +213,20 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // -> DOUT
-  MBNG_DOUT_MIDI_NotifyPackage(port, midi_package);
+#if DEBUG_EVENT_HANDLER_PERFORMANCE
+    MIOS32_STOPWATCH_Reset();
+#endif
+
+  // -> Event Handler
+  MBNG_EVENT_MIDI_NotifyPackage(port, midi_package);
+
+#if DEBUG_EVENT_HANDLER_PERFORMANCE
+  u32 cycles = MIOS32_STOPWATCH_ValueGet();
+  if( cycles == 0xffffffff )
+    DEBUG_MSG("[PERF] overrun!\n");
+  else
+    DEBUG_MSG("[PERF] %5d.%d mS\n", cycles/10, cycles%10);
+#endif
 
   // -> MIDI Router
   MIDI_ROUTER_Receive(port, midi_package);
@@ -375,6 +403,7 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
 	  MBNG_FILE_StatusMsgSet("No FAT");
 	} else {
+	  MBNG_FILE_StatusMsgSet(NULL);
 	  // check if patch file exists
 	  if( !MBNG_FILE_P_Valid() ) {
 	    // create new one

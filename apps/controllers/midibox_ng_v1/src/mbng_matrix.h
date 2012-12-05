@@ -14,6 +14,8 @@
 #ifndef _MBNG_MATRIX_H
 #define _MBNG_MATRIX_H
 
+#include "mbng_event.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -32,6 +34,7 @@ extern s32 MBNG_MATRIX_Init(u32 mode);
 extern s32 MBNG_MATRIX_PrepareCol(void);
 extern s32 MBNG_MATRIX_GetRow(void);
 extern s32 MBNG_MATRIX_ButtonHandler(void);
+extern s32 MBNG_MATRIX_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

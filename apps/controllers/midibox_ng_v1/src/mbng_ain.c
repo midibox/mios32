@@ -17,15 +17,17 @@
 
 #include <mios32.h>
 
+#include "app.h"
 #include "mbng_ain.h"
 #include "mbng_patch.h"
-
+#include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// local prototypes
+// local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 MBNG_AIN_SendMIDIEvent(mbng_patch_ain_entry_t *ain_cfg, u8 value_7bit);
+static u8 ain_group;
+static u8 ainser_group;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -35,6 +37,9 @@ s32 MBNG_AIN_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  ain_group = 0;
+  ainser_group = 0;
 
   return 0; // no error
 }
@@ -49,17 +54,34 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   if( pin >= MBNG_PATCH_NUM_AIN )
     return -1; // invalid pin
 
-#if 0
-  DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", pin, pin_value);
-#endif
+  // tmp. as long as no AIN HW enable provided
+  return 0;
 
-  // convert 12bit value to 7bit value
-  u8 value_7bit = pin_value >> 5;
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", pin, pin_value);
+  }
 
-  // get pin configuration from patch structure
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[pin];
+  // search for AIN
+  int ain_ix = ain_group * mbng_patch_cfg.ain_group_size + pin;
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AIN + ain_ix, &item) < 0 ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("No event assigned to AIN_IX %d\n", ain_ix);
+    }
+    return -2; // no event assigned
+  }
 
-  return MBNG_AIN_SendMIDIEvent(ain_cfg, value_7bit);
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MBNG_EVENT_ItemPrint(&item);
+  }
+
+  // scale 12bit value between min/max with fixed point artithmetic
+  int value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+
+  // TODO: handle AIN modes
+
+  // send MIDI event
+  return MBNG_EVENT_ItemSend(&item, value);
 }
 
 
@@ -72,55 +94,60 @@ s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
   if( mbng_pin >= MBNG_PATCH_NUM_AINSER )
     return -1; // invalid pin
 
-#if 0
-  DEBUG_MSG("MBNG_AIN_NotifyChange_SER64(%d, %d, %d)\n", module, pin, pin_value);
-#endif
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_AIN_NotifyChange_SER64(%d, %d, %d)\n", module, pin, pin_value);
+  }
 
-  // convert 12bit value to 7bit value
-  u8 value_7bit = pin_value >> 5;
+  // search for AIN
+  int ain_ix = ain_group * mbng_patch_cfg.ain_group_size + pin;
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AINSER + ain_ix, &item) < 0 ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("No event assigned to AINSER_IX %d\n", ain_ix);
+    }
+    return -2; // no event assigned
+  }
 
-  // get pin configuration from patch structure
-  mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[mbng_pin];
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MBNG_EVENT_ItemPrint(&item);
+  }
 
-  return MBNG_AIN_SendMIDIEvent(ain_cfg, value_7bit);
+  // scale 12bit value between min/max with fixed point artithmetic
+  int value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+
+  // TODO: handle AIN modes
+
+  // send MIDI event
+  return MBNG_EVENT_ItemSend(&item, value);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends the MIDI event based on AIN pin configuration
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
 /////////////////////////////////////////////////////////////////////////////
-static s32 MBNG_AIN_SendMIDIEvent(mbng_patch_ain_entry_t *ain_cfg, u8 value_7bit)
+s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 {
-  // silently ignore if pin not mapped (default)
-  if( !ain_cfg->enabled_ports )
-    return 0;
+  int ain_ix = item->id & 0xfff;
 
-  // determine MIDI event type
-  mios32_midi_event_t event = (ain_cfg->evnt0 >> 4) | 0x8;
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_AIN_NotifyReceivedValue(%d, %d)\n", ain_ix, value);
+  }
 
-  // create MIDI package
-  mios32_midi_package_t p;
-  p.ALL = 0;
-  p.type = event;
-  p.event = event;
+  return 0; // no error
+}
 
-  if( mbng_patch_cfg.global_chn )
-    p.chn = mbng_patch_cfg.global_chn - 1;
-  else
-    p.chn = ain_cfg->evnt0;
 
-  p.evnt1 = ain_cfg->evnt1;
-  p.evnt2 = value_7bit;
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_AIN_NotifyReceivedValue_SER64(mbng_event_item_t *item, u16 value)
+{
+  int ain_ix = item->id & 0xfff;
 
-  // send MIDI package over enabled ports
-  int i;
-  u16 mask = 1;
-  for(i=0; i<16; ++i, mask <<= 1) {
-    if( ain_cfg->enabled_ports & mask ) {
-      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-      MIOS32_MIDI_SendPackage(port, p);
-    }
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_AINSER64_NotifyReceivedValue(%d, %d)\n", ain_ix, value);
   }
 
   return 0; // no error

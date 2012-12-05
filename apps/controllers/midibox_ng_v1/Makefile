@@ -17,6 +17,7 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    = src/app.c \
 		  src/mbng_sysex.c \
 		  src/mbng_patch.c \
+		  src/mbng_event.c \
 		  src/mbng_din.c \
 		  src/mbng_dout.c \
 		  src/mbng_enc.c \
@@ -85,9 +86,6 @@ include $(MIOS32_PATH)/modules/file/file.mk
 
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
-
-# MIDI file Player
-include $(MIOS32_PATH)/modules/midifile/midifile.mk
 
 # USB Mass Storage Device Driver
 include $(MIOS32_PATH)/modules/msd/msd.mk

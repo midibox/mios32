@@ -17,8 +17,10 @@
 
 #include <mios32.h>
 
+#include "app.h"
 #include "mbng_dout.h"
 #include "mbng_patch.h"
+#include "mbng_event.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -29,52 +31,14 @@ s32 MBNG_DOUT_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+#if 0
   // set all DOUT pins depending on polarity
   int pin;
   u8 pin_value = mbng_patch_cfg.flags.INVERSE_DOUT;
   for(pin=0; pin<MBNG_PATCH_NUM_DOUT; ++pin)
     MIOS32_DOUT_PinSet(pin, pin_value);
+#endif
   
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_MIDI_NotifyPackage whenver a new
-// MIDI event has been received
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_DOUT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-{
-  // check for "all notes off" command
-  if( midi_package.event == CC &&
-      mbng_patch_cfg.all_notes_off_chn &&
-      (midi_package.chn == (mbng_patch_cfg.all_notes_off_chn - 1)) &&
-      midi_package.cc_number == 123 ) {
-    MBNG_DOUT_Init(0);
-  }      
-
-  // get first DOUT entry from patch structure
-  mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[0];
-
-  // create port mask
-  u8 subport_mask = (1 << (port&3));
-  u8 port_class = ((port-0x10) & 0xc)>>2;
-  u8 port_mask = subport_mask << (4*port_class);
-
-  // check for matching pins
-  int pin;
-  for(pin=0; pin<MBNG_PATCH_NUM_DOUT; ++pin, ++dout_cfg) {
-    // check if port is enabled
-    if( port == DEFAULT || (dout_cfg->enabled_ports & port_mask) ) {
-      // check for matching MIDI event
-      if( ((midi_package.evnt0 ^ dout_cfg->evnt0) & 0x7f) == 0 &&
-	  midi_package.evnt1 == dout_cfg->evnt1 ) {
-	// set pin
-	MBNG_DOUT_PinSet(pin, (midi_package.evnt2 >= 0x40) ? 1 : 0);
-      }
-    }
-  }
-
   return 0; // no error
 }
 
@@ -91,6 +55,7 @@ s32 MBNG_DOUT_PinSet(u32 pin, u32 pin_value)
   DEBUG_MSG("MBNG_DOUT_PinSet(%d, %d)\n", pin, pin_value);
 #endif
 
+#if 0
   // DOUT assigned to program change?
   if( mbng_patch_cfg.flags.ALT_PROGCHNG &&
       ((mbng_patch_dout[pin].evnt0 >> 4) | 0x8) == ProgramChange ) {
@@ -118,7 +83,24 @@ s32 MBNG_DOUT_PinSet(u32 pin, u32 pin_value)
 
     MIOS32_DOUT_PinSet(pin, pin_value);
   }
+#endif
 
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+{
+  int led_ix = item->id & 0xfff;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", led_ix, value);
+  }
 
   return 0; // no error
 }

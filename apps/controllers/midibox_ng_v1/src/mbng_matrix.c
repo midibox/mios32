@@ -17,8 +17,10 @@
 
 #include <mios32.h>
 
+#include "app.h"
 #include "mbng_matrix.h"
 #include "mbng_patch.h"
+#include "mbng_event.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -182,51 +184,25 @@ s32 MBNG_MATRIX_ButtonHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 {
-  //MIOS32_MIDI_SendDebugMessage("matrix=%d pin=%d pin_value=%d\n", matrix, pin, pin_value);
-
-  mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
-
-  // button depressed? (take INVERSE_DIN flag into account)
-  // note: on a common configuration (MBHP_DINX4 module used with pull-ups), pins are inverse
-  u8 depressed = pin_value ? 0 : 1;
-  if( mbng_patch_cfg.flags.INVERSE_DIN )
-    depressed ^= 1;
-
-  // here we could differ between matrix modes
-  // currently only MBNG_PATCH_MATRIX_MODE_COMMON supported (sending note events)
-
-  // create MIDI package
-  mios32_midi_package_t p;
-  p.ALL = 0;
-  p.type = NoteOn;
-  p.event = NoteOn;
-
-  if( mbng_patch_cfg.global_chn )
-    p.chn = mbng_patch_cfg.global_chn - 1;
-  else {
-    if( m->mode == MBNG_PATCH_MATRIX_MODE_MAPPED ) {
-      p.chn = m->map_chn[pin] - 1;
-    } else {
-      p.chn = m->chn - 1;
-    }
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MIOS32_MIDI_SendDebugMessage("matrix=%d pin=%d pin_value=%d\n", matrix, pin, pin_value);
   }
 
-  if( m->mode == MBNG_PATCH_MATRIX_MODE_MAPPED ) {
-    p.evnt1 = m->map_evnt1[pin] & 0x7f;
-  } else {
-    p.evnt1 = (m->arg + pin) & 0x7f;
-  }
-  p.evnt2 = (depressed ? 0x00 : 0x7f);
+  // TODO
 
-  // send MIDI package over enabled ports
-  int i;
-  u16 mask = 1;
-  for(i=0; i<16; ++i, mask <<= 1) {
-    if( m->enabled_ports & mask ) {
-      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-      MIOS32_MIDI_SendPackage(port, p);
-    }
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+{
+  int button_matrix_ix = item->id & 0xfff;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_MATRIX_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, value);
   }
 
   return 0; // no error

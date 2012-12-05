@@ -324,165 +324,7 @@ s32 MBNG_FILE_P_Read(char *filename)
 
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "DIN") == 0 ) {
-	  s32 sr;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (sr=get_sr(word)) < 0 || sr >= MBNG_PATCH_NUM_DIN  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR.Pin format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
-		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid MIDI port format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
-#endif
-	    } else {
-	      s32 mode;
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (mode=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_P] ERROR invalid Mode format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
-#endif
-	      } else {
-		u8 events[6];
-		int i;
-		for(i=0; i<6; ++i) {
-		  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		  if( (events[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid Event format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, sr%8);
-#endif
-		    break;
-		  } else {
-		    events[i] &= 0x7f;
-		  }
-		}
-
-		if( i == 6 ) {
-		  // finally a valid line!
-		  mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[sr];
-		  din_cfg->enabled_ports = enabled_ports;
-		  din_cfg->mode = mode;
-		  din_cfg->evnt0_on = events[0];
-		  din_cfg->evnt1_on = events[1];
-		  din_cfg->evnt2_on = events[2];
-		  din_cfg->evnt0_off = events[3];
-		  din_cfg->evnt1_off = events[4];
-		  din_cfg->evnt2_off = events[5];
-		}
-	      }
-	    }
-	    
-	  }	  
-	} else if( strcmp(parameter, "DOUT") == 0 ) {
-	  s32 sr;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (sr=get_sr(word)) < 0 || sr >= MBNG_PATCH_NUM_DOUT  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR.Pin format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
-		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid MIDI port format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, 7-(sr%8));
-#endif
-	    } else {
-	      u8 events[2];
-	      int i;
-	      for(i=0; i<2; ++i) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (events[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid Event format for parameter '%s %2d.D%d'\n", parameter, (sr/8)+1, (7-sr%8));
-#endif
-		  break;
-		} else {
-		  events[i] &= 0x7f;
-		}
-	      }
-
-	      if( i == 2 ) {
-		// finally a valid line!
-		sr ^= 7; // DOUT SR pins are mirrored
-		mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[sr];
-		dout_cfg->enabled_ports = enabled_ports;
-		dout_cfg->evnt0 = events[0];
-		dout_cfg->evnt1 = events[1];
-	      }
-	    }
-	    
-	  }	  
-	} else if( strcmp(parameter, "AIN") == 0 ) {
-	  s32 ain;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (ain=get_dec(word)) < 0 || ain >= MBNG_PATCH_NUM_AIN  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid AIN pin #%d for parameter '%s'\n", ain, parameter);
-#endif
-	  } else {
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
-		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, ain);
-#endif
-	    } else {
-	      u8 events[2];
-	      int i;
-	      for(i=0; i<2; ++i) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (events[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid Event format for parameter '%s %d'\n", parameter, ain);
-#endif
-		  break;
-		} else {
-		  events[i] &= 0x7f;
-		}
-	      }
-
-	      if( i == 2 ) {
-		// finally a valid line!
-		mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[ain];
-		ain_cfg->enabled_ports = enabled_ports;
-		ain_cfg->evnt0 = events[0];
-		ain_cfg->evnt1 = events[1];
-	      }
-	    }
-	    
-	  }	  
-	} else if( strcmp(parameter, "ENCHW") == 0 ) {
+	} else if( strcmp(parameter, "ENC") == 0 ) {
 	  s32 enc;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  if( (enc=get_dec(word)) < 1 || enc >= MIOS32_ENC_NUM_MAX ) {
@@ -544,54 +386,6 @@ s32 MBNG_FILE_P_Read(char *filename)
 	      }
 	    }
 	  }
-	} else if( strcmp(parameter, "AINSER") == 0 ) {
-	  s32 ain;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (ain=get_dec(word)) < 0 || ain >= MBNG_PATCH_NUM_AINSER  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid AINSER pin for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
-		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, ain);
-#endif
-	    } else {
-	      u8 events[2];
-	      int i;
-	      for(i=0; i<2; ++i) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (events[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid Event format for parameter '%s %d'\n", parameter, ain);
-#endif
-		  break;
-		} else {
-		  events[i] &= 0x7f;
-		}
-	      }
-
-	      if( i == 2 ) {
-		// finally a valid line!
-		mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[ain];
-		ain_cfg->enabled_ports = enabled_ports;
-		ain_cfg->evnt0 = events[0];
-		ain_cfg->evnt1 = events[1];
-	      }
-	    }
-	    
-	  }	  
 	} else if( strcmp(parameter, "MATRIX") == 0 ) {
 	  s32 matrix;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -603,130 +397,25 @@ s32 MBNG_FILE_P_Read(char *filename)
 	    // user counts from 1...
 	    --matrix;
 
-	    s32 enabled_ports = 0;
-	    int bit;
-	    for(bit=0; bit<16; ++bit) {
+	    // we have to read 2 additional values
+	    int values[2];
+	    const char value_name[2][10] = { "SR_DIN", "SR_DOUT" };
+	    int i;
+	    for(i=0; i<2; ++i) {
 	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int enable = get_dec(word);
-	      if( enable < 0 )
+	      if( (values[i]=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[MBNG_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, matrix);
+#endif
 		break;
-	      if( enable >= 1 )
-		enabled_ports |= (1 << bit);
-	    }
-
-	    if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid MIDI port format for parameter '%s %d'\n", parameter, matrix);
-#endif
-	    } else {
-	      // we have to read 5 additional values
-	      int values[5];
-	      const char value_name[5][10] = { "Mode", "Channel", "Arg", "SR_DIN", "SR_DOUT" };
-	      int i;
-	      for(i=0; i<5; ++i) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (values[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, matrix);
-#endif
-		  break;
-		}
-	      }
-
-	      if( i == 5 ) {
-		// finally a valid line!
-		mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
-		m->enabled_ports = enabled_ports;
-		m->mode = values[0];
-		m->chn = values[1];
-		m->arg = values[2];
-		m->sr_din = values[3];
-		m->sr_dout = values[4];
 	      }
 	    }
-	  }	  
-	} else if( strcmp(parameter, "MATRIX_MAP_CHN") == 0 ) {
-	  s32 matrix;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (matrix=get_dec(word)) < 1 || matrix > MBNG_PATCH_NUM_MATRIX  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    // user counts from 1...
-	    --matrix;
 
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int row;
-	    if( (row=get_dec(word)) < 1 || row > 8 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid row number for parameter '%s'\n", parameter);
-#endif
-	    } else {
-	      // user counts from 1...
-	      --row;
-
-	      int chn[8];
-	      int col;
-	      for(col=0; col<8; ++col) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (chn[col]=get_dec(word)) < 1 || chn[col] > 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid channel number for parameter '%s'\n", parameter);
-#endif
-		  break;
-		}
-	      }
-
-	      // valid line?
-	      if( col == 8 ) {
-		mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
-		for(col=0; col<8; ++col) {
-		  m->map_chn[row*8+col] = chn[col];
-		}
-	      }
-	    }
-	  }
-	} else if( strcmp(parameter, "MATRIX_MAP_EVNT1") == 0 ) {
-	  s32 matrix;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (matrix=get_dec(word)) < 1 || matrix > MBNG_PATCH_NUM_MATRIX  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    // user counts from 1...
-	    --matrix;
-
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int row;
-	    if( (row=get_dec(word)) < 1 || row > 8 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid row number for parameter '%s'\n", parameter);
-#endif
-	    } else {
-	      // user counts from 1...
-	      --row;
-
-	      int evnt1[8];
-	      int col;
-	      for(col=0; col<8; ++col) {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		if( (evnt1[col]=get_dec(word)) < 0 || evnt1[col] > 127 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid evnt1 number for parameter '%s'\n", parameter);
-#endif
-		  break;
-		}
-	      }
-
-	      // valid line?
-	      if( col == 8 ) {
-		mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
-		for(col=0; col<8; ++col) {
-		  m->map_evnt1[row*8+col] = evnt1[col];
-		}
-	      }
+	    if( i == 2 ) {
+	      // finally a valid line!
+	      mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
+	      m->sr_din = values[0];
+	      m->sr_dout = values[1];
 	    }
 	  }
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
@@ -762,42 +451,6 @@ s32 MBNG_FILE_P_Read(char *filename)
 	      n->dst_port = values[2];
 	      n->dst_chn = values[3];
 	    }
-	  }
-	} else if( strcmp(parameter, "ForwardIO") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    mbng_patch_cfg.flags.FORWARD_IO = value;
-	  }
-	} else if( strcmp(parameter, "InverseDIN") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    mbng_patch_cfg.flags.INVERSE_DIN = value;
-	  }
-	} else if( strcmp(parameter, "InverseDOUT") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    mbng_patch_cfg.flags.INVERSE_DOUT = value;
-	  }
-	} else if( strcmp(parameter, "AltProgramChange") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    mbng_patch_cfg.flags.ALT_PROGCHNG = value;
 	  }
 	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
 	  u32 value;
@@ -1055,61 +708,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    sprintf(line_buffer, "\n\n#DIN;SR.Pin;USB1;USB2;USB3;USB4;OUT1;OUT2;OUT3;OUT4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;OnEv0;OnEv1;OnEv2;OffEv0;OffEv1;OffEv2\n");
-    FLUSH_BUFFER;
-
-    int din;
-    mbng_patch_din_entry_t *din_cfg = (mbng_patch_din_entry_t *)&mbng_patch_din[0];
-    for(din=0; din<MBNG_PATCH_NUM_DIN; ++din, ++din_cfg) {
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (din_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "DIN;%d.D%d;%s;%d;0x%02X;0x%02X;0x%02X;0x%02x;0x%02x;0x%02x\n",
-	      (din / 8) + 1,
-	      din % 8,
-	      ports_bin,
-	      din_cfg->mode,
-	      din_cfg->evnt0_on | 0x80, din_cfg->evnt1_on, din_cfg->evnt2_on,
-	      din_cfg->evnt0_off | 0x80, din_cfg->evnt1_off, din_cfg->evnt2_off);
-      FLUSH_BUFFER;
-    }
-  }
-
-  {
-    sprintf(line_buffer, "\n\n#DOUT;SR.Pin;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Evnt0;Evnt1\n");
-    FLUSH_BUFFER;
-
-    int dout;
-    mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[0];
-    for(dout=0; dout<MBNG_PATCH_NUM_DOUT; ++dout, ++dout_cfg) {
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (dout_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "DOUT;%d.D%d;%s;0x%02X;0x%02X\n",
-	      (dout / 8) + 1,
-	      7 - (dout % 8),
-	      ports_bin,
-	      dout_cfg->evnt0 | 0x80, dout_cfg->evnt1);
-      FLUSH_BUFFER;
-    }
-  }
-
-  {
-    sprintf(line_buffer, "\n\n#ENCHW;SR;Pin;Type\n");
+    sprintf(line_buffer, "\n\n#ENC;SR;Pin;Type\n");
     FLUSH_BUFFER;
 
     int enc;
@@ -1127,7 +726,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
       default: strcpy(enc_type, "DISABLED"); break;
       }
 
-      sprintf(line_buffer, "ENCHW;%d;%d;%d;%s\n",
+      sprintf(line_buffer, "ENC;%d;%d;%d;%s\n",
 	      enc,
 	      enc_config.cfg.sr,
 	      enc_config.cfg.pos,
@@ -1137,120 +736,18 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#AIN;Pin;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Evnt0;Evnt1\n");
+    sprintf(line_buffer, "\n\n#MATRIX;DIN_SR;DOUT_SR\n");
     FLUSH_BUFFER;
 
-    int ain;
-    mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ain[0];
-    for(ain=0; ain<MBNG_PATCH_NUM_AIN; ++ain, ++ain_cfg) {
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (ain_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "AIN;%d;%s;0x%02X;0x%02X\n",
-	      ain,
-	      ports_bin,
-	      ain_cfg->evnt0 | 0x80, ain_cfg->evnt1);
-      FLUSH_BUFFER;
-    }
-  }
-
-  {
-    sprintf(line_buffer, "\n\n#AINSER;Pin;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
-    FLUSH_BUFFER;
-    sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Evnt0;Evnt1\n");
-    FLUSH_BUFFER;
-
-    int ain;
-    mbng_patch_ain_entry_t *ain_cfg = (mbng_patch_ain_entry_t *)&mbng_patch_ainser[0];
-    for(ain=0; ain<MBNG_PATCH_NUM_AINSER; ++ain, ++ain_cfg) {
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (ain_cfg->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "AINSER;%d;%s;0x%02X;0x%02X\n",
-	      ain,
-	      ports_bin,
-	      ain_cfg->evnt0 | 0x80, ain_cfg->evnt1);
-      FLUSH_BUFFER;
-    }
-  }
-
-  {
     int matrix;
     mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX; ++matrix, ++m) {
-      sprintf(line_buffer, "\n\n#MATRIX;Number;USB1;USB2;USB3;USB4;IN1;IN2;IN3;IN4;");
-      FLUSH_BUFFER;
-      sprintf(line_buffer, "RES1;RES2;RES3;RES4;OSC1;OSC2;OSC3;OSC4;Mode;Chn;Arg;DIN_SR;DOUT_SR\n");
-      FLUSH_BUFFER;
 
-      char ports_bin[40];
-      int bit;
-      for(bit=0; bit<16; ++bit) {
-	ports_bin[2*bit+0] = (m->enabled_ports & (1 << bit)) ? '1' : '0';
-	ports_bin[2*bit+1] = ';';
-      }
-      ports_bin[2*16-1] = 0; // removes also last semicolon
-
-      sprintf(line_buffer, "MATRIX;%d;%s;%d;%d;0x%02X;%d;%d\n",
+      sprintf(line_buffer, "MATRIX;%d;%d;%d\n",
 	      matrix+1,
-	      ports_bin,
-	      m->mode,
-	      m->chn,
-	      m->arg,
 	      m->sr_din,
 	      m->sr_dout);
       FLUSH_BUFFER;
-
-      sprintf(line_buffer, "\n#MATRIX_MAP_CHN;Number;Row;C1;C2;C3;C4;C5;C6;C7;C8\n");
-      FLUSH_BUFFER;
-      int row;
-      for(row=0; row<8; ++row) {
-	int ix = row*8;
-
-	sprintf(line_buffer, "MATRIX_MAP_CHN;%d;%d;%d;%d;%d;%d;%d;%d;%d;%d\n",
-		matrix+1,
-		row+1,
-		m->map_chn[ix+0],
-		m->map_chn[ix+1],
-		m->map_chn[ix+2],
-		m->map_chn[ix+3],
-		m->map_chn[ix+4],
-		m->map_chn[ix+5],
-		m->map_chn[ix+6],
-		m->map_chn[ix+7]);
-	FLUSH_BUFFER;
-      }
-
-      sprintf(line_buffer, "#MATRIX_MAP_EVNT1;Number;Row;C1;C2;C3;C4;C5;C6;C7;C8\n");
-      FLUSH_BUFFER;
-      for(row=0; row<8; ++row) {
-	int ix = row*8;
-
-	sprintf(line_buffer, "MATRIX_MAP_EVNT1;%d;%d;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X;0x%02X\n",
-		matrix+1,
-		row+1,
-		m->map_evnt1[ix+0],
-		m->map_evnt1[ix+1],
-		m->map_evnt1[ix+2],
-		m->map_evnt1[ix+3],
-		m->map_evnt1[ix+4],
-		m->map_evnt1[ix+5],
-		m->map_evnt1[ix+6],
-		m->map_evnt1[ix+7]);
-	FLUSH_BUFFER;
-      }
     }
   }
 
@@ -1332,14 +829,6 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "ForwardIO;%d\n", mbng_patch_cfg.flags.FORWARD_IO);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "InverseDIN;%d\n", mbng_patch_cfg.flags.INVERSE_DIN);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "InverseDOUT;%d\n", mbng_patch_cfg.flags.INVERSE_DOUT);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "AltProgramChange;%d\n", mbng_patch_cfg.flags.ALT_PROGCHNG);
-  FLUSH_BUFFER;
   sprintf(line_buffer, "DebounceCtr;%d\n", mbng_patch_cfg.debounce_ctr);
   FLUSH_BUFFER;
   sprintf(line_buffer, "GlobalChannel;%d\n", mbng_patch_cfg.global_chn);

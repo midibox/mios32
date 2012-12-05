@@ -17,8 +17,10 @@
 
 #include <mios32.h>
 
+#include "app.h"
 #include "mbng_enc.h"
 #include "mbng_patch.h"
+#include "mbng_event.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -70,64 +72,84 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
   if( encoder >= MBNG_PATCH_NUM_ENC )
     return -1; // invalid encoder
 
-#if 0
-  DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
-#endif
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
+  }
 
-  int enc_ix = (enc_group * mbng_patch_cfg.enc_group_size + encoder) % MBNG_PATCH_NUM_ENC;
+  // search for ENC
+  int enc_ix = enc_group * mbng_patch_cfg.enc_group_size + encoder;
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_ENC + enc_ix, &item) < 0 ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("No event assigned to ENC_IX %d\n", enc_ix);
+    }
+    return -2; // no event assigned
+  }
 
-  // get encoder configuration from patch structure
-  mbng_patch_enc_entry_t *enc_cfg = (mbng_patch_enc_entry_t *)&mbng_patch_enc[enc_ix];
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MBNG_EVENT_ItemPrint(&item);
+  }
 
-  // TODO: implement different MIDI modes
-  // currently we only provide absolute values
-  u8 value = 0;
-  switch( enc_cfg->mode ) {
-  case 0:
-    return 0; // encoder disabled
+  int value = 0;
+  switch( item.flags.ENC.enc_mode ) {
+  case MBNG_EVENT_ENC_MODE_40SPEED:
+    value = 0x40 + incrementer;
+    if( value < 0 )
+      value = 0;
+    else if( value >= 0x7f )
+      value = 0x7f;
+    break;
 
-  default: { // absolute mode
-    int new_value = enc_value[enc_ix] + incrementer;
-    if( new_value < enc_cfg->min )
-      new_value = enc_cfg->min;
-    else if( new_value > enc_cfg->max )
-      new_value = enc_cfg->max;      
+  case MBNG_EVENT_ENC_MODE_00SPEED:
+    value = incrementer & 0x7f;
+    break;
 
-    if( new_value == enc_value[enc_ix] )
+  case MBNG_EVENT_ENC_MODE_40_1:
+    value = incrementer > 0 ? 0x41 : 0x3f;
+    break;
+
+  case MBNG_EVENT_ENC_MODE_00_1:
+    value = incrementer > 0 ? 0x01 : 0x7f;
+    break;
+
+  case MBNG_EVENT_ENC_MODE_INC_DEC:
+    // TODO
+    // dummy:
+    value = incrementer > 0 ? 0x41 : 0x3f;
+    break;
+
+  default: // MBNG_EVENT_ENC_MODE_ABSOLUTE
+    value = enc_value[enc_ix] + incrementer;
+    if( value < item.min )
+      value = item.min;
+    else if( value > item.max )
+      value = item.max;
+
+    if( value == enc_value[enc_ix] )
       return 0; // no change
 
-    enc_value[enc_ix] = new_value;
-    value = new_value & 0x7f; // TODO: NRPN etc for higher value range
-  }
+    enc_value[enc_ix] = value;
   }
 
-  // determine MIDI event type
-  mios32_midi_event_t event = (enc_cfg->evnt0 >> 4) | 0x8;
+  // send MIDI event
+  return MBNG_EVENT_ItemSend(&item, value);
+}
 
-  // create MIDI package
-  mios32_midi_package_t p;
-  p.ALL = 0;
-  p.type = event;
-  p.event = event;
 
-  if( mbng_patch_cfg.global_chn )
-    p.chn = mbng_patch_cfg.global_chn - 1;
-  else
-    p.chn = enc_cfg->evnt0;
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_ItemReceive when a matching value
+// has been received
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+{
+  int enc_ix = item->id & 0xfff;
 
-  p.evnt1 = enc_cfg->evnt1;
-  p.evnt2 = value;
-
-  // send MIDI package over enabled ports
-  int i;
-  u16 mask = 1;
-  for(i=0; i<16; ++i, mask <<= 1) {
-    if( enc_cfg->enabled_ports & mask ) {
-      // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-      mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-      MIOS32_MIDI_SendPackage(port, p);
-    }
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_ix, value);
   }
+
+  if( enc_ix < MBNG_PATCH_NUM_ENC )
+    enc_value[enc_ix] = value;
 
   return 0; // no error
 }
