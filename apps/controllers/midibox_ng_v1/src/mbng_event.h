@@ -70,6 +70,11 @@ typedef enum {
   MBNG_EVENT_AIN_MODE_PARALLAX = 3,
 } mbng_event_ain_mode_t;
 
+typedef enum {
+  MBNG_EVENT_NRPN_FORMAT_UNSIGNED = 0,
+  MBNG_EVENT_NRPN_FORMAT_SIGNED   = 1,
+} mbng_event_nrpn_format_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -127,11 +132,11 @@ typedef struct {
   u16 id;
   mbng_event_flags_t flags;
   u16 enabled_ports;
-  u16 min;
-  u16 max;
+  s16 min;
+  s16 max;
   u32 stream_size;
   u8* stream;
-  u8 lcd_num;
+  u8 lcd;
   u8 lcd_pos;
   char *label;
 } mbng_event_item_t;
@@ -144,7 +149,6 @@ typedef struct {
 extern s32 MBNG_EVENT_Init(u32 mode);
 
 extern s32 MBNG_EVENT_PoolClear(void);
-
 extern s32 MBNG_EVENT_PoolPrint(void);
 
 extern s32 MBNG_EVENT_PoolNumItemsGet(void);
@@ -152,12 +156,17 @@ extern s32 MBNG_EVENT_PoolSizeGet(void);
 extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
 
 extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item);
 extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item);
+extern mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event);
 extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
+extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
+extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
+extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);

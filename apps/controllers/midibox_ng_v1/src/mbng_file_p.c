@@ -32,6 +32,7 @@
 #include "mbng_file.h"
 #include "mbng_file_p.h"
 #include "mbng_patch.h"
+#include "mbng_event.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -165,18 +166,18 @@ static char *remove_quotes(char *word)
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses a decimal or hex value
 // returns >= 0 if value is valid
-// returns -1 if value is invalid
+// returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
   if( word == NULL )
-    return -1;
+    return -1000000000;
 
   char *next;
   long l = strtol(word, &next, 0);
 
   if( word == next )
-    return -1;
+    return -1000000000;
 
   return l; // value is valid
 }
@@ -250,8 +251,6 @@ static s32 get_sr(char *word)
 // returns >= 0 if value is valid
 // returns -1 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
-// not required anymore
-#if 0
 static s32 get_bin(char *word, int numBits)
 {
   if( word == NULL )
@@ -274,7 +273,430 @@ static s32 get_bin(char *word, int numBits)
 
   return value;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a event definition and adds it to the pool
+// returns >= 0 if event is valid
+// returns -1 if event is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parse_event(char *event, char *brkt)
+{
+  mbng_event_item_t item;
+
+  MBNG_EVENT_ItemInit(&item);
+  item.id = MBNG_EVENT_ItemIdFromControllerStrGet(event);
+
+#define STREAM_MAX_SIZE 128
+  u8 stream[STREAM_MAX_SIZE];
+  item.stream = stream;
+  item.stream_size = 0;
+
+#define LABEL_MAX_SIZE 41
+  char label[LABEL_MAX_SIZE];
+  item.label = label;
+  label[0] = 0;
+
+  if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_DISABLED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR: EVENT_%s item not supported!\n", event);
 #endif
+    return -1;
+  }
+
+  // parse the parameters
+  while( brkt != NULL ) {
+    const char *separators = " \t";
+    const char *separator_colon = ":";
+    char *parameter;
+    int eq_found = 0;
+
+    // parameter name + '='
+    if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+      break;
+    } else {
+      // since strstr() doesn't work for unknown reasons (maybe newlib issue)
+      char *search_str = parameter;
+      for(; *search_str != 0 && !eq_found; ++search_str) {
+	if( *search_str == '=' ) {
+	  eq_found = 1;
+	  *search_str = 0;
+	  if( search_str[1] != 0 ) {
+	    if( brkt ) {
+	      brkt = (char *)&search_str[1];
+	      brkt[strlen(brkt)] = ' ';
+	    }
+	  }
+	}
+      }
+    }
+
+    // if '=' wasn't found, check if there are spaces between
+    if( !eq_found && brkt != NULL ) {
+      // since strstr() doesn't work for unknown reasons (maybe newlib issue)
+      char *search_str = brkt;
+      for(; *search_str != 0 && !eq_found; ++search_str) {
+	if( *search_str == '=' ) {
+	  eq_found = 1;
+	  brkt = (char *)&search_str[1];
+	}
+      }
+    }
+
+    if( brkt == NULL || brkt[0] == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after EVENT_%s ... %s\n", event, parameter);
+#endif
+      return -1;
+    } else if( !eq_found ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing '=' after EVENT_%s ... %s\n", event, parameter);
+#endif
+      return -1;
+    }
+
+    // we can't use strtok_r here, since we have to consider quotes...
+    char *value_str = brkt;
+    {
+      int quote_started = 0;
+
+      for(; *brkt != 0 && (*brkt == ' ' || *brkt == '\t'); ++brkt);
+
+      if( *brkt == '\'' || *brkt == '"' ) {
+	quote_started = 1;
+	++brkt;
+      }
+
+      value_str = brkt;
+
+      if( quote_started ) {
+	for(; *brkt != 0 && *brkt != '\'' && *brkt != '\"'; ++brkt);
+      } else {
+	for(; *brkt != 0 && *brkt != ' ' && *brkt != '\t'; ++brkt);
+      }
+      *brkt = 0;
+      ++brkt;
+    }
+
+    if( !value_str[0] ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after EVENT_%s ... %s\n", event, parameter);
+#endif
+      return -1;
+    }
+
+#if 0
+    DEBUG_MSG("%s -> '%s'\n", parameter, value_str);
+#endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "id") == 0 ) {
+      int id;
+      if( (id=get_dec(value_str)) < 0 || id > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid ID in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.id = (item.id & 0xf000) | id;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "id") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid ID in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.id = (item.id & 0xf000) | value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "type") == 0 ) {
+      mbng_event_type_t event_type = MBNG_EVENT_ItemTypeFromStrGet(value_str);
+      if( event_type == -1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid event type in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.flags.general.type = event_type;
+
+	switch( event_type ) {
+	case MBNG_EVENT_TYPE_NOTE_OFF:
+	case MBNG_EVENT_TYPE_NOTE_ON:
+	case MBNG_EVENT_TYPE_POLY_PRESSURE:
+	case MBNG_EVENT_TYPE_CC: {
+	  item.stream_size = 2;
+	  item.stream[0] = (event_type << 4);
+	  item.stream[1] = 0x30;
+	} break;
+
+	case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
+	case MBNG_EVENT_TYPE_AFTERTOUCH:
+	case MBNG_EVENT_TYPE_PITCHBEND: {
+	  item.stream_size = 1;
+	  item.stream[0] = (event_type << 4);
+	} break;
+
+	case MBNG_EVENT_TYPE_SYSEX: {
+	  item.stream_size = 2;
+	  item.stream[0] = 0x00; // SysEx type
+	  item.stream[1] = 0x00; // Value Pos
+	} break;
+
+	case MBNG_EVENT_TYPE_RPN:
+	case MBNG_EVENT_TYPE_NRPN: {
+	  item.stream_size = 3;
+	  item.stream[0] = 0x00; // number
+	  item.stream[1] = 0x00;
+	  item.stream[2] = 0x00; // value format
+	} break;
+
+	case MBNG_EVENT_TYPE_META: {
+	  item.stream_size = 2;
+	  item.stream[0] = 0x00; // Meta Number
+	  item.stream[1] = 0x00;
+	} break;
+
+	default:
+	  item.stream_size = 0;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "chn") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 1 || value > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid MIDI channel in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( item.flags.general.type == MBNG_EVENT_TYPE_SYSEX || item.flags.general.type == MBNG_EVENT_TYPE_META ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] WARNING: no MIDI channel expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+	} else {
+	  // no extra check if event_type already defined...
+	  stream[0] = (stream[0] & 0xf0) | (value-1);
+	}
+      }
+
+    } else if( strcasecmp(parameter, "key") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 127 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid key number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( item.flags.general.type != MBNG_EVENT_TYPE_NOTE_OFF &&
+	    item.flags.general.type != MBNG_EVENT_TYPE_NOTE_ON &&
+	    item.flags.general.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] WARNING: no key number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+	} else {
+	  // no extra check if event_type already defined...
+	  stream[1] = value;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cc") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 127 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid CC number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( item.flags.general.type != MBNG_EVENT_TYPE_CC ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] WARNING: no CC number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+	} else {
+	  // no extra check if event_type already defined...
+	  stream[1] = value;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "rpn") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid RPN number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( item.flags.general.type != MBNG_EVENT_TYPE_RPN ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] WARNING: no RPN number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+	} else {
+	  // no extra check if event_type already defined...
+	  stream[0] = value & 0xff;
+	  stream[1] = value >> 8;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "rpn_format") == 0 ) {
+      mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
+      if( nrpn_format == -1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid RPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	// no extra check if event_type already defined...
+	stream[2] = nrpn_format;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "nrpn") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid NRPN number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( item.flags.general.type != MBNG_EVENT_TYPE_NRPN ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] WARNING: no NRPN number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+	} else {
+	  // no extra check if event_type already defined...
+	  stream[0] = value & 0xff;
+	  stream[1] = value >> 8;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "nrpn_format") == 0 ) {
+      mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
+      if( nrpn_format == -1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid NRPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	// no extra check if event_type already defined...
+	stream[2] = nrpn_format;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "range") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[2];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) <= -1000000000 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) <= -1000000000 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid range format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( values[0] < -16384 || values[0] > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid min value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else if( values[1] < -16384 || values[1] > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid max value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else {
+	  item.min = values[0];
+	  item.max = values[1];
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ports") == 0 ) {
+      int value;
+      if( (value=get_bin(value_str, 16)) < 0 || value > 0xffff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid port mask in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.enabled_ports = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid LCD position format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( values[0] < 1 || values[0] >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid LCD number (first item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else if( values[1] < 1 || values[1] >= 64 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid LCD X position (second item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else if( values[2] < 1 || values[2] >= 4 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid LCD Y position (third item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else {
+	  item.lcd = values[0] - 1;
+	  item.lcd_pos = ((values[1]-1) & 0x3f) | ((values[2]-1) & 0x3) << 6;
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "label") == 0 ) {
+      if( strlen(value_str) >= LABEL_MAX_SIZE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: string to long in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	strcpy(item.label, value_str);
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] WARNING: unsupported parameter in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  MBNG_EVENT_ItemPrint(&item);
+#endif
+
+  if( MBNG_EVENT_ItemAdd(&item) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR: couldn't add EVENT_%s ... id=%d: out of memory!\n", event, item.id & 0xfff);
+#endif
+    return -2;
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // reads the patch file content (again)
@@ -285,6 +707,7 @@ s32 MBNG_FILE_P_Read(char *filename)
   s32 status = 0;
   mbng_file_p_info_t *info = &mbng_file_p_info;
   file_t file;
+  u8 got_first_event_item = 0;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
 
@@ -324,6 +747,13 @@ s32 MBNG_FILE_P_Read(char *filename)
 
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
+	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
+	  // this huge task is done in a separate function
+	  if( !got_first_event_item ) {
+	    got_first_event_item = 1;
+	    MBNG_EVENT_PoolClear();
+	  }
+	  parse_event((char *)(parameter+6), brkt);
 	} else if( strcmp(parameter, "ENC") == 0 ) {
 	  s32 enc;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -353,19 +783,19 @@ s32 MBNG_FILE_P_Read(char *filename)
 		  DEBUG_MSG("[MBNG_FILE_P] ERROR missing encoder type for parameter '%s %d' (0,2,4,6)\n", parameter, enc);
 #endif
 		  continue;
-		} else if( strcmp(word, "DISABLED") == 0 ) {
+		} else if( strcasecmp(word, "disabled") == 0 ) {
 		  enc_type = DISABLED;
-		} else if( strcmp(word, "NON_DETENTED") == 0 ) {
+		} else if( strcasecmp(word, "non_detented") == 0 ) {
 		  enc_type = NON_DETENTED;
-		} else if( strcmp(word, "DETENTED1") == 0 ) {
+		} else if( strcasecmp(word, "detented1") == 0 ) {
 		  enc_type = DETENTED1;
-		} else if( strcmp(word, "DETENTED2") == 0 ) {
+		} else if( strcasecmp(word, "detented2") == 0 ) {
 		  enc_type = DETENTED2;
-		} else if( strcmp(word, "DETENTED3") == 0 ) {
+		} else if( strcasecmp(word, "detented3") == 0 ) {
 		  enc_type = DETENTED3;
-		} else if( strcmp(word, "DETENTED4") == 0 ) {
+		} else if( strcasecmp(word, "detented4") == 0 ) {
 		  enc_type = DETENTED4;
-		} else if( strcmp(word, "DETENTED5") == 0 ) {
+		} else if( strcasecmp(word, "detented5") == 0 ) {
 		  enc_type = DETENTED5;
 		} else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -689,6 +1119,16 @@ s32 MBNG_FILE_P_Read(char *filename)
     return MBNG_FILE_P_ERR_READ;
   }
 
+#if DEBUG_VERBOSE_LEVEL >= 1
+  if( got_first_event_item ) {
+    DEBUG_MSG("[MBNG_FILE_P] Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
+    u32 pool_size = MBNG_EVENT_PoolSizeGet();
+    u32 pool_max_size = MBNG_EVENT_PoolMaxSizeGet();
+    DEBUG_MSG("[MBNG_FILE_P] Event Pool Allocation: %d of %d bytes (%d%%)",
+	      pool_size, pool_max_size, (100*pool_size)/pool_max_size);
+  }
+#endif
+
   // file is valid! :)
   info->valid = 1;
 
@@ -708,7 +1148,104 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    sprintf(line_buffer, "\n\n#ENC;SR;Pin;Type\n");
+    sprintf(line_buffer, "# EVENT definitions\n");
+    FLUSH_BUFFER;
+
+    int num_items = MBNG_EVENT_PoolNumItemsGet();
+    int item_ix;
+    for(item_ix=0; item_ix<num_items; ++item_ix) {
+      mbng_event_item_t item;
+      if( MBNG_EVENT_ItemGet(item_ix, &item) < 0 )
+	continue;
+
+      sprintf(line_buffer, "EVENT_%-6s id=%3d  type=%-6s",
+	      MBNG_EVENT_ItemControllerStrGet(&item),
+	      item.id & 0xfff,
+	      MBNG_EVENT_ItemTypeStrGet(&item));
+      FLUSH_BUFFER;
+
+      switch( item.flags.general.type ) {
+      case MBNG_EVENT_TYPE_NOTE_OFF:
+      case MBNG_EVENT_TYPE_NOTE_ON:
+      case MBNG_EVENT_TYPE_POLY_PRESSURE: {
+	if( item.stream_size >= 2 ) {
+	  sprintf(line_buffer, " chn=%2d key=%3d", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_CC: {
+	if( item.stream_size >= 2 ) {
+	  sprintf(line_buffer, " chn=%2d cc=%3d ", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
+      case MBNG_EVENT_TYPE_AFTERTOUCH:
+      case MBNG_EVENT_TYPE_PITCHBEND: {
+	if( item.stream_size >= 2 ) {
+	  sprintf(line_buffer, " chn=%2d", (item.stream[0] & 0xf)+1);
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_SYSEX: {
+	if( item.stream_size >= 4 ) {
+	  sprintf(line_buffer, " sysex_type=%d sysex_value_pos=%d stream=\"", item.stream[0], item.stream[1]); // it isn't required to dump the sysex length
+	  FLUSH_BUFFER;
+
+	  int pos;
+	  for(pos=0; pos<(item.stream_size-3); ++pos) {
+	    sprintf(line_buffer, "%s0x%02x", (pos == 0) ? "" : " ", item.stream[3+pos]);
+	    FLUSH_BUFFER;
+	  }
+	  sprintf(line_buffer, "\"");
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_RPN: {
+	if( item.stream_size >= 2 ) {
+	  sprintf(line_buffer, " rpn=%d rpn_format=%d", item.stream[0] | (int)(item.stream[1] << 7), MBNG_EVENT_ItemNrpnFormatStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_NRPN: {
+	if( item.stream_size >= 3 ) {
+	  sprintf(line_buffer, " nrpn=%d nrpn_format=%s", item.stream[0] | (int)(item.stream[1] << 7), MBNG_EVENT_ItemNrpnFormatStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+      } break;
+
+      case MBNG_EVENT_TYPE_META: {
+	if( item.stream_size >= 2 ) {
+	  sprintf(line_buffer, " meta_id=0x%04x", item.stream[0] | (int)(item.stream[1] << 8));
+	  FLUSH_BUFFER;
+	}
+      } break;
+      }
+
+      {
+	char ports_bin[17];
+	int bit;
+	for(bit=0; bit<16; ++bit) {
+	  ports_bin[bit] = (item.enabled_ports & (1 << bit)) ? '1' : '0';
+	}
+	ports_bin[16] = 0;
+
+	sprintf(line_buffer, "  range=%3d:%3d  ports=%s", item.min, item.max, ports_bin);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "  lcd_pos=%d:%d:%d label=\"%s\"\n", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1, item.label ? item.label : "");
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n#ENC Num SR Pin Type\n");
     FLUSH_BUFFER;
 
     int enc;
@@ -717,16 +1254,16 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 
       char enc_type[20];
       switch( enc_config.cfg.type ) { // see mios32_enc.h for available types
-      case 0xff: strcpy(enc_type, "NON_DETENTED"); break;
-      case 0xaa: strcpy(enc_type, "DETENTED1"); break;
-      case 0x22: strcpy(enc_type, "DETENTED2"); break;
-      case 0x88: strcpy(enc_type, "DETENTED3"); break;
-      case 0xa5: strcpy(enc_type, "DETENTED4"); break;
-      case 0x5a: strcpy(enc_type, "DETENTED5"); break;
-      default: strcpy(enc_type, "DISABLED"); break;
+      case 0xff: strcpy(enc_type, "non_detented"); break;
+      case 0xaa: strcpy(enc_type, "detented1"); break;
+      case 0x22: strcpy(enc_type, "detented2"); break;
+      case 0x88: strcpy(enc_type, "detented3"); break;
+      case 0xa5: strcpy(enc_type, "detented4"); break;
+      case 0x5a: strcpy(enc_type, "detented5"); break;
+      default: strcpy(enc_type, "disabled"); break;
       }
 
-      sprintf(line_buffer, "ENC;%d;%d;%d;%s\n",
+      sprintf(line_buffer, "ENC  %3d %2d %2d  %s\n",
 	      enc,
 	      enc_config.cfg.sr,
 	      enc_config.cfg.pos,
@@ -736,14 +1273,14 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#MATRIX;DIN_SR;DOUT_SR\n");
+    sprintf(line_buffer, "\n\n#DIN_MATRIX Num DIN_SR DOUT_SR\n");
     FLUSH_BUFFER;
 
     int matrix;
     mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX; ++matrix, ++m) {
 
-      sprintf(line_buffer, "MATRIX;%d;%d;%d\n",
+      sprintf(line_buffer, "DIN_MATRIX  %3d   %3d   %3d\n",
 	      matrix+1,
 	      m->sr_din,
 	      m->sr_dout);
@@ -752,13 +1289,13 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#ROUTER;Node;SrcPort;Chn.;DstPort;Chn.\n");
+    sprintf(line_buffer, "\n\n#ROUTER Node SrcPort Chn. DstPort Chn.\n");
     FLUSH_BUFFER;
 
     int node;
     midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
     for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-      sprintf(line_buffer, "ROUTER;%d;0x%02X;%d;0x%02X;%d\n",
+      sprintf(line_buffer, "ROUTER   %2d    0x%02X  %3d    0x%02X %3d\n",
 	      node+1,
 	      n->src_port,
 	      n->src_chn,
@@ -773,7 +1310,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   {
     u32 value = UIP_TASK_IP_AddressGet();
-    sprintf(line_buffer, "ETH_LocalIp;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -783,7 +1320,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_NetmaskGet();
-    sprintf(line_buffer, "ETH_Netmask;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Netmask %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -793,7 +1330,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_GatewayGet();
-    sprintf(line_buffer, "ETH_Gateway;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Gateway %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -801,13 +1338,13 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
   }
 
-  sprintf(line_buffer, "ETH_Dhcp;%d\n", UIP_TASK_DHCP_EnableGet());
+  sprintf(line_buffer, "ETH_Dhcp %d\n", UIP_TASK_DHCP_EnableGet());
   FLUSH_BUFFER;
 
   int con;
   for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
     u32 value = OSC_SERVER_RemoteIP_Get(con);
-    sprintf(line_buffer, "OSC_RemoteIp;%d;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "OSC_RemoteIp %d %d.%d.%d.%d\n",
 	    con,
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
@@ -815,13 +1352,13 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 	    (value >>  0) & 0xff);
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_RemotePort;%d;%d\n", con, OSC_SERVER_RemotePortGet(con));
+    sprintf(line_buffer, "OSC_RemotePort %d %d\n", con, OSC_SERVER_RemotePortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_LocalPort;%d;%d\n", con, OSC_SERVER_LocalPortGet(con));
+    sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_TransferMode;%d;%d\n", con, OSC_CLIENT_TransferModeGet(con));
+    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
 #endif
@@ -829,15 +1366,15 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "DebounceCtr;%d\n", mbng_patch_cfg.debounce_ctr);
+  sprintf(line_buffer, "DebounceCtr %d\n", mbng_patch_cfg.debounce_ctr);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "GlobalChannel;%d\n", mbng_patch_cfg.global_chn);
+  sprintf(line_buffer, "GlobalChannel %d\n", mbng_patch_cfg.global_chn);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "AllNotesOffChannel;%d\n", mbng_patch_cfg.all_notes_off_chn);
+  sprintf(line_buffer, "AllNotesOffChannel %d\n", mbng_patch_cfg.all_notes_off_chn);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "BPM_Preset;%d\n", (int)SEQ_BPM_Get());
+  sprintf(line_buffer, "BPM_Preset %d\n", (int)SEQ_BPM_Get());
   FLUSH_BUFFER;
-  sprintf(line_buffer, "BPM_Mode;%d\n", SEQ_BPM_ModeGet());
+  sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
   FLUSH_BUFFER;
 
   return status;

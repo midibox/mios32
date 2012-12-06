@@ -36,12 +36,12 @@ typedef struct { // should be dividable by u16
   u16 id;
   u16 enabled_ports;
   u16 flags; // (mbng_event_flags_t)
-  u16 min;
-  u16 max;
+  s16 min;
+  s16 max;
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
   u8 len_label;
-  u8 lcd_num;
+  u8 lcd;
   u8 lcd_pos;
   u8 data_begin; // data section for streams and label start here, it can have multiple bytes
 } mbng_event_pool_item_t;
@@ -73,7 +73,7 @@ s32 MBNG_EVENT_Init(u32 mode)
   int i;
 
   // Buttons
-  for(i=0; i<64; ++i) {
+  for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
@@ -81,18 +81,18 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
-    stream[1] = 0x24 + i;
+    stream[1] = 0x24 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "Button #%d", i+1);
+    sprintf(str, "Button #%%3i %%3d%%b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
 
   // LEDs
-  for(i=0; i<64; ++i) {
+  for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
@@ -100,18 +100,18 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
-    stream[1] = 0x24 + i;
+    stream[1] = 0x24 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "LED #%d", i+1);
+    sprintf(str, "LED #%%3i        ");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
 
   // Encoders
-  for(i=0; i<64; ++i) {
+  for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
@@ -119,48 +119,48 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb0;
-    stream[1] = 0x10 + i;
+    stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "ENC #%d", i+1);
+    sprintf(str, "ENC #%%3i    %%3d%%b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
 
   // AINSER
-  for(i=0; i<64; ++i) {
+  for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
     item.id = (u16)MBNG_EVENT_CONTROLLER_AINSER + i;
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb1;
-    stream[1] = 0x10 + i;
+    stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "AINSER #%d", i+1);
+    sprintf(str, "AINSER #%%3i %%3d%%b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
 
   // AINs
-  for(i=0; i<6; ++i) {
+  for(i=1; i<=6; ++i) {
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_AIN + i;
+    item.id = (u16)MBNG_EVENT_CONTROLLER_AIN + i + 1;
 
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb2;
-    stream[1] = 0x10 + i;
+    stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "AIN #%d", i+1);
+    sprintf(str, "AIN #%%3i    %%3d%%b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -224,7 +224,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item)
   item->min = 0x0000;
   item->max = 0x007f;
   item->stream_size = 0;
-  item->lcd_num = 0;
+  item->lcd = 0;
   item->lcd_pos = 0x00;
   item->stream = NULL;
   item->label = NULL;
@@ -242,7 +242,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->enabled_ports = pool_item->enabled_ports;
   item->min = pool_item->min;
   item->max = pool_item->max;
-  item->lcd_num = pool_item->lcd_num;
+  item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
   item->stream_size = pool_item->len_stream;
   item->stream = pool_item->len_stream ? (u8 *)&pool_item->data_begin : NULL;
@@ -264,7 +264,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->enabled_ports = item->enabled_ports;
   pool_item->min = item->min;
   pool_item->max = item->max;
-  pool_item->lcd_num = item->lcd_num;
+  pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
   pool_item->len = pool_item_len;
   pool_item->len_stream = item->stream ? item->stream_size : 0;
@@ -277,6 +277,28 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
     memcpy((u8 *)&pool_item->data_begin + pool_item->len_stream, item->label, pool_item->len_label);
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns an item of the event pool with the given index number
+// (only used for dumping out all items in mbng_file_p.c)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item)
+{
+  if( item_ix >= event_pool_num_items )
+    return -1; // not found
+
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  mbng_event_pool_item_t *pool_item;
+
+  u32 i;
+  for(i=0; i<=item_ix; ++i) {
+    pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    pool_ptr += pool_item->len;
+  }
+
+  MBNG_EVENT_ItemCopy2User(pool_item, item);
+  return 0; // item found
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -354,29 +376,90 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_CONTROLLER_MF:            return "MF";
   case MBNG_EVENT_CONTROLLER_CV:            return "CV";
   }
-  return "RESERVED";
+  return "DISABLED";
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends the an item description to debug terminal
+// returns ID of controller given as string
+/////////////////////////////////////////////////////////////////////////////
+mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
+{
+  if( strcasecmp(event, "BUTTON") == 0 )        return MBNG_EVENT_CONTROLLER_BUTTON;
+  if( strcasecmp(event, "LED") == 0 )           return MBNG_EVENT_CONTROLLER_LED;
+  if( strcasecmp(event, "BUTTON_MATRIX") == 0 ) return MBNG_EVENT_CONTROLLER_BUTTON_MATRIX;
+  if( strcasecmp(event, "LED_MATRIX") == 0 )    return MBNG_EVENT_CONTROLLER_LED_MATRIX;
+  if( strcasecmp(event, "ENC") == 0 )           return MBNG_EVENT_CONTROLLER_ENC;
+  if( strcasecmp(event, "AIN") == 0 )           return MBNG_EVENT_CONTROLLER_AIN;
+  if( strcasecmp(event, "AINSER") == 0 )        return MBNG_EVENT_CONTROLLER_AINSER;
+  if( strcasecmp(event, "MF") == 0 )            return MBNG_EVENT_CONTROLLER_MF;
+  if( strcasecmp(event, "CV") == 0 )            return MBNG_EVENT_CONTROLLER_CV;
+
+  return MBNG_EVENT_CONTROLLER_DISABLED;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns name of event type
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 {
   switch( item->flags.general.type ) {
-  case MBNG_EVENT_TYPE_NOTE_OFF:       return "NOTE_OFF";
-  case MBNG_EVENT_TYPE_NOTE_ON:        return "NOTE_ON";
-  case MBNG_EVENT_TYPE_POLY_PRESSURE:  return "POLY_PRESSURE";
+  case MBNG_EVENT_TYPE_NOTE_OFF:       return "NoteOff";
+  case MBNG_EVENT_TYPE_NOTE_ON:        return "NoteOn";
+  case MBNG_EVENT_TYPE_POLY_PRESSURE:  return "PolyPressure";
   case MBNG_EVENT_TYPE_CC:             return "CC";
-  case MBNG_EVENT_TYPE_PROGRAM_CHANGE: return "PROGRAM_CHANGE";
-  case MBNG_EVENT_TYPE_AFTERTOUCH:     return "AFTERTOUCH";
-  case MBNG_EVENT_TYPE_PITCHBEND:      return "PITCHBEND";
-  case MBNG_EVENT_TYPE_SYSEX:          return "SYSEX";
+  case MBNG_EVENT_TYPE_PROGRAM_CHANGE: return "ProgramChange";
+  case MBNG_EVENT_TYPE_AFTERTOUCH:     return "Aftertouch";
+  case MBNG_EVENT_TYPE_PITCHBEND:      return "Pitchbend";
+  case MBNG_EVENT_TYPE_SYSEX:          return "SysEx";
   case MBNG_EVENT_TYPE_RPN:            return "RPN";
   case MBNG_EVENT_TYPE_NRPN:           return "NRPN";
-  case MBNG_EVENT_TYPE_META:           return "META";
+  case MBNG_EVENT_TYPE_META:           return "Meta";
   }
-  return "RESERVED";
+  return "Disabled";
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// returns value of event type given as string
+// returns <0 if invalid type
+/////////////////////////////////////////////////////////////////////////////
+mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
+{
+  if( strcasecmp(event_type, "NoteOff") == 0 )       return MBNG_EVENT_TYPE_NOTE_OFF;
+  if( strcasecmp(event_type, "NoteOn") == 0 )        return MBNG_EVENT_TYPE_NOTE_ON;
+  if( strcasecmp(event_type, "PolyPressure") == 0 )  return MBNG_EVENT_TYPE_POLY_PRESSURE;
+  if( strcasecmp(event_type, "CC") == 0 )            return MBNG_EVENT_TYPE_CC;
+  if( strcasecmp(event_type, "ProgramChange") == 0 ) return MBNG_EVENT_TYPE_PROGRAM_CHANGE;
+  if( strcasecmp(event_type, "Aftertouch") == 0 )    return MBNG_EVENT_TYPE_AFTERTOUCH;
+  if( strcasecmp(event_type, "Pitchbend") == 0 )     return MBNG_EVENT_TYPE_PITCHBEND;
+  if( strcasecmp(event_type, "SysEx") == 0 )         return MBNG_EVENT_TYPE_SYSEX;
+  if( strcasecmp(event_type, "RPN") == 0 )           return MBNG_EVENT_TYPE_RPN;
+  if( strcasecmp(event_type, "NRPN") == 0 )          return MBNG_EVENT_TYPE_NRPN;
+  if( strcasecmp(event_type, "Meta") == 0 )          return MBNG_EVENT_TYPE_META;
+
+  return -1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// for (N)RPN format
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item)
+{
+  mbng_event_nrpn_format_t nrpn_format = (item->stream_size >= 3) ? item->stream[2] : MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
+  switch( nrpn_format ) {
+  case MBNG_EVENT_NRPN_FORMAT_SIGNED: return "Signed";
+  }
+  return "Unsigned";
+}
+
+mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format)
+{
+  if( strcasecmp(nrpn_format, "Unsigned") == 0 ) return MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
+  if( strcasecmp(nrpn_format, "Signed") == 0 ) return MBNG_EVENT_NRPN_FORMAT_SIGNED;
+
+  return -1;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -477,7 +560,6 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
 
   return -1; // unsupported controller type
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This function should be called from APP_MIDI_NotifyPackage whenver a new

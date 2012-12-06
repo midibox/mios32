@@ -79,7 +79,7 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
   // search for ENC
   int enc_ix = enc_group * mbng_patch_cfg.enc_group_size + encoder;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_ENC + enc_ix, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_ENC + enc_ix + 1, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("No event assigned to ENC_IX %d\n", enc_ix);
     }

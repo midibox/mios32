@@ -66,7 +66,7 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
   // search for DIN
   int button_ix = button_group * mbng_patch_cfg.button_group_size + pin;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_BUTTON + button_ix, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_BUTTON + button_ix + 1, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("No event assigned to BUTTON %d\n", button_ix);
     }

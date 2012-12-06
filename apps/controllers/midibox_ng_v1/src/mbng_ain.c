@@ -64,7 +64,7 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   // search for AIN
   int ain_ix = ain_group * mbng_patch_cfg.ain_group_size + pin;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AIN + ain_ix, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AIN + ain_ix + 1, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("No event assigned to AIN_IX %d\n", ain_ix);
     }
@@ -101,7 +101,7 @@ s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
   // search for AIN
   int ain_ix = ain_group * mbng_patch_cfg.ain_group_size + pin;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AINSER + ain_ix, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_AINSER + ain_ix + 1, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("No event assigned to AINSER_IX %d\n", ain_ix);
     }

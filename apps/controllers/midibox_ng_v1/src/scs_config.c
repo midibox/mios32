@@ -529,22 +529,18 @@ static s32 encHook(s32 incrementer)
   // main page
   else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
 
-    if( SEQ_BPM_ModeGet() == SEQ_BPM_MODE_Slave ) {
-      SCS_Msg(SCS_MSG_L, 200, "No BPM change", "in Slave Mode!");
-    } else {
-      int bpm = (int)SEQ_BPM_Get() + incrementer;
+    if( altMainPage ) {
+      if( SEQ_BPM_ModeGet() == SEQ_BPM_MODE_Slave ) {
+	SCS_Msg(SCS_MSG_L, 200, "No BPM change", "in Slave Mode!");
+      } else {
+	int bpm = (int)SEQ_BPM_Get() + incrementer;
 
-      if( bpm < 1 )
-	bpm = 1;
-      else if( bpm > 300 )
-	bpm = 300;
+	if( bpm < 1 )
+	  bpm = 1;
+	else if( bpm > 300 )
+	  bpm = 300;
 
-      SEQ_BPM_Set((float)bpm);
-
-      if( !altMainPage ) {
-	char buffer[21];
-	sprintf(buffer, "Tempo: %3d BPM", bpm);
-	SCS_Msg(SCS_MSG_L, 200, "", buffer);
+	SEQ_BPM_Set((float)bpm);
       }
     }
 
