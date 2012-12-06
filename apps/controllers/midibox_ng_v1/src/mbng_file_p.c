@@ -274,15 +274,119 @@ static s32 get_bin(char *word, int numBits)
   return value;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses an extended parameter with the syntax
+// 'parameter=value_str'
+// returns >= 0 if parameter is valid
+// returns <0 if parameter is invalid or no more parameters found
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str, char **brkt)
+{
+  const char *separators = " \t";
+
+  // parameter name + '='
+  if( !(*parameter = strtok_r(NULL, separators, brkt)) ) {
+    return -1; // no additional parameter
+  }
+
+  // store this information, because it stores the information that the end of the command line has been reached
+  u8 brkt_was_NULL = *brkt == NULL;
+
+  // since strstr() doesn't work for unknown reasons (maybe newlib issue)
+  u8 eq_found = 0;
+  char *search_str = *parameter;
+
+  for(; *search_str != 0 && !eq_found; ++search_str) {
+    if( *search_str == '=' ) {
+      eq_found = 1;
+      *search_str = 0;
+      if( search_str[1] != 0 ) {
+	*brkt = (char *)&search_str[1];
+	(*brkt)[strlen(*brkt)] = brkt_was_NULL ? 0 : ' ';
+      }
+    }
+  }
+
+  // if '=' wasn't found, check if there are spaces between
+  if( !eq_found && *brkt != NULL ) {
+    // since strstr() doesn't work for unknown reasons (maybe newlib issue)
+    char *search_str = *brkt;
+    for(; *search_str != 0 && !eq_found; ++search_str) {
+      if( *search_str == '=' ) {
+	eq_found = 1;
+	*brkt = (char *)&search_str[1];
+      }
+    }
+  }
+
+  if( *brkt == NULL || (*brkt)[0] == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after %s ... %s\n", cmd, *parameter);
+#endif
+    return -2; // missing value
+  } else if( !eq_found ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR: missing '=' after %s ... %s\n", cmd, *parameter);
+#endif
+    return -1;
+  }
+
+  // we can't use strtok_r here, since we have to consider quotes...
+  *value_str = *brkt;
+  {
+    int quote_started = 0;
+
+    char *search_str = *brkt;
+    for(; *search_str != 0 && (*search_str == ' ' || *search_str == '\t'); ++search_str);
+
+    if( *search_str == '\'' || *search_str == '"' ) {
+      quote_started = 1;
+      ++search_str;
+    }
+
+    *value_str = search_str;
+
+    if( quote_started ) {
+      for(; *search_str != 0 && *search_str != '\'' && *search_str != '\"'; ++search_str);
+    } else {
+      for(; *search_str != 0 && *search_str != ' ' && *search_str != '\t'; ++search_str);
+    }
+
+    if( *search_str != 0 ) {
+      *search_str = 0;
+      ++search_str;
+    }
+
+    *brkt = search_str;
+  }
+
+  // end of command line reached?
+  if( brkt_was_NULL || (*brkt)[0] == 0 )
+    *brkt = NULL;
+
+  if( !*value_str[0] ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after %s ... %s\n", cmd, *parameter);
+#endif
+    return -2; // missing value
+  }
+
+#if 0
+  DEBUG_MSG("%s -> '%s'\n", *parameter, *value_str);
+#endif
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a event definition and adds it to the pool
-// returns >= 0 if event is valid
-// returns -1 if event is invalid
+// help function which parses a EVENT definitions and adds them to the pool
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parse_event(char *event, char *brkt)
+static s32 parseEvent(char *cmd, char *brkt)
 {
   mbng_event_item_t item;
+  char *event = (char *)&cmd[6]; // remove "EVENT_"
 
   MBNG_EVENT_ItemInit(&item);
   item.id = MBNG_EVENT_ItemIdFromControllerStrGet(event);
@@ -305,89 +409,10 @@ static s32 parse_event(char *event, char *brkt)
   }
 
   // parse the parameters
-  while( brkt != NULL ) {
-    const char *separators = " \t";
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     const char *separator_colon = ":";
-    char *parameter;
-    int eq_found = 0;
-
-    // parameter name + '='
-    if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
-      break;
-    } else {
-      // since strstr() doesn't work for unknown reasons (maybe newlib issue)
-      char *search_str = parameter;
-      for(; *search_str != 0 && !eq_found; ++search_str) {
-	if( *search_str == '=' ) {
-	  eq_found = 1;
-	  *search_str = 0;
-	  if( search_str[1] != 0 ) {
-	    if( brkt ) {
-	      brkt = (char *)&search_str[1];
-	      brkt[strlen(brkt)] = ' ';
-	    }
-	  }
-	}
-      }
-    }
-
-    // if '=' wasn't found, check if there are spaces between
-    if( !eq_found && brkt != NULL ) {
-      // since strstr() doesn't work for unknown reasons (maybe newlib issue)
-      char *search_str = brkt;
-      for(; *search_str != 0 && !eq_found; ++search_str) {
-	if( *search_str == '=' ) {
-	  eq_found = 1;
-	  brkt = (char *)&search_str[1];
-	}
-      }
-    }
-
-    if( brkt == NULL || brkt[0] == 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after EVENT_%s ... %s\n", event, parameter);
-#endif
-      return -1;
-    } else if( !eq_found ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing '=' after EVENT_%s ... %s\n", event, parameter);
-#endif
-      return -1;
-    }
-
-    // we can't use strtok_r here, since we have to consider quotes...
-    char *value_str = brkt;
-    {
-      int quote_started = 0;
-
-      for(; *brkt != 0 && (*brkt == ' ' || *brkt == '\t'); ++brkt);
-
-      if( *brkt == '\'' || *brkt == '"' ) {
-	quote_started = 1;
-	++brkt;
-      }
-
-      value_str = brkt;
-
-      if( quote_started ) {
-	for(; *brkt != 0 && *brkt != '\'' && *brkt != '\"'; ++brkt);
-      } else {
-	for(; *brkt != 0 && *brkt != ' ' && *brkt != '\t'; ++brkt);
-      }
-      *brkt = 0;
-      ++brkt;
-    }
-
-    if( !value_str[0] ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after EVENT_%s ... %s\n", event, parameter);
-#endif
-      return -1;
-    }
-
-#if 0
-    DEBUG_MSG("%s -> '%s'\n", parameter, value_str);
-#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "id") == 0 ) {
@@ -698,6 +723,261 @@ static s32 parse_event(char *event, char *brkt)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses ENC definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseEnc(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int sr = 0;
+  int pin_a = 0;
+  mios32_enc_type_t enc_type = DISABLED;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+    const char *separator_colon = ":";
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MIOS32_ENC_NUM_MAX ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid encoder number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MIOS32_ENC_NUM_MAX-1);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr") == 0 ) {
+      if( (sr=get_dec(value_str)) < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pins") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[2];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid pin format for %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      } else {
+	if( values[0] >= 8 ||  (values[0] & 1) ||
+	    values[1] >= 8 || !(values[1] & 1) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid pins for %s n=%d ... %s=%s (expecting 0:1, 2:3, 4:5 or 6:7)\n", cmd, num, parameter, value_str);
+#endif
+	  return -1; // invalid parameter
+	} else {
+	  pin_a = values[0];
+	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "type") == 0 ) {
+      if( strcasecmp(value_str, "disabled") == 0 ) {
+	enc_type = DISABLED;
+      } else if( strcasecmp(value_str, "non_detented") == 0 ) {
+	enc_type = NON_DETENTED;
+      } else if( strcasecmp(value_str, "detented1") == 0 ) {
+	enc_type = DETENTED1;
+      } else if( strcasecmp(value_str, "detented2") == 0 ) {
+	enc_type = DETENTED2;
+      } else if( strcasecmp(value_str, "detented3") == 0 ) {
+	enc_type = DETENTED3;
+      } else if( strcasecmp(value_str, "detented4") == 0 ) {
+	enc_type = DETENTED4;
+      } else if( strcasecmp(value_str, "detented5") == 0 ) {
+	enc_type = DETENTED5;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid type for %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    mios32_enc_config_t enc_config = {
+      .cfg.type=enc_type,
+      .cfg.speed=NORMAL,
+      .cfg.speed_par=0,
+      .cfg.sr=sr,
+      .cfg.pos=pin_a
+    };
+
+    MIOS32_ENC_ConfigSet(num, enc_config); // counting from 1, because SCS menu encoder is assigned to 0
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses DIN_MATRIX definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseDinMatrix(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int sr_din = 0;
+  int sr_dout = 0;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_din") == 0 ) {
+      if( (sr_din=get_dec(value_str)) < 0 || sr_din > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout") == 0 ) {
+      if( (sr_dout=get_dec(value_str)) < 0 || sr_dout > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[num-1];
+    m->sr_din = sr_din;
+    m->sr_dout = sr_dout;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses ROUTER definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseRouter(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int src_port = 0x10;
+  int src_chn  = 0;
+  int dst_port = 0x10;
+  int dst_chn  = 0;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MIDI_ROUTER_NUM_NODES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid router node number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MIDI_ROUTER_NUM_NODES);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "src_port") == 0 ) {
+      if( (src_port=get_dec(value_str)) < 0 || src_port > 0xff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "src_chn") == 0 ) {
+      if( (src_chn=get_dec(value_str)) < 0 || src_chn > 17 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid source channel for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "dst_port") == 0 ) {
+      if( (dst_port=get_dec(value_str)) < 0 || dst_port > 0xff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "dst_chn") == 0 ) {
+      if( (dst_chn=get_dec(value_str)) < 0 || dst_chn > 17 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid source channel for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[num-1];
+    n->src_port = src_port;
+    n->src_chn = src_chn;
+    n->dst_port = dst_port;
+    n->dst_chn = dst_chn;
+  }
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // reads the patch file content (again)
 // returns < 0 on errors (error codes are documented in mbng_file.h)
@@ -748,140 +1028,18 @@ s32 MBNG_FILE_P_Read(char *filename)
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
 	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
-	  // this huge task is done in a separate function
 	  if( !got_first_event_item ) {
 	    got_first_event_item = 1;
 	    MBNG_EVENT_PoolClear();
 	  }
-	  parse_event((char *)(parameter+6), brkt);
+	  parseEvent(parameter, brkt);
 	} else if( strcmp(parameter, "ENC") == 0 ) {
-	  s32 enc;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (enc=get_dec(word)) < 1 || enc >= MIOS32_ENC_NUM_MAX ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid encoder number for parameter '%s %d' (1..%d)\n", parameter, enc, MIOS32_ENC_NUM_MAX-1);
-#endif
-	  } else {
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int sr;
-	    if( (sr=get_dec(word)) < 0 || sr > MIOS32_SRIO_NUM_SR ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number %d for parameter '%s %d' (1..%d)\n", sr, parameter, enc, MIOS32_SRIO_NUM_SR);
-#endif
-	    } else {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      int pin;
-	      if( (pin=get_dec(word)) < 0 || pin > 8 || (pin&1) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_P] ERROR invalid DIN pin number %d for parameter '%s %d' (0,2,4,6)\n", pin, parameter, enc);
-#endif
-	      } else {
-		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-		mios32_enc_type_t enc_type = DISABLED;
-		if( word == NULL ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR missing encoder type for parameter '%s %d' (0,2,4,6)\n", parameter, enc);
-#endif
-		  continue;
-		} else if( strcasecmp(word, "disabled") == 0 ) {
-		  enc_type = DISABLED;
-		} else if( strcasecmp(word, "non_detented") == 0 ) {
-		  enc_type = NON_DETENTED;
-		} else if( strcasecmp(word, "detented1") == 0 ) {
-		  enc_type = DETENTED1;
-		} else if( strcasecmp(word, "detented2") == 0 ) {
-		  enc_type = DETENTED2;
-		} else if( strcasecmp(word, "detented3") == 0 ) {
-		  enc_type = DETENTED3;
-		} else if( strcasecmp(word, "detented4") == 0 ) {
-		  enc_type = DETENTED4;
-		} else if( strcasecmp(word, "detented5") == 0 ) {
-		  enc_type = DETENTED5;
-		} else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_P] ERROR invalid encoder type '%s' for parameter '%s %d' (0,2,4,6)\n", word, parameter, enc);
-#endif
-		  continue;
-		}
-
-		mios32_enc_config_t enc_config = {
-		  .cfg.type=enc_type,
-		  .cfg.speed=NORMAL,
-		  .cfg.speed_par=0,
-		  .cfg.sr=sr,
-		  .cfg.pos=pin
-		};
-
-		MIOS32_ENC_ConfigSet(enc, enc_config); // counting from 1, because SCS menu encoder is assigned to 0
-	      }
-	    }
-	  }
-	} else if( strcmp(parameter, "MATRIX") == 0 ) {
-	  s32 matrix;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (matrix=get_dec(word)) < 1 || matrix > MBNG_PATCH_NUM_MATRIX  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid matrix number for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    // user counts from 1...
-	    --matrix;
-
-	    // we have to read 2 additional values
-	    int values[2];
-	    const char value_name[2][10] = { "SR_DIN", "SR_DOUT" };
-	    int i;
-	    for(i=0; i<2; ++i) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (values[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, matrix);
-#endif
-		break;
-	      }
-	    }
-
-	    if( i == 2 ) {
-	      // finally a valid line!
-	      mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[matrix];
-	      m->sr_din = values[0];
-	      m->sr_dout = values[1];
-	    }
-	  }
+	  parseEnc(parameter, brkt);
+	} else if( strcmp(parameter, "DIN_MATRIX") == 0 ) {
+	  parseDinMatrix(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
-	  s32 node;
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  if( (node=get_dec(word)) < 1 || node > MIDI_ROUTER_NUM_NODES  ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid node number for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    // user counts from 1...
-	    --node;
+	  parseRouter(parameter, brkt);
 
-	    // we have to read 4 additional values
-	    int values[4];
-	    const char value_name[4][10] = { "SrcPort", "Channel", "DstPort", "Channel" };
-	    int i;
-	    for(i=0; i<4; ++i) {
-	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (values[i]=get_dec(word)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node);
-#endif
-		break;
-	      }
-	    }
-	    
-	    if( i == 4 ) {
-	      // finally a valid line!
-	      midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[node];
-	      n->src_port = values[0];
-	      n->src_chn = values[1];
-	      n->dst_port = values[2];
-	      n->dst_chn = values[3];
-	    }
-	  }
 	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
 	  u32 value;
 	  if( (value=get_dec(brkt)) < 0 ) {
@@ -1148,7 +1306,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    sprintf(line_buffer, "# EVENT definitions\n");
+    sprintf(line_buffer, "# EVENT_* (event definitions)\n");
     FLUSH_BUFFER;
 
     int num_items = MBNG_EVENT_PoolNumItemsGet();
@@ -1245,7 +1403,7 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#ENC Num SR Pin Type\n");
+    sprintf(line_buffer, "\n\n# ENC (encoder definitions)\n");
     FLUSH_BUFFER;
 
     int enc;
@@ -1263,24 +1421,25 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
       default: strcpy(enc_type, "disabled"); break;
       }
 
-      sprintf(line_buffer, "ENC  %3d %2d %2d  %s\n",
+      sprintf(line_buffer, "ENC n=%3d   sr=%2d  pins=%d:%d   type=%s\n",
 	      enc,
 	      enc_config.cfg.sr,
 	      enc_config.cfg.pos,
+	      enc_config.cfg.pos+1,
 	      enc_type);
       FLUSH_BUFFER;
     }
   }
 
   {
-    sprintf(line_buffer, "\n\n#DIN_MATRIX Num DIN_SR DOUT_SR\n");
+    sprintf(line_buffer, "\n\n# DIN_MATRIX definitions\n");
     FLUSH_BUFFER;
 
     int matrix;
     mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX  %3d   %3d   %3d\n",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   sr_din=%2d  sr_dout=%2d\n",
 	      matrix+1,
 	      m->sr_din,
 	      m->sr_dout);
@@ -1289,13 +1448,13 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n#ROUTER Node SrcPort Chn. DstPort Chn.\n");
+    sprintf(line_buffer, "\n\n# ROUTER definitions (Note: chn=0 disables, chn=17 selects all channels)\n");
     FLUSH_BUFFER;
 
     int node;
     midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
     for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-      sprintf(line_buffer, "ROUTER   %2d    0x%02X  %3d    0x%02X %3d\n",
+      sprintf(line_buffer, "ROUTER n=%2d   src_port=0x%02x  src_chn=%2d   dst_port=0x%02x  dst_chn=%2d\n",
 	      node+1,
 	      n->src_port,
 	      n->src_chn,
