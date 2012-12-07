@@ -31,6 +31,7 @@
 #include "mbng_sysex.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
+#include "mbng_lcd.h"
 #include "mbng_din.h"
 #include "mbng_dout.h"
 #include "mbng_enc.h"
@@ -146,6 +147,9 @@ void APP_Init(void)
   int pin;
   for(pin=0; pin<8; ++pin)
     MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
+
+  // initialize LCDs
+  MBNG_LCD_Init(0);
 
   // initialize the AINSER module(s)
   AINSER_Init(0);

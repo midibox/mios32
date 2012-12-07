@@ -28,7 +28,10 @@
 #include "osc_server.h"
 
 #include <scs.h>
+#include <scs_lcd.h>
 #include "scs_config.h"
+
+#include <buflcd.h>
 
 #include <seq_bpm.h>
 
@@ -38,6 +41,7 @@
 #include "mbng_file.h"
 #include "mbng_file_p.h"
 #include "mbng_patch.h"
+#include "mbng_lcd.h"
 
 
 
@@ -46,7 +50,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 extraPage;
-static u8 altMainPage;
 
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
@@ -372,6 +375,17 @@ const scs_menu_page_t rootMode0[] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 displayHook(char *line1, char *line2)
 {
+  static u8 special_chars_from_mbng = 0;
+
+  // switch between charsets
+  if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !special_chars_from_mbng ) {
+    special_chars_from_mbng = 1;
+    MBNG_LCD_SpecialCharsReInit();
+  } else if( SCS_MenuStateGet() != SCS_MENU_STATE_MAINPAGE && special_chars_from_mbng ) {
+    special_chars_from_mbng = 0;
+    SCS_LCD_SpecialCharsReInit();
+  }
+
   if( extraPage ) {
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
@@ -394,31 +408,15 @@ static s32 displayHook(char *line1, char *line2)
   }
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-    u8 fastRefresh = line1[0] == 0;
-    u32 tick = SEQ_BPM_TickGet();
-    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-    u32 ticks_per_measure = ticks_per_step * 16;
-    u32 measure = (tick / ticks_per_measure) + 1;
-    u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
-    // print SD Card status message or patch
+    // special handling for MBNG: take over string from BUFLCD!
     if( line1[0] == 0 ) { // no MSD overlay?
-      if( altMainPage ) {
-	sprintf(line1, "%-12s     BPM", MBNG_FILE_StatusMsgGet() ? MBNG_FILE_StatusMsgGet() : mbng_file_p_patch_name);
-      } else {
-	sprintf(line1, "%-12s %4u.%2d", MBNG_FILE_StatusMsgGet() ? MBNG_FILE_StatusMsgGet() : mbng_file_p_patch_name, measure, step);
-      }
+      BUFLCD_BufferGet(line1, 0, SCS_LCD_MAX_COLUMNS);
     }
+    BUFLCD_BufferGet(line2, 1, SCS_LCD_MAX_COLUMNS);
 
-    if( altMainPage ) {
-      sprintf(line2, "%s  FRew FFwd  %3d", SEQ_BPM_IsRunning() ? "STOP" : "REC ", (int)SEQ_BPM_EffectiveGet());
-    } else {
-      sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
-    }
-
-    // request LCD update - this will lead to fast refresh rate in main screen
-    if( fastRefresh )
-      SCS_DisplayUpdateRequest();
+    // request fast refresh
+    SCS_DisplayUpdateRequest();
 
     return 1;
   }
@@ -526,27 +524,6 @@ static s32 encHook(s32 incrementer)
     monPageOffset = newOffset;
   }
 
-  // main page
-  else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-
-    if( altMainPage ) {
-      if( SEQ_BPM_ModeGet() == SEQ_BPM_MODE_Slave ) {
-	SCS_Msg(SCS_MSG_L, 200, "No BPM change", "in Slave Mode!");
-      } else {
-	int bpm = (int)SEQ_BPM_Get() + incrementer;
-
-	if( bpm < 1 )
-	  bpm = 1;
-	else if( bpm > 300 )
-	  bpm = 300;
-
-	SEQ_BPM_Set((float)bpm);
-      }
-    }
-
-    return 1;
-  }
-
   return 0;
 }
 
@@ -559,8 +536,6 @@ static s32 encHook(s32 incrementer)
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
   if( extraPage ) {
-    altMainPage = 0;
-
     if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
       extraPage = 0;
     else {
@@ -611,54 +586,6 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       extraPage = 1;
       return 1;
     }
-
-    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-
-      if( scsButton == SCS_PIN_EXIT ) {
-	altMainPage = !depressed;
-      }
-
-      if( depressed )
-	return 0;
-
-      if( altMainPage ) {
-	u32 tick = SEQ_BPM_TickGet();
-	u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-	u32 ticks_per_measure = ticks_per_step * 16;
-	u32 measure = (tick / ticks_per_measure) + 1;
-	u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
-
-	switch( scsButton ) {
-	case SCS_PIN_SOFT1:
-	  return 1;
-
-	case SCS_PIN_SOFT2: {
-	  return 1;
-	}
-
-	case SCS_PIN_SOFT3: {
-	  return 1;
-	}
-
-	case SCS_PIN_SOFT4: {
-	  return 1;
-	}
-	}
-      } else {
-	switch( scsButton ) {
-	case SCS_PIN_SOFT1:
-	  return 1;
-
-	case SCS_PIN_SOFT2: {
-	  return 1;
-	}
-
-	case SCS_PIN_SOFT3: {
-	  return 1;
-	}
-	}
-      }
-    }
   }
 
   return 0; // no error
@@ -684,7 +611,6 @@ s32 SCS_CONFIG_Init(u32 mode)
     SCS_InstallEncHook(encHook);
     SCS_InstallButtonHook(buttonHook);
     monPageOffset = 0;
-    altMainPage = 0;
     break;
   }
   default: return -1; // mode not supported

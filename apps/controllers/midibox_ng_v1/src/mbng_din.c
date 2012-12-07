@@ -19,6 +19,7 @@
 
 #include "app.h"
 #include "mbng_din.h"
+#include "mbng_lcd.h"
 #include "mbng_event.h"
 #include "mbng_patch.h"
 
@@ -97,8 +98,13 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     return 0; // don't send if button depressed
   }
 
+  u16 value = depressed ? item.min : item.max;
+
+  // print label
+  MBNG_LCD_PrintItemLabel(&item, value);
+
   // send MIDI event
-  return MBNG_EVENT_ItemSend(&item, depressed ? item.min : item.max);
+  return MBNG_EVENT_ItemSend(&item, value);
 }
 
 

@@ -192,7 +192,7 @@ static s32 (*scsButtonHook)(u8 button, u8 depressed);
 s32 SCS_Init(u32 mode)
 {
   SCS_LCD_Init(mode);
-  SCS_LCD_InitSpecialChars(SCS_LCD_CHARSET_Menu);
+  SCS_LCD_InitSpecialChars(SCS_LCD_CHARSET_Menu, 1);
 
   scsMenuState = SCS_MENU_STATE_MAINPAGE;
 

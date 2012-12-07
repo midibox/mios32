@@ -92,6 +92,7 @@ static u8 lcd_buffer[SCS_LCD_MAX_LINES][SCS_LCD_MAX_COLUMNS];
 static u16 lcd_cursor_x;
 static u16 lcd_cursor_y;
 
+static scs_lcd_charset_t lcd_charset = SCS_LCD_CHARSET_None;
 
 /////////////////////////////////////////////////////////////////////////////
 // Display Initialisation
@@ -255,13 +256,12 @@ s32 SCS_LCD_Update(u8 force)
 /////////////////////////////////////////////////////////////////////////////
 // initialise character set (if not already active)
 /////////////////////////////////////////////////////////////////////////////
-s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset)
+s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset, u8 force)
 {
-  static scs_lcd_charset_t current_charset = SCS_LCD_CHARSET_None;
   s32 status = 0;
 
-  if( charset != current_charset ) {
-    current_charset = charset;
+  if( force || charset != lcd_charset ) {
+    lcd_charset = charset;
 
 #ifdef MUTEX_LCD_TAKE
     MUTEX_LCD_TAKE;
@@ -297,6 +297,16 @@ s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset)
 
   return status; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// re-initializes special characters
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_SpecialCharsReInit(void)
+{
+  return SCS_LCD_InitSpecialChars(lcd_charset, 1);
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////

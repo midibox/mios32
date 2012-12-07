@@ -19,6 +19,7 @@
 
 #include "app.h"
 #include "mbng_ain.h"
+#include "mbng_lcd.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
 
@@ -80,6 +81,9 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 
   // TODO: handle AIN modes
 
+  // print label
+  MBNG_LCD_PrintItemLabel(&item, value);
+
   // send MIDI event
   return MBNG_EVENT_ItemSend(&item, value);
 }
@@ -116,6 +120,9 @@ s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
   int value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
 
   // TODO: handle AIN modes
+
+  // print label
+  MBNG_LCD_PrintItemLabel(&item, value);
 
   // send MIDI event
   return MBNG_EVENT_ItemSend(&item, value);
