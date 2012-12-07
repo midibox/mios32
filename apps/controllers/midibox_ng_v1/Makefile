@@ -23,6 +23,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_enc.c \
 		  src/mbng_ain.c \
 		  src/mbng_matrix.c \
+		  src/mbng_lcd.c \
 		  src/mbng_file.c \
 		  src/mbng_file_p.c \
                   src/terminal.c \
@@ -62,6 +63,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# buffered LCD output
+include $(MIOS32_PATH)/modules/buflcd/buflcd.mk
 
 # MIDI Router (and port handling)
 include $(MIOS32_PATH)/modules/midi_router/midi_router.mk

@@ -391,6 +391,10 @@ static s32 parseEvent(char *cmd, char *brkt)
   MBNG_EVENT_ItemInit(&item);
   item.id = MBNG_EVENT_ItemIdFromControllerStrGet(event);
 
+  // extra: if button, invert it by default to avoid confusion if inverted=1 not set (DINs are low-active)
+  if( item.id == MBNG_EVENT_CONTROLLER_BUTTON || item.id == MBNG_EVENT_CONTROLLER_BUTTON_MATRIX )
+      item.flags.DIN.inverse = 1;
+
 #define STREAM_MAX_SIZE 128
   u8 stream[STREAM_MAX_SIZE];
   item.stream = stream;
@@ -455,7 +459,7 @@ static s32 parseEvent(char *cmd, char *brkt)
 	case MBNG_EVENT_TYPE_POLY_PRESSURE:
 	case MBNG_EVENT_TYPE_CC: {
 	  item.stream_size = 2;
-	  item.stream[0] = (event_type << 4);
+	  item.stream[0] = 0x80 | (event_type << 4);
 	  item.stream[1] = 0x30;
 	} break;
 
@@ -463,7 +467,7 @@ static s32 parseEvent(char *cmd, char *brkt)
 	case MBNG_EVENT_TYPE_AFTERTOUCH:
 	case MBNG_EVENT_TYPE_PITCHBEND: {
 	  item.stream_size = 1;
-	  item.stream[0] = (event_type << 4);
+	  item.stream[0] = 0x80 | (event_type << 4);
 	} break;
 
 	case MBNG_EVENT_TYPE_SYSEX: {

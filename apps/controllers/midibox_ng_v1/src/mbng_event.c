@@ -73,6 +73,7 @@ s32 MBNG_EVENT_Init(u32 mode)
   int i;
 
   // Buttons
+  item.flags.DIN.inverse = 1;
   for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
@@ -85,13 +86,15 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "Button #%%3i %%3d%%b");
+    strcpy(str, "Button #%3i %3d%b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
+  item.flags.DIN.inverse = 0;
 
   // LEDs
+  item.lcd_pos = 0x40;
   for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
@@ -104,11 +107,12 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "LED #%%3i        ");
+    strcpy(str, "LED #%3i       %b");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
   }
+  item.lcd_pos = 0x00;
 
   // Encoders
   for(i=1; i<=64; ++i) {
@@ -123,7 +127,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "ENC #%%3i    %%3d%%b");
+    strcpy(str, "ENC #%3i    %3d%B");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -141,7 +145,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "AINSER #%%3i %%3d%%b");
+    strcpy(str, "AINSER #%3i %3d%B");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -160,7 +164,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    sprintf(str, "AIN #%%3i    %%3d%%b");
+    strcpy(str, "AIN #%3i    %3d%B");
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -349,6 +353,16 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 {
+#if 1
+  MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s stream:",
+			       item->id,
+			       MBNG_EVENT_ItemControllerStrGet(item),
+			       MBNG_EVENT_ItemTypeStrGet(item));
+  if( item->stream_size ) {
+    MIOS32_MIDI_SendDebugHexDump(item->stream, item->stream_size);
+  }
+  return 0;
+#else
   return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d label:%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item),
@@ -357,6 +371,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 				      item->min,
 				      item->max,
 				      item->label ? item->label : "");
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////

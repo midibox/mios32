@@ -19,6 +19,7 @@
 
 #include "app.h"
 #include "mbng_enc.h"
+#include "mbng_lcd.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
 
@@ -130,6 +131,9 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
     enc_value[enc_ix] = value;
   }
+
+  // print label
+  MBNG_LCD_PrintItemLabel(&item, value);
 
   // send MIDI event
   return MBNG_EVENT_ItemSend(&item, value);

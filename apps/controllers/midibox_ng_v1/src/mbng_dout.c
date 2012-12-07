@@ -19,6 +19,7 @@
 
 #include "app.h"
 #include "mbng_dout.h"
+#include "mbng_lcd.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
 
@@ -101,6 +102,9 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", led_ix, value);
   }
+
+  // print label
+  MBNG_LCD_PrintItemLabel(item, value);
 
   return 0; // no error
 }

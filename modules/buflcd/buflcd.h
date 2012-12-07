@@ -59,6 +59,8 @@ extern s32 BUFLCD_OffsetXGet(void);
 extern s32 BUFLCD_OffsetYSet(u8 offset);
 extern s32 BUFLCD_OffsetYGet(void);
 
+extern s32 BUFLCD_BufferGet(char *str, u8 line, u8 len);
+
 extern s32 BUFLCD_Clear(void);
 extern s32 BUFLCD_PrintChar(char c);
 extern s32 BUFLCD_CursorSet(u16 column, u16 line);

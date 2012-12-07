@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "app.h"
+#include "mbng_lcd.h"
 #include "mbng_matrix.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"

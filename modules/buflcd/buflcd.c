@@ -189,6 +189,26 @@ s32 BUFLCD_OffsetYGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! copies the current LCD buffer line into the output string
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_BufferGet(char *str, u8 line, u8 len)
+{
+  if( line >= BUFLCD_MAX_LINES )
+    return -1; // invalid line
+
+  if( len > BUFLCD_MAX_COLUMNS )
+    len = BUFLCD_MAX_COLUMNS;
+
+  u8 *ptr = &lcd_buffer[line][0];
+  int i;
+  for(i=0; i<len; ++i)
+    *str++ = *ptr++;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! clears the buffer
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_Clear(void)
