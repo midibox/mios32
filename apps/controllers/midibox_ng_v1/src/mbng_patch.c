@@ -28,7 +28,8 @@
 // Preset patch
 /////////////////////////////////////////////////////////////////////////////
 
-mbng_patch_matrix_entry_t mbng_patch_matrix[MBNG_PATCH_NUM_MATRIX];
+mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
+mbng_patch_matrix_dout_entry_t mbng_patch_matrix_dout[MBNG_PATCH_NUM_MATRIX_DOUT];
 
 mbng_patch_cfg_t mbng_patch_cfg = {
   .debounce_ctr = 20,
@@ -36,6 +37,8 @@ mbng_patch_cfg_t mbng_patch_cfg = {
   .all_notes_off_chn = 0,
   .button_group_size = 128,
   .enc_group_size = 64,
+  .matrix_din_group_size = 64,
+  .matrix_dout_group_size = 64,
   .ain_group_size = 6,
   .ainser_group_size = 64,
 };
@@ -49,11 +52,34 @@ s32 MBNG_PATCH_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  int matrix;
-  mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[0];
-  for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX; ++matrix, ++m) {
-    m->sr_din = 0;
-    m->sr_dout = 0;
+  {
+    int matrix;
+    mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
+      m->num_rows = 8;
+      m->inverted = 0;
+      m->sr_dout_sel1 = 0;
+      m->sr_dout_sel2 = 0;
+      m->sr_din1  = 0;
+      m->sr_din2  = 0;
+    }
+  }
+
+  {
+    int matrix;
+    mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
+      m->num_rows = 8;
+      m->inverted = 0;
+      m->sr_dout_sel1  = 0;
+      m->sr_dout_sel2 = 0;
+      m->sr_dout_r1 = 0;
+      m->sr_dout_r2 = 0;
+      m->sr_dout_g1 = 0;
+      m->sr_dout_g2 = 0;
+      m->sr_dout_r1 = 0;
+      m->sr_dout_r2 = 0;
+    }
   }
 
   return 0; // no error

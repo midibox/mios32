@@ -353,7 +353,7 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 {
-#if 1
+#if 0
   MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s stream:",
 			       item->id,
 			       MBNG_EVENT_ItemControllerStrGet(item),
@@ -564,8 +564,8 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   //case MBNG_EVENT_CONTROLLER_DISABLED:
   case MBNG_EVENT_CONTROLLER_BUTTON:        return MBNG_DIN_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_LED:           return MBNG_DOUT_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: return MBNG_MATRIX_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_LED_MATRIX:    return -1; // TODO
+  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: return MBNG_MATRIX_DIN_NotifyReceivedValue(item, value);
+  case MBNG_EVENT_CONTROLLER_LED_MATRIX:    return MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_ENC:           return MBNG_ENC_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_AIN:           return MBNG_AIN_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_AINSER:        return MBNG_AIN_NotifyReceivedValue_SER64(item, value);

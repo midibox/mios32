@@ -19,13 +19,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // temporary - will be changed with second (or enhanced) SRIO chain
-#define MBNG_PATCH_NUM_DIN    128
-#define MBNG_PATCH_NUM_ENC    128
-#define MBNG_PATCH_NUM_DOUT   128
-#define MBNG_PATCH_NUM_AIN      6
-#define MBNG_PATCH_NUM_AINSER 128
-#define MBNG_PATCH_NUM_MATRIX  16
+#define MBNG_PATCH_NUM_DIN         128
+#define MBNG_PATCH_NUM_ENC         128
+#define MBNG_PATCH_NUM_DOUT        128
+#define MBNG_PATCH_NUM_AIN           6
+#define MBNG_PATCH_NUM_AINSER      128
+#define MBNG_PATCH_NUM_MATRIX_DIN    8
+#define MBNG_PATCH_NUM_MATRIX_DOUT   8
 
+#define MBNG_PATCH_NUM_MATRIX_ROWS_MAX   16
+#define MBNG_PATCH_NUM_MATRIX_COLORS_MAX  3
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -33,9 +36,26 @@
 
 
 typedef struct {
-  u8 sr_din;
-  u8 sr_dout;
-} mbng_patch_matrix_entry_t;
+  u8 num_rows;
+  u8 inverted;
+  u8 sr_dout_sel1;
+  u8 sr_dout_sel2;
+  u8 sr_din1;
+  u8 sr_din2;
+} mbng_patch_matrix_din_entry_t;
+
+typedef struct {
+  u8 num_rows;
+  u8 inverted;
+  u8 sr_dout_sel1;
+  u8 sr_dout_sel2;
+  u8 sr_dout_r1;
+  u8 sr_dout_r2;
+  u8 sr_dout_g1;
+  u8 sr_dout_g2;
+  u8 sr_dout_b1;
+  u8 sr_dout_b2;
+} mbng_patch_matrix_dout_entry_t;
 
 typedef struct {
   u8 debounce_ctr;
@@ -43,6 +63,8 @@ typedef struct {
   u8 all_notes_off_chn;
   u8 button_group_size;
   u8 enc_group_size;
+  u8 matrix_din_group_size;
+  u8 matrix_dout_group_size;
   u8 ain_group_size;
   u8 ainser_group_size;
 } mbng_patch_cfg_t;
@@ -61,8 +83,9 @@ extern s32 MBNG_PATCH_Store(char *filename);
 // Exported variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern mbng_patch_matrix_entry_t mbng_patch_matrix[MBNG_PATCH_NUM_MATRIX];
+extern mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
+extern mbng_patch_matrix_dout_entry_t mbng_patch_matrix_dout[MBNG_PATCH_NUM_MATRIX_DOUT];
 
-extern mbng_patch_cfg_t        mbng_patch_cfg;
+extern mbng_patch_cfg_t mbng_patch_cfg;
 
 #endif /* _MBNG_PATCH_H */
