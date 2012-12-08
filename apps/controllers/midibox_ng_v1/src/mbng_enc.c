@@ -160,8 +160,8 @@ s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_ix, value);
   }
 
-  if( enc_ix < MBNG_PATCH_NUM_ENC )
-    enc_value[enc_ix] = value;
+  if( enc_ix && enc_ix < MBNG_PATCH_NUM_ENC )
+    enc_value[enc_ix-1] = value;
 
   // TODO: add to event definition
   u8 forward = 1;

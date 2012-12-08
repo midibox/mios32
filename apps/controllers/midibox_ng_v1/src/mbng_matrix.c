@@ -556,7 +556,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
       pattern_ix = scaled+1;
     }
     *led_pattern = ledring_pattern[pattern][pattern_ix];
-#if 1
+#if 0
     DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_pattern=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_pattern);
 #endif
   }
