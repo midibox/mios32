@@ -45,6 +45,7 @@
 #include "file.h"
 #include "mbng_file.h"
 #include "mbng_file_p.h"
+#include "mbng_file_l.h"
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
@@ -411,9 +412,19 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	  // check if patch file exists
 	  if( !MBNG_FILE_P_Valid() ) {
 	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.NG1 file\n");
+	    DEBUG_MSG("Creating initial DEFAULT.NGP file\n");
 
 	    if( (status=MBNG_FILE_P_Write("DEFAULT")) < 0 ) {
+	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+	    }
+	  }
+
+	  // check if patch file exists
+	  if( !MBNG_FILE_L_Valid() ) {
+	    // create new one
+	    DEBUG_MSG("Creating initial DEFAULT.NGL file\n");
+
+	    if( (status=MBNG_FILE_L_Write("DEFAULT")) < 0 ) {
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }

@@ -157,7 +157,7 @@ s32 MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
   // store value into buffer, send when:
   //   o 0xf7 (end of stream) has been received
   //   o 0xf0 (start of stream) has been received although buffer isn't empty
-  //   o buffer size has been exceeded
+  //   o buffer size has been exceeded (in this case, we switch to single byte send mode)
   // we check for (MIDI_ROUTER_SYSEX_BUFFER_SIZE-1), so that we always have a free byte for F7
   u32 buffer_len = sysex_buffer_len[sysex_in];
   if( midi_in == 0xf7 || (midi_in == 0xf0 && buffer_len != 0) || buffer_len >= (MIDI_ROUTER_SYSEX_BUFFER_SIZE-1) ) {

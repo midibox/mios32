@@ -22,6 +22,7 @@
 #include "mbng_dout.h"
 #include "mbng_file.h"
 #include "mbng_file_p.h"
+#include "mbng_file_l.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -93,6 +94,7 @@ s32 MBNG_PATCH_Load(char *filename)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = MBNG_FILE_P_Read(filename);
+  status |= MBNG_FILE_L_Read(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;

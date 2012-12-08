@@ -27,14 +27,16 @@
 // see also basic error codes which are documented in file.h
 
 // used by mbng_file_p.c
-#define MBNG_FILE_P_ERR_INVALID_BANK    -128 // invalid bank number
-#define MBNG_FILE_P_ERR_INVALID_GROUP   -129 // invalid group number
-#define MBNG_FILE_P_ERR_INVALID_PATCH   -130 // invalid patch number
-#define MBNG_FILE_P_ERR_FORMAT          -131 // invalid bank file format
-#define MBNG_FILE_P_ERR_READ            -132 // error while reading file (exact error status cannot be determined anymore)
-#define MBNG_FILE_P_ERR_WRITE           -133 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_P_ERR_NO_FILE         -134 // no or invalid bank file
-#define MBNG_FILE_P_ERR_P_TOO_LARGE     -135 // during patch write: patch too large for slot in bank
+#define MBNG_FILE_P_ERR_READ            -130 // error while reading file (exact error status cannot be determined anymore)
+#define MBNG_FILE_P_ERR_WRITE           -131 // error while writing file (exact error status cannot be determined anymore)
+#define MBNG_FILE_P_ERR_NO_FILE         -132 // no or invalid bank file
+#define MBNG_FILE_P_ERR_P_TOO_LARGE     -133 // during patch write: patch too large for slot in bank
+
+// used by mbng_file_l.c
+#define MBNG_FILE_L_ERR_READ            -140 // error while reading file (exact error status cannot be determined anymore)
+#define MBNG_FILE_L_ERR_WRITE           -141 // error while writing file (exact error status cannot be determined anymore)
+#define MBNG_FILE_L_ERR_NO_FILE         -142 // no or invalid bank file
+#define MBNG_FILE_L_ERR_P_TOO_LARGE     -143 // during label write: label too large for slot in bank
 
 
 /////////////////////////////////////////////////////////////////////////////

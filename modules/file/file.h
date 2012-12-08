@@ -96,6 +96,7 @@ extern s32 FILE_ReadSeek(u32 offset);
 extern u32 FILE_ReadGetCurrentSize(void);
 extern u32 FILE_ReadGetCurrentPosition(void);
 extern s32 FILE_ReadBuffer(u8 *buffer, u32 len);
+extern s32 FILE_ReadBufferUnknownLen(u8 *buffer, u32 len);
 extern s32 FILE_ReadLine(u8 *buffer, u32 max_len);
 extern s32 FILE_ReadByte(u8 *byte);
 extern s32 FILE_ReadHWord(u16 *hword);

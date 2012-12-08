@@ -26,6 +26,7 @@
 #include "file.h"
 #include "mbng_file.h"
 #include "mbng_file_p.h"
+#include "mbng_file_l.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -60,6 +61,7 @@ s32 MBNG_FILE_Init(u32 mode)
 
   status |= FILE_Init(0);
   status |= MBNG_FILE_P_Init(0);
+  status |= MBNG_FILE_L_Init(0);
 
   return status;
 }
@@ -77,6 +79,7 @@ s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
   }
 
   status |= MBNG_FILE_P_Load("DEFAULT");
+  status |= MBNG_FILE_L_Load("DEFAULT");
 
   return status;
 }
@@ -89,6 +92,7 @@ s32 MBNG_FILE_UnloadAllFiles(void)
 {
   s32 status = 0;
   status |= MBNG_FILE_P_Unload();
+  status |= MBNG_FILE_L_Unload();
   return status;
 }
 

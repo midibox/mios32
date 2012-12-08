@@ -275,6 +275,53 @@ static s32 get_bin(char *word, int numBits)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses a quoted string
+// returns >= 0 if string is valid
+// returns < 0 if string is invalid
+/////////////////////////////////////////////////////////////////////////////
+static char *getQuotedString(char **brkt)
+{
+  char *value_str;
+
+  if( *brkt == NULL )
+    return NULL;
+
+  value_str = *brkt;
+  {
+    int quote_started = 0;
+
+    char *search_str = *brkt;
+    for(; *search_str != 0 && (*search_str == ' ' || *search_str == '\t'); ++search_str);
+
+    if( *search_str == '\'' || *search_str == '"' ) {
+      quote_started = 1;
+      ++search_str;
+    }
+
+    value_str = search_str;
+
+    if( quote_started ) {
+      for(; *search_str != 0 && *search_str != '\'' && *search_str != '\"'; ++search_str);
+    } else {
+      for(; *search_str != 0 && *search_str != ' ' && *search_str != '\t'; ++search_str);
+    }
+
+    if( *search_str != 0 ) {
+      *search_str = 0;
+      ++search_str;
+    }
+
+    *brkt = search_str;
+  }
+
+  // end of command line reached?
+  if( (*brkt)[0] == 0 )
+    *brkt = NULL;
+
+  return value_str[0] ? value_str : NULL;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses an extended parameter with the syntax
 // 'parameter=value_str'
 // returns >= 0 if parameter is valid
@@ -332,39 +379,13 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
   }
 
   // we can't use strtok_r here, since we have to consider quotes...
-  *value_str = *brkt;
-  {
-    int quote_started = 0;
-
-    char *search_str = *brkt;
-    for(; *search_str != 0 && (*search_str == ' ' || *search_str == '\t'); ++search_str);
-
-    if( *search_str == '\'' || *search_str == '"' ) {
-      quote_started = 1;
-      ++search_str;
-    }
-
-    *value_str = search_str;
-
-    if( quote_started ) {
-      for(; *search_str != 0 && *search_str != '\'' && *search_str != '\"'; ++search_str);
-    } else {
-      for(; *search_str != 0 && *search_str != ' ' && *search_str != '\t'; ++search_str);
-    }
-
-    if( *search_str != 0 ) {
-      *search_str = 0;
-      ++search_str;
-    }
-
-    *brkt = search_str;
-  }
+  *value_str = getQuotedString(brkt);
 
   // end of command line reached?
   if( brkt_was_NULL || (*brkt)[0] == 0 )
     *brkt = NULL;
 
-  if( !*value_str[0] ) {
+  if( *value_str == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_P] ERROR: missing value after %s ... %s\n", cmd, *parameter);
 #endif
@@ -1193,7 +1214,7 @@ s32 MBNG_FILE_P_Read(char *filename)
   memcpy(mbng_file_p_patch_name, filename, MBNG_FILE_P_FILENAME_LEN+1);
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s%s.NG1", MBNG_FILES_PATH, mbng_file_p_patch_name);
+  sprintf(filepath, "%s%s.NGP", MBNG_FILES_PATH, mbng_file_p_patch_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_P] Open patch '%s'\n", filepath);
@@ -1780,7 +1801,7 @@ s32 MBNG_FILE_P_Write(char *filename)
   memcpy(mbng_file_p_patch_name, filename, MBNG_FILE_P_FILENAME_LEN+1);
 
   char filepath[MAX_PATH];
-  sprintf(filepath, "%s%s.NG1", MBNG_FILES_PATH, mbng_file_p_patch_name);
+  sprintf(filepath, "%s%s.NGP", MBNG_FILES_PATH, mbng_file_p_patch_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_P] Open patch '%s' for writing\n", filepath);

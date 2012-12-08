@@ -514,6 +514,31 @@ s32 FILE_ReadBuffer(u8 *buffer, u32 len)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Read from file with unknown size
+//! \return < 0 on errors (error codes are documented in file.h)
+//! \return >= 0: value contains the actual read bytes
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_ReadBufferUnknownLen(u8 *buffer, u32 len)
+{
+  UINT successcount;
+
+  // exit if volume not available
+  if( !volume_available )
+    return FILE_ERR_NO_VOLUME;
+
+  if( (file_dfs_errno=f_read(&file_read, buffer, len, &successcount)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 3
+    DEBUG_MSG("[FILE] Failed to read sector at position 0x%08x, status: %u\n", file_read.fptr, file_dfs_errno);
+#endif
+      return FILE_ERR_READ;
+  }
+
+  return successcount;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Read a string (terminated with CR) from file
 //! \return < 0 on errors (error codes are documented in file.h)

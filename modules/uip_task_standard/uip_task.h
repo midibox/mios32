@@ -30,8 +30,8 @@
 // By defining DONT_USE_DHCP we can optionally use static addresses
 
 #ifndef MY_IP_ADDRESS
-//                      192        .  168        .    2       .  100
-#define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  2 << 8) | (100 << 0)
+//                      192        .  168        .    1       .  180
+#define MY_IP_ADDRESS (192 << 24) | (168 << 16) | (  1 << 8) | (180 << 0)
 #endif
 
 #ifndef MY_NETMASK
@@ -40,8 +40,8 @@
 #endif
 
 #ifndef MY_GATEWAY
-//                      192        .  168        .    2       .    1
-#define MY_GATEWAY    (192 << 24) | (168 << 16) | (  2 << 8) | (  1 << 0)
+//                      192        .  168        .    1       .    1
+#define MY_GATEWAY    (192 << 24) | (168 << 16) | (  1 << 8) | (  1 << 0)
 #endif
 
 

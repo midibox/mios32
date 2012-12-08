@@ -11,6 +11,10 @@
  * ==========================================================================
  */
 
+// prints execution time on each print event
+#define DEBUG_PRINT_ITEM_PERFORMANCE 0
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Include files
 /////////////////////////////////////////////////////////////////////////////
@@ -20,6 +24,7 @@
 
 #include "app.h"
 #include "mbng_lcd.h"
+#include "mbng_file_l.h"
 #include "mbng_event.h"
 
 
@@ -121,6 +126,10 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
   if( !item->label )
     return -1; // no label
 
+#if DEBUG_PRINT_ITEM_PERFORMANCE
+  MIOS32_STOPWATCH_Reset();
+#endif
+
   if( !first_msg ) {
     first_msg = 1;
     BUFLCD_Clear();
@@ -137,6 +146,14 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
   }
 
   char *str = item->label;
+
+  if( *str == '^' ) {
+    char *label_str = MBNG_FILE_L_GetLabel((char *)&str[1], item_value);
+    if( label_str != NULL ) {
+      str = label_str;
+    }
+  }
+
   for(; *str != 0; ++str) {
     if( *str != '%' )
       BUFLCD_PrintChar(*str);
@@ -216,6 +233,14 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
       }
     }
   }
+
+#if DEBUG_PRINT_ITEM_PERFORMANCE
+  u32 cycles = MIOS32_STOPWATCH_ValueGet();
+  if( cycles == 0xffffffff )
+    DEBUG_MSG("[PERF] overrun!\n");
+  else
+    DEBUG_MSG("[PERF] %5d.%d mS\n", cycles/10, cycles%10);
+#endif
 
   return 0; // no error
 }
