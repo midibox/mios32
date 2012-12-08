@@ -27,6 +27,9 @@ extern "C" {
 #define MIDI_ROUTER_NUM_NODES  16
 #endif
 
+// size of SysEx buffers
+// if longer SysEx strings are received, they will be forwarded directly
+// in this case, multiple strings concurrently sent to the same port won't be merged correctly anymore.
 #ifndef MIDI_ROUTER_SYSEX_BUFFER_SIZE
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 1024
 #endif

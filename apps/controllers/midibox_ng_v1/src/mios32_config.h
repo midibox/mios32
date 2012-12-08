@@ -67,5 +67,16 @@
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 14*1024
 
+// for LPC17: simplify allocation of large arrays
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define AHB_SECTION __attribute__ ((section (".bss_ahb")))
+#else
+# define AHB_SECTION
+#endif
+
+// size of SysEx buffers
+// if longer SysEx strings are received, they will be forwarded directly
+// in this case, multiple strings concurrently sent to the same port won't be merged correctly anymore.
+#define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
 
 #endif /* _MIOS32_CONFIG_H */

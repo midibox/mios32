@@ -50,7 +50,7 @@ typedef struct { // should be dividable by u16
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-#define MBNG_EVENT_POOL_MAX_SIZE 8192
+#define MBNG_EVENT_POOL_MAX_SIZE 16384
 static u8 event_pool[MBNG_EVENT_POOL_MAX_SIZE];
 static u16 event_pool_size;
 static u16 event_pool_num_items;
@@ -86,7 +86,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    strcpy(str, "Button #%3i %3d%b");
+    strcpy(str, "^std_btn"); // Button #%3i %3d%b
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -107,7 +107,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    strcpy(str, "LED #%3i       %b");
+    strcpy(str, "^std_led"); // LED #%3i       %b
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -127,7 +127,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    strcpy(str, "ENC #%3i    %3d%B");
+    strcpy(str, "^std_enc"); // ENC #%3i    %3d%B
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -145,7 +145,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    strcpy(str, "AINSER #%3i %3d%B");
+    strcpy(str, "^std_aser"); // AINSER #%3i %3d%B
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);
@@ -164,7 +164,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     item.stream = stream;
     item.stream_size = 2;
 
-    strcpy(str, "AIN #%3i    %3d%B");
+    strcpy(str, "^std_ain"); // AIN #%3i    %3d%B
     item.label = str;
 
     MBNG_EVENT_ItemAdd(&item);

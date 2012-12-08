@@ -26,6 +26,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_lcd.c \
 		  src/mbng_file.c \
 		  src/mbng_file_p.c \
+		  src/mbng_file_l.c \
                   src/terminal.c \
 		  src/scs_config.c
 
@@ -87,6 +88,9 @@ include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
 # FILE Access Layer
 include $(MIOS32_PATH)/modules/file/file.mk
+
+# MD5 checksum generator
+include $(MIOS32_PATH)/modules/md5/md5.mk
 
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
