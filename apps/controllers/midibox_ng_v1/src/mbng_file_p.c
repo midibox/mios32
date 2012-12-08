@@ -845,8 +845,12 @@ static s32 parseDinMatrix(char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
-  int sr_din = 0;
-  int sr_dout = 0;
+  int rows = 0;
+  int inverted = 0;
+  int sr_dout_sel1 = 0;
+  int sr_dout_sel2 = 0;
+  int sr_din1 = 0;
+  int sr_din2 = 0;
 
   char *parameter;
   char *value_str;
@@ -854,16 +858,34 @@ static s32 parseDinMatrix(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
-      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DIN ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX);
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DIN);
 #endif
 	return -1; // invalid parameter
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "sr_din") == 0 ) {
-      if( (sr_din=get_dec(value_str)) < 0 || sr_din > MIOS32_SRIO_NUM_SR ) {
+    } else if( strcasecmp(parameter, "rows") == 0 ) {
+      if( (rows=get_dec(value_str)) < 0 || (rows != 4 && rows != 8 && rows != 16) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "inverted") == 0 ) {
+      if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_sel1") == 0 ) {
+      if( (sr_dout_sel1=get_dec(value_str)) < 0 || sr_dout_sel1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
@@ -871,8 +893,26 @@ static s32 parseDinMatrix(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "sr_dout") == 0 ) {
-      if( (sr_dout=get_dec(value_str)) < 0 || sr_dout > MIOS32_SRIO_NUM_SR ) {
+    } else if( strcasecmp(parameter, "sr_dout_sel2") == 0 ) {
+      if( (sr_dout_sel2=get_dec(value_str)) < 0 || sr_dout_sel2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_din1") == 0 ) {
+      if( (sr_din1=get_dec(value_str)) < 0 || sr_din1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_din2") == 0 ) {
+      if( (sr_din2=get_dec(value_str)) < 0 || sr_din2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
@@ -889,9 +929,163 @@ static s32 parseDinMatrix(char *cmd, char *brkt)
   }
 
   if( num >= 1 ) {
-    mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[num-1];
-    m->sr_din = sr_din;
-    m->sr_dout = sr_dout;
+    mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[num-1];
+    m->num_rows = rows;
+    m->inverted = inverted;
+    m->sr_dout_sel1 = sr_dout_sel1;
+    m->sr_dout_sel2 = sr_dout_sel2;
+    m->sr_din1 = sr_din1;
+    m->sr_din2 = sr_din2;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses DOUT_MATRIX definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseDoutMatrix(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int rows = 0;
+  int inverted = 0;
+  int sr_dout_sel1 = 0;
+  int sr_dout_sel2 = 0;
+  int sr_dout_r1 = 0;
+  int sr_dout_r2 = 0;
+  int sr_dout_g1 = 0;
+  int sr_dout_g2 = 0;
+  int sr_dout_b1 = 0;
+  int sr_dout_b2 = 0;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DIN ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DIN);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "rows") == 0 ) {
+      if( (rows=get_dec(value_str)) < 0 || (rows != 4 && rows != 8 && rows != 16) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "inverted") == 0 ) {
+      if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_sel1") == 0 ) {
+      if( (sr_dout_sel1=get_dec(value_str)) < 0 || sr_dout_sel1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_sel2") == 0 ) {
+      if( (sr_dout_sel2=get_dec(value_str)) < 0 || sr_dout_sel2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_r1") == 0 ) {
+      if( (sr_dout_r1=get_dec(value_str)) < 0 || sr_dout_r1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_r2") == 0 ) {
+      if( (sr_dout_r2=get_dec(value_str)) < 0 || sr_dout_r2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_g1") == 0 ) {
+      if( (sr_dout_g1=get_dec(value_str)) < 0 || sr_dout_g1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_g2") == 0 ) {
+      if( (sr_dout_g2=get_dec(value_str)) < 0 || sr_dout_g2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_b1") == 0 ) {
+      if( (sr_dout_b1=get_dec(value_str)) < 0 || sr_dout_b1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "sr_dout_b2") == 0 ) {
+      if( (sr_dout_b2=get_dec(value_str)) < 0 || sr_dout_b2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_P] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[num-1];
+    m->num_rows = rows;
+    m->inverted = inverted;
+    m->sr_dout_sel1 = sr_dout_sel1;
+    m->sr_dout_sel2 = sr_dout_sel2;
+    m->sr_dout_r1 = sr_dout_r1;
+    m->sr_dout_r2 = sr_dout_r2;
+    m->sr_dout_g1 = sr_dout_g1;
+    m->sr_dout_g2 = sr_dout_g2;
+    m->sr_dout_b1 = sr_dout_b1;
+    m->sr_dout_b2 = sr_dout_b2;
   }
 
   return 0; // no error
@@ -1013,9 +1207,9 @@ s32 MBNG_FILE_P_Read(char *filename)
   }
 
   // read patch values
-  char line_buffer[128];
+  char line_buffer[200];
   do {
-    status=FILE_ReadLine((u8 *)line_buffer, 128);
+    status=FILE_ReadLine((u8 *)line_buffer, 200);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -1041,6 +1235,8 @@ s32 MBNG_FILE_P_Read(char *filename)
 	  parseEnc(parameter, brkt);
 	} else if( strcmp(parameter, "DIN_MATRIX") == 0 ) {
 	  parseDinMatrix(parameter, brkt);
+	} else if( strcmp(parameter, "DOUT_MATRIX") == 0 ) {
+	  parseDoutMatrix(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
 
@@ -1440,13 +1636,41 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
 
     int matrix;
-    mbng_patch_matrix_entry_t *m = (mbng_patch_matrix_entry_t *)&mbng_patch_matrix[0];
-    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX; ++matrix, ++m) {
+    mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX n=%2d   sr_din=%2d  sr_dout=%2d\n",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d\n",
 	      matrix+1,
-	      m->sr_din,
-	      m->sr_dout);
+	      m->num_rows,
+	      m->inverted,
+	      m->sr_dout_sel1,
+	      m->sr_dout_sel2,
+	      m->sr_din1,
+	      m->sr_din2);
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# DOUT_MATRIX definitions\n");
+    FLUSH_BUFFER;
+
+    int matrix;
+    mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
+
+      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d\n",
+	      matrix+1,
+	      m->num_rows,
+	      m->inverted,
+	      m->sr_dout_sel1,
+	      m->sr_dout_sel2,
+	      m->sr_dout_r1,
+	      m->sr_dout_r2,
+	      m->sr_dout_g1,
+	      m->sr_dout_g2,
+	      m->sr_dout_b1,
+	      m->sr_dout_b2);
       FLUSH_BUFFER;
     }
   }

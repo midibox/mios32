@@ -135,6 +135,14 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
   // print label
   MBNG_LCD_PrintItemLabel(&item, value);
 
+  // TODO: add to event definition
+  u8 forward = 1;
+  if( forward ) {
+    mbng_event_item_t fwd_item = item;
+    fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | (fwd_item.id & 0xfff);
+    MBNG_EVENT_ItemReceive(&fwd_item, value);
+  }
+
   // send MIDI event
   return MBNG_EVENT_ItemSend(&item, value);
 }
@@ -154,6 +162,14 @@ s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
   if( enc_ix < MBNG_PATCH_NUM_ENC )
     enc_value[enc_ix] = value;
+
+  // TODO: add to event definition
+  u8 forward = 1;
+  if( forward ) {
+    mbng_event_item_t fwd_item = *item;
+    fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | (fwd_item.id & 0xfff);
+    MBNG_EVENT_ItemReceive(&fwd_item, value);
+  }
 
   return 0; // no error
 }
