@@ -1541,3 +1541,8 @@ the gatelength
 Nuke:
 in the fx section , theres the humanizer which now can "randomize" notes, vel/cc and length...but since the whole right screen is empty, wouldn´t it be cool to have the trigger layer "humanized" also?...maybe with a percentage-value like probability...
 so it would be possible to have some nice variation with accent, slide , rolls, random value etc... each with it´s own amount...?! 
+
+----------------------------------------------------------
+
+Marxon http://midibox.org/forums/topic/17484-suggestion-deincrement-values-in-mixer-mode
+It would be usefull to have a mixer page to send also relative de/increment values.
