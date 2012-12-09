@@ -62,11 +62,17 @@ typedef struct {
   u8 global_chn;
   u8 all_notes_off_chn;
   u8 button_group_size;
+  u8 led_group_size;
   u8 enc_group_size;
   u8 matrix_din_group_size;
   u8 matrix_dout_group_size;
   u8 ain_group_size;
   u8 ainser_group_size;
+  u8 sysex_dev;
+  u8 sysex_pat;
+  u8 sysex_bnk;
+  u8 sysex_ins;
+  u8 sysex_chn;
 } mbng_patch_cfg_t;
 
 /////////////////////////////////////////////////////////////////////////////

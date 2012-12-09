@@ -1,0 +1,12 @@
+
+EVENT_ENC    id=  1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   1 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Octave     %03d"
+EVENT_ENC    id=  2  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   2 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Semitone   %03d"
+EVENT_ENC    id=  3  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   3 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Detune     %03d"
+EVENT_ENC    id=  4  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   4 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 BendRange  %03d"
+EVENT_ENC    id=  5  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   5 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Keytrack   %03d"
+EVENT_ENC    id=  6  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   6 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 FM Source  %03d"
+EVENT_ENC    id=  7  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   7 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 FM Amount  %03d"
+EVENT_ENC    id=  8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   8 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Shape      %03d"
+EVENT_ENC    id=  9  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0   9 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 Pulsewidth %03d"
+EVENT_ENC    id= 10  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  10 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 PWM Source %03d"
+EVENT_ENC    id= 11  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x20 0x00 0  11 ^val 0xf7"  range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="OSC1 PWM Amount %03d"

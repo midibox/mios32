@@ -210,46 +210,9 @@ static u32 get_ip(char *brkt)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a SR definition (<dec>.D<dec>)
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-// returns -2 if SR number 0 has been passed (could disable a SR definition)
-/////////////////////////////////////////////////////////////////////////////
-static s32 get_sr(char *word)
-{
-  if( word == NULL )
-    return -1;
-
-  // check for '.D' separator
-  char *word2 = word;
-  while( *word2 != '.' )
-    if( *word2++ == 0 )
-      return -1;
-  word2++;
-  if( *word2++ != 'D' )
-    return -1;
-
-  s32 srNum = get_dec(word);
-  if( srNum < 0 )
-    return -1;
-
-  if( srNum == 0 )
-    return -2; // SR has been disabled...
-
-  s32 pinNum = get_dec(word2);
-  if( pinNum < 0 )
-    return -1;
-
-  if( pinNum >= 8 )
-    return -1;
-
-  return 8*(srNum-1) + pinNum;
-}
-
-/////////////////////////////////////////////////////////////////////////////
 // help function which parses a binary value
 // returns >= 0 if value is valid
-// returns -1 if value is invalid
+// returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_bin(char *word, int numBits)
 {
@@ -270,6 +233,25 @@ static s32 get_bin(char *word, int numBits)
 
   if( bit != numBits )
     return -1; // invalid number of bits
+
+  return value;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a simple value definition, and outputs error message if invalid
+// returns >= 0 if value is valid
+// returns < 0 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseSimpleValue(char *parameter, char **brkt, int min, int max)
+{
+  int value;
+  char *value_str = *brkt;
+  if( (value=get_dec(*brkt)) < min || value > max ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid value for parameter '%s %s', range should be within %d..%d!\n", parameter, value_str, min, max);
+#endif
+    return -1000000000;
+  }
 
   return value;
 }
@@ -438,6 +420,7 @@ static s32 parseEvent(char *cmd, char *brkt)
   char *value_str;
   while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     const char *separator_colon = ":";
+    char *separators = " \t;";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "id") == 0 ) {
@@ -466,7 +449,7 @@ static s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "type") == 0 ) {
       mbng_event_type_t event_type = MBNG_EVENT_ItemTypeFromStrGet(value_str);
-      if( event_type == -1 ) {
+      if( event_type == MBNG_EVENT_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid event type in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
@@ -492,9 +475,7 @@ static s32 parseEvent(char *cmd, char *brkt)
 	} break;
 
 	case MBNG_EVENT_TYPE_SYSEX: {
-	  item.stream_size = 2;
-	  item.stream[0] = 0x00; // SysEx type
-	  item.stream[1] = 0x00; // Value Pos
+	  item.stream_size = 0; // initial
 	} break;
 
 	case MBNG_EVENT_TYPE_RPN:
@@ -597,7 +578,7 @@ static s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "rpn_format") == 0 ) {
       mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
-      if( nrpn_format == -1 ) {
+      if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid RPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
@@ -630,7 +611,7 @@ static s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "nrpn_format") == 0 ) {
       mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
-      if( nrpn_format == -1 ) {
+      if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid NRPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
@@ -638,6 +619,55 @@ static s32 parseEvent(char *cmd, char *brkt)
       } else {
 	// no extra check if event_type already defined...
 	stream[2] = nrpn_format;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "stream") == 0 ) {
+      if( item.flags.general.type != MBNG_EVENT_TYPE_SYSEX ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: stream is only expected for SysEx types in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      char *stream_str;
+      char *brkt_local = value_str;
+      u8 *stream_pos = (u8 *)&stream[item.stream_size];
+      // check for STREAM_MAX_SIZE-1, since a meta entry allocates 2 bytes
+      while( item.stream_size < (STREAM_MAX_SIZE-1) && (stream_str = strtok_r(NULL, separators, &brkt_local)) ) {
+	if( *stream_str == '^' ) {
+	  mbng_event_sysex_var_t sysex_var = MBNG_EVENT_ItemSysExVarFromStrGet((char *)&stream_str[1]);
+	  if( sysex_var == MBNG_EVENT_SYSEX_VAR_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_P] ERROR: unknown SysEx variable '%s' in EVENT_%s ... %s=%s\n", stream_str, event, parameter, value_str);
+#endif
+	    return -1;
+	  } else {
+	    *stream_pos = 0xff; // meta indicator
+	    ++stream_pos;
+	    ++item.stream_size;
+	    *stream_pos = (u8)sysex_var;
+	  }
+	} else {
+	  int value;
+	  if( (value=get_dec(stream_str)) < 0 || value > 0xff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_P] ERROR: invalid SysEx value '%s' in EVENT_%s ... %s=%s, expecting 0..127 (0x00..0x7f)\n", stream_str, event, parameter, value_str);
+#endif
+	    return -1;
+	  } else {
+	    *stream_pos = (u8)value;
+	  }
+	}
+
+	++stream_pos;
+	++item.stream_size;
+      }
+
+      if( !item.stream_size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_P] ERROR: stream is empty in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1227,10 +1257,18 @@ s32 MBNG_FILE_P_Read(char *filename)
     return status;
   }
 
+  // allocate 1024 bytes from heap
+  char *line_buffer = pvPortMalloc(1024);
+  if( !line_buffer ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_P] FATAL: out of heap memory!\n");
+#endif
+    return -1;
+  }
+
   // read patch values
-  char line_buffer[200];
   do {
-    status=FILE_ReadLine((u8 *)line_buffer, 200);
+    status=FILE_ReadLine((u8 *)line_buffer, 1024);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -1262,50 +1300,69 @@ s32 MBNG_FILE_P_Read(char *filename)
 	  parseRouter(parameter, brkt);
 
 	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 255);
+	  if( value >= 0 )
 	    mbng_patch_cfg.debounce_ctr = value;
-	  }
 	} else if( strcmp(parameter, "GlobalChannel") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  if( value >= 0 )
 	    mbng_patch_cfg.global_chn = value;
-	  }
 	} else if( strcmp(parameter, "AllNotesOffChannel") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
-#endif
-	  } else {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  if( value >= 0 )
 	    mbng_patch_cfg.all_notes_off_chn = value;
-	  }
-
+	} else if( strcmp(parameter, "ButtonGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.button_group_size = value;
+	} else if( strcmp(parameter, "LedGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.led_group_size = value;
+	} else if( strcmp(parameter, "MatrixDinGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.matrix_din_group_size = value;
+	} else if( strcmp(parameter, "MatrixDoutGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.matrix_dout_group_size = value;
+	} else if( strcmp(parameter, "AinGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.ain_group_size = value;
+	} else if( strcmp(parameter, "AinSerGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.ainser_group_size = value;
+	} else if( strcmp(parameter, "SysExDev") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
+	  if( value >= 0 )
+	    mbng_patch_cfg.sysex_dev = value;
+	} else if( strcmp(parameter, "SysExPat") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
+	  if( value >= 0 )
+	    mbng_patch_cfg.sysex_pat = value;
+	} else if( strcmp(parameter, "SysExBnk") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
+	  if( value >= 0 )
+	    mbng_patch_cfg.sysex_bnk = value;
+	} else if( strcmp(parameter, "SysExIns") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
+	  if( value >= 0 )
+	    mbng_patch_cfg.sysex_ins = value;
+	} else if( strcmp(parameter, "SysExChn") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
+	  if( value >= 0 )
+	    mbng_patch_cfg.sysex_chn = value;
 	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid BPM for parameter '%s'\n", parameter);
-#endif
-	  }
-	  SEQ_BPM_Set((float)value);
-
+	  int value = parseSimpleValue(parameter, &brkt, 1, 1000);
+	  if( value >= 0 )
+	    SEQ_BPM_Set((float)value);
 	} else if( strcmp(parameter, "BPM_Mode") == 0 ) {
-	  u32 value;
-	  if( (value=get_dec(brkt)) < 0 || SEQ_BPM_ModeSet(value) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR invalid BPM Mode for parameter '%s'\n", parameter);
-#endif
-	  }
-
+	  int value = parseSimpleValue(parameter, &brkt, 0, 2);
+	  if( value >= 0 )
+	    SEQ_BPM_ModeSet(value);
 	} else if( strcmp(parameter, "MidiFileClkOutPorts") == 0 ) {
 	  s32 enabled_ports = 0;
 	  int bit;
@@ -1483,6 +1540,9 @@ s32 MBNG_FILE_P_Read(char *filename)
 
   } while( status >= 1 );
 
+  // release memory from heap
+  vPortFree(line_buffer);
+
   // close file
   status |= FILE_ReadClose(&file);
 
@@ -1570,13 +1630,23 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
       } break;
 
       case MBNG_EVENT_TYPE_SYSEX: {
-	if( item.stream_size >= 4 ) {
-	  sprintf(line_buffer, " sysex_type=%d sysex_value_pos=%d stream=\"", item.stream[0], item.stream[1]); // it isn't required to dump the sysex length
+	if( item.stream_size ) {
+	  sprintf(line_buffer, " stream=\"");
 	  FLUSH_BUFFER;
 
 	  int pos;
-	  for(pos=0; pos<(item.stream_size-3); ++pos) {
-	    sprintf(line_buffer, "%s0x%02x", (pos == 0) ? "" : " ", item.stream[3+pos]);
+	  for(pos=0; pos<item.stream_size; ++pos) {
+	    if( item.stream[pos] == 0xff ) { // meta indicator
+	      char *var_str = (char *)MBNG_EVENT_ItemSysExVarStrGet(&item, pos+1);
+	      if( strcasecmp(var_str, "undef") == 0 ) {
+		sprintf(line_buffer, "%s0xff 0x%02x", (pos == 0) ? "" : " ", item.stream[pos+1]);
+	      } else {
+		sprintf(line_buffer, "%s^%s", (pos == 0) ? "" : " ", var_str);
+	      }
+	      ++pos;
+	    } else {
+	      sprintf(line_buffer, "%s0x%02x", (pos == 0) ? "" : " ", item.stream[pos]);
+	    }
 	    FLUSH_BUFFER;
 	  }
 	  sprintf(line_buffer, "\"");
@@ -1779,6 +1849,30 @@ static s32 MBNG_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "GlobalChannel %d\n", mbng_patch_cfg.global_chn);
   FLUSH_BUFFER;
   sprintf(line_buffer, "AllNotesOffChannel %d\n", mbng_patch_cfg.all_notes_off_chn);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "ButtonGroupSize %d\n", mbng_patch_cfg.button_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "LedGroupSize %d\n", mbng_patch_cfg.led_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "EncGroupSize %d\n", mbng_patch_cfg.enc_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "MatrixDinGroupSize %d\n", mbng_patch_cfg.matrix_din_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "MatrixDoutGroupSize %d\n", mbng_patch_cfg.matrix_dout_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "AinGroupSize %d\n", mbng_patch_cfg.ain_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "AinSerGroupSize %d\n", mbng_patch_cfg.ainser_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SysExDev %d\n", mbng_patch_cfg.sysex_dev);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SysExPat %d\n", mbng_patch_cfg.sysex_pat);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SysExBnk %d\n", mbng_patch_cfg.sysex_bnk);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SysExIns %d\n", mbng_patch_cfg.sysex_ins);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SysExChn %d\n", mbng_patch_cfg.sysex_chn);
   FLUSH_BUFFER;
   sprintf(line_buffer, "BPM_Preset %d\n", (int)SEQ_BPM_Get());
   FLUSH_BUFFER;

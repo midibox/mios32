@@ -451,7 +451,7 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
   if( strcasecmp(event_type, "NRPN") == 0 )          return MBNG_EVENT_TYPE_NRPN;
   if( strcasecmp(event_type, "Meta") == 0 )          return MBNG_EVENT_TYPE_META;
 
-  return -1;
+  return MBNG_EVENT_TYPE_UNDEFINED;
 }
 
 
@@ -472,9 +472,53 @@ mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format)
   if( strcasecmp(nrpn_format, "Unsigned") == 0 ) return MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
   if( strcasecmp(nrpn_format, "Signed") == 0 ) return MBNG_EVENT_NRPN_FORMAT_SIGNED;
 
-  return -1;
+  return MBNG_EVENT_NRPN_FORMAT_UNDEFINED;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// for SysEx variables
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos)
+{
+  mbng_event_sysex_var_t sysex_var = (item->stream_size >= stream_pos) ? item->stream[stream_pos] : MBNG_EVENT_SYSEX_VAR_UNDEFINED;
+  switch( sysex_var ) {
+  case MBNG_EVENT_SYSEX_VAR_DEV:        return "dev";
+  case MBNG_EVENT_SYSEX_VAR_PAT:        return "pat";
+  case MBNG_EVENT_SYSEX_VAR_BNK:        return "bnk";
+  case MBNG_EVENT_SYSEX_VAR_INS:        return "ins";
+  case MBNG_EVENT_SYSEX_VAR_CHN:        return "chn";
+  case MBNG_EVENT_SYSEX_VAR_CHK_START:  return "chk_start";
+  case MBNG_EVENT_SYSEX_VAR_CHK:        return "chk";
+  case MBNG_EVENT_SYSEX_VAR_CHK_INV:    return "chk_inv";
+  case MBNG_EVENT_SYSEX_VAR_VAL:        return "val";
+  case MBNG_EVENT_SYSEX_VAR_VAL_H:      return "val_h";
+  case MBNG_EVENT_SYSEX_VAR_VAL_N1:     return "val_n1";
+  case MBNG_EVENT_SYSEX_VAR_VAL_N2:     return "val_n2";
+  case MBNG_EVENT_SYSEX_VAR_VAL_N3:     return "val_n3";
+  case MBNG_EVENT_SYSEX_VAR_VAL_N4:     return "val_n4";
+  }
+  return "undef";
+}
+
+mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
+{
+  if( strcasecmp(sysex_var, "dev") == 0 )        return MBNG_EVENT_SYSEX_VAR_DEV;
+  if( strcasecmp(sysex_var, "pat") == 0 )        return MBNG_EVENT_SYSEX_VAR_PAT;
+  if( strcasecmp(sysex_var, "bnk") == 0 )        return MBNG_EVENT_SYSEX_VAR_BNK;
+  if( strcasecmp(sysex_var, "ins") == 0 )        return MBNG_EVENT_SYSEX_VAR_INS;
+  if( strcasecmp(sysex_var, "chn") == 0 )        return MBNG_EVENT_SYSEX_VAR_CHN;
+  if( strcasecmp(sysex_var, "chk_start") == 0 )  return MBNG_EVENT_SYSEX_VAR_CHK_START;
+  if( strcasecmp(sysex_var, "chk") == 0 )        return MBNG_EVENT_SYSEX_VAR_CHK;
+  if( strcasecmp(sysex_var, "chk_inv") == 0 )    return MBNG_EVENT_SYSEX_VAR_CHK_INV;
+  if( strcasecmp(sysex_var, "val") == 0 )        return MBNG_EVENT_SYSEX_VAR_VAL;
+  if( strcasecmp(sysex_var, "val_h") == 0 )      return MBNG_EVENT_SYSEX_VAR_VAL_H;
+  if( strcasecmp(sysex_var, "val_n1") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N1;
+  if( strcasecmp(sysex_var, "val_n2") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N2;
+  if( strcasecmp(sysex_var, "val_n3") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N3;
+  if( strcasecmp(sysex_var, "val_n4") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N4;
+  return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -536,7 +580,59 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
     return 0; // no error
 
   } else if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
-    // TODO
+#define STREAM_MAX_SIZE 128
+    u8 stream[STREAM_MAX_SIZE]; // note: it's ensure that the out stream isn't longer than the in stream, therefore no size checks required
+    u8 *stream_out = stream;
+    u8 *stream_in = item->stream;
+    u8 *stream_in_end = (u8 *)(item->stream + item->stream_size - 1);
+    u8 chk = 0;
+    while( stream_in <= stream_in_end ) {
+      u8 new_value = 1;
+
+      if( *stream_in == 0xff ) {
+	++stream_in;
+	switch( *stream_in++ ) {
+	case MBNG_EVENT_SYSEX_VAR_DEV:        *stream_out = mbng_patch_cfg.sysex_dev; break;
+	case MBNG_EVENT_SYSEX_VAR_PAT:        *stream_out = mbng_patch_cfg.sysex_pat; break;
+	case MBNG_EVENT_SYSEX_VAR_BNK:        *stream_out = mbng_patch_cfg.sysex_bnk; break;
+	case MBNG_EVENT_SYSEX_VAR_INS:        *stream_out = mbng_patch_cfg.sysex_ins; break;
+	case MBNG_EVENT_SYSEX_VAR_CHN:        *stream_out = mbng_patch_cfg.sysex_chn; break;
+	case MBNG_EVENT_SYSEX_VAR_CHK_START:  new_value = 0; chk = 0; break;
+	case MBNG_EVENT_SYSEX_VAR_CHK:        *stream_out = chk & 0x7f; break;
+	case MBNG_EVENT_SYSEX_VAR_CHK_INV:    *stream_out = (chk ^ 0x7f) & 0x7f; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL:        *stream_out = value & 0x7f; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL_H:      *stream_out = (value >>  7) & 0x7f; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL_N1:     *stream_out = (value >>  0) & 0xf; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL_N2:     *stream_out = (value >>  4) & 0xf; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL_N3:     *stream_out = (value >>  8) & 0xf; break;
+	case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (value >> 12) & 0xf; break;
+	default: new_value = 0;
+	}
+      } else {
+	new_value = 1;
+	*stream_out = *stream_in++;
+      }
+
+      if( new_value )
+	chk += *stream_out++;
+    }
+
+    // send SysEx over enabled ports
+    {
+      int len = stream_out - stream;
+      if( len >= 1 ) {
+	int i;
+	u16 mask = 1;
+	for(i=0; i<16; ++i, mask <<= 1) {
+	  if( item->enabled_ports & mask ) {
+	    // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	    mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	    MIOS32_MIDI_SendSysEx(port, stream, len);
+	  }
+	}
+      }
+    }
+    return 0;
   } else if( event_type == MBNG_EVENT_TYPE_RPN ) {
     // TODO
   } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {

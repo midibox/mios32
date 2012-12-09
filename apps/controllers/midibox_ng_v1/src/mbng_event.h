@@ -35,45 +35,68 @@ typedef enum {
 
 // event pool assignments (upper part of ID)
 typedef enum {
-  MBNG_EVENT_TYPE_NOTE_OFF       = 0,
-  MBNG_EVENT_TYPE_NOTE_ON        = 1,
-  MBNG_EVENT_TYPE_POLY_PRESSURE  = 2,
-  MBNG_EVENT_TYPE_CC             = 3,
-  MBNG_EVENT_TYPE_PROGRAM_CHANGE = 4,
-  MBNG_EVENT_TYPE_AFTERTOUCH     = 5,
-  MBNG_EVENT_TYPE_PITCHBEND      = 6,
-  MBNG_EVENT_TYPE_SYSEX          = 7,
-  MBNG_EVENT_TYPE_RPN            = 8,
-  MBNG_EVENT_TYPE_NRPN           = 9,
-  MBNG_EVENT_TYPE_META           = 10,
+  MBNG_EVENT_TYPE_UNDEFINED = 0,
+  MBNG_EVENT_TYPE_NOTE_OFF,
+  MBNG_EVENT_TYPE_NOTE_ON,
+  MBNG_EVENT_TYPE_POLY_PRESSURE,
+  MBNG_EVENT_TYPE_CC,
+  MBNG_EVENT_TYPE_PROGRAM_CHANGE,
+  MBNG_EVENT_TYPE_AFTERTOUCH,
+  MBNG_EVENT_TYPE_PITCHBEND,
+  MBNG_EVENT_TYPE_SYSEX,
+  MBNG_EVENT_TYPE_RPN,
+  MBNG_EVENT_TYPE_NRPN,
+  MBNG_EVENT_TYPE_META,
 } mbng_event_type_t;
 
 typedef enum {
-  MBNG_EVENT_BUTTON_MODE_ON_OFF  = 0,
-  MBNG_EVENT_BUTTON_MODE_ON_ONLY = 1,
-  MBNG_EVENT_BUTTON_MODE_TOGGLE  = 2,
+  MBNG_EVENT_BUTTON_MODE_UNDEFINED = 0,
+  MBNG_EVENT_BUTTON_MODE_ON_OFF,
+  MBNG_EVENT_BUTTON_MODE_ON_ONLY,
+  MBNG_EVENT_BUTTON_MODE_TOGGLE,
 } mbng_event_button_mode_t;
 
 typedef enum {
-  MBNG_EVENT_ENC_MODE_ABSOLUTE = 0,
-  MBNG_EVENT_ENC_MODE_40SPEED  = 1,
-  MBNG_EVENT_ENC_MODE_00SPEED  = 2,
-  MBNG_EVENT_ENC_MODE_40_1     = 3,
-  MBNG_EVENT_ENC_MODE_00_1     = 4,
-  MBNG_EVENT_ENC_MODE_INC_DEC  = 5,
+  MBNG_EVENT_ENC_MODE_UNDEFINED = 0,
+  MBNG_EVENT_ENC_MODE_ABSOLUTE,
+  MBNG_EVENT_ENC_MODE_40SPEED,
+  MBNG_EVENT_ENC_MODE_00SPEED,
+  MBNG_EVENT_ENC_MODE_40_1,
+  MBNG_EVENT_ENC_MODE_00_1,
+  MBNG_EVENT_ENC_MODE_INC_DEC,
 } mbng_event_enc_mode_t;
 
 typedef enum {
-  MBNG_EVENT_AIN_MODE_DIRECT   = 0,
-  MBNG_EVENT_AIN_MODE_SNAP     = 1,
-  MBNG_EVENT_AIN_MODE_RELATIVE = 2,
-  MBNG_EVENT_AIN_MODE_PARALLAX = 3,
+  MBNG_EVENT_AIN_MODE_UNDEFINED = 0,
+  MBNG_EVENT_AIN_MODE_DIRECT,
+  MBNG_EVENT_AIN_MODE_SNAP,
+  MBNG_EVENT_AIN_MODE_RELATIVE,
+  MBNG_EVENT_AIN_MODE_PARALLAX,
 } mbng_event_ain_mode_t;
 
 typedef enum {
-  MBNG_EVENT_NRPN_FORMAT_UNSIGNED = 0,
-  MBNG_EVENT_NRPN_FORMAT_SIGNED   = 1,
+  MBNG_EVENT_NRPN_FORMAT_UNDEFINED = 0,
+  MBNG_EVENT_NRPN_FORMAT_UNSIGNED,
+  MBNG_EVENT_NRPN_FORMAT_SIGNED,
 } mbng_event_nrpn_format_t;
+
+typedef enum {
+  MBNG_EVENT_SYSEX_VAR_UNDEFINED = 0,
+  MBNG_EVENT_SYSEX_VAR_DEV,
+  MBNG_EVENT_SYSEX_VAR_PAT,
+  MBNG_EVENT_SYSEX_VAR_BNK,
+  MBNG_EVENT_SYSEX_VAR_INS,
+  MBNG_EVENT_SYSEX_VAR_CHN,
+  MBNG_EVENT_SYSEX_VAR_CHK_START,
+  MBNG_EVENT_SYSEX_VAR_CHK,
+  MBNG_EVENT_SYSEX_VAR_CHK_INV,
+  MBNG_EVENT_SYSEX_VAR_VAL,
+  MBNG_EVENT_SYSEX_VAR_VAL_H,
+  MBNG_EVENT_SYSEX_VAR_VAL_N1,
+  MBNG_EVENT_SYSEX_VAR_VAL_N2,
+  MBNG_EVENT_SYSEX_VAR_VAL_N3,
+  MBNG_EVENT_SYSEX_VAR_VAL_N4,
+} mbng_event_sysex_var_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -167,6 +190,8 @@ extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
 extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
+extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);
+extern mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);

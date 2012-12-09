@@ -703,7 +703,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    }
 	  }
 	} else if( strcmp(parameter, "ForwardIO") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -712,7 +712,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.flags.FORWARD_IO = value;
 	  }
 	} else if( strcmp(parameter, "InverseDIN") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -721,7 +721,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.flags.INVERSE_DIN = value;
 	  }
 	} else if( strcmp(parameter, "InverseDOUT") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -730,7 +730,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.flags.INVERSE_DOUT = value;
 	  }
 	} else if( strcmp(parameter, "AltProgramChange") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -739,7 +739,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.flags.ALT_PROGCHNG = value;
 	  }
 	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -748,7 +748,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.debounce_ctr = value;
 	  }
 	} else if( strcmp(parameter, "GlobalChannel") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -757,7 +757,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.global_chn = value;
 	  }
 	} else if( strcmp(parameter, "AllNotesOffChannel") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
@@ -767,7 +767,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  }
 
 	} else if( strcmp(parameter, "MidiFilePlayMode") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 || SEQ_MidiPlayModeSet(value) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid play mode for parameter '%s'\n", parameter);
@@ -775,7 +775,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  }
 
 	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid BPM for parameter '%s'\n", parameter);
@@ -784,7 +784,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	  SEQ_BPM_Set((float)value);
 
 	} else if( strcmp(parameter, "BPM_Mode") == 0 ) {
-	  u32 value;
+	  int value;
 	  if( (value=get_dec(brkt)) < 0 || SEQ_ClockModeSet(value) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid BPM Mode for parameter '%s'\n", parameter);
