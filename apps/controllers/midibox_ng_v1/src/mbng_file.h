@@ -26,11 +26,11 @@
 // additional error codes
 // see also basic error codes which are documented in file.h
 
-// used by mbng_file_p.c
-#define MBNG_FILE_P_ERR_READ            -130 // error while reading file (exact error status cannot be determined anymore)
-#define MBNG_FILE_P_ERR_WRITE           -131 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_P_ERR_NO_FILE         -132 // no or invalid bank file
-#define MBNG_FILE_P_ERR_P_TOO_LARGE     -133 // during patch write: patch too large for slot in bank
+// used by mbng_file_c.c
+#define MBNG_FILE_C_ERR_READ            -130 // error while reading file (exact error status cannot be determined anymore)
+#define MBNG_FILE_C_ERR_WRITE           -131 // error while writing file (exact error status cannot be determined anymore)
+#define MBNG_FILE_C_ERR_NO_FILE         -132 // no or invalid bank file
+#define MBNG_FILE_C_ERR_P_TOO_LARGE     -133 // during patch write: patch too large for slot in bank
 
 // used by mbng_file_l.c
 #define MBNG_FILE_L_ERR_READ            -140 // error while reading file (exact error status cannot be determined anymore)

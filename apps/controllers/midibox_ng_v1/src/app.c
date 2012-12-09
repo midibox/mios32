@@ -44,7 +44,7 @@
 
 #include "file.h"
 #include "mbng_file.h"
-#include "mbng_file_p.h"
+#include "mbng_file_c.h"
 #include "mbng_file_l.h"
 
 #include <seq_bpm.h>
@@ -410,12 +410,12 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 
 	  portENTER_CRITICAL();
 
-	  // check if patch file exists
-	  if( !MBNG_FILE_P_Valid() ) {
+	  // check if configuration file exists
+	  if( !MBNG_FILE_C_Valid() ) {
 	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.NGP file\n");
+	    DEBUG_MSG("Creating initial DEFAULT.NGC file\n");
 
-	    if( (status=MBNG_FILE_P_Write("DEFAULT")) < 0 ) {
+	    if( (status=MBNG_FILE_C_Write("DEFAULT")) < 0 ) {
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }

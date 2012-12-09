@@ -30,7 +30,7 @@
 #include "tasks.h"
 #include "mbng_event.h"
 #include "mbng_file.h"
-#include "mbng_file_p.h"
+#include "mbng_file_c.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -261,7 +261,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	}
       }
     } else if( strcmp(parameter, "show") == 0 ) {
-      MBNG_FILE_P_Debug();
+      MBNG_FILE_C_Debug();
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {

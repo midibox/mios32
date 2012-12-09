@@ -21,7 +21,7 @@
 #include "mbng_patch.h"
 #include "mbng_dout.h"
 #include "mbng_file.h"
-#include "mbng_file_p.h"
+#include "mbng_file_c.h"
 #include "mbng_file_l.h"
 
 
@@ -99,7 +99,7 @@ s32 MBNG_PATCH_Init(u32 mode)
 s32 MBNG_PATCH_Load(char *filename)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = MBNG_FILE_P_Read(filename);
+  s32 status = MBNG_FILE_C_Read(filename);
 #if 0
   status |= MBNG_FILE_L_Read(filename);
 #else
@@ -119,7 +119,7 @@ s32 MBNG_PATCH_Load(char *filename)
 s32 MBNG_PATCH_Store(char *filename)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = MBNG_FILE_P_Write(filename);
+  s32 status = MBNG_FILE_C_Write(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;
