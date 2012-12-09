@@ -531,7 +531,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 {
-  mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+2))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
+  mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+1))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
   switch( meta_type ) {
   case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:      return "SetButtonGroup";
   case MBNG_EVENT_META_TYPE_SET_LED_GROUP:         return "SetLedGroup";
