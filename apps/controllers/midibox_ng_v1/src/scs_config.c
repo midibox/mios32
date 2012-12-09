@@ -39,7 +39,7 @@
 
 #include <file.h>
 #include "mbng_file.h"
-#include "mbng_file_p.h"
+#include "mbng_file_c.h"
 #include "mbng_patch.h"
 #include "mbng_lcd.h"
 
@@ -186,17 +186,17 @@ static void selectSAVE_Callback(char *newString)
 
   if( (status=MBNG_PATCH_Store(newString)) < 0 ) {
     char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
+    sprintf(buffer, "Config %s", newString);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
   } else {
     char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
+    sprintf(buffer, "Config %s", newString);
     SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
   }
 }
 static u16  selectSAVE(u32 ix, u16 value)
 {
-  return SCS_InstallEditStringCallback(selectSAVE_Callback, "SAVE", mbng_file_p_patch_name, MBNG_FILE_P_FILENAME_LEN);
+  return SCS_InstallEditStringCallback(selectSAVE_Callback, "SAVE", mbng_file_c_config_name, MBNG_FILE_C_FILENAME_LEN);
 }
 
 static void selectLOAD_Callback(char *newString)
@@ -206,11 +206,11 @@ static void selectLOAD_Callback(char *newString)
   if( newString[0] != 0 ) {
     if( (status=MBNG_PATCH_Load(newString)) < 0 ) {
       char buffer[100];
-      sprintf(buffer, "Patch %s", newString);
+      sprintf(buffer, "Config %s", newString);
       SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
     } else {
       char buffer[100];
-      sprintf(buffer, "Patch %s", newString);
+      sprintf(buffer, "Config %s", newString);
       SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
     }
   }
@@ -218,10 +218,10 @@ static void selectLOAD_Callback(char *newString)
 static u8 getListLOAD_Callback(u8 offset, char *line)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = FILE_GetFiles("/", "NGP", line, 2, offset);
+  s32 status = FILE_GetFiles("/", "NGC", line, 2, offset);
   MUTEX_SDCARD_GIVE;
   if( status < 1 ) {
-    sprintf(line, "<no .NGP files>");
+    sprintf(line, "<no .NGC files>");
     status = 0;
   }
   return status;
@@ -426,7 +426,7 @@ static s32 displayHook(char *line1, char *line2)
       if( MBNG_FILE_StatusMsgGet() )
 	sprintf(line1, MBNG_FILE_StatusMsgGet());
       else
-	sprintf(line1, "Patch: %s", mbng_file_p_patch_name);
+	sprintf(line1, "Config: %s", mbng_file_c_config_name);
     }
     return 1;
   }
@@ -437,7 +437,7 @@ static s32 displayHook(char *line1, char *line2)
       if( MBNG_FILE_StatusMsgGet() )
 	sprintf(line1, MBNG_FILE_StatusMsgGet());
       else
-	sprintf(line1, "Patch: %s", mbng_file_p_patch_name);
+	sprintf(line1, "Config: %s", mbng_file_c_config_name);
     }
     sprintf(line2, "Load Save");
     return 1;

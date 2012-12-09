@@ -11,8 +11,8 @@
  * ==========================================================================
  */
 
-#ifndef _MBNG_FILE_P_H
-#define _MBNG_FILE_P_H
+#ifndef _MBNG_FILE_C_H
+#define _MBNG_FILE_C_H
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -20,7 +20,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // limited by common 8.3 directory entry format
-#define MBNG_FILE_P_FILENAME_LEN 8
+#define MBNG_FILE_C_FILENAME_LEN 8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -32,21 +32,21 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 MBNG_FILE_P_Init(u32 mode);
-extern s32 MBNG_FILE_P_Load(char *filename);
-extern s32 MBNG_FILE_P_Unload(void);
+extern s32 MBNG_FILE_C_Init(u32 mode);
+extern s32 MBNG_FILE_C_Load(char *filename);
+extern s32 MBNG_FILE_C_Unload(void);
 
-extern s32 MBNG_FILE_P_Valid(void);
+extern s32 MBNG_FILE_C_Valid(void);
 
-extern s32 MBNG_FILE_P_Read(char *filename);
-extern s32 MBNG_FILE_P_Write(char *filename);
-extern s32 MBNG_FILE_P_Debug(void);
+extern s32 MBNG_FILE_C_Read(char *filename);
+extern s32 MBNG_FILE_C_Write(char *filename);
+extern s32 MBNG_FILE_C_Debug(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern char mbng_file_p_patch_name[MBNG_FILE_P_FILENAME_LEN+1];
+extern char mbng_file_c_config_name[MBNG_FILE_C_FILENAME_LEN+1];
 
-#endif /* _MBNG_FILE_P_H */
+#endif /* _MBNG_FILE_C_H */
