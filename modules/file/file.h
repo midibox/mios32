@@ -116,6 +116,8 @@ extern s32 FILE_Copy(char *src_file, char *dst_file);
 
 extern s32 FILE_MakeDir(char *path);
 
+extern s32 FILE_Remove(char *path);
+
 extern s32 FILE_FileExists(char *filepath);
 extern s32 FILE_DirExists(char *path);
 

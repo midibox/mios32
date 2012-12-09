@@ -25,14 +25,17 @@
 // maximum number of labels (conditional entries count as one label)
 #define MBNG_FILE_L_NUM_LABELS 512
 
-// item types
-#define MBNG_FILE_L_ITEM_UNCONDITIONAL  0
-#define MBNG_FILE_L_ITEM_COND_EQUAL     1
-#define MBNG_FILE_L_ITEM_COND_LT        2
-#define MBNG_FILE_L_ITEM_COND_LTEQ      3
-#define MBNG_FILE_L_ITEM_COND_GT        4
-#define MBNG_FILE_L_ITEM_COND_GTEQ      5
-#define MBNG_FILE_L_ITEM_COND_ELSE      6
+// item types (stored in info->label_pos)
+#define MBNG_FILE_L_ITEM_UNCONDITIONAL   0
+#define MBNG_FILE_L_ITEM_CONDITIONAL     1
+
+// condition labels (not stored in info->label_pos)
+#define MBNG_FILE_L_ITEM_COND_EQ        10
+#define MBNG_FILE_L_ITEM_COND_LT        11
+#define MBNG_FILE_L_ITEM_COND_LTEQ      12
+#define MBNG_FILE_L_ITEM_COND_GT        13
+#define MBNG_FILE_L_ITEM_COND_GTEQ      14
+#define MBNG_FILE_L_ITEM_COND_ELSE      15
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,7 +57,7 @@ extern s32 MBNG_FILE_L_Read(char *filename);
 extern s32 MBNG_FILE_L_Write(char *filename);
 extern s32 MBNG_FILE_L_Debug(void);
 
-extern char *MBNG_FILE_L_GetLabel(char *label, u16 value);
+extern const char *MBNG_FILE_L_GetLabel(char *label, u16 value);
 
 
 /////////////////////////////////////////////////////////////////////////////

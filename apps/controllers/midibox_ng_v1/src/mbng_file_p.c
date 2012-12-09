@@ -1466,10 +1466,10 @@ s32 MBNG_FILE_P_Read(char *filename)
 	    }
 #endif /* !defined(MIOS32_FAMILY_EMULATION) */
 	  } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    // changed error to warning, since people are sometimes confused about these messages
 	    // on file format changes
-	    DEBUG_MSG("[MBNG_FILE_P] ERROR: unknown parameter: %s", line_buffer);
+	    DEBUG_MSG("[MBNG_FILE_P] WARNING: unknown parameter: %s", line_buffer);
 #endif
 	  }
 	}

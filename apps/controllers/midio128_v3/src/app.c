@@ -384,8 +384,6 @@ static void TASK_Period_1mS_SD(void *pvParameters)
       MUTEX_SDCARD_TAKE;
       s32 status = FILE_CheckSDCard();
 
-      hw_enabled = 1; // enable hardware after first read...
-
       if( status == 1 ) {
 	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
 
@@ -430,6 +428,8 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	  SEQ_SetPauseMode(1);
 	  SEQ_PlayFileReq(0, 1);
 	}
+
+	hw_enabled = 1; // enable hardware after first read...
       }
 
       MUTEX_SDCARD_GIVE;

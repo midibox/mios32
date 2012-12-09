@@ -20,6 +20,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include <buflcd.h>
 
 #include "app.h"
@@ -148,17 +149,17 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
   char *str = item->label;
 
   if( *str == '^' ) {
-    char *label_str = MBNG_FILE_L_GetLabel((char *)&str[1], item_value);
+    char *label_str = (char *)MBNG_FILE_L_GetLabel((char *)&str[1], item_value);
     if( label_str != NULL ) {
       str = label_str;
     }
   }
-
   for(; *str != 0; ++str) {
     if( *str != '%' )
       BUFLCD_PrintChar(*str);
     else {
-      char *format = str;
+      char *format_begin = str;
+
       ++str;
       if( *str == '%' || *str == 0 )
 	BUFLCD_PrintChar('%');
@@ -171,13 +172,14 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	for(; *str != 0 && *str >= '0' && *str <= '9'; ++str);
 
 	// finally check for valid string
-	if( *str != 0 ) {
-	  char memo[2]; // store current char and temporary terminate *format string
-	  memo[0] = str[0];
-	  memo[1] = str[1];
-	  str[1] = 0;
+	int format_len = str - format_begin + 1;
+	if( *str != 0 && format_len < 9 ) {
+	  char format[10];
+	  strncpy(format, format_begin, format_len);
+	  format[format_len] = 0;
+	  char *format_type = &format[format_len-1];
 
-	  switch( *str ) {
+	  switch( format[format_len-1] ) {
 	  case 'd': // value in various formats
 	  case 'x':
 	  case 'X':
@@ -191,22 +193,22 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  } break;
 
 	  case 'i': { // ID
-	    *str = 'd';
+	    *format_type = 'd';
 	    BUFLCD_PrintFormattedString(format, item->id & 0xfff);
 	  } break;
 
 	  case 'm': { // min value
-	    *str = 'd';
+	    *format_type = 'd';
 	    BUFLCD_PrintFormattedString(format, item->min);
 	  } break;
 
 	  case 'M': { // max value
-	    *str = 'd';
+	    *format_type = 'd';
 	    BUFLCD_PrintFormattedString(format, item->max);
 	  } break;
 
 	  case 'b': { // binary digit
-	    *str = 'c';
+	    *format_type = 'c';
 	    if( (max-min) == 1 )
 	      BUFLCD_PrintFormattedString(format, (item_value > min) ? '*' : 'o');
 	    else
@@ -214,7 +216,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  } break;
 
 	  case 'B': { // vertical bar
-	    *str = 'c';
+	    *format_type = 'c';
 	    int range = max - min + 1;
 	    char bar = ((8 * item_value) / range); // between 0..7
 	    // 0x08 ensures that string won't be terminated.. common CLCDs will output the special char of 0 instead
@@ -226,9 +228,6 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  default:
 	    BUFLCD_PrintString(format);
 	  }
-
-	  str[0] = memo[0]; // restore formatted string
-	  str[1] = memo[1];
 	}
       }
     }

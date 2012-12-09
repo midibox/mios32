@@ -1,0 +1,30 @@
+# My preferred ethernet setup
+
+ETH_LocalIp 192.168.1.180
+ETH_Netmask 255.255.255.0
+ETH_Gateway 192.168.1.1
+ETH_Dhcp 1
+
+# iPad with MCMPP protocol
+OSC_RemoteIp 0 192.168.1.110
+OSC_RemotePort 0 8001
+OSC_LocalPort 0 8000
+OSC_TransferMode 0 3
+
+# iPhone with TouchOSC protocol
+OSC_RemoteIp 1 192.168.1.111
+OSC_RemotePort 1 8001
+OSC_LocalPort 1 8000
+OSC_TransferMode 1 4
+
+# Mac with TouchOSC protocol
+OSC_RemoteIp 2 192.168.1.114
+OSC_RemotePort 2 8001
+OSC_LocalPort 2 8000
+OSC_TransferMode 2 4
+
+# Mac with MIDI protocol
+OSC_RemoteIp 3 192.168.1.114
+OSC_RemotePort 3 8001
+OSC_LocalPort 3 8000
+OSC_TransferMode 3 0
