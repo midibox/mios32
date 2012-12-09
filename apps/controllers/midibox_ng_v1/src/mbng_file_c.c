@@ -1723,7 +1723,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       case MBNG_EVENT_TYPE_META: {
 	int i;
-	for(i=0; i<2*item.stream_size; ++i) {
+	for(i=0; i<item.stream_size/2; ++i) {
 	  sprintf(line_buffer, " meta=%s:%d", MBNG_EVENT_ItemMetaTypeStrGet(&item, i), (int)item.stream[2*i+1]);
 	  FLUSH_BUFFER;
 	}
