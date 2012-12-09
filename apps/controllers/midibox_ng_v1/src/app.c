@@ -377,8 +377,6 @@ static void TASK_Period_1mS_SD(void *pvParameters)
       MUTEX_SDCARD_TAKE;
       s32 status = FILE_CheckSDCard();
 
-      hw_enabled = 1; // enable hardware after first read...
-
       if( status == 1 ) {
 	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
 
@@ -409,6 +407,9 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	  MBNG_FILE_StatusMsgSet("No FAT");
 	} else {
 	  MBNG_FILE_StatusMsgSet(NULL);
+
+	  portENTER_CRITICAL();
+
 	  // check if patch file exists
 	  if( !MBNG_FILE_P_Valid() ) {
 	    // create new one
@@ -428,7 +429,11 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }
+
+	  portEXIT_CRITICAL();
 	}
+
+	hw_enabled = 1; // enable hardware after first read...
       }
 
       MUTEX_SDCARD_GIVE;

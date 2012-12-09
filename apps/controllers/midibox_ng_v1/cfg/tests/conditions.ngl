@@ -1,0 +1,29 @@
+COND_LABEL test1
+COND =0   "Val is 000   %3d"
+COND =1   "Val is 001   %3d"
+COND =2   "Val is 002   %3d"
+COND =3   "Val is 003   %3d"
+COND =4   "Val is 004   %3d"
+COND =5   "Val is 005   %3d"
+COND =6   "Val is 006   %3d"
+COND =7   "Val is 007   %3d"
+COND =8   "Val is 008   %3d"
+COND =9   "Val is 009   %3d"
+COND <20  "Val is <20   %3d"
+COND <=40 "Val is <=40  %3d"
+COND_ELSE "else cond.   %3d"
+
+COND_LABEL test2
+COND <0   "NEVER!       %3d"
+COND <1   "Val is 000   %3d"
+COND <2   "Val is 001   %3d"
+COND_ELSE "else cond.   %3d"
+
+COND_LABEL test3
+COND <=0  "Val is 000   %3d"
+COND <=1  "Val is 001   %3d"
+COND_ELSE "else cond.   %3d"
+
+COND_LABEL test4
+COND <0x40   "Off          %3d"
+COND_ELSE    "On           %3d"

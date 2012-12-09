@@ -94,7 +94,12 @@ s32 MBNG_PATCH_Load(char *filename)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = MBNG_FILE_P_Read(filename);
+#if 0
   status |= MBNG_FILE_L_Read(filename);
+#else
+  // we need a more sophisticated file handling to determine if file *must* exist before error message is print out
+  MBNG_FILE_L_Read(filename);
+#endif
   MUTEX_SDCARD_GIVE;
 
   return status;
