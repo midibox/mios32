@@ -1,7 +1,7 @@
 
 # group sizes for ENC and AINSER
 EncGroupSize 16
-AinSerGroupSize 16
+AinSerGroupSize 64
 
 # Following buttons switch between the Encoder groups
 # For demonstration purposes, we also add a second meta event which switches the AINSER group (but AINSER not configured here...)
