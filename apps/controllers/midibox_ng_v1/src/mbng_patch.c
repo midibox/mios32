@@ -43,6 +43,7 @@ mbng_patch_cfg_t mbng_patch_cfg = {
   .matrix_dout_group_size = 64,
   .ain_group_size = 6,
   .ainser_group_size = 64,
+  .mf_group_size = 8,
   .sysex_dev = 0,
   .sysex_pat = 0,
   .sysex_bnk = 0,

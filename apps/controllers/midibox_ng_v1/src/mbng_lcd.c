@@ -154,7 +154,35 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
       str = label_str;
     }
   }
-  for(; *str != 0; ++str) {
+  char *recursive_str = NULL; // only simple one-level recursion for label strings
+  for( ; ; ++str) {
+    if( *str == 0 && recursive_str ) {
+      str = recursive_str;
+      recursive_str = NULL;
+    }
+    if( *str == 0 )
+      break;
+
+    if( *str == '^' ) { // label
+      ++str;
+      if( *str == '^' || *str == 0 )
+	BUFLCD_PrintChar('^');
+      else {
+	char label[9];
+	int pos;
+	for(pos=0; pos<8 && *str != 0 && *str != '^' && *str != ' '; ++pos, ++str) {
+	  label[pos] = *str;
+	}
+	label[pos] = 0;
+
+	char *label_str = (char *)MBNG_FILE_L_GetLabel(label, item_value);
+	if( label_str != NULL ) {
+	  recursive_str = str;
+	  str = label_str;
+	}
+      }
+    }
+
     if( *str != '%' )
       BUFLCD_PrintChar(*str);
     else {
@@ -185,7 +213,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  case 'X':
 	  case 'u':
 	  case 'c': {
-	    BUFLCD_PrintFormattedString(format, item_value);
+	    BUFLCD_PrintFormattedString(format, (int)item_value + item->offset);
 	  } break;
 
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
