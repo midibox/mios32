@@ -37,11 +37,17 @@ mbng_patch_cfg_t mbng_patch_cfg = {
   .global_chn = 0,
   .all_notes_off_chn = 0,
   .button_group_size = 128,
+  .led_group_size = 128,
   .enc_group_size = 64,
   .matrix_din_group_size = 64,
   .matrix_dout_group_size = 64,
   .ain_group_size = 6,
   .ainser_group_size = 64,
+  .sysex_dev = 0,
+  .sysex_pat = 0,
+  .sysex_bnk = 0,
+  .sysex_ins = 0,
+  .sysex_chn = 0,
 };
 
 
