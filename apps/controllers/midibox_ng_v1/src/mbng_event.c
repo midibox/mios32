@@ -38,6 +38,7 @@ typedef struct { // should be dividable by u16
   u16 flags; // (mbng_event_flags_t)
   s16 min;
   s16 max;
+  s16 offset;
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
   u8 len_label;
@@ -225,8 +226,9 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item)
   item->id = (u16)MBNG_EVENT_CONTROLLER_DISABLED;
   item->flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
-  item->min = 0x0000;
-  item->max = 0x007f;
+  item->min    = 0;
+  item->max    = 127;
+  item->offset = 0;
   item->stream_size = 0;
   item->lcd = 0;
   item->lcd_pos = 0x00;
@@ -246,6 +248,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->enabled_ports = pool_item->enabled_ports;
   item->min = pool_item->min;
   item->max = pool_item->max;
+  item->offset = pool_item->offset;
   item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
   item->stream_size = pool_item->len_stream;
@@ -268,6 +271,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->enabled_ports = item->enabled_ports;
   pool_item->min = item->min;
   pool_item->max = item->max;
+  pool_item->offset = item->offset;
   pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
   pool_item->len = pool_item_len;
@@ -363,13 +367,14 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d label:%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d offset:%d label:%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item),
 				      MBNG_EVENT_ItemTypeStrGet(item),
 				      item->enabled_ports,
 				      item->min,
 				      item->max,
+				      item->offset,
 				      item->label ? item->label : "");
 #endif
 }
@@ -522,6 +527,40 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for Meta events
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
+{
+  mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+2))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
+  switch( meta_type ) {
+  case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:      return "SetButtonGroup";
+  case MBNG_EVENT_META_TYPE_SET_LED_GROUP:         return "SetLedGroup";
+  case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:         return "SetEncGroup";
+  case MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP:  return "SetDinMatrixGroup";
+  case MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP: return "SetDoutMatrixGroup";
+  case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:         return "SetAinGroup";
+  case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:      return "SetAinSerGroup";
+  case MBNG_EVENT_META_TYPE_SET_MF_GROUP:          return "SetMfGroup";
+  }
+
+  return "Undefined";
+}
+
+mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
+{
+  if( strcasecmp(meta_type, "SetButtonGroup") == 0 )     return MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP;
+  if( strcasecmp(meta_type, "SetLedGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_LED_GROUP;
+  if( strcasecmp(meta_type, "SetEncGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_ENC_GROUP;
+  if( strcasecmp(meta_type, "SetDinMatrixGroup") == 0 )  return MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP;
+  if( strcasecmp(meta_type, "SetDoutMatrixGroup") == 0 ) return MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP;
+  if( strcasecmp(meta_type, "SetAinGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_AIN_GROUP;
+  if( strcasecmp(meta_type, "SetAinSerGroup") == 0 )     return MBNG_EVENT_META_TYPE_SET_AINSER_GROUP;
+  if( strcasecmp(meta_type, "SetMfGroup") == 0 )         return MBNG_EVENT_META_TYPE_SET_MF_GROUP;
+  return MBNG_EVENT_META_TYPE_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Sends the item via MIDI
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
@@ -638,7 +677,22 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
   } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
     // TODO
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
-    // TODO
+    
+    int i;
+    for(i=0; i<item->stream_size; i+=2) {
+      mbng_event_meta_type_t meta_type = item->stream[i+0];
+      u8 meta_value = item->stream[i+1];
+      switch( meta_type ) {
+      case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:      break;
+      case MBNG_EVENT_META_TYPE_SET_LED_GROUP:         break;
+      case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:         MBNG_ENC_GroupSet(meta_value-1); break;
+      case MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP:  break;
+      case MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP: break;
+      case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:         break;
+      case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:      break;
+      case MBNG_EVENT_META_TYPE_SET_MF_GROUP:          break;
+      }
+    }
   } else {
     return -1; // unsupported
   }

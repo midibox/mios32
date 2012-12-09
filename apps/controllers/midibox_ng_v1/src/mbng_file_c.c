@@ -487,9 +487,7 @@ static s32 parseEvent(char *cmd, char *brkt)
 	} break;
 
 	case MBNG_EVENT_TYPE_META: {
-	  item.stream_size = 2;
-	  item.stream[0] = 0x00; // Meta Number
-	  item.stream[1] = 0x00;
+	  item.stream_size = 0;
 	} break;
 
 	default:
@@ -625,7 +623,7 @@ static s32 parseEvent(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "stream") == 0 ) {
       if( item.flags.general.type != MBNG_EVENT_TYPE_SYSEX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: stream is only expected for SysEx types in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: stream is only expected for SysEx events in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -671,6 +669,41 @@ static s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "meta") == 0 ) {
+      if( item.flags.general.type != MBNG_EVENT_TYPE_META ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: meta is only expected for Meta events in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      char *values_str = value_str;
+      char *brkt_local;
+
+      mbng_event_meta_type_t meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(value_str);
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(values_str)) == MBNG_EVENT_META_TYPE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid meta type in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int value = 0;
+      if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (value=get_dec(values_str)) < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: missing or invalid meta value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int entry = item.stream_size / 2;
+      item.stream[2*entry + 0] = meta_type;
+      item.stream[2*entry + 1] = value;
+      item.stream_size += 2;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "range") == 0 ) {
       char *values_str = value_str;
       char *brkt_local;
@@ -696,6 +729,18 @@ static s32 parseEvent(char *cmd, char *brkt)
 	  item.min = values[0];
 	  item.max = values[1];
 	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "offset") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < -16384 || value > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid offset value in EVENT_%s ... %s=%s (expecting -16384..16383)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.offset = value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1319,6 +1364,10 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.led_group_size = value;
+	} else if( strcmp(parameter, "EncGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.enc_group_size = value;
 	} else if( strcmp(parameter, "MatrixDinGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
@@ -1335,6 +1384,10 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.ainser_group_size = value;
+	} else if( strcmp(parameter, "MfGroupSize") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
+	  if( value >= 0 )
+	    mbng_patch_cfg.mf_group_size = value;
 	} else if( strcmp(parameter, "SysExDev") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
 	  if( value >= 0 )
@@ -1669,8 +1722,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
 
       case MBNG_EVENT_TYPE_META: {
-	if( item.stream_size >= 2 ) {
-	  sprintf(line_buffer, " meta_id=0x%04x", item.stream[0] | (int)(item.stream[1] << 8));
+	int i;
+	for(i=0; i<2*item.stream_size; ++i) {
+	  sprintf(line_buffer, " meta=%s:%d", MBNG_EVENT_ItemMetaTypeStrGet(&item, i), (int)item.stream[2*i+1]);
 	  FLUSH_BUFFER;
 	}
       } break;
@@ -1684,7 +1738,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	}
 	ports_bin[16] = 0;
 
-	sprintf(line_buffer, "  range=%3d:%3d  ports=%s", item.min, item.max, ports_bin);
+	sprintf(line_buffer, "  range=%3d:%3d offset=%3d  ports=%s", item.min, item.max, item.offset, ports_bin);
 	FLUSH_BUFFER;
       }
 
@@ -1863,6 +1917,8 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "AinGroupSize %d\n", mbng_patch_cfg.ain_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "AinSerGroupSize %d\n", mbng_patch_cfg.ainser_group_size);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "MfGroupSize %d\n", mbng_patch_cfg.mf_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "SysExDev %d\n", mbng_patch_cfg.sysex_dev);
   FLUSH_BUFFER;

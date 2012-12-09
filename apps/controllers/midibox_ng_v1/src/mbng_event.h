@@ -98,6 +98,18 @@ typedef enum {
   MBNG_EVENT_SYSEX_VAR_VAL_N4,
 } mbng_event_sysex_var_t;
 
+typedef enum {
+  MBNG_EVENT_META_TYPE_UNDEFINED = 0,
+  MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP,
+  MBNG_EVENT_META_TYPE_SET_LED_GROUP,
+  MBNG_EVENT_META_TYPE_SET_ENC_GROUP,
+  MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP,
+  MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP,
+  MBNG_EVENT_META_TYPE_SET_AIN_GROUP,
+  MBNG_EVENT_META_TYPE_SET_AINSER_GROUP,
+  MBNG_EVENT_META_TYPE_SET_MF_GROUP,
+} mbng_event_meta_type_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -157,6 +169,7 @@ typedef struct {
   u16 enabled_ports;
   s16 min;
   s16 max;
+  s16 offset;
   u32 stream_size;
   u8* stream;
   u8 lcd;
@@ -192,6 +205,8 @@ extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);
 extern mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var);
+extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry);
+extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);

@@ -68,6 +68,7 @@ typedef struct {
   u8 matrix_dout_group_size;
   u8 ain_group_size;
   u8 ainser_group_size;
+  u8 mf_group_size;
   u8 sysex_dev;
   u8 sysex_pat;
   u8 sysex_bnk;

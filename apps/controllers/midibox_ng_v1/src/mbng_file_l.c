@@ -366,14 +366,16 @@ static char *getQuotedString(char **brkt)
     for(; *search_str != 0 && (*search_str == ' ' || *search_str == '\t'); ++search_str);
 
     if( *search_str == '\'' || *search_str == '"' ) {
-      quote_started = 1;
+      quote_started = *search_str == '\'' ? 1 : 2;
       ++search_str;
     }
 
     value_str = search_str;
 
-    if( quote_started ) {
-      for(; *search_str != 0 && *search_str != '\'' && *search_str != '\"'; ++search_str);
+    if( quote_started == 1 ) {
+      for(; *search_str != 0 && *search_str != '\''; ++search_str);
+    } else if( quote_started ) {
+      for(; *search_str != 0 && *search_str != '\"'; ++search_str);
     } else {
       for(; *search_str != 0 && *search_str != ' ' && *search_str != '\t'; ++search_str);
     }
@@ -493,7 +495,7 @@ s32 MBNG_FILE_L_Read(char *filename)
   u32 bin_file_errors = 0;
   char current_cond_label[9];
   current_cond_label[0] = 0;
-  info->num_labels = 0;
+  int num_labels = 0;
   do {
     status=FILE_ReadLine((u8 *)line_buffer, 200);
 
@@ -549,9 +551,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		  DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing LABEL statement - please report to TK");
 #endif
 		} else {
-		  info->label_pos[info->num_labels] = FILE_WriteGetCurrentPosition();
-		  memcpy(info->labels[info->num_labels], label, 8);
-		  ++info->num_labels;
+		  ++num_labels;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
 		  DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, MBNG_FILE_L_ITEM_UNCONDITIONAL, label, str);
@@ -605,11 +605,9 @@ s32 MBNG_FILE_L_Read(char *filename)
 		DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing COND_LABEL statement - please report to TK");
 #endif
 	      } else {
-		info->label_pos[info->num_labels] = FILE_WriteGetCurrentPosition();
-		memcpy(info->labels[info->num_labels], label, 8);
+		++num_labels;
 		memcpy(current_cond_label, label, 8);
 		current_cond_label[8] = 0;
-		++info->num_labels;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
 		DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, MBNG_FILE_L_ITEM_CONDITIONAL, label, str);
@@ -814,12 +812,16 @@ s32 MBNG_FILE_L_Read(char *filename)
     sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, mbng_file_l_patch_name);
     FILE_Remove(filepath);
   } else {
-    // file is valid! :)
-    info->valid = 1;
-
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_L] new %s.BIN file has been successfully created.\n", filename);
 #endif
+
+    // try to read file again...
+    if( parseBinFile(filename) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_L] ERROR: generated %s.BIN file seems to be corrupted!\n", filename);
+#endif
+    }
   }
 
   return 0; // no error
@@ -987,7 +989,7 @@ const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
 		}
 
 		u8 label_type = label_buffer[1];
-		u16 check_value = label_buffer[3] | ((u16)label_buffer[4] << 8);
+		s16 check_value = label_buffer[3] | ((u16)label_buffer[4] << 8);
 
 		switch( label_type ) {
 		case MBNG_FILE_L_ITEM_COND_EQ:   if( value == check_value ) { condition_matched = 1; } break;
