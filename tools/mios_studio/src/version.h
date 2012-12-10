@@ -1,2 +1,2 @@
 // $Id$
-#define MIOS_STUDIO_VERSION "2.4.0"
+#define MIOS_STUDIO_VERSION "2.4.1"
