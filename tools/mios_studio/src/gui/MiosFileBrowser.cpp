@@ -345,6 +345,8 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
                buttonThatWasClicked == saveButton ) {
 
         if( buttonThatWasClicked == cancelButton ) {
+            openHexEditorAfterRead = false;
+            openTextEditorAfterRead = false;
             enableFileButtons();
             hexEditor->clear();
             hexEditor->setReadOnly(true);
@@ -854,9 +856,11 @@ bool MiosFileBrowser::uploadBuffer(String filename, const Array<uint8>& buffer)
 bool MiosFileBrowser::uploadFinished(void)
 {
     currentWriteInProgress = false;
+    String extraText;
 
     // finished edit operation?
     if( openHexEditorAfterRead || openTextEditorAfterRead ) {
+#if 0
         openHexEditorAfterRead = false;
         openTextEditorAfterRead = false;
         hexEditor->clear();
@@ -864,17 +868,30 @@ bool MiosFileBrowser::uploadFinished(void)
         textEditor->clear();
         textEditor->setReadOnly(true);
         editLabel->setText(String::empty, true);
+#else
+        extraText = T(" - you can continue editing; click CANCEL to close editor!");
+        // don't close editor
+#endif
     }
 
     uint32 currentWriteFinished = Time::currentTimeMillis();
     float downloadTime = (float)(currentWriteFinished-currentWriteStartTime) / 1000.0;
     float dataRate = ((float)currentWriteSize/1000.0) / downloadTime;
 
+
     statusLabel->setText(T("Upload of ") + currentWriteFileName +
                          T(" (") + String(currentWriteSize) + T(" bytes) completed in ") +
-                         String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate), true);
+                         String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate) +
+                         extraText, true);
 
+#if 0 // not required
     requestUpdateTreeView();
+#else
+    if( !openHexEditorAfterRead && !openTextEditorAfterRead ) {
+        enableFileButtons();
+    }
+#endif
+
 
     return true;
 }
