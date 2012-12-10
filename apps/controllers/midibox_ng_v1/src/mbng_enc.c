@@ -139,7 +139,7 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
   u8 forward = 1;
   if( forward ) {
     mbng_event_item_t fwd_item = item;
-    fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | (fwd_item.id & 0xfff);
+    fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | ((fwd_item.id & 0xfff) % mbng_patch_cfg.enc_group_size);
     MBNG_EVENT_ItemReceive(&fwd_item, value);
   }
 
@@ -167,8 +167,12 @@ s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   u8 forward = 1;
   if( forward ) {
     mbng_event_item_t fwd_item = *item;
-    fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | (fwd_item.id & 0xfff);
-    MBNG_EVENT_ItemReceive(&fwd_item, value);
+    u16 fwd_item_id = fwd_item.id & 0xfff;
+    if( fwd_item_id >= enc_group*mbng_patch_cfg.enc_group_size &&
+	fwd_item_id < (enc_group+1)*mbng_patch_cfg.enc_group_size ) {
+      fwd_item.id = MBNG_EVENT_CONTROLLER_LED_MATRIX | (fwd_item_id % mbng_patch_cfg.enc_group_size);
+      MBNG_EVENT_ItemReceive(&fwd_item, value);
+    }
   }
 
   return 0; // no error

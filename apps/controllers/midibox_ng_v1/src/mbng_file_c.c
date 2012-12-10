@@ -391,8 +391,7 @@ static s32 parseEvent(char *cmd, char *brkt)
   mbng_event_item_t item;
   char *event = (char *)&cmd[6]; // remove "EVENT_"
 
-  MBNG_EVENT_ItemInit(&item);
-  item.id = MBNG_EVENT_ItemIdFromControllerStrGet(event);
+  MBNG_EVENT_ItemInit(&item, MBNG_EVENT_ItemIdFromControllerStrGet(event));
 
   // extra: if button, invert it by default to avoid confusion if inverted=1 not set (DINs are low-active)
   if( item.id == MBNG_EVENT_CONTROLLER_BUTTON || item.id == MBNG_EVENT_CONTROLLER_BUTTON_MATRIX )
@@ -680,7 +679,7 @@ static s32 parseEvent(char *cmd, char *brkt)
       char *values_str = value_str;
       char *brkt_local;
 
-      mbng_event_meta_type_t meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(value_str);
+      mbng_event_meta_type_t meta_type;
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
 	  (meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(values_str)) == MBNG_EVENT_META_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -729,6 +728,49 @@ static s32 parseEvent(char *cmd, char *brkt)
 	  item.min = values[0];
 	  item.max = values[1];
 	}
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "syxdump_pos") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+
+      int receiver;
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (receiver=get_dec(values_str)) < 1 || receiver > 15 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid receiver number in EVENT_%s ... %s=%s (expect 1..15)\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int value = 0;
+      if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (value=get_dec(values_str)) < 0 || value > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", event, parameter, value_str, 0xfff);
+#endif
+	return -1;
+      }
+
+      item.syxdump_pos.receiver = receiver;
+      item.syxdump_pos.pos = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "button_mode") == 0 ) {
+      mbng_event_button_mode_t button_mode = MBNG_EVENT_ItemButtonModeFromStrGet(value_str);
+      if( button_mode == MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid button mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_BUTTON ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON!\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.flags.DIN.button_mode = button_mode;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1303,7 +1345,9 @@ s32 MBNG_FILE_C_Read(char *filename)
   }
 
   // allocate 1024 bytes from heap
-  char *line_buffer = pvPortMalloc(1024);
+  u32 line_buffer_size = 1024;
+  char *line_buffer = pvPortMalloc(line_buffer_size);
+  u32 line_buffer_len = 0;
   if( !line_buffer ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C] FATAL: out of heap memory!\n");
@@ -1313,12 +1357,29 @@ s32 MBNG_FILE_C_Read(char *filename)
 
   // read config values
   do {
-    status=FILE_ReadLine((u8 *)line_buffer, 1024);
+    status=FILE_ReadLine((u8 *)(line_buffer+line_buffer_len), line_buffer_size-line_buffer_len);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
-      DEBUG_MSG("[MBNG_FILE_C] read: %s", line_buffer);
+      if( line_buffer_len )
+	MIOS32_MIDI_SendDebugString("+++");
+      MIOS32_MIDI_SendDebugString(line_buffer);
 #endif
+
+      // concatenate?
+      u32 new_len = strlen(line_buffer);
+      // remove spaces
+      while( new_len >= 1 && line_buffer[new_len-1] == ' ' ) {
+	line_buffer[new_len-1] = 0;
+	--new_len;
+      }
+      if( new_len >= 1 && line_buffer[new_len-1] == '\\' ) {
+	line_buffer[new_len-1] = 0;
+	line_buffer_len = new_len - 1;
+	continue; // read next line
+      } else {
+	line_buffer_len = 0; // for next round we start at 0 again
+      }
 
       // sscanf consumes too much memory, therefore we parse directly
       char *separators = " \t;";
@@ -1738,9 +1799,52 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	}
 	ports_bin[16] = 0;
 
-	sprintf(line_buffer, "  range=%3d:%3d offset=%3d  ports=%s", item.min, item.max, item.offset, ports_bin);
+	sprintf(line_buffer, "  range=%3d:%-3d offset=%3d  ports=%s", item.min, item.max, item.offset, ports_bin);
 	FLUSH_BUFFER;
       }
+
+      if( item.syxdump_pos.receiver ) {
+	sprintf(line_buffer, "  syxdump_pos=%d:%d", item.syxdump_pos.receiver, item.syxdump_pos.pos);
+	FLUSH_BUFFER;
+      }
+
+      // differ between event type
+      switch( item.id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_BUTTON: {
+	if( item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_OFF && item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_LED: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_ENC: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_AIN: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_AINSER: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_MF: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_CV: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_RECEIVER: {
+      }; break;
+      }
+      
 
       sprintf(line_buffer, "  lcd_pos=%d:%d:%d label=\"%s\"\n", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1, item.label ? item.label : "");
       FLUSH_BUFFER;
