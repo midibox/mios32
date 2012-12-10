@@ -20,6 +20,7 @@
 
 #include "app.h"
 #include "mbng_event.h"
+#include "mbng_lcd.h"
 #include "mbng_din.h"
 #include "mbng_dout.h"
 #include "mbng_matrix.h"
@@ -32,6 +33,14 @@
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  u8 ALL;
+
+  struct {
+    u8 sysex_dump;
+  };
+} runtime_flags_t;
+
 typedef struct { // should be dividable by u16
   u16 id;
   u16 enabled_ports;
@@ -39,6 +48,10 @@ typedef struct { // should be dividable by u16
   s16 min;
   s16 max;
   s16 offset;
+  mbng_event_syxdump_pos_t syxdump_pos;
+  u16 tmp_sysex_match_ctr; // temporary variable which counts matching bytes in SysEx stream
+  u16 tmp_sysex_value;     // temporary variable which stores current SysEx value
+  runtime_flags_t tmp_runtime_flags;    // several runtime flags
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
   u8 len_label;
@@ -68,19 +81,16 @@ s32 MBNG_EVENT_Init(u32 mode)
   MBNG_EVENT_PoolClear();
 
   mbng_event_item_t item;
-  MBNG_EVENT_ItemInit(&item);
 
   // Default Items:
   int i;
 
   // Buttons
-  item.flags.DIN.inverse = 1;
   for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_BUTTON + i;
-
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_BUTTON + i);
     item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
     stream[1] = 0x24 + i - 1;
@@ -100,8 +110,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_LED + i;
-
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_LED + i);
     item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
     stream[1] = 0x24 + i - 1;
@@ -120,8 +129,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_ENC + i;
-
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_ENC + i);
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb0;
     stream[1] = 0x10 + i - 1;
@@ -139,7 +147,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_AINSER + i;
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_AINSER + i);
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb1;
     stream[1] = 0x10 + i - 1;
@@ -157,8 +165,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     char str[21];
     u8 stream[20];
 
-    item.id = (u16)MBNG_EVENT_CONTROLLER_AIN + i + 1;
-
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_AIN + i);
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb2;
     stream[1] = 0x10 + i - 1;
@@ -221,19 +228,56 @@ s32 MBNG_EVENT_PoolMaxSizeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // Initializes an item with default settings
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item)
+s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 {
-  item->id = (u16)MBNG_EVENT_CONTROLLER_DISABLED;
+  item->id = id;
   item->flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->min    = 0;
   item->max    = 127;
   item->offset = 0;
+  item->syxdump_pos.ALL = 0;
   item->stream_size = 0;
   item->lcd = 0;
   item->lcd_pos = 0x00;
   item->stream = NULL;
   item->label = NULL;
+
+  // differ between type
+  switch( id & 0xf000 ) {
+  case MBNG_EVENT_CONTROLLER_BUTTON: {
+    item->flags.DIN.button_mode = MBNG_EVENT_BUTTON_MODE_ON_OFF;
+    item->flags.DIN.inverse = 1;
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_LED: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_ENC: {
+    item->flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_AIN: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_AINSER: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_MF: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_CV: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_RECEIVER: {
+  }; break;
+  }
   
   return 0; // no error
 }
@@ -249,6 +293,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->min = pool_item->min;
   item->max = pool_item->max;
   item->offset = pool_item->offset;
+  item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
   item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
   item->stream_size = pool_item->len_stream;
@@ -272,6 +317,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->min = item->min;
   pool_item->max = item->max;
   pool_item->offset = item->offset;
+  pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
   pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
   pool_item->len = pool_item_len;
@@ -283,6 +329,11 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
 
   if( pool_item->len_label )
     memcpy((u8 *)&pool_item->data_begin + pool_item->len_stream, item->label, pool_item->len_label);
+
+  // temporary variables:
+  pool_item->tmp_sysex_match_ctr = 0;
+  pool_item->tmp_sysex_value = 0;
+  pool_item->tmp_runtime_flags.ALL = 0;
 
   return 0; // no error
 }
@@ -367,14 +418,13 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d offset:%d label:%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d label:%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item),
 				      MBNG_EVENT_ItemTypeStrGet(item),
 				      item->enabled_ports,
 				      item->min,
 				      item->max,
-				      item->offset,
 				      item->label ? item->label : "");
 #endif
 }
@@ -395,6 +445,7 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_CONTROLLER_AINSER:        return "AINSER";
   case MBNG_EVENT_CONTROLLER_MF:            return "MF";
   case MBNG_EVENT_CONTROLLER_CV:            return "CV";
+  case MBNG_EVENT_CONTROLLER_RECEIVER:      return "RECEIVER";
   }
   return "DISABLED";
 }
@@ -413,6 +464,7 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
   if( strcasecmp(event, "AINSER") == 0 )        return MBNG_EVENT_CONTROLLER_AINSER;
   if( strcasecmp(event, "MF") == 0 )            return MBNG_EVENT_CONTROLLER_MF;
   if( strcasecmp(event, "CV") == 0 )            return MBNG_EVENT_CONTROLLER_CV;
+  if( strcasecmp(event, "RECEIVER") == 0 )      return MBNG_EVENT_CONTROLLER_RECEIVER;
 
   return MBNG_EVENT_CONTROLLER_DISABLED;
 }
@@ -461,6 +513,30 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for button mode
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item)
+{
+  mbng_event_button_mode_t button_mode = item->flags.DIN.button_mode;
+  switch( button_mode ) {
+  case MBNG_EVENT_BUTTON_MODE_ON_OFF:  return "OnOff";
+  case MBNG_EVENT_BUTTON_MODE_ON_ONLY: return "OnOnly";
+  case MBNG_EVENT_BUTTON_MODE_TOGGLE:  return "Toggle";
+  }
+  return "Undefined";
+}
+
+mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode)
+{
+  if( strcasecmp(button_mode, "OnOff") == 0 )  return MBNG_EVENT_BUTTON_MODE_ON_OFF;
+  if( strcasecmp(button_mode, "OnOnly") == 0 ) return MBNG_EVENT_BUTTON_MODE_ON_ONLY;
+  if( strcasecmp(button_mode, "Toggle") == 0 ) return MBNG_EVENT_BUTTON_MODE_TOGGLE;
+
+  return MBNG_EVENT_BUTTON_MODE_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // for (N)RPN format
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item)
@@ -502,6 +578,8 @@ const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos
   case MBNG_EVENT_SYSEX_VAR_VAL_N2:     return "val_n2";
   case MBNG_EVENT_SYSEX_VAR_VAL_N3:     return "val_n3";
   case MBNG_EVENT_SYSEX_VAR_VAL_N4:     return "val_n4";
+  case MBNG_EVENT_SYSEX_VAR_IGNORE:     return "ignore";
+  case MBNG_EVENT_SYSEX_VAR_DUMP:       return "dump";
   }
   return "undef";
 }
@@ -522,6 +600,8 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "val_n2") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N2;
   if( strcasecmp(sysex_var, "val_n3") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N3;
   if( strcasecmp(sysex_var, "val_n4") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N4;
+  if( strcasecmp(sysex_var, "ignore") == 0 )     return MBNG_EVENT_SYSEX_VAR_IGNORE;
+  if( strcasecmp(sysex_var, "dump") == 0 )       return MBNG_EVENT_SYSEX_VAR_DUMP;
   return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
 }
 
@@ -645,6 +725,8 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	case MBNG_EVENT_SYSEX_VAR_VAL_N2:     *stream_out = (value >>  4) & 0xf; break;
 	case MBNG_EVENT_SYSEX_VAR_VAL_N3:     *stream_out = (value >>  8) & 0xf; break;
 	case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (value >> 12) & 0xf; break;
+	case MBNG_EVENT_SYSEX_VAR_IGNORE:     new_value = 0; break;
+	case MBNG_EVENT_SYSEX_VAR_DUMP:       new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
 	default: new_value = 0;
 	}
       } else {
@@ -677,7 +759,6 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
   } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
     // TODO
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
-    
     int i;
     for(i=0; i<item->stream_size; i+=2) {
       mbng_event_meta_type_t meta_type = item->stream[i+0];
@@ -721,10 +802,47 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   case MBNG_EVENT_CONTROLLER_AINSER:        return MBNG_AIN_NotifyReceivedValue_SER64(item, value);
   case MBNG_EVENT_CONTROLLER_MF:            return -1; // TODO
   case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
+
+  case MBNG_EVENT_CONTROLLER_RECEIVER: {
+    int receiver_ix = item->id & 0xfff;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Receiver)\n", receiver_ix, value);
+      if( item->label )
+	DEBUG_MSG(":::%s\n", item->label);
+    }
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
+  } break;
   }
 
   return -1; // unsupported controller type
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// called from MBNG_EVENT_ReceiveSysEx() when a Syxdump is received
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
+{
+  // search in pool for events which listen to this receiver and dump_pos
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    if( pool_item->syxdump_pos.pos == dump_pos &&
+	pool_item->syxdump_pos.receiver == from_receiver ) {
+
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_EVENT_ItemReceive(&item, value);
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function should be called from APP_MIDI_NotifyPackage whenver a new
@@ -768,6 +886,105 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	MBNG_EVENT_ItemReceive(&item, evnt1 | ((u16)midi_package.value << 7));
       } else {
 	// TODO
+      }
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function should be called from APP_SYSEX_Parser on incoming SysEx data
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
+{
+  // search in pool for matching SysEx streams
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
+    if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
+      u8 parse_sysex = 1;
+
+      // receiving a SysEx dump=
+      if( pool_item->tmp_runtime_flags.sysex_dump ) {
+	if( midi_in >= 0xf0 ) {
+	  // notify event when all values have been received
+	  mbng_event_item_t item;
+	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	  MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_match_ctr); // passing byte counter as value, it could be interesting
+
+	  // and reset
+	  pool_item->tmp_runtime_flags.sysex_dump = 0; // finished
+	  pool_item->tmp_sysex_match_ctr = 0;
+	} else {
+	  // notify all events which listen to this dump
+	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->tmp_sysex_match_ctr, midi_in);
+
+	  // waiting for next byte
+	  ++pool_item->tmp_sysex_match_ctr;
+	  parse_sysex = 0;
+	}
+      }
+
+      if( parse_sysex ) {
+	u8 *stream = ((u8 *)&pool_item->data_begin) + pool_item->tmp_sysex_match_ctr;
+	u8 again = 0;
+	do {
+	  if( *stream == 0xff ) { // SysEx variable
+	    u8 match = 0;
+	    switch( *++stream ) {
+	    case MBNG_EVENT_SYSEX_VAR_DEV:        match = midi_in == mbng_patch_cfg.sysex_dev; break;
+	    case MBNG_EVENT_SYSEX_VAR_PAT:        match = midi_in == mbng_patch_cfg.sysex_pat; break;
+	    case MBNG_EVENT_SYSEX_VAR_BNK:        match = midi_in == mbng_patch_cfg.sysex_bnk; break;
+	    case MBNG_EVENT_SYSEX_VAR_INS:        match = midi_in == mbng_patch_cfg.sysex_ins; break;
+	    case MBNG_EVENT_SYSEX_VAR_CHN:        match = midi_in == mbng_patch_cfg.sysex_chn; break;
+	    case MBNG_EVENT_SYSEX_VAR_CHK_START:  match = 1; again = 1; break;
+	    case MBNG_EVENT_SYSEX_VAR_CHK:        match = 1; break; // ignore checksum
+	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
+	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xff80) | (midi_in & 0x7f); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xf07f) | ((midi_in & 0x7f) << 7); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xfff0) | ((midi_in >>  0) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xff0f) | ((midi_in >>  4) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xf0ff) | ((midi_in >>  8) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
+	    case MBNG_EVENT_SYSEX_VAR_DUMP:       match = 1; pool_item->tmp_runtime_flags.sysex_dump = 1; pool_item->tmp_sysex_match_ctr = 0; break; // enable dump receiver
+	    }
+	    if( match ) {
+	      if( !pool_item->tmp_runtime_flags.sysex_dump ) {
+		pool_item->tmp_sysex_match_ctr += 2;
+	      }
+	    } else {
+	      pool_item->tmp_sysex_match_ctr = 0;
+	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+	    }
+	  } else if( *stream == midi_in ) { // matching byte
+	    // begin of stream?
+	    if( midi_in == 0xf0 ) {
+	      pool_item->tmp_sysex_match_ctr = 0;
+	      pool_item->tmp_sysex_value = 0;
+	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+	    }
+
+	    // end of stream?
+	    if( midi_in == 0xf7 ) {
+	      pool_item->tmp_sysex_match_ctr = 0;
+	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+
+	      // all values matching!
+	      mbng_event_item_t item;
+	      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	      MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_value);
+	    } else {
+	      ++pool_item->tmp_sysex_match_ctr;
+	    }
+	  } else { // no matching byte
+	    pool_item->tmp_sysex_match_ctr = 0;
+	  }
+	} while( again );
       }
     }
     pool_ptr += pool_item->len;

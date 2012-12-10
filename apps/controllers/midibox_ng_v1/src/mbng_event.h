@@ -30,6 +30,7 @@ typedef enum {
   MBNG_EVENT_CONTROLLER_AINSER        = 0x7000,
   MBNG_EVENT_CONTROLLER_MF            = 0x8000,
   MBNG_EVENT_CONTROLLER_CV            = 0x9000,
+  MBNG_EVENT_CONTROLLER_RECEIVER      = 0xa000,
 } mbng_event_item_id_t;
 
 
@@ -96,6 +97,8 @@ typedef enum {
   MBNG_EVENT_SYSEX_VAR_VAL_N2,
   MBNG_EVENT_SYSEX_VAR_VAL_N3,
   MBNG_EVENT_SYSEX_VAR_VAL_N4,
+  MBNG_EVENT_SYSEX_VAR_IGNORE,
+  MBNG_EVENT_SYSEX_VAR_DUMP,
 } mbng_event_sysex_var_t;
 
 typedef enum {
@@ -163,6 +166,16 @@ typedef union {
 } mbng_event_flags_t;
 
 
+typedef union {
+  u16 ALL;
+
+  struct {
+    u16 pos:12;
+    u16 receiver:4;
+  };
+} mbng_event_syxdump_pos_t;
+
+
 typedef struct {
   u16 id;
   mbng_event_flags_t flags;
@@ -170,6 +183,7 @@ typedef struct {
   s16 min;
   s16 max;
   s16 offset;
+  mbng_event_syxdump_pos_t syxdump_pos;
   u32 stream_size;
   u8* stream;
   u8 lcd;
@@ -191,7 +205,7 @@ extern s32 MBNG_EVENT_PoolNumItemsGet(void);
 extern s32 MBNG_EVENT_PoolSizeGet(void);
 extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
 
-extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id);
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
@@ -201,6 +215,8 @@ extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item);
 extern mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event);
 extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
+extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
+extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
 extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);
@@ -212,6 +228,7 @@ extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -218,20 +218,26 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  // filter SysEx which is handled by separate parser
+  if( !(midi_package.evnt0 < 0xf8 &&
+       (midi_package.cin == 0xf ||
+       (midi_package.cin >= 0x4 && midi_package.cin <= 0x7))) ) {
+
 #if DEBUG_EVENT_HANDLER_PERFORMANCE
     MIOS32_STOPWATCH_Reset();
 #endif
 
-  // -> Event Handler
-  MBNG_EVENT_MIDI_NotifyPackage(port, midi_package);
+    // -> Event Handler
+    MBNG_EVENT_MIDI_NotifyPackage(port, midi_package);
 
 #if DEBUG_EVENT_HANDLER_PERFORMANCE
-  u32 cycles = MIOS32_STOPWATCH_ValueGet();
-  if( cycles == 0xffffffff )
-    DEBUG_MSG("[PERF] overrun!\n");
-  else
-    DEBUG_MSG("[PERF] %5d.%d mS\n", cycles/10, cycles%10);
+    u32 cycles = MIOS32_STOPWATCH_ValueGet();
+    if( cycles == 0xffffffff )
+      DEBUG_MSG("[PERF PCK:%08x] overrun!\n", midi_package.ALL);
+    else
+      DEBUG_MSG("[PERF PCK:%08x] %5d.%d mS\n", midi_package.ALL, cycles/10, cycles%10);
 #endif
+  }
 
   // -> MIDI Router
   MIDI_ROUTER_Receive(port, midi_package);
@@ -253,6 +259,21 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
   // -> MBNG
   MBNG_SYSEX_Parser(port, midi_in);
+
+#if DEBUG_EVENT_HANDLER_PERFORMANCE
+    MIOS32_STOPWATCH_Reset();
+#endif
+
+  // -> Event router
+  MBNG_EVENT_ReceiveSysEx(port, midi_in);
+
+#if DEBUG_EVENT_HANDLER_PERFORMANCE
+  u32 cycles = MIOS32_STOPWATCH_ValueGet();
+  if( cycles == 0xffffffff )
+    DEBUG_MSG("[PERF SYX:%02x] overrun!\n", midi_in);
+  else
+    DEBUG_MSG("[PERF SYX:%02x] %5d.%d mS\n", midi_in, cycles/10, cycles%10);
+#endif
 
   // -> MIDI Router
   MIDI_ROUTER_ReceiveSysEx(port, midi_in);
