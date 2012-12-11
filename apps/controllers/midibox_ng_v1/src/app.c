@@ -187,6 +187,8 @@ void APP_Init(void)
   TERMINAL_Init(0);
   MIDIMON_Init(0);
   MBNG_FILE_Init(0);
+  SEQ_BPM_Init(0);
+  SEQ_BPM_Set(120.0);
   SEQ_MIDI_OUT_Init(0);
 
   // install timer function which is called each 100 uS

@@ -225,6 +225,19 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	    BUFLCD_PrintFormattedString(format, item->id & 0xfff);
 	  } break;
 
+	  case 'e': { // (MIDI) event
+	    *format_type = 's';
+	    char midi_str[10];
+	    if( item->stream_size < 1 ) {
+	      sprintf(midi_str, "NoMIDI", midi_str);
+	    } else if( item->stream_size < 2 ) {
+	      sprintf(midi_str, "%02x%02x  ", item->stream[0], item_value & 0x7f);
+	    } else {
+	      sprintf(midi_str, "%02x%02x%02x", item->stream[0], item->stream[1], item_value & 0x7f);
+	    }
+	    BUFLCD_PrintFormattedString(format, midi_str);
+	  } break;
+
 	  case 'm': { // min value
 	    *format_type = 'd';
 	    BUFLCD_PrintFormattedString(format, item->min);

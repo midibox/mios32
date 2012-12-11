@@ -18,19 +18,24 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// maximum recursion on forwarded events (max 4 can be chained)
+#define MBNG_EVENT_MAX_FWD_RECURSION 3
+
+
 // event pool assignments (upper part of ID)
 typedef enum {
   MBNG_EVENT_CONTROLLER_DISABLED      = 0x0000,
-  MBNG_EVENT_CONTROLLER_BUTTON        = 0x1000,
-  MBNG_EVENT_CONTROLLER_LED           = 0x2000,
-  MBNG_EVENT_CONTROLLER_BUTTON_MATRIX = 0x3000,
-  MBNG_EVENT_CONTROLLER_LED_MATRIX    = 0x4000,
-  MBNG_EVENT_CONTROLLER_ENC           = 0x5000,
-  MBNG_EVENT_CONTROLLER_AIN           = 0x6000,
-  MBNG_EVENT_CONTROLLER_AINSER        = 0x7000,
-  MBNG_EVENT_CONTROLLER_MF            = 0x8000,
-  MBNG_EVENT_CONTROLLER_CV            = 0x9000,
-  MBNG_EVENT_CONTROLLER_RECEIVER      = 0xa000,
+  MBNG_EVENT_CONTROLLER_SENDER        = 0x1000,
+  MBNG_EVENT_CONTROLLER_RECEIVER      = 0x2000,
+  MBNG_EVENT_CONTROLLER_BUTTON        = 0x3000,
+  MBNG_EVENT_CONTROLLER_LED           = 0x4000,
+  MBNG_EVENT_CONTROLLER_BUTTON_MATRIX = 0x5000,
+  MBNG_EVENT_CONTROLLER_LED_MATRIX    = 0x6000,
+  MBNG_EVENT_CONTROLLER_ENC           = 0x7000,
+  MBNG_EVENT_CONTROLLER_AIN           = 0x8000,
+  MBNG_EVENT_CONTROLLER_AINSER        = 0x9000,
+  MBNG_EVENT_CONTROLLER_MF            = 0xa000,
+  MBNG_EVENT_CONTROLLER_CV            = 0xb000,
 } mbng_event_item_id_t;
 
 
@@ -180,6 +185,7 @@ typedef struct {
   u16 id;
   mbng_event_flags_t flags;
   u16 enabled_ports;
+  u16 fwd_id;
   s16 min;
   s16 max;
   s16 offset;
@@ -211,7 +217,7 @@ extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item);
-extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item);
+extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id);
 extern mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event);
 extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
@@ -226,6 +232,7 @@ extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
