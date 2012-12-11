@@ -745,8 +745,8 @@ static s32 parseEvent(char *cmd, char *brkt)
       }
 
       int value = 0;
-      if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
-	  (value=get_dec(values_str)) < 0 || value > 0xfff ) {
+      if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (value=get_dec(value_str)) < 0 || value > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", event, parameter, value_str, 0xfff);
 #endif
@@ -796,6 +796,31 @@ static s32 parseEvent(char *cmd, char *brkt)
       } else {
 	item.enabled_ports = value;
       }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "fwd_id") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+
+      mbng_event_item_id_t fwd_id;
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (fwd_id=MBNG_EVENT_ItemIdFromControllerStrGet(value_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid fwd_id controller name in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int id_lower = 0;
+      if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (id_lower=get_dec(value_str)) < 1 || id_lower > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid fwd_id in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+#endif
+	return -1;
+      }
+
+      item.fwd_id = fwd_id | id_lower;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
@@ -1711,9 +1736,17 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       if( MBNG_EVENT_ItemGet(item_ix, &item) < 0 )
 	continue;
 
-      sprintf(line_buffer, "EVENT_%-6s id=%3d  type=%-6s",
-	      MBNG_EVENT_ItemControllerStrGet(&item),
-	      item.id & 0xfff,
+      sprintf(line_buffer, "EVENT_%-6s id=%3d",
+	      MBNG_EVENT_ItemControllerStrGet(item.id),
+	      item.id & 0xfff);
+      FLUSH_BUFFER;
+
+      if( item.fwd_id ) {
+	sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "  type=%-6s",
 	      MBNG_EVENT_ItemTypeStrGet(&item));
       FLUSH_BUFFER;
 
@@ -1810,6 +1843,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       // differ between event type
       switch( item.id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_SENDER: {
+      }; break;
+
+      case MBNG_EVENT_CONTROLLER_RECEIVER: {
+      }; break;
+
       case MBNG_EVENT_CONTROLLER_BUTTON: {
 	if( item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_OFF && item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
@@ -1839,9 +1878,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }; break;
 
       case MBNG_EVENT_CONTROLLER_CV: {
-      }; break;
-
-      case MBNG_EVENT_CONTROLLER_RECEIVER: {
       }; break;
       }
       

@@ -44,6 +44,7 @@ typedef union {
 typedef struct { // should be dividable by u16
   u16 id;
   u16 enabled_ports;
+  u16 fwd_id;
   u16 flags; // (mbng_event_flags_t)
   s16 min;
   s16 max;
@@ -91,6 +92,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     u8 stream[20];
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_BUTTON + i);
+    item.fwd_id = MBNG_EVENT_CONTROLLER_LED | i;
     item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
     stream[1] = 0x24 + i - 1;
@@ -104,32 +106,13 @@ s32 MBNG_EVENT_Init(u32 mode)
   }
   item.flags.DIN.inverse = 0;
 
-  // LEDs
-  item.lcd_pos = 0x40;
-  for(i=1; i<=64; ++i) {
-    char str[21];
-    u8 stream[20];
-
-    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_LED + i);
-    item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
-    stream[0] = 0x90;
-    stream[1] = 0x24 + i - 1;
-    item.stream = stream;
-    item.stream_size = 2;
-
-    strcpy(str, "^std_led"); // LED #%3i       %b
-    item.label = str;
-
-    MBNG_EVENT_ItemAdd(&item);
-  }
-  item.lcd_pos = 0x00;
-
   // Encoders
   for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_ENC + i);
+    item.fwd_id = MBNG_EVENT_CONTROLLER_LED_MATRIX | i;
     item.flags.general.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb0;
     stream[1] = 0x10 + i - 1;
@@ -233,6 +216,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->id = id;
   item->flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
+  item->fwd_id = 0;
   item->min    = 0;
   item->max    = 127;
   item->offset = 0;
@@ -245,6 +229,12 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 
   // differ between type
   switch( id & 0xf000 ) {
+  case MBNG_EVENT_CONTROLLER_SENDER: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_RECEIVER: {
+  }; break;
+
   case MBNG_EVENT_CONTROLLER_BUTTON: {
     item->flags.DIN.button_mode = MBNG_EVENT_BUTTON_MODE_ON_OFF;
     item->flags.DIN.inverse = 1;
@@ -274,9 +264,6 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 
   case MBNG_EVENT_CONTROLLER_CV: {
   }; break;
-
-  case MBNG_EVENT_CONTROLLER_RECEIVER: {
-  }; break;
   }
   
   return 0; // no error
@@ -290,6 +277,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->id = pool_item->id;
   item->flags.ALL = pool_item->flags;
   item->enabled_ports = pool_item->enabled_ports;
+  item->fwd_id = pool_item->fwd_id;
   item->min = pool_item->min;
   item->max = pool_item->max;
   item->offset = pool_item->offset;
@@ -314,6 +302,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->id = item->id;
   pool_item->flags = item->flags.ALL;
   pool_item->enabled_ports = item->enabled_ports;
+  pool_item->fwd_id = item->fwd_id;
   pool_item->min = item->min;
   pool_item->max = item->max;
   pool_item->offset = item->offset;
@@ -411,18 +400,19 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 #if 0
   MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s stream:",
 			       item->id,
-			       MBNG_EVENT_ItemControllerStrGet(item),
+			       MBNG_EVENT_ItemControllerStrGet(item->id),
 			       MBNG_EVENT_ItemTypeStrGet(item));
   if( item->stream_size ) {
     MIOS32_MIDI_SendDebugHexDump(item->stream, item->stream_size);
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x min:%d max:%d label:%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x fwd_id:0x%04x min:%d max:%d label:%s\n",
 				      item->id,
-				      MBNG_EVENT_ItemControllerStrGet(item),
+				      MBNG_EVENT_ItemControllerStrGet(item->id),
 				      MBNG_EVENT_ItemTypeStrGet(item),
 				      item->enabled_ports,
+				      item->fwd_id,
 				      item->min,
 				      item->max,
 				      item->label ? item->label : "");
@@ -432,9 +422,10 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 // returns name of controller
 /////////////////////////////////////////////////////////////////////////////
-const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item)
+const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
 {
-  switch( item->id & 0xf000 ) {
+  switch( id & 0xf000 ) {
+  case MBNG_EVENT_CONTROLLER_SENDER:        return "SENDER";
   case MBNG_EVENT_CONTROLLER_DISABLED:      return "DISABLED";
   case MBNG_EVENT_CONTROLLER_BUTTON:        return "BUTTON";
   case MBNG_EVENT_CONTROLLER_LED:           return "LED";
@@ -445,7 +436,6 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_CONTROLLER_AINSER:        return "AINSER";
   case MBNG_EVENT_CONTROLLER_MF:            return "MF";
   case MBNG_EVENT_CONTROLLER_CV:            return "CV";
-  case MBNG_EVENT_CONTROLLER_RECEIVER:      return "RECEIVER";
   }
   return "DISABLED";
 }
@@ -455,6 +445,8 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
 {
+  if( strcasecmp(event, "SENDER") == 0 )        return MBNG_EVENT_CONTROLLER_SENDER;
+  if( strcasecmp(event, "RECEIVER") == 0 )      return MBNG_EVENT_CONTROLLER_RECEIVER;
   if( strcasecmp(event, "BUTTON") == 0 )        return MBNG_EVENT_CONTROLLER_BUTTON;
   if( strcasecmp(event, "LED") == 0 )           return MBNG_EVENT_CONTROLLER_LED;
   if( strcasecmp(event, "BUTTON_MATRIX") == 0 ) return MBNG_EVENT_CONTROLLER_BUTTON_MATRIX;
@@ -464,7 +456,6 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
   if( strcasecmp(event, "AINSER") == 0 )        return MBNG_EVENT_CONTROLLER_AINSER;
   if( strcasecmp(event, "MF") == 0 )            return MBNG_EVENT_CONTROLLER_MF;
   if( strcasecmp(event, "CV") == 0 )            return MBNG_EVENT_CONTROLLER_CV;
-  if( strcasecmp(event, "RECEIVER") == 0 )      return MBNG_EVENT_CONTROLLER_RECEIVER;
 
   return MBNG_EVENT_CONTROLLER_DISABLED;
 }
@@ -803,14 +794,32 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   case MBNG_EVENT_CONTROLLER_MF:            return -1; // TODO
   case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
 
+  case MBNG_EVENT_CONTROLLER_SENDER: {
+    int sender_ix = item->id & 0xfff;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Sender)\n", sender_ix, value);
+    }
+
+    // send MIDI event
+    MBNG_EVENT_ItemSend(item, value);
+
+    // forward
+    MBNG_EVENT_ItemForward(item, value);
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
+  } break;
+
   case MBNG_EVENT_CONTROLLER_RECEIVER: {
     int receiver_ix = item->id & 0xfff;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Receiver)\n", receiver_ix, value);
-      if( item->label )
-	DEBUG_MSG(":::%s\n", item->label);
     }
+
+    // forward
+    MBNG_EVENT_ItemForward(item, value);
 
     // print label
     MBNG_LCD_PrintItemLabel(item, value);
@@ -818,6 +827,46 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   }
 
   return -1; // unsupported controller type
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called to forward an event
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value)
+{
+  static recursion_ctr = 0;
+
+  if( !item->fwd_id )
+    return -2; // no forwarding enabled
+
+  if( item->fwd_id == item->id )
+    return -3; // avoid feedback
+
+  if( recursion_ctr >= MBNG_EVENT_MAX_FWD_RECURSION )
+    return -1;
+  ++recursion_ctr;
+
+  // search for fwd item
+  mbng_event_item_t fwd_item;
+  if( MBNG_EVENT_ItemSearchById(item->fwd_id, &fwd_item) >= 0 ) {
+    // notify item
+    MBNG_EVENT_ItemReceive(&fwd_item, value);
+  } else {
+    // notify by temporary changing the ID - forwarding disabled
+    mbng_event_item_id_t tmp_id = item->id;
+    mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
+    item->id = item->fwd_id;
+    item->fwd_id = 0;
+    MBNG_EVENT_ItemReceive(item, value);
+    item->id = tmp_id;
+    item->fwd_id = tmp_fwd_id;
+  }
+
+  if( recursion_ctr )
+    --recursion_ctr;
+
+  return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////

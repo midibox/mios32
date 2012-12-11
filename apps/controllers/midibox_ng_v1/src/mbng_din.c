@@ -100,11 +100,16 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
   u16 value = depressed ? item.min : item.max;
 
+  // send MIDI event
+  MBNG_EVENT_ItemSend(&item, value);
+
+  // forward
+  MBNG_EVENT_ItemForward(&item, value);
+
   // print label
   MBNG_LCD_PrintItemLabel(&item, value);
 
-  // send MIDI event
-  return MBNG_EVENT_ItemSend(&item, value);
+  return 0; // no error
 }
 
 
@@ -118,6 +123,15 @@ s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_DIN_NotifyReceivedValue(%d, %d)\n", button_ix, value);
+  }
+
+  // forward
+  if( item->fwd_id ) {
+    u16 item_id_lower = (item->id & 0xfff) - 1;
+    if( item_id_lower >= button_group*mbng_patch_cfg.button_group_size &&
+	item_id_lower < (button_group+1)*mbng_patch_cfg.button_group_size ) {
+      MBNG_EVENT_ItemForward(item, value);
+    }
   }
 
   return 0; // no error

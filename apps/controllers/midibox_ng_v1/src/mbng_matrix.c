@@ -546,7 +546,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
     u8 pattern = 2; // TODO: take from item
     int range = max - min + 1;    
-    u16 scaled = (32*value) / range;
+    u32 scaled = (32*(value-min)) / range;
     int pattern_ix;
     if( scaled <= 15 )
       pattern_ix = scaled;
@@ -560,6 +560,9 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_pattern=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_pattern);
 #endif
   }
+
+  // forward
+  MBNG_EVENT_ItemForward(item, value);
 
   return 0; // no error
 }
