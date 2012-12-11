@@ -318,10 +318,12 @@ void MiosStudio::setMidiInput(const String &port)
     if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
         uploadWindow->midiPortChanged();
 
-    // store setting
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
-    if( propertiesFile )
-        propertiesFile->setValue(T("midiIn"), port);
+    // store setting if MIDI input selected
+    if( port != String::empty ) {
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile )
+            propertiesFile->setValue(T("midiIn"), port);
+    }
 }
 
 String MiosStudio::getMidiInput(void)
@@ -339,10 +341,12 @@ void MiosStudio::setMidiOutput(const String &port)
     if( uploadWindow && initialMidiScanCounter == 0 && port != String::empty )
         uploadWindow->midiPortChanged();
 
-    // store setting
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
-    if( propertiesFile )
-        propertiesFile->setValue(T("midiOut"), port);
+    // store setting if MIDI output selected
+    if( port != String::empty ) {
+        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile )
+            propertiesFile->setValue(T("midiOut"), port);
+    }
 }
 
 String MiosStudio::getMidiOutput(void)
