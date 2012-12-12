@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <tasks.h>
 
 #include "app.h"
 #include "mbng_event.h"
@@ -70,6 +71,23 @@ static u8 event_pool[MBNG_EVENT_POOL_MAX_SIZE];
 static u16 event_pool_size;
 static u16 event_pool_num_items;
 
+// listen to NRPN for up to 8 ports at up to 16 channels
+// in order to save RAM, we only listen to USB and UART based ports! (this already costs us 512 byte!)
+#define MBNG_EVENT_NRPN_RECEIVE_PORTS_MASK    0x00ff
+#define MBNG_EVENT_NRPN_RECEIVE_PORTS_OFFSET  0
+#define MBNG_EVENT_NRPN_RECEIVE_PORTS         8
+#define MBNG_EVENT_NRPN_RECEIVE_CHANNELS     16
+static u16 nrpn_received_address[MBNG_EVENT_NRPN_RECEIVE_PORTS][MBNG_EVENT_NRPN_RECEIVE_CHANNELS];
+static u16 nrpn_received_value[MBNG_EVENT_NRPN_RECEIVE_PORTS][MBNG_EVENT_NRPN_RECEIVE_CHANNELS];
+
+// for UART based transfers we also optimize the output
+#define MBNG_EVENT_NRPN_SEND_PORTS_MASK    0x00f0
+#define MBNG_EVENT_NRPN_SEND_PORTS_OFFSET  4
+#define MBNG_EVENT_NRPN_SEND_PORTS         4
+#define MBNG_EVENT_NRPN_SEND_CHANNELS     16
+static u16 nrpn_sent_address[MBNG_EVENT_NRPN_SEND_PORTS][MBNG_EVENT_NRPN_SEND_CHANNELS];
+static u16 nrpn_sent_value[MBNG_EVENT_NRPN_SEND_PORTS][MBNG_EVENT_NRPN_SEND_CHANNELS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the event pool structure
@@ -80,6 +98,28 @@ s32 MBNG_EVENT_Init(u32 mode)
     return -1; // only mode 0 supported
 
   MBNG_EVENT_PoolClear();
+
+  {
+    int i, j;
+
+    u16 *nrpn_received_address_ptr = (u16 *)&nrpn_received_address[0][0];
+    u16 *nrpn_received_value_ptr = (u16 *)&nrpn_received_value[0][0];
+    for(i=0; i<MBNG_EVENT_NRPN_RECEIVE_PORTS; ++i) {
+      for(j=0; j<MBNG_EVENT_NRPN_RECEIVE_CHANNELS; ++j) {
+	*nrpn_received_address_ptr = 0;
+	*nrpn_received_value_ptr = 0;
+      }
+    }
+
+    u16 *nrpn_sent_address_ptr = (u16 *)&nrpn_sent_address[0][0];
+    u16 *nrpn_sent_value_ptr = (u16 *)&nrpn_sent_value[0][0];
+    for(i=0; i<MBNG_EVENT_NRPN_SEND_PORTS; ++i) {
+      for(j=0; j<MBNG_EVENT_NRPN_SEND_CHANNELS; ++j) {
+	*nrpn_sent_address_ptr = 0xffff; // invalidate
+	*nrpn_sent_value_ptr = 0xffff; // invalidate
+      }
+    }
+  }
 
   mbng_event_item_t item;
 
@@ -163,6 +203,39 @@ s32 MBNG_EVENT_Init(u32 mode)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function should be called each mS (with low priority)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_Tick(void)
+{
+  static u16 ms_counter = 0;
+
+  // each second:
+  if( ++ms_counter < 1000 )
+    return 0; // no error
+  ms_counter = 0;
+
+  // invalidate the NRPN optimizer
+  portENTER_CRITICAL(); // should be atomic!
+  {
+    int i, j;
+
+    u16 *nrpn_sent_address_ptr = (u16 *)&nrpn_sent_address[0][0];
+    u16 *nrpn_sent_value_ptr = (u16 *)&nrpn_sent_value[0][0];
+    for(i=0; i<MBNG_EVENT_NRPN_SEND_PORTS; ++i) {
+      for(j=0; j<MBNG_EVENT_NRPN_SEND_CHANNELS; ++j) {
+	*nrpn_sent_address_ptr = 0xffff; // invalidate
+	*nrpn_sent_value_ptr = 0xffff; // invalidate
+      }
+    }
+  }
+  portEXIT_CRITICAL();
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Clear the event pool
@@ -474,7 +547,6 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_TYPE_AFTERTOUCH:     return "Aftertouch";
   case MBNG_EVENT_TYPE_PITCHBEND:      return "Pitchbend";
   case MBNG_EVENT_TYPE_SYSEX:          return "SysEx";
-  case MBNG_EVENT_TYPE_RPN:            return "RPN";
   case MBNG_EVENT_TYPE_NRPN:           return "NRPN";
   case MBNG_EVENT_TYPE_META:           return "Meta";
   }
@@ -495,7 +567,6 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
   if( strcasecmp(event_type, "Aftertouch") == 0 )    return MBNG_EVENT_TYPE_AFTERTOUCH;
   if( strcasecmp(event_type, "Pitchbend") == 0 )     return MBNG_EVENT_TYPE_PITCHBEND;
   if( strcasecmp(event_type, "SysEx") == 0 )         return MBNG_EVENT_TYPE_SYSEX;
-  if( strcasecmp(event_type, "RPN") == 0 )           return MBNG_EVENT_TYPE_RPN;
   if( strcasecmp(event_type, "NRPN") == 0 )          return MBNG_EVENT_TYPE_NRPN;
   if( strcasecmp(event_type, "Meta") == 0 )          return MBNG_EVENT_TYPE_META;
 
@@ -689,6 +760,86 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
     }
     return 0; // no error
 
+  } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
+
+    // create MIDI package
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.type = CC;
+    p.event = CC;
+
+    if( mbng_patch_cfg.global_chn )
+      p.chn = mbng_patch_cfg.global_chn - 1;
+    else
+      p.chn = item->stream[0] & 0xf;
+
+    u16 nrpn_address = item->stream[1] | ((u16)item->stream[2] << 7);
+    mbng_event_nrpn_format_t nrpn_format = item->stream[3]; // TODO
+    u8 nrpn_address_msb = (nrpn_address >> 7) & 0x7f;
+    u8 nrpn_address_lsb = (nrpn_address >> 0) & 0x7f;
+    u16 nrpn_value = value;
+    u8 nrpn_value_msb = (nrpn_value >> 7) & 0x7f;
+    u8 nrpn_value_lsb = (nrpn_value >> 0) & 0x7f;
+
+    // send optimized NRPNs over enabled ports
+    int i;
+    u16 mask = 1;
+    for(i=0; i<16; ++i, mask <<= 1) {
+      if( item->enabled_ports & mask ) {
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+
+	if( mask & MBNG_EVENT_NRPN_SEND_PORTS_MASK ) {
+	  u8 port_ix = i - MBNG_EVENT_NRPN_SEND_PORTS_OFFSET;
+
+	  if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_address == 0xffff
+	    p.cc_number = 0x63; // Address MSB
+	    p.value = nrpn_address_msb;
+	    MIOS32_MIDI_SendPackage(port, p);
+	  }
+
+	  if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) & 0x7f ) { // new LSB
+	    p.cc_number = 0x62; // Address LSB
+	    p.value = nrpn_address_lsb;
+	    MIOS32_MIDI_SendPackage(port, p);
+	  }
+
+	  if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_value == 0xffff
+	    p.cc_number = 0x06; // Data MSB
+	    p.value = nrpn_value_msb;
+	    MIOS32_MIDI_SendPackage(port, p);
+	  }
+
+	  if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) & 0x7f ) { // new LSB
+	    p.cc_number = 0x26; // Data LSB
+	    p.value = nrpn_value_lsb;
+	    MIOS32_MIDI_SendPackage(port, p);
+	  }
+
+	  nrpn_sent_address[port_ix][p.chn] = nrpn_address;
+	  nrpn_sent_value[port_ix][p.chn] = nrpn_value;
+
+	} else {
+	  p.cc_number = 0x63; // Address MSB
+	  p.value = nrpn_address_msb;
+	  MIOS32_MIDI_SendPackage(port, p);
+
+	  p.cc_number = 0x62; // Address LSB
+	  p.value = nrpn_address_lsb;
+	  MIOS32_MIDI_SendPackage(port, p);
+
+	  p.cc_number = 0x06; // Data MSB
+	  p.value = nrpn_value_msb;
+	  MIOS32_MIDI_SendPackage(port, p);
+
+	  p.cc_number = 0x26; // Data LSB
+	  p.value = nrpn_value_lsb;
+	  MIOS32_MIDI_SendPackage(port, p);
+	}
+      }
+    }
+    return 0; // no error
+
   } else if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
 #define STREAM_MAX_SIZE 128
     u8 stream[STREAM_MAX_SIZE]; // note: it's ensure that the out stream isn't longer than the in stream, therefore no size checks required
@@ -745,8 +896,6 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
       }
     }
     return 0;
-  } else if( event_type == MBNG_EVENT_TYPE_RPN ) {
-    // TODO
   } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
     // TODO
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
@@ -835,16 +984,16 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value)
 {
-  static recursion_ctr = 0;
+  static u8 recursion_ctr = 0;
 
   if( !item->fwd_id )
-    return -2; // no forwarding enabled
+    return -1; // no forwarding enabled
 
   if( item->fwd_id == item->id )
-    return -3; // avoid feedback
+    return -2; // avoid feedback
 
   if( recursion_ctr >= MBNG_EVENT_MAX_FWD_RECURSION )
-    return -1;
+    return -3;
   ++recursion_ctr;
 
   // search for fwd item
@@ -899,12 +1048,58 @@ static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  // check for "all notes off" command
-  if( midi_package.event == CC &&
-      mbng_patch_cfg.all_notes_off_chn &&
-      (midi_package.chn == (mbng_patch_cfg.all_notes_off_chn - 1)) &&
-      midi_package.cc_number == 123 ) {
-    MBNG_DOUT_Init(0);
+  // create port mask, and check if this is a supported port (USB0..3, UART0..3, IIC0..3, OSC0..3)
+  u8 subport_mask = (1 << (port&3));
+  u8 port_class = ((port-0x10) & 0x30)>>2;
+  u16 port_mask = subport_mask << port_class;
+  if( !port_mask )
+    return -1; // not supported
+
+  // on CC:
+  u16 nrpn_address = 0xffff; // taken if < 0xffff
+  u16 nrpn_value = 0;
+  if( midi_package.event == CC ) {
+
+    // track NRPN event
+    if( port_mask & MBNG_EVENT_NRPN_RECEIVE_PORTS_MASK ) {
+      int port_ix = (port_class | (port & 3)) - MBNG_EVENT_NRPN_RECEIVE_PORTS_OFFSET;
+      if( port_ix >= 0 && port_ix < MBNG_EVENT_NRPN_RECEIVE_PORTS ) {
+        // NRPN handling
+        switch( midi_package.cc_number ) {
+        case 0x63: { // Address MSB
+	  nrpn_received_address[port_ix][midi_package.chn] &= ~0x3f80;
+	  nrpn_received_address[port_ix][midi_package.chn] |= ((midi_package.value << 7) & 0x3f80);
+        } break;
+
+        case 0x62: { // Address LSB
+	  nrpn_received_address[port_ix][midi_package.chn] &= ~0x007f;
+	  nrpn_received_address[port_ix][midi_package.chn] |= (midi_package.value & 0x007f);
+        } break;
+
+        case 0x06: { // Data MSB
+	  nrpn_received_value[port_ix][midi_package.chn] &= ~0x3f80;
+	  nrpn_received_value[port_ix][midi_package.chn] |= ((midi_package.value << 7) & 0x3f80);
+	  // nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
+	  // MEMO: it's better to update only when LSB has been received
+	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
+        } break;
+
+        case 0x26: { // Data LSB
+	  nrpn_received_value[port_ix][midi_package.chn] &= ~0x007f;
+	  nrpn_received_value[port_ix][midi_package.chn] |= (midi_package.value & 0x007f);
+	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
+	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
+        } break;
+        }
+      }
+    }
+
+    // check for "all notes off" command
+    if( mbng_patch_cfg.all_notes_off_chn &&
+	(midi_package.chn == (mbng_patch_cfg.all_notes_off_chn - 1)) &&
+	midi_package.cc_number == 123 ) {
+      MBNG_DOUT_Init(0);
+    }
   }
 
   // search in pool for matching events
@@ -917,6 +1112,12 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     if( pool_item->data_begin == evnt0 && pool_item->len_stream ) { // timing critical
       // first byte is matching - now we've a bit more time for checking
       
+      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // as sender doesn't receive
+	continue;
+
+      if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
+	continue;
+
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
 	u8 *stream = &pool_item->data_begin;
@@ -933,8 +1134,16 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	MBNG_EVENT_ItemReceive(&item, evnt1 | ((u16)midi_package.value << 7));
+      } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
+	u8 *stream = &pool_item->data_begin;
+	u16 expected_address = stream[1] | ((u16)stream[2] << 7);
+	if( nrpn_address == expected_address ) {
+	  mbng_event_item_t item;
+	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	  MBNG_EVENT_ItemReceive(&item, nrpn_value);
+	}
       } else {
-	// TODO
+	// no additional event types yet...
       }
     }
     pool_ptr += pool_item->len;
@@ -948,6 +1157,13 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 {
+  // create port mask, and check if this is a supported port (USB0..3, UART0..3, IIC0..3, OSC0..3)
+  u8 subport_mask = (1 << (port&3));
+  u8 port_class = ((port-0x10) & 0x30)>>2;
+  u16 port_mask = subport_mask << port_class;
+  if( !port_mask )
+    return -1; // not supported
+
   // search in pool for matching SysEx streams
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
@@ -956,6 +1172,12 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
     mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
     if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
       u8 parse_sysex = 1;
+
+      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // as sender doesn't receive
+	continue;
+
+      if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
+	continue;
 
       // receiving a SysEx dump=
       if( pool_item->tmp_runtime_flags.sysex_dump ) {

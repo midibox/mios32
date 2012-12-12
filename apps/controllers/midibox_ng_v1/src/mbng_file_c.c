@@ -477,12 +477,12 @@ static s32 parseEvent(char *cmd, char *brkt)
 	  item.stream_size = 0; // initial
 	} break;
 
-	case MBNG_EVENT_TYPE_RPN:
 	case MBNG_EVENT_TYPE_NRPN: {
-	  item.stream_size = 3;
-	  item.stream[0] = 0x00; // number
-	  item.stream[1] = 0x00;
-	  item.stream[2] = 0x00; // value format
+	  item.stream_size = 4;
+	  item.stream[0] = 0xb0; // match on CC, will also store channel
+	  item.stream[1] = 0x00; // number
+	  item.stream[2] = 0x00;
+	  item.stream[3] = 0x00; // value format
 	} break;
 
 	case MBNG_EVENT_TYPE_META: {
@@ -553,39 +553,6 @@ static s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "rpn") == 0 ) {
-      int value;
-      if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid RPN number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
-#endif
-	return -1;
-      } else {
-	if( item.flags.general.type != MBNG_EVENT_TYPE_RPN ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: no RPN number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
-#endif
-	} else {
-	  // no extra check if event_type already defined...
-	  stream[0] = value & 0xff;
-	  stream[1] = value >> 8;
-	}
-      }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "rpn_format") == 0 ) {
-      mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
-      if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_UNDEFINED ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid RPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
-#endif
-	return -1;
-      } else {
-	// no extra check if event_type already defined...
-	stream[2] = nrpn_format;
-      }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "nrpn") == 0 ) {
       int value;
       if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
@@ -600,8 +567,8 @@ static s32 parseEvent(char *cmd, char *brkt)
 #endif
 	} else {
 	  // no extra check if event_type already defined...
-	  stream[0] = value & 0xff;
-	  stream[1] = value >> 8;
+	  stream[1] = value & 0xff;
+	  stream[2] = value >> 8;
 	}
       }
 
@@ -615,7 +582,7 @@ static s32 parseEvent(char *cmd, char *brkt)
 	return -1;
       } else {
 	// no extra check if event_type already defined...
-	stream[2] = nrpn_format;
+	stream[3] = nrpn_format;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1801,16 +1768,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	}
       } break;
 
-      case MBNG_EVENT_TYPE_RPN: {
-	if( item.stream_size >= 2 ) {
-	  sprintf(line_buffer, " rpn=%d rpn_format=%d", item.stream[0] | (int)(item.stream[1] << 7), MBNG_EVENT_ItemNrpnFormatStrGet(&item));
-	  FLUSH_BUFFER;
-	}
-      } break;
-
       case MBNG_EVENT_TYPE_NRPN: {
 	if( item.stream_size >= 3 ) {
-	  sprintf(line_buffer, " nrpn=%d nrpn_format=%s", item.stream[0] | (int)(item.stream[1] << 7), MBNG_EVENT_ItemNrpnFormatStrGet(&item));
+	  sprintf(line_buffer, " chn=%2d nrpn=%d nrpn_format=%s",
+		  (item.stream[0] & 0xf)+1,
+		  item.stream[1] | (int)(item.stream[2] << 7),
+		  MBNG_EVENT_ItemNrpnFormatStrGet(&item));
 	  FLUSH_BUFFER;
 	}
       } break;

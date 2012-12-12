@@ -65,6 +65,41 @@ s32 MBNG_ENC_GroupSet(u8 new_group)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Sets the encoder speed depending on value range
+// should this be optional?
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
+{
+  int range = item->max - item->min + 1;
+  if( range < 0 ) range *= -1;
+
+
+  mios32_enc_speed_t cfg_speed = NORMAL;
+  int                cfg_speed_par = 0;
+  if( range < 32  ) {
+    cfg_speed = SLOW;
+    cfg_speed_par = 3;
+  } else if( range <= 256 ) {
+    cfg_speed = NORMAL;
+  } else {
+    cfg_speed = FAST;
+    cfg_speed_par = 2 + (range / 2048);
+    if( cfg_speed_par > 7 )
+      cfg_speed_par = 7;
+  }
+
+  mios32_enc_config_t enc_config;
+  enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
+  if( enc_config.cfg.speed != cfg_speed || enc_config.cfg.speed_par != cfg_speed_par ) {
+    enc_config.cfg.speed = cfg_speed;
+    enc_config.cfg.speed_par = cfg_speed_par;
+    MIOS32_ENC_ConfigSet(enc+1, enc_config); // add +1 since the first encoder is allocated by SCS
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // This function should be called from APP_ENC_NotifyChange when an encoder
 // has been moved
 /////////////////////////////////////////////////////////////////////////////
@@ -120,6 +155,8 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     break;
 
   default: // MBNG_EVENT_ENC_MODE_ABSOLUTE
+    MBNG_ENC_AutoSpeed(enc_ix, &item);
+
     value = enc_value[enc_ix] + incrementer;
     if( value < item.min )
       value = item.min;

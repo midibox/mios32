@@ -376,6 +376,9 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
+
+    // call MIDI event tick
+    MBNG_EVENT_Tick();
   }
 
 }
