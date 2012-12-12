@@ -264,7 +264,10 @@ s32 MIOS32_ENC_UpdateStates(void)
 	  case FAST:
 	    if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	      acc = 1;
-	    enc_state_ptr->incrementer -= acc;
+	    int new_incrementer = enc_state_ptr->incrementer - acc;
+	    if( new_incrementer < -70 ) // avoid overrun
+	      new_incrementer = -70;
+	    enc_state_ptr->incrementer = new_incrementer;
 	    break;
 
 	  case SLOW:
@@ -310,7 +313,10 @@ s32 MIOS32_ENC_UpdateStates(void)
 	  case FAST:
 	    if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	      acc = 1;
-	    enc_state_ptr->incrementer += acc;
+	    int new_incrementer = enc_state_ptr->incrementer + acc;
+	    if( new_incrementer > 70 ) // avoid overrun
+	      new_incrementer = 70;
+	    enc_state_ptr->incrementer = new_incrementer;
 	    break;
 
 	  case SLOW:
