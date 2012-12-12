@@ -50,7 +50,6 @@ typedef enum {
   MBNG_EVENT_TYPE_AFTERTOUCH,
   MBNG_EVENT_TYPE_PITCHBEND,
   MBNG_EVENT_TYPE_SYSEX,
-  MBNG_EVENT_TYPE_RPN,
   MBNG_EVENT_TYPE_NRPN,
   MBNG_EVENT_TYPE_META,
 } mbng_event_type_t;
@@ -203,6 +202,8 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MBNG_EVENT_Init(u32 mode);
+
+extern s32 MBNG_EVENT_Tick(void);
 
 extern s32 MBNG_EVENT_PoolClear(void);
 extern s32 MBNG_EVENT_PoolPrint(void);

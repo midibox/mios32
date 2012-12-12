@@ -58,8 +58,8 @@ s32 MIDIO_DOUT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 
   // create port mask
   u8 subport_mask = (1 << (port&3));
-  u8 port_class = ((port-0x10) & 0xc)>>2;
-  u8 port_mask = subport_mask << (4*port_class);
+  u8 port_class = ((port-0x10) & 0x30)>>2;
+  u16 port_mask = subport_mask << port_class;
 
   // check for matching pins
   int pin;
