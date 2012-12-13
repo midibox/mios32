@@ -172,6 +172,7 @@ SECTIONS
         It is one task of the startup to copy the initial values from FLASH to RAM. */
         .data : ALIGN (8)
         {
+                __ram_start = .;
                 /* This is used by the startup in order to initialize the .data section */
                 _sdata = . ;
                 
@@ -207,7 +208,6 @@ SECTIONS
                  /* This is used by the startup in order to initialize the .bss section */
                  _ebss = . ;
                 _end = .;
-                __end = .;
         } >RAM AT>FLASH
 
     PROVIDE ( end = _ebss );
@@ -227,6 +227,7 @@ SECTIONS
         . = . + _Minimum_Stack_Size ;
         . = ALIGN(4);
         _eusrstack = . ;
+        __ram_end = .;
     } >RAM
     
 

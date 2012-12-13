@@ -167,6 +167,7 @@ SECTIONS
         .bss (NOLOAD):
         {
                 . = ALIGN(4);
+                __ram_start = .;
                 /* This is used by the startup in order to initialize the .bss section */
                 _sbss = .;
                 *(.shbss)
@@ -178,7 +179,6 @@ SECTIONS
                  /* This is used by the startup in order to initialize the .bss section */
                  _ebss = . ;
                 _end = .;
-                __end = .;
         } >RAM AT>FLASH
 
     PROVIDE ( end = _ebss );
@@ -198,6 +198,7 @@ SECTIONS
         . = . + _Minimum_Stack_Size ;
         . = ALIGN(4);
         _eusrstack = . ;
+	__ram_end = .;
     } >RAM
     
 
@@ -207,6 +208,7 @@ SECTIONS
         It is one task of the startup to copy the initial values from FLASH to RAM. */
         .data : ALIGN (8)
         {
+		__ram_start_ahb = .;
                 /* This is used by the startup in order to initialize the .data section */
                 _sdata = . ;
                 
@@ -241,7 +243,7 @@ SECTIONS
                  /* This is used by the startup in order to initialize the .bss section */
                  _ebss_ahb = . ;
                 _end_ahb = .;
-                __end_ahb = .;
+                __ram_end_ahb = .;
         } >RAMAHB AT>FLASH
 
     PROVIDE ( end_ahb = _ebss_ahb );

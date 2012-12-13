@@ -65,7 +65,16 @@
 #define AINSER_NUM_MODULES 2
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 14*1024
+#define MIOS32_HEAP_SIZE 12*1024
+// UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
+#define UMM_HEAP_SECTION
+
+// optionally for task analysis - if enabled, the stats can be displayed with the "system" command in MIOS Terminal
+#if 0
+#define configGENERATE_RUN_TIME_STATS           1
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
+#define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+#endif
 
 // for LPC17: simplify allocation of large arrays
 #if defined(MIOS32_FAMILY_LPC17xx)
@@ -73,6 +82,15 @@
 #else
 # define AHB_SECTION
 #endif
+
+// LPC17 Ethernet driver: locate buffers to lower (default) section
+// (no attribute passed to this variable)
+#define LPC17XX_EMAC_MEM_SECTION
+// reduce number of buffers to save memory
+#define LPC17XX_EMAC_NUM_RX_FRAG 2
+#define LPC17XX_EMAC_NUM_TX_FRAG 2
+#define LPC17XX_EMAC_FRAG_SIZE   1024
+
 
 // size of SysEx buffers
 // if longer SysEx strings are received, they will be forwarded directly

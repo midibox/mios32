@@ -168,6 +168,7 @@ SECTIONS
         {
                 . = ALIGN(4);
                 /* This is used by the startup in order to initialize the .bss section */
+                __ram_start = .;
                 _sbss = .;
                 *(.shbss)
                 *(.bss .bss.* .gnu.linkonce.b.*)
@@ -178,7 +179,6 @@ SECTIONS
                  /* This is used by the startup in order to initialize the .bss section */
                  _ebss = . ;
                 _end = .;
-                __end = .;
         } >RAM AT>FLASH
 
     PROVIDE ( end = _ebss );
@@ -198,6 +198,7 @@ SECTIONS
         . = . + _Minimum_Stack_Size ;
         . = ALIGN(4);
         _eusrstack = . ;
+        __ram_end = .;
     } >RAM
     
 
@@ -208,6 +209,7 @@ SECTIONS
         .data : ALIGN (8)
         {
                 /* This is used by the startup in order to initialize the .data section */
+                __ram_start_ahb = .;
                 _sdata = . ;
                 
                 . = ALIGN(0x80);
@@ -241,7 +243,7 @@ SECTIONS
                  /* This is used by the startup in order to initialize the .bss section */
                  _ebss_ahb = . ;
                 _end_ahb = .;
-                __end_ahb = .;
+                __ram_end_ahb = .;
         } >RAMAHB AT>FLASH
 
     PROVIDE ( end_ahb = _ebss_ahb );
