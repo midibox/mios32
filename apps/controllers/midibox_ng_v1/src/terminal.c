@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <ff.h>
 
 #include <midi_port.h>
 #include <midi_router.h>
@@ -32,6 +33,9 @@
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 
+#if !defined(MIOS32_FAMILY_EMULATION)
+#include "umm_malloc.h"
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -54,6 +58,8 @@ static u16 line_ix;
 
 static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
 static s32 TERMINAL_PrintSystem(void *_output_function);
+static s32 TERMINAL_PrintMemoryInfo(void *_output_function);
+static s32 TERMINAL_PrintSdCardInfo(void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -188,6 +194,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
       out("Following commands are available:");
       out("  system:                           print system info");
+      out("  memory:                           print memory allocation info\n");
+      out("  sdcard:                           print SD Card info\n");
       UIP_TERMINAL_Help(_output_function);
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
@@ -202,6 +210,10 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  exit:                             (telnet only) exits the terminal");
     } else if( strcmp(parameter, "system") == 0 ) {
       TERMINAL_PrintSystem(_output_function);
+    } else if( strcmp(parameter, "memory") == 0 ) {
+      TERMINAL_PrintMemoryInfo(out);
+    } else if( strcmp(parameter, "sdcard") == 0 ) {
+      TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
       char *arg = NULL;
       if( (arg = strtok_r(NULL, separators, &brkt)) ) {
@@ -339,6 +351,166 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
   u32 pool_max_size = MBNG_EVENT_PoolMaxSizeGet();
   out("Event Pool Allocation: %d of %d bytes (%d%%)",
       pool_size, pool_max_size, (100*pool_size)/pool_max_size);
+
+#if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
+  // send Run Time Stats to MIOS terminal
+  out("FreeRTOS Task RunTime Stats:\n");
+  FREERTOS_UTILS_RunTimeStats();
+#endif
       
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Memory allocation Informations
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_PrintMemoryInfo(void *_output_function)
+{
+  //void (*out)(char *format, ...) = _output_function;
+  // TODO: umm_info doesn't allow to define output function
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+  umm_info( NULL, 1 );
+#endif
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// SDCard Informations
+/////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// These time and date functions and other bits of following code were adapted from 
+// Rickey's world of Microelectronics under the creative commons 2.5 license.
+// http://www.8051projects.net/mmc-sd-interface-fat16/final-code.php
+static void ShowFatTime(u32 ThisTime, char* msg)
+{
+   u8 AM = 1;
+
+   int Hour, Minute, Second;
+
+   Hour = ThisTime >> 11;        // bits 15 through 11 hold Hour...
+   Minute = ThisTime & 0x07E0;   // bits 10 through 5 hold Minute... 0000 0111 1110 0000
+   Minute = Minute >> 5;
+   Second = ThisTime & 0x001F;   //bits 4 through 0 hold Second...   0000 0000 0001 1111
+   
+   if( Hour > 11 )
+   {
+      AM = 0;
+      if( Hour > 12 )
+         Hour -= 12;
+   }
+     
+   sprintf( msg, "%02d:%02d:%02d %s", Hour, Minute, Second*2,
+         (AM)?"AM":"PM");
+   return;
+}
+
+static void ShowFatDate(u32 ThisDate, char* msg)
+{
+
+   int Year, Month, Day;
+
+   Year = ThisDate >> 9;         // bits 15 through 9 hold year...
+   Month = ThisDate & 0x01E0;    // bits 8 through 5 hold month... 0000 0001 1110 0000
+   Month = Month >> 5;
+   Day = ThisDate & 0x001F;      //bits 4 through 0 hold day...    0000 0000 0001 1111
+   sprintf( msg, "%02d/%02d/%02d", Month, Day, Year-20);
+   return;
+}
+
+static s32 TERMINAL_PrintSdCardInfo(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  FRESULT res;
+  FILINFO fno;
+  DIR dir;
+  char *fn;
+  char str_buffer[128];
+
+  MUTEX_MIDIOUT_TAKE;
+
+  out("SD Card Informations\n");
+  out("====================\n");
+
+#if !defined(MIOS32_FAMILY_EMULATION)
+  // this yield ensures, that Debug Messages are sent before we continue the execution
+  // Since MIOS Studio displays the time at which the messages arrived, this allows
+  // us to measure the delay of following operations
+  taskYIELD();
+
+  MUTEX_SDCARD_TAKE;
+  FILE_PrintSDCardInfos();
+  MUTEX_SDCARD_GIVE;
+#endif
+
+  out("\n");
+  out("Reading Root Directory\n");
+  out("======================\n");
+
+  taskYIELD();
+
+  if( !FILE_SDCardAvailable() ) {
+    sprintf(str_buffer, "not connected");
+  } else if( !FILE_VolumeAvailable() ) {
+    sprintf(str_buffer, "Invalid FAT");
+  } else {
+    out("Retrieving SD Card informations - please wait!\n");
+    MUTEX_MIDIOUT_GIVE;
+    MUTEX_SDCARD_TAKE;
+    FILE_UpdateFreeBytes();
+    MUTEX_SDCARD_GIVE;
+    MUTEX_MIDIOUT_TAKE;
+
+    sprintf(str_buffer, "'%s': %u of %u MB free", 
+	    FILE_VolumeLabel(),
+	    (unsigned int)(FILE_VolumeBytesFree()/1000000),
+	    (unsigned int)(FILE_VolumeBytesTotal()/1000000));
+  }
+  out("SD Card: %s\n", str_buffer);
+
+  taskYIELD();
+
+#if _USE_LFN
+  static char lfn[_MAX_LFN * (_DF1S ? 2 : 1) + 1];
+  fno.lfname = lfn;
+  fno.lfsize = sizeof(lfn);
+#endif
+
+  MUTEX_SDCARD_TAKE;
+  if( (res=f_opendir(&dir, "/")) != FR_OK ) {
+    out("Failed to open root directory - error status: %d\n", res);
+  } else {
+    while( (f_readdir(&dir, &fno) == FR_OK) && fno.fname[0] ) {
+#if _USE_LFN
+      fn = *fno.lfname ? fno.lfname : fno.fname;
+#else
+      fn = fno.fname;
+#endif
+      char date[10];
+      ShowFatDate(fno.fdate,(char*)&date);
+      char time[12];
+      ShowFatTime(fno.ftime,(char*)&time);
+      out("[%s%s%s%s%s%s%s] %s  %s   %s %u %s\n",
+		(fno.fattrib & AM_RDO ) ? "r" : ".",
+		(fno.fattrib & AM_HID ) ? "h" : ".",
+		(fno.fattrib & AM_SYS ) ? "s" : ".",
+		(fno.fattrib & AM_VOL ) ? "v" : ".",
+		(fno.fattrib & AM_LFN ) ? "l" : ".",
+		(fno.fattrib & AM_DIR ) ? "d" : ".",
+		(fno.fattrib & AM_ARC ) ? "a" : ".",
+		date,time,
+		(fno.fattrib & AM_DIR) ? "<DIR>" : " ",
+		fno.fsize,fn);
+    }
+  }
+  MUTEX_SDCARD_GIVE;
+
+  taskYIELD();
+
+  out("done.\n");
+  MUTEX_MIDIOUT_GIVE;
+
   return 0; // no error
 }

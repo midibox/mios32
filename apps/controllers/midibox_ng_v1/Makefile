@@ -80,6 +80,9 @@ include $(MIOS32_PATH)/modules/uip/uip.mk
 # UIP Standard Task (with DHCPC + OSC server and client)
 include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 
+# For performance measurings
+include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
+
 # AINSER driver
 include $(MIOS32_PATH)/modules/ainser/ainser.mk
 

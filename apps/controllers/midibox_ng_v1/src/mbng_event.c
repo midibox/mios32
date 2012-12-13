@@ -66,8 +66,14 @@ typedef struct { // should be dividable by u16
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-#define MBNG_EVENT_POOL_MAX_SIZE 16384
-static u8 event_pool[MBNG_EVENT_POOL_MAX_SIZE];
+
+#define MBNG_EVENT_POOL_MAX_SIZE (24*1024)
+
+#ifndef AHB_SECTION
+#define AHB_SECTION
+#endif
+
+static u8 AHB_SECTION event_pool[MBNG_EVENT_POOL_MAX_SIZE];
 static u16 event_pool_size;
 static u16 event_pool_num_items;
 

@@ -574,7 +574,7 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
   #define umm_malloc  pvPortMalloc
   #define umm_realloc realloc
 
-#if defined(MIOS32_FAMILY_LPC17xx)
+#if defined(MIOS32_FAMILY_LPC17xx) && !defined(UMM_HEAP_SECTION)
 # define UMM_HEAP_SECTION __attribute__ ((section (".bss_ahb")))
 #else
 # define UMM_HEAP_SECTION
@@ -736,7 +736,10 @@ void *umm_info( void *ptr, int force ) {
                         heapInfo.usedBlocks,
                         heapInfo.freeBlocks  );
 
-  DBG_LOG_FORCE( force, "Size of umm_heap is %d\n", sizeof(umm_heap)       );
+  DBG_LOG_FORCE( force, "Size of umm_heap is %d bytes, used: %d bytes, free: %d bytes\n",
+		 sizeof(umm_heap),
+		 heapInfo.usedBlocks*sizeof(umm_block),
+		 heapInfo.freeBlocks*sizeof(umm_block));
 
   // Release the critical section...
   //

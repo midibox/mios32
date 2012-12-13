@@ -137,6 +137,7 @@ projectinfo:
 	@echo "LCD:       $(LCD)"
 	@echo "-------------------------------------------------------------------------------"
 	$(SIZE) $(PROJECT_OUT)/$(PROJECT).elf
+	@grep -E '__ram_start|__ram_end' project_build/project.sym
 
 # default rule for compiling .c programs
 # inspired from the "super makefile" published at http://gpwiki.org/index.php/Make
