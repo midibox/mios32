@@ -413,8 +413,8 @@ ConvertNoteOffToOn0 1
 ButtonGroupSize 128
 LedGroupSize 128
 EncGroupSize 64
-MatrixButtonGroupSize 64
-MatrixLedGroupSize 64
+ButtonMatrixGroupSize 64
+LedMatrixGroupSize 64
 AinGroupSize 6
 AinSerGroupSize 64
 MfGroupSize 8
