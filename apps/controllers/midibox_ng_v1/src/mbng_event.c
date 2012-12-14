@@ -504,8 +504,9 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
 {
   switch( id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_SENDER:        return "SENDER";
   case MBNG_EVENT_CONTROLLER_DISABLED:      return "DISABLED";
+  case MBNG_EVENT_CONTROLLER_SENDER:        return "SENDER";
+  case MBNG_EVENT_CONTROLLER_RECEIVER:      return "RECEIVER";
   case MBNG_EVENT_CONTROLLER_BUTTON:        return "BUTTON";
   case MBNG_EVENT_CONTROLLER_LED:           return "LED";
   case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: return "BUTTON_MATRIX";
@@ -605,6 +606,70 @@ mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for ENC Mode
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
+{
+  mbng_event_enc_mode_t enc_mode = item->flags.ENC.enc_mode;
+  switch( enc_mode ) {
+  case MBNG_EVENT_ENC_MODE_ABSOLUTE:              return "Absolute";
+  case MBNG_EVENT_ENC_MODE_40SPEED:               return "40Speed";
+  case MBNG_EVENT_ENC_MODE_00SPEED:               return "00Speed";
+  case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED: return "Inc00Speed_Dec40Speed";
+  case MBNG_EVENT_ENC_MODE_INC41_DEC3F:           return "Inc41_Dec3F";
+  case MBNG_EVENT_ENC_MODE_INC01_DEC7F:           return "Inc01_Dec7F";
+  case MBNG_EVENT_ENC_MODE_INC01_DEC41:           return "Inc01_Dec41";
+  case MBNG_EVENT_ENC_MODE_INC_DEC:               return "IncDec";
+  }
+  return "Undefined";
+}
+
+mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
+{
+  if( strcasecmp(enc_mode, "Absolute") == 0 )               return MBNG_EVENT_ENC_MODE_ABSOLUTE;
+  if( strcasecmp(enc_mode, "40Speed") == 0 )                return MBNG_EVENT_ENC_MODE_40SPEED;
+  if( strcasecmp(enc_mode, "00Speed") == 0 )                return MBNG_EVENT_ENC_MODE_00SPEED;
+  if( strcasecmp(enc_mode, "Inc00Speed_Dec40Speed") == 0 )  return MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED;
+  if( strcasecmp(enc_mode, "Inc41_Dec3F") == 0 )            return MBNG_EVENT_ENC_MODE_INC41_DEC3F;
+  if( strcasecmp(enc_mode, "Inc01_Dec7F") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC7F;
+  if( strcasecmp(enc_mode, "Inc01_Dec41") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC41;
+  if( strcasecmp(enc_mode, "IncDec") == 0 )                 return MBNG_EVENT_ENC_MODE_INC_DEC;
+
+  return MBNG_EVENT_ENC_MODE_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// for DOUT Matrix pattern selection
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item)
+{
+  mbng_event_led_matrix_pattern_t led_matrix_pattern = item->flags.ENC.led_matrix_pattern;
+  switch( led_matrix_pattern ) {
+  case MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED: return "Undefined";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_1:         return "1";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_2:         return "2";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_3:         return "3";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_4:         return "4";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO:   return "LcAuto";
+  }
+  return "Undefined";
+}
+
+mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *led_matrix_pattern)
+{
+  if( strcasecmp(led_matrix_pattern, "Undefined") == 0 ) return MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED;
+  if( strcasecmp(led_matrix_pattern, "1") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_1;
+  if( strcasecmp(led_matrix_pattern, "2") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_2;
+  if( strcasecmp(led_matrix_pattern, "3") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_3;
+  if( strcasecmp(led_matrix_pattern, "4") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_4;
+  if( strcasecmp(led_matrix_pattern, "LcAuto") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO;
+
+  return MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // for (N)RPN format
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item)
@@ -681,14 +746,14 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 {
   mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+1))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
   switch( meta_type ) {
-  case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:      return "SetButtonGroup";
-  case MBNG_EVENT_META_TYPE_SET_LED_GROUP:         return "SetLedGroup";
-  case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:         return "SetEncGroup";
-  case MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP:  return "SetDinMatrixGroup";
-  case MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP: return "SetDoutMatrixGroup";
-  case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:         return "SetAinGroup";
-  case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:      return "SetAinSerGroup";
-  case MBNG_EVENT_META_TYPE_SET_MF_GROUP:          return "SetMfGroup";
+  case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:        return "SetButtonGroup";
+  case MBNG_EVENT_META_TYPE_SET_LED_GROUP:           return "SetLedGroup";
+  case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:           return "SetEncGroup";
+  case MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP: return "SetButtonMatrixGroup";
+  case MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP:    return "SetLedMatrixGroup";
+  case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:           return "SetAinGroup";
+  case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:        return "SetAinSerGroup";
+  case MBNG_EVENT_META_TYPE_SET_MF_GROUP:            return "SetMfGroup";
   }
 
   return "Undefined";
@@ -696,14 +761,14 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 
 mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 {
-  if( strcasecmp(meta_type, "SetButtonGroup") == 0 )     return MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP;
-  if( strcasecmp(meta_type, "SetLedGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_LED_GROUP;
-  if( strcasecmp(meta_type, "SetEncGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_ENC_GROUP;
-  if( strcasecmp(meta_type, "SetDinMatrixGroup") == 0 )  return MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP;
-  if( strcasecmp(meta_type, "SetDoutMatrixGroup") == 0 ) return MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP;
-  if( strcasecmp(meta_type, "SetAinGroup") == 0 )        return MBNG_EVENT_META_TYPE_SET_AIN_GROUP;
-  if( strcasecmp(meta_type, "SetAinSerGroup") == 0 )     return MBNG_EVENT_META_TYPE_SET_AINSER_GROUP;
-  if( strcasecmp(meta_type, "SetMfGroup") == 0 )         return MBNG_EVENT_META_TYPE_SET_MF_GROUP;
+  if( strcasecmp(meta_type, "SetButtonGroup") == 0 )       return MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP;
+  if( strcasecmp(meta_type, "SetLedGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_LED_GROUP;
+  if( strcasecmp(meta_type, "SetEncGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_ENC_GROUP;
+  if( strcasecmp(meta_type, "SetButtonMatrixGroup") == 0 ) return MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP;
+  if( strcasecmp(meta_type, "SetLedMatrixGroup") == 0 )    return MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP;
+  if( strcasecmp(meta_type, "SetAinGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_AIN_GROUP;
+  if( strcasecmp(meta_type, "SetAinSerGroup") == 0 )       return MBNG_EVENT_META_TYPE_SET_AINSER_GROUP;
+  if( strcasecmp(meta_type, "SetMfGroup") == 0 )           return MBNG_EVENT_META_TYPE_SET_MF_GROUP;
   return MBNG_EVENT_META_TYPE_UNDEFINED;
 }
 
@@ -910,14 +975,14 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
       mbng_event_meta_type_t meta_type = item->stream[i+0];
       u8 meta_value = item->stream[i+1];
       switch( meta_type ) {
-      case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:      break;
-      case MBNG_EVENT_META_TYPE_SET_LED_GROUP:         break;
-      case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:         MBNG_ENC_GroupSet(meta_value-1); break;
-      case MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP:  break;
-      case MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP: break;
-      case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:         break;
-      case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:      break;
-      case MBNG_EVENT_META_TYPE_SET_MF_GROUP:          break;
+      case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:        break;
+      case MBNG_EVENT_META_TYPE_SET_LED_GROUP:           break;
+      case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:           MBNG_ENC_GroupSet(meta_value-1); break;
+      case MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP: break;
+      case MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP:    break;
+      case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:           break;
+      case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:        break;
+      case MBNG_EVENT_META_TYPE_SET_MF_GROUP:            break;
       }
     }
   } else {
@@ -1061,6 +1126,14 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
   if( !port_mask )
     return -1; // not supported
 
+  // Note Off -> Note On with velocity 0
+  if( mbng_patch_cfg.convert_note_off_to_on0 ) {
+    if( midi_package.event == NoteOff ) {
+      midi_package.event = NoteOn;
+      midi_package.velocity = 0;
+    }
+  }
+
   // on CC:
   u16 nrpn_address = 0xffff; // taken if < 0xffff
   u16 nrpn_value = 0;
@@ -1118,7 +1191,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     if( pool_item->data_begin == evnt0 && pool_item->len_stream ) { // timing critical
       // first byte is matching - now we've a bit more time for checking
       
-      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // as sender doesn't receive
+      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
 	continue;
 
       if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
@@ -1179,13 +1252,13 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
     if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
       u8 parse_sysex = 1;
 
-      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // as sender doesn't receive
-	continue;
+      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
+	parse_sysex = 0;
 
       if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
-	continue;
+	parse_sysex = 0;
 
-      // receiving a SysEx dump=
+      // receiving a SysEx dump?
       if( pool_item->tmp_runtime_flags.sysex_dump ) {
 	if( midi_in >= 0xf0 ) {
 	  // notify event when all values have been received

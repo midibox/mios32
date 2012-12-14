@@ -14,7 +14,7 @@ while( <STDIN> ) {
     my $dec = bin2dec($pattern);
     ++$taken_line;
 
-    printf "    0x%04x, // [%2d] b'${pattern}'%s\n", bin2dec($pattern), $taken_line-1, $taken_line == 17 ? " // taken when mid value has been selected" : "";
+    printf "    0x%04x, // [%2d] b'${pattern}'%s\n", bin2dec($pattern), $taken_line-1, $taken_line == 9 ? " // taken when mid value has been selected" : "";
   }
 }
 

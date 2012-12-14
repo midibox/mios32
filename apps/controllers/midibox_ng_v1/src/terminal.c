@@ -57,9 +57,6 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
-static s32 TERMINAL_PrintSystem(void *_output_function);
-static s32 TERMINAL_PrintMemoryInfo(void *_output_function);
-static s32 TERMINAL_PrintSdCardInfo(void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -338,7 +335,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 /////////////////////////////////////////////////////////////////////////////
 // System Informations
 /////////////////////////////////////////////////////////////////////////////
-static s32 TERMINAL_PrintSystem(void *_output_function)
+s32 TERMINAL_PrintSystem(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
@@ -364,7 +361,7 @@ static s32 TERMINAL_PrintSystem(void *_output_function)
 /////////////////////////////////////////////////////////////////////////////
 // Memory allocation Informations
 /////////////////////////////////////////////////////////////////////////////
-static s32 TERMINAL_PrintMemoryInfo(void *_output_function)
+s32 TERMINAL_PrintMemoryInfo(void *_output_function)
 {
   //void (*out)(char *format, ...) = _output_function;
   // TODO: umm_info doesn't allow to define output function
@@ -419,7 +416,7 @@ static void ShowFatDate(u32 ThisDate, char* msg)
    return;
 }
 
-static s32 TERMINAL_PrintSdCardInfo(void *_output_function)
+s32 TERMINAL_PrintSdCardInfo(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 

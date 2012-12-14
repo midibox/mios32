@@ -553,6 +553,7 @@ midio_patch_cfg_t midio_patch_cfg = {
   .ts_sensitivity = 3,
   .global_chn = 0,
   .all_notes_off_chn = 0,
+  .convert_note_off_to_on0 = 1,
 };
 
 

@@ -44,6 +44,16 @@ s32 MBNG_ENC_Init(u32 mode)
   int i;
   for(i=0; i<MBNG_PATCH_NUM_ENC; ++i)
     enc_value[i] = 0;
+
+  for(i=1; i<MIOS32_ENC_NUM_MAX; ++i) { // start at 1 since the first encoder is allocated by SCS
+    mios32_enc_config_t enc_config;
+    enc_config = MIOS32_ENC_ConfigGet(i);
+    enc_config.cfg.sr = 0;
+    enc_config.cfg.pos = 0;
+    enc_config.cfg.speed = NORMAL;
+    enc_config.cfg.speed_par = 0;
+    MIOS32_ENC_ConfigSet(i, enc_config);
+  }
   
   return 0; // no error
 }
@@ -140,12 +150,28 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     value = incrementer & 0x7f;
     break;
 
-  case MBNG_EVENT_ENC_MODE_40_1:
+  case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED:
+    if( incrementer < 0 ) {
+      if( incrementer < -63 )
+	incrementer = -63;
+      value = -incrementer | 0x40;
+    } else {
+      if( incrementer > 63 )
+	incrementer = 63;
+      value = incrementer;
+    }
+    break;
+
+  case MBNG_EVENT_ENC_MODE_INC41_DEC3F:
     value = incrementer > 0 ? 0x41 : 0x3f;
     break;
 
-  case MBNG_EVENT_ENC_MODE_00_1:
+  case MBNG_EVENT_ENC_MODE_INC01_DEC7F:
     value = incrementer > 0 ? 0x01 : 0x7f;
+    break;
+
+  case MBNG_EVENT_ENC_MODE_INC01_DEC41:
+    value = incrementer > 0 ? 0x01 : 0x41;
     break;
 
   case MBNG_EVENT_ENC_MODE_INC_DEC:

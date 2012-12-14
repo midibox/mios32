@@ -5,7 +5,8 @@ EVENT_BUTTON id=  1  fwd_id=LED:1  type=NoteOn chn=1 key=36  range=  0:127 ports
 
 ###################################################################################################################
 # An encoder should send/receive a CC, and forward the value to LED_MATRIX id=1
-EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=CC chn=1 cc=16   range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %e"
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=CC chn=1 cc=16   range=  0:127 ports=1000100000001000 \
+                     led_matrix_pattern=3  lcd_pos=1:1:1 label="Enc%3i:      %e"
 
 
 ###################################################################################################################

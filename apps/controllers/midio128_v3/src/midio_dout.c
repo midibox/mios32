@@ -45,6 +45,14 @@ s32 MIDIO_DOUT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIO_DOUT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
+  // Note Off -> Note On with velocity 0
+  if( midio_patch_cfg.convert_note_off_to_on0 ) {
+    if( midi_package.event == NoteOff ) {
+      midi_package.event = NoteOn;
+      midi_package.velocity = 0;
+    }
+  }
+
   // check for "all notes off" command
   if( midi_package.event == CC &&
       midio_patch_cfg.all_notes_off_chn &&

@@ -151,6 +151,7 @@ s32 MBNG_FILE_L_Valid(void)
 // md5_checksum_binfile[16] contains the expected MD5 checksum of the .NGL file if valid
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 readBinFileMD5(u8 md5_checksum[16])
 {
   s32 status;
@@ -199,6 +200,7 @@ s32 readBinFileMD5(u8 md5_checksum[16])
 // parse the .BIN file for labels
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 parseBinFile(char *filename)
 {
   s32 status;
@@ -276,47 +278,53 @@ s32 parseBinFile(char *filename)
 // creates the MD5 checksum over the .NGL file
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 generateNglFileMD5(u8 md5_checksum[16])
 {
   s32 status;
   file_t file;
-  char filepath[MAX_PATH];
-
-#define MD5_READ_BLOCKSIZE 256 // must be dividable by 64
-  u8 buffer[MD5_READ_BLOCKSIZE];
-  struct md5_ctx ctx;
-  md5_init_ctx(&ctx);
 
   // open .ngl file
-  sprintf(filepath, "%s%s.NGL", MBNG_FILES_PATH, mbng_file_l_patch_name);
-  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
+  {
+    char filepath[MAX_PATH];
+    sprintf(filepath, "%s%s.NGL", MBNG_FILES_PATH, mbng_file_l_patch_name);
+    if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
-    DEBUG_MSG("[MBNG_FILE_L] failed to open file, status: %d\n", status);
+      DEBUG_MSG("[MBNG_FILE_L] failed to open file, status: %d\n", status);
 #endif
-    return status;
+      return status;
+    }
   }
 
-  s32 len = 0;
-  while( 1 ) {
-    if( (len=FILE_ReadBufferUnknownLen(buffer, MD5_READ_BLOCKSIZE)) < 0 ) {
+  {
+#define MD5_READ_BLOCKSIZE 64 // must be dividable by 64
+    u8 buffer[MD5_READ_BLOCKSIZE];
+    struct md5_ctx ctx;
+    md5_init_ctx(&ctx);
+
+    s32 len = 0;
+    while( 1 ) {
+      if( (len=FILE_ReadBufferUnknownLen(buffer, MD5_READ_BLOCKSIZE)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_L] failed to read file, status: %d\n", status);
+	DEBUG_MSG("[MBNG_FILE_L] failed to read file, status: %d\n", status);
 #endif
-      FILE_ReadClose(&file);
-      return len; // contains error status
+	FILE_ReadClose(&file);
+	return len; // contains error status
+      }
+
+      if( len != MD5_READ_BLOCKSIZE )
+	break;
+
+      md5_process_block(buffer, MD5_READ_BLOCKSIZE, &ctx);
     }
 
-    if( len != MD5_READ_BLOCKSIZE )
-      break;
-
-    md5_process_block(buffer, MD5_READ_BLOCKSIZE, &ctx);
-  }
-  FILE_ReadClose(&file);
-
-  if( len > 0 )
-    md5_process_bytes(buffer, len, &ctx);
+    if( len > 0 )
+      md5_process_bytes(buffer, len, &ctx);
     
-  md5_finish_ctx(&ctx, md5_checksum);
+    md5_finish_ctx(&ctx, md5_checksum);
+  }
+
+  FILE_ReadClose(&file);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_L] MD5 checksum:\n");
@@ -402,6 +410,7 @@ static char *getQuotedString(char **brkt)
 s32 MBNG_FILE_L_Read(char *filename)
 {
   s32 status = 0;
+  char filepath[MAX_PATH];
   mbng_file_l_info_t *info = &mbng_file_l_info;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
@@ -454,7 +463,6 @@ s32 MBNG_FILE_L_Read(char *filename)
   
   // create new .BIN file
   {
-    char filepath[MAX_PATH];
     sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, mbng_file_l_patch_name);
     if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -481,7 +489,6 @@ s32 MBNG_FILE_L_Read(char *filename)
 
   // open .ngl file again
   file_t file;
-  char filepath[MAX_PATH];
   sprintf(filepath, "%s%s.NGL", MBNG_FILES_PATH, mbng_file_l_patch_name);
   if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -491,7 +498,14 @@ s32 MBNG_FILE_L_Read(char *filename)
   }
 
   // read label definitions
-  char line_buffer[200];
+  char *line_buffer = pvPortMalloc(1024);
+  if( !line_buffer ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_L] FATAL: out of heap memory!\n");
+#endif
+    return -1;
+  }
+
   u32 bin_file_errors = 0;
   char current_cond_label[9];
   current_cond_label[0] = 0;
@@ -568,7 +582,6 @@ s32 MBNG_FILE_L_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 		    DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
 #endif
-		    return status;
 		  }
 		}
 	      }
@@ -623,7 +636,6 @@ s32 MBNG_FILE_L_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 		  DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
 #endif
-		  return status;
 		}
 	      }
 	    }
@@ -666,7 +678,6 @@ s32 MBNG_FILE_L_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
 #endif
-		return status;
 	      }
 	    }
 	  }
@@ -760,7 +771,6 @@ s32 MBNG_FILE_L_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 		      DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
 #endif
-		      return status;
 		    }
 		  }
 		}
@@ -783,6 +793,9 @@ s32 MBNG_FILE_L_Read(char *filename)
     }
 
   } while( status >= 1 );
+
+  // release memory from heap
+  vPortFree(line_buffer);
 
   if( current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
