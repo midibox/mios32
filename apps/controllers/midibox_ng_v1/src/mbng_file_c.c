@@ -1550,11 +1550,11 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.enc_group_size = value;
-	} else if( strcmp(parameter, "MatrixButtonGroupSize") == 0 ) {
+	} else if( strcmp(parameter, "ButtonMatrixGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.matrix_button_group_size = value;
-	} else if( strcmp(parameter, "MatrixLedGroupSize") == 0 ) {
+	} else if( strcmp(parameter, "LedMatrixGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.matrix_led_group_size = value;
@@ -2201,9 +2201,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "EncGroupSize %d\n", mbng_patch_cfg.enc_group_size);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "MatrixButtonGroupSize %d\n", mbng_patch_cfg.matrix_button_group_size);
+  sprintf(line_buffer, "ButtonMatrixGroupSize %d\n", mbng_patch_cfg.matrix_button_group_size);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "MatrixLedGroupSize %d\n", mbng_patch_cfg.matrix_led_group_size);
+  sprintf(line_buffer, "LedMatrixGroupSize %d\n", mbng_patch_cfg.matrix_led_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "AinGroupSize %d\n", mbng_patch_cfg.ain_group_size);
   FLUSH_BUFFER;

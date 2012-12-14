@@ -14,10 +14,6 @@ RESET_HW
 ButtonGroupSize 128
 LedGroupSize 128
 EncGroupSize 8
-MatrixButtonGroupSize 64
-MatrixLedGroupSize 64
-AinGroupSize 6
-AinSerGroupSize 64
 MfGroupSize 8
 
 
