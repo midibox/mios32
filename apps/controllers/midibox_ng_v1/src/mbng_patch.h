@@ -26,6 +26,7 @@
 #define MBNG_PATCH_NUM_AINSER      128
 #define MBNG_PATCH_NUM_MATRIX_DIN    8
 #define MBNG_PATCH_NUM_MATRIX_DOUT   8
+#define MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS 4
 
 #define MBNG_PATCH_NUM_MATRIX_ROWS_MAX   16
 #define MBNG_PATCH_NUM_MATRIX_COLORS_MAX  3
@@ -61,11 +62,12 @@ typedef struct {
   u8 debounce_ctr;
   u8 global_chn;
   u8 all_notes_off_chn;
+  u8 convert_note_off_to_on0;
   u8 button_group_size;
   u8 led_group_size;
   u8 enc_group_size;
-  u8 matrix_din_group_size;
-  u8 matrix_dout_group_size;
+  u8 matrix_button_group_size;
+  u8 matrix_led_group_size;
   u8 ain_group_size;
   u8 ainser_group_size;
   u8 mf_group_size;

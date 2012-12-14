@@ -102,6 +102,7 @@ typedef struct {
   u8 ts_sensitivity;
   u8 global_chn;
   u8 all_notes_off_chn;
+  u8 convert_note_off_to_on0;
 } midio_patch_cfg_t;
 
 /////////////////////////////////////////////////////////////////////////////

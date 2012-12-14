@@ -20,7 +20,7 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define MBNG_MATRIX_DOUT_LEDRING_PATTERNS 4
+#define MBNG_MATRIX_DOUT_NUM_PATTERN_POS 17
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -32,6 +32,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 MBNG_MATRIX_Init(u32 mode);
+
+extern s32 MBNG_MATRIX_PatternSet(u8 num, u8 pos, u16 pattern);
+extern u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos);
+
 extern s32 MBNG_MATRIX_PrepareCol(void);
 extern s32 MBNG_MATRIX_GetRow(void);
 extern s32 MBNG_MATRIX_ButtonHandler(void);

@@ -36,11 +36,12 @@ mbng_patch_cfg_t mbng_patch_cfg = {
   .debounce_ctr = 20,
   .global_chn = 0,
   .all_notes_off_chn = 0,
+  .convert_note_off_to_on0 = 1,
   .button_group_size = 128,
   .led_group_size = 128,
   .enc_group_size = 64,
-  .matrix_din_group_size = 64,
-  .matrix_dout_group_size = 64,
+  .matrix_button_group_size = 64,
+  .matrix_led_group_size = 64,
   .ain_group_size = 6,
   .ainser_group_size = 64,
   .mf_group_size = 8,
@@ -99,8 +100,10 @@ s32 MBNG_PATCH_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_PATCH_Load(char *filename)
 {
+  s32 status = 0;
+
   MUTEX_SDCARD_TAKE;
-  s32 status = MBNG_FILE_C_Read(filename);
+  status |= MBNG_FILE_C_Read(filename);
 #if 0
   status |= MBNG_FILE_L_Read(filename);
 #else

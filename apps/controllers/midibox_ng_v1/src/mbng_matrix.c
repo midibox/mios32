@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include "app.h"
 #include "mbng_lcd.h"
@@ -83,157 +84,97 @@ const u16 selection_16rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
 };
 
 // the b'...' patterns have been converted with tools/patterns.pl to hexadecimal numbers
-static const u16 ledring_pattern[MBNG_MATRIX_DOUT_LEDRING_PATTERNS][33] = {
+static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS][MBNG_MATRIX_DOUT_NUM_PATTERN_POS] = {
 
   {
-    // 33 entries for LED pattern #1 - requires 11 LEDs
+    // 17 entries for LED pattern #1 - requires 11 LEDs
     0x0001, // [ 0] b'0000000000000001'
-    0x0001, // [ 1] b'0000000000000001'
+    0x0003, // [ 1] b'0000000000000011'
     0x0003, // [ 2] b'0000000000000011'
-    0x0003, // [ 3] b'0000000000000011'
-    0x0003, // [ 4] b'0000000000000011'
-    0x0007, // [ 5] b'0000000000000111'
-    0x0007, // [ 6] b'0000000000000111'
-    0x0007, // [ 7] b'0000000000000111'
-    0x000f, // [ 8] b'0000000000001111'
-    0x000f, // [ 9] b'0000000000001111'
-    0x000f, // [10] b'0000000000001111'
-    0x001f, // [11] b'0000000000011111'
-    0x001f, // [12] b'0000000000011111'
-    0x001f, // [13] b'0000000000011111'
-    0x003f, // [14] b'0000000000111111'
-    0x003f, // [15] b'0000000000111111'
-    0x003f, // [16] b'0000000000111111' // taken when mid value has been selected
-    0x003f, // [17] b'0000000000111111'
-    0x003f, // [18] b'0000000000111111'
-    0x007f, // [19] b'0000000001111111'
-    0x007f, // [20] b'0000000001111111'
-    0x007f, // [21] b'0000000001111111'
-    0x00ff, // [22] b'0000000011111111'
-    0x00ff, // [23] b'0000000011111111'
-    0x00ff, // [24] b'0000000011111111'
-    0x01ff, // [25] b'0000000111111111'
-    0x01ff, // [26] b'0000000111111111'
-    0x01ff, // [27] b'0000000111111111'
-    0x03ff, // [28] b'0000001111111111'
-    0x03ff, // [29] b'0000001111111111'
-    0x03ff, // [30] b'0000001111111111'
-    0x07ff, // [31] b'0000011111111111'
-    0x07ff, // [32] b'0000011111111111'
+    0x0007, // [ 3] b'0000000000000111'
+    0x0007, // [ 4] b'0000000000000111'
+    0x000f, // [ 5] b'0000000000001111'
+    0x000f, // [ 6] b'0000000000001111'
+    0x001f, // [ 7] b'0000000000011111'
+    0x003f, // [ 8] b'0000000000111111' // taken when mid value has been selected
+    0x007f, // [ 9] b'0000000001111111'
+    0x00ff, // [10] b'0000000011111111'
+    0x00ff, // [11] b'0000000011111111'
+    0x01ff, // [12] b'0000000111111111'
+    0x01ff, // [13] b'0000000111111111'
+    0x03ff, // [14] b'0000001111111111'
+    0x03ff, // [15] b'0000001111111111'
+    0x07ff, // [16] b'0000011111111111'
   },
 
   {
-    // 33 entries for LED pattern #2 - requires 11 LEDs
+    // 17 entries for LED pattern #2 - requires 11 LEDs
     0x003f, // [ 0] b'0000000000111111'
-    0x003f, // [ 1] b'0000000000111111'
+    0x003e, // [ 1] b'0000000000111110'
     0x003e, // [ 2] b'0000000000111110'
-    0x003e, // [ 3] b'0000000000111110'
-    0x003e, // [ 4] b'0000000000111110'
-    0x003c, // [ 5] b'0000000000111100'
-    0x003c, // [ 6] b'0000000000111100'
-    0x003c, // [ 7] b'0000000000111100'
-    0x0038, // [ 8] b'0000000000111000'
-    0x0038, // [ 9] b'0000000000111000'
-    0x0038, // [10] b'0000000000111000'
-    0x0030, // [11] b'0000000000110000'
-    0x0030, // [12] b'0000000000110000'
-    0x0030, // [13] b'0000000000110000'
-    0x0020, // [14] b'0000000000100000'
-    0x0020, // [15] b'0000000000100000'
-    0x0070, // [16] b'0000000001110000' // taken when mid value has been selected
-    0x0020, // [17] b'0000000000100000'
-    0x0020, // [18] b'0000000000100000'
-    0x0060, // [19] b'0000000001100000'
-    0x0060, // [20] b'0000000001100000'
-    0x0060, // [21] b'0000000001100000'
-    0x00e0, // [22] b'0000000011100000'
-    0x00e0, // [23] b'0000000011100000'
-    0x00e0, // [24] b'0000000011100000'
-    0x01e0, // [25] b'0000000111100000'
-    0x01e0, // [26] b'0000000111100000'
-    0x01e0, // [27] b'0000000111100000'
-    0x03e0, // [28] b'0000001111100000'
-    0x03e0, // [29] b'0000001111100000'
-    0x03e0, // [30] b'0000001111100000'
-    0x07e0, // [31] b'0000011111100000'
-    0x07e0, // [32] b'0000011111100000'
+    0x003c, // [ 3] b'0000000000111100'
+    0x0038, // [ 4] b'0000000000111000'
+    0x0038, // [ 5] b'0000000000111000'
+    0x0030, // [ 6] b'0000000000110000'
+    0x0020, // [ 7] b'0000000000100000'
+    0x0070, // [ 8] b'0000000001110000' // taken when mid value has been selected
+    0x0020, // [ 9] b'0000000000100000'
+    0x0060, // [10] b'0000000001100000'
+    0x0060, // [11] b'0000000001100000'
+    0x00e0, // [12] b'0000000011100000'
+    0x01e0, // [13] b'0000000111100000'
+    0x01e0, // [14] b'0000000111100000'
+    0x03e0, // [15] b'0000001111100000'
+    0x07e0, // [16] b'0000011111100000'
   },
 
   {
-    // 33 entries for LED pattern #3 - requires 11 LEDs
+    // 17 entries for LED pattern #3 - requires 11 LEDs
     0x0001, // [ 0] b'0000000000000001'
-    0x0001, // [ 1] b'0000000000000001'
-    0x0001, // [ 2] b'0000000000000001'
-    0x0002, // [ 3] b'0000000000000010'
-    0x0002, // [ 4] b'0000000000000010'
-    0x0002, // [ 5] b'0000000000000010'
-    0x0004, // [ 6] b'0000000000000100'
-    0x0004, // [ 7] b'0000000000000100'
-    0x0004, // [ 8] b'0000000000000100'
-    0x0008, // [ 9] b'0000000000001000'
-    0x0008, // [10] b'0000000000001000'
-    0x0008, // [11] b'0000000000001000'
-    0x0010, // [12] b'0000000000010000'
-    0x0010, // [13] b'0000000000010000'
-    0x0010, // [14] b'0000000000010000'
-    0x0020, // [15] b'0000000000100000'
-    0x0070, // [16] b'0000000001110000' // taken when mid value has been selected
-    0x0020, // [17] b'0000000000100000'
-    0x0040, // [18] b'0000000001000000'
-    0x0040, // [19] b'0000000001000000'
-    0x0040, // [20] b'0000000001000000'
-    0x0080, // [21] b'0000000010000000'
-    0x0080, // [22] b'0000000010000000'
-    0x0080, // [23] b'0000000010000000'
-    0x0100, // [24] b'0000000100000000'
-    0x0100, // [25] b'0000000100000000'
-    0x0100, // [26] b'0000000100000000'
-    0x0200, // [27] b'0000001000000000'
-    0x0200, // [28] b'0000001000000000'
-    0x0200, // [29] b'0000001000000000'
-    0x0400, // [30] b'0000010000000000'
-    0x0400, // [31] b'0000010000000000'
-    0x0400, // [32] b'0000010000000000'
+    0x0002, // [ 1] b'0000000000000010'
+    0x0002, // [ 2] b'0000000000000010'
+    0x0004, // [ 3] b'0000000000000100'
+    0x0004, // [ 4] b'0000000000000100'
+    0x0008, // [ 5] b'0000000000001000'
+    0x0010, // [ 6] b'0000000000010000'
+    0x0020, // [ 7] b'0000000000100000'
+    0x0070, // [ 8] b'0000000001110000' // taken when mid value has been selected
+    0x0020, // [ 9] b'0000000000100000'
+    0x0040, // [10] b'0000000001000000'
+    0x0080, // [11] b'0000000010000000'
+    0x0080, // [12] b'0000000010000000'
+    0x0100, // [13] b'0000000100000000'
+    0x0200, // [14] b'0000001000000000'
+    0x0200, // [15] b'0000001000000000'
+    0x0400, // [16] b'0000010000000000'
   },
 
   {
-    // 33 entries for LED pattern #4 - requires 11 LEDs
+    // 17 entries for LED pattern #4 - requires 11 LEDs
     0x0020, // [ 0] b'0000000000100000'
     0x0020, // [ 1] b'0000000000100000'
-    0x0020, // [ 2] b'0000000000100000'
-    0x0020, // [ 3] b'0000000000100000'
+    0x0070, // [ 2] b'0000000001110000'
+    0x0070, // [ 3] b'0000000001110000'
     0x0070, // [ 4] b'0000000001110000'
-    0x0070, // [ 5] b'0000000001110000'
-    0x0070, // [ 6] b'0000000001110000'
-    0x0070, // [ 7] b'0000000001110000'
-    0x0070, // [ 8] b'0000000001110000'
-    0x0070, // [ 9] b'0000000001110000'
-    0x00f8, // [10] b'0000000011111000'
-    0x00f8, // [11] b'0000000011111000'
-    0x00f8, // [12] b'0000000011111000'
-    0x00f8, // [13] b'0000000011111000'
-    0x00f8, // [14] b'0000000011111000'
-    0x00f8, // [15] b'0000000011111000'
-    0x01fc, // [16] b'0000000111111100' // taken when mid value has been selected
-    0x01fc, // [17] b'0000000111111100'
-    0x01fc, // [18] b'0000000111111100'
-    0x01fc, // [19] b'0000000111111100'
-    0x01fc, // [20] b'0000000111111100'
-    0x01fc, // [21] b'0000000111111100'
-    0x01fc, // [22] b'0000000111111100'
-    0x03fe, // [23] b'0000001111111110'
-    0x03fe, // [24] b'0000001111111110'
-    0x03fe, // [25] b'0000001111111110'
-    0x03fe, // [26] b'0000001111111110'
-    0x03fe, // [27] b'0000001111111110'
-    0x03fe, // [28] b'0000001111111110'
-    0x07ff, // [29] b'0000011111111111'
-    0x07ff, // [30] b'0000011111111111'
-    0x07ff, // [31] b'0000011111111111'
-    0x07ff, // [32] b'0000011111111111'
+    0x00f8, // [ 5] b'0000000011111000'
+    0x00f8, // [ 6] b'0000000011111000'
+    0x00f8, // [ 7] b'0000000011111000'
+    0x01fc, // [ 8] b'0000000111111100' // taken when mid value has been selected
+    0x01fc, // [ 9] b'0000000111111100'
+    0x01fc, // [10] b'0000000111111100'
+    0x01fc, // [11] b'0000000111111100'
+    0x03fe, // [12] b'0000001111111110'
+    0x03fe, // [13] b'0000001111111110'
+    0x03fe, // [14] b'0000001111111110'
+    0x07ff, // [15] b'0000011111111111'
+    0x07ff, // [16] b'0000011111111111'
   },
 
 };
+
+
+// stored in RAM so that it can be redefined in the .NGC file
+static u16 dout_matrix_pattern[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS][MBNG_MATRIX_DOUT_NUM_PATTERN_POS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -280,9 +221,39 @@ s32 MBNG_MATRIX_Init(u32 mode)
     }
   }
 
+  // initial LED patterns
+  memcpy((u16 *)dout_matrix_pattern, (u16 *)dout_matrix_pattern_preload, 2*MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS*MBNG_MATRIX_DOUT_NUM_PATTERN_POS);
+
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Set/Get pattern
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_PatternSet(u8 num, u8 pos, u16 pattern)
+{
+  if( num >= MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS )
+    return -1;
+
+  if( pos >= MBNG_MATRIX_DOUT_NUM_PATTERN_POS )
+    return -2;
+
+  dout_matrix_pattern[num][pos] = pattern;
+
+  return 0; // no error
+}
+
+u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
+{
+  if( num >= MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS )
+    return 0x0000;
+
+  if( pos >= MBNG_MATRIX_DOUT_NUM_PATTERN_POS )
+    return 0x0000;
+
+  return dout_matrix_pattern[num][pos];
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This function prepares the DOUT register to drive a column.
@@ -527,38 +498,51 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 # error "not prepared for != 16 rows - id assignments have to be adapted!"
 #endif
 
-  int row = (led_matrix_ix-1) % mbng_patch_cfg.matrix_dout_group_size;
-  int matrix = (led_matrix_ix-1) / mbng_patch_cfg.matrix_dout_group_size;
-
-  if( matrix < MBNG_PATCH_NUM_MATRIX_DOUT &&
-      row < MBNG_PATCH_NUM_MATRIX_ROWS_MAX ) {
-
-    u8 color = 0;
+  if( item->flags.LED_MATRIX.led_matrix_pattern ) {
+    int row = (led_matrix_ix-1) % mbng_patch_cfg.matrix_led_group_size;
+    int matrix = (led_matrix_ix-1) / mbng_patch_cfg.matrix_led_group_size;
+    u8 color = 0; // TODO...
     u16 *led_pattern = (u16 *)&led_row[matrix][row][color];
 
-    int min = item->min;
-    int max = item->max;
-    if( min > max ) { // swap
-      int swap = max;
-      max = min;
-      min = swap;
-    }
+    if( matrix < MBNG_PATCH_NUM_MATRIX_DOUT &&
+	row < MBNG_PATCH_NUM_MATRIX_ROWS_MAX ) {
 
-    u8 pattern = 2; // TODO: take from item
-    int range = max - min + 1;    
-    u32 scaled = (32*(value-min)) / range;
-    int pattern_ix;
-    if( scaled <= 15 )
-      pattern_ix = scaled;
-    else if( value == (range/2) ) {
-      pattern_ix = 16;
-    } else {
-      pattern_ix = scaled+1;
-    }
-    *led_pattern = ledring_pattern[pattern][pattern_ix];
+      if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
+	u8 pattern = (value >> 4) & 0x3;
+	u8 pattern_ix = value & 0x0f;
+	if( pattern_ix >= ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2) )
+	  ++pattern_ix; // 'M' entry not supported...
+	u8 center_led = value & 0x40;
+	*led_pattern = dout_matrix_pattern[pattern][pattern_ix] | (center_led ? (1 << 11) : 0);
+
+      } else if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	  item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
+	u8 pattern = item->flags.LED_MATRIX.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
+
+	int min = item->min;
+	int max = item->max;
+	if( min > max ) { // swap
+	  int swap = max;
+	  max = min;
+	  min = swap;
+	}
+
+	int range = max - min + 1;    
+	u32 scaled = ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)*(value-min)) / range;
+	int pattern_ix;
+	if( scaled <= 7 )
+	  pattern_ix = scaled;
+	else if( value == (range/2) ) {
+	  pattern_ix = (MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2;
+	} else {
+	  pattern_ix = scaled+1;
+	}
+	*led_pattern = dout_matrix_pattern[pattern][pattern_ix];
 #if 0
-    DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_pattern=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_pattern);
+	DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_pattern=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_pattern);
 #endif
+      }
+    }
   }
 
   // forward

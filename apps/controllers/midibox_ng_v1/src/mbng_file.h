@@ -16,7 +16,7 @@
 
 // for compatibility with DOSFS
 // TODO: change
-#define MAX_PATH 100
+#define MAX_PATH 50
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions

@@ -1,8 +1,8 @@
 # common NRPNs with different addresses and ranges
-EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=NRPN chn=1 nrpn=123   range=  0:1000                   ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
-EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2  type=NRPN chn=1 nrpn=10000 range=  10:20                    ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
-EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3  type=NRPN chn=1 nrpn=16383 range= 16320:16447 offset=-16384 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
-EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4  type=NRPN chn=2 nrpn=456   range= -20:20                    ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=NRPN chn=1 nrpn=123   range=  0:1000                 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2  type=NRPN chn=1 nrpn=10000 range=  10:20                  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3  type=NRPN chn=1 nrpn=16383 range= 8128:8255 offset=-8192  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4  type=NRPN chn=2 nrpn=456   range= -20:20                  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
 
 # MBCV2 MIDI channel (can be tested with Lemur panel)
 EVENT_ENC    id=  5  fwd_id=LED_MATRIX:5  type=NRPN chn=1 nrpn=16    range=   0:16  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"

@@ -32,61 +32,12 @@ s32 MBNG_DOUT_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-#if 0
   // set all DOUT pins depending on polarity
   int pin;
-  u8 pin_value = mbng_patch_cfg.flags.INVERSE_DOUT;
-  for(pin=0; pin<MBNG_PATCH_NUM_DOUT; ++pin)
+  u8 pin_value = 0; // mbng_patch_cfg.flags.INVERSE_DOUT; // TODO
+  for(pin=0; pin<8*MIOS32_SRIO_NUM_SR; ++pin)
     MIOS32_DOUT_PinSet(pin, pin_value);
-#endif
   
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function sets a DOUT pin with configured polarity (and mode)
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_DOUT_PinSet(u32 pin, u32 pin_value)
-{
-  if( pin >= MBNG_PATCH_NUM_DOUT )
-    return -1; // invalid pin
-
-#if 0
-  DEBUG_MSG("MBNG_DOUT_PinSet(%d, %d)\n", pin, pin_value);
-#endif
-
-#if 0
-  // DOUT assigned to program change?
-  if( mbng_patch_cfg.flags.ALT_PROGCHNG &&
-      ((mbng_patch_dout[pin].evnt0 >> 4) | 0x8) == ProgramChange ) {
-
-    if( !pin_value )
-      return 0; // ignore
-
-    // set pin
-    if( mbng_patch_cfg.flags.INVERSE_DOUT )
-      pin_value = pin_value ? 0 : 1;
-
-    MIOS32_DOUT_PinSet(pin, pin_value);
-
-    // search for DOUTs assigned to program change and same channel
-    int i;
-    mbng_patch_dout_entry_t *dout_cfg = (mbng_patch_dout_entry_t *)&mbng_patch_dout[0];
-    u8 search_event = mbng_patch_dout[pin].evnt0;
-    for(i=0; i<MBNG_PATCH_NUM_DOUT; ++i, ++dout_cfg) {
-      if( i != pin && dout_cfg->evnt0 == search_event )
-	MIOS32_DOUT_PinSet(i, mbng_patch_cfg.flags.INVERSE_DOUT ? 1 : 0);
-    }
-  } else {
-    if( mbng_patch_cfg.flags.INVERSE_DOUT )
-      pin_value = pin_value ? 0 : 1;
-
-    MIOS32_DOUT_PinSet(pin, pin_value);
-  }
-#endif
-
-
   return 0; // no error
 }
 
@@ -105,6 +56,13 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
   // print label
   MBNG_LCD_PrintItemLabel(item, value);
+
+  int range = item->max - item->min + 1;
+  if( range < 0 ) range *= -1;
+  u8 led_value = value >= (range/2);
+
+  // set LED
+  MIOS32_DOUT_PinSet(led_ix-1, led_value);
 
   return 0; // no error
 }

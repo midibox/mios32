@@ -33,6 +33,10 @@
 #include "mbng_file_c.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
+#include "mbng_dout.h"
+#include "mbng_din.h"
+#include "mbng_enc.h"
+#include "mbng_matrix.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -214,7 +218,7 @@ static u32 get_ip(char *brkt)
 // returns >= 0 if value is valid
 // returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 get_bin(char *word, int numBits)
+static s32 get_bin(char *word, int numBits, u8 reverse)
 {
   if( word == NULL )
     return -1;
@@ -223,7 +227,10 @@ static s32 get_bin(char *word, int numBits)
   int bit = 0;
   while( 1 ) {
     if( *word == '1' ) {
-      value |= 1 << bit;
+      if( reverse )
+	value |= 1 << (numBits-bit-1);
+      else
+	value |= 1 << bit;
     } else if( *word != '0' ) {
       break;
     }
@@ -386,7 +393,8 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseEvent(char *cmd, char *brkt)
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseEvent(char *cmd, char *brkt)
 {
   mbng_event_item_t item;
   char *event = (char *)&cmd[6]; // remove "EVENT_"
@@ -741,6 +749,41 @@ static s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enc_mode") == 0 ) {
+      mbng_event_enc_mode_t enc_mode = MBNG_EVENT_ItemEncModeFromStrGet(value_str);
+      if( enc_mode == MBNG_EVENT_ENC_MODE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid enc_mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.flags.ENC.enc_mode = enc_mode;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "led_matrix_pattern") == 0 ) {
+      mbng_event_led_matrix_pattern_t led_matrix_pattern = MBNG_EVENT_ItemLedMatrixPatternFromStrGet(value_str);
+      if( led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid led_matrix_pattern in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC &&
+		 (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_LED_MATRIX) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC/LED_MATRIX!\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.flags.ENC.led_matrix_pattern = led_matrix_pattern;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "offset") == 0 ) {
       int value;
       if( (value=get_dec(value_str)) < -16384 || value > 16383 ) {
@@ -755,7 +798,7 @@ static s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "ports") == 0 ) {
       int value;
-      if( (value=get_bin(value_str, 16)) < 0 || value > 0xffff ) {
+      if( (value=get_bin(value_str, 16, 0)) < 0 || value > 0xffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid port mask in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
@@ -863,7 +906,8 @@ static s32 parseEvent(char *cmd, char *brkt)
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseEnc(char *cmd, char *brkt)
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseEnc(char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -971,7 +1015,8 @@ static s32 parseEnc(char *cmd, char *brkt)
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseDinMatrix(char *cmd, char *brkt)
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseDinMatrix(char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1077,7 +1122,8 @@ static s32 parseDinMatrix(char *cmd, char *brkt)
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseDoutMatrix(char *cmd, char *brkt)
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseDoutMatrix(char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1098,9 +1144,9 @@ static s32 parseDoutMatrix(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
-      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DIN ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DOUT ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DIN);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DOUT matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT);
 #endif
 	return -1; // invalid parameter
       }
@@ -1223,11 +1269,82 @@ static s32 parseDoutMatrix(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses LED_MATRIX_PATTERN definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseLedMatrixPattern(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int pos = 0;
+  u16 pattern = 0x5555; // checkerboard to output anything by default
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DOUT pattern number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pos") == 0 ) {
+      if( value_str[0] != 'M' && ((pos=get_dec(value_str)) < 0 || pos > 15) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid pos value for %s n=%d ... %s=%s (only 0..15 and M allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      // modify pos ix:
+      if( value_str[0] == 'M' )
+	pos = 8;
+      else if( pos >= 8 )
+	pos += 1;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pattern") == 0 ) {
+      if( (pattern=get_bin(value_str, 16, 1)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid pattern for %s n=%d ... %s=%s (expecting 16 bits)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    MBNG_MATRIX_PatternSet(num-1, pos, pattern);
+
+    if( pos == 7 ) // pre-set "middle" pattern for the case that it won't be defined
+      MBNG_MATRIX_PatternSet(num-1, pos+1, pattern);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses ROUTER definitions
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseRouter(char *cmd, char *brkt)
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseRouter(char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1379,9 +1496,15 @@ s32 MBNG_FILE_C_Read(char *filename)
       char *parameter;
 
       if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
-
+	
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
+	} else if( strcmp(parameter, "RESET_HW") == 0 ) {
+	  MBNG_PATCH_Init(0);
+	  MBNG_MATRIX_Init(0);
+	  MBNG_ENC_Init(0);
+	  MBNG_DOUT_Init(0);
+	  MBNG_DIN_Init(0);
 	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
 	  if( !got_first_event_item ) {
 	    got_first_event_item = 1;
@@ -1394,6 +1517,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseDinMatrix(parameter, brkt);
 	} else if( strcmp(parameter, "DOUT_MATRIX") == 0 ) {
 	  parseDoutMatrix(parameter, brkt);
+	} else if( strcmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
+	  parseLedMatrixPattern(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
 
@@ -1409,6 +1534,10 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.all_notes_off_chn = value;
+	} else if( strcmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
+	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  if( value >= 0 )
+	    mbng_patch_cfg.convert_note_off_to_on0 = value;
 	} else if( strcmp(parameter, "ButtonGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
@@ -1421,14 +1550,14 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.enc_group_size = value;
-	} else if( strcmp(parameter, "MatrixDinGroupSize") == 0 ) {
+	} else if( strcmp(parameter, "MatrixButtonGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
-	    mbng_patch_cfg.matrix_din_group_size = value;
-	} else if( strcmp(parameter, "MatrixDoutGroupSize") == 0 ) {
+	    mbng_patch_cfg.matrix_button_group_size = value;
+	} else if( strcmp(parameter, "MatrixLedGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
-	    mbng_patch_cfg.matrix_dout_group_size = value;
+	    mbng_patch_cfg.matrix_led_group_size = value;
 	} else if( strcmp(parameter, "AinGroupSize") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
 	  if( value >= 0 )
@@ -1826,9 +1955,24 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }; break;
 
       case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+	if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	    item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+	  sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
+	  FLUSH_BUFFER;
+	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_ENC: {
+	if( item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	    item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+	  sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
+	  FLUSH_BUFFER;
+	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_AIN: {
@@ -1843,9 +1987,16 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_CONTROLLER_CV: {
       }; break;
       }
-      
 
-      sprintf(line_buffer, "  lcd_pos=%d:%d:%d label=\"%s\"\n", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1, item.label ? item.label : "");
+      sprintf(line_buffer, "  lcd_pos=%d:%d:%d", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1);
+      FLUSH_BUFFER;
+
+      if( item.label && strlen(item.label) ) {
+	sprintf(line_buffer, "  label=\"%s\"", item.label);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
     }
   }
@@ -1919,6 +2070,41 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      m->sr_dout_g2,
 	      m->sr_dout_b1,
 	      m->sr_dout_b2);
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# LED_MATRIX_PATTERN definitions\n");
+    FLUSH_BUFFER;
+
+    int n, pos;
+    for(n=0; n<MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS; ++n) {
+      for(pos=0; pos<MBNG_MATRIX_DOUT_NUM_PATTERN_POS; ++pos) {
+	sprintf(line_buffer, "LED_MATRIX_PATTERN n=%2d", n+1);
+	FLUSH_BUFFER;
+
+	if( pos == ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2) )
+	  sprintf(line_buffer, "  pos= M");
+	else
+	  sprintf(line_buffer, "  pos=%2d", (pos < ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2)) ? pos : (pos-1));
+	FLUSH_BUFFER;
+
+	{
+	  u16 pattern = MBNG_MATRIX_PatternGet(n, pos);
+	  char pattern_bin[17];
+	  int bit;
+	  for(bit=0; bit<16; ++bit) {
+	    pattern_bin[bit] = (pattern & (1 << (15-bit))) ? '1' : '0';
+	  }
+	  pattern_bin[16] = 0;
+
+	  sprintf(line_buffer, "  pattern=%s\n", pattern_bin);
+	  FLUSH_BUFFER;
+	}
+      }
+
+      sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
     }
   }
@@ -2007,15 +2193,17 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "AllNotesOffChannel %d\n", mbng_patch_cfg.all_notes_off_chn);
   FLUSH_BUFFER;
+  sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", mbng_patch_cfg.convert_note_off_to_on0);
+  FLUSH_BUFFER;
   sprintf(line_buffer, "ButtonGroupSize %d\n", mbng_patch_cfg.button_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "LedGroupSize %d\n", mbng_patch_cfg.led_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "EncGroupSize %d\n", mbng_patch_cfg.enc_group_size);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "MatrixDinGroupSize %d\n", mbng_patch_cfg.matrix_din_group_size);
+  sprintf(line_buffer, "MatrixButtonGroupSize %d\n", mbng_patch_cfg.matrix_button_group_size);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "MatrixDoutGroupSize %d\n", mbng_patch_cfg.matrix_dout_group_size);
+  sprintf(line_buffer, "MatrixLedGroupSize %d\n", mbng_patch_cfg.matrix_led_group_size);
   FLUSH_BUFFER;
   sprintf(line_buffer, "AinGroupSize %d\n", mbng_patch_cfg.ain_group_size);
   FLUSH_BUFFER;

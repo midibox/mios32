@@ -766,6 +766,16 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	    midio_patch_cfg.all_notes_off_chn = value;
 	  }
 
+	} else if( strcmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
+	  int value;
+	  if( (value=get_dec(brkt)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid format for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    midio_patch_cfg.convert_note_off_to_on0 = value;
+	  }
+
 	} else if( strcmp(parameter, "MidiFilePlayMode") == 0 ) {
 	  int value;
 	  if( (value=get_dec(brkt)) < 0 || SEQ_MidiPlayModeSet(value) < 0 ) {
@@ -1306,6 +1316,8 @@ static s32 MIDIO_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "GlobalChannel;%d\n", midio_patch_cfg.global_chn);
   FLUSH_BUFFER;
   sprintf(line_buffer, "AllNotesOffChannel;%d\n", midio_patch_cfg.all_notes_off_chn);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", midio_patch_cfg.convert_note_off_to_on0);
   FLUSH_BUFFER;
   sprintf(line_buffer, "MidiFilePlayMode;%d\n", SEQ_MidiPlayModeGet());
   FLUSH_BUFFER;

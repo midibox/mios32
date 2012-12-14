@@ -66,10 +66,21 @@ typedef enum {
   MBNG_EVENT_ENC_MODE_ABSOLUTE,
   MBNG_EVENT_ENC_MODE_40SPEED,
   MBNG_EVENT_ENC_MODE_00SPEED,
-  MBNG_EVENT_ENC_MODE_40_1,
-  MBNG_EVENT_ENC_MODE_00_1,
+  MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED,
+  MBNG_EVENT_ENC_MODE_INC41_DEC3F,
+  MBNG_EVENT_ENC_MODE_INC01_DEC7F,
+  MBNG_EVENT_ENC_MODE_INC01_DEC41,
   MBNG_EVENT_ENC_MODE_INC_DEC,
 } mbng_event_enc_mode_t;
+
+typedef enum {
+  MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED = 0,
+  MBNG_EVENT_LED_MATRIX_PATTERN_1,
+  MBNG_EVENT_LED_MATRIX_PATTERN_2,
+  MBNG_EVENT_LED_MATRIX_PATTERN_3,
+  MBNG_EVENT_LED_MATRIX_PATTERN_4,
+  MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO,
+} mbng_event_led_matrix_pattern_t;
 
 typedef enum {
   MBNG_EVENT_AIN_MODE_UNDEFINED = 0,
@@ -110,8 +121,8 @@ typedef enum {
   MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP,
   MBNG_EVENT_META_TYPE_SET_LED_GROUP,
   MBNG_EVENT_META_TYPE_SET_ENC_GROUP,
-  MBNG_EVENT_META_TYPE_SET_DIN_MATRIX_GROUP,
-  MBNG_EVENT_META_TYPE_SET_DOUT_MATRIX_GROUP,
+  MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP,
+  MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP,
   MBNG_EVENT_META_TYPE_SET_AIN_GROUP,
   MBNG_EVENT_META_TYPE_SET_AINSER_GROUP,
   MBNG_EVENT_META_TYPE_SET_MF_GROUP,
@@ -146,15 +157,17 @@ typedef union {
     u16 type:4;
     u16 inverse:1;
     u16 mapped:1;
-  } DIN_MATRIX;
+  } BUTTON_MATRIX;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t -- must be aligned with ENC!
     u16 inverse:1;
-  } DOUT_MATRIX;
+  } LED_MATRIX;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t -- must be aligned with LED_MATRIX!
     u16 enc_mode:4; // mbng_event_enc_mode_t
   } ENC;
 
@@ -224,6 +237,10 @@ extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
 extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
 extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
+extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item);
+extern mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode);
+extern const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item);
+extern mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *led_matrix_pattern);
 extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);
