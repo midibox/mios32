@@ -1822,7 +1822,14 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    sprintf(line_buffer, "# EVENT_* (event definitions)\n");
+    sprintf(line_buffer, "# Reset to default\n");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "RESET_HW\n");
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# EVENT_* (event definitions)\n");
     FLUSH_BUFFER;
 
     int num_items = MBNG_EVENT_PoolNumItemsGet();

@@ -1,3 +1,6 @@
+# Reset to default
+RESET_HW
+
 # EVENT_* (event definitions)
 EVENT_BUTTON id=  1  fwd_id=LED:1    type=NoteOn chn= 1 key= 36  range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
 EVENT_BUTTON id=  2  fwd_id=LED:2    type=NoteOn chn= 1 key= 37  range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
