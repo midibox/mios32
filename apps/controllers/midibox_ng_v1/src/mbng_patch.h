@@ -25,8 +25,8 @@
 #define MBNG_PATCH_NUM_DOUT        128
 #define MBNG_PATCH_NUM_ENC         128
 #define MBNG_PATCH_NUM_AIN           6
-#define MBNG_PATCH_NUM_AINSER      128
-#define MBNG_PATCH_NUM_MF           64
+#define MBNG_PATCH_NUM_AINSER_MODULES 2
+#define MBNG_PATCH_NUM_MF_MODULES    4
 #define MBNG_PATCH_NUM_MATRIX_DIN    8
 #define MBNG_PATCH_NUM_MATRIX_DOUT   8
 #define MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS 4
@@ -64,6 +64,40 @@ typedef struct {
   u8 sr_dout_b1;
   u8 sr_dout_b2;
 } mbng_patch_matrix_dout_entry_t;
+
+typedef union {
+  u8 ALL;
+  
+  struct {
+    u8 chn:4;
+    u8 enabled:1;
+  };
+} mbng_patch_mf_flags_t;
+
+typedef struct {
+  u16 ts_first_button_id;
+  u8 midi_in_port;
+  u8 midi_out_port;
+  u8 config_port;
+  mbng_patch_mf_flags_t flags;
+} mbng_patch_mf_entry_t;
+
+typedef struct {
+  u8 enable_mask;
+} mbng_patch_ain_entry_t;
+
+typedef union {
+  u8 ALL;
+  
+  struct {
+    u8 enabled:1;
+    u8 cs:1;
+  };
+} mbng_patch_ainser_flags_t;
+
+typedef struct {
+  mbng_patch_ainser_flags_t flags;
+} mbng_patch_ainser_entry_t;
 
 typedef struct {
   u16 first_n;
@@ -118,7 +152,14 @@ extern s32 MBNG_PATCH_BankCtrlIsActive(mbng_event_item_t *item);
 extern mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
 extern mbng_patch_matrix_dout_entry_t mbng_patch_matrix_dout[MBNG_PATCH_NUM_MATRIX_DOUT];
 
+extern mbng_patch_ain_entry_t mbng_patch_ain;
+
+extern mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES];
+
+extern mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
+
 extern mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
+
 extern mbng_patch_cfg_t mbng_patch_cfg;
 
 #endif /* _MBNG_PATCH_H */

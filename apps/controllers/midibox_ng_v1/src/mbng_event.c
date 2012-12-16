@@ -17,9 +17,9 @@
 
 #include <mios32.h>
 #include <string.h>
-#include <tasks.h>
 
 #include "app.h"
+#include "tasks.h"
 #include "mbng_event.h"
 #include "mbng_lcd.h"
 #include "mbng_din.h"
@@ -27,6 +27,7 @@
 #include "mbng_matrix.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
+#include "mbng_mf.h"
 #include "mbng_patch.h"
 
 
@@ -843,7 +844,9 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
       if( item->enabled_ports & mask ) {
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	MUTEX_MIDIOUT_TAKE;
 	MIOS32_MIDI_SendPackage(port, p);
+	MUTEX_MIDIOUT_GIVE;
       }
     }
     return 0; // no error
@@ -880,6 +883,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	if( mask & MBNG_EVENT_NRPN_SEND_PORTS_MASK ) {
 	  u8 port_ix = i - MBNG_EVENT_NRPN_SEND_PORTS_OFFSET;
 
+	  MUTEX_MIDIOUT_TAKE;
 	  if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_address == 0xffff
 	    p.cc_number = 0x63; // Address MSB
 	    p.value = nrpn_address_msb;
@@ -903,11 +907,14 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	    p.value = nrpn_value_lsb;
 	    MIOS32_MIDI_SendPackage(port, p);
 	  }
+	  MUTEX_MIDIOUT_GIVE;
 
 	  nrpn_sent_address[port_ix][p.chn] = nrpn_address;
 	  nrpn_sent_value[port_ix][p.chn] = nrpn_value;
 
 	} else {
+	  MUTEX_MIDIOUT_TAKE;
+
 	  p.cc_number = 0x63; // Address MSB
 	  p.value = nrpn_address_msb;
 	  MIOS32_MIDI_SendPackage(port, p);
@@ -923,6 +930,8 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	  p.cc_number = 0x26; // Data LSB
 	  p.value = nrpn_value_lsb;
 	  MIOS32_MIDI_SendPackage(port, p);
+
+	  MUTEX_MIDIOUT_GIVE;
 	}
       }
     }
@@ -978,7 +987,9 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	  if( item->enabled_ports & mask ) {
 	    // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	    mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	    MUTEX_MIDIOUT_TAKE;
 	    MIOS32_MIDI_SendSysEx(port, stream, len);
+	    MUTEX_MIDIOUT_GIVE;
 	  }
 	}
       }
@@ -1037,7 +1048,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   case MBNG_EVENT_CONTROLLER_ENC:           return MBNG_ENC_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_AIN:           return MBNG_AIN_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_AINSER:        return MBNG_AIN_NotifyReceivedValue_SER64(item, value);
-  case MBNG_EVENT_CONTROLLER_MF:            return -1; // TODO
+  case MBNG_EVENT_CONTROLLER_MF:            return MBNG_MF_NotifyReceivedValue(item, value);
   case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
 
   case MBNG_EVENT_CONTROLLER_SENDER: {
@@ -1135,8 +1146,8 @@ s32 MBNG_EVENT_Refresh(void)
     case MBNG_EVENT_CONTROLLER_ENC:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_ENC_NotifyRefresh(&item); break;
     case MBNG_EVENT_CONTROLLER_AIN:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh(&item); break;
     case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh_SER64(&item); break;
-#if 0
     case MBNG_EVENT_CONTROLLER_MF:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MF_NotifyRefresh(&item); break;
+#if 0
     case MBNG_EVENT_CONTROLLER_CV:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_CV_NotifyRefresh(&item); break;
 #endif
     }

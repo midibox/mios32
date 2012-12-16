@@ -7,7 +7,7 @@ LCD "%C@(1:1:1)READY."
 
 
 # BANKs
-BANK n= 1  button=1:128:1     led=1:128:1     enc=1:128:1     ain=1:6:1       ainser=1:128:1     mf=1:64:1    
+BANK n= 1  button=1:128:1     led=1:128:1     enc=1:128:1     ain=1:6:1       ainser=1:128:1     mf=1:32:1    
 
 
 # EVENTs
@@ -373,6 +373,22 @@ LED_MATRIX_PATTERN n= 4  pos=13  pattern=0000001111111110
 LED_MATRIX_PATTERN n= 4  pos=14  pattern=0000011111111111
 LED_MATRIX_PATTERN n= 4  pos=15  pattern=0000011111111111
 
+
+
+# AIN hardware
+AIN enable_mask=000000
+
+
+# AINSER hardware
+AINSER n=  1   enabled=1  cs=0
+AINSER n=  2   enabled=1  cs=1
+
+
+# MF hardware (has to be configured for Motormix protocol!)
+MF n=  1   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=  2   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=  3   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=  4   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
 
 
 # ROUTER definitions (Note: chn=0 disables, chn=17 selects all channels)

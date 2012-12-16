@@ -254,3 +254,32 @@ EVENT_LED_MATRIX   id= 8  type=CC  chn= 1 cc=0x37  led_matrix_pattern=LcAuto
 ENC n=  9   sr= 15 pins=0:1   type=non_detented
 
 EVENT_ENC    id= 9  type=CC  chn= 1 cc=0x3c  enc_mode=Inc00Speed_Dec40Speed
+
+
+################################################################################
+# Motorfaders
+################################################################################
+
+# we've a single MBHP_MF_NG module with 8 motorfaders
+# It has to be configured for Motormix protocol!
+MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3
+
+# on motorfader movements
+EVENT_MF  id= 1  fwd_id=MF:1  type=PitchBend  chn= 1  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 2  fwd_id=MF:2  type=PitchBend  chn= 2  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 3  fwd_id=MF:3  type=PitchBend  chn= 3  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 4  fwd_id=MF:4  type=PitchBend  chn= 4  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 5  fwd_id=MF:5  type=PitchBend  chn= 5  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 6  fwd_id=MF:6  type=PitchBend  chn= 6  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 7  fwd_id=MF:7  type=PitchBend  chn= 7  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 8  fwd_id=MF:8  type=PitchBend  chn= 8  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+
+# on touchsensor event (first id has been specified in the MF configuration above)
+EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127  lcd_pos=1:1:2  label="^std_btn"

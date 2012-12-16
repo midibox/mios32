@@ -39,6 +39,7 @@
 #include "mbng_enc.h"
 #include "mbng_ain.h"
 #include "mbng_matrix.h"
+#include "mbng_mf.h"
 
 // include source of the SCS
 #include <scs.h>
@@ -181,6 +182,7 @@ void APP_Init(void)
   MBNG_DIN_Init(0);
   MBNG_DOUT_Init(0);
   MBNG_ENC_Init(0);
+  MBNG_MF_Init(0);
   MBNG_AIN_Init(0);
   MBNG_MATRIX_Init(0);
   UIP_TASK_Init(0);
@@ -243,6 +245,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 #endif
   }
 
+  // -> Motorfader Handler
+  MBNG_MF_MIDI_NotifyPackage(port, midi_package);
+
   // -> MIDI Router
   MIDI_ROUTER_Receive(port, midi_package);
 
@@ -278,6 +283,9 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   else
     DEBUG_MSG("[PERF SYX:%02x] %5d.%d mS\n", midi_in, cycles/10, cycles%10);
 #endif
+
+  // -> MF handler
+  MBNG_MF_ReceiveSysEx(port, midi_in);
 
   // -> MIDI Router
   MIDI_ROUTER_ReceiveSysEx(port, midi_in);

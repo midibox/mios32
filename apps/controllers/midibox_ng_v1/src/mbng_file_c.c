@@ -247,6 +247,63 @@ static s32 get_bin(char *word, int numBits, u8 reverse)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses a MIDI IN port parameter
+// returns >= 0 if value is valid
+// returns < 0 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseMidiInPort(char *value_str)
+{
+  int in_port = 0xff;
+  int port_ix;
+  for(port_ix=0; port_ix<MIDI_PORT_InNumGet(); ++port_ix) {
+    // terminate port name at first space
+    char port_name[10];
+    strcpy(port_name, MIDI_PORT_InNameGet(port_ix));
+    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+    if( strcasecmp(value_str, port_name) == 0 ) {
+      in_port = MIDI_PORT_InPortGet(port_ix);
+      break;
+    }
+  }
+
+  if( in_port == 0xff && ((in_port=get_dec(value_str)) < 0 || in_port > 0xff) )
+      return -1; // invalid port
+
+  return in_port; // valid port
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a MIDI OUT port parameter
+// returns >= 0 if value is valid
+// returns < 0 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseMidiOutPort(char *value_str)
+{
+  int out_port = 0xff;
+  int port_ix;
+
+  for(port_ix=0; port_ix<MIDI_PORT_OutNumGet(); ++port_ix) {
+    // terminate port name at first space
+    char port_name[10];
+    strcpy(port_name, MIDI_PORT_OutNameGet(port_ix));
+    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+    
+    if( strcasecmp(value_str, port_name) == 0 ) {
+      out_port = MIDI_PORT_OutPortGet(port_ix);
+      break;
+    }
+  }
+
+  if( out_port == 0xff && ((out_port=get_dec(value_str)) < 0 || out_port > 0xff) )
+      return -1; // invalid port
+
+  return out_port; // valid port
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses a simple value definition, and outputs error message if invalid
 // returns >= 0 if value is valid
 // returns < 0 if value is invalid
@@ -264,6 +321,7 @@ static s32 parseSimpleValue(char *parameter, char **brkt, int min, int max)
 
   return value;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses a quoted string
@@ -1466,6 +1524,215 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses AIN definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseAin(char *cmd, char *brkt)
+{
+  // parse the parameters
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "enable_mask") == 0 ) {
+      int value;
+      if( (value=get_bin(value_str, 6, 0)) < 0 || value > 0x3f ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid enable mask in AIN ... %s=%s\n", parameter, value_str);
+#endif
+	return -1;
+      } else {
+	mbng_patch_ain.enable_mask = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses AINSER definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseAinSer(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int enabled = 1;
+  int cs = 0;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_AINSER_MODULES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid AINSER module number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enabled") == 0 ) {
+      if( (enabled=get_dec(value_str)) < 0 || enabled > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cs") == 0 ) {
+      if( (cs=get_dec(value_str)) < 0 || cs > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid CS line for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[num-1];
+    ainser->flags.enabled = enabled;
+    ainser->flags.cs = cs;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses MF definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseMf(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int enabled = 0;
+  int midi_in_port = 0x00;
+  int midi_out_port = 0x00;
+  int config_port = 0x00;
+  int chn = 0;
+  int ts_first_button_id = 0;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MF_MODULES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid MF module number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enabled") == 0 ) {
+      if( (enabled=get_dec(value_str)) < 0 || enabled > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "midi_in_port") == 0 ) {
+      if( (midi_in_port = parseMidiInPort(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid midi_in_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "midi_out_port") == 0 ) {
+      if( (midi_out_port = parseMidiOutPort(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid midi_out_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "config_port") == 0 ) {
+      if( (config_port = parseMidiInPort(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid config_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "chn") == 0 ) {
+      if( (chn=get_dec(value_str)) < 1 || chn > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid channel for %s n=%d ... %s=%s (1,,16)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+      --chn; // user counts from 1
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ts_first_button_id") == 0 ) {
+      if( (ts_first_button_id=get_dec(value_str)) < 0 || ts_first_button_id > 4095 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ts_first_button_id value for %s n=%d ... %s=%s (0..4095)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+      if( ts_first_button_id )
+	ts_first_button_id |= MBNG_EVENT_CONTROLLER_BUTTON;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[num-1];
+    mf->midi_in_port = midi_in_port;
+    mf->midi_out_port = midi_out_port;
+    mf->config_port = config_port;
+    mf->flags.enabled = enabled;
+    mf->flags.chn = chn;
+    mf->ts_first_button_id = ts_first_button_id;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses ROUTER definitions
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
@@ -1495,68 +1762,36 @@ s32 parseRouter(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "src_port") == 0 ) {
-      src_port = 0xff;
-      int port_ix;
-      for(port_ix=0; port_ix<MIDI_PORT_InNumGet(); ++port_ix) {
-	// terminate port name at first space
-	char port_name[10];
-	strcpy(port_name, MIDI_PORT_InNameGet(port_ix));
-	int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
-
-	if( strcasecmp(value_str, port_name) == 0 ) {
-	  src_port = MIDI_PORT_InPortGet(port_ix);
-	  break;
-	}
-      }
-
-      if( src_port == 0xff ) {
-	if( (src_port=get_dec(value_str)) < 0 || src_port > 0xff ) {
+      if( (src_port = parseMidiInPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
 #endif
-	  return -1; // invalid parameter
-	}
+	return -1; // invalid parameter
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "src_chn") == 0 ) {
       if( (src_chn=get_dec(value_str)) < 0 || src_chn > 17 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "dst_port") == 0 ) {
-      dst_port = 0xff;
-      int port_ix;
-      for(port_ix=0; port_ix<MIDI_PORT_OutNumGet(); ++port_ix) {
-	// terminate port name at first space
-	char port_name[10];
-	strcpy(port_name, MIDI_PORT_OutNameGet(port_ix));
-	int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
-
-	if( strcasecmp(value_str, port_name) == 0 ) {
-	  dst_port = MIDI_PORT_OutPortGet(port_ix);
-	  break;
-	}
-      }
-
-      if( dst_port == 0xff ) {
-	if( (dst_port=get_dec(value_str)) < 0 || dst_port > 0xff ) {
+      if( (dst_port = parseMidiOutPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
 #endif
-	  return -1; // invalid parameter
-	}
+	return -1; // invalid parameter
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "dst_chn") == 0 ) {
       if( (dst_chn=get_dec(value_str)) < 0 || dst_chn > 17 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1693,6 +1928,12 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseDoutMatrix(parameter, brkt);
 	} else if( strcmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
 	  parseLedMatrixPattern(parameter, brkt);
+	} else if( strcmp(parameter, "AIN") == 0 ) {
+	  parseAin(parameter, brkt);
+	} else if( strcmp(parameter, "AINSER") == 0 ) {
+	  parseAinSer(parameter, brkt);
+	} else if( strcmp(parameter, "MF") == 0 ) {
+	  parseMf(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
 
@@ -2077,7 +2318,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
       case MBNG_EVENT_TYPE_AFTERTOUCH:
       case MBNG_EVENT_TYPE_PITCHBEND: {
-	if( item.stream_size >= 2 ) {
+	if( item.stream_size >= 1 ) {
 	  sprintf(line_buffer, " chn=%2d", (item.stream[0] & 0xf)+1);
 	  FLUSH_BUFFER;
 	}
@@ -2316,6 +2557,78 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }
 
       sprintf(line_buffer, "\n");
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# AIN hardware\n");
+    FLUSH_BUFFER;
+
+    char enable_bin[7];
+    int bit;
+    for(bit=0; bit<6; ++bit) {
+      enable_bin[bit] = (mbng_patch_ain.enable_mask & (1 << bit)) ? '1' : '0';
+    }
+    enable_bin[6] = 0;
+
+    sprintf(line_buffer, "AIN enable_mask=%s\n", enable_bin);
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# AINSER hardware\n");
+    FLUSH_BUFFER;
+
+    int module;
+    mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
+    for(module=0; module<MBNG_PATCH_NUM_AINSER_MODULES; ++module, ++ainser) {
+      sprintf(line_buffer, "AINSER n=%3d   enabled=%d  cs=%d\n",
+	      module+1,
+	      ainser->flags.enabled,
+	      ainser->flags.cs);
+      FLUSH_BUFFER;
+    }
+
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# MF hardware (has to be configured for Motormix protocol!)\n");
+    FLUSH_BUFFER;
+
+    int module;
+    mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[0];
+    for(module=0; module<MBNG_PATCH_NUM_MF_MODULES; ++module, ++mf) {
+      u8 ix;
+      char midi_in_port_str[10];
+      if( (ix=MIDI_PORT_InIxGet(mf->midi_in_port)) > 0 ) {
+	strcpy(midi_in_port_str, MIDI_PORT_InNameGet(ix));
+      } else {
+	sprintf(midi_in_port_str, "0x%02x", mf->midi_in_port);
+      }
+
+      char midi_out_port_str[10];
+      if( (ix=MIDI_PORT_OutIxGet(mf->midi_out_port)) > 0 ) {
+	strcpy(midi_out_port_str, MIDI_PORT_OutNameGet(ix));
+      } else {
+	sprintf(midi_out_port_str, "0x%02x", mf->midi_out_port);
+      }
+
+      char config_port_str[10];
+      if( (ix=MIDI_PORT_InIxGet(mf->config_port)) > 0 ) {
+	strcpy(config_port_str, MIDI_PORT_InNameGet(ix));
+      } else {
+	sprintf(config_port_str, "0x%02x", mf->config_port);
+      }
+
+      sprintf(line_buffer, "MF n=%3d   enabled=%d  midi_in_port=%s  midi_out_port=%s  chn=%d  ts_first_button_id=%d  config_port=%s\n",
+	      module+1,
+	      mf->flags.enabled,
+	      midi_in_port_str,
+	      midi_out_port_str,
+	      mf->flags.chn+1,
+	      mf->ts_first_button_id & 0xfff,
+	      config_port_str);
       FLUSH_BUFFER;
     }
   }

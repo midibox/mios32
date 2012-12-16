@@ -28,7 +28,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 ain_value[MBNG_PATCH_NUM_AIN];
-static u16 ainser_value[MBNG_PATCH_NUM_AINSER];
+static u16 ainser_value[MBNG_PATCH_NUM_AINSER_MODULES*64];
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the AIN handler
@@ -42,7 +42,7 @@ s32 MBNG_AIN_Init(u32 mode)
   for(i=0; i<MBNG_PATCH_NUM_AIN; ++i)
     ain_value[i] = 0;
 
-  for(i=0; i<MBNG_PATCH_NUM_AINSER; ++i)
+  for(i=0; i<MBNG_PATCH_NUM_AINSER_MODULES*64; ++i)
     ainser_value[i] = 0;
 
   return 0; // no error
@@ -58,8 +58,8 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   if( pin >= MBNG_PATCH_NUM_AIN )
     return -1; // invalid pin
 
-  // tmp. as long as no AIN HW enable provided
-  return 0;
+  if( !(mbng_patch_ain.enable_mask & (1 << pin)) )
+    return 0; // not enabled
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", pin, pin_value);
@@ -88,11 +88,16 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
     ain_value[ain_ix] = value;
   // TODO: handle AIN modes
 
+  // send MIDI event
+  MBNG_EVENT_ItemSend(&item, value);
+
+  // forward
+  MBNG_EVENT_ItemForward(&item, value);
+
   // print label
   MBNG_LCD_PrintItemLabel(&item, value);
 
-  // send MIDI event
-  return MBNG_EVENT_ItemSend(&item, value);
+  return 0; // no error
 }
 
 
@@ -101,17 +106,31 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
 {
-  int mbng_pin = module*64 + pin;
-  if( mbng_pin >= MBNG_PATCH_NUM_AINSER )
-    return -1; // invalid pin
+  // actual module number based on CS config
+  u8 mapped_module = 0;
+  {
+    int i;
+    mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
+    for(i=0; i<MBNG_PATCH_NUM_AINSER_MODULES; ++i, ++ainser) {
+      if( ainser->flags.enabled && ainser->flags.cs == module )
+	break;
+    }
+
+    if( i >= MBNG_PATCH_NUM_AINSER_MODULES )
+      return -2; // module not mapped
+
+    mapped_module = i;
+  }
+
+  int mbng_pin = mapped_module*64 + pin;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AIN_NotifyChange_SER64(%d, %d, %d)\n", module, pin, pin_value);
+    DEBUG_MSG("MBNG_AIN_NotifyChange_SER64(%d, %d, %d)\n", mapped_module, mbng_pin, pin_value);
   }
 
   // get ID
-  mbng_event_item_id_t ainser_id = MBNG_EVENT_CONTROLLER_AINSER + pin + 1;
-  MBNG_PATCH_BankCtrlIdGet(pin, &ainser_id); // modifies id depending on bank selection
+  mbng_event_item_id_t ainser_id = MBNG_EVENT_CONTROLLER_AINSER + mbng_pin + 1;
+  MBNG_PATCH_BankCtrlIdGet(mbng_pin, &ainser_id); // modifies id depending on bank selection
   mbng_event_item_t item;
   if( MBNG_EVENT_ItemSearchById(ainser_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
@@ -132,11 +151,16 @@ s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
     ainser_value[ainser_ix] = value;
   // TODO: handle AIN modes
 
+  // send MIDI event
+  MBNG_EVENT_ItemSend(&item, value);
+
+  // forward
+  MBNG_EVENT_ItemForward(&item, value);
+
   // print label
   MBNG_LCD_PrintItemLabel(&item, value);
 
-  // send MIDI event
-  return MBNG_EVENT_ItemSend(&item, value);
+  return 0; // no error
 }
 
 
@@ -198,7 +222,7 @@ s32 MBNG_AIN_NotifyReceivedValue_SER64(mbng_event_item_t *item, u16 value)
   }
 
   // store new value
-  if( ainser_subid && ainser_subid <= MBNG_PATCH_NUM_AINSER )
+  if( ainser_subid && ainser_subid <= MBNG_PATCH_NUM_AINSER_MODULES*64 )
     ainser_value[ainser_subid-1] = value;
 
   // forward
@@ -221,7 +245,7 @@ s32 MBNG_AIN_NotifyRefresh_SER64(mbng_event_item_t *item)
     DEBUG_MSG("MBNG_AIN_NotifyRefresh_SER64(%d)\n", ainser_subid);
   }
 
-  if( ainser_subid && ainser_subid <= MBNG_PATCH_NUM_AINSER ) {
+  if( ainser_subid && ainser_subid <= MBNG_PATCH_NUM_AINSER_MODULES*64 ) {
     u16 value = ainser_value[ainser_subid-1];
     MBNG_AIN_NotifyReceivedValue_SER64(item, value);
   }
