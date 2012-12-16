@@ -6,23 +6,30 @@
 ################################################################################
 RESET_HW
 
+LCD "%C@(1:1:1)Blofeld Ctrl"
+
 
 ################################################################################
-# group sizes for ENC and AINSER
+# We provide 5 banks which are only used for encoders
 ################################################################################
-EncGroupSize 16
-AinSerGroupSize 64
+# Start ID/End ID/First HW Encoder
+BANK n=1  enc=1:16:1
+BANK n=2  enc=1:16:17
+BANK n=3  enc=1:16:33
+BANK n=4  enc=1:16:49
+BANK n=5  enc=1:16:65
+
 
 ################################################################################
 # Following buttons switch between the Encoder groups
 # For demonstration purposes, we also add a second meta event which switches the AINSER group (but AINSER not configured here...)
 # The selected group will be displayed at lcd_pos=1:1:1 (first LCD, X=1, Y=1)
 ################################################################################
-EVENT_BUTTON id=  1  type=Meta   meta=SetEncGroup:1  meta=SetAinSerGroup:1  lcd_pos=1:1:1 label="**** OSC1 Group ****"
-EVENT_BUTTON id=  2  type=Meta   meta=SetEncGroup:2  meta=SetAinSerGroup:1  lcd_pos=1:1:1 label="**** OSC2 Group ****"
-EVENT_BUTTON id=  3  type=Meta   meta=SetEncGroup:3  meta=SetAinSerGroup:1  lcd_pos=1:1:1 label="**** OSC3 Group ****"
-EVENT_BUTTON id=  4  type=Meta   meta=SetEncGroup:4  meta=SetAinSerGroup:1  lcd_pos=1:1:1 label="**** FIL1 Group ****"
-EVENT_BUTTON id=  5  type=Meta   meta=SetEncGroup:5  meta=SetAinSerGroup:2  lcd_pos=1:1:1 label="**** FIL2 Group ****"
+EVENT_BUTTON id=  1  type=Meta   meta=SetBank button_mode=OnOnly range=1:1  lcd_pos=1:1:1 label="**** OSC1 Bank  ****"
+EVENT_BUTTON id=  2  type=Meta   meta=SetBank button_mode=OnOnly range=2:2  lcd_pos=1:1:1 label="**** OSC2 Bank  ****"
+EVENT_BUTTON id=  3  type=Meta   meta=SetBank button_mode=OnOnly range=3:3  lcd_pos=1:1:1 label="**** OSC3 Bank  ****"
+EVENT_BUTTON id=  4  type=Meta   meta=SetBank button_mode=OnOnly range=4:4  lcd_pos=1:1:1 label="**** FIL1 Bank  ****"
+EVENT_BUTTON id=  5  type=Meta   meta=SetBank button_mode=OnOnly range=5:5  lcd_pos=1:1:1 label="**** FIL2 Bank  ****"
 
 
 ################################################################################

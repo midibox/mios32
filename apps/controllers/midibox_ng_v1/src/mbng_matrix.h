@@ -41,7 +41,9 @@ extern s32 MBNG_MATRIX_GetRow(void);
 extern s32 MBNG_MATRIX_ButtonHandler(void);
 
 extern s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_MATRIX_DIN_NotifyRefresh(mbng_event_item_t *item);
 extern s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_MATRIX_DOUT_NotifyRefresh(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

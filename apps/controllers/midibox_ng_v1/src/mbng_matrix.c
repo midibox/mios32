@@ -96,7 +96,7 @@ static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS
     0x000f, // [ 5] b'0000000000001111'
     0x000f, // [ 6] b'0000000000001111'
     0x001f, // [ 7] b'0000000000011111'
-    0x003f, // [ 8] b'0000000000111111' // taken when mid value has been selected
+    0x083f, // [ 8] b'0000100000111111' // taken when mid value has been selected
     0x007f, // [ 9] b'0000000001111111'
     0x00ff, // [10] b'0000000011111111'
     0x00ff, // [11] b'0000000011111111'
@@ -117,7 +117,7 @@ static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS
     0x0038, // [ 5] b'0000000000111000'
     0x0030, // [ 6] b'0000000000110000'
     0x0020, // [ 7] b'0000000000100000'
-    0x0070, // [ 8] b'0000000001110000' // taken when mid value has been selected
+    0x0870, // [ 8] b'0000100001110000' // taken when mid value has been selected
     0x0020, // [ 9] b'0000000000100000'
     0x0060, // [10] b'0000000001100000'
     0x0060, // [11] b'0000000001100000'
@@ -138,7 +138,7 @@ static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS
     0x0008, // [ 5] b'0000000000001000'
     0x0010, // [ 6] b'0000000000010000'
     0x0020, // [ 7] b'0000000000100000'
-    0x0070, // [ 8] b'0000000001110000' // taken when mid value has been selected
+    0x0870, // [ 8] b'0000100001110000' // taken when mid value has been selected
     0x0020, // [ 9] b'0000000000100000'
     0x0040, // [10] b'0000000001000000'
     0x0080, // [11] b'0000000010000000'
@@ -159,7 +159,7 @@ static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS
     0x00f8, // [ 5] b'0000000011111000'
     0x00f8, // [ 6] b'0000000011111000'
     0x00f8, // [ 7] b'0000000011111000'
-    0x01fc, // [ 8] b'0000000111111100' // taken when mid value has been selected
+    0x09fc, // [ 8] b'0000100111111100' // taken when mid value has been selected
     0x01fc, // [ 9] b'0000000111111100'
     0x01fc, // [10] b'0000000111111100'
     0x01fc, // [11] b'0000000111111100'
@@ -467,6 +467,7 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
   return 0; // no error
 }
 
+
 /////////////////////////////////////////////////////////////////////////////
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
@@ -481,6 +482,30 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_Refresh() to refresh the controller
+// (mainly to trigger the forward item)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DIN_NotifyRefresh(mbng_event_item_t *item)
+{
+  int button_matrix_subid = item->id & 0xfff;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyRefresh(%d)\n", button_matrix_subid);
+  }
+
+  if( button_matrix_subid ) {
+#if 0
+    u16 value = 0;
+    MBNG_MATRIX_DIN_NotifyReceivedValue(item, value);
+#endif
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
@@ -499,8 +524,8 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 #endif
 
   if( item->flags.LED_MATRIX.led_matrix_pattern ) {
-    int row = (led_matrix_ix-1) % mbng_patch_cfg.matrix_led_group_size;
-    int matrix = (led_matrix_ix-1) / mbng_patch_cfg.matrix_led_group_size;
+    int row = (led_matrix_ix-1); // % mbng_patch_cfg.enc_group_size;
+    int matrix = 0; // (led_matrix_ix-1); // / mbng_patch_cfg.enc_group_size;
     u8 color = 0; // TODO...
     u16 *led_pattern = (u16 *)&led_row[matrix][row][color];
 
@@ -547,6 +572,29 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
   // forward
   MBNG_EVENT_ItemForward(item, value);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_Refresh() to refresh the controller
+// (mainly to trigger the forward item)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_NotifyRefresh(mbng_event_item_t *item)
+{
+  int led_matrix_subid = item->id & 0xfff;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyRefresh(%d)\n", led_matrix_subid);
+  }
+
+  if( led_matrix_subid ) {
+#if 0
+    u16 value = 0; // TODO
+    MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value);
+#endif
+  }
 
   return 0; // no error
 }

@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include <midi_port.h>
 #include <midi_router.h>
 #include <seq_bpm.h>
 
@@ -37,6 +38,7 @@
 #include "mbng_din.h"
 #include "mbng_enc.h"
 #include "mbng_matrix.h"
+#include "mbng_lcd.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -401,10 +403,6 @@ s32 parseEvent(char *cmd, char *brkt)
 
   MBNG_EVENT_ItemInit(&item, MBNG_EVENT_ItemIdFromControllerStrGet(event));
 
-  // extra: if button, invert it by default to avoid confusion if inverted=1 not set (DINs are low-active)
-  if( item.id == MBNG_EVENT_CONTROLLER_BUTTON || item.id == MBNG_EVENT_CONTROLLER_BUTTON_MATRIX )
-      item.flags.DIN.inverse = 1;
-
 #define STREAM_MAX_SIZE 128
   u8 stream[STREAM_MAX_SIZE];
   item.stream = stream;
@@ -432,25 +430,13 @@ s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "id") == 0 ) {
       int id;
-      if( (id=get_dec(value_str)) < 0 || id > 0xfff ) {
+      if( (id=get_dec(value_str)) < 1 || id > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ID in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
 #endif
 	return -1;
       } else {
 	item.id = (item.id & 0xf000) | id;
-      }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "id") == 0 ) {
-      int value;
-      if( (value=get_dec(value_str)) < 0 || value > 0xfff ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ID in EVENT_%s ... %s=%s\n", event, parameter, value_str);
-#endif
-	return -1;
-      } else {
-	item.id = (item.id & 0xf000) | value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -666,10 +652,8 @@ s32 parseEvent(char *cmd, char *brkt)
       int value = 0;
       if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (value=get_dec(values_str)) < 0 || value > 255 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: missing or invalid meta value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
-#endif
-	return -1;
+	// ignore - we allow meta events without values
+	value = 0;
       }
 
       int entry = item.stream_size / 2;
@@ -902,6 +886,127 @@ s32 parseEvent(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses BANK definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 parseBankCtrl(char *values_str, mbng_patch_bank_ctrl_t *ctrl)
+{
+  const char *separator_colon = ":";
+  char *brkt_local;
+  char *value_str;
+
+  if( !(value_str = strtok_r(values_str, separator_colon, &brkt_local)) )
+    return -1;
+  if( (ctrl->first_n = get_dec(value_str)) < 1 )
+    return -2;
+
+  if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) )
+    return -3;
+  if( (ctrl->num = get_dec(value_str)) < 1 )
+    return -4;
+
+  if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) )
+    return -5;
+  if( (ctrl->first_id = get_dec(value_str)) < 1 || ctrl->first_id >= 4095 )
+    return -6;
+
+  return 0; // no error
+}
+
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseBank(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  mbng_patch_bank_entry_t bank_entry;
+  MBNG_PATCH_BankEntryInit(&bank_entry, 0);
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_BANKS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid bank number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_BANKS);
+#endif
+	return -1; // invalid parameter
+      }
+      bank_entry.valid = 1;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "button") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.button) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid button spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.button.first_id |= MBNG_EVENT_CONTROLLER_BUTTON;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "led") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.led) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid led spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.led.first_id |= MBNG_EVENT_CONTROLLER_LED;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enc") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.enc) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enc spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.enc.first_id |= MBNG_EVENT_CONTROLLER_ENC;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.ain) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ain spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.ain.first_id |= MBNG_EVENT_CONTROLLER_AIN;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ainser") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.ainser) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ainser spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.ainser.first_id |= MBNG_EVENT_CONTROLLER_AINSER;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "mf") == 0 ) {
+      if( parseBankCtrl(value_str, &bank_entry.mf) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid mf spec for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+      }
+      bank_entry.mf.first_id |= MBNG_EVENT_CONTROLLER_MF;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( bank_entry.valid ) {
+    memcpy((u8 *)&mbng_patch_bank[num-1], (u8 *)&bank_entry, sizeof(mbng_patch_bank_entry_t));
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses ENC definitions
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
@@ -1022,6 +1127,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
   int num = 0;
   int rows = 0;
   int inverted = 0;
+  int button_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
   int sr_din1 = 0;
@@ -1054,6 +1160,15 @@ s32 parseDinMatrix(char *cmd, char *brkt)
       if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "button_emu_id_offset") == 0 ) {
+      if( (button_emu_id_offset=get_dec(value_str)) < 0 || button_emu_id_offset >= 4095 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ID offset for %s n=%d ... %s=%s (1..4095 allowed)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1107,6 +1222,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[num-1];
     m->num_rows = rows;
     m->inverted = inverted;
+    m->button_emu_id_offset = button_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
     m->sr_din1 = sr_din1;
@@ -1129,6 +1245,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
   int num = 0;
   int rows = 0;
   int inverted = 0;
+  int led_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
   int sr_dout_r1 = 0;
@@ -1165,6 +1282,15 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
       if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "led_emu_id_offset") == 0 ) {
+      if( (led_emu_id_offset=get_dec(value_str)) < 0 || led_emu_id_offset >= 4095 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid offset for %s n=%d ... %s=%s (1..4095 allowed)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1254,6 +1380,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[num-1];
     m->num_rows = rows;
     m->inverted = inverted;
+    m->led_emu_id_offset = led_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
     m->sr_dout_r1 = sr_dout_r1;
@@ -1368,11 +1495,27 @@ s32 parseRouter(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "src_port") == 0 ) {
-      if( (src_port=get_dec(value_str)) < 0 || src_port > 0xff ) {
+      src_port = 0xff;
+      int port_ix;
+      for(port_ix=0; port_ix<MIDI_PORT_InNumGet(); ++port_ix) {
+	// terminate port name at first space
+	char port_name[10];
+	strcpy(port_name, MIDI_PORT_InNameGet(port_ix));
+	int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+	if( strcasecmp(value_str, port_name) == 0 ) {
+	  src_port = MIDI_PORT_InPortGet(port_ix);
+	  break;
+	}
+      }
+
+      if( src_port == 0xff ) {
+	if( (src_port=get_dec(value_str)) < 0 || src_port > 0xff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
 #endif
-	return -1; // invalid parameter
+	  return -1; // invalid parameter
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1386,11 +1529,27 @@ s32 parseRouter(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "dst_port") == 0 ) {
-      if( (dst_port=get_dec(value_str)) < 0 || dst_port > 0xff ) {
+      dst_port = 0xff;
+      int port_ix;
+      for(port_ix=0; port_ix<MIDI_PORT_OutNumGet(); ++port_ix) {
+	// terminate port name at first space
+	char port_name[10];
+	strcpy(port_name, MIDI_PORT_OutNameGet(port_ix));
+	int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+
+	if( strcasecmp(value_str, port_name) == 0 ) {
+	  dst_port = MIDI_PORT_OutPortGet(port_ix);
+	  break;
+	}
+      }
+
+      if( dst_port == 0xff ) {
+	if( (dst_port=get_dec(value_str)) < 0 || dst_port > 0xff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
 #endif
-	return -1; // invalid parameter
+	  return -1; // invalid parameter
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1505,6 +1664,21 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  MBNG_ENC_Init(0);
 	  MBNG_DOUT_Init(0);
 	  MBNG_DIN_Init(0);
+	} else if( strcmp(parameter, "LCD") == 0 ) {
+	  char *str = brkt;
+	  if( !(str=remove_quotes(str)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C] ERROR: missing string after LCD message!\n");
+#endif
+	  } else {
+	    // print from a dummy item
+	    mbng_event_item_t item;
+	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+	    item.label = str;
+	    MBNG_LCD_PrintItemLabel(&item, 0x0000);
+	  }
+	} else if( strcmp(parameter, "BANK") == 0 ) {
+	  parseBank(parameter, brkt);
 	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
 	  if( !got_first_event_item ) {
 	    got_first_event_item = 1;
@@ -1538,38 +1712,6 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.convert_note_off_to_on0 = value;
-	} else if( strcmp(parameter, "ButtonGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.button_group_size = value;
-	} else if( strcmp(parameter, "LedGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.led_group_size = value;
-	} else if( strcmp(parameter, "EncGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.enc_group_size = value;
-	} else if( strcmp(parameter, "ButtonMatrixGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.matrix_button_group_size = value;
-	} else if( strcmp(parameter, "LedMatrixGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.matrix_led_group_size = value;
-	} else if( strcmp(parameter, "AinGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.ain_group_size = value;
-	} else if( strcmp(parameter, "AinSerGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.ainser_group_size = value;
-	} else if( strcmp(parameter, "MfGroupSize") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.mf_group_size = value;
 	} else if( strcmp(parameter, "SysExDev") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
 	  if( value >= 0 )
@@ -1829,7 +1971,69 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# EVENT_* (event definitions)\n");
+    sprintf(line_buffer, "\n\n# LCD message after load\n");
+    FLUSH_BUFFER;
+    sprintf(line_buffer, "LCD \"%%C@(1:1:1)READY.\"\n");
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# BANKs\n");
+    FLUSH_BUFFER;
+
+    int bank;
+    mbng_patch_bank_entry_t *b = (mbng_patch_bank_entry_t *)&mbng_patch_bank[0];
+    for(bank=0; bank<MBNG_PATCH_NUM_BANKS; ++bank, ++b) {
+      if( b->valid ) {
+	char str[20];
+
+	sprintf(line_buffer, "BANK n=%2d", bank+1);
+	FLUSH_BUFFER;
+
+	if( b->button.num ) {
+	  sprintf(str, "%d:%d:%d", b->button.first_n, b->button.num, b->button.first_id & 0xfff);
+	  sprintf(line_buffer, "  button=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	if( b->led.num ) {
+	  sprintf(str, "%d:%d:%d", b->led.first_n, b->led.num, b->led.first_id & 0xfff);
+	  sprintf(line_buffer, "  led=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	if( b->enc.num ) {
+	  sprintf(str, "%d:%d:%d", b->enc.first_n, b->enc.num, b->enc.first_id & 0xfff);
+	  sprintf(line_buffer, "  enc=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	if( b->ain.num ) {
+	  sprintf(str, "%d:%d:%d", b->ain.first_n, b->ain.num, b->ain.first_id & 0xfff);
+	  sprintf(line_buffer, "  ain=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	if( b->ainser.num ) {
+	  sprintf(str, "%d:%d:%d", b->ainser.first_n, b->ainser.num, b->ainser.first_id & 0xfff);
+	  sprintf(line_buffer, "  ainser=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	if( b->mf.num ) {
+	  sprintf(str, "%d:%d:%d", b->mf.first_n, b->mf.num, b->mf.first_id & 0xfff);
+	  sprintf(line_buffer, "  mf=%-10s", str);
+	  FLUSH_BUFFER;
+	}
+
+	sprintf(line_buffer, "\n");
+	FLUSH_BUFFER;
+      }
+    }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# EVENTs\n");
     FLUSH_BUFFER;
 
     int num_items = MBNG_EVENT_PoolNumItemsGet();
@@ -2009,7 +2213,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# ENC (encoder definitions)\n");
+    sprintf(line_buffer, "\n\n# ENC hardware \n");
     FLUSH_BUFFER;
 
     int enc;
@@ -2038,7 +2242,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# DIN_MATRIX definitions\n");
+    sprintf(line_buffer, "\n\n# DIN_MATRIX hardware\n");
     FLUSH_BUFFER;
 
     int matrix;
@@ -2058,7 +2262,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# DOUT_MATRIX definitions\n");
+    sprintf(line_buffer, "\n\n# DOUT_MATRIX hardware\n");
     FLUSH_BUFFER;
 
     int matrix;
@@ -2082,7 +2286,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# LED_MATRIX_PATTERN definitions\n");
+    sprintf(line_buffer, "\n\n# LED_MATRIX_PATTERNs\n");
     FLUSH_BUFFER;
 
     int n, pos;
@@ -2123,11 +2327,27 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     int node;
     midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
     for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-      sprintf(line_buffer, "ROUTER n=%2d   src_port=0x%02x  src_chn=%2d   dst_port=0x%02x  dst_chn=%2d\n",
+      char src_port_str[10];
+      u8 src_ix;
+      if( (src_ix=MIDI_PORT_InIxGet(n->src_port)) > 0 ) {
+	strcpy(src_port_str, MIDI_PORT_InNameGet(src_ix));
+      } else {
+	sprintf(src_port_str, "0x%02x", n->src_port);
+      }
+
+      char dst_port_str[10];
+      u8 dst_ix;
+      if( (dst_ix=MIDI_PORT_OutIxGet(n->dst_port)) > 0 ) {
+	strcpy(dst_port_str, MIDI_PORT_OutNameGet(dst_ix));
+      } else {
+	sprintf(dst_port_str, "0x%02x", n->dst_port);
+      }
+
+      sprintf(line_buffer, "ROUTER n=%2d   src_port=%s  src_chn=%2d   dst_port=%s  dst_chn=%2d\n",
 	      node+1,
-	      n->src_port,
+	      src_port_str,
 	      n->src_chn,
-	      n->dst_port,
+	      dst_port_str,
 	      n->dst_chn);
       FLUSH_BUFFER;
     }
@@ -2202,22 +2422,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", mbng_patch_cfg.convert_note_off_to_on0);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "ButtonGroupSize %d\n", mbng_patch_cfg.button_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "LedGroupSize %d\n", mbng_patch_cfg.led_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "EncGroupSize %d\n", mbng_patch_cfg.enc_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "ButtonMatrixGroupSize %d\n", mbng_patch_cfg.matrix_button_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "LedMatrixGroupSize %d\n", mbng_patch_cfg.matrix_led_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "AinGroupSize %d\n", mbng_patch_cfg.ain_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "AinSerGroupSize %d\n", mbng_patch_cfg.ainser_group_size);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "MfGroupSize %d\n", mbng_patch_cfg.mf_group_size);
-  FLUSH_BUFFER;
   sprintf(line_buffer, "SysExDev %d\n", mbng_patch_cfg.sysex_dev);
   FLUSH_BUFFER;
   sprintf(line_buffer, "SysExPat %d\n", mbng_patch_cfg.sysex_pat);
@@ -2227,10 +2431,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "SysExIns %d\n", mbng_patch_cfg.sysex_ins);
   FLUSH_BUFFER;
   sprintf(line_buffer, "SysExChn %d\n", mbng_patch_cfg.sysex_chn);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "BPM_Preset %d\n", (int)SEQ_BPM_Get());
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "BPM_Mode %d\n", SEQ_BPM_ModeGet());
   FLUSH_BUFFER;
 
   return status;

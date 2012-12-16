@@ -32,8 +32,7 @@
 
 extern s32 MBNG_DOUT_Init(u32 mode);
 extern s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
-
-extern s32 MBNG_DOUT_UpdatePolarity(u8 old_polarity, u8 new_polarity);
+extern s32 MBNG_DOUT_NotifyRefresh(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

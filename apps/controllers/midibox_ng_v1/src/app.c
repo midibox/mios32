@@ -23,6 +23,8 @@
 #include "app.h"
 #include "tasks.h"
 
+#include <buflcd.h>
+
 #include <ainser.h>
 #include <midi_port.h>
 #include <midi_router.h>
@@ -366,13 +368,27 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
-  MIOS32_LCD_Clear();
+  static u8 isInMainPage = 0;
+
+  SCS_DisplayUpdateInMainPage(0);
 
   while( 1 ) {
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // call SCS handler
     SCS_Tick();
+
+    // LCD output in mainpage
+    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+      u8 force = isInMainPage == 0;
+      if( force ) // page change
+	MBNG_LCD_SpecialCharsReInit();
+
+      BUFLCD_Update(force);
+      isInMainPage = 1; // static reminder
+    } else {
+      isInMainPage = 0; // static reminder
+    }
 
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
@@ -455,6 +471,9 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
 	    }
 	  }
+
+	  // select first bank
+	  MBNG_PATCH_BankSet(0);
 
 	  portEXIT_CRITICAL();
 	}

@@ -1,3 +1,5 @@
+LCD "%C@(1:1:1)Forwarding Test"
+
 ###################################################################################################################
 # A button should send/receive a note, and forward the state to LED id=1
 EVENT_BUTTON id=  1  fwd_id=LED:1  type=NoteOn chn=1 key=36  range=  0:127 ports=1000100000001000  lcd_pos=1:1:1 label="Button%3i:   %e"

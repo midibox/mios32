@@ -118,14 +118,9 @@ typedef enum {
 
 typedef enum {
   MBNG_EVENT_META_TYPE_UNDEFINED = 0,
-  MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP,
-  MBNG_EVENT_META_TYPE_SET_LED_GROUP,
-  MBNG_EVENT_META_TYPE_SET_ENC_GROUP,
-  MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP,
-  MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP,
-  MBNG_EVENT_META_TYPE_SET_AIN_GROUP,
-  MBNG_EVENT_META_TYPE_SET_AINSER_GROUP,
-  MBNG_EVENT_META_TYPE_SET_MF_GROUP,
+  MBNG_EVENT_META_TYPE_SET_BANK,
+  MBNG_EVENT_META_TYPE_INC_BANK,
+  MBNG_EVENT_META_TYPE_DEC_BANK,
 } mbng_event_meta_type_t;
 
 
@@ -142,27 +137,23 @@ typedef union {
 
   struct {
     u16 type:4;
-    u16 inverse:1;
     u16 button_mode:2; // mbng_event_button_mode_t
     u16 radio_group:8;
   } DIN;
 
   struct {
     u16 type:4;
-    u16 inverse:1;
     u16 radio_group:8;
   } DOUT;
 
   struct {
     u16 type:4;
-    u16 inverse:1;
     u16 mapped:1;
   } BUTTON_MATRIX;
 
   struct {
     u16 type:4;
     u16 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t -- must be aligned with ENC!
-    u16 inverse:1;
   } LED_MATRIX;
 
   struct {
@@ -220,6 +211,7 @@ extern s32 MBNG_EVENT_Tick(void);
 
 extern s32 MBNG_EVENT_PoolClear(void);
 extern s32 MBNG_EVENT_PoolPrint(void);
+extern s32 MBNG_EVENT_PoolItemsPrint(void);
 
 extern s32 MBNG_EVENT_PoolNumItemsGet(void);
 extern s32 MBNG_EVENT_PoolSizeGet(void);
@@ -251,6 +243,8 @@ extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value);
+
+extern s32 MBNG_EVENT_Refresh(void);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);

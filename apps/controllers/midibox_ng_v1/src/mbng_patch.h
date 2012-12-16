@@ -14,19 +14,24 @@
 #ifndef _MBNG_PATCH_H
 #define _MBNG_PATCH_H
 
+#include "mbng_event.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
 // temporary - will be changed with second (or enhanced) SRIO chain
 #define MBNG_PATCH_NUM_DIN         128
-#define MBNG_PATCH_NUM_ENC         128
 #define MBNG_PATCH_NUM_DOUT        128
+#define MBNG_PATCH_NUM_ENC         128
 #define MBNG_PATCH_NUM_AIN           6
 #define MBNG_PATCH_NUM_AINSER      128
+#define MBNG_PATCH_NUM_MF           64
 #define MBNG_PATCH_NUM_MATRIX_DIN    8
 #define MBNG_PATCH_NUM_MATRIX_DOUT   8
 #define MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS 4
+
+#define MBNG_PATCH_NUM_BANKS        16
 
 #define MBNG_PATCH_NUM_MATRIX_ROWS_MAX   16
 #define MBNG_PATCH_NUM_MATRIX_COLORS_MAX  3
@@ -37,6 +42,7 @@
 
 
 typedef struct {
+  u16 button_emu_id_offset;
   u8 num_rows;
   u8 inverted;
   u8 sr_dout_sel1;
@@ -46,6 +52,7 @@ typedef struct {
 } mbng_patch_matrix_din_entry_t;
 
 typedef struct {
+  u16 led_emu_id_offset;
   u8 num_rows;
   u8 inverted;
   u8 sr_dout_sel1;
@@ -59,18 +66,26 @@ typedef struct {
 } mbng_patch_matrix_dout_entry_t;
 
 typedef struct {
+  u16 first_n;
+  u16 num;
+  u16 first_id;
+} mbng_patch_bank_ctrl_t;
+
+typedef struct {
+  mbng_patch_bank_ctrl_t button;
+  mbng_patch_bank_ctrl_t led;
+  mbng_patch_bank_ctrl_t enc;
+  mbng_patch_bank_ctrl_t ain;
+  mbng_patch_bank_ctrl_t ainser;
+  mbng_patch_bank_ctrl_t mf;
+  u8 valid;
+} mbng_patch_bank_entry_t;
+
+typedef struct {
   u8 debounce_ctr;
   u8 global_chn;
   u8 all_notes_off_chn;
   u8 convert_note_off_to_on0;
-  u8 button_group_size;
-  u8 led_group_size;
-  u8 enc_group_size;
-  u8 matrix_button_group_size;
-  u8 matrix_led_group_size;
-  u8 ain_group_size;
-  u8 ainser_group_size;
-  u8 mf_group_size;
   u8 sysex_dev;
   u8 sysex_pat;
   u8 sysex_bnk;
@@ -87,6 +102,14 @@ extern s32 MBNG_PATCH_Init(u32 mode);
 extern s32 MBNG_PATCH_Load(char *filename);
 extern s32 MBNG_PATCH_Store(char *filename);
 
+extern s32 MBNG_PATCH_BankEntryInit(mbng_patch_bank_entry_t *b, u8 valid);
+extern s32 MBNG_PATCH_BankSet(u8 new_bank);
+extern s32 MBNG_PATCH_BankGet(void);
+extern s32 MBNG_PATCH_NumBanksGet(void);
+extern s32 MBNG_PATCH_BankCtrlIdGet(u32 ix, mbng_event_item_id_t* id);
+extern s32 MBNG_PATCH_BankCtrlInBank(mbng_event_item_t *item);
+extern s32 MBNG_PATCH_BankCtrlIsActive(mbng_event_item_t *item);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
@@ -95,6 +118,7 @@ extern s32 MBNG_PATCH_Store(char *filename);
 extern mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
 extern mbng_patch_matrix_dout_entry_t mbng_patch_matrix_dout[MBNG_PATCH_NUM_MATRIX_DOUT];
 
+extern mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
 extern mbng_patch_cfg_t mbng_patch_cfg;
 
 #endif /* _MBNG_PATCH_H */

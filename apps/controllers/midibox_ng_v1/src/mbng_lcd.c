@@ -22,12 +22,13 @@
 #include <mios32.h>
 #include <string.h>
 #include <buflcd.h>
+#include <glcd_font.h>
 
 #include "app.h"
 #include "mbng_lcd.h"
 #include "mbng_file_l.h"
 #include "mbng_event.h"
-
+#include "mbng_patch.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
@@ -94,9 +95,18 @@ s32 MBNG_LCD_Init(u32 mode)
     return -1; // only mode 0 supported
 
   // init buffered LCD output
-  BUFLCD_Init(0);
+  BUFLCD_Init(1); // without clear - we want to initialize the layout first
+
+  // LCD layout
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    // TODO
+  } else {
+    BUFLCD_ColumnsPerDeviceSet(40);
+    BUFLCD_NumLinesSet(2);
+  }
 
   first_msg = 0; // message will disappear with first item
+  BUFLCD_Clear();
   BUFLCD_CursorSet(0, 0);
   BUFLCD_PrintString("Welcome to");
   BUFLCD_CursorSet(0, 1);
@@ -130,6 +140,10 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 #if DEBUG_PRINT_ITEM_PERFORMANCE
   MIOS32_STOPWATCH_Reset();
 #endif
+
+  // GLCD: always start with normal font
+  BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  u8 current_font = 'n';
 
   if( !first_msg ) {
     first_msg = 1;
@@ -179,6 +193,48 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	if( label_str != NULL ) {
 	  recursive_str = str;
 	  str = label_str;
+	}
+      }
+    }
+
+    if( *str == '&' ) {
+      switch( *(++str) ) {
+      case '&': BUFLCD_PrintChar('&'); break;
+      case 'n': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL); break;
+      case 's': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_SMALL); break;
+      case 'b': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_BIG); break;
+      case 'k': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); break;
+      case 'h': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); break;
+      case 'v': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); break;
+      default:
+	current_font = 'n';
+	BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	BUFLCD_PrintChar('&');
+	BUFLCD_PrintChar(*str);
+      }
+      ++str;
+    }
+
+    if( *str == '@' ) {
+      if( str[1] == '@' )
+	++str; // print single @
+      else if( str[1] == '(' ) {
+	// new LCD pos
+	char *pos_str = (char *)(str + 2);
+	char *next;
+	long lcd_num;
+	long lcd_x;
+	long lcd_y;
+
+	if( (lcd_num = strtol(pos_str, &next, 0)) && lcd_num >= 1 && pos_str != next && next[0] == ':' ) {
+	  pos_str = (char *)(next + 1);
+	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
+	    pos_str = (char *)(next + 1);
+	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
+	      BUFLCD_CursorSet(lcd_x-1, lcd_y-1);	  
+	      str = (char *)&next[1];
+	    }
+	  }
 	}
       }
     }
@@ -259,11 +315,29 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  case 'B': { // vertical bar
 	    *format_type = 'c';
 	    int range = max - min + 1;
-	    char bar = ((8 * item_value) / range); // between 0..7
-	    // 0x08 ensures that string won't be terminated.. common CLCDs will output the special char of 0 instead
-	    if( bar == 0 )
-	      bar = 0x08;
-	    BUFLCD_PrintFormattedString(format, bar);
+
+	    u8 num_icons = 8; // for CLCD and GLCD default fonts
+	    u8 icon_offset = 0;
+	    if( current_font == 'k' ) {
+	      num_icons = 11;
+	      icon_offset = 1;
+	    } else if( current_font == 'h' ) {
+	      num_icons = 14;
+	    } else if( current_font == 'v' ) {
+	      num_icons = 14;
+	    }
+
+	    char bar = icon_offset + ((num_icons * item_value) / range);
+	    BUFLCD_PrintChar(bar);
+	  } break;
+
+	  case 'q': { // selected bank
+	    *format_type = 'd';
+	    BUFLCD_PrintFormattedString(format, MBNG_PATCH_BankGet() + 1);
+	  } break;
+
+	  case 'C': { // clear screens
+	    BUFLCD_Clear();
 	  } break;
 
 	  default:

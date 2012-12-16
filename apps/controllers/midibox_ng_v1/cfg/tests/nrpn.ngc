@@ -1,3 +1,5 @@
+LCD "%C@(1:1:1)NRPN Test"
+
 # common NRPNs with different addresses and ranges
 EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=NRPN chn=1 nrpn=123   range=  0:1000                 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
 EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2  type=NRPN chn=1 nrpn=10000 range=  10:20                  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
