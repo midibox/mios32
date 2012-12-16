@@ -114,6 +114,7 @@
 
 static scs_menu_state_t scsMenuState;
 static u8 displayUpdateReq;    // using single variable for atomic access
+static u8 displayUpdateInMainPage; // optionally disables SCS_LCD handling in mainpage (e.g. used in MBNG to use BUFLCD driver in main page)
 static u8 displayInitReq;      // using single variable for atomic access
 static u16 displayCursorCtr;
 static u16 displayFlickerSelectionCtr;
@@ -149,7 +150,6 @@ static u16 scsPinStatePrev;
 #if SCS_BUTTON_DEBOUNCE_RELOAD
 static u8 scsButtonDebounceCtr;
 #endif
-
 
 static scs_menu_page_t *rootTable;
 static u8 rootTableNumItems;
@@ -197,6 +197,7 @@ s32 SCS_Init(u32 mode)
   scsMenuState = SCS_MENU_STATE_MAINPAGE;
 
   displayUpdateReq = 1;
+  displayUpdateInMainPage = 1;
   displayInitReq = 1;
   displayCursorCtr = 0;
   displayFlickerSelectionCtr = 0;
@@ -958,6 +959,8 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_Tick(void)
 {
+  static u8 isInMainPage = 1;
+
   ///////////////////////////////////////////////////////////////////////////
   // check for pin changes
   // only relevant if buttons are directly connected to core (LPC17: via J10)
@@ -1015,13 +1018,27 @@ s32 SCS_Tick(void)
   // handle LCD
   ///////////////////////////////////////////////////////////////////////////
 
+  u8 forceUpdate = 0;
+  if( !displayUpdateInMainPage ) {
+    if( scsMenuState == SCS_MENU_STATE_MAINPAGE ) {
+      isInMainPage = 1; // static reminder
+      return 0; // no LCD update
+    }
+    if( isInMainPage ) {
+      isInMainPage = 0;
+      forceUpdate = 1;
+      SCS_LCD_SpecialCharsReInit();
+    }
+  }
+
+
   if( displayInitReq ) {
     displayInitReq = 0;
     displayUpdateReq = 1;
     SCS_LCD_Clear();
   }
 
-  if( displayUpdateReq ) {
+  if( displayUpdateReq || forceUpdate ) {
     displayUpdateReq = 0;
 
     // call optional display hook for overruling
@@ -1430,7 +1447,7 @@ s32 SCS_Tick(void)
   }
 
   // transfer display changes to LCD if necessary (no force)
-  SCS_LCD_Update(0);
+  SCS_LCD_Update(forceUpdate);
 
   return 0; // no error
 }
@@ -1510,6 +1527,18 @@ s32 SCS_InstallButtonHook(s32 (*buttonFunct)(u8 scsButton, u8 depressed))
 s32 SCS_DisplayUpdateRequest(void)
 {
   displayUpdateReq = 1;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Enables/Disables LCD output when SCS is in SCS_MENU_STATE_MAINPAGE
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_DisplayUpdateInMainPage(u8 enable)
+{
+  displayUpdateInMainPage = enable;
 
   return 0; // no error
 }

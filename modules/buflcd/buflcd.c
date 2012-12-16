@@ -42,6 +42,10 @@
 #include <stdarg.h>
 #include <string.h>
 
+#if BUFLCD_SUPPORT_GLCD_FONTS
+#include <glcd_font.h>
+#endif
+
 #include "buflcd.h"
 
 
@@ -57,6 +61,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 lcd_buffer[BUFLCD_MAX_LINES][BUFLCD_MAX_COLUMNS];
+#if BUFLCD_SUPPORT_GLCD_FONTS
+static u8 lcd_buffer_font[BUFLCD_MAX_LINES][BUFLCD_MAX_COLUMNS];
+#endif
 
 static u16 lcd_cursor_x;
 static u8 lcd_cursor_y;
@@ -74,19 +81,24 @@ static u8 buflcd_max_lines;
 static u8 buflcd_offset_x;
 static u8 buflcd_offset_y;
 
+#if BUFLCD_SUPPORT_GLCD_FONTS
+// current selected font
+static u8 lcd_current_font;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //! Display Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_Init(u32 mode)
 {
-  BUFLCD_Clear();
-
   buflcd_num_devices = BUFLCD_NUM_DEVICES;
   buflcd_columns_per_device = BUFLCD_COLUMNS_PER_DEVICE;
   buflcd_max_lines = BUFLCD_MAX_LINES;
   buflcd_offset_x = 0;
   buflcd_offset_y = 0;
+
+  if( !mode )
+    BUFLCD_Clear();
 
   return 0; // no error
 }
@@ -214,16 +226,48 @@ s32 BUFLCD_BufferGet(char *str, u8 line, u8 len)
 s32 BUFLCD_Clear(void)
 {
   int i;
-  
+
   u8 *ptr = (u8 *)lcd_buffer;
   for(i=0; i<BUFLCD_MAX_LINES*BUFLCD_MAX_COLUMNS; ++i)
     *ptr++ = ' ';
+
+#if BUFLCD_SUPPORT_GLCD_FONTS
+  u8 *font_ptr = (u8 *)lcd_buffer_font;
+  for(i=0; i<BUFLCD_MAX_LINES*BUFLCD_MAX_COLUMNS; ++i)
+    *font_ptr++ = 'n';
+  lcd_current_font = 0; // force switch to new font
+#endif
 
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+//! selects a font for GLCD (only works with BUFLCD_SUPPORT_GLCD_FONTS)
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_FontInit(u8 *font)
+{
+#if !BUFLCD_SUPPORT_GLCD_FONTS
+  return -1; // not supported
+#else
+
+  if     ( font == GLCD_FONT_NORMAL )        lcd_current_font = 'n';
+  else if( font == GLCD_FONT_BIG )           lcd_current_font = 'b';
+  else if( font == GLCD_FONT_SMALL )         lcd_current_font = 's';
+  else if( font == GLCD_FONT_KNOB_ICONS )    lcd_current_font = 'k';
+  else if( font == GLCD_FONT_METER_ICONS_H ) lcd_current_font = 'h';
+  else if( font == GLCD_FONT_METER_ICONS_V ) lcd_current_font = 'v';
+  else {
+    lcd_current_font = 'n';
+    return -2; // unsupported font
+  }
+
+  return 0; // no error
+#endif
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! prints char into buffer and increments cursor
@@ -233,9 +277,19 @@ s32 BUFLCD_PrintChar(char c)
   if( lcd_cursor_y >= BUFLCD_MAX_LINES || lcd_cursor_x >= BUFLCD_MAX_COLUMNS )
     return -1; // invalid cursor range
 
-  u8 *ptr = &lcd_buffer[lcd_cursor_y][lcd_cursor_x++];
+  u8 *ptr = &lcd_buffer[lcd_cursor_y][lcd_cursor_x];
   if( (*ptr & 0x7f) != c )
-      *ptr = c;
+    *ptr = c;
+
+#if BUFLCD_SUPPORT_GLCD_FONTS
+  u8 *font_ptr = &lcd_buffer_font[lcd_cursor_y][lcd_cursor_x];
+  if( *font_ptr != lcd_current_font ) {
+    *font_ptr = lcd_current_font;
+    *ptr &= 0x7f; // new font: ensure that character will be updated
+  }
+#endif
+
+  ++lcd_cursor_x;
 
   return 0; // no error
 }
@@ -267,6 +321,9 @@ s32 BUFLCD_Update(u8 force)
   int phys_y = buflcd_offset_y;
   for(y=0; y<buflcd_max_lines; ++y, ++phys_y) {
     u8 *ptr = (u8 *)lcd_buffer[y];
+#if BUFLCD_SUPPORT_GLCD_FONTS
+    u8 *font_ptr = (u8 *)lcd_buffer_font[y];
+#endif
     int phys_x = buflcd_offset_x;
     for(x=0; x<(buflcd_num_devices*buflcd_columns_per_device); ++x, ++phys_x) {
 
@@ -275,10 +332,43 @@ s32 BUFLCD_Update(u8 force)
 	break;
 
       if( force || !(*ptr & 0x80) ) {
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	u8 *glcd_font = NULL;
+	switch( *font_ptr ) {
+	case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
+	case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+	case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
+	case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
+	case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
+	default: // and 'n'
+	  glcd_font = (u8 *)GLCD_FONT_NORMAL;
+	}
+
+	MIOS32_LCD_FontInit(glcd_font);
+#endif
+
 	if( x != next_x || y != next_y ) {
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	  // temporary use pseudo-font to ensure that Y is handled equaly for all fonts
+	  u8 pseudo_font[4];
+	  // just to ensure...
+#if MIOS32_LCD_FONT_WIDTH_IX != 0 || MIOS32_LCD_FONT_HEIGHT_IX != 1 || MIOS32_LCD_FONT_X0_IX != 2 || MIOS32_LCD_FONT_OFFSET_IX != 3
+# error "Please adapt this part for new LCD Font parameter positions!"
+#endif
+	  pseudo_font[MIOS32_LCD_FONT_WIDTH_IX] = glcd_font[MIOS32_LCD_FONT_WIDTH_IX];
+	  pseudo_font[MIOS32_LCD_FONT_HEIGHT_IX] = 1*8; // forced!
+	  pseudo_font[MIOS32_LCD_FONT_X0_IX] = glcd_font[MIOS32_LCD_FONT_X0_IX];
+	  pseudo_font[MIOS32_LCD_FONT_OFFSET_IX] = glcd_font[MIOS32_LCD_FONT_OFFSET_IX];
+	  MIOS32_LCD_FontInit((u8 *)&pseudo_font);
+#endif
 	  MIOS32_LCD_DeviceSet(device);
 	  MIOS32_LCD_CursorSet(phys_x % buflcd_columns_per_device, phys_y);
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	  // switch back to original font
+	  MIOS32_LCD_FontInit(glcd_font);
+#endif
 	}
+
 	MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
 	MIOS32_IRQ_Disable(); // must be atomic
@@ -293,6 +383,9 @@ s32 BUFLCD_Update(u8 force)
 	  next_x = -1;
       }
       ++ptr;
+#if BUFLCD_SUPPORT_GLCD_FONTS
+      ++font_ptr;
+#endif
     }
   }
 

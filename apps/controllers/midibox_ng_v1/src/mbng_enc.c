@@ -28,7 +28,6 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 enc_group;
 static u16 enc_value[MBNG_PATCH_NUM_ENC];
 
 /////////////////////////////////////////////////////////////////////////////
@@ -38,8 +37,6 @@ s32 MBNG_ENC_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
-
-  enc_group = 0;
 
   int i;
   for(i=0; i<MBNG_PATCH_NUM_ENC; ++i)
@@ -54,22 +51,7 @@ s32 MBNG_ENC_Init(u32 mode)
     enc_config.cfg.speed_par = 0;
     MIOS32_ENC_ConfigSet(i, enc_config);
   }
-  
-  return 0; // no error
-}
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Get/Set the selected encoder group
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_ENC_GroupGet(void)
-{
-  return enc_group;
-}
-
-s32 MBNG_ENC_GroupSet(u8 new_group)
-{
-  enc_group = new_group;
   return 0; // no error
 }
 
@@ -122,12 +104,13 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
   }
 
-  // search for ENC
-  int enc_ix = enc_group * mbng_patch_cfg.enc_group_size + encoder;
+  // get ID
+  mbng_event_item_id_t enc_id = MBNG_EVENT_CONTROLLER_ENC + encoder + 1;
+  MBNG_PATCH_BankCtrlIdGet(encoder, &enc_id); // modifies id depending on bank selection
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_ENC + enc_ix + 1, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(enc_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to ENC_IX %d\n", enc_ix);
+      DEBUG_MSG("No event assigned to ENC id=%d\n", enc_id & 0xfff);
     }
     return -2; // no event assigned
   }
@@ -181,7 +164,11 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     break;
 
   default: // MBNG_EVENT_ENC_MODE_ABSOLUTE
-    MBNG_ENC_AutoSpeed(enc_ix, &item);
+    MBNG_ENC_AutoSpeed(encoder, &item);
+
+    int enc_ix = (enc_id & 0xfff) - 1;
+    if( enc_ix < 0 || enc_ix > MBNG_PATCH_NUM_ENC )
+      return 0; // no value storage
 
     value = enc_value[enc_ix] + incrementer;
     if( value < item.min )
@@ -214,22 +201,39 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 {
-  int enc_ix = item->id & 0xfff;
+  int enc_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_ix, value);
+    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_subid, value);
   }
 
-  if( enc_ix && enc_ix < MBNG_PATCH_NUM_ENC )
-    enc_value[enc_ix-1] = value;
+  // store new value
+  if( enc_subid && enc_subid <= MBNG_PATCH_NUM_ENC )
+    enc_value[enc_subid-1] = value;
 
   // forward
-  if( item->fwd_id ) {
-    u16 item_id_lower = (item->id & 0xfff) - 1;
-    if( item_id_lower >= enc_group*mbng_patch_cfg.enc_group_size &&
-	item_id_lower < (enc_group+1)*mbng_patch_cfg.enc_group_size ) {
-      MBNG_EVENT_ItemForward(item, value);
-    }
+  if( item->fwd_id && (!MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item)) )
+    MBNG_EVENT_ItemForward(item, value);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_Refresh() to refresh the controller
+// (mainly to trigger the forward item)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_ENC_NotifyRefresh(mbng_event_item_t *item)
+{
+  int enc_subid = item->id & 0xfff;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_ENC_NotifyRefresh(%d)\n", enc_subid);
+  }
+
+  if( enc_subid && enc_subid <= MBNG_PATCH_NUM_ENC ) {
+    u16 value = enc_value[enc_subid-1];
+    MBNG_ENC_NotifyReceivedValue(item, value);
   }
 
   return 0; // no error

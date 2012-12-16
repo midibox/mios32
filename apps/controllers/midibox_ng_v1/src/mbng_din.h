@@ -33,6 +33,7 @@
 extern s32 MBNG_DIN_Init(u32 mode);
 extern s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value);
 extern s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_DIN_NotifyRefresh(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

@@ -244,6 +244,15 @@ s32 APP_LCD_Data(u8 data)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+
+    // due to historical reasons currently only one device provided, it's spreaded over multiple CS lines
+    if( mios32_lcd_device != 0 )
+      return -1;
+
+    // abort if max. width reached
+    if( mios32_lcd_x >= mios32_lcd_parameters.width )
+      return -1;
+
     // determine chip select line(s)
     APP_LCD_KS0108_SetCS(0); // select display depending on current X position
 
@@ -363,6 +372,11 @@ s32 APP_LCD_Cmd(u8 cmd)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+
+    // due to historical reasons currently only one device provided, it's spreaded over multiple CS lines
+    if( mios32_lcd_device != 0 )
+      return -1;
+
     // determine chip select line(s)
     APP_LCD_KS0108_SetCS(0); // select display depending on current X position
 
@@ -764,13 +778,13 @@ static void APP_LCD_KS0108_SetCS(u8 all)
   if( all ) {
     // set all chip select lines
     for(cs=0; cs<4; ++cs)
-      MIOS32_BOARD_J28_PinSet(cs+8, level_active);
+      MIOS32_BOARD_J28_PinSet(cs, level_active);
   } else {
     // set only one chip select line depending on X pos   
     u8 sel_cs = (mios32_lcd_x >> 6) & 0x3;
 
     for(cs=0; cs<4; ++cs)
-      MIOS32_BOARD_J28_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
+      MIOS32_BOARD_J28_PinSet(cs, (cs == sel_cs) ? level_active : level_nonactive);
   }
 #else
 # warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"

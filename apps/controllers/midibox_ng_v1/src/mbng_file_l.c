@@ -867,14 +867,19 @@ static s32 MBNG_FILE_L_Write_Hlp(u8 write_to_file)
   strcpy(line_buffer, "LABEL std_enc  \"ENC #%3i    %3d%B\"\n\n");
   FLUSH_BUFFER;
 
+  strcpy(line_buffer, "# Standard label for pots connected to AIN pins:\n");
+  FLUSH_BUFFER;
+  strcpy(line_buffer, "LABEL std_ain  \"AIN #%3i    %3d%B\"\n\n");
+  FLUSH_BUFFER;
+
   strcpy(line_buffer, "# Standard label for pots connected to AINSER module:\n");
   FLUSH_BUFFER;
   strcpy(line_buffer, "LABEL std_aser \"AINSER #%3i %3d%B\"\n\n");
   FLUSH_BUFFER;
 
-  strcpy(line_buffer, "# Standard label for pots connected to AIN pins:\n");
+  strcpy(line_buffer, "# Standard label for motorfaders:\n");
   FLUSH_BUFFER;
-  strcpy(line_buffer, "LABEL std_ain  \"AIN #%3i    %3d%B\"\n\n");
+  strcpy(line_buffer, "LABEL std_mf   \"MF #%3i     %3d%B\"\n\n");
   FLUSH_BUFFER;
 
   return status;
@@ -1050,6 +1055,8 @@ const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
     return "AINSER #%3i %3d%B";
   if( strcmp(label, "std_ain") == 0 )
     return "AIN #%3i    %3d%B";
+  if( strcmp(label, "std_mf") == 0 )
+    return "MF #%3i     %3d%B";
 
   return NULL; // label not found
 }

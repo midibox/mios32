@@ -231,6 +231,7 @@ extern s32 SCS_InstallEncHook(s32 (*encFunct)(s32 incrementer));
 extern s32 SCS_InstallButtonHook(s32 (*buttonFunct)(u8 scsButton, u8 depressed));
 
 extern s32 SCS_DisplayUpdateRequest(void);
+extern s32 SCS_DisplayUpdateInMainPage(u8 enable);
 
 extern scs_menu_state_t SCS_MenuStateGet(void);
 extern scs_menu_item_t *SCS_MenuPageGet(void);

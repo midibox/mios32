@@ -32,13 +32,11 @@
 
 extern s32 MBNG_ENC_Init(u32 mode);
 
-extern s32 MBNG_ENC_GroupGet(void);
-extern s32 MBNG_ENC_GroupSet(u8 new_group);
-
 extern s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item);
 
 extern s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer);
 extern s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_ENC_NotifyRefresh(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

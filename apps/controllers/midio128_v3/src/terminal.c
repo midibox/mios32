@@ -200,7 +200,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
-      out("  show:                             shows the current configuration file");
+      out("  show file:                        shows the current configuration file");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -266,7 +266,15 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	}
       }
     } else if( strcmp(parameter, "show") == 0 ) {
-      MIDIO_FILE_P_Debug();
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("ERROR: please specify the item which should be displayed!");
+      } else {
+	if( strcmp(parameter, "file") == 0 )
+	  MIDIO_FILE_P_Debug();
+	else {
+	  out("ERROR: invalid item which should be showed - see help for available items!");
+	}
+      }
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {

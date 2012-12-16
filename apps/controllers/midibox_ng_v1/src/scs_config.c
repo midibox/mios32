@@ -408,16 +408,7 @@ static s32 displayHook(char *line1, char *line2)
   }
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-
-    // special handling for MBNG: take over string from BUFLCD!
-    if( line1[0] == 0 ) { // no MSD overlay?
-      BUFLCD_BufferGet(line1, 0, SCS_LCD_MAX_COLUMNS);
-    }
-    BUFLCD_BufferGet(line2, 1, SCS_LCD_MAX_COLUMNS);
-
-    // request fast refresh
-    SCS_DisplayUpdateRequest();
-
+    // overlayed by BUFLCD_Buffer() in app.c!
     return 1;
   }
 

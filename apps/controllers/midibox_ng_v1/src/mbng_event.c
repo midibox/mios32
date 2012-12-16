@@ -96,6 +96,13 @@ static u16 nrpn_sent_value[MBNG_EVENT_NRPN_SEND_PORTS][MBNG_EVENT_NRPN_SEND_CHAN
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_event_item_t *item);
+static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_item_t* pool_item);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This function initializes the event pool structure
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Init(u32 mode)
@@ -150,7 +157,6 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     MBNG_EVENT_ItemAdd(&item);
   }
-  item.flags.DIN.inverse = 0;
 
   // Encoders
   for(i=1; i<=64; ++i) {
@@ -263,6 +269,26 @@ s32 MBNG_EVENT_PoolPrint(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Sends short item informations to debug terminal
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_PoolItemsPrint(void)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    mbng_event_item_t item;
+    MBNG_EVENT_ItemCopy2User(pool_item, &item);
+    MBNG_EVENT_ItemPrint(&item);
+
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // returns the current pool size
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolNumItemsGet(void)
@@ -316,7 +342,6 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 
   case MBNG_EVENT_CONTROLLER_BUTTON: {
     item->flags.DIN.button_mode = MBNG_EVENT_BUTTON_MODE_ON_OFF;
-    item->flags.DIN.inverse = 1;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED: {
@@ -326,9 +351,11 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+    item->flags.LED_MATRIX.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
+    item->flags.ENC.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
     item->flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
   }; break;
 
@@ -746,14 +773,9 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 {
   mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+1))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
   switch( meta_type ) {
-  case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:        return "SetButtonGroup";
-  case MBNG_EVENT_META_TYPE_SET_LED_GROUP:           return "SetLedGroup";
-  case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:           return "SetEncGroup";
-  case MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP: return "SetButtonMatrixGroup";
-  case MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP:    return "SetLedMatrixGroup";
-  case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:           return "SetAinGroup";
-  case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:        return "SetAinSerGroup";
-  case MBNG_EVENT_META_TYPE_SET_MF_GROUP:            return "SetMfGroup";
+  case MBNG_EVENT_META_TYPE_SET_BANK:            return "SetBank";
+  case MBNG_EVENT_META_TYPE_INC_BANK:            return "IncBank";
+  case MBNG_EVENT_META_TYPE_DEC_BANK:            return "DecBank";
   }
 
   return "Undefined";
@@ -761,14 +783,9 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 
 mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 {
-  if( strcasecmp(meta_type, "SetButtonGroup") == 0 )       return MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP;
-  if( strcasecmp(meta_type, "SetLedGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_LED_GROUP;
-  if( strcasecmp(meta_type, "SetEncGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_ENC_GROUP;
-  if( strcasecmp(meta_type, "SetButtonMatrixGroup") == 0 ) return MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP;
-  if( strcasecmp(meta_type, "SetLedMatrixGroup") == 0 )    return MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP;
-  if( strcasecmp(meta_type, "SetAinGroup") == 0 )          return MBNG_EVENT_META_TYPE_SET_AIN_GROUP;
-  if( strcasecmp(meta_type, "SetAinSerGroup") == 0 )       return MBNG_EVENT_META_TYPE_SET_AINSER_GROUP;
-  if( strcasecmp(meta_type, "SetMfGroup") == 0 )           return MBNG_EVENT_META_TYPE_SET_MF_GROUP;
+  if( strcasecmp(meta_type, "SetBank") == 0 )       return MBNG_EVENT_META_TYPE_SET_BANK;
+  if( strcasecmp(meta_type, "IncBank") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK;
+  if( strcasecmp(meta_type, "DecBank") == 0 )       return MBNG_EVENT_META_TYPE_DEC_BANK;
   return MBNG_EVENT_META_TYPE_UNDEFINED;
 }
 
@@ -975,14 +992,23 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
       mbng_event_meta_type_t meta_type = item->stream[i+0];
       u8 meta_value = item->stream[i+1];
       switch( meta_type ) {
-      case MBNG_EVENT_META_TYPE_SET_BUTTON_GROUP:        break;
-      case MBNG_EVENT_META_TYPE_SET_LED_GROUP:           break;
-      case MBNG_EVENT_META_TYPE_SET_ENC_GROUP:           MBNG_ENC_GroupSet(meta_value-1); break;
-      case MBNG_EVENT_META_TYPE_SET_BUTTON_MATRIX_GROUP: break;
-      case MBNG_EVENT_META_TYPE_SET_LED_MATRIX_GROUP:    break;
-      case MBNG_EVENT_META_TYPE_SET_AIN_GROUP:           break;
-      case MBNG_EVENT_META_TYPE_SET_AINSER_GROUP:        break;
-      case MBNG_EVENT_META_TYPE_SET_MF_GROUP:            break;
+      case MBNG_EVENT_META_TYPE_SET_BANK: {
+	if( value ) {
+	  MBNG_PATCH_BankSet(value-1); // user counts from 1, internally we are counting from 0
+	}
+      } break;
+
+      case MBNG_EVENT_META_TYPE_INC_BANK: {
+	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
+	if( bank < MBNG_PATCH_NumBanksGet() )
+	  MBNG_PATCH_BankSet(bank-1 + 1);
+      } break;
+
+      case MBNG_EVENT_META_TYPE_DEC_BANK: {
+	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
+	if( bank > 1 )
+	  MBNG_PATCH_BankSet(bank-1 - 1);
+      } break;
       }
     }
   } else {
@@ -1088,6 +1114,38 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Refresh all items
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_Refresh(void)
+{
+  mbng_event_item_t item;
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    switch( pool_item->id & 0xf000 ) {
+    case MBNG_EVENT_CONTROLLER_BUTTON:        MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_DIN_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_LED:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_DOUT_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MATRIX_DIN_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_LED_MATRIX:    MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MATRIX_DOUT_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_ENC:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_ENC_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_AIN:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh_SER64(&item); break;
+#if 0
+    case MBNG_EVENT_CONTROLLER_MF:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MF_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_CV:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_CV_NotifyRefresh(&item); break;
+#endif
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // called from MBNG_EVENT_ReceiveSysEx() when a Syxdump is received

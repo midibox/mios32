@@ -36,6 +36,10 @@ extern "C" {
 # define BUFLCD_MAX_LINES            2
 #endif
 
+#ifndef BUFLCD_SUPPORT_GLCD_FONTS
+# define BUFLCD_SUPPORT_GLCD_FONTS   0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -62,6 +66,7 @@ extern s32 BUFLCD_OffsetYGet(void);
 extern s32 BUFLCD_BufferGet(char *str, u8 line, u8 len);
 
 extern s32 BUFLCD_Clear(void);
+extern s32 BUFLCD_FontInit(u8 *font);
 extern s32 BUFLCD_PrintChar(char c);
 extern s32 BUFLCD_CursorSet(u16 column, u16 line);
 extern s32 BUFLCD_Update(u8 force);

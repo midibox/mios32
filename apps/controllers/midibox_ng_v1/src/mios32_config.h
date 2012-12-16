@@ -97,4 +97,10 @@
 // in this case, multiple strings concurrently sent to the same port won't be merged correctly anymore.
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
 
+// BUFLCD driver should support GLCD Font Selection
+#define BUFLCD_NUM_DEVICES          1
+#define BUFLCD_COLUMNS_PER_DEVICE  64
+#define BUFLCD_MAX_LINES            4
+#define BUFLCD_SUPPORT_GLCD_FONTS   1
+
 #endif /* _MIOS32_CONFIG_H */

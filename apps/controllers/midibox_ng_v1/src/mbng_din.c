@@ -28,9 +28,7 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 button_group;
-
-static u32 toggle_flags[MBNG_PATCH_NUM_DIN/32];
+static u32 button_states[MBNG_PATCH_NUM_DIN/32];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -41,11 +39,9 @@ s32 MBNG_DIN_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  button_group = 0;
-
   int i;
   for(i=0; i<MBNG_PATCH_NUM_DIN/32; ++i)
-    toggle_flags[i] = 0;
+    button_states[i] = 0;
 
   return 0; // no error
 }
@@ -64,12 +60,13 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     DEBUG_MSG("MBNG_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
   }
 
-  // search for DIN
-  int button_ix = button_group * mbng_patch_cfg.button_group_size + pin;
+  // get ID
+  mbng_event_item_id_t din_id = MBNG_EVENT_CONTROLLER_BUTTON + pin + 1;
+  MBNG_PATCH_BankCtrlIdGet(pin, &din_id); // modifies id depending on bank selection
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(MBNG_EVENT_CONTROLLER_BUTTON + button_ix + 1, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchById(din_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to BUTTON %d\n", button_ix);
+      DEBUG_MSG("No event assigned to BUTTON id=%d\n", din_id & 0xfff);
     }
     return -2; // no event assigned
   }
@@ -78,36 +75,37 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     MBNG_EVENT_ItemPrint(&item);
   }
 
-  // button depressed? (take inverse flag into account)
-  // note: on a common configuration (MBHP_DINX4 module used with pull-ups), pins are inverse
-  u8 depressed = pin_value ? 0 : 1;
-  if( item.flags.DIN.inverse )
-    depressed ^= 1;
+  // button depressed?
+  u8 depressed = pin_value ? 1 : 0;
+  u16 din_subid = din_id & 0xfff;
+  int ix = (din_subid-1) / 32;
+  int mask = (1 << ((din_subid-1) % 32));
+  u16 value = depressed ? item.min : item.max;
 
   // toggle mode?
   if( item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
     if( depressed )
       return 0;
 
-    int ix = pin / 32;
-    int mask = (1 << (pin % 32));
-    toggle_flags[ix] ^= mask;
-    depressed = (toggle_flags[ix] & mask) ? 0 : 1;
-
-  } else if( depressed && item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
-    return 0; // don't send if button depressed
+    value = (button_states[ix] & mask) ? item.min : item.max;
   }
 
-  u16 value = depressed ? item.min : item.max;
+  if( value == item.max )
+    button_states[ix] |= mask;
+  else
+    button_states[ix] &= ~mask;
 
-  // send MIDI event
-  MBNG_EVENT_ItemSend(&item, value);
+  // OnOnly mode: don't send if button depressed
+  if( !depressed || item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
+    // send MIDI event
+    MBNG_EVENT_ItemSend(&item, value);
 
-  // forward
-  MBNG_EVENT_ItemForward(&item, value);
+    // forward
+    MBNG_EVENT_ItemForward(&item, value);
 
-  // print label
-  MBNG_LCD_PrintItemLabel(&item, value);
+    // print label
+    MBNG_LCD_PrintItemLabel(&item, value);
+  }
 
   return 0; // no error
 }
@@ -119,21 +117,53 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 {
-  int button_ix = item->id & 0xfff;
+  int din_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_DIN_NotifyReceivedValue(%d, %d)\n", button_ix, value);
+    DEBUG_MSG("MBNG_DIN_NotifyReceivedValue(%d, %d)\n", din_subid, value);
   }
 
-  // forward
-  if( item->fwd_id ) {
-    u16 item_id_lower = (item->id & 0xfff) - 1;
-    if( item_id_lower >= button_group*mbng_patch_cfg.button_group_size &&
-	item_id_lower < (button_group+1)*mbng_patch_cfg.button_group_size ) {
-      MBNG_EVENT_ItemForward(item, value);
+  int range = item->max - item->min + 1;
+  if( range < 0 ) range *= -1;
+  u8 din_value = value >= (range/2);
+
+  if( din_subid && din_subid <= MBNG_PATCH_NUM_DIN ) {
+    int ix = (din_subid-1) / 32;
+    int mask = (1 << ((din_subid-1) % 32));
+
+    if( din_value ) {
+      button_states[ix] |= mask;
+    } else {
+      button_states[ix] &= ~mask;
     }
-  }
+  }  
+
+  // forward
+  if( item->fwd_id && (!MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item)) )
+    MBNG_EVENT_ItemForward(item, value);
 
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by MBNG_EVENT_Refresh() to refresh the controller
+// (mainly to trigger the forward item)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_DIN_NotifyRefresh(mbng_event_item_t *item)
+{
+  int din_subid = (item->id & 0xfff);
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    DEBUG_MSG("MBNG_DIN_NotifyRefresh(%d)\n", din_subid);
+  }
+
+  if( din_subid && din_subid <= MBNG_PATCH_NUM_DIN ) {
+    int ix = (din_subid-1) / 32;
+    int mask = (1 << ((din_subid-1) % 32));
+    u16 value = (button_states[ix] & mask) ? item->max : item->min;
+    MBNG_DIN_NotifyReceivedValue(item, value);
+  }
+
+  return 0; // no error
+}

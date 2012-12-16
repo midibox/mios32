@@ -433,7 +433,7 @@ s32 MIDI_ROUTER_TerminalParseLine(char *input, void *_output_function)
 	  strcpy(port_name, MIDI_PORT_InNameGet(port_ix));
 	  int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
 
-	  if( strcmp(parameter, port_name) == 0 ) {
+	  if( strcasecmp(parameter, port_name) == 0 ) {
 	    src_port = MIDI_PORT_InPortGet(port_ix);
 	    break;
 	  }
@@ -452,9 +452,9 @@ s32 MIDI_ROUTER_TerminalParseLine(char *input, void *_output_function)
 	}
 
 	int src_chn = -1;
-	if( strcmp(arg_src_chn, "---") == 0 || strcmp(arg_src_chn, "off") == 0 )
+	if( strcmp(arg_src_chn, "---") == 0 || strcasecmp(arg_src_chn, "off") == 0 )
 	  src_chn = 0;
-	else if( strcmp(arg_src_chn, "All") == 0 || strcmp(arg_src_chn, "all") == 0 )
+	else if( strcasecmp(arg_src_chn, "All") == 0 )
 	  src_chn = 17;
 	else {
 	  src_chn = get_dec(arg_src_chn);
@@ -480,7 +480,7 @@ s32 MIDI_ROUTER_TerminalParseLine(char *input, void *_output_function)
 	  strcpy(port_name, MIDI_PORT_OutNameGet(port_ix));
 	  int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
 
-	  if( strcmp(parameter, port_name) == 0 ) {
+	  if( strcasecmp(parameter, port_name) == 0 ) {
 	    dst_port = MIDI_PORT_OutPortGet(port_ix);
 	    break;
 	  }
@@ -499,9 +499,9 @@ s32 MIDI_ROUTER_TerminalParseLine(char *input, void *_output_function)
 	}
 
 	int dst_chn = -1;
-	if( strcmp(arg_dst_chn, "---") == 0 || strcmp(arg_dst_chn, "off") == 0 )
+	if( strcmp(arg_dst_chn, "---") == 0 || strcasecmp(arg_dst_chn, "off") == 0 )
 	  dst_chn = 0;
-	else if( strcmp(arg_dst_chn, "All") == 0 || strcmp(arg_dst_chn, "all") == 0 )
+	else if( strcasecmp(arg_dst_chn, "All") == 0 )
 	  dst_chn = 17;
 	else {
 	  dst_chn = get_dec(arg_dst_chn);
@@ -546,7 +546,7 @@ s32 MIDI_ROUTER_TerminalParseLine(char *input, void *_output_function)
               strcpy(port_name, MIDI_PORT_ClkNameGet(port_ix));
               int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
 
-              if( strcmp(parameter, port_name) == 0 ) {
+              if( strcasecmp(parameter, port_name) == 0 ) {
                 mclk_port = MIDI_PORT_ClkPortGet(port_ix);
                 break;
               }

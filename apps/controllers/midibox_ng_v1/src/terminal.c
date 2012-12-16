@@ -200,7 +200,9 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set debug <on|off>:               enables debug messages (current: %s)", debug_verbose_level ? "on" : "off");
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
-      out("  show:                             shows the current configuration file");
+      out("  show file:                        shows the current configuration file");
+      out("  show pool:                        shows the items of the event pool");
+      out("  show poolbin:                     shows the event pool in binary format");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -270,7 +272,19 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	}
       }
     } else if( strcmp(parameter, "show") == 0 ) {
-      MBNG_FILE_C_Debug();
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("ERROR: please specify the item which should be displayed!");
+      } else {
+	if( strcmp(parameter, "file") == 0 )
+	  MBNG_FILE_C_Debug();
+	else if( strcmp(parameter, "poolbin") == 0 )
+	  MBNG_EVENT_PoolPrint();
+	else if( strcmp(parameter, "pool") == 0 )
+	  MBNG_EVENT_PoolItemsPrint();
+	else {
+	  out("ERROR: invalid item which should be showed - see help for available items!");
+	}
+      }
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {

@@ -1,4 +1,6 @@
 
+LCD "%C@(1:1:1)Conditions"
+
 # generate conditional labels with encoders:
 
 EVENT_ENC    id=  1  type=CC     chn= 1 cc= 16   range=  0:127  ports=1000100000001000  lcd_pos=1:1:1 label="^test1"
