@@ -32,6 +32,12 @@
 mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
 mbng_patch_matrix_dout_entry_t mbng_patch_matrix_dout[MBNG_PATCH_NUM_MATRIX_DOUT];
 
+mbng_patch_ain_entry_t mbng_patch_ain;
+
+mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES];
+
+mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
+
 mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
 
 mbng_patch_cfg_t mbng_patch_cfg = {
@@ -91,6 +97,17 @@ s32 MBNG_PATCH_Init(u32 mode)
       m->sr_dout_g2 = 0;
       m->sr_dout_r1 = 0;
       m->sr_dout_r2 = 0;
+    }
+  }
+
+  mbng_patch_ain.enable_mask = 0x0000;
+
+  {
+    int module;
+    mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
+    for(module=0; module<MBNG_PATCH_NUM_AINSER_MODULES; ++module, ++ainser) {
+      ainser->flags.enabled = 1;
+      ainser->flags.cs = module;
     }
   }
 
@@ -169,11 +186,11 @@ s32 MBNG_PATCH_BankEntryInit(mbng_patch_bank_entry_t *b, u8 valid)
     b->ain.first_id = MBNG_EVENT_CONTROLLER_AIN + 1;
 
     b->ainser.first_n = 1;
-    b->ainser.num = MBNG_PATCH_NUM_AINSER;
+    b->ainser.num = MBNG_PATCH_NUM_AINSER_MODULES*64;
     b->ainser.first_id = MBNG_EVENT_CONTROLLER_AINSER + 1;
 
     b->mf.first_n = 1;
-    b->mf.num = MBNG_PATCH_NUM_MF;
+    b->mf.num = MBNG_PATCH_NUM_MF_MODULES*8;
     b->mf.first_id = MBNG_EVENT_CONTROLLER_MF + 1;
   } else {
     b->valid = 0;
