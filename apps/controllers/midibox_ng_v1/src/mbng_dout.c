@@ -22,6 +22,7 @@
 #include "mbng_lcd.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
+#include "mbng_matrix.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -80,8 +81,31 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
       led_states[ix] &= ~mask;
   }
 
-  // set LED
-  MIOS32_DOUT_PinSet(dout_subid-1, dout_value);
+  // check if any matrix emulates the LEDs
+  u8 emulated = 0;
+  {
+    int matrix;
+    mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
+      if( m->led_emu_id_offset && m->sr_dout_r1 && dout_subid >= m->led_emu_id_offset ) {
+	int num_pins = 8*m->num_rows;
+	if( m->sr_dout_r2 )
+	  num_pins *= 2;
+
+	if( dout_subid < (m->led_emu_id_offset + num_pins) ) {
+	  emulated = 1;
+
+	  u8 color = 0; // TODO
+	  MBNG_MATRIX_DOUT_PinSet(matrix, color, dout_subid - m->led_emu_id_offset, dout_value);
+	}
+      }
+    }
+  }
+
+  if( !emulated ) {
+    // set LED
+    MIOS32_DOUT_PinSet(dout_subid-1, dout_value);
+  }
 
   // forward
   if( item->fwd_id && (!MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item)) )
@@ -108,6 +132,9 @@ s32 MBNG_DOUT_NotifyRefresh(mbng_event_item_t *item)
     int mask = (1 << ((dout_subid-1) % 32));
     u16 value = (led_states[ix] & mask) ? item->max : item->min;
     MBNG_DOUT_NotifyReceivedValue(item, value);
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

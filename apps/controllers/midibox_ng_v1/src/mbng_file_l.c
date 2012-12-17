@@ -152,11 +152,9 @@ s32 MBNG_FILE_L_Valid(void)
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
-s32 readBinFileMD5(u8 md5_checksum[16])
+s32 readBinFileMD5(char *filepath, u8 md5_checksum[16])
 {
   s32 status;
-  char filepath[MAX_PATH];
-  sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, mbng_file_l_patch_name);
 
   if( (status=FILE_ReadOpen(&mbng_file_l_info.bin_file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -201,16 +199,14 @@ s32 readBinFileMD5(u8 md5_checksum[16])
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
-s32 parseBinFile(char *filename)
+s32 parseBinFile(char *filepath)
 {
   s32 status;
-  char filepath[MAX_PATH];
   u32 pos = 4 + 16; // start to read after format and MD5 checksum
 
   mbng_file_l_info_t *info = &mbng_file_l_info;
   info->valid = 1;
 
-  sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, mbng_file_l_patch_name);
   if( (status=FILE_ReadOpen(&info->bin_file, filepath)) < 0 ||
       (status=FILE_ReadSeek(pos)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -266,7 +262,7 @@ s32 parseBinFile(char *filename)
 
   if( info->valid ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_L] %d labels found in %s.BIN file%s\n", info->num_labels, filename, (info->num_labels >= MBNG_FILE_L_NUM_LABELS) ? " (maximum reached)" : "");
+    DEBUG_MSG("[MBNG_FILE_L] %d labels found in %s.BIN file%s\n", info->num_labels, filepath, (info->num_labels >= MBNG_FILE_L_NUM_LABELS) ? " (maximum reached)" : "");
 #endif
   }
 
@@ -279,15 +275,13 @@ s32 parseBinFile(char *filename)
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
-s32 generateNglFileMD5(u8 md5_checksum[16])
+s32 generateNglFileMD5(char *filepath, u8 md5_checksum[16])
 {
   s32 status;
   file_t file;
 
   // open .ngl file
   {
-    char filepath[MAX_PATH];
-    sprintf(filepath, "%s%s.NGL", MBNG_FILES_PATH, mbng_file_l_patch_name);
     if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
       DEBUG_MSG("[MBNG_FILE_L] failed to open file, status: %d\n", status);
@@ -407,10 +401,10 @@ static char *getQuotedString(char **brkt)
 // reads the label file content (again)
 // returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
+  char filepath[MAX_PATH];
 s32 MBNG_FILE_L_Read(char *filename)
 {
   s32 status = 0;
-  char filepath[MAX_PATH];
   mbng_file_l_info_t *info = &mbng_file_l_info;
 
   info->valid = 0; // will be set to valid if file content has been read successfully
@@ -422,11 +416,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 
   // check if compiled .BIN file exists and if it has right format
   u8 md5_checksum_binfile[16];
-  u8 bin_file_valid = readBinFileMD5(md5_checksum_binfile) >= 0;
+  sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, filename);
+  u8 bin_file_valid = readBinFileMD5(filepath, md5_checksum_binfile) >= 0;
 
   // determine the MD5 checksum of the .NGL file
   u8 md5_checksum_nglfile[16];
-  if( (status=generateNglFileMD5(md5_checksum_nglfile)) < 0 ) {
+  sprintf(filepath, "%s%s.NGL", MBNG_FILES_PATH, filename);
+  if( (status=generateNglFileMD5(filepath, md5_checksum_nglfile)) < 0 ) {
     return status; // error already reported
   }
 
@@ -456,7 +452,8 @@ s32 MBNG_FILE_L_Read(char *filename)
   }
 
   // parse .bin file for label positions
-  if( bin_file_valid && parseBinFile(filename) >= 0 ) {
+  sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, filename);
+  if( bin_file_valid && parseBinFile(filepath) >= 0 ) {
     return 0; // -> done
   }
   bin_file_valid = 0;
@@ -830,7 +827,8 @@ s32 MBNG_FILE_L_Read(char *filename)
 #endif
 
     // try to read file again...
-    if( parseBinFile(filename) < 0 ) {
+    sprintf(filepath, "%s%s.BIN", MBNG_FILES_PATH, filename);
+    if( parseBinFile(filepath) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_L] ERROR: generated %s.BIN file seems to be corrupted!\n", filename);
 #endif

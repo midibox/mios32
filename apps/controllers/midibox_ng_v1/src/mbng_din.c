@@ -162,7 +162,11 @@ s32 MBNG_DIN_NotifyRefresh(mbng_event_item_t *item)
     int ix = (din_subid-1) / 32;
     int mask = (1 << ((din_subid-1) % 32));
     u16 value = (button_states[ix] & mask) ? item->max : item->min;
+
     MBNG_DIN_NotifyReceivedValue(item, value);
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

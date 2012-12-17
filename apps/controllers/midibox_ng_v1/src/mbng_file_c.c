@@ -2643,7 +2643,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d\n",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
 	      matrix+1,
 	      m->num_rows,
 	      m->inverted,
@@ -2651,6 +2651,14 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      m->sr_dout_sel2,
 	      m->sr_din1,
 	      m->sr_din2);
+      FLUSH_BUFFER;
+
+      if( m->button_emu_id_offset ) {
+	sprintf(line_buffer, "  button_emu_id_offset=%d", m->button_emu_id_offset);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
     }
   }
@@ -2663,7 +2671,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d\n",
+      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
 	      matrix+1,
 	      m->num_rows,
 	      m->inverted,
@@ -2675,6 +2683,14 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      m->sr_dout_g2,
 	      m->sr_dout_b1,
 	      m->sr_dout_b2);
+      FLUSH_BUFFER;
+
+      if( m->led_emu_id_offset ) {
+	sprintf(line_buffer, "  led_emu_id_offset=%d", m->led_emu_id_offset);
+	FLUSH_BUFFER;
+      }
+
+      sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
     }
   }

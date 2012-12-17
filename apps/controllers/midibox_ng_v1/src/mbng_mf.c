@@ -256,6 +256,9 @@ s32 MBNG_MF_NotifyRefresh(mbng_event_item_t *item)
   if( mf_subid && mf_subid <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
     u16 value = mf_value[mf_subid-1];
     MBNG_MF_NotifyReceivedValue(item, value);
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

@@ -67,4 +67,15 @@
 // combine MIDI router with SEQ module
 #define MIDI_ROUTER_COMBINED_WITH_SEQ 1
 
+// map MIDI mutex to UIP task
+// located in app.c to access MIDI IN/OUT mutex from external
+extern void APP_MUTEX_MIDIOUT_Take(void);
+extern void APP_MUTEX_MIDIOUT_Give(void);
+extern void APP_MUTEX_MIDIIN_Take(void);
+extern void APP_MUTEX_MIDIIN_Give(void);
+#define UIP_TASK_MUTEX_MIDIOUT_TAKE { APP_MUTEX_MIDIOUT_Take(); }
+#define UIP_TASK_MUTEX_MIDIOUT_GIVE { APP_MUTEX_MIDIOUT_Give(); }
+#define UIP_TASK_MUTEX_MIDIIN_TAKE  { APP_MUTEX_MIDIIN_Take(); }
+#define UIP_TASK_MUTEX_MIDIIN_GIVE  { APP_MUTEX_MIDIIN_Give(); }
+
 #endif /* _MIOS32_CONFIG_H */

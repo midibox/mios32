@@ -390,6 +390,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->min = pool_item->min;
   item->max = pool_item->max;
   item->offset = pool_item->offset;
+  item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
   item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
@@ -859,6 +860,15 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
       p.evnt2 = value & 0x7f;
     }
 
+    // EXTRA for BUTTON_MATRIX: modify MIDI event depending on pin number
+    // NOTE: if dedicated MIDI events should be sent, use the button_emu_id_offset feature!
+    if( item->matrix_pin && event_type < MBNG_EVENT_TYPE_CC ) {
+      int new = p.evnt1 + item->matrix_pin;
+      if( new >= 127 )
+	new = 127;
+      p.evnt1 = new;
+    }
+
     // send MIDI package over enabled ports
     int i;
     u16 mask = 1;
@@ -1322,6 +1332,45 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	  MBNG_EVENT_ItemReceive(&item, midi_package.value);
+	} else {
+	  // EXTRA for button/led matrices
+	  int matrix = (pool_item->id & 0x0fff) - 1;
+	  int num_pins = -1;
+
+	  switch( pool_item->id & 0xf000 ) {
+	  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
+	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DIN ) {
+	      mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[matrix];
+
+	      if( m->button_emu_id_offset && m->sr_din1 ) {
+		num_pins = 8 * m->num_rows;
+		if( m->sr_din2 )
+		  num_pins *= 2;
+	      }
+	    }
+	  } break;
+	  case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
+	      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
+
+	      if( m->led_emu_id_offset && m->sr_dout_r1 ) {
+		num_pins = 8 * m->num_rows;
+		if( m->sr_dout_r2 )
+		  num_pins *= 2;
+	      }
+	    }
+	  } break;
+	  }
+
+	  if( num_pins >= 0 ) {
+	    int first_evnt1 = stream[1];
+	    if( evnt1 >= first_evnt1 && evnt1 < (first_evnt1 + num_pins) ) {
+	      mbng_event_item_t item;
+	      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	      item.matrix_pin = evnt1 - first_evnt1;
+	      MBNG_EVENT_ItemReceive(&item, midi_package.value);
+	    }
+	  }
 	}
       } else if( event_type <= MBNG_EVENT_TYPE_AFTERTOUCH ) {
 	mbng_event_item_t item;

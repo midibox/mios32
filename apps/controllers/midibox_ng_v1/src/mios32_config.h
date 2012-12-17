@@ -71,6 +71,14 @@
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 
+// stack sizes which are used by various tasks (see APP_Init() in app.c)
+#define APP_BIG_STACK_SIZE     (2048)
+#define APP_REDUCED_STACK_SIZE (1024)
+// for the MIOS32 hooks in main.c
+#define MIOS32_MINIMAL_STACK_SIZE APP_BIG_STACK_SIZE
+// for the UIP task
+#define UIP_TASK_STACK_SIZE       APP_REDUCED_STACK_SIZE
+
 // optionally for task analysis - if enabled, the stats can be displayed with the "system" command in MIOS Terminal
 #if 0
 #define configGENERATE_RUN_TIME_STATS           1
@@ -100,9 +108,28 @@
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
 
 // BUFLCD driver should support GLCD Font Selection
-#define BUFLCD_NUM_DEVICES          1
+#define BUFLCD_NUM_DEVICES          2
 #define BUFLCD_COLUMNS_PER_DEVICE  64
 #define BUFLCD_MAX_LINES            4
 #define BUFLCD_SUPPORT_GLCD_FONTS   1
+
+// map MIDI mutex to UIP task
+// located in app.c to access MIDI IN/OUT mutex from external
+extern void APP_MUTEX_MIDIOUT_Take(void);
+extern void APP_MUTEX_MIDIOUT_Give(void);
+extern void APP_MUTEX_MIDIIN_Take(void);
+extern void APP_MUTEX_MIDIIN_Give(void);
+#define UIP_TASK_MUTEX_MIDIOUT_TAKE { APP_MUTEX_MIDIOUT_Take(); }
+#define UIP_TASK_MUTEX_MIDIOUT_GIVE { APP_MUTEX_MIDIOUT_Give(); }
+#define UIP_TASK_MUTEX_MIDIIN_TAKE  { APP_MUTEX_MIDIIN_Take(); }
+#define UIP_TASK_MUTEX_MIDIIN_GIVE  { APP_MUTEX_MIDIIN_Give(); }
+
+// Mutex for J16 access
+extern void APP_J16SemaphoreTake(void);
+extern void APP_J16SemaphoreGive(void);
+#define MIOS32_SDCARD_MUTEX_TAKE   { APP_J16SemaphoreTake(); }
+#define MIOS32_SDCARD_MUTEX_GIVE   { APP_J16SemaphoreGive(); }
+#define MIOS32_ENC28J60_MUTEX_TAKE { APP_J16SemaphoreTake(); }
+#define MIOS32_ENC28J60_MUTEX_GIVE { APP_J16SemaphoreGive(); }
 
 #endif /* _MIOS32_CONFIG_H */
