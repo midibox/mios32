@@ -12,6 +12,9 @@ BANK n=4  enc=1:8:45  button=1:8:45
 # select the bank with the jogwheel
 EVENT_ENC id=  9  type=Meta   meta=SetBank range=1:4  lcd_pos=1:1:2 label="Bank #%q"
 
+# use button 9 as "FAST" button (it's outside the bank)
+EVENT_BUTTON id=9 type=Meta   meta=EncFast  range=0:5 lcd_pos=1:10:2 label="FAST%d"
+
 
 # Bank 1
 EVENT_ENC    id= 21  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"

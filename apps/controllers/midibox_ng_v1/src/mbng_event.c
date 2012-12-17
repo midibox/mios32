@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#include <scs.h>
+
 #include "app.h"
 #include "tasks.h"
 #include "mbng_event.h"
@@ -775,8 +777,18 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
   mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+1))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
   switch( meta_type ) {
   case MBNG_EVENT_META_TYPE_SET_BANK:            return "SetBank";
-  case MBNG_EVENT_META_TYPE_INC_BANK:            return "IncBank";
   case MBNG_EVENT_META_TYPE_DEC_BANK:            return "DecBank";
+  case MBNG_EVENT_META_TYPE_INC_BANK:            return "IncBank";
+
+  case MBNG_EVENT_META_TYPE_ENC_FAST:            return "EncFast";
+
+  case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
+  case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT2:           return "ScsSoft2";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT3:           return "ScsSoft3";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT4:           return "ScsSoft4";
+  case MBNG_EVENT_META_TYPE_SCS_SHIFT:           return "ScsShift";
   }
 
   return "Undefined";
@@ -785,8 +797,18 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 {
   if( strcasecmp(meta_type, "SetBank") == 0 )       return MBNG_EVENT_META_TYPE_SET_BANK;
-  if( strcasecmp(meta_type, "IncBank") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK;
   if( strcasecmp(meta_type, "DecBank") == 0 )       return MBNG_EVENT_META_TYPE_DEC_BANK;
+  if( strcasecmp(meta_type, "IncBank") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK;
+
+  if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
+
+  if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
+  if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
+  if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
+  if( strcasecmp(meta_type, "ScsSoft2") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT2;
+  if( strcasecmp(meta_type, "ScsSoft3") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT3;
+  if( strcasecmp(meta_type, "ScsSoft4") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT4;
+  if( strcasecmp(meta_type, "ScsShift") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SHIFT;
   return MBNG_EVENT_META_TYPE_UNDEFINED;
 }
 
@@ -1009,16 +1031,43 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value)
 	}
       } break;
 
+      case MBNG_EVENT_META_TYPE_DEC_BANK: {
+	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
+	if( bank > 1 )
+	  MBNG_PATCH_BankSet(bank-1 - 1);
+      } break;
+
       case MBNG_EVENT_META_TYPE_INC_BANK: {
 	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
 	if( bank < MBNG_PATCH_NumBanksGet() )
 	  MBNG_PATCH_BankSet(bank-1 + 1);
       } break;
 
-      case MBNG_EVENT_META_TYPE_DEC_BANK: {
-	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
-	if( bank > 1 )
-	  MBNG_PATCH_BankSet(bank-1 - 1);
+
+      case MBNG_EVENT_META_TYPE_ENC_FAST: {
+	MBNG_ENC_FastModeSet(value);
+      } break;
+
+      case MBNG_EVENT_META_TYPE_SCS_ENC: {
+	SCS_ENC_MENU_NotifyChange((s32)(value - 64));
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_MENU: {
+	SCS_DIN_NotifyToggle(SCS_PIN_EXIT, value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT1: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT1, value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT2: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT2, value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT3: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT3, value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT4: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT4, value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SHIFT: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT5, value == 0);
       } break;
       }
     }

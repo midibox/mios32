@@ -8,6 +8,10 @@ MIDIbox NG V1.001
 
    o Number of virtual button and LED functions increased to 1024
 
+   o New meta event for speeding up ENC movements (EncFast, see .NGC documentation)
+
+   o New meta events for emulating SCS buttons/encoder (see .NGC documentation)
+
    o Ethernet and OSC setup now stored with ETH/OSC commands in .NGC file
 
    o SysEx variables are now stored with a SYSEX_VAR command in .NGC file

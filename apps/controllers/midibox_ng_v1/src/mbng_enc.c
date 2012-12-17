@@ -30,6 +30,9 @@
 
 static u16 enc_value[MBNG_PATCH_NUM_ENC];
 
+static u8 enc_speed_multiplier;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the ENC handler
 /////////////////////////////////////////////////////////////////////////////
@@ -37,6 +40,8 @@ s32 MBNG_ENC_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  enc_speed_multiplier = 0;
 
   int i;
   for(i=0; i<MBNG_PATCH_NUM_ENC; ++i)
@@ -53,6 +58,21 @@ s32 MBNG_ENC_Init(u32 mode)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Enables/Disables fast mode with given multiplier
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_ENC_FastModeSet(u8 multiplier)
+{
+  enc_speed_multiplier = multiplier;
+  return 0;
+}
+
+s32 MBNG_ENC_FastModeGet(void)
+{
+  return enc_speed_multiplier;
 }
 
 
@@ -117,6 +137,10 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     MBNG_EVENT_ItemPrint(&item);
+  }
+
+  if( enc_speed_multiplier > 1 ) {
+    incrementer *= (s32)enc_speed_multiplier;
   }
 
   int value = 0;
