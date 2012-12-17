@@ -349,7 +349,7 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
     int accumulated_delay = 0;
     for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap)
       accumulated_delay += tap_tempo_delay[tap];
-    u32 bpm = 60000000 / (accumulated_delay / tap_tempo_beat_ctr);
+    u32 bpm = 60000000 / (accumulated_delay / TAP_DELAY_STORAGE_SIZE);
 
     // set BPM
     float bpmF = bpm / 1000.0;
