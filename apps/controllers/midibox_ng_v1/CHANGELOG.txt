@@ -16,6 +16,9 @@ MIDIbox NG V1.001
 
    o SysEx variables are now stored with a SYSEX_VAR command in .NGC file
 
+   o EVENT_BUTTON_MATRIX and EVENT_LED_MATRIX now properly supported
+     See cfg/tests/blm8x8.ngc for a configuration simple example
+
 
 MIDIbox NG V1.000
 ~~~~~~~~~~~~~~~~~

@@ -23,6 +23,11 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+// stack size of the task
+#ifndef UIP_TASK_STACK_SIZE
+# define UIP_TASK_STACK_SIZE MIOS32_MINIMAL_STACK_SIZE
+#endif
+
 // Ethernet configuration
 // can be overruled in mios32_config.h
 

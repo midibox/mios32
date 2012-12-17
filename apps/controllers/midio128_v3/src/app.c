@@ -112,7 +112,6 @@ static volatile msd_state_t msd_state;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
@@ -193,9 +192,6 @@ void APP_Init(void)
     MIOS32_ENC_ConfigSet(enc+1, enc_config);
   }
 #endif
-
-  // install timer function which is called each 100 uS
-  MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
 
   // start tasks
   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
@@ -497,6 +493,10 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
+
+    // increment timestamp
+    ++ms_counter;
+
     // execute sequencer handler
     MUTEX_SDCARD_TAKE;
     SEQ_Handler();
@@ -515,23 +515,6 @@ static void TASK_Period_1mS(void *pvParameters)
   }
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// This timer function is periodically called each 100 uS
-/////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void)
-{
-  static u8 pre_ctr = 0;
-
-  // increment the microsecond counter each 10th tick
-  if( ++pre_ctr >= 10 ) {
-    pre_ctr = 0;
-    ++ms_counter;
-  }
-
-  // here we could do some additional high-prio jobs
-  // (e.g. PWM LEDs)
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_DirectRxCallback_Init
@@ -598,3 +581,12 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// functions to access MIDI IN/Out Mutex
+// see also mios32_config.h
+/////////////////////////////////////////////////////////////////////////////
+void APP_MUTEX_MIDIOUT_Take(void) { MUTEX_MIDIOUT_TAKE; }
+void APP_MUTEX_MIDIOUT_Give(void) { MUTEX_MIDIOUT_GIVE; }
+void APP_MUTEX_MIDIIN_Take(void) { MUTEX_MIDIIN_TAKE; }
+void APP_MUTEX_MIDIIN_Give(void) { MUTEX_MIDIIN_GIVE; }

@@ -65,30 +65,30 @@ static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 //static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 //static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
-static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
+//static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 //static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
-static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
-static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
+//static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
+//static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 
-static void stringNote(u32 ix, u16 value, char *label)
-{
-  const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
-
-  // print "---" if note number is 0
-  if( value == 0 )
-    sprintf(label, "---  ");
-  else {
-    u8 octave = value / 12;
-    u8 note = value % 12;
-
-    // print semitone and octave (-2): up to 4 chars
-    sprintf(label, "%s%d  ",
-	    noteTab[note],
-	    (int)octave-2);
-  }
-}
+//static void stringNote(u32 ix, u16 value, char *label)
+//{
+//  const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+//
+//  // print "---" if note number is 0
+//  if( value == 0 )
+//    sprintf(label, "---  ");
+//  else {
+//    u8 octave = value / 12;
+//    u8 note = value % 12;
+//
+//    // print semitone and octave (-2): up to 4 chars
+//    sprintf(label, "%s%d  ",
+//	    noteTab[note],
+//	    (int)octave-2);
+//  }
+//}
 
 static void stringInPort(u32 ix, u16 value, char *label)
 {
@@ -277,6 +277,17 @@ static u16 selectIpEnter(u32 ix, u16 value)
 static u16  dummyGet(u32 ix)              { return 0; }
 static void dummySet(u32 ix, u16 value)   { }
 
+static u16  sysExVarDevGet(u32 ix)             { return mbng_patch_cfg.sysex_dev; }
+static void sysExVarDevSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_dev = value; }
+static u16  sysExVarPatGet(u32 ix)             { return mbng_patch_cfg.sysex_pat; }
+static void sysExVarPatSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_pat = value; }
+static u16  sysExVarBnkGet(u32 ix)             { return mbng_patch_cfg.sysex_bnk; }
+static void sysExVarBnkSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_bnk = value; }
+static u16  sysExVarInsGet(u32 ix)             { return mbng_patch_cfg.sysex_ins; }
+static void sysExVarInsSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_ins = value; }
+static u16  sysExVarChnGet(u32 ix)             { return mbng_patch_cfg.sysex_chn; }
+static void sysExVarChnSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_chn = value; }
+
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -320,6 +331,14 @@ static void MSD_EnableReq(u32 enable)
 // Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
+const scs_menu_item_t pageVAR[] = {
+  SCS_ITEM("Dev ", 0, 127, sysExVarDevGet, sysExVarDevSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Pat ", 0, 127, sysExVarPatGet, sysExVarPatSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Bnk ", 0, 127, sysExVarBnkGet, sysExVarBnkSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Ins ", 0, 127, sysExVarInsGet, sysExVarInsSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Chn ", 0, 127, sysExVarChnGet, sysExVarChnSet, selectNOP, stringDec, NULL),
+};
+
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -358,6 +377,7 @@ const scs_menu_item_t pageMON[] = {
 
 
 const scs_menu_page_t rootMode0[] = {
+  SCS_PAGE("Var. ", pageVAR),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),

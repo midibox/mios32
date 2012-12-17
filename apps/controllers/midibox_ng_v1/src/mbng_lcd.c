@@ -150,7 +150,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
     BUFLCD_Clear();
   }
 
-  BUFLCD_CursorSet(item->lcd_pos % 64, item->lcd_pos / 64);
+  BUFLCD_CursorSet(item->lcd*BUFLCD_ColumnsPerDeviceGet() + (item->lcd_pos % 64), item->lcd_pos / 64);
 
   int min = item->min;
   int max = item->max;
@@ -231,7 +231,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
 	    pos_str = (char *)(next + 1);
 	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
-	      BUFLCD_CursorSet(lcd_x-1, lcd_y-1);	  
+	      BUFLCD_CursorSet((lcd_num-1)*BUFLCD_ColumnsPerDeviceGet() + (lcd_x-1), lcd_y-1);
 	      str = (char *)&next[1];
 	    }
 	  }
@@ -279,6 +279,11 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  case 'i': { // ID
 	    *format_type = 'd';
 	    BUFLCD_PrintFormattedString(format, item->id & 0xfff);
+	  } break;
+
+	  case 'p': { // Matrix pin number
+	    *format_type = 'd';
+	    BUFLCD_PrintFormattedString(format, item->matrix_pin);
 	  } break;
 
 	  case 'e': { // (MIDI) event

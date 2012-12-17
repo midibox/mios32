@@ -70,12 +70,8 @@ static void TASK_Period_1mS(void *pvParameters);
 // use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
 #define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
 
-// SD Card with lower priority
-#define PRIORITY_TASK_PERIOD_1mS_SD ( tskIDLE_PRIORITY + 2 )
-
 // local prototype of the task function
 static void TASK_Period_1mS_LP(void *pvParameters);
-static void TASK_Period_1mS_SD(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -110,6 +106,8 @@ xSemaphoreHandle xSDCardSemaphore;
 xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
 
+// Mutex for J16 access (SDCard/Ethernet)
+xSemaphoreHandle xJ16Semaphore;
 
 static u32 ms_counter;
 
@@ -119,7 +117,6 @@ static volatile msd_state_t msd_state;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
@@ -162,6 +159,7 @@ void APP_Init(void)
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+  xJ16Semaphore = xSemaphoreCreateRecursiveMutex();
 
   // install SysEx callback
   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
@@ -195,13 +193,9 @@ void APP_Init(void)
   SEQ_BPM_Set(120.0);
   SEQ_MIDI_OUT_Init(0);
 
-  // install timer function which is called each 100 uS
-  MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
-
   // start tasks
-  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
-  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-  xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS",   APP_REDUCED_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", APP_BIG_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 
 }
 
@@ -376,6 +370,9 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
+  const u16 sdcard_check_delay = 1000;
+  u16 sdcard_check_ctr = 0;
+  u8 lun_available = 0;
   static u8 isInMainPage = 0;
 
   SCS_DisplayUpdateInMainPage(0);
@@ -403,22 +400,6 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
     // call MIDI event tick
     MBNG_EVENT_Tick();
-  }
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This task handles the SD Card
-/////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS_SD(void *pvParameters)
-{
-  const u16 sdcard_check_delay = 1000;
-  u16 sdcard_check_ctr = 0;
-  u8 lun_available = 0;
-
-  while( 1 ) {
-    vTaskDelay(1 / portTICK_RATE_MS);
 
     // each second: check if SD Card (still) available
     if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay ) {
@@ -508,12 +489,12 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	lun_available = 0;
 
 	// enable MSD USB driver
-	//MUTEX_J16_TAKE;
+	MUTEX_J16_TAKE;
 	if( MSD_Init(0) >= 0 )
 	  msd_state = MSD_READY;
 	else
 	  msd_state = MSD_SHUTDOWN;
-	//MUTEX_J16_GIVE;
+	MUTEX_J16_GIVE;
 	break;
 
       case MSD_READY:
@@ -554,6 +535,9 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
+    // increment timestamp
+    ++ms_counter;
+
 //    // execute sequencer handler
 //    MUTEX_SDCARD_TAKE;
 //    SEQ_Handler();
@@ -572,23 +556,6 @@ static void TASK_Period_1mS(void *pvParameters)
   }
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// This timer function is periodically called each 100 uS
-/////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void)
-{
-  static u8 pre_ctr = 0;
-
-  // increment the microsecond counter each 10th tick
-  if( ++pre_ctr >= 10 ) {
-    pre_ctr = 0;
-    ++ms_counter;
-  }
-
-  // here we could do some additional high-prio jobs
-  // (e.g. PWM LEDs)
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_DirectRxCallback_Init
@@ -655,3 +622,29 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// functions to access J16 semaphore
+// see also mios32_config.h
+/////////////////////////////////////////////////////////////////////////////
+void APP_J16SemaphoreTake(void)
+{
+  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+    MUTEX_J16_TAKE;
+}
+
+void APP_J16SemaphoreGive(void)
+{
+  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+    MUTEX_J16_GIVE;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// functions to access MIDI IN/Out Mutex
+// see also mios32_config.h
+/////////////////////////////////////////////////////////////////////////////
+void APP_MUTEX_MIDIOUT_Take(void) { MUTEX_MIDIOUT_TAKE; }
+void APP_MUTEX_MIDIOUT_Give(void) { MUTEX_MIDIOUT_GIVE; }
+void APP_MUTEX_MIDIIN_Take(void) { MUTEX_MIDIIN_TAKE; }
+void APP_MUTEX_MIDIIN_Give(void) { MUTEX_MIDIIN_GIVE; }

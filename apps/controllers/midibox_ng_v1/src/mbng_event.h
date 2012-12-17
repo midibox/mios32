@@ -202,6 +202,7 @@ typedef struct {
   s16 min;
   s16 max;
   s16 offset;
+  u16 matrix_pin;
   mbng_event_syxdump_pos_t syxdump_pos;
   u32 stream_size;
   u8* stream;

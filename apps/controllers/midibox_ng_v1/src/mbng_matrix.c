@@ -23,6 +23,7 @@
 #include "mbng_matrix.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
+#include "mbng_din.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -255,6 +256,77 @@ u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
   return dout_matrix_pattern[num][pos];
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sets the a pin on the given DOUT matrix
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
+{
+  if( matrix >= MBNG_PATCH_NUM_MATRIX_DOUT )
+    return -1; // invalid matrix
+
+  int num_rows = mbng_patch_matrix_dout[matrix].num_rows;
+  int row    = pin / num_rows;
+  int column = pin % num_rows;
+  u16 *led_row_ptr = (u16 *)&led_row[matrix][row][color];
+
+  if( value )
+    *led_row_ptr |= (1 << column);
+  else
+    *led_row_ptr &= ~(1 << column);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sets a pattern DOUT matrix row
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_PatternSet(u8 matrix, u8 color, u16 row, u16 value, u16 range, u8 pattern)
+{
+  if( matrix >= MBNG_PATCH_NUM_MATRIX_DOUT )
+    return -1; // invalid matrix
+
+  u32 scaled = ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)*value) / range;
+  int pattern_ix;
+  if( scaled <= 7 )
+    pattern_ix = scaled;
+  else if( value == (range/2) ) {
+    pattern_ix = (MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2;
+  } else {
+    pattern_ix = scaled+1;
+  }
+
+  u16 *led_row_ptr = (u16 *)&led_row[matrix][row][color];
+  *led_row_ptr = dout_matrix_pattern[pattern][pattern_ix];
+#if 0
+  DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_row=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_row_ptr);
+#endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sets a pattern DOUT matrix row for the LC protocol
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value)
+{
+  if( matrix >= MBNG_PATCH_NUM_MATRIX_DOUT )
+    return -1; // invalid matrix
+
+  u8 pattern = (value >> 4) & 0x3;
+  u8 pattern_ix = value & 0x0f;
+  if( pattern_ix >= ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2) )
+    ++pattern_ix; // 'M' entry not supported...
+  u8 center_led = value & 0x40;
+
+  u16 *led_row_ptr = (u16 *)&led_row[matrix][row][color];
+  *led_row_ptr = dout_matrix_pattern[pattern][pattern_ix] | (center_led ? (1 << 11) : 0);
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // This function prepares the DOUT register to drive a column.
 // It should be called from the APP_SRIO_ServicePrepare()
@@ -458,11 +530,47 @@ s32 MBNG_MATRIX_ButtonHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 {
+  if( matrix >= MBNG_PATCH_NUM_MATRIX_DIN )
+    return -1; // invalid matrix
+    
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    MIOS32_MIDI_SendDebugMessage("matrix=%d pin=%d pin_value=%d\n", matrix, pin, pin_value);
+    MIOS32_MIDI_SendDebugMessage("MBNG_MATRIX_NotifyToggle(%d, %d, %d)\n", matrix, pin, pin_value);
   }
 
-  // TODO
+  // "normal" buttons emulated?
+  if( mbng_patch_matrix_din[matrix].button_emu_id_offset ) // -> DIN handler
+    return MBNG_DIN_NotifyToggle(pin + mbng_patch_matrix_din[matrix].button_emu_id_offset - 1, pin_value);
+
+  // get ID
+  mbng_event_item_id_t matrix_id = MBNG_EVENT_CONTROLLER_BUTTON_MATRIX + matrix + 1;
+  MBNG_PATCH_BankCtrlIdGet(matrix, &matrix_id); // modifies id depending on bank selection
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchById(matrix_id, &item) < 0 ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("No event assigned to BUTTON_MATRIX id=%d\n", matrix_id & 0xfff);
+    }
+    return -2; // no event assigned
+  }
+
+  // EXTRA for matrix: store pin number for MBNG_EVENT_Item* functions
+  item.matrix_pin = pin;
+
+  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+    MBNG_EVENT_ItemPrint(&item);
+  }
+
+  // button depressed?
+  u8 depressed = pin_value ? 1 : 0;
+  u16 value = depressed ? item.min : item.max;
+
+  // send MIDI event
+  MBNG_EVENT_ItemSend(&item, value);
+
+  // forward
+  MBNG_EVENT_ItemForward(&item, value);
+
+  // print label
+  MBNG_LCD_PrintItemLabel(&item, value);
 
   return 0; // no error
 }
@@ -479,6 +587,9 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, value);
   }
+
+  if( item->fwd_id )
+    MBNG_EVENT_ItemForward(item, value);
 
   return 0; // no error
 }
@@ -497,11 +608,13 @@ s32 MBNG_MATRIX_DIN_NotifyRefresh(mbng_event_item_t *item)
   }
 
   if( button_matrix_subid ) {
-#if 0
-    u16 value = 0;
+    u16 value = 0; // TODO
     MBNG_MATRIX_DIN_NotifyReceivedValue(item, value);
-#endif
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
   }
+
 
   return 0; // no error
 }
@@ -523,55 +636,45 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 # error "not prepared for != 16 rows - id assignments have to be adapted!"
 #endif
 
-  if( item->flags.LED_MATRIX.led_matrix_pattern ) {
-    int row = (led_matrix_ix-1); // % mbng_patch_cfg.enc_group_size;
-    int matrix = 0; // (led_matrix_ix-1); // / mbng_patch_cfg.enc_group_size;
+  if( !item->flags.LED_MATRIX.led_matrix_pattern ) {
+    if( led_matrix_ix ) {
+      // no LED pattern: set bit directly depending on item->matrix_pin, which could have been
+      // set by a EVENT_BUTTON_MATRIX
+      int range = item->max - item->min + 1;
+      if( range < 0 ) range *= -1;
+      u8 dout_value = value >= (range/2);
+
+      u8 color = 0; // TODO...
+      MBNG_MATRIX_DOUT_PinSet(led_matrix_ix-1, color, item->matrix_pin, dout_value);
+    }
+  } else {
+    int matrix = (led_matrix_ix-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
+    int row = (led_matrix_ix-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
     u8 color = 0; // TODO...
-    u16 *led_pattern = (u16 *)&led_row[matrix][row][color];
+    // this is actually a dirty solution: without LED patterns we address the matrix directly with 1..8,
+    // and here we multiply by 16 since we've connected 16 LED Rings... :-/
 
-    if( matrix < MBNG_PATCH_NUM_MATRIX_DOUT &&
-	row < MBNG_PATCH_NUM_MATRIX_ROWS_MAX ) {
+    if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
+      MBNG_MATRIX_DOUT_PatternSet_LC(matrix, color, row, value);
 
-      if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
-	u8 pattern = (value >> 4) & 0x3;
-	u8 pattern_ix = value & 0x0f;
-	if( pattern_ix >= ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2) )
-	  ++pattern_ix; // 'M' entry not supported...
-	u8 center_led = value & 0x40;
-	*led_pattern = dout_matrix_pattern[pattern][pattern_ix] | (center_led ? (1 << 11) : 0);
+    } else if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	       item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
+      u8 pattern = item->flags.LED_MATRIX.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
 
-      } else if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	  item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
-	u8 pattern = item->flags.LED_MATRIX.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
+      int range = item->max - item->min + 1;
+      if( range < 0 ) range *= -1;
 
-	int min = item->min;
-	int max = item->max;
-	if( min > max ) { // swap
-	  int swap = max;
-	  max = min;
-	  min = swap;
-	}
+      int saturated_value = value - item->min;
+      if( saturated_value < 0 )
+	saturated_value = 0;
 
-	int range = max - min + 1;    
-	u32 scaled = ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)*(value-min)) / range;
-	int pattern_ix;
-	if( scaled <= 7 )
-	  pattern_ix = scaled;
-	else if( value == (range/2) ) {
-	  pattern_ix = (MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2;
-	} else {
-	  pattern_ix = scaled+1;
-	}
-	*led_pattern = dout_matrix_pattern[pattern][pattern_ix];
-#if 0
-	DEBUG_MSG("matrix=%d row=%d value=%d range=%d scaled=%d ix=%d led_pattern=0x%04x\n", matrix, row, value, range, scaled, pattern_ix, *led_pattern);
-#endif
-      }
+      MBNG_MATRIX_DOUT_PatternSet(matrix, color, row, saturated_value, range, pattern);
     }
   }
 
   // forward
-  MBNG_EVENT_ItemForward(item, value);
+  if( item->fwd_id )
+    MBNG_EVENT_ItemForward(item, value);
 
   return 0; // no error
 }
@@ -590,10 +693,11 @@ s32 MBNG_MATRIX_DOUT_NotifyRefresh(mbng_event_item_t *item)
   }
 
   if( led_matrix_subid ) {
-#if 0
     u16 value = 0; // TODO
+
     MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value);
-#endif
+
+    MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

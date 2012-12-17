@@ -85,23 +85,38 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
   int range = item->max - item->min + 1;
   if( range < 0 ) range *= -1;
 
+  mios32_enc_config_t enc_config;
+  enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
 
   mios32_enc_speed_t cfg_speed = NORMAL;
   int                cfg_speed_par = 0;
-  if( range < 32  ) {
-    cfg_speed = SLOW;
-    cfg_speed_par = 3;
-  } else if( range <= 256 ) {
-    cfg_speed = NORMAL;
+
+  if( enc_config.cfg.type == NON_DETENTED ) {
+    if( range < 32  ) {
+      cfg_speed = SLOW;
+      cfg_speed_par = 3;
+    } else if( range <= 256 ) {
+      cfg_speed = NORMAL;
+    } else {
+      cfg_speed = FAST;
+      cfg_speed_par = 2 + (range / 2048);
+      if( cfg_speed_par > 7 )
+	cfg_speed_par = 7;
+    }
   } else {
-    cfg_speed = FAST;
-    cfg_speed_par = 2 + (range / 2048);
-    if( cfg_speed_par > 7 )
-      cfg_speed_par = 7;
+    if( range < 32  ) {
+      cfg_speed = SLOW;
+      cfg_speed_par = 3;
+    } else if( range <= 64 ) {
+      cfg_speed = NORMAL;
+    } else {
+      cfg_speed = FAST;
+      cfg_speed_par = 2 + (range / 2048);
+      if( cfg_speed_par > 7 )
+	cfg_speed_par = 7;
+    }
   }
 
-  mios32_enc_config_t enc_config;
-  enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
   if( enc_config.cfg.speed != cfg_speed || enc_config.cfg.speed_par != cfg_speed_par ) {
     enc_config.cfg.speed = cfg_speed;
     enc_config.cfg.speed_par = cfg_speed_par;
@@ -258,7 +273,11 @@ s32 MBNG_ENC_NotifyRefresh(mbng_event_item_t *item)
   if( enc_subid && enc_subid <= MBNG_PATCH_NUM_ENC ) {
     u16 value = enc_value[enc_subid-1];
     MBNG_ENC_NotifyReceivedValue(item, value);
+
+    // print label
+    MBNG_LCD_PrintItemLabel(item, value);
   }
+
 
   return 0; // no error
 }

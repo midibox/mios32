@@ -45,6 +45,16 @@ extern "C" {
 # define MUTEX_SDCARD_GIVE { xSemaphoreGiveRecursive(xSDCardSemaphore); }
 #endif
 
+// this mutex should be used by all tasks which access J16 (ENC28J60 and SD Card)
+#ifdef MIOS32_FAMILY_EMULATION
+# define MUTEX_J16_TAKE { }
+# define MUTEX_J16_GIVE { }
+#else
+  extern xSemaphoreHandle xJ16Semaphore;
+# define MUTEX_J16_TAKE { while( xSemaphoreTakeRecursive(xJ16Semaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_J16_GIVE { xSemaphoreGiveRecursive(xJ16Semaphore); }
+#endif
+
 // MIDI IN handler
 #ifdef MIOS32_FAMILY_EMULATION
   extern void TASKS_MIDIINSemaphoreTake(void);

@@ -99,7 +99,7 @@ s32 UIP_TASK_Init(u32 mode)
 
   xUIPSemaphore = xSemaphoreCreateRecursiveMutex();
 
-  xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
+  xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", UIP_TASK_STACK_SIZE/4, NULL, PRIORITY_TASK_UIP, NULL);
 
   services_running = 0;
 
