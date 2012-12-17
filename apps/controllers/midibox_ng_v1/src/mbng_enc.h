@@ -32,6 +32,9 @@
 
 extern s32 MBNG_ENC_Init(u32 mode);
 
+extern s32 MBNG_ENC_FastModeSet(u8 multiplier);
+extern s32 MBNG_ENC_FastModeGet(void);
+
 extern s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item);
 
 extern s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer);
