@@ -211,7 +211,11 @@ EVENT_AIN    id=  5  type=CC     chn= 3 cc= 20   range=  0:127 offset=  0  ports
 EVENT_AIN    id=  6  type=CC     chn= 3 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
 
 
-# ENC hardware 
+# SysEx variables
+SYSEX_VAR dev=0 pat=0 bnk=0 ins=0 chn=0
+
+
+# ENC hardware
 ENC n=  1   sr= 0  pins=0:1   type=disabled
 ENC n=  2   sr= 0  pins=0:1   type=disabled
 ENC n=  3   sr= 0  pins=0:1   type=disabled
@@ -426,8 +430,3 @@ DebounceCtr 20
 GlobalChannel 0
 AllNotesOffChannel 0
 ConvertNoteOffToOn0 1
-SysExDev 0
-SysExPat 0
-SysExBnk 0
-SysExIns 0
-SysExChn 0
