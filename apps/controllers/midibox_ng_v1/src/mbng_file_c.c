@@ -1067,6 +1067,67 @@ s32 parseBank(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses SYSEX_VAR definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseSysExVar(char *cmd, char *brkt)
+{
+  // parse the parameters
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+    char full_parameter_str[60];
+    if( strlen(parameter) < 30 ) // just to ensure...
+      sprintf(full_parameter_str, "%s ... %s=", cmd, parameter);
+    else
+      strcpy(full_parameter_str, cmd);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "dev") == 0 ) {
+      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      if( value >= 0 )
+	mbng_patch_cfg.sysex_dev = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pat") == 0 ) {
+      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      if( value >= 0 )
+	mbng_patch_cfg.sysex_pat = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "bnk") == 0 ) {
+      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      if( value >= 0 )
+	mbng_patch_cfg.sysex_bnk = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ins") == 0 ) {
+      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      if( value >= 0 )
+	mbng_patch_cfg.sysex_ins = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "chn") == 0 ) {
+      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      if( value >= 0 )
+	mbng_patch_cfg.sysex_chn = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses ENC definitions
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
@@ -2103,6 +2164,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    MBNG_EVENT_PoolClear();
 	  }
 	  parseEvent(parameter, brkt);
+	} else if( strcmp(parameter, "SYSEX_VAR") == 0 ) {
+	  parseSysExVar(parameter, brkt);
 	} else if( strcmp(parameter, "ENC") == 0 ) {
 	  parseEnc(parameter, brkt);
 	} else if( strcmp(parameter, "DIN_MATRIX") == 0 ) {
@@ -2140,26 +2203,6 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.convert_note_off_to_on0 = value;
-	} else if( strcmp(parameter, "SysExDev") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
-	  if( value >= 0 )
-	    mbng_patch_cfg.sysex_dev = value;
-	} else if( strcmp(parameter, "SysExPat") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
-	  if( value >= 0 )
-	    mbng_patch_cfg.sysex_pat = value;
-	} else if( strcmp(parameter, "SysExBnk") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
-	  if( value >= 0 )
-	    mbng_patch_cfg.sysex_bnk = value;
-	} else if( strcmp(parameter, "SysExIns") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
-	  if( value >= 0 )
-	    mbng_patch_cfg.sysex_ins = value;
-	} else if( strcmp(parameter, "SysExChn") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 127);
-	  if( value >= 0 )
-	    mbng_patch_cfg.sysex_chn = value;
 	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 1000);
 	  if( value >= 0 )
@@ -2551,7 +2594,20 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   {
-    sprintf(line_buffer, "\n\n# ENC hardware \n");
+    sprintf(line_buffer, "\n\n# SysEx variables\n");
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "SYSEX_VAR dev=%d pat=%d bnk=%d ins=%d chn=%d\n",
+	    mbng_patch_cfg.sysex_dev,
+	    mbng_patch_cfg.sysex_pat,
+	    mbng_patch_cfg.sysex_bnk,
+	    mbng_patch_cfg.sysex_ins,
+	    mbng_patch_cfg.sysex_chn);
+    FLUSH_BUFFER;
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# ENC hardware\n");
     FLUSH_BUFFER;
 
     int enc;
@@ -2851,16 +2907,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "AllNotesOffChannel %d\n", mbng_patch_cfg.all_notes_off_chn);
   FLUSH_BUFFER;
   sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", mbng_patch_cfg.convert_note_off_to_on0);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SysExDev %d\n", mbng_patch_cfg.sysex_dev);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SysExPat %d\n", mbng_patch_cfg.sysex_pat);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SysExBnk %d\n", mbng_patch_cfg.sysex_bnk);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SysExIns %d\n", mbng_patch_cfg.sysex_ins);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SysExChn %d\n", mbng_patch_cfg.sysex_chn);
   FLUSH_BUFFER;
 
   return status;

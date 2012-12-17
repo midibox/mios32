@@ -18,7 +18,7 @@ LCD "%C@(1:1:1)Logic Control"
 #   0x11 : Logic Control XT
 #   0x14 : Mackie Control
 #   0x15 : Mackie Control XT
-SysExDev 0x10
+SYSEX_VAR dev=0x10
 
 # Receive Device Query -> send Host Connection Query
 EVENT_RECEIVER id=  1  fwd_id=SENDER:1 \
