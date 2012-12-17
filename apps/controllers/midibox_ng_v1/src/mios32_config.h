@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.000"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.001"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application
@@ -20,6 +20,8 @@
 // enable 4 USB ports
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
+// increased number of SRs
+#define MIOS32_SRIO_NUM_SR 32
 
 // enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
 #if defined(MIOS32_FAMILY_STM32F10x)

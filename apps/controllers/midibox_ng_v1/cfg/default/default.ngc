@@ -411,26 +411,14 @@ ROUTER n=16   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
 
 
 # Ethernet Setup
-ETH_LocalIp 192.168.1.180
-ETH_Netmask 255.255.255.0
-ETH_Gateway 192.168.1.1
-ETH_Dhcp 1
-OSC_RemoteIp 0 192.168.1.101
-OSC_RemotePort 0 8001
-OSC_LocalPort 0 8000
-OSC_TransferMode 0 0
-OSC_RemoteIp 1 192.168.1.101
-OSC_RemotePort 1 8001
-OSC_LocalPort 1 8000
-OSC_TransferMode 1 0
-OSC_RemoteIp 2 192.168.1.101
-OSC_RemotePort 2 8001
-OSC_LocalPort 2 8000
-OSC_TransferMode 2 0
-OSC_RemoteIp 3 192.168.1.101
-OSC_RemotePort 3 8001
-OSC_LocalPort 3 8000
-OSC_TransferMode 3 0
+ETH dhcp=1  local_ip=192.168.1.180  netmask=255.255.255.0  gateway=192.168.1.1
+
+
+# OSC Configuration
+OSC n=1  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=2  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=3  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=4  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
 
 
 # Misc. Configuration
