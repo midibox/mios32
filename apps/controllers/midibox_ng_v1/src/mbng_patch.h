@@ -20,9 +20,8 @@
 // global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// temporary - will be changed with second (or enhanced) SRIO chain
-#define MBNG_PATCH_NUM_DIN         128
-#define MBNG_PATCH_NUM_DOUT        128
+#define MBNG_PATCH_NUM_DIN        1024
+#define MBNG_PATCH_NUM_DOUT       1024
 #define MBNG_PATCH_NUM_ENC         128
 #define MBNG_PATCH_NUM_AIN           6
 #define MBNG_PATCH_NUM_AINSER_MODULES 2

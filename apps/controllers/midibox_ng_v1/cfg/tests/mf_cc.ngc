@@ -25,14 +25,14 @@ ENC n=  8   sr=14 pins=6:7   type=non_detented
 ################################################################################
 
 # on motorfader movements
-EVENT_MF  id= 1  fwd_id=MF:1  type=CC  chn= 1 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 2  fwd_id=MF:2  type=CC  chn= 1 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 3  fwd_id=MF:3  type=CC  chn= 1 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 4  fwd_id=MF:4  type=CC  chn= 1 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 5  fwd_id=MF:5  type=CC  chn= 1 cc=20  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 6  fwd_id=MF:6  type=CC  chn= 1 cc=21  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 7  fwd_id=MF:7  type=CC  chn= 1 cc=22  range=0:127  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 8  fwd_id=MF:8  type=CC  chn= 1 cc=23  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 1  fwd_id=ENC:1  type=CC  chn= 1 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 2  fwd_id=ENC:2  type=CC  chn= 1 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 3  fwd_id=ENC:3  type=CC  chn= 1 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 4  fwd_id=ENC:4  type=CC  chn= 1 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 5  fwd_id=ENC:5  type=CC  chn= 1 cc=20  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 6  fwd_id=ENC:6  type=CC  chn= 1 cc=21  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 7  fwd_id=ENC:7  type=CC  chn= 1 cc=22  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 8  fwd_id=ENC:8  type=CC  chn= 1 cc=23  range=0:127  lcd_pos=1:1:1  label="^std_mf"
 
 # on touchsensor event (first id has been specified in the MF configuration above)
 EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127  lcd_pos=1:1:2  label="^std_btn"

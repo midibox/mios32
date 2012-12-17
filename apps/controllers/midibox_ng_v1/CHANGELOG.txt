@@ -1,5 +1,16 @@
 $Id$
 
+MIDIbox NG V1.001
+~~~~~~~~~~~~~~~~~
+
+   o maximum length of DIN/DOUT shift register chain increased to 32.
+     This means that up to 256 digital inputs, and 256 digital outputs are available.
+
+   o Number of virtual button and LED functions increased to 1024
+
+   o Ethernet and OSC setup now stored with ETH/OSC commands in .NGC file
+
+
 MIDIbox NG V1.000
 ~~~~~~~~~~~~~~~~~
 

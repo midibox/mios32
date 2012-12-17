@@ -21,14 +21,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include "tasks.h"
-
 #include <string.h>
+#include <uip_task.h>
 
 #include <midi_port.h>
 #include <midi_router.h>
 #include <seq_bpm.h>
 
+#include "tasks.h"
 #include "file.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
@@ -37,6 +37,8 @@
 #include "mbng_dout.h"
 #include "mbng_din.h"
 #include "mbng_enc.h"
+#include "mbng_ain.h"
+#include "mbng_mf.h"
 #include "mbng_matrix.h"
 #include "mbng_lcd.h"
 
@@ -1818,6 +1820,185 @@ s32 parseRouter(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses ETH definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseEth(char *cmd, char *brkt)
+{
+#if defined(MIOS32_FAMILY_EMULATION)
+  return -1;
+#else
+  // parse the parameters
+  int dhcp = 1;
+  u32 local_ip = MY_IP_ADDRESS;
+  u32 netmask = MY_NETMASK;
+  u32 gateway = MY_GATEWAY;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "dhcp") == 0 ) {
+      if( (dhcp=get_dec(value_str)) < 0 || dhcp > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s ... %s=%s' (expecting 0 or 1)\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "local_ip") == 0 ) {
+      if( (local_ip = get_ip(value_str)) == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "netmask") == 0 ) {
+      if( (netmask = get_ip(value_str)) == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "gateway") == 0 ) {
+      if( (gateway = get_ip(value_str)) == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  UIP_TASK_IP_AddressSet(local_ip);
+  UIP_TASK_NetmaskSet(netmask);
+  UIP_TASK_GatewaySet(gateway);
+  UIP_TASK_DHCP_EnableSet(dhcp);
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses OSC definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseOsc(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  u32 remote_ip = OSC_REMOTE_IP;
+  int remote_port = OSC_REMOTE_PORT;
+  int local_port = OSC_LOCAL_PORT;
+  int transfer_mode = OSC_CLIENT_TRANSFER_MODE_MIDI;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > OSC_SERVER_NUM_CONNECTIONS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid OSC port number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, OSC_SERVER_NUM_CONNECTIONS);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "remote_ip") == 0 ) {
+      if( (remote_ip = get_ip(value_str)) == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "remote_port") == 0 ) {
+      if( (remote_port=get_dec(value_str)) < 0 || remote_port > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "local_port") == 0 ) {
+      if( (local_port=get_dec(value_str)) < 0 || local_port > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "transfer_mode") == 0 ) {
+      int found_mode = -1;
+      int i;
+      for(i=0; i<OSC_CLIENT_NUM_TRANSFER_MODES; ++i) {
+	char mode[10];
+	strcpy(mode, OSC_CLIENT_TransferModeShortNameGet(i));
+
+	// remove spaces and dots
+	char *mode_ptr;
+	for(mode_ptr=mode; *mode_ptr != 0 && *mode_ptr != ' ' && *mode_ptr != '.'; ++mode_ptr);
+	*mode_ptr = 0;
+
+	if( strcasecmp(value_str, mode) == 0 ) {
+	  found_mode = i;
+	  break;
+	}
+      }
+
+      if( found_mode < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR unknown transfer mode %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      transfer_mode = found_mode;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    OSC_SERVER_RemoteIP_Set(num-1, remote_ip);
+    OSC_SERVER_RemotePortSet(num-1, remote_port);
+    OSC_SERVER_LocalPortSet(num-1, local_port);
+    OSC_CLIENT_TransferModeSet(num-1, transfer_mode);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // reads the config file content (again)
 // returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -1899,6 +2080,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  MBNG_ENC_Init(0);
 	  MBNG_DOUT_Init(0);
 	  MBNG_DIN_Init(0);
+	  MBNG_AIN_Init(0);
+	  MBNG_MF_Init(0);
 	} else if( strcmp(parameter, "LCD") == 0 ) {
 	  char *str = brkt;
 	  if( !(str=remove_quotes(str)) ) {
@@ -1936,6 +2119,10 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseMf(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
+	} else if( strcmp(parameter, "ETH") == 0 ) {
+	  parseEth(parameter, brkt);
+	} else if( strcmp(parameter, "OSC") == 0 ) {
+	  parseOsc(parameter, brkt);
 
 	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 255);
@@ -2049,104 +2236,14 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
 	    MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
 	    MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
-	  }	  
+	  }
 
-#if !defined(MIOS32_FAMILY_EMULATION)
-	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
-	  u32 value;
-	  if( !(value=get_ip(brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    UIP_TASK_IP_AddressSet(value);
-	  }
-	} else if( strcmp(parameter, "ETH_Netmask") == 0 ) {
-	  u32 value;
-	  if( !(value=get_ip(brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    UIP_TASK_NetmaskSet(value);
-	  }
-	} else if( strcmp(parameter, "ETH_Gateway") == 0 ) {
-	  u32 value;
-	  if( !(value=get_ip(brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for parameter '%s'\n", parameter);
-#endif
-	  } else {
-	    UIP_TASK_GatewaySet(value);
-	  }
 	} else {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  s32 value = get_dec(word);
-
-	  if( value < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for parameter '%s'\n", parameter);
+	  // changed error to warning, since people are sometimes confused about these messages
+	  // on file format changes
+	  DEBUG_MSG("[MBNG_FILE_C] WARNING: unknown parameter: %s", line_buffer);
 #endif
-	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
-	    UIP_TASK_DHCP_EnableSet((value >= 1) ? 1 : 0);
-	  } else if( strcmp(parameter, "OSC_RemoteIp") == 0 ) {
-	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
-	      DEBUG_MSG("[MBNG_FILE_C] ERROR invalid connection number for parameter '%s'\n", parameter);
-	    } else {
-	      u8 con = value;
-	      u32 ip;
-	      if( !(ip=get_ip(brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for parameter '%s'\n", parameter);
-#endif
-	      } else {
-		OSC_SERVER_RemoteIP_Set(con, ip);
-	      }
-	    }
-	  } else if( strcmp(parameter, "OSC_RemotePort") == 0 ) {
-	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
-	      DEBUG_MSG("[MBNG_FILE_C] ERROR invalid connection number for parameter '%s'\n", parameter);
-	    } else {
-	      u8 con = value;
-	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (value=get_dec(word)) < 0 ) {
-		DEBUG_MSG("[MBNG_FILE_C] ERROR invalid port number for parameter '%s'\n", parameter);
-	      } else {
-		OSC_SERVER_RemotePortSet(con, value);
-	      }
-	    }
-	  } else if( strcmp(parameter, "OSC_LocalPort") == 0 ) {
-	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
-	      DEBUG_MSG("[MBNG_FILE_C] ERROR invalid connection number for parameter '%s'\n", parameter);
-	    } else {
-	      u8 con = value;
-	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (value=get_dec(word)) < 0 ) {
-		DEBUG_MSG("[MBNG_FILE_C] ERROR invalid port number for parameter '%s'\n", parameter);
-	      } else {
-		OSC_SERVER_LocalPortSet(con, value);
-	      }
-	    }
-	  } else if( strcmp(parameter, "OSC_TransferMode") == 0 ) {
-	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
-	      DEBUG_MSG("[MBNG_FILE_C] ERROR invalid connection number for parameter '%s'\n", parameter);
-	    } else {
-	      u8 con = value;
-	      word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	      if( (value=get_dec(word)) < 0 ) {
-		DEBUG_MSG("[MBNG_FILE_C] ERROR invalid transfer mode number for parameter '%s'\n", parameter);
-	      } else {
-		OSC_CLIENT_TransferModeSet(con, value);
-	      }
-	    }
-#endif /* !defined(MIOS32_FAMILY_EMULATION) */
-	  } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    // changed error to warning, since people are sometimes confused about these messages
-	    // on file format changes
-	    DEBUG_MSG("[MBNG_FILE_C] WARNING: unknown parameter: %s", line_buffer);
-#endif
-	  }
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -2670,57 +2767,77 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Ethernet Setup\n");
   FLUSH_BUFFER;
   {
-    u32 value = UIP_TASK_IP_AddressGet();
-    sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
-	    (value >> 24) & 0xff,
-	    (value >> 16) & 0xff,
-	    (value >>  8) & 0xff,
-	    (value >>  0) & 0xff);
+    sprintf(line_buffer, "ETH dhcp=%d", UIP_TASK_DHCP_EnableGet());
+    FLUSH_BUFFER;
+
+    {
+      u32 value = UIP_TASK_IP_AddressGet();
+      sprintf(line_buffer, "  local_ip=%d.%d.%d.%d",
+	      (value >> 24) & 0xff,
+	      (value >> 16) & 0xff,
+	      (value >>  8) & 0xff,
+	      (value >>  0) & 0xff);
+      FLUSH_BUFFER;
+    }
+
+    {
+      u32 value = UIP_TASK_NetmaskGet();
+      sprintf(line_buffer, "  netmask=%d.%d.%d.%d",
+	      (value >> 24) & 0xff,
+	      (value >> 16) & 0xff,
+	      (value >>  8) & 0xff,
+	      (value >>  0) & 0xff);
+      FLUSH_BUFFER;
+    }
+
+    {
+      u32 value = UIP_TASK_GatewayGet();
+      sprintf(line_buffer, "  gateway=%d.%d.%d.%d",
+	      (value >> 24) & 0xff,
+	      (value >> 16) & 0xff,
+	      (value >>  8) & 0xff,
+	      (value >>  0) & 0xff);
+      FLUSH_BUFFER;
+    }
+
+    sprintf(line_buffer, "\n");
     FLUSH_BUFFER;
   }
 
   {
-    u32 value = UIP_TASK_NetmaskGet();
-    sprintf(line_buffer, "ETH_Netmask %d.%d.%d.%d\n",
-	    (value >> 24) & 0xff,
-	    (value >> 16) & 0xff,
-	    (value >>  8) & 0xff,
-	    (value >>  0) & 0xff);
-    FLUSH_BUFFER;
-  }
-
-  {
-    u32 value = UIP_TASK_GatewayGet();
-    sprintf(line_buffer, "ETH_Gateway %d.%d.%d.%d\n",
-	    (value >> 24) & 0xff,
-	    (value >> 16) & 0xff,
-	    (value >>  8) & 0xff,
-	    (value >>  0) & 0xff);
-    FLUSH_BUFFER;
-  }
-
-  sprintf(line_buffer, "ETH_Dhcp %d\n", UIP_TASK_DHCP_EnableGet());
-  FLUSH_BUFFER;
-
-  int con;
-  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
-    u32 value = OSC_SERVER_RemoteIP_Get(con);
-    sprintf(line_buffer, "OSC_RemoteIp %d %d.%d.%d.%d\n",
-	    con,
-	    (value >> 24) & 0xff,
-	    (value >> 16) & 0xff,
-	    (value >>  8) & 0xff,
-	    (value >>  0) & 0xff);
+    sprintf(line_buffer, "\n\n# OSC Configuration\n");
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_RemotePort %d %d\n", con, OSC_SERVER_RemotePortGet(con));
-    FLUSH_BUFFER;
+    int con;
+    for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+      sprintf(line_buffer, "OSC n=%d", con+1);
+      FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
-    FLUSH_BUFFER;
+      {
+	u32 value = OSC_SERVER_RemoteIP_Get(con);
+	sprintf(line_buffer, "  remote_ip=%d.%d.%d.%d",
+		(value >> 24) & 0xff,
+		(value >> 16) & 0xff,
+		(value >>  8) & 0xff,
+		(value >>  0) & 0xff);
+	FLUSH_BUFFER;
+      }
 
-    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
-    FLUSH_BUFFER;
+      char mode[10];
+      strcpy(mode, OSC_CLIENT_TransferModeShortNameGet(OSC_CLIENT_TransferModeGet(con)));
+
+      // remove spaces and dots
+      char *mode_ptr;
+      for(mode_ptr=mode; *mode_ptr != 0 && *mode_ptr != ' ' && *mode_ptr != '.'; ++mode_ptr);
+      *mode_ptr = 0;
+
+
+      sprintf(line_buffer, "  remote_port=%d  local_port=%d  transfer_mode=%s\n",
+	      OSC_SERVER_RemotePortGet(con),
+	      OSC_SERVER_LocalPortGet(con),
+	      mode);
+      FLUSH_BUFFER;
+    }
   }
 #endif
 
