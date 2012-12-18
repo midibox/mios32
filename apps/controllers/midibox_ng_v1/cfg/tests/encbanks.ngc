@@ -4,7 +4,6 @@ BANK n=1  enc=1:16:1
 BANK n=2  enc=1:16:17
 BANK n=3  enc=1:16:33
 BANK n=4  enc=1:16:49
-BANK n=5  enc=1:16:65
 
 EVENT_BUTTON id=  1  type=Meta   meta=SetBank button_mode=OnOnly range=1:1  lcd_pos=1:17:1 label="Bnk%q"
 EVENT_BUTTON id=  2  type=Meta   meta=SetBank button_mode=OnOnly range=2:2  lcd_pos=1:17:1 label="Bnk%q"
