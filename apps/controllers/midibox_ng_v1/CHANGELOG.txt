@@ -8,6 +8,15 @@ MIDIbox NG V1.002
 
    o reversed value ranges (min value greater than max value) now properly supported
 
+   o support for ain_mode Direct/Snap/Relative/Parallax
+
+   o incoming MIDI values can now trigger the output of EVENT labels if the "fwd_to_lcd"
+     option is set to 1 in the related EVENT_* definitions.
+
+   o support for "Radio Groups": button and LEDs can now be assigned to groups, which
+     handle the same value over multiple elements.
+     A configuration example can be found under: cfg/tests/radiogrp.ngc
+
 
 MIDIbox NG V1.001
 ~~~~~~~~~~~~~~~~~

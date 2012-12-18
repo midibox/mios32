@@ -637,6 +637,32 @@ mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// for AIN Mode
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item)
+{
+  mbng_event_ain_mode_t ain_mode = item->flags.AIN.ain_mode;
+  switch( ain_mode ) {
+  case MBNG_EVENT_AIN_MODE_DIRECT:                return "Direct";
+  case MBNG_EVENT_AIN_MODE_SNAP:                  return "Snap";
+  case MBNG_EVENT_AIN_MODE_RELATIVE:              return "Relative";
+  case MBNG_EVENT_AIN_MODE_PARALLAX:              return "Parallax";
+  }
+  return "Undefined";
+}
+
+mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
+{
+  if( strcasecmp(ain_mode, "Direct") == 0 )       return MBNG_EVENT_AIN_MODE_DIRECT;
+  if( strcasecmp(ain_mode, "Snap") == 0 )         return MBNG_EVENT_AIN_MODE_SNAP;
+  if( strcasecmp(ain_mode, "Relative") == 0 )     return MBNG_EVENT_AIN_MODE_RELATIVE;
+  if( strcasecmp(ain_mode, "Parallax") == 0 )     return MBNG_EVENT_AIN_MODE_PARALLAX;
+
+  return MBNG_EVENT_AIN_MODE_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // for ENC Mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
@@ -1100,14 +1126,14 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
 
   switch( item->id & 0xf000 ) {
   //case MBNG_EVENT_CONTROLLER_DISABLED:
-  case MBNG_EVENT_CONTROLLER_BUTTON:        return MBNG_DIN_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_LED:           return MBNG_DOUT_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: return MBNG_MATRIX_DIN_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_LED_MATRIX:    return MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_ENC:           return MBNG_ENC_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_AIN:           return MBNG_AIN_NotifyReceivedValue(item, value);
-  case MBNG_EVENT_CONTROLLER_AINSER:        return MBNG_AIN_NotifyReceivedValue_SER64(item, value);
-  case MBNG_EVENT_CONTROLLER_MF:            return MBNG_MF_NotifyReceivedValue(item, value);
+  case MBNG_EVENT_CONTROLLER_BUTTON:        MBNG_DIN_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_LED:           MBNG_DOUT_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: MBNG_MATRIX_DIN_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_LED_MATRIX:    MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_ENC:           MBNG_ENC_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_AIN:           MBNG_AIN_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_AIN_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_MF:            MBNG_MF_NotifyReceivedValue(item, value); break;
   case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
 
   case MBNG_EVENT_CONTROLLER_SENDER: {
@@ -1119,12 +1145,6 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
 
     // send MIDI event
     MBNG_EVENT_ItemSend(item, value);
-
-    // forward
-    MBNG_EVENT_ItemForward(item, value);
-
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
   } break;
 
   case MBNG_EVENT_CONTROLLER_RECEIVER: {
@@ -1133,13 +1153,16 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Receiver)\n", receiver_ix, value);
     }
-
-    // forward
-    MBNG_EVENT_ItemForward(item, value);
-
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
   } break;
+  }
+
+  // forward
+  if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) ) {
+    if( item->fwd_id )
+      MBNG_EVENT_ItemForward(item, value);
+
+    if( item->flags.general.fwd_to_lcd )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return -1; // unsupported controller type
@@ -1172,11 +1195,14 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value)
     // notify by temporary changing the ID - forwarding disabled
     mbng_event_item_id_t tmp_id = item->id;
     mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
+    u8 tmp_fwd_to_lcd = item->flags.general.fwd_to_lcd;
     item->id = item->fwd_id;
     item->fwd_id = 0;
+    item->flags.general.fwd_to_lcd = 0;
     MBNG_EVENT_ItemReceive(item, value);
     item->id = tmp_id;
     item->fwd_id = tmp_fwd_id;
+    item->flags.general.fwd_to_lcd = tmp_fwd_to_lcd;
   }
 
   if( recursion_ctr )
@@ -1187,29 +1213,112 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Called to forward an event to a radio group
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u16 value, u8 radio_group)
+{
+  // search for all items in the pool which are part of the radio group
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    u16 id_type = pool_item->id & 0xf000;
+    u8 is_in_group = 0;
+    mbng_event_flags_t flags;
+    if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
+      flags.ALL = pool_item->flags;
+      is_in_group = flags.DIN.radio_group == radio_group;
+    }
+    else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
+      flags.ALL = pool_item->flags;
+      is_in_group = flags.DOUT.radio_group == radio_group;
+    }
+
+    if( is_in_group ) {
+      mbng_event_item_t fwd_item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &fwd_item);
+
+      // update value in button/LED element
+      if( id_type == MBNG_EVENT_CONTROLLER_BUTTON )
+	MBNG_DIN_NotifyReceivedValue(&fwd_item, value);
+      else if( id_type == MBNG_EVENT_CONTROLLER_LED )
+	MBNG_DOUT_NotifyReceivedValue(&fwd_item, value);
+
+      // and trigger forwarding
+      MBNG_EVENT_ItemForward(&fwd_item, value);
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Refresh all items
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Refresh(void)
 {
-  mbng_event_item_t item;
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
+    s32 value = 0;
     switch( pool_item->id & 0xf000 ) {
-    case MBNG_EVENT_CONTROLLER_BUTTON:        MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_DIN_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_LED:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_DOUT_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MATRIX_DIN_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_LED_MATRIX:    MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MATRIX_DOUT_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_ENC:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_ENC_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_AIN:           MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh(&item); break;
-    case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_AIN_NotifyRefresh_SER64(&item); break;
-    case MBNG_EVENT_CONTROLLER_MF:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_MF_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_BUTTON:
+      if( (value=MBNG_DIN_GetCurrentValueFromId(pool_item->id)) >= 0 ) {
+	mbng_event_flags_t flags;
+	flags.ALL = pool_item->flags;
+	if( flags.DIN.radio_group ) {
+	  if( pool_item->min <= pool_item->max )
+	    value = value ? pool_item->min : (pool_item->max+1); // outside range if DIN wasn't set
+	  else
+	    value = value ? pool_item->max : (pool_item->min+1); // outside range if DIN wasn't set
+	} else if( pool_item->min == pool_item->max ) {
+	  value = value ? pool_item->max : 0;
+	} else {
+	  value = value ? pool_item->max : pool_item->min;
+	}
+      }
+      break;
+
+    case MBNG_EVENT_CONTROLLER_LED:
+      if( (value=MBNG_DOUT_GetCurrentValueFromId(pool_item->id)) >= 0 ) {
+	mbng_event_flags_t flags;
+	flags.ALL = pool_item->flags;
+	if( flags.DOUT.radio_group ) {
+	  if( pool_item->min <= pool_item->max )
+	    value = value ? pool_item->min : (pool_item->max+1); // outside range if DIN wasn't set
+	  else
+	    value = value ? pool_item->max : (pool_item->min+1); // outside range if DIN wasn't set
+	} else if( pool_item->min == pool_item->max ) {
+	  value = value ? pool_item->max : 0;
+	} else {
+	  value = value ? pool_item->max : pool_item->min;
+	}
+      }
+      break;
+
+    case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: value = MBNG_MATRIX_DOUT_GetCurrentValueFromId(pool_item->id); break;
+    case MBNG_EVENT_CONTROLLER_LED_MATRIX:    value = MBNG_MATRIX_DIN_GetCurrentValueFromId(pool_item->id); break;
+    case MBNG_EVENT_CONTROLLER_ENC:           value = MBNG_ENC_GetCurrentValueFromId(pool_item->id); break;
+    case MBNG_EVENT_CONTROLLER_AIN:           value = MBNG_AIN_GetCurrentValueFromId(pool_item->id); break;
+    case MBNG_EVENT_CONTROLLER_AINSER:        value = MBNG_AINSER_GetCurrentValueFromId(pool_item->id); break;
+    case MBNG_EVENT_CONTROLLER_MF:            value = MBNG_MF_GetCurrentValueFromId(pool_item->id); break;
 #if 0
-    case MBNG_EVENT_CONTROLLER_CV:            MBNG_EVENT_ItemCopy2User(pool_item, &item); MBNG_CV_NotifyRefresh(&item); break;
+    case MBNG_EVENT_CONTROLLER_CV:            value = MBNG_MF_GetCurrentValueFromId(pool_item->id); break;
 #endif
     }
+
+    if( value >= 0 ) {
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      item.flags.general.fwd_to_lcd = 1; // force LCD update
+      MBNG_EVENT_ItemReceive(&item, value);
+    }
+
     pool_ptr += pool_item->len;
   }
 

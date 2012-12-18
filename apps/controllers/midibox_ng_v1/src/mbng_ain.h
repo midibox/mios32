@@ -33,12 +33,12 @@
 extern s32 MBNG_AIN_Init(u32 mode);
 
 extern s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value);
-extern s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value);
+extern s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value);
 
 extern s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_AIN_NotifyRefresh(mbng_event_item_t *item);
-extern s32 MBNG_AIN_NotifyReceivedValue_SER64(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_AIN_NotifyRefresh_SER64(mbng_event_item_t *item);
+extern s32 MBNG_AIN_GetCurrentValueFromId(mbng_event_item_id_t id);
+extern s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_AINSER_GetCurrentValueFromId(mbng_event_item_id_t id);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

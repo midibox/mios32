@@ -300,7 +300,7 @@ s32 MBNG_PATCH_BankCtrlInBank(mbng_event_item_t *item)
   }
 
   if( bc == NULL )
-    return 1; // not covered by banks -> always active
+    return 0; // not in bank
 
   mbng_event_item_id_t item_id = item->id;
   int bank;

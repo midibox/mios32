@@ -64,11 +64,17 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", dout_subid, value);
   }
 
-  // print label
-  MBNG_LCD_PrintItemLabel(item, value);
-
   int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-  u8 dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
+  u8 dout_value;
+  if( item->flags.DOUT.radio_group ) {
+    if( item->min <= item->max )
+      dout_value = value >= item->min && value <= item->max;
+    else
+      dout_value = value >= item->max && value <= item->min;
+  } else if( item->min == item->max ) {
+    dout_value = value == item->min;
+  } else
+    dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
 
   // set state
   if( dout_subid && dout_subid <= MBNG_PATCH_NUM_DOUT ) {
@@ -106,36 +112,21 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     MIOS32_DOUT_PinSet(dout_subid-1, dout_value);
   }
 
-  // forward
-  if( item->fwd_id && (!MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item)) )
-    MBNG_EVENT_ItemForward(item, value);
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_Refresh() to refresh the controller
-// (mainly to trigger the forward item)
+// This function returns the value of a given item ID
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_DOUT_NotifyRefresh(mbng_event_item_t *item)
+s32 MBNG_DOUT_GetCurrentValueFromId(mbng_event_item_id_t id)
 {
-  int dout_subid = item->id & 0xfff;
+  int dout_subid = id & 0xfff;
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_DOUT_NotifyRefresh(%d)\n", dout_subid);
-  }
+  if( !dout_subid || dout_subid > MBNG_PATCH_NUM_DOUT )
+    return -1; // item not mapped to hardware
 
-  if( dout_subid && dout_subid <= MBNG_PATCH_NUM_DOUT ) {
-    int ix = (dout_subid-1) / 32;
-    int mask = (1 << ((dout_subid-1) % 32));
-    u16 value = (led_states[ix] & mask) ? item->max : item->min;
-    MBNG_DOUT_NotifyReceivedValue(item, value);
-
-    // print label if visible in bank
-    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
-      MBNG_LCD_PrintItemLabel(item, value);
-  }
-
-  return 0; // no error
+  int ix = (dout_subid-1) / 32;
+  int mask = (1 << ((dout_subid-1) % 32));
+  return (led_states[ix] & mask) ? 1 : 0;
 }

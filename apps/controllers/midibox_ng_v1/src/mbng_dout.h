@@ -32,7 +32,7 @@
 
 extern s32 MBNG_DOUT_Init(u32 mode);
 extern s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_DOUT_NotifyRefresh(mbng_event_item_t *item);
+extern s32 MBNG_DOUT_GetCurrentValueFromId(mbng_event_item_id_t id);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

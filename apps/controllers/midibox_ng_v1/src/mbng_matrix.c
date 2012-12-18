@@ -588,35 +588,21 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, value);
   }
 
-  if( item->fwd_id )
-    MBNG_EVENT_ItemForward(item, value);
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_Refresh() to refresh the controller
-// (mainly to trigger the forward item)
+// This function returns the value of a given item ID
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DIN_NotifyRefresh(mbng_event_item_t *item)
+s32 MBNG_MATRIX_DIN_GetCurrentValueFromId(mbng_event_item_id_t id)
 {
-  int button_matrix_subid = item->id & 0xfff;
+  int button_matrix_subid = (id & 0xfff);
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyRefresh(%d)\n", button_matrix_subid);
-  }
+  if( !button_matrix_subid )
+    return -1; // item not mapped to hardware
 
-  if( button_matrix_subid ) {
-    u16 value = 0; // TODO
-    MBNG_MATRIX_DIN_NotifyReceivedValue(item, value);
-
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
-  }
-
-
-  return 0; // no error
+  return 0; // TODO
 }
 
 
@@ -678,33 +664,19 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     }
   }
 
-  // forward
-  if( item->fwd_id )
-    MBNG_EVENT_ItemForward(item, value);
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_Refresh() to refresh the controller
-// (mainly to trigger the forward item)
+// This function returns the value of a given item ID
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DOUT_NotifyRefresh(mbng_event_item_t *item)
+s32 MBNG_MATRIX_DOUT_GetCurrentValueFromId(mbng_event_item_id_t id)
 {
-  int led_matrix_subid = item->id & 0xfff;
+  int led_matrix_subid = (id & 0xfff);
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyRefresh(%d)\n", led_matrix_subid);
-  }
+  if( !led_matrix_subid )
+    return -1; // item not mapped to hardware
 
-  if( led_matrix_subid ) {
-    u16 value = 0; // TODO
-
-    MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value);
-
-    MBNG_LCD_PrintItemLabel(item, value);
-  }
-
-  return 0; // no error
+  return 0; // TODO
 }

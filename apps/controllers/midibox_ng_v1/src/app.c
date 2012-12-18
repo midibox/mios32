@@ -361,7 +361,7 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 {
   // -> MBNG_AIN once enabled
   if( hw_enabled )
-    MBNG_AIN_NotifyChange_SER64(module, pin, pin_value);
+    MBNG_AINSER_NotifyChange(module, pin, pin_value);
 }
 
 

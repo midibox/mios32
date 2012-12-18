@@ -793,6 +793,44 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "radio_group") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 63 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0..63)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_BUTTON ) {
+	item.flags.DIN.radio_group = value;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_LED ) {
+	item.flags.DOUT.radio_group = value;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON or EVENT_LED!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_mode") == 0 ) {
+      mbng_event_ain_mode_t ain_mode = MBNG_EVENT_ItemAinModeFromStrGet(value_str);
+      if( ain_mode == MBNG_EVENT_AIN_MODE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ain_mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN ) {
+	item.flags.AIN.ain_mode = ain_mode;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER ) {
+	item.flags.AINSER.ain_mode = ain_mode;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "enc_mode") == 0 ) {
       mbng_event_enc_mode_t enc_mode = MBNG_EVENT_ItemEncModeFromStrGet(value_str);
       if( enc_mode == MBNG_EVENT_ENC_MODE_UNDEFINED ) {
@@ -815,12 +853,6 @@ s32 parseEvent(char *cmd, char *brkt)
       if( led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid led_matrix_pattern in EVENT_%s ... %s=%s\n", event, parameter, value_str);
-#endif
-	return -1;
-      } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC &&
-		 (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_LED_MATRIX) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC/LED_MATRIX!\n", event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -875,6 +907,18 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
       item.fwd_id = fwd_id | id_lower;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "fwd_to_lcd") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.flags.general.fwd_to_lcd = value;
+      }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
@@ -2434,6 +2478,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
+      if( item.flags.general.fwd_to_lcd ) {
+	sprintf(line_buffer, "  fwd_to_lcd=1");
+	FLUSH_BUFFER;
+      }
+
       sprintf(line_buffer, "  type=%-6s",
 	      MBNG_EVENT_ItemTypeStrGet(&item));
       FLUSH_BUFFER;
@@ -2538,20 +2587,24 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
+
+	if( item.flags.DIN.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.flags.DIN.radio_group);
+	  FLUSH_BUFFER;
+	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_LED: {
+	if( item.flags.DOUT.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.flags.DOUT.radio_group);
+	  FLUSH_BUFFER;
+	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
       }; break;
 
       case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
-	if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	    item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
-	  sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
-	  FLUSH_BUFFER;
-	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_ENC: {
@@ -2559,18 +2612,20 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
+      }; break;
 
-	if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	    item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
-	  sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
+      case MBNG_EVENT_CONTROLLER_AIN: {
+	if( item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
       }; break;
 
-      case MBNG_EVENT_CONTROLLER_AIN: {
-      }; break;
-
       case MBNG_EVENT_CONTROLLER_AINSER: {
+	if( item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
       }; break;
 
       case MBNG_EVENT_CONTROLLER_MF: {
@@ -2578,6 +2633,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       case MBNG_EVENT_CONTROLLER_CV: {
       }; break;
+      }
+
+      if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	  item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+	sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
+	FLUSH_BUFFER;
       }
 
       sprintf(line_buffer, "  lcd_pos=%d:%d:%d", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1);

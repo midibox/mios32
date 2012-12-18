@@ -36,7 +36,7 @@ extern s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_packa
 extern s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 
 extern s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_MF_NotifyRefresh(mbng_event_item_t *item);
+extern s32 MBNG_MF_GetCurrentValueFromId(mbng_event_item_id_t id);
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
