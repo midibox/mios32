@@ -81,12 +81,22 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   }
 
   // scale 12bit value between min/max with fixed point artithmetic
-  int value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+  int value;
+  if( item.min <= item.max ) {
+    value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+  } else {
+    value = item.min - (((256*pin_value)/4096) * (item.min-item.max+1) / 256);
+  }
 
   int ain_ix = (ain_id & 0xfff) - 1;
-  if( ain_ix >= 0 || ain_ix < MBNG_PATCH_NUM_AIN )
+  if( ain_ix >= 0 || ain_ix < MBNG_PATCH_NUM_AIN ) {
+    // TODO: handle AIN modes
+
+    if( ain_value[ain_ix] == value )
+      return 0; // value already sent
+
     ain_value[ain_ix] = value;
-  // TODO: handle AIN modes
+  }
 
   // send MIDI event
   MBNG_EVENT_ItemSend(&item, value);
@@ -144,12 +154,22 @@ s32 MBNG_AIN_NotifyChange_SER64(u32 module, u32 pin, u32 pin_value)
   }
 
   // scale 12bit value between min/max with fixed point artithmetic
-  int value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+  int value;
+  if( item.min <= item.max ) {
+    value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+  } else {
+    value = item.min - (((256*pin_value)/4096) * (item.min-item.max+1) / 256);
+  }
 
   int ainser_ix = (ainser_id & 0xfff) - 1;
-  if( ainser_ix >= 0 || ainser_ix < MBNG_PATCH_NUM_AIN )
+  if( ainser_ix >= 0 || ainser_ix < MBNG_PATCH_NUM_AIN ) {
+    // TODO: handle AIN modes
+
+    if( ainser_value[ainser_ix] == value )
+      return 0; // value already sent
+
     ainser_value[ainser_ix] = value;
-  // TODO: handle AIN modes
+  }
 
   // send MIDI event
   MBNG_EVENT_ItemSend(&item, value);
@@ -203,6 +223,10 @@ s32 MBNG_AIN_NotifyRefresh(mbng_event_item_t *item)
   if( ain_subid && ain_subid <= MBNG_PATCH_NUM_AIN ) {
     u16 value = ain_value[ain_subid-1];
     MBNG_AIN_NotifyReceivedValue(item, value);
+
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error
@@ -248,6 +272,10 @@ s32 MBNG_AIN_NotifyRefresh_SER64(mbng_event_item_t *item)
   if( ainser_subid && ainser_subid <= MBNG_PATCH_NUM_AINSER_MODULES*64 ) {
     u16 value = ainser_value[ainser_subid-1];
     MBNG_AIN_NotifyReceivedValue_SER64(item, value);
+
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

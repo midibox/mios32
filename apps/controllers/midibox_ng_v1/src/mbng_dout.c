@@ -67,9 +67,8 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   // print label
   MBNG_LCD_PrintItemLabel(item, value);
 
-  int range = item->max - item->min + 1;
-  if( range < 0 ) range *= -1;
-  u8 dout_value = value >= (range/2);
+  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+  u8 dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
 
   // set state
   if( dout_subid && dout_subid <= MBNG_PATCH_NUM_DOUT ) {
@@ -133,8 +132,9 @@ s32 MBNG_DOUT_NotifyRefresh(mbng_event_item_t *item)
     u16 value = (led_states[ix] & mask) ? item->max : item->min;
     MBNG_DOUT_NotifyReceivedValue(item, value);
 
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

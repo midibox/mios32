@@ -82,8 +82,7 @@ s32 MBNG_ENC_FastModeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
 {
-  int range = item->max - item->min + 1;
-  if( range < 0 ) range *= -1;
+  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 
   mios32_enc_config_t enc_config;
   enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
@@ -209,11 +208,20 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     if( enc_ix < 0 || enc_ix > MBNG_PATCH_NUM_ENC )
       return 0; // no value storage
 
-    value = enc_value[enc_ix] + incrementer;
-    if( value < item.min )
-      value = item.min;
-    else if( value > item.max )
-      value = item.max;
+    if( item.min <= item.max ) {
+      value = enc_value[enc_ix] + incrementer;
+      if( value < item.min )
+	value = item.min;
+      else if( value > item.max )
+	value = item.max;
+    } else {
+      // reversed range
+      value = enc_value[enc_ix] - incrementer;
+      if( value < item.max )
+	value = item.max;
+      else if( value > item.min )
+	value = item.min;
+    }
 
     if( value == enc_value[enc_ix] )
       return 0; // no change
@@ -274,8 +282,9 @@ s32 MBNG_ENC_NotifyRefresh(mbng_event_item_t *item)
     u16 value = enc_value[enc_subid-1];
     MBNG_ENC_NotifyReceivedValue(item, value);
 
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
 

@@ -640,9 +640,8 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     if( led_matrix_ix ) {
       // no LED pattern: set bit directly depending on item->matrix_pin, which could have been
       // set by a EVENT_BUTTON_MATRIX
-      int range = item->max - item->min + 1;
-      if( range < 0 ) range *= -1;
-      u8 dout_value = value >= (range/2);
+      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+      u8 dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
 
       u8 color = 0; // TODO...
       MBNG_MATRIX_DOUT_PinSet(led_matrix_ix-1, color, item->matrix_pin, dout_value);
@@ -661,12 +660,19 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 	       item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
       u8 pattern = item->flags.LED_MATRIX.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
 
-      int range = item->max - item->min + 1;
-      if( range < 0 ) range *= -1;
+      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 
-      int saturated_value = value - item->min;
+      int saturated_value;
+      if( item->min <= item->max ) {
+	saturated_value = value - item->min;
+      } else {
+	// reversed range
+	saturated_value = item->min - value;
+      }
       if( saturated_value < 0 )
 	saturated_value = 0;
+      if( saturated_value > range )
+	saturated_value = range - 1;
 
       MBNG_MATRIX_DOUT_PatternSet(matrix, color, row, saturated_value, range, pattern);
     }

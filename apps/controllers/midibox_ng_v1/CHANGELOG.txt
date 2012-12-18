@@ -6,6 +6,8 @@ MIDIbox NG V1.002
    o the patterns specified with LED_MATRIX_PATTERN are now reversed so that the
      bit orientation matches with the hardware.
 
+   o reversed value ranges (min value greater than max value) now properly supported
+
 
 MIDIbox NG V1.001
 ~~~~~~~~~~~~~~~~~
