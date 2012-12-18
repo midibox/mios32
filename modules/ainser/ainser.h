@@ -82,6 +82,7 @@ extern s32 AINSER_DeadbandGet(void);
 extern s32 AINSER_DeadbandSet(u8 deadband);
 
 extern s32 AINSER_PinGet(u8 module, u8 pin);
+extern s32 AINSER_PreviousPinValueGet(void);
 
 extern s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value));
 

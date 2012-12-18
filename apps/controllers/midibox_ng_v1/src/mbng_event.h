@@ -143,42 +143,56 @@ typedef union {
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
   } general;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
+    u16 radio_group:6;
     u16 button_mode:2; // mbng_event_button_mode_t
-    u16 radio_group:8;
   } DIN;
 
   struct {
     u16 type:4;
-    u16 radio_group:8;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
+    u16 radio_group:6;
   } DOUT;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
     u16 mapped:1;
   } BUTTON_MATRIX;
 
   struct {
     u16 type:4;
-    u16 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t -- must be aligned with ENC!
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
   } LED_MATRIX;
 
   struct {
     u16 type:4;
-    u16 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t -- must be aligned with LED_MATRIX!
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
     u16 enc_mode:4; // mbng_event_enc_mode_t
   } ENC;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
     u16 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
   struct {
     u16 type:4;
+    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u16 fwd_to_lcd:1;
     u16 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 } mbng_event_flags_t;
@@ -240,6 +254,8 @@ extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
 extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
 extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
+extern const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item);
+extern mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode);
 extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item);
 extern mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode);
 extern const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item);
@@ -254,6 +270,7 @@ extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);
 extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value);
+extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u16 value, u8 radio_group);
 
 extern s32 MBNG_EVENT_Refresh(void);
 

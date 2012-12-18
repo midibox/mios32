@@ -231,34 +231,19 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     }
   }
 
-  // forward
-  if( item->fwd_id && (!MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item)) )
-    MBNG_EVENT_ItemForward(item, value);
-
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_Refresh() to refresh the controller
-// (mainly to trigger the forward item)
+// This function returns the value of a given item ID
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MF_NotifyRefresh(mbng_event_item_t *item)
+s32 MBNG_MF_GetCurrentValueFromId(mbng_event_item_id_t id)
 {
-  int mf_subid = item->id & 0xfff;
+  int mf_subid = id & 0xfff;
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MF_NotifyRefresh(%d)\n", mf_subid);
-  }
+  if( !mf_subid || mf_subid > MBNG_PATCH_NUM_MF_MODULES*8 )
+    return -1; // item not mapped to hardware
 
-  if( mf_subid && mf_subid <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
-    u16 value = mf_value[mf_subid-1];
-    MBNG_MF_NotifyReceivedValue(item, value);
-
-    // print label if visible in bank
-    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
-      MBNG_LCD_PrintItemLabel(item, value);
-  }
-
-  return 0; // no error
+  return mf_value[mf_subid-1];
 }

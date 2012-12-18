@@ -30,6 +30,7 @@ static u8 num_used_modules = AINSER_NUM_MODULES;
 static u8 num_used_pins = AINSER_NUM_PINS;
 
 static u16 ain_pin_values[AINSER_NUM_MODULES][AINSER_NUM_PINS];
+static u16 previous_ain_pin_value;
 
 static u8 ain_deadband = MIOS32_AIN_DEADBAND;
 
@@ -78,6 +79,7 @@ s32 AINSER_Init(u32 mode)
     for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
       ain_pin_values[module][pin] = 0;
     }
+    previous_ain_pin_value = 0;
   }
 
   return status;
@@ -168,6 +170,16 @@ s32 AINSER_PinGet(u8 module, u8 pin)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \return the previous value of the pin which has triggered the NotifyChanged hook.\n
+//! Only valid when function is called from this hook!
+/////////////////////////////////////////////////////////////////////////////
+s32 AINSER_PreviousPinValueGet(void)
+{
+  return previous_ain_pin_value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function should be periodically called to scan AIN pin changes.
 //!
 //! A scan of a single multiplexer selection takes ca. 50 uS on a LPC1769 with MIOS32_SPI_PRESCALER_8
@@ -233,7 +245,8 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
       // store conversion value if difference to old value is outside the deadband
       u16 pin = mux_pin_map[mux_ctr] + 8*(7-chn); // the mux/chn -> pin mapping is layout dependend
       u16 value = (b2 | (b1 << 8)) & 0xfff;
-      int diff = value - ain_pin_values[module][pin];
+      previous_ain_pin_value = ain_pin_values[module][pin];
+      int diff = value - previous_ain_pin_value;
       int abs_diff = (diff > 0 ) ? diff : -diff;
 
       if( !first_scan_done || abs_diff > ain_deadband ) {
