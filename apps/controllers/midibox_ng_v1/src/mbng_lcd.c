@@ -152,14 +152,6 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 
   BUFLCD_CursorSet(item->lcd*BUFLCD_ColumnsPerDeviceGet() + (item->lcd_pos % 64), item->lcd_pos / 64);
 
-  int min = item->min;
-  int max = item->max;
-  if( min > max ) { // swap
-    int swap = max;
-    max = min;
-    min = swap;
-  }
-
   char *str = item->label;
 
   if( *str == '^' ) {
@@ -311,15 +303,20 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 
 	  case 'b': { // binary digit
 	    *format_type = 'c';
-	    if( (max-min) == 1 )
-	      BUFLCD_PrintFormattedString(format, (item_value > min) ? '*' : 'o');
-	    else
-	      BUFLCD_PrintFormattedString(format, (item_value > ((max-min)/2)) ? '*' : 'o');
+	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+	    u8 dout_value = (item->min <= item->max) ? ((item_value - item->min) >= (range/2)) : ((item_value - item->max) >= (range/2));
+	    BUFLCD_PrintFormattedString(format, dout_value ? '*' : 'o');
 	  } break;
 
 	  case 'B': { // vertical bar
 	    *format_type = 'c';
-	    int range = max - min + 1;
+	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+
+	    int normalized_value = (item->min <= item->max) ? (item_value - item->min) : (item_value - item->max);
+	    if( normalized_value < 0 )
+	      normalized_value = 0;
+	    if( normalized_value >= range )
+	      normalized_value = range - 1;
 
 	    u8 num_icons = 8; // for CLCD and GLCD default fonts
 	    u8 icon_offset = 0;
@@ -332,7 +329,18 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	      num_icons = 14;
 	    }
 
-	    char bar = icon_offset + ((num_icons * item_value) / range);
+	    char bar;
+	    if( range < num_icons ) {
+	      if( normalized_value >= range )
+		bar = icon_offset + num_icons - 1;
+	      else
+		bar = icon_offset + ((num_icons * normalized_value) / range);
+	    } else if( range == num_icons )
+	      bar = icon_offset + normalized_value;
+	    else {
+	      bar = icon_offset + ((num_icons * normalized_value) / range);
+	    }
+
 	    BUFLCD_PrintChar(bar);
 	  } break;
 

@@ -123,8 +123,7 @@ s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     DEBUG_MSG("MBNG_DIN_NotifyReceivedValue(%d, %d)\n", din_subid, value);
   }
 
-  int range = item->max - item->min + 1;
-  if( range < 0 ) range *= -1;
+  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
   u8 din_value = value >= (range/2);
 
   if( din_subid && din_subid <= MBNG_PATCH_NUM_DIN ) {
@@ -165,8 +164,9 @@ s32 MBNG_DIN_NotifyRefresh(mbng_event_item_t *item)
 
     MBNG_DIN_NotifyReceivedValue(item, value);
 
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error

@@ -140,8 +140,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	}
 
 	// scale value from 14bit
-	int range = item.max - item.min + 1;
-	if( range < 0 ) range *= -1;
+	int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
 	u32 value_scaled = value / (16384 / range);
 
 	u8 value_changed = 1;
@@ -222,8 +221,7 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[module];
     if( mf->flags.enabled ) {
       // scale value to 14bit
-      int range = item->max - item->min + 1;
-      if( range < 0 ) range *= -1;
+      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
       u32 value14 = value * (16384 / range);
 
       MUTEX_MIDIOUT_TAKE;
@@ -257,8 +255,9 @@ s32 MBNG_MF_NotifyRefresh(mbng_event_item_t *item)
     u16 value = mf_value[mf_subid-1];
     MBNG_MF_NotifyReceivedValue(item, value);
 
-    // print label
-    MBNG_LCD_PrintItemLabel(item, value);
+    // print label if visible in bank
+    if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) )
+      MBNG_LCD_PrintItemLabel(item, value);
   }
 
   return 0; // no error
