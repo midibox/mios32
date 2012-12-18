@@ -1,6 +1,6 @@
 
 # generic controller for the MIDIbox SEQ V4 hardware with Wilba's Frontpanel PCB
-# 4 banks are provided for encoders, Buttons and LEDs
+# 4 banks are provided for encoders
 # The banks are selected with the 4 "Group" buttons.
 
 RESET_HW
