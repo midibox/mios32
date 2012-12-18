@@ -2180,6 +2180,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
 	} else if( strcmp(parameter, "RESET_HW") == 0 ) {
+	  MBNG_EVENT_PoolClear();	  
 	  MBNG_PATCH_Init(0);
 	  MBNG_MATRIX_Init(0);
 	  MBNG_ENC_Init(0);
