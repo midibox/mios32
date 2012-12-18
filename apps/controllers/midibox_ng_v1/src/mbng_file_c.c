@@ -1559,7 +1559,7 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "pattern") == 0 ) {
-      if( (pattern=get_bin(value_str, 16, 1)) < 0 ) {
+      if( (pattern=get_bin(value_str, 16, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid pattern for %s n=%d ... %s=%s (expecting 16 bits)\n", cmd, num, parameter, value_str);
 #endif
@@ -2716,7 +2716,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  char pattern_bin[17];
 	  int bit;
 	  for(bit=0; bit<16; ++bit) {
-	    pattern_bin[bit] = (pattern & (1 << (15-bit))) ? '1' : '0';
+	    pattern_bin[bit] = (pattern & (1 << bit)) ? '1' : '0';
 	  }
 	  pattern_bin[16] = 0;
 
