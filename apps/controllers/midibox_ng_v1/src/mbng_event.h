@@ -74,6 +74,14 @@ typedef enum {
 } mbng_event_enc_mode_t;
 
 typedef enum {
+  MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED = 0,
+  MBNG_EVENT_ENC_SPEED_MODE_AUTO,
+  MBNG_EVENT_ENC_SPEED_MODE_SLOW,
+  MBNG_EVENT_ENC_SPEED_MODE_NORMAL,
+  MBNG_EVENT_ENC_SPEED_MODE_FAST,
+} mbng_event_enc_speed_mode_t;
+
+typedef enum {
   MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED = 0,
   MBNG_EVENT_LED_MATRIX_PATTERN_1,
   MBNG_EVENT_LED_MATRIX_PATTERN_2,
@@ -139,61 +147,63 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u16 ALL;
+  u32 ALL;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
   } general;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 radio_group:6;
-    u16 button_mode:2; // mbng_event_button_mode_t
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 radio_group:6;
+    u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 radio_group:6;
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 radio_group:6;
   } DOUT;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 mapped:1;
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 mapped:1;
   } BUTTON_MATRIX;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
   } LED_MATRIX;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 enc_mode:4; // mbng_event_enc_mode_t
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 enc_mode:4; // mbng_event_enc_mode_t
+    u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
+    u32 enc_speed_mode_par:3;
   } ENC;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 ain_mode:4; // mbng_event_ain_mode_t
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
   struct {
-    u16 type:4;
-    u16 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u16 fwd_to_lcd:1;
-    u16 ain_mode:4; // mbng_event_ain_mode_t
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 } mbng_event_flags_t;
 
@@ -210,8 +220,8 @@ typedef union {
 
 typedef struct {
   u16 id;
-  mbng_event_flags_t flags;
   u16 enabled_ports;
+  mbng_event_flags_t flags;
   u16 fwd_id;
   s16 min;
   s16 max;
@@ -258,6 +268,8 @@ extern const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item);
 extern mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode);
 extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item);
 extern mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode);
+extern const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item);
+extern mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_speed_mode);
 extern const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item);
 extern mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *led_matrix_pattern);
 extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);

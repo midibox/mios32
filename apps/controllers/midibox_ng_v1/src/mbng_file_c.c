@@ -848,6 +848,40 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enc_speed_mode") == 0 ) {
+      if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      char *values_str = value_str;
+      char *brkt_local;
+
+      mbng_event_enc_speed_mode_t enc_speed_mode;
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (enc_speed_mode = MBNG_EVENT_ItemEncSpeedModeFromStrGet(values_str)) == MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid speed mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int value = 0; // we allow that no value is specified
+      if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
+	if( (value=get_dec(values_str)) < 0 || value > 7 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid speed mode parameter in EVENT_%s ... %s=%s (expect 0..7)\n", event, parameter, value_str);
+#endif
+	  return -1;
+	}
+      }
+
+      item.flags.ENC.enc_speed_mode = enc_speed_mode;
+      item.flags.ENC.enc_speed_mode_par = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "led_matrix_pattern") == 0 ) {
       mbng_event_led_matrix_pattern_t led_matrix_pattern = MBNG_EVENT_ItemLedMatrixPatternFromStrGet(value_str);
       if( led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
@@ -2611,6 +2645,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_CONTROLLER_ENC: {
 	if( item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_AUTO && item.flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(&item), item.flags.ENC.enc_speed_mode_par);
 	  FLUSH_BUFFER;
 	}
       }; break;

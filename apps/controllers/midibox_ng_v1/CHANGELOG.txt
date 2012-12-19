@@ -1,5 +1,16 @@
 $Id$
 
+MIDIbox NG V1.003
+~~~~~~~~~~~~~~~~~
+
+   o added "enc_speed_mode" parameter to EVENT_ENC
+     Valid modes are Auto (speed automatically adapted according to the value range),
+     Slow:0 .. Slow:7 (divides the increments),
+     Normal (no special measure) and
+     Fast:0 .. Fast:7 (accelerates the increments)
+     A configuration example can be found under cfg/tests/encspeed.ngc
+
+
 MIDIbox NG V1.002
 ~~~~~~~~~~~~~~~~~
 

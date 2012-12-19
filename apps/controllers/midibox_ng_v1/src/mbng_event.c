@@ -48,8 +48,8 @@ typedef union {
 typedef struct { // should be dividable by u16
   u16 id;
   u16 enabled_ports;
+  u32 flags; // (mbng_event_flags_t)
   u16 fwd_id;
-  u16 flags; // (mbng_event_flags_t)
   s16 min;
   s16 max;
   s16 offset;
@@ -360,6 +360,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   case MBNG_EVENT_CONTROLLER_ENC: {
     item->flags.ENC.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
     item->flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
+    item->flags.ENC.enc_speed_mode = MBNG_EVENT_ENC_SPEED_MODE_AUTO;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_AIN: {
@@ -693,6 +694,32 @@ mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
   if( strcasecmp(enc_mode, "IncDec") == 0 )                 return MBNG_EVENT_ENC_MODE_INC_DEC;
 
   return MBNG_EVENT_ENC_MODE_UNDEFINED;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// for ENC Speed Mode
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item)
+{
+  mbng_event_enc_speed_mode_t enc_speed_mode = item->flags.ENC.enc_speed_mode;
+  switch( enc_speed_mode ) {
+  case MBNG_EVENT_ENC_SPEED_MODE_AUTO:    return "Auto";
+  case MBNG_EVENT_ENC_SPEED_MODE_SLOW:    return "Slow";
+  case MBNG_EVENT_ENC_SPEED_MODE_NORMAL:  return "Normal";
+  case MBNG_EVENT_ENC_SPEED_MODE_FAST:    return "Fast";
+  }
+  return "Undefined";
+}
+
+mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_speed_mode)
+{
+  if( strcasecmp(enc_speed_mode, "Auto") == 0 )     return MBNG_EVENT_ENC_SPEED_MODE_AUTO;
+  if( strcasecmp(enc_speed_mode, "Slow") == 0 )     return MBNG_EVENT_ENC_SPEED_MODE_SLOW;
+  if( strcasecmp(enc_speed_mode, "Normal") == 0 )   return MBNG_EVENT_ENC_SPEED_MODE_NORMAL;
+  if( strcasecmp(enc_speed_mode, "Fast") == 0 )     return MBNG_EVENT_ENC_SPEED_MODE_FAST;
+
+  return MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED;
 }
 
 
