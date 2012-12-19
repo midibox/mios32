@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.004
+~~~~~~~~~~~~~~~~~
+
+   o some minor code cleanup
+
+
 MIDIbox NG V1.003
 ~~~~~~~~~~~~~~~~~
 
