@@ -90,32 +90,44 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
   mios32_enc_speed_t cfg_speed = NORMAL;
   int                cfg_speed_par = 0;
 
-  if( enc_config.cfg.type == NON_DETENTED ) {
-    if( range < 32  ) {
-      cfg_speed = SLOW;
-      cfg_speed_par = 3;
-    } else if( range <= 256 ) {
-      cfg_speed = NORMAL;
+  if(        item->flags.ENC.enc_speed_mode == MBNG_EVENT_ENC_SPEED_MODE_SLOW ) {
+    cfg_speed = SLOW;
+    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
+  } else if( item->flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_NORMAL ) {
+    cfg_speed = NORMAL;
+    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
+  } else if( item->flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_FAST ) {
+    cfg_speed = FAST;
+    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
+  } else { // MBNG_EVENT_ENC_SPEED_MODE_AUTO
+    if( enc_config.cfg.type == NON_DETENTED ) {
+      if( range < 32  ) {
+	cfg_speed = SLOW;
+	cfg_speed_par = 3;
+      } else if( range <= 256 ) {
+	cfg_speed = NORMAL;
+      } else {
+	cfg_speed = FAST;
+	cfg_speed_par = 2 + (range / 2048);
+	if( cfg_speed_par > 7 )
+	  cfg_speed_par = 7;
+      }
     } else {
-      cfg_speed = FAST;
-      cfg_speed_par = 2 + (range / 2048);
-      if( cfg_speed_par > 7 )
-	cfg_speed_par = 7;
-    }
-  } else {
-    if( range < 32  ) {
-      cfg_speed = SLOW;
-      cfg_speed_par = 3;
-    } else if( range <= 64 ) {
-      cfg_speed = NORMAL;
-    } else {
-      cfg_speed = FAST;
-      cfg_speed_par = 2 + (range / 2048);
-      if( cfg_speed_par > 7 )
-	cfg_speed_par = 7;
+      if( range < 32  ) {
+	cfg_speed = SLOW;
+	cfg_speed_par = 3;
+      } else if( range <= 64 ) {
+	cfg_speed = NORMAL;
+      } else {
+	cfg_speed = FAST;
+	cfg_speed_par = 2 + (range / 2048);
+	if( cfg_speed_par > 7 )
+	  cfg_speed_par = 7;
+      }
     }
   }
 
+  DEBUG_MSG("%d: %d %d\n", item->id & 0xfff, cfg_speed, cfg_speed_par);
   if( enc_config.cfg.speed != cfg_speed || enc_config.cfg.speed_par != cfg_speed_par ) {
     enc_config.cfg.speed = cfg_speed;
     enc_config.cfg.speed_par = cfg_speed_par;
