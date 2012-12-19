@@ -127,7 +127,6 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
     }
   }
 
-  DEBUG_MSG("%d: %d %d\n", item->id & 0xfff, cfg_speed, cfg_speed_par);
   if( enc_config.cfg.speed != cfg_speed || enc_config.cfg.speed_par != cfg_speed_par ) {
     enc_config.cfg.speed = cfg_speed;
     enc_config.cfg.speed_par = cfg_speed_par;
