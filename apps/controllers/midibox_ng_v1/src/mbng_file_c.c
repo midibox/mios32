@@ -38,6 +38,7 @@
 #include "mbng_din.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
+#include "mbng_ainser.h"
 #include "mbng_mf.h"
 #include "mbng_matrix.h"
 #include "mbng_lcd.h"

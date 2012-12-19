@@ -38,6 +38,7 @@
 #include "mbng_dout.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
+#include "mbng_ainser.h"
 #include "mbng_matrix.h"
 #include "mbng_mf.h"
 
@@ -182,6 +183,7 @@ void APP_Init(void)
   MBNG_ENC_Init(0);
   MBNG_MF_Init(0);
   MBNG_AIN_Init(0);
+  MBNG_AINSER_Init(0);
   MBNG_MATRIX_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);

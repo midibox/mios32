@@ -29,6 +29,7 @@
 #include "mbng_matrix.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
+#include "mbng_ainser.h"
 #include "mbng_mf.h"
 #include "mbng_patch.h"
 
@@ -48,7 +49,7 @@ typedef union {
 typedef struct { // should be dividable by u16
   u16 id;
   u16 enabled_ports;
-  u32 flags; // (mbng_event_flags_t)
+  mbng_event_flags_t flags;
   u16 fwd_id;
   s16 min;
   s16 max;
@@ -384,8 +385,19 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_event_item_t *item)
 {
+  // note: sooner or later I will clean-up this copy routine!
+  // It copies many parts of the mbng_event_pool_item_t structure into the mbng_event_item_t
+  // with accesses to all structure members. 
+  // Each copy operation consists of two instructions (see project_build/project.lss)
+  // regardless if 32, 16 or 8 bit variables are copied.
+  // Optimisation could be done by arranging struct members in a way which allows direct 32bit
+  // copy operations.
+  // Maintaining two structs this way is "dirty", but really helps to improve the performance (a bit)
+  // on this timing critical part.
+  // This should be done once the struct definitions are settled - currently it isn't urgent
+  // since I haven't noticed significant performnance issues yet (on a LPC17 core...)
   item->id = pool_item->id;
-  item->flags.ALL = pool_item->flags;
+  item->flags.ALL = pool_item->flags.ALL;
   item->enabled_ports = pool_item->enabled_ports;
   item->fwd_id = pool_item->fwd_id;
   item->min = pool_item->min;
@@ -411,7 +423,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
 
   pool_item->id = item->id;
-  pool_item->flags = item->flags.ALL;
+  pool_item->flags.ALL = item->flags.ALL;
   pool_item->enabled_ports = item->enabled_ports;
   pool_item->fwd_id = item->fwd_id;
   pool_item->min = item->min;
@@ -1159,7 +1171,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value)
   case MBNG_EVENT_CONTROLLER_LED_MATRIX:    MBNG_MATRIX_DOUT_NotifyReceivedValue(item, value); break;
   case MBNG_EVENT_CONTROLLER_ENC:           MBNG_ENC_NotifyReceivedValue(item, value); break;
   case MBNG_EVENT_CONTROLLER_AIN:           MBNG_AIN_NotifyReceivedValue(item, value); break;
-  case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_AIN_NotifyReceivedValue(item, value); break;
+  case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_AINSER_NotifyReceivedValue(item, value); break;
   case MBNG_EVENT_CONTROLLER_MF:            MBNG_MF_NotifyReceivedValue(item, value); break;
   case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
 
@@ -1251,14 +1263,11 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u16 value, u8 ra
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
     u16 id_type = pool_item->id & 0xf000;
     u8 is_in_group = 0;
-    mbng_event_flags_t flags;
     if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
-      flags.ALL = pool_item->flags;
-      is_in_group = flags.DIN.radio_group == radio_group;
+      is_in_group = pool_item->flags.DIN.radio_group == radio_group;
     }
     else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
-      flags.ALL = pool_item->flags;
-      is_in_group = flags.DOUT.radio_group == radio_group;
+      is_in_group = pool_item->flags.DOUT.radio_group == radio_group;
     }
 
     if( is_in_group ) {
@@ -1296,9 +1305,7 @@ s32 MBNG_EVENT_Refresh(void)
     switch( pool_item->id & 0xf000 ) {
     case MBNG_EVENT_CONTROLLER_BUTTON:
       if( (value=MBNG_DIN_GetCurrentValueFromId(pool_item->id)) >= 0 ) {
-	mbng_event_flags_t flags;
-	flags.ALL = pool_item->flags;
-	if( flags.DIN.radio_group ) {
+	if( pool_item->flags.DIN.radio_group ) {
 	  if( pool_item->min <= pool_item->max )
 	    value = value ? pool_item->min : (pool_item->max+1); // outside range if DIN wasn't set
 	  else
@@ -1313,9 +1320,7 @@ s32 MBNG_EVENT_Refresh(void)
 
     case MBNG_EVENT_CONTROLLER_LED:
       if( (value=MBNG_DOUT_GetCurrentValueFromId(pool_item->id)) >= 0 ) {
-	mbng_event_flags_t flags;
-	flags.ALL = pool_item->flags;
-	if( flags.DOUT.radio_group ) {
+	if( pool_item->flags.DOUT.radio_group ) {
 	  if( pool_item->min <= pool_item->max )
 	    value = value ? pool_item->min : (pool_item->max+1); // outside range if DIN wasn't set
 	  else
