@@ -21,9 +21,8 @@ BANK n=5  enc=1:16:65
 
 
 ################################################################################
-# Following buttons switch between the Encoder groups
-# For demonstration purposes, we also add a second meta event which switches the AINSER group (but AINSER not configured here...)
-# The selected group will be displayed at lcd_pos=1:1:1 (first LCD, X=1, Y=1)
+# Following buttons switch between the Encoder banks
+# The selected bank will be displayed at lcd_pos=1:1:1 (first LCD, X=1, Y=1)
 ################################################################################
 EVENT_BUTTON id=  1  type=Meta   meta=SetBank button_mode=OnOnly range=1:1  lcd_pos=1:1:1 label="**** OSC1 Bank  ****"
 EVENT_BUTTON id=  2  type=Meta   meta=SetBank button_mode=OnOnly range=2:2  lcd_pos=1:1:1 label="**** OSC2 Bank  ****"
