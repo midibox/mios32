@@ -37,13 +37,13 @@ EVENT_BUTTON id=  5  type=Meta   meta=SetBank button_mode=OnOnly range=5:5  lcd_
 ################################################################################
 EVENT_BUTTON id=  8  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x00 0x7f 0x00 0xf7" \
              range=  0:1 offset=  0  ports=1000100000001000  button_mode=OnOnly \
-             lcd_pos=1:1:1 label="*** Dump Request ***"
+             lcd_pos=1:1:2 label="*** Dump Request ***"
 
 # this generic receiver (without controller assignment) receives the SysEx dump
 # and notifies all events which select syxdump_pos=1:<pos-in-dump>
 EVENT_RECEIVER id=  1  type=SysEx  stream="0xf0 0x3e 0x13 ^dev 0x10 ^ignore ^ignore ^dump" \
              ports=1000100000001000 \
-             lcd_pos=1:1:1 label="* Received SyxDump *"
+             fwd_to_lcd=1 lcd_pos=1:1:2 label="* Received SyxDump *"
 
 
 ########################################################################################################################
