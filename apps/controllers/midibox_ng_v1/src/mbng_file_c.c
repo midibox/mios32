@@ -2222,6 +2222,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  MBNG_DOUT_Init(0);
 	  MBNG_DIN_Init(0);
 	  MBNG_AIN_Init(0);
+	  MBNG_AINSER_Init(0);
 	  MBNG_MF_Init(0);
 	} else if( strcmp(parameter, "LCD") == 0 ) {
 	  char *str = brkt;
