@@ -41,49 +41,20 @@ MiosStudio::MiosStudio()
     sysexLibrarianWindow = 0;
     miosFileBrowserWindow = 0;
 
+    addAndMakeVisible(horizontalDividerBar1 = new StretchableLayoutResizerBar(&horizontalLayout, 1, false));
+    addAndMakeVisible(horizontalDividerBar2 = new StretchableLayoutResizerBar(&horizontalLayout, 3, false));
+    addAndMakeVisible(horizontalDividerBar3 = new StretchableLayoutResizerBar(&horizontalLayout, 5, false));
+    addAndMakeVisible(verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true));
+    addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
+    resizeLimits.setSizeLimits(200, 100, 2048, 2048);
+
     commandManager = new ApplicationCommandManager();
     commandManager->registerAllCommandsForTarget(this);
     commandManager->registerAllCommandsForTarget(JUCEApplication::getInstance());
     addKeyListener(commandManager->getKeyMappings());
     setApplicationCommandManagerToWatch(commandManager);
 
-    //                             num   min   max  prefered  
-#if 0
-    horizontalLayout.setItemLayout(0, -0.005, -0.9, -0.25); // MIDI In/Out Monitors
-    horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(2, -0.005, -0.9, -0.30); // Upload Window
-    horizontalLayout.setItemLayout(3,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(4, -0.005, -0.9, -0.25); // MIOS Terminal
-    horizontalLayout.setItemLayout(5,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(6, -0.005, -0.2, -0.20); // MIDI Keyboard
-#else
-    // new: fixed size of Upload window and MIDI keyboard window, so that MIDI IN/OUT and MIOS Terminal can be enlarged easier
-    horizontalLayout.setItemLayout(0,    50, -0.9, -0.25); // MIDI In/Out Monitors
-    horizontalLayout.setItemLayout(1,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(2,   186,    186,  186); // Upload Window
-    horizontalLayout.setItemLayout(3,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(4,   50, -0.9, -0.25); // MIOS Terminal
-    horizontalLayout.setItemLayout(5,    8,      8,     8); // Resizer
-    horizontalLayout.setItemLayout(6,   124,    124,  124); // MIDI Keyboard
-#endif
-
-    horizontalDividerBar1 = new StretchableLayoutResizerBar(&horizontalLayout, 1, false);
-    addAndMakeVisible(horizontalDividerBar1);
-    horizontalDividerBar2 = new StretchableLayoutResizerBar(&horizontalLayout, 3, false);
-    addAndMakeVisible(horizontalDividerBar2);
-    horizontalDividerBar3 = new StretchableLayoutResizerBar(&horizontalLayout, 5, false);
-    addAndMakeVisible(horizontalDividerBar3);
-
-    //                           num  min   max   prefered  
-    verticalLayoutMonitors.setItemLayout(0, -0.2, -0.8, -0.5); // MIDI In Monitor
-    verticalLayoutMonitors.setItemLayout(1,    8,    8,    8); // resizer
-    verticalLayoutMonitors.setItemLayout(2, -0.2, -0.8, -0.5); // MIDI Out Monitor
-
-    verticalDividerBarMonitors = new StretchableLayoutResizerBar(&verticalLayoutMonitors, 1, true);
-    addAndMakeVisible(verticalDividerBarMonitors);
-
-    resizeLimits.setSizeLimits(200, 100, 2048, 2048);
-    addAndMakeVisible(resizer = new ResizableCornerComponent(this, &resizeLimits));
+    updateLayout();
 
     Timer::startTimer(1);
 
@@ -120,30 +91,21 @@ void MiosStudio::paint (Graphics& g)
 
 void MiosStudio::resized()
 {
-    Component* hcomps[] = { 0,
-                            horizontalDividerBar1,
-                            uploadWindow,
-                            horizontalDividerBar2,
-                            miosTerminal,
-                            horizontalDividerBar3,
-                            midiKeyboard
-    };
-
-    horizontalLayout.layOutComponents(hcomps, 7,
+    horizontalLayout.layOutComponents(layoutHComps.getRawDataPointer(), layoutHComps.size(),
                                        4, 4,
                                        getWidth() - 8, getHeight() - 8,
                                        true,  // lay out above each other
                                        true); // resize the components' heights as well as widths
 
-    Component* vcomps[] = { midiInMonitor, verticalDividerBarMonitors, midiOutMonitor };
-
-    verticalLayoutMonitors.layOutComponents(vcomps, 3,
-                                            4,
-                                            4 + horizontalLayout.getItemCurrentPosition(0),
-                                            getWidth() - 8,
-                                            horizontalLayout.getItemCurrentAbsoluteSize(0),
-                                            false, // lay out side-by-side
-                                            true); // resize the components' heights as well as widths
+    if( layoutVComps.size() ) {
+        verticalLayoutMonitors.layOutComponents(layoutVComps.getRawDataPointer(), layoutVComps.size(),
+                                                4,
+                                                4 + horizontalLayout.getItemCurrentPosition(0),
+                                                getWidth() - 8,
+                                                horizontalLayout.getItemCurrentAbsoluteSize(0),
+                                                false, // lay out side-by-side
+                                                true); // resize the components' heights as well as widths
+    }
 
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
 }
@@ -373,6 +335,11 @@ const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String&
 
     if( topLevelMenuIndex == 0 ) {
         // "Application" menu
+        menu.addCommandItem(commandManager, enableMonitors);
+        menu.addCommandItem(commandManager, enableUpload);
+        menu.addCommandItem(commandManager, enableTerminal);
+        menu.addCommandItem(commandManager, enableKeyboard);
+        menu.addSeparator();
         menu.addCommandItem(commandManager, rescanDevices);
         menu.addSeparator();
         menu.addCommandItem(commandManager, StandardApplicationCommandIDs::quit);
@@ -421,6 +388,10 @@ void MiosStudio::getAllCommands(Array <CommandID>& commands)
                               showMbhpMfTool,
                               showSysexLibrarian,
                               showMiosFileBrowser,
+                              enableMonitors,
+                              enableUpload,
+                              enableTerminal,
+                              enableKeyboard,
                               rescanDevices,
                               showMiosStudioPage,
                               showTroubleshootingPage
@@ -438,6 +409,30 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
     const String helpCategory (T("Help"));
 
     switch( commandID ) {
+    case enableMonitors:
+        result.setInfo(T("Show MIDI Monitors"), T("Enables/disables the MIDI IN/OUT Monitors"), applicationCategory, 0);
+        result.setTicked(verticalDividerBarMonitors->isVisible());
+        result.addDefaultKeypress(T('M'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case enableUpload:
+        result.setInfo(T("Show Upload Window"), T("Enables/disables the Upload Window"), applicationCategory, 0);
+        result.setTicked(uploadWindow->isVisible());
+        result.addDefaultKeypress(T('U'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case enableTerminal:
+        result.setInfo(T("Show MIOS Terminal"), T("Enables/disables the MIOS Terminal"), applicationCategory, 0);
+        result.setTicked(miosTerminal->isVisible());
+        result.addDefaultKeypress(T('T'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
+    case enableKeyboard:
+        result.setInfo(T("Show Virtual Keyboard"), T("Enables/disables the virtual Keyboard"), applicationCategory, 0);
+        result.setTicked(midiKeyboard->isVisible());
+        result.addDefaultKeypress(T('K'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        break;
+
     case rescanDevices:
         result.setInfo(T("Rescan MIDI Devices"), T("Updates the MIDI In/Out port lists"), applicationCategory, 0);
         result.addDefaultKeypress(T('R'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
@@ -492,7 +487,7 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
 
     case showTroubleshootingPage:
         result.setInfo(T("MIDI Troubleshooting Page (Web)"), T("Opens the MIDI Troubleshooting page on uCApps.de"), helpCategory, 0);
-        result.addDefaultKeypress (T('T'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress (T('I'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
     }
 }
@@ -501,8 +496,53 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
 bool MiosStudio::perform(const InvocationInfo& info)
 {
     switch( info.commandID ) {
-    case rescanDevices:
+    case enableMonitors:
+        if( verticalDividerBarMonitors->isVisible() ) {
+            midiInMonitor->setVisible(false);
+            verticalDividerBarMonitors->setVisible(false);
+            midiOutMonitor->setVisible(false);
+        } else {
+            midiInMonitor->setVisible(true);
+            verticalDividerBarMonitors->setVisible(true);
+            midiOutMonitor->setVisible(true);
+        }
+        updateLayout();
+        break;
 
+    case enableUpload:        
+        if( horizontalDividerBar1->isVisible() ) {
+            horizontalDividerBar1->setVisible(false);
+            uploadWindow->setVisible(false);
+        } else {
+            horizontalDividerBar1->setVisible(true);
+            uploadWindow->setVisible(true);
+        }
+        updateLayout();
+        break;
+
+    case enableTerminal:
+        if( horizontalDividerBar2->isVisible() ) {
+            horizontalDividerBar2->setVisible(false);
+            miosTerminal->setVisible(false);
+        } else {
+            horizontalDividerBar2->setVisible(true);
+            miosTerminal->setVisible(true);
+        }
+        updateLayout();
+        break;
+
+    case enableKeyboard:
+        if( horizontalDividerBar3->isVisible() ) {
+            horizontalDividerBar3->setVisible(false);
+            midiKeyboard->setVisible(false);
+        } else {
+            horizontalDividerBar3->setVisible(true);
+            midiKeyboard->setVisible(true);
+        }
+        updateLayout();
+        break;
+
+    case rescanDevices:
         // TK: doesn't always work, therefore some warnings ;-)
         if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
                                          T("Rescan MIDI Devices"),
@@ -592,3 +632,72 @@ bool MiosStudio::perform(const InvocationInfo& info)
 
     return true;
 };
+
+
+void MiosStudio::updateLayout(void)
+{
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    layoutHComps.clear();
+    horizontalLayout.clearAllItems();
+
+    int itemIx = 0;
+    if( verticalDividerBarMonitors->isVisible() ) {
+        horizontalLayout.setItemLayout(itemIx++,    50,   -1, -1); // MIDI In/Out Monitors
+        layoutHComps.add(0);
+    }
+
+    if( uploadWindow->isVisible() ) {
+        if( itemIx ) {
+            horizontalLayout.setItemLayout(itemIx++,    8,      8,     8); // Resizer
+            layoutHComps.add(horizontalDividerBar1);
+        }
+
+        horizontalLayout.setItemLayout(itemIx++,   186,    186,  186); // Upload Window
+        layoutHComps.add(uploadWindow);
+    }
+
+    if( miosTerminal->isVisible() ) {
+        if( itemIx ) {
+            horizontalLayout.setItemLayout(itemIx++,    8,      8,     8); // Resizer
+            layoutHComps.add(horizontalDividerBar2);
+        }
+
+        horizontalLayout.setItemLayout(itemIx++,   50,   -1, -1); // MIOS Terminal
+        layoutHComps.add(miosTerminal);
+
+    }
+
+    if( midiKeyboard->isVisible() ) {
+        if( itemIx ) {
+            horizontalLayout.setItemLayout(itemIx++,    8,      8,     8); // Resizer
+            layoutHComps.add(horizontalDividerBar3);
+        }
+
+        horizontalLayout.setItemLayout(itemIx++,   124,    124,  124); // MIDI Keyboard
+        layoutHComps.add(midiKeyboard);
+    }
+
+    // dummy to ensure that MIDI keyboard or upload window is displayed with right size if all other components invisible
+    horizontalLayout.setItemLayout(itemIx++,   0, 0, 0);
+    layoutHComps.add(0);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    layoutVComps.clear();
+    verticalLayoutMonitors.clearAllItems();
+    if( verticalDividerBarMonitors->isVisible() ) {
+        //                                   num  min   max   prefered  
+        verticalLayoutMonitors.setItemLayout(0, -0.2, -0.8, -0.5); // MIDI In Monitor
+        layoutVComps.add(midiInMonitor);
+
+        verticalLayoutMonitors.setItemLayout(1,    8,    8,    8); // resizer
+        layoutVComps.add(verticalDividerBarMonitors);
+
+        verticalLayoutMonitors.setItemLayout(2, -0.2, -0.8, -0.5); // MIDI Out Monitor
+        layoutVComps.add(midiOutMonitor);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    resized();
+}
+
