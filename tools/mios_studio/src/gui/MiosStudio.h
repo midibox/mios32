@@ -41,7 +41,11 @@ class MiosStudio
 {
 public:
     enum CommandIDs {
-        rescanDevices              = 0x1000,
+        enableMonitors             = 0x1010,
+        enableUpload               = 0x1011,
+        enableTerminal             = 0x1012,
+        enableKeyboard             = 0x1013,
+        rescanDevices              = 0x1100,
         showSysexTool              = 0x2000,
         showOscTool                = 0x2001,
         showMidio128Tool           = 0x2002,
@@ -87,6 +91,8 @@ public:
 #endif
 	bool perform(const InvocationInfo& info);
 
+    void updateLayout(void);
+
     AudioDeviceManager audioDeviceManager;
 
     UploadHandler *uploadHandler;
@@ -114,11 +120,13 @@ protected:
     MiosTerminal *miosTerminal;
     MidiKeyboard *midiKeyboard;
 
+    Array<Component *> layoutHComps;
     StretchableLayoutManager horizontalLayout;
     StretchableLayoutResizerBar* horizontalDividerBar1;
     StretchableLayoutResizerBar* horizontalDividerBar2;
     StretchableLayoutResizerBar* horizontalDividerBar3;
 
+    Array<Component *> layoutVComps;
     StretchableLayoutManager verticalLayoutMonitors;
     StretchableLayoutResizerBar* verticalDividerBarMonitors;
 
