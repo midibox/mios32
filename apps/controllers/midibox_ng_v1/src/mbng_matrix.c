@@ -561,16 +561,10 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 
   // button depressed?
   u8 depressed = pin_value ? 1 : 0;
-  u16 value = depressed ? item.min : item.max;
+  item.value = depressed ? item.min : item.max;
 
   // send MIDI event
-  MBNG_EVENT_ItemSend(&item, value);
-
-  // forward
-  MBNG_EVENT_ItemForward(&item, value);
-
-  // print label
-  MBNG_LCD_PrintItemLabel(&item, value);
+  MBNG_EVENT_NotifySendValue(&item);
 
   return 0; // no error
 }
@@ -580,12 +574,12 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int button_matrix_ix = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, value);
+    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, item->value);
   }
 
   return 0; // no error
@@ -593,29 +587,15 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DIN_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int button_matrix_subid = (id & 0xfff);
-
-  if( !button_matrix_subid )
-    return -1; // item not mapped to hardware
-
-  return 0; // TODO
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int led_matrix_ix = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d)\n", led_matrix_ix, value);
+    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d)\n", led_matrix_ix, item->value);
   }
 
 #if MBNG_PATCH_NUM_MATRIX_ROWS_MAX != 16
@@ -627,7 +607,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
       // no LED pattern: set bit directly depending on item->matrix_pin, which could have been
       // set by a EVENT_BUTTON_MATRIX
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      u8 dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
+      u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
 
       u8 color = 0; // TODO...
       MBNG_MATRIX_DOUT_PinSet(led_matrix_ix-1, color, item->matrix_pin, dout_value);
@@ -640,7 +620,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
     // and here we multiply by 16 since we've connected 16 LED Rings... :-/
 
     if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
-      MBNG_MATRIX_DOUT_PatternSet_LC(matrix, color, row, value);
+      MBNG_MATRIX_DOUT_PatternSet_LC(matrix, color, row, item->value);
 
     } else if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
 	       item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
@@ -650,10 +630,10 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
 
       int saturated_value;
       if( item->min <= item->max ) {
-	saturated_value = value - item->min;
+	saturated_value = item->value - item->min;
       } else {
 	// reversed range
-	saturated_value = item->min - value;
+	saturated_value = item->min - item->value;
       }
       if( saturated_value < 0 )
 	saturated_value = 0;
@@ -665,18 +645,4 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   }
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MATRIX_DOUT_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int led_matrix_subid = (id & 0xfff);
-
-  if( !led_matrix_subid )
-    return -1; // item not mapped to hardware
-
-  return 0; // TODO
 }

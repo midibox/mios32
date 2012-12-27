@@ -34,7 +34,7 @@ extern s32 MBNG_LCD_Init(u32 mode);
 
 extern s32 MBNG_LCD_Update(u8 force);
 
-extern s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value);
+extern s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item);
 
 extern s32 MBNG_LCD_SpecialCharsInit(u8 charset, u8 force);
 extern s32 MBNG_LCD_SpecialCharsReInit(void);

@@ -153,12 +153,14 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
   } general;
 
   struct {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 radio_group:6;
     u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
@@ -167,6 +169,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 radio_group:6;
   } DOUT;
 
@@ -174,6 +177,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 mapped:1;
   } BUTTON_MATRIX;
 
@@ -181,12 +185,14 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
   } LED_MATRIX;
 
   struct {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 enc_mode:4; // mbng_event_enc_mode_t
     u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
     u32 enc_speed_mode_par:3;
@@ -196,6 +202,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
@@ -203,6 +210,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 } mbng_event_flags_t;
@@ -220,9 +228,11 @@ typedef union {
 
 typedef struct {
   u16 id;
+  u16 pool_address;
   u16 enabled_ports;
   mbng_event_flags_t flags;
   u16 fwd_id;
+  u16 value;
   s16 min;
   s16 max;
   s16 offset;
@@ -279,11 +289,13 @@ extern mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry);
 extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type);
 
-extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item, u16 value);
-extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u16 value, u8 radio_group);
 
+extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi);
+extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group);
+
+extern s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_Refresh(void);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);

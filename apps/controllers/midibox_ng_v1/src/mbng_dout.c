@@ -29,8 +29,6 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 led_states[MBNG_PATCH_NUM_DOUT/32];
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This function initializes the DOUT handler
@@ -39,10 +37,6 @@ s32 MBNG_DOUT_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
-
-  int i;
-  for(i=0; i<MBNG_PATCH_NUM_DOUT/32; ++i)
-    led_states[i] = 0;
 
   int pin;
   for(pin=0; pin<8*MIOS32_SRIO_NUM_SR; ++pin)
@@ -56,35 +50,25 @@ s32 MBNG_DOUT_Init(u32 mode)
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int dout_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", dout_subid, value);
+    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", dout_subid, item->value);
   }
 
   int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
   u8 dout_value;
   if( item->flags.DOUT.radio_group ) {
     if( item->min <= item->max )
-      dout_value = value >= item->min && value <= item->max;
+      dout_value = item->value >= item->min && item->value <= item->max;
     else
-      dout_value = value >= item->max && value <= item->min;
+      dout_value = item->value >= item->max && item->value <= item->min;
   } else if( item->min == item->max ) {
-    dout_value = value == item->min;
+    dout_value = item->value == item->min;
   } else
-    dout_value = (item->min <= item->max) ? ((value - item->min) >= (range/2)) : ((value - item->max) >= (range/2));
-
-  // set state
-  if( dout_subid && dout_subid <= MBNG_PATCH_NUM_DOUT ) {
-    int ix = (dout_subid-1) / 32;
-    int mask = (1 << ((dout_subid-1) % 32));
-    if( dout_value )
-      led_states[ix] |= mask;
-    else
-      led_states[ix] &= ~mask;
-  }
+    dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
 
   // check if any matrix emulates the LEDs
   u8 emulated = 0;
@@ -113,20 +97,4 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   }
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_DOUT_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int dout_subid = id & 0xfff;
-
-  if( !dout_subid || dout_subid > MBNG_PATCH_NUM_DOUT )
-    return -1; // item not mapped to hardware
-
-  int ix = (dout_subid-1) / 32;
-  int mask = (1 << ((dout_subid-1) % 32));
-  return (led_states[ix] & mask) ? 1 : 0;
 }
