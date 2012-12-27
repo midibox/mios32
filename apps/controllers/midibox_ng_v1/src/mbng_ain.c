@@ -27,7 +27,6 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u16 ain_value[MBNG_PATCH_NUM_AIN];
 static u16 previous_ain_value[MBNG_PATCH_NUM_AIN];
 
 /////////////////////////////////////////////////////////////////////////////
@@ -40,7 +39,6 @@ s32 MBNG_AIN_Init(u32 mode)
 
   int i;
   for(i=0; i<MBNG_PATCH_NUM_AIN; ++i) {
-    ain_value[i] = 0;
     previous_ain_value[i] = 0;
   }
 
@@ -52,23 +50,22 @@ s32 MBNG_AIN_Init(u32 mode)
 // This function handles the various AIN modes
 // Note: it's also used by the AINSER module, therefore public
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_HandleAinMode(mbng_event_ain_mode_t ain_mode, u16 value, u16 prev_value, u16 stored_value, s16 min_value, s16 max_value)
+s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value)
 {
-  u8 taken_over = stored_value >= 0x8000;
-  stored_value &= 0x7fff;
+  mbng_event_ain_mode_t ain_mode = item->flags.AIN.ain_mode; // also valid for AINSER
 
   switch( ain_mode ) {
   case MBNG_EVENT_AIN_MODE_SNAP: {
-    if( value == stored_value )
+    if( value == item->value )
       return -1; // value already sent
 
-    if( !taken_over ) {
+    if( item->flags.general.value_from_midi ) {
       int diff = value - prev_value;
       if( diff >= 0 ) { // moved clockwise
-	if( prev_value > stored_value || value < stored_value ) // wrong direction, or target value not reached yet
+	if( prev_value > item->value || value < item->value ) // wrong direction, or target value not reached yet
 	  return -2; // don't send
       } else { // moved counter-clockwise
-	if( prev_value < stored_value || value > stored_value ) // wrong direction, target value not reached yet
+	if( prev_value < item->value || value > item->value ) // wrong direction, target value not reached yet
 	  return -2; // don't send
       }
     }
@@ -76,23 +73,23 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_ain_mode_t ain_mode, u16 value, u16 prev_v
 
   case MBNG_EVENT_AIN_MODE_RELATIVE: {
     int diff = value - prev_value;
-    int new_value = stored_value + diff;
+    int new_value = item->value + diff;
 
     if( diff >= 0 ) { // moved clockwise
-      if( min_value <= max_value ) {
-	if( new_value >= max_value )
-	  new_value = max_value;
+      if( item->min <= item->max ) {
+	if( new_value >= item->max )
+	  new_value = item->max;
       } else {
-	if( new_value >= min_value )
-	  new_value = min_value;
+	if( new_value >= item->min )
+	  new_value = item->min;
       }
     } else { // moved counter-clockwise
-      if( min_value <= max_value ) {
-	if( new_value < min_value )
-	  new_value = min_value;
+      if( item->min <= item->max ) {
+	if( new_value < item->min )
+	  new_value = item->min;
       } else {
-	if( new_value < max_value )
-	  new_value = max_value;
+	if( new_value < item->max )
+	  new_value = item->max;
       }
     }
     value = new_value;
@@ -100,39 +97,41 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_ain_mode_t ain_mode, u16 value, u16 prev_v
 
   case MBNG_EVENT_AIN_MODE_PARALLAX: {
     // see also http://www.ucapps.de/midibox/midibox_plus_parallax.gif
-    if( !taken_over ) {
+    if( item->flags.general.value_from_midi ) {
       int diff = value - prev_value;
       if( diff >= 0 ) { // moved clockwise
-	if( prev_value > stored_value || value < stored_value ) { // wrong direction, or target value not reached yet
-	  if( min_value <= max_value ) {
-	    if( (max_value - value) > 0 ) {
-	      value = stored_value + ((max_value - stored_value) / (max_value - value));
+	if( prev_value > item->value || value < item->value ) { // wrong direction, or target value not reached yet
+	  if( item->min <= item->max ) {
+	    if( (item->max - value) > 0 ) {
+	      value = item->value + ((item->max - item->value) / (item->max - value));
 	    }
 	  } else {
-	    if( (min_value - value) > 0 )
-	      value = stored_value + ((min_value - stored_value) / (min_value - value));
+	    if( (item->min - value) > 0 )
+	      value = item->value + ((item->min - item->value) / (item->min - value));
 	  }
 	  return value; // not taken over
 	}
       } else { // moved counter-clockwise
-	if( prev_value < stored_value || value > stored_value ) { // wrong direction, target value not reached yet
+	if( prev_value < item->value || value > item->value ) { // wrong direction, target value not reached yet
 	  if( value )
-	    value = stored_value - (stored_value / value);
+	    value = item->value - (item->value / value);
 	  return value; // not taken over
 	}
       }
     }
 
-    if( value == stored_value )
+    if( value == item->value )
       return -1; // value already sent    
   } break;
 
   default: // MBNG_EVENT_AIN_MODE_DIRECT:
-    if( value == stored_value )
+    if( value == item->value )
       return -1; // value already sent    
   }
 
-  return value | 0x8000; // taken over
+  item->value = value; // taken over
+
+  return 0; // value taken over
 }
 
 
@@ -185,23 +184,14 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
       prev_value = item.min - (((256*prev_value)/4096) * (item.min-item.max+1) / 256);
     }
 
-    int new_value;
-    if( (new_value=MBNG_AIN_HandleAinMode(item.flags.AIN.ain_mode, value, prev_value, ain_value[ain_ix], item.min, item.max)) < 0 )
+    if( MBNG_AIN_HandleAinMode(&item, value, prev_value) < 0 )
       return 0; // don't send
-
-    if( new_value & 0x8000 )
-      ain_value[ain_ix] = new_value;
-    value = new_value & 0x7fff;
+  } else {
+    item.value = value;
   }
 
   // send MIDI event
-  MBNG_EVENT_ItemSend(&item, value);
-
-  // forward
-  MBNG_EVENT_ItemForward(&item, value);
-
-  // print label
-  MBNG_LCD_PrintItemLabel(&item, value);
+  MBNG_EVENT_NotifySendValue(&item);
 
   return 0; // no error
 }
@@ -211,31 +201,15 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int ain_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AIN_NotifyReceivedValue(%d, %d)\n", ain_subid, value);
+    DEBUG_MSG("MBNG_AIN_NotifyReceivedValue(%d, %d)\n", ain_subid, item->value);
   }
 
-  // store new value
-  if( ain_subid && ain_subid <= MBNG_PATCH_NUM_AIN )
-    ain_value[ain_subid-1] = value;
+  // nothing else to do...
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int ain_subid = id & 0xfff;
-
-  if( !ain_subid || ain_subid > MBNG_PATCH_NUM_AIN )
-    return -1; // item not mapped to hardware
-
-  return ain_value[ain_subid-1];
 }

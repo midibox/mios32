@@ -751,6 +751,20 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "value") == 0 ) {
+      // currently not written into .NGC file on save, only (optional) read
+      // could become obsolete with 'value snapshot' files
+      int value;
+
+      if( (value=get_dec(value_str)) < 0 || value >= 65536 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+      } else {
+	item.value = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "syxdump_pos") == 0 ) {
       char *values_str = value_str;
       char *brkt_local;
@@ -2235,7 +2249,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    mbng_event_item_t item;
 	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	    item.label = str;
-	    MBNG_LCD_PrintItemLabel(&item, 0x0000);
+	    MBNG_LCD_PrintItemLabel(&item);
 	  }
 	} else if( strcmp(parameter, "BANK") == 0 ) {
 	  parseBank(parameter, brkt);

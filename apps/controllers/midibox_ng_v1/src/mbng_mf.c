@@ -29,7 +29,6 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u16 mf_value[MBNG_PATCH_NUM_MF_MODULES*8];
 static u8  mf_value_msb[MBNG_PATCH_NUM_MF_MODULES][8];
 static u8  mf_touchsensor_selected[MBNG_PATCH_NUM_MF_MODULES];
 
@@ -42,9 +41,6 @@ s32 MBNG_MF_Init(u32 mode)
     return -1; // only mode 0 supported
 
   int i;
-  for(i=0; i<MBNG_PATCH_NUM_MF_MODULES*8; ++i)
-    mf_value[i] = 0;
-
   for(i=0; i<MBNG_PATCH_NUM_MF_MODULES; ++i) {
     int j;
     for(j=0; j<8; ++j)
@@ -105,16 +101,11 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	    MBNG_EVENT_ItemPrint(&item);
 	  }
 
-	  u16 value = is_pressed ? item.max : item.min;
+	  // take over new value
+	  item.value = is_pressed ? item.max : item.min;
 
 	  // send MIDI event
-	  MBNG_EVENT_ItemSend(&item, value);
-
-	  // forward
-	  MBNG_EVENT_ItemForward(&item, value);
-
-	  // print label
-	  MBNG_LCD_PrintItemLabel(&item, value);
+	  MBNG_EVENT_NotifySendValue(&item);
 	}
       } else if( is_fader_msb ) {
 	u8 fader_sel = midi_package.cc_number & 0x7;
@@ -143,25 +134,15 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
 	u32 value_scaled = value / (16384 / range);
 
-	u8 value_changed = 1;
 	int mf_ix = (mf_id & 0xfff) - 1;
 	if( mf_ix >= 0 || mf_ix < MBNG_PATCH_NUM_MF_MODULES*8 ) {
-	  if( mf_value[mf_ix] == value_scaled ) {
-	    value_changed = 0;
-	  } else {
-	    mf_value[mf_ix] = value_scaled;
+	  if( item.value != value_scaled ) {
+	    // take over new value
+	    item.value = value_scaled;
+
+	    // send MIDI event
+	    MBNG_EVENT_NotifySendValue(&item);
 	  }
-	}
-
-	if( value_changed ) {
-	  // send MIDI event
-	  MBNG_EVENT_ItemSend(&item, value_scaled);
-
-	  // forward
-	  MBNG_EVENT_ItemForward(&item, value_scaled);
-
-	  // print label
-	  MBNG_LCD_PrintItemLabel(&item, value_scaled);
 	}
       }
     }
@@ -204,25 +185,23 @@ s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int mf_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MF_NotifyReceivedValue(%d, %d)\n", mf_subid, value);
+    DEBUG_MSG("MBNG_MF_NotifyReceivedValue(%d, %d)\n", mf_subid, item->value);
   }
 
   // store new value and forward to MF
   if( mf_subid && mf_subid <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
-    mf_value[mf_subid-1] = value;
-
     int module = (mf_subid-1) / 8;
     int fader = (mf_subid-1) % 8;
     mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[module];
     if( mf->flags.enabled ) {
       // scale value to 14bit
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      u32 value14 = value * (16384 / range);
+      u32 value14 = item->value * (16384 / range);
 
       MUTEX_MIDIOUT_TAKE;
       MIOS32_MIDI_SendCC(mf->midi_out_port, mf->flags.chn, 0x00 + fader, (value14 >> 7) & 0x7f);
@@ -232,18 +211,4 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
   }
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_MF_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int mf_subid = id & 0xfff;
-
-  if( !mf_subid || mf_subid > MBNG_PATCH_NUM_MF_MODULES*8 )
-    return -1; // item not mapped to hardware
-
-  return mf_value[mf_subid-1];
 }

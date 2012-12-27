@@ -132,7 +132,7 @@ s32 MBNG_LCD_Update(u8 force)
 /////////////////////////////////////////////////////////////////////////////
 // prints the string of an item
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
+s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 {
   if( !item->label )
     return -1; // no label
@@ -155,7 +155,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
   char *str = item->label;
 
   if( *str == '^' ) {
-    char *label_str = (char *)MBNG_FILE_L_GetLabel((char *)&str[1], item_value);
+    char *label_str = (char *)MBNG_FILE_L_GetLabel((char *)&str[1], item->value);
     if( label_str != NULL ) {
       str = label_str;
     }
@@ -181,7 +181,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	}
 	label[pos] = 0;
 
-	char *label_str = (char *)MBNG_FILE_L_GetLabel(label, item_value);
+	char *label_str = (char *)MBNG_FILE_L_GetLabel(label, item->value);
 	if( label_str != NULL ) {
 	  recursive_str = str;
 	  str = label_str;
@@ -261,7 +261,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  case 'X':
 	  case 'u':
 	  case 'c': {
-	    BUFLCD_PrintFormattedString(format, (int)item_value + item->offset);
+	    BUFLCD_PrintFormattedString(format, (int)item->value + item->offset);
 	  } break;
 
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
@@ -284,9 +284,9 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	    if( item->stream_size < 1 ) {
 	      sprintf(midi_str, "NoMIDI", midi_str);
 	    } else if( item->stream_size < 2 ) {
-	      sprintf(midi_str, "%02x%02x  ", item->stream[0], item_value & 0x7f);
+	      sprintf(midi_str, "%02x%02x  ", item->stream[0], item->value & 0x7f);
 	    } else {
-	      sprintf(midi_str, "%02x%02x%02x", item->stream[0], item->stream[1], item_value & 0x7f);
+	      sprintf(midi_str, "%02x%02x%02x", item->stream[0], item->stream[1], item->value & 0x7f);
 	    }
 	    BUFLCD_PrintFormattedString(format, midi_str);
 	  } break;
@@ -304,7 +304,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	  case 'b': { // binary digit
 	    *format_type = 'c';
 	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-	    u8 dout_value = (item->min <= item->max) ? ((item_value - item->min) >= (range/2)) : ((item_value - item->max) >= (range/2));
+	    u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
 	    BUFLCD_PrintFormattedString(format, dout_value ? '*' : 'o');
 	  } break;
 
@@ -312,7 +312,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, u16 item_value)
 	    *format_type = 'c';
 	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 
-	    int normalized_value = (item->min <= item->max) ? (item_value - item->min) : (item_value - item->max);
+	    int normalized_value = (item->min <= item->max) ? (item->value - item->min) : (item->value - item->max);
 	    if( normalized_value < 0 )
 	      normalized_value = 0;
 	    if( normalized_value >= range )

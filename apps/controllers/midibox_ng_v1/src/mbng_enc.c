@@ -28,8 +28,6 @@
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u16 enc_value[MBNG_PATCH_NUM_ENC];
-
 static u8 enc_speed_multiplier;
 
 
@@ -44,9 +42,6 @@ s32 MBNG_ENC_Init(u32 mode)
   enc_speed_multiplier = 0;
 
   int i;
-  for(i=0; i<MBNG_PATCH_NUM_ENC; ++i)
-    enc_value[i] = 0;
-
   for(i=1; i<MIOS32_ENC_NUM_MAX; ++i) { // start at 1 since the first encoder is allocated by SCS
     mios32_enc_config_t enc_config;
     enc_config = MIOS32_ENC_ConfigGet(i);
@@ -168,7 +163,11 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     incrementer *= (s32)enc_speed_multiplier;
   }
 
-  int value = 0;
+  // set speed mode
+  MBNG_ENC_AutoSpeed(encoder, &item);
+
+  // change value
+  s32 value = 0;
   switch( item.flags.ENC.enc_mode ) {
   case MBNG_EVENT_ENC_MODE_40SPEED:
     value = 0x40 + incrementer;
@@ -212,42 +211,36 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     value = incrementer > 0 ? 0x41 : 0x3f;
     break;
 
-  default: // MBNG_EVENT_ENC_MODE_ABSOLUTE
-    MBNG_ENC_AutoSpeed(encoder, &item);
-
+  default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
     int enc_ix = (enc_id & 0xfff) - 1;
     if( enc_ix < 0 || enc_ix > MBNG_PATCH_NUM_ENC )
       return 0; // no value storage
 
     if( item.min <= item.max ) {
-      value = enc_value[enc_ix] + incrementer;
+      value = item.value + incrementer;
       if( value < item.min )
 	value = item.min;
       else if( value > item.max )
 	value = item.max;
     } else {
       // reversed range
-      value = enc_value[enc_ix] - incrementer;
+      value = item.value - incrementer;
       if( value < item.max )
 	value = item.max;
       else if( value > item.min )
 	value = item.min;
     }
 
-    if( value == enc_value[enc_ix] )
+    if( value == item.value )
       return 0; // no change
-
-    enc_value[enc_ix] = value;
+  }
   }
 
+  // take over new value
+  item.value = value;
+
   // send MIDI event
-  MBNG_EVENT_ItemSend(&item, value);
-
-  // forward
-  MBNG_EVENT_ItemForward(&item, value);
-
-  // print label
-  MBNG_LCD_PrintItemLabel(&item, value);
+  MBNG_EVENT_NotifySendValue(&item);
 
   return 0; // no error
 }
@@ -257,31 +250,15 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 // This function is called by MBNG_EVENT_ItemReceive when a matching value
 // has been received
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item, u16 value)
+s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item)
 {
   int enc_subid = item->id & 0xfff;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_subid, value);
+    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_subid, item->value);
   }
 
-  // store new value
-  if( enc_subid && enc_subid <= MBNG_PATCH_NUM_ENC )
-    enc_value[enc_subid-1] = value;
+  // nothing else to do...
 
   return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This function returns the value of a given item ID
-/////////////////////////////////////////////////////////////////////////////
-s32 MBNG_ENC_GetCurrentValueFromId(mbng_event_item_id_t id)
-{
-  int enc_subid = id & 0xfff;
-
-  if( !enc_subid || enc_subid > MBNG_PATCH_NUM_ENC )
-    return -1; // item not mapped to hardware
-
-  return enc_value[enc_subid-1];
 }
