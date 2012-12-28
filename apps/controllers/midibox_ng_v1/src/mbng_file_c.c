@@ -27,6 +27,7 @@
 #include <midi_port.h>
 #include <midi_router.h>
 #include <seq_bpm.h>
+#include <ainser.h>
 
 #include "tasks.h"
 #include "file.h"
@@ -452,7 +453,7 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a EVENT definitions and adds them to the pool
+// help function which parses a EVENT command and adds it to the pool
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
@@ -486,7 +487,7 @@ s32 parseEvent(char *cmd, char *brkt)
   char *value_str;
   while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     const char *separator_colon = ":";
-    char *separators = " \t;";
+    const char *separators = " \t;";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "id") == 0 ) {
@@ -724,29 +725,48 @@ s32 parseEvent(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "range") == 0 ) {
-      char *values_str = value_str;
-      char *brkt_local;
-      int values[2];
-      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
-	  (values[0]=get_dec(values_str)) <= -1000000000 ||
-	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
-	  (values[1]=get_dec(values_str)) <= -1000000000 ) {
+      if( strncasecmp(value_str, "map", 3) == 0 ) {
+	int value;
+	if( (value=get_dec((char *)&value_str[3])) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid range format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
-	return -1;
-      } else {
-	if( values[0] < -16384 || values[0] > 16383 ) {
+	} else if( value == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
-	} else if( values[1] < -16384 || values[1] > 16383 ) {
+	} else if( value >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", event, parameter, value_str);
 #endif
 	} else {
-	  item.min = values[0];
-	  item.max = values[1];
+	  item.map = value; // will modify item.min/max in postprocessing step
+	}
+      } else {
+	char *values_str = value_str;
+	char *brkt_local;
+	int values[2];
+	if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	    (values[0]=get_dec(values_str)) <= -1000000000 ||
+	    !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	    (values[1]=get_dec(values_str)) <= -1000000000 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid range format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	  return -1;
+	} else {
+	  if( values[0] < -16384 || values[0] > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	  } else if( values[1] < -16384 || values[1] > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	  } else {
+	    item.min = values[0];
+	    item.max = values[1];
+	  }
 	}
       }
 
@@ -1037,6 +1057,57 @@ s32 parseEvent(char *cmd, char *brkt)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a MAP definition and adds it to the pool
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseMap(char *cmd, char *brkt)
+{
+  const char *separators = " \t;";
+  int map;
+
+  if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in %s\n", cmd);
+#endif
+  }
+
+#define MAP_VALUE_MAX_SIZE 128
+  u8 map_values[MAP_VALUE_MAX_SIZE];
+
+  int pos = 0;
+  char *value_str;
+  while( pos < MAP_VALUE_MAX_SIZE && (value_str = strtok_r(NULL, separators, &brkt)) ) {
+    int value;
+    if( (value=get_dec(value_str)) < 0 || value > 0xff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map value '%s' in %s, expecting 0..255 (0x00..0x7f)\n", value_str, cmd);
+#endif
+      return -1;
+    } else {
+      map_values[pos++] = (u8)value;
+    }
+  }
+
+  if( !pos ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C] ERROR: %s doesn't define any value!\n", cmd);
+#endif
+  } else if( pos >= MAP_VALUE_MAX_SIZE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C] ERROR: too many values defined for %s (max: %d)!\n", cmd, MAP_VALUE_MAX_SIZE);
+#endif
+  } else if( MBNG_EVENT_MapAdd(map, map_values, pos) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C] ERROR: failed to add %s to the pool!\n", cmd);
+#endif
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses BANK definitions
@@ -1730,6 +1801,8 @@ s32 parseAinSer(char *cmd, char *brkt)
   int num = 0;
   int enabled = 1;
   int cs = 0;
+  int resolution = 7;
+  int num_pins = 64;
 
   char *parameter;
   char *value_str;
@@ -1763,6 +1836,24 @@ s32 parseAinSer(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "resolution") == 0 ) {
+      if( (resolution=get_dec(value_str)) < 1 || resolution > 12 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid resolution for %s n=%d ... %s=%s (4bit .. 12bit)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "num_pins") == 0 ) {
+      if( (num_pins=get_dec(value_str)) < 1 || num_pins > AINSER_NUM_PINS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid number of pins for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, AINSER_NUM_PINS);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
@@ -1773,8 +1864,13 @@ s32 parseAinSer(char *cmd, char *brkt)
 
   if( num >= 1 ) {
     mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[num-1];
-    ainser->flags.enabled = enabled;
     ainser->flags.cs = cs;
+    AINSER_EnabledSet(cs, enabled);
+    AINSER_NumPinsSet(cs, num_pins);
+
+    //                        0bit 1bit 2bit 3bit 4bit 5bit 6bit 7bit 8bit 9bit 10   11   12
+    const u8 deadband[13] = { 255, 255, 255, 255, 255, 127,  63,  31,  15,   7,   3,   1,  0 };
+    AINSER_DeadbandSet(cs, deadband[resolution]);
   }
 
   return 0; // no error
@@ -2220,7 +2316,7 @@ s32 MBNG_FILE_C_Read(char *filename)
       }
 
       // sscanf consumes too much memory, therefore we parse directly
-      char *separators = " \t;";
+      const char *separators = " \t;";
       char *brkt;
       char *parameter;
 
@@ -2229,7 +2325,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
 	} else if( strcmp(parameter, "RESET_HW") == 0 ) {
-	  MBNG_EVENT_PoolClear();	  
+	  MBNG_EVENT_PoolClear();
 	  MBNG_PATCH_Init(0);
 	  MBNG_MATRIX_Init(0);
 	  MBNG_ENC_Init(0);
@@ -2259,6 +2355,12 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    MBNG_EVENT_PoolClear();
 	  }
 	  parseEvent(parameter, brkt);
+	} else if( strncmp(parameter, "MAP", 3) == 0 ) {
+	  if( !got_first_event_item ) {
+	    got_first_event_item = 1;
+	    MBNG_EVENT_PoolClear();
+	  }
+	  parseMap(parameter, brkt);
 	} else if( strcmp(parameter, "SYSEX_VAR") == 0 ) {
 	  parseSysExVar(parameter, brkt);
 	} else if( strcmp(parameter, "ENC") == 0 ) {
@@ -2413,6 +2515,9 @@ s32 MBNG_FILE_C_Read(char *filename)
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   if( got_first_event_item ) {
+    // post-processing step
+    MBNG_EVENT_PoolUpdate();
+
     DEBUG_MSG("[MBNG_FILE_C] Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
     u32 pool_size = MBNG_EVENT_PoolSizeGet();
     u32 pool_max_size = MBNG_EVENT_PoolMaxSizeGet();
@@ -2508,7 +2613,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     }
   }
 
-  {
+  if( MBNG_EVENT_PoolNumItemsGet() > 0 ) {
     sprintf(line_buffer, "\n\n# EVENTs\n");
     FLUSH_BUFFER;
 
@@ -2608,6 +2713,14 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
       }
 
+      if( item.map ) {
+	sprintf(line_buffer, "  range=map%-3d ", item.map);
+	FLUSH_BUFFER;
+      } else {
+	sprintf(line_buffer, "  range=%3d:%-3d", item.min, item.max);
+	FLUSH_BUFFER;
+      }
+
       {
 	char ports_bin[17];
 	int bit;
@@ -2616,7 +2729,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	}
 	ports_bin[16] = 0;
 
-	sprintf(line_buffer, "  range=%3d:%-3d offset=%3d  ports=%s", item.min, item.max, item.offset, ports_bin);
+	sprintf(line_buffer, "  offset=%3d  ports=%s", item.offset, ports_bin);
 	FLUSH_BUFFER;
       }
 
@@ -2707,6 +2820,30 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
+    }
+  }
+
+  if( MBNG_EVENT_PoolNumMapsGet() > 0 ) {
+    sprintf(line_buffer, "\n\n# MAPs\n");
+    FLUSH_BUFFER;
+
+    int num_maps = MBNG_EVENT_PoolNumMapsGet();
+    int map_ix;
+    for(map_ix=1; map_ix<=num_maps; ++map_ix) {
+      u8 *map_values;
+      int map_len = MBNG_EVENT_MapGet(map_ix, &map_values);
+      if( map_len > 0 ) {
+	sprintf(line_buffer, "MAP%d", map_ix);
+	FLUSH_BUFFER;
+
+        int i;
+	for(i=0; i<map_len; ++i) {
+	  sprintf(line_buffer, " %d", map_values[i]);
+	  FLUSH_BUFFER;
+	}
+	sprintf(line_buffer, "\n");
+	FLUSH_BUFFER;
+      }
     }
   }
 
@@ -2869,10 +3006,24 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     int module;
     mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
     for(module=0; module<MBNG_PATCH_NUM_AINSER_MODULES; ++module, ++ainser) {
-      sprintf(line_buffer, "AINSER n=%3d   enabled=%d  cs=%d\n",
+      int resolution = 7;
+      u8 deadband = AINSER_DeadbandGet(ainser->flags.cs);
+      if( deadband <=   0 )      resolution = 12;
+      else if( deadband <=   1 ) resolution = 11;
+      else if( deadband <=   3 ) resolution = 10;
+      else if( deadband <=   7 ) resolution =  9;
+      else if( deadband <=  15 ) resolution =  8;
+      else if( deadband <=  31 ) resolution =  7;
+      else if( deadband <=  63 ) resolution =  6;
+      else if( deadband <= 127 ) resolution =  5;
+      else                       resolution =  4;
+
+      sprintf(line_buffer, "AINSER n=%3d   enabled=%d  cs=%d  num_pins=%d  resolution=%dbit\n",
 	      module+1,
-	      ainser->flags.enabled,
-	      ainser->flags.cs);
+	      AINSER_EnabledGet(ainser->flags.cs),
+	      ainser->flags.cs,
+	      AINSER_NumPinsGet(ainser->flags.cs),
+	      resolution);
       FLUSH_BUFFER;
     }
 

@@ -49,3 +49,6 @@ ENC n= 16   sr= 8  pins=6:7   type=non_detented
 
 # LEDring configuration
 DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+# enable first AINSER module
+AINSER n=  1   enabled=1  cs=0  resolution=7bit

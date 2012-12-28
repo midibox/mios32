@@ -77,9 +77,18 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     if( depressed )
       return 0;
 
-    int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
-    int toggle_state = (item.min <= item.max) ? ((item.value - item.min) >= (range/2)) : ((item.value - item.max) >= (range/2));
-    item.value = toggle_state ? item.min : item.max;
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+    if( map_len > 0 ) {
+      int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value) + 1;
+      if( map_ix >= map_len )
+	map_ix = 0;
+      item.value = map_values[map_ix];
+    } else {
+      int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
+      int toggle_state = (item.min <= item.max) ? ((item.value - item.min) >= (range/2)) : ((item.value - item.max) >= (range/2));
+      item.value = toggle_state ? item.min : item.max;
+    }
   } else {
     item.value = depressed ? item.min : item.max;
   }

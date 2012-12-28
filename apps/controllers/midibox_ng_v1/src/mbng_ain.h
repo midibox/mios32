@@ -32,7 +32,7 @@
 
 extern s32 MBNG_AIN_Init(u32 mode);
 
-extern s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value);
+extern s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s16 min, s16 max);
 
 extern s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value);
 extern s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item);

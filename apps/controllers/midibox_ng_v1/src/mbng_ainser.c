@@ -53,7 +53,7 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     int i;
     mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
     for(i=0; i<MBNG_PATCH_NUM_AINSER_MODULES; ++i, ++ainser) {
-      if( ainser->flags.enabled && ainser->flags.cs == module )
+      if( ainser->flags.cs == module && (AINSER_EnabledGet(module) > 0) )
 	break;
     }
 
@@ -86,22 +86,39 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 
   // scale 12bit value between min/max with fixed point artithmetic
   int value = pin_value;
-  if( item.min <= item.max ) {
-    value = item.min + (((256*value)/4096) * (item.max-item.min+1) / 256);
+  s16 min = item.min;
+  s16 max = item.max;
+  u8 *map_values;
+  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+  if( map_len > 0 ) {
+    min = 0;
+    max = map_len-1;
+  }
+
+  if( min <= max ) {
+    value = min + (((256*value)/4096) * (max-min+1) / 256);
   } else {
-    value = item.min - (((256*value)/4096) * (item.min-item.max+1) / 256);
+    value = min - (((256*value)/4096) * (min-max+1) / 256);
+  }
+
+  if( map_len > 0 ) {
+    value = map_values[value];
   }
 
   int ainser_ix = (ainser_id & 0xfff) - 1;
   if( ainser_ix >= 0 || ainser_ix < MBNG_PATCH_NUM_AIN ) {
     int prev_value = AINSER_PreviousPinValueGet();
-    if( item.min <= item.max ) {
-      prev_value = item.min + (((256*prev_value)/4096) * (item.max-item.min+1) / 256);
+    if( min <= max ) {
+      prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
     } else {
-      prev_value = item.min - (((256*prev_value)/4096) * (item.min-item.max+1) / 256);
+      prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
     }
 
-    if( MBNG_AIN_HandleAinMode(&item, value, prev_value) < 0 )
+    if( map_len > 0 ) {
+      prev_value = map_values[prev_value];
+    }
+
+    if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
       return 0; // don't send
   }
 

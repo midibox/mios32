@@ -131,8 +131,27 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	}
 
 	// scale value from 14bit
-	int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
-	u32 value_scaled = value / (16384 / range);
+	s16 min = item.min;
+	s16 max = item.max;
+	u8 *map_values;
+	int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+	if( map_len > 0 ) {
+	  min = 0;
+	  max = map_len-1;
+	}
+
+	u32 value_scaled;
+	if( min <= max ) {
+	  int range = max - min + 1;
+	  value_scaled = min + (value / (16384 / range));
+	} else {
+	  int range = min - max + 1;
+	  value_scaled = max + (value / (16384 / range));
+	}
+
+	if( map_len > 0 ) {
+	  value_scaled = map_values[value_scaled];
+	}
 
 	int mf_ix = (mf_id & 0xfff) - 1;
 	if( mf_ix >= 0 || mf_ix < MBNG_PATCH_NUM_MF_MODULES*8 ) {
@@ -200,8 +219,23 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
     mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[module];
     if( mf->flags.enabled ) {
       // scale value to 14bit
-      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      u32 value14 = item->value * (16384 / range);
+      int value14;
+      u8 *map_values;
+      int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+      if( map_len > 0 ) {
+	value14 = MBNG_EVENT_MapIxGet(map_values, map_len, item->value) * (16384 / map_len);
+      } else if( item->min <= item->max ) {
+	int range = item->max - item->min + 1;
+	value14 = (item->value - item->min) * (16384 / range);
+      } else {
+	int range = item->min - item->max + 1;
+	value14 = (item->value - item->max)* (16384 / range);
+      }
+
+      if( value14 < 0 )
+	value14 = 0;
+      else if( value14 > 16383 )
+	value14 = 16383;
 
       MUTEX_MIDIOUT_TAKE;
       MIOS32_MIDI_SendCC(mf->midi_out_port, mf->flags.chn, 0x00 + fader, (value14 >> 7) & 0x7f);

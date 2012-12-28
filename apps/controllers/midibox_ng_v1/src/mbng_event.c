@@ -62,10 +62,18 @@ typedef struct { // should be dividable by u16
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
   u8 len_label;
+  u8 map;
   u8 lcd;
   u8 lcd_pos;
-  u8 data_begin; // data section for streams and label start here, it can have multiple bytes
+  u8 data_begin; // data section for streams and label starts here, it can have multiple bytes
 } mbng_event_pool_item_t;
+
+typedef struct {
+  u8 len;
+  u8 num;
+  u8 data_begin; // data section for value map starts here, it can have multiple bytes
+} mbng_event_pool_map_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -80,7 +88,9 @@ typedef struct { // should be dividable by u16
 
 static u8 AHB_SECTION event_pool[MBNG_EVENT_POOL_MAX_SIZE];
 static u16 event_pool_size;
+static u16 event_pool_maps_begin;
 static u16 event_pool_num_items;
+static u16 event_pool_num_maps;
 
 // listen to NRPN for up to 8 ports at up to 16 channels
 // in order to save RAM, we only listen to USB and UART based ports! (this already costs us 512 byte!)
@@ -183,6 +193,7 @@ s32 MBNG_EVENT_Init(u32 mode)
   }
 
   // AINSER
+  AINSER_EnabledSet(0, 1);
   for(i=1; i<=64; ++i) {
     char str[21];
     u8 stream[20];
@@ -260,10 +271,49 @@ s32 MBNG_EVENT_Tick(void)
 s32 MBNG_EVENT_PoolClear(void)
 {
   event_pool_size = 0;
+  event_pool_maps_begin = 0;
   event_pool_num_items = 0;
+  event_pool_num_maps = 0;
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Called after a new file has been loaded (post-processing step)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_PoolUpdate(void)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    int map_len;
+    u8 *map_values;
+    if( pool_item->map && (map_len=MBNG_EVENT_MapGet(pool_item->map, &map_values)) > 0 ) {
+      // determine min/max value of map
+      int pos;
+      u8 min = 255;
+      u8 max = 0;
+      u8 *map_values_ptr = map_values;
+      for(pos=0; pos<map_len; ++pos, ++map_values_ptr) {
+	if( *map_values_ptr >= max )
+	  max = *map_values_ptr;
+	if( *map_values_ptr < min )
+	  min = *map_values_ptr;
+      }
+
+      // transfer min/max to pool item
+      pool_item->min = min;
+      pool_item->max = max;
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Sends the event pool to debug terminal
@@ -278,27 +328,76 @@ s32 MBNG_EVENT_PoolPrint(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolItemsPrint(void)
 {
-  u8 *pool_ptr = (u8 *)&event_pool[0];
-  u32 i;
-  for(i=0; i<event_pool_num_items; ++i) {
-    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+  if( !event_pool_num_items ) {
+    DEBUG_MSG("No Events in pool\n");
+  } else {
+    DEBUG_MSG("%d Events in pool:\n", event_pool_num_items);
+    u8 *pool_ptr = (u8 *)&event_pool[0];
+    u32 i;
+    for(i=0; i<event_pool_num_items; ++i) {
+      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    mbng_event_item_t item;
-    MBNG_EVENT_ItemCopy2User(pool_item, &item);
-    MBNG_EVENT_ItemPrint(&item);
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_EVENT_ItemPrint(&item);
 
-    pool_ptr += pool_item->len;
+      pool_ptr += pool_item->len;
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends short map informations to debug terminal
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_PoolMapsPrint(void)
+{
+  if( !event_pool_num_maps ) {
+    DEBUG_MSG("No Maps in pool\n");
+  } else {
+    DEBUG_MSG("%d Maps in pool:\n", event_pool_num_maps);
+    u8 *pool_ptr = (u8 *)&event_pool[event_pool_maps_begin];
+    u32 i;
+    for(i=0; i<event_pool_num_maps; ++i) {
+      mbng_event_pool_map_t *pool_map = (mbng_event_pool_map_t *)pool_ptr;
+
+      char value_str[128];
+      sprintf(value_str, "MAP%d", pool_map->num);
+
+      u8 *map_values = (u8 *)&pool_map->data_begin;
+      int j;
+      for(j=2; j<pool_map->len && j < 16; ++j ) {
+	sprintf(value_str, "%s %d", value_str, *map_values++);
+      }
+
+      if( j == 16 ) {
+	sprintf(value_str, "%s ...", value_str);
+      }
+      DEBUG_MSG(value_str);
+
+      pool_ptr += pool_map->len;
+    }
   }
 
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the current pool size
+// returns the number of EVENT items
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolNumItemsGet(void)
 {
   return event_pool_num_items;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the number of MAPs
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_PoolNumMapsGet(void)
+{
+  return event_pool_num_maps;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -319,6 +418,75 @@ s32 MBNG_EVENT_PoolMaxSizeGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Adds a map to event pool
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len)
+{
+  if( (event_pool_size+len+2) > MBNG_EVENT_POOL_MAX_SIZE )
+    return -2; // out of storage 
+
+  u32 event_pool_map_start = event_pool_size;
+
+  ++event_pool_num_maps;
+  u8 *pool_ptr = (u8 *)&event_pool[event_pool_map_start];
+  *pool_ptr++ = len+2;
+  *pool_ptr++ = map;
+  memcpy(pool_ptr, (u8 *)map_values, len);
+
+  event_pool_size += len + 2;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns a map from the event pool
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[event_pool_maps_begin];
+  u32 i;
+  for(i=0; i<event_pool_num_maps; ++i) {
+      mbng_event_pool_map_t *pool_map = (mbng_event_pool_map_t *)pool_ptr;
+
+      if( pool_map->num == map ) {
+	*map_values = (u8 *)&pool_map->data_begin;
+	return pool_map->len - 2;
+      }
+
+      pool_ptr += pool_map->len;
+  }
+
+  return -1; // map not available
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the index of a given value
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value)
+{
+  // first search for exact match
+  {
+    int i;
+    u8 *map_values_ptr = map_values;
+    for(i=0; i<map_len; ++i)
+      if( *map_values_ptr++ == value )
+	return i;
+  }
+
+  // otherwise search for match which is close to the given value
+  {
+    int i;
+    u8 *map_values_ptr = map_values;
+    for(i=0; i<map_len; ++i)
+      if( *map_values_ptr++ > value ) {
+	return (i == 0) ? 0 : (i-1);
+      }
+  }
+
+  return map_len-1; // no match -> take last index
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Initializes an item with default settings
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
@@ -334,6 +502,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->offset = 0;
   item->syxdump_pos.ALL = 0;
   item->stream_size = 0;
+  item->map = 0;
   item->lcd = 0;
   item->lcd_pos = 0x00;
   item->stream = NULL;
@@ -411,6 +580,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->offset = pool_item->offset;
   item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
+  item->map = pool_item->map;
   item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
   item->stream_size = pool_item->len_stream;
@@ -437,6 +607,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->max = item->max;
   pool_item->offset = item->offset;
   pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
+  pool_item->map = item->map;
   pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
   pool_item->len = pool_item_len;
@@ -491,12 +662,21 @@ s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item)
     return -1; // too much data
 
   if( (event_pool_size+pool_item_len) > MBNG_EVENT_POOL_MAX_SIZE )
-    return -1; // out of storage 
+    return -2; // out of storage 
 
-  mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)&event_pool[event_pool_size];
+  // shift map items
+  if( event_pool_maps_begin < event_pool_size ) {
+    u8 *first_map = (u8 *)&event_pool[event_pool_maps_begin];
+    u8 *new_map_begin = (u8 *)&event_pool[event_pool_maps_begin + pool_item_len];
+    u32 map_items_size = event_pool_size - event_pool_maps_begin;
+    memmove(new_map_begin, first_map, map_items_size);
+  }
+
+  mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)&event_pool[event_pool_maps_begin];
   MBNG_EVENT_ItemCopy2Pool(item, pool_item);
   event_pool_size += pool_item->len;
   ++event_pool_num_items;
+  event_pool_maps_begin += pool_item_len;
 
   return 0; // no error
 }
@@ -1202,6 +1382,13 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
       DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Sender)\n", sender_ix, item->value);
     }
 
+    // map?
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+    if( map_len > 0 ) {
+      item->value = map_values[(value < map_len) ? value : (map_len-1)];
+    }
+
     // send MIDI event
     MBNG_EVENT_ItemSend(item);
   } break;
@@ -1212,6 +1399,13 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
       DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Receiver)\n", receiver_ix, item->value);
     }
+
+    // map?
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+    if( map_len > 0 ) {
+      item->value = map_values[(value < map_len) ? value : (map_len-1)];
+    }
   } break;
   }
 
@@ -1219,6 +1413,16 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) ) {
     if( item->fwd_id )
       MBNG_EVENT_ItemForward(item);
+    else {
+      u8 radio_group = 0;
+      switch( item->id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_BUTTON: radio_group = item->flags.DIN.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_LED:    radio_group = item->flags.DOUT.radio_group; break;
+      }
+
+      if( radio_group )
+	MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
+    }
 
     if( item->flags.general.fwd_to_lcd )
       MBNG_LCD_PrintItemLabel(item);
@@ -1348,24 +1552,16 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   MBNG_EVENT_ItemSend(item);
 
   // forward - optionally to whole radio group
+  u8 radio_group = 0;
   switch( item->id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_BUTTON:
-    if( item->flags.DIN.radio_group )
-      MBNG_EVENT_ItemForwardToRadioGroup(item, item->flags.DIN.radio_group);
-    else
-      MBNG_EVENT_ItemForward(item);
-    break;
-
-  case MBNG_EVENT_CONTROLLER_LED:
-    if( item->flags.DOUT.radio_group )
-      MBNG_EVENT_ItemForwardToRadioGroup(item, item->flags.DOUT.radio_group);
-    else
-      MBNG_EVENT_ItemForward(item);
-    break;
-
-  default:
-    MBNG_EVENT_ItemForward(item);
+  case MBNG_EVENT_CONTROLLER_BUTTON: radio_group = item->flags.DIN.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_LED:    radio_group = item->flags.DOUT.radio_group; break;
   }
+
+  if( radio_group )
+    MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
+  else
+    MBNG_EVENT_ItemForward(item);
 
   // print label
   MBNG_LCD_PrintItemLabel(item);
@@ -1498,11 +1694,15 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     if( pool_item->data_begin == evnt0 && pool_item->len_stream ) { // timing critical
       // first byte is matching - now we've a bit more time for checking
       
-      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
+      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) { // a sender doesn't receive
+	pool_ptr += pool_item->len;
 	continue;
+      }
 
-      if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
+      if( !(pool_item->enabled_ports & port_mask) ) { // port not enabled
+	pool_ptr += pool_item->len;
 	continue;
+      }
 
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
