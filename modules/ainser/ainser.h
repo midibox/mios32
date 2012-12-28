@@ -75,11 +75,14 @@ extern s32 AINSER_Init(u32 mode);
 extern s32 AINSER_NumModulesGet(void);
 extern s32 AINSER_NumModulesSet(u8 num_modules);
 
-extern s32 AINSER_NumPinsGet(void);
-extern s32 AINSER_NumPinsSet(u8 num_pins);
+extern s32 AINSER_EnabledGet(u8 module);
+extern s32 AINSER_EnabledSet(u8 module, u8 enabled);
 
-extern s32 AINSER_DeadbandGet(void);
-extern s32 AINSER_DeadbandSet(u8 deadband);
+extern s32 AINSER_NumPinsGet(u8 module);
+extern s32 AINSER_NumPinsSet(u8 module, u8 num_pins);
+
+extern s32 AINSER_DeadbandGet(u8 module);
+extern s32 AINSER_DeadbandSet(u8 module, u8 deadband);
 
 extern s32 AINSER_PinGet(u8 module, u8 pin);
 extern s32 AINSER_PreviousPinValueGet(void);

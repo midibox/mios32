@@ -27,12 +27,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 num_used_modules = AINSER_NUM_MODULES;
-static u8 num_used_pins = AINSER_NUM_PINS;
+static u8 ainser_enable_mask;
+static u8 num_used_pins[AINSER_NUM_MODULES];
 
 static u16 ain_pin_values[AINSER_NUM_MODULES][AINSER_NUM_PINS];
 static u16 previous_ain_pin_value;
 
-static u8 ain_deadband = MIOS32_AIN_DEADBAND;
+static u8 ain_deadband[AINSER_NUM_MODULES];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,12 +69,17 @@ s32 AINSER_Init(u32 mode)
   // SPI Port will be initialized in AINSER_Update()
 
   num_used_modules = AINSER_NUM_MODULES;
-  num_used_pins = AINSER_NUM_PINS;
-  ain_deadband = MIOS32_AIN_DEADBAND;
+#if AINSER_NUM_MODULES > 8
+# error "If more than 8 AINSER_NUM_MODULES should be supported, the ainser_enable_mask variable type has to be changed from u8 to u16 (up to 16) or u32 (up to 32)"
+#endif
 
   for(module=0; module<AINSER_NUM_MODULES; ++module) {
     // ensure that CS is deactivated
     AINSER_SetCs(module, 1);
+
+    AINSER_EnabledSet(module, 1);
+    AINSER_NumPinsSet(module, AINSER_NUM_PINS);
+    AINSER_DeadbandSet(module, MIOS32_AIN_DEADBAND);
 
     // clear all values
     for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
@@ -109,23 +115,57 @@ s32 AINSER_NumModulesSet(u8 num_modules)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! \return the enable mask for modules which should be scanned
+/////////////////////////////////////////////////////////////////////////////
+s32 AINSER_EnabledGet(u8 module)
+{
+  if( module >= AINSER_NUM_MODULES )
+    return 0;
+
+  return (ainser_enable_mask & (1 << module)) ? 1 : 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the enable mask for modules which should be scanned
+/////////////////////////////////////////////////////////////////////////////
+s32 AINSER_EnabledSet(u8 module, u8 enabled)
+{
+  if( module >= AINSER_NUM_MODULES )
+    return -1; // invalid module
+
+  if( enabled )
+    ainser_enable_mask |= (1 << module);
+  else
+    ainser_enable_mask &= ~(1 << module);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! \return the number of AIN pins per module which are scanned
 /////////////////////////////////////////////////////////////////////////////
-s32 AINSER_NumPinsGet(void)
+s32 AINSER_NumPinsGet(u8 module)
 {
-  return num_used_pins;
+  if( module >= AINSER_NUM_MODULES )
+    return 0; // invalid module (return 0 pins)
+
+  return num_used_pins[module];
 }
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the number of AIN pins per module which should be scanned
 //! \return < 0 on error (e.g. unsupported number of pins)
 /////////////////////////////////////////////////////////////////////////////
-s32 AINSER_NumPinsSet(u8 num_pins)
+s32 AINSER_NumPinsSet(u8 module, u8 num_pins)
 {
-  if( num_pins >= AINSER_NUM_PINS )
-    return -1;
+  if( module >= AINSER_NUM_MODULES )
+    return -1; // invalid module
 
-  num_used_pins = num_pins;
+  if( num_pins > AINSER_NUM_PINS )
+    return -2;
+
+  num_used_pins[module] = num_pins;
 
   return 0; // no error
 }
@@ -135,9 +175,12 @@ s32 AINSER_NumPinsSet(u8 num_pins)
 //! \return the deadband which is used to notify changes
 //! \return < 0 on error
 /////////////////////////////////////////////////////////////////////////////
-s32 AINSER_DeadbandGet(void)
+s32 AINSER_DeadbandGet(u8 module)
 {
-  return ain_deadband;
+  if( module >= AINSER_NUM_MODULES )
+    return 0; // invalid module (return 0)
+
+  return ain_deadband[module];
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -145,9 +188,12 @@ s32 AINSER_DeadbandGet(void)
 //! be achieved to trigger the callback function passed to AINSER_Handler()
 //! \return < 0 on error
 /////////////////////////////////////////////////////////////////////////////
-s32 AINSER_DeadbandSet(u8 deadband)
+s32 AINSER_DeadbandSet(u8 module, u8 deadband)
 {
-  ain_deadband = deadband;
+  if( module >= AINSER_NUM_MODULES )
+    return -1; // invalid module
+
+  ain_deadband[module] = deadband;
 
   return 0; // no error
 }
@@ -225,6 +271,9 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
   int module;
   for(module=0; module<num_used_modules; ++module) {
 
+    if( !(ainser_enable_mask & (1 << module)) )
+      continue;
+
     // loop over channels
     int chn;
     for(chn=0; chn<8; ++chn) {
@@ -249,12 +298,12 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
       int diff = value - previous_ain_pin_value;
       int abs_diff = (diff > 0 ) ? diff : -diff;
 
-      if( !first_scan_done || abs_diff > ain_deadband ) {
+      if( !first_scan_done || abs_diff > ain_deadband[module] ) {
 	ain_pin_values[module][pin] = value;
 
 	// notify callback function
 	// check pin number as well... just to ensure
-	if( first_scan_done && _callback && pin < num_used_pins )
+	if( first_scan_done && _callback && pin < num_used_pins[module] )
 	  _callback(module, pin, value);
       }
     }

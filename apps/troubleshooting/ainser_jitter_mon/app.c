@@ -83,7 +83,7 @@ void APP_Init(void)
   AINSER_Init(0);
 
   // Jitter Mon requires that deadband function is disabled
-  AINSER_DeadbandSet(0);
+  AINSER_DeadbandSet(0, 0);
 
   // install the callback function which is called on incoming characters
   // from MIOS Terminal
@@ -355,7 +355,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  check_module <off|1..%d>: which AIN module should be checked (current: %d)\n", AINSER_NumModulesGet(), check_ain_module);
       out("  check_mux <off|1..8>:     which AINSER multiplexer should be checked (current: %d)\n", check_ain_mux);
       out("  cc <on|off>:              send CC on AIN pin changes (currently: %s)\n", send_cc ? "on" : "off");
-      out("  deadband <0..255>:        sets the AIN deadband (currently: %d)\n", AINSER_DeadbandGet());
+      out("  deadband <0..255>:        sets the AIN deadband (currently: %d)\n", AINSER_DeadbandGet(0));
       out("  reset:                    resets the MIDIbox (!)\n");
       out("  help:                     this page");
     } else if( strcmp(parameter, "reset") == 0 ) {
@@ -421,8 +421,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       if( deadband < 0 || deadband > 255 ) {
 	out("ERROR: deadband must be between 0..255");
       } else {
-	AINSER_DeadbandSet(deadband);
-	out("Deadband set to %d", AINSER_DeadbandGet());
+	AINSER_DeadbandSet(0, deadband);
+	out("Deadband set to %d", AINSER_DeadbandGet(0));
       }
       
     } else {
