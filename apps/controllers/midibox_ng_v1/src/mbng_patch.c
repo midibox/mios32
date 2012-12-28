@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 #include "tasks.h"
+#include <ainser.h>
+#include <aout.h>
 
 #include "mbng_patch.h"
 #include "mbng_dout.h"
@@ -39,6 +41,8 @@ mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES];
 mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
 
 mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
+
+char mbng_patch_aout_spi_rc_pin;
 
 mbng_patch_cfg_t mbng_patch_cfg = {
   .debounce_ctr = 20,
@@ -113,6 +117,19 @@ s32 MBNG_PATCH_Init(u32 mode)
       AINSER_DeadbandSet(module, 31); // matches with 7bit
       AINSER_NumPinsSet(module, 64);
     }
+  }
+
+  {
+    // AOUT CS pin
+    mbng_patch_aout_spi_rc_pin = 0;
+
+    // disable module by default, only enable 8 channels by default
+    aout_config_t config;
+    config = AOUT_ConfigGet();
+    config.if_type = AOUT_IF_NONE;
+    config.num_channels = 8;
+    AOUT_ConfigSet(config);
+    AOUT_IF_Init(0);
   }
 
   {

@@ -28,6 +28,7 @@
 #include <midi_router.h>
 #include <seq_bpm.h>
 #include <ainser.h>
+#include <aout.h>
 
 #include "tasks.h"
 #include "file.h"
@@ -41,6 +42,7 @@
 #include "mbng_ain.h"
 #include "mbng_ainser.h"
 #include "mbng_mf.h"
+#include "mbng_cv.h"
 #include "mbng_matrix.h"
 #include "mbng_lcd.h"
 
@@ -190,6 +192,43 @@ static s32 get_dec(char *word)
     return -1000000000;
 
   return l; // value is valid
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a SR definition (<dec>.D<dec>)
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+// returns -2 if SR number 0 has been passed (could disable a SR definition)
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_sr(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  // check for '.D' separator
+  char *word2 = word;
+  while( *word2 != '.' )
+    if( *word2++ == 0 )
+      return -1;
+  word2++;
+  if( *word2++ != 'D' )
+    return -1;
+
+  s32 srNum = get_dec(word);
+  if( srNum < 0 )
+    return -1;
+
+  if( srNum == 0 )
+    return -2; // SR has been disabled...
+
+  s32 pinNum = get_dec(word2);
+  if( pinNum < 0 )
+    return -1;
+
+  if( pinNum >= 8 )
+    return -1;
+
+  return 8*(srNum-1) + pinNum;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -571,46 +610,64 @@ s32 parseEvent(char *cmd, char *brkt)
 
     } else if( strcasecmp(parameter, "key") == 0 ) {
       int value;
-      if( (value=get_dec(value_str)) < 0 || value > 127 ) {
+
+      if( strcasecmp(value_str, "any") == 0 ) {
+	value = 128;
+      } else if( (value=get_dec(value_str)) < 0 || value > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid key number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid key number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", event, parameter, value_str);
 #endif
 	return -1;
-      } else {
-	if( item.flags.general.type != MBNG_EVENT_TYPE_NOTE_OFF &&
-	    item.flags.general.type != MBNG_EVENT_TYPE_NOTE_ON &&
-	    item.flags.general.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: no key number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
-#endif
-	} else {
-	  // no extra check if event_type already defined...
-	  stream[1] = value;
-	}
       }
+
+      if( item.flags.general.type != MBNG_EVENT_TYPE_NOTE_OFF &&
+	  item.flags.general.type != MBNG_EVENT_TYPE_NOTE_ON &&
+	  item.flags.general.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] WARNING: no key number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+#endif
+      } else {
+	// no extra check if event_type already defined...
+	stream[1] = value;
+      }
+
+    } else if( strcasecmp(parameter, "use_key_number") == 0 || strcasecmp(parameter, "use_cc_number") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      item.flags.general.use_key_or_cc = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "cc") == 0 ) {
       int value;
-      if( (value=get_dec(value_str)) < 0 || value > 127 ) {
+
+      if( strcasecmp(value_str, "any") == 0 ) {
+	value = 128;
+      } else if( (value=get_dec(value_str)) < 0 || value > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid CC number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid CC number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", event, parameter, value_str);
 #endif
 	return -1;
-      } else {
-	if( item.flags.general.type != MBNG_EVENT_TYPE_CC ) {
+      }
+
+      if( item.flags.general.type != MBNG_EVENT_TYPE_CC ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: no CC number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+	DEBUG_MSG("[MBNG_FILE_C] WARNING: no CC number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
-	} else {
-	  // no extra check if event_type already defined...
-	  stream[1] = value;
-	}
+      } else {
+	// no extra check if event_type already defined...
+	stream[1] = value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "nrpn") == 0 ) {
       int value;
+
       if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid NRPN number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
@@ -778,10 +835,24 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( (value=get_dec(value_str)) < 0 || value >= 65536 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..65535)\n", event, parameter, value_str);
 #endif
       } else {
 	item.value = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "secondary_value") == 0 ) {
+      // currently not written into .NGC file on save, only (optional) read
+      // could become obsolete with 'value snapshot' files
+      int value;
+
+      if( (value=get_dec(value_str)) < 0 || value >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..255)\n", event, parameter, value_str);
+#endif
+      } else {
+	item.secondary_value = value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -988,6 +1059,75 @@ s32 parseEvent(char *cmd, char *brkt)
       } else {
 	item.flags.general.fwd_to_lcd = value;
       }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "fwd_gate_to_dout_pin") == 0 ) {
+      int value;
+      if( (value=get_sr(value_str)) < 0 || value >= 8*MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid DOUT pin in EVENT_%s ... %s=%s (expecting <1..%d>.D<0..7>)\n", event, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
+	item.flags.CV.fwd_gate_to_dout_pin = 1 + ((value & 0xfff8) | (7-(value & 7))); // since DOUT data outputs are mirrored
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cv_inverted") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
+	item.flags.CV.cv_inverted = value;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cv_gate_inverted") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
+	item.flags.CV.cv_gate_inverted = value;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cv_hz_v") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
+	item.flags.CV.cv_hz_v = value;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
@@ -1985,6 +2125,84 @@ s32 parseMf(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses AOUT definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseAout(char *cmd, char *brkt)
+{
+  // parse the parameters
+  aout_if_t if_type = AOUT_IF_NONE;
+  int num_channels = 8;
+  u32 chn_hz_v = 0x00000000;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "type") == 0 ) {
+      int i;
+      for(i=0; i<AOUT_NUM_IF; ++i) {
+	if( strcasecmp(value_str, AOUT_IfNameGet(i)) == 0 )
+	  break;
+      }
+
+      if( i >= AOUT_NUM_IF ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid AOUT module type for %s ... %s=%s'\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      if_type = i;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "cs") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid chip select line for %s ... %s=%s (0 or 1)\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      mbng_patch_aout_spi_rc_pin = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "num_channels") == 0 ) {
+      if( (num_channels=get_dec(value_str)) < 1 || num_channels > AOUT_NUM_CHANNELS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid number of channels for %s ... %s=%s (1..%d)\n", cmd, parameter, value_str, AOUT_NUM_CHANNELS);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  // reconfigure AOUT module
+  aout_config_t config;
+  config = AOUT_ConfigGet();
+  config.if_type = if_type;
+  config.num_channels = num_channels;
+  config.chn_hz_v = chn_hz_v;
+  AOUT_ConfigSet(config);
+  AOUT_IF_Init(0);  
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // help function which parses ROUTER definitions
 // returns >= 0 if command is valid
 // returns <0 if command is invalid
@@ -2334,6 +2552,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  MBNG_AIN_Init(0);
 	  MBNG_AINSER_Init(0);
 	  MBNG_MF_Init(0);
+	  MBNG_CV_Init(0);
 	} else if( strcmp(parameter, "LCD") == 0 ) {
 	  char *str = brkt;
 	  if( !(str=remove_quotes(str)) ) {
@@ -2377,6 +2596,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseAinSer(parameter, brkt);
 	} else if( strcmp(parameter, "MF") == 0 ) {
 	  parseMf(parameter, brkt);
+	} else if( strcmp(parameter, "AOUT") == 0 ) {
+	  parseAout(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
 	} else if( strcmp(parameter, "ETH") == 0 ) {
@@ -2648,15 +2869,33 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_TYPE_NOTE_ON:
       case MBNG_EVENT_TYPE_POLY_PRESSURE: {
 	if( item.stream_size >= 2 ) {
-	  sprintf(line_buffer, " chn=%2d key=%3d", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  if( item.stream[1] < 128 ) {
+	    sprintf(line_buffer, " chn=%2d key=%3d", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  } else {
+	    sprintf(line_buffer, " chn=%2d key=any", (item.stream[0] & 0xf)+1);
+	  }
 	  FLUSH_BUFFER;
+
+	  if( item.flags.general.use_key_or_cc ) {
+	    sprintf(line_buffer, " use_key_number=1 ");
+	    FLUSH_BUFFER;
+	  }
 	}
       } break;
 
       case MBNG_EVENT_TYPE_CC: {
 	if( item.stream_size >= 2 ) {
-	  sprintf(line_buffer, " chn=%2d cc=%3d ", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  if( item.stream[1] < 128 ) {
+	    sprintf(line_buffer, " chn=%2d cc=%3d ", (item.stream[0] & 0xf)+1, item.stream[1]);
+	  } else {
+	    sprintf(line_buffer, " chn=%2d cc=any ", (item.stream[0] & 0xf)+1);
+	  }
 	  FLUSH_BUFFER;
+
+	  if( item.flags.general.use_key_or_cc ) {
+	    sprintf(line_buffer, " use_cc_number=1 ");
+	    FLUSH_BUFFER;
+	  }
 	}
       } break;
 
@@ -2741,10 +2980,10 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       // differ between event type
       switch( item.id & 0xf000 ) {
       case MBNG_EVENT_CONTROLLER_SENDER: {
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_RECEIVER: {
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON: {
 	if( item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_OFF && item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
@@ -2756,20 +2995,20 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  radio_group=%d", item.flags.DIN.radio_group);
 	  FLUSH_BUFFER;
 	}
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_LED: {
 	if( item.flags.DOUT.radio_group ) {
 	  sprintf(line_buffer, "  radio_group=%d", item.flags.DOUT.radio_group);
 	  FLUSH_BUFFER;
 	}
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_ENC: {
 	if( item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
@@ -2781,27 +3020,48 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(&item), item.flags.ENC.enc_speed_mode_par);
 	  FLUSH_BUFFER;
 	}
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_AIN: {
 	if( item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_AINSER: {
 	if( item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_MF: {
-      }; break;
+      } break;
 
       case MBNG_EVENT_CONTROLLER_CV: {
-      }; break;
+	if( item.flags.CV.fwd_gate_to_dout_pin ) {
+	  sprintf(line_buffer, "  fwd_gate_to_dout_pin=%d.D%d",
+		  ((item.flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
+		  7 - ((item.flags.CV.fwd_gate_to_dout_pin-1) % 8));
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.CV.cv_inverted ) {
+	  sprintf(line_buffer, "  cv_inverted=%d", item.flags.CV.cv_inverted);
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.CV.cv_gate_inverted ) {
+	  sprintf(line_buffer, "  cv_gate_inverted=%d", item.flags.CV.cv_gate_inverted);
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.CV.cv_hz_v ) {
+	  sprintf(line_buffer, "  cv_hz_v=%d", item.flags.CV.cv_hz_v);
+	  FLUSH_BUFFER;
+	}
+      } break;
       }
 
       if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
@@ -3068,6 +3328,20 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      config_port_str);
       FLUSH_BUFFER;
     }
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# AOUT hardware\n");
+    FLUSH_BUFFER;
+
+    aout_config_t config;
+    config = AOUT_ConfigGet();
+
+    sprintf(line_buffer, "AOUT  type=%s  cs=%d  num_channels=%d\n",
+	    AOUT_IfNameGet(config.if_type),
+	    mbng_patch_aout_spi_rc_pin,
+	    config.num_channels);
+    FLUSH_BUFFER;
   }
 
   {

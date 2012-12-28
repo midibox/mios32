@@ -154,6 +154,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
   } general;
 
   struct {
@@ -161,6 +162,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 radio_group:6;
     u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
@@ -170,6 +172,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 radio_group:6;
   } DOUT;
 
@@ -178,6 +181,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 mapped:1;
   } BUTTON_MATRIX;
 
@@ -186,6 +190,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
   } LED_MATRIX;
 
   struct {
@@ -193,6 +198,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 enc_mode:4; // mbng_event_enc_mode_t
     u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
     u32 enc_speed_mode_par:3;
@@ -203,6 +209,7 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
@@ -211,8 +218,21 @@ typedef union {
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
+
+  struct {
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
+    u32 fwd_gate_to_dout_pin:9;
+    u32 cv_inverted:1;
+    u32 cv_hz_v:1;
+    u32 cv_gate_inverted:1;
+  } CV;
 } mbng_event_flags_t;
 
 
@@ -241,6 +261,7 @@ typedef struct {
   u32 stream_size;
   u8* stream;
   u8 map;
+  u8 secondary_value;
   u8 lcd;
   u8 lcd_pos;
   char *label;

@@ -24,8 +24,9 @@
 #define MBNG_PATCH_NUM_DOUT       1024
 #define MBNG_PATCH_NUM_ENC         128
 #define MBNG_PATCH_NUM_AIN           6
-#define MBNG_PATCH_NUM_AINSER_MODULES 2
+#define MBNG_PATCH_NUM_AINSER_MODULES AINSER_NUM_MODULES
 #define MBNG_PATCH_NUM_MF_MODULES    4
+#define MBNG_PATCH_NUM_CV_CHANNELS   AOUT_NUM_CHANNELS
 #define MBNG_PATCH_NUM_MATRIX_DIN    8
 #define MBNG_PATCH_NUM_MATRIX_DOUT   8
 #define MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS 4
@@ -158,6 +159,8 @@ extern mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES
 extern mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
 
 extern mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
+
+extern char mbng_patch_aout_spi_rc_pin;
 
 extern mbng_patch_cfg_t mbng_patch_cfg;
 

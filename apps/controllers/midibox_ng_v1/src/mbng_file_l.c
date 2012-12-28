@@ -880,6 +880,11 @@ static s32 MBNG_FILE_L_Write_Hlp(u8 write_to_file)
   strcpy(line_buffer, "LABEL std_mf   \"MF #%3i     %3d%B\"\n\n");
   FLUSH_BUFFER;
 
+  strcpy(line_buffer, "# Standard label for CV Channels:\n");
+  FLUSH_BUFFER;
+  strcpy(line_buffer, "LABEL std_cv   \"CV #%3i     %3d%B\"\n\n");
+  FLUSH_BUFFER;
+
   return status;
 }
 
@@ -1055,6 +1060,8 @@ const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
     return "AIN #%3i    %3d%B";
   if( strcmp(label, "std_mf") == 0 )
     return "MF #%3i     %3d%B";
+  if( strcmp(label, "std_cv") == 0 )
+    return "CV #%3i     %3d%B";
 
   return NULL; // label not found
 }
