@@ -279,9 +279,10 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  MBNG_FILE_C_Debug();
 	else if( strcmp(parameter, "poolbin") == 0 )
 	  MBNG_EVENT_PoolPrint();
-	else if( strcmp(parameter, "pool") == 0 )
+	else if( strcmp(parameter, "pool") == 0 ) {
 	  MBNG_EVENT_PoolItemsPrint();
-	else {
+	  MBNG_EVENT_PoolMapsPrint();
+	} else {
 	  out("ERROR: invalid item which should be showed - see help for available items!");
 	}
       }

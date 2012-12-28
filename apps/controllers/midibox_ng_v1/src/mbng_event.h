@@ -240,6 +240,7 @@ typedef struct {
   mbng_event_syxdump_pos_t syxdump_pos;
   u32 stream_size;
   u8* stream;
+  u8 map;
   u8 lcd;
   u8 lcd_pos;
   char *label;
@@ -255,12 +256,19 @@ extern s32 MBNG_EVENT_Init(u32 mode);
 extern s32 MBNG_EVENT_Tick(void);
 
 extern s32 MBNG_EVENT_PoolClear(void);
+extern s32 MBNG_EVENT_PoolUpdate(void);
 extern s32 MBNG_EVENT_PoolPrint(void);
 extern s32 MBNG_EVENT_PoolItemsPrint(void);
+extern s32 MBNG_EVENT_PoolMapsPrint(void);
 
 extern s32 MBNG_EVENT_PoolNumItemsGet(void);
+extern s32 MBNG_EVENT_PoolNumMapsGet(void);
 extern s32 MBNG_EVENT_PoolSizeGet(void);
 extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
+
+extern s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len);
+extern s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values);
+extern s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value);
 
 extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id);
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);

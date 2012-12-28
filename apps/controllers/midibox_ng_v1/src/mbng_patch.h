@@ -89,8 +89,8 @@ typedef union {
   u8 ALL;
   
   struct {
-    u8 enabled:1;
     u8 cs:1;
+    u8 resolution:4;
   };
 } mbng_patch_ainser_flags_t;
 

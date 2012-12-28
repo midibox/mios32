@@ -106,8 +106,12 @@ s32 MBNG_PATCH_Init(u32 mode)
     int module;
     mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[0];
     for(module=0; module<MBNG_PATCH_NUM_AINSER_MODULES; ++module, ++ainser) {
-      ainser->flags.enabled = 1;
       ainser->flags.cs = module;
+      ainser->flags.resolution = 7; // bit
+
+      AINSER_EnabledSet(module, 0);
+      AINSER_DeadbandSet(module, 31); // matches with 7bit
+      AINSER_NumPinsSet(module, 64);
     }
   }
 

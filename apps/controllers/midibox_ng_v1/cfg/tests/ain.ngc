@@ -3,7 +3,7 @@ RESET_HW
 
 
 # LCD message after load
-LCD "%C@(1:1:1)AINSER Test"
+LCD "%C@(1:1:1)AIN Test"
 
 
 # AIN hardware

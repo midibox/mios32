@@ -75,10 +75,8 @@ s32 MBNG_ENC_FastModeGet(void)
 // Sets the encoder speed depending on value range
 // should this be optional?
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item)
+s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 {
-  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-
   mios32_enc_config_t enc_config;
   enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
 
@@ -164,7 +162,10 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
   }
 
   // set speed mode
-  MBNG_ENC_AutoSpeed(encoder, &item);
+  u8 *map_values;
+  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+  int range = (map_len > 0) ? map_len : ((item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1));
+  MBNG_ENC_AutoSpeed(encoder, &item, range);
 
   // change value
   s32 value = 0;
@@ -216,19 +217,29 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     if( enc_ix < 0 || enc_ix > MBNG_PATCH_NUM_ENC )
       return 0; // no value storage
 
-    if( item.min <= item.max ) {
-      value = item.value + incrementer;
-      if( value < item.min )
-	value = item.min;
-      else if( value > item.max )
-	value = item.max;
+    if( map_len > 0 ) {
+      int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value);
+      map_ix += incrementer;
+      if( map_ix >= map_len )
+	map_ix = map_len - 1;
+      else if( map_ix < 0 )
+	map_ix = 0;
+      value = map_values[map_ix];
     } else {
-      // reversed range
-      value = item.value - incrementer;
-      if( value < item.max )
-	value = item.max;
-      else if( value > item.min )
-	value = item.min;
+      if( item.min <= item.max ) {
+	value = item.value + incrementer;
+	if( value < item.min )
+	  value = item.min;
+	else if( value > item.max )
+	  value = item.max;
+      } else {
+	// reversed range
+	value = item.value - incrementer;
+	if( value < item.max )
+	  value = item.max;
+	else if( value > item.min )
+	  value = item.min;
+      }
     }
 
     if( value == item.value )

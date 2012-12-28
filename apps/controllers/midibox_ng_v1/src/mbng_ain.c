@@ -50,7 +50,7 @@ s32 MBNG_AIN_Init(u32 mode)
 // This function handles the various AIN modes
 // Note: it's also used by the AINSER module, therefore public
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value)
+s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s16 min, s16 max)
 {
   mbng_event_ain_mode_t ain_mode = item->flags.AIN.ain_mode; // also valid for AINSER
 
@@ -167,24 +167,41 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   }
 
   // scale 12bit value between min/max with fixed point artithmetic
-  int value;
-  if( item.min <= item.max ) {
-    value = item.min + (((256*pin_value)/4096) * (item.max-item.min+1) / 256);
+  int value = pin_value;
+  s16 min = item.min;
+  s16 max = item.max;
+  u8 *map_values;
+  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+  if( map_len > 0 ) {
+    min = 0;
+    max = map_len-1;
+  }
+
+  if( min <= max ) {
+    value = min + (((256*value)/4096) * (max-min+1) / 256);
   } else {
-    value = item.min - (((256*pin_value)/4096) * (item.min-item.max+1) / 256);
+    value = min - (((256*value)/4096) * (min-max+1) / 256);
+  }
+
+  if( map_len > 0 ) {
+    value = map_values[value];
   }
 
   int ain_ix = (ain_id & 0xfff) - 1;
   if( ain_ix >= 0 || ain_ix < MBNG_PATCH_NUM_AIN ) {
     int prev_value = previous_ain_value[ain_ix];
     previous_ain_value[ain_ix] = pin_value; // for next notification
-    if( item.min <= item.max ) {
-      prev_value = item.min + (((256*prev_value)/4096) * (item.max-item.min+1) / 256);
+    if( min <= max ) {
+      prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
     } else {
-      prev_value = item.min - (((256*prev_value)/4096) * (item.min-item.max+1) / 256);
+      prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
     }
 
-    if( MBNG_AIN_HandleAinMode(&item, value, prev_value) < 0 )
+    if( map_len > 0 ) {
+      prev_value = map_values[prev_value];
+    }
+
+    if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
       return 0; // don't send
   } else {
     item.value = value;

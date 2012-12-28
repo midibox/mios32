@@ -1,0 +1,19 @@
+RESET_HW
+
+LCD "%CMap MIDI Values"
+
+# the used maps:
+MAP1  0 1 2 4 8 16 32 64
+
+# map incoming CC#16 to CC#17 via MAP1 at the sender side:
+EVENT_RECEIVER id=  1  fwd_id=SENDER:1  fwd_to_lcd=1  type=CC chn=1 cc=16   range=  0:127  lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  1                   fwd_to_lcd=1  type=CC chn=1 cc=17   range=map1     lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+# map incoming CC#18 to CC#19 via MAP1 at the receiver side
+EVENT_RECEIVER id=  2  fwd_id=SENDER:2  fwd_to_lcd=1  type=CC chn=1 cc=18   range=map1     lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  2                   fwd_to_lcd=1  type=CC chn=1 cc=19   range=  0:127  lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+# the difference makes sense when values are forwarded to multiple items!
+# either the sender forwards the same mapped value to all items, or different maps are used by different senders of the forwarding chain
