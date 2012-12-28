@@ -66,6 +66,12 @@
 // enable two AINSER modules
 #define AINSER_NUM_MODULES 2
 
+// enable 32 AOUT channels
+#define AOUT_NUM_CHANNELS 32
+// configurable chip select pin
+extern char mbng_patch_aout_spi_rc_pin;
+#define AOUT_SPI_RC_PIN mbng_patch_aout_spi_rc_pin
+
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 12*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)

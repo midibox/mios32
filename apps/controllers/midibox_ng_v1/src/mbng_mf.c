@@ -212,7 +212,7 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
     DEBUG_MSG("MBNG_MF_NotifyReceivedValue(%d, %d)\n", mf_subid, item->value);
   }
 
-  // store new value and forward to MF
+  // forward to MF
   if( mf_subid && mf_subid <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
     int module = (mf_subid-1) / 8;
     int fader = (mf_subid-1) % 8;

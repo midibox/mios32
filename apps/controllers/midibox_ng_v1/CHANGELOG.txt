@@ -6,6 +6,9 @@ MIDIbox NG V1.005
    o support for value MAPs.
      Various examples can be found under cfg/test/map*.ngc
 
+   o support for EVENT_CV
+     Various examples can be found under cfg/test/cv*.ngc
+
    o AINSER modules now disabled after RESET_HW
      They have to be explicitely enabled with the AINSER command
 

@@ -16,3 +16,6 @@ LABEL std_aser "AINSER #%3i %3d%B"
 # Standard label for motorfaders:
 LABEL std_mf   "MF #%3i     %3d%B"
 
+# Standard label for CV Channels:
+LABEL std_cv   "CV #%3i     %3d%B"
+

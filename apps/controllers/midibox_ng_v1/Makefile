@@ -24,6 +24,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_ain.c \
 		  src/mbng_ainser.c \
 		  src/mbng_matrix.c \
+		  src/mbng_cv.c \
 		  src/mbng_mf.c \
 		  src/mbng_lcd.c \
 		  src/mbng_file.c \
@@ -87,6 +88,12 @@ include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
 
 # AINSER driver
 include $(MIOS32_PATH)/modules/ainser/ainser.mk
+
+# AOUT Driver
+include $(MIOS32_PATH)/modules/aout/aout.mk
+
+# Notestack functions
+include $(MIOS32_PATH)/modules/notestack/notestack.mk
 
 # FATFS Driver
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk

@@ -395,6 +395,10 @@ MF n=  3   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_but
 MF n=  4   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
 
 
+# AOUT hardware
+AOUT  type=none  cs=0  num_channels=8
+
+
 # ROUTER definitions (Note: chn=0 disables, chn=17 selects all channels)
 ROUTER n= 1   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
 ROUTER n= 2   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17

@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <scs.h>
+#include <ainser.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -31,6 +32,7 @@
 #include "mbng_ain.h"
 #include "mbng_ainser.h"
 #include "mbng_mf.h"
+#include "mbng_cv.h"
 #include "mbng_patch.h"
 
 
@@ -63,6 +65,7 @@ typedef struct { // should be dividable by u16
   u8 len_stream;
   u8 len_label;
   u8 map;
+  u8 secondary_value;
   u8 lcd;
   u8 lcd_pos;
   u8 data_begin; // data section for streams and label starts here, it can have multiple bytes
@@ -503,6 +506,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->syxdump_pos.ALL = 0;
   item->stream_size = 0;
   item->map = 0;
+  item->secondary_value = 0;
   item->lcd = 0;
   item->lcd_pos = 0x00;
   item->stream = NULL;
@@ -581,6 +585,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
   item->map = pool_item->map;
+  item->secondary_value = pool_item->secondary_value;
   item->lcd = pool_item->lcd;
   item->lcd_pos = pool_item->lcd_pos;
   item->stream_size = pool_item->len_stream;
@@ -608,6 +613,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->offset = item->offset;
   pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
   pool_item->map = item->map;
+  pool_item->secondary_value = item->secondary_value;
   pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
   pool_item->len = pool_item_len;
@@ -1108,8 +1114,13 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       break;
 
     default:
-      p.evnt1 = item->stream[1] & 0x7f;
-      p.evnt2 = item->value & 0x7f;
+      if( item->flags.general.use_key_or_cc ) { // key=any or cc=any
+	p.evnt1 = item->value & 0x7f;
+	p.evnt2 = item->secondary_value;
+      } else {
+	p.evnt1 = item->stream[1] & 0x7f;
+	p.evnt2 = item->value & 0x7f;
+      }
     }
 
     // EXTRA for BUTTON_MATRIX: modify MIDI event depending on pin number
@@ -1373,7 +1384,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   case MBNG_EVENT_CONTROLLER_AIN:           MBNG_AIN_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_AINSER_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_MF:            MBNG_MF_NotifyReceivedValue(item); break;
-  case MBNG_EVENT_CONTROLLER_CV:            return -1; // TODO
+  case MBNG_EVENT_CONTROLLER_CV:            MBNG_CV_NotifyReceivedValue(item); break;
 
   case MBNG_EVENT_CONTROLLER_SENDER: {
     int sender_ix = item->id & 0xfff;
@@ -1707,10 +1718,15 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
 	u8 *stream = &pool_item->data_begin;
-	if( evnt1 == stream[1] ) {
+	if( stream[1] >= 128 || evnt1 == stream[1] ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  MBNG_EVENT_ItemReceive(&item, midi_package.value, 1);
+	  item.secondary_value = midi_package.value;
+	  if( item.flags.general.use_key_or_cc ) {
+	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1);
+	  } else {
+	    MBNG_EVENT_ItemReceive(&item, midi_package.value, 1);
+	  }
 	} else {
 	  // EXTRA for button/led matrices
 	  int matrix = (pool_item->id & 0x0fff) - 1;

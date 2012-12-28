@@ -26,6 +26,7 @@
 #include <buflcd.h>
 
 #include <ainser.h>
+#include <aout.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
@@ -41,6 +42,7 @@
 #include "mbng_ainser.h"
 #include "mbng_matrix.h"
 #include "mbng_mf.h"
+#include "mbng_cv.h"
 
 // include source of the SCS
 #include <scs.h>
@@ -156,6 +158,9 @@ void APP_Init(void)
   // initialize the AINSER module(s)
   AINSER_Init(0);
 
+  // initialize the AOUT module(s)
+  AOUT_Init(0);
+
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -184,6 +189,7 @@ void APP_Init(void)
   MBNG_MF_Init(0);
   MBNG_AIN_Init(0);
   MBNG_AINSER_Init(0);
+  MBNG_CV_Init(0);
   MBNG_MATRIX_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
@@ -552,6 +558,9 @@ static void TASK_Period_1mS(void *pvParameters)
 
     // Scan Matrix button handler
     MBNG_MATRIX_ButtonHandler();
+
+    // update CV outputs
+    MBNG_CV_Update();
 
     // scan AINSER pins
     AINSER_Handler(APP_AINSER_NotifyChange);
