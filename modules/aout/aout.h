@@ -105,6 +105,9 @@ extern s32 AOUT_IF_Init(u32 mode);
 extern s32 AOUT_ConfigSet(aout_config_t config);
 extern aout_config_t AOUT_ConfigGet(void);
 
+extern s32 AOUT_ConfigChannelInvertedSet(u8 cv, u8 inverted);
+extern s32 AOUT_ConfigChannelHzVSet(u8 cv, u8 hz_v);
+
 extern const char* AOUT_IfNameGet(aout_if_t if_type);
 
 extern s32 AOUT_CaliModeSet(u8 cv, aout_cali_mode_t mode);

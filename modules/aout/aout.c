@@ -475,6 +475,34 @@ aout_config_t AOUT_ConfigGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! gives direct access to the chn_inverted field of the AOUT configuration
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_ConfigChannelInvertedSet(u8 cv, u8 inverted)
+{
+  if( inverted )
+    aout_config.chn_inverted |= (1 << cv);
+  else
+    aout_config.chn_inverted &= ~(1 << cv);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! gives direct access to the chn_hz_v field of the AOUT configuration
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_ConfigChannelHzVSet(u8 cv, u8 hz_v)
+{
+  if( hz_v )
+    aout_config.chn_hz_v |= (1 << cv);
+  else
+    aout_config.chn_hz_v &= ~(1 << cv);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function enables calibration mode for a given pin
 //!
 //! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
@@ -1215,7 +1243,8 @@ s32 AOUT_TerminalHelp(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  out("  testaoutpin:    type this command to get further informations about the testmode.");
+  out("  testaoutpin:    type this command to get further informations about this testmode.");
+  out("  caliaout:       type this command to get further informations about this testmode.");
 
   return 0; // no error
 }
@@ -1237,19 +1266,19 @@ s32 AOUT_TerminalParseLine(char *input, void *_output_function)
   int input_len = strlen(input);
 
   if( (parameter = strtok_r(input, separators, &brkt)) ) {
-    if( strcmp(parameter, "testaoutpin") == 0 ) {
+    if( strcasecmp(parameter, "testaoutpin") == 0 ) {
       char *arg;
       int pin_number = -1;
       int level = -1;
       
       if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(arg, "cs") == 0 )
+	if( strcasecmp(arg, "cs") == 0 )
 	  pin_number = 1;
-	else if( strcmp(arg, "si") == 0 )
+	else if( strcasecmp(arg, "si") == 0 )
 	  pin_number = 2;
-	else if( strcmp(arg, "sc") == 0 )
+	else if( strcasecmp(arg, "sc") == 0 )
 	  pin_number = 3;
-	else if( strcmp(arg, "reset") == 0 ) {
+	else if( strcasecmp(arg, "reset") == 0 ) {
 	  pin_number = 0;
 	  level = 0; // dummy
 	}
@@ -1279,8 +1308,70 @@ s32 AOUT_TerminalParseLine(char *input, void *_output_function)
 	out("testaoutpin reset -> re-initializes AOUT module so that it can be used again.");
       }
       return 1; // command taken
-    }
 
+    } else if( strcasecmp(parameter, "caliaout") == 0 ) {
+      char *arg;
+      int channel = AOUT_CaliPinGet() + 1;
+      int mode = -1;
+      
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcasecmp(arg, "off") == 0 )
+	  mode = AOUT_CALI_MODE_OFF;
+	else {
+	  if( (channel=get_dec(arg)) < 1 || channel > AOUT_NUM_CHANNELS ) {
+	    out("Please specifiy valid channel number (1..%d)\n", AOUT_NUM_CHANNELS);
+	  }
+
+	  if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	    if( strcasecmp(arg, "off") == 0 )
+	      mode = AOUT_CALI_MODE_OFF;
+	    if( strcasecmp(arg, "min") == 0 )
+	      mode = AOUT_CALI_MODE_MIN;
+	    else if( strcasecmp(arg, "middle") == 0 || strcasecmp(arg, "mid") == 0 )
+	      mode = AOUT_CALI_MODE_MIDDLE;
+	    else if( strcasecmp(arg, "max") == 0 )
+	      mode = AOUT_CALI_MODE_MAX;
+	    else if( strcasecmp(arg, "1v") == 0 || strcasecmp(arg, "1") == 0 )
+	      mode = AOUT_CALI_MODE_1V;
+	    else if( strcasecmp(arg, "2v") == 0 || strcasecmp(arg, "2") == 0 )
+	      mode = AOUT_CALI_MODE_2V;
+	    else if( strcasecmp(arg, "4v") == 0 || strcasecmp(arg, "4") == 0 )
+	      mode = AOUT_CALI_MODE_4V;
+	    else if( strcasecmp(arg, "8v") == 0 || strcasecmp(arg, "8") == 0 )
+	      mode = AOUT_CALI_MODE_8V;
+	  }
+
+	  if( mode < 0 )
+	    out("Please specifiy valid calibration mode (off, min, middle, max, 1V, 2V, 4V or 8V)\n");
+	}
+      }
+
+      if( mode >= 0 ) {
+	if( AOUT_CaliModeSet(channel-1, mode) >= 0 ) {
+	  if( mode == AOUT_CALI_MODE_OFF )
+	    out("Calibration Mode has been disabled!\n");
+	  else
+	    out("Now you should measure the %s value at channel %d!\n", AOUT_CaliNameGet(mode), channel);
+	}
+      } else {
+	out("Following commands are supported:\n");
+	out("caliaout off:              disables calibration");
+	out("caliaout <channel> off:    disables calibration as well");
+	out("caliaout <channel> min:    sets the given channel (1..%d) to minimum value", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> middle: sets the given channel (1..%d) to middle value", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> max:    sets the given channel (1..%d) to maximum value", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> 1V:     sets the given channel (1..%d) to 1V", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> 2V:     sets the given channel (1..%d) to 2V", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> 4V:     sets the given channel (1..%d) to 4V", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> 8V:     sets the given channel (1..%d) to 8V", AOUT_NUM_CHANNELS);
+	if( AOUT_CaliModeGet() == AOUT_CALI_MODE_OFF )
+	  out("Current calibration mode: off");
+	else
+	  out("Current calibration mode: %s at channel #%d", AOUT_CaliNameGet(AOUT_CaliModeGet()), AOUT_CaliPinGet() + 1);
+      }
+
+      return 1; // command taken
+    }
   }
 
   // restore input line (replace NUL characters by spaces)
