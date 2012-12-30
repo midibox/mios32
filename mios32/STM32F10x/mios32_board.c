@@ -955,6 +955,22 @@ s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of the D7_IN pin
+//! return < 0 if LCD port not available
+//! return 0 if logic level is 0
+//! return 1 if logic level is 1
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J15_GetD7In(void)
+{
+#if J15_AVAILABLE == 0
+  return -1; // LCD port not available
+#else
+  return J15_PIN_D7_IN ? 1 : 0;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function is used by LCD drivers under $MIOS32_PATH/modules/app_lcd
 //! to poll the busy bit (D7) of a LCD
 //! \param[in] lcd display port (0=J15A, 1=J15B)
@@ -990,7 +1006,7 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
     for(delay_ctr=0; delay_ctr<10; ++delay_ctr)
       MIOS32_BOARD_J15_RW_Set(1);
 
-    u32 busy = J15_PIN_D7_IN;
+    u32 busy = MIOS32_BOARD_J15_GetD7In();
     MIOS32_BOARD_J15_E_Set(lcd, 0);
     if( !busy )
       break;

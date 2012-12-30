@@ -21,6 +21,7 @@
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
+#include <app_lcd.h>
 
 #include "app.h"
 #include "presets.h"
@@ -155,6 +156,11 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
   if( MIDI_ROUTER_TerminalParseLine(input, _output_function) > 0 )
     return 0; // command parsed
 
+#ifdef MIOS32_LCD_universal
+  if( APP_LCD_TerminalParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed
+#endif
+
   if( (parameter = strtok_r(input, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
@@ -163,6 +169,9 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       UIP_TERMINAL_Help(_output_function);
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
+#ifdef MIOS32_LCD_universal
+      APP_LCD_TerminalHelp(_output_function);
+#endif
       out("  set srio_num <1..16>:             max. number of scanned DIN/DOUT registers (currently: %d)", MIOS32_SRIO_ScanNumGet());
       MM_HWCFG_TerminalHelp(_output_function);
       out("  store:                            stores current config as preset");
