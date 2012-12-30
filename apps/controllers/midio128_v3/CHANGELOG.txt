@@ -1,22 +1,19 @@
 $Id$
 
-MIDIO128 V3.012_pre2
-~~~~~~~~~~~~~~~~~~~~
-
-   o with the new ConvertNoteOffToOn0 setting in the .MIO file incoming
-     Note Off events will now be converted to Note On with velocity 0.
-     This change is active by default - means: it can be optionally
-     displayed in the .MIO file
-
-
-MIDIO128 V3.012_pre1
-~~~~~~~~~~~~~~~~~~~~
+MIDIO128 V3.012
+~~~~~~~~~~~~~~~
 
    o USB MSD driver: changed endpoint to avoid conflict with MIDI driver.
      Note that it's still not possible to use MSD and MIDI in parallel,
      but Windows and MacOS should accept the connection (again).
 
    o the .MID menu got a subhierarchy to improve the oversight: Play and Ports
+
+   o with the new ConvertNoteOffToOn0 setting in the .MIO file incoming
+     Note Off events will now be converted to Note On with velocity 0.
+     This change is active by default - means: it can be optionally
+     displayed in the .MIO file
+
 
 
 MIDIO128 V3.011
