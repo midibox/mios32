@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.006"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.007"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // Following settings allow to customize the USB device descriptor
@@ -35,7 +35,9 @@
 #endif
 
 // magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
-#define EEPROM_MAGIC_NUMBER 0x47114224
+#define EEPROM_MAGIC_NUMBER 0x47114225
+// to consider an older format (see presets.c)
+#define EEPROM_MAGIC_NUMBER_OLDFORMAT1 0x47114224
 
 // AIN configuration:
 // Pin mapping on MBHP_CORE_LPC17 module:
@@ -45,8 +47,8 @@
 
 // define the deadband (min. difference to report a change to the application hook)
 // typically set to (2^(12-desired_resolution)-1)
-// e.g. for a resolution of 7 bit, it's set to (2^(12-7)-1) = (2^5 - 1) = 31
-#define MIOS32_AIN_DEADBAND 31
+// e.g. for a resolution of 8 bit, it's set to (2^(12-8)-1) = (2^4 - 1) = 15
+#define MIOS32_AIN_DEADBAND 15
 
 
 #endif /* _MIOS32_CONFIG_H */
