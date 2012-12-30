@@ -1,5 +1,25 @@
 $Id$
 
+MIDIbox KB V1.007
+~~~~~~~~~~~~~~~~~
+
+   o srio_num now stored on EEPROM
+
+   o changed default delay settings (required after performance fix in v1.006)
+
+   o added ain_sustain and ctrl_sustain parameters
+
+   o the min/max values of the potentiometers can now be calibrated with the
+       set kb <kb> calibrate <off|pitchwheel|modwheel|sustain>
+     command.
+
+
+MIDIbox KB V1.006
+~~~~~~~~~~~~~~~~~
+
+   o fix for SRIO scan performance issue
+
+
 MIDIbox KB V1.005
 ~~~~~~~~~~~~~~~~~
 

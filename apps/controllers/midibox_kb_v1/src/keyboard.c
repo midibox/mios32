@@ -68,12 +68,14 @@ static u16 din_activated_timestamp[KEYBOARD_NUM][KEYBOARD_NUM_PINS];
 static u8 key_note_on_sent[KEYBOARD_NUM][KEYBOARD_NUM_PINS / 8];
 static u8 key_note_off_sent[KEYBOARD_NUM][KEYBOARD_NUM_PINS / 8];
 
+static u8 ain_cali_mode_pin;
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity);
-static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u32 ain_value);
+static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value);
 static char *KEYBOARD_GetNoteName(u8 note, char str[4]);
 
 
@@ -88,6 +90,8 @@ s32 KEYBOARD_Init(u32 mode)
 
   connected_keyboards_num = 0;
 
+  ain_cali_mode_pin = 0;
+
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
@@ -96,8 +100,8 @@ s32 KEYBOARD_Init(u32 mode)
       kc->midi_chn = kb+1;
       kc->note_offset = 36;
 
-      kc->delay_fastest = 100;
-      kc->delay_slowest = 2000;
+      kc->delay_fastest = 50;
+      kc->delay_slowest = 1000;
 
       // set low verbose level by default (only warnings)
       kc->verbose_level = 1;
@@ -113,10 +117,6 @@ s32 KEYBOARD_Init(u32 mode)
 	kc->din_sr2 = 2;
 	kc->din_key_offset = 32;
 	kc->din_inverted = 0;
-	kc->ain_pitchwheel = 0;
-	kc->ctrl_pitchwheel = 0x80;
-	kc->ain_modwheel = 0;
-	kc->ctrl_modwheel = 1;
       } else {
 	kc->num_rows = 0;
 	kc->dout_sr1 = 0;
@@ -125,10 +125,21 @@ s32 KEYBOARD_Init(u32 mode)
 	kc->din_sr2 = 0;
 	kc->din_key_offset = 32;
 	kc->din_inverted = 0;
-	kc->ain_pitchwheel = 0;
-	kc->ctrl_pitchwheel = 0x80;
-	kc->ain_modwheel = 0;
-	kc->ctrl_modwheel = 1;
+      }
+
+      int i;
+      for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
+	kc->ain_pin[i] = 0;
+	switch( i ) {
+	case KEYBOARD_AIN_PITCHWHEEL: kc->ain_ctrl[i] = 0x80; break;
+	case KEYBOARD_AIN_MODWHEEL:   kc->ain_ctrl[i] = 1; break;
+	case KEYBOARD_AIN_SUSTAIN:    kc->ain_ctrl[i] = 64; break;
+	default: kc->ain_ctrl[i] = 16; break;
+	}
+	
+	kc->ain_min[i] = 1;
+	kc->ain_max[i] = 254;
+	kc->ain_last_value7[i] = 0xff; // will force to send the value
       }
     }
 
@@ -530,12 +541,62 @@ void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
-  for(kb=0; kb<connected_keyboards_num; ++kb, ++kc) {
-    if( pin == ((int)kc->ain_pitchwheel - 1) )
-      KEYBOARD_MIDI_SendCtrl(kb, kc->ctrl_pitchwheel, pin_value);
+  for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+    int i;
+    for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
+      u8 expected_cali_mode_pin = 1 + kb*KEYBOARD_AIN_NUM + i;
 
-    if( pin == ((int)kc->ain_modwheel - 1) )
-      KEYBOARD_MIDI_SendCtrl(kb, kc->ctrl_modwheel, pin_value);
+      if( ain_cali_mode_pin == expected_cali_mode_pin ) {
+	u8 notification = 0;
+
+	u8 value8bit = pin_value >> 4;
+	if( value8bit <= kc->ain_min[i] ) {
+	  kc->ain_min[i] = value8bit;
+	  notification = 1;
+	}
+
+	if( value8bit >= kc->ain_max[i] ) {
+	  kc->ain_max[i] = value8bit;
+	  notification = 1;
+	}
+
+	if( notification ) {
+	  const char src_name[KEYBOARD_AIN_NUM][15] = {
+	    "PitchWheel",
+	    "ModWheel",
+	    "Sustain Pedal"
+	  };
+
+	  DEBUG_MSG("AIN Calibration of KB%d %s: min=%3d, max=%3d\n", kb+1, src_name[i], kc->ain_min[i], kc->ain_max[i]);
+	}
+      } else {
+	if( pin == ((int)kc->ain_pin[i] - 1) ) {
+	  int value16bit = (pin_value << 4) - ((int)kc->ain_min[i] << 8);
+	  if( value16bit < 0 )
+	    value16bit = 0;
+
+	  int range8bit = (int)kc->ain_max[i] - (int)kc->ain_min[i] + 1;
+
+	  // fixed point arithmetic
+	  int value7bit = (value16bit / range8bit) >> (9-8);
+
+	  if( value7bit < 0 )
+	    value7bit = 0;
+	  if( value7bit > 127 )
+	    value7bit = 127;
+
+#if 0
+	  // for debugging the fixed point arithmetic formula
+	  DEBUG_MSG("value16bit=%d, range8bit=%d, value7bit=%d\n", value16bit, range8bit, value7bit);
+#endif
+
+	  if( value7bit != kc->ain_last_value7[i] ) {
+	    kc->ain_last_value7[i] = value7bit;
+	    KEYBOARD_MIDI_SendCtrl(kb, kc->ain_ctrl[i], value7bit);
+	  }
+	}
+      }
+    }
   }
 }
 
@@ -566,11 +627,9 @@ static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity)
 /////////////////////////////////////////////////////////////////////////////
 // Help function to send a MIDI controller over given ports
 /////////////////////////////////////////////////////////////////////////////
-static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u32 ain_value)
+static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value)
 {
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
-
-  int value7bit = ain_value >> 5;
 
   if( kc->midi_chn ) {
     int i;
@@ -581,12 +640,17 @@ static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u32 ain_value)
 	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
 
 	if( ctrl_number < 128 )
-	  MIOS32_MIDI_SendCC(port, kc->midi_chn-1, ctrl_number, value7bit);
+	  MIOS32_MIDI_SendCC(port, kc->midi_chn-1, ctrl_number, value);
 	else if( ctrl_number == 128 ) {
-	  u16 pb_value = (value7bit == 0x40) ? 0x2000 : ((value7bit << 7) | value7bit);
+#if 0
+	  u16 pb_value = (value == 0x40) ? 0x2000 : ((value << 7) | value);
+#else
+	  // allow some headroom for the middle position
+	  u16 pb_value = (value >= 0x3f && value <= 0x41) ? 0x2000 : ((value << 7) | value);
+#endif
 	  MIOS32_MIDI_SendPitchBend(port, kc->midi_chn-1, pb_value);
 	} else if( ctrl_number == 129 ) {
-	  MIOS32_MIDI_SendAftertouch(port, kc->midi_chn-1, value7bit);
+	  MIOS32_MIDI_SendAftertouch(port, kc->midi_chn-1, value);
 	}
       }
     }
@@ -656,6 +720,27 @@ static s32 get_on_off(char *word)
   return -1;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// help function which returns the current calibration mode
+/////////////////////////////////////////////////////////////////////////////
+static s32 KEYBOARD_TerminalCaliMode(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  switch( ain_cali_mode_pin ) {
+  case 1: out("AIN Calibration Mode enabled for kb 1 pitchwheel"); break;
+  case 2: out("AIN Calibration Mode enabled for kb 1 modwheel"); break;
+  case 3: out("AIN Calibration Mode enabled for kb 1 sustain"); break;
+  case 4: out("AIN Calibration Mode enabled for kb 2 pitchwheel"); break;
+  case 5: out("AIN Calibration Mode enabled for kb 2 modwheel"); break;
+  case 6: out("AIN Calibration Mode enabled for kb 2 sustain"); break;
+  default:
+    out("AIN Calibration Mode disabled.");
+  }
+
+  return 0; // no error
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns help page for implemented terminal commands of this module
@@ -683,8 +768,11 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> delay_slowest <0-65535>: slowest delay for velocity calculation");
   out("  set kb <1|2> ain_pitchwheel <0..5> or off: assigns pitchwheel to given J5.A<0..5> pin");
   out("  set kb <1|2> ctrl_pitchwheel <0-129>: assigns CC/PB(=128)/AT(=129) to PitchWheel");
-  out("  set kb <1|2> ain_modwheel <0..5> or off: assigns modwheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ain_modwheel <0..5> or off: assigns ModWheel to given J5.A<0..5> pin");
   out("  set kb <1|2> ctrl_modwheel <0-129>:   assigns CC/PB(=128)/AT(=129) to ModWheel");
+  out("  set kb <1|2> ain_sustain <0..5> or off: assigns Sustain Pedal to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_sustain <0-129>:   assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
+  out("  set kb <1|2> calibration <off|pitchwheel|modwheel|sustain>: starts AIN calibration");
 
   return 0; // no error
 }
@@ -1017,8 +1105,11 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  }
 
 	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "ain_pitchwheel") == 0 || strcmp(parameter, "ain_modwheel") == 0 ) {
+	} else if( strcmp(parameter, "ain_pitchwheel") == 0 ||
+		   strcmp(parameter, "ain_modwheel") == 0 ||
+		   strcmp(parameter, "ain_sustain") == 0 ) {
 	  u8 pitchwheel = strcmp(parameter, "ain_pitchwheel") == 0;
+	  u8 modwheel = strcmp(parameter, "ain_modwheel") == 0;
 
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify J5.Ax number (0..5) or off!");
@@ -1039,10 +1130,13 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  char wheel_name[20];
 	  if( pitchwheel ) {
 	    strcpy(wheel_name, "PitchWheel");
-	    kc->ain_pitchwheel = ain;
-	  } else {
+	    kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL] = ain;
+	  } else if( modwheel ) {
 	    strcpy(wheel_name, "ModWheel");
-	    kc->ain_modwheel = ain;
+	    kc->ain_pin[KEYBOARD_AIN_MODWHEEL] = ain;
+	  } else {
+	    strcpy(wheel_name, "Sustain Pedal");
+	    kc->ain_pin[KEYBOARD_AIN_SUSTAIN] = ain;
 	  }
 
 	  if( ain ) {
@@ -1052,8 +1146,11 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  }
 
 	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "ctrl_pitchwheel") == 0 || strcmp(parameter, "ctrl_modwheel") == 0 ) {
+	} else if( strcmp(parameter, "ctrl_pitchwheel") == 0 ||
+		   strcmp(parameter, "ctrl_modwheel") == 0 ||
+		   strcmp(parameter, "ctrl_sustain") == 0) {
 	  u8 pitchwheel = strcmp(parameter, "ctrl_pitchwheel") == 0;
+	  u8 modwheel = strcmp(parameter, "ctrl_modwheel") == 0;
 
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the CC number (or 128 for PitchBend or 129 for Aftertouch)!");
@@ -1069,11 +1166,15 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    char wheel_name[20];
 	    if( pitchwheel ) {
 	      strcpy(wheel_name, "PitchWheel");
-	      kc->ctrl_pitchwheel = ctrl;
-	    } else {
+	      kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] = ctrl;
+	    } else if( modwheel ) {
 	      strcpy(wheel_name, "ModWheel");
-	      kc->ctrl_modwheel = ctrl;
+	      kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL] = ctrl;
+	    } else {
+	      strcpy(wheel_name, "Sustain Pedal");
+	      kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] = ctrl;
 	    }
+
 	    if( ctrl < 128 )
 	      out("Keyboard #%d: %s sends CC#%d", kb+1, wheel_name, ctrl);
 	    else if( ctrl == 128 )
@@ -1081,6 +1182,47 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    else
 	      out("Keyboard #%d: %s sends Aftertouch", kb+1, wheel_name);
 	  }
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "calibration") == 0 || strcmp(parameter, "calibrate") == 0 ) {
+
+	  int pin = -1;
+	  u8 invalid_mode = 0;
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    invalid_mode = 1;
+	  } else {
+	    if( strcmp(parameter, "off") == 0 )
+	      pin = -1;
+	    else if( strcmp(parameter, "pitchwheel") == 0 )
+	      pin = KEYBOARD_AIN_PITCHWHEEL;
+	    else if( strcmp(parameter, "modwheel") == 0 )
+	      pin = KEYBOARD_AIN_MODWHEEL;
+	    else if( strcmp(parameter, "sustain") == 0 )
+	      pin = KEYBOARD_AIN_SUSTAIN;
+	    else
+	      invalid_mode = 1;
+	  }
+
+	  if( invalid_mode ) {
+	    out("Please specify off, pitchwheel, modwheel or sustain to disable/enable calibration mode!");
+	    return 1; // command taken
+	  }
+
+	  if( pin < 0 ) {
+	    ain_cali_mode_pin = 0; // off
+	    KEYBOARD_TerminalCaliMode(_output_function);
+	  } else {
+	    ain_cali_mode_pin = 1 + KEYBOARD_AIN_NUM*kb + pin;
+	    KEYBOARD_TerminalCaliMode(_output_function);
+
+	    kc->ain_min[pin] = 0xff;
+	    kc->ain_max[pin] = 0x00;
+	    out("Please move the potentiomenter into both directions now!");
+	    out("The calibration will be finished by selection a new source, or with 'set kb %d calibration off'", kb+1);
+	    out("Enter 'store' to save the calibration values");
+	  }
+
+
 	/////////////////////////////////////////////////////////////////////
 	} else {
 	  out("Unknown parameter for keyboard configuration - type 'help' to list available parameters!");
@@ -1134,19 +1276,28 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
   out("kb %d delay_slowest %d", kb+1, kc->delay_slowest);
 
-  if( kc->ain_pitchwheel )
-    out("kb %d ain_pitchwheel %d", kb+1, kc->ain_pitchwheel-1);
+  if( kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL] )
+    out("kb %d ain_pitchwheel %d", kb+1, kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL]-1);
   else
     out("kb %d ain_pitchwheel off", kb+1);
-  out("kb %d ctrl_pitchwheel %d (%s)", kb+1, kc->ctrl_pitchwheel,
-      (kc->ctrl_pitchwheel < 128) ? "CC" : (kc->ctrl_pitchwheel == 128 ? "PitchBend" : "Aftertouch"));
+  out("kb %d ctrl_pitchwheel %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL],
+      (kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] == 128 ? "PitchBend" : "Aftertouch"));
 
-  if( kc->ain_modwheel )
-    out("kb %d ain_modwheel %d", kb+1, kc->ain_modwheel-1);
+  if( kc->ain_pin[KEYBOARD_AIN_MODWHEEL] )
+    out("kb %d ain_modwheel %d", kb+1, kc->ain_pin[KEYBOARD_AIN_MODWHEEL]-1);
   else
     out("kb %d ain_modwheel off", kb+1);
-  out("kb %d ctrl_modwheel %d (%s)", kb+1, kc->ctrl_modwheel,
-      (kc->ctrl_modwheel < 128) ? "CC" : (kc->ctrl_modwheel == 128 ? "PitchBend" : "Aftertouch"));
+  out("kb %d ctrl_modwheel %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL],
+      (kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL] == 128 ? "PitchBend" : "Aftertouch"));
+
+  if( kc->ain_pin[KEYBOARD_AIN_SUSTAIN] )
+    out("kb %d ain_sustain %d", kb+1, kc->ain_pin[KEYBOARD_AIN_SUSTAIN]-1);
+  else
+    out("kb %d ain_sustain off", kb+1);
+  out("kb %d ctrl_sustain %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN],
+      (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] == 128 ? "PitchBend" : "Aftertouch"));
+
+  KEYBOARD_TerminalCaliMode(_output_function);
 
   return 0; // no error
 }

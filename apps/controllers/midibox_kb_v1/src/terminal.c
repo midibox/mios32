@@ -92,16 +92,16 @@ static s32 get_dec(char *word)
 // help function which parses for on or off
 // returns 0 if 'off', 1 if 'on', -1 if invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 get_on_off(char *word)
-{
-  if( strcmp(word, "on") == 0 )
-    return 1;
-
-  if( strcmp(word, "off") == 0 )
-    return 0;
-
-  return -1;
-}
+//static s32 get_on_off(char *word)
+//{
+//  if( strcmp(word, "on") == 0 )
+//    return 1;
+//
+//  if( strcmp(word, "off") == 0 )
+//    return 0;
+//
+//  return -1;
+//}
 
 
 /////////////////////////////////////////////////////////////////////////////

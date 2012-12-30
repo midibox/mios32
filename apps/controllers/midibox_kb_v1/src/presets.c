@@ -54,7 +54,8 @@ s32 PRESETS_Init(u32 mode)
   }
 
   // check for magic number in EEPROM - if not available, initialize the structure
-  if( PRESETS_Read32(PRESETS_ADDR_MAGIC01) != EEPROM_MAGIC_NUMBER ) {
+  u32 magic = PRESETS_Read32(PRESETS_ADDR_MAGIC01);
+  if( magic != EEPROM_MAGIC_NUMBER && magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] magic number not found - initialize EEPROM!\n");
 #endif
@@ -65,10 +66,6 @@ s32 PRESETS_Init(u32 mode)
       status |= PRESETS_Write16(addr, 0x00);
 
     status |= PRESETS_StoreAll();
-
-    // finally write magic numbers
-    if( status >= 0 )
-      status |= PRESETS_Write32(PRESETS_ADDR_MAGIC01, EEPROM_MAGIC_NUMBER);
   }
 
   if( status >= 0 ) {
@@ -78,6 +75,11 @@ s32 PRESETS_Init(u32 mode)
 
     u8 midimon_setup = PRESETS_Read16(PRESETS_ADDR_MIDIMON);
     status |= MIDIMON_InitFromPresets((midimon_setup>>0) & 1, (midimon_setup>>1) & 1, (midimon_setup>>2) & 1);
+
+    u8 num_srio = PRESETS_Read16(PRESETS_ADDR_NUM_SRIO);
+    if( num_srio )
+      MIOS32_SRIO_ScanNumSet(num_srio);
+
 
     status |= UIP_TASK_InitFromPresets(PRESETS_Read16(PRESETS_ADDR_UIP_USE_DHCP),
 				       PRESETS_Read32(PRESETS_ADDR_UIP_IP01),
@@ -119,13 +121,27 @@ s32 PRESETS_Init(u32 mode)
       kc->delay_fastest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
       kc->delay_slowest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
 
-      u16 ain_assign = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_ASSIGN + offset);
-      kc->ain_pitchwheel = (ain_assign >> 0) & 0xff;
-      kc->ain_modwheel   = (ain_assign >> 8) & 0xff;
+      if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ) {
+	u16 ain_assign = PRESETS_Read16(0xcb + offset);
+	kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL] = (ain_assign >> 0) & 0xff;
+	kc->ain_pin[KEYBOARD_AIN_MODWHEEL]   = (ain_assign >> 8) & 0xff;
 
-      u16 ctrl_assign = PRESETS_Read16(PRESETS_ADDR_KB1_CTRL_ASSIGN + offset);
-      kc->ctrl_pitchwheel = (ctrl_assign >> 0) & 0xff;
-      kc->ctrl_modwheel   = (ctrl_assign >> 8) & 0xff;
+	u16 ctrl_assign = PRESETS_Read16(0xcc + offset);
+	kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] = (ctrl_assign >> 0) & 0xff;
+	kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL]   = (ctrl_assign >> 8) & 0xff;
+      } else {
+	// new format
+	int i;
+	for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
+	  u16 ain_cfg1 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG1_1 + i*2 + offset);
+	  kc->ain_pin[i]  = (ain_cfg1 >> 0) & 0xff;
+	  kc->ain_ctrl[i] = (ain_cfg1 >> 8) & 0xff;
+
+	  u16 ain_cfg2 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset);
+	  kc->ain_min[i] = (ain_cfg2 >> 0) & 0xff;
+	  kc->ain_max[i] = (ain_cfg2 >> 8) & 0xff;
+	}	  
+      }
     }
     KEYBOARD_Init(1); // without overwriting default configuration
 
@@ -171,11 +187,18 @@ s32 PRESETS_StoreAll(void)
 {
   s32 status = 0;
 
+  // magic numbers
+  status |= PRESETS_Write32(PRESETS_ADDR_MAGIC01, EEPROM_MAGIC_NUMBER);
+
   // write MIDImon data
   status |= PRESETS_Write16(PRESETS_ADDR_MIDIMON,
 			    (MIDIMON_ActiveGet() ? 1 : 0) |
 			    (MIDIMON_FilterActiveGet() ? 2 : 0) |
 			    (MIDIMON_TempoActiveGet() ? 4 : 0));
+
+  // write number of SRIOs
+  status |= PRESETS_Write16(PRESETS_ADDR_NUM_SRIO,
+			    MIOS32_SRIO_ScanNumGet());
 
   // write uIP data
   status |= PRESETS_Write16(PRESETS_ADDR_UIP_USE_DHCP, UIP_TASK_DHCP_EnableGet());
@@ -215,16 +238,18 @@ s32 PRESETS_StoreAll(void)
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset, kc->delay_fastest);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset, kc->delay_slowest);
 
-      u16 ain_assign =
-	(kc->ain_pitchwheel << 0) |
-	(kc->ain_modwheel   << 8);
-      status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_ASSIGN + offset, ain_assign);
+      int i;
+      for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
+	u16 ain_cfg1 =
+	  (kc->ain_pin[i]  << 0) |
+	  (kc->ain_ctrl[i] << 8);
+	status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG1_1 + i*2 + offset, ain_cfg1);
 
-      u16 ctrl_assign =
-	(kc->ctrl_pitchwheel << 0) |
-	(kc->ctrl_modwheel   << 8);
-      status |= PRESETS_Write16(PRESETS_ADDR_KB1_CTRL_ASSIGN + offset, ctrl_assign);
-
+	u16 ain_cfg2 =
+	  (kc->ain_min[i] << 0) |
+	  (kc->ain_max[i] << 8);
+	status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset, ain_cfg2);
+      }
     }
 
   return 0; // no error

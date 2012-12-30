@@ -23,6 +23,13 @@
 #define KEYBOARD_NUM 2
 
 
+// AIN components
+#define KEYBOARD_AIN_NUM        3
+#define KEYBOARD_AIN_PITCHWHEEL 0
+#define KEYBOARD_AIN_MODWHEEL   1
+#define KEYBOARD_AIN_SUSTAIN    2
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -54,10 +61,11 @@ typedef struct {
   u16 delay_fastest;
   u16 delay_slowest;
 
-  u8  ain_pitchwheel;
-  u8  ctrl_pitchwheel;
-  u8  ain_modwheel;
-  u8  ctrl_modwheel;
+  u8  ain_pin[KEYBOARD_AIN_NUM];
+  u8  ain_ctrl[KEYBOARD_AIN_NUM];
+  u8  ain_min[KEYBOARD_AIN_NUM];
+  u8  ain_max[KEYBOARD_AIN_NUM];
+  u8  ain_last_value7[KEYBOARD_AIN_NUM];
 } keyboard_config_t;
 
 
