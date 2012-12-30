@@ -71,6 +71,7 @@ extern s32 MIOS32_BOARD_J15_SerDataShift(u8 data);
 extern s32 MIOS32_BOARD_J15_RS_Set(u8 rs);
 extern s32 MIOS32_BOARD_J15_RW_Set(u8 rw);
 extern s32 MIOS32_BOARD_J15_E_Set(u8 lcd, u8 e);
+extern s32 MIOS32_BOARD_J15_GetD7In(void);
 extern s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out);
 
 extern s32 MIOS32_BOARD_DAC_PinInit(u8 chn, u8 enable);

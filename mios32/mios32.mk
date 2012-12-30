@@ -9,7 +9,9 @@ CFLAGS    +=    -DMIOS32_PROCESSOR_$(PROCESSOR) \
 		-DMIOS32_FAMILY_$(FAMILY) \
 		-DMIOS32_FAMILY_STR=\"$(FAMILY)\" \
 		-DMIOS32_BOARD_$(BOARD) \
-		-DMIOS32_BOARD_STR=\"$(BOARD)\"
+		-DMIOS32_BOARD_STR=\"$(BOARD)\" \
+		-DMIOS32_LCD_$(LCD) \
+		-DMIOS32_LCD_STR=\"$(LCD)\"
 
 
 # add modules to thumb sources

@@ -22,6 +22,7 @@
 #include <ff.h>
 
 #include <aout.h>
+#include <app_lcd.h>
 
 #include "tasks.h"
 
@@ -209,6 +210,11 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   if( AOUT_TerminalParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed
+#endif
+
+#ifdef MIOS32_LCD_universal
+  if( APP_LCD_TerminalParseLine(input, _output_function) >= 1 )
     return 0; // command parsed
 #endif
 
@@ -548,6 +554,9 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
   AOUT_TerminalHelp(_output_function);
+#endif
+#ifdef MIOS32_LCD_universal
+  APP_LCD_TerminalHelp(_output_function);
 #endif
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);

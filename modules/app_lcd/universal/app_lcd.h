@@ -41,6 +41,8 @@ extern s32 APP_LCD_FColourSet(u32 rgb);
 extern s32 APP_LCD_BitmapPixelSet(mios32_lcd_bitmap_t bitmap, u16 x, u16 y, u32 colour);
 extern s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
+extern s32 APP_LCD_TerminalHelp(void *_output_function);
+extern s32 APP_LCD_TerminalParseLine(char *input, void *_output_function);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
