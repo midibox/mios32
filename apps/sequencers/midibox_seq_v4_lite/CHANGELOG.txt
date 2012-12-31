@@ -1,9 +1,14 @@
 $Id$
 
-Wishlist for future features
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--> see bottom of this document
+MIDIboxSEQ V4L.069
+~~~~~~~~~~~~~~~~~~
+
+   o USB MSD driver: changed endpoint to avoid conflict with MIDI driver.
+     Note that it's still not possible to use MSD and MIDI in parallel,
+     but Windows and MacOS should accept the connection (again).
+
+   o corrected tap tempo function
 
 
 MIDIboxSEQ V4L.068
