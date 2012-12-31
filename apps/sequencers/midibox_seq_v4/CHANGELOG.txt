@@ -6,6 +6,22 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.069
+~~~~~~~~~~~~~~~~~
+
+   o USB MSD driver: changed endpoint to avoid conflict with MIDI driver.
+     Note that it's still not possible to use MSD and MIDI in parallel,
+     but Windows and MacOS should accept the connection (again).
+
+   o Event configuration page: the selected layer type now has to be confirmed with 
+     GP button below the appr. item.
+     A warning message will pop up to notify about this unusual data entry method.
+     In addition, the value will be marked with '!' so long it doesn't match with
+     currently active value.
+
+    o it's now possible to delete a session from the main page
+
+
 MIDIboxSEQ V4.068
 ~~~~~~~~~~~~~~~~~
 

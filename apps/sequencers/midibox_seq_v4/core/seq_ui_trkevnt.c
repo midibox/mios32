@@ -120,6 +120,7 @@ static u8 selected_layer_config;
 static u8 selected_layer_config_track;
 
 static u8 edit_cc_number;
+static u8 edit_layer_type;
 
 static const layer_config_t layer_config[] = {
   //      mode           par_layers  par_steps  trg_layers  trg_steps  instruments
@@ -568,18 +569,34 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      break;
 
 	    case SEQ_UI_ENCODER_GP10:
-	      ui_selected_item = ITEM_LAYER_CONTROL;
+	      // Layer selection now has to be confirmed with GP button
+	      if( incrementer ) {
+		if( ui_selected_item != ITEM_LAYER_CONTROL ) {
+		  edit_layer_type = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer);
+		  ui_selected_item = ITEM_LAYER_CONTROL;
+		}
+		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm new type", "with GP button!");
+	      } else {
+		if( edit_layer_type != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer) ) {
+		  // TODO: has to be done for all selected tracks
+		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, edit_layer_type);
+		  SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
+		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Layer Type", "has been changed.");
+		}
+	      }
 	      break;
 
 	    case SEQ_UI_ENCODER_GP11:
 	    case SEQ_UI_ENCODER_GP12:
 	    case SEQ_UI_ENCODER_GP13:
 	      // CC number selection now has to be confirmed with GP button
-	      if( ui_selected_item != ITEM_LAYER_PAR ) {
-		edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
-		ui_selected_item = ITEM_LAYER_PAR;
+	      if( incrementer ) {
+		if( ui_selected_item != ITEM_LAYER_PAR ) {
+		  edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+		  ui_selected_item = ITEM_LAYER_PAR;
+		}
 		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
-	      } else if( incrementer == 0 ) {
+	      } else {
 		if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
@@ -695,12 +712,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    }
 	    
 	  case ITEM_LAYER_CONTROL: {
-	    // TODO: has to be done for all selected tracks
-	    if( SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
-	      SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
-	      return 1;
-	    }
-	    return 0;
+	    // Layer Control selection now has to be confirmed with GP button
+	    return SEQ_UI_Var8_Inc(&edit_layer_type, 0, SEQ_PAR_NUM_TYPES-1, incrementer);
 	  } break;
 	}
       }
@@ -1335,20 +1348,31 @@ static s32 LCD_Handler(u8 high_prio)
 	} else {
 	  SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
 	}
-	SEQ_LCD_PrintSpaces(4);
+	SEQ_LCD_PrintSpaces(3);
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_LAYER_CONTROL && ui_cursor_flash ) {
-	  SEQ_LCD_PrintSpaces(5);
+	  SEQ_LCD_PrintSpaces(6);
 	} else {
-	  SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+	  u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer);
+	  if( ui_selected_item == ITEM_LAYER_CONTROL && edit_layer_type != current_value ) {
+	    SEQ_LCD_PrintChar('!');
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(edit_layer_type));
+	  } else {
+	    SEQ_LCD_PrintChar(' ');
+	    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+	  }
 	}
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_LAYER_PAR && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(15);
 	} else {
-	  switch( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) ) {
+	  u8 assignment = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
+	  if( ui_selected_item == ITEM_LAYER_CONTROL )
+	    assignment = edit_layer_type;
+
+	  switch( assignment ) {
             case SEQ_PAR_Type_CC: {
 	      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	      u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
