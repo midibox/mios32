@@ -998,7 +998,7 @@ s32 APP_LCD_TerminalParseLine(char *input, void *_output_function)
 	out("testlcdpin d0 1  -> sets J15(AB):D0 to ca. 5V (resp. 3.3V)");
 	out("testlcdpin d1 0  -> sets J15(AB):D1 to ca. 0V");
 	out("testlcdpin d1 1  -> sets J15(AB):D1 to ca. 5V (resp. 3.3V)");
-	out("testlcdpin d...  -> same for J15(AB):D2, D3 D4, D5, D6, D7");
+	out("testlcdpin d...  -> same for J15(AB):D2, D3, D4, D5, D6, D7");
 	out("testlcdpin reset -> re-initializes LCD modules so that they can be used again.");
 	out("The testmode is currently %s", lcd_testmode ? "enabled" : "disabled");
       }
