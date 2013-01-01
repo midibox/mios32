@@ -1028,27 +1028,33 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	      // sustained/glided note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
 	      if( gen_sustained_events ) {
-		u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
-
-		// glide: if same note already played, play the new one a tick later for 
-		// proper handling of "fingered portamento" function on some synths
-		if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
-		  scheduled_tick += 1;
-
 		// for visualisation in mute menu
 		t->vu_meter = p->velocity;
 
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+		if( loopback_port ) {
+		  // forward to MIDI IN handler immediately
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1);
+		} else {
+		  u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
 
-		// apply Post-FX
-		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		  u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
-		  SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		  // glide: if same note already played, play the new one a tick later for 
+		  // proper handling of "fingered portamento" function on some synths
+		  if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
+		    scheduled_tick += 1;
+
+		  // Note On
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+
+		  // apply Post-FX
+		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
+		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		  }
+
+		  // Note Off
+		  p->velocity = 0;
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 		}
-
-		// Note Off
-		p->velocity = 0;
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
