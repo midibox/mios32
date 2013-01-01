@@ -679,7 +679,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
       if( next_step_event ) {
 
-	if( next_step_event ) {
+	{
 	  // calculate step length
 	  u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
 	  t->step_length = step_length_pre;

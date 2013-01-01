@@ -146,6 +146,9 @@ static notestack_item_t arp_unsorted_hold[SEQ_MIDI_IN_NUM_BUSSES][4];
 // for MIDI remote keyboard function
 static u8 remote_active;
 
+// for automatic note-stack reset
+static u8 last_bus_received_from_loopback;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -177,7 +180,43 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
     seq_midi_in_sect_note[i] = 0x30 + 12*i;
 
   remote_active = 0;
+  last_bus_received_from_loopback = 0x00;
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// resets note stacks used for transposer/arpeggiator
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDI_IN_ResetSingleTransArpStacks(u8 bus)
+{
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_TRANSPOSER][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED],
+		 NOTESTACK_MODE_SORT,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_ARP_SORTED][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  transposer_hold_note[bus] = 0x3c; // C-3
+
+  int i;
+  for(i=0; i<4; ++i)
+    arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
+
+  arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
+  arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
+  arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
+  arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
+    
   return 0; // no error
 }
 
@@ -189,31 +228,7 @@ s32 SEQ_MIDI_IN_ResetTransArpStacks(void)
 {
   int bus;
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER],
-		   NOTESTACK_MODE_PUSH_TOP,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_TRANSPOSER][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED],
-		   NOTESTACK_MODE_SORT,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_SORTED][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED],
-		   NOTESTACK_MODE_PUSH_TOP,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    transposer_hold_note[bus] = 0x3c; // C-3
-
-    int i;
-    for(i=0; i<4; ++i)
-      arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
-
-    arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
-    arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
-    arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
-    arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
+    SEQ_MIDI_IN_ResetSingleTransArpStacks(bus);
   }
     
   return 0; // no error
@@ -483,7 +498,14 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 s32 SEQ_MIDI_IN_BusReceive(mios32_midi_port_t port, mios32_midi_package_t midi_package, u8 from_loopback_port)
 {
   s32 status = 0;
-  u8 bus = (port >= 0xf0) ? (port-0xf0) : 0xf0;
+  u8 bus = (port >= 0xf0) ? (port-0xf0) : 0;
+
+  if( from_loopback_port ) {
+    last_bus_received_from_loopback |= (1 << bus);
+  } else if( (last_bus_received_from_loopback & (1 << bus)) ) {
+    last_bus_received_from_loopback &= ~(1 << bus);
+    SEQ_MIDI_IN_ResetSingleTransArpStacks(bus);
+  }
 
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 

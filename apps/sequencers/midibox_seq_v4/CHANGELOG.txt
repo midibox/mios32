@@ -12,6 +12,9 @@ MIDIboxSEQ V4.070
    o improved transpose handling if loopback track is running with sustain enabled,
      or with notes > step length (glide)
 
+   o note stack now automatically cleared if transpose was controlled by a loopback
+     track, and then manually from an external keyboard.
+
 
 MIDIboxSEQ V4.069
 ~~~~~~~~~~~~~~~~~
