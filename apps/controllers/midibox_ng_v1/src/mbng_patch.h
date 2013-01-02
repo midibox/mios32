@@ -115,6 +115,12 @@ typedef struct {
   u8 valid;
 } mbng_patch_bank_entry_t;
 
+#define MBNG_PATCH_SCS_BUTTONS 5
+typedef struct {
+  u16 button_emu_id[MBNG_PATCH_SCS_BUTTONS];
+  u16 enc_emu_id;
+} mbng_patch_scs_t;
+
 typedef struct {
   u8 debounce_ctr;
   u8 global_chn;
@@ -161,6 +167,8 @@ extern mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
 extern mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
 
 extern char mbng_patch_aout_spi_rc_pin;
+
+extern mbng_patch_scs_t mbng_patch_scs;
 
 extern mbng_patch_cfg_t mbng_patch_cfg;
 

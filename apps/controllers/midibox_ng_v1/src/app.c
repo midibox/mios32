@@ -201,6 +201,15 @@ void APP_Init(void)
   SEQ_BPM_Set(120.0);
   SEQ_MIDI_OUT_Init(0);
 
+#if MIOS32_DONT_SERVICE_SRIO_SCAN
+  //MIOS32_SRIO_ScanNumSet(4);
+
+  // standard SRIO scan has been disabled in programming_models/traditional/main.c via MIOS32_DONT_SERVICE_SRIO_SCAN in mios32_config.h
+  // start the scan here - and retrigger it whenever it's finished
+  APP_SRIO_ServicePrepare();
+  MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
+#endif
+
   // start tasks
   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS",   APP_REDUCED_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", APP_BIG_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
@@ -319,6 +328,16 @@ void APP_SRIO_ServiceFinish(void)
 {
   // Matrix handler
   MBNG_MATRIX_GetRow();
+
+#if MIOS32_DONT_SERVICE_SRIO_SCAN
+  // update encoder states
+  MIOS32_ENC_UpdateStates();
+
+  // standard SRIO scan has been disabled in programming_models/traditional/main.c via MIOS32_DONT_SERVICE_SRIO_SCAN in mios32_config.h
+  // start the scan here - and retrigger it whenever it's finished
+  APP_SRIO_ServicePrepare();
+  MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
+#endif
 }
 
 

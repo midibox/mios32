@@ -47,9 +47,6 @@ s32 MBNG_DIN_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-  if( pin >= MBNG_PATCH_NUM_DIN )
-    return -1; // invalid pin
-
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_DIN_NotifyToggle(%d, %d)\n", pin, pin_value);
   }

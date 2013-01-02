@@ -44,7 +44,14 @@ mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
 
 char mbng_patch_aout_spi_rc_pin;
 
-mbng_patch_cfg_t mbng_patch_cfg = {
+mbng_patch_scs_t mbng_patch_scs;
+static const mbng_patch_scs_t mbng_patch_scs_default = {
+  .button_emu_id = {0, 0, 0, 0, 0},
+  .enc_emu_id = 0,
+};
+
+mbng_patch_cfg_t mbng_patch_cfg;
+static const mbng_patch_cfg_t mbng_patch_cfg_default = {
   .debounce_ctr = 20,
   .global_chn = 0,
   .all_notes_off_chn = 0,
@@ -69,6 +76,9 @@ s32 MBNG_PATCH_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  mbng_patch_cfg = mbng_patch_cfg_default;
+  mbng_patch_scs = mbng_patch_scs_default;
 
   selected_bank = 0;
 

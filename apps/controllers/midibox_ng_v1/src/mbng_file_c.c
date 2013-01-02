@@ -2201,6 +2201,69 @@ s32 parseAout(char *cmd, char *brkt)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses SCS definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseScs(char *cmd, char *brkt)
+{
+  // parse the parameters
+
+typedef struct {
+  u16 button_emu_id[MBNG_PATCH_SCS_BUTTONS];
+  u16 enc_emu_id;
+} mbng_patch_scs_t;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    int button = -1;
+    if(      strcasecmp(parameter, "soft1_button_emu_id") == 0 ) button = 0;
+    else if( strcasecmp(parameter, "soft2_button_emu_id") == 0 ) button = 1;
+    else if( strcasecmp(parameter, "soft3_button_emu_id") == 0 ) button = 2;
+    else if( strcasecmp(parameter, "soft4_button_emu_id") == 0 ) button = 3;
+    else if( strcasecmp(parameter, "shift_button_emu_id") == 0 ) button = 4;
+
+    if( button >= 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 4095 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid button emulation id for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      mbng_patch_scs.button_emu_id[button] = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "enc_emu_id") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 4095 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enc emulation id for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      mbng_patch_scs.enc_emu_id = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  return 0; // no error
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses ROUTER definitions
@@ -2598,6 +2661,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseMf(parameter, brkt);
 	} else if( strcmp(parameter, "AOUT") == 0 ) {
 	  parseAout(parameter, brkt);
+	} else if( strcmp(parameter, "SCS") == 0 ) {
+	  parseScs(parameter, brkt);
 	} else if( strcmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
 	} else if( strcmp(parameter, "ETH") == 0 ) {
@@ -3342,6 +3407,36 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	    mbng_patch_aout_spi_rc_pin,
 	    config.num_channels);
     FLUSH_BUFFER;
+  }
+
+  {
+    u16 any_value = 0;
+
+    int i;
+    for(i=0; i<MBNG_PATCH_SCS_BUTTONS; ++i)
+      any_value |= mbng_patch_scs.button_emu_id[i];
+    any_value |= mbng_patch_scs.enc_emu_id;
+
+    if( any_value ) {
+      sprintf(line_buffer, "\n\n# SCS Configuration\n");
+      FLUSH_BUFFER;
+
+#if MBNG_PATCH_SCS_BUTTONS != 5
+# error "Please adapt for new number of buttons"
+#endif
+      sprintf(line_buffer, "SCS soft1_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[0]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    soft2_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[1]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    soft3_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[2]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    soft4_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[3]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    shift_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[4]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    enc_emu_id=%d\n", mbng_patch_scs.enc_emu_id);
+      FLUSH_BUFFER;
+    }
   }
 
   {

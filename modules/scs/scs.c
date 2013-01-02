@@ -711,9 +711,10 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       scsEditStringCallback = NULL; // disable edit string callback
       scsEditGetListCallback = NULL; // disable edit string callback
     }
-      //default: // SCS_MENU_STATE_MAINPAGE
-      //scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
-      // enter page only via soft buttons
+#if SCS_MENU_ENTERED_VIA_EXIT_BUTTON
+    default: // SCS_MENU_STATE_MAINPAGE
+      scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
+#endif
     }
     SCS_ENC_MENU_AutoSpeedSet(1); // slow speed..
     displayUpdateReq = 1;
