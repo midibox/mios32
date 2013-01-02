@@ -85,6 +85,12 @@ extern "C" {
 #define SCS_MENU_NO_SOFT_BUTTON_MODE 0
 #endif
 
+// currently only used by MIDIbox NG:
+// the EXIT button enters the menu if the SCS shows the main page
+// this measure is required, since soft buttons are assigned to alternative functions in main page
+#ifndef SCS_MENU_ENTERED_VIA_EXIT_BUTTON
+#define SCS_MENU_ENTERED_VIA_EXIT_BUTTON 0
+#endif
 
 // Optional Inc/Dec button (e.g. as encoder replacement)
 // it's save to assign them to the same pins like the encoder (SCS_PIN_ENC_MENU_A and SCS_PIN_ENC_MENU_B)

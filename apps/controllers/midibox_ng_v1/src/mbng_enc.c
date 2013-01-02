@@ -77,8 +77,12 @@ s32 MBNG_ENC_FastModeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 {
+  int enc_ix = enc + 1;
+  if( enc == (mbng_patch_scs.enc_emu_id-1) )
+    enc_ix = 0;
+
   mios32_enc_config_t enc_config;
-  enc_config = MIOS32_ENC_ConfigGet(enc+1); // add +1 since the first encoder is allocated by SCS
+  enc_config = MIOS32_ENC_ConfigGet(enc_ix); // add +1 since the first encoder is allocated by SCS
 
   mios32_enc_speed_t cfg_speed = NORMAL;
   int                cfg_speed_par = 0;
@@ -123,7 +127,7 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
   if( enc_config.cfg.speed != cfg_speed || enc_config.cfg.speed_par != cfg_speed_par ) {
     enc_config.cfg.speed = cfg_speed;
     enc_config.cfg.speed_par = cfg_speed_par;
-    MIOS32_ENC_ConfigSet(enc+1, enc_config); // add +1 since the first encoder is allocated by SCS
+    MIOS32_ENC_ConfigSet(enc_ix, enc_config); // add +1 since the first encoder is allocated by SCS
   }
 
   return 0; // no error
@@ -135,9 +139,6 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-  if( encoder >= MBNG_PATCH_NUM_ENC )
-    return -1; // invalid encoder
-
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
     DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
   }
@@ -213,10 +214,6 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     break;
 
   default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
-    int enc_ix = (enc_id & 0xfff) - 1;
-    if( enc_ix < 0 || enc_ix > MBNG_PATCH_NUM_ENC )
-      return 0; // no value storage
-
     if( map_len > 0 ) {
       int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value);
       map_ix += incrementer;

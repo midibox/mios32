@@ -11,8 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.005"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.006"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox NG"
@@ -22,6 +22,12 @@
 
 // increased number of SRs
 #define MIOS32_SRIO_NUM_SR 32
+
+// disables the default SRIO scan routine in programming_models/traditional/main.c
+// allows to implement an own handler
+// -> see app.c, APP_SRIO_*
+//#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
+// TK: not done - doesn't improve ledring results
 
 // enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
 #if defined(MIOS32_FAMILY_STM32F10x)
@@ -35,6 +41,10 @@
 
 // enable 65 encoders (because SCS allocates one encoder as well)
 #define MIOS32_ENC_NUM_MAX 65
+
+
+// the SCS is entered by pressing the EXIT button
+#define SCS_MENU_ENTERED_VIA_EXIT_BUTTON 1
 
 
 // AIN configuration:

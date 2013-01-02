@@ -22,7 +22,7 @@
 
 // disables the default SRIO scan routine in programming_models/traditional/main.c
 // allows to implement an own handler
-// -> see app.c, TASK_MatrixScan()
+// -> see app.c, , APP_SRIO_*
 #define MIOS32_DONT_SERVICE_SRIO_SCAN 1
 
 

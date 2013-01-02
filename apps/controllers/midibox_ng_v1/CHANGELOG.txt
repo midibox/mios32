@@ -1,13 +1,23 @@
 $Id$
 
+MIDIbox NG V1.006
+~~~~~~~~~~~~~~~~~
+
+   o corrected LED pattern output for the case that the selection lines are inverted.
+
+   o the new SCS command allows to assign emulated button/encoder functions if the SCS
+     shows the mainpage.
+     A usage example can be found under cfg/templates/lre8x2.ngc
+
+
 MIDIbox NG V1.005
 ~~~~~~~~~~~~~~~~~
 
    o support for value MAPs.
-     Various examples can be found under cfg/test/map*.ngc
+     Various examples can be found under cfg/tests/map*.ngc
 
    o support for EVENT_CV
-     Various examples can be found under cfg/test/cv*.ngc
+     Various examples can be found under cfg/tests/cv*.ngc
 
    o AINSER modules now disabled after RESET_HW
      They have to be explicitely enabled with the AINSER command

@@ -373,7 +373,6 @@ s32 MBNG_MATRIX_PrepareCol(void)
     // same for DOUTs
     int matrix;
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
-    u16 *pattern = (u16 *)&led_row[0][selected_row];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
       // select next DIN column (selected cathode line = 0, all others 1)
 
@@ -381,7 +380,10 @@ s32 MBNG_MATRIX_PrepareCol(void)
       if( m->num_rows <= 4 ) dout_value = selection_4rows[selected_row];
       else if( m->num_rows <= 8 ) dout_value = selection_8rows[selected_row];
       else dout_value = selection_16rows[selected_row];
-      if( m->inverted ) { dout_value ^= 0xffff; }
+
+      if( m->inverted ) {
+	dout_value ^= 0xffff;
+      }
 
       if( m->sr_dout_sel1 ) {
 	MIOS32_DOUT_SRSet(m->sr_dout_sel1-1, dout_value);
@@ -394,8 +396,10 @@ s32 MBNG_MATRIX_PrepareCol(void)
 #if MBNG_PATCH_NUM_MATRIX_COLORS_MAX != 3
 # error "only prepared for 3 colors" // just to ensure
 #endif
+      u16 *pattern = (u16 *)&led_row[0][selected_row % m->num_rows];
+
       dout_value = *pattern++;
-      if( m->inverted ) { dout_value ^= 0xffff; }
+      //if( m->inverted ) { dout_value ^= 0xffff; }
       if( m->sr_dout_r1 ) {
 	MIOS32_DOUT_SRSet(m->sr_dout_r1-1, dout_value);
       }
@@ -404,7 +408,7 @@ s32 MBNG_MATRIX_PrepareCol(void)
       }
 
       dout_value = *pattern++;
-      if( m->inverted ) { dout_value ^= 0xffff; }
+      //if( m->inverted ) { dout_value ^= 0xffff; }
       if( m->sr_dout_g1 ) {
 	MIOS32_DOUT_SRSet(m->sr_dout_g1-1, dout_value);
       }
@@ -413,7 +417,7 @@ s32 MBNG_MATRIX_PrepareCol(void)
       }
 
       dout_value = *pattern++;
-      if( m->inverted ) { dout_value ^= 0xffff; }
+      //if( m->inverted ) { dout_value ^= 0xffff; }
       if( m->sr_dout_b1 ) {
 	MIOS32_DOUT_SRSet(m->sr_dout_b1-1, dout_value);
       }

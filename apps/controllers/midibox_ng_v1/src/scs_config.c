@@ -42,6 +42,8 @@
 #include "mbng_file_c.h"
 #include "mbng_patch.h"
 #include "mbng_lcd.h"
+#include "mbng_enc.h"
+#include "mbng_din.h"
 
 
 
@@ -406,7 +408,7 @@ static s32 displayHook(char *line1, char *line2)
     SCS_LCD_SpecialCharsReInit();
   }
 
-  if( extraPage ) {
+  if( SCS_MenuStateGet() != SCS_MENU_STATE_MAINPAGE && extraPage ) {
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
 
@@ -518,8 +520,28 @@ static s32 displayHook(char *line1, char *line2)
 /////////////////////////////////////////////////////////////////////////////
 static s32 encHook(s32 incrementer)
 {
-  if( extraPage )
+  if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    // emulated encoder function?
+    if( mbng_patch_scs.enc_emu_id )
+      MBNG_ENC_NotifyChange(mbng_patch_scs.enc_emu_id-1, incrementer);
+
+    return 1;
+  }
+
+  // auto-switch encoder mode to "normal", because MBNG_ENC_AutoSpeed could have changed it
+  {
+    mios32_enc_config_t enc_config;
+    enc_config = MIOS32_ENC_ConfigGet(0);
+    if( enc_config.cfg.speed != NORMAL ) {
+      enc_config.cfg.speed = NORMAL;
+      MIOS32_ENC_ConfigSet(0, enc_config);
+    }
+  }
+
+
+  if( SCS_MenuStateGet() != SCS_MENU_STATE_MAINPAGE && extraPage ) {
     return 1; // ignore encoder movements in extra page
+  }
 
   // encoder overlayed in monitor page to scroll through port list
   if( SCS_MenuPageGet() == pageMON ) {
@@ -546,6 +568,25 @@ static s32 encHook(s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
+  if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    // emulated button function?
+
+#if MBNG_PATCH_SCS_BUTTONS != 5
+# error "Please adapt for new number of buttons"
+#endif
+
+    if( scsButton >= SCS_PIN_SOFT1 && scsButton <= SCS_PIN_SOFT5 ) {
+      int button_ix = scsButton - SCS_PIN_SOFT1;
+
+      if( mbng_patch_scs.button_emu_id[button_ix] )
+	MBNG_DIN_NotifyToggle(mbng_patch_scs.button_emu_id[button_ix]-1, depressed ? 1 : 0);
+    } else if( scsButton == SCS_PIN_EXIT ) {
+      return 0; // switches to menu page
+    }
+
+    return 1;
+  }
+
   if( extraPage ) {
     if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
       extraPage = 0;
