@@ -262,7 +262,7 @@ s32 parseBinFile(char *filepath)
 
   if( info->valid ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_L] %d labels found in %s.BIN file%s\n", info->num_labels, filepath, (info->num_labels >= MBNG_FILE_L_NUM_LABELS) ? " (maximum reached)" : "");
+    DEBUG_MSG("[MBNG_FILE_L] %d labels found in %s file%s\n", info->num_labels, filepath, (info->num_labels >= MBNG_FILE_L_NUM_LABELS) ? " (maximum reached)" : "");
 #endif
   }
 

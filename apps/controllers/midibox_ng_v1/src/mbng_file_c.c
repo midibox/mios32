@@ -538,6 +538,32 @@ s32 parseEvent(char *cmd, char *brkt)
 	return -1;
       } else {
 	item.id = (item.id & 0xf000) | id;
+	if( !item.hw_id )
+	  item.hw_id = id; // default hardware ID if not already define before
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "hw_id") == 0 ) {
+      int hw_id;
+      if( (hw_id=get_dec(value_str)) < 1 || hw_id > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid HW_ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+#endif
+	return -1;
+      } else {
+	item.hw_id = hw_id; // HW_ID can be modified
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "bank") == 0 ) {
+      int bank;
+      if( (bank=get_dec(value_str)) < 0 || bank > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid bank in EVENT_%s ... %s=%s (expect 0..255)\n", event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.bank = bank;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1244,126 +1270,6 @@ s32 parseMap(char *cmd, char *brkt)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C] ERROR: failed to add %s to the pool!\n", cmd);
 #endif
-  }
-
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// help function which parses BANK definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
-/////////////////////////////////////////////////////////////////////////////
-static s32 parseBankCtrl(char *values_str, mbng_patch_bank_ctrl_t *ctrl)
-{
-  const char *separator_colon = ":";
-  char *brkt_local;
-  char *value_str;
-
-  if( !(value_str = strtok_r(values_str, separator_colon, &brkt_local)) )
-    return -1;
-  if( (ctrl->first_n = get_dec(value_str)) < 1 )
-    return -2;
-
-  if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) )
-    return -3;
-  if( (ctrl->num = get_dec(value_str)) < 1 )
-    return -4;
-
-  if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) )
-    return -5;
-  if( (ctrl->first_id = get_dec(value_str)) < 1 || ctrl->first_id >= 4095 )
-    return -6;
-
-  return 0; // no error
-}
-
-//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseBank(char *cmd, char *brkt)
-{
-  // parse the parameters
-  int num = 0;
-  mbng_patch_bank_entry_t bank_entry;
-  MBNG_PATCH_BankEntryInit(&bank_entry, 0);
-
-  char *parameter;
-  char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    if( strcasecmp(parameter, "n") == 0 ) {
-      if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_BANKS ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid bank number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_BANKS);
-#endif
-	return -1; // invalid parameter
-      }
-      bank_entry.valid = 1;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "button") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.button) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid button spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.button.first_id |= MBNG_EVENT_CONTROLLER_BUTTON;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "led") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.led) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid led spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.led.first_id |= MBNG_EVENT_CONTROLLER_LED;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "enc") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.enc) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enc spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.enc.first_id |= MBNG_EVENT_CONTROLLER_ENC;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "ain") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.ain) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ain spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.ain.first_id |= MBNG_EVENT_CONTROLLER_AIN;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "ainser") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.ainser) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ainser spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.ainser.first_id |= MBNG_EVENT_CONTROLLER_AINSER;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "mf") == 0 ) {
-      if( parseBankCtrl(value_str, &bank_entry.mf) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid mf spec for %s ... %s=%s'\n", cmd, parameter, value_str);
-#endif
-      }
-      bank_entry.mf.first_id |= MBNG_EVENT_CONTROLLER_MF;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
-#endif
-      // just continue to keep files compatible
-    }
-  }
-
-  if( bank_entry.valid ) {
-    memcpy((u8 *)&mbng_patch_bank[num-1], (u8 *)&bank_entry, sizeof(mbng_patch_bank_entry_t));
   }
 
   return 0; // no error
@@ -2629,8 +2535,6 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    item.label = str;
 	    MBNG_LCD_PrintItemLabel(&item);
 	  }
-	} else if( strcmp(parameter, "BANK") == 0 ) {
-	  parseBank(parameter, brkt);
 	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
 	  if( !got_first_event_item ) {
 	    got_first_event_item = 1;
@@ -2844,61 +2748,6 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
   }
 
-  {
-    sprintf(line_buffer, "\n\n# BANKs\n");
-    FLUSH_BUFFER;
-
-    int bank;
-    mbng_patch_bank_entry_t *b = (mbng_patch_bank_entry_t *)&mbng_patch_bank[0];
-    for(bank=0; bank<MBNG_PATCH_NUM_BANKS; ++bank, ++b) {
-      if( b->valid ) {
-	char str[20];
-
-	sprintf(line_buffer, "BANK n=%2d", bank+1);
-	FLUSH_BUFFER;
-
-	if( b->button.num ) {
-	  sprintf(str, "%d:%d:%d", b->button.first_n, b->button.num, b->button.first_id & 0xfff);
-	  sprintf(line_buffer, "  button=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	if( b->led.num ) {
-	  sprintf(str, "%d:%d:%d", b->led.first_n, b->led.num, b->led.first_id & 0xfff);
-	  sprintf(line_buffer, "  led=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	if( b->enc.num ) {
-	  sprintf(str, "%d:%d:%d", b->enc.first_n, b->enc.num, b->enc.first_id & 0xfff);
-	  sprintf(line_buffer, "  enc=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	if( b->ain.num ) {
-	  sprintf(str, "%d:%d:%d", b->ain.first_n, b->ain.num, b->ain.first_id & 0xfff);
-	  sprintf(line_buffer, "  ain=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	if( b->ainser.num ) {
-	  sprintf(str, "%d:%d:%d", b->ainser.first_n, b->ainser.num, b->ainser.first_id & 0xfff);
-	  sprintf(line_buffer, "  ainser=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	if( b->mf.num ) {
-	  sprintf(str, "%d:%d:%d", b->mf.first_n, b->mf.num, b->mf.first_id & 0xfff);
-	  sprintf(line_buffer, "  mf=%-10s", str);
-	  FLUSH_BUFFER;
-	}
-
-	sprintf(line_buffer, "\n");
-	FLUSH_BUFFER;
-      }
-    }
-  }
-
   if( MBNG_EVENT_PoolNumItemsGet() > 0 ) {
     sprintf(line_buffer, "\n\n# EVENTs\n");
     FLUSH_BUFFER;
@@ -2914,6 +2763,18 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      MBNG_EVENT_ItemControllerStrGet(item.id),
 	      item.id & 0xfff);
       FLUSH_BUFFER;
+
+      if( item.hw_id != (item.id & 0xfff) ) {
+	sprintf(line_buffer, "  hw_id=%3d",
+		item.hw_id);
+	FLUSH_BUFFER;
+      }
+
+      if( item.bank ) {
+	sprintf(line_buffer, "  bank=%2d",
+		item.bank);
+	FLUSH_BUFFER;
+      }
 
       if( item.fwd_id ) {
 	sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);

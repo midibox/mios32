@@ -116,12 +116,11 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	u16 fader = module*8 + fader_sel;
 
 	// get ID
-	mbng_event_item_id_t mf_id = MBNG_EVENT_CONTROLLER_MF + fader + 1;
-	MBNG_PATCH_BankCtrlIdGet(fader, &mf_id); // modifies id depending on bank selection
+	u16 hw_id = fader + 1;
 	mbng_event_item_t item;
-	if( MBNG_EVENT_ItemSearchById(mf_id, &item) < 0 ) {
+	if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_MF, hw_id, &item) < 0 ) {
 	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	    DEBUG_MSG("No event assigned to MF id=%d\n", mf_id & 0xfff);
+	    DEBUG_MSG("No event assigned to MF hw_id=%d\n", hw_id);
 	  }
 	  return -2; // no event assigned
 	}
@@ -153,15 +152,12 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	  value_scaled = map_values[value_scaled];
 	}
 
-	int mf_ix = (mf_id & 0xfff) - 1;
-	if( mf_ix >= 0 || mf_ix < MBNG_PATCH_NUM_MF_MODULES*8 ) {
-	  if( item.value != value_scaled ) {
-	    // take over new value
-	    item.value = value_scaled;
+	if( item.value != value_scaled ) {
+	  // take over new value
+	  item.value = value_scaled;
 
-	    // send MIDI event
-	    MBNG_EVENT_NotifySendValue(&item);
-	  }
+	  // send MIDI event
+	  MBNG_EVENT_NotifySendValue(&item);
 	}
       }
     }
@@ -206,16 +202,16 @@ s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int mf_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MF_NotifyReceivedValue(%d, %d)\n", mf_subid, item->value);
+    DEBUG_MSG("MBNG_MF_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   // forward to MF
-  if( mf_subid && mf_subid <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
-    int module = (mf_subid-1) / 8;
-    int fader = (mf_subid-1) % 8;
+  if( hw_id && hw_id <= MBNG_PATCH_NUM_MF_MODULES*8 ) {
+    int module = (hw_id-1) / 8;
+    int fader = (hw_id-1) % 8;
     mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[module];
     if( mf->flags.enabled ) {
       // scale value to 14bit

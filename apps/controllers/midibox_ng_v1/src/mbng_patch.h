@@ -31,8 +31,6 @@
 #define MBNG_PATCH_NUM_MATRIX_DOUT   8
 #define MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS 4
 
-#define MBNG_PATCH_NUM_BANKS        16
-
 #define MBNG_PATCH_NUM_MATRIX_ROWS_MAX   16
 #define MBNG_PATCH_NUM_MATRIX_COLORS_MAX  3
 
@@ -99,22 +97,6 @@ typedef struct {
   mbng_patch_ainser_flags_t flags;
 } mbng_patch_ainser_entry_t;
 
-typedef struct {
-  u16 first_n;
-  u16 num;
-  u16 first_id;
-} mbng_patch_bank_ctrl_t;
-
-typedef struct {
-  mbng_patch_bank_ctrl_t button;
-  mbng_patch_bank_ctrl_t led;
-  mbng_patch_bank_ctrl_t enc;
-  mbng_patch_bank_ctrl_t ain;
-  mbng_patch_bank_ctrl_t ainser;
-  mbng_patch_bank_ctrl_t mf;
-  u8 valid;
-} mbng_patch_bank_entry_t;
-
 #define MBNG_PATCH_SCS_BUTTONS 5
 typedef struct {
   u16 button_emu_id[MBNG_PATCH_SCS_BUTTONS];
@@ -142,14 +124,6 @@ extern s32 MBNG_PATCH_Init(u32 mode);
 extern s32 MBNG_PATCH_Load(char *filename);
 extern s32 MBNG_PATCH_Store(char *filename);
 
-extern s32 MBNG_PATCH_BankEntryInit(mbng_patch_bank_entry_t *b, u8 valid);
-extern s32 MBNG_PATCH_BankSet(u8 new_bank);
-extern s32 MBNG_PATCH_BankGet(void);
-extern s32 MBNG_PATCH_NumBanksGet(void);
-extern s32 MBNG_PATCH_BankCtrlIdGet(u32 ix, mbng_event_item_id_t* id);
-extern s32 MBNG_PATCH_BankCtrlInBank(mbng_event_item_t *item);
-extern s32 MBNG_PATCH_BankCtrlIsActive(mbng_event_item_t *item);
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
@@ -163,8 +137,6 @@ extern mbng_patch_ain_entry_t mbng_patch_ain;
 extern mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES];
 
 extern mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
-
-extern mbng_patch_bank_entry_t mbng_patch_bank[MBNG_PATCH_NUM_BANKS];
 
 extern char mbng_patch_aout_spi_rc_pin;
 

@@ -546,12 +546,11 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
     return MBNG_DIN_NotifyToggle(pin + mbng_patch_matrix_din[matrix].button_emu_id_offset - 1, pin_value);
 
   // get ID
-  mbng_event_item_id_t matrix_id = MBNG_EVENT_CONTROLLER_BUTTON_MATRIX + matrix + 1;
-  MBNG_PATCH_BankCtrlIdGet(matrix, &matrix_id); // modifies id depending on bank selection
+  u16 hw_id = matrix + 1;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(matrix_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_BUTTON_MATRIX, hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to BUTTON_MATRIX id=%d\n", matrix_id & 0xfff);
+      DEBUG_MSG("No event assigned to BUTTON_MATRIX hw_id=%d\n", hw_id);
     }
     return -2; // no event assigned
   }
@@ -580,10 +579,10 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int button_matrix_ix = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", button_matrix_ix, item->value);
+    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   return 0; // no error
@@ -596,10 +595,10 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int led_matrix_ix = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d)\n", led_matrix_ix, item->value);
+    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
 #if MBNG_PATCH_NUM_MATRIX_ROWS_MAX != 16
@@ -607,18 +606,18 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 #endif
 
   if( !item->flags.LED_MATRIX.led_matrix_pattern ) {
-    if( led_matrix_ix ) {
+    if( hw_id ) {
       // no LED pattern: set bit directly depending on item->matrix_pin, which could have been
       // set by a EVENT_BUTTON_MATRIX
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
       u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
 
       u8 color = 0; // TODO...
-      MBNG_MATRIX_DOUT_PinSet(led_matrix_ix-1, color, item->matrix_pin, dout_value);
+      MBNG_MATRIX_DOUT_PinSet(hw_id-1, color, item->matrix_pin, dout_value);
     }
   } else {
-    int matrix = (led_matrix_ix-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
-    int row = (led_matrix_ix-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
+    int matrix = (hw_id-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
+    int row = (hw_id-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
     u8 color = 0; // TODO...
     // this is actually a dirty solution: without LED patterns we address the matrix directly with 1..8,
     // and here we multiply by 16 since we've connected 16 LED Rings... :-/

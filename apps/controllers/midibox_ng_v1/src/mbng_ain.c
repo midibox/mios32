@@ -147,17 +147,16 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
   if( !(mbng_patch_ain.enable_mask & (1 << pin)) )
     return 0; // not enabled
 
+  u16 hw_id = pin + 1;
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", pin, pin_value);
+    DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", hw_id, pin_value);
   }
 
   // get ID
-  mbng_event_item_id_t ain_id = MBNG_EVENT_CONTROLLER_AIN + pin + 1;
-  MBNG_PATCH_BankCtrlIdGet(pin, &ain_id); // modifies id depending on bank selection
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(ain_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_AIN, hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to AIN id=%d\n", ain_id & 0xfff);
+      DEBUG_MSG("No event assigned to AIN hw_id=%d\n", hw_id);
     }
     return -2; // no event assigned
   }
@@ -187,10 +186,9 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
     value = map_values[value];
   }
 
-  int ain_ix = (ain_id & 0xfff) - 1;
-  if( ain_ix >= 0 || ain_ix < MBNG_PATCH_NUM_AIN ) {
-    int prev_value = previous_ain_value[ain_ix];
-    previous_ain_value[ain_ix] = pin_value; // for next notification
+  if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
+    int prev_value = previous_ain_value[pin];
+    previous_ain_value[pin] = pin_value; // for next notification
     if( min <= max ) {
       prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
     } else {
@@ -220,10 +218,10 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int ain_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AIN_NotifyReceivedValue(%d, %d)\n", ain_subid, item->value);
+    DEBUG_MSG("MBNG_AIN_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   // nothing else to do...

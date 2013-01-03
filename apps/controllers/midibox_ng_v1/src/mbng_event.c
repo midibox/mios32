@@ -50,9 +50,10 @@ typedef union {
 
 typedef struct { // should be dividable by u16
   u16 id;
+  u16 hw_id;
+  u16 fwd_id;
   u16 enabled_ports;
   mbng_event_flags_t flags;
-  u16 fwd_id;
   u16 value;
   s16 min;
   s16 max;
@@ -65,6 +66,7 @@ typedef struct { // should be dividable by u16
   u8 len_stream;
   u8 len_label;
   u8 map;
+  u8 bank;
   u8 secondary_value;
   u8 lcd;
   u8 lcd_pos;
@@ -94,6 +96,10 @@ static u16 event_pool_size;
 static u16 event_pool_maps_begin;
 static u16 event_pool_num_items;
 static u16 event_pool_num_maps;
+
+// banks
+u8 selected_bank;
+u8 num_banks;
 
 // listen to NRPN for up to 8 ports at up to 16 channels
 // in order to save RAM, we only listen to USB and UART based ports! (this already costs us 512 byte!)
@@ -278,19 +284,26 @@ s32 MBNG_EVENT_PoolClear(void)
   event_pool_num_items = 0;
   event_pool_num_maps = 0;
 
+  selected_bank = 1;
+  num_banks = 0;
+
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Called after a new file has been loaded (post-processing step)
+// Called after a new file has been loaded (post-processing step).
+// Also called on bank changes to update the active flag
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolUpdate(void)
 {
+  num_banks = 0;
+
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
+    // maps
     int map_len;
     u8 *map_values;
     if( pool_item->map && (map_len=MBNG_EVENT_MapGet(pool_item->map, &map_values)) > 0 ) {
@@ -310,6 +323,19 @@ s32 MBNG_EVENT_PoolUpdate(void)
       pool_item->min = min;
       pool_item->max = max;
     }
+
+    // banks
+    {
+      if( pool_item->bank ) {
+	pool_item->flags.general.active = (pool_item->bank == selected_bank);
+
+	if( pool_item->bank > num_banks )
+	  num_banks = pool_item->bank;
+      } else {
+	pool_item->flags.general.active = 1;
+      }
+    }
+    
 
     pool_ptr += pool_item->len;
   }
@@ -489,6 +515,104 @@ s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value)
   return map_len-1; // no match -> take last index
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the number of defined banks
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_NumBanksGet(void)
+{
+  return num_banks;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the selected bank
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_SelectedBankGet(void)
+{
+  return selected_bank;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Called to set a new bank
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_SelectedBankSet(u8 new_bank)
+{
+  if( new_bank < 1 || new_bank > num_banks )
+    return -1; // invalid bank
+
+  selected_bank = new_bank;
+
+  // update active flag of all elements depending on the bank
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    if( pool_item->bank ) {
+      pool_item->flags.general.active = (pool_item->bank == new_bank);
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  // refresh the new selected elements
+  MBNG_EVENT_Refresh();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the selected bank of a given hw_id
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_HwIdBankGet(u16 hw_id)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    if( pool_item->hw_id == hw_id && pool_item->bank && pool_item->flags.general.active ) {
+      return pool_item->bank; // bank found
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // either hw_id or no active item found
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the new bank for the given hw_id only
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
+{
+  // update all items which are banked and which belong to the given hw_id
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    if( pool_item->hw_id == hw_id && pool_item->bank ) {
+      pool_item->flags.general.active = (pool_item->bank == new_bank);
+
+      // refresh active item
+      if( pool_item->flags.general.active ) {
+	mbng_event_item_t item;
+	MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	item.flags.general.fwd_to_lcd = 1; // force LCD update
+	MBNG_EVENT_ItemReceive(&item, pool_item->value, 1);
+      }
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initializes an item with default settings
 /////////////////////////////////////////////////////////////////////////////
@@ -499,6 +623,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
+  item->hw_id = id & 0xfff;
   item->value  = 0;
   item->min    = 0;
   item->max    = 127;
@@ -506,6 +631,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->syxdump_pos.ALL = 0;
   item->stream_size = 0;
   item->map = 0;
+  item->bank = 0;
   item->secondary_value = 0;
   item->lcd = 0;
   item->lcd_pos = 0x00;
@@ -578,12 +704,14 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->flags.ALL = pool_item->flags.ALL;
   item->enabled_ports = pool_item->enabled_ports;
   item->fwd_id = pool_item->fwd_id;
+  item->hw_id = pool_item->hw_id;
   item->value = pool_item->value;
   item->min = pool_item->min;
   item->max = pool_item->max;
   item->offset = pool_item->offset;
   item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
+  item->bank = pool_item->bank;
   item->map = pool_item->map;
   item->secondary_value = pool_item->secondary_value;
   item->lcd = pool_item->lcd;
@@ -606,6 +734,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->id = item->id;
   pool_item->flags.ALL = item->flags.ALL;
   pool_item->enabled_ports = item->enabled_ports;
+  pool_item->hw_id = item->hw_id;
   pool_item->fwd_id = item->fwd_id;
   pool_item->value = item->value;
   pool_item->min = item->min;
@@ -613,6 +742,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->offset = item->offset;
   pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
   pool_item->map = item->map;
+  pool_item->bank = item->bank;
   pool_item->secondary_value = item->secondary_value;
   pool_item->lcd = item->lcd;
   pool_item->lcd_pos = item->lcd_pos;
@@ -708,6 +838,31 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
   return -1; // not found
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Search an item in event pool based on the HW ID
+// Takes the selected bank into account (means: only an active item will be returned)
+// returns 0 and copies item into *item if found
+// returns -1 if item not found
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t main_id, u16 hw_id, mbng_event_item_t *item)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    if( pool_item->flags.general.active &&
+	pool_item->hw_id == hw_id &&
+	(pool_item->id & 0xf000) == main_id ) {
+      MBNG_EVENT_ItemCopy2User(pool_item, item);
+      return 0; // item found
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return -1; // not found
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Sends the an item description to debug terminal
 /////////////////////////////////////////////////////////////////////////////
@@ -723,14 +878,14 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s ports:%04x fwd_id:0x%04x min:%d max:%d label:%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=0x%03x bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item->id),
-				      MBNG_EVENT_ItemTypeStrGet(item),
-				      item->enabled_ports,
+				      item->hw_id,
+				      item->bank,
 				      item->fwd_id,
-				      item->min,
-				      item->max,
+				      MBNG_EVENT_ItemTypeStrGet(item),
+				      item->value,
 				      item->label ? item->label : "");
 #endif
 }
@@ -1038,6 +1193,12 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
   case MBNG_EVENT_META_TYPE_SET_BANK:            return "SetBank";
   case MBNG_EVENT_META_TYPE_DEC_BANK:            return "DecBank";
   case MBNG_EVENT_META_TYPE_INC_BANK:            return "IncBank";
+  case MBNG_EVENT_META_TYPE_CYCLE_BANK:          return "CycleBank";
+
+  case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID:   return "SetBankOfHwId";
+  case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID:   return "DecBankOfHwId";
+  case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID:   return "IncBankOfHwId";
+  case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: return "CycleBankOfHwId";
 
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return "EncFast";
 
@@ -1058,6 +1219,12 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "SetBank") == 0 )       return MBNG_EVENT_META_TYPE_SET_BANK;
   if( strcasecmp(meta_type, "DecBank") == 0 )       return MBNG_EVENT_META_TYPE_DEC_BANK;
   if( strcasecmp(meta_type, "IncBank") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK;
+  if( strcasecmp(meta_type, "CycleBank") == 0 )     return MBNG_EVENT_META_TYPE_CYCLE_BANK;
+
+  if( strcasecmp(meta_type, "SetBankOfHwId") == 0 )       return MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID;
+  if( strcasecmp(meta_type, "DecBankOfHwId") == 0 )       return MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID;
+  if( strcasecmp(meta_type, "IncBankOfHwId") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID;
+  if( strcasecmp(meta_type, "CycleBankOfHwId") == 0 )     return MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID;
 
   if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
 
@@ -1300,20 +1467,63 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       switch( meta_type ) {
       case MBNG_EVENT_META_TYPE_SET_BANK: {
 	if( item->value ) {
-	  MBNG_PATCH_BankSet(item->value-1); // user counts from 1, internally we are counting from 0
+	  MBNG_EVENT_SelectedBankSet(item->value);
 	}
+	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
       } break;
 
       case MBNG_EVENT_META_TYPE_DEC_BANK: {
-	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
+	int bank = MBNG_EVENT_SelectedBankGet();
 	if( bank > 1 )
-	  MBNG_PATCH_BankSet(bank-1 - 1);
+	  MBNG_EVENT_SelectedBankSet(bank - 1);
+	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
       } break;
 
       case MBNG_EVENT_META_TYPE_INC_BANK: {
-	s32 bank = MBNG_PATCH_BankGet() + 1; // user counts from 1, internally we are counting from 0
-	if( bank < MBNG_PATCH_NumBanksGet() )
-	  MBNG_PATCH_BankSet(bank-1 + 1);
+	int bank = MBNG_EVENT_SelectedBankGet();
+	if( bank < MBNG_EVENT_NumBanksGet() )
+	  MBNG_EVENT_SelectedBankSet(bank + 1);
+	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_CYCLE_BANK: {
+	int bank = MBNG_EVENT_SelectedBankGet();
+	if( bank < MBNG_EVENT_NumBanksGet() )
+	  MBNG_EVENT_SelectedBankSet(bank + 1);
+	else
+	  MBNG_EVENT_SelectedBankSet(1);
+	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+      } break;
+
+
+      case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID: {
+	if( item->value ) {
+	  MBNG_EVENT_HwIdBankSet(meta_value, item->value);
+	}
+	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID: {
+	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+	if( bank > 1 )
+	  MBNG_EVENT_HwIdBankSet(meta_value, bank - 1);
+	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID: {
+	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+	if( bank < MBNG_EVENT_NumBanksGet() )
+	  MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
+	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: {
+	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+	if( bank < MBNG_EVENT_NumBanksGet() )
+	  MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
+	else
+	  MBNG_EVENT_HwIdBankSet(meta_value, 1);
+	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
       } break;
 
 
@@ -1421,7 +1631,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   }
 
   // forward
-  if( !MBNG_PATCH_BankCtrlInBank(item) || MBNG_PATCH_BankCtrlIsActive(item) ) {
+  if( item->flags.general.active ) {
     if( item->fwd_id )
       MBNG_EVENT_ItemForward(item);
     else {
@@ -1475,15 +1685,18 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
   } else {
     // notify by temporary changing the ID - forwarding disabled
     mbng_event_item_id_t tmp_id = item->id;
+    mbng_event_item_id_t tmp_hw_id = item->hw_id;
     mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
     u16 tmp_pool_address = item->pool_address;
     u8 tmp_fwd_to_lcd = item->flags.general.fwd_to_lcd;
     item->id = item->fwd_id;
+    item->hw_id = item->fwd_id & 0xfff;
     item->fwd_id = 0;
     item->pool_address = 0xffff;
     item->flags.general.fwd_to_lcd = 0;
     MBNG_EVENT_ItemReceive(item, item->value, 0);
     item->id = tmp_id;
+    item->hw_id = tmp_hw_id;
     item->fwd_id = tmp_fwd_id;
     item->pool_address = tmp_pool_address;
     item->flags.general.fwd_to_lcd = tmp_fwd_to_lcd;

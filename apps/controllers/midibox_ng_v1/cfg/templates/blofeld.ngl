@@ -1,3 +1,12 @@
+
+COND_LABEL bank
+COND =1 "**** OSC1 Bank  ****"
+COND =2 "**** OSC2 Bank  ****"
+COND =3 "**** OSC3 Bank  ****"
+COND =4 "**** FIL1 Bank  ****"
+COND =5 "**** FIL2 Bank  ****"
+COND_ELSE "**** OSC1 Bank  ****"
+
 COND_LABEL octave
 COND <28  "128'"
 COND <40  " 64'"

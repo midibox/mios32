@@ -65,17 +65,16 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 
   int mbng_pin = mapped_module*64 + pin;
 
+  u16 hw_id = mbng_pin + 1;
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AINSER_NotifyChange(%d, %d, %d)\n", mapped_module, mbng_pin, pin_value);
+    DEBUG_MSG("MBNG_AINSER_NotifyChange(%d, %d)\n", hw_id, pin_value);
   }
 
   // get ID
-  mbng_event_item_id_t ainser_id = MBNG_EVENT_CONTROLLER_AINSER + mbng_pin + 1;
-  MBNG_PATCH_BankCtrlIdGet(mbng_pin, &ainser_id); // modifies id depending on bank selection
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(ainser_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_AINSER, hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to AINSER id=%d\n", ainser_id & 0xfff);
+      DEBUG_MSG("No event assigned to AINSER hw_id=%d\n", hw_id);
     }
     return -2; // no event assigned
   }
@@ -105,22 +104,19 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     value = map_values[value];
   }
 
-  int ainser_ix = (ainser_id & 0xfff) - 1;
-  if( ainser_ix >= 0 || ainser_ix < MBNG_PATCH_NUM_AIN ) {
-    int prev_value = AINSER_PreviousPinValueGet();
-    if( min <= max ) {
-      prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
-    } else {
-      prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
-    }
-
-    if( map_len > 0 ) {
-      prev_value = map_values[prev_value];
-    }
-
-    if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
-      return 0; // don't send
+  int prev_value = AINSER_PreviousPinValueGet();
+  if( min <= max ) {
+    prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
+  } else {
+    prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
   }
+
+  if( map_len > 0 ) {
+    prev_value = map_values[prev_value];
+  }
+
+  if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
+    return 0; // don't send
 
   // send MIDI event
   MBNG_EVENT_NotifySendValue(&item);
@@ -135,10 +131,10 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int ain_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AINSER_NotifyReceivedValue(%d, %d)\n", ain_subid, item->value);
+    DEBUG_MSG("MBNG_AINSER_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   // nothing else to do...
