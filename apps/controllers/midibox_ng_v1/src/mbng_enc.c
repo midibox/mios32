@@ -139,17 +139,16 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
+  u16 hw_id = encoder + 1;
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", encoder, incrementer);
+    DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", hw_id, incrementer);
   }
 
   // get ID
-  mbng_event_item_id_t enc_id = MBNG_EVENT_CONTROLLER_ENC + encoder + 1;
-  MBNG_PATCH_BankCtrlIdGet(encoder, &enc_id); // modifies id depending on bank selection
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchById(enc_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_ENC, hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to ENC id=%d\n", enc_id & 0xfff);
+      DEBUG_MSG("No event assigned to ENC hw_id=%d\n", hw_id);
     }
     return -2; // no event assigned
   }
@@ -260,10 +259,10 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int enc_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", enc_subid, item->value);
+    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   // nothing else to do...

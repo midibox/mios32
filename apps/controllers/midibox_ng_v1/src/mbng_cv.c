@@ -71,15 +71,15 @@ s32 MBNG_CV_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int cv_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_CV_NotifyReceivedValue(%d, %d)\n", cv_subid, item->value);
+    DEBUG_MSG("MBNG_CV_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   // forward to CV channel
-  if( cv_subid && cv_subid <= MBNG_PATCH_NUM_CV_CHANNELS ) {
-    u8 cv_ix = cv_subid - 1;
+  if( hw_id && hw_id <= MBNG_PATCH_NUM_CV_CHANNELS ) {
+    u8 cv_ix = hw_id - 1;
     u16 value = item->value;
     u8 set_value = 1;
     u8 gate_value = 0;

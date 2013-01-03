@@ -126,9 +126,16 @@ typedef enum {
 
 typedef enum {
   MBNG_EVENT_META_TYPE_UNDEFINED = 0,
+
   MBNG_EVENT_META_TYPE_SET_BANK,
   MBNG_EVENT_META_TYPE_DEC_BANK,
   MBNG_EVENT_META_TYPE_INC_BANK,
+  MBNG_EVENT_META_TYPE_CYCLE_BANK,
+
+  MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID,
+  MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID,
+  MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID,
+  MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID,
 
   MBNG_EVENT_META_TYPE_ENC_FAST,
 
@@ -155,6 +162,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
   } general;
 
   struct {
@@ -163,6 +171,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 radio_group:6;
     u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
@@ -173,6 +182,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 radio_group:6;
   } DOUT;
 
@@ -182,6 +192,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 mapped:1;
   } BUTTON_MATRIX;
 
@@ -191,6 +202,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
   } LED_MATRIX;
 
   struct {
@@ -199,6 +211,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 enc_mode:4; // mbng_event_enc_mode_t
     u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
     u32 enc_speed_mode_par:3;
@@ -210,6 +223,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
@@ -219,6 +233,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 
@@ -228,6 +243,7 @@ typedef union {
     u32 fwd_to_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 active:1;
     u32 fwd_gate_to_dout_pin:9;
     u32 cv_inverted:1;
     u32 cv_hz_v:1;
@@ -248,6 +264,7 @@ typedef union {
 
 typedef struct {
   u16 id;
+  u16 hw_id;
   u16 pool_address;
   u16 enabled_ports;
   mbng_event_flags_t flags;
@@ -261,6 +278,7 @@ typedef struct {
   u32 stream_size;
   u8* stream;
   u8 map;
+  u8 bank;
   u8 secondary_value;
   u8 lcd;
   u8 lcd_pos;
@@ -291,10 +309,17 @@ extern s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len);
 extern s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values);
 extern s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value);
 
+extern s32 MBNG_EVENT_NumBanksGet(void);
+extern s32 MBNG_EVENT_SelectedBankGet(void);
+extern s32 MBNG_EVENT_SelectedBankSet(u8 new_bank);
+extern s32 MBNG_EVENT_HwIdBankGet(u16 hw_id);
+extern s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank);
+
 extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id);
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t main_id, u16 hw_id, mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item);
 extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id);

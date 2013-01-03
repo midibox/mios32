@@ -52,10 +52,10 @@ s32 MBNG_DOUT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
-  int dout_subid = item->id & 0xfff;
+  u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", dout_subid, item->value);
+    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
   }
 
   int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
@@ -76,16 +76,16 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     int matrix;
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
-      if( m->led_emu_id_offset && m->sr_dout_r1 && dout_subid >= m->led_emu_id_offset ) {
+      if( m->led_emu_id_offset && m->sr_dout_r1 && hw_id >= m->led_emu_id_offset ) {
 	int num_pins = 8*m->num_rows;
 	if( m->sr_dout_r2 )
 	  num_pins *= 2;
 
-	if( dout_subid < (m->led_emu_id_offset + num_pins) ) {
+	if( hw_id < (m->led_emu_id_offset + num_pins) ) {
 	  emulated = 1;
 
 	  u8 color = 0; // TODO
-	  MBNG_MATRIX_DOUT_PinSet(matrix, color, dout_subid - m->led_emu_id_offset, dout_value);
+	  MBNG_MATRIX_DOUT_PinSet(matrix, color, hw_id - m->led_emu_id_offset, dout_value);
 	}
       }
     }
@@ -93,7 +93,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
   if( !emulated ) {
     // set LED
-    MIOS32_DOUT_PinSet(dout_subid-1, dout_value);
+    MIOS32_DOUT_PinSet(hw_id - 1, dout_value);
   }
 
   return 0; // no error

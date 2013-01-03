@@ -444,6 +444,9 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	// load all file infos
 	MBNG_FILE_LoadAllFiles(1); // including HW info
 
+	// select the first bank
+	MBNG_EVENT_SelectedBankSet(1);
+
 	// immediately go to next step
 	sdcard_check_ctr = sdcard_check_delay;
       } else if( status == 2 ) {
@@ -488,8 +491,8 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	    }
 	  }
 
-	  // select first bank
-	  MBNG_PATCH_BankSet(0);
+	  // select the first bank
+	  MBNG_EVENT_SelectedBankSet(1);
 
 	  portEXIT_CRITICAL();
 	}

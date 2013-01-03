@@ -1,5 +1,18 @@
 $Id$
 
+MIDIbox NG V1.007
+~~~~~~~~~~~~~~~~~
+
+   o changed bank concept: the BANK command has been removed, instead the EVENT
+     command got a new "hw_id" and "bank" parameter.
+     A simple configuration example can be found under cfg/tests/encbanks.ngc
+     More complex configuration examples under cfg/tests/bnk*.ngc
+
+   o added meta=CycleBank (increments bank, resets to 1 if last bank reached)
+
+   o additional new metas: SetBankOfHwId, DecBankOfHwId, IncBankOfHwId, CycleBankOfHwId
+
+
 MIDIbox NG V1.006
 ~~~~~~~~~~~~~~~~~
 

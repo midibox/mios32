@@ -2,11 +2,6 @@ RESET_HW
 
 LCD "%CRadioGrp"
 
-BANK n=1  enc=1:16:1
-BANK n=2  enc=1:16:17
-BANK n=3  enc=1:16:33
-BANK n=4  enc=1:16:49
-
 # radio group with 8 buttons which send individual values
 EVENT_BUTTON id=  1  fwd_id=LED:1  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 0:0   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
 EVENT_BUTTON id=  2  fwd_id=LED:2  fwd_to_lcd=1  type=CC chn=1 cc=16  button_mode=OnOnly  range= 1:1   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"

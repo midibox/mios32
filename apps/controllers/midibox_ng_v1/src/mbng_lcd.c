@@ -346,7 +346,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
 	  case 'q': { // selected bank
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, MBNG_PATCH_BankGet() + 1);
+	    BUFLCD_PrintFormattedString(format, MBNG_EVENT_SelectedBankGet());
 	  } break;
 
 	  case 'C': { // clear screens

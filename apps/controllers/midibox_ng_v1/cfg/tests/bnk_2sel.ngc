@@ -1,41 +1,31 @@
 RESET_HW
 
-LCD "%C@(1:1:1)Encoder Banks"
+LCD "%C@(1:1:1)Bank 2 Sels"
 
 
-# the SCS should emulate button/enc functions in main page
-SCS soft1_button_emu_id=2000 \
-    soft2_button_emu_id=2001 \
-    soft3_button_emu_id=2002 \
-    soft4_button_emu_id=2003 \
-    shift_button_emu_id=2004 \
-    enc_emu_id=2000
+# the two leftmost encoders (hw_id=1 and 2) select the bank for the remaining upper/lower encoders
+EVENT_ENC    id=101  hw_id =  1  fwd_id=LED_MATRIX:1  fwd_to_lcd=1  type=Meta  range=  1:4 \
+	     meta=SetBankOfHwId:3 \
+	     meta=SetBankOfHwId:5 \
+	     meta=SetBankOfHwId:7 \
+	     meta=SetBankOfHwId:9 \
+	     meta=SetBankOfHwId:11 \
+	     meta=SetBankOfHwId:13 \
+	     meta=SetBankOfHwId:15 \
+             lcd_pos=1:17:1 label="Bnk%d"
 
+EVENT_ENC    id=102  hw_id =  2  fwd_id=LED_MATRIX:2  fwd_to_lcd=1  type=Meta  range=  1:4 \
+	     meta=SetBankOfHwId:4 \
+	     meta=SetBankOfHwId:6 \
+	     meta=SetBankOfHwId:8 \
+	     meta=SetBankOfHwId:10 \
+	     meta=SetBankOfHwId:12 \
+	     meta=SetBankOfHwId:14 \
+	     meta=SetBankOfHwId:16 \
+             lcd_pos=1:17:2 label="Bnk%d"
 
-# Controlled from SCS buttons at J10 in main page
-
-# select Bank1 directly
-EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1  lcd_pos=1:17:1 label="Bnk%q"
-
-# For testing purposes: decrement bank
-EVENT_BUTTON id=2001  type=Meta   meta=DecBank   button_mode=OnOnly            lcd_pos=1:17:1 label="Bnk%q"
-
-# For testing purposes: increment bank
-EVENT_BUTTON id=2002  type=Meta   meta=IncBank   button_mode=OnOnly            lcd_pos=1:17:1 label="Bnk%q"
-
-# For testing purposes: cycle bank
-EVENT_BUTTON id=2003  type=Meta   meta=CycleBank button_mode=OnOnly            lcd_pos=1:17:1 label="Bnk%q"
-
-# Encoder fast/slow
-EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
-
-# the SCS encoder at J10 just increments/decrements the bank
-EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4                     lcd_pos=1:17:1 label="Bnk%q"
-
-
+# remaining encoders are banked:
 # Bank 1
-EVENT_ENC    id=  1  hw_id =  1  bank=1  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B"
-EVENT_ENC    id=  2  hw_id =  2  bank=1  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:2:2)%B"
 EVENT_ENC    id=  3  hw_id =  3  bank=1  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:3:2)%B"
 EVENT_ENC    id=  4  hw_id =  4  bank=1  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:4:2)%B"
 EVENT_ENC    id=  5  hw_id =  5  bank=1  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:5:2)%B"
@@ -52,8 +42,6 @@ EVENT_ENC    id= 15  hw_id = 15  bank=1  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  ty
 EVENT_ENC    id= 16  hw_id = 16  bank=1  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 1 cc= 31   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:16:2)%B"
 
 # Bank 2
-EVENT_ENC    id= 17  hw_id =  1  bank=2  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 32   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B" 
-EVENT_ENC    id= 18  hw_id =  2  bank=2  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 33   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:2:2)%B" 
 EVENT_ENC    id= 19  hw_id =  3  bank=2  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 34   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:3:2)%B" 
 EVENT_ENC    id= 20  hw_id =  4  bank=2  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 35   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:4:2)%B" 
 EVENT_ENC    id= 21  hw_id =  5  bank=2  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 36   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:5:2)%B" 
@@ -70,8 +58,6 @@ EVENT_ENC    id= 31  hw_id = 15  bank=2  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  ty
 EVENT_ENC    id= 32  hw_id = 16  bank=2  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 1 cc= 47   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:16:2)%B"
 
 # Bank 3
-EVENT_ENC    id= 33  hw_id =  1  bank=3  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 48   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B" 
-EVENT_ENC    id= 34  hw_id =  2  bank=3  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 49   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:2:2)%B" 
 EVENT_ENC    id= 35  hw_id =  3  bank=3  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 50   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:3:2)%B" 
 EVENT_ENC    id= 36  hw_id =  4  bank=3  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 51   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:4:2)%B" 
 EVENT_ENC    id= 37  hw_id =  5  bank=3  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 52   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:5:2)%B" 
@@ -88,8 +74,6 @@ EVENT_ENC    id= 47  hw_id = 15  bank=3  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  ty
 EVENT_ENC    id= 48  hw_id = 16  bank=3  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 1 cc= 63   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:16:2)%B"
 
 # Bank 4
-EVENT_ENC    id= 49  hw_id =  1  bank=4  fwd_id=LED_MATRIX:1    fwd_to_lcd=1  type=CC     chn= 1 cc= 64   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:1:2)%B" 
-EVENT_ENC    id= 50  hw_id =  2  bank=4  fwd_id=LED_MATRIX:2    fwd_to_lcd=1  type=CC     chn= 1 cc= 65   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:2:2)%B" 
 EVENT_ENC    id= 51  hw_id =  3  bank=4  fwd_id=LED_MATRIX:3    fwd_to_lcd=1  type=CC     chn= 1 cc= 66   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:3:2)%B" 
 EVENT_ENC    id= 52  hw_id =  4  bank=4  fwd_id=LED_MATRIX:4    fwd_to_lcd=1  type=CC     chn= 1 cc= 67   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:4:2)%B" 
 EVENT_ENC    id= 53  hw_id =  5  bank=4  fwd_id=LED_MATRIX:5    fwd_to_lcd=1  type=CC     chn= 1 cc= 68   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:5:2)%B" 
@@ -104,6 +88,7 @@ EVENT_ENC    id= 61  hw_id = 13  bank=4  fwd_id=LED_MATRIX:13   fwd_to_lcd=1  ty
 EVENT_ENC    id= 62  hw_id = 14  bank=4  fwd_id=LED_MATRIX:14   fwd_to_lcd=1  type=CC     chn= 1 cc= 77   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:14:2)%B"
 EVENT_ENC    id= 63  hw_id = 15  bank=4  fwd_id=LED_MATRIX:15   fwd_to_lcd=1  type=CC     chn= 1 cc= 78   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:15:2)%B"
 EVENT_ENC    id= 64  hw_id = 16  bank=4  fwd_id=LED_MATRIX:16   fwd_to_lcd=1  type=CC     chn= 1 cc= 79   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="ENC #%3i    %3d@(1:16:2)%B"
+
 
 
 # encoder hardware configuration
