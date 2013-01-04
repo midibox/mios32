@@ -98,7 +98,7 @@ static u16 adc_conversion_values[NUM_CHANNELS_MAX] __attribute__((aligned(4)));
 static u16 adc_conversion_values_sum[NUM_CHANNELS_MAX] __attribute__((aligned(4)));
 #endif
 
-static u8 ain_deadband = MIOS32_AIN_DEADBAND;
+static u16 ain_deadband = MIOS32_AIN_DEADBAND;
 
 static u8  num_used_channels;
 static u8  num_channels;
@@ -402,7 +402,7 @@ s32 MIOS32_AIN_DeadbandGet(void)
 //! be achieved to trigger the callback function passed to AINSER_Handler()
 //! \return < 0 on error
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_AIN_DeadbandSet(u8 deadband)
+s32 MIOS32_AIN_DeadbandSet(u16 deadband)
 {
 #if !MIOS32_AIN_CHANNEL_MASK
   return -1; // no analog input selected

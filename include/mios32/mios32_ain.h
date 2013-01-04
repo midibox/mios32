@@ -118,7 +118,7 @@ extern s32 MIOS32_AIN_ServicePrepareCallback_Init(void *_service_prepare_callbac
 extern s32 MIOS32_AIN_PinGet(u32 pin);
 
 extern s32 MIOS32_AIN_DeadbandGet(void);
-extern s32 MIOS32_AIN_DeadbandSet(u8 deadband);
+extern s32 MIOS32_AIN_DeadbandSet(u16 deadband);
 
 extern s32 MIOS32_AIN_Handler(void *callback);
 
