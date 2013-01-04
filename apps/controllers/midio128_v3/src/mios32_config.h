@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.012"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.013_pre1"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // define a unique VID/PID for this application
@@ -30,6 +30,8 @@
 # define MIOS32_UART_NUM 4
 #endif
 
+// optionally the number of SRs can be increased here
+#define MIOS32_SRIO_NUM_SR 16
 
 // AIN configuration:
 
