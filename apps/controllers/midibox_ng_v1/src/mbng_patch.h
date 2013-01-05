@@ -38,11 +38,19 @@
 // Type definitions
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  u8 ALL;
+  
+  struct {
+    u8 sel:1;
+    u8 row:1;
+  };
+} mbng_patch_matrix_inverted_t;
 
 typedef struct {
   u16 button_emu_id_offset;
   u8 num_rows;
-  u8 inverted;
+  mbng_patch_matrix_inverted_t inverted;
   u8 sr_dout_sel1;
   u8 sr_dout_sel2;
   u8 sr_din1;
@@ -52,7 +60,7 @@ typedef struct {
 typedef struct {
   u16 led_emu_id_offset;
   u8 num_rows;
-  u8 inverted;
+  mbng_patch_matrix_inverted_t inverted;
   u8 sr_dout_sel1;
   u8 sr_dout_sel2;
   u8 sr_dout_r1;

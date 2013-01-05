@@ -6,8 +6,8 @@ RESET_HW
 LCD "%C@(1:1:1)Simple 8x8 BLM"
 
 # HW definitions:
-DIN_MATRIX  n= 1   rows=8  inverted=0  sr_dout_sel1=1  sr_din1=1
-DOUT_MATRIX n= 1   rows=8  inverted=0  sr_dout_sel1=1  sr_dout_r1=2
+DIN_MATRIX  n= 1   rows=8  inverted_sel=0  sr_dout_sel1=1  sr_din1=1
+DOUT_MATRIX n= 1   rows=8  inverted_sel=0  sr_dout_sel1=1  sr_dout_r1=2
 # note: actually the sr_dout_sel1 in DOUT_MATRIX could be removed,
 # since DIN_MATRIX already outputs the selection pulses there
 # this is just for the case that somebody copy&pastes the definition...
