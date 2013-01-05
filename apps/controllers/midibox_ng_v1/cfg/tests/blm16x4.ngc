@@ -4,7 +4,7 @@
 
 RESET_HW
 
-LCD "%C@(1:1:1)BLM 16x4 #A"
+LCD "%C@(1:1:1)BLM 16x4"
 
 
 # In the SR configuration we assume that the DINs/DOUTs are directly connected to J8/9 of the core
@@ -29,7 +29,7 @@ EVENT_LED_MATRIX    id=2  type=NoteOn key=68 chn=1  fwd_to_lcd=1  lcd_pos=1:1:2 
 
 
 
-# TK: I've 4 additional connected buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..54)
+# TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..54)
 # send CC#16..19 with these buttons
 # and allow to control the Duo-LEDs with the same controllers
 
