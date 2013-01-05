@@ -657,7 +657,6 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
-    item->flags.LED_MATRIX.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
@@ -1950,10 +1949,9 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DIN ) {
 	      mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[matrix];
 
-	      if( m->button_emu_id_offset && m->sr_din1 ) {
-		num_pins = 8 * m->num_rows;
-		if( m->sr_din2 )
-		  num_pins *= 2;
+	      if( m->sr_din1 ) {
+		u8 row_size = m->sr_din2 ? 16 : 8;
+		num_pins = row_size * row_size;
 	      }
 	    }
 	  } break;
@@ -1961,10 +1959,9 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
 	      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
-	      if( m->led_emu_id_offset && m->sr_dout_r1 ) {
-		num_pins = 8 * m->num_rows;
-		if( m->sr_dout_r2 )
-		  num_pins *= 2;
+	      if( m->sr_dout_r1 && !pool_item->flags.LED_MATRIX.led_matrix_pattern ) {
+		u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
+		num_pins = row_size * row_size;
 	      }
 	    }
 	  } break;

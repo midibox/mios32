@@ -1457,7 +1457,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
   // parse the parameters
   int num = 0;
   int rows = 0;
-  int inverted = 0;
+  mbng_patch_matrix_inverted_t inverted; inverted.ALL = 0;
   int button_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
@@ -1487,13 +1487,28 @@ s32 parseDinMatrix(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "inverted") == 0 ) {
-      if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
+    } else if( strcasecmp(parameter, "inverted") == 0 || strcasecmp(parameter, "inverted_sel") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
+
+      inverted.sel = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "inverted_row") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      inverted.row = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "button_emu_id_offset") == 0 ) {
@@ -1552,7 +1567,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
   if( num >= 1 ) {
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[num-1];
     m->num_rows = rows;
-    m->inverted = inverted;
+    m->inverted.ALL = inverted.ALL;
     m->button_emu_id_offset = button_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
@@ -1575,7 +1590,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
   // parse the parameters
   int num = 0;
   int rows = 0;
-  int inverted = 0;
+  mbng_patch_matrix_inverted_t inverted; inverted.ALL = 0;
   int led_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
@@ -1609,13 +1624,28 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "inverted") == 0 ) {
-      if( (inverted=get_dec(value_str)) < 0 || inverted > 1 ) {
+    } else if( strcasecmp(parameter, "inverted") == 0 || strcasecmp(parameter, "inverted_sel") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
+
+      inverted.sel = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "inverted_row") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      inverted.row = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "led_emu_id_offset") == 0 ) {
@@ -1710,7 +1740,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
   if( num >= 1 ) {
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[num-1];
     m->num_rows = rows;
-    m->inverted = inverted;
+    m->inverted.ALL = inverted.ALL;
     m->led_emu_id_offset = led_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
@@ -3062,16 +3092,18 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case 0x88: strcpy(enc_type, "detented3"); break;
       case 0xa5: strcpy(enc_type, "detented4"); break;
       case 0x5a: strcpy(enc_type, "detented5"); break;
-      default: strcpy(enc_type, "disabled"); break;
+      default: enc_type[0] = 0;
       }
 
-      sprintf(line_buffer, "ENC n=%3d   sr=%2d  pins=%d:%d   type=%s\n",
-	      enc,
-	      enc_config.cfg.sr,
-	      enc_config.cfg.pos,
-	      enc_config.cfg.pos+1,
-	      enc_type);
-      FLUSH_BUFFER;
+      if( enc_type[0] && enc_config.cfg.sr ) {
+	sprintf(line_buffer, "ENC n=%3d   sr=%2d  pins=%d:%d   type=%s\n",
+		enc,
+		enc_config.cfg.sr,
+		enc_config.cfg.pos,
+		enc_config.cfg.pos+1,
+		enc_type);
+	FLUSH_BUFFER;
+      }
     }
   }
 
@@ -3083,10 +3115,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
 	      matrix+1,
 	      m->num_rows,
-	      m->inverted,
+	      m->inverted.sel,
+	      m->inverted.row,
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_din1,
@@ -3111,10 +3144,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
+      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
 	      matrix+1,
 	      m->num_rows,
-	      m->inverted,
+	      m->inverted.sel,
+	      m->inverted.row,
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_dout_r1,

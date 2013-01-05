@@ -1,5 +1,18 @@
 $Id$
 
+MIDIbox NG V1.008
+~~~~~~~~~~~~~~~~~
+
+   o DIN_MATRIX with rows=4 now properly supported
+
+   o DIN_MATRIX/DOUT_MATRIX: it's now possible to invert the rows as well:
+     inverted=1 or inverted_sel=1 will invert the selection lines
+     inverted_row=1 will invert the row pattern
+
+   o configuration examples for the 16x4 Button/Duo-LED matrix are now
+     available under cfg/tests/blm16x4*.ngc
+
+
 MIDIbox NG V1.007
 ~~~~~~~~~~~~~~~~~
 

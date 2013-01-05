@@ -77,15 +77,15 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
       if( m->led_emu_id_offset && m->sr_dout_r1 && hw_id >= m->led_emu_id_offset ) {
-	int num_pins = 8*m->num_rows;
-	if( m->sr_dout_r2 )
-	  num_pins *= 2;
 
-	if( hw_id < (m->led_emu_id_offset + num_pins) ) {
+	u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
+	if( hw_id < (m->num_rows * (m->led_emu_id_offset + row_size)) ) {
 	  emulated = 1;
-
-	  u8 color = 0; // TODO
-	  MBNG_MATRIX_DOUT_PinSet(matrix, color, hw_id - m->led_emu_id_offset, dout_value);
+	  u16 tmp_hw_id = item->hw_id;
+	  item->hw_id = matrix + 1;
+	  item->matrix_pin = hw_id - m->led_emu_id_offset;
+	  MBNG_MATRIX_DOUT_NotifyReceivedValue(item);
+	  item->hw_id = tmp_hw_id;
 	}
       }
     }
