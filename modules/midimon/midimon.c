@@ -166,21 +166,34 @@ s32 MIDIMON_TempoActiveGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message)
 {
-  char pre_str[32];
+  if( !midimon_active )
+    return 0; // MIDImon mode not enabled
+
+  return MIDIMON_Print("", port, package, timestamp, filter_sysex_message);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Print the MIDI event independent from midimon_active with an optional prefix-string
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIMON_Print(char *prefix_str, mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message)
+{
+  char pre_str[64];
   u8 display_midi_clk = 0;
   //u8 display_mtc = 0;
 
-  if( !midimon_active )
-    return 0; // MIDImon mode not enabled
+  if( strlen(prefix_str) > 50 ) {
+    MSG("[ERROR:MIDIMON_PRINT] prefix_str shouldn't be longer than 50 chars!");
+  }
 
   // derive port name and build pre-string
   u8 port_ix = port & 0x0f;
   char port_ix_name = (port_ix < 9) ? ('1'+port_ix) : ('A'+(port_ix-9));
   switch( port & 0xf0 ) {
-    case USB0:  sprintf(pre_str, "[USB%c]", port_ix_name); break;
-    case UART0: sprintf(pre_str, "[IN%c ]", port_ix_name); break;
-    case IIC0:  sprintf(pre_str, "[IIC%c]", port_ix_name); break;
-    default:    sprintf(pre_str, "[P.%02X ]", port);
+    case USB0:  sprintf(pre_str, "[%sUSB%c]", prefix_str, port_ix_name); break;
+    case UART0: sprintf(pre_str, "[%sIN%c ]", prefix_str, port_ix_name); break;
+    case IIC0:  sprintf(pre_str, "[%sIIC%c]", prefix_str, port_ix_name); break;
+    default:    sprintf(pre_str, "[%sP.%02X ]", prefix_str, port);
   }
 
   // for separate MIDI clock/MTC measurements
@@ -344,6 +357,12 @@ s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 
     case 0xd: // Channel Aftertouch
       MSG("%s Chn%2d  Channel Aftertouch %s%d\n",
 	  pre_str, (package.evnt0 & 0xf)+1, note_name[package.evnt1%12], (int)(package.evnt1/12)-2);
+      msg_sent = 1;
+      break;
+
+    case 0xe: // PitchBend
+      MSG("%s Chn%2d  PitchBend %5d\n",
+	  pre_str, (package.evnt0 & 0xf)+1, package.evnt1 | ((u16)package.evnt2 << 7));
       msg_sent = 1;
       break;
   }

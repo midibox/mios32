@@ -173,7 +173,7 @@ EVENT_LED     id=1064  type=NoteOn key=99 chn=1
 
 
 
-# TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..54)
+# TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..56)
 # send CC#16..19 with these buttons
 # and allow to control the Duo-LEDs with the same controllers
 

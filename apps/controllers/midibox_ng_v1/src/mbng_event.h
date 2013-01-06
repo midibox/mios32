@@ -139,6 +139,8 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_ENC_FAST,
 
+  MBNG_EVENT_META_TYPE_MIDI_LEARN,
+
   MBNG_EVENT_META_TYPE_SCS_ENC,
   MBNG_EVENT_META_TYPE_SCS_MENU,
   MBNG_EVENT_META_TYPE_SCS_SOFT1,
@@ -318,8 +320,14 @@ extern s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank);
 extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id);
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
-extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t main_id, u16 hw_id, mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item);
+
+extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);
+extern s32 MBNG_EVENT_MidiLearnModeGet(void);
+extern s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id);
+
 
 extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item);
 extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id);

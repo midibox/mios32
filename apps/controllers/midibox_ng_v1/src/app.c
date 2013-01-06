@@ -92,7 +92,9 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 // global variables
 /////////////////////////////////////////////////////////////////////////////
-u8 debug_verbose_level;
+u8  debug_verbose_level;
+u32 app_ms_counter;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // local variables
@@ -111,8 +113,6 @@ xSemaphoreHandle xMIDIOUTSemaphore;
 
 // Mutex for J16 access (SDCard/Ethernet)
 xSemaphoreHandle xJ16Semaphore;
-
-static u32 ms_counter;
 
 static volatile msd_state_t msd_state;
 
@@ -269,7 +269,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, app_ms_counter, filter_sysex_message);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -566,7 +566,7 @@ static void TASK_Period_1mS(void *pvParameters)
       xLastExecutionTime = xCurrentTickCount;
 
     // increment timestamp
-    ++ms_counter;
+    ++app_ms_counter;
 
 //    // execute sequencer handler
 //    MUTEX_SDCARD_TAKE;

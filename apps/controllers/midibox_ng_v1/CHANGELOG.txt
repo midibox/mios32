@@ -1,5 +1,16 @@
 $Id$
 
+MIDIbox NG V1.009
+~~~~~~~~~~~~~~~~~
+
+   o with a button assigned to 'type=Meta meta=MidiLearn range=0:1' it's now possible
+     to activate a MIDI Learn mode which allows to assign an incoming MIDI event to any
+     control element
+
+   o with 'type=Meta meta=MidiLearn range=0:2' also NRPN events can be learned (in this case,
+     CC#62 and CC#63 will be ignored!)
+
+
 MIDIbox NG V1.008
 ~~~~~~~~~~~~~~~~~
 

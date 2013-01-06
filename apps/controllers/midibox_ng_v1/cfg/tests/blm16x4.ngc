@@ -29,7 +29,7 @@ EVENT_LED_MATRIX    id=2  type=NoteOn key=68 chn=1  fwd_to_lcd=1  lcd_pos=1:1:2 
 
 
 
-# TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..54)
+# TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..56)
 # send CC#16..19 with these buttons
 # and allow to control the Duo-LEDs with the same controllers
 
