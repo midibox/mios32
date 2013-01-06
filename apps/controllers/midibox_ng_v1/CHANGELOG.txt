@@ -1,5 +1,16 @@
 $Id$
 
+MIDIbox NG V1.010
+~~~~~~~~~~~~~~~~~
+
+   o SysEx: added ^cursor, ^txt and ^txt56 identifiers.
+     They allow to send messages to the LCD via SysEx.
+     A usage example can be found under cfg/templates/logictrl.ngc
+
+   o Labels: ^# allows to terminate a label.
+     E.g. "^label^#MyText" prints "MyText" directly after the specified ^label
+
+
 MIDIbox NG V1.009
 ~~~~~~~~~~~~~~~~~
 

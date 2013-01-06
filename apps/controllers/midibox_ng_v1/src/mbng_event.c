@@ -21,6 +21,7 @@
 #include <scs.h>
 #include <ainser.h>
 #include <midimon.h>
+#include <buflcd.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -45,7 +46,8 @@ typedef union {
   u8 ALL;
 
   struct {
-    u8 sysex_dump;
+    u8 sysex_dump:1;
+    u8 sysex_txt:1;
   };
 } runtime_flags_t;
 
@@ -1430,6 +1432,9 @@ const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos
   case MBNG_EVENT_SYSEX_VAR_VAL_N4:     return "val_n4";
   case MBNG_EVENT_SYSEX_VAR_IGNORE:     return "ignore";
   case MBNG_EVENT_SYSEX_VAR_DUMP:       return "dump";
+  case MBNG_EVENT_SYSEX_VAR_CURSOR:     return "cursor";
+  case MBNG_EVENT_SYSEX_VAR_TXT:        return "txt";
+  case MBNG_EVENT_SYSEX_VAR_TXT56:      return "txt56";
   }
   return "undef";
 }
@@ -1452,6 +1457,8 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "val_n4") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N4;
   if( strcasecmp(sysex_var, "ignore") == 0 )     return MBNG_EVENT_SYSEX_VAR_IGNORE;
   if( strcasecmp(sysex_var, "dump") == 0 )       return MBNG_EVENT_SYSEX_VAR_DUMP;
+  if( strcasecmp(sysex_var, "cursor") == 0 )     return MBNG_EVENT_SYSEX_VAR_CURSOR;
+  if( strcasecmp(sysex_var, "txt56") == 0 )      return MBNG_EVENT_SYSEX_VAR_TXT56;
   return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
 }
 
@@ -1705,6 +1712,9 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (item->value >> 12) & 0xf; break;
 	case MBNG_EVENT_SYSEX_VAR_IGNORE:     new_value = 0; break;
 	case MBNG_EVENT_SYSEX_VAR_DUMP:       new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+	case MBNG_EVENT_SYSEX_VAR_CURSOR:     new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+	case MBNG_EVENT_SYSEX_VAR_TXT:        new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+	case MBNG_EVENT_SYSEX_VAR_TXT56:      new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
 	default: new_value = 0;
 	}
       } else {
@@ -2437,7 +2447,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_match_ctr, 1); // passing byte counter as value, it could be interesting
 
 	  // and reset
-	  pool_item->tmp_runtime_flags.sysex_dump = 0; // finished
+	  pool_item->tmp_runtime_flags.ALL = 0; // finished
 	  pool_item->tmp_sysex_match_ctr = 0;
 	} else {
 	  // notify all events which listen to this dump
@@ -2446,6 +2456,12 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  // waiting for next byte
 	  ++pool_item->tmp_sysex_match_ctr;
 	  parse_sysex = 0;
+	}
+      } else {
+	// always reset if 0xf0 or 0xf7 has been received
+	if( midi_in == 0xf0 || midi_in == 0xf7 ) {
+	  pool_item->tmp_sysex_match_ctr = 0;
+	  pool_item->tmp_runtime_flags.ALL = 0;
 	}
       }
 
@@ -2472,27 +2488,53 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
 	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
 	    case MBNG_EVENT_SYSEX_VAR_DUMP:       match = 1; pool_item->tmp_runtime_flags.sysex_dump = 1; pool_item->tmp_sysex_match_ctr = 0; break; // enable dump receiver
+
+	    case MBNG_EVENT_SYSEX_VAR_CURSOR:
+	      match = 1;
+	      pool_item->tmp_sysex_value = midi_in; // store cursor
+	      break;
+
+	    case MBNG_EVENT_SYSEX_VAR_TXT:
+	      match = 1;
+	      pool_item->tmp_runtime_flags.sysex_txt = 1;
+	      BUFLCD_CursorSet(pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
+	      // TODO: graphical default font for textmessages
+	      BUFLCD_PrintChar(midi_in); // print char
+	      ++pool_item->tmp_sysex_value; // increment cursor (no wrapping)
+	      break;
+
+	    case MBNG_EVENT_SYSEX_VAR_TXT56:
+	      match = 1;
+	      pool_item->tmp_runtime_flags.sysex_txt = 1;
+	      BUFLCD_CursorSet(pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
+	      // TODO: graphical default font for textmessages
+	      BUFLCD_PrintChar(midi_in); // print char
+	      ++pool_item->tmp_sysex_value; // increment cursor
+	      if( (pool_item->tmp_sysex_value & 0x3f) >= 56 ) // wrap at 56
+		pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value >= 64) ? 0x00 : 0x40;
+	      break;
+
 	    }
 	    if( match ) {
-	      if( !pool_item->tmp_runtime_flags.sysex_dump ) {
+	      if( !pool_item->tmp_runtime_flags.sysex_dump && !pool_item->tmp_runtime_flags.sysex_txt ) {
 		pool_item->tmp_sysex_match_ctr += 2;
 	      }
 	    } else {
 	      pool_item->tmp_sysex_match_ctr = 0;
-	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+	      pool_item->tmp_runtime_flags.ALL = 0;
 	    }
 	  } else if( *stream == midi_in ) { // matching byte
 	    // begin of stream?
 	    if( midi_in == 0xf0 ) {
 	      pool_item->tmp_sysex_match_ctr = 0;
 	      pool_item->tmp_sysex_value = 0;
-	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+	      pool_item->tmp_runtime_flags.ALL = 0;
 	    }
 
 	    // end of stream?
 	    if( midi_in == 0xf7 ) {
 	      pool_item->tmp_sysex_match_ctr = 0;
-	      pool_item->tmp_runtime_flags.sysex_dump = 0;
+	      pool_item->tmp_runtime_flags.ALL = 0;
 
 	      // all values matching!
 	      mbng_event_item_t item;
@@ -2503,6 +2545,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    }
 	  } else { // no matching byte
 	    pool_item->tmp_sysex_match_ctr = 0;
+	    pool_item->tmp_runtime_flags.ALL = 0;
 	  }
 	} while( again );
       }
