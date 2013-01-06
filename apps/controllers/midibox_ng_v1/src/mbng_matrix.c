@@ -559,12 +559,16 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
   if( mbng_patch_matrix_din[matrix].button_emu_id_offset ) // -> DIN handler
     return MBNG_DIN_NotifyToggle(pin + mbng_patch_matrix_din[matrix].button_emu_id_offset - 1, pin_value);
 
+  u16 hw_id = MBNG_EVENT_CONTROLLER_BUTTON_MATRIX + matrix + 1;
+
+  // MIDI Learn
+  MBNG_EVENT_MidiLearnIt(hw_id);
+
   // get ID
-  u16 hw_id = matrix + 1;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_BUTTON_MATRIX, hw_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to BUTTON_MATRIX hw_id=%d\n", hw_id);
+      DEBUG_MSG("No event assigned to BUTTON_MATRIX hw_id=%d\n", hw_id & 0xfff);
     }
     return -2; // no event assigned
   }
@@ -596,7 +600,7 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
   u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
+    DEBUG_MSG("MBNG_MATRIX_DIN_NotifyReceivedValue(%d, %d)\n", hw_id & 0xfff, item->value);
   }
 
   return 0; // no error
@@ -612,16 +616,17 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d, %d)\n", hw_id, item->matrix_pin+1, item->value);
+    DEBUG_MSG("MBNG_MATRIX_DOUT_NotifyReceivedValue(%d, %d, %d)\n", hw_id & 0xfff, item->matrix_pin+1, item->value);
   }
 
 #if MBNG_PATCH_NUM_MATRIX_ROWS_MAX != 16
 # error "not prepared for != 16 rows - id assignments have to be adapted!"
 #endif
 
+  u16 hw_id_ix = hw_id & 0xfff;
   if( !item->flags.LED_MATRIX.led_matrix_pattern ) {
-    if( hw_id && hw_id < MBNG_PATCH_NUM_MATRIX_DOUT ) {
-      u8 matrix = hw_id - 1;
+    if( hw_id_ix && hw_id_ix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
+      u8 matrix = hw_id_ix - 1;
       mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
@@ -686,8 +691,8 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       }
     }
   } else {
-    int matrix = (hw_id-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
-    int row = (hw_id-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
+    int matrix = (hw_id_ix-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
+    int row = (hw_id_ix-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
     u8 color = 0; // TODO...
     // this is actually a dirty solution: without LED patterns we address the matrix directly with 1..8,
     // and here we multiply by 16 since we've connected 16 LED Rings... :-/

@@ -139,16 +139,19 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-  u16 hw_id = encoder + 1;
+  u16 hw_id = MBNG_EVENT_CONTROLLER_ENC + encoder + 1;
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", hw_id, incrementer);
+    DEBUG_MSG("MBNG_ENC_NotifyChange(%d, %d)\n", hw_id & 0xfff, incrementer);
   }
+
+  // MIDI Learn
+  MBNG_EVENT_MidiLearnIt(hw_id);
 
   // get ID
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_ENC, hw_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to ENC hw_id=%d\n", hw_id);
+      DEBUG_MSG("No event assigned to ENC hw_id=%d\n", hw_id & 0xfff);
     }
     return -2; // no event assigned
   }
@@ -262,7 +265,7 @@ s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item)
   u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
+    DEBUG_MSG("MBNG_ENC_NotifyReceivedValue(%d, %d)\n", hw_id & 0xfff, item->value);
   }
 
   // nothing else to do...

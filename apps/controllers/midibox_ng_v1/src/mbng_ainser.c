@@ -65,16 +65,19 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 
   int mbng_pin = mapped_module*64 + pin;
 
-  u16 hw_id = mbng_pin + 1;
+  u16 hw_id = MBNG_EVENT_CONTROLLER_AINSER + mbng_pin + 1;
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AINSER_NotifyChange(%d, %d)\n", hw_id, pin_value);
+    DEBUG_MSG("MBNG_AINSER_NotifyChange(%d, %d)\n", hw_id & 0xfff, pin_value);
   }
+
+  // MIDI Learn
+  MBNG_EVENT_MidiLearnIt(hw_id);
 
   // get ID
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(MBNG_EVENT_CONTROLLER_AINSER, hw_id, &item) < 0 ) {
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to AINSER hw_id=%d\n", hw_id);
+      DEBUG_MSG("No event assigned to AINSER hw_id=%d\n", hw_id & 0xfff);
     }
     return -2; // no event assigned
   }
@@ -134,7 +137,7 @@ s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item)
   u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_AINSER_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
+    DEBUG_MSG("MBNG_AINSER_NotifyReceivedValue(%d, %d)\n", hw_id & 0xfff, item->value);
   }
 
   // nothing else to do...

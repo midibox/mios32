@@ -55,7 +55,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   u16 hw_id = item->hw_id;
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", hw_id, item->value);
+    DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", hw_id & 0xfff, item->value);
   }
 
   int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
@@ -73,17 +73,18 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   // check if any matrix emulates the LEDs
   u8 emulated = 0;
   {
+    u16 hw_id_ix = hw_id & 0xfff;
     int matrix;
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
-      if( m->led_emu_id_offset && m->sr_dout_r1 && hw_id >= m->led_emu_id_offset ) {
+      if( m->led_emu_id_offset && m->sr_dout_r1 && hw_id_ix >= m->led_emu_id_offset ) {
 
 	u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
-	if( hw_id < (m->num_rows * (m->led_emu_id_offset + row_size)) ) {
+	if( hw_id_ix < (m->num_rows * (m->led_emu_id_offset + row_size)) ) {
 	  emulated = 1;
 	  u16 tmp_hw_id = item->hw_id;
-	  item->hw_id = matrix + 1;
-	  item->matrix_pin = hw_id - m->led_emu_id_offset;
+	  item->hw_id = MBNG_EVENT_CONTROLLER_LED_MATRIX + matrix + 1;
+	  item->matrix_pin = hw_id_ix - m->led_emu_id_offset;
 	  MBNG_MATRIX_DOUT_NotifyReceivedValue(item);
 	  item->hw_id = tmp_hw_id;
 	}
@@ -93,7 +94,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
   if( !emulated ) {
     // set LED
-    MIOS32_DOUT_PinSet(hw_id - 1, dout_value);
+    MIOS32_DOUT_PinSet((hw_id & 0xfff) - 1, dout_value);
   }
 
   return 0; // no error

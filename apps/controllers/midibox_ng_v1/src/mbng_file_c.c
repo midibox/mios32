@@ -538,8 +538,8 @@ s32 parseEvent(char *cmd, char *brkt)
 	return -1;
       } else {
 	item.id = (item.id & 0xf000) | id;
-	if( !item.hw_id )
-	  item.hw_id = id; // default hardware ID if not already define before
+	if( !(item.hw_id & 0xfff) )
+	  item.hw_id = item.id; // default hardware ID if not already define before
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -551,7 +551,7 @@ s32 parseEvent(char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.hw_id = hw_id; // HW_ID can be modified
+	item.hw_id = (item.hw_id & 0xf000) | hw_id; // HW_ID can be modified
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2794,9 +2794,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      item.id & 0xfff);
       FLUSH_BUFFER;
 
-      if( item.hw_id != (item.id & 0xfff) ) {
+      if( item.hw_id != item.id ) {
 	sprintf(line_buffer, "  hw_id=%3d",
-		item.hw_id);
+		item.hw_id & 0xfff);
 	FLUSH_BUFFER;
       }
 

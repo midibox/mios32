@@ -20,6 +20,7 @@
 
 #include <scs.h>
 #include <ainser.h>
+#include <midimon.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -119,6 +120,16 @@ static u16 nrpn_sent_address[MBNG_EVENT_NRPN_SEND_PORTS][MBNG_EVENT_NRPN_SEND_CH
 static u16 nrpn_sent_value[MBNG_EVENT_NRPN_SEND_PORTS][MBNG_EVENT_NRPN_SEND_CHANNELS];
 
 
+static u8                    midi_learn_mode;
+static u8                    midi_learn_nrpn_chn;
+static u8                    midi_learn_nrpn_valid;
+static u16                   midi_learn_min;
+static u16                   midi_learn_max;
+static mios32_midi_package_t midi_learn_event;
+static mios32_midi_port_t    midi_learn_nrpn_port;
+static u16                   midi_learn_nrpn_address;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -157,6 +168,8 @@ s32 MBNG_EVENT_Init(u32 mode)
       }
     }
   }
+
+  MBNG_EVENT_MidiLearnModeSet(0);
 
   mbng_event_item_t item;
 
@@ -573,7 +586,7 @@ s32 MBNG_EVENT_HwIdBankGet(u16 hw_id)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( pool_item->hw_id == hw_id && pool_item->bank && pool_item->flags.general.active ) {
+    if( (pool_item->hw_id & 0xfff) == hw_id && pool_item->bank && pool_item->flags.general.active ) {
       return pool_item->bank; // bank found
     }
 
@@ -594,7 +607,7 @@ s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( pool_item->hw_id == hw_id && pool_item->bank ) {
+    if( (pool_item->hw_id & 0xfff) == hw_id && pool_item->bank ) {
       pool_item->flags.general.active = (pool_item->bank == new_bank);
 
       // refresh active item
@@ -623,7 +636,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
-  item->hw_id = id & 0xfff;
+  item->hw_id  = id;
   item->value  = 0;
   item->min    = 0;
   item->max    = 127;
@@ -816,6 +829,69 @@ s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Modifies an existing item in the pool
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    if( pool_item->id == item->id ) {
+      u32 label_len = item->label ? (strlen(item->label)+1) : 0;
+      u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
+
+      if( pool_item_len > 255 )
+	return -2; // too much data
+
+      int len_diff = pool_item_len - pool_item->len;
+      if( len_diff >= 0 && (event_pool_size+len_diff) > MBNG_EVENT_POOL_MAX_SIZE )
+	return -2; // out of storage 
+
+      if( len_diff != 0 ) {
+	// make room
+	u8 *old_next_pool_item = (u8 *)((u32)pool_item + pool_item->len);
+	u8 *new_next_pool_item = (u8 *)((u32)pool_item + pool_item_len);
+	u32 move_size = MBNG_EVENT_POOL_MAX_SIZE - ((u32)new_next_pool_item - (u32)&event_pool);
+
+	//DEBUG_MSG("New Item changed size by %d bytes. Next Old Addr: 0x%08x, New: 0x%08x, move_size %d\n", len_diff, old_next_pool_item, new_next_pool_item, move_size);
+
+	// make copy of label (because it's normaly located in pool!
+	if( label_len >= 128 ) {
+	  DEBUG_MSG("[MBNG_EVENT_ItemModify] Impossible Mission!\n"); // should never happen...
+	}
+	char label[129];
+	if( item->label ) {
+	  strcpy(label, item->label);
+	  item->label = label;
+	} else {
+	  label[0] = 0;
+	}
+
+	// move memory
+	memmove(new_next_pool_item, old_next_pool_item, move_size);
+
+	// copy the modified item into pool
+	MBNG_EVENT_ItemCopy2Pool(item, pool_item);
+
+	// change event pool size and move map pointer
+	event_pool_size += len_diff;
+	event_pool_maps_begin += len_diff;
+      } else {
+	// no size change - copy new item directly into pool
+	MBNG_EVENT_ItemCopy2Pool(item, pool_item);
+      }
+
+      return 0; // operation was successfull
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return -1; // not found
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Search an item in event pool based on ID
 // returns 0 and copies item into *item if found
@@ -844,15 +920,13 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 // returns 0 and copies item into *item if found
 // returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t main_id, u16 hw_id, mbng_event_item_t *item)
+s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
-    if( pool_item->flags.general.active &&
-	pool_item->hw_id == hw_id &&
-	(pool_item->id & 0xf000) == main_id ) {
+    if( pool_item->flags.general.active && pool_item->hw_id == hw_id ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
       return 0; // item found
     }
@@ -877,7 +951,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=0x%03x bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=0x%04x bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item->id),
 				      item->hw_id,
@@ -888,6 +962,177 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 				      item->label ? item->label : "");
 #endif
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Enable/Get Learn Mode Status
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MidiLearnModeSet(u8 mode)
+{
+  midi_learn_mode = mode;
+  midi_learn_event.ALL = 0;
+  midi_learn_min = 0xffff;
+  midi_learn_max = 0xffff;
+  midi_learn_nrpn_port = DEFAULT;
+  midi_learn_nrpn_chn = 0;
+  midi_learn_nrpn_valid = 0;
+  midi_learn_nrpn_address = 0xffff;
+
+  return 0; // no error
+}
+
+s32 MBNG_EVENT_MidiLearnModeGet(void)
+{
+  return midi_learn_mode;
+}
+
+
+s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
+{
+  if( !midi_learn_mode )
+    return 0; // nothing to learn...
+
+  if( !midi_learn_event.ALL )
+    return 0; // nothing to learn...
+
+  mbng_event_item_id_t id = hw_id;
+
+  u8 new_item = 0;
+  mbng_event_item_t item;
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
+    new_item = 1;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[MIDI_LEARN] creating a new item for hw_id=%s:%d\n", MBNG_EVENT_ItemControllerStrGet(hw_id), hw_id & 0xfff);
+    }
+
+    mbng_event_item_t tmp_item;
+    while( MBNG_EVENT_ItemSearchById(id, &tmp_item) >= 0 ) {
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[MIDI_LEARN] id=%s:d already allocated, trying next one...\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+      }
+
+      ++id;
+
+      if( (id & 0xfff) == 0 ) {
+	DEBUG_MSG("[MIDI_LEARN] ERROR: no free id found!\n");
+	return -1; // unable to add new item
+      }
+    }
+    
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[MIDI_LEARN] the new item will get id=%s:%d\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+    }
+
+    MBNG_EVENT_ItemInit(&item, id);
+  } else {
+    if( item.flags.general.type == MBNG_EVENT_TYPE_META ) {
+      if( item.stream_size && item.stream[0] == MBNG_EVENT_META_TYPE_MIDI_LEARN )
+	return 0; // silently ignore
+
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[MIDI_LEARN] id=%s:%d is assigned to a Meta Event which can't be overwritten!\n", 
+		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+      }
+      return -2; // meta items can't be changed
+    }
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[MIDI_LEARN] modify an existing item id=%s:%d for hw_id=%s:%d\n", 
+		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff,
+		  MBNG_EVENT_ItemControllerStrGet(hw_id), hw_id & 0xfff);
+      }
+    }
+  }
+
+  // modify item depending on the learnt event
+  u8 item_modified = 0;
+  u8 stream[4];
+  if( midi_learn_mode == 1 || midi_learn_nrpn_valid != 0x7 ) {
+    switch( midi_learn_event.type ) {
+    case NoteOff:
+    case NoteOn:
+    case PolyPressure:
+    case CC:
+      item_modified = 1;
+      item.flags.general.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
+      item.stream_size = 2;
+      item.stream = (u8 *)&stream;
+      stream[0] = midi_learn_event.evnt0;
+      stream[1] = midi_learn_event.evnt1;
+      break;
+
+    case ProgramChange:
+    case Aftertouch:
+    case PitchBend:
+      item_modified = 1;
+      item.flags.general.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
+      item.stream_size = 1;
+      item.stream = (u8 *)&stream;
+      stream[0] = midi_learn_event.evnt0;
+      break;
+    }
+  } else {
+    // valid NRPN
+    item_modified = 1;
+    item.flags.general.type = MBNG_EVENT_TYPE_NRPN;
+    item.stream_size = 4;
+    item.stream = (u8 *)&stream;
+    stream[0] = midi_learn_event.evnt0;
+    stream[1] = (midi_learn_nrpn_address & 0xff);
+    stream[2] = (midi_learn_nrpn_address >> 8);
+    stream[3] = MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
+  }
+
+  if( !item_modified ) {
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[MIDI_LEARN] MIDI event not supported.\n");
+    }
+    return -3; // MIDI event not supported
+  }
+
+  // set min/max value
+  item.min = (midi_learn_min == 0xffff) ? 0 : midi_learn_min;
+  item.max = (midi_learn_max == 0xffff) ? 127 : midi_learn_max;
+
+  // add/modify to/in pool
+  if( new_item ) {
+    // just add it to the pool...
+    if( MBNG_EVENT_ItemAdd(&item) < 0 ) {
+      DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add id=%s:%d: out of memory!\n",
+		MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+      MBNG_EVENT_MidiLearnModeSet(0); // disable learn mode
+      return -3; // out of memory...
+    }
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[MIDI_LEARN] item id=%s:%d has been created.\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+    }
+  } else {
+    // modify in pool
+    s32 status;
+    if( (status=MBNG_EVENT_ItemModify(&item)) < 0 ) {
+      if( status == -1 ) {
+	DEBUG_MSG("[MBNG_FILE_C] FATAL: unexpected malfunction of firmware while adding id=%s:%d!\n",
+		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+      } else {
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add id=%s:%d: out of memory!\n",
+		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+      }
+      MBNG_EVENT_MidiLearnModeSet(0); // disable learn mode
+      return -3; // out of memory...
+    }
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[MIDI_LEARN] item id=%s:%d has been modified.\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+    }
+  }
+
+  MBNG_EVENT_MidiLearnModeSet(0); // disable learn mode
+
+  return 0; // no error
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // returns name of controller
@@ -1201,6 +1446,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return "EncFast";
 
+  case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -1226,6 +1473,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "CycleBankOfHwId") == 0 )     return MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID;
 
   if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
+
+  if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -1530,6 +1779,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	MBNG_ENC_FastModeSet(item->value);
       } break;
 
+      case MBNG_EVENT_META_TYPE_MIDI_LEARN: {
+	MBNG_EVENT_MidiLearnModeSet(item->value);
+      } break;
+
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
 	SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
       } break;
@@ -1689,7 +1942,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     u16 tmp_pool_address = item->pool_address;
     u8 tmp_fwd_to_lcd = item->flags.general.fwd_to_lcd;
     item->id = item->fwd_id;
-    item->hw_id = item->fwd_id & 0xfff;
+    item->hw_id = item->fwd_id;
     item->fwd_id = 0;
     item->pool_address = 0xffff;
     item->flags.general.fwd_to_lcd = 0;
@@ -1874,11 +2127,25 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
         case 0x63: { // Address MSB
 	  nrpn_received_address[port_ix][midi_package.chn] &= ~0x3f80;
 	  nrpn_received_address[port_ix][midi_package.chn] |= ((midi_package.value << 7) & 0x3f80);
+
+	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
+	    midi_learn_nrpn_port = port;
+	    midi_learn_nrpn_chn = midi_package.chn + 1;
+	    midi_learn_nrpn_valid = 0;
+	  }
+	  midi_learn_nrpn_valid |= 0x01;
         } break;
 
         case 0x62: { // Address LSB
 	  nrpn_received_address[port_ix][midi_package.chn] &= ~0x007f;
 	  nrpn_received_address[port_ix][midi_package.chn] |= (midi_package.value & 0x007f);
+
+	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
+	    midi_learn_nrpn_port = port;
+	    midi_learn_nrpn_chn = midi_package.chn + 1;
+	    midi_learn_nrpn_valid = 0;
+	  }
+	  midi_learn_nrpn_valid |= 0x02;
         } break;
 
         case 0x06: { // Data MSB
@@ -1887,6 +2154,15 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  // nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  // MEMO: it's better to update only when LSB has been received
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
+
+	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
+	    midi_learn_nrpn_port = port;
+	    midi_learn_nrpn_chn = midi_package.chn + 1;
+	    midi_learn_nrpn_valid = 0;
+	  } else {
+	    // only if valid address has been parsed
+	    midi_learn_nrpn_valid |= 0x04;
+	  }
         } break;
 
         case 0x26: { // Data LSB
@@ -1894,6 +2170,16 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  nrpn_received_value[port_ix][midi_package.chn] |= (midi_package.value & 0x007f);
 	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
+
+	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
+	    midi_learn_nrpn_port = port;
+	    midi_learn_nrpn_chn = midi_package.chn + 1;
+	    midi_learn_nrpn_valid = 0;
+	  } else {
+	    // only if valid address has been parsed
+	    // use same valid flag like Data MSB (complete NRPN is valid with 0x07)
+	    midi_learn_nrpn_valid |= 0x04;
+	  }
         } break;
         }
       }
@@ -1904,6 +2190,82 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	(midi_package.chn == (mbng_patch_cfg.all_notes_off_chn - 1)) &&
 	midi_package.cc_number == 123 ) {
       MBNG_DOUT_Init(0);
+    }
+  }
+
+  // MIDI Learn Mode
+  if( midi_learn_mode ) {
+    int value = -1;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      MIDIMON_Print("MIDI_LEARN:", port, midi_package, app_ms_counter, 0);
+    }
+
+    if( midi_learn_mode >= 2 && nrpn_address != 0xffff && midi_learn_nrpn_valid == 0x07 ) {
+      if( nrpn_address != midi_learn_nrpn_address ) {
+	midi_learn_min = 0;
+	midi_learn_max = 0;
+      }
+
+      midi_learn_nrpn_address = nrpn_address;
+
+      value = nrpn_value;
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[MIDI_LEARN] Detected NRPN value for #%d\n", midi_learn_nrpn_address);
+      }
+    }
+
+    if( value < 0 &&
+	!(midi_learn_mode >= 2 && midi_package.event == CC && (midi_package.cc_number == 0x63 || midi_package.cc_number == 0x62)) ) {
+      switch( midi_package.event ) {
+      case NoteOff:
+      case NoteOn:
+      case PolyPressure:
+      case CC:
+	value = midi_package.evnt2;
+
+	if( midi_package.evnt0 != midi_learn_event.evnt0 ||
+	    midi_package.evnt1 != midi_learn_event.evnt1 ) {
+	  midi_learn_min = 0xffff;
+	  midi_learn_max = 0xffff;
+	}
+	break;
+
+      case ProgramChange:
+      case Aftertouch:
+	value = midi_package.evnt1;
+
+	if( midi_package.evnt0 != midi_learn_event.evnt0 ) {
+	  midi_learn_min = 0xffff;
+	  midi_learn_max = 0xffff;
+	}
+	break;
+
+      case PitchBend:
+	value = midi_package.evnt1 | ((u16)midi_package.evnt2 << 7);
+
+	if( midi_package.evnt0 != midi_learn_event.evnt0 ) {
+	  midi_learn_min = 0xffff;
+	  midi_learn_max = 0xffff;
+	}
+	break;
+      }      
+    }
+
+    if( value >= 0 ) {
+      midi_learn_event.ALL = midi_package.ALL;
+
+      if( midi_learn_min == 0xffff || value < midi_learn_min )
+	midi_learn_min = value;
+      else if( midi_learn_max == 0xffff || value > midi_learn_max )
+	midi_learn_max = value;
+
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[MIDI_LEARN] value=%d  range=%d:%d\n",
+		  value,
+		  (midi_learn_min == 0xffff) ? 0 : midi_learn_min,
+		  (midi_learn_max == 0xffff) ? 0 : midi_learn_max);
+      }
     }
   }
 
