@@ -128,6 +128,7 @@ static u16                   midi_learn_max;
 static mios32_midi_package_t midi_learn_event;
 static mios32_midi_port_t    midi_learn_nrpn_port;
 static u16                   midi_learn_nrpn_address;
+static u16                   midi_learn_nrpn_value;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -977,6 +978,7 @@ s32 MBNG_EVENT_MidiLearnModeSet(u8 mode)
   midi_learn_nrpn_chn = 0;
   midi_learn_nrpn_valid = 0;
   midi_learn_nrpn_address = 0xffff;
+  midi_learn_nrpn_value = 0xffff;
 
   return 0; // no error
 }
@@ -986,6 +988,32 @@ s32 MBNG_EVENT_MidiLearnModeGet(void)
   return midi_learn_mode;
 }
 
+s32 MBNG_EVENT_MidiLearnStatusMsg(char *line1, char *line2)
+{
+  if( !midi_learn_event.ALL ) {
+    if( !line1[0] ) {
+      sprintf(line1, "Waiting for         ");
+    }
+    sprintf(line2, "MIDI Event...       ");
+  } else {
+    if( !line1[0] ) {
+      if( midi_learn_mode >= 2 && midi_learn_nrpn_valid == 0x7 ) {
+	sprintf(line1, "NRPN %5d = %5d  ", midi_learn_nrpn_address, midi_learn_nrpn_value);
+      } else {
+	sprintf(line1, "Received: %02X%02X%02X    ",
+		midi_learn_event.evnt0,
+		midi_learn_event.evnt1,
+		midi_learn_event.evnt2);
+      }
+    }
+
+    sprintf(line2, "Min:%5d Max:%5d ",
+	    (midi_learn_min == 0xffff) ? 0 : midi_learn_min,
+	    (midi_learn_max == 0xffff) ? 127 : midi_learn_max);
+  }
+
+  return 0; // no error
+}
 
 s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
 {
@@ -1575,10 +1603,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       p.chn = item->stream[0] & 0xf;
 
     u16 nrpn_address = item->stream[1] | ((u16)item->stream[2] << 7);
-    mbng_event_nrpn_format_t nrpn_format = item->stream[3]; // TODO
+    mbng_event_nrpn_format_t nrpn_format = item->stream[3];
     u8 nrpn_address_msb = (nrpn_address >> 7) & 0x7f;
     u8 nrpn_address_lsb = (nrpn_address >> 0) & 0x7f;
-    u16 nrpn_value = item->value;
+    u16 nrpn_value = (nrpn_format == MBNG_EVENT_NRPN_FORMAT_SIGNED) ? ((item->value - 8192) & 0x3fff) : item->value;
     u8 nrpn_value_msb = (nrpn_value >> 7) & 0x7f;
     u8 nrpn_value_lsb = (nrpn_value >> 0) & 0x7f;
 
@@ -2151,8 +2179,9 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
         case 0x06: { // Data MSB
 	  nrpn_received_value[port_ix][midi_package.chn] &= ~0x3f80;
 	  nrpn_received_value[port_ix][midi_package.chn] |= ((midi_package.value << 7) & 0x3f80);
-	  // nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
+#if 0
 	  // MEMO: it's better to update only when LSB has been received
+	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
 
 	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
@@ -2163,6 +2192,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	    // only if valid address has been parsed
 	    midi_learn_nrpn_valid |= 0x04;
 	  }
+#endif
         } break;
 
         case 0x26: { // Data LSB
@@ -2203,20 +2233,25 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 
     if( midi_learn_mode >= 2 && nrpn_address != 0xffff && midi_learn_nrpn_valid == 0x07 ) {
       if( nrpn_address != midi_learn_nrpn_address ) {
-	midi_learn_min = 0;
-	midi_learn_max = 0;
+	midi_learn_min = 0xffff;
+	midi_learn_max = 0xffff;
+      } else {
+	// ignore first value after nrpn address change, because it could happen that we only received the MSB yet...
+	value = nrpn_value;
       }
 
       midi_learn_nrpn_address = nrpn_address;
+      midi_learn_nrpn_value = nrpn_value;
 
-      value = nrpn_value;
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("[MIDI_LEARN] Detected NRPN value for #%d\n", midi_learn_nrpn_address);
       }
     }
 
     if( value < 0 &&
-	!(midi_learn_mode >= 2 && midi_package.event == CC && (midi_package.cc_number == 0x63 || midi_package.cc_number == 0x62)) ) {
+	!(midi_learn_mode >= 2 && midi_package.event == CC &&
+	  (midi_package.cc_number == 0x63 || midi_package.cc_number == 0x62 ||
+	   midi_package.cc_number == 0x06 || midi_package.cc_number == 0x26)) ) {
       switch( midi_package.event ) {
       case NoteOff:
       case NoteOn:
@@ -2257,14 +2292,14 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 
       if( midi_learn_min == 0xffff || value < midi_learn_min )
 	midi_learn_min = value;
-      else if( midi_learn_max == 0xffff || value > midi_learn_max )
+      if( midi_learn_max == 0xffff || value > midi_learn_max )
 	midi_learn_max = value;
 
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("[MIDI_LEARN] value=%d  range=%d:%d\n",
 		  value,
 		  (midi_learn_min == 0xffff) ? 0 : midi_learn_min,
-		  (midi_learn_max == 0xffff) ? 0 : midi_learn_max);
+		  (midi_learn_max == 0xffff) ? 127 : midi_learn_max);
       }
     }
   }

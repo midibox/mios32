@@ -10,6 +10,8 @@ MIDIbox NG V1.009
    o with 'type=Meta meta=MidiLearn range=0:2' also NRPN events can be learned (in this case,
      CC#62 and CC#63 will be ignored!)
 
+   o MIDI Learn mode can also be activated in the SCS menu
+
 
 MIDIbox NG V1.008
 ~~~~~~~~~~~~~~~~~
