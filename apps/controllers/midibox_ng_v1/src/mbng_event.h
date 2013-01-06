@@ -326,6 +326,7 @@ extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_it
 
 extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);
 extern s32 MBNG_EVENT_MidiLearnModeGet(void);
+extern s32 MBNG_EVENT_MidiLearnStatusMsg(char *line1, char *line2);
 extern s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id);
 
 

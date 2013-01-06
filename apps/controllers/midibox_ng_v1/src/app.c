@@ -46,6 +46,7 @@
 
 // include source of the SCS
 #include <scs.h>
+#include <scs_lcd.h>
 #include "scs_config.h"
 
 #include "file.h"
@@ -410,8 +411,10 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     // call SCS handler
     SCS_Tick();
 
+    SCS_DisplayUpdateInMainPage(MBNG_EVENT_MidiLearnModeGet() ? 1 : 0);
+
     // LCD output in mainpage
-    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() ) {
       u8 force = isInMainPage == 0;
       if( force ) // page change
 	MBNG_LCD_SpecialCharsReInit();
@@ -419,6 +422,10 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       BUFLCD_Update(force);
       isInMainPage = 1; // static reminder
     } else {
+      if( isInMainPage && MBNG_EVENT_MidiLearnModeGet() ) {
+	SCS_LCD_Update(1); // force display update when learn mode is entered in mainpage
+      }
+
       isInMainPage = 0; // static reminder
     }
 

@@ -603,7 +603,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  item.stream[0] = 0xb0; // match on CC, will also store channel
 	  item.stream[1] = 0x00; // number
 	  item.stream[2] = 0x00;
-	  item.stream[3] = 0x00; // value format
+	  item.stream[3] = MBNG_EVENT_NRPN_FORMAT_UNSIGNED; // value format
 	} break;
 
 	case MBNG_EVENT_TYPE_META: {

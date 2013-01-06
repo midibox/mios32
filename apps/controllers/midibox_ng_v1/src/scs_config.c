@@ -377,6 +377,11 @@ const scs_menu_item_t pageMON[] = {
   SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
 };
 
+const scs_menu_item_t pageLearn[] = {
+  // dummy - will be overlayed in displayHook
+  SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
+};
+
 
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Var. ", pageVAR),
@@ -384,7 +389,8 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("Mon. ", pageMON),
-  SCS_PAGE("Disk ", pageDsk),
+  SCS_PAGE("Learn", pageLearn),
+  SCS_PAGE(" Disk", pageDsk),
 };
 
 
@@ -431,6 +437,12 @@ static s32 displayHook(char *line1, char *line2)
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
     // overlayed by BUFLCD_Buffer() in app.c!
+    // only exception: not in MIDI learn mode
+    if( MBNG_EVENT_MidiLearnModeGet() ) {
+      MBNG_EVENT_MidiLearnStatusMsg(line1, line2);
+      SCS_DisplayUpdateRequest(); // fast updates
+    }
+
     return 1;
   }
 
@@ -505,6 +517,22 @@ static s32 displayHook(char *line1, char *line2)
     // request LCD update - this will lead to fast refresh rate in monitor screen
     if( fastRefresh )
       SCS_DisplayUpdateRequest();
+
+    return 1;
+  }
+
+  if( SCS_MenuPageGet() == pageLearn ) {
+    if( MBNG_EVENT_MidiLearnModeGet() ) {
+      MBNG_EVENT_MidiLearnStatusMsg(line1, line2);
+    } else {
+      if( line1[0] == 0 ) { // no MSD overlay?
+	sprintf(line1, "  Common  NRPN      ");
+      }
+      sprintf(line2, "  Learn   Learn     ");
+    }
+
+    // fast updates
+    SCS_DisplayUpdateRequest();
 
     return 1;
   }
@@ -637,6 +665,21 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
     if( scsButton == SCS_PIN_SOFT5 && !depressed ) { // selects/deselects extra page
       extraPage = 1;
       return 1;
+    }
+  }
+
+  if( SCS_MenuPageGet() == pageLearn ) {
+    if( scsButton == SCS_PIN_SOFT1 || scsButton == SCS_PIN_SOFT2 ) {
+      if( !depressed )
+	MBNG_EVENT_MidiLearnModeSet(1);
+      return 1;
+    } else if( scsButton == SCS_PIN_SOFT3 || scsButton == SCS_PIN_SOFT4 ) {
+      if( !depressed )
+	MBNG_EVENT_MidiLearnModeSet(2);
+      return 1;
+    } else if( scsButton == SCS_PIN_EXIT ) {
+      if( !depressed )
+	MBNG_EVENT_MidiLearnModeSet(0);
     }
   }
 
