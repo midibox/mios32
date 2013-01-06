@@ -1037,7 +1037,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     mbng_event_item_t tmp_item;
     while( MBNG_EVENT_ItemSearchById(id, &tmp_item) >= 0 ) {
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	DEBUG_MSG("[MIDI_LEARN] id=%s:d already allocated, trying next one...\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
+	DEBUG_MSG("[MIDI_LEARN] id=%s:%d already allocated, trying next one...\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
       }
 
       ++id;
@@ -1127,6 +1127,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
   // add/modify to/in pool
   if( new_item ) {
     // just add it to the pool...
+    item.flags.general.active = 1;
     if( MBNG_EVENT_ItemAdd(&item) < 0 ) {
       DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add id=%s:%d: out of memory!\n",
 		MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
