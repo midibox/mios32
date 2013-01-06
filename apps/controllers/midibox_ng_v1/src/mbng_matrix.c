@@ -64,17 +64,17 @@ static u8 debounce_reload;
 
 // pre-calculated selection patterns, since we need them very often
 const u16 selection_4rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
-  0x1e1e, 0x2d2d, 0x4b4b, 0x8787, // duplicate selection lines on all nibbles (partly inverted)
-  0x1e1e, 0x2d2d, 0x4b4b, 0x8787, // so that the remaining DOUT pins can be used as well (MBSEQ V3 BLM matrix)
-  0x1e1e, 0x2d2d, 0x4b4b, 0x8787,
-  0x1e1e, 0x2d2d, 0x4b4b, 0x8787,
+  0xeeee, 0xdddd, 0xbbbb, 0x7777, // duplicate selection lines on all nibbles
+  0xeeee, 0xdddd, 0xbbbb, 0x7777, // so that the remaining DOUT pins can be used as well (MBSEQ V3 BLM matrix)
+  0xeeee, 0xdddd, 0xbbbb, 0x7777,
+  0xeeee, 0xdddd, 0xbbbb, 0x7777,
 };
 
 const u16 selection_8rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
-  0x01fe, 0x02fd, 0x04fb, 0x08f7, // duplicate selection lines at second byte inverted
-  0x10ef, 0x20df, 0x40bf, 0x807f, // for the case that the second DOUT is used as well (for whatever reason)
-  0x01fe, 0x02fd, 0x04fb, 0x08f7,
-  0x10ef, 0x20df, 0x40bf, 0x807f,
+  0xefef, 0xdfdf, 0xbfbf, 0x7f7f, // duplicate selection lines at second byte
+  0xfefe, 0xfdfd, 0xfbfb, 0xf7f7, // for the case that the second DOUT is used as well (for whatever reason)
+  0xefef, 0xdfdf, 0xbfbf, 0x7f7f,
+  0xfefe, 0xfdfd, 0xfbfb, 0xf7f7,
 };
 
 const u16 selection_16rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
