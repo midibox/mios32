@@ -71,10 +71,10 @@ const u16 selection_4rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
 };
 
 const u16 selection_8rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
-  0xefef, 0xdfdf, 0xbfbf, 0x7f7f, // duplicate selection lines at second byte
-  0xfefe, 0xfdfd, 0xfbfb, 0xf7f7, // for the case that the second DOUT is used as well (for whatever reason)
-  0xefef, 0xdfdf, 0xbfbf, 0x7f7f,
+  0xfefe, 0xfdfd, 0xfbfb, 0xf7f7, // duplicate selection lines at second byte
+  0xefef, 0xdfdf, 0xbfbf, 0x7f7f, // for the case that the second DOUT is used as well (for whatever reason)
   0xfefe, 0xfdfd, 0xfbfb, 0xf7f7,
+  0xefef, 0xdfdf, 0xbfbf, 0x7f7f,
 };
 
 const u16 selection_16rows[MBNG_PATCH_NUM_MATRIX_ROWS_MAX] = {
