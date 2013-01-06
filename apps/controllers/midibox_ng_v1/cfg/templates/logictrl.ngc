@@ -47,18 +47,24 @@ EVENT_RECEIVER id=  3  fwd_id=SENDER:3 \
 EVENT_SENDER   id=  3 \
                type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
 
+# LCD Messages
+# Note: we use ^txt56 instead of ^txt, so that the cursor will jump 
+#       to the next line after the 56th character has been reached
+EVENT_RECEIVER id=  4 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x12 ^cursor ^txt56"
+
 
 ################################################################################
 # Select 1-8 (Note Key: 0x18..0x1f)
 ################################################################################
-EVENT_BUTTON id=  1  type=NoteOn chn= 1 key=0x18  lcd_pos=1:1:1 label="Select #1"
-EVENT_BUTTON id=  2  type=NoteOn chn= 1 key=0x19  lcd_pos=1:1:1 label="Select #2"
-EVENT_BUTTON id=  3  type=NoteOn chn= 1 key=0x1a  lcd_pos=1:1:1 label="Select #3"
-EVENT_BUTTON id=  4  type=NoteOn chn= 1 key=0x1b  lcd_pos=1:1:1 label="Select #4"
-EVENT_BUTTON id=  5  type=NoteOn chn= 1 key=0x1c  lcd_pos=1:1:1 label="Select #5"
-EVENT_BUTTON id=  6  type=NoteOn chn= 1 key=0x1d  lcd_pos=1:1:1 label="Select #6"
-EVENT_BUTTON id=  7  type=NoteOn chn= 1 key=0x1e  lcd_pos=1:1:1 label="Select #7"
-EVENT_BUTTON id=  8  type=NoteOn chn= 1 key=0x1f  lcd_pos=1:1:1 label="Select #8"
+EVENT_BUTTON id=  1  type=NoteOn chn= 1 key=0x18
+EVENT_BUTTON id=  2  type=NoteOn chn= 1 key=0x19
+EVENT_BUTTON id=  3  type=NoteOn chn= 1 key=0x1a
+EVENT_BUTTON id=  4  type=NoteOn chn= 1 key=0x1b
+EVENT_BUTTON id=  5  type=NoteOn chn= 1 key=0x1c
+EVENT_BUTTON id=  6  type=NoteOn chn= 1 key=0x1d
+EVENT_BUTTON id=  7  type=NoteOn chn= 1 key=0x1e
+EVENT_BUTTON id=  8  type=NoteOn chn= 1 key=0x1f
 
 EVENT_LED    id=  1  type=NoteOn chn= 1 key=0x18
 EVENT_LED    id=  2  type=NoteOn chn= 1 key=0x19
@@ -73,14 +79,14 @@ EVENT_LED    id=  8  type=NoteOn chn= 1 key=0x1f
 ################################################################################
 # Rec/Ready 1-8 (Note Key: 0x00..0x07)
 ################################################################################
-EVENT_BUTTON id=  9  type=NoteOn chn= 1 key=0x00  lcd_pos=1:1:1 label="Rec/Ready #1"
-EVENT_BUTTON id= 10  type=NoteOn chn= 1 key=0x01  lcd_pos=1:1:1 label="Rec/Ready #2"
-EVENT_BUTTON id= 11  type=NoteOn chn= 1 key=0x02  lcd_pos=1:1:1 label="Rec/Ready #3"
-EVENT_BUTTON id= 12  type=NoteOn chn= 1 key=0x03  lcd_pos=1:1:1 label="Rec/Ready #4"
-EVENT_BUTTON id= 13  type=NoteOn chn= 1 key=0x04  lcd_pos=1:1:1 label="Rec/Ready #5"
-EVENT_BUTTON id= 14  type=NoteOn chn= 1 key=0x05  lcd_pos=1:1:1 label="Rec/Ready #6"
-EVENT_BUTTON id= 15  type=NoteOn chn= 1 key=0x06  lcd_pos=1:1:1 label="Rec/Ready #7"
-EVENT_BUTTON id= 16  type=NoteOn chn= 1 key=0x07  lcd_pos=1:1:1 label="Rec/Ready #8"
+EVENT_BUTTON id=  9  type=NoteOn chn= 1 key=0x00
+EVENT_BUTTON id= 10  type=NoteOn chn= 1 key=0x01
+EVENT_BUTTON id= 11  type=NoteOn chn= 1 key=0x02
+EVENT_BUTTON id= 12  type=NoteOn chn= 1 key=0x03
+EVENT_BUTTON id= 13  type=NoteOn chn= 1 key=0x04
+EVENT_BUTTON id= 14  type=NoteOn chn= 1 key=0x05
+EVENT_BUTTON id= 15  type=NoteOn chn= 1 key=0x06
+EVENT_BUTTON id= 16  type=NoteOn chn= 1 key=0x07
 
 EVENT_LED    id=  9  type=NoteOn chn= 1 key=0x00
 EVENT_LED    id= 10  type=NoteOn chn= 1 key=0x01
@@ -95,14 +101,14 @@ EVENT_LED    id= 16  type=NoteOn chn= 1 key=0x07
 ################################################################################
 # Solo 1-8 (Note Key: 0x08..0x0f)
 ################################################################################
-EVENT_BUTTON id= 17  type=NoteOn chn= 1 key=0x08  lcd_pos=1:1:1 label="Solo #1     "
-EVENT_BUTTON id= 18  type=NoteOn chn= 1 key=0x09  lcd_pos=1:1:1 label="Solo #2     "
-EVENT_BUTTON id= 19  type=NoteOn chn= 1 key=0x0a  lcd_pos=1:1:1 label="Solo #3     "
-EVENT_BUTTON id= 20  type=NoteOn chn= 1 key=0x0b  lcd_pos=1:1:1 label="Solo #4     "
-EVENT_BUTTON id= 21  type=NoteOn chn= 1 key=0x0c  lcd_pos=1:1:1 label="Solo #5     "
-EVENT_BUTTON id= 22  type=NoteOn chn= 1 key=0x0d  lcd_pos=1:1:1 label="Solo #6     "
-EVENT_BUTTON id= 23  type=NoteOn chn= 1 key=0x0e  lcd_pos=1:1:1 label="Solo #7     "
-EVENT_BUTTON id= 24  type=NoteOn chn= 1 key=0x0f  lcd_pos=1:1:1 label="Solo #8     "
+EVENT_BUTTON id= 17  type=NoteOn chn= 1 key=0x08
+EVENT_BUTTON id= 18  type=NoteOn chn= 1 key=0x09
+EVENT_BUTTON id= 19  type=NoteOn chn= 1 key=0x0a
+EVENT_BUTTON id= 20  type=NoteOn chn= 1 key=0x0b
+EVENT_BUTTON id= 21  type=NoteOn chn= 1 key=0x0c
+EVENT_BUTTON id= 22  type=NoteOn chn= 1 key=0x0d
+EVENT_BUTTON id= 23  type=NoteOn chn= 1 key=0x0e
+EVENT_BUTTON id= 24  type=NoteOn chn= 1 key=0x0f
 
 EVENT_LED    id= 17  type=NoteOn chn= 1 key=0x08
 EVENT_LED    id= 18  type=NoteOn chn= 1 key=0x09
@@ -117,14 +123,14 @@ EVENT_LED    id= 24  type=NoteOn chn= 1 key=0x0f
 ################################################################################
 # Mute 1-8 (Note Key: 0x10..0x17)
 ################################################################################
-EVENT_BUTTON id= 25  type=NoteOn chn= 1 key=0x10  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 26  type=NoteOn chn= 1 key=0x11  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 27  type=NoteOn chn= 1 key=0x12  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 28  type=NoteOn chn= 1 key=0x13  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 29  type=NoteOn chn= 1 key=0x14  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 30  type=NoteOn chn= 1 key=0x15  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 31  type=NoteOn chn= 1 key=0x16  lcd_pos=1:1:1 label="Mute #1     "
-EVENT_BUTTON id= 32  type=NoteOn chn= 1 key=0x17  lcd_pos=1:1:1 label="Mute #1     "
+EVENT_BUTTON id= 25  type=NoteOn chn= 1 key=0x10
+EVENT_BUTTON id= 26  type=NoteOn chn= 1 key=0x11
+EVENT_BUTTON id= 27  type=NoteOn chn= 1 key=0x12
+EVENT_BUTTON id= 28  type=NoteOn chn= 1 key=0x13
+EVENT_BUTTON id= 29  type=NoteOn chn= 1 key=0x14
+EVENT_BUTTON id= 30  type=NoteOn chn= 1 key=0x15
+EVENT_BUTTON id= 31  type=NoteOn chn= 1 key=0x16
+EVENT_BUTTON id= 32  type=NoteOn chn= 1 key=0x17
 
 EVENT_LED    id= 25  type=NoteOn chn= 1 key=0x10
 EVENT_LED    id= 26  type=NoteOn chn= 1 key=0x11
@@ -266,21 +272,21 @@ EVENT_ENC    id= 9  type=CC  chn= 1 cc=0x3c  enc_mode=Inc00Speed_Dec40Speed
 MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3
 
 # on motorfader movements
-EVENT_MF  id= 1  fwd_id=MF:1  type=PitchBend  chn= 1  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 2  fwd_id=MF:2  type=PitchBend  chn= 2  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 3  fwd_id=MF:3  type=PitchBend  chn= 3  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 4  fwd_id=MF:4  type=PitchBend  chn= 4  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 5  fwd_id=MF:5  type=PitchBend  chn= 5  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 6  fwd_id=MF:6  type=PitchBend  chn= 6  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 7  fwd_id=MF:7  type=PitchBend  chn= 7  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
-EVENT_MF  id= 8  fwd_id=MF:8  type=PitchBend  chn= 8  range=0:16383  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 1  fwd_id=MF:1  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id= 2  fwd_id=MF:2  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id= 3  fwd_id=MF:3  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id= 4  fwd_id=MF:4  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id= 5  fwd_id=MF:5  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id= 6  fwd_id=MF:6  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id= 7  fwd_id=MF:7  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id= 8  fwd_id=MF:8  type=PitchBend  chn= 8  range=0:16383
 
 # on touchsensor event (first id has been specified in the MF configuration above)
-EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127  lcd_pos=1:1:2  label="^std_btn"
-EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127

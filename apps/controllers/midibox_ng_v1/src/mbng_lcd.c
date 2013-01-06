@@ -173,7 +173,10 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
       ++str;
       if( *str == '^' || *str == 0 )
 	BUFLCD_PrintChar('^');
-      else {
+      else if( *str == '#' ) {
+	// ignore... this is for label termination without spaces, e.g. "^label^#MyText"
+	++str;
+      } else {
 	char label[9];
 	int pos;
 	for(pos=0; pos<8 && *str != 0 && *str != '^' && *str != ' '; ++pos, ++str) {
@@ -230,6 +233,10 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	}
       }
     }
+
+    // could be 0 meanwhile
+    if( *str == 0 )
+      continue; // for the case that we've an recursive string - see for() header
 
     if( *str != '%' )
       BUFLCD_PrintChar(*str);
