@@ -9,10 +9,10 @@ LCD "%C@(1:1:1)BLM 16x4 Emu"
 
 # In the SR configuration we assume that the DINs/DOUTs are directly connected to J8/9 of the core
 # they emulate button/led functions
-DIN_MATRIX  n=1  rows=4  inverted=1  sr_dout_sel1=1  sr_din1=1                    button_emu_id_offset=1001
-DIN_MATRIX  n=2  rows=4  inverted=1  sr_dout_sel1=4  sr_din1=2                    button_emu_id_offset=1033
-DOUT_MATRIX n=1  rows=4  inverted=1  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3   led_emu_id_offset=1001
-DOUT_MATRIX n=2  rows=4  inverted=1  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6   led_emu_id_offset=1033
+DIN_MATRIX  n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_din1=1                    button_emu_id_offset=1001
+DIN_MATRIX  n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_din1=2                    button_emu_id_offset=1033
+DOUT_MATRIX n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3   led_emu_id_offset=1001
+DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6   led_emu_id_offset=1033
 
 # note: actually the sr_dout_sel1 in DOUT_MATRIX could be removed,
 # since DIN_MATRIX already outputs the selection pulses there
