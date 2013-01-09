@@ -223,6 +223,37 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintHelp(out);
     } else if( strcmp(parameter, "system") == 0 ) {
       SEQ_TERMINAL_PrintSystem(out);
+    } else if( strcmp(parameter, "memory") == 0 ) {
+      SEQ_TERMINAL_PrintMemoryInfo(out);
+    } else if( strcmp(parameter, "sdcard") == 0 ) {
+      SEQ_TERMINAL_PrintSdCardInfo(out);
+    } else if( strcmp(parameter, "sdcard_format") == 0 ) {
+      if( !brkt || strcasecmp(brkt, "yes, I'm sure") != 0 ) {
+	out("ATTENTION: this command will format your SD Card!!!");
+	out("           ALL DATA WILL BE DELETED FOREVER!!!");
+	out("           Check the current content with the 'sdcard' command");
+	out("           Create a backup on your computer if necessary!");
+	out("To start formatting, please enter: sdcard_format yes, I'm sure");
+	if( brkt ) {
+	  out("('%s' wasn't the right \"password\")", brkt);
+	}
+      } else {
+	MUTEX_SDCARD_TAKE;
+	out("Formatting SD Card...");
+	FRESULT res;
+	if( (res=f_mkfs(0,0,0)) != FR_OK ) {
+	  out("Formatting failed with error code: %d!", res);
+	} else {
+	  out("...with success!");
+#ifdef MBSEQV4L    
+	  out("Please upload your MBSEQ_HW.V4L file with the MIOS Filebrowser now!");
+#else
+	  out("Please upload your MBSEQ_HW.V4 file with the MIOS Filebrowser now!");
+#endif
+	  out("Thereafter enter 'reset' to restart the application.");
+	}
+	MUTEX_SDCARD_GIVE;
+      }
     } else if( strcmp(parameter, "global") == 0 ) {
       SEQ_TERMINAL_PrintGlobalConfig(out);
     } else if( strcmp(parameter, "bookmarks") == 0 ) {
@@ -249,8 +280,6 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintCurrentSong(out);
     } else if( strcmp(parameter, "grooves") == 0 ) {
       SEQ_TERMINAL_PrintGrooveTemplates(out);
-    } else if( strcmp(parameter, "memory") == 0 ) {
-      SEQ_TERMINAL_PrintMemoryInfo(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
       char *arg = NULL;
       if( (arg = strtok_r(NULL, separators, &brkt)) ) {
@@ -491,8 +520,6 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       } else {
 	out("Missing parameter after 'set'!");
       }
-    } else if( strcmp(parameter, "sdcard") == 0 ) {
-      SEQ_TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "router") == 0 ) {
       SEQ_TERMINAL_PrintRouterInfo(out);
     } else if( strcmp(parameter, "play") == 0 || strcmp(parameter, "start") == 0 ) { // play or start do the same
@@ -536,6 +563,9 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
   out("Following commands are available:");
   out("  system:         print system info\n");
+  out("  memory:         print memory allocation info\n");
+  out("  sdcard:         print SD Card info\n");
+  out("  sdcard_format:  formats the SD Card (you will be asked for confirmation)\n");
   out("  global:         print global configuration\n");
   out("  config:         print local session configuration\n");
   out("  tracks:         print overview of all tracks\n");
@@ -544,8 +574,6 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  song:           print current song info\n");
   out("  grooves:        print groove templates\n");
   out("  bookmarks:      print bookmarks\n");
-  out("  memory:         print memory allocation info\n");
-  out("  sdcard:         print SD Card info\n");
   out("  router:         print MIDI router info\n");
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");

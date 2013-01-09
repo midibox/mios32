@@ -74,14 +74,14 @@ static MbCvEnvironment* env;
 static void stringEmpty(u32 ix, u16 value, char *label)   { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
-static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
+//static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDecPM128(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 128); }
-static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
+//static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
 static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d", value); }
-static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
-static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
+//static void stringHex2(u32 ix, u16 value, char *label)    { sprintf(label, " %02X  ", value); }
+//static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 static void stringCurve(u32 ix, u16 value, char *label)  { sprintf(label, value ? "Exp. " : "Lin. "); }
 
@@ -216,17 +216,6 @@ static void stringLfoWave(u32 ix, u16 value, char *label)
 
   if( value < 10 )
     strcpy(label, waveLabel[value]);
-  else
-    sprintf(label, "%3d ", value);
-}
-
-static void stringDIN_SR(u32 ix, u16 value, char *label)  { sprintf(label, "%2d.%d", (value/8)+1, value%8); }
-static void stringDOUT_SR(u32 ix, u16 value, char *label) { sprintf(label, "%2d.%d", (value/8)+1, 7-(value%8)); }
-static void stringDIN_Mode(u32 ix, u16 value, char *label)
-{
-  const char dinLabel[3][5] = { "Norm", "OnOf", "Togl" };
-  if( value < 3 )
-    strcpy(label, dinLabel[value]);
   else
     sprintf(label, "%3d ", value);
 }
@@ -848,11 +837,11 @@ static s32 displayHook(char *line1, char *line2)
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
     u8 fastRefresh = line1[0] == 0;
-    u32 tick = SEQ_BPM_TickGet();
-    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
-    u32 ticks_per_measure = ticks_per_step * 16;
-    u32 measure = (tick / ticks_per_measure) + 1;
-    u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
+//    u32 tick = SEQ_BPM_TickGet();
+//    u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
+//    u32 ticks_per_measure = ticks_per_step * 16;
+//    u32 measure = (tick / ticks_per_measure) + 1;
+//    u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
 
     if( line1[0] == 0 ) { // no MSD overlay?
       if( MBCV_FILE_StatusMsgGet() )

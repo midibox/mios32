@@ -901,7 +901,7 @@ const scs_menu_item_t pageMIDIFile[] = {
 
 const scs_menu_item_t pageMIDIPorts[] = {
   SCS_ITEM("Port ", 0, MIDI_PORT_NUM_OUT_PORTS-1, midiPlayPortGet, midiPlayPortSet, selectNOP, stringMidiIoPort, NULL),
-  SCS_ITEM("REC  ", 0, 1,           midiPlayPortRecGet, midiPlayPortRecSet, selectNOP, stringOnOff, NULL),
+  SCS_ITEM(" REC ", 0, 1,           midiPlayPortRecGet, midiPlayPortRecSet, selectNOP, stringOnOff, NULL),
   SCS_ITEM("PLAY ", 0, 1,           midiPlayPortPlayGet, midiPlayPortPlaySet, selectNOP, stringOnOff, NULL),
   SCS_ITEM("ClkI ", 0, 1,           midiPlayPortClkIGet, midiPlayPortClkISet, selectNOP, stringOnOffMidiIo, NULL),
   SCS_ITEM("ClkO ", 0, 1,           midiPlayPortClkOGet, midiPlayPortClkOSet, selectNOP, stringOnOffMidiIo, NULL),

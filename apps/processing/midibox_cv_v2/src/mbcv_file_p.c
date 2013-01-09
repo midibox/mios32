@@ -183,24 +183,6 @@ static s32 get_dec(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses an integer value
-// returns != -INT_MIN if value is valid
-/////////////////////////////////////////////////////////////////////////////
-static s32 get_int(char *word)
-{
-  if( word == NULL )
-    return INT_MIN;
-
-  char *next;
-  long l = strtol(word, &next, 0);
-
-  if( word == next )
-    return INT_MIN;
-
-  return l; // value is valid
-}
-
-/////////////////////////////////////////////////////////////////////////////
 // help function which parses an IP value
 // returns > 0 if value is valid
 // returns 0 if value is invalid
@@ -227,73 +209,6 @@ static u32 get_ip(char *brkt)
     return 0; // invalid IP
 }
 
-/////////////////////////////////////////////////////////////////////////////
-// help function which parses a SR definition (<dec>.D<dec>)
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-// returns -2 if SR number 0 has been passed (could disable a SR definition)
-/////////////////////////////////////////////////////////////////////////////
-static s32 get_sr(char *word)
-{
-  if( word == NULL )
-    return -1;
-
-  // check for '.D' separator
-  char *word2 = word;
-  while( *word2 != '.' )
-    if( *word2++ == 0 )
-      return -1;
-  word2++;
-  if( *word2++ != 'D' )
-    return -1;
-
-  s32 srNum = get_dec(word);
-  if( srNum < 0 )
-    return -1;
-
-  if( srNum == 0 )
-    return -2; // SR has been disabled...
-
-  s32 pinNum = get_dec(word2);
-  if( pinNum < 0 )
-    return -1;
-
-  if( pinNum >= 8 )
-    return -1;
-
-  return 8*(srNum-1) + pinNum;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// help function which parses a binary value
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-/////////////////////////////////////////////////////////////////////////////
-// not required anymore
-#if 0
-static s32 get_bin(char *word, int numBits)
-{
-  if( word == NULL )
-    return -1;
-
-  s32 value = 0;
-  int bit = 0;
-  while( 1 ) {
-    if( *word == '1' ) {
-      value |= 1 << bit;
-    } else if( *word != '0' ) {
-      break;
-    }
-    ++word;
-    ++bit;
-  }
-
-  if( bit != numBits )
-    return -1; // invalid number of bits
-
-  return value;
-}
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // reads the patch file content (again)

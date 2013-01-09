@@ -1,12 +1,15 @@
 $Id$
 
-MIDIO128 V3.013_pre1
-~~~~~~~~~~~~~~~~~~~~
+MIDIO128 V3.013
+~~~~~~~~~~~~~~~
 
    o optional support for up to 32 DIN and DOUT shift registers
      (=256 inputs and 256 outputs)
      Currently only provided as compile option; increase
      MIOS32_SRIO_NUM_SR to 32 in mios32_config.h
+
+   o the "sdcard_format" command allows to format the connected SD Card with FAT32
+     from the MIOS Terminal
 
 
 MIDIO128 V3.012

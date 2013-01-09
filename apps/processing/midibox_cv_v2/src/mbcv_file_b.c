@@ -397,7 +397,7 @@ s32 MBCV_FILE_B_PatchRead(u8 bank, u8 patch)
 	break;
       }
 
-      MBCV_PATCH_Paste(cv, (u8 *)patch_buffer);
+      MBCV_PATCH_Paste(cv, (u16 *)patch_buffer);
     }
   }
 
