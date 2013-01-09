@@ -22,11 +22,13 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <tasks.h>
 
 #include "file.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
+#include "mbng_event.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,6 +96,44 @@ s32 MBNG_FILE_UnloadAllFiles(void)
   status |= MBNG_FILE_C_Unload();
   status |= MBNG_FILE_L_Unload();
   return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// creates the default files if they don't exist on SD Card
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_CreateDefaultFiles(void)
+{
+  s32 status;
+
+  portENTER_CRITICAL();
+
+  // check if configuration file exists
+  if( !MBNG_FILE_C_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.NGC file\n");
+
+    if( (status=MBNG_FILE_C_Write("DEFAULT")) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    }
+  }
+
+  // check if patch file exists
+  if( !MBNG_FILE_L_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.NGL file\n");
+
+    if( (status=MBNG_FILE_L_Write("DEFAULT")) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    }
+  }
+
+  // select the first bank
+  MBNG_EVENT_SelectedBankSet(1);
+
+  portEXIT_CRITICAL();
+
+  return 0; // no error
 }
 
 

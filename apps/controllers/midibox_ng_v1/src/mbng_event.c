@@ -1928,8 +1928,10 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     else {
       u8 radio_group = 0;
       switch( item->id & 0xf000 ) {
-      case MBNG_EVENT_CONTROLLER_BUTTON: radio_group = item->flags.DIN.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_LED:    radio_group = item->flags.DOUT.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->flags.DIN.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->flags.DOUT.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->flags.SENDER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->flags.RECEIVER.radio_group; break;
       }
 
       if( radio_group )
@@ -1978,19 +1980,22 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     mbng_event_item_id_t tmp_id = item->id;
     mbng_event_item_id_t tmp_hw_id = item->hw_id;
     mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
+    mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
     u16 tmp_pool_address = item->pool_address;
-    u8 tmp_fwd_to_lcd = item->flags.general.fwd_to_lcd;
+
     item->id = item->fwd_id;
     item->hw_id = item->fwd_id;
     item->fwd_id = 0;
-    item->pool_address = 0xffff;
     item->flags.general.fwd_to_lcd = 0;
+    item->flags.general.active = 0; // a little bit dirty: necessary to avoid unnecessary radio group forwarding
+                                    // if in future the active flag is used for other purposes in ItemReceive, we've to pass this info as function parameter
+    item->pool_address = 0xffff;
     MBNG_EVENT_ItemReceive(item, item->value, 0);
     item->id = tmp_id;
     item->hw_id = tmp_hw_id;
     item->fwd_id = tmp_fwd_id;
+    item->flags.ALL = flags.ALL;
     item->pool_address = tmp_pool_address;
-    item->flags.general.fwd_to_lcd = tmp_fwd_to_lcd;
   }
 
   if( recursion_ctr )
@@ -2014,9 +2019,12 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
     u8 is_in_group = 0;
     if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
       is_in_group = pool_item->flags.DIN.radio_group == radio_group;
-    }
-    else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
+    } else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
       is_in_group = pool_item->flags.DOUT.radio_group == radio_group;
+    } else if( id_type == MBNG_EVENT_CONTROLLER_SENDER ) {
+      is_in_group = pool_item->flags.SENDER.radio_group == radio_group;
+    } else if( id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
+      is_in_group = pool_item->flags.RECEIVER.radio_group == radio_group;
     }
 
     if( is_in_group ) {
@@ -2024,18 +2032,30 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
       MBNG_EVENT_ItemCopy2User(pool_item, &fwd_item);
       fwd_item.value = item->value; // forward the value of the sender
 
+      // sender/receiver will map the value
+      u16 fwd_id_type = fwd_item.id & 0xf000;
+      if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER || fwd_id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
+	u8 *map_values;
+	int map_len = MBNG_EVENT_MapGet(fwd_item.map, &map_values);
+	if( map_len > 0 ) {
+	  fwd_item.value = map_values[(fwd_item.value < map_len) ? fwd_item.value : (map_len-1)];
+	}	
+      }
+
       // take over value of item in pool item
       if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
-	pool_item->value = item->value;
+	pool_item->value = fwd_item.value;
 	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
       }
 
-      // update value in button/LED element
-      if( id_type == MBNG_EVENT_CONTROLLER_BUTTON )
+      // notify button/LED element
+      if( fwd_id_type == MBNG_EVENT_CONTROLLER_BUTTON )
 	MBNG_DIN_NotifyReceivedValue(&fwd_item);
-      else if( id_type == MBNG_EVENT_CONTROLLER_LED )
+      else if( fwd_id_type == MBNG_EVENT_CONTROLLER_LED )
 	MBNG_DOUT_NotifyReceivedValue(&fwd_item);
+      else if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER ) // or send MIDI value?
+	MBNG_EVENT_ItemSend(&fwd_item);
 
       // and trigger forwarding
       MBNG_EVENT_ItemForward(&fwd_item);
@@ -2069,8 +2089,10 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   // forward - optionally to whole radio group
   u8 radio_group = 0;
   switch( item->id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_BUTTON: radio_group = item->flags.DIN.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_LED:    radio_group = item->flags.DOUT.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->flags.DIN.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->flags.DOUT.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->flags.SENDER.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->flags.RECEIVER.radio_group; break;
   }
 
   if( radio_group )
@@ -2095,10 +2117,18 @@ s32 MBNG_EVENT_Refresh(void)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    mbng_event_item_t item;
-    MBNG_EVENT_ItemCopy2User(pool_item, &item);
-    item.flags.general.fwd_to_lcd = 1; // force LCD update
-    MBNG_EVENT_ItemReceive(&item, pool_item->value, 1);
+    u8 allow_refresh = 1;
+    switch( pool_item->id & 0xf000 ) {
+    case MBNG_EVENT_CONTROLLER_SENDER:   allow_refresh = 0; break;
+    case MBNG_EVENT_CONTROLLER_RECEIVER: allow_refresh = 0; break;
+    }
+
+    if( allow_refresh ) {
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      item.flags.general.fwd_to_lcd = 1; // force LCD update
+      MBNG_EVENT_ItemReceive(&item, pool_item->value, 1);
+    }
 
     pool_ptr += pool_item->len;
   }

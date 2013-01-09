@@ -205,6 +205,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  system:                           print system info");
       out("  memory:                           print memory allocation info\n");
       out("  sdcard:                           print SD Card info\n");
+      out("  sdcard_format:                    formats the SD Card (you will be asked for confirmation)\n");
       UIP_TERMINAL_Help(_output_function);
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
@@ -229,6 +230,27 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       TERMINAL_PrintMemoryInfo(out);
     } else if( strcmp(parameter, "sdcard") == 0 ) {
       TERMINAL_PrintSdCardInfo(out);
+    } else if( strcmp(parameter, "sdcard_format") == 0 ) {
+      if( !brkt || strcasecmp(brkt, "yes, I'm sure") != 0 ) {
+	out("ATTENTION: this command will format your SD Card!!!");
+	out("           ALL DATA WILL BE DELETED FOREVER!!!");
+	out("           Check the current content with the 'sdcard' command");
+	out("           Create a backup on your computer if necessary!");
+	out("To start formatting, please enter: sdcard_format yes, I'm sure");
+	if( brkt ) {
+	  out("('%s' wasn't the right \"password\")", brkt);
+	}
+      } else {
+	out("Formatting SD Card...");
+	FRESULT res;
+	if( (res=f_mkfs(0,0,0)) != FR_OK ) {
+	  out("Formatting failed with error code: %d!", res);
+	} else {
+	  out("...with success!");
+	  MBNG_FILE_UnloadAllFiles();
+	  MBNG_FILE_CreateDefaultFiles();
+	}
+      }
     } else if( strcmp(parameter, "msd") == 0 ) {
       char *arg = NULL;
       if( (arg = strtok_r(NULL, separators, &brkt)) ) {

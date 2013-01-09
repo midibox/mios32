@@ -1,5 +1,17 @@
 $Id$
 
+MIDIbox NG V1.011
+~~~~~~~~~~~~~~~~~
+
+   o EVENT_SENDER and EVENT_RECEIVER can now also be assigned to a radio_group.
+     This can not only be used in conjunction with BUTTON/LED radio groups, but also
+     to distribute MIDI events to from receiver to multiple senders without
+     forwarding chains (which then can be used for a different purpose)
+
+   o the "sdcard_format" command allows to format the connected SD Card with FAT32
+     from the MIOS Terminal
+
+
 MIDIbox NG V1.010
 ~~~~~~~~~~~~~~~~~
 

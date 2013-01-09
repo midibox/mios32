@@ -52,6 +52,7 @@ extern s32 MBNG_FILE_Init(u32 mode);
 
 extern s32 MBNG_FILE_LoadAllFiles(u8 including_hw);
 extern s32 MBNG_FILE_UnloadAllFiles(void);
+extern s32 MBNG_FILE_CreateDefaultFiles(void);
 
 extern s32 MBNG_FILE_StatusMsgSet(char *msg);
 extern char *MBNG_FILE_StatusMsgGet(void);
