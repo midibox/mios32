@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "file.h"
+#include "tasks.h"
 #include "midio_file.h"
 #include "midio_file_p.h"
 
@@ -90,6 +91,31 @@ s32 MIDIO_FILE_UnloadAllFiles(void)
   s32 status = 0;
   status |= MIDIO_FILE_P_Unload();
   return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// creates the default files if they don't exist on SD Card
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDIO_FILE_CreateDefaultFiles(void)
+{
+  s32 status;
+
+  portENTER_CRITICAL();
+
+  // check if patch file exists
+  if( !MIDIO_FILE_P_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
+
+    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    }
+  }
+
+  portEXIT_CRITICAL();
+
+  return 0; // no error
 }
 
 

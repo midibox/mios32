@@ -241,8 +241,6 @@ s32 MbCvEnvironment::bankLoad(u8 bank, u8 patch, bool forceImmediateChange)
 /////////////////////////////////////////////////////////////////////////////
 s32 MbCvEnvironment::bankPatchNameGet(u8 bank, u8 patch, char *buffer)
 {
-    int i;
-
     if( bank >= CV_BANK_NUM ) {
         sprintf(buffer, "<Invalid Bank %c>", 'A'+bank);
         return -1; // invalid bank

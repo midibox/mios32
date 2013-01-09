@@ -50,6 +50,7 @@ extern s32 MIDIO_FILE_Init(u32 mode);
 
 extern s32 MIDIO_FILE_LoadAllFiles(u8 including_hw);
 extern s32 MIDIO_FILE_UnloadAllFiles(void);
+extern s32 MIDIO_FILE_CreateDefaultFiles(void);
 
 extern s32 MIDIO_FILE_StatusMsgSet(char *msg);
 extern char *MIDIO_FILE_StatusMsgGet(void);

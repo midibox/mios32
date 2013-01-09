@@ -150,7 +150,6 @@ s32 MBCV_SYSEX_Send(mios32_midi_port_t port, u8 patch)
   int i;
   int sysex_buffer_ix = 0;
   u8 checksum;
-  u8 c;
 
   // send header
   for(i=0; i<sizeof(sysex_header); ++i)
@@ -175,6 +174,8 @@ s32 MBCV_SYSEX_Send(mios32_midi_port_t port, u8 patch)
     sysex_buffer[sysex_buffer_ix++] = c & 0x7f;
     checksum += c & 0x7f;
   }
+#else
+  checksum = 0;
 #endif
 
   // send checksum

@@ -27,8 +27,8 @@
 #include <app_lcd.h>
 
 #include "app.h"
-#include "mbng_patch.h"
 #include "terminal.h"
+#include "mbng_patch.h"
 #include "uip_terminal.h"
 #include "tasks.h"
 #include "mbng_event.h"
@@ -36,7 +36,7 @@
 #include "mbng_file_c.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
-#include "umm_malloc.h"
+#include <umm_malloc.h>
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -241,6 +241,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  out("('%s' wasn't the right \"password\")", brkt);
 	}
       } else {
+	MUTEX_SDCARD_TAKE;
 	out("Formatting SD Card...");
 	FRESULT res;
 	if( (res=f_mkfs(0,0,0)) != FR_OK ) {
@@ -250,6 +251,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  MBNG_FILE_UnloadAllFiles();
 	  MBNG_FILE_CreateDefaultFiles();
 	}
+	MUTEX_SDCARD_GIVE;
       }
     } else if( strcmp(parameter, "msd") == 0 ) {
       char *arg = NULL;
@@ -395,6 +397,8 @@ s32 TERMINAL_PrintSystem(void *_output_function)
   out("Application: " MIOS32_LCD_BOOT_MSG_LINE1);
 
   MIDIMON_TerminalPrintConfig(out);
+
+  AOUT_TerminalPrintConfig(out);
 
   out("Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
   u32 pool_size = MBNG_EVENT_PoolSizeGet();

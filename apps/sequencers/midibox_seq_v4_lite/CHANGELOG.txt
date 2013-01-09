@@ -109,3 +109,15 @@ MIDIboxSEQ V4L.052
 
    o initial version (aligned with MIDIbox SEQ V4.052)
 
+
+
+
+
+Wishlist (TODO)
+~~~~~~~~~~~~~~~
+
+o http://midibox.org/forums/topic/17568-drum-mode-seqv4l/
+
+I understand the SeqV4 has the option to run a track in 'drum mode' to trigger up to sixteen different sounds.
+Would it be possible to modify the firmware to be in this mode, and just use one of the buttons as a part selector?
+(I was thinking the Echo/LFO ones would be less useful for something that just acted like a simple trigger sequencer).

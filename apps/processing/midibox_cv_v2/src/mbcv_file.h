@@ -60,6 +60,7 @@ extern s32 MBCV_FILE_Init(u32 mode);
 
 extern s32 MBCV_FILE_LoadAllFiles(u8 including_hw);
 extern s32 MBCV_FILE_UnloadAllFiles(void);
+extern s32 MBCV_FILE_CreateDefaultFiles(void);
 
 extern s32 MBCV_FILE_StatusMsgSet(char *msg);
 extern char *MBCV_FILE_StatusMsgGet(void);

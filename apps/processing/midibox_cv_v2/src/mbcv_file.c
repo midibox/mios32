@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "file.h"
+#include "tasks.h"
 #include "mbcv_file.h"
 #include "mbcv_file_b.h"
 #include "mbcv_file_p.h"
@@ -94,6 +95,55 @@ s32 MBCV_FILE_UnloadAllFiles(void)
   status |= MBCV_FILE_B_UnloadAllBanks();
   status |= MBCV_FILE_P_Unload();
   return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// creates the default files if they don't exist on SD Card
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_FILE_CreateDefaultFiles(void)
+{
+  s32 status;
+
+  portENTER_CRITICAL();
+
+  // check if patch file exists
+  if( !MBCV_FILE_P_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.CV2 file\n");
+
+    if( (status=MBCV_FILE_P_Write("DEFAULT")) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    }
+  }
+
+  // check if bank files exist
+  int bank;
+  for(bank=0; bank<MBCV_FILE_B_NUM_BANKS; ++bank) {
+    if( !MBCV_FILE_B_NumPatches(bank) ) {
+      // create new one
+      DEBUG_MSG("Creating MBCV_B%d.V2 file\n", bank+1);
+	  
+      if( (status=MBCV_FILE_B_Create(bank)) < 0 ) {
+	DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+      } else {
+	int patch;
+	for(patch=0; patch<MBCV_FILE_B_NumPatches(bank); ++patch) {
+	  DEBUG_MSG("Creating MBCV_B%d.V2 patch %c%03d\n", bank+1, 'A'+bank, patch);
+	  if( (status=MBCV_FILE_B_PatchWrite(bank, patch, 0)) < 0 ) {
+	    DEBUG_MSG("Failed to create patch! (status: %d)\n", status);
+	  }
+	}
+      }
+      DEBUG_MSG("done!\n");
+    }
+  }
+
+  MBCV_FILE_B_LoadAllBanks();
+
+  portEXIT_CRITICAL();
+
+  return 0; // no error
 }
 
 

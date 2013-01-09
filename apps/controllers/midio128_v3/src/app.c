@@ -409,15 +409,8 @@ static void TASK_Period_1mS_SD(void *pvParameters)
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
 	  MIDIO_FILE_StatusMsgSet("No FAT");
 	} else {
-	  // check if patch file exists
-	  if( !MIDIO_FILE_P_Valid() ) {
-	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.MIO file\n");
-
-	    if( (status=MIDIO_FILE_P_Write("DEFAULT")) < 0 ) {
-	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
-	    }
-	  }
+	  // create the default files if they don't exist on SD Card
+	  MIDIO_FILE_CreateDefaultFiles();
 
 	  // load first MIDI file
 	  MID_FILE_UI_NameClear();

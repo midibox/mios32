@@ -59,7 +59,7 @@ public:
     u8 midivoiceAftertouch;
     u8 midivoiceCCNumber;
     u8 midivoiceCCValue;
-    u8 midivoiceNRPNValue;
+    u16 midivoiceNRPNValue;
 
     // stacks
     notestack_t midivoiceNotestack;
