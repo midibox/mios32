@@ -178,6 +178,26 @@ typedef union {
     u32 use_key_or_cc:1;
     u32 active:1;
     u32 radio_group:6;
+  } SENDER;
+
+  struct {
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
+    u32 active:1;
+    u32 radio_group:6;
+  } RECEIVER;
+
+  struct {
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
+    u32 active:1;
+    u32 radio_group:6;
     u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
 
@@ -254,6 +274,7 @@ typedef union {
     u32 cv_hz_v:1;
     u32 cv_gate_inverted:1;
   } CV;
+
 } mbng_event_flags_t;
 
 

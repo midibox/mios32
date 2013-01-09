@@ -476,32 +476,8 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	} else {
 	  MBNG_FILE_StatusMsgSet(NULL);
 
-	  portENTER_CRITICAL();
-
-	  // check if configuration file exists
-	  if( !MBNG_FILE_C_Valid() ) {
-	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.NGC file\n");
-
-	    if( (status=MBNG_FILE_C_Write("DEFAULT")) < 0 ) {
-	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
-	    }
-	  }
-
-	  // check if patch file exists
-	  if( !MBNG_FILE_L_Valid() ) {
-	    // create new one
-	    DEBUG_MSG("Creating initial DEFAULT.NGL file\n");
-
-	    if( (status=MBNG_FILE_L_Write("DEFAULT")) < 0 ) {
-	      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
-	    }
-	  }
-
-	  // select the first bank
-	  MBNG_EVENT_SelectedBankSet(1);
-
-	  portEXIT_CRITICAL();
+	  // create the default files if they don't exist on SD Card
+	  MBNG_FILE_CreateDefaultFiles();
 	}
 
 	hw_enabled = 1; // enable hardware after first read...

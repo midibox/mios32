@@ -936,9 +936,13 @@ s32 parseEvent(char *cmd, char *brkt)
 	item.flags.DIN.radio_group = value;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_LED ) {
 	item.flags.DOUT.radio_group = value;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) {
+	item.flags.SENDER.radio_group = value;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_RECEIVER ) {
+	item.flags.RECEIVER.radio_group = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON or EVENT_LED!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON, LED, SENDER or RECEIVER\n", event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -2936,9 +2940,17 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       // differ between event type
       switch( item.id & 0xf000 ) {
       case MBNG_EVENT_CONTROLLER_SENDER: {
+	if( item.flags.SENDER.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.flags.SENDER.radio_group);
+	  FLUSH_BUFFER;
+	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_RECEIVER: {
+	if( item.flags.RECEIVER.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.flags.RECEIVER.radio_group);
+	  FLUSH_BUFFER;
+	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON: {
