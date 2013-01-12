@@ -1,13 +1,13 @@
 // $Id$
-/*
- * Config File access functions
- *
- * NOTE: before accessing the SD Card, the upper level function should
- * synchronize with the SD Card semaphore!
- *   MUTEX_SDCARD_TAKE; // to take the semaphore
- *   MUTEX_SDCARD_GIVE; // to release the semaphore
- *
- * ==========================================================================
+//! \defgroup MBNG_FILE_C
+//! Config File access functions
+//! 
+//! NOTE: before accessing the SD Card, the upper level function should
+//! synchronize with the SD Card semaphore!
+//!   MUTEX_SDCARD_TAKE; // to take the semaphore
+//!   MUTEX_SDCARD_GIVE; // to release the semaphore
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -17,7 +17,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -55,7 +55,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+//! for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
 /////////////////////////////////////////////////////////////////////////////
 
 // Note: verbose level 1 is default - it prints error messages!
@@ -63,7 +63,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
+//! Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
 // in which subdirectory of the SD card are the files located?
@@ -76,7 +76,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
+//! Local types
 /////////////////////////////////////////////////////////////////////////////
 
 // file informations stored in RAM
@@ -86,25 +86,25 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
+//! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static mbng_file_c_info_t mbng_file_c_info;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
+//! Global variables
 /////////////////////////////////////////////////////////////////////////////
 char mbng_file_c_config_name[MBNG_FILE_C_FILENAME_LEN+1];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation
+//! Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Init(u32 mode)
 {
@@ -116,9 +116,9 @@ s32 MBNG_FILE_C_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Loads patch file
-// Called from MBNG_FILE_CheckSDCard() when the SD card has been connected
-// returns < 0 on errors
+//! Loads patch file
+//! Called from MBNG_FILE_CheckSDCard() when the SD card has been connected
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Load(char *filename)
 {
@@ -133,9 +133,9 @@ s32 MBNG_FILE_C_Load(char *filename)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Unloads patch file
-// Called from MBNG_FILE_CheckSDCard() when the SD card has been disconnected
-// returns < 0 on errors
+//! Unloads patch file
+//! Called from MBNG_FILE_CheckSDCard() when the SD card has been disconnected
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Unload(void)
 {
@@ -147,8 +147,8 @@ s32 MBNG_FILE_C_Unload(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns 1 if current patch file valid
-// Returns 0 if current patch file not valid
+//! \Returns 1 if current patch file valid
+//! \Returns 0 if current patch file not valid
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Valid(void)
 {
@@ -157,8 +157,8 @@ s32 MBNG_FILE_C_Valid(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which removes the quotes of an argument (e.g. .csv file format)
-// can be cascaded with strtok_r
+//! help function which removes the quotes of an argument (e.g. .csv file format)
+//! can be cascaded with strtok_r
 /////////////////////////////////////////////////////////////////////////////
 static char *remove_quotes(char *word)
 {
@@ -176,9 +176,9 @@ static char *remove_quotes(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a decimal or hex value
-// returns >= 0 if value is valid
-// returns -1000000000 if value is invalid
+//! help function which parses a decimal or hex value
+//! \returns >= 0 if value is valid
+//! \returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
@@ -195,10 +195,10 @@ static s32 get_dec(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a SR definition (<dec>.D<dec>)
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-// returns -2 if SR number 0 has been passed (could disable a SR definition)
+//! help function which parses a SR definition (<dec>.D<dec>)
+//! \returns >= 0 if value is valid
+//! \returns -1 if value is invalid
+//! \returns -2 if SR number 0 has been passed (could disable a SR definition)
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_sr(char *word)
 {
@@ -232,9 +232,9 @@ static s32 get_sr(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses an IP value
-// returns > 0 if value is valid
-// returns 0 if value is invalid
+//! help function which parses an IP value
+//! \returns > 0 if value is valid
+//! \returns 0 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static u32 get_ip(char *brkt)
 {
@@ -259,9 +259,9 @@ static u32 get_ip(char *brkt)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a binary value
-// returns >= 0 if value is valid
-// returns -1000000000 if value is invalid
+//! help function which parses a binary value
+//! \returns >= 0 if value is valid
+//! \returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_bin(char *word, int numBits, u8 reverse)
 {
@@ -290,9 +290,9 @@ static s32 get_bin(char *word, int numBits, u8 reverse)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a MIDI IN port parameter
-// returns >= 0 if value is valid
-// returns < 0 if value is invalid
+//! help function which parses a MIDI IN port parameter
+//! \returns >= 0 if value is valid
+//! \returns < 0 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 parseMidiInPort(char *value_str)
 {
@@ -318,9 +318,9 @@ static s32 parseMidiInPort(char *value_str)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a MIDI OUT port parameter
-// returns >= 0 if value is valid
-// returns < 0 if value is invalid
+//! help function which parses a MIDI OUT port parameter
+//! \returns >= 0 if value is valid
+//! \returns < 0 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 parseMidiOutPort(char *value_str)
 {
@@ -347,9 +347,9 @@ static s32 parseMidiOutPort(char *value_str)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a simple value definition, and outputs error message if invalid
-// returns >= 0 if value is valid
-// returns < 0 if value is invalid
+//! help function which parses a simple value definition, and outputs error message if invalid
+//! \returns >= 0 if value is valid
+//! \returns < 0 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 parseSimpleValue(char *parameter, char **brkt, int min, int max)
 {
@@ -367,9 +367,9 @@ static s32 parseSimpleValue(char *parameter, char **brkt, int min, int max)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a quoted string
-// returns >= 0 if string is valid
-// returns < 0 if string is invalid
+//! help function which parses a quoted string
+//! \returns >= 0 if string is valid
+//! \returns < 0 if string is invalid
 /////////////////////////////////////////////////////////////////////////////
 static char *getQuotedString(char **brkt)
 {
@@ -414,10 +414,10 @@ static char *getQuotedString(char **brkt)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses an extended parameter with the syntax
-// 'parameter=value_str'
-// returns >= 0 if parameter is valid
-// returns <0 if parameter is invalid or no more parameters found
+//! help function which parses an extended parameter with the syntax
+//! 'parameter=value_str'
+//! \returns >= 0 if parameter is valid
+//! \returns <0 if parameter is invalid or no more parameters found
 /////////////////////////////////////////////////////////////////////////////
 static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str, char **brkt)
 {
@@ -492,9 +492,9 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a EVENT command and adds it to the pool
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses a EVENT command and adds it to the pool
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseEvent(char *cmd, char *brkt)
@@ -1342,9 +1342,9 @@ s32 parseSysExVar(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses ENC definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses ENC definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseEnc(char *cmd, char *brkt)
@@ -1451,9 +1451,9 @@ s32 parseEnc(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses DIN_MATRIX definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses DIN_MATRIX definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseDinMatrix(char *cmd, char *brkt)
@@ -1584,9 +1584,9 @@ s32 parseDinMatrix(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses DOUT_MATRIX definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses DOUT_MATRIX definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseDoutMatrix(char *cmd, char *brkt)
@@ -1761,9 +1761,9 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses LED_MATRIX_PATTERN definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses LED_MATRIX_PATTERN definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseLedMatrixPattern(char *cmd, char *brkt)
@@ -1831,9 +1831,9 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses AIN definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses AIN definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseAin(char *cmd, char *brkt)
@@ -1958,9 +1958,9 @@ s32 parseAinSer(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses MF definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses MF definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseMf(char *cmd, char *brkt)
@@ -2065,9 +2065,9 @@ s32 parseMf(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses AOUT definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses AOUT definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseAout(char *cmd, char *brkt)
@@ -2142,9 +2142,9 @@ s32 parseAout(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses SCS definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses SCS definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseScs(char *cmd, char *brkt)
@@ -2206,9 +2206,9 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses ROUTER definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses ROUTER definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseRouter(char *cmd, char *brkt)
@@ -2291,9 +2291,9 @@ s32 parseRouter(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses ETH definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! \help function which parses ETH definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseEth(char *cmd, char *brkt)
@@ -2367,9 +2367,9 @@ s32 parseEth(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses OSC definitions
-// returns >= 0 if command is valid
-// returns <0 if command is invalid
+//! help function which parses OSC definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseOsc(char *cmd, char *brkt)
@@ -2470,8 +2470,8 @@ s32 parseOsc(char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// reads the config file content (again)
-// returns < 0 on errors (error codes are documented in mbng_file.h)
+//! reads the config file content (again)
+//! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Read(char *filename)
 {
@@ -2758,8 +2758,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function to write data into file or send to debug terminal
-// returns < 0 on errors (error codes are documented in seq_file.h)
+//! help function to write data into file or send to debug terminal
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 {
@@ -3474,8 +3474,8 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// writes data into config file
-// returns < 0 on errors (error codes are documented in seq_file.h)
+//! writes data into config file
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Write(char *filename)
 {
@@ -3521,10 +3521,13 @@ s32 MBNG_FILE_C_Write(char *filename)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// sends config data to debug terminal
-// returns < 0 on errors
+//! sends config data to debug terminal
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_C_Debug(void)
 {
   return MBNG_FILE_C_Write_Hlp(0); // send to debug terminal
 }
+
+
+//! \}

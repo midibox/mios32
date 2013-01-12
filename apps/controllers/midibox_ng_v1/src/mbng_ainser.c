@@ -1,8 +1,8 @@
 // $Id$
-/*
- * AINSER access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_AINSER
+//! AINSER access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -26,12 +26,12 @@
 #include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the AIN handler
+//! This function initializes the AIN handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AINSER_Init(u32 mode)
 {
@@ -43,7 +43,7 @@ s32 MBNG_AINSER_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when an AINSER pot has been moved
+//! This hook is called when an AINSER pot has been moved
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 {
@@ -129,8 +129,8 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -144,3 +144,6 @@ s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+
+//! \}

@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Encoder access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_ENC
+//! Encoder access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -25,14 +25,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 enc_speed_multiplier;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the ENC handler
+//! This function initializes the ENC handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_Init(u32 mode)
 {
@@ -57,7 +57,7 @@ s32 MBNG_ENC_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Enables/Disables fast mode with given multiplier
+//! Enables/Disables fast mode with given multiplier
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_FastModeSet(u8 multiplier)
 {
@@ -72,8 +72,8 @@ s32 MBNG_ENC_FastModeGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets the encoder speed depending on value range
-// should this be optional?
+//! Sets the encoder speed depending on value range
+//! should this be optional?
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 {
@@ -134,8 +134,8 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_ENC_NotifyChange when an encoder
-// has been moved
+//! This function should be called from APP_ENC_NotifyChange when an encoder
+//! has been moved
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
@@ -257,8 +257,8 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -272,3 +272,6 @@ s32 MBNG_ENC_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+
+//! \}

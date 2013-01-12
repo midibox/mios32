@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Patch Layer for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_PATCH
+//! Patch Layer for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -28,7 +28,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Preset patch
+//! Preset patch
 /////////////////////////////////////////////////////////////////////////////
 
 mbng_patch_matrix_din_entry_t mbng_patch_matrix_din[MBNG_PATCH_NUM_MATRIX_DIN];
@@ -62,7 +62,7 @@ static const mbng_patch_cfg_t mbng_patch_cfg_default = {
 };
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the patch structure
+//! This function initializes the patch structure
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_PATCH_Init(u32 mode)
 {
@@ -136,8 +136,8 @@ s32 MBNG_PATCH_Init(u32 mode)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function loads the patch from SD Card
-// Returns != 0 if Load failed
+//! This function loads the patch from SD Card
+//! \return != 0 if Load failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_PATCH_Load(char *filename)
 {
@@ -161,8 +161,8 @@ s32 MBNG_PATCH_Load(char *filename)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function stores the patch on SD Card
-// Returns != 0 if Store failed
+//! This function stores the patch on SD Card
+//! \return != 0 if Store failed
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_PATCH_Store(char *filename)
 {
@@ -172,3 +172,6 @@ s32 MBNG_PATCH_Store(char *filename)
 
   return status;
 }
+
+
+//! \}

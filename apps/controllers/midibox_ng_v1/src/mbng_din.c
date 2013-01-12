@@ -1,8 +1,8 @@
 // $Id$
-/*
- * DIN access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_DIN
+//! DIN access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -25,12 +25,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the DIN handler
+//! This function initializes the DIN handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DIN_Init(u32 mode)
 {
@@ -42,8 +42,8 @@ s32 MBNG_DIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_DIN_NotifyToggle when an input
-// has been toggled
+//! This function should be called from APP_DIN_NotifyToggle when an input
+//! has been toggled
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
@@ -104,8 +104,8 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -119,3 +119,5 @@ s32 MBNG_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+//! \}

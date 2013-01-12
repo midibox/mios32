@@ -1,8 +1,8 @@
 // $Id$
-/*
- * CV access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_CV
+//! CV access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -25,7 +25,7 @@
 #include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 // each channel has an own notestack
@@ -35,7 +35,7 @@ static notestack_item_t cv_notestack_items[MBNG_PATCH_NUM_CV_CHANNELS][NOTESTACK
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the AIN handler
+//! This function initializes the AIN handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_CV_Init(u32 mode)
 {
@@ -54,7 +54,7 @@ s32 MBNG_CV_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Updates all CV channels and gates
+//! Updates all CV channels and gates
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_CV_Update(void)
 {
@@ -66,8 +66,8 @@ s32 MBNG_CV_Update(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -177,7 +177,7 @@ s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called to reset all channels/notes (e.g. after session change)
+//! Called to reset all channels/notes (e.g. after session change)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_CV_ResetAllChannels(void)
 {
@@ -196,3 +196,6 @@ s32 MBNG_CV_ResetAllChannels(void)
 
   return 0; // no error
 }
+
+
+//! \}

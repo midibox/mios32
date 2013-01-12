@@ -1,8 +1,8 @@
 // $Id$
-/*
- * DOUT access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_DOUT
+//! DOUT access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -26,12 +26,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the DOUT handler
+//! This function initializes the DOUT handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DOUT_Init(u32 mode)
 {
@@ -47,8 +47,8 @@ s32 MBNG_DOUT_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -99,3 +99,5 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+//! \}

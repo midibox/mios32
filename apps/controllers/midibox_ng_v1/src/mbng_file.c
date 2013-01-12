@@ -1,13 +1,13 @@
 // $Id$
-/*
- * File access functions for MIDIbox NG
- *
- * NOTE: before accessing the SD Card, the upper level function should
- * synchronize with the SD Card semaphore!
- *   MUTEX_SDCARD_TAKE; // to take the semaphore
- *   MUTEX_SDCARD_GIVE; // to release the semaphore
- *
- * ==========================================================================
+//! \defgroup MBNG_FILE
+//! File access functions for MIDIbox NG
+//! 
+//! NOTE: before accessing the SD Card, the upper level function should
+//! synchronize with the SD Card semaphore!
+//!   MUTEX_SDCARD_TAKE; // to take the semaphore
+//!   MUTEX_SDCARD_GIVE; // to release the semaphore
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -17,7 +17,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -32,7 +32,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+//! for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
 /////////////////////////////////////////////////////////////////////////////
 
 // Note: verbose level 1 is default - it prints error messages
@@ -41,19 +41,19 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
+//! Global variables
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static char sd_card_msg[13];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation
+//! Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_Init(u32 mode)
 {
@@ -70,7 +70,7 @@ s32 MBNG_FILE_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Loads all files
+//! Loads all files
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
 {
@@ -88,7 +88,7 @@ s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// invalidate all file infos
+//! invalidate all file infos
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_UnloadAllFiles(void)
 {
@@ -100,7 +100,7 @@ s32 MBNG_FILE_UnloadAllFiles(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// creates the default files if they don't exist on SD Card
+//! creates the default files if they don't exist on SD Card
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_CreateDefaultFiles(void)
 {
@@ -138,9 +138,9 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// sets the SD Card status
-// 12 characters max.
-// if msg == NULL: ok, no special status, print filename
+//! sets the SD Card status
+//! 12 characters max.
+//! if msg == NULL: ok, no special status, print filename
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_StatusMsgSet(char *msg)
 {
@@ -155,11 +155,13 @@ s32 MBNG_FILE_StatusMsgSet(char *msg)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the current SD Card status
-// if NULL: ok, no special status, print filename
+//! \returns the current SD Card status
+//! if NULL: ok, no special status, print filename
 /////////////////////////////////////////////////////////////////////////////
 char *MBNG_FILE_StatusMsgGet(void)
 {
   return sd_card_msg[0] ? sd_card_msg : NULL;
 }
 
+
+//! \}
