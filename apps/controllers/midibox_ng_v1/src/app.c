@@ -1,8 +1,8 @@
 // $Id$
-/*
- * MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MIOS32_APP
+//! MIDIbox NG Application
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -15,7 +15,7 @@
 #define DEBUG_EVENT_HANDLER_PERFORMANCE 0
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -79,7 +79,7 @@ static void TASK_Period_1mS_LP(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
+//! Local types
 /////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
@@ -91,14 +91,14 @@ typedef enum {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// global variables
+//! global variables
 /////////////////////////////////////////////////////////////////////////////
 u8  debug_verbose_level;
 u32 app_ms_counter;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 static u8 hw_enabled;
 
@@ -119,7 +119,7 @@ static volatile msd_state_t msd_state;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
+//! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
@@ -128,7 +128,7 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called after startup to initialize the application
+//! This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
@@ -219,7 +219,7 @@ void APP_Init(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is running endless in background
+//! This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
@@ -232,7 +232,7 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when a MIDI package has been received
+//! This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -274,7 +274,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function parses an incoming sysex stream for MIOS32 commands
+//! This function parses an incoming sysex stream for MIOS32 commands
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
@@ -306,7 +306,7 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called before the shift register chain is scanned
+//! This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
@@ -323,7 +323,7 @@ void APP_SRIO_ServicePrepare(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called after the shift register chain has been scanned
+//! This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
@@ -343,8 +343,8 @@ void APP_SRIO_ServiceFinish(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when a button has been toggled
-// pin_value is 1 when button released, and 0 when button pressed
+//! This hook is called when a button has been toggled
+//! pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
@@ -355,9 +355,9 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when an encoder has been moved
-// incrementer is positive when encoder has been turned clockwise, else
-// it is negative
+//! This hook is called when an encoder has been moved
+//! incrementer is positive when encoder has been turned clockwise, else
+//! it is negative
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
@@ -372,7 +372,7 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when a pot has been moved
+//! This hook is called when a pot has been moved
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
@@ -383,7 +383,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called when an AINSER pot has been moved
+//! This hook is called when an AINSER pot has been moved
 /////////////////////////////////////////////////////////////////////////////
 static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 {
@@ -394,7 +394,7 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task handles the control surface
+//! This task handles the control surface
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
@@ -530,7 +530,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This task is called periodically each mS to handle sequencer requests
+//! This task is called periodically each mS to handle sequencer requests
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS(void *pvParameters)
 {
@@ -574,7 +574,7 @@ static void TASK_Period_1mS(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Installed via MIOS32_MIDI_DirectRxCallback_Init
+//! Installed via MIOS32_MIDI_DirectRxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
@@ -586,7 +586,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Installed via MIOS32_MIDI_DirectTxCallback_Init
+//! Installed via MIOS32_MIDI_DirectTxCallback_Init
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package)
 {
@@ -594,7 +594,7 @@ static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Installed via MIOS32_MIDI_TimeoutCallback_Init
+//! Installed via MIOS32_MIDI_TimeoutCallback_Init
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 {  
@@ -609,7 +609,7 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// MSD access functions
+//! MSD access functions
 /////////////////////////////////////////////////////////////////////////////
 s32 TASK_MSD_EnableSet(u8 enable)
 {
@@ -640,8 +640,8 @@ s32 TASK_MSD_FlagStrGet(char str[5])
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// functions to access J16 semaphore
-// see also mios32_config.h
+//! functions to access J16 semaphore
+//! see also mios32_config.h
 /////////////////////////////////////////////////////////////////////////////
 void APP_J16SemaphoreTake(void)
 {
@@ -657,10 +657,12 @@ void APP_J16SemaphoreGive(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// functions to access MIDI IN/Out Mutex
-// see also mios32_config.h
+//! functions to access MIDI IN/Out Mutex
+//! see also mios32_config.h
 /////////////////////////////////////////////////////////////////////////////
 void APP_MUTEX_MIDIOUT_Take(void) { MUTEX_MIDIOUT_TAKE; }
 void APP_MUTEX_MIDIOUT_Give(void) { MUTEX_MIDIOUT_GIVE; }
 void APP_MUTEX_MIDIIN_Take(void) { MUTEX_MIDIIN_TAKE; }
 void APP_MUTEX_MIDIIN_Give(void) { MUTEX_MIDIIN_GIVE; }
+
+//! \}

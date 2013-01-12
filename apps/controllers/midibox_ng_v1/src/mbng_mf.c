@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Motorfader access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_MF
+//! Motorfader access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -26,14 +26,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8  mf_value_msb[MBNG_PATCH_NUM_MF_MODULES][8];
 static u8  mf_touchsensor_selected[MBNG_PATCH_NUM_MF_MODULES];
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the MF handler
+//! This function initializes the MF handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MF_Init(u32 mode)
 {
@@ -53,8 +53,8 @@ s32 MBNG_MF_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_MIDI_NotifyPackage whenver a new
-// MIDI event has been received
+//! This function should be called from APP_MIDI_NotifyPackage whenver a new
+//! MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -172,7 +172,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_SYSEX_Parser on incoming SysEx data
+//! This function should be called from APP_SYSEX_Parser on incoming SysEx data
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 {
@@ -201,8 +201,8 @@ s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -247,3 +247,6 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+
+//! \}

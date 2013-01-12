@@ -1,13 +1,13 @@
 // $Id$
-/*
- * Label File access functions
- *
- * NOTE: before accessing the SD Card, the upper level function should
- * synchronize with the SD Card semaphore!
- *   MUTEX_SDCARD_TAKE; // to take the semaphore
- *   MUTEX_SDCARD_GIVE; // to release the semaphore
- *
- * ==========================================================================
+//! \defgroup MBNG_FILE_L
+//! Label File access functions
+//! 
+//! NOTE: before accessing the SD Card, the upper level function should
+//! synchronize with the SD Card semaphore!
+//!   MUTEX_SDCARD_TAKE; // to take the semaphore
+//!   MUTEX_SDCARD_GIVE; // to release the semaphore
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -17,7 +17,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -32,7 +32,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
+//! for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
 /////////////////////////////////////////////////////////////////////////////
 
 // Note: verbose level 1 is default - it prints error messages!
@@ -40,7 +40,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
+//! Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
 // in which subdirectory of the SD card are the files located?
@@ -56,7 +56,7 @@
 #define BIN_FILE_FORMAT_NUMBER 0
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
+//! Local types
 /////////////////////////////////////////////////////////////////////////////
 
 // file informations stored in RAM
@@ -71,12 +71,12 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
+//! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef AHB_SECTION
@@ -86,13 +86,13 @@ static AHB_SECTION mbng_file_l_info_t mbng_file_l_info;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Global variables
+//! Global variables
 /////////////////////////////////////////////////////////////////////////////
 char mbng_file_l_patch_name[MBNG_FILE_L_FILENAME_LEN+1];
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation
+//! Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Init(u32 mode)
 {
@@ -104,9 +104,9 @@ s32 MBNG_FILE_L_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Loads patch file
-// Called from MBNG_FILE_CheckSDCard() when the SD card has been connected
-// returns < 0 on errors
+//! Loads patch file
+//! Called from MBNG_FILE_CheckSDCard() when the SD card has been connected
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Load(char *filename)
 {
@@ -121,9 +121,9 @@ s32 MBNG_FILE_L_Load(char *filename)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Unloads label file
-// Called from MBNG_FILE_CheckSDCard() when the SD card has been disconnected
-// returns < 0 on errors
+//! Unloads label file
+//! Called from MBNG_FILE_CheckSDCard() when the SD card has been disconnected
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Unload(void)
 {
@@ -137,8 +137,8 @@ s32 MBNG_FILE_L_Unload(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns 1 if current label file valid
-// Returns 0 if current label file not valid
+//! \returns 1 if current label file valid
+//! \returns 0 if current label file not valid
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Valid(void)
 {
@@ -147,9 +147,9 @@ s32 MBNG_FILE_L_Valid(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// read the .BIN file and checks if it is valid
-// md5_checksum_binfile[16] contains the expected MD5 checksum of the .NGL file if valid
-// returns < 0 on errors
+//! read the .BIN file and checks if it is valid
+//! md5_checksum_binfile[16] contains the expected MD5 checksum of the .NGL file if valid
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 readBinFileMD5(char *filepath, u8 md5_checksum[16])
@@ -195,8 +195,8 @@ s32 readBinFileMD5(char *filepath, u8 md5_checksum[16])
 
 
 /////////////////////////////////////////////////////////////////////////////
-// parse the .BIN file for labels
-// returns < 0 on errors
+//! parse the .BIN file for labels
+//! \eturns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 parseBinFile(char *filepath)
@@ -271,8 +271,8 @@ s32 parseBinFile(char *filepath)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// creates the MD5 checksum over the .NGL file
-// returns < 0 on errors
+//! creates the MD5 checksum over the .NGL file
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_L_Read - this will blow up the stack usage too much!
 s32 generateNglFileMD5(char *filepath, u8 md5_checksum[16])
@@ -330,9 +330,9 @@ s32 generateNglFileMD5(char *filepath, u8 md5_checksum[16])
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a decimal or hex value
-// returns >= 0 if value is valid
-// returns -1000000000 if value is invalid
+//! help function which parses a decimal or hex value
+//! \returns >= 0 if value is valid
+//! \returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
@@ -349,9 +349,9 @@ static s32 get_dec(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a quoted string
-// returns >= 0 if string is valid
-// returns < 0 if string is invalid
+//! help function which parses a quoted string
+//! \returns >= 0 if string is valid
+//! \returns < 0 if string is invalid
 /////////////////////////////////////////////////////////////////////////////
 static char *getQuotedString(char **brkt)
 {
@@ -398,8 +398,8 @@ static char *getQuotedString(char **brkt)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// reads the label file content (again)
-// returns < 0 on errors (error codes are documented in mbng_file.h)
+//! reads the label file content (again)
+//! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
   char filepath[MAX_PATH];
 s32 MBNG_FILE_L_Read(char *filename)
@@ -840,8 +840,8 @@ s32 MBNG_FILE_L_Read(char *filename)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function to write data into file or send to debug terminal
-// returns < 0 on errors (error codes are documented in seq_file.h)
+//! help function to write data into file or send to debug terminal
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_FILE_L_Write_Hlp(u8 write_to_file)
 {
@@ -890,8 +890,8 @@ static s32 MBNG_FILE_L_Write_Hlp(u8 write_to_file)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// writes data into label file
-// returns < 0 on errors (error codes are documented in seq_file.h)
+//! writes data into label file
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Write(char *filename)
 {
@@ -936,8 +936,8 @@ s32 MBNG_FILE_L_Write(char *filename)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// sends label data to debug terminal
-// returns < 0 on errors
+//! sends label data to debug terminal
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_L_Debug(void)
 {
@@ -947,8 +947,8 @@ s32 MBNG_FILE_L_Debug(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the content of a label for a given value
-// SDCARD mutex handled automatically if SD Card really has to be accessed
+//! \returns the content of a label for a given value
+//! SDCARD mutex handled automatically if SD Card really has to be accessed
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
 {
@@ -1065,3 +1065,6 @@ const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
 
   return NULL; // label not found
 }
+
+
+//! \}

@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Event Handler for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_EVENT
+//! Event Handler for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -39,7 +39,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local types
+//! Local types
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
@@ -84,7 +84,7 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -134,14 +134,14 @@ static u16                   midi_learn_nrpn_value;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
+//! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_event_item_t *item);
 static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_item_t* pool_item);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the event pool structure
+//! This function initializes the event pool structure
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Init(u32 mode)
 {
@@ -259,7 +259,7 @@ s32 MBNG_EVENT_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called each mS (with low priority)
+//! This function should be called each mS (with low priority)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Tick(void)
 {
@@ -291,7 +291,7 @@ s32 MBNG_EVENT_Tick(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Clear the event pool
+//! Clear the event pool
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolClear(void)
 {
@@ -307,8 +307,8 @@ s32 MBNG_EVENT_PoolClear(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Called after a new file has been loaded (post-processing step).
-// Also called on bank changes to update the active flag
+//! Called after a new file has been loaded (post-processing step).
+//! Also called on bank changes to update the active flag
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolUpdate(void)
 {
@@ -361,7 +361,7 @@ s32 MBNG_EVENT_PoolUpdate(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends the event pool to debug terminal
+//! Sends the event pool to debug terminal
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolPrint(void)
 {
@@ -369,7 +369,7 @@ s32 MBNG_EVENT_PoolPrint(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends short item informations to debug terminal
+//! Sends short item informations to debug terminal
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolItemsPrint(void)
 {
@@ -395,7 +395,7 @@ s32 MBNG_EVENT_PoolItemsPrint(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends short map informations to debug terminal
+//! Sends short map informations to debug terminal
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolMapsPrint(void)
 {
@@ -430,7 +430,7 @@ s32 MBNG_EVENT_PoolMapsPrint(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the number of EVENT items
+//! \returns the number of EVENT items
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolNumItemsGet(void)
 {
@@ -438,7 +438,7 @@ s32 MBNG_EVENT_PoolNumItemsGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the number of MAPs
+//! \returns the number of MAPs
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolNumMapsGet(void)
 {
@@ -446,7 +446,7 @@ s32 MBNG_EVENT_PoolNumMapsGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the current pool size
+//! \returns the current pool size
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolSizeGet(void)
 {
@@ -454,7 +454,7 @@ s32 MBNG_EVENT_PoolSizeGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns the maximum pool size
+//! \returns the maximum pool size
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolMaxSizeGet(void)
 {
@@ -463,7 +463,7 @@ s32 MBNG_EVENT_PoolMaxSizeGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Adds a map to event pool
+//! Adds a map to event pool
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len)
 {
@@ -484,7 +484,7 @@ s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns a map from the event pool
+//! Returns a map from the event pool
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
 {
@@ -505,7 +505,7 @@ s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the index of a given value
+//! Returns the index of a given value
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value)
 {
@@ -533,7 +533,7 @@ s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the number of defined banks
+//! \Returns the number of defined banks
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_NumBanksGet(void)
 {
@@ -541,7 +541,7 @@ s32 MBNG_EVENT_NumBanksGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the selected bank
+//! \Returns the selected bank
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_SelectedBankGet(void)
 {
@@ -550,7 +550,7 @@ s32 MBNG_EVENT_SelectedBankGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called to set a new bank
+//! Called to set a new bank
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_SelectedBankSet(u8 new_bank)
 {
@@ -580,7 +580,7 @@ s32 MBNG_EVENT_SelectedBankSet(u8 new_bank)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the selected bank of a given hw_id
+//! \Returns the selected bank of a given hw_id
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_HwIdBankGet(u16 hw_id)
 {
@@ -600,7 +600,7 @@ s32 MBNG_EVENT_HwIdBankGet(u16 hw_id)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets the new bank for the given hw_id only
+//! Sets the new bank for the given hw_id only
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
 {
@@ -630,7 +630,7 @@ s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initializes an item with default settings
+//! Initializes an item with default settings
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 {
@@ -698,7 +698,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Local function to copy a pool item into a "user" item
+//! Local function to copy a pool item into a "user" item
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_event_item_t *item)
 {
@@ -739,7 +739,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Local function to copy a "user" item into a "pool" item
+//! Local function to copy a "user" item into a "pool" item
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_item_t* pool_item)
 {
@@ -780,8 +780,8 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns an item of the event pool with the given index number
-// (only used for dumping out all items in mbng_file_p.c)
+//! \Returns an item of the event pool with the given index number
+//! (only used for dumping out all items in mbng_file_p.c)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item)
 {
@@ -802,7 +802,7 @@ s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Adds an item to event pool
+//! Adds an item to event pool
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item)
 {
@@ -834,7 +834,7 @@ s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Modifies an existing item in the pool
+//! Modifies an existing item in the pool
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
 {
@@ -896,9 +896,9 @@ s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Search an item in event pool based on ID
-// returns 0 and copies item into *item if found
-// returns -1 if item not found
+//! Search an item in event pool based on ID
+//! \returns 0 and copies item into *item if found
+//! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 {
@@ -918,10 +918,10 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Search an item in event pool based on the HW ID
-// Takes the selected bank into account (means: only an active item will be returned)
-// returns 0 and copies item into *item if found
-// returns -1 if item not found
+//! Search an item in event pool based on the HW ID
+//! Takes the selected bank into account (means: only an active item will be returned)
+//! \returns 0 and copies item into *item if found
+//! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item)
 {
@@ -940,7 +940,7 @@ s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *i
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends the an item description to debug terminal
+//! Sends the an item description to debug terminal
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 {
@@ -968,7 +968,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Enable/Get Learn Mode Status
+//! Enable/Get Learn Mode Status
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MidiLearnModeSet(u8 mode)
 {
@@ -1166,7 +1166,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// returns name of controller
+//! \returns name of controller
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
 {
@@ -1188,7 +1188,7 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns ID of controller given as string
+//! \returns ID of controller given as string
 /////////////////////////////////////////////////////////////////////////////
 mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
 {
@@ -1208,7 +1208,7 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns name of event type
+//! \returns name of event type
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 {
@@ -1228,8 +1228,8 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// returns value of event type given as string
-// returns <0 if invalid type
+//! \returns value of event type given as string
+//! \returns <0 if invalid type
 /////////////////////////////////////////////////////////////////////////////
 mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 {
@@ -1249,7 +1249,7 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for button mode
+//! for button mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item)
 {
@@ -1273,7 +1273,7 @@ mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for AIN Mode
+//! for AIN Mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item)
 {
@@ -1299,7 +1299,7 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for ENC Mode
+//! for ENC Mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
 {
@@ -1333,7 +1333,7 @@ mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for ENC Speed Mode
+//! for ENC Speed Mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item)
 {
@@ -1359,7 +1359,7 @@ mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_spee
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for DOUT Matrix pattern selection
+//! for DOUT Matrix pattern selection
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item)
 {
@@ -1389,7 +1389,7 @@ mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for (N)RPN format
+//! for (N)RPN format
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item)
 {
@@ -1410,7 +1410,7 @@ mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for SysEx variables
+//! for SysEx variables
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos)
 {
@@ -1464,7 +1464,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// for Meta events
+//! for Meta events
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 {
@@ -1524,7 +1524,7 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sends the item via MIDI
+//! Sends the item via MIDI
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 {
@@ -1854,7 +1854,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called when an item should be notified
+//! Called when an item should be notified
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
 {
@@ -1947,7 +1947,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called to forward an event
+//! Called to forward an event
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 {
@@ -2006,7 +2006,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Called to forward an event to a radio group
+//! Called to forward an event to a radio group
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 {
@@ -2069,7 +2069,7 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// called from a controller to notify that a value should be sent
+//! called from a controller to notify that a value should be sent
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
 {
@@ -2108,7 +2108,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Refresh all items
+//! Refresh all items
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Refresh(void)
 {
@@ -2138,7 +2138,7 @@ s32 MBNG_EVENT_Refresh(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// called from MBNG_EVENT_ReceiveSysEx() when a Syxdump is received
+//! called from MBNG_EVENT_ReceiveSysEx() when a Syxdump is received
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
 {
@@ -2162,8 +2162,8 @@ static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_MIDI_NotifyPackage whenver a new
-// MIDI event has been received
+//! This function should be called from APP_MIDI_NotifyPackage whenver a new
+//! MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
@@ -2442,7 +2442,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_SYSEX_Parser on incoming SysEx data
+//! This function should be called from APP_SYSEX_Parser on incoming SysEx data
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 {
@@ -2585,3 +2585,6 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
   return 0; // no error
 }
+
+
+//! \}

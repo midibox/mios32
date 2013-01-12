@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Scan Matrix functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_MATRIX
+//! DIN/DOUT Scan Matrix functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -27,7 +27,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local definitions
+//! local definitions
 /////////////////////////////////////////////////////////////////////////////
 
 // execution time of MBNG_MATRIX_PrepareCol() can be monitored on J5.A0 with a scope
@@ -40,7 +40,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 // just to ensure
@@ -179,13 +179,13 @@ static u16 dout_matrix_pattern[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS][MBNG_MATRIX_
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local prototypes
+//! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the matrix handler
+//! This function initializes the matrix handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_Init(u32 mode)
 {
@@ -230,7 +230,7 @@ s32 MBNG_MATRIX_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Set/Get pattern
+//! Set/Get pattern
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_PatternSet(u8 num, u8 pos, u16 pattern)
 {
@@ -258,7 +258,7 @@ u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sets the a pin on the given DOUT matrix
+//! This function sets the a pin on the given DOUT matrix
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
 {
@@ -287,7 +287,7 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sets a pattern DOUT matrix row
+//! This function sets a pattern DOUT matrix row
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_PatternSet(u8 matrix, u8 color, u16 row, u16 value, u16 range, u8 pattern)
 {
@@ -315,7 +315,7 @@ s32 MBNG_MATRIX_DOUT_PatternSet(u8 matrix, u8 color, u16 row, u16 value, u16 ran
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sets a pattern DOUT matrix row for the LC protocol
+//! This function sets a pattern DOUT matrix row for the LC protocol
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value)
 {
@@ -336,8 +336,8 @@ s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function prepares the DOUT register to drive a column.
-// It should be called from the APP_SRIO_ServicePrepare()
+//! This function prepares the DOUT register to drive a column.
+//! It should be called from the APP_SRIO_ServicePrepare()
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_PrepareCol(void)
 {
@@ -443,8 +443,8 @@ s32 MBNG_MATRIX_PrepareCol(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function gets the DIN values of the selected row.
-// It should be called from the APP_SRIO_ServiceFinish() hook
+//! This function gets the DIN values of the selected row.
+//! It should be called from the APP_SRIO_ServiceFinish() hook
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_GetRow(void)
 {
@@ -505,9 +505,9 @@ s32 MBNG_MATRIX_GetRow(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from a task to check for button changes
-// periodically. Events (change from 0->1 or from 1->0) will be notified 
-// to MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
+//! This function should be called from a task to check for button changes
+//! periodically. Events (change from 0->1 or from 1->0) will be notified 
+//! to MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_ButtonHandler(void)
 {
@@ -542,9 +542,9 @@ s32 MBNG_MATRIX_ButtonHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function will be called by MBNG_MATRIX_ButtonHandler whenever
-// a button has been toggled
-// pin_value is 1 when button released, and 0 when button pressed
+//! This function will be called by MBNG_MATRIX_ButtonHandler whenever
+//! a button has been toggled
+//! pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 {
@@ -592,8 +592,8 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -608,8 +608,8 @@ s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -724,3 +724,6 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+
+//! \}

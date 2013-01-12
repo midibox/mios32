@@ -1,8 +1,8 @@
 // $Id$
-/*
- * Local SCS Configuration
- *
- * ==========================================================================
+//! \defgroup SCS_CONFIG
+//! Local SCS Configuration
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -48,7 +48,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 extraPage;
@@ -60,7 +60,7 @@ static u8 monPageOffset;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// String Conversion Functions
+//! String Conversion Functions
 /////////////////////////////////////////////////////////////////////////////
 static void stringEmpty(u32 ix, u16 value, char *label)   { label[0] = 0; }
 static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  ", value); }
@@ -178,7 +178,7 @@ static void stringIp(u32 ix, u16 value, char *label)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Parameter Selection Functions
+//! Parameter Selection Functions
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
@@ -274,7 +274,7 @@ static u16 selectIpEnter(u32 ix, u16 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Parameter Access Functions
+//! Parameter Access Functions
 /////////////////////////////////////////////////////////////////////////////
 static u16  dummyGet(u32 ix)              { return 0; }
 static void dummySet(u32 ix, u16 value)   { }
@@ -330,7 +330,7 @@ static void MSD_EnableReq(u32 enable)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Menu Structure
+//! Menu Structure
 /////////////////////////////////////////////////////////////////////////////
 
 const scs_menu_item_t pageVAR[] = {
@@ -395,11 +395,11 @@ const scs_menu_page_t rootMode0[] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function can overrule the display output
-// If it returns 0, the original SCS output will be print
-// If it returns 1, the output copied into line1 and/or line2 will be print
-// If a line is not changed (line[0] = 0 or line[1] = 0), the original output
-// will be displayed - this allows to overrule only a single line
+//! This function can overrule the display output
+//! If it returns 0, the original SCS output will be print
+//! If it returns 1, the output copied into line1 and/or line2 will be print
+//! If a line is not changed (line[0] = 0 or line[1] = 0), the original output
+//! will be displayed - this allows to overrule only a single line
 /////////////////////////////////////////////////////////////////////////////
 static s32 displayHook(char *line1, char *line2)
 {
@@ -542,9 +542,9 @@ static s32 displayHook(char *line1, char *line2)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when the rotary encoder is moved
-// If it returns 0, the encoder increment will be handled by the SCS
-// If it returns 1, the SCS will ignore the encoder
+//! This function is called when the rotary encoder is moved
+//! If it returns 0, the encoder increment will be handled by the SCS
+//! If it returns 1, the SCS will ignore the encoder
 /////////////////////////////////////////////////////////////////////////////
 static s32 encHook(s32 incrementer)
 {
@@ -590,9 +590,9 @@ static s32 encHook(s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called when a button has been pressed or depressed
-// If it returns 0, the button movement will be handled by the SCS
-// If it returns 1, the SCS will ignore the button event
+//! This function is called when a button has been pressed or depressed
+//! If it returns 0, the button movement will be handled by the SCS
+//! If it returns 1, the SCS will ignore the button event
 /////////////////////////////////////////////////////////////////////////////
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
@@ -689,9 +689,9 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialisation of SCS Config
-// mode selects the used SCS config (currently only one available selected with 0)
-// return < 0 if initialisation failed
+//! Initialisation of SCS Config
+//! mode selects the used SCS config (currently only one available selected with 0)
+//! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_CONFIG_Init(u32 mode)
 {
@@ -713,3 +713,6 @@ s32 SCS_CONFIG_Init(u32 mode)
 
   return 0; // no error
 }
+
+
+//! \}

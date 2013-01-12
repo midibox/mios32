@@ -1,8 +1,8 @@
 // $Id$
-/*
- * AIN access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_AIN
+//! AIN access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -24,13 +24,13 @@
 #include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 previous_ain_value[MBNG_PATCH_NUM_AIN];
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the AIN handler
+//! This function initializes the AIN handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_Init(u32 mode)
 {
@@ -47,8 +47,8 @@ s32 MBNG_AIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function handles the various AIN modes
-// Note: it's also used by the AINSER module, therefore public
+//! This function handles the various AIN modes
+//! Note: it's also used by the AINSER module, therefore public
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s16 min, s16 max)
 {
@@ -136,8 +136,8 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from APP_AIN_NotifyChange when an input
-// has changed its value
+//! This function should be called from APP_AIN_NotifyChange when an input
+//! has changed its value
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
@@ -216,8 +216,8 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called by MBNG_EVENT_ItemReceive when a matching value
-// has been received
+//! This function is called by MBNG_EVENT_ItemReceive when a matching value
+//! has been received
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item)
 {
@@ -231,3 +231,5 @@ s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item)
 
   return 0; // no error
 }
+
+//! \}

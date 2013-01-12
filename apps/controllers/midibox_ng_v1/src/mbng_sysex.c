@@ -1,8 +1,8 @@
 // $Id$
-/*
- * SysEx Parser for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_SYSEX
+//! SysEx Parser to access decicated MIDIbox NG functions (not really used yet)
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -12,7 +12,7 @@
  */
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -22,7 +22,7 @@
 #include "mbng_sysex.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// local definitions
+//! local definitions
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -44,7 +44,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Type definitions
+//! Type definitions
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
@@ -65,7 +65,7 @@ typedef union {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Internal Prototypes
+//! Internal Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 MBNG_SYSEX_CmdFinished(void);
@@ -76,7 +76,7 @@ static s32 MBNG_SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Variables
+//! Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
 static sysex_state_t sysex_state;
@@ -86,7 +86,7 @@ static mios32_midi_port_t sysex_port = DEFAULT;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// constant definitions
+//! constant definitions
 /////////////////////////////////////////////////////////////////////////////
 
 // SysEx header of MBNG
@@ -94,12 +94,12 @@ static const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x50 };
 
 
 /////////////////////////////////////////////////////////////////////////////
-// local variables
+//! local variables
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the SysEx handler
+//! This function initializes the SysEx handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_Init(u32 mode)
 {
@@ -118,8 +118,8 @@ s32 MBNG_SYSEX_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends a SysEx acknowledge to notify the user about the received command
-// expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
+//! This function sends a SysEx acknowledge to notify the user about the received command
+//! expects acknowledge code (e.g. 0x0f for good, 0x0e for error) and additional argument
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 {
@@ -144,8 +144,8 @@ s32 MBNG_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_arg)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called from NOTIFY_MIDI_TimeOut() in app.c if the 
-// MIDI parser runs into timeout
+//! This function is called from NOTIFY_MIDI_TimeOut() in app.c if the 
+//! MIDI parser runs into timeout
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_TimeOut(mios32_midi_port_t port)
 {
@@ -158,7 +158,7 @@ s32 MBNG_SYSEX_TimeOut(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function parses an incoming sysex stream for SysEx messages
+//! This function parses an incoming sysex stream for SysEx messages
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
@@ -206,8 +206,8 @@ s32 MBNG_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function is called at the end of a sysex command or on 
-// an invalid message
+//! This function is called at the end of a sysex command or on 
+//! an invalid message
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_CmdFinished(void)
 {
@@ -223,8 +223,8 @@ s32 MBNG_SYSEX_CmdFinished(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function sends the SysEx footer if merger enabled
-// if force == 1, send the footer regardless of merger state
+//! This function sends the SysEx footer if merger enabled
+//! if force == 1, send the footer regardless of merger state
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_SendFooter(u8 force)
 {
@@ -238,7 +238,7 @@ s32 MBNG_SYSEX_SendFooter(u8 force)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This function handles the sysex commands
+//! This function handles the sysex commands
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 {
@@ -259,7 +259,7 @@ s32 MBNG_SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Command 0F: Ping (just send back acknowledge)
+//! Command 0F: Ping (just send back acknowledge)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in)
 {
@@ -285,4 +285,4 @@ s32 MBNG_SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in)
   return 0; // no error
 }
 
-
+//! \}

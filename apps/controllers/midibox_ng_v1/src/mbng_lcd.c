@@ -1,8 +1,8 @@
 // $Id$
-/*
- * LCD access functions for MIDIbox NG
- *
- * ==========================================================================
+//! \defgroup MBNG_LCD
+//! LCD access functions for MIDIbox NG
+//! \{
+/* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
@@ -16,7 +16,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Include files
+//! Include files
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
@@ -31,7 +31,7 @@
 #include "mbng_patch.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Variables
+//! Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 lcd_charset;
@@ -87,7 +87,7 @@ static const u8 hmeter_map[5*16] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function initializes the LCD handler
+//! This function initializes the LCD handler
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_LCD_Init(u32 mode)
 {
@@ -119,9 +119,9 @@ s32 MBNG_LCD_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// transfers the buffer to LCDs
-// \param[in] force if != 0, it is ensured that the whole screen will be refreshed, regardless
-// if characters have changed or not
+//! transfers the buffer to LCDs
+//! \param[in] force if != 0, it is ensured that the whole screen will be refreshed, regardless
+//! if characters have changed or not
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_LCD_Update(u8 force)
 {
@@ -130,7 +130,7 @@ s32 MBNG_LCD_Update(u8 force)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// prints the string of an item
+//! prints the string of an item
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 {
@@ -381,7 +381,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// initializes special characters
+//! initializes special characters
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_LCD_SpecialCharsInit(u8 charset, u8 force)
 {
@@ -416,10 +416,12 @@ s32 MBNG_LCD_SpecialCharsInit(u8 charset, u8 force)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// re-initializes special characters
+//! re-initializes special characters
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_LCD_SpecialCharsReInit(void)
 {
   return MBNG_LCD_SpecialCharsInit(lcd_charset, 1);
 }
 
+
+//! \}
