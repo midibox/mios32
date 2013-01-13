@@ -684,6 +684,24 @@ s32 MIOS32_BOARD_J28_PinGet(u8 pin)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+//! Shifts a serial data through J28.SDA (data) and J28.SC (clock)
+//! The RC line (either J28.MCLK or J28.WS) has to be pulsed externally!
+//! \param[in] pin the pin number (0..7)
+//! \param[in] data the 8bit value
+//! \return < 0 if access to data port not supported by board
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J28_SerDataShift(u8 data)
+{
+#if J28_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J28 not supported
+#else
+# error "Not prepared for STM32"
+  return -1;
+#endif
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes the J15 port
@@ -971,6 +989,22 @@ s32 MIOS32_BOARD_J15_GetD7In(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function enables/disables the pull up on the D7 pin
+//! return < 0 if LCD port not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J15_D7InPullUpEnable(u8 enable)
+{
+#if J15_AVAILABLE == 0
+  return -1; // LCD port not available
+#else
+  return 0; // not relevant for MBHP_CORE_STM32 board
+  // TODO: check if this is true 
+#endif
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function is used by LCD drivers under $MIOS32_PATH/modules/app_lcd
 //! to poll the busy bit (D7) of a LCD
 //! \param[in] lcd display port (0=J15A, 1=J15B)
@@ -989,6 +1023,9 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
 
   // select command register (RS=0)
   MIOS32_BOARD_J15_RS_Set(0);
+
+  // enable pull-up
+  MIOS32_BOARD_J15_D7InPullUpEnable(1);
 
   // select read (will also disable output buffer of 74HC595)
   MIOS32_BOARD_J15_RW_Set(1);
@@ -1011,6 +1048,9 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
     if( !busy )
       break;
   }
+
+  // disable pull-up
+  MIOS32_BOARD_J15_D7InPullUpEnable(0);
 
   // deselect read (output buffers of 74HC595 enabled again)
   MIOS32_BOARD_J15_RW_Set(0);
