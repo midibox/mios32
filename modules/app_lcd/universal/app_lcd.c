@@ -38,10 +38,17 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local defines
+/////////////////////////////////////////////////////////////////////////////
+// the number of LCDs is currently only limited by the size of the display_available variable!
+#define MAX_LCDS 64
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u32 display_available = 0;
+static unsigned long long display_available = 0;
 static u8 lcd_testmode = 0;
 
 
@@ -50,6 +57,109 @@ static u8 lcd_testmode = 0;
 /////////////////////////////////////////////////////////////////////////////
 
 static void APP_LCD_KS0108_SetCS(u8 all);
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the E (enable) line depending on mios32_lcd_device
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_LCD_E_Set(u8 value)
+{
+  if( mios32_lcd_device < 2 ) {
+    return MIOS32_BOARD_J15_E_Set(mios32_lcd_device, value);
+  } else {
+    // Serial Extension via J28 currently only supported for CLCDs
+    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD ||
+	mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
+
+      int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 2;
+      if( num_additional_lcds < 0 )
+	return -2; // E line not configured
+
+      if( num_additional_lcds >= (MAX_LCDS-2) )
+	num_additional_lcds = MAX_LCDS-2; // saturate
+      int num_shifts = num_additional_lcds / 8;
+      if( num_additional_lcds % 8 )
+	++num_shifts;
+
+      int selected_lcd = mios32_lcd_device - 2;
+      int selected_lcd_sr = selected_lcd / 8;
+      u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
+
+      // shift data
+      int i;
+      for(i=num_shifts-1; i>=0; --i) {
+	u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
+	MIOS32_BOARD_J28_SerDataShift(data);
+      }
+
+      // pulse RC (J28.WS)
+      MIOS32_BOARD_J28_PinSet(2, 0);
+      MIOS32_BOARD_J28_PinSet(2, 1);
+
+      return 0; // no error
+    }
+  }
+
+  return -1; // E line not available
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Polls for unbusy depending on mios32_lcd_device
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_LCD_PollUnbusy(u32 time_out)
+{
+  if( mios32_lcd_device < 2 ) {
+    return MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, time_out);
+  }
+
+  if( mios32_lcd_device >= MAX_LCDS )
+    return -1; // LCD not supported
+
+  u32 poll_ctr;
+  u32 delay_ctr;
+
+  // select command register (RS=0)
+  MIOS32_BOARD_J15_RS_Set(0);
+
+  // enable pull-up
+  MIOS32_BOARD_J15_D7InPullUpEnable(1);
+
+  // select read (will also disable output buffer of 74HC595)
+  MIOS32_BOARD_J15_RW_Set(1);
+
+  // check if E pin is available
+  if( APP_LCD_E_Set(1) < 0 )
+    return -1; // LCD port not available
+
+  // poll busy flag, timeout after 10 mS
+  // each loop takes ca. 4 uS @ 72MHz, this has to be considered when defining the time_out value
+  for(poll_ctr=time_out; poll_ctr>0; --poll_ctr) {
+    APP_LCD_E_Set(1);
+
+    // due to slow slope we should wait at least for 1 uS
+    for(delay_ctr=0; delay_ctr<10; ++delay_ctr)
+      MIOS32_BOARD_J15_RW_Set(1);
+
+    u32 busy = MIOS32_BOARD_J15_GetD7In();
+    APP_LCD_E_Set(0);
+    if( !busy )
+      break;
+  }
+
+  // disable pull-up
+  MIOS32_BOARD_J15_D7InPullUpEnable(0);
+
+  // deselect read (output buffers of 74HC595 enabled again)
+  MIOS32_BOARD_J15_RW_Set(0);
+
+  // timeout?
+  if( poll_ctr == 0 )
+    return -2; // timeout error
+
+  return 0; // no error
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,8 +176,11 @@ s32 APP_LCD_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+  if( mios32_lcd_device >= MAX_LCDS )
+    return -2; // unsupported LCD device number
+
   // enable display by default
-  display_available |= (1 << mios32_lcd_device);
+  display_available |= (1ULL << mios32_lcd_device);
 
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
@@ -189,27 +302,41 @@ s32 APP_LCD_Init(u32 mode)
 	return -2; // failed to initialize J15
     }
 
+    // init extension port J28?
+    int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
+    if( num_lcds >= 2 ) {
+      MIOS32_BOARD_J28_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SDA (used to shift out data)
+      MIOS32_BOARD_J28_PinInit(1, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SC (used as clock)
+      MIOS32_BOARD_J28_PinInit(2, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.WS (used as strobe)
+      MIOS32_BOARD_J28_PinSet(2, 1); // RC set to 1 by default
+    }
+
     // initialize LCD
     MIOS32_BOARD_J15_DataSet(0x38);
     MIOS32_BOARD_J15_RS_Set(0);
     MIOS32_BOARD_J15_RW_Set(0);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
-    MIOS32_DELAY_Wait_uS(50000);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
+    MIOS32_DELAY_Wait_uS(5000); // according to the hitachi datasheet, this command takes 37 uS - take 1 mS to be at the secure side
 
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
-    MIOS32_DELAY_Wait_uS(50000);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
+    MIOS32_DELAY_Wait_uS(500); // and now only 500 uS anymore
 
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
-    MIOS32_DELAY_Wait_uS(50000);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
+    MIOS32_DELAY_Wait_uS(500);
 
     APP_LCD_Cmd(0x08); // Display Off
+
+    // display still available?
+    // if not, we can already break here!
+    if( !(display_available & (1ULL << mios32_lcd_device)) )
+      return -1; // display not available
+
     APP_LCD_Cmd(0x0c); // Display On
     APP_LCD_Cmd(0x06); // Entry Mode
     APP_LCD_Cmd(0x01); // Clear Display
-    MIOS32_DELAY_Wait_uS(50000);
 
     // for DOG displays: perform additional display initialisation
     if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
@@ -231,7 +358,7 @@ s32 APP_LCD_Init(u32 mode)
   }
   }
 
-  return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
+  return (display_available & (1ULL << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
 
 
@@ -246,7 +373,7 @@ s32 APP_LCD_Data(u8 data)
     return -1; // direct access disabled in testmode
 
   // check if if display already has been disabled
-  if( !(display_available & (1 << mios32_lcd_device)) )
+  if( !(display_available & (1ULL << mios32_lcd_device)) )
     return -1;
 
   switch( mios32_lcd_parameters.lcd_type ) {
@@ -265,17 +392,17 @@ s32 APP_LCD_Data(u8 data)
     APP_LCD_KS0108_SetCS(0); // select display depending on current X position
 
     // wait until LCD unbusy, exit on error (timeout)
-    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
-      display_available &= ~(1 << mios32_lcd_device);
+      display_available &= ~(1ULL << mios32_lcd_device);
       return -2; // timeout
     }
 
     // write data
     MIOS32_BOARD_J15_DataSet(data);
     MIOS32_BOARD_J15_RS_Set(1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
 
     // increment graphical cursor
     // if end of display segment reached: set X position of all segments to 0
@@ -346,17 +473,17 @@ s32 APP_LCD_Data(u8 data)
   case MIOS32_LCD_TYPE_CLCD_DOG:
   default: {
     // wait until LCD unbusy, exit on error (timeout)
-    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
-      display_available &= ~(1 << mios32_lcd_device);
+      display_available &= ~(1ULL << mios32_lcd_device);
       return -2; // timeout
     }
 
     // write data
     MIOS32_BOARD_J15_DataSet(data);
     MIOS32_BOARD_J15_RS_Set(1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
 
     return 0; // no error
   }
@@ -377,7 +504,7 @@ s32 APP_LCD_Cmd(u8 cmd)
     return -1; // direct access disabled in testmode
 
   // check if if display already has been disabled
-  if( !(display_available & (1 << mios32_lcd_device)) )
+  if( !(display_available & (1ULL << mios32_lcd_device)) )
     return -1;
 
   switch( mios32_lcd_parameters.lcd_type ) {
@@ -392,9 +519,9 @@ s32 APP_LCD_Cmd(u8 cmd)
     APP_LCD_KS0108_SetCS(0); // select display depending on current X position
 
     // wait until LCD unbusy, exit on error (timeout)
-    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
-      display_available &= ~(1 << mios32_lcd_device);
+      display_available &= ~(1ULL << mios32_lcd_device);
       return -2; // timeout
     }
 
@@ -404,8 +531,8 @@ s32 APP_LCD_Cmd(u8 cmd)
     // write command
     MIOS32_BOARD_J15_DataSet(cmd);
     MIOS32_BOARD_J15_RS_Set(0);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
 
     return 0; // no error
   } break;
@@ -433,17 +560,17 @@ s32 APP_LCD_Cmd(u8 cmd)
   case MIOS32_LCD_TYPE_CLCD_DOG:
   default: {
     // wait until LCD unbusy, exit on error (timeout)
-    if( MIOS32_BOARD_J15_PollUnbusy(mios32_lcd_device, 2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
-      display_available &= ~(1 << mios32_lcd_device);
+      display_available &= ~(1ULL << mios32_lcd_device);
       return -2; // timeout
     }
 
     // write command
     MIOS32_BOARD_J15_DataSet(cmd);
     MIOS32_BOARD_J15_RS_Set(0);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 1);
-    MIOS32_BOARD_J15_E_Set(mios32_lcd_device, 0);
+    APP_LCD_E_Set(1);
+    APP_LCD_E_Set(0);
 
     return 0; // no error
   }
