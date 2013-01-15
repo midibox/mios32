@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include <string.h>
 #include "tasks.h"
+#include "app.h"
 
 #include <midi_port.h>
 #include <midi_router.h>
@@ -941,6 +942,12 @@ const scs_menu_page_t rootMode0[] = {
 /////////////////////////////////////////////////////////////////////////////
 static s32 displayHook(char *line1, char *line2)
 {
+  if( !hw_enabled ) {
+    sprintf(line1, MIOS32_LCD_BOOT_MSG_LINE1);
+    sprintf(line2, MIOS32_LCD_BOOT_MSG_LINE2);
+    return 1;
+  }
+
   if( extraPage ) {
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
@@ -1100,6 +1107,9 @@ static s32 displayHook(char *line1, char *line2)
 /////////////////////////////////////////////////////////////////////////////
 static s32 encHook(s32 incrementer)
 {
+  if( !hw_enabled )
+    return 1;
+
   if( extraPage )
     return 1; // ignore encoder movements in extra page
 
@@ -1153,6 +1163,9 @@ static s32 encHook(s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
+  if( !hw_enabled )
+    return 1;
+
   if( extraPage ) {
     altMainPage = 0;
 

@@ -470,9 +470,14 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	if( !FILE_SDCardAvailable() ) {
 	  DEBUG_MSG("SD Card not found\n");
 	  MBNG_FILE_StatusMsgSet("No SD Card");
+	  BUFLCD_Clear();
+	  BUFLCD_CursorSet(0, 0);
+	  BUFLCD_PrintString("No SD Card");
 	} else if( !FILE_VolumeAvailable() ) {
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
 	  MBNG_FILE_StatusMsgSet("No FAT");
+	  BUFLCD_CursorSet(0, 0);
+	  BUFLCD_PrintString("No FAT on SD Card");
 	} else {
 	  MBNG_FILE_StatusMsgSet(NULL);
 

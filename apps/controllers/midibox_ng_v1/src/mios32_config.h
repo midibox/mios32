@@ -11,7 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.011"
+#define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.012"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
 
 // define a unique VID/PID for this application
@@ -124,9 +125,7 @@ extern char mbng_patch_aout_spi_rc_pin;
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
 
 // BUFLCD driver should support GLCD Font Selection
-#define BUFLCD_NUM_DEVICES          2
-#define BUFLCD_COLUMNS_PER_DEVICE  64
-#define BUFLCD_MAX_LINES            4
+#define BUFLCD_BUFFER_SIZE          1024
 #define BUFLCD_SUPPORT_GLCD_FONTS   1
 
 // map MIDI mutex to UIP task

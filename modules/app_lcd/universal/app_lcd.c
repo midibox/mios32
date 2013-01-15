@@ -68,34 +68,41 @@ static s32 APP_LCD_E_Set(u8 value)
   if( mios32_lcd_device < 2 ) {
     return MIOS32_BOARD_J15_E_Set(mios32_lcd_device, value);
   } else {
-    // Serial Extension via J28 currently only supported for CLCDs
-    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD ||
-	mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
+    int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 2;
+    if( num_additional_lcds < 0 )
+      return -2; // E line not configured
 
-      int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 2;
-      if( num_additional_lcds < 0 )
-	return -2; // E line not configured
+    if( num_additional_lcds <= 4 ) {
+      // the J28:SDA/SC/WS/RC are used as dedicated E pins
+      MIOS32_BOARD_J28_PinSet(mios32_lcd_device - 2, value);
 
-      if( num_additional_lcds >= (MAX_LCDS-2) )
-	num_additional_lcds = MAX_LCDS-2; // saturate
-      int num_shifts = num_additional_lcds / 8;
-      if( num_additional_lcds % 8 )
-	++num_shifts;
+      return 0; // no error
+    } else {
+      // Serial Extension via J28 currently only supported for CLCDs
+      if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD ||
+	  mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
 
-      int selected_lcd = mios32_lcd_device - 2;
-      int selected_lcd_sr = selected_lcd / 8;
-      u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
+	if( num_additional_lcds >= (MAX_LCDS-2) )
+	  num_additional_lcds = MAX_LCDS-2; // saturate
+	int num_shifts = num_additional_lcds / 8;
+	if( num_additional_lcds % 8 )
+	  ++num_shifts;
 
-      // shift data
-      int i;
-      for(i=num_shifts-1; i>=0; --i) {
-	u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
-	MIOS32_BOARD_J28_SerDataShift(data);
+	int selected_lcd = mios32_lcd_device - 2;
+	int selected_lcd_sr = selected_lcd / 8;
+	u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
+
+	// shift data
+	int i;
+	for(i=num_shifts-1; i>=0; --i) {
+	  u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
+	  MIOS32_BOARD_J28_SerDataShift(data);
+	}
+
+	// pulse RC (J28.WS)
+	MIOS32_BOARD_J28_PinSet(2, 0);
+	MIOS32_BOARD_J28_PinSet(2, 1);
       }
-
-      // pulse RC (J28.WS)
-      MIOS32_BOARD_J28_PinSet(2, 0);
-      MIOS32_BOARD_J28_PinSet(2, 1);
 
       return 0; // no error
     }
@@ -204,8 +211,6 @@ s32 APP_LCD_Init(u32 mode)
 # warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"
 #endif
 
-    MIOS32_DELAY_Wait_uS(50000); // exact 50 mS delay
-
     // "Display On" command
     APP_LCD_Cmd(0x3e + 1);
   } break;
@@ -214,8 +219,6 @@ s32 APP_LCD_Init(u32 mode)
     // DOGM128 works at 3.3V, level shifting (and open drain mode) not required
     if( MIOS32_BOARD_J15_PortInit(0) < 0 )
       return -2; // failed to initialize J15
-
-    MIOS32_DELAY_Wait_uS(50000); // exact 50 mS delay
 
     // initialisation sequence based on EA-DOGL/M datasheet
   
@@ -305,10 +308,17 @@ s32 APP_LCD_Init(u32 mode)
     // init extension port J28?
     int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
     if( num_lcds >= 2 ) {
-      MIOS32_BOARD_J28_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SDA (used to shift out data)
-      MIOS32_BOARD_J28_PinInit(1, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SC (used as clock)
-      MIOS32_BOARD_J28_PinInit(2, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.WS (used as strobe)
-      MIOS32_BOARD_J28_PinSet(2, 1); // RC set to 1 by default
+      if( num_lcds <= 6 ) {
+	// the J28:SDA/SC/WS/RC are used as dedicated E pins
+	int e;
+	for(e=0; e<4; ++e)
+	  MIOS32_BOARD_J28_PinInit(e, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+      } else {
+	MIOS32_BOARD_J28_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SDA (used to shift out data)
+	MIOS32_BOARD_J28_PinInit(1, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.SC (used as clock)
+	MIOS32_BOARD_J28_PinInit(2, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // J28.WS (used as strobe)
+	MIOS32_BOARD_J28_PinSet(2, 1); // RC set to 1 by default
+      }
     }
 
     // initialize LCD

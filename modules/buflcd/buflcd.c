@@ -50,32 +50,19 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local definitions
-/////////////////////////////////////////////////////////////////////////////
-
-#define BUFLCD_MAX_COLUMNS  (BUFLCD_NUM_DEVICES*BUFLCD_COLUMNS_PER_DEVICE)
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 lcd_buffer[BUFLCD_MAX_LINES][BUFLCD_MAX_COLUMNS];
-#if BUFLCD_SUPPORT_GLCD_FONTS
-static u8 lcd_buffer_font[BUFLCD_MAX_LINES][BUFLCD_MAX_COLUMNS];
-#endif
+static u8 lcd_buffer[BUFLCD_BUFFER_SIZE];
 
 static u16 lcd_cursor_x;
 static u8 lcd_cursor_y;
 
-// BUFLCD_NUM_DEVICES can be changed during runtime to a smaller value
-static u8 buflcd_num_devices;
-
-// BUFLCD_COLUMNS_PER_DEVICE can be changed during runtime to a smaller value
-static u8 buflcd_columns_per_device;
-
-// BUFLCD_MAX_LINES can be changed during runtime to a smaller value
-static u8 buflcd_max_lines;
+// taken from MIOS32 Bootloader configuration, but can also be changed during runtime
+static u8 buflcd_device_num_x;
+static u8 buflcd_device_num_y;
+static u8 buflcd_device_height;
+static u8 buflcd_device_width;
 
 // allows to add an x/y offset where the buffer is print out
 static u8 buflcd_offset_x;
@@ -91,9 +78,27 @@ static u8 lcd_current_font;
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_Init(u32 mode)
 {
-  buflcd_num_devices = BUFLCD_NUM_DEVICES;
-  buflcd_columns_per_device = BUFLCD_COLUMNS_PER_DEVICE;
-  buflcd_max_lines = BUFLCD_MAX_LINES;
+  // how many devices are configured in the MIOS32 Bootloader?
+  buflcd_device_num_x = mios32_lcd_parameters.num_x;
+  buflcd_device_num_y = mios32_lcd_parameters.num_y;
+
+  // graphical LCDs?
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    // take 80x2 by default - if bigger displays are used (which could display more), change during runtime
+    buflcd_device_width  = 80;
+    buflcd_device_height = 2;
+  } else {
+    // if only two CLCDs, we assume that the user hasn't changed the configuration
+    // and therefore support up to two 2x40 CLCDs (combined to 2x80)
+    if( (mios32_lcd_parameters.num_x*mios32_lcd_parameters.num_y) <= 2 ) {
+      buflcd_device_width  = 40;
+      buflcd_device_height = 2;      
+    } else {
+      buflcd_device_width  = mios32_lcd_parameters.width;
+      buflcd_device_height = mios32_lcd_parameters.height;
+    }
+  }
+
   buflcd_offset_x = 0;
   buflcd_offset_y = 0;
 
@@ -104,63 +109,92 @@ s32 BUFLCD_Init(u32 mode)
 }
 
 
+
+
 /////////////////////////////////////////////////////////////////////////////
-//! sets the number of devices to which the output is transfered.
+//! max. number of characters depends on GLCD and BUFLCD_SUPPORT_GLCD_FONTS
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_NumDevicesSet(u8 devices)
+s32 BUFLCD_MaxBufferGet(void)
 {
-  if( devices > BUFLCD_NUM_DEVICES )
-    return -1; // too many devices
-  buflcd_num_devices = devices;
+#if BUFLCD_SUPPORT_GLCD_FONTS
+  return MIOS32_LCD_TypeIsGLCD() ? (BUFLCD_BUFFER_SIZE/2) : BUFLCD_BUFFER_SIZE;
+#else
+  return BUFLCD_BUFFER_SIZE;
+#endif
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the number of devices which are combined to a single line
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_DeviceNumXSet(u8 num_x)
+{
+  buflcd_device_num_x = num_x;
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! returns the number of devices to which the output is transfered
+//! \returns the number of devices which are combined to a single line
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_NumDevicesGet(void)
+s32 BUFLCD_DeviceNumXGet(void)
 {
-  return buflcd_num_devices;
+  return buflcd_device_num_x;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! sets the number of columns which are print per device
+//! sets the number of devices which are available in Y direction
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_ColumnsPerDeviceSet(u8 columns)
+s32 BUFLCD_DeviceNumYSet(u8 num_y)
 {
-  if( columns > BUFLCD_MAX_COLUMNS ) // BUFLCD_COLUMNS_PER_DEVICE )
-    return -1; // too many columns (note: we allow to change device=1 and columns=full during runtime!)
-  buflcd_columns_per_device = columns;
+  buflcd_device_num_y = num_y;
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! returns the number of columns which are print per device
+//! \returns the number of devices which are available in Y direction
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_ColumnsPerDeviceGet(void)
+s32 BUFLCD_DeviceNumYGet(void)
 {
-  return buflcd_columns_per_device;
+  return buflcd_device_num_y;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! sets the number of lines which are print per device
+//! sets the display width (in characters) of a single LCD
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_NumLinesSet(u8 lines)
+s32 BUFLCD_DeviceWidthSet(u8 width)
 {
-  if( lines > BUFLCD_MAX_LINES )
-    return -1; // too many lines
-  buflcd_max_lines = lines;
+  buflcd_device_width = width;
   return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! returns the number of lines which are print per device
+//! \returns the display width (in characters) of a single LCD
 /////////////////////////////////////////////////////////////////////////////
-s32 BUFLCD_NumLinesGet(void)
+s32 BUFLCD_DeviceWidthGet(void)
 {
-  return buflcd_max_lines;
+  return buflcd_device_width;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the display height (in characters) of a single LCD
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_DeviceHeightSet(u8 height)
+{
+  buflcd_device_height = height;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \returns the display height (in characters) of a single LCD
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_DeviceHeightGet(void)
+{
+  return buflcd_device_height;
 }
 
 
@@ -200,18 +234,17 @@ s32 BUFLCD_OffsetYGet(void)
 }
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 //! copies the current LCD buffer line into the output string
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_BufferGet(char *str, u8 line, u8 len)
 {
-  if( line >= BUFLCD_MAX_LINES )
+  u32 bufpos = line * buflcd_device_num_x * buflcd_device_width;
+  if( bufpos >= BUFLCD_MaxBufferGet() )
     return -1; // invalid line
 
-  if( len > BUFLCD_MAX_COLUMNS )
-    len = BUFLCD_MAX_COLUMNS;
-
-  u8 *ptr = &lcd_buffer[line][0];
+  u8 *ptr = &lcd_buffer[bufpos];
   int i;
   for(i=0; i<len; ++i)
     *str++ = *ptr++;
@@ -227,16 +260,24 @@ s32 BUFLCD_Clear(void)
 {
   int i;
 
-  u8 *ptr = (u8 *)lcd_buffer;
-  for(i=0; i<BUFLCD_MAX_LINES*BUFLCD_MAX_COLUMNS; ++i)
-    *ptr++ = ' ';
-
 #if BUFLCD_SUPPORT_GLCD_FONTS
-  u8 *font_ptr = (u8 *)lcd_buffer_font;
-  for(i=0; i<BUFLCD_MAX_LINES*BUFLCD_MAX_COLUMNS; ++i)
-    *font_ptr++ = 'n';
-  lcd_current_font = 0; // force switch to new font
+  u8 use_font_buffer = MIOS32_LCD_TypeIsGLCD();
+#else
+  u8 use_font_buffer = 0;
 #endif
+
+  if( use_font_buffer ) {
+    u8 *ptr = (u8 *)lcd_buffer;
+    for(i=0; i<BUFLCD_BUFFER_SIZE/2; ++i)
+      *ptr++ = ' ';
+    for(; i<BUFLCD_BUFFER_SIZE; ++i)
+      *ptr++ = 'n';
+  } else {
+    u8 *ptr = (u8 *)lcd_buffer;
+    for(i=0; i<BUFLCD_BUFFER_SIZE; ++i)
+      *ptr++ = ' ';
+  }
+  lcd_current_font = 0; // force switch to new font
 
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
@@ -274,18 +315,21 @@ s32 BUFLCD_FontInit(u8 *font)
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_PrintChar(char c)
 {
-  if( lcd_cursor_y >= BUFLCD_MAX_LINES || lcd_cursor_x >= BUFLCD_MAX_COLUMNS )
-    return -1; // invalid cursor range
+  u32 bufpos = lcd_cursor_y * buflcd_device_num_x * buflcd_device_width + lcd_cursor_x;
+  if( bufpos >= BUFLCD_MaxBufferGet() )
+    return -1; // invalid line
 
-  u8 *ptr = &lcd_buffer[lcd_cursor_y][lcd_cursor_x];
+  u8 *ptr = &lcd_buffer[bufpos];
   if( (*ptr & 0x7f) != c )
     *ptr = c;
 
 #if BUFLCD_SUPPORT_GLCD_FONTS
-  u8 *font_ptr = &lcd_buffer_font[lcd_cursor_y][lcd_cursor_x];
-  if( *font_ptr != lcd_current_font ) {
-    *font_ptr = lcd_current_font;
-    *ptr &= 0x7f; // new font: ensure that character will be updated
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    u8 *font_ptr = &lcd_buffer[bufpos + (BUFLCD_BUFFER_SIZE/2)];
+    if( *font_ptr != lcd_current_font ) {
+      *font_ptr = lcd_current_font;
+      *ptr &= 0x7f; // new font: ensure that character will be updated
+    }
   }
 #endif
 
@@ -318,54 +362,64 @@ s32 BUFLCD_Update(u8 force)
   int next_y = -1;
   int x, y;
 
+  u32 bufpos_len = BUFLCD_MaxBufferGet();
   int phys_y = buflcd_offset_y;
-  for(y=0; y<buflcd_max_lines; ++y, ++phys_y) {
-    u8 *ptr = (u8 *)lcd_buffer[y];
+  for(y=0; y<buflcd_device_num_y*buflcd_device_height; ++y, ++phys_y) {
+    u32 bufpos = y * buflcd_device_num_x * buflcd_device_width;
+    if( bufpos >= bufpos_len )
+      break;
+
+    u8 *ptr = (u8 *)&lcd_buffer[bufpos];
 #if BUFLCD_SUPPORT_GLCD_FONTS
-    u8 *font_ptr = (u8 *)lcd_buffer_font[y];
+    u8 *font_ptr = (u8 *)&lcd_buffer[bufpos + (BUFLCD_BUFFER_SIZE/2)];
 #endif
     int phys_x = buflcd_offset_x;
-    for(x=0; x<(buflcd_num_devices*buflcd_columns_per_device); ++x, ++phys_x) {
-
-      u8 device = phys_x / buflcd_columns_per_device;
-      if( device >= buflcd_num_devices )
-	break;
+    int device = (buflcd_device_num_x * (phys_y / buflcd_device_height)) - 1;
+    for(x=0; x<(buflcd_device_num_x * buflcd_device_width) && bufpos < bufpos_len; ++x, ++phys_x, ++bufpos) {
+      if( (phys_x % buflcd_device_width) == 0 )
+	++device;
 
       if( force || !(*ptr & 0x80) ) {
 #if BUFLCD_SUPPORT_GLCD_FONTS
 	u8 *glcd_font = NULL;
-	switch( *font_ptr ) {
-	case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
-	case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
-	case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
-	case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
-	case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
-	default: // and 'n'
-	  glcd_font = (u8 *)GLCD_FONT_NORMAL;
-	}
+	if( MIOS32_LCD_TypeIsGLCD() ) {
+	  switch( *font_ptr ) {
+	  case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
+	  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+	  case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
+	  case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
+	  case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
+	  default: // and 'n'
+	    glcd_font = (u8 *)GLCD_FONT_NORMAL;
+	  }
 
-	MIOS32_LCD_FontInit(glcd_font);
+	  MIOS32_LCD_FontInit(glcd_font);
+	}
 #endif
 
 	if( x != next_x || y != next_y ) {
 #if BUFLCD_SUPPORT_GLCD_FONTS
-	  // temporary use pseudo-font to ensure that Y is handled equaly for all fonts
-	  u8 pseudo_font[4];
-	  // just to ensure...
+	  if( MIOS32_LCD_TypeIsGLCD() ) {
+	    // temporary use pseudo-font to ensure that Y is handled equaly for all fonts
+	    u8 pseudo_font[4];
+	    // just to ensure...
 #if MIOS32_LCD_FONT_WIDTH_IX != 0 || MIOS32_LCD_FONT_HEIGHT_IX != 1 || MIOS32_LCD_FONT_X0_IX != 2 || MIOS32_LCD_FONT_OFFSET_IX != 3
 # error "Please adapt this part for new LCD Font parameter positions!"
 #endif
-	  pseudo_font[MIOS32_LCD_FONT_WIDTH_IX] = glcd_font[MIOS32_LCD_FONT_WIDTH_IX];
-	  pseudo_font[MIOS32_LCD_FONT_HEIGHT_IX] = 1*8; // forced!
-	  pseudo_font[MIOS32_LCD_FONT_X0_IX] = glcd_font[MIOS32_LCD_FONT_X0_IX];
-	  pseudo_font[MIOS32_LCD_FONT_OFFSET_IX] = glcd_font[MIOS32_LCD_FONT_OFFSET_IX];
-	  MIOS32_LCD_FontInit((u8 *)&pseudo_font);
+	    pseudo_font[MIOS32_LCD_FONT_WIDTH_IX] = glcd_font[MIOS32_LCD_FONT_WIDTH_IX];
+	    pseudo_font[MIOS32_LCD_FONT_HEIGHT_IX] = 1*8; // forced!
+	    pseudo_font[MIOS32_LCD_FONT_X0_IX] = glcd_font[MIOS32_LCD_FONT_X0_IX];
+	    pseudo_font[MIOS32_LCD_FONT_OFFSET_IX] = glcd_font[MIOS32_LCD_FONT_OFFSET_IX];
+	    MIOS32_LCD_FontInit((u8 *)&pseudo_font);
+	  }
 #endif
 	  MIOS32_LCD_DeviceSet(device);
-	  MIOS32_LCD_CursorSet(phys_x % buflcd_columns_per_device, phys_y);
+	  MIOS32_LCD_CursorSet(phys_x % buflcd_device_width, phys_y % buflcd_device_height);
 #if BUFLCD_SUPPORT_GLCD_FONTS
-	  // switch back to original font
-	  MIOS32_LCD_FontInit(glcd_font);
+	  if( MIOS32_LCD_TypeIsGLCD() ) {
+	    // switch back to original font
+	    MIOS32_LCD_FontInit(glcd_font);
+	  }
 #endif
 	}
 
@@ -379,7 +433,7 @@ s32 BUFLCD_Update(u8 force)
 	next_x = x+1;
 
 	// for multiple LCDs: ensure that cursor is set when we reach the next partition
-	if( (next_x % buflcd_columns_per_device) == 0 )
+	if( (next_x % buflcd_device_width) == 0 )
 	  next_x = -1;
       }
       ++ptr;
@@ -399,7 +453,7 @@ s32 BUFLCD_Update(u8 force)
 s32 BUFLCD_PrintString(char *str)
 {
   while( *str != '\0' ) {
-    if( lcd_cursor_x >= (BUFLCD_NUM_DEVICES*buflcd_columns_per_device) )
+    if( lcd_cursor_x >= (buflcd_device_num_x * buflcd_device_width) )
       break;
     BUFLCD_PrintChar(*str);
     ++str;
@@ -414,7 +468,7 @@ s32 BUFLCD_PrintString(char *str)
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_PrintFormattedString(char *format, ...)
 {
-  char buffer[BUFLCD_MAX_COLUMNS];
+  char buffer[128]; // hopefully enough?
   va_list args;
 
   va_start(args, format);

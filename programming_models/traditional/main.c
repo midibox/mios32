@@ -18,6 +18,9 @@
 
 #include <mios32.h>
 #include <app.h>
+#ifndef MIOS32_DONT_USE_LCD
+#include <app_lcd.h>
+#endif
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -102,7 +105,7 @@ int main(void)
 # if defined(MIOS32_BOARD_MBHP_CORE_STM32) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
   // init second LCD as well (if available)
   MIOS32_LCD_DeviceSet(1);
-  MIOS32_LCD_Init(0);
+  APP_LCD_Init(0);
   MIOS32_LCD_DeviceSet(0);
 # endif
 #endif

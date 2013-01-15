@@ -23,19 +23,19 @@ extern "C" {
 /////////////////////////////////////////////////////////////////////////////
 
 // can be overruled in mios32_config.h
-// These values only define the maximum numbers, they can be reduced during runtime
-#ifndef BUFLCD_NUM_DEVICES
-# define BUFLCD_NUM_DEVICES          2
+// These values define the size of the available display buffer
+// It's configured for two 2x40 CLCDs by default (connected to J15A/B of the core module)
+// If more than 2 CLCDs are configured in the MIOS32 Bootloader, the size depends
+// on the specified layout parameters (num_x, num_y, width, height)\n
+// GLCDs are supported as well, we handle them as text displays\n
+// All details: see implementation in BUFLCD_Init()
+#ifndef BUFLCD_BUFFER_SIZE
+# define BUFLCD_BUFFER_SIZE         (2*2*40)
 #endif
 
-#ifndef BUFLCD_COLUMNS_PER_DEVICE
-# define BUFLCD_COLUMNS_PER_DEVICE  40
-#endif
-
-#ifndef BUFLCD_MAX_LINES
-# define BUFLCD_MAX_LINES            2
-#endif
-
+// enable this flag if half of the buffer should be used to store the font
+// Only required if the text message is print with *different* fonts.
+// The BUFLCD_BUFFER_SIZE has be doubled in this case
 #ifndef BUFLCD_SUPPORT_GLCD_FONTS
 # define BUFLCD_SUPPORT_GLCD_FONTS   0
 #endif
@@ -52,12 +52,15 @@ extern "C" {
 
 extern s32 BUFLCD_Init(u32 mode);
 
-extern s32 BUFLCD_NumDevicesSet(u8 devices);
-extern s32 BUFLCD_NumDevicesGet(void);
-extern s32 BUFLCD_ColumnsPerDeviceSet(u8 columns);
-extern s32 BUFLCD_ColumnsPerDeviceGet(void);
-extern s32 BUFLCD_NumLinesSet(u8 lines);
-extern s32 BUFLCD_NumLinesGet(void);
+extern s32 BUFLCD_MaxBufferGet(void);
+extern s32 BUFLCD_DeviceNumXSet(u8 num_x);
+extern s32 BUFLCD_DeviceNumXGet(void);
+extern s32 BUFLCD_DeviceNumYSet(u8 num_y);
+extern s32 BUFLCD_DeviceNumYGet(void);
+extern s32 BUFLCD_DeviceWidthSet(u8 width);
+extern s32 BUFLCD_DeviceWidthGet(void);
+extern s32 BUFLCD_DeviceHeightSet(u8 height);
+extern s32 BUFLCD_DeviceHeightGet(void);
 extern s32 BUFLCD_OffsetXSet(u8 offset);
 extern s32 BUFLCD_OffsetXGet(void);
 extern s32 BUFLCD_OffsetYSet(u8 offset);
