@@ -1,5 +1,14 @@
 $Id$
 
+
+MIDIbox NG V1.012
+~~~~~~~~~~~~~~~~~
+
+   o The application boots a little bit faster now
+
+   o support for more than 2 LCDs (to be documented)
+
+
 MIDIbox NG V1.011
 ~~~~~~~~~~~~~~~~~
 

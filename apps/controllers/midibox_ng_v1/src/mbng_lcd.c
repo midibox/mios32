@@ -94,23 +94,27 @@ s32 MBNG_LCD_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+  // initialize remaining LCDs
+  // initialize remaining CLCDs (programming_models/traditional/main.c will only initialize the first two)
+  int lcd;
+  for(lcd=0; lcd<(mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y); ++lcd) {
+    MIOS32_LCD_DeviceSet(lcd);
+    if( MIOS32_LCD_Init(0) < 0 ) {
+      MIOS32_MIDI_SendDebugMessage("[MBNG_LCD] no response from CLCD #%d.%d\n",
+				   (lcd % mios32_lcd_parameters.num_x) + 1,
+				   (lcd / mios32_lcd_parameters.num_x) + 1);
+    }
+  }
+
   // init buffered LCD output
   BUFLCD_Init(1); // without clear - we want to initialize the layout first
-
-  // LCD layout
-  if( MIOS32_LCD_TypeIsGLCD() ) {
-    // TODO
-  } else {
-    BUFLCD_ColumnsPerDeviceSet(40);
-    BUFLCD_NumLinesSet(2);
-  }
 
   first_msg = 0; // message will disappear with first item
   BUFLCD_Clear();
   BUFLCD_CursorSet(0, 0);
-  BUFLCD_PrintString("Welcome to");
-  BUFLCD_CursorSet(0, 1);
   BUFLCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+  BUFLCD_CursorSet(0, 1);
+  BUFLCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
 
   MBNG_LCD_SpecialCharsInit(0, 1); // select vertical bars
 
@@ -150,7 +154,13 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
     BUFLCD_Clear();
   }
 
-  BUFLCD_CursorSet(item->lcd*BUFLCD_ColumnsPerDeviceGet() + (item->lcd_pos % 64), item->lcd_pos / 64);
+  {
+    u8 lcd = item->lcd;
+    u8 x = item->lcd_pos % 64;
+    u8 y = item->lcd_pos / 64;
+    BUFLCD_CursorSet((lcd % BUFLCD_DeviceNumXGet())*BUFLCD_DeviceWidthGet() + x,
+		     (lcd / BUFLCD_DeviceNumXGet())*BUFLCD_DeviceHeightGet() + y);
+  }
 
   char *str = item->label;
 
@@ -226,7 +236,13 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
 	    pos_str = (char *)(next + 1);
 	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
-	      BUFLCD_CursorSet((lcd_num-1)*BUFLCD_ColumnsPerDeviceGet() + (lcd_x-1), lcd_y-1);
+	      {
+		u8 lcd = lcd_num-1;
+		u8 x = lcd_x - 1;
+		u8 y = lcd_y - 1;
+		BUFLCD_CursorSet((lcd % BUFLCD_DeviceNumXGet())*BUFLCD_DeviceWidthGet() + x,
+				 (lcd / BUFLCD_DeviceNumXGet())*BUFLCD_DeviceHeightGet() + y);
+	      }
 	      str = (char *)&next[1];
 	    }
 	  }

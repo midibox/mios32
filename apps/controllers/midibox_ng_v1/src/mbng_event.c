@@ -2488,8 +2488,8 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  parse_sysex = 0;
 	}
       } else {
-	// always reset if 0xf0 or 0xf7 has been received
-	if( midi_in == 0xf0 || midi_in == 0xf7 ) {
+	// always reset if 0xf0 has been received
+	if( midi_in == 0xf0 ) { //  || midi_in == 0xf7  --- disabled, could be too confusing for user if the specified stream shouldn't contain F7
 	  pool_item->tmp_sysex_match_ctr = 0;
 	  pool_item->tmp_runtime_flags.ALL = 0;
 	}

@@ -11,6 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
+#define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIO 128 V3.013"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
