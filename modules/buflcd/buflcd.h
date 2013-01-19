@@ -61,6 +61,8 @@ extern s32 BUFLCD_DeviceWidthSet(u8 width);
 extern s32 BUFLCD_DeviceWidthGet(void);
 extern s32 BUFLCD_DeviceHeightSet(u8 height);
 extern s32 BUFLCD_DeviceHeightGet(void);
+extern s32 BUFLCD_DeviceFontHandlingEnabled(void);
+
 extern s32 BUFLCD_OffsetXSet(u8 offset);
 extern s32 BUFLCD_OffsetXGet(void);
 extern s32 BUFLCD_OffsetYSet(u8 offset);

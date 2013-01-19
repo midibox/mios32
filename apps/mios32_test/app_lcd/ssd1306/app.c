@@ -35,19 +35,20 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // X/Y "position" of displays (see also comments in $MIOS32_PATH/modules/app_lcd/pcd8544/README.txt)
-  const u8 lcd_x[8] = {0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
-  const u8 lcd_y[8] = {0, 0, 1, 1, 2, 2, 3, 3};
+#define MAX_LCDS 12
+  int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
+  if( num_lcds > MAX_LCDS )
+    num_lcds = MAX_LCDS;
 
-  u8 vmeter_icon_ctr[8][2] = {{0,5},{3,14},{7,1},{3,9},{13,6},{10,2},{1,4},{6,2}}; // memo: 28 icons (14 used)
-  u8 vmeter_icon_dir[8][2] = {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};
-  u8 vmeter_icon_delay_ctr[8][2] = {{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4}};
+  u8 vmeter_icon_ctr[MAX_LCDS][2] = {{0,5},{3,14},{7,1},{3,9},{13,6},{10,2},{1,4},{6,2},{13,6},{10,2},{1,4},{6,2}}; // memo: 28 icons (14 used)
+  u8 vmeter_icon_dir[MAX_LCDS][2] = {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};
+  u8 vmeter_icon_delay_ctr[MAX_LCDS][2] = {{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4}};
   const u8 vmeter_icon_x[2] = {0, 120}; // memo: icon width 8
   const u8 vmeter_icon_y[2] = {12, 12}; // memo: icon height 32
 
-  u8 hmeter_icon_ctr[8][2] = {{6,11},{2,27},{23,1},{15,6},{18,9},{10,12},{3,25},{26,7}}; // memo: 28 icons (14 used)
-  u8 hmeter_icon_dir[8][2] = {{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0}};
-  u8 hmeter_icon_delay_ctr[8][2] = {{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2}};
+  u8 hmeter_icon_ctr[MAX_LCDS][2] = {{6,11},{2,27},{23,1},{15,6},{18,9},{10,12},{3,25},{26,7},{18,9},{10,12},{3,25},{26,7}}; // memo: 28 icons (14 used)
+  u8 hmeter_icon_dir[MAX_LCDS][2] = {{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0}};
+  u8 hmeter_icon_delay_ctr[MAX_LCDS][2] = {{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2}};
   const u8 hmeter_icon_x[2] = {20, 80}; // memo: icon width 28
   const u8 hmeter_icon_y[2] = {60, 60}; // memo: icon height 8
 
@@ -68,11 +69,10 @@ void APP_Background(void)
     MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
   }
 
+
+
   // print static screen
   MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-
-  // clear LCD
-  MIOS32_LCD_Clear();
 
   // endless loop - LED will flicker on each iteration
   while( 1 ) {
@@ -83,11 +83,22 @@ void APP_Background(void)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
     u8 n;
-    for(n=0; n<8; ++n) {
+    for(n=0; n<num_lcds; ++n) {
       int i;
+#if 0
+      // X/Y "position" of displays
+      const u8 lcd_x[MAX_LCDS] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
+      const u8 lcd_y[MAX_LCDS] = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4};
+
       // X/Y "position" of displays
       u8 x_offset = 128*lcd_x[n];
       u8 y_offset = 64*lcd_y[n];
+#else
+      // TK: expired! LCDs now addressed via MIOS32_LCD_DeviceSet()
+      u8 x_offset = 0;
+      u8 y_offset = 0;
+      MIOS32_LCD_DeviceSet(n);
+#endif
 
       // print text
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
