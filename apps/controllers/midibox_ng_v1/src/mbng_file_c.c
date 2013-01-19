@@ -1179,17 +1179,18 @@ s32 parseEvent(char *cmd, char *brkt)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD number (first item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
-	} else if( values[1] < 1 || values[1] >= 64 ) {
+	} else if( values[1] < 1 || values[1] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD X position (second item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
-	} else if( values[2] < 1 || values[2] >= 4 ) {
+	} else if( values[2] < 1 || values[2] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD Y position (third item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
 #endif
 	} else {
 	  item.lcd = values[0] - 1;
-	  item.lcd_pos = ((values[1]-1) & 0x3f) | ((values[2]-1) & 0x3) << 6;
+	  item.lcd_x = values[1] - 1;
+	  item.lcd_y = values[2] - 1;
 	}
       }
 
@@ -3038,7 +3039,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
-      sprintf(line_buffer, "  lcd_pos=%d:%d:%d", item.lcd+1, (item.lcd_pos%64)+1, (item.lcd_pos/64)+1);
+      sprintf(line_buffer, "  lcd_pos=%d:%d:%d", item.lcd+1, item.lcd_x+1, item.lcd_y+1);
       FLUSH_BUFFER;
 
       if( item.label && strlen(item.label) ) {

@@ -72,7 +72,8 @@ typedef struct { // should be dividable by u16
   u8 bank;
   u8 secondary_value;
   u8 lcd;
-  u8 lcd_pos;
+  u8 lcd_x;
+  u8 lcd_y;
   u8 data_begin; // data section for streams and label starts here, it can have multiple bytes
 } mbng_event_pool_item_t;
 
@@ -650,7 +651,8 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->bank = 0;
   item->secondary_value = 0;
   item->lcd = 0;
-  item->lcd_pos = 0x00;
+  item->lcd_x = 0;
+  item->lcd_y = 0;
   item->stream = NULL;
   item->label = NULL;
 
@@ -730,7 +732,8 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->map = pool_item->map;
   item->secondary_value = pool_item->secondary_value;
   item->lcd = pool_item->lcd;
-  item->lcd_pos = pool_item->lcd_pos;
+  item->lcd_x = pool_item->lcd_x;
+  item->lcd_y = pool_item->lcd_y;
   item->stream_size = pool_item->len_stream;
   item->stream = pool_item->len_stream ? (u8 *)&pool_item->data_begin : NULL;
   item->label = pool_item->len_label ? ((char *)&pool_item->data_begin + pool_item->len_stream) : NULL;
@@ -760,7 +763,8 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->bank = item->bank;
   pool_item->secondary_value = item->secondary_value;
   pool_item->lcd = item->lcd;
-  pool_item->lcd_pos = item->lcd_pos;
+  pool_item->lcd_x = item->lcd_x;
+  pool_item->lcd_y = item->lcd_y;
   pool_item->len = pool_item_len;
   pool_item->len_stream = item->stream ? item->stream_size : 0;
   pool_item->len_label = label_len;

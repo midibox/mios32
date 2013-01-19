@@ -125,7 +125,7 @@ extern char mbng_patch_aout_spi_rc_pin;
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
 
 // BUFLCD driver should support GLCD Font Selection
-#define BUFLCD_BUFFER_SIZE          1024
+#define BUFLCD_BUFFER_SIZE          2700
 #define BUFLCD_SUPPORT_GLCD_FONTS   1
 
 // map MIDI mutex to UIP task

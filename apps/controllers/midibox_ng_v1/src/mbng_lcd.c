@@ -156,8 +156,8 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
   {
     u8 lcd = item->lcd;
-    u8 x = item->lcd_pos % 64;
-    u8 y = item->lcd_pos / 64;
+    u8 x = item->lcd_x;
+    u8 y = item->lcd_y;
     BUFLCD_CursorSet((lcd % BUFLCD_DeviceNumXGet())*BUFLCD_DeviceWidthGet() + x,
 		     (lcd / BUFLCD_DeviceNumXGet())*BUFLCD_DeviceHeightGet() + y);
   }

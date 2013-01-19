@@ -307,7 +307,8 @@ typedef struct {
   u8 bank;
   u8 secondary_value;
   u8 lcd;
-  u8 lcd_pos;
+  u8 lcd_x;
+  u8 lcd_y;
   char *label;
 } mbng_event_item_t;
 
