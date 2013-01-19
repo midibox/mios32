@@ -43,6 +43,7 @@ extern s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap);
 
 extern s32 APP_LCD_TerminalHelp(void *_output_function);
 extern s32 APP_LCD_TerminalParseLine(char *input, void *_output_function);
+extern s32 APP_LCD_TerminalPrintConfig(void *_output_function);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

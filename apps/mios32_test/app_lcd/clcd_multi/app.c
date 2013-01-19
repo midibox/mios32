@@ -68,10 +68,10 @@ void APP_Background(void)
     MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
   }
 
-  // initialize remaining CLCDs (programming_models/traditional/main.c will only initialize the first two)
+  // initialize all LCDs (although programming_models/traditional/main.c will only initialize the first two)
   int lcd;
   for(lcd=0; lcd<num_lcds; ++lcd) {
-    MIOS32_MIDI_SendDebugMessage("Initialize LCD #%d\n", lcd);
+    MIOS32_MIDI_SendDebugMessage("Initialize LCD #%d\n", lcd+1);
     MIOS32_LCD_DeviceSet(lcd);
     if( MIOS32_LCD_Init(0) < 0 ) {
       MIOS32_MIDI_SendDebugMessage("Failed - no response from CLCD #%d.%d\n",

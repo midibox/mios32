@@ -70,6 +70,7 @@ static u8 buflcd_offset_y;
 
 #if BUFLCD_SUPPORT_GLCD_FONTS
 // current selected font
+static u8 glcd_font_handling;
 static u8 lcd_current_font;
 #endif
 
@@ -85,8 +86,12 @@ s32 BUFLCD_Init(u32 mode)
   // graphical LCDs?
   if( MIOS32_LCD_TypeIsGLCD() ) {
     // take 80x2 by default - if bigger displays are used (which could display more), change during runtime
-    buflcd_device_width  = 80;
-    buflcd_device_height = 2;
+    buflcd_device_width  = mios32_lcd_parameters.width / 6;
+    buflcd_device_height = mios32_lcd_parameters.height / 8;
+
+#if BUFLCD_SUPPORT_GLCD_FONTS
+    glcd_font_handling = (buflcd_device_num_x * buflcd_device_num_y * buflcd_device_width * buflcd_device_height) <= (BUFLCD_BUFFER_SIZE/2);
+#endif
   } else {
     // if only two CLCDs, we assume that the user hasn't changed the configuration
     // and therefore support up to two 2x40 CLCDs (combined to 2x80)
@@ -117,7 +122,7 @@ s32 BUFLCD_Init(u32 mode)
 s32 BUFLCD_MaxBufferGet(void)
 {
 #if BUFLCD_SUPPORT_GLCD_FONTS
-  return MIOS32_LCD_TypeIsGLCD() ? (BUFLCD_BUFFER_SIZE/2) : BUFLCD_BUFFER_SIZE;
+  return glcd_font_handling ? (BUFLCD_BUFFER_SIZE/2) : BUFLCD_BUFFER_SIZE;
 #else
   return BUFLCD_BUFFER_SIZE;
 #endif
@@ -199,6 +204,15 @@ s32 BUFLCD_DeviceHeightGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \returns 1 if GLCD font handling enabled
+/////////////////////////////////////////////////////////////////////////////
+s32 BUFLCD_DeviceFontHandlingEnabled(void)
+{
+  return glcd_font_handling;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! sets the first column at which a line is print
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_OffsetXSet(u8 offset)
@@ -261,7 +275,7 @@ s32 BUFLCD_Clear(void)
   int i;
 
 #if BUFLCD_SUPPORT_GLCD_FONTS
-  u8 use_font_buffer = MIOS32_LCD_TypeIsGLCD();
+  u8 use_font_buffer = glcd_font_handling;
 #else
   u8 use_font_buffer = 0;
 #endif
@@ -277,7 +291,7 @@ s32 BUFLCD_Clear(void)
     for(i=0; i<BUFLCD_BUFFER_SIZE; ++i)
       *ptr++ = ' ';
   }
-  lcd_current_font = 0; // force switch to new font
+  lcd_current_font = 'n';
 
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
@@ -324,7 +338,7 @@ s32 BUFLCD_PrintChar(char c)
     *ptr = c;
 
 #if BUFLCD_SUPPORT_GLCD_FONTS
-  if( MIOS32_LCD_TypeIsGLCD() ) {
+  if( glcd_font_handling ) {
     u8 *font_ptr = &lcd_buffer[bufpos + (BUFLCD_BUFFER_SIZE/2)];
     if( *font_ptr != lcd_current_font ) {
       *font_ptr = lcd_current_font;
@@ -379,18 +393,23 @@ s32 BUFLCD_Update(u8 force)
       if( (phys_x % buflcd_device_width) == 0 )
 	++device;
 
-      if( force || !(*ptr & 0x80) ) {
+      if( force || !(*ptr & 0x80)
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	  || (glcd_font_handling && !(*font_ptr & 0x80))
+#endif
+	  ) {
 #if BUFLCD_SUPPORT_GLCD_FONTS
 	u8 *glcd_font = NULL;
-	if( MIOS32_LCD_TypeIsGLCD() ) {
-	  switch( *font_ptr ) {
+	if( glcd_font_handling ) {
+	  switch( *font_ptr & 0x7f ) {
+	  case 'n': glcd_font = (u8 *)GLCD_FONT_NORMAL; break;
 	  case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
 	  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
 	  case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
 	  case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
 	  case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
-	  default: // and 'n'
-	    glcd_font = (u8 *)GLCD_FONT_NORMAL;
+	  default:
+	    glcd_font = NULL; // no character will be print
 	  }
 
 	  MIOS32_LCD_FontInit(glcd_font);
@@ -399,7 +418,7 @@ s32 BUFLCD_Update(u8 force)
 
 	if( x != next_x || y != next_y ) {
 #if BUFLCD_SUPPORT_GLCD_FONTS
-	  if( MIOS32_LCD_TypeIsGLCD() ) {
+	  if( glcd_font_handling && glcd_font ) {
 	    // temporary use pseudo-font to ensure that Y is handled equaly for all fonts
 	    u8 pseudo_font[4];
 	    // just to ensure...
@@ -416,17 +435,23 @@ s32 BUFLCD_Update(u8 force)
 	  MIOS32_LCD_DeviceSet(device);
 	  MIOS32_LCD_CursorSet(phys_x % buflcd_device_width, phys_y % buflcd_device_height);
 #if BUFLCD_SUPPORT_GLCD_FONTS
-	  if( MIOS32_LCD_TypeIsGLCD() ) {
+	  if( glcd_font_handling ) {
 	    // switch back to original font
 	    MIOS32_LCD_FontInit(glcd_font);
 	  }
 #endif
 	}
 
-	MIOS32_LCD_PrintChar(*ptr & 0x7f);
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	if( glcd_font )
+#endif
+	  MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
 	MIOS32_IRQ_Disable(); // must be atomic
 	*ptr |= 0x80;
+#if BUFLCD_SUPPORT_GLCD_FONTS
+	*font_ptr |= 0x80;
+#endif
 	MIOS32_IRQ_Enable();
 
 	next_y = y;
