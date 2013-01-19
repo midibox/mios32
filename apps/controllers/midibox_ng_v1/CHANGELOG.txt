@@ -6,7 +6,8 @@ MIDIbox NG V1.012
 
    o The application boots a little bit faster now
 
-   o support for more than 2 LCDs (to be documented)
+   o support for more than 2 LCDs.
+     A documentation can be found under http://www.ucapps.de/midibox_ng_manual_lcd.html
 
 
 MIDIbox NG V1.011

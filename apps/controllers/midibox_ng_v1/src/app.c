@@ -24,6 +24,7 @@
 #include "tasks.h"
 
 #include <buflcd.h>
+#include <glcd_font.h>
 
 #include <ainser.h>
 #include <aout.h>
@@ -409,6 +410,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // call SCS handler
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
     SCS_Tick();
 
     SCS_DisplayUpdateInMainPage(MBNG_EVENT_MidiLearnModeGet() ? 1 : 0);
