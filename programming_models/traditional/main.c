@@ -257,6 +257,12 @@ static void TASK_Hooks(void *pvParameters)
     // check for incoming COM messages
     MIOS32_COM_Receive_Handler();
 #endif
+
+#if defined(MIOS32_USE_APP_TICK)
+    // optional APP_Tick() hook
+    // helps to save memory (re-use the TASK_Hooks for other purposes...)
+    APP_Tick();
+#endif
   }
 }
 
