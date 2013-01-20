@@ -443,7 +443,7 @@ s32 BUFLCD_Update(u8 force)
 	}
 
 #if BUFLCD_SUPPORT_GLCD_FONTS
-	if( glcd_font )
+	if( !glcd_font_handling || glcd_font )
 #endif
 	  MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
