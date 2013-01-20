@@ -84,7 +84,7 @@ extern char mbng_patch_aout_spi_rc_pin;
 #define AOUT_SPI_RC_PIN mbng_patch_aout_spi_rc_pin
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 12*1024
+#define MIOS32_HEAP_SIZE 11*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 

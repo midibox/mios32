@@ -255,6 +255,9 @@ s32 MBNG_EVENT_Init(u32 mode)
     MBNG_EVENT_ItemAdd(&item);
   }
 
+  MBNG_EVENT_PoolUpdate();
+
+
   return 0; // no error
 }
 
