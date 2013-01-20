@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.007"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.008"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2012 T.Klose"
 
 // Following settings allow to customize the USB device descriptor

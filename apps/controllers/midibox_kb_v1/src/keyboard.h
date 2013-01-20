@@ -59,6 +59,7 @@ typedef struct {
   u8  scan_optimized:1;
 
   u16 delay_fastest;
+  u16 delay_fastest_black_keys;
   u16 delay_slowest;
 
   u8  ain_pin[KEYBOARD_AIN_NUM];
