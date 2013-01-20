@@ -1,5 +1,12 @@
 $Id$
 
+MIDIbox KB V1.008
+~~~~~~~~~~~~~~~~~
+
+   o dedicated delay value for black keys (delay_fastest_black_keys)
+     Will be taken if > 0, otherwise white and black keys take the same delay_fastest value
+
+
 MIDIbox KB V1.007
 ~~~~~~~~~~~~~~~~~
 

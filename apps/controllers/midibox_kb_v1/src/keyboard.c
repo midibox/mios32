@@ -31,7 +31,7 @@
 #define MATRIX_NUM_ROWS 16
 
 // maximum number of supported contacts
-#define KEYBOARD_NUM_PINS (KEYBOARD_NUM*8*16)
+#define KEYBOARD_NUM_PINS (16*MATRIX_NUM_ROWS)
 
 // for FantomXR's Yamaha keyboard - currently only a hardcoded option
 #define FANTOM_XR_VARIANT 0
@@ -101,6 +101,7 @@ s32 KEYBOARD_Init(u32 mode)
       kc->note_offset = 36;
 
       kc->delay_fastest = 50;
+      kc->delay_fastest_black_keys = 0; // if 0, we take delay_fastest, otherwise we take the dedicated value for the black keys
       kc->delay_slowest = 1000;
 
       // set low verbose level by default (only warnings)
@@ -108,6 +109,7 @@ s32 KEYBOARD_Init(u32 mode)
 
       kc->scan_velocity = 1;
       kc->scan_optimized = 0;
+      kc->break_inverted = 0;
 
       if( kb == 0 ) {
 	kc->num_rows = 8;
@@ -211,8 +213,9 @@ void KEYBOARD_SRIO_ServicePrepare(void)
       u8 skip_make = 0;
 
       if( kc->prev_row & 1 ) { // last scan was break contact
-	if( (!kc->din_inverted && din_value[kb][kc->prev_row] == 0xffff) ||
-	    ( kc->din_inverted && din_value[kb][kc->prev_row] == 0x0000) ) {
+	if( kc->prev_row != 0xff && // if 0xff, no row has been scanned yet
+	    ((!kc->din_inverted && din_value[kb][kc->prev_row] == 0xffff) ||
+	     ( kc->din_inverted && din_value[kb][kc->prev_row] == 0x0000)) ) {
 	  // skip scan of make contacts
 	  skip_make = 1;
 	}
@@ -408,7 +411,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   else if( note_number < 0 )
     note_number = 0;
 
-  if( kc->verbose_level >= 2 )
+  if( kc->verbose_level >= 2 ) {
     DEBUG_MSG("KB%d: DOUT#%d.D%d / DIN#%d.D%d: %s  -->  key=%2d, %s, note=%s (%d)\n",
 	      kb+1,
 	      (row < 8) ? kc->dout_sr1 : kc->dout_sr2, 7 - (row % 8),
@@ -417,6 +420,12 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	      key,
 	      break_contact ? "break contact" : "make contact",
 	      KEYBOARD_GetNoteName(note_number, note_str), note_number);
+  }
+
+  if( key >= KEYBOARD_NUM_PINS ) {
+    DEBUG_MSG("ERROR: key=%d too high; no note event will be sent!\n", key);
+    return; // don't continue to prevent access to invalid array indices
+  }
 
   // determine key mask and pointers for access to combined arrays
   u8 key_mask = (1 << (key % 8));
@@ -476,13 +485,23 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	u16 timestamp_break = din_activated_timestamp[kb][pin_break];
 	u16 timestamp_make  = din_activated_timestamp[kb][pin_make];
 
+	// optionally we differ the delay_fastest value between black and white keys.
+	// IMPORTANT: we should determine the black key based on the key value (=matching with HW), and not on the note value
+	// to ensure that an evtl. transposed note doesn't affect the selected value.
+	u8 normalized_key = key % 12;
+	u8 black_key = (normalized_key == 1 || normalized_key == 3 || normalized_key == 6 || normalized_key == 8 || normalized_key == 10);
+
 	// and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
 	s16 delay = timestamp_make - timestamp_break;
+	u16 delay_slowest = kc->delay_slowest;
+	u16 delay_fastest = kc->delay_fastest;
+	if( black_key && kc->delay_fastest_black_keys )
+	  delay_fastest = kc->delay_fastest_black_keys;
 
-	if( delay > kc->delay_fastest ) {
+	if( delay > delay_fastest ) {
 	  // determine velocity depending on delay
 	  // lineary scaling - here we could also apply a curve table
-	  velocity = 127 - (((delay-kc->delay_fastest) * 127) / (kc->delay_slowest-kc->delay_fastest));
+	  velocity = 127 - (((delay - delay_fastest) * 127) / (delay_slowest - delay_fastest));
 	  // saturate to ensure that range 1..127 won't be exceeded
 	  if( velocity < 1 )
 	    velocity = 1;
@@ -491,7 +510,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	}
 
 	if( kc->verbose_level >= 2 )
-	  DEBUG_MSG("PRESSED note=%s, delay=%d, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), delay, velocity);
+	  DEBUG_MSG("PRESSED note=%s, delay=%d, velocity=%d (played from a %s key)\n",
+		    KEYBOARD_GetNoteName(note_number, note_str), delay, velocity,
+		    black_key ? "black" : "white");
       }
 
       KEYBOARD_MIDI_SendNote(kb, note_number, velocity);
@@ -765,6 +786,7 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> din_inverted <on|off>: DINs inverted?");
   out("  set kb <1|2> break_inverted <on|off>: Only break contacts inverted?");
   out("  set kb <1|2> delay_fastest <0-65535>: fastest delay for velocity calculation");
+  out("  set kb <1|2> delay_fastest_black_keys <0-65535>: optional fastest delay for black keys");
   out("  set kb <1|2> delay_slowest <0-65535>: slowest delay for velocity calculation");
   out("  set kb <1|2> ain_pitchwheel <0..5> or off: assigns pitchwheel to given J5.A<0..5> pin");
   out("  set kb <1|2> ctrl_pitchwheel <0-129>: assigns CC/PB(=128)/AT(=129) to PitchWheel");
@@ -1088,6 +1110,22 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("Keyboard #%d: delay_fastest set to %d!", kb+1, kc->delay_fastest);
 	  }
 	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "delay_fastest_black_keys") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the fastest delay for the black keys!");
+	    return 1; // command taken
+	  }
+
+	  int delay = get_dec(parameter);
+
+	  if( delay < 0 || delay > 65535 ) {
+	    out("Delay should be in the range between 0 and 65535");
+	    return 1; // command taken
+	  } else {
+	    kc->delay_fastest_black_keys = delay;
+	    out("Keyboard #%d: delay_fastest_black_keys set to %d!", kb+1, kc->delay_fastest_black_keys);
+	  }
+	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "delay_slowest") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the slowest delay for velocity calculation!");
@@ -1274,6 +1312,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   out("kb %d din_inverted %s", kb+1, kc->din_inverted ? "on" : "off");
   out("kb %d break_inverted %s", kb+1, kc->break_inverted ? "on" : "off");
   out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
+  out("kb %d delay_fastest_black_keys %d", kb+1, kc->delay_fastest_black_keys);
   out("kb %d delay_slowest %d", kb+1, kc->delay_slowest);
 
   if( kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL] )
