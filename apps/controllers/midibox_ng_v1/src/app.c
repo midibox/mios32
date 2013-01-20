@@ -64,13 +64,6 @@
 #include "osc_client.h"
 
 
-// define priority level for sequencer
-// use same priority as MIOS32 specific tasks
-#define PRIORITY_TASK_PERIOD_1mS ( tskIDLE_PRIORITY + 3 )
-
-// local prototype of the task function
-static void TASK_Period_1mS(void *pvParameters);
-
 // define priority level for control surface handler
 // use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
 #define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
@@ -213,7 +206,6 @@ void APP_Init(void)
 #endif
 
   // start tasks
-  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS",   APP_REDUCED_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", APP_BIG_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 
 }
@@ -537,46 +529,32 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! This task is called periodically each mS to handle sequencer requests
+//! This function is periodically called from TASK_Hooks in main.c
+//! it has been enabled with MIOS32_USE_APP_TICK in app.h
 /////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS(void *pvParameters)
+void APP_Tick(void)
 {
-  portTickType xLastExecutionTime;
-
-  // Initialise the xLastExecutionTime variable on task entry
-  xLastExecutionTime = xTaskGetTickCount();
-
-  while( 1 ) {
-    vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
-
-    // skip delay gap if we had to wait for more than 5 ticks to avoid 
-    // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
-    portTickType xCurrentTickCount = xTaskGetTickCount();
-    if( xLastExecutionTime < (xCurrentTickCount-5) )
-      xLastExecutionTime = xCurrentTickCount;
-
-    // increment timestamp
-    ++app_ms_counter;
+  // increment timestamp
+  ++app_ms_counter;
 
 //    // execute sequencer handler
 //    MUTEX_SDCARD_TAKE;
 //    SEQ_Handler();
 //    MUTEX_SDCARD_GIVE;
 
-    // send timestamped MIDI events
-    MUTEX_MIDIOUT_TAKE;
-    SEQ_MIDI_OUT_Handler();
-    MUTEX_MIDIOUT_GIVE;
+//  // send timestamped MIDI events
+//  MUTEX_MIDIOUT_TAKE;
+//  SEQ_MIDI_OUT_Handler();
+//  MUTEX_MIDIOUT_GIVE;
 
-    // Scan Matrix button handler
-    MBNG_MATRIX_ButtonHandler();
+  // Scan Matrix button handler
+  MBNG_MATRIX_ButtonHandler();
 
-    // update CV outputs
-    MBNG_CV_Update();
+  // update CV outputs
+  MBNG_CV_Update();
 
-    // scan AINSER pins
-    AINSER_Handler(APP_AINSER_NotifyChange);
-  }
+  // scan AINSER pins
+  AINSER_Handler(APP_AINSER_NotifyChange);
 }
 
 
