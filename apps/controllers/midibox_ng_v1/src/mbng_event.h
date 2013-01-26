@@ -165,6 +165,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -174,6 +175,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -184,6 +186,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -194,6 +197,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -205,6 +209,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -215,6 +220,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -225,6 +231,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -234,6 +241,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -246,6 +254,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -256,6 +265,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -266,6 +276,7 @@ typedef union {
     u32 type:4;
     u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
@@ -385,6 +396,8 @@ extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_
 
 extern s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_Refresh(void);
+
+extern s32 MBNG_EVENT_UpdateLCD(u8 force);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);

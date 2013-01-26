@@ -23,7 +23,6 @@
 #include "app.h"
 #include "tasks.h"
 
-#include <buflcd.h>
 #include <glcd_font.h>
 
 #include <ainser.h>
@@ -87,6 +86,7 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 //! global variables
 /////////////////////////////////////////////////////////////////////////////
+u8  hw_enabled;
 u8  debug_verbose_level;
 u32 app_ms_counter;
 
@@ -94,7 +94,6 @@ u32 app_ms_counter;
 /////////////////////////////////////////////////////////////////////////////
 //! local variables
 /////////////////////////////////////////////////////////////////////////////
-static u8 hw_enabled;
 
 // for mutual exclusive SD Card access between different tasks
 // The mutex is handled with MUTEX_SDCARD_TAKE and MUTEX_SDCARD_GIVE
@@ -105,6 +104,9 @@ xSemaphoreHandle xSDCardSemaphore;
 // Mutex for MIDI IN/OUT handler
 xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
+
+// Mutex for LCD access
+xSemaphoreHandle xLCDSemaphore;
 
 // Mutex for J16 access (SDCard/Ethernet)
 xSemaphoreHandle xJ16Semaphore;
@@ -131,6 +133,10 @@ void APP_Init(void)
 
   // initialize stopwatch for measuring delays
   MIOS32_STOPWATCH_Init(100);
+
+  // hardware will be enabled once configuration has been loaded from SD Card
+  // (resp. no SD Card is available)
+  hw_enabled = 0;
 
   // only print error messages by default
   debug_verbose_level = DEBUG_VERBOSE_LEVEL_ERROR;
@@ -160,6 +166,7 @@ void APP_Init(void)
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+  xLCDSemaphore = xSemaphoreCreateRecursiveMutex();
   xJ16Semaphore = xSemaphoreCreateRecursiveMutex();
 
   // install SysEx callback
@@ -394,14 +401,16 @@ static void TASK_Period_1mS_LP(void *pvParameters)
   const u16 sdcard_check_delay = 1000;
   u16 sdcard_check_ctr = 0;
   u8 lun_available = 0;
-  static u8 isInMainPage = 0;
+  static u8 isInMainPage = 1;
 
   SCS_DisplayUpdateInMainPage(0);
+  MBNG_LCD_SpecialCharsReInit();
 
   while( 1 ) {
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // call SCS handler
+    MUTEX_LCD_TAKE;
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
     SCS_Tick();
 
@@ -410,10 +419,16 @@ static void TASK_Period_1mS_LP(void *pvParameters)
     // LCD output in mainpage
     if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() ) {
       u8 force = isInMainPage == 0;
-      if( force ) // page change
+      if( force ) { // page change
 	MBNG_LCD_SpecialCharsReInit();
+	MBNG_LCD_CursorSet(0, 0, 0);
+	MBNG_LCD_PrintSpaces(20);
+	MBNG_LCD_CursorSet(0, 0, 1);
+	MBNG_LCD_PrintSpaces(20);
+      }
 
-      BUFLCD_Update(force);
+      MBNG_EVENT_UpdateLCD(force);
+
       isInMainPage = 1; // static reminder
     } else {
       if( isInMainPage && MBNG_EVENT_MidiLearnModeGet() ) {
@@ -422,6 +437,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
       isInMainPage = 0; // static reminder
     }
+    MUTEX_LCD_GIVE;
 
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
@@ -460,18 +476,31 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
 	// change status
 	MBNG_FILE_StatusMsgSet("No SD Card");
+
+	MUTEX_LCD_TAKE;
+	MBNG_LCD_CursorSet(0, 0, 0);
+	MBNG_LCD_PrintString("*** No SD Card *** ");
+	MBNG_LCD_ClearScreenOnNextMessage();
+	MUTEX_LCD_GIVE;
       } else if( status == 3 ) {
 	if( !FILE_SDCardAvailable() ) {
 	  DEBUG_MSG("SD Card not found\n");
 	  MBNG_FILE_StatusMsgSet("No SD Card");
-	  BUFLCD_Clear();
-	  BUFLCD_CursorSet(0, 0);
-	  BUFLCD_PrintString("No SD Card");
+
+	  MUTEX_LCD_TAKE;
+	  MBNG_LCD_CursorSet(0, 0, 0);
+	  MBNG_LCD_PrintString("*** No SD Card *** ");
+	  MBNG_LCD_ClearScreenOnNextMessage();
+	  MUTEX_LCD_GIVE;
 	} else if( !FILE_VolumeAvailable() ) {
 	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
 	  MBNG_FILE_StatusMsgSet("No FAT");
-	  BUFLCD_CursorSet(0, 0);
-	  BUFLCD_PrintString("No FAT on SD Card");
+
+	  MUTEX_LCD_TAKE;
+	  MBNG_LCD_CursorSet(0, 0, 0);
+	  MBNG_LCD_PrintString("* No FAT on SD Card * ");
+	  MBNG_LCD_ClearScreenOnNextMessage();
+	  MUTEX_LCD_GIVE;
 	} else {
 	  MBNG_FILE_StatusMsgSet(NULL);
 

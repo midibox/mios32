@@ -31,8 +31,6 @@
 #include <scs_lcd.h>
 #include "scs_config.h"
 
-#include <buflcd.h>
-
 #include <seq_bpm.h>
 
 #include "mbng_dout.h"
@@ -436,7 +434,7 @@ static s32 displayHook(char *line1, char *line2)
   }
 
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
-    // overlayed by BUFLCD_Buffer() in app.c!
+    // overlayed by LCD handler in MBNG_LCD!
     // only exception: not in MIDI learn mode
     if( MBNG_EVENT_MidiLearnModeGet() ) {
       MBNG_EVENT_MidiLearnStatusMsg(line1, line2);

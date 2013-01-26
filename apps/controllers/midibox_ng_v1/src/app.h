@@ -53,6 +53,7 @@ extern void APP_Tick(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8  hw_enabled;
 extern u8  debug_verbose_level;
 extern u32 app_ms_counter;
 

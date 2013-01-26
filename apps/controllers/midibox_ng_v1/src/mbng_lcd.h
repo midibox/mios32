@@ -32,7 +32,14 @@
 
 extern s32 MBNG_LCD_Init(u32 mode);
 
-extern s32 MBNG_LCD_Update(u8 force);
+extern s32 MBNG_LCD_Clear(void);
+extern s32 MBNG_LCD_CursorSet(u8 lcd, u16 x, u16 y);
+extern s32 MBNG_LCD_PrintChar(char c);
+extern s32 MBNG_LCD_PrintString(char *str);
+extern s32 MBNG_LCD_PrintFormattedString(char *format, ...);
+extern s32 MBNG_LCD_PrintSpaces(int num);
+
+extern s32 MBNG_LCD_ClearScreenOnNextMessage(void);
 
 extern s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item);
 

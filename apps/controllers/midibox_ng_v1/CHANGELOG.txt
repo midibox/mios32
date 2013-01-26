@@ -1,6 +1,16 @@
 $Id$
 
 
+MIDIbox NG V1.013
+~~~~~~~~~~~~~~~~~
+
+   o overworked LCD handling: there is no buffer limitation anymore, any LCD and GLCD size
+     is accepted, which especially means that GLCD fonts are displayed correctly
+     independent from the specified number of connected devices.
+
+   o this change has freed some RAM which can be used for other purposes in future
+
+
 MIDIbox NG V1.012
 ~~~~~~~~~~~~~~~~~
 
