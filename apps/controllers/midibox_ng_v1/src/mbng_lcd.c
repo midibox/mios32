@@ -20,8 +20,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <stdarg.h>
 #include <string.h>
-#include <buflcd.h>
 #include <glcd_font.h>
 
 #include "app.h"
@@ -35,6 +35,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 lcd_charset;
+
+static u16 lcd_cursor_device;
+static u16 lcd_cursor_x;
+static u16 lcd_cursor_y;
+
+// taken from MIOS32 Bootloader configuration, but can also be changed during runtime
+static u8 lcd_device_num_x;
+static u8 lcd_device_num_y;
+static u8 lcd_device_height;
+static u8 lcd_device_width;
 
 static u8 first_msg;
 
@@ -94,8 +104,28 @@ s32 MBNG_LCD_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-  // initialize remaining LCDs
-  // initialize remaining CLCDs (programming_models/traditional/main.c will only initialize the first two)
+  // how many devices are configured in the MIOS32 Bootloader?
+  lcd_device_num_x = mios32_lcd_parameters.num_x;
+  lcd_device_num_y = mios32_lcd_parameters.num_y;
+
+  // graphical LCDs?
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    // take 80x2 by default - if bigger displays are used (which could display more), change during runtime
+    lcd_device_width  = mios32_lcd_parameters.width / 6;
+    lcd_device_height = mios32_lcd_parameters.height / 8;
+  } else {
+    // if only two CLCDs, we assume that the user hasn't changed the configuration
+    // and therefore support up to two 2x40 CLCDs (combined to 2x80)
+    if( (mios32_lcd_parameters.num_x*mios32_lcd_parameters.num_y) <= 2 ) {
+      lcd_device_width  = 40;
+      lcd_device_height = 2;    
+    } else {
+      lcd_device_width  = mios32_lcd_parameters.width;
+      lcd_device_height = mios32_lcd_parameters.height;
+    }
+  }
+
+  // initialize all LCDs (programming_models/traditional/main.c will only initialize the first two)
   int lcd;
   for(lcd=0; lcd<(mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y); ++lcd) {
     MIOS32_LCD_DeviceSet(lcd);
@@ -106,15 +136,13 @@ s32 MBNG_LCD_Init(u32 mode)
     }
   }
 
-  // init buffered LCD output
-  BUFLCD_Init(1); // without clear - we want to initialize the layout first
-
+  // init LCD
   first_msg = 0; // message will disappear with first item
-  BUFLCD_Clear();
-  BUFLCD_CursorSet(0, 0);
-  BUFLCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
-  BUFLCD_CursorSet(0, 1);
-  BUFLCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
+  MBNG_LCD_Clear();
+  MBNG_LCD_CursorSet(0, 0, 0);
+  MBNG_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+  MBNG_LCD_CursorSet(0, 0, 1);
+  MBNG_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE2);
 
   MBNG_LCD_SpecialCharsInit(0, 1); // select vertical bars
 
@@ -122,14 +150,140 @@ s32 MBNG_LCD_Init(u32 mode)
 }
 
 
+
 /////////////////////////////////////////////////////////////////////////////
-//! transfers the buffer to LCDs
-//! \param[in] force if != 0, it is ensured that the whole screen will be refreshed, regardless
-//! if characters have changed or not
+//! Clears all LCDs
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LCD_Update(u8 force)
+s32 MBNG_LCD_Clear(void)
 {
-  return BUFLCD_Update(force);
+  int lcd;
+  for(lcd=0; lcd<(mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y); ++lcd) {
+    MIOS32_LCD_DeviceSet(lcd);
+    MIOS32_LCD_Clear();
+  }
+
+  lcd_cursor_device = 0;
+  lcd_cursor_x = 0;
+  lcd_cursor_y = 0;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the cursor on the given LCD
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_CursorSet(u8 lcd, u16 x, u16 y)
+{
+  // determine effective x/y depending on bootloader configuration
+  u32 full_width = lcd_device_num_x * lcd_device_width;
+  u32 full_height = lcd_device_num_y * lcd_device_height;
+
+  // following calculation allows to span the line over multiple LCDs
+  // e.g. with lcd_device_num_x=2 and lcd_device_width=40, we are able to
+  // - address x=0..79 with lcd=0
+  // - or alternatively address x=0..39 with lcd=0 and lcd=1
+  lcd_cursor_x = x + (lcd % lcd_device_num_x) * lcd_device_width;
+  // same for the Y position
+  lcd_cursor_y = y + (lcd / lcd_device_num_x) * lcd_device_height;
+
+  // invalidate cursor if resulting cursor position is out of range
+  if( lcd_cursor_x >= full_width || lcd_cursor_y >= full_height ) {
+    lcd_cursor_x = 0xffff;
+    lcd_cursor_y = 0xffff;
+    return -1; // out of range
+  }
+
+  // set device & cursor
+  lcd_cursor_device = (lcd_cursor_x / lcd_device_width) + (lcd_cursor_y / lcd_device_height) * lcd_device_num_x;
+  MIOS32_LCD_DeviceSet(lcd_cursor_device);
+  MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints a character and increments the cursor
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_PrintChar(char c)
+{
+  // determine effective x/y depending on bootloader configuration
+  u32 full_width = lcd_device_num_x * lcd_device_width;
+  u32 full_height = lcd_device_num_y * lcd_device_height;
+
+  // exit if invalid cursor position
+  if( lcd_cursor_x >= full_width || lcd_cursor_y >= full_height )
+    return -1;
+
+  // set device and change cursor if required
+  u8 device = (lcd_cursor_x / lcd_device_width) + (lcd_cursor_y / lcd_device_height) * lcd_device_num_x;
+  if( device != lcd_cursor_device ) {
+    lcd_cursor_device = device;
+    MIOS32_LCD_DeviceSet(lcd_cursor_device);
+    MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+  }
+
+  // print char
+  MIOS32_LCD_PrintChar(c);
+
+  // increment cursor
+  ++lcd_cursor_x;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints a string
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_PrintString(char *str)
+{
+  while( *str != '\0' ) {
+    if( lcd_cursor_x >= (lcd_device_num_x * lcd_device_width) )
+      break;
+    MBNG_LCD_PrintChar(*str);
+    ++str;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints a formatted string
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_PrintFormattedString(char *format, ...)
+{
+  char buffer[128]; // hopefully enough?
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return MBNG_LCD_PrintString(buffer);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints the given number of spaces
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_PrintSpaces(int num)
+{
+  int i;
+
+  for(i=0; i<num; ++i)
+    MBNG_LCD_PrintChar(' ');
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Whenever this function is called, the screen will be cleared once a new
+//! message is print
+/////////////////////////////////////////////////////////////////////////////
+extern s32 MBNG_LCD_ClearScreenOnNextMessage(void)
+{
+  first_msg = 0;
+
+  return 0; // no error
 }
 
 
@@ -146,21 +300,15 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 #endif
 
   // GLCD: always start with normal font
-  BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
   u8 current_font = 'n';
 
   if( !first_msg ) {
     first_msg = 1;
-    BUFLCD_Clear();
+    MBNG_LCD_Clear();
   }
 
-  {
-    u8 lcd = item->lcd;
-    u8 x = item->lcd_x;
-    u8 y = item->lcd_y;
-    BUFLCD_CursorSet((lcd % BUFLCD_DeviceNumXGet())*BUFLCD_DeviceWidthGet() + x,
-		     (lcd / BUFLCD_DeviceNumXGet())*BUFLCD_DeviceHeightGet() + y);
-  }
+  MBNG_LCD_CursorSet(item->lcd, item->lcd_x, item->lcd_y);
 
   char *str = item->label;
 
@@ -182,7 +330,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
     if( *str == '^' ) { // label
       ++str;
       if( *str == '^' || *str == 0 )
-	BUFLCD_PrintChar('^');
+	MBNG_LCD_PrintChar('^');
       else if( *str == '#' ) {
 	// ignore... this is for label termination without spaces, e.g. "^label^#MyText"
 	++str;
@@ -204,18 +352,18 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
     if( *str == '&' ) {
       switch( *(++str) ) {
-      case '&': BUFLCD_PrintChar('&'); break;
-      case 'n': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL); break;
-      case 's': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_SMALL); break;
-      case 'b': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_BIG); break;
-      case 'k': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); break;
-      case 'h': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); break;
-      case 'v': current_font = *str; BUFLCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); break;
+      case '&': MBNG_LCD_PrintChar('&'); break;
+      case 'n': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL); break;
+      case 's': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_SMALL); break;
+      case 'b': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG); break;
+      case 'k': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); break;
+      case 'h': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); break;
+      case 'v': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); break;
       default:
 	current_font = 'n';
-	BUFLCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-	BUFLCD_PrintChar('&');
-	BUFLCD_PrintChar(*str);
+	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	MBNG_LCD_PrintChar('&');
+	MBNG_LCD_PrintChar(*str);
       }
       ++str;
     }
@@ -236,13 +384,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
 	    pos_str = (char *)(next + 1);
 	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
-	      {
-		u8 lcd = lcd_num-1;
-		u8 x = lcd_x - 1;
-		u8 y = lcd_y - 1;
-		BUFLCD_CursorSet((lcd % BUFLCD_DeviceNumXGet())*BUFLCD_DeviceWidthGet() + x,
-				 (lcd / BUFLCD_DeviceNumXGet())*BUFLCD_DeviceHeightGet() + y);
-	      }
+	      MBNG_LCD_CursorSet(lcd_num-1, lcd_x - 1, lcd_y - 1);
 	      str = (char *)&next[1];
 	    }
 	  }
@@ -255,13 +397,13 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
       continue; // for the case that we've an recursive string - see for() header
 
     if( *str != '%' )
-      BUFLCD_PrintChar(*str);
+      MBNG_LCD_PrintChar(*str);
     else {
       char *format_begin = str;
 
       ++str;
       if( *str == '%' || *str == 0 )
-	BUFLCD_PrintChar('%');
+	MBNG_LCD_PrintChar('%');
       else {
 	// alignment, padding, etc...
 	if( *str == '-' )
@@ -284,21 +426,21 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  case 'X':
 	  case 'u':
 	  case 'c': {
-	    BUFLCD_PrintFormattedString(format, (int)item->value + item->offset);
+	    MBNG_LCD_PrintFormattedString(format, (int)item->value + item->offset);
 	  } break;
 
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
-	    BUFLCD_PrintFormattedString(format, "");
+	    MBNG_LCD_PrintFormattedString(format, "");
 	  } break;
 
 	  case 'i': { // ID
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, item->id & 0xfff);
+	    MBNG_LCD_PrintFormattedString(format, item->id & 0xfff);
 	  } break;
 
 	  case 'p': { // Matrix pin number
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, item->matrix_pin);
+	    MBNG_LCD_PrintFormattedString(format, item->matrix_pin);
 	  } break;
 
 	  case 'e': { // (MIDI) event
@@ -311,24 +453,24 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	    } else {
 	      sprintf(midi_str, "%02x%02x%02x", item->stream[0], item->stream[1], item->value & 0x7f);
 	    }
-	    BUFLCD_PrintFormattedString(format, midi_str);
+	    MBNG_LCD_PrintFormattedString(format, midi_str);
 	  } break;
 
 	  case 'm': { // min value
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, item->min);
+	    MBNG_LCD_PrintFormattedString(format, item->min);
 	  } break;
 
 	  case 'M': { // max value
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, item->max);
+	    MBNG_LCD_PrintFormattedString(format, item->max);
 	  } break;
 
 	  case 'b': { // binary digit
 	    *format_type = 'c';
 	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 	    u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
-	    BUFLCD_PrintFormattedString(format, dout_value ? '*' : 'o');
+	    MBNG_LCD_PrintFormattedString(format, dout_value ? '*' : 'o');
 	  } break;
 
 	  case 'B': { // vertical bar
@@ -364,20 +506,20 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	      bar = icon_offset + ((num_icons * normalized_value) / range);
 	    }
 
-	    BUFLCD_PrintChar(bar);
+	    MBNG_LCD_PrintChar(bar);
 	  } break;
 
 	  case 'q': { // selected bank
 	    *format_type = 'd';
-	    BUFLCD_PrintFormattedString(format, MBNG_EVENT_SelectedBankGet());
+	    MBNG_LCD_PrintFormattedString(format, MBNG_EVENT_SelectedBankGet());
 	  } break;
 
 	  case 'C': { // clear screens
-	    BUFLCD_Clear();
+	    MBNG_LCD_Clear();
 	  } break;
 
 	  default:
-	    BUFLCD_PrintString(format);
+	    MBNG_LCD_PrintString(format);
 	  }
 	}
       }

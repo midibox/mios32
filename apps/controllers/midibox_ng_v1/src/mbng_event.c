@@ -21,7 +21,6 @@
 #include <scs.h>
 #include <ainser.h>
 #include <midimon.h>
-#include <buflcd.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -100,6 +99,9 @@ static u16 event_pool_size;
 static u16 event_pool_maps_begin;
 static u16 event_pool_num_items;
 static u16 event_pool_num_maps;
+
+// last active event
+mbng_event_item_id_t last_event_item_id;
 
 // banks
 u8 selected_bank;
@@ -257,7 +259,6 @@ s32 MBNG_EVENT_Init(u32 mode)
 
   MBNG_EVENT_PoolUpdate();
 
-
   return 0; // no error
 }
 
@@ -303,6 +304,8 @@ s32 MBNG_EVENT_PoolClear(void)
   event_pool_maps_begin = 0;
   event_pool_num_items = 0;
   event_pool_num_maps = 0;
+
+  last_event_item_id = 0;
 
   selected_bank = 1;
   num_banks = 0;
@@ -1945,8 +1948,11 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
 	MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
     }
 
-    if( item->flags.general.fwd_to_lcd )
-      MBNG_LCD_PrintItemLabel(item);
+    if( item->flags.general.fwd_to_lcd && item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+      pool_item->flags.general.update_lcd = 1;
+      last_event_item_id = pool_item->id;
+    }
   }
 
   return -1; // unsupported controller type
@@ -2108,7 +2114,11 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     MBNG_EVENT_ItemForward(item);
 
   // print label
-  MBNG_LCD_PrintItemLabel(item);
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->flags.general.update_lcd = 1;
+    last_event_item_id = pool_item->id;
+  }
 
   return 0; // no error
 }
@@ -2162,6 +2172,47 @@ static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
       MBNG_EVENT_ItemReceive(&item, value, 1);
     }
     pool_ptr += pool_item->len;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints all items with enabled 'update_lcd' flag\n
+//! With force != 0 all active items will be print regardless of this flag
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_UpdateLCD(u8 force)
+{
+  mbng_event_pool_item_t *last_pool_item = NULL;
+
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    if( pool_item->flags.general.active && (force || pool_item->flags.general.update_lcd) ) {
+      pool_item->flags.general.update_lcd = 0;
+
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_LCD_PrintItemLabel(&item);
+
+      // if force: output the last active item (again) at the end
+      if( force && last_event_item_id && pool_item->id == last_event_item_id ) {
+	last_pool_item = pool_item;
+      }
+    }
+
+    pool_ptr += pool_item->len;
+  }
+
+  // last pool item?
+  // (relevant for SCS->Main Page change)
+  if( last_pool_item ) {
+    mbng_event_item_t item;
+    MBNG_EVENT_ItemCopy2User(last_pool_item, &item);
+    MBNG_LCD_PrintItemLabel(&item);
   }
 
   return 0; // no error
@@ -2534,21 +2585,27 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_TXT:
 	      match = 1;
 	      pool_item->tmp_runtime_flags.sysex_txt = 1;
-	      BUFLCD_CursorSet(pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
-	      // TODO: graphical default font for textmessages
-	      BUFLCD_PrintChar(midi_in); // print char
+	      if( midi_in < 0x80 ) {
+		MUTEX_LCD_TAKE;
+		MBNG_LCD_CursorSet(0, pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
+		// TODO: graphical default font for textmessages
+		MBNG_LCD_PrintChar(midi_in); // print char
+		MUTEX_LCD_GIVE;
+	      }
 	      ++pool_item->tmp_sysex_value; // increment cursor (no wrapping)
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_TXT56:
 	      match = 1;
 	      pool_item->tmp_runtime_flags.sysex_txt = 1;
-	      BUFLCD_CursorSet(pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
-	      // TODO: graphical default font for textmessages
-	      BUFLCD_PrintChar(midi_in); // print char
+	      if( midi_in < 0x80 ) {
+		MUTEX_LCD_TAKE;
+		MBNG_LCD_CursorSet(0, pool_item->tmp_sysex_value % 56, pool_item->tmp_sysex_value / 56); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
+		// TODO: graphical default font for textmessages
+		MBNG_LCD_PrintChar(midi_in); // print char
+		MUTEX_LCD_GIVE;
+	      }
 	      ++pool_item->tmp_sysex_value; // increment cursor
-	      if( (pool_item->tmp_sysex_value & 0x3f) >= 56 ) // wrap at 56
-		pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value >= 64) ? 0x00 : 0x40;
 	      break;
 
 	    }

@@ -25,7 +25,6 @@
 #include <aout.h>
 #include <file.h>
 #include <app_lcd.h>
-#include <buflcd.h>
 
 #include "app.h"
 #include "terminal.h"
@@ -402,16 +401,6 @@ s32 TERMINAL_PrintSystem(void *_output_function)
   AOUT_TerminalPrintConfig(out);
 
   APP_LCD_TerminalPrintConfig(out);
-  out("LCD Buffer configured for %dx%d devices with dimension %dx%d\n",
-      BUFLCD_DeviceNumXGet(), BUFLCD_DeviceNumYGet(), BUFLCD_DeviceWidthGet(), BUFLCD_DeviceHeightGet());
-
-  if( MIOS32_LCD_TypeIsGLCD() ) {
-    if( BUFLCD_DeviceFontHandlingEnabled() ) {
-      out("LCD is a graphical LCD and font handling has been enabled.\n");
-    } else {
-      out("LCD is a graphical LCD, but font handling has been disabled due to the high buffer size!\n");
-    }
-  }
 
   out("Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
   u32 pool_size = MBNG_EVENT_PoolSizeGet();

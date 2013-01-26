@@ -81,6 +81,18 @@ extern "C" {
 #endif
 
 
+// LCD access
+#ifdef MIOS32_FAMILY_EMULATION
+  extern void TASKS_LCDSemaphoreTake(void);
+  extern void TASKS_LCDSemaphoreGive(void);
+# define MUTEX_LCD_TAKE { TASKS_LCDSemaphoreTake(); }
+# define MUTEX_LCD_GIVE { TASKS_LCDSemaphoreGive(); }
+#else
+  extern xSemaphoreHandle xLCDSemaphore;
+# define MUTEX_LCD_TAKE { while( xSemaphoreTakeRecursive(xLCDSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_LCD_GIVE { xSemaphoreGiveRecursive(xLCDSemaphore); }
+#endif
+
 
 extern s32 TASK_MSD_EnableSet(u8 enable);
 extern s32 TASK_MSD_EnableGet();
