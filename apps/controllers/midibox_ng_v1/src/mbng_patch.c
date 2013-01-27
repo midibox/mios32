@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include "tasks.h"
+#include <keyboard.h>
 #include <ainser.h>
 #include <aout.h>
 
@@ -130,6 +131,26 @@ s32 MBNG_PATCH_Init(u32 mode)
     config.num_channels = 8;
     AOUT_ConfigSet(config);
     AOUT_IF_Init(0);
+  }
+
+  {
+    KEYBOARD_Init(0);
+
+    // disable keyboard SR assignments by default
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      kc->num_rows = 0;
+      kc->dout_sr1 = 0;
+      kc->dout_sr2 = 0;
+      kc->din_sr1 = 0;
+      kc->din_sr2 = 0;
+
+      // due to slower scan rate:
+      kc->delay_fastest = 5;
+      kc->delay_fastest_black_keys = 0; // if 0, we take delay_fastest, otherwise we take the dedicated value for the black keys
+      kc->delay_slowest = 100;
+    }
   }
 
   return 0; // no error
