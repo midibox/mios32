@@ -22,6 +22,7 @@
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
+#include <keyboard.h>
 #include <aout.h>
 #include <file.h>
 #include <app_lcd.h>
@@ -182,6 +183,9 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
   if( UIP_TERMINAL_ParseLine(input, _output_function) > 0 )
     return 0; // command parsed by UIP Terminal
 
+  if( KEYBOARD_TerminalParseLine(input, _output_function) > 0 )
+    return 0; // command parsed by Keyboard Terminal
+
   if( MIDIMON_TerminalParseLine(input, _output_function) > 0 )
     return 0; // command parsed
 
@@ -207,6 +211,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  sdcard:                           print SD Card info\n");
       out("  sdcard_format:                    formats the SD Card (you will be asked for confirmation)\n");
       UIP_TERMINAL_Help(_output_function);
+      KEYBOARD_TerminalHelp(_output_function);
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
       AOUT_TerminalHelp(_output_function);

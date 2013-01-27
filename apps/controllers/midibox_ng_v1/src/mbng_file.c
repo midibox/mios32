@@ -115,6 +115,8 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
 
     if( (status=MBNG_FILE_C_Write("DEFAULT")) < 0 ) {
       DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    } else {
+      DEBUG_MSG("Initial DEFAULT.NGC file has been created.\n");
     }
   }
 
@@ -125,6 +127,8 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
 
     if( (status=MBNG_FILE_L_Write("DEFAULT")) < 0 ) {
       DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    } else {
+      DEBUG_MSG("Initial DEFAULT.NGL file has been created.\n");
     }
   }
 

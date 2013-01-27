@@ -1,6 +1,26 @@
 $Id$
 
 
+MIDIbox NG V1.014
+~~~~~~~~~~~~~~~~~
+
+   o the keyboard handler of MIDIbox KB has been integrated.
+     The configuration commands are identical "set kb..." as documented at
+     the MIDIbox KB page: http://www.ucapps.de/midibox_kb.html
+
+   o keyboard parameters are also stored in the .NGC file, and can be
+     configured from there.
+
+   o please note that the latency is 10 times higher than in the MIDIbox KB
+     application! Each row is scanned in 320 uS (instead of 32 uS).
+     This has to be considered in the velocity delay configuration.
+     delay_slowest should be 100 (instead of 1000), and delay_fastest should
+     be 5 (instead of 50)
+
+   o DOGM and SSD1306 GLCDs: support for more than 12 displays via DOUT shift
+     registers connected to J28
+
+
 MIDIbox NG V1.013
 ~~~~~~~~~~~~~~~~~
 

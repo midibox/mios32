@@ -29,6 +29,7 @@
 #include <seq_bpm.h>
 #include <ainser.h>
 #include <aout.h>
+#include <keyboard.h>
 
 #include "tasks.h"
 #include "file.h"
@@ -1761,6 +1762,365 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses KEYBOARD definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseKeyboard(char *cmd, char *brkt)
+{
+  // parse the parameters
+  int num = 0;
+  int rows = 0;
+  int dout_sr1 = 0;
+  int dout_sr2 = 0;
+  int din_sr1 = 0;
+  int din_sr2 = 0;
+  int din_inverted = 0;
+  int break_inverted = 0;
+  int din_key_offset = 32;
+  int scan_velocity = 1;
+  int scan_optimized = 0;
+  int note_offset = 36;
+  int midi_ports = 0x1011;
+  int midi_chn = 1;
+  int delay_fastest = 5;
+  int delay_fastest_black_keys = 0;
+  int delay_slowest = 100;
+
+  int ain_pitchwheel_pin = 0;
+  int ain_pitchwheel_ctrl = 0x80;
+  int ain_pitchwheel_min = 1;
+  int ain_pitchwheel_max = 254;
+
+  int ain_modwheel_pin = 0;
+  int ain_modwheel_ctrl = 1;
+  int ain_modwheel_min = 1;
+  int ain_modwheel_max = 254;
+
+  int ain_sustain_pin = 0;
+  int ain_sustain_ctrl = 64;
+  int ain_sustain_min = 1;
+  int ain_sustain_max = 254;
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "n") == 0 ) {
+      if( (num=get_dec(value_str)) < 1 || num > KEYBOARD_NUM ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid KEYBOARD number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, KEYBOARD_NUM);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "rows") == 0 ) {
+      if( (rows=get_dec(value_str)) < 0 || rows > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid row number for %s n=%d ... %s=%s (1..16)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "dout_sr1") == 0 ) {
+      if( (dout_sr1=get_dec(value_str)) < 0 || dout_sr1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "dout_sr2") == 0 ) {
+      if( (dout_sr2=get_dec(value_str)) < 0 || dout_sr2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "din_sr1") == 0 ) {
+      if( (din_sr1=get_dec(value_str)) < 0 || din_sr1 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "din_sr2") == 0 ) {
+      if( (din_sr2=get_dec(value_str)) < 0 || din_sr2 > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "din_inverted") == 0 ) {
+      if( (din_inverted=get_dec(value_str)) < 0 || din_inverted > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "break_inverted") == 0 ) {
+      if( (break_inverted=get_dec(value_str)) < 0 || break_inverted > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "din_key_offset") == 0 ) {
+      if( (din_key_offset=get_dec(value_str)) < 0 || din_key_offset > 127 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "scan_velocity") == 0 ) {
+      if( (scan_velocity=get_dec(value_str)) < 0 || scan_velocity > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "scan_optimized") == 0 ) {
+      if( (scan_optimized=get_dec(value_str)) < 0 || scan_optimized > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "note_offset") == 0 ) {
+      if( (note_offset=get_dec(value_str)) < 0 || note_offset > 127 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "midi_ports") == 0 ) {
+      if( (midi_ports=get_bin(value_str, 16, 0)) < 0 || midi_ports > 0xffff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid port mask for %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "midi_chn") == 0 ) {
+      if( (midi_chn=get_dec(value_str)) < 1 || midi_chn > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 1..16)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "delay_fastest") == 0 ) {
+      if( (delay_fastest=get_dec(value_str)) < 0 || delay_fastest > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "delay_fastest_black_keys") == 0 ) {
+      if( (delay_fastest_black_keys=get_dec(value_str)) < 0 || delay_fastest_black_keys > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "delay_slowest") == 0 ) {
+      if( (delay_slowest=get_dec(value_str)) < 0 || delay_slowest > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_pitchwheel_pin") == 0 ) {
+      if( (ain_pitchwheel_pin=get_dec(value_str)) < 0 || ain_pitchwheel_pin > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_pitchwheel_ctrl") == 0 ) {
+      if( (ain_pitchwheel_ctrl=get_dec(value_str)) < 0 || ain_pitchwheel_ctrl > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_pitchwheel_min") == 0 ) {
+      if( (ain_pitchwheel_min=get_dec(value_str)) < 0 || ain_pitchwheel_min > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_pitchwheel_max") == 0 ) {
+      if( (ain_pitchwheel_max=get_dec(value_str)) < 0 || ain_pitchwheel_max > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_modwheel_pin") == 0 ) {
+      if( (ain_modwheel_pin=get_dec(value_str)) < 0 || ain_modwheel_pin > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_modwheel_ctrl") == 0 ) {
+      if( (ain_modwheel_ctrl=get_dec(value_str)) < 0 || ain_modwheel_ctrl > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_modwheel_min") == 0 ) {
+      if( (ain_modwheel_min=get_dec(value_str)) < 0 || ain_modwheel_min > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_modwheel_max") == 0 ) {
+      if( (ain_modwheel_max=get_dec(value_str)) < 0 || ain_modwheel_max > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_sustain_pin") == 0 ) {
+      if( (ain_sustain_pin=get_dec(value_str)) < 0 || ain_sustain_pin > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_sustain_ctrl") == 0 ) {
+      if( (ain_sustain_ctrl=get_dec(value_str)) < 0 || ain_sustain_ctrl > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_sustain_min") == 0 ) {
+      if( (ain_sustain_min=get_dec(value_str)) < 0 || ain_sustain_min > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_sustain_max") == 0 ) {
+      if( (ain_sustain_max=get_dec(value_str)) < 0 || ain_sustain_max > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..255)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  if( num >= 1 ) {
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[num-1];
+    kc->num_rows = rows;
+    kc->dout_sr1 = dout_sr1;
+    kc->dout_sr2 = dout_sr2;
+    kc->din_sr1 = din_sr1;
+    kc->din_sr2 = din_sr2;
+    kc->din_inverted = din_inverted;
+    kc->break_inverted = break_inverted;
+    kc->din_key_offset = din_key_offset;
+    kc->scan_velocity = scan_velocity;
+    kc->scan_optimized = scan_optimized;
+    kc->note_offset = note_offset;
+    kc->midi_ports = midi_ports;
+    kc->midi_chn = midi_chn;
+    kc->delay_fastest = delay_fastest;
+    kc->delay_fastest_black_keys = delay_fastest_black_keys;
+    kc->delay_slowest = delay_slowest;
+
+#if KEYBOARD_AIN_NUM != 3
+# error "KEYBOARD_AIN_NUM != 3 - please adapt here!"
+#endif
+    kc->ain_pin[0]  = ain_pitchwheel_pin;
+    kc->ain_ctrl[0] = ain_pitchwheel_ctrl;
+    kc->ain_min[0]  = ain_pitchwheel_min;
+    kc->ain_max[0]  = ain_pitchwheel_max;
+
+    kc->ain_pin[1]  = ain_modwheel_pin;
+    kc->ain_ctrl[1] = ain_modwheel_ctrl;
+    kc->ain_min[1]  = ain_modwheel_min;
+    kc->ain_max[1]  = ain_modwheel_max;
+
+    kc->ain_pin[2]  = ain_sustain_pin;
+    kc->ain_ctrl[2] = ain_sustain_ctrl;
+    kc->ain_min[2]  = ain_sustain_min;
+    kc->ain_max[2]  = ain_sustain_max;
+  }
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses LED_MATRIX_PATTERN definitions
 //! \returns >= 0 if command is valid
@@ -2590,6 +2950,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  parseDinMatrix(parameter, brkt);
 	} else if( strcmp(parameter, "DOUT_MATRIX") == 0 ) {
 	  parseDoutMatrix(parameter, brkt);
+	} else if( strcmp(parameter, "KEYBOARD") == 0 ) {
+	  parseKeyboard(parameter, brkt);
 	} else if( strcmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
 	  parseLedMatrixPattern(parameter, brkt);
 	} else if( strcmp(parameter, "AIN") == 0 ) {
@@ -3157,7 +3519,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DOUT_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
+      sprintf(line_buffer, "DOUT_MATRIX n=%d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
 	      matrix+1,
 	      m->num_rows,
 	      m->inverted.sel,
@@ -3189,7 +3551,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     int n, pos;
     for(n=0; n<MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS; ++n) {
       for(pos=0; pos<MBNG_MATRIX_DOUT_NUM_PATTERN_POS; ++pos) {
-	sprintf(line_buffer, "LED_MATRIX_PATTERN n=%2d", n+1);
+	sprintf(line_buffer, "LED_MATRIX_PATTERN n=%d", n+1);
 	FLUSH_BUFFER;
 
 	if( pos == ((MBNG_MATRIX_DOUT_NUM_PATTERN_POS-1)/2) )
@@ -3251,7 +3613,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       else if( deadband <= 127 ) resolution =  5;
       else                       resolution =  4;
 
-      sprintf(line_buffer, "AINSER n=%3d   enabled=%d  cs=%d  num_pins=%d  resolution=%dbit\n",
+      sprintf(line_buffer, "AINSER n=%d   enabled=%d  cs=%d  num_pins=%d  resolution=%dbit\n",
 	      module+1,
 	      AINSER_EnabledGet(ainser->flags.cs),
 	      ainser->flags.cs,
@@ -3260,6 +3622,77 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
     }
 
+  }
+
+  {
+    sprintf(line_buffer, "\n\n# KEYBOARD hardware\n");
+    FLUSH_BUFFER;
+
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      char ports_bin[17];
+      {
+	int bit;
+	for(bit=0; bit<16; ++bit) {
+	  ports_bin[bit] = (kc->midi_ports & (1 << bit)) ? '1' : '0';
+	}
+	ports_bin[16] = 0;
+      }
+
+      sprintf(line_buffer, "KEYBOARD n=%d   rows=%d  dout_sr1=%d  dout_sr2=%d  din_sr1=%d  din_sr2=%d  din_inverted=%d  break_inverted=%d  din_key_offset=%d \\\n",
+	      kb+1,
+	      kc->num_rows,
+	      kc->dout_sr1,
+	      kc->dout_sr2,
+	      kc->din_sr1,
+	      kc->din_sr2,
+	      kc->din_inverted,
+	      kc->break_inverted,
+	      kc->din_key_offset);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "               scan_velocity=%d  scan_optimized=%d  note_offset=%d  midi_ports=%s  midi_chn=%d \\\n",
+	      kc->scan_velocity,
+	      kc->scan_optimized,
+	      kc->note_offset,
+	      ports_bin,
+	      kc->midi_chn);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "               delay_fastest=%d  delay_fastest_black_keys=%d  delay_slowest=%d \\\n",
+	      kc->delay_fastest,
+	      kc->delay_fastest_black_keys,
+	      kc->delay_slowest);
+      FLUSH_BUFFER;
+
+#if KEYBOARD_AIN_NUM != 3
+# error "KEYBOARD_AIN_NUM != 3 - please adapt here!"
+#endif
+      sprintf(line_buffer, "               ain_pitchwheel_pin=%3d  ain_pitchwheel_ctrl=%3d  ain_pitchwheel_min=%3d  ain_pitchwheel_max=%3d \\\n",
+	      kc->ain_pin[0],
+	      kc->ain_ctrl[0],
+	      kc->ain_min[0],
+	      kc->ain_max[0]);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "               ain_modwheel_pin  =%3d  ain_modwheel_ctrl  =%3d  ain_modwheel_min  =%3d  ain_modwheel_max  =%3d \\\n",
+	      kc->ain_pin[1],
+	      kc->ain_ctrl[1],
+	      kc->ain_min[1],
+	      kc->ain_max[1]);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "               ain_sustain_pin   =%3d  ain_sustain_ctrl   =%3d  ain_sustain_min   =%3d  ain_sustain_max   =%3d\n",
+	      kc->ain_pin[2],
+	      kc->ain_ctrl[2],
+	      kc->ain_min[2],
+	      kc->ain_max[2]);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "\n");
+      FLUSH_BUFFER;
+    }
   }
 
   {
@@ -3291,7 +3724,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	sprintf(config_port_str, "0x%02x", mf->config_port);
       }
 
-      sprintf(line_buffer, "MF n=%3d   enabled=%d  midi_in_port=%s  midi_out_port=%s  chn=%d  ts_first_button_id=%d  config_port=%s\n",
+      sprintf(line_buffer, "MF n=%d   enabled=%d  midi_in_port=%s  midi_out_port=%s  chn=%d  ts_first_button_id=%d  config_port=%s\n",
 	      module+1,
 	      mf->flags.enabled,
 	      midi_in_port_str,

@@ -83,6 +83,9 @@ include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 # For performance measurings
 include $(MIOS32_PATH)/modules/freertos_utils/freertos_utils.mk
 
+# KEYBOARD driver
+include $(MIOS32_PATH)/modules/keyboard/keyboard.mk
+
 # AINSER driver
 include $(MIOS32_PATH)/modules/ainser/ainser.mk
 

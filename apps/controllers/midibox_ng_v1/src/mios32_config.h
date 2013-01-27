@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.013"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.014"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
 
 // define a unique VID/PID for this application
@@ -27,8 +27,7 @@
 // disables the default SRIO scan routine in programming_models/traditional/main.c
 // allows to implement an own handler
 // -> see app.c, APP_SRIO_*
-//#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
-// TK: not done - doesn't improve ledring results
+#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
 
 // enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
 #if defined(MIOS32_FAMILY_STM32F10x)
