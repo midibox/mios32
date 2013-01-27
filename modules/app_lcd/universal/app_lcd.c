@@ -108,24 +108,61 @@ static s32 APP_LCD_KS0108_CS_Set(u8 all)
 static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 {
   int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
-  if( num_additional_lcds >= 4 )
-    num_additional_lcds = 4;
+  if( num_additional_lcds >= (MAX_LCDS-8) )
+    num_additional_lcds = (MAX_LCDS-8);
 
   // Note: assume that CS lines are low-active!
   if( all ) {
     MIOS32_BOARD_J15_DataSet(value ? 0x00 : 0xff);
 
-    int i;
-    for(i=0; i<num_additional_lcds; ++i)
-      MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
+    if( num_additional_lcds <= 4 ) {
+      int i;
+      for(i=0; i<num_additional_lcds; ++i)
+	MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
+    } else {
+      int num_shifts = num_additional_lcds / 8;
+      if( num_additional_lcds % 8 )
+	++num_shifts;
+
+      // shift data
+      int i;
+      for(i=num_shifts-1; i>=0; --i) {
+	MIOS32_BOARD_J28_SerDataShift(value ? 0x00 : 0xff);
+      }
+
+      // pulse RC (J28.WS)
+      MIOS32_BOARD_J28_PinSet(2, 0);
+      MIOS32_BOARD_J28_PinSet(2, 1);
+    }
   } else {
     u32 mask = value ? ~(1 << mios32_lcd_device) : 0xffffffff;
 
     MIOS32_BOARD_J15_DataSet(mask);
 
-    int i;
-    for(i=0; i<num_additional_lcds; ++i)
-      MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
+    if( num_additional_lcds <= 4 ) {
+      int i;
+      for(i=0; i<num_additional_lcds; ++i)
+	MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
+    } else {
+      int num_shifts = num_additional_lcds / 8;
+      if( num_additional_lcds % 8 )
+	++num_shifts;
+
+      int selected_lcd = mios32_lcd_device - 8;
+      int selected_lcd_sr = selected_lcd / 8;
+      u8 selected_lcd_mask = value ? ~(1 << (selected_lcd % 8)) : 0xff;
+
+      // shift data
+      int i;
+      for(i=num_shifts-1; i>=0; --i) {
+	u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
+	MIOS32_BOARD_J28_SerDataShift(data);
+      }
+
+      // pulse RC (J28.WS)
+      MIOS32_BOARD_J28_PinSet(2, 0);
+      MIOS32_BOARD_J28_PinSet(2, 1);
+    }
   }
 
   return 0; // no error
@@ -137,56 +174,41 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 /////////////////////////////////////////////////////////////////////////////
 static s32 APP_LCD_E_Set(u8 value)
 {
-  // special handling for SSD1306 and DOG
-  if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_DOG ||
-      mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
-
-  }
-
   if( mios32_lcd_device < 2 ) {
     return MIOS32_BOARD_J15_E_Set(mios32_lcd_device, value);
-  } else {
-    int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 2;
-    if( num_additional_lcds < 0 )
-      return -2; // E line not configured
-
-    if( num_additional_lcds <= 4 ) {
-      // the J28:SDA/SC/WS/RC are used as dedicated E pins
-      MIOS32_BOARD_J28_PinSet(mios32_lcd_device - 2, value);
-
-      return 0; // no error
-    } else {
-      // Serial Extension via J28 currently only supported for CLCDs
-      if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD ||
-	  mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
-
-	if( num_additional_lcds >= (MAX_LCDS-2) )
-	  num_additional_lcds = MAX_LCDS-2; // saturate
-	int num_shifts = num_additional_lcds / 8;
-	if( num_additional_lcds % 8 )
-	  ++num_shifts;
-
-	int selected_lcd = mios32_lcd_device - 2;
-	int selected_lcd_sr = selected_lcd / 8;
-	u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
-
-	// shift data
-	int i;
-	for(i=num_shifts-1; i>=0; --i) {
-	  u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
-	  MIOS32_BOARD_J28_SerDataShift(data);
-	}
-
-	// pulse RC (J28.WS)
-	MIOS32_BOARD_J28_PinSet(2, 0);
-	MIOS32_BOARD_J28_PinSet(2, 1);
-      }
-
-      return 0; // no error
-    }
   }
 
-  return -1; // E line not available
+  int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 2;
+  if( num_additional_lcds < 0 )
+    return -2; // E line not configured
+
+  if( num_additional_lcds <= 4 ) {
+    // the J28:SDA/SC/WS/RC are used as dedicated E pins
+    MIOS32_BOARD_J28_PinSet(mios32_lcd_device - 2, value);
+  } else {
+    if( num_additional_lcds >= (MAX_LCDS-2) )
+      num_additional_lcds = MAX_LCDS-2; // saturate
+    int num_shifts = num_additional_lcds / 8;
+    if( num_additional_lcds % 8 )
+      ++num_shifts;
+
+    int selected_lcd = mios32_lcd_device - 2;
+    int selected_lcd_sr = selected_lcd / 8;
+    u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
+
+    // shift data
+    int i;
+    for(i=num_shifts-1; i>=0; --i) {
+      u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
+      MIOS32_BOARD_J28_SerDataShift(data);
+    }
+
+    // pulse RC (J28.WS)
+    MIOS32_BOARD_J28_PinSet(2, 0);
+    MIOS32_BOARD_J28_PinSet(2, 1);
+  }
+
+  return 0; // no error
 }
 
 
