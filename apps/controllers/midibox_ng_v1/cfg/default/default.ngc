@@ -6,10 +6,6 @@ RESET_HW
 LCD "%C@(1:1:1)READY."
 
 
-# BANKs
-BANK n= 1  button=1:1024:1    led=1:1024:1    enc=1:128:1     ain=1:6:1       ainser=1:128:1     mf=1:32:1    
-
-
 # EVENTs
 EVENT_BUTTON id=  1  fwd_id=LED:1    type=NoteOn chn= 1 key= 36  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
 EVENT_BUTTON id=  2  fwd_id=LED:2    type=NoteOn chn= 1 key= 37  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
@@ -216,166 +212,102 @@ SYSEX_VAR dev=0 pat=0 bnk=0 ins=0 chn=0
 
 
 # ENC hardware
-ENC n=  1   sr= 0  pins=0:1   type=disabled
-ENC n=  2   sr= 0  pins=0:1   type=disabled
-ENC n=  3   sr= 0  pins=0:1   type=disabled
-ENC n=  4   sr= 0  pins=0:1   type=disabled
-ENC n=  5   sr= 0  pins=0:1   type=disabled
-ENC n=  6   sr= 0  pins=0:1   type=disabled
-ENC n=  7   sr= 0  pins=0:1   type=disabled
-ENC n=  8   sr= 0  pins=0:1   type=disabled
-ENC n=  9   sr= 0  pins=0:1   type=disabled
-ENC n= 10   sr= 0  pins=0:1   type=disabled
-ENC n= 11   sr= 0  pins=0:1   type=disabled
-ENC n= 12   sr= 0  pins=0:1   type=disabled
-ENC n= 13   sr= 0  pins=0:1   type=disabled
-ENC n= 14   sr= 0  pins=0:1   type=disabled
-ENC n= 15   sr= 0  pins=0:1   type=disabled
-ENC n= 16   sr= 0  pins=0:1   type=disabled
-ENC n= 17   sr= 0  pins=0:1   type=disabled
-ENC n= 18   sr= 0  pins=0:1   type=disabled
-ENC n= 19   sr= 0  pins=0:1   type=disabled
-ENC n= 20   sr= 0  pins=0:1   type=disabled
-ENC n= 21   sr= 0  pins=0:1   type=disabled
-ENC n= 22   sr= 0  pins=0:1   type=disabled
-ENC n= 23   sr= 0  pins=0:1   type=disabled
-ENC n= 24   sr= 0  pins=0:1   type=disabled
-ENC n= 25   sr= 0  pins=0:1   type=disabled
-ENC n= 26   sr= 0  pins=0:1   type=disabled
-ENC n= 27   sr= 0  pins=0:1   type=disabled
-ENC n= 28   sr= 0  pins=0:1   type=disabled
-ENC n= 29   sr= 0  pins=0:1   type=disabled
-ENC n= 30   sr= 0  pins=0:1   type=disabled
-ENC n= 31   sr= 0  pins=0:1   type=disabled
-ENC n= 32   sr= 0  pins=0:1   type=disabled
-ENC n= 33   sr= 0  pins=0:1   type=disabled
-ENC n= 34   sr= 0  pins=0:1   type=disabled
-ENC n= 35   sr= 0  pins=0:1   type=disabled
-ENC n= 36   sr= 0  pins=0:1   type=disabled
-ENC n= 37   sr= 0  pins=0:1   type=disabled
-ENC n= 38   sr= 0  pins=0:1   type=disabled
-ENC n= 39   sr= 0  pins=0:1   type=disabled
-ENC n= 40   sr= 0  pins=0:1   type=disabled
-ENC n= 41   sr= 0  pins=0:1   type=disabled
-ENC n= 42   sr= 0  pins=0:1   type=disabled
-ENC n= 43   sr= 0  pins=0:1   type=disabled
-ENC n= 44   sr= 0  pins=0:1   type=disabled
-ENC n= 45   sr= 0  pins=0:1   type=disabled
-ENC n= 46   sr= 0  pins=0:1   type=disabled
-ENC n= 47   sr= 0  pins=0:1   type=disabled
-ENC n= 48   sr= 0  pins=0:1   type=disabled
-ENC n= 49   sr= 0  pins=0:1   type=disabled
-ENC n= 50   sr= 0  pins=0:1   type=disabled
-ENC n= 51   sr= 0  pins=0:1   type=disabled
-ENC n= 52   sr= 0  pins=0:1   type=disabled
-ENC n= 53   sr= 0  pins=0:1   type=disabled
-ENC n= 54   sr= 0  pins=0:1   type=disabled
-ENC n= 55   sr= 0  pins=0:1   type=disabled
-ENC n= 56   sr= 0  pins=0:1   type=disabled
-ENC n= 57   sr= 0  pins=0:1   type=disabled
-ENC n= 58   sr= 0  pins=0:1   type=disabled
-ENC n= 59   sr= 0  pins=0:1   type=disabled
-ENC n= 60   sr= 0  pins=0:1   type=disabled
-ENC n= 61   sr= 0  pins=0:1   type=disabled
-ENC n= 62   sr= 0  pins=0:1   type=disabled
-ENC n= 63   sr= 0  pins=0:1   type=disabled
-ENC n= 64   sr= 0  pins=0:1   type=disabled
 
 
 # DIN_MATRIX hardware
-DIN_MATRIX n= 1   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 2   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 3   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 4   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 5   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 6   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 7   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
-DIN_MATRIX n= 8   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 1   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 2   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 3   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 4   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 5   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 6   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 7   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 8   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
 
 
 # DOUT_MATRIX hardware
-DOUT_MATRIX n= 1   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 2   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 3   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 4   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 5   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 6   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 7   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
-DOUT_MATRIX n= 8   rows=8  inverted=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=1   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=2   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=3   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=4   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=5   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=6   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=7   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=8   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
 
 
 # LED_MATRIX_PATTERNs
-LED_MATRIX_PATTERN n= 1  pos= 0  pattern=1000000000000000
-LED_MATRIX_PATTERN n= 1  pos= 1  pattern=1100000000000000
-LED_MATRIX_PATTERN n= 1  pos= 2  pattern=1100000000000000
-LED_MATRIX_PATTERN n= 1  pos= 3  pattern=1110000000000000
-LED_MATRIX_PATTERN n= 1  pos= 4  pattern=1110000000000000
-LED_MATRIX_PATTERN n= 1  pos= 5  pattern=1111000000000000
-LED_MATRIX_PATTERN n= 1  pos= 6  pattern=1111000000000000
-LED_MATRIX_PATTERN n= 1  pos= 7  pattern=1111100000000000
-LED_MATRIX_PATTERN n= 1  pos= M  pattern=1111110000010000
-LED_MATRIX_PATTERN n= 1  pos= 8  pattern=1111111000000000
-LED_MATRIX_PATTERN n= 1  pos= 9  pattern=1111111100000000
-LED_MATRIX_PATTERN n= 1  pos=10  pattern=1111111100000000
-LED_MATRIX_PATTERN n= 1  pos=11  pattern=1111111110000000
-LED_MATRIX_PATTERN n= 1  pos=12  pattern=1111111110000000
-LED_MATRIX_PATTERN n= 1  pos=13  pattern=1111111111000000
-LED_MATRIX_PATTERN n= 1  pos=14  pattern=1111111111000000
-LED_MATRIX_PATTERN n= 1  pos=15  pattern=1111111111100000
+LED_MATRIX_PATTERN n=1  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n=1  pos= 1  pattern=1100000000000000
+LED_MATRIX_PATTERN n=1  pos= 2  pattern=1100000000000000
+LED_MATRIX_PATTERN n=1  pos= 3  pattern=1110000000000000
+LED_MATRIX_PATTERN n=1  pos= 4  pattern=1110000000000000
+LED_MATRIX_PATTERN n=1  pos= 5  pattern=1111000000000000
+LED_MATRIX_PATTERN n=1  pos= 6  pattern=1111000000000000
+LED_MATRIX_PATTERN n=1  pos= 7  pattern=1111100000000000
+LED_MATRIX_PATTERN n=1  pos= M  pattern=1111110000010000
+LED_MATRIX_PATTERN n=1  pos= 8  pattern=1111111000000000
+LED_MATRIX_PATTERN n=1  pos= 9  pattern=1111111100000000
+LED_MATRIX_PATTERN n=1  pos=10  pattern=1111111100000000
+LED_MATRIX_PATTERN n=1  pos=11  pattern=1111111110000000
+LED_MATRIX_PATTERN n=1  pos=12  pattern=1111111110000000
+LED_MATRIX_PATTERN n=1  pos=13  pattern=1111111111000000
+LED_MATRIX_PATTERN n=1  pos=14  pattern=1111111111000000
+LED_MATRIX_PATTERN n=1  pos=15  pattern=1111111111100000
 
-LED_MATRIX_PATTERN n= 2  pos= 0  pattern=1111110000000000
-LED_MATRIX_PATTERN n= 2  pos= 1  pattern=0111110000000000
-LED_MATRIX_PATTERN n= 2  pos= 2  pattern=0111110000000000
-LED_MATRIX_PATTERN n= 2  pos= 3  pattern=0011110000000000
-LED_MATRIX_PATTERN n= 2  pos= 4  pattern=0001110000000000
-LED_MATRIX_PATTERN n= 2  pos= 5  pattern=0001110000000000
-LED_MATRIX_PATTERN n= 2  pos= 6  pattern=0000110000000000
-LED_MATRIX_PATTERN n= 2  pos= 7  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 2  pos= M  pattern=0000111000010000
-LED_MATRIX_PATTERN n= 2  pos= 8  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 2  pos= 9  pattern=0000011000000000
-LED_MATRIX_PATTERN n= 2  pos=10  pattern=0000011000000000
-LED_MATRIX_PATTERN n= 2  pos=11  pattern=0000011100000000
-LED_MATRIX_PATTERN n= 2  pos=12  pattern=0000011110000000
-LED_MATRIX_PATTERN n= 2  pos=13  pattern=0000011110000000
-LED_MATRIX_PATTERN n= 2  pos=14  pattern=0000011111000000
-LED_MATRIX_PATTERN n= 2  pos=15  pattern=0000011111100000
+LED_MATRIX_PATTERN n=2  pos= 0  pattern=1111110000000000
+LED_MATRIX_PATTERN n=2  pos= 1  pattern=0111110000000000
+LED_MATRIX_PATTERN n=2  pos= 2  pattern=0111110000000000
+LED_MATRIX_PATTERN n=2  pos= 3  pattern=0011110000000000
+LED_MATRIX_PATTERN n=2  pos= 4  pattern=0001110000000000
+LED_MATRIX_PATTERN n=2  pos= 5  pattern=0001110000000000
+LED_MATRIX_PATTERN n=2  pos= 6  pattern=0000110000000000
+LED_MATRIX_PATTERN n=2  pos= 7  pattern=0000010000000000
+LED_MATRIX_PATTERN n=2  pos= M  pattern=0000111000010000
+LED_MATRIX_PATTERN n=2  pos= 8  pattern=0000010000000000
+LED_MATRIX_PATTERN n=2  pos= 9  pattern=0000011000000000
+LED_MATRIX_PATTERN n=2  pos=10  pattern=0000011000000000
+LED_MATRIX_PATTERN n=2  pos=11  pattern=0000011100000000
+LED_MATRIX_PATTERN n=2  pos=12  pattern=0000011110000000
+LED_MATRIX_PATTERN n=2  pos=13  pattern=0000011110000000
+LED_MATRIX_PATTERN n=2  pos=14  pattern=0000011111000000
+LED_MATRIX_PATTERN n=2  pos=15  pattern=0000011111100000
 
-LED_MATRIX_PATTERN n= 3  pos= 0  pattern=1000000000000000
-LED_MATRIX_PATTERN n= 3  pos= 1  pattern=0100000000000000
-LED_MATRIX_PATTERN n= 3  pos= 2  pattern=0100000000000000
-LED_MATRIX_PATTERN n= 3  pos= 3  pattern=0010000000000000
-LED_MATRIX_PATTERN n= 3  pos= 4  pattern=0010000000000000
-LED_MATRIX_PATTERN n= 3  pos= 5  pattern=0001000000000000
-LED_MATRIX_PATTERN n= 3  pos= 6  pattern=0000100000000000
-LED_MATRIX_PATTERN n= 3  pos= 7  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 3  pos= M  pattern=0000111000010000
-LED_MATRIX_PATTERN n= 3  pos= 8  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 3  pos= 9  pattern=0000001000000000
-LED_MATRIX_PATTERN n= 3  pos=10  pattern=0000000100000000
-LED_MATRIX_PATTERN n= 3  pos=11  pattern=0000000100000000
-LED_MATRIX_PATTERN n= 3  pos=12  pattern=0000000010000000
-LED_MATRIX_PATTERN n= 3  pos=13  pattern=0000000001000000
-LED_MATRIX_PATTERN n= 3  pos=14  pattern=0000000001000000
-LED_MATRIX_PATTERN n= 3  pos=15  pattern=0000000000100000
+LED_MATRIX_PATTERN n=3  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n=3  pos= 1  pattern=0100000000000000
+LED_MATRIX_PATTERN n=3  pos= 2  pattern=0100000000000000
+LED_MATRIX_PATTERN n=3  pos= 3  pattern=0010000000000000
+LED_MATRIX_PATTERN n=3  pos= 4  pattern=0010000000000000
+LED_MATRIX_PATTERN n=3  pos= 5  pattern=0001000000000000
+LED_MATRIX_PATTERN n=3  pos= 6  pattern=0000100000000000
+LED_MATRIX_PATTERN n=3  pos= 7  pattern=0000010000000000
+LED_MATRIX_PATTERN n=3  pos= M  pattern=0000111000010000
+LED_MATRIX_PATTERN n=3  pos= 8  pattern=0000010000000000
+LED_MATRIX_PATTERN n=3  pos= 9  pattern=0000001000000000
+LED_MATRIX_PATTERN n=3  pos=10  pattern=0000000100000000
+LED_MATRIX_PATTERN n=3  pos=11  pattern=0000000100000000
+LED_MATRIX_PATTERN n=3  pos=12  pattern=0000000010000000
+LED_MATRIX_PATTERN n=3  pos=13  pattern=0000000001000000
+LED_MATRIX_PATTERN n=3  pos=14  pattern=0000000001000000
+LED_MATRIX_PATTERN n=3  pos=15  pattern=0000000000100000
 
-LED_MATRIX_PATTERN n= 4  pos= 0  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 4  pos= 1  pattern=0000010000000000
-LED_MATRIX_PATTERN n= 4  pos= 2  pattern=0000111000000000
-LED_MATRIX_PATTERN n= 4  pos= 3  pattern=0000111000000000
-LED_MATRIX_PATTERN n= 4  pos= 4  pattern=0000111000000000
-LED_MATRIX_PATTERN n= 4  pos= 5  pattern=0001111100000000
-LED_MATRIX_PATTERN n= 4  pos= 6  pattern=0001111100000000
-LED_MATRIX_PATTERN n= 4  pos= 7  pattern=0001111100000000
-LED_MATRIX_PATTERN n= 4  pos= M  pattern=0011111110010000
-LED_MATRIX_PATTERN n= 4  pos= 8  pattern=0011111110000000
-LED_MATRIX_PATTERN n= 4  pos= 9  pattern=0011111110000000
-LED_MATRIX_PATTERN n= 4  pos=10  pattern=0011111110000000
-LED_MATRIX_PATTERN n= 4  pos=11  pattern=0111111111000000
-LED_MATRIX_PATTERN n= 4  pos=12  pattern=0111111111000000
-LED_MATRIX_PATTERN n= 4  pos=13  pattern=0111111111000000
-LED_MATRIX_PATTERN n= 4  pos=14  pattern=1111111111100000
-LED_MATRIX_PATTERN n= 4  pos=15  pattern=1111111111100000
+LED_MATRIX_PATTERN n=4  pos= 0  pattern=0000010000000000
+LED_MATRIX_PATTERN n=4  pos= 1  pattern=0000010000000000
+LED_MATRIX_PATTERN n=4  pos= 2  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 3  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 4  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 5  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= 6  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= 7  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= M  pattern=0011111110010000
+LED_MATRIX_PATTERN n=4  pos= 8  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos= 9  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos=10  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos=11  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=12  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=13  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=14  pattern=1111111111100000
+LED_MATRIX_PATTERN n=4  pos=15  pattern=1111111111100000
 
 
 
@@ -384,15 +316,32 @@ AIN enable_mask=000000
 
 
 # AINSER hardware
-AINSER n=  1   enabled=1  cs=0  num_pins=64  resolution=7bit
-AINSER n=  2   enabled=0  cs=1  num_pins=64  resolution=7bit
+AINSER n=1   enabled=1  cs=0  num_pins=64  resolution=7bit
+AINSER n=2   enabled=0  cs=1  num_pins=64  resolution=7bit
+
+
+# KEYBOARD hardware
+KEYBOARD n=1   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=1 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100 \
+               ain_pitchwheel_pin=  0  ain_pitchwheel_ctrl=128  ain_pitchwheel_min=  1  ain_pitchwheel_max=254 \
+               ain_modwheel_pin  =  0  ain_modwheel_ctrl  =  1  ain_modwheel_min  =  1  ain_modwheel_max  =254 \
+               ain_sustain_pin   =  0  ain_sustain_ctrl   = 64  ain_sustain_min   =  1  ain_sustain_max   =254
+
+KEYBOARD n=2   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=2 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100 \
+               ain_pitchwheel_pin=  0  ain_pitchwheel_ctrl=128  ain_pitchwheel_min=  1  ain_pitchwheel_max=254 \
+               ain_modwheel_pin  =  0  ain_modwheel_ctrl  =  1  ain_modwheel_min  =  1  ain_modwheel_max  =254 \
+               ain_sustain_pin   =  0  ain_sustain_ctrl   = 64  ain_sustain_min   =  1  ain_sustain_max   =254
+
 
 
 # MF hardware (has to be configured for Motormix protocol!)
-MF n=  1   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
-MF n=  2   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
-MF n=  3   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
-MF n=  4   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=1   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=2   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=3   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=4   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
 
 
 # AOUT hardware

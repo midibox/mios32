@@ -30,6 +30,7 @@
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
+#include <keyboard.h>
 
 #include "mbng_sysex.h"
 #include "mbng_patch.h"
@@ -203,6 +204,25 @@ void APP_Init(void)
   SEQ_BPM_Set(120.0);
   SEQ_MIDI_OUT_Init(0);
 
+  KEYBOARD_Init(0);
+  // disable keyboard SR assignments by default
+  {
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      kc->num_rows = 0;
+      kc->dout_sr1 = 0;
+      kc->dout_sr2 = 0;
+      kc->din_sr1 = 0;
+      kc->din_sr2 = 0;
+
+      // due to slower scan rate:
+      kc->delay_fastest = 5;
+      kc->delay_fastest_black_keys = 0; // if 0, we take delay_fastest, otherwise we take the dedicated value for the black keys
+      kc->delay_slowest = 100;
+    }
+  }
+
 #if MIOS32_DONT_SERVICE_SRIO_SCAN
   //MIOS32_SRIO_ScanNumSet(4);
 
@@ -319,6 +339,9 @@ void APP_SRIO_ServicePrepare(void)
 
   // Matrix handler
   MBNG_MATRIX_PrepareCol();
+
+  // keyboard handler
+  KEYBOARD_SRIO_ServicePrepare();
 }
 
 
@@ -329,6 +352,9 @@ void APP_SRIO_ServiceFinish(void)
 {
   // Matrix handler
   MBNG_MATRIX_GetRow();
+
+  // keyboard handler
+  KEYBOARD_SRIO_ServiceFinish();
 
 #if MIOS32_DONT_SERVICE_SRIO_SCAN
   // update encoder states
@@ -377,8 +403,12 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   // -> MBNG_AIN once enabled
-  if( hw_enabled )
+  if( hw_enabled ) {
     MBNG_AIN_NotifyChange(pin, pin_value);
+
+    // -> keyboard
+    KEYBOARD_AIN_NotifyChange(pin, pin_value);
+  }
 }
 
 
@@ -388,8 +418,9 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 {
   // -> MBNG_AIN once enabled
-  if( hw_enabled )
+  if( hw_enabled ) {
     MBNG_AINSER_NotifyChange(module, pin, pin_value);
+  }
 }
 
 
@@ -438,6 +469,9 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       isInMainPage = 0; // static reminder
     }
     MUTEX_LCD_GIVE;
+
+    // -> keyboard handler
+    KEYBOARD_Periodic_1mS();
 
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
