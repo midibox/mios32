@@ -2115,6 +2115,8 @@ s32 parseKeyboard(char *cmd, char *brkt)
     kc->ain_ctrl[2] = ain_sustain_ctrl;
     kc->ain_min[2]  = ain_sustain_min;
     kc->ain_max[2]  = ain_sustain_max;
+
+    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
   }
 
   return 0; // no error
