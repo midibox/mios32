@@ -16,7 +16,6 @@ LCD       =     $(MIOS32_LCD)
 
 THUMB_SOURCE    = src/app.c \
 		  src/presets.c \
-		  src/keyboard.c \
 		  src/terminal.c \
 		  src/shell.c
 
@@ -53,6 +52,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# KEYBOARD driver
+include $(MIOS32_PATH)/modules/keyboard/keyboard.mk
 
 # MIDI Router (and port handling)
 include $(MIOS32_PATH)/modules/midi_router/midi_router.mk
