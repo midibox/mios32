@@ -50,6 +50,7 @@
 
 static unsigned long long display_available = 0;
 static u8 lcd_testmode = 0;
+static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_device, 0xff: all CS were activated, 0xfe: will force the update
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -113,55 +114,61 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 
   // Note: assume that CS lines are low-active!
   if( all ) {
-    MIOS32_BOARD_J15_DataSet(value ? 0x00 : 0xff);
+    if( prev_glcd_selection != 0xff ) {
+      prev_glcd_selection = 0xff;
+      MIOS32_BOARD_J15_DataSet(value ? 0x00 : 0xff);
 
-    if( num_additional_lcds <= 4 ) {
-      int i;
-      for(i=0; i<num_additional_lcds; ++i)
-	MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
-    } else {
-      int num_shifts = num_additional_lcds / 8;
-      if( num_additional_lcds % 8 )
-	++num_shifts;
+      if( num_additional_lcds <= 4 ) {
+	int i;
+	for(i=0; i<num_additional_lcds; ++i)
+	  MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
+      } else {
+	int num_shifts = num_additional_lcds / 8;
+	if( num_additional_lcds % 8 )
+	  ++num_shifts;
 
-      // shift data
-      int i;
-      for(i=num_shifts-1; i>=0; --i) {
-	MIOS32_BOARD_J28_SerDataShift(value ? 0x00 : 0xff);
+	// shift data
+	int i;
+	for(i=num_shifts-1; i>=0; --i) {
+	  MIOS32_BOARD_J28_SerDataShift(value ? 0x00 : 0xff);
+	}
+
+	// pulse RC (J28.WS)
+	MIOS32_BOARD_J28_PinSet(2, 0);
+	MIOS32_BOARD_J28_PinSet(2, 1);
       }
-
-      // pulse RC (J28.WS)
-      MIOS32_BOARD_J28_PinSet(2, 0);
-      MIOS32_BOARD_J28_PinSet(2, 1);
     }
   } else {
-    u32 mask = value ? ~(1 << mios32_lcd_device) : 0xffffffff;
+    if( prev_glcd_selection != mios32_lcd_device ) {
+      prev_glcd_selection = mios32_lcd_device;
+      u32 mask = value ? ~(1 << mios32_lcd_device) : 0xffffffff;
 
-    MIOS32_BOARD_J15_DataSet(mask);
+      MIOS32_BOARD_J15_DataSet(mask);
 
-    if( num_additional_lcds <= 4 ) {
-      int i;
-      for(i=0; i<num_additional_lcds; ++i)
-	MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
-    } else {
-      int num_shifts = num_additional_lcds / 8;
-      if( num_additional_lcds % 8 )
-	++num_shifts;
+      if( num_additional_lcds <= 4 ) {
+	int i;
+	for(i=0; i<num_additional_lcds; ++i)
+	  MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
+      } else {
+	int num_shifts = num_additional_lcds / 8;
+	if( num_additional_lcds % 8 )
+	  ++num_shifts;
 
-      int selected_lcd = mios32_lcd_device - 8;
-      int selected_lcd_sr = selected_lcd / 8;
-      u8 selected_lcd_mask = value ? ~(1 << (selected_lcd % 8)) : 0xff;
+	int selected_lcd = mios32_lcd_device - 8;
+	int selected_lcd_sr = selected_lcd / 8;
+	u8 selected_lcd_mask = value ? ~(1 << (selected_lcd % 8)) : 0xff;
 
-      // shift data
-      int i;
-      for(i=num_shifts-1; i>=0; --i) {
-	u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
-	MIOS32_BOARD_J28_SerDataShift(data);
+	// shift data
+	int i;
+	for(i=num_shifts-1; i>=0; --i) {
+	  u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
+	  MIOS32_BOARD_J28_SerDataShift(data);
+	}
+
+	// pulse RC (J28.WS)
+	MIOS32_BOARD_J28_PinSet(2, 0);
+	MIOS32_BOARD_J28_PinSet(2, 1);
       }
-
-      // pulse RC (J28.WS)
-      MIOS32_BOARD_J28_PinSet(2, 0);
-      MIOS32_BOARD_J28_PinSet(2, 1);
     }
   }
 
