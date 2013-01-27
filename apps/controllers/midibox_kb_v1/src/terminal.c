@@ -18,6 +18,7 @@
 #include <mios32.h>
 #include <string.h>
 
+#include <keyboard.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
@@ -25,7 +26,6 @@
 #include "app.h"
 #include "presets.h"
 #include "terminal.h"
-#include "keyboard.h"
 #include "uip_terminal.h"
 #include "tasks.h"
 

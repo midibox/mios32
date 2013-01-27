@@ -23,6 +23,7 @@
 #include <task.h>
 #include <queue.h>
 
+#include <keyboard.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
@@ -33,7 +34,6 @@
 #include "tasks.h"
 #include "uip_task.h"
 #include "osc_client.h"
-#include "keyboard.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
