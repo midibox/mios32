@@ -151,6 +151,8 @@ s32 MBNG_PATCH_Init(u32 mode)
       kc->delay_fastest_black_keys = 0; // if 0, we take delay_fastest, otherwise we take the dedicated value for the black keys
       kc->delay_slowest = 100;
     }
+
+    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
   }
 
   return 0; // no error
