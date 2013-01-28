@@ -368,7 +368,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 			{
 				if(midi_package.note==sample_to_midinote[samp_no])		// Midi note on matches a note mapped to this sample samp_no
 				{
-					if(no_decay || sample_decval[samp_no]==0) { sample_on[samp_no]=0; }		// Turn off immediately if no decay for bank or this sample
+					if(no_decay || sample_decval[samp_no]==0 || sample_on[samp_no]==0) { sample_on[samp_no]=0; }		// Turn off immediately if no decay for bank or this sample or the sample finished
 					else
 					{
 						sample_on[samp_no]=sample_decval[samp_no];							// Mark it as decaying with the appropriate time for this sample
