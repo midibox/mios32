@@ -2583,31 +2583,44 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_TXT:
+	    case MBNG_EVENT_SYSEX_VAR_TXT56: {
 	      match = 1;
-	      pool_item->tmp_runtime_flags.sysex_txt = 1;
-	      if( midi_in < 0x80 ) {
-		MUTEX_LCD_TAKE;
-		MBNG_LCD_CursorSet(0, pool_item->tmp_sysex_value % 64, pool_item->tmp_sysex_value / 64); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
-		// TODO: graphical default font for textmessages
-		MBNG_LCD_PrintChar(midi_in); // print char
-		MUTEX_LCD_GIVE;
-	      }
-	      ++pool_item->tmp_sysex_value; // increment cursor (no wrapping)
-	      break;
 
-	    case MBNG_EVENT_SYSEX_VAR_TXT56:
-	      match = 1;
+	      // wrap at 64 or 56?
+	      u8 x_wrap = (*stream == MBNG_EVENT_SYSEX_VAR_TXT56) ? 56 : 64;
+
 	      pool_item->tmp_runtime_flags.sysex_txt = 1;
 	      if( midi_in < 0x80 ) {
+		// take initial LCD device and position from item
+		// print also the label (e.g. to initialize font)
+		mbng_event_item_t item;
+		MBNG_EVENT_ItemCopy2User(pool_item, &item);
+
+		// mapped X?
+		u8 x = pool_item->tmp_sysex_value % x_wrap;
+		u8 *map_values;
+		int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+		if( map_len > 0 ) {
+		  if( x < map_len )
+		    x = map_values[x];
+		  else
+		    x = map_values[map_len-1];
+		}
+		item.lcd_x += x;
+		item.lcd_y += pool_item->tmp_sysex_value / x_wrap;
+
 		MUTEX_LCD_TAKE;
-		MBNG_LCD_CursorSet(0, pool_item->tmp_sysex_value % 56, pool_item->tmp_sysex_value / 56); // set cursor to stored position - if not set via ^cursor, we start at 0 (or ^val...)
-		// TODO: graphical default font for textmessages
+		if( item.label ) {
+		  MBNG_LCD_PrintItemLabel(&item);
+		} else {
+		  MBNG_LCD_FontInit('n');
+		  MBNG_LCD_CursorSet(item.lcd, item.lcd_x, item.lcd_y);
+		}
 		MBNG_LCD_PrintChar(midi_in); // print char
 		MUTEX_LCD_GIVE;
 	      }
 	      ++pool_item->tmp_sysex_value; // increment cursor
-	      break;
-
+	    } break;
 	    }
 	    if( match ) {
 	      if( !pool_item->tmp_runtime_flags.sysex_dump && !pool_item->tmp_runtime_flags.sysex_txt ) {

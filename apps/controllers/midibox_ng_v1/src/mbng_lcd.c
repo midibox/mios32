@@ -46,6 +46,8 @@ static u8 lcd_device_num_y;
 static u8 lcd_device_height;
 static u8 lcd_device_width;
 
+u8 *glcd_font = NULL;  
+
 static u8 first_msg;
 
 
@@ -110,7 +112,7 @@ s32 MBNG_LCD_Init(u32 mode)
 
   // graphical LCDs?
   if( MIOS32_LCD_TypeIsGLCD() ) {
-    // take 80x2 by default - if bigger displays are used (which could display more), change during runtime
+    // depending on normal font by default - can change depending on font
     lcd_device_width  = mios32_lcd_parameters.width / 6;
     lcd_device_height = mios32_lcd_parameters.height / 8;
   } else {
@@ -138,6 +140,7 @@ s32 MBNG_LCD_Init(u32 mode)
 
   // init LCD
   first_msg = 0; // message will disappear with first item
+  MBNG_LCD_FontInit('n');
   MBNG_LCD_Clear();
   MBNG_LCD_CursorSet(0, 0, 0);
   MBNG_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
@@ -169,6 +172,31 @@ s32 MBNG_LCD_Clear(void)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Selects a GLCD font
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_LCD_FontInit(char font_name)
+{
+  switch( font_name ) {
+  case 'n': glcd_font = (u8 *)GLCD_FONT_NORMAL; break;
+  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+  case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
+  case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
+  case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
+  case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
+  default:
+    return -1; // unsupported font
+  }
+
+  if( glcd_font && MIOS32_LCD_TypeIsGLCD() ) {
+    MIOS32_LCD_FontInit(glcd_font);
+
+    lcd_device_width  = mios32_lcd_parameters.width / glcd_font[MIOS32_LCD_FONT_WIDTH_IX];
+    // note: lcd_device_height stays at is to improve cursor control!
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the cursor on the given LCD
@@ -197,7 +225,14 @@ s32 MBNG_LCD_CursorSet(u8 lcd, u16 x, u16 y)
   // set device & cursor
   lcd_cursor_device = (lcd_cursor_x / lcd_device_width) + (lcd_cursor_y / lcd_device_height) * lcd_device_num_x;
   MIOS32_LCD_DeviceSet(lcd_cursor_device);
-  MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+
+  if( MIOS32_LCD_TypeIsGLCD() ) {
+    u16 font_width = glcd_font ? glcd_font[MIOS32_LCD_FONT_WIDTH_IX] : 6;
+    u16 font_height = 8; // force 8 pixels for better cursor control over Y lines
+    MIOS32_LCD_GCursorSet((lcd_cursor_x % lcd_device_width) * font_width, (lcd_cursor_y % lcd_device_height) * font_height);
+  } else {
+    MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+  }
 
   return 0; // no error
 }
@@ -221,7 +256,14 @@ s32 MBNG_LCD_PrintChar(char c)
   if( device != lcd_cursor_device ) {
     lcd_cursor_device = device;
     MIOS32_LCD_DeviceSet(lcd_cursor_device);
-    MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+
+    if( MIOS32_LCD_TypeIsGLCD() ) {
+      u16 font_width = glcd_font ? glcd_font[MIOS32_LCD_FONT_WIDTH_IX] : 6;
+      u16 font_height = 8; // force 8 pixels for better cursor control over Y lines
+      MIOS32_LCD_GCursorSet((lcd_cursor_x % lcd_device_width) * font_width, (lcd_cursor_y % lcd_device_height) * font_height);
+    } else {
+      MIOS32_LCD_CursorSet(lcd_cursor_x % lcd_device_width, lcd_cursor_y % lcd_device_height);
+    }
   }
 
   // print char
@@ -294,23 +336,16 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 {
   if( !item->label )
     return -1; // no label
+  char *str = item->label;
 
 #if DEBUG_PRINT_ITEM_PERFORMANCE
   MIOS32_STOPWATCH_Reset();
 #endif
 
-  // GLCD: always start with normal font
-  MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-  u8 current_font = 'n';
-
   if( !first_msg ) {
     first_msg = 1;
     MBNG_LCD_Clear();
   }
-
-  MBNG_LCD_CursorSet(item->lcd, item->lcd_x, item->lcd_y);
-
-  char *str = item->label;
 
   if( *str == '^' ) {
     char *label_str = (char *)MBNG_FILE_L_GetLabel((char *)&str[1], item->value);
@@ -318,6 +353,34 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
       str = label_str;
     }
   }
+
+  // GLCD: always start with normal font
+  // exception: if label starts with & (font selection)
+  u8 current_font = 'n';
+  MBNG_LCD_FontInit(current_font);
+  if( *str == '&' ) {
+    switch( *(++str) ) {
+    case '&': MBNG_LCD_PrintChar('&'); break;
+    default:
+      if( MBNG_LCD_FontInit(*str) >= 0 ) {
+	current_font = *str;
+      } else {
+	//current_font = 'n'; // (redundant)
+	//MBNG_LCD_FontInit(current_font);
+	MBNG_LCD_PrintChar('&');
+	MBNG_LCD_PrintChar(*str);
+      }
+    }
+    ++str;
+  }
+
+  // set cursor (depending on font...)
+  MBNG_LCD_CursorSet(item->lcd, item->lcd_x, item->lcd_y);
+
+  // string already 0?
+  if( *str == 0 )
+    return 0; // no error
+
   char *recursive_str = NULL; // only simple one-level recursion for label strings
   for( ; ; ++str) {
     if( *str == 0 && recursive_str ) {
@@ -353,17 +416,15 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
     if( *str == '&' ) {
       switch( *(++str) ) {
       case '&': MBNG_LCD_PrintChar('&'); break;
-      case 'n': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL); break;
-      case 's': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_SMALL); break;
-      case 'b': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG); break;
-      case 'k': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_KNOB_ICONS); break;
-      case 'h': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); break;
-      case 'v': current_font = *str; MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); break;
       default:
-	current_font = 'n';
-	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-	MBNG_LCD_PrintChar('&');
-	MBNG_LCD_PrintChar(*str);
+	if( MBNG_LCD_FontInit(*str) >= 0 ) {
+	  current_font = *str;
+	} else {
+	  current_font = 'n';
+	  MBNG_LCD_FontInit(current_font);
+	  MBNG_LCD_PrintChar('&');
+	  MBNG_LCD_PrintChar(*str);
+	}
       }
       ++str;
     }
@@ -393,8 +454,12 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
     }
 
     // could be 0 meanwhile
-    if( *str == 0 )
-      continue; // for the case that we've an recursive string - see for() header
+    if( *str == 0 ) {
+      if( recursive_str )
+	continue; // for the case that we've an recursive string - see for() header
+      else
+	break;
+    }
 
     if( *str != '%' )
       MBNG_LCD_PrintChar(*str);
