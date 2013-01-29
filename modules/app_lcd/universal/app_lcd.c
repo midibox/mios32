@@ -365,7 +365,10 @@ s32 APP_LCD_Init(u32 mode)
 
   } break;
 
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
+    u8 rotated = mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED;
+
     // all OLEDs will be initialized at once by activating all CS lines!
     if( mios32_lcd_device == 0 ) {
       // the OLED works at 3.3V, level shifting (and open drain mode) not required
@@ -399,9 +402,13 @@ s32 APP_LCD_Init(u32 mode)
 
       APP_LCD_Cmd(0x40); // Set Display Start Line
 
-      APP_LCD_Cmd(0xa0); // Set Segment re-map
-
-      APP_LCD_Cmd(0xc0); // Set COM Output Scan Direction
+      if( !rotated ) {
+	APP_LCD_Cmd(0xa0); // Set Segment re-map
+	APP_LCD_Cmd(0xc0); // Set COM Output Scan Direction
+      } else {
+	APP_LCD_Cmd(0xa1); // Set Segment re-map: rotated
+	APP_LCD_Cmd(0xc8); // Set COM Output Scan Direction: rotated
+      }
 
       APP_LCD_Cmd(0xda); // Set COM Pins hardware configuration
       APP_LCD_Cmd(0x12);
@@ -577,7 +584,8 @@ s32 APP_LCD_Data(u8 data)
     return 0; // no error
   } break;
 
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     // chip select and DC
     APP_LCD_SERGLCD_CS_Set(1, 0);
     MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
@@ -676,7 +684,8 @@ s32 APP_LCD_Cmd(u8 cmd)
     return 0; // no error
   } break;
 
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     // select all LCDs
     APP_LCD_SERGLCD_CS_Set(1, 1);
     MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
@@ -767,7 +776,8 @@ s32 APP_LCD_Clear(void)
     return error;
   } break;
 
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     s32 error = 0;
     u8 x, y;
 
@@ -813,24 +823,16 @@ s32 APP_LCD_CursorSet(u16 column, u16 line)
   if( lcd_testmode )
     return -1; // direct access disabled in testmode
 
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
-  case MIOS32_LCD_TYPE_GLCD_DOG:
-  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  if( mios32_lcd_parameters.lcd_type >= 0x80 ) { // GLCD
     // mios32_lcd_x/y set by MIOS32_LCD_CursorSet() function
     return APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
-
-  case MIOS32_LCD_TYPE_CLCD:
-  case MIOS32_LCD_TYPE_CLCD_DOG:
-  default: {
+  } else { // CLCD
     // exit with error if line is not in allowed range
     if( line >= MIOS32_LCD_MAX_MAP_LINES )
       return -1;
 
     // -> set cursor address
     return APP_LCD_Cmd(0x80 | (mios32_lcd_cursor_map[line] + column));
-  }
   }
 
   return -3; // not supported
@@ -874,7 +876,8 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
     return error;
   } break;
 
-  case MIOS32_LCD_TYPE_GLCD_SSD1306: {
+  case MIOS32_LCD_TYPE_GLCD_SSD1306:
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     s32 error = 0;
 
     // set X position
@@ -902,17 +905,8 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
   if( lcd_testmode )
     return -1; // direct access disabled in testmode
 
-  switch( mios32_lcd_parameters.lcd_type ) {
-  case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
-  case MIOS32_LCD_TYPE_GLCD_DOG:
-  case MIOS32_LCD_TYPE_GLCD_SSD1306:
-    // TODO
-    break;
-
-  case MIOS32_LCD_TYPE_CLCD:
-  case MIOS32_LCD_TYPE_CLCD_DOG:
-  default: {
+  if( mios32_lcd_parameters.lcd_type >= 0x80 ) { // GLCD
+  } else { // CLCD
     s32 i;
 
     // send character number
@@ -925,7 +919,6 @@ s32 APP_LCD_SpecialCharInit(u8 num, u8 table[8])
 
     // set cursor to original position
     return APP_LCD_CursorSet(mios32_lcd_column, mios32_lcd_line);
-  }
   }
 
   return -3; // not supported
