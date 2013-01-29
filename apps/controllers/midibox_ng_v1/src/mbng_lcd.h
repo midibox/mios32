@@ -33,6 +33,7 @@
 extern s32 MBNG_LCD_Init(u32 mode);
 
 extern s32 MBNG_LCD_Clear(void);
+extern s32 MBNG_LCD_FontInit(char font_name);
 extern s32 MBNG_LCD_CursorSet(u8 lcd, u16 x, u16 y);
 extern s32 MBNG_LCD_PrintChar(char c);
 extern s32 MBNG_LCD_PrintString(char *str);

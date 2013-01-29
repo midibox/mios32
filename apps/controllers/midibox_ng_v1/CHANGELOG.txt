@@ -1,5 +1,19 @@
 $Id$
 
+MIDIbox NG V1.015
+~~~~~~~~~~~~~~~~~
+
+   o support for GLCD_SSD1306_ROTATED
+
+   o the ^txt and ^txt56 SysEx command now allows to map incoming characters to
+     different cursor positions. An example can be found in cfg/templates/logictrl.ngc
+
+   o independent from this map feature, ^txt and ^txt56 now also take lcd_pos=... and
+     label=... into account to set the initial LCD and cursor position, at which the
+     message will start. The label can be used to change the GLCD font before the
+     characters will be print.
+     An example can be found in cfg/templates/logictrl.ngc as well.
+
 
 MIDIbox NG V1.014
 ~~~~~~~~~~~~~~~~~
