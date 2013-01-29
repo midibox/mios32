@@ -173,6 +173,7 @@ const char* MIOS32_LCD_LcdTypeName(mios32_lcd_type_t lcd_type)
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: return "GLCD_KS0108_INVCS";
   case MIOS32_LCD_TYPE_GLCD_DOG: return "GLCD_DOG";
   case MIOS32_LCD_TYPE_GLCD_SSD1306: return "GLCD_SSD1306";
+  case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: return "GLCD_SSD1306_ROTATED";
   }
 
   return NULL;
