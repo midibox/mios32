@@ -945,27 +945,43 @@ s32 MIOS32_BOARD_J15_DataSet(u8 data)
 
   J15_PIN_SER(data & 0x80); // D7
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x40); // D6
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x20); // D5
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x10); // D4
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x08); // D3
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x04); // D2
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x02); // D1
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x01); // D0
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
 
   // transfer to output register
