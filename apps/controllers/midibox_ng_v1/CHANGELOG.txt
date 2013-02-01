@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.016
+~~~~~~~~~~~~~~~~~
+
+   o LPC17: robustness of LCD driver has been improved
+
+
 MIDIbox NG V1.015
 ~~~~~~~~~~~~~~~~~
 
