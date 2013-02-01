@@ -3,6 +3,8 @@ $Id$
 MIDIO128 V3.013
 ~~~~~~~~~~~~~~~
 
+   o LPC17: robustness of LCD driver has been improved
+
    o The application boots a little bit faster now
 
    o optional support for up to 32 DIN and DOUT shift registers
