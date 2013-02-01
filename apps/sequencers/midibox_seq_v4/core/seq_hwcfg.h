@@ -224,16 +224,18 @@ typedef struct {
 
 
 typedef struct {
-  u8 enabled;
-  u8 dout_duocolour;
-  u8 buttons_enabled;
-  u8 buttons_no_ui;
+  u8 enabled:1;
+  u8 dout_duocolour:2;
+  u8 buttons_enabled:1;
+  u8 buttons_no_ui:1;
+  u8 gp_always_select_menu_page:1;
 } seq_hwcfg_blm_t;
 
 
 typedef struct {
-  u8 enabled;
-  u8 dout_gp_mapping;
+  u8 enabled:1;
+  u8 dout_gp_mapping:1;
+  u8 din_gp_mapping:1;
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {

@@ -204,7 +204,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Mode  Dst.Range               ValueMorphing controlled by CC#  1 at Bus1..4
+  // Trk. Mode  Dst.Range               ValueMorphing controlled by All /Chn 1 CC#  1
   // G1T1  on    17..32                  100    <######################          >
 
 
@@ -213,8 +213,16 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintFormattedString("Trk. Mode  Dst.Range               ValueMorphing controlled by CC#%3d at Bus1..4",
-			       1); // always ModWheel
+  SEQ_LCD_PrintString("Trk. Mode  Dst.Range               Value");
+
+  if( !seq_midi_in_ext_ctrl_channel || seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] >= 0x80 ) {
+    SEQ_LCD_PrintString("Please enable Ext. Ctrl in the MIDI page");
+  } else {
+    SEQ_LCD_PrintFormattedString("Morphing controlled by %s/Chn%2d CC#%3d",
+				 seq_midi_in_ext_ctrl_port ? SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port)) : " All",
+				 seq_midi_in_ext_ctrl_channel,
+				 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH]);
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);

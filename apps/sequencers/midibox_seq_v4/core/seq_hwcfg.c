@@ -407,11 +407,13 @@ seq_hwcfg_blm_t seq_hwcfg_blm = {
   .dout_duocolour = 1,
   .buttons_enabled = 1,
   .buttons_no_ui = 1,
+  .gp_always_select_menu_page = 0,
 };
 
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
   .enabled = 0,
   .dout_gp_mapping = 1,
+  .din_gp_mapping = 0,
 };
 
 

@@ -386,7 +386,7 @@ static void SEQ_UI_Msg_SongPos(char *line2)
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
   // in MENU page: overrule GP buttons as long as MENU button is pressed/active
-  if( seq_ui_button_state.MENU_PRESSED ) {
+  if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( depressed ) return -1;
     SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
   } else {
@@ -2610,7 +2610,7 @@ s32 SEQ_UI_LED_Handler(void)
 
 
   // in MENU page: overrule GP LEDs as long as MENU button is pressed/active
-  if( seq_ui_button_state.MENU_PRESSED ) {
+  if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( ui_cursor_flash ) // if flashing flag active: no LED flag set
       ui_gp_leds = 0x0000;
     else {
