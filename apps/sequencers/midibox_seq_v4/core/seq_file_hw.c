@@ -801,6 +801,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_blm.buttons_enabled = value;
 	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
 	    seq_hwcfg_blm.buttons_no_ui = value;
+	  } else if( strcmp(parameter, "GP_ALWAYS_SELECT_MENU_PAGE") == 0 ) {
+	    seq_hwcfg_blm.gp_always_select_menu_page = value;
 	  } else if( strcmp(parameter, "DIN_L_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.din_l_sr = value;

@@ -651,7 +651,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	mios32_midi_package_t p;
 	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
 	  if( loopback_port )
-	    SEQ_MIDI_IN_BusReceive(tcc->midi_port, p, 1); // forward to MIDI IN handler immediately
+	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else
 	    SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 	}
@@ -1007,6 +1007,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  // Second pass: schedule new events
 	  //////////////////////////////////////////////////////////////////////////////////////////
           e = &layer_events[0];
+	  u8 reset_stacks_done = 0;
           for(i=0; i<number_of_events; ++e, ++i) {
             mios32_midi_package_t *p = &e->midi_package;
 
@@ -1016,7 +1017,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    if( p->type != NoteOn ) {
 	      // e.g. CC, PitchBend, ProgramChange
 	      if( loopback_port )
-		SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1); // forward to MIDI IN handler immediately
+		SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1); // forward to MIDI IN handler immediately
 	      else
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
@@ -1032,8 +1033,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		t->vu_meter = p->velocity;
 
 		if( loopback_port ) {
+		  if( !reset_stacks_done ) {
+		    // reset current stack
+		    SEQ_MIDI_IN_ResetSingleTransArpStacks(tcc->midi_port & 0x0f);
+		    reset_stacks_done = 1;
+		  }
 		  // forward to MIDI IN handler immediately
-		  SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1);
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1);
 		} else {
 		  u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
 
@@ -1069,8 +1075,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		t->vu_meter = p->velocity;
 
 		if( loopback_port ) {
+		  if( !reset_stacks_done ) {
+		    reset_stacks_done = 1;
+		    // reset current stack
+		    SEQ_MIDI_IN_ResetSingleTransArpStacks(tcc->midi_port & 0x0f);
+		  }
 		  // forward to MIDI IN handler immediately
-		  SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1);
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1);
 		  // multi triggers, but also echo not possible on loopback ports
 		} else {
 		  u16 gatelength = e->len;

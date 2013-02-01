@@ -9,14 +9,29 @@ Wishlist for future features
 MIDIboxSEQ V4.070
 ~~~~~~~~~~~~~~~~~
 
+   o LPC17: robustness of LCD driver has been improved
+
+   o the MIDI configuration page got a new subpage called "Ext.Ctrl"
+     This subpage allows to assign CCs to functions like Morph Value,
+     Scale, Song, Phrase, Patterns, Banks, All Note Off, etc.
+     Some of these functions can also be assigned to a Program Change Event.
+     The MIDI port and channel over which these functions are accessible is free assignable.
+     The MIDI channel is disabled by default, which means that the Ext Ctrl. feature
+     has to be explicitly enabled in the MIDI->Ext Ctrl. page!!
+
    o improved transpose handling if loopback track is running with sustain enabled,
      or with notes > step length (glide)
 
    o note stack now automatically cleared if transpose was controlled by a loopback
      track, and then manually from an external keyboard.
 
+   o it's now possible to transpose with chords (or multiple notes) from a loopback
+     track
+
    o the "sdcard_format" command allows to format the connected SD Card with FAT32
      from the MIOS Terminal
+
+   o added BLM_GP_ALWAYS_SELECT_MENU_PAGE option to MBSEQ_V4.HW file
 
 
 MIDIboxSEQ V4.069

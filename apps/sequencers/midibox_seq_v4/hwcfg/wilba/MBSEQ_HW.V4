@@ -110,6 +110,12 @@ BLM_BUTTONS_ENABLED 1
 # set this to 1 if these buttons should only control the "step triggers" (gate, and other assigned triggers) - and no UI functions
 BLM_BUTTONS_NO_UI   1
 
+# optional (only useful in conjunction with the BLM):
+# if 0: the GP buttons/LEDs are working as usual
+# if 1: the GP buttons/LEDs always select the page items like if the MENU button is pressed,
+#       the GP LEDs show the selected page (if matching with any of these items)
+BLM_GP_ALWAYS_SELECT_MENU_PAGE 0
+
 # define the DIN shift registers to which the button matrix is connected
 BLM_DIN_L_SR  0
 BLM_DIN_R_SR  0

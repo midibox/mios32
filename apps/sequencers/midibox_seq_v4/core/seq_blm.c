@@ -1885,7 +1885,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	  p.chn = Chn1;
 	  p.note = button + 0x3c;
 	  p.velocity = midi_package.velocity;
-	  SEQ_MIDI_IN_BusReceive(0xf0, p, 1);
+	  SEQ_MIDI_IN_BusReceive(0, p, 1);
 	} else {
 	  if( midi_package.velocity > 0 ) {
 	    u8 visible_track = SEQ_UI_VisibleTrackGet();
