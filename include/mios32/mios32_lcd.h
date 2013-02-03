@@ -63,6 +63,7 @@ typedef enum {
   MIOS32_LCD_TYPE_GLCD_DOG          = 0x83,
   MIOS32_LCD_TYPE_GLCD_SSD1306      = 0x84,
   MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED = 0x85,
+  MIOS32_LCD_TYPE_GLCD_SED1520      = 0x86,
 } mios32_lcd_type_t;
 
 

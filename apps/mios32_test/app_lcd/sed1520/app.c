@@ -35,7 +35,7 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-#define MAX_LCDS 12
+#define MAX_LCDS 2
   int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
   if( num_lcds > MAX_LCDS )
     num_lcds = MAX_LCDS;
@@ -49,22 +49,22 @@ void APP_Background(void)
     }
   }
 
-  u8 vmeter_icon_ctr[MAX_LCDS][2] = {{0,5},{3,14},{7,1},{3,9},{13,6},{10,2},{1,4},{6,2},{13,6},{10,2},{1,4},{6,2}}; // memo: 28 icons (14 used)
-  u8 vmeter_icon_dir[MAX_LCDS][2] = {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};
-  u8 vmeter_icon_delay_ctr[MAX_LCDS][2] = {{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4}};
-  const u8 vmeter_icon_x[2] = {0, 120}; // memo: icon width 8
-  const u8 vmeter_icon_y[2] = {12, 12}; // memo: icon height 32
+  u8 vmeter_icon_ctr[MAX_LCDS][2] = {{0,5},{3,14}}; // memo: 28 icons (14 used)
+  u8 vmeter_icon_dir[MAX_LCDS][2] = {{1,1},{1,1}};
+  u8 vmeter_icon_delay_ctr[MAX_LCDS][2] = {{1,4},{1,4}};
+  const u8 vmeter_icon_x[2] = {0, 114}; // memo: icon width 8
+  const u8 vmeter_icon_y[2] = {8, 8}; // memo: icon height 32
 
-  u8 hmeter_icon_ctr[MAX_LCDS][2] = {{6,11},{2,27},{23,1},{15,6},{18,9},{10,12},{3,25},{26,7},{18,9},{10,12},{3,25},{26,7}}; // memo: 28 icons (14 used)
-  u8 hmeter_icon_dir[MAX_LCDS][2] = {{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0}};
-  u8 hmeter_icon_delay_ctr[MAX_LCDS][2] = {{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2}};
+  u8 hmeter_icon_ctr[MAX_LCDS][2] = {{6,11},{2,27}}; // memo: 28 icons (14 used)
+  u8 hmeter_icon_dir[MAX_LCDS][2] = {{1,0},{1,0}};
+  u8 hmeter_icon_delay_ctr[MAX_LCDS][2] = {{4,2},{4,2}};
   const u8 hmeter_icon_x[2] = {20, 80}; // memo: icon width 28
-  const u8 hmeter_icon_y[2] = {60, 60}; // memo: icon height 8
+  const u8 hmeter_icon_y[2] = {24, 24}; // memo: icon height 8
 
   // print configured LCD parameters
   MIOS32_MIDI_SendDebugMessage("\n");
   MIOS32_MIDI_SendDebugMessage("\n");
-  MIOS32_MIDI_SendDebugMessage("SSD1306 Demo started.");
+  MIOS32_MIDI_SendDebugMessage("SED1520 Demo started.");
   MIOS32_MIDI_SendDebugMessage("Configured LCD Parameters in MIOS32 Bootloader Info Range:\n");
   MIOS32_MIDI_SendDebugMessage("lcd_type: 0x%02x (%s)\n", mios32_lcd_parameters.lcd_type, MIOS32_LCD_LcdTypeName(mios32_lcd_parameters.lcd_type));
   MIOS32_MIDI_SendDebugMessage("num_x:    %4d\n", mios32_lcd_parameters.num_x);
@@ -72,7 +72,7 @@ void APP_Background(void)
   MIOS32_MIDI_SendDebugMessage("width:    %4d\n", mios32_lcd_parameters.width);
   MIOS32_MIDI_SendDebugMessage("height:   %4d\n", mios32_lcd_parameters.height);
 
-  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
+  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SED1520 ) {
     // print warning if correct LCD hasn't been selected
     MIOS32_MIDI_SendDebugMessage("WARNING: your core module hasn't been configured for the SSD1306 GLCD!\n");
     MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
@@ -94,31 +94,17 @@ void APP_Background(void)
     u8 n;
     for(n=0; n<num_lcds; ++n) {
       int i;
-#if 0
-      // X/Y "position" of displays
-      const u8 lcd_x[MAX_LCDS] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
-      const u8 lcd_y[MAX_LCDS] = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4};
-
-      // X/Y "position" of displays
-      u8 x_offset = 128*lcd_x[n];
-      u8 y_offset = 64*lcd_y[n];
-#else
-      // TK: expired! LCDs now addressed via MIOS32_LCD_DeviceSet()
       u8 x_offset = 0;
       u8 y_offset = 0;
       MIOS32_LCD_DeviceSet(n);
-#endif
 
       // print text
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-      MIOS32_LCD_GCursorSet(x_offset + 6*6, y_offset + 1*8);
-      MIOS32_LCD_PrintFormattedString("SSD1306 #%d", n+1);
-
-      MIOS32_LCD_GCursorSet(x_offset + 6*6, y_offset + 2*8);
-      MIOS32_LCD_PrintString("powered by    ");
+      MIOS32_LCD_GCursorSet(x_offset + 0*6, y_offset + 0*8);
+      MIOS32_LCD_PrintFormattedString("SED1520#%d powered by", n+1);
 
       MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
-      MIOS32_LCD_GCursorSet(x_offset + 3*6, y_offset + 3*8);
+      MIOS32_LCD_GCursorSet(x_offset + 2*6+3, y_offset + 1*8);
       MIOS32_LCD_PrintString("MIOS32");
 
       // print vmeter icons
@@ -138,6 +124,7 @@ void APP_Background(void)
 	MIOS32_LCD_PrintChar(vmeter_icon_ctr[n][i]);
       }
 
+#if 0
       // print hmeter icons
       for(i=0; i<2; ++i) {
 	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H); // memo: 28 icons, 14 used, icon size: 28x8
@@ -153,16 +140,8 @@ void APP_Background(void)
 	}
 	MIOS32_LCD_GCursorSet(hmeter_icon_x[i]+x_offset, hmeter_icon_y[i]+y_offset);
 	MIOS32_LCD_PrintChar(hmeter_icon_ctr[n][i]);
-
-	MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-	if( i == 0 ) {
-	  MIOS32_LCD_GCursorSet(0+x_offset, hmeter_icon_y[i]+y_offset);
-	  MIOS32_LCD_PrintFormattedString("%d", hmeter_icon_ctr[n][i]*4);
-	} else {
-	  MIOS32_LCD_GCursorSet(128-3*6+x_offset, hmeter_icon_y[i]+y_offset);
-	  MIOS32_LCD_PrintFormattedString("%3d", hmeter_icon_ctr[n][i]*4);
-	}
       }
+#endif
     }
   }
 }
