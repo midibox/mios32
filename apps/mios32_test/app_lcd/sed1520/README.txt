@@ -1,6 +1,6 @@
 $Id$
 
-Demo application for up to 8 SSD1306 OLEDs
+Demo application for SED1520 based GLCDs
 ===============================================================================
 Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -13,12 +13,12 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 module w/ at least one SSD1306 based graphical OLED
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 module w/ at least one SED1520 based graphical LCD
 
 ===============================================================================
 
-This application demonstrates the GLCD driver for SSD1306 controller
+This application demonstrates the GLCD driver for SED1520 controller
 
-Messages are print on up to 12 LCDs
+Messages are print on up to 2 LCDs with up to 4 segments
 
 ===============================================================================

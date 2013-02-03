@@ -43,6 +43,13 @@
 // the number of LCDs is currently only limited by the size of the display_available variable!
 #define MAX_LCDS 64
 
+// optional debug messages
+#define DEBUG_VERBOSE_LEVEL 0
+
+// for special segment sizes (2x61 pixel) of SED1520 based display available at pollin.de
+// since this is currently the only recommended GLCD with SED1520 controller, it's enabled by default
+#define SED1520_POLLIN_WINTEK_WD_G1203T 1
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -57,15 +64,44 @@ static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+
 /////////////////////////////////////////////////////////////////////////////
-// Sets the CS line of a KS0108 LCD depending on X cursor position
+// Initializes the CS pins for GLCDs with parallel port
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_LCD_GLCD_CS_Init(void)
+{
+  // configure CS pins
+  // STM32: the 4 CS pins are available at J5C
+  // LPC17: the 4 CS pins are available at J28
+#if defined(MIOS32_FAMILY_STM32F10x)
+  int cs;
+  for(cs=0; cs<4; ++cs)
+    MIOS32_BOARD_J5_PinInit(cs + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  int cs;
+  for(cs=0; cs<4; ++cs)
+    MIOS32_BOARD_J28_PinInit(cs, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#else
+# warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"
+#endif
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the CS line of GLCDs with parallel port depending on X cursor position
 // if "all" flag is set, commands are sent to all segments
 /////////////////////////////////////////////////////////////////////////////
-static s32 APP_LCD_KS0108_CS_Set(u8 all)
+static s32 APP_LCD_GLCD_CS_Set(u8 all)
 {
   // determine polarity of CS pins
-  u8 level_active = (mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_KS0108_INVCS) ? 0 : 1;
+  u8 level_active = (mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_KS0108) ? 1 : 0;
   u8 level_nonactive = level_active ? 0 : 1;
+#if SED1520_POLLIN_WINTEK_WD_G1203T
+  u8 segment_width = (mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SED1520) ? 61 : 64;
+#else
+  u8 segment_width = 64; // should be valid for KS0108 and SED1320 (although sometimes the controllers provide more columns)
+#endif
 
   int cs;
   // STM32: the 4 CS pins are available at J5C
@@ -77,7 +113,7 @@ static s32 APP_LCD_KS0108_CS_Set(u8 all)
       MIOS32_BOARD_J5_PinSet(cs+8, level_active);
   } else {
     // set only one chip select line depending on X pos   
-    u8 sel_cs = (mios32_lcd_x >> 6) & 0x3;
+    u8 sel_cs = mios32_lcd_x / segment_width;
 
     for(cs=0; cs<4; ++cs)
       MIOS32_BOARD_J5_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
@@ -89,7 +125,7 @@ static s32 APP_LCD_KS0108_CS_Set(u8 all)
       MIOS32_BOARD_J28_PinSet(cs, level_active);
   } else {
     // set only one chip select line depending on X pos   
-    u8 sel_cs = (mios32_lcd_x >> 6) & 0x3;
+    u8 sel_cs = mios32_lcd_x / segment_width;
 
     for(cs=0; cs<4; ++cs)
       MIOS32_BOARD_J28_PinSet(cs, (cs == sel_cs) ? level_active : level_nonactive);
@@ -299,31 +335,46 @@ s32 APP_LCD_Init(u32 mode)
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
   case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
-    // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
-    if( MIOS32_BOARD_J15_PortInit(1) < 0 )
-      return -2; // failed to initialize J15
+    // all GLCDs will be initialized at once by activating all CS lines!
+    if( mios32_lcd_device < 2 ) { // only two E lines available
+      // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
+      if( MIOS32_BOARD_J15_PortInit(1) < 0 )
+	return -2; // failed to initialize J15
 
-    // configure CS pins
-    // STM32: the 4 CS pins are available at J5C
-    // LPC17: the 4 CS pins are available at J28
-#if defined(MIOS32_FAMILY_STM32F10x)
-    int cs;
-    for(cs=0; cs<4; ++cs)
-      MIOS32_BOARD_J5_PinInit(cs + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-#elif defined(MIOS32_FAMILY_LPC17xx)
-    int cs;
-    for(cs=0; cs<4; ++cs)
-      MIOS32_BOARD_J28_PinInit(cs, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-#else
-# warning "KS0108 CS pins not adapted for this MIOS32_FAMILY"
-#endif
+      // initialize CS pins
+      APP_LCD_GLCD_CS_Init();
 
-    // "Display On" command
-    APP_LCD_Cmd(0x3e + 1);
+      // "Display On" command
+      APP_LCD_Cmd(0x3e + 1);
+
+      // set Y0=0
+      APP_LCD_Cmd(0xc0 + 0);
+    }
+  } break;
+
+  case MIOS32_LCD_TYPE_GLCD_SED1520: {
+    // all GLCDs will be initialized at once by activating all CS lines!
+    if( mios32_lcd_device < 2 ) { // only two E lines available
+      // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
+      if( MIOS32_BOARD_J15_PortInit(1) < 0 )
+	return -2; // failed to initialize J15
+
+      // initialize CS pins
+      APP_LCD_GLCD_CS_Init();
+
+      // Reset command
+      APP_LCD_Cmd(0xe2);
+
+      // "Display On" command
+      APP_LCD_Cmd(0xae + 1);
+
+      // Display start line
+      APP_LCD_Cmd(0xc0 + 0);
+    }
   } break;
 
   case MIOS32_LCD_TYPE_GLCD_DOG: {
-    // all OLEDs will be initialized at once by activating all CS lines!
+    // all GLCDs will be initialized at once by activating all CS lines!
     if( mios32_lcd_device == 0 ) {
       // DOGM128 works at 3.3V, level shifting (and open drain mode) not required
       if( MIOS32_BOARD_J15_PortInit(0) < 0 )
@@ -530,23 +581,28 @@ s32 APP_LCD_Data(u8 data)
 
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
+  case MIOS32_LCD_TYPE_GLCD_SED1520: {
 
-    // due to historical reasons currently only one device provided, it's spreaded over multiple CS lines
-    if( mios32_lcd_device != 0 )
+    // due to historical reasons currently only two devices provided, they are spreaded over multiple CS lines
+    if( mios32_lcd_device >= 2 )
       return -1;
 
-    // abort if max. width reached
-    if( mios32_lcd_x >= mios32_lcd_parameters.width )
+    // abort if max. width or height reached
+    if( mios32_lcd_x >= mios32_lcd_parameters.width || mios32_lcd_y >= mios32_lcd_parameters.height )
       return -1;
 
     // determine chip select line(s)
-    APP_LCD_KS0108_CS_Set(0); // select display depending on current X position
+    APP_LCD_GLCD_CS_Set(0); // select display depending on current X position
 
     // wait until LCD unbusy, exit on error (timeout)
     if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
       display_available &= ~(1ULL << mios32_lcd_device);
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[APP_LCD_Data] lost connection to LCD at E%d during write to x=%d/y=%d\n",
+				   mios32_lcd_device+1, mios32_lcd_x, mios32_lcd_y);
+#endif
       return -2; // timeout
     }
 
@@ -558,8 +614,18 @@ s32 APP_LCD_Data(u8 data)
 
     // increment graphical cursor
     // if end of display segment reached: set X position of all segments to 0
-    if( (++mios32_lcd_x & 0x3f) == 0x00 )
-      return APP_LCD_Cmd(0x40);
+    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SED1520 ) {
+#if SED1520_POLLIN_WINTEK_WD_G1203T
+      if( (++mios32_lcd_x % 61) == 0 )
+	return APP_LCD_Cmd(0x00 + 0);
+#else
+      if( (++mios32_lcd_x % 64) == 0 )
+	return APP_LCD_Cmd(0x00 + 0);
+#endif
+    } else {
+      if( (++mios32_lcd_x % 64) == 0 )
+	return APP_LCD_Cmd(0x40 + 0);
+    }
 
     return 0; // no error
   } break;
@@ -612,6 +678,9 @@ s32 APP_LCD_Data(u8 data)
     if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
       display_available &= ~(1ULL << mios32_lcd_device);
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[APP_LCD_Data] lost connection to LCD at E%d\n", mios32_lcd_device+1);
+#endif
       return -2; // timeout
     }
 
@@ -645,24 +714,29 @@ s32 APP_LCD_Cmd(u8 cmd)
 
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
+  case MIOS32_LCD_TYPE_GLCD_SED1520: {
 
-    // due to historical reasons currently only one device provided, it's spreaded over multiple CS lines
-    if( mios32_lcd_device != 0 )
+    // due to historical reasons currently only two devices provided, they are spreaded over multiple CS lines
+    if( mios32_lcd_device >= 2 )
       return -1;
 
     // determine chip select line(s)
-    APP_LCD_KS0108_CS_Set(0); // select display depending on current X position
+    APP_LCD_GLCD_CS_Set(0); // select display depending on current X position
 
     // wait until LCD unbusy, exit on error (timeout)
     if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
-      display_available &= ~(1ULL << mios32_lcd_device);
-      return -2; // timeout
+      //display_available &= ~(1ULL << mios32_lcd_device);
+      // TK: not here... only timeout on data accesses
+#if DEBUG_VERBOSE_LEVEL >= 1
+      //MIOS32_MIDI_SendDebugMessage("[APP_LCD_Cmd] lost connection to LCD at E%d\n", mios32_lcd_device+1);
+#endif
+      //return -2; // timeout
     }
 
     // select all displays
-    APP_LCD_KS0108_CS_Set(1);
+    APP_LCD_GLCD_CS_Set(1);
 
     // write command
     MIOS32_BOARD_J15_DataSet(cmd);
@@ -700,6 +774,9 @@ s32 APP_LCD_Cmd(u8 cmd)
     if( APP_LCD_PollUnbusy(2500) < 0 ) {
       // disable display
       display_available &= ~(1ULL << mios32_lcd_device);
+#if DEBUG_VERBOSE_LEVEL >= 1
+      MIOS32_MIDI_SendDebugMessage("[APP_LCD_Cmd] lost connection to LCD at E%d\n", mios32_lcd_device+1);
+#endif
       return -2; // timeout
     }
 
@@ -729,7 +806,8 @@ s32 APP_LCD_Clear(void)
 
   switch( mios32_lcd_parameters.lcd_type ) {
   case MIOS32_LCD_TYPE_GLCD_KS0108:
-  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS: {
+  case MIOS32_LCD_TYPE_GLCD_KS0108_INVCS:
+  case MIOS32_LCD_TYPE_GLCD_SED1520: {
     s32 error = 0;
     int x, y;
 
@@ -741,9 +819,6 @@ s32 APP_LCD_Clear(void)
       for(x=0; x<mios32_lcd_parameters.width; ++x)
 	error |= APP_LCD_Data(0x00);
     }
-
-    // set Y0=0
-    error |= APP_LCD_Cmd(0xc0 + 0);
 
     // set X=0, Y=0
     error |= MIOS32_LCD_CursorSet(0, 0);
@@ -855,10 +930,26 @@ s32 APP_LCD_GCursorSet(u16 x, u16 y)
     s32 error = 0;
 
     // set X position
-    error |= APP_LCD_Cmd(0x40 | (x & 0x3f));
+    error |= APP_LCD_Cmd(0x40 | (x % 64));
 
     // set Y position
     error |= APP_LCD_Cmd(0xb8 | ((y>>3) & 0x7));
+
+    return error;
+  } break;
+
+  case MIOS32_LCD_TYPE_GLCD_SED1520: {
+    s32 error = 0;
+
+    // set X position
+#if SED1520_POLLIN_WINTEK_WD_G1203T
+    error |= APP_LCD_Cmd(0x00 | (x % 61));
+#else
+    error |= APP_LCD_Cmd(0x00 | (x % 64));
+#endif
+
+    // set Y position
+    error |= APP_LCD_Cmd(0xb8 | ((y>>3) & 0x3));
 
     return error;
   } break;
@@ -986,10 +1077,16 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
   if( !MIOS32_LCD_TypeIsGLCD() )
     return -1; // no GLCD
 
+  // abort if max. width reached
+  if( mios32_lcd_x >= mios32_lcd_parameters.width )
+    return -2;
+
   // all GLCDs support the same bitmap scrambling
   int line;
   int y_lines = (bitmap.height >> 3);
 
+  u16 initial_x = mios32_lcd_x;
+  u16 initial_y = mios32_lcd_y;
   for(line=0; line<y_lines; ++line) {
 
     // calculate pointer to bitmap line
@@ -997,7 +1094,7 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 
     // set graphical cursor after second line has reached
     if( line > 0 ) {
-      mios32_lcd_x -= bitmap.width;
+      mios32_lcd_x = initial_x;
       mios32_lcd_y += 8;
       APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
     }
@@ -1010,7 +1107,7 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 
   // fix graphical cursor if more than one line has been print
   if( y_lines >= 1 ) {
-    mios32_lcd_y = mios32_lcd_y - (bitmap.height-8);
+    mios32_lcd_y = initial_y;
     APP_LCD_GCursorSet(mios32_lcd_x, mios32_lcd_y);
   }
 
