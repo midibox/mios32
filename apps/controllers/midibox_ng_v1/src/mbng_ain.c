@@ -157,59 +157,71 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
 
   // get ID
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
-    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to AIN hw_id=%d\n", hw_id & 0xfff);
+  u32 continue_ix = 0;
+  do {
+    if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+      if( continue_ix )
+	return 0; // ok: at least one event was assigned
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("No event assigned to AIN hw_id=%d\n", hw_id & 0xfff);
+      }
+      return -2; // no event assigned
     }
-    return -2; // no event assigned
-  }
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    MBNG_EVENT_ItemPrint(&item);
-  }
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      MBNG_EVENT_ItemPrint(&item);
+    }
 
-  // scale 12bit value between min/max with fixed point artithmetic
-  int value = pin_value;
-  s16 min = item.min;
-  s16 max = item.max;
-  u8 *map_values;
-  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-  if( map_len > 0 ) {
-    min = 0;
-    max = map_len-1;
-  }
+    // scale 12bit value between min/max with fixed point artithmetic
+    int value = pin_value;
+    s16 min = item.min;
+    s16 max = item.max;
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+    if( map_len > 0 ) {
+      min = 0;
+      max = map_len-1;
+    }
 
-  if( min <= max ) {
-    value = min + (((256*value)/4096) * (max-min+1) / 256);
-  } else {
-    value = min - (((256*value)/4096) * (min-max+1) / 256);
-  }
-
-  if( map_len > 0 ) {
-    value = map_values[value];
-  }
-
-  if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
-    int prev_value = previous_ain_value[pin];
-    previous_ain_value[pin] = pin_value; // for next notification
     if( min <= max ) {
-      prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
+      value = min + (((256*value)/4096) * (max-min+1) / 256);
     } else {
-      prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
+      value = min - (((256*value)/4096) * (min-max+1) / 256);
     }
 
     if( map_len > 0 ) {
-      prev_value = map_values[prev_value];
+      value = map_values[value];
     }
 
-    if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
-      return 0; // don't send
-  } else {
-    item.value = value;
-  }
+    if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
+      int prev_value = previous_ain_value[pin];
+      previous_ain_value[pin] = pin_value; // for next notification
+      if( min <= max ) {
+	prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
+      } else {
+	prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
+      }
 
-  // send MIDI event
-  MBNG_EVENT_NotifySendValue(&item);
+      if( map_len > 0 ) {
+	prev_value = map_values[prev_value];
+      }
+
+      if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
+	return 0; // don't send
+    } else {
+      item.value = value;
+    }
+
+    // matching condition?
+    s32 cond_match;
+    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
+      // send MIDI event
+      MBNG_EVENT_NotifySendValue(&item);
+
+      if( cond_match >= 2 ) // stop on match
+	break;
+    }
+  } while( continue_ix );
 
   return 0; // no error
 }

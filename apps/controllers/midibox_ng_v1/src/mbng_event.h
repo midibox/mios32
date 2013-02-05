@@ -55,6 +55,18 @@ typedef enum {
 } mbng_event_type_t;
 
 typedef enum {
+  MBNG_EVENT_IF_COND_NONE = 0,
+  MBNG_EVENT_IF_COND_EQ,
+  MBNG_EVENT_IF_COND_EQ_STOP_ON_MATCH,
+  MBNG_EVENT_IF_COND_UNEQ,
+  MBNG_EVENT_IF_COND_UNEQ_STOP_ON_MATCH,
+  MBNG_EVENT_IF_COND_LT,
+  MBNG_EVENT_IF_COND_LT_STOP_ON_MATCH,
+  MBNG_EVENT_IF_COND_LEQ,
+  MBNG_EVENT_IF_COND_LEQ_STOP_ON_MATCH,
+} mbng_event_if_cond_t;
+
+typedef enum {
   MBNG_EVENT_BUTTON_MODE_UNDEFINED = 0,
   MBNG_EVENT_BUTTON_MODE_ON_OFF,
   MBNG_EVENT_BUTTON_MODE_ON_ONLY,
@@ -70,7 +82,6 @@ typedef enum {
   MBNG_EVENT_ENC_MODE_INC41_DEC3F,
   MBNG_EVENT_ENC_MODE_INC01_DEC7F,
   MBNG_EVENT_ENC_MODE_INC01_DEC41,
-  MBNG_EVENT_ENC_MODE_INC_DEC,
 } mbng_event_enc_mode_t;
 
 typedef enum {
@@ -290,6 +301,17 @@ typedef union {
 
 
 typedef union {
+  u32 ALL;
+
+  struct {
+    u32 condition:4;
+    u32 id:14;
+    u32 value:14;
+  };
+} mbng_event_cond_t;
+
+
+typedef union {
   u16 ALL;
 
   struct {
@@ -302,6 +324,7 @@ typedef union {
 typedef struct {
   u16 id;
   u16 hw_id;
+  mbng_event_cond_t cond;
   u16 pool_address;
   u16 enabled_ports;
   mbng_event_flags_t flags;
@@ -358,7 +381,8 @@ extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
-extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix);
+extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);
 extern s32 MBNG_EVENT_MidiLearnModeGet(void);
@@ -371,6 +395,8 @@ extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id);
 extern mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event);
 extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);
 extern mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type);
+extern const char *MBNG_EVENT_ItemConditionStrGet(mbng_event_item_t *item);
+extern mbng_event_if_cond_t MBNG_EVENT_ItemConditionFromStrGet(char *condition);
 extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
 extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
 extern const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item);

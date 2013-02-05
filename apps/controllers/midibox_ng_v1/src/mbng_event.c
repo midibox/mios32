@@ -53,6 +53,7 @@ typedef union {
 typedef struct { // should be dividable by u16
   u16 id;
   u16 hw_id;
+  mbng_event_cond_t cond;
   u16 fwd_id;
   u16 enabled_ports;
   mbng_event_flags_t flags;
@@ -647,6 +648,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
   item->hw_id  = id;
+  item->cond.ALL = 0;
   item->value  = 0;
   item->min    = 0;
   item->max    = 127;
@@ -728,6 +730,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->enabled_ports = pool_item->enabled_ports;
   item->fwd_id = pool_item->fwd_id;
   item->hw_id = pool_item->hw_id;
+  item->cond.ALL = pool_item->cond.ALL;
   item->value = pool_item->value;
   item->min = pool_item->min;
   item->max = pool_item->max;
@@ -760,6 +763,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->enabled_ports = item->enabled_ports;
   pool_item->hw_id = item->hw_id;
   pool_item->fwd_id = item->fwd_id;
+  pool_item->cond.ALL = item->cond.ALL;
   pool_item->value = item->value;
   pool_item->min = item->min;
   pool_item->max = item->max;
@@ -933,20 +937,78 @@ s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
 //! \returns 0 and copies item into *item if found
 //! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item)
+s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
-  u32 i;
-  for(i=0; i<event_pool_num_items; ++i) {
+  u32 i = 0;
+
+  if( *continue_ix ) {
+    // lower half: pointer offset to pool item
+    // upper half: index of pool item
+    pool_ptr += (*continue_ix & 0xffff);
+    i = *continue_ix >> 16;
+  }
+
+  for(; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
     if( pool_item->flags.general.active && pool_item->hw_id == hw_id ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
+
+      // pass pointer offset to pool item + index of pool item in continue_ix for continued search
+      // skip this if the new values exceeding the 16bit boundary, or if this is the last pool item
+      u32 next_pool_offset = (u32)pool_ptr - (u32)event_pool + pool_item->len;
+      u32 next_pool_i = i + 1;
+      if( next_pool_i > 65535 || next_pool_i >= event_pool_num_items || next_pool_offset > 65535 )
+	*continue_ix = 0;
+      else
+	*continue_ix = (next_pool_i << 16) | next_pool_offset;
+
       return 0; // item found
     }
     pool_ptr += pool_item->len;
   }
 
   return -1; // not found
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! \retval 0 if no matching condition
+//! \retval 1 if matching condition
+//! \retval 2 if matching condition and stop requested
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item)
+{
+  if( !item->cond.condition )
+    return 1; // shortcut: no condition selected -> match
+
+  // take value from another event?
+  u16 cmp_value;
+  if( item->cond.id ) {
+    mbng_event_item_t tmp_item;
+    if( MBNG_EVENT_ItemSearchById(item->cond.id, &tmp_item) < 0 ) {
+      return 0; // id doesn't exist -> no match
+    }
+    cmp_value = tmp_item.value;
+  } else {
+    // take my own value
+    cmp_value = item->value;
+  }
+
+  // check condition:
+  switch( item->cond.condition ) {
+  case MBNG_EVENT_IF_COND_EQ:                  return (cmp_value == item->cond.value) ? 1 : 0;
+  case MBNG_EVENT_IF_COND_EQ_STOP_ON_MATCH:    return (cmp_value == item->cond.value) ? 2 : 0;
+  case MBNG_EVENT_IF_COND_UNEQ:                return (cmp_value != item->cond.value) ? 1 : 0;
+  case MBNG_EVENT_IF_COND_UNEQ_STOP_ON_MATCH:  return (cmp_value != item->cond.value) ? 2 : 0;
+  case MBNG_EVENT_IF_COND_LT:                  return (cmp_value <  item->cond.value) ? 1 : 0;
+  case MBNG_EVENT_IF_COND_LT_STOP_ON_MATCH:    return (cmp_value <  item->cond.value) ? 2 : 0;
+  case MBNG_EVENT_IF_COND_LEQ:                 return (cmp_value <= item->cond.value) ? 1 : 0;
+  case MBNG_EVENT_IF_COND_LEQ_STOP_ON_MATCH:   return (cmp_value <= item->cond.value) ? 2 : 0;
+  }
+
+  return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1039,7 +1101,9 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
 
   u8 new_item = 0;
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
+  // note: currently only assigned to first found item
+  u32 continue_ix = 0;
+  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
     new_item = 1;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
@@ -1259,6 +1323,44 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \returns name of condition
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemConditionStrGet(mbng_event_item_t *item)
+{
+  switch( item->cond.condition ) {
+  case MBNG_EVENT_IF_COND_EQ:                  return "equal";
+  case MBNG_EVENT_IF_COND_EQ_STOP_ON_MATCH:    return "equal_stop_on_match";
+  case MBNG_EVENT_IF_COND_UNEQ:                return "unequal";
+  case MBNG_EVENT_IF_COND_UNEQ_STOP_ON_MATCH:  return "unequal_stop_on_match";
+  case MBNG_EVENT_IF_COND_LT:                  return "less";
+  case MBNG_EVENT_IF_COND_LT_STOP_ON_MATCH:    return "less_stop_on_match";
+  case MBNG_EVENT_IF_COND_LEQ:                 return "lessequal";
+  case MBNG_EVENT_IF_COND_LEQ_STOP_ON_MATCH:   return "lessequal_stop_on_match";
+  }
+  return "none";
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \returns value of condition given as string
+//! \returns <0 if invalid type
+/////////////////////////////////////////////////////////////////////////////
+mbng_event_if_cond_t MBNG_EVENT_ItemConditionFromStrGet(char *condition)
+{
+  if( strcasecmp(condition, "equal") == 0 )                    return MBNG_EVENT_IF_COND_EQ;
+  if( strcasecmp(condition, "equal_stop_on_match") == 0 )      return MBNG_EVENT_IF_COND_EQ_STOP_ON_MATCH;
+  if( strcasecmp(condition, "unequal") == 0 )                  return MBNG_EVENT_IF_COND_UNEQ;
+  if( strcasecmp(condition, "unequal_stop_on_match") == 0 )    return MBNG_EVENT_IF_COND_UNEQ_STOP_ON_MATCH;
+  if( strcasecmp(condition, "less") == 0 )                     return MBNG_EVENT_IF_COND_LT;
+  if( strcasecmp(condition, "less_stop_on_match") == 0 )       return MBNG_EVENT_IF_COND_LT_STOP_ON_MATCH;
+  if( strcasecmp(condition, "lessequal") == 0 )                return MBNG_EVENT_IF_COND_LEQ;
+  if( strcasecmp(condition, "lessequal_stop_on_match") == 0 )  return MBNG_EVENT_IF_COND_LEQ_STOP_ON_MATCH;
+
+  return MBNG_EVENT_IF_COND_NONE;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! for button mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item)
@@ -1322,7 +1424,6 @@ const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_ENC_MODE_INC41_DEC3F:           return "Inc41_Dec3F";
   case MBNG_EVENT_ENC_MODE_INC01_DEC7F:           return "Inc01_Dec7F";
   case MBNG_EVENT_ENC_MODE_INC01_DEC41:           return "Inc01_Dec41";
-  case MBNG_EVENT_ENC_MODE_INC_DEC:               return "IncDec";
   }
   return "Undefined";
 }
@@ -1336,7 +1437,6 @@ mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
   if( strcasecmp(enc_mode, "Inc41_Dec3F") == 0 )            return MBNG_EVENT_ENC_MODE_INC41_DEC3F;
   if( strcasecmp(enc_mode, "Inc01_Dec7F") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC7F;
   if( strcasecmp(enc_mode, "Inc01_Dec41") == 0 )            return MBNG_EVENT_ENC_MODE_INC01_DEC41;
-  if( strcasecmp(enc_mode, "IncDec") == 0 )                 return MBNG_EVENT_ENC_MODE_INC_DEC;
 
   return MBNG_EVENT_ENC_MODE_UNDEFINED;
 }
