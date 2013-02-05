@@ -566,26 +566,38 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
 
   // get ID
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
-    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to BUTTON_MATRIX hw_id=%d\n", hw_id & 0xfff);
+  u32 continue_ix = 0;
+  do {
+    if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+      if( continue_ix )
+	return 0; // ok: at least one event was assigned
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("No event assigned to BUTTON_MATRIX hw_id=%d\n", hw_id & 0xfff);
+      }
+      return -2; // no event assigned
     }
-    return -2; // no event assigned
-  }
 
-  // EXTRA for matrix: store pin number for MBNG_EVENT_Item* functions
-  item.matrix_pin = pin;
+    // EXTRA for matrix: store pin number for MBNG_EVENT_Item* functions
+    item.matrix_pin = pin;
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    MBNG_EVENT_ItemPrint(&item);
-  }
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      MBNG_EVENT_ItemPrint(&item);
+    }
 
-  // button depressed?
-  u8 depressed = pin_value ? 1 : 0;
-  item.value = depressed ? item.min : item.max;
+    // button depressed?
+    u8 depressed = pin_value ? 1 : 0;
+    item.value = depressed ? item.min : item.max;
 
-  // send MIDI event
-  MBNG_EVENT_NotifySendValue(&item);
+    // matching condition?
+    s32 cond_match;
+    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
+      // send MIDI event
+      MBNG_EVENT_NotifySendValue(&item);
+
+      if( cond_match >= 2 ) // stop on match
+	break;
+    }
+  } while( continue_ix );
 
   return 0; // no error
 }

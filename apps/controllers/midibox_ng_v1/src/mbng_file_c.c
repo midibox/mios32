@@ -556,6 +556,66 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strncasecmp(parameter, "if_", 3) == 0 ) {
+      if( (item.cond.condition=MBNG_EVENT_ItemConditionFromStrGet(parameter+3)) == MBNG_EVENT_IF_COND_NONE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid if_* condition in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      char *values_str = value_str;
+      char *brkt_local;
+
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int value;
+      if( (value=get_dec(values_str)) >= 0 ) {
+	if( value >= 16384 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..%d)\n", event, parameter, value_str, 16383);
+#endif
+	  return -1;
+	}
+	item.cond.id = 0; // just to ensure...
+	item.cond.value = value;
+      } else {
+	mbng_event_item_id_t hw_id;
+
+	if( (hw_id=MBNG_EVENT_ItemIdFromControllerStrGet(values_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	  return -1;
+	}
+
+	int id_lower = 0;
+	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	    (id_lower=get_dec(values_str)) < 1 || id_lower > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid hardware idin EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+#endif
+	  return -1;
+	}
+
+	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	    (value=get_dec(values_str)) < 0  || value >= 16384 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting valid value in EVENT_%s ... %s=%s (0..%d)\n", event, parameter, value_str, 16383);
+#endif
+	  return -1;
+	}
+
+	item.cond.id = hw_id | id_lower;
+	item.cond.value = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "bank") == 0 ) {
       int bank;
       if( (bank=get_dec(value_str)) < 0 || bank > 255 ) {

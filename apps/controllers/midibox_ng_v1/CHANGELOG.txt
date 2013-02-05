@@ -1,5 +1,14 @@
 $Id$
 
+MIDIbox NG V1.017
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to use the same hw_id in multiple event definitions.
+     This allows for example to send multiple MIDI events from a single control element.
+
+   o started with condition events
+
+
 MIDIbox NG V1.016
 ~~~~~~~~~~~~~~~~~
 

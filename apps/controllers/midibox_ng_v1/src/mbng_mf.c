@@ -90,22 +90,33 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	  // get ID
 	  mbng_event_item_id_t button_id = mf->ts_first_button_id + ts_sel;
 	  mbng_event_item_t item;
-	  if( MBNG_EVENT_ItemSearchById(button_id, &item) < 0 ) {
-	    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	      DEBUG_MSG("No event assigned to BUTTON id=%d for touchsensor\n", button_id & 0xfff);
+	  u32 continue_ix = 0;
+	  do {
+	    if( MBNG_EVENT_ItemSearchByHwId(button_id, &item, &continue_ix) < 0 ) {
+	      if( continue_ix )
+		return 0; // ok: at least one event was assigned
+	      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+		DEBUG_MSG("No event assigned to BUTTON hw_id=%d for touchsensor\n", button_id & 0xfff);
+	      }
+	      return -2; // no event assigned
 	    }
-	    return -2; // no event assigned
-	  }
 
-	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	    MBNG_EVENT_ItemPrint(&item);
-	  }
+	    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	      MBNG_EVENT_ItemPrint(&item);
+	    }
 
-	  // take over new value
-	  item.value = is_pressed ? item.max : item.min;
+	    // take over new value
+	    item.value = is_pressed ? item.max : item.min;
 
-	  // send MIDI event
-	  MBNG_EVENT_NotifySendValue(&item);
+	    s32 cond_match;
+	    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
+	      // send MIDI event
+	      MBNG_EVENT_NotifySendValue(&item);
+
+	      if( cond_match >= 2 ) // stop on match
+		break;
+	    }
+	  } while( continue_ix );
 	}
       } else if( is_fader_msb ) {
 	u8 fader_sel = midi_package.cc_number & 0x7;
@@ -122,47 +133,58 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 
 	// get ID
 	mbng_event_item_t item;
-	if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
-	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	    DEBUG_MSG("No event assigned to MF hw_id=%d\n", hw_id & 0xfff);
+	u32 continue_ix = 0;
+	do {
+	  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+	    if( continue_ix )
+	      return 0; // ok: at least one event was assigned
+	    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	      DEBUG_MSG("No event assigned to MF hw_id=%d\n", hw_id & 0xfff);
+	    }
+	    return -2; // no event assigned
 	  }
-	  return -2; // no event assigned
-	}
 
-	if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	  MBNG_EVENT_ItemPrint(&item);
-	}
+	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	    MBNG_EVENT_ItemPrint(&item);
+	  }
 
-	// scale value from 14bit
-	s16 min = item.min;
-	s16 max = item.max;
-	u8 *map_values;
-	int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-	if( map_len > 0 ) {
-	  min = 0;
-	  max = map_len-1;
-	}
+	  // scale value from 14bit
+	  s16 min = item.min;
+	  s16 max = item.max;
+	  u8 *map_values;
+	  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+	  if( map_len > 0 ) {
+	    min = 0;
+	    max = map_len-1;
+	  }
 
-	u32 value_scaled;
-	if( min <= max ) {
-	  int range = max - min + 1;
-	  value_scaled = min + (value / (16384 / range));
-	} else {
-	  int range = min - max + 1;
-	  value_scaled = max + (value / (16384 / range));
-	}
+	  u32 value_scaled;
+	  if( min <= max ) {
+	    int range = max - min + 1;
+	    value_scaled = min + (value / (16384 / range));
+	  } else {
+	    int range = min - max + 1;
+	    value_scaled = max + (value / (16384 / range));
+	  }
 
-	if( map_len > 0 ) {
-	  value_scaled = map_values[value_scaled];
-	}
+	  if( map_len > 0 ) {
+	    value_scaled = map_values[value_scaled];
+	  }
 
-	if( item.value != value_scaled ) {
-	  // take over new value
-	  item.value = value_scaled;
+	  if( item.value != value_scaled ) {
+	    // take over new value
+	    item.value = value_scaled;
 
-	  // send MIDI event
-	  MBNG_EVENT_NotifySendValue(&item);
-	}
+	    s32 cond_match;
+	    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
+	      // send MIDI event
+	      MBNG_EVENT_NotifySendValue(&item);
+
+	      if( cond_match >= 2 ) // stop on match
+		break;
+	    }
+	  }
+	} while( continue_ix );
       }
     }
   }

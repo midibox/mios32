@@ -58,46 +58,58 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
   // get ID
   mbng_event_item_t item;
-  if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item) < 0 ) {
+  u32 continue_ix = 0;
+  do {
+    if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
+      if( continue_ix )
+	return 0; // ok: at least one event was assigned
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("No event assigned to BUTTON hw_id=%d\n", hw_id & 0xfff);
+      }
+      return -2; // no event assigned
+    }
+
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("No event assigned to BUTTON hw_id=%d\n", hw_id & 0xfff);
+      MBNG_EVENT_ItemPrint(&item);
     }
-    return -2; // no event assigned
-  }
 
-  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-    MBNG_EVENT_ItemPrint(&item);
-  }
+    // button depressed?
+    u8 depressed = pin_value ? 1 : 0;
 
-  // button depressed?
-  u8 depressed = pin_value ? 1 : 0;
+    // toggle mode?
+    if( item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
+      if( depressed )
+	return 0;
 
-  // toggle mode?
-  if( item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
-    if( depressed )
-      return 0;
-
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-    if( map_len > 0 ) {
-      int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value) + 1;
-      if( map_ix >= map_len )
-	map_ix = 0;
-      item.value = map_values[map_ix];
+      u8 *map_values;
+      int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+      if( map_len > 0 ) {
+	int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value) + 1;
+	if( map_ix >= map_len )
+	  map_ix = 0;
+	item.value = map_values[map_ix];
+      } else {
+	int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
+	int toggle_state = (item.min <= item.max) ? ((item.value - item.min) >= (range/2)) : ((item.value - item.max) >= (range/2));
+	item.value = toggle_state ? item.min : item.max;
+      }
     } else {
-      int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
-      int toggle_state = (item.min <= item.max) ? ((item.value - item.min) >= (range/2)) : ((item.value - item.max) >= (range/2));
-      item.value = toggle_state ? item.min : item.max;
+      item.value = depressed ? item.min : item.max;
     }
-  } else {
-    item.value = depressed ? item.min : item.max;
-  }
 
-  // OnOnly mode: don't send if button depressed
-  if( !depressed || item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
-    // send MIDI event
-    MBNG_EVENT_NotifySendValue(&item);
-  }
+    // OnOnly mode: don't send if button depressed
+    if( !depressed || item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
+      // matching condition?
+      s32 cond_match;
+      if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
+	// send MIDI event
+	MBNG_EVENT_NotifySendValue(&item);
+
+	if( cond_match >= 2 ) // stop on match
+	  break;
+      }
+    }
+  } while( continue_ix );
 
   return 0; // no error
 }
