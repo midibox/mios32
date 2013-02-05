@@ -20,4 +20,4 @@ EVENT_BUTTON  id=2000  type=meta range=1:2  button_mode=Toggle  lcd_pos=1:1:1 la
 EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:1  type=CC cc=16  lcd_pos=1:1:2 label="Enc Mode 1: %3d"
 
 # send CC#32 if mode #2 is selected
-EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:2  type=CC cc=32  lcd_pos=1:1:2 label="Enc Mode 2: %3d"
+EVENT_ENC  id=2001  hw_id=2000  if_equal=Button:2000:2  type=CC cc=32  lcd_pos=1:1:2 label="Enc Mode 2: %3d"
