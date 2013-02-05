@@ -18,4 +18,4 @@ SCS soft1_button_emu_id=2000 \
 EVENT_ENC  id=2000  hw_id=2000  fwd_id=Sender:2000
 
 EVENT_SENDER id=2000 hw_id=2000  fwd_to_lcd=1  if_less_stop_on_match=64  type=CC cc=16  lcd_pos=1:1:2 label="Enc <64: %3d"
-EVENT_SENDER id=2001 hw_id=2001  fwd_to_lcd=1                            type=CC cc=17  lcd_pos=1:1:2 label="Enc >=64: %3d"
+EVENT_SENDER id=2001 hw_id=2000  fwd_to_lcd=1                            type=CC cc=17  lcd_pos=1:1:2 label="Enc >=64: %3d"

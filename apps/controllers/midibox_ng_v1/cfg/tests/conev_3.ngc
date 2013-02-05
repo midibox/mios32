@@ -19,6 +19,6 @@ EVENT_BUTTON  id=2000  type=meta range=map1  button_mode=Toggle  lcd_pos=1:1:1 l
 
 # send CC#16..19 depending on mode selection
 EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:1  type=CC cc=16  lcd_pos=1:1:2 label="Enc Mode 1: %3d"
-EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:2  type=CC cc=17  lcd_pos=1:1:2 label="Enc Mode 2: %3d"
-EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:3  type=CC cc=18  lcd_pos=1:1:2 label="Enc Mode 3: %3d"
-EVENT_ENC  id=2000  hw_id=2000  if_equal=Button:2000:4  type=CC cc=19  lcd_pos=1:1:2 label="Enc Mode 4: %3d"
+EVENT_ENC  id=2001  hw_id=2000  if_equal=Button:2000:2  type=CC cc=17  lcd_pos=1:1:2 label="Enc Mode 2: %3d"
+EVENT_ENC  id=2002  hw_id=2000  if_equal=Button:2000:3  type=CC cc=18  lcd_pos=1:1:2 label="Enc Mode 3: %3d"
+EVENT_ENC  id=2003  hw_id=2000  if_equal=Button:2000:4  type=CC cc=19  lcd_pos=1:1:2 label="Enc Mode 4: %3d"
