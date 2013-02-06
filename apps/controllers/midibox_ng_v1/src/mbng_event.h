@@ -155,6 +155,8 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_MIDI_LEARN,
 
+  MBNG_EVENT_META_TYPE_UPDATE_LCD,
+
   MBNG_EVENT_META_TYPE_SCS_ENC,
   MBNG_EVENT_META_TYPE_SCS_MENU,
   MBNG_EVENT_META_TYPE_SCS_SOFT1,
@@ -305,7 +307,7 @@ typedef union {
 
   struct {
     u32 condition:4;
-    u32 id:14;
+    u32 hw_id:14;
     u32 value:14;
   };
 } mbng_event_cond_t;
@@ -380,7 +382,7 @@ extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item);
-extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 

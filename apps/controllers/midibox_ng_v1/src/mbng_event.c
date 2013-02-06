@@ -914,14 +914,32 @@ s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
 //! \returns 0 and copies item into *item if found
 //! \returns -1 if item not found
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item)
+s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, u32 *continue_ix)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
-  u32 i;
-  for(i=0; i<event_pool_num_items; ++i) {
+  u32 i = 0;
+
+  if( *continue_ix ) {
+    // lower half: pointer offset to pool item
+    // upper half: index of pool item
+    pool_ptr += (*continue_ix & 0xffff);
+    i = *continue_ix >> 16;
+  }
+
+  for(; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
     if( pool_item->id == id ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
+
+      // pass pointer offset to pool item + index of pool item in continue_ix for continued search
+      // skip this if the new values exceeding the 16bit boundary, or if this is the last pool item
+      u32 next_pool_offset = (u32)pool_ptr - (u32)event_pool + pool_item->len;
+      u32 next_pool_i = i + 1;
+      if( next_pool_i > 65535 || next_pool_i >= event_pool_num_items || next_pool_offset > 65535 )
+	*continue_ix = 0;
+      else
+	*continue_ix = (next_pool_i << 16) | next_pool_offset;
+
       return 0; // item found
     }
     pool_ptr += pool_item->len;
@@ -975,7 +993,7 @@ s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *i
 
 /////////////////////////////////////////////////////////////////////////////
 //! \retval 0 if no matching condition
-//! \retval 1 if matching condition
+//! \retval 1 if matching condition (or no condition)
 //! \retval 2 if matching condition and stop requested
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item)
@@ -985,9 +1003,10 @@ s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item)
 
   // take value from another event?
   u16 cmp_value;
-  if( item->cond.id ) {
+  if( item->cond.hw_id ) {
     mbng_event_item_t tmp_item;
-    if( MBNG_EVENT_ItemSearchById(item->cond.id, &tmp_item) < 0 ) {
+    u32 continue_ix = 0;
+    if( MBNG_EVENT_ItemSearchById(item->cond.hw_id, &tmp_item, &continue_ix) < 0 ) {
       return 0; // id doesn't exist -> no match
     }
     cmp_value = tmp_item.value;
@@ -1111,7 +1130,8 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     }
 
     mbng_event_item_t tmp_item;
-    while( MBNG_EVENT_ItemSearchById(id, &tmp_item) >= 0 ) {
+    u32 continue_id_ix = 0;
+    while( MBNG_EVENT_ItemSearchById(id, &tmp_item, &continue_id_ix) >= 0 ) {
       if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("[MIDI_LEARN] id=%s:%d already allocated, trying next one...\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
       }
@@ -1594,6 +1614,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
 
+  case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -1621,6 +1643,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
 
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
+
+  if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -1932,6 +1956,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	MBNG_EVENT_MidiLearnModeSet(item->value);
       } break;
 
+      case MBNG_EVENT_META_TYPE_UPDATE_LCD: {
+	MBNG_EVENT_Refresh();
+      } break;
+
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
 	SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
       } break;
@@ -1964,7 +1992,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Called when an item should be notified
+//! Called when an item should be notified about a new value
+//! \retval 0 if no matching condition
+//! \retval 1 if matching condition (or no condition)
+//! \retval 2 if matching condition and stop requested
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
 {
@@ -1980,6 +2011,11 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     pool_item->value = item->value;
     pool_item->flags.general.value_from_midi = from_midi;
   }
+
+  // matching condition?
+  s32 cond_match;
+  if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(item)) < 1 )
+    return 0; // stop here
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_DEBUG ) {
     MBNG_EVENT_ItemPrint(item);
@@ -2055,7 +2091,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     }
   }
 
-  return -1; // unsupported controller type
+  return cond_match; // no error
 }
 
 
@@ -2078,17 +2114,29 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 
   // search for fwd item
   mbng_event_item_t fwd_item;
-  if( MBNG_EVENT_ItemSearchById(item->fwd_id, &fwd_item) >= 0 ) {
-    // take over value of item in pool item
-    if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
-      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
-      pool_item->value = item->value;
-      pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
-    }
+  u32 continue_ix = 0;
+  u32 num_forwarded = 0;
+  do {
+    if( MBNG_EVENT_ItemSearchByHwId(item->fwd_id, &fwd_item, &continue_ix) < 0 ) {
+      break;
+    } else {
+      ++num_forwarded;
 
-    // notify item
-    MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0);
-  } else {
+      // take over value of item in pool item
+      if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
+	pool_item->value = item->value;
+	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
+      }
+
+      // notify item
+      if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0) == 2 )
+	break; // stop has been requested
+    }
+  } while( continue_ix );
+
+  // no matching ID found - create "virtual" event based on parameters of original item
+  if( !num_forwarded ) {
     // notify by temporary changing the ID - forwarding disabled
     mbng_event_item_id_t tmp_id = item->id;
     mbng_event_item_id_t tmp_hw_id = item->hw_id;
@@ -2183,6 +2231,9 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 
 /////////////////////////////////////////////////////////////////////////////
 //! called from a controller to notify that a value should be sent
+//! \retval 0 if no matching condition
+//! \retval 1 if matching condition (or no condition)
+//! \retval 2 if matching condition and stop requested
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
 {
@@ -2195,6 +2246,11 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     pool_item->value = item->value;
     pool_item->flags.general.value_from_midi = 0;
   }
+
+  // matching condition?
+  s32 cond_match;
+  if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(item)) < 1 )
+    return 0; // stop here
 
   // send MIDI event
   MBNG_EVENT_ItemSend(item);
@@ -2220,7 +2276,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     last_event_item_id = pool_item->id;
   }
 
-  return 0; // no error
+  return cond_match;
 }
 
 

@@ -4,9 +4,20 @@ MIDIbox NG V1.017
 ~~~~~~~~~~~~~~~~~
 
    o it's now possible to use the same hw_id in multiple event definitions.
-     This allows for example to send multiple MIDI events from a single control element.
+     This allows for example to send multiple MIDI events from a single
+     control element (e.g. from a single button)
 
-   o started with condition events
+   o the fwd_id now forwards to the event(s) with the given hw_id
+     (which is the same like the "normal id" if not explicitely specified)
+
+   o implemented "conditional events".
+     See the user manual (.NGC chapter) for details and examples.
+
+   o the new meta event UpdateLcd allows to force a refresh of the complete
+     LCD content. This is especially useful in conjunction with conditional
+     events: whenever a source value has been changed (e.g. a button state),
+     all events which have this value in their condition will print out the
+     label if the specified condition matches.
 
 
 MIDIbox NG V1.016

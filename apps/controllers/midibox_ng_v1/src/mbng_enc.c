@@ -248,15 +248,8 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     // take over new value
     item.value = value;
 
-    // matching condition?
-    s32 cond_match;
-    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-      // send MIDI event
-      MBNG_EVENT_NotifySendValue(&item);
-
-      if( cond_match >= 2 ) // stop on match
-	break;
-    }
+    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+      break; // stop has been requested
   } while( continue_ix );
 
   return 0; // no error
