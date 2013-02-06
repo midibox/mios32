@@ -588,15 +588,8 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
     u8 depressed = pin_value ? 1 : 0;
     item.value = depressed ? item.min : item.max;
 
-    // matching condition?
-    s32 cond_match;
-    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-      // send MIDI event
-      MBNG_EVENT_NotifySendValue(&item);
-
-      if( cond_match >= 2 ) // stop on match
-	break;
-    }
+    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+      break; // stop has been requested
   } while( continue_ix );
 
   return 0; // no error

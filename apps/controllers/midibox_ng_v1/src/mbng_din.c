@@ -99,15 +99,8 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
     // OnOnly mode: don't send if button depressed
     if( !depressed || item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
-      // matching condition?
-      s32 cond_match;
-      if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-	// send MIDI event
-	MBNG_EVENT_NotifySendValue(&item);
-
-	if( cond_match >= 2 ) // stop on match
-	  break;
-      }
+      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	break; // stop has been requested
     }
   } while( continue_ix );
 

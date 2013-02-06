@@ -123,16 +123,10 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     }
 
     if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
-      return 0; // don't send
+      continue; // don't send
 
-    s32 cond_match;
-    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-      // send MIDI event
-      MBNG_EVENT_NotifySendValue(&item);
-
-      if( cond_match >= 2 ) // stop on match
-	break;
-    }
+    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+      break; // stop has been requested
   } while( continue_ix );
 
   return 0; // no error

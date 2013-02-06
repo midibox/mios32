@@ -582,7 +582,7 @@ s32 parseEvent(char *cmd, char *brkt)
 #endif
 	  return -1;
 	}
-	item.cond.id = 0; // just to ensure...
+	item.cond.hw_id = 0; // just to ensure...
 	item.cond.value = value;
       } else {
 	mbng_event_item_id_t hw_id;
@@ -611,7 +611,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  return -1;
 	}
 
-	item.cond.id = hw_id | id_lower;
+	item.cond.hw_id = hw_id | id_lower;
 	item.cond.value = value;
       }
 
@@ -3235,6 +3235,20 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
+      if( item.cond.condition ) {
+	if( item.cond.hw_id ) {
+	  sprintf(line_buffer, "  if_%s=%s:%d:%d",
+		  MBNG_EVENT_ItemConditionStrGet(&item),
+		  MBNG_EVENT_ItemControllerStrGet(item.cond.hw_id),
+		  item.cond.hw_id & 0xfff, item.cond.value);
+	} else {
+	  sprintf(line_buffer, "  if_%s=%d",
+		  MBNG_EVENT_ItemConditionStrGet(&item),
+		  item.cond.value);
+	}
+	FLUSH_BUFFER;
+      }
+
       if( item.fwd_id ) {
 	sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);
 	FLUSH_BUFFER;
@@ -3245,9 +3259,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
-      sprintf(line_buffer, "  type=%-6s",
-	      MBNG_EVENT_ItemTypeStrGet(&item));
-      FLUSH_BUFFER;
+      if( item.flags.general.type ) {
+	sprintf(line_buffer, "  type=%-6s",
+		MBNG_EVENT_ItemTypeStrGet(&item));
+	FLUSH_BUFFER;
+      }
 
       switch( item.flags.general.type ) {
       case MBNG_EVENT_TYPE_NOTE_OFF:

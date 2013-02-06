@@ -108,14 +108,8 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	    // take over new value
 	    item.value = is_pressed ? item.max : item.min;
 
-	    s32 cond_match;
-	    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-	      // send MIDI event
-	      MBNG_EVENT_NotifySendValue(&item);
-
-	      if( cond_match >= 2 ) // stop on match
-		break;
-	    }
+	    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	      break; // stop has been requested
 	  } while( continue_ix );
 	}
       } else if( is_fader_msb ) {
@@ -175,14 +169,8 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	    // take over new value
 	    item.value = value_scaled;
 
-	    s32 cond_match;
-	    if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(&item)) >= 1 ) {
-	      // send MIDI event
-	      MBNG_EVENT_NotifySendValue(&item);
-
-	      if( cond_match >= 2 ) // stop on match
-		break;
-	    }
+	    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	      break; // stop has been requested
 	  }
 	} while( continue_ix );
       }
