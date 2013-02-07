@@ -74,7 +74,7 @@ void APP_Background(void)
     MIOS32_MIDI_SendDebugMessage("Initialize LCD #%d\n", lcd+1);
     MIOS32_LCD_DeviceSet(lcd);
     if( MIOS32_LCD_Init(0) < 0 ) {
-      MIOS32_MIDI_SendDebugMessage("Failed - no response from CLCD #%d.%d\n",
+      MIOS32_MIDI_SendDebugMessage("Failed - no response from LCD #%d.%d\n",
 				   (lcd % mios32_lcd_parameters.num_x) + 1,
 				   (lcd / mios32_lcd_parameters.num_x) + 1);
     }
@@ -91,7 +91,7 @@ void APP_Background(void)
   for(lcd=0; lcd<num_lcds; ++lcd) {
     MIOS32_LCD_DeviceSet(lcd);
     MIOS32_LCD_CursorSet(0, 0);
-    MIOS32_LCD_PrintFormattedString("CLCD #%d.%d",
+    MIOS32_LCD_PrintFormattedString("LCD #%d.%d",
 				    (lcd % mios32_lcd_parameters.num_x) + 1,
 				    (lcd / mios32_lcd_parameters.num_x) + 1);
     MIOS32_LCD_CursorSet(0, 1);
