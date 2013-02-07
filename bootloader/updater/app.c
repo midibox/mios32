@@ -18,6 +18,8 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <app_lcd.h>
+
 #include "app.h"
 
 
@@ -111,6 +113,8 @@ static s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned c
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 RetrieveBootInfos(void);
+
+static s32 LCD_Update(void);
 
 static s32 TERMINAL_Parse(mios32_midi_port_t port, char byte);
 static s32 TERMINAL_ParseLine(char *input, void *_output_function);
@@ -404,7 +408,9 @@ static s32 RetrieveBootInfos(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // init LCD
+  // init all specified LCDs
+  LCD_Update();
+
   MIOS32_LCD_Clear();
 
   // print welcome message on MIOS terminal
@@ -639,6 +645,43 @@ s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Updates all specified LCDs
+/////////////////////////////////////////////////////////////////////////////
+static s32 LCD_Update(void)
+{
+  int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
+
+  // initialize all LCDs (although programming_models/traditional/main.c will only initialize the first two)
+  int lcd;
+  for(lcd=0; lcd<num_lcds; ++lcd) {
+    MIOS32_MIDI_SendDebugMessage("Initialize LCD #%d\n", lcd+1);
+    MIOS32_LCD_DeviceSet(lcd);
+    if( MIOS32_LCD_Init(0) < 0 ) {
+      MIOS32_MIDI_SendDebugMessage("Failed - no response from LCD #%d.%d\n",
+				   (lcd % mios32_lcd_parameters.num_x) + 1,
+				   (lcd / mios32_lcd_parameters.num_x) + 1);
+    }
+  }
+
+  // print text on all LCDs
+  for(lcd=0; lcd<num_lcds; ++lcd) {
+    MIOS32_LCD_DeviceSet(lcd);
+    MIOS32_LCD_CursorSet(0, 0);
+    MIOS32_LCD_PrintFormattedString("LCD #%d.%d",
+				    (lcd % mios32_lcd_parameters.num_x) + 1,
+				    (lcd / mios32_lcd_parameters.num_x) + 1);
+    MIOS32_LCD_CursorSet(0, 1);
+    MIOS32_LCD_PrintFormattedString("READY.");
+  }
+
+  // switch back to first LCD
+  MIOS32_LCD_DeviceSet(0);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 // Terminal
 /////////////////////////////////////////////////////////////////////////////
@@ -703,6 +746,11 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
   char *brkt;
   char *parameter;
 
+#ifdef MIOS32_LCD_universal
+  if( APP_LCD_TerminalParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed
+#endif
+
   if( (parameter = strtok_r(input, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
@@ -721,7 +769,10 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  set lcd_width <value>:  sets width of a single LCD (current: %d)\n", BSL_lcd_parameters.width);
       out("  set lcd_height <value>: sets height of a single LCD (current: %d)\n", BSL_lcd_parameters.height);
       out("  lcd_types:              lists all known LCD types\n");
-      out("  store:                  stores the changed settings in flash\n");
+#ifdef MIOS32_LCD_universal
+      APP_LCD_TerminalHelp(_output_function);
+#endif
+      out("  store:                  stores the changed settings in flash (and updates all LCDs)\n");
       out("  restore:                restores previous settings from flash\n");
       out("  reset:                  resets the MIDIbox (!)\n");
       out("  help:                   this page");
@@ -742,9 +793,11 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	out("New settings stored.");
       else
 	out("Failed to store new settings!");
+      LCD_Update();
     } else if( strcmp(parameter, "restore") == 0 ) {
       RetrieveBootInfos();
       out("Previous settings restored.");
+      LCD_Update();
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "fastboot") == 0 ) {
@@ -783,7 +836,7 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  if( value < 0 ) { // try the name
 	    u8 lcd_type;
 	    for(lcd_type=0; lcd_type<255; ++lcd_type) {
-	      if( strcmp(parameter, MIOS32_LCD_LcdTypeName(lcd_type)) == 0 ) {
+	      if( strcasecmp(parameter, MIOS32_LCD_LcdTypeName(lcd_type)) == 0 ) {
 		value = lcd_type;
 		break;
 	      }
@@ -791,7 +844,8 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  }
 
 	  if( value < 0 || value > 255 ) {
-	    out("Expecting LCD type between 0x00 and 0xff!");
+	    out("Expecting LCD type between 0x00 and 0xff or a matching LCD name!");
+	    out("Enter 'lcd_types' to get a list of valid IDs!");
 	  } else {
 	    BSL_lcd_parameters.lcd_type = value;
 	    out("LCD type set to 0x%02x (%s) after 'store'!",
