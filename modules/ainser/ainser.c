@@ -74,6 +74,8 @@ s32 AINSER_Init(u32 mode)
 #endif
 
   for(module=0; module<AINSER_NUM_MODULES; ++module) {
+    num_used_pins[module] = AINSER_NUM_PINS;
+
     // ensure that CS is deactivated
     AINSER_SetCs(module, 1);
 
