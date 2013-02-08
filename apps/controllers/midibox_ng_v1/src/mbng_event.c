@@ -34,6 +34,7 @@
 #include "mbng_ainser.h"
 #include "mbng_mf.h"
 #include "mbng_cv.h"
+#include "mbng_kb.h"
 #include "mbng_patch.h"
 
 
@@ -702,6 +703,9 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
 
   case MBNG_EVENT_CONTROLLER_CV: {
   }; break;
+
+  case MBNG_EVENT_CONTROLLER_KB: {
+  }; break;
   }
   
   return 0; // no error
@@ -1277,6 +1281,7 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
   case MBNG_EVENT_CONTROLLER_AINSER:        return "AINSER";
   case MBNG_EVENT_CONTROLLER_MF:            return "MF";
   case MBNG_EVENT_CONTROLLER_CV:            return "CV";
+  case MBNG_EVENT_CONTROLLER_KB:            return "KB";
   }
   return "DISABLED";
 }
@@ -1297,6 +1302,7 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
   if( strcasecmp(event, "AINSER") == 0 )        return MBNG_EVENT_CONTROLLER_AINSER;
   if( strcasecmp(event, "MF") == 0 )            return MBNG_EVENT_CONTROLLER_MF;
   if( strcasecmp(event, "CV") == 0 )            return MBNG_EVENT_CONTROLLER_CV;
+  if( strcasecmp(event, "KB") == 0 )            return MBNG_EVENT_CONTROLLER_KB;
 
   return MBNG_EVENT_CONTROLLER_DISABLED;
 }
@@ -2032,6 +2038,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   case MBNG_EVENT_CONTROLLER_AINSER:        MBNG_AINSER_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_MF:            MBNG_MF_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_CV:            MBNG_CV_NotifyReceivedValue(item); break;
+  case MBNG_EVENT_CONTROLLER_KB:            MBNG_KB_NotifyReceivedValue(item); break;
 
   case MBNG_EVENT_CONTROLLER_SENDER: {
     int sender_ix = item->id & 0xfff;

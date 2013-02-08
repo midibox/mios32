@@ -1,7 +1,10 @@
 // $Id$
+//! \defgroup KEYBOARD
+//!
+//! Keyboard Handler
+//!
+//! \{
 /*
- * Keyboard handler
- *
  * ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
@@ -68,21 +71,30 @@ static u16 din_activated_timestamp[KEYBOARD_NUM][KEYBOARD_NUM_PINS];
 static u8 key_note_on_sent[KEYBOARD_NUM][KEYBOARD_NUM_PINS / 8];
 static u8 key_note_off_sent[KEYBOARD_NUM][KEYBOARD_NUM_PINS / 8];
 
+#if !KEYBOARD_DONT_USE_AIN
 static u8 ain_cali_mode_pin;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+#ifndef KEYBOARD_NOTIFY_TOGGLE_HOOK
 static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity);
+#else
+extern s32 KEYBOARD_NOTIFY_TOGGLE_HOOK(u8 kb, u8 note_number, u8 velocity);
+#endif
+
+#if !KEYBOARD_DONT_USE_AIN
 static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value);
+#endif
 static char *KEYBOARD_GetNoteName(u8 note, char str[4]);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Initialize the keyboard handler
-// mode == 0: init configuration + runtime variables
-// mode > 0: init only runtime variables
+//! Initialize the keyboard handler
+//! \param mode == 0: init configuration + runtime variables
+//! \param mode > 0: init only runtime variables
 /////////////////////////////////////////////////////////////////////////////
 s32 KEYBOARD_Init(u32 mode)
 {
@@ -90,14 +102,18 @@ s32 KEYBOARD_Init(u32 mode)
 
   connected_keyboards_num = 0;
 
+#if !KEYBOARD_DONT_USE_AIN
   ain_cali_mode_pin = 0;
+#endif
 
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
     if( init_configuration ) {
+#if !KEYBOARD_DONT_USE_MIDI_CFG
       kc->midi_ports = 0x1011; // OSC1, OUT1 and USB1
       kc->midi_chn = kb+1;
+#endif
       kc->note_offset = 36;
 
       kc->delay_fastest = 50;
@@ -129,6 +145,7 @@ s32 KEYBOARD_Init(u32 mode)
 	kc->din_inverted = 0;
       }
 
+#if !KEYBOARD_DONT_USE_AIN
       int i;
       for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
 	kc->ain_pin[i] = 0;
@@ -143,6 +160,7 @@ s32 KEYBOARD_Init(u32 mode)
 	kc->ain_max[i] = 254;
 	kc->ain_last_value7[i] = 0xff; // will force to send the value
       }
+#endif
     }
 
     // runtime variables:
@@ -179,7 +197,7 @@ s32 KEYBOARD_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Sets/Gets number of connected keyboards
+//! Sets number of connected keyboards
 /////////////////////////////////////////////////////////////////////////////
 s32 KEYBOARD_ConnectedNumSet(u8 num)
 {
@@ -191,13 +209,16 @@ s32 KEYBOARD_ConnectedNumSet(u8 num)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Returns number of connected keyboards
+/////////////////////////////////////////////////////////////////////////////
 u8 KEYBOARD_ConnectedNumGet(void)
 {
   return connected_keyboards_num;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called before the shift register chain is scanned
+//! This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
 void KEYBOARD_SRIO_ServicePrepare(void)
 {
@@ -256,7 +277,7 @@ void KEYBOARD_SRIO_ServicePrepare(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// This hook is called after the shift register chain has been scanned
+//! This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 void KEYBOARD_SRIO_ServiceFinish(void)
 {
@@ -318,7 +339,7 @@ void KEYBOARD_SRIO_ServiceFinish(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// will be called on pin changes
+//! will be called on pin changes
 /////////////////////////////////////////////////////////////////////////////
 static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 {
@@ -445,7 +466,11 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	if( kc->verbose_level >= 2 )
 	  DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 
+# ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
+	KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
+# else
 	KEYBOARD_MIDI_SendNote(kb, note_number, 0x00);
+# endif
 #endif
 	*note_on_sent &= ~key_mask;
 	*note_off_sent &= ~key_mask;
@@ -466,7 +491,11 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
       if( kc->verbose_level >= 2 )
 	DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 
+# ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
+      KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
+# else
       KEYBOARD_MIDI_SendNote(kb, note_number, 0x00);
+# endif
 #endif      
     }
 
@@ -515,14 +544,18 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 		    black_key ? "black" : "white");
       }
 
+#ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
+      KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, velocity);
+#else
       KEYBOARD_MIDI_SendNote(kb, note_number, velocity);
+#endif
     }
   }
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called periodically (each mS) to check for pin changes
+//! This function should be called periodically (each mS) to check for pin changes
 /////////////////////////////////////////////////////////////////////////////
 void KEYBOARD_Periodic_1mS(void)
 {
@@ -556,8 +589,9 @@ void KEYBOARD_Periodic_1mS(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function should be called from AIN_NotifyChange in app.c
+//! This function should be called from AIN_NotifyChange in app.c
 /////////////////////////////////////////////////////////////////////////////
+#if !KEYBOARD_DONT_USE_AIN
 void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   int kb;
@@ -620,15 +654,19 @@ void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
     }
   }
 }
+#endif
 
-
+#ifndef KEYBOARD_NOTIFY_TOGGLE_HOOK
 /////////////////////////////////////////////////////////////////////////////
-// Help function to send a MIDI note over given ports
+//! Help function to send a MIDI note over given ports\n
+//! Optionally this function can be provided from external by defining the
+//! function name in KEYBOARD_NOTIFY_TOGGLE_HOOK
 /////////////////////////////////////////////////////////////////////////////
 static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity)
 {
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
+#if !KEYBOARD_DONT_USE_MIDI_CFG
   if( kc->midi_chn ) {
     int i;
     u16 mask = 1;
@@ -640,17 +678,25 @@ static s32 KEYBOARD_MIDI_SendNote(u8 kb, u8 note_number, u8 velocity)
       }
     }
   }
+#else
+  MIOS32_MIDI_SendNoteOn(DEFAULT, Chn1, note_number, velocity);
+#endif
 
   return 0; // no error
 }
+#endif
 
-
+#if !KEYBOARD_DONT_USE_AIN
 /////////////////////////////////////////////////////////////////////////////
-// Help function to send a MIDI controller over given ports
+//! Help function to send a MIDI controller over given ports
 /////////////////////////////////////////////////////////////////////////////
 static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value)
 {
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
+
+#if KEYBOARD_DONT_USE_MIDI_CFG
+# error "KEYBOARD_DONT_USE_AIN == 0 && KEYBOARD_DONT_USE_MIDI_CFG == 1 not prepared!"
+#endif
 
   if( kc->midi_chn ) {
     int i;
@@ -679,10 +725,11 @@ static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value)
 
   return 0; // no error
 }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Help function to put the note name into a string (buffer has 3 chars + terminator)
+//! Help function to put the note name into a string (buffer has 3 chars + terminator)
 /////////////////////////////////////////////////////////////////////////////
 static char *KEYBOARD_GetNoteName(u8 note, char str[4])
 {
@@ -707,9 +754,9 @@ static char *KEYBOARD_GetNoteName(u8 note, char str[4])
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses a decimal or hex value
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
+//! help function which parses a decimal or hex value
+//! \retval >= 0 if value is valid
+//! \retval -1 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
@@ -727,8 +774,10 @@ static s32 get_dec(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which parses for on or off
-// returns 0 if 'off', 1 if 'on', -1 if invalid
+//! help function which parses for on or off
+//! \retval 0 if 'off'
+//! \retval 1 if 'on'
+//! \retval -1 if invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_on_off(char *word)
 {
@@ -742,8 +791,9 @@ static s32 get_on_off(char *word)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which returns the current calibration mode
+//! help function which returns the current calibration mode
 /////////////////////////////////////////////////////////////////////////////
+#if !KEYBOARD_DONT_USE_AIN
 static s32 KEYBOARD_TerminalCaliMode(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
@@ -761,10 +811,11 @@ static s32 KEYBOARD_TerminalCaliMode(void *_output_function)
 
   return 0; // no error
 }
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns help page for implemented terminal commands of this module
+//! Returns help page for implemented terminal commands of this module
 /////////////////////////////////////////////////////////////////////////////
 s32 KEYBOARD_TerminalHelp(void *_output_function)
 {
@@ -772,8 +823,10 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
 
   out("  keyboard <1|2> (or kb <1|2>):     print current configuration of given keyboard number");
   out("  set kb <1|2> debug <on|off>:      enables/disables debug mode (not stored in EEPROM)");
+#if !KEYBOARD_DONT_USE_MIDI_CFG
   out("  set kb <1|2> midi_ports <ports>   selects the MIDI ports (values: see documentation)");
   out("  set kb <1|2> midi_chn <0-16>      selects the MIDI channel (0=off)");
+#endif
   out("  set kb <1|2> note_offset <0-127>  selects the note offset (transpose)");
   out("  set kb <1|2> rows <0-%d>:         how many rows should be scanned? (0=off)", MATRIX_NUM_ROWS);
   out("  set kb <1|2> velocity <on|off>:   keyboard supports break and make contacts?");
@@ -788,6 +841,7 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> delay_fastest <0-65535>: fastest delay for velocity calculation");
   out("  set kb <1|2> delay_fastest_black_keys <0-65535>: optional fastest delay for black keys");
   out("  set kb <1|2> delay_slowest <0-65535>: slowest delay for velocity calculation");
+#if !KEYBOARD_DONT_USE_AIN
   out("  set kb <1|2> ain_pitchwheel <0..5> or off: assigns pitchwheel to given J5.A<0..5> pin");
   out("  set kb <1|2> ctrl_pitchwheel <0-129>: assigns CC/PB(=128)/AT(=129) to PitchWheel");
   out("  set kb <1|2> ain_modwheel <0..5> or off: assigns ModWheel to given J5.A<0..5> pin");
@@ -795,14 +849,15 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> ain_sustain <0..5> or off: assigns Sustain Pedal to given J5.A<0..5> pin");
   out("  set kb <1|2> ctrl_sustain <0-129>:   assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
   out("  set kb <1|2> calibration <off|pitchwheel|modwheel|sustain>: starts AIN calibration");
+#endif
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Parser for a complete line
-// Returns > 0 if command line matches with UIP terminal commands
+//! Parser for a complete line
+//! \return > 0 if command line matches with UIP terminal commands
 /////////////////////////////////////////////////////////////////////////////
 s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 {
@@ -860,7 +915,25 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	}
 
 	/////////////////////////////////////////////////////////////////////
-	if( strcmp(parameter, "midi_ports") == 0 ) {
+	if( strcmp(parameter, "note_offset") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the Note offset!");
+	    return 1; // command taken
+	  }
+
+	  int offset = get_dec(parameter);
+
+	  if( offset < 0 || offset > 127 ) {
+	    out("Note Offset should be in the range between 0 and 127!");
+	    return 1; // command taken
+	  } else {
+	    kc->note_offset = offset;
+	    out("Keyboard #%d: Note Offset %d", kb+1, kc->note_offset);
+	  }
+
+#if !KEYBOARD_DONT_USE_MIDI_CFG
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "midi_ports") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the MIDI port selection mask!");
 	    return 1; // command taken
@@ -891,24 +964,10 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    kc->midi_chn = chn;
 	    out("Keyboard #%d: MIDI channel %d", kb+1, kc->midi_chn);
 	  }
-	/////////////////////////////////////////////////////////////////////
-        } else if( strcmp(parameter, "note_offset") == 0 ) {
-	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
-	    out("Please specify the Note offset!");
-	    return 1; // command taken
-	  }
+#endif
 
-	  int offset = get_dec(parameter);
-
-	  if( offset < 0 || offset > 127 ) {
-	    out("Note Offset should be in the range between 0 and 127!");
-	    return 1; // command taken
-	  } else {
-	    kc->note_offset = offset;
-	    out("Keyboard #%d: Note Offset %d", kb+1, kc->note_offset);
-	  }
 	/////////////////////////////////////////////////////////////////////
-        } else if( strcmp(parameter, "din_key_offset") == 0 ) {
+	} else if( strcmp(parameter, "din_key_offset") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the key offset!");
 	    return 1; // command taken
@@ -1142,6 +1201,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("Keyboard #%d: delay_slowest set to %d!", kb+1, kc->delay_slowest);
 	  }
 
+#if !KEYBOARD_DONT_USE_AIN
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "ain_pitchwheel") == 0 ||
 		   strcmp(parameter, "ain_modwheel") == 0 ||
@@ -1259,7 +1319,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("The calibration will be finished by selection a new source, or with 'set kb %d calibration off'", kb+1);
 	    out("Enter 'store' to save the calibration values");
 	  }
-
+#endif
 
 	/////////////////////////////////////////////////////////////////////
 	} else {
@@ -1289,7 +1349,7 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Keyboard Configuration (can also be called from external)
+//! Keyboard Configuration (can also be called from external)
 /////////////////////////////////////////////////////////////////////////////
 s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
 {
@@ -1298,8 +1358,10 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
   out("kb %d debug %s", kb+1, (kc->verbose_level >= 2) ? "on" : "off");
+#if !KEYBOARD_DONT_USE_MIDI_CFG
   out("kb %d midi_ports 0x%04x", kb+1, kc->midi_ports);
   out("kb %d midi_chn %d", kb+1, kc->midi_chn);
+#endif
   out("kb %d note_offset %d", kb+1, kc->note_offset);
   out("kb %d rows %d", kb+1, kc->num_rows);
   out("kb %d velocity %s", kb+1, kc->scan_velocity ? "on" : "off");
@@ -1315,6 +1377,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   out("kb %d delay_fastest_black_keys %d", kb+1, kc->delay_fastest_black_keys);
   out("kb %d delay_slowest %d", kb+1, kc->delay_slowest);
 
+#if !KEYBOARD_DONT_USE_AIN
   if( kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL] )
     out("kb %d ain_pitchwheel %d", kb+1, kc->ain_pin[KEYBOARD_AIN_PITCHWHEEL]-1);
   else
@@ -1337,6 +1400,9 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
       (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] == 128 ? "PitchBend" : "Aftertouch"));
 
   KEYBOARD_TerminalCaliMode(_output_function);
+#endif
 
   return 0; // no error
 }
+
+//! \}

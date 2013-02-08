@@ -36,6 +36,7 @@ typedef enum {
   MBNG_EVENT_CONTROLLER_AINSER        = 0x9000,
   MBNG_EVENT_CONTROLLER_MF            = 0xa000,
   MBNG_EVENT_CONTROLLER_CV            = 0xb000,
+  MBNG_EVENT_CONTROLLER_KB            = 0xc000,
 } mbng_event_item_id_t;
 
 
@@ -298,6 +299,17 @@ typedef union {
     u32 cv_hz_v:1;
     u32 cv_gate_inverted:1;
   } CV;
+
+  struct {
+    u32 type:4;
+    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 fwd_to_lcd:1;
+    u32 update_lcd:1;
+    u32 value_from_midi:1;
+    u32 use_key_or_cc:1;
+    u32 active:1;
+    u32 key_transpose:8; // has to be converted to a signed value
+  } KB;
 
 } mbng_event_flags_t;
 

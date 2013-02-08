@@ -1,5 +1,14 @@
 $Id$
 
+MIDIbox NG V1.018
+~~~~~~~~~~~~~~~~~
+
+   o added EVENT_KB. See cfg/tests/kb_*.ngc for usage examples
+
+   o new LCD formats: %N prints the note name based on the specified MIDI event,
+     and %n based on the event value
+
+
 MIDIbox NG V1.017
 ~~~~~~~~~~~~~~~~~
 

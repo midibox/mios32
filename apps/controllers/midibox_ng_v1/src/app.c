@@ -41,6 +41,7 @@
 #include "mbng_enc.h"
 #include "mbng_ain.h"
 #include "mbng_ainser.h"
+#include "mbng_kb.h"
 #include "mbng_matrix.h"
 #include "mbng_mf.h"
 #include "mbng_cv.h"
@@ -193,6 +194,7 @@ void APP_Init(void)
   MBNG_AIN_Init(0);
   MBNG_AINSER_Init(0);
   MBNG_CV_Init(0);
+  MBNG_KB_Init(0);
   MBNG_MATRIX_Init(0);
   UIP_TASK_Init(0);
   SCS_Init(0);
@@ -389,9 +391,6 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
   // -> MBNG_AIN once enabled
   if( hw_enabled ) {
     MBNG_AIN_NotifyChange(pin, pin_value);
-
-    // -> keyboard
-    KEYBOARD_AIN_NotifyChange(pin, pin_value);
   }
 }
 
