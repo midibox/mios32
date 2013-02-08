@@ -323,17 +323,11 @@ AINSER n=2   enabled=0  cs=1  num_pins=64  resolution=7bit
 # KEYBOARD hardware
 KEYBOARD n=1   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
                scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=1 \
-               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100 \
-               ain_pitchwheel_pin=  0  ain_pitchwheel_ctrl=128  ain_pitchwheel_min=  1  ain_pitchwheel_max=254 \
-               ain_modwheel_pin  =  0  ain_modwheel_ctrl  =  1  ain_modwheel_min  =  1  ain_modwheel_max  =254 \
-               ain_sustain_pin   =  0  ain_sustain_ctrl   = 64  ain_sustain_min   =  1  ain_sustain_max   =254
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
 KEYBOARD n=2   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
                scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=2 \
-               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100 \
-               ain_pitchwheel_pin=  0  ain_pitchwheel_ctrl=128  ain_pitchwheel_min=  1  ain_pitchwheel_max=254 \
-               ain_modwheel_pin  =  0  ain_modwheel_ctrl  =  1  ain_modwheel_min  =  1  ain_modwheel_max  =254 \
-               ain_sustain_pin   =  0  ain_sustain_ctrl   = 64  ain_sustain_min   =  1  ain_sustain_max   =254
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
 
 

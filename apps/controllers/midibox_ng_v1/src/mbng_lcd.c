@@ -485,7 +485,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  format[format_len] = 0;
 	  char *format_type = &format[format_len-1];
 
-	  switch( format[format_len-1] ) {
+	  switch( *format_type ) {
 	  case 'd': // value in various formats
 	  case 'x':
 	  case 'X':
@@ -529,6 +529,37 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  case 'M': { // max value
 	    *format_type = 'd';
 	    MBNG_LCD_PrintFormattedString(format, item->max);
+	  } break;
+
+	  case 'n':
+	  case 'N': { // note value
+	    u8 note = (*format_type == 'n') ? item->value : (item->stream_size < 2) ? 0 : item->stream[1];
+	    *format_type = 's';
+	    char note_str[4];
+
+	    const char note_tab[12][3] = { "c-", "c#", "d-", "d#", "e-", "f-", "f#", "g-", "g#", "a-", "a#", "b-" };
+
+	    // print "---" if note number is 0
+	    if( note == 0 )
+	      strcpy(note_str, "---");
+	    else {
+	      // determine octave, note contains semitone number thereafter
+	      u8 octave = note / 12;
+	      note %= 12;
+
+	      // semitone (capital letter if octave >= 2)
+	      note_str[0] = octave >= 2 ? (note_tab[note][0] + 'A'-'a') : note_tab[note][0];
+	      note_str[1] = note_tab[note][1];
+
+	      // octave
+	      switch( octave ) {
+	      case 0:  note_str[2] = '2'; break; // -2
+	      case 1:  note_str[2] = '1'; break; // -1
+	      default: note_str[2] = '0' + (octave-2); // 0..7
+	      }
+	    }
+	    note_str[3] = 0;
+	    MBNG_LCD_PrintFormattedString(format, note_str);
 	  } break;
 
 	  case 'b': { // binary digit
