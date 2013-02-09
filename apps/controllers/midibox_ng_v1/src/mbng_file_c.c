@@ -1337,7 +1337,8 @@ s32 parseMap(char *cmd, char *brkt)
 #endif
       return -1;
     } else {
-      map_values[pos++] = (u8)value;
+      if( pos < MAP_VALUE_MAX_SIZE )
+	map_values[pos++] = (u8)value;
     }
   }
 
@@ -1345,7 +1346,7 @@ s32 parseMap(char *cmd, char *brkt)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C] ERROR: %s doesn't define any value!\n", cmd);
 #endif
-  } else if( pos >= MAP_VALUE_MAX_SIZE ) {
+  } else if( pos > MAP_VALUE_MAX_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C] ERROR: too many values defined for %s (max: %d)!\n", cmd, MAP_VALUE_MAX_SIZE);
 #endif
@@ -2124,13 +2125,49 @@ s32 parseAin(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "enable_mask") == 0 ) {
       int value;
-      if( (value=get_bin(value_str, 6, 0)) < 0 || value > 0x3f ) {
+      if( (value=get_bin(value_str, MBNG_PATCH_NUM_AIN, 0)) < 0 || value >= (1 << MBNG_PATCH_NUM_AIN) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid enable mask in AIN ... %s=%s\n", parameter, value_str);
 #endif
 	return -1;
       } else {
 	mbng_patch_ain.enable_mask = value;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pinrange") == 0 ) {
+      const char *separator_colon = ":";
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pinrange in AIN ... %s=%s\n", parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( values[0] < 1 || values[0] > MBNG_PATCH_NUM_AIN ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pin number in AIN ... %s=%s\n", parameter, value_str);
+#endif
+	} else if( values[1] < 0 || values[1] > MBNG_PATCH_AIN_MAX_VALUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in AIN ... %s=%s\n", parameter, value_str);
+#endif
+	} else if( values[2] < 0 || values[2] > MBNG_PATCH_AIN_MAX_VALUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in AIN ... %s=%s\n", parameter, value_str);
+#endif
+	} else {
+	  int pin = values[0] - 1;
+	  mbng_patch_ain.pin_min_value[pin] = values[1];
+	  mbng_patch_ain.pin_max_value[pin] = values[2];
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2208,6 +2245,48 @@ s32 parseAinSer(char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid number of pins for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, AINSER_NUM_PINS);
 #endif
 	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pinrange") == 0 ) {
+      const char *separator_colon = ":";
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pinrange in AINSER ... %s=%s\n", parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( values[0] < 1 || values[0] > (MBNG_PATCH_NUM_AINSER_MODULES*AINSER_NUM_PINS) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pin number in AINSER ... %s=%s\n", parameter, value_str);
+#endif
+	} else if( values[1] < 0 || values[1] > MBNG_PATCH_AINSER_MAX_VALUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in AINSER ... %s=%s\n", parameter, value_str);
+#endif
+	} else if( values[2] < 0 || values[2] > MBNG_PATCH_AINSER_MAX_VALUE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in AINSER ... %s=%s\n", parameter, value_str);
+#endif
+	} else {
+	  u8 module = (values[0]-1) / AINSER_NUM_PINS;
+	  u8 pin = (values[0]-1) % AINSER_NUM_PINS;
+	  if( module < MBNG_PATCH_NUM_AINSER_MODULES && pin < AINSER_NUM_PINS ) {
+	    mbng_patch_ainser[module].pin_min_value[pin] = values[1];
+	    mbng_patch_ainser[module].pin_max_value[pin] = values[2];
+	  } else {
+	    DEBUG_MSG("[MBNG_FILE_C] ERROR: something unexpected happened in parseAinSer()!");
+	    DEBUG_MSG("[MBNG_FILE_C] ERROR: while parsing AINSER ... %s=%s\n", parameter, value_str);
+	  }
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3523,15 +3602,25 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "\n\n# AIN hardware\n");
     FLUSH_BUFFER;
 
-    char enable_bin[7];
+    char enable_bin[MBNG_PATCH_NUM_AIN+1];
     int bit;
-    for(bit=0; bit<6; ++bit) {
+    for(bit=0; bit<MBNG_PATCH_NUM_AIN; ++bit) {
       enable_bin[bit] = (mbng_patch_ain.enable_mask & (1 << bit)) ? '1' : '0';
     }
-    enable_bin[6] = 0;
+    enable_bin[MBNG_PATCH_NUM_AIN] = 0;
 
     sprintf(line_buffer, "AIN enable_mask=%s\n", enable_bin);
     FLUSH_BUFFER;
+
+    int pin;
+    for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
+      int min = mbng_patch_ain.pin_min_value[pin];
+      int max = mbng_patch_ain.pin_max_value[pin];
+      if( min != 0 || max != MBNG_PATCH_AIN_MAX_VALUE ) {
+	sprintf(line_buffer, "AIN pinrange=%d:%d:%d\n", pin+1, min, max);
+	FLUSH_BUFFER;
+      }
+    }
   }
 
   {
@@ -3560,6 +3649,16 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      AINSER_NumPinsGet(ainser->flags.cs),
 	      resolution);
       FLUSH_BUFFER;
+
+      int pin;
+      for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
+	int min = ainser->pin_min_value[pin];
+	int max = ainser->pin_max_value[pin];
+	if( min != 0 || max != MBNG_PATCH_AINSER_MAX_VALUE ) {
+	  sprintf(line_buffer, "AINSER pinrange=%d:%d:%d\n", module*AINSER_NUM_PINS + pin + 1, min, max);
+	  FLUSH_BUFFER;
+	}
+      }
     }
 
   }
@@ -3589,7 +3688,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      kc->note_offset);
       FLUSH_BUFFER;
 
-      sprintf(line_buffer, "               delay_fastest=%d  delay_fastest_black_keys=%d  delay_slowest=%d \\\n",
+      sprintf(line_buffer, "               delay_fastest=%d  delay_fastest_black_keys=%d  delay_slowest=%d\n",
 	      kc->delay_fastest,
 	      kc->delay_fastest_black_keys,
 	      kc->delay_slowest);

@@ -74,42 +74,46 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
     }
 
     // transpose
+    s8 key_transpose = (s8)item.flags.KB.key_transpose;
+    int note = note_number + key_transpose;
     if( item.stream_size >= 2 ) {
-      s8 key_transpose = (s8)item.flags.KB.key_transpose;
-      int note = note_number + key_transpose;
       if( note < 0 )
 	note = 0;
       else if( note > 127 )
 	note = 127;
-
-      item.stream[1] = note;
     }
 
-    if( velocity == 0 ) { // we should always send Note-Off on velocity==0
-      item.value = 0;
+    if( item.flags.general.use_key_or_cc ) {
+      item.value = note;
     } else {
-      // scale 7bit value between min/max with fixed point artithmetic
-      int value = velocity;
-      s16 min = item.min;
-      s16 max = item.max;
-      u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-      if( map_len > 0 ) {
-	min = 0;
-	max = map_len-1;
-      }
+      item.stream[1] = note;
 
-      if( min <= max ) {
-	value = min + (((256*value)/128) * (max-min+1) / 256);
+      if( velocity == 0 ) { // we should always send Note-Off on velocity==0
+	item.value = 0;
       } else {
-	value = min - (((256*value)/128) * (min-max+1) / 256);
-      }
+	// scale 7bit value between min/max with fixed point artithmetic
+	int value = velocity;
+	s16 min = item.min;
+	s16 max = item.max;
+	u8 *map_values;
+	int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+	if( map_len > 0 ) {
+	  min = 0;
+	  max = map_len-1;
+	}
 
-      if( map_len > 0 ) {
-	value = map_values[value];
-      }
+	if( min <= max ) {
+	  value = min + (((256*value)/128) * (max-min+1) / 256);
+	} else {
+	  value = min - (((256*value)/128) * (min-max+1) / 256);
+	}
 
-      item.value = value;
+	if( map_len > 0 ) {
+	  value = map_values[value];
+	}
+
+	item.value = value;
+      }
     }
 
     if( MBNG_EVENT_NotifySendValue(&item) == 2 )

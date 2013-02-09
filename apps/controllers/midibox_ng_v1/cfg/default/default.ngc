@@ -322,11 +322,11 @@ AINSER n=2   enabled=0  cs=1  num_pins=64  resolution=7bit
 
 # KEYBOARD hardware
 KEYBOARD n=1   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
-               scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=1 \
+               scan_velocity=1  scan_optimized=0  note_offset=36 \
                delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
 KEYBOARD n=2   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
-               scan_velocity=1  scan_optimized=0  note_offset=36  midi_ports=1000100000001000  midi_chn=2 \
+               scan_velocity=1  scan_optimized=0  note_offset=36 \
                delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
 

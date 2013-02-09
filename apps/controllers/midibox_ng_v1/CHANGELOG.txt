@@ -8,6 +8,10 @@ MIDIbox NG V1.018
    o new LCD formats: %N prints the note name based on the specified MIDI event,
      and %n based on the event value
 
+   o AIN/AINSER configuration: added pinrange parameter.
+     It allows to specify individual ranges for the connected pots to calibrate
+     the physical min/max limits.
+
 
 MIDIbox NG V1.017
 ~~~~~~~~~~~~~~~~~
