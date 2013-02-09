@@ -14,6 +14,7 @@
 #ifndef _MBNG_PATCH_H
 #define _MBNG_PATCH_H
 
+#include <ainser.h>
 #include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -33,6 +34,10 @@
 
 #define MBNG_PATCH_NUM_MATRIX_ROWS_MAX   16
 #define MBNG_PATCH_NUM_MATRIX_COLORS_MAX  3
+
+// depends on the resolution
+#define MBNG_PATCH_AIN_MAX_VALUE 4095
+#define MBNG_PATCH_AINSER_MAX_VALUE 4095
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -90,6 +95,8 @@ typedef struct {
 
 typedef struct {
   u8 enable_mask;
+  u16 pin_min_value[MBNG_PATCH_NUM_AIN];
+  u16 pin_max_value[MBNG_PATCH_NUM_AIN];
 } mbng_patch_ain_entry_t;
 
 typedef union {
@@ -103,6 +110,8 @@ typedef union {
 
 typedef struct {
   mbng_patch_ainser_flags_t flags;
+  u16 pin_min_value[AINSER_NUM_PINS];
+  u16 pin_max_value[AINSER_NUM_PINS];
 } mbng_patch_ainser_entry_t;
 
 #define MBNG_PATCH_SCS_BUTTONS 5

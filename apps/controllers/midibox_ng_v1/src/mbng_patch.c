@@ -105,7 +105,15 @@ s32 MBNG_PATCH_Init(u32 mode)
     }
   }
 
-  mbng_patch_ain.enable_mask = 0x0000;
+  {
+    mbng_patch_ain.enable_mask = 0x0000;
+
+    int pin;
+    for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
+      mbng_patch_ain.pin_min_value[pin] = 0;
+      mbng_patch_ain.pin_max_value[pin] = MBNG_PATCH_AIN_MAX_VALUE;
+    }
+  }
 
   {
     int module;
@@ -116,7 +124,13 @@ s32 MBNG_PATCH_Init(u32 mode)
 
       AINSER_EnabledSet(module, 0);
       AINSER_DeadbandSet(module, 31); // matches with 7bit
-      AINSER_NumPinsSet(module, 64);
+      AINSER_NumPinsSet(module, AINSER_NUM_PINS);
+
+      int pin;
+      for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
+	ainser->pin_min_value[pin] = 0;
+	ainser->pin_max_value[pin] = MBNG_PATCH_AINSER_MAX_VALUE;
+      }
     }
   }
 

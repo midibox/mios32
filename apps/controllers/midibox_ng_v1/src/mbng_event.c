@@ -1049,10 +1049,10 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
   }
   return 0;
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=0x%04x bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
+  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=%d bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
 				      item->id,
 				      MBNG_EVENT_ItemControllerStrGet(item->id),
-				      item->hw_id,
+				      item->hw_id & 0xfff,
 				      item->bank,
 				      item->fwd_id,
 				      MBNG_EVENT_ItemTypeStrGet(item),
