@@ -1622,6 +1622,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
 
+  case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -1651,6 +1653,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
 
   if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
+
+  if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -1966,6 +1970,12 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	MBNG_EVENT_Refresh();
       } break;
 
+      case MBNG_EVENT_META_TYPE_SWAP_VALUES: {
+	u8 secondary = item->secondary_value;
+	item->secondary_value = item->value;
+	item->value = secondary;
+      } break;
+
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
 	SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
       } break;
@@ -2015,6 +2025,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
+    pool_item->secondary_value = item->secondary_value;
     pool_item->flags.general.value_from_midi = from_midi;
   }
 
@@ -2133,8 +2144,10 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
       if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
 	pool_item->value = item->value;
+	pool_item->secondary_value = item->secondary_value;
 	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
       }
+      fwd_item.secondary_value = item->secondary_value;
 
       // notify item
       if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0) == 2 )
@@ -2214,8 +2227,10 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
       if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
 	pool_item->value = fwd_item.value;
+	pool_item->secondary_value = fwd_item.secondary_value;
 	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
       }
+      fwd_item.secondary_value = item->secondary_value;
 
       // notify button/LED element
       if( fwd_id_type == MBNG_EVENT_CONTROLLER_BUTTON )
@@ -2251,6 +2266,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
+    pool_item->secondary_value = item->secondary_value;
     pool_item->flags.general.value_from_midi = 0;
   }
 

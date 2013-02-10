@@ -944,19 +944,49 @@ s32 parseEvent(char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    } else if( strcasecmp(parameter, "key_transpose") == 0 ) {
-      int key_transpose;
+    } else if( strcasecmp(parameter, "kb_transpose") == 0 ) {
+      int kb_transpose;
 
-      if( (key_transpose=get_dec(value_str)) < -128 || key_transpose >= 128 ) {
+      if( (kb_transpose=get_dec(value_str)) < -128 || kb_transpose >= 128 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect -128..127, got %d)\n", event, parameter, value_str, key_transpose);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect -128..127, got %d)\n", event, parameter, value_str, kb_transpose);
 #endif
       } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_KB ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (key_transpose only supported by EVENT_KB)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (kb_transpose only supported by EVENT_KB)\n", event, parameter, value_str);
 #endif
       } else {
-	item.flags.KB.key_transpose = (u8)key_transpose;
+	item.flags.KB.kb_transpose = (u8)kb_transpose;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "kb_velocity_map") == 0 ) {
+
+      if( strncasecmp(value_str, "map", 3) != 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s (value should start with 'map')\n", event, parameter, value_str);
+#endif
+      } else {
+	int value;
+	if( (value=get_dec((char *)&value_str[3])) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else if( value == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	} else if( value >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", event, parameter, value_str);
+#endif
+	} else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_KB ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (kb_velocity_map only supported by EVENT_KB)\n", event, parameter, value_str);
+#endif
+	} else {
+	  item.flags.KB.kb_velocity_map = (u8)value;
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3407,8 +3437,13 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
 
       case MBNG_EVENT_CONTROLLER_KB: {
-	if( item.flags.KB.key_transpose ) {
-	  sprintf(line_buffer, "  key_transpose=%d", (s8)item.flags.KB.key_transpose);
+	if( item.flags.KB.kb_transpose ) {
+	  sprintf(line_buffer, "  kb_transpose=%d", (s8)item.flags.KB.kb_transpose);
+	  FLUSH_BUFFER;
+	}
+
+	if( item.flags.KB.kb_velocity_map ) {
+	  sprintf(line_buffer, "  kb_velocity_map=map%d", (s8)item.flags.KB.kb_velocity_map);
 	  FLUSH_BUFFER;
 	}
       } break;

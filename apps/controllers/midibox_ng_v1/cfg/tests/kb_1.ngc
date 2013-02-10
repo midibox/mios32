@@ -8,7 +8,7 @@ KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
                scan_velocity=1  scan_optimized=0  note_offset=28 \
                delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
-EVENT_KB id=1  type=NoteOn key_transpose=0 range=0:127  lcd_pos=1:1:1 label="Note %N %3d%B"
+EVENT_KB id=1  type=NoteOn chn=1 key=any use_key_number=1 range=0:127  lcd_pos=1:1:1 label="Note %n"
 
 
 # Pitch- and Modulation wheel are connected to an AINSER module
