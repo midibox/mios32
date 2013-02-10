@@ -185,7 +185,6 @@ void APP_Init(void)
   MIDI_PORT_Init(0);
   MBNG_SYSEX_Init(0);
   MIDI_ROUTER_Init(0);
-  MBNG_PATCH_Init(0);
   MBNG_EVENT_Init(0);
   MBNG_DIN_Init(0);
   MBNG_DOUT_Init(0);
@@ -205,6 +204,8 @@ void APP_Init(void)
   SEQ_BPM_Init(0);
   SEQ_BPM_Set(120.0);
   SEQ_MIDI_OUT_Init(0);
+
+  MBNG_PATCH_Init(0);
 
   //KEYBOARD_Init(0);
   // done in MBNG_PATCH_Init()
