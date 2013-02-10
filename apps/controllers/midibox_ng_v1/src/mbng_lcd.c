@@ -426,7 +426,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  MBNG_LCD_PrintChar(*str);
 	}
       }
-      ++str;
+      continue; // re-start from top - required for "&x^label"
     }
 
     if( *str == '@' ) {
@@ -451,6 +451,8 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  }
 	}
       }
+      --str;
+      continue; // re-start from top - required for "@(d:x:y)^label"
     }
 
     // could be 0 meanwhile

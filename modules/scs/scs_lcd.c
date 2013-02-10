@@ -268,9 +268,9 @@ s32 SCS_LCD_Update(u8 force)
   MUTEX_LCD_TAKE;
 #endif
 
-  u8 *ptr = (u8 *)lcd_buffer;
-  for(y=0; y<SCS_LCD_MAX_LINES; ++y)
-    for(x=0; x<SCS_LCD_MAX_COLUMNS; ++x) {
+  for(y=0; y<SCS_LCD_MAX_LINES; ++y) {
+    u8 *ptr = (u8 *)&lcd_buffer[y];
+    for(x=0; x<SCS_MENU_ITEM_WIDTH*SCS_NumMenuItemsGet(); ++x) {
 
       if( force || !(*ptr & 0x80) ) {
 	if( remote_first_x[y] == -1 )
@@ -298,6 +298,7 @@ s32 SCS_LCD_Update(u8 force)
       }
       ++ptr;
     }
+  }
 
 #ifdef MUTEX_LCD_GIVE
   MUTEX_LCD_GIVE;
