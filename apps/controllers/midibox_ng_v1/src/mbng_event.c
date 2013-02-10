@@ -1636,6 +1636,10 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
   case MBNG_EVENT_META_TYPE_SCS_SOFT2:           return "ScsSoft2";
   case MBNG_EVENT_META_TYPE_SCS_SOFT3:           return "ScsSoft3";
   case MBNG_EVENT_META_TYPE_SCS_SOFT4:           return "ScsSoft4";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT5:           return "ScsSoft5";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT6:           return "ScsSoft6";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT7:           return "ScsSoft7";
+  case MBNG_EVENT_META_TYPE_SCS_SOFT8:           return "ScsSoft8";
   case MBNG_EVENT_META_TYPE_SCS_SHIFT:           return "ScsShift";
   }
 
@@ -1668,6 +1672,10 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "ScsSoft2") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT2;
   if( strcasecmp(meta_type, "ScsSoft3") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT3;
   if( strcasecmp(meta_type, "ScsSoft4") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT4;
+  if( strcasecmp(meta_type, "ScsSoft5") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT5;
+  if( strcasecmp(meta_type, "ScsSoft6") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT6;
+  if( strcasecmp(meta_type, "ScsSoft7") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT7;
+  if( strcasecmp(meta_type, "ScsSoft8") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT8;
   if( strcasecmp(meta_type, "ScsShift") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SHIFT;
   return MBNG_EVENT_META_TYPE_UNDEFINED;
 }
@@ -2000,8 +2008,20 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       case MBNG_EVENT_META_TYPE_SCS_SOFT4: {
 	SCS_DIN_NotifyToggle(SCS_PIN_SOFT4, item->value == 0);
       } break;
-      case MBNG_EVENT_META_TYPE_SCS_SHIFT: {
+      case MBNG_EVENT_META_TYPE_SCS_SOFT5: {
 	SCS_DIN_NotifyToggle(SCS_PIN_SOFT5, item->value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT6: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT6, item->value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT7: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT7, item->value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SOFT8: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT8, item->value == 0);
+      } break;
+      case MBNG_EVENT_META_TYPE_SCS_SHIFT: {
+	SCS_DIN_NotifyToggle(SCS_PIN_SOFT1 + SCS_NumMenuItemsGet(), item->value == 0);
       } break;
       }
     }
@@ -2610,7 +2630,8 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
-	if( pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
+	u8 *stream = &pool_item->data_begin;
+	if( stream[1] >= 128 || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	  if( item.flags.general.use_key_or_cc ) {
@@ -2651,7 +2672,6 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  }
 
 	  if( num_pins >= 0 ) {
-	    u8 *stream = &pool_item->data_begin;
 	    int first_evnt1 = stream[1];
 	    if( evnt1 >= first_evnt1 && evnt1 < (first_evnt1 + num_pins) ) {
 	      mbng_event_item_t item;

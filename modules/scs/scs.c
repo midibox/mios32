@@ -113,6 +113,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static scs_menu_state_t scsMenuState;
+static u8 scsNumMenuItems; // can be changed during runtime
+
 static u8 displayUpdateReq;    // using single variable for atomic access
 static u8 displayUpdateInMainPage; // optionally disables SCS_LCD handling in mainpage (e.g. used in MBNG to use BUFLCD driver in main page)
 static u8 displayInitReq;      // using single variable for atomic access
@@ -191,6 +193,8 @@ static s32 (*scsButtonHook)(u8 button, u8 depressed);
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_Init(u32 mode)
 {
+  scsNumMenuItems = SCS_NUM_MENU_ITEMS;
+
   SCS_LCD_Init(mode);
   SCS_LCD_InitSpecialChars(SCS_LCD_CHARSET_Menu, 1);
 
@@ -251,6 +255,31 @@ s32 SCS_Init(u32 mode)
   enc_config.cfg.speed = NORMAL;
   enc_config.cfg.speed_par = 0;
   MIOS32_ENC_ConfigSet(SCS_ENC_MENU_ID, enc_config);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! returns the number of menu items which are visible on screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_NumMenuItemsGet(void)
+{
+  return scsNumMenuItems;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the number of menu items which are visible on screen
+//! \param[in] num_items must be between 1..SCS_NUM_MENU_ITEMS
+//! \return != 0 if invalid value
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_NumMenuItemsSet(u8 num_items)
+{
+  if( num_items < 1 || num_items > SCS_NUM_MENU_ITEMS )
+    return -1;
+
+  scsNumMenuItems = num_items;
 
   return 0; // no error
 }
@@ -427,8 +456,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     if( newCursorPos < 0 ) {
       newCursorPos = 0;
       pageOffsetIncrementer = -1;
-    } else if( newCursorPos >= SCS_NUM_MENU_ITEMS ) {
-      newCursorPos = SCS_NUM_MENU_ITEMS-1;
+    } else if( newCursorPos >= scsNumMenuItems ) {
+      newCursorPos = scsNumMenuItems-1;
       pageOffsetIncrementer = 1;
     } else if( newCursorPos >= currentMenuTableNumItems ) {
       newCursorPos = currentMenuTableNumItems-1;
@@ -446,8 +475,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     int newOffset = displayRootOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
-    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= currentMenuTableNumItems ) {
-      newOffset = currentMenuTableNumItems - SCS_NUM_MENU_ITEMS;
+    else if( (newOffset+scsNumMenuItems) >= currentMenuTableNumItems ) {
+      newOffset = currentMenuTableNumItems - scsNumMenuItems;
       if( newOffset < 0 )
 	newOffset = 0;
     }
@@ -467,8 +496,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     if( newCursorPos < 0 ) {
       newCursorPos = 0;
       pageOffsetIncrementer = -1;
-    } else if( newCursorPos >= SCS_NUM_MENU_ITEMS ) {
-      newCursorPos = SCS_NUM_MENU_ITEMS-1;
+    } else if( newCursorPos >= scsNumMenuItems ) {
+      newCursorPos = scsNumMenuItems-1;
       pageOffsetIncrementer = 1;
     } else if( newCursorPos >= selectedPage->numItems ) {
       newCursorPos = selectedPage->numItems - 1;
@@ -487,8 +516,8 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
     int newOffset = displayPageOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
-    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= selectedPage->numItems ) {
-      newOffset = selectedPage->numItems - SCS_NUM_MENU_ITEMS;
+    else if( (newOffset+scsNumMenuItems) >= selectedPage->numItems ) {
+      newOffset = selectedPage->numItems - scsNumMenuItems;
       if( newOffset < 0 )
 	newOffset = 0;
     }
@@ -1079,7 +1108,7 @@ s32 SCS_Tick(void)
 	SCS_LCD_CursorSet(0, 1);
 
 	int i;
-	for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	for(i=0; i<scsNumMenuItems; ++i) {
 	  u8 page = displayRootOffset + i;
 	  if( page >= currentMenuTableNumItems
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
@@ -1093,11 +1122,11 @@ s32 SCS_Tick(void)
 	}
 
 	// print arrow at upper right corner
-	if( currentMenuTableNumItems > SCS_NUM_MENU_ITEMS ) {
-	  SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	if( currentMenuTableNumItems > scsNumMenuItems ) {
+	  SCS_LCD_CursorSet(scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 1, 0);
 	  if( displayRootOffset == 0 )
 	    SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '>' : 3); // right arrow
-	  else if( displayRootOffset >= (currentMenuTableNumItems-SCS_NUM_MENU_ITEMS) )
+	  else if( displayRootOffset >= (currentMenuTableNumItems-scsNumMenuItems) )
 	    SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '<' : 1); // left arrow
 	  else
 	    SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '-' : 2); // left/right arrow
@@ -1159,7 +1188,7 @@ s32 SCS_Tick(void)
 	    SCS_LCD_CursorSet(0, 0);
 
 	    int i;
-	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	    for(i=0; i<scsNumMenuItems; ++i) {
 	      u8 item = displayPageOffset + i;
 	      if( item >= numItems ||
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
@@ -1178,7 +1207,7 @@ s32 SCS_Tick(void)
 	    SCS_LCD_CursorSet(0, 1);
 
 	    int i;
-	    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+	    for(i=0; i<scsNumMenuItems; ++i) {
 	      u8 item = displayPageOffset + i;
 	      if( item >= numItems ||
 		  (editMode && item == currentMenuTableSelectedItemPos && !displayCursorOn ) )
@@ -1195,11 +1224,11 @@ s32 SCS_Tick(void)
 	  }
 
 	  // print arrow at upper right corner
-	  if( !line1AlreadyPrint && numItems > SCS_NUM_MENU_ITEMS ) {
-	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	  if( !line1AlreadyPrint && numItems > scsNumMenuItems ) {
+	    SCS_LCD_CursorSet(scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 1, 0);
 	    if( displayPageOffset == 0 )
 	      SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '>' : 3); // right arrow
-	    else if( displayPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
+	    else if( displayPageOffset >= (numItems-scsNumMenuItems) )
 	      SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '<' : 1); // left arrow
 	    else
 	      SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '-' : 2); // left/right arrow
@@ -1235,13 +1264,13 @@ s32 SCS_Tick(void)
       if( !line2AlreadyPrint ) {
 	SCS_LCD_CursorSet(0, 1);
 	SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 2 )
+	if( scsNumMenuItems >= 2 )
 	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 3 )
+	if( scsNumMenuItems >= 3 )
 	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 4 )
+	if( scsNumMenuItems >= 4 )
 	  SCS_LCD_PrintStringCentered("Del", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 5 )
+	if( scsNumMenuItems >= 5 )
 	  SCS_LCD_PrintStringCentered("Clr", SCS_MENU_ITEM_WIDTH);
       }
     } break;
@@ -1268,9 +1297,9 @@ s32 SCS_Tick(void)
       if( !line2AlreadyPrint ) {
 	SCS_LCD_CursorSet(0, 1);
 	SCS_LCD_PrintStringCentered("Ok", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 2 )
+	if( scsNumMenuItems >= 2 )
 	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 3 )
+	if( scsNumMenuItems >= 3 )
 	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
 	SCS_LCD_PrintSpaces(SCS_LCD_COLUMNS_PER_DEVICE-3*SCS_MENU_ITEM_WIDTH);
       }
@@ -1298,7 +1327,7 @@ s32 SCS_Tick(void)
 
 	  // print arrow at upper right corner
 	  if( scsEditNumItems > scsEditItemsPerPage ) {
-	    SCS_LCD_CursorSet(SCS_LCD_MAX_COLUMNS-1, 0);
+	    SCS_LCD_CursorSet(scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 1, 0);
 	    if( scsEditOffset == 0 )
 	      SCS_LCD_PrintChar(MIOS32_LCD_TypeIsGLCD() ? '>' : 3); // right arrow
 	    else if( scsEditOffset >= (scsEditNumItems-scsEditItemsPerPage) )
@@ -1313,9 +1342,9 @@ s32 SCS_Tick(void)
       if( !line2AlreadyPrint ) {
 	SCS_LCD_CursorSet(0, 1);
 	SCS_LCD_PrintStringCentered(scsActionString, SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 2 )
+	if( scsNumMenuItems >= 2 )
 	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
-	if( SCS_NUM_MENU_ITEMS >= 3 )
+	if( scsNumMenuItems >= 3 )
 	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
       }
     } break;

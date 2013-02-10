@@ -470,7 +470,7 @@ static s32 displayHook(char *line1, char *line2)
     u8 fastRefresh = line1[0] == 0;
 
     int i;
-    for(i=0; i<SCS_NUM_MENU_ITEMS; ++i) {
+    for(i=0; i<SCS_NumMenuItemsGet(); ++i) {
       u8 portIx = 1 + i + monPageOffset;
 
       if( fastRefresh ) { // no MSD overlay?
@@ -489,13 +489,13 @@ static s32 displayHook(char *line1, char *line2)
 
 	// insert arrow at upper right corner
 	int numItems = MIDI_PORT_OutNumGet() - 1;
+	int lastColumn = SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH - 1;
 	if( monPageOffset == 0 )
-	  line1[19] = 3; // right arrow
-	else if( monPageOffset >= (numItems-SCS_NUM_MENU_ITEMS) )
-	  line1[19] = 1; // left arrow
+	  line1[lastColumn] = MIOS32_LCD_TypeIsGLCD() ? '>' : 3; // right arrow
+	else if( monPageOffset >= (numItems-SCS_NumMenuItemsGet()) )
+	  line1[lastColumn] = MIOS32_LCD_TypeIsGLCD() ? '<' : 1; // left arrow
 	else
-	  line1[19] = 2; // left/right arrow
-
+	  line1[lastColumn] = MIOS32_LCD_TypeIsGLCD() ? '-' : 2; // left/right arrow
       }
 
       mios32_midi_port_t port = MIDI_PORT_OutPortGet(portIx);
@@ -575,8 +575,8 @@ static s32 encHook(s32 incrementer)
     int newOffset = monPageOffset + incrementer;
     if( newOffset < 0 )
       newOffset = 0;
-    else if( (newOffset+SCS_NUM_MENU_ITEMS) >= numItems ) {
-      newOffset = numItems - SCS_NUM_MENU_ITEMS;
+    else if( (newOffset+SCS_NumMenuItemsGet()) >= numItems ) {
+      newOffset = numItems - SCS_NumMenuItemsGet();
       if( newOffset < 0 )
 	newOffset = 0;
     }
@@ -597,11 +597,11 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
   if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
     // emulated button function?
 
-#if MBNG_PATCH_SCS_BUTTONS != 5
+#if MBNG_PATCH_SCS_BUTTONS != 9
 # error "Please adapt for new number of buttons"
 #endif
 
-    if( scsButton >= SCS_PIN_SOFT1 && scsButton <= SCS_PIN_SOFT5 ) {
+    if( scsButton >= SCS_PIN_SOFT1 && scsButton <= SCS_PIN_SOFT9 ) {
       int button_ix = scsButton - SCS_PIN_SOFT1;
 
       if( mbng_patch_scs.button_emu_id[button_ix] )
@@ -614,7 +614,7 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
   }
 
   if( extraPage ) {
-    if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
+    if( scsButton >= (SCS_PIN_SOFT1+SCS_NumMenuItemsGet()) && depressed ) // selects/deselects extra page
       extraPage = 0;
     else {
       switch( scsButton ) {
@@ -660,7 +660,7 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 
     return 1;
   } else {
-    if( scsButton == SCS_PIN_SOFT5 && !depressed ) { // selects/deselects extra page
+    if( scsButton >= (SCS_PIN_SOFT1+SCS_NumMenuItemsGet()) && !depressed ) { // selects/deselects extra page
       extraPage = 1;
       return 1;
     }

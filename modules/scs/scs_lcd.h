@@ -55,6 +55,14 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 
 extern s32 SCS_LCD_Init(u32 mode);
+
+extern s32 SCS_LCD_DeviceGet(void);
+extern s32 SCS_LCD_DeviceSet(u8 device);
+extern s32 SCS_LCD_OffsetXGet(void);
+extern s32 SCS_LCD_OffsetXSet(u8 x_offset);
+extern s32 SCS_LCD_OffsetYGet(void);
+extern s32 SCS_LCD_OffsetYSet(u8 y_offset);
+
 extern s32 SCS_LCD_Clear(void);
 extern s32 SCS_LCD_PrintChar(char c);
 extern s32 SCS_LCD_BufferSet(u16 x, u16 y, char *str);

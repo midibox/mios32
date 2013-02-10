@@ -15,6 +15,8 @@
 #define _MBNG_PATCH_H
 
 #include <ainser.h>
+#include <scs.h>
+#include <scs_lcd.h>
 #include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -114,7 +116,7 @@ typedef struct {
   u16 pin_max_value[AINSER_NUM_PINS];
 } mbng_patch_ainser_entry_t;
 
-#define MBNG_PATCH_SCS_BUTTONS 5
+#define MBNG_PATCH_SCS_BUTTONS (SCS_NUM_MENU_ITEMS+1)
 typedef struct {
   u16 button_emu_id[MBNG_PATCH_SCS_BUTTONS];
   u16 enc_emu_id;

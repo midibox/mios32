@@ -24,6 +24,8 @@
 #include <string.h>
 #include <uip_task.h>
 
+#include <scs.h>
+#include <scs_lcd.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <seq_bpm.h>
@@ -2555,11 +2557,18 @@ typedef struct {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     int button = -1;
+#if MBNG_PATCH_SCS_BUTTONS != 9
+# error "Please adapt for new number of buttons"
+#endif
     if(      strcasecmp(parameter, "soft1_button_emu_id") == 0 ) button = 0;
     else if( strcasecmp(parameter, "soft2_button_emu_id") == 0 ) button = 1;
     else if( strcasecmp(parameter, "soft3_button_emu_id") == 0 ) button = 2;
     else if( strcasecmp(parameter, "soft4_button_emu_id") == 0 ) button = 3;
-    else if( strcasecmp(parameter, "shift_button_emu_id") == 0 ) button = 4;
+    else if( strcasecmp(parameter, "soft5_button_emu_id") == 0 ) button = 4;
+    else if( strcasecmp(parameter, "soft6_button_emu_id") == 0 ) button = 5;
+    else if( strcasecmp(parameter, "soft7_button_emu_id") == 0 ) button = 6;
+    else if( strcasecmp(parameter, "soft8_button_emu_id") == 0 ) button = 7;
+    else if( strcasecmp(parameter, "shift_button_emu_id") == 0 ) button = 8;
 
     if( button >= 0 ) {
       int value;
@@ -2571,6 +2580,54 @@ typedef struct {
       }
 
       mbng_patch_scs.button_emu_id[button] = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "num_items") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 1 || value > SCS_NUM_MENU_ITEMS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      SCS_NumMenuItemsSet(value);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
+      const char *separator_colon = ":";
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD position format in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	if( values[0] < 1 || values[0] >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD number (first item) in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	} else if( values[1] < 1 || values[1] >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD X position (second item) in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	} else if( values[2] < 1 || values[2] >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD Y position (third item) in %s ... %s=%s\n", cmd, parameter, value_str);
+#endif
+	} else {
+	  SCS_LCD_DeviceSet(values[0] - 1);
+	  SCS_LCD_OffsetXSet(values[1] - 1);
+	  SCS_LCD_OffsetYSet(values[2] - 1);
+	}
+      }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "enc_emu_id") == 0 ) {
@@ -3800,12 +3857,16 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     for(i=0; i<MBNG_PATCH_SCS_BUTTONS; ++i)
       any_value |= mbng_patch_scs.button_emu_id[i];
     any_value |= mbng_patch_scs.enc_emu_id;
+    any_value |= SCS_NumMenuItemsGet() != 4;
+    any_value |= SCS_LCD_DeviceGet();
+    any_value |= SCS_LCD_OffsetXGet();
+    any_value |= SCS_LCD_OffsetYGet();
 
     if( any_value ) {
       sprintf(line_buffer, "\n\n# SCS Configuration\n");
       FLUSH_BUFFER;
 
-#if MBNG_PATCH_SCS_BUTTONS != 5
+#if MBNG_PATCH_SCS_BUTTONS != 9
 # error "Please adapt for new number of buttons"
 #endif
       sprintf(line_buffer, "SCS soft1_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[0]);
@@ -3816,9 +3877,21 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
       sprintf(line_buffer, "    soft4_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[3]);
       FLUSH_BUFFER;
-      sprintf(line_buffer, "    shift_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[4]);
+      sprintf(line_buffer, "    soft5_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[4]);
       FLUSH_BUFFER;
-      sprintf(line_buffer, "    enc_emu_id=%d\n", mbng_patch_scs.enc_emu_id);
+      sprintf(line_buffer, "    soft6_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[5]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    soft7_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[6]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    soft8_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[7]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    shift_button_emu_id=%d \\\n", mbng_patch_scs.button_emu_id[8]);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    enc_emu_id=%d \\\n", mbng_patch_scs.enc_emu_id);
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "    num_items=%d  lcd_pos=%d:%d:%d\n",
+	      SCS_NumMenuItemsGet(),
+	      SCS_LCD_DeviceGet()+1, SCS_LCD_OffsetXGet()+1, SCS_LCD_OffsetYGet()+1);
       FLUSH_BUFFER;
     }
   }

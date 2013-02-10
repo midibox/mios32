@@ -17,6 +17,8 @@ MIDIbox NG V1.018
      It allows to specify individual ranges for the connected pots to calibrate
      the physical min/max limits.
 
+   o SCS configuration: added SCS num_items and lcd_pos parameters
+
 
 MIDIbox NG V1.017
 ~~~~~~~~~~~~~~~~~

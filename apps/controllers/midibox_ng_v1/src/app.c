@@ -435,10 +435,10 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       u8 force = isInMainPage == 0;
       if( force ) { // page change
 	MBNG_LCD_SpecialCharsReInit();
-	MBNG_LCD_CursorSet(0, 0, 0);
-	MBNG_LCD_PrintSpaces(20);
-	MBNG_LCD_CursorSet(0, 0, 1);
-	MBNG_LCD_PrintSpaces(20);
+	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 0);
+	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
+	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 1);
+	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
       }
 
       MBNG_EVENT_UpdateLCD(force);
