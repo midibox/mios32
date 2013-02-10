@@ -196,6 +196,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     stream[1] = 0x24 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
+    item.secondary_value = stream[1];
 
     strcpy(str, "^std_btn"); // Button #%3i %3d%b
     item.label = str;
@@ -215,6 +216,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
+    item.secondary_value = stream[1];
 
     strcpy(str, "^std_enc"); // ENC #%3i    %3d%B
     item.label = str;
@@ -234,6 +236,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
+    item.secondary_value = stream[1];
 
     strcpy(str, "^std_aser"); // AINSER #%3i %3d%B
     item.label = str;
@@ -252,6 +255,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
     item.stream_size = 2;
+    item.secondary_value = stream[1];
 
     strcpy(str, "^std_ain"); // AIN #%3i    %3d%B
     item.label = str;
@@ -1189,6 +1193,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
       item.stream = (u8 *)&stream;
       stream[0] = midi_learn_event.evnt0;
       stream[1] = midi_learn_event.evnt1;
+      item.secondary_value = stream[1];
       break;
 
     case ProgramChange:
@@ -1211,6 +1216,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     stream[1] = (midi_learn_nrpn_address & 0xff);
     stream[2] = (midi_learn_nrpn_address >> 8);
     stream[3] = MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
+    item.secondary_value = stream[1];
   }
 
   if( !item_modified ) {
@@ -1713,7 +1719,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	p.evnt1 = item->value & 0x7f;
 	p.evnt2 = item->secondary_value;
       } else {
-	p.evnt1 = item->stream[1] & 0x7f;
+	p.evnt1 = item->secondary_value & 0x7f; // TK: was 'item->stream[1] & 0x7f;', now using secondary value for more flexibility
 	p.evnt2 = item->value & 0x7f;
       }
     }
@@ -2604,14 +2610,16 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
-	u8 *stream = &pool_item->data_begin;
-	if( stream[1] >= 128 || evnt1 == stream[1] ) {
+	if( pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  item.secondary_value = midi_package.value;
 	  if( item.flags.general.use_key_or_cc ) {
+	    if( item.secondary_value < 128 ) // if != any
+	      item.secondary_value = midi_package.value;
 	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1);
 	  } else {
+	    if( item.secondary_value < 128 ) // if != any
+	      item.secondary_value = midi_package.evnt1;
 	    MBNG_EVENT_ItemReceive(&item, midi_package.value, 1);
 	  }
 	} else {
@@ -2643,6 +2651,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  }
 
 	  if( num_pins >= 0 ) {
+	    u8 *stream = &pool_item->data_begin;
 	    int first_evnt1 = stream[1];
 	    if( evnt1 >= first_evnt1 && evnt1 < (first_evnt1 + num_pins) ) {
 	      mbng_event_item_t item;

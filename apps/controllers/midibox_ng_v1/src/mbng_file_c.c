@@ -647,6 +647,8 @@ s32 parseEvent(char *cmd, char *brkt)
 	  item.stream_size = 2;
 	  item.stream[0] = 0x80 | ((event_type-1) << 4);
 	  item.stream[1] = 0x30;
+
+	  item.secondary_value = item.stream[1];
 	} break;
 
 	case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
@@ -666,6 +668,8 @@ s32 parseEvent(char *cmd, char *brkt)
 	  item.stream[1] = 0x00; // number
 	  item.stream[2] = 0x00;
 	  item.stream[3] = MBNG_EVENT_NRPN_FORMAT_UNSIGNED; // value format
+
+	  item.secondary_value = item.stream[1];
 	} break;
 
 	case MBNG_EVENT_TYPE_META: {
@@ -717,6 +721,7 @@ s32 parseEvent(char *cmd, char *brkt)
       } else {
 	// no extra check if event_type already defined...
 	stream[1] = value;
+	item.secondary_value = stream[1];
       }
 
     } else if( strcasecmp(parameter, "use_key_number") == 0 || strcasecmp(parameter, "use_cc_number") == 0 ) {
@@ -750,6 +755,7 @@ s32 parseEvent(char *cmd, char *brkt)
       } else {
 	// no extra check if event_type already defined...
 	stream[1] = value;
+	item.secondary_value = stream[1];
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -770,6 +776,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  // no extra check if event_type already defined...
 	  stream[1] = value & 0xff;
 	  stream[2] = value >> 8;
+	  item.secondary_value = stream[1];
 	}
       }
 
