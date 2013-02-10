@@ -158,6 +158,8 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_UPDATE_LCD,
 
+  MBNG_EVENT_META_TYPE_SWAP_VALUES,
+
   MBNG_EVENT_META_TYPE_SCS_ENC,
   MBNG_EVENT_META_TYPE_SCS_MENU,
   MBNG_EVENT_META_TYPE_SCS_SOFT1,
@@ -308,7 +310,8 @@ typedef union {
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
-    u32 key_transpose:8; // has to be converted to a signed value
+    u32 kb_transpose:8; // has to be converted to a signed value
+    u32 kb_velocity_map:8;
   } KB;
 
 } mbng_event_flags_t;

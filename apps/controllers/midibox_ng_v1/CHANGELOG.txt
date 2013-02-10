@@ -8,6 +8,11 @@ MIDIbox NG V1.018
    o new LCD formats: %N prints the note name based on the specified MIDI event,
      and %n based on the event value
 
+   o new meta event: SwapValues - it swaps the primary and secondary value of an event.
+     E.g. on a note event, velocity can be swapped with the key value.
+     A usage example can be found in cfg/tests/kb_4.ngc, where the key and velocity
+     value should be output by separate CV channels
+
    o AIN/AINSER configuration: added pinrange parameter.
      It allows to specify individual ranges for the connected pots to calibrate
      the physical min/max limits.
