@@ -92,13 +92,24 @@ static u8 lcd_buffer[SCS_LCD_MAX_LINES][SCS_LCD_MAX_COLUMNS];
 static u16 lcd_cursor_x;
 static u16 lcd_cursor_y;
 
+static u8 lcd_device;
+static u8 lcd_offset_x;
+static u8 lcd_offset_y;
+
 static scs_lcd_charset_t lcd_charset = SCS_LCD_CHARSET_None;
 
 /////////////////////////////////////////////////////////////////////////////
-// Display Initialisation
+//! Display Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_LCD_Init(u32 mode)
 {
+  lcd_device = 0;
+  lcd_offset_x = 0;
+  lcd_offset_y = 0;
+  lcd_cursor_x = 0;
+  lcd_cursor_y = 0;
+  
+
 #if 0
   // obsolete
   // now done in main.c
@@ -107,7 +118,7 @@ s32 SCS_LCD_Init(u32 mode)
 
   // first LCD already initialized
   for(dev=1; dev<SCS_LCD_NUM_DEVICES; ++dev) {
-    MIOS32_LCD_DeviceSet(dev);
+    MIOS32_LCD_DeviceSet(lcd_device + dev);
     MIOS32_LCD_Init(0);
   }
 
@@ -115,6 +126,59 @@ s32 SCS_LCD_Init(u32 mode)
   MIOS32_LCD_DeviceSet(0);
 #endif
 
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! returns the LCD device at which the SCS starts to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_DeviceGet(void)
+{
+  return lcd_device;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the LCD device at which the SCS should start to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_DeviceSet(u8 device)
+{
+  lcd_device = device;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! returns the X offset at which the SCS starts to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_OffsetXGet(void)
+{
+  return lcd_offset_x;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the X offset at which the SCS should start to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_OffsetXSet(u8 x_offset)
+{
+  lcd_offset_x = x_offset;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! returns the Y offset at which the SCS starts to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_OffsetYGet(void)
+{
+  return lcd_offset_y;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! sets the Y offset at which the SCS should start to print the screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_LCD_OffsetYSet(u8 y_offset)
+{
+  lcd_offset_y = y_offset;
   return 0; // no error
 }
 
@@ -214,8 +278,10 @@ s32 SCS_LCD_Update(u8 force)
 	remote_last_x[y] = x;
 
 	if( x != next_x || y != next_y ) {
-	  MIOS32_LCD_DeviceSet(x / SCS_LCD_COLUMNS_PER_DEVICE);
-	  MIOS32_LCD_CursorSet(x % SCS_LCD_COLUMNS_PER_DEVICE, y);
+	  u16 phys_x = x + lcd_offset_x;
+	  u16 phys_y = y + lcd_offset_y;
+	  MIOS32_LCD_DeviceSet(lcd_device + (phys_x / SCS_LCD_COLUMNS_PER_DEVICE));
+	  MIOS32_LCD_CursorSet(phys_x % SCS_LCD_COLUMNS_PER_DEVICE, phys_y);
 	}
 	MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
@@ -268,7 +334,7 @@ s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset, u8 force)
 #endif
     int dev;
     for(dev=0; dev<SCS_LCD_NUM_DEVICES; ++dev) {
-      MIOS32_LCD_DeviceSet(dev);
+      MIOS32_LCD_DeviceSet(lcd_device + dev);
       switch( charset ) {
         case SCS_LCD_CHARSET_Menu:
 	  MIOS32_LCD_SpecialCharsInit((u8 *)charset_menu);

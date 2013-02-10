@@ -46,6 +46,9 @@
 // the SCS is entered by pressing the EXIT button
 #define SCS_MENU_ENTERED_VIA_EXIT_BUTTON 1
 
+// max. number of menu items (configurable with SCS num_items=...)
+#define SCS_NUM_MENU_ITEMS 8
+
 
 // AIN configuration:
 

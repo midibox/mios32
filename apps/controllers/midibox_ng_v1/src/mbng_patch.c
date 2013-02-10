@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 #include "tasks.h"
+#include <scs.h>
+#include <scs_lcd.h>
 #include <keyboard.h>
 #include <ainser.h>
 #include <aout.h>
@@ -72,6 +74,11 @@ s32 MBNG_PATCH_Init(u32 mode)
 
   mbng_patch_cfg = mbng_patch_cfg_default;
   mbng_patch_scs = mbng_patch_scs_default;
+
+  SCS_LCD_DeviceSet(0);
+  SCS_LCD_OffsetXSet(0);
+  SCS_LCD_OffsetYSet(0);
+  SCS_NumMenuItemsSet(4); // for 2x20 LCD
 
   {
     int matrix;

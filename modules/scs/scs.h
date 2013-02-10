@@ -218,6 +218,9 @@ typedef enum {
 
 extern s32 SCS_Init(u32 mode);
 
+extern s32 SCS_NumMenuItemsGet(void);
+extern s32 SCS_NumMenuItemsSet(u8 num_items);
+
 extern s32 SCS_PinSet(u8 pin, u8 depressed);
 extern s32 SCS_PinGet(u8 pin);
 extern s32 SCS_AllPinsSet(u16 new_state);
