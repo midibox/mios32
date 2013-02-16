@@ -66,6 +66,9 @@ into your local mios32_config.h file
 // default value 16 (see mios32_srio.h)
 #define MIOS32_SRIO_NUM_SR 16
 
+// how many DOUT pages are supported (used for dimmed LED and optimized matrix handling support)
+#define MIOS32_SRIO_NUM_DOUT_PAGES 1
+
 // Which SPI peripheral should be used
 // allowed values: 0 and 1
 // (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)

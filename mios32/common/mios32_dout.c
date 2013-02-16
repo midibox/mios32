@@ -68,7 +68,7 @@ const u8 mios32_dout_reverse_tab[256] = {
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_DOUT_Init(u32 mode)
 {
-  u8 i;
+  int i;
 
   // currently only mode 0 supported
   if( mode != 0 )
@@ -77,7 +77,13 @@ s32 MIOS32_DOUT_Init(u32 mode)
   // clear DOUT part of SRIO chain
   // TODO: here we could provide an option to invert the default value
   for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
-    mios32_srio_dout[i] = 0;
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
+    mios32_srio_dout[0][i] = 0;
+#else
+    int j;
+    for(j=0; j<MIOS32_SRIO_NUM_DOUT_PAGES; ++j)
+      mios32_srio_dout[j][i] = 0;
+#endif
   }
 
   return 0;
@@ -85,7 +91,7 @@ s32 MIOS32_DOUT_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Returns value from a DOUT Pin
+//! Returns value from a DOUT Pin (always page 0)
 //! \param[in] pin number (0..127)
 //! \return 1 if pin is Vss (ie. 5V)
 //! \return 0 if pin is 0V
@@ -100,11 +106,12 @@ s32 MIOS32_DOUT_PinGet(u32 pin)
     return -1;
 
   // NOTE: DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
-  return (mios32_srio_dout[num_sr - (pin>>3) - 1] & (1 << ((pin&7)^7))) ? 1 : 0;
+  return (mios32_srio_dout[0][num_sr - (pin>>3) - 1] & (1 << ((pin&7)^7))) ? 1 : 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Sets value of a DOUT Pin
+//! Sets value of a DOUT Pin\n
+//! With MIOS32_SRIO_NUM_DOUT_PAGES > 1, the value will be set in all pages at once!
 //! \param[in] pin number (0..127)
 //! \param[in] value of the pin (0 or 1)
 //! \return -1 if pin not available
@@ -117,18 +124,83 @@ s32 MIOS32_DOUT_PinSet(u32 pin, u32 value)
   if( (pin/8) >= num_sr )
     return -1;
 
+  int i;
+  u8 *dout = (u8 *)&mios32_srio_dout[0][num_sr - (pin>>3) - 1];
+  u8 mask = (1 << ((pin&7)^7));
+
   MIOS32_IRQ_Disable(); // this should be atomic
-  if( value )
-    mios32_srio_dout[num_sr - (pin>>3) - 1] |= (u8)(1 << ((pin&7)^7));
-  else
-    mios32_srio_dout[num_sr - (pin>>3) - 1] &= ~(u8)(1 << ((pin&7)^7));
+
+  if( value ) {
+    for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, dout += MIOS32_SRIO_NUM_SR)
+      *dout |= mask;
+  } else {
+    for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, dout += MIOS32_SRIO_NUM_SR)
+      *dout &= ~mask;
+  }
+
   MIOS32_IRQ_Enable();
 
   return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Returns 8bit value of a DOUT shift register
+//! Returns value from a DOUT Pin of given page
+//! \param[in] page number (0..MIOS32_SRIO_NUM_DOUT_PAGES-1)
+//! \param[in] pin number (0..127)
+//! \return 1 if pin is Vss (ie. 5V)
+//! \return 0 if pin is 0V
+//! \return -1 if pin not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_DOUT_PagePinGet(u8 page, u32 pin)
+{
+  if( page >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    return -2; // invalid page
+
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
+  // check if pin available
+  if( (pin/8) >= num_sr )
+    return -1;
+
+  // NOTE: DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
+  return (mios32_srio_dout[page][num_sr - (pin>>3) - 1] & (1 << ((pin&7)^7))) ? 1 : 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets value of a DOUT Pin in given page
+//! \param[in] page number (0..MIOS32_SRIO_NUM_DOUT_PAGES-1)
+//! \param[in] pin number (0..127)
+//! \param[in] value of the pin (0 or 1)
+//! \return -1 if pin not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_DOUT_PagePinSet(u8 page, u32 pin, u32 value)
+{
+  if( page >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    return -2; // invalid page
+
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
+  // check if pin available
+  if( (pin/8) >= num_sr )
+    return -1;
+
+  u8 *dout = (u8 *)&mios32_srio_dout[page][num_sr - (pin>>3) - 1];
+  u8 mask = (1 << ((pin&7)^7));
+
+  MIOS32_IRQ_Disable(); // this should be atomic
+
+  if( value )
+    *dout |= mask;
+  else
+    *dout &= ~mask;
+
+  MIOS32_IRQ_Enable();
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns 8bit value of a DOUT shift register (always from page 0)
 //! \param[in] sr shift register number (0..15)
 //! \return 8bit value of shift register
 //! \return -1 if shift register not available
@@ -141,11 +213,12 @@ s32 MIOS32_DOUT_SRGet(u32 sr)
   if( sr >= num_sr )
     return -1;
 
-  return mios32_dout_reverse_tab[mios32_srio_dout[num_sr - sr - 1]];
+  return mios32_dout_reverse_tab[mios32_srio_dout[0][num_sr - sr - 1]];
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Sets 8bit value of a DOUT shift register
+//! Sets 8bit value of a DOUT shift register\n
+//! With MIOS32_SRIO_NUM_DOUT_PAGES > 1, the value will be set in all pages at once!
 //! \param[in] sr shift register number (0..15)
 //! \param[in] value 8bit value of shift register
 //! \return -1 if shift register not available
@@ -158,7 +231,62 @@ s32 MIOS32_DOUT_SRSet(u32 sr, u8 value)
   if( sr >= num_sr )
     return -1;
 
-  mios32_srio_dout[num_sr - sr - 1] = mios32_dout_reverse_tab[value];
+  u8 *dout = (u8 *)&mios32_srio_dout[0][num_sr - sr - 1];
+  u8 mapped_value = mios32_dout_reverse_tab[value];
+
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
+  *dout = mapped_value;
+#else
+  int i;
+  for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, dout += MIOS32_SRIO_NUM_SR)
+    *dout = mapped_value;
+#endif
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns 8bit value of a DOUT shift register of the given page
+//! \param[in] sr shift register number (0..15)
+//! \return 8bit value of shift register
+//! \return -1 if shift register not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_DOUT_PageSRGet(u8 page, u32 sr)
+{
+  if( page >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    return -2; // invalid page
+
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
+  // check if SR available
+  if( sr >= num_sr )
+    return -1;
+
+  return mios32_dout_reverse_tab[mios32_srio_dout[page][num_sr - sr - 1]];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets 8bit value of a DOUT shift register in the given page.
+//! \param[in] sr shift register number (0..15)
+//! \param[in] value 8bit value of shift register
+//! \return -1 if shift register not available
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_DOUT_PageSRSet(u8 page, u32 sr, u8 value)
+{
+  if( page >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    return -2; // invalid page
+
+  u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
+  // check if SR available
+  if( sr >= num_sr )
+    return -1;
+
+  u8 *dout = (u8 *)&mios32_srio_dout[page][num_sr - sr - 1];
+  u8 mapped_value = mios32_dout_reverse_tab[value];
+
+  *dout = mapped_value;
 
   return 0;
 }

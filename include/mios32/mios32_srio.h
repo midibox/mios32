@@ -26,6 +26,11 @@
 #endif
 
 
+// how many DOUT pages are supported (used for dimmed LED and optimized matrix handling support)
+#ifndef MIOS32_SRIO_NUM_DOUT_PAGES
+#define MIOS32_SRIO_NUM_DOUT_PAGES 1
+#endif
+
 // Which SPI peripheral should be used
 // allowed values: 0 and 1
 // (note: SPI0 will allocate DMA channel 2 and 3, SPI1 will allocate DMA channel 4 and 5)
@@ -73,6 +78,8 @@ extern s32 MIOS32_SRIO_Init(u32 mode);
 extern u8  MIOS32_SRIO_ScanNumGet(void);
 extern s32 MIOS32_SRIO_ScanNumSet(u8 new_num_sr);
 
+extern s32 MIOS32_SRIO_DoutPageGet(void);
+
 extern u32 MIOS32_SRIO_DebounceGet(void);
 extern s32 MIOS32_SRIO_DebounceSet(u8 debounce_time);
 extern s32 MIOS32_SRIO_DebounceStart(void);
@@ -85,7 +92,7 @@ extern s32 MIOS32_SRIO_ScanStart(void *notify_hook);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
+extern volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_DOUT_PAGES][MIOS32_SRIO_NUM_SR];
 extern volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
 extern volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR]; // only required for emulation
 extern volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];

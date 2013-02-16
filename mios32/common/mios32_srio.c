@@ -29,7 +29,7 @@
 // DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
 // Note that also the bits are in reversed order compared to PIC based MIOS
 // As long as the array is accessed via MIOS32_DOUT_* functions, they programmer won't notice a difference!
-volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
+volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_DOUT_PAGES][MIOS32_SRIO_NUM_SR];
 
 // DIN values of last scan
 volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
@@ -50,7 +50,10 @@ static u8 num_sr;
 static u8 debounce_time;
 static u8 debounce_ctr;
 
-
+// the current DOUT page
+#if MIOS32_SRIO_NUM_DOUT_PAGES > 1
+static u8 dout_page_ctr;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -79,7 +82,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-  u8 i;
+  int i;
 
   // disable notification hook
   srio_scan_finished_hook = NULL;
@@ -91,11 +94,26 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // will be done again in MIOS32_DIN_Init and MIOS32_DOUT_Init
   // we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
   for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
-    mios32_srio_dout[i] = 0x00;       // passive state (LEDs off)
+#if MIOS32_SRIO_NUM_DOUT_PAGES == 1
+    mios32_srio_dout[0][i] = 0x00;       // passive state (LEDs off)
+#else
+    int j;
+    for(j=0; j<MIOS32_SRIO_NUM_DOUT_PAGES; ++j)
+      mios32_srio_dout[j][i] = 0x00;       // passive state (LEDs off)
+#endif
     mios32_srio_din[i] = 0xff;        // passive state (Buttons depressed)
     mios32_srio_din_buffer[i] = 0xff; // passive state (Buttons depressed)
     mios32_srio_din_changed[i] = 0;   // no change
   }
+
+  // initial debounce time (debouncing disabled)
+  debounce_time = 0;
+  debounce_ctr = 0;
+  
+#if MIOS32_SRIO_NUM_DOUT_PAGES > 1
+  // start with first page
+  dout_page_ctr = 0;
+#endif
 
   // initial state of RCLK
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
@@ -119,10 +137,6 @@ s32 MIOS32_SRIO_Init(u32 mode)
   // (cleared on each ScanStart, set on each DMA IRQ invokation for proper synchronisation)
   srio_values_transfered = 1;
 
-  // initial debounce time (debouncing disabled)
-  debounce_time = 0;
-  debounce_ctr = 0;
-  
   return 0;
 }
 
@@ -155,6 +169,20 @@ s32 MIOS32_SRIO_ScanNumSet(u8 new_num_sr)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \returns the DOUT page which is currently active (counted from 0)\n
+//! (changes with each SRIO update cycle)
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SRIO_DoutPageGet(void)
+{
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
+  return 0;
+#else
+  return dout_page_ctr;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Returns the debounce counter reload value of the DIN SR registers
 //! \return debounce counter reload value (0 if disabled, otherwise 1..255)
 /////////////////////////////////////////////////////////////////////////////
@@ -162,6 +190,7 @@ u32 MIOS32_SRIO_DebounceGet(void)
 {
   return debounce_time;
 }
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the debounce counter reload value for the DIN SR registers which are 
@@ -259,9 +288,19 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
 #endif
 
+#if MIOS32_SRIO_NUM_DOUT_PAGES >= 2
+  // select next DOUT page
+  if( ++dout_page_ctr >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    dout_page_ctr = 0;
+#endif
+
   // start DMA transfer
   MIOS32_SPI_TransferBlock(MIOS32_SRIO_SPI,
-			   (u8 *)&mios32_srio_dout[0], (u8 *)&mios32_srio_din_buffer[0],
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
+			   (u8 *)&mios32_srio_dout[0][0], (u8 *)&mios32_srio_din_buffer[0],
+#else
+			   (u8 *)&mios32_srio_dout[dout_page_ctr][0], (u8 *)&mios32_srio_din_buffer[0],
+#endif
 			   num_sr,
 			   MIOS32_SRIO_DMA_Callback);
 
