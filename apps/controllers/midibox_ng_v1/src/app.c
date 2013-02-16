@@ -325,7 +325,8 @@ void APP_SRIO_ServicePrepare(void)
   SCS_EncButtonUpdate_Tick();
 
   // Matrix handler
-  MBNG_MATRIX_PrepareCol();
+  //MBNG_MATRIX_PrepareCol();
+  // obsolete with MIOS32_SRIO based pages
 
   // keyboard handler
   KEYBOARD_SRIO_ServicePrepare();

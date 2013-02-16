@@ -1696,6 +1696,8 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     m->sr_dout_sel2 = sr_dout_sel2;
     m->sr_din1 = sr_din1;
     m->sr_din2 = sr_din2;
+
+    MBNG_MATRIX_ButtonMatrixChanged(num-1);
   }
 
   return 0; // no error
@@ -1873,6 +1875,8 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     m->sr_dout_g2 = sr_dout_g2;
     m->sr_dout_b1 = sr_dout_b1;
     m->sr_dout_b2 = sr_dout_b2;
+
+    MBNG_MATRIX_LedMatrixChanged(num-1);
   }
 
   return 0; // no error
