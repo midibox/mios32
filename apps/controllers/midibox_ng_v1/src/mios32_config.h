@@ -24,6 +24,9 @@
 // increased number of SRs
 #define MIOS32_SRIO_NUM_SR 32
 
+// use 16 DOUT pages
+#define MIOS32_SRIO_NUM_DOUT_PAGES 16
+
 // disables the default SRIO scan routine in programming_models/traditional/main.c
 // allows to implement an own handler
 // -> see app.c, APP_SRIO_*
