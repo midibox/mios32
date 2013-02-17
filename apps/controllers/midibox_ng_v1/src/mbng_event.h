@@ -189,117 +189,69 @@ typedef union {
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
+    u32 dimmed:1;
+    u32 colour:2;
+    u32 spare:1; // for future extensions.... maximum 16 bit in general range
   } general;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 radio_group:6;
   } SENDER;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 radio_group:6;
   } RECEIVER;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 radio_group:6;
     u32 button_mode:2; // mbng_event_button_mode_t
   } DIN;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 radio_group:6;
   } DOUT;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 mapped:1;
   } BUTTON_MATRIX;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
   } LED_MATRIX;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 enc_mode:4; // mbng_event_enc_mode_t
     u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
     u32 enc_speed_mode_par:3;
   } ENC;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 fwd_gate_to_dout_pin:9;
     u32 cv_inverted:1;
     u32 cv_hz_v:1;
@@ -307,13 +259,8 @@ typedef union {
   } CV;
 
   struct {
-    u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
-    u32 fwd_to_lcd:1;
-    u32 update_lcd:1;
-    u32 value_from_midi:1;
-    u32 use_key_or_cc:1;
-    u32 active:1;
+    u32 general_flags:16;
+
     u32 kb_transpose:8; // has to be converted to a signed value
     u32 kb_velocity_map:8;
   } KB;

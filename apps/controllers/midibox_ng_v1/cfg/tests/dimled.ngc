@@ -1,0 +1,43 @@
+
+RESET_HW
+
+LCD "%CDimmed LEDs"
+
+
+EVENT_LED id= 1  type=CC cc=16 range=0:127  dimmed=1  value=  0  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 2  type=CC cc=17 range=0:127  dimmed=1  value=  8  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 3  type=CC cc=18 range=0:127  dimmed=1  value= 16  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 4  type=CC cc=19 range=0:127  dimmed=1  value= 24  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 5  type=CC cc=20 range=0:127  dimmed=1  value= 32  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 6  type=CC cc=21 range=0:127  dimmed=1  value= 40  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 7  type=CC cc=22 range=0:127  dimmed=1  value= 48  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 8  type=CC cc=23 range=0:127  dimmed=1  value= 56  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id= 9  type=CC cc=24 range=0:127  dimmed=1  value= 64  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=10  type=CC cc=25 range=0:127  dimmed=1  value= 72  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=11  type=CC cc=26 range=0:127  dimmed=1  value= 80  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=12  type=CC cc=27 range=0:127  dimmed=1  value= 88  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=13  type=CC cc=28 range=0:127  dimmed=1  value= 96  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=14  type=CC cc=29 range=0:127  dimmed=1  value=104  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=15  type=CC cc=30 range=0:127  dimmed=1  value=112  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=16  type=CC cc=31 range=0:127  dimmed=1  value=120  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+
+
+# Duo-Colour LED connected to DOUT Pin 17 and 18
+# Fade-in green and red LED over the 16 brightness levels
+# Both LEDs are assigned to the same MIDI event, but they range over different value maps which specify the brightness
+#  0..15: fade green LED
+# 16..31: fade red LED
+# 32..47: fade both LEDs (-> yellow)
+# 48..63: fade both LEDs with different levels
+MAP1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      2  2  2  2  4  4  4  4  6  8 10 12 14 15 15 15 
+
+MAP2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+
+EVENT_LED id=17  type=CC cc=32  range=map1  dimmed=1  fwd_to_lcd=1 lcd_pos=1:1:1  label="^std_led"
+EVENT_LED id=18  type=CC cc=32  range=map2  dimmed=1  fwd_to_lcd=1 lcd_pos=1:1:2  label="^std_led"

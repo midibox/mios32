@@ -691,7 +691,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
-    item->flags.ENC.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
+    item->flags.general.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
     item->flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
     item->flags.ENC.enc_speed_mode = MBNG_EVENT_ENC_SPEED_MODE_AUTO;
   }; break;
@@ -1505,7 +1505,7 @@ mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_spee
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item)
 {
-  mbng_event_led_matrix_pattern_t led_matrix_pattern = item->flags.ENC.led_matrix_pattern;
+  mbng_event_led_matrix_pattern_t led_matrix_pattern = item->flags.general.led_matrix_pattern;
   switch( led_matrix_pattern ) {
   case MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED: return "Undefined";
   case MBNG_EVENT_LED_MATRIX_PATTERN_1:         return "1";
@@ -2166,16 +2166,8 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     } else {
       ++num_forwarded;
 
-      // take over value of item in pool item
-      if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
-	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
-	pool_item->value = item->value;
-	pool_item->secondary_value = item->secondary_value;
-	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
-      }
+      // notify item (will also store value in pool item)
       fwd_item.secondary_value = item->secondary_value;
-
-      // notify item
       if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0) == 2 )
 	break; // stop has been requested
     }
@@ -2188,20 +2180,23 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     mbng_event_item_id_t tmp_hw_id = item->hw_id;
     mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
     mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
+    u8 tmp_map = item->map;
     u16 tmp_pool_address = item->pool_address;
 
     item->id = item->fwd_id;
     item->hw_id = item->fwd_id;
     item->fwd_id = 0;
     item->flags.general.fwd_to_lcd = 0;
-    item->flags.general.active = 0; // a little bit dirty: necessary to avoid unnecessary radio group forwarding
+    item->flags.general.active = 0; // a little bit dirty: to avoid unnecessary radio group forwarding
                                     // if in future the active flag is used for other purposes in ItemReceive, we've to pass this info as function parameter
+    item->map = 0; // we assume that the value has already been mapped
     item->pool_address = 0xffff;
     MBNG_EVENT_ItemReceive(item, item->value, 0);
     item->id = tmp_id;
     item->hw_id = tmp_hw_id;
     item->fwd_id = tmp_fwd_id;
     item->flags.ALL = flags.ALL;
+    item->map = tmp_map;
     item->pool_address = tmp_pool_address;
   }
 
@@ -2631,7 +2626,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
 	u8 *stream = &pool_item->data_begin;
-	if( stream[1] >= 128 || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
+	if( stream[1] >= 128 || stream[1] == evnt1 ) { // || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	  if( item.flags.general.use_key_or_cc ) {
@@ -2663,7 +2658,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
 	      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
-	      if( m->sr_dout_r1 && !pool_item->flags.LED_MATRIX.led_matrix_pattern ) {
+	      if( m->sr_dout_r1 && !pool_item->flags.general.led_matrix_pattern ) {
 		u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
 		num_pins = row_size * row_size;
 	      }

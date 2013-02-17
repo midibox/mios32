@@ -33,6 +33,7 @@
 #include "uip_terminal.h"
 #include "tasks.h"
 #include "mbng_event.h"
+#include "mbng_lcd.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 
@@ -54,12 +55,17 @@
 static char line_buffer[STRING_MAX];
 static u16 line_ix;
 
+static char autoload_ngc_file[9];
+static u8 autoload_enabled;
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
+
+static s32 TERMINAL_BrowserUploadCallback(char *filename);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,6 +82,11 @@ s32 TERMINAL_Init(u32 mode)
   // clear line buffer
   line_buffer[0] = 0;
   line_ix = 0;
+  
+  // invalidate autoload file
+  autoload_ngc_file[0] = 0;
+  // enable autoload by default
+  autoload_enabled = 1;
 
   return 0; // no error
 }
@@ -154,6 +165,9 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
+    // for the auto-load function
+    FILE_BrowserUploadCallback_Init(TERMINAL_BrowserUploadCallback);
+
     MUTEX_MIDIOUT_TAKE;
     MUTEX_SDCARD_TAKE;
     FILE_BrowserHandler(port, line_buffer);
@@ -164,6 +178,49 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   } else if( line_ix < (STRING_MAX-1) ) {
     line_buffer[line_ix++] = byte;
     line_buffer[line_ix] = 0;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! For the auto-load function
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_BrowserUploadCallback(char *filename)
+{
+  if( filename ) {
+    // invalidate autoload file
+    autoload_ngc_file[0] = 0;
+
+    // check for .NGC file in root dir
+
+    if( filename[0] == '/' )
+      ++filename;
+
+    int len = strlen(filename);
+
+    if( len < 5 || len > 12 || strcasecmp((char *)&filename[len-4], ".ngc") != 0 )
+      return 0; // no .NGC file
+
+    int i;
+    for(i=0; i<len; ++i) {
+      if( filename[i] == '/' )
+	return 0; // not in root dir
+    }
+
+    strncpy(autoload_ngc_file, filename, len-4);
+    autoload_ngc_file[len-4] = 0;
+  } else {
+    if( autoload_enabled && autoload_ngc_file[0] ) {
+      DEBUG_MSG("AUTOLOAD '%s'\n", autoload_ngc_file);
+
+      s32 status = MBNG_PATCH_Load(autoload_ngc_file);
+      if( status >= 0 ) {
+	DEBUG_MSG("Patch '%s' loaded from SD Card!", autoload_ngc_file);
+      } else {
+	DEBUG_MSG("ERROR: failed to load patch '%s' on SD Card (status %d)!", autoload_ngc_file, status);
+      }
+    }
   }
 
   return 0; // no error
@@ -220,11 +277,13 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 #endif
       out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
       out("  set debug <on|off>:               enables debug messages (current: %s)", debug_verbose_level ? "on" : "off");
+      out("  set autoload <on|off>:            enables autoload after filebrowser upload (current: %s)", autoload_enabled ? "on" : "off");
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
       out("  show file:                        shows the current configuration file");
       out("  show pool:                        shows the items of the event pool");
       out("  show poolbin:                     shows the event pool in binary format");
+      out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -277,7 +336,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  if( !TASK_MSD_EnableGet() ) {
 	    out("Mass Storage Device Mode already deactivated!\n");
 	  } else {
-	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again.n");
+	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again\n");
 	    TASK_MSD_EnableSet(0);
 	  }
 	} else
@@ -286,6 +345,22 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       if( arg == NULL ) {
 	out("Please enter 'msd on' or 'msd off'\n");
       }      
+    } else if( strcmp(parameter, "lcd") == 0 ) {
+      if( !brkt || !strlen(brkt) ) {
+	out("Please specify string (can be optionally formatted)");
+      } else {
+	out("Print '%s'", brkt);
+
+	MUTEX_LCD_TAKE;
+
+	// print from a dummy item
+	mbng_event_item_t item;
+	MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+	item.label = brkt;
+	MBNG_LCD_PrintItemLabel(&item);
+
+	MUTEX_LCD_GIVE;
+      }
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("ERROR: please specify filename for patch (up to 8 characters)!");
@@ -376,6 +451,18 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	  } else {
 	    debug_verbose_level = on_off ? DEBUG_VERBOSE_LEVEL_INFO : DEBUG_VERBOSE_LEVEL_ERROR;
 	    out("Debug mode turned %s", on_off ? "on" : "off");
+	  }
+
+	} else if( strcmp(parameter, "autoload") == 0 ) {
+	  int on_off = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off'");
+	  } else {
+	    autoload_enabled = on_off;
+	    out("Autoload of .NGC file after filebrowser upload %s", on_off ? "on" : "off");
 	  }
 	} else {
 	  out("Unknown set parameter: '%s'!", parameter);

@@ -26,8 +26,33 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! local defines
+/////////////////////////////////////////////////////////////////////////////
+
+#define NUM_DIM_LEVELS 16
+
+/////////////////////////////////////////////////////////////////////////////
 //! local variables
 /////////////////////////////////////////////////////////////////////////////
+
+static const u32 dim_pattern[NUM_DIM_LEVELS] = {
+  0x00000000, // 0
+  0x00000001, // 1
+  0x00010001, // 2
+  0x01010101, // 3
+  0x01010103, // 4
+  0x01030103, // 5
+  0x03030303, // 6
+  0x03130313, // 7
+  0x13131313, // 8
+  0x33333333, // 9
+  0x33373337, // 10
+  0x37373737, // 11
+  0x77777777, // 12
+  0x777f777f, // 13
+  0x7f7f7f7f, // 14
+  0xffffffff, // 15
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,18 +83,6 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     DEBUG_MSG("MBNG_DOUT_NotifyReceivedValue(%d, %d)\n", hw_id & 0xfff, item->value);
   }
 
-  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-  u8 dout_value;
-  if( item->flags.DOUT.radio_group ) {
-    if( item->min <= item->max )
-      dout_value = item->value >= item->min && item->value <= item->max;
-    else
-      dout_value = item->value >= item->max && item->value <= item->min;
-  } else if( item->min == item->max ) {
-    dout_value = item->value == item->min;
-  } else
-    dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
-
   // check if any matrix emulates the LEDs
   u8 emulated = 0;
   {
@@ -93,8 +106,48 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   }
 
   if( !emulated ) {
+    u8 dout_value;
+
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+    if( map_len > 0 ) {
+      int map_ix = item->value;
+      if( map_ix >= map_len )
+	map_ix = map_len - 1;
+      dout_value = map_values[map_ix];
+    } else {
+      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+      if( item->flags.DOUT.radio_group ) {
+	if( item->min <= item->max )
+	  dout_value = item->value >= item->min && item->value <= item->max;
+	else
+	  dout_value = item->value >= item->max && item->value <= item->min;
+      } else if( item->min == item->max ) {      
+	dout_value = (item->value == item->min) ? (NUM_DIM_LEVELS-1) : 0;
+      } else {
+	if( !item->flags.general.dimmed ) {
+	  if( item->min <= item->max )
+	    dout_value = ((item->value - item->min) >= (range/2)) ? (NUM_DIM_LEVELS-1) : 0;
+	  else
+	    dout_value = ((item->value - item->max) >= (range/2)) ? (NUM_DIM_LEVELS-1) : 0;
+	} else {
+	  int steps = range / NUM_DIM_LEVELS;
+	  dout_value = (item->min <= item->max) ? ((item->value - item->min) / steps) : ((item->value - item->max) / steps);
+	}
+      }
+    }
+
     // set LED
-    MIOS32_DOUT_PinSet((hw_id & 0xfff) - 1, dout_value);
+    int pin = (hw_id & 0xfff) - 1;
+    if( !item->flags.general.dimmed ) {
+      MIOS32_DOUT_PinSet(pin, dout_value);
+    } else {
+      u32 pattern = dim_pattern[(dout_value < NUM_DIM_LEVELS) ? dout_value : (NUM_DIM_LEVELS-1)];
+      int i;
+      for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, pattern >>= 1) {
+	MIOS32_DOUT_PagePinSet(i, pin, pattern & 1);
+      }
+    }
   }
 
   return 0; // no error

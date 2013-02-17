@@ -165,6 +165,8 @@ s32 MBNG_LCD_Clear(void)
     MIOS32_LCD_Clear();
   }
 
+  MIOS32_LCD_DeviceSet(0);
+
   lcd_cursor_device = 0;
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
