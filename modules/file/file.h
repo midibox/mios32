@@ -134,6 +134,7 @@ extern s32 FILE_PrintSDCardInfos(void);
 extern s32 FILE_SendErrorMessage(s32 error_status);
 
 extern s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command);
+extern s32 FILE_BrowserUploadCallback_Init(s32 (*callback_upload)(char *filename));
 
 
 /////////////////////////////////////////////////////////////////////////////
