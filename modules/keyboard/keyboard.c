@@ -267,12 +267,24 @@ void KEYBOARD_SRIO_ServicePrepare(void)
     if( kc->din_inverted )
       selection_mask ^= 0xffff;
 
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
     if( kc->dout_sr1 )
       MIOS32_DOUT_SRSet(kc->dout_sr1-1, selection_mask >> 0);
 
     // mirror selection if <= 8 rows for second SR, otherwise output remaining 8 selection lines
     if( kc->dout_sr2 )
       MIOS32_DOUT_SRSet(kc->dout_sr2-1, selection_mask >> ((kc->num_rows <= 8) ? 0 : 8));
+#else
+    // optimized for multiple pages: only write into the next page
+    int next_page = (MIOS32_SRIO_DoutPageGet() + 1) % MIOS32_SRIO_NUM_DOUT_PAGES;
+
+    if( kc->dout_sr1 )
+      MIOS32_DOUT_PageSRSet(next_page, kc->dout_sr1-1, selection_mask >> 0);
+
+    // mirror selection if <= 8 rows for second SR, otherwise output remaining 8 selection lines
+    if( kc->dout_sr2 )
+      MIOS32_DOUT_PageSRSet(next_page, kc->dout_sr2-1, selection_mask >> ((kc->num_rows <= 8) ? 0 : 8));
+#endif
   }
 }
 
