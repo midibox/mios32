@@ -1,5 +1,48 @@
 $Id$
 
+MIDIbox NG V1.019
+~~~~~~~~~~~~~~~~~
+
+   o added "Autoload" function: whenever a .NGC file has been uploaded via the
+     MIOS Filebrowser, it will be automatically loaded, so that "load <file>" 
+     doesn't need to be entered in the MIOS Terminal anymore.
+
+
+   o EVENT_LED_MATRIX: now expects the 'colour' parameter to address the
+     red (colour=0), green (colour=1) or blue (colour=2) LED.
+
+     Note that it's still possible to control the LEDs from a single incoming
+     MIDI message, e.g. by assigning the 3 EVENT_LED_MATRIX entries to the
+     same CC number.
+
+     But now it's also possible to address the LEDs independent from each other.
+
+
+   o LEDs can now be dimmed with 16 brightness levels over the value range.
+     This feature has to be enabled with dimmed=1 in the EVENT_* definition.
+     Configuration example: cfg/tests/dimled.ngc
+
+   o LEDs in a matrix configuration can be dimmed as well. The dim range is the
+     same (0..15), but the effective dim level is limited by the number of 
+     scanned rows:
+        - 4  rows: only 8 levels (0..1, 2..3, 4..5, 6..7, 8..9, 10..11, 12..13, 14..15)
+        - 8  rows: only 4 levels (0..3, 4..7, 8..11, 12..15)
+        - 16 rows: only 2 levels (0..7, 8..15)
+     Configuration example: cfg/tests/dimled_m.ngc
+
+   o the new MIOS Terminal command "lcd" allows to directly output a (formatted)
+     string to the LCD(s).
+     E.g. try "lcd @(1:1:1)Hello World!"
+
+     Note that terminal strings can also be sent via SysEx from a DAW:
+     F0 00 00 7E 32 00 0D 00 <ascii-text> 0A F7
+
+     Accordingly, this SysEx string will print "Hello World!" as well:
+     F0 00 00 7E 32 00 0D 00 6C 63 64 20 40 28 31 3A 31 3A 31 29 48 65 6C 6C 6F 20 57 6F 72 6C 64 21 0A F7
+
+
+
+
 MIDIbox NG V1.018
 ~~~~~~~~~~~~~~~~~
 

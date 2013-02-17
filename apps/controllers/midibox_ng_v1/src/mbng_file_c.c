@@ -952,6 +952,28 @@ s32 parseEvent(char *cmd, char *brkt)
 	item.secondary_value = value;
       }
 
+    } else if( strcasecmp(parameter, "dimmed") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      item.flags.general.dimmed = value;
+
+    } else if( strcasecmp(parameter, "colour") == 0 || strcasecmp(parameter, "color") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0..2)\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      item.flags.general.colour = value;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "kb_transpose") == 0 ) {
       int kb_transpose;
@@ -1143,7 +1165,7 @@ s32 parseEvent(char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.ENC.led_matrix_pattern = led_matrix_pattern;
+	item.flags.general.led_matrix_pattern = led_matrix_pattern;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3393,6 +3415,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
+      if( item.flags.general.dimmed ) {
+	sprintf(line_buffer, " dimmed=1 ");
+	FLUSH_BUFFER;
+      }
+
       {
 	char ports_bin[17];
 	int bit;
@@ -3517,9 +3544,14 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
       }
 
-      if( item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	  item.flags.ENC.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+      if( item.flags.general.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	  item.flags.general.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
 	sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
+	FLUSH_BUFFER;
+      }
+
+      if( item.flags.general.colour ) {
+	sprintf(line_buffer, "  colour=%d", item.flags.general.colour);
 	FLUSH_BUFFER;
       }
 

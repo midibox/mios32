@@ -30,13 +30,13 @@
 //! local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// execution time of MBNG_MATRIX_PrepareCol() can be monitored on J5.A0 with a scope
-// current values:
-//   - no matrix assignments: ca. 10 uS
-//   - 1 DIN, 1 DOUT matrix assigment: ca. 12..17 uS (jittering)
-//   - 8 DIN, 8 DOUT matrix assigments: ca. 33..40 uS (jittering)
-// -> with update cycle of 1 mS the system loaded is by ca. 2.5 % in worst case -> no additional optimisation required
-#define MEASURE_PERFORMANCE 0
+// same number of levels as for "common DOUTs" (see mbng_dout.c)
+// however, the actual number of levels depends on the number of scanned rows:
+// 4  rows: reduced to 8 dim levels
+// 8  rows: reduced to 4 dim levels
+// 16 rows: reduced to 2 dim levels
+#define NUM_MATRIX_DIM_LEVELS 16
+// but the level is always selected in the 0..15 range to avoid unnecessary calculations at the user side
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -48,8 +48,8 @@
 # error "not prepared for != 16 rows - many variable types have to be adapted!"
 #endif
 
-#if MIOS32_SRIO_NUM_DOUT_PAGES != 16
-# error "not prepared for != 16 pages - many variable types have to be adapted!"
+#if MIOS32_SRIO_NUM_DOUT_PAGES != 32
+# error "not prepared for != 32 pages - many variable types have to be adapted!"
 #endif
 
 static u16 button_row[MBNG_PATCH_NUM_MATRIX_DIN][MBNG_PATCH_NUM_MATRIX_ROWS_MAX];
@@ -189,10 +189,6 @@ s32 MBNG_MATRIX_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
-#if MEASURE_PERFORMANCE
-  MIOS32_BOARD_J5_PinInit(0, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-#endif
-
   {
     int matrix, row;
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix) {
@@ -245,11 +241,13 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
     }
 
     if( m->sr_dout_sel1 ) {
-      MIOS32_DOUT_PageSRSet(row, m->sr_dout_sel1-1, dout_value);
+      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel1-1, dout_value);
+      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel1-1, dout_value);
     }
 
     if( m->sr_dout_sel2 ) {
-      MIOS32_DOUT_PageSRSet(row, m->sr_dout_sel2-1, dout_value >> 8);
+      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel2-1, dout_value >> 8);
+      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel2-1, dout_value >> 8);
     }
   }
 
@@ -283,11 +281,13 @@ s32 MBNG_MATRIX_ButtonMatrixChanged(u8 matrix)
     }
 
     if( m->sr_dout_sel1 ) {
-      MIOS32_DOUT_PageSRSet(row, m->sr_dout_sel1-1, dout_value);
+      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel1-1, dout_value);
+      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel1-1, dout_value);
     }
 
     if( m->sr_dout_sel2 ) {
-      MIOS32_DOUT_PageSRSet(row, m->sr_dout_sel2-1, dout_value >> 8);
+      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel2-1, dout_value >> 8);
+      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel2-1, dout_value >> 8);
     }
   }
 
@@ -324,6 +324,7 @@ u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sets the a pin on the given DOUT matrix
+//! The value ranges from 0..NUM_MATRIX_DIM_LEVELS-1
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
 {
@@ -339,6 +340,9 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
   default: row_size = m->sr_dout_r2 ? 16 : 8; break;
   }
 
+  if( pin >= row_size*m->num_rows )
+    return -2; // pin is out-of-range
+
   int row    = pin / row_size;
   int column = pin % row_size;
 
@@ -349,22 +353,19 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
   default: sr = (column >= 8) ? m->sr_dout_r2 : m->sr_dout_r1; break;
   }
 
-#if MIOS32_SRIO_NUM_DOUT_PAGES != 16
+#if MIOS32_SRIO_NUM_DOUT_PAGES != 32
 # error "Please adapt this code according to the different MIOS32_SRIO_NUM_DOUT_PAGES"
 #endif
 
-  if( sr ) {
+#if NUM_MATRIX_DIM_LEVELS != (MIOS32_SRIO_NUM_DOUT_PAGES/2)
+# error "Please adapt this code according to the different NUM_MATRIX_DIM_LEVELS"
+#endif
+  if( sr && m->num_rows ) {
     u32 pin_offset = 8*(sr-1) + column;
-    if( m->num_rows <= 4 ) { // 4 rows are scanned: quadruple pages
-      MIOS32_DOUT_PagePinSet(row+ 0, pin_offset, value);
-      MIOS32_DOUT_PagePinSet(row+ 4, pin_offset, value);
-      MIOS32_DOUT_PagePinSet(row+ 8, pin_offset, value);
-      MIOS32_DOUT_PagePinSet(row+12, pin_offset, value);
-    } else if( m->num_rows <= 8 ) { // 8 rows are scanned: duplicate pages
-      MIOS32_DOUT_PagePinSet(row+ 0, pin_offset, value);
-      MIOS32_DOUT_PagePinSet(row+ 8, pin_offset, value);
-    } else { // 16 rows are scanned
-      MIOS32_DOUT_PagePinSet(row+ 0, pin_offset, value);
+    int i;
+    for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
+      int dout_value = i ? (i <= 2*value) : 0;
+      MIOS32_DOUT_PagePinSet(row + i, pin_offset, dout_value);
     }
   }
 
@@ -395,43 +396,21 @@ static s32 Hlp_DOUT_PatternTransfer(u8 matrix, u8 color, u16 row, u16 matrix_pat
   u8 sr1_value = matrix_pattern;
   u8 sr2_value = matrix_pattern >> 8;
 
-  if( m->num_rows <= 4 ) { // 4 rows are scanned: quadruple pages
+  if( m->num_rows ) {
     if( sr1 ) {
       u8 sr_offset = sr1-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr1_value);
-      MIOS32_DOUT_PageSRSet(row+ 4, sr_offset, sr1_value);
-      MIOS32_DOUT_PageSRSet(row+ 8, sr_offset, sr1_value);
-      MIOS32_DOUT_PageSRSet(row+12, sr_offset, sr1_value);
+      int i;
+      for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
+	MIOS32_DOUT_PageSRSet(row + i, sr_offset, sr1_value);
+      }
     }
 
     if( sr2 ) {
       u8 sr_offset = sr2-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr2_value);
-      MIOS32_DOUT_PageSRSet(row+ 4, sr_offset, sr2_value);
-      MIOS32_DOUT_PageSRSet(row+ 8, sr_offset, sr2_value);
-      MIOS32_DOUT_PageSRSet(row+12, sr_offset, sr2_value);
-    }
-  } else if( m->num_rows <= 8 ) { // 8 rows are scanned: duplicate pages
-    if( sr1 ) {
-      u8 sr_offset = sr1-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr1_value);
-      MIOS32_DOUT_PageSRSet(row+ 8, sr_offset, sr1_value);
-    }
-
-    if( sr2 ) {
-      u8 sr_offset = sr2-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr2_value);
-      MIOS32_DOUT_PageSRSet(row+ 8, sr_offset, sr2_value);
-    }
-  } else { // 16 rows are scanned
-    if( sr1 ) {
-      u8 sr_offset = sr1-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr1_value);
-    }
-
-    if( sr2 ) {
-      u8 sr_offset = sr2-1;
-      MIOS32_DOUT_PageSRSet(row+ 0, sr_offset, sr2_value);
+      int i;
+      for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
+	MIOS32_DOUT_PageSRSet(row + i, sr_offset, sr2_value);
+      }
     }
   }
 
@@ -489,7 +468,7 @@ s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_GetRow(void)
 {
-  u8 selected_row = MIOS32_SRIO_DoutPageGet();
+  u8 selected_row = MIOS32_SRIO_DoutPageGet() % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
 
   int matrix;
   mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
@@ -672,85 +651,48 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 #endif
 
   u16 hw_id_ix = hw_id & 0xfff;
-  if( !item->flags.LED_MATRIX.led_matrix_pattern ) {
+  if( !item->flags.general.led_matrix_pattern ) {
     if( hw_id_ix && hw_id_ix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
       u8 matrix = hw_id_ix - 1;
-      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
-      int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      if( m->sr_dout_b1 ) { // RGB LED
-	int range_div_8 = range/8;
-	int value_normalized = (item->min <= item->max) ? (item->value - item->min) : (item->value - item->max);
-
-	if(        value_normalized < 1*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 0);
-	} else if( value_normalized < 2*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 0);
-	} else if( value_normalized < 3*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 0);
-	} else if( value_normalized < 4*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 0);
-	} else if( value_normalized < 5*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 1);
-	} else if( value_normalized < 6*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 1);
-	} else if( value_normalized < 7*range_div_8 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 1);
+      u8 dout_value;
+      u8 *map_values;
+      int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+      if( map_len > 0 ) {
+	int map_ix = item->value;
+	if( map_ix >= map_len )
+	  map_ix = map_len - 1;
+	dout_value = map_values[map_ix];
+      } else {
+	if( item->min == item->max ) {      
+	  dout_value = (item->value == item->min) ? (NUM_MATRIX_DIM_LEVELS-1) : 0;
 	} else {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, 1);
+	  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
+	  if( !item->flags.general.dimmed ) {
+	    if( item->min <= item->max )
+	      dout_value = ((item->value - item->min) >= (range/2)) ? (NUM_MATRIX_DIM_LEVELS-1) : 0;
+	    else
+	      dout_value = ((item->value - item->max) >= (range/2)) ? (NUM_MATRIX_DIM_LEVELS-1) : 0;
+	  } else {
+	    int steps = range / NUM_MATRIX_DIM_LEVELS;
+	    dout_value = (item->min <= item->max) ? ((item->value - item->min) / steps) : ((item->value - item->max) / steps);
+	  }
 	}
-      } else if( m->sr_dout_g1 ) { // Duo-Colour LED (RG)
-	int range_div_4 = range/4;
-	int value_normalized = (item->min <= item->max) ? (item->value - item->min) : (item->value - item->max);
-
-	if(        value_normalized < 1*range_div_4 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	} else if( value_normalized < 2*range_div_4 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 0);
-	} else if( value_normalized < 3*range_div_4 ) {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 0);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	} else {
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 0, item->matrix_pin, 1);
-	  MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, 1);
-	}
-      } else { // Single-Colour LED
-	u8 color = 0;
-	u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
-	MBNG_MATRIX_DOUT_PinSet(matrix, color, item->matrix_pin, dout_value);
       }
+      MBNG_MATRIX_DOUT_PinSet(matrix, item->flags.general.colour, item->matrix_pin, dout_value);
     }
   } else {
     int matrix = (hw_id_ix-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
     int row = (hw_id_ix-1) % MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
-    u8 color = 0; // TODO...
     // this is actually a dirty solution: without LED patterns we address the matrix directly with 1..8,
     // and here we multiply by 16 since we've connected 16 LED Rings... :-/
 
-    if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
-      MBNG_MATRIX_DOUT_PatternSet_LC(matrix, color, row, item->value);
+    if( item->flags.general.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
+      MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.general.colour, row, item->value);
 
-    } else if( item->flags.LED_MATRIX.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	       item->flags.LED_MATRIX.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
-      u8 pattern = item->flags.LED_MATRIX.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
+    } else if( item->flags.general.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	       item->flags.general.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
+      u8 pattern = item->flags.general.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
 
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 
@@ -766,7 +708,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       if( saturated_value > range )
 	saturated_value = range - 1;
 
-      MBNG_MATRIX_DOUT_PatternSet(matrix, color, row, saturated_value, range, pattern);
+      MBNG_MATRIX_DOUT_PatternSet(matrix, item->flags.general.colour, row, saturated_value, range, pattern);
     }
   }
 

@@ -18,15 +18,37 @@ DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6
 # this is just for the case that somebody copy&pastes the definition...
 
 
+# Fade-in green and red LED over the 16 brightness levels
+# Both LEDs are assigned to the same MIDI event, but they range over different value maps which specify the brightness
+#  0..15: fade green LED
+# 16..31: fade red LED
+# 32..47: fade both LEDs (-> yellow)
+# 48..63: fade both LEDs with different levels
+MAP1  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      2  2  2  2  4  4  4  4  6  8 10 12 14 15 15 15 
+
+MAP2  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0  0 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 \
+      1  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+
+
+
 # the left half of the BLM will send and receive Note On C-1 (key=36) .. G-3 over channel #1
 # the right half of the BLM will send and receive Note On G#3 (key=68) .. D#6 over channel #1
 EVENT_BUTTON_MATRIX id=1  type=NoteOn key=36 chn=1  lcd_pos=1:1:1 label="Matrix1 Pin %2p %b"
 EVENT_BUTTON_MATRIX id=2  type=NoteOn key=68 chn=1  lcd_pos=1:1:1 label="Matrix2 Pin %2p %b"
 
 # receive feedback from DAW
-EVENT_LED_MATRIX    id=1  type=NoteOn key=36 chn=1  fwd_to_lcd=1  lcd_pos=1:1:2 label="Matrix1 Pin %2p %b"
-EVENT_LED_MATRIX    id=2  type=NoteOn key=68 chn=1  fwd_to_lcd=1  lcd_pos=1:1:2 label="Matrix2 Pin %2p %b"
+# Red/Green LEDs of left half:
+EVENT_LED_MATRIX    id=1  hw_id=1  colour=0  dimmed=1  type=NoteOn key=36 chn=1  range=map1  fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix1 Pin %2p %b"
+EVENT_LED_MATRIX    id=2  hw_id=1  colour=1  dimmed=1  type=NoteOn key=36 chn=1  range=map2
 
+# Red/Green LEDs of right half:
+EVENT_LED_MATRIX    id=3  hw_id=2  colour=0  dimmed=1  type=NoteOn key=68 chn=1  range=map1  fwd_to_lcd=1 lcd_pos=1:1:2 label="Matrix2 Pin %2p %b"
+EVENT_LED_MATRIX    id=4  hw_id=2  colour=1  dimmed=1  type=NoteOn key=68 chn=1  range=map2
 
 
 # TK: I've 4 additional buttons connected to DIN#3 (hw_id=17..20), and 4 Duo-LEDs connected to DOUT#7 (hw_id=49..56)
@@ -38,19 +60,15 @@ EVENT_BUTTON  id=18  type=CC cc=17 chn=1
 EVENT_BUTTON  id=19  type=CC cc=18 chn=1
 EVENT_BUTTON  id=20  type=CC cc=19 chn=1
 
-# 0..31:    Green LED: off  Red LED: off
-# 32..63:   Green LED: on   Red LED: off
-# 64..95:   Green LED: off  Red LED: on
-# 96..127:  Green LED: on   Red LED: on
-# -> not working yet!!! Green LED will be on if value >= 64!
-EVENT_LED     id=49  type=CC cc=16 chn=1  range=0:63
-EVENT_LED     id=50  type=CC cc=16 chn=1  range=0:127
 
-EVENT_LED     id=51  type=CC cc=17 chn=1  range=0:63
-EVENT_LED     id=52  type=CC cc=17 chn=1  range=0:127
+EVENT_LED     id=49  type=CC cc=16 chn=1  dimmed=1  range=map1
+EVENT_LED     id=50  type=CC cc=16 chn=1  dimmed=1  range=map2
 
-EVENT_LED     id=53  type=CC cc=18 chn=1  range=0:63
-EVENT_LED     id=54  type=CC cc=18 chn=1  range=0:127
+EVENT_LED     id=51  type=CC cc=17 chn=1  dimmed=1  range=map1
+EVENT_LED     id=52  type=CC cc=17 chn=1  dimmed=1  range=map2
 
-EVENT_LED     id=55  type=CC cc=19 chn=1  range=0:63
-EVENT_LED     id=56  type=CC cc=19 chn=1  range=0:127
+EVENT_LED     id=53  type=CC cc=18 chn=1  dimmed=1  range=map1
+EVENT_LED     id=54  type=CC cc=18 chn=1  dimmed=1  range=map2
+
+EVENT_LED     id=55  type=CC cc=19 chn=1  dimmed=1  range=map1
+EVENT_LED     id=56  type=CC cc=19 chn=1  dimmed=1  range=map2

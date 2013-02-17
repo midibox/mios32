@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.018"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.019"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
 
 // define a unique VID/PID for this application
@@ -25,7 +25,7 @@
 #define MIOS32_SRIO_NUM_SR 32
 
 // use 16 DOUT pages
-#define MIOS32_SRIO_NUM_DOUT_PAGES 16
+#define MIOS32_SRIO_NUM_DOUT_PAGES 32
 
 // disables the default SRIO scan routine in programming_models/traditional/main.c
 // allows to implement an own handler
