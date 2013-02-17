@@ -110,6 +110,8 @@ static u8 tmp_buffer[TMP_BUFFER_SIZE];
 static u32 browser_write_file_size;
 static u32 browser_write_file_pos;
 
+static s32 (*browser_upload_callback_func)(char *filename);
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initialisation
@@ -121,6 +123,8 @@ s32 FILE_Init(u32 mode)
   sdcard_available = 0;
   volume_available = 0;
   volume_free_bytes = 0;
+
+  browser_upload_callback_func = NULL;
 
   // init SDCard access
   s32 error = MIOS32_SDCARD_Init(0);
@@ -1544,6 +1548,9 @@ s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command)
 	    send_footer = 0;
 
 	    DEBUG_MSG("[FILE] Uploading %s with %d bytes\n", filename, browser_write_file_size);
+
+	    if( browser_upload_callback_func )
+	      browser_upload_callback_func(filename);
 	  }
 	}
       }
@@ -1603,6 +1610,9 @@ s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command)
 	    send_footer = 0;
 
 	    DEBUG_MSG("[FILE] Upload of %d bytes finished.", browser_write_file_size);
+
+	    if( browser_upload_callback_func )
+	      browser_upload_callback_func(NULL);
 	  } else {
 	    // next request
 	    char str[20];
@@ -1630,5 +1640,25 @@ s32 FILE_BrowserHandler(mios32_midi_port_t port, char *command)
 
   return status;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Installs the Browser Upload callback function which is executed whenever
+//! a file upload starts, and when it has been successfully finished.
+//!
+//! \param[in] filename if != NULL, upload has been started for the given file,
+//!            if NULL the upload has been finished.\n
+//!            This means: if the application should do anything with the
+//!            uploaded file (e.g. auto-load), then it has to store the
+//!            filename in a temporary variable!
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_BrowserUploadCallback_Init(s32 (*callback_upload)(char *filename))
+{
+  browser_upload_callback_func = callback_upload;
+
+  return 0; // no error
+}
+
+
 
 //! \}
