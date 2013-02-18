@@ -1,0 +1,349 @@
+
+RESET_HW
+
+LCD "%CUnicolour Example"
+
+
+# test LEDs on the 16x4 Button/Duo-LED matrix
+# Schematic: http://www.ucapps.de/mbhp/button_duoled_matrix.pdf
+
+# only LEDs configured here:
+DOUT_MATRIX n=1  rows=4  inverted=0  sr_dout_sel1=1  sr_dout_r1=2  sr_dout_g1=3  \
+                 led_emu_id_offset=1001 \
+                 unicolour=1  colour_level_r=15  colour_level_g=15  colour_level_b=15
+
+DOUT_MATRIX n=2  rows=4  inverted=0  sr_dout_sel1=4  sr_dout_r1=5  sr_dout_g1=6 \
+                 led_emu_id_offset=1031 \
+                 unicolour=1  colour_level_r=15  colour_level_g=15  colour_level_b=15
+
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank  \
+                                  meta=SetColourR:1:15  meta=SetColourG:1:0   meta=SetColourB:1:0  \
+                                  meta=SetColourR:2:15  meta=SetColourG:2:0   meta=SetColourB:2:0  \
+                      button_mode=OnOnly range=1:1  lcd_pos=1:1:2 label="Bnk%q"
+
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank  \
+                                  meta=SetColourR:1:0   meta=SetColourG:1:15  meta=SetColourB:1:0  \
+                                  meta=SetColourR:2:0   meta=SetColourG:2:15  meta=SetColourB:2:0  \
+                      button_mode=OnOnly range=2:2  lcd_pos=1:1:2 label="Bnk%q"
+
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank  \
+                                  meta=SetColourR:1:15  meta=SetColourG:1:15  meta=SetColourB:1:0  \
+                                  meta=SetColourR:2:15  meta=SetColourG:2:15  meta=SetColourB:2:0  \
+                      button_mode=OnOnly range=3:3  lcd_pos=1:1:2 label="Bnk%q"
+
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank  \
+                                  meta=SetColourR:1:4   meta=SetColourG:1:15  meta=SetColourB:1:0  \
+                                  meta=SetColourR:2:4   meta=SetColourG:2:15  meta=SetColourB:2:0  \
+                      button_mode=OnOnly range=4:4  lcd_pos=1:1:2 label="Bnk%q"
+
+
+
+# LED Functions Bank1
+EVENT_LED     id=1001  bank=1  type=NoteOn key=36 chn=1
+EVENT_LED     id=1002  bank=1  type=NoteOn key=37 chn=1
+EVENT_LED     id=1003  bank=1  type=NoteOn key=38 chn=1
+EVENT_LED     id=1004  bank=1  type=NoteOn key=39 chn=1
+EVENT_LED     id=1005  bank=1  type=NoteOn key=40 chn=1
+EVENT_LED     id=1006  bank=1  type=NoteOn key=41 chn=1
+EVENT_LED     id=1007  bank=1  type=NoteOn key=42 chn=1
+EVENT_LED     id=1008  bank=1  type=NoteOn key=43 chn=1
+
+EVENT_LED     id=1033  bank=1  type=NoteOn key=44 chn=1
+EVENT_LED     id=1034  bank=1  type=NoteOn key=45 chn=1
+EVENT_LED     id=1035  bank=1  type=NoteOn key=46 chn=1
+EVENT_LED     id=1036  bank=1  type=NoteOn key=47 chn=1
+EVENT_LED     id=1037  bank=1  type=NoteOn key=48 chn=1
+EVENT_LED     id=1038  bank=1  type=NoteOn key=49 chn=1
+EVENT_LED     id=1039  bank=1  type=NoteOn key=50 chn=1
+EVENT_LED     id=1040  bank=1  type=NoteOn key=51 chn=1
+
+EVENT_LED     id=1009  bank=1  type=NoteOn key=52 chn=1
+EVENT_LED     id=1010  bank=1  type=NoteOn key=53 chn=1
+EVENT_LED     id=1011  bank=1  type=NoteOn key=54 chn=1
+EVENT_LED     id=1012  bank=1  type=NoteOn key=55 chn=1
+EVENT_LED     id=1013  bank=1  type=NoteOn key=56 chn=1
+EVENT_LED     id=1014  bank=1  type=NoteOn key=57 chn=1
+EVENT_LED     id=1015  bank=1  type=NoteOn key=58 chn=1
+EVENT_LED     id=1016  bank=1  type=NoteOn key=59 chn=1
+
+EVENT_LED     id=1041  bank=1  type=NoteOn key=60 chn=1
+EVENT_LED     id=1042  bank=1  type=NoteOn key=61 chn=1
+EVENT_LED     id=1043  bank=1  type=NoteOn key=62 chn=1
+EVENT_LED     id=1044  bank=1  type=NoteOn key=63 chn=1
+EVENT_LED     id=1045  bank=1  type=NoteOn key=64 chn=1
+EVENT_LED     id=1046  bank=1  type=NoteOn key=65 chn=1
+EVENT_LED     id=1047  bank=1  type=NoteOn key=66 chn=1
+EVENT_LED     id=1048  bank=1  type=NoteOn key=67 chn=1
+
+EVENT_LED     id=1017  bank=1  type=NoteOn key=68 chn=1
+EVENT_LED     id=1018  bank=1  type=NoteOn key=69 chn=1
+EVENT_LED     id=1019  bank=1  type=NoteOn key=70 chn=1
+EVENT_LED     id=1020  bank=1  type=NoteOn key=71 chn=1
+EVENT_LED     id=1021  bank=1  type=NoteOn key=72 chn=1
+EVENT_LED     id=1022  bank=1  type=NoteOn key=73 chn=1
+EVENT_LED     id=1023  bank=1  type=NoteOn key=74 chn=1
+EVENT_LED     id=1024  bank=1  type=NoteOn key=75 chn=1
+
+EVENT_LED     id=1049  bank=1  type=NoteOn key=76 chn=1
+EVENT_LED     id=1050  bank=1  type=NoteOn key=77 chn=1
+EVENT_LED     id=1051  bank=1  type=NoteOn key=78 chn=1
+EVENT_LED     id=1052  bank=1  type=NoteOn key=79 chn=1
+EVENT_LED     id=1053  bank=1  type=NoteOn key=80 chn=1
+EVENT_LED     id=1054  bank=1  type=NoteOn key=81 chn=1
+EVENT_LED     id=1055  bank=1  type=NoteOn key=82 chn=1
+EVENT_LED     id=1056  bank=1  type=NoteOn key=83 chn=1
+
+EVENT_LED     id=1025  bank=1  type=NoteOn key=84 chn=1
+EVENT_LED     id=1026  bank=1  type=NoteOn key=85 chn=1
+EVENT_LED     id=1027  bank=1  type=NoteOn key=86 chn=1
+EVENT_LED     id=1028  bank=1  type=NoteOn key=87 chn=1
+EVENT_LED     id=1029  bank=1  type=NoteOn key=88 chn=1
+EVENT_LED     id=1030  bank=1  type=NoteOn key=89 chn=1
+EVENT_LED     id=1031  bank=1  type=NoteOn key=90 chn=1
+EVENT_LED     id=1032  bank=1  type=NoteOn key=91 chn=1
+
+EVENT_LED     id=1057  bank=1  type=NoteOn key=92 chn=1
+EVENT_LED     id=1058  bank=1  type=NoteOn key=93 chn=1
+EVENT_LED     id=1059  bank=1  type=NoteOn key=94 chn=1
+EVENT_LED     id=1060  bank=1  type=NoteOn key=95 chn=1
+EVENT_LED     id=1061  bank=1  type=NoteOn key=96 chn=1
+EVENT_LED     id=1062  bank=1  type=NoteOn key=97 chn=1
+EVENT_LED     id=1063  bank=1  type=NoteOn key=98 chn=1
+EVENT_LED     id=1064  bank=1  type=NoteOn key=99 chn=1
+
+
+
+# LED Functions Bank2
+EVENT_LED     id=1001  bank=2  type=NoteOn key=36 chn=1
+EVENT_LED     id=1002  bank=2  type=NoteOn key=37 chn=1
+EVENT_LED     id=1003  bank=2  type=NoteOn key=38 chn=1
+EVENT_LED     id=1004  bank=2  type=NoteOn key=39 chn=1
+EVENT_LED     id=1005  bank=2  type=NoteOn key=40 chn=1
+EVENT_LED     id=1006  bank=2  type=NoteOn key=41 chn=1
+EVENT_LED     id=1007  bank=2  type=NoteOn key=42 chn=1
+EVENT_LED     id=1008  bank=2  type=NoteOn key=43 chn=1
+
+EVENT_LED     id=1033  bank=2  type=NoteOn key=44 chn=1
+EVENT_LED     id=1034  bank=2  type=NoteOn key=45 chn=1
+EVENT_LED     id=1035  bank=2  type=NoteOn key=46 chn=1
+EVENT_LED     id=1036  bank=2  type=NoteOn key=47 chn=1
+EVENT_LED     id=1037  bank=2  type=NoteOn key=48 chn=1
+EVENT_LED     id=1038  bank=2  type=NoteOn key=49 chn=1
+EVENT_LED     id=1039  bank=2  type=NoteOn key=50 chn=1
+EVENT_LED     id=1040  bank=2  type=NoteOn key=51 chn=1
+
+EVENT_LED     id=1009  bank=2  type=NoteOn key=52 chn=1
+EVENT_LED     id=1010  bank=2  type=NoteOn key=53 chn=1
+EVENT_LED     id=1011  bank=2  type=NoteOn key=54 chn=1
+EVENT_LED     id=1012  bank=2  type=NoteOn key=55 chn=1
+EVENT_LED     id=1013  bank=2  type=NoteOn key=56 chn=1
+EVENT_LED     id=1014  bank=2  type=NoteOn key=57 chn=1
+EVENT_LED     id=1015  bank=2  type=NoteOn key=58 chn=1
+EVENT_LED     id=1016  bank=2  type=NoteOn key=59 chn=1
+
+EVENT_LED     id=1041  bank=2  type=NoteOn key=60 chn=1
+EVENT_LED     id=1042  bank=2  type=NoteOn key=61 chn=1
+EVENT_LED     id=1043  bank=2  type=NoteOn key=62 chn=1
+EVENT_LED     id=1044  bank=2  type=NoteOn key=63 chn=1
+EVENT_LED     id=1045  bank=2  type=NoteOn key=64 chn=1
+EVENT_LED     id=1046  bank=2  type=NoteOn key=65 chn=1
+EVENT_LED     id=1047  bank=2  type=NoteOn key=66 chn=1
+EVENT_LED     id=1048  bank=2  type=NoteOn key=67 chn=1
+
+EVENT_LED     id=1017  bank=2  type=NoteOn key=68 chn=1
+EVENT_LED     id=1018  bank=2  type=NoteOn key=69 chn=1
+EVENT_LED     id=1019  bank=2  type=NoteOn key=70 chn=1
+EVENT_LED     id=1020  bank=2  type=NoteOn key=71 chn=1
+EVENT_LED     id=1021  bank=2  type=NoteOn key=72 chn=1
+EVENT_LED     id=1022  bank=2  type=NoteOn key=73 chn=1
+EVENT_LED     id=1023  bank=2  type=NoteOn key=74 chn=1
+EVENT_LED     id=1024  bank=2  type=NoteOn key=75 chn=1
+
+EVENT_LED     id=1049  bank=2  type=NoteOn key=76 chn=1
+EVENT_LED     id=1050  bank=2  type=NoteOn key=77 chn=1
+EVENT_LED     id=1051  bank=2  type=NoteOn key=78 chn=1
+EVENT_LED     id=1052  bank=2  type=NoteOn key=79 chn=1
+EVENT_LED     id=1053  bank=2  type=NoteOn key=80 chn=1
+EVENT_LED     id=1054  bank=2  type=NoteOn key=81 chn=1
+EVENT_LED     id=1055  bank=2  type=NoteOn key=82 chn=1
+EVENT_LED     id=1056  bank=2  type=NoteOn key=83 chn=1
+
+EVENT_LED     id=1025  bank=2  type=NoteOn key=84 chn=1
+EVENT_LED     id=1026  bank=2  type=NoteOn key=85 chn=1
+EVENT_LED     id=1027  bank=2  type=NoteOn key=86 chn=1
+EVENT_LED     id=1028  bank=2  type=NoteOn key=87 chn=1
+EVENT_LED     id=1029  bank=2  type=NoteOn key=88 chn=1
+EVENT_LED     id=1030  bank=2  type=NoteOn key=89 chn=1
+EVENT_LED     id=1031  bank=2  type=NoteOn key=90 chn=1
+EVENT_LED     id=1032  bank=2  type=NoteOn key=91 chn=1
+
+EVENT_LED     id=1057  bank=2  type=NoteOn key=92 chn=1
+EVENT_LED     id=1058  bank=2  type=NoteOn key=93 chn=1
+EVENT_LED     id=1059  bank=2  type=NoteOn key=94 chn=1
+EVENT_LED     id=1060  bank=2  type=NoteOn key=95 chn=1
+EVENT_LED     id=1061  bank=2  type=NoteOn key=96 chn=1
+EVENT_LED     id=1062  bank=2  type=NoteOn key=97 chn=1
+EVENT_LED     id=1063  bank=2  type=NoteOn key=98 chn=1
+EVENT_LED     id=1064  bank=2  type=NoteOn key=99 chn=1
+
+
+
+
+# LED Functions Bank3
+EVENT_LED     id=1001  bank=3  type=NoteOn key=36 chn=1
+EVENT_LED     id=1002  bank=3  type=NoteOn key=37 chn=1
+EVENT_LED     id=1003  bank=3  type=NoteOn key=38 chn=1
+EVENT_LED     id=1004  bank=3  type=NoteOn key=39 chn=1
+EVENT_LED     id=1005  bank=3  type=NoteOn key=40 chn=1
+EVENT_LED     id=1006  bank=3  type=NoteOn key=41 chn=1
+EVENT_LED     id=1007  bank=3  type=NoteOn key=42 chn=1
+EVENT_LED     id=1008  bank=3  type=NoteOn key=43 chn=1
+
+EVENT_LED     id=1033  bank=3  type=NoteOn key=44 chn=1
+EVENT_LED     id=1034  bank=3  type=NoteOn key=45 chn=1
+EVENT_LED     id=1035  bank=3  type=NoteOn key=46 chn=1
+EVENT_LED     id=1036  bank=3  type=NoteOn key=47 chn=1
+EVENT_LED     id=1037  bank=3  type=NoteOn key=48 chn=1
+EVENT_LED     id=1038  bank=3  type=NoteOn key=49 chn=1
+EVENT_LED     id=1039  bank=3  type=NoteOn key=50 chn=1
+EVENT_LED     id=1040  bank=3  type=NoteOn key=51 chn=1
+
+EVENT_LED     id=1009  bank=3  type=NoteOn key=52 chn=1
+EVENT_LED     id=1010  bank=3  type=NoteOn key=53 chn=1
+EVENT_LED     id=1011  bank=3  type=NoteOn key=54 chn=1
+EVENT_LED     id=1012  bank=3  type=NoteOn key=55 chn=1
+EVENT_LED     id=1013  bank=3  type=NoteOn key=56 chn=1
+EVENT_LED     id=1014  bank=3  type=NoteOn key=57 chn=1
+EVENT_LED     id=1015  bank=3  type=NoteOn key=58 chn=1
+EVENT_LED     id=1016  bank=3  type=NoteOn key=59 chn=1
+
+EVENT_LED     id=1041  bank=3  type=NoteOn key=60 chn=1
+EVENT_LED     id=1042  bank=3  type=NoteOn key=61 chn=1
+EVENT_LED     id=1043  bank=3  type=NoteOn key=62 chn=1
+EVENT_LED     id=1044  bank=3  type=NoteOn key=63 chn=1
+EVENT_LED     id=1045  bank=3  type=NoteOn key=64 chn=1
+EVENT_LED     id=1046  bank=3  type=NoteOn key=65 chn=1
+EVENT_LED     id=1047  bank=3  type=NoteOn key=66 chn=1
+EVENT_LED     id=1048  bank=3  type=NoteOn key=67 chn=1
+
+EVENT_LED     id=1017  bank=3  type=NoteOn key=68 chn=1
+EVENT_LED     id=1018  bank=3  type=NoteOn key=69 chn=1
+EVENT_LED     id=1019  bank=3  type=NoteOn key=70 chn=1
+EVENT_LED     id=1020  bank=3  type=NoteOn key=71 chn=1
+EVENT_LED     id=1021  bank=3  type=NoteOn key=72 chn=1
+EVENT_LED     id=1022  bank=3  type=NoteOn key=73 chn=1
+EVENT_LED     id=1023  bank=3  type=NoteOn key=74 chn=1
+EVENT_LED     id=1024  bank=3  type=NoteOn key=75 chn=1
+
+EVENT_LED     id=1049  bank=3  type=NoteOn key=76 chn=1
+EVENT_LED     id=1050  bank=3  type=NoteOn key=77 chn=1
+EVENT_LED     id=1051  bank=3  type=NoteOn key=78 chn=1
+EVENT_LED     id=1052  bank=3  type=NoteOn key=79 chn=1
+EVENT_LED     id=1053  bank=3  type=NoteOn key=80 chn=1
+EVENT_LED     id=1054  bank=3  type=NoteOn key=81 chn=1
+EVENT_LED     id=1055  bank=3  type=NoteOn key=82 chn=1
+EVENT_LED     id=1056  bank=3  type=NoteOn key=83 chn=1
+
+EVENT_LED     id=1025  bank=3  type=NoteOn key=84 chn=1
+EVENT_LED     id=1026  bank=3  type=NoteOn key=85 chn=1
+EVENT_LED     id=1027  bank=3  type=NoteOn key=86 chn=1
+EVENT_LED     id=1028  bank=3  type=NoteOn key=87 chn=1
+EVENT_LED     id=1029  bank=3  type=NoteOn key=88 chn=1
+EVENT_LED     id=1030  bank=3  type=NoteOn key=89 chn=1
+EVENT_LED     id=1031  bank=3  type=NoteOn key=90 chn=1
+EVENT_LED     id=1032  bank=3  type=NoteOn key=91 chn=1
+
+EVENT_LED     id=1057  bank=3  type=NoteOn key=92 chn=1
+EVENT_LED     id=1058  bank=3  type=NoteOn key=93 chn=1
+EVENT_LED     id=1059  bank=3  type=NoteOn key=94 chn=1
+EVENT_LED     id=1060  bank=3  type=NoteOn key=95 chn=1
+EVENT_LED     id=1061  bank=3  type=NoteOn key=96 chn=1
+EVENT_LED     id=1062  bank=3  type=NoteOn key=97 chn=1
+EVENT_LED     id=1063  bank=3  type=NoteOn key=98 chn=1
+EVENT_LED     id=1064  bank=3  type=NoteOn key=99 chn=1
+
+
+
+# LED Functions Bank4
+EVENT_LED     id=1001  bank=4  type=NoteOn key=36 chn=1
+EVENT_LED     id=1002  bank=4  type=NoteOn key=37 chn=1
+EVENT_LED     id=1003  bank=4  type=NoteOn key=38 chn=1
+EVENT_LED     id=1004  bank=4  type=NoteOn key=39 chn=1
+EVENT_LED     id=1005  bank=4  type=NoteOn key=40 chn=1
+EVENT_LED     id=1006  bank=4  type=NoteOn key=41 chn=1
+EVENT_LED     id=1007  bank=4  type=NoteOn key=42 chn=1
+EVENT_LED     id=1008  bank=4  type=NoteOn key=43 chn=1
+
+EVENT_LED     id=1033  bank=4  type=NoteOn key=44 chn=1
+EVENT_LED     id=1034  bank=4  type=NoteOn key=45 chn=1
+EVENT_LED     id=1035  bank=4  type=NoteOn key=46 chn=1
+EVENT_LED     id=1036  bank=4  type=NoteOn key=47 chn=1
+EVENT_LED     id=1037  bank=4  type=NoteOn key=48 chn=1
+EVENT_LED     id=1038  bank=4  type=NoteOn key=49 chn=1
+EVENT_LED     id=1039  bank=4  type=NoteOn key=50 chn=1
+EVENT_LED     id=1040  bank=4  type=NoteOn key=51 chn=1
+
+EVENT_LED     id=1009  bank=4  type=NoteOn key=52 chn=1
+EVENT_LED     id=1010  bank=4  type=NoteOn key=53 chn=1
+EVENT_LED     id=1011  bank=4  type=NoteOn key=54 chn=1
+EVENT_LED     id=1012  bank=4  type=NoteOn key=55 chn=1
+EVENT_LED     id=1013  bank=4  type=NoteOn key=56 chn=1
+EVENT_LED     id=1014  bank=4  type=NoteOn key=57 chn=1
+EVENT_LED     id=1015  bank=4  type=NoteOn key=58 chn=1
+EVENT_LED     id=1016  bank=4  type=NoteOn key=59 chn=1
+
+EVENT_LED     id=1041  bank=4  type=NoteOn key=60 chn=1
+EVENT_LED     id=1042  bank=4  type=NoteOn key=61 chn=1
+EVENT_LED     id=1043  bank=4  type=NoteOn key=62 chn=1
+EVENT_LED     id=1044  bank=4  type=NoteOn key=63 chn=1
+EVENT_LED     id=1045  bank=4  type=NoteOn key=64 chn=1
+EVENT_LED     id=1046  bank=4  type=NoteOn key=65 chn=1
+EVENT_LED     id=1047  bank=4  type=NoteOn key=66 chn=1
+EVENT_LED     id=1048  bank=4  type=NoteOn key=67 chn=1
+
+EVENT_LED     id=1017  bank=4  type=NoteOn key=68 chn=1
+EVENT_LED     id=1018  bank=4  type=NoteOn key=69 chn=1
+EVENT_LED     id=1019  bank=4  type=NoteOn key=70 chn=1
+EVENT_LED     id=1020  bank=4  type=NoteOn key=71 chn=1
+EVENT_LED     id=1021  bank=4  type=NoteOn key=72 chn=1
+EVENT_LED     id=1022  bank=4  type=NoteOn key=73 chn=1
+EVENT_LED     id=1023  bank=4  type=NoteOn key=74 chn=1
+EVENT_LED     id=1024  bank=4  type=NoteOn key=75 chn=1
+
+EVENT_LED     id=1049  bank=4  type=NoteOn key=76 chn=1
+EVENT_LED     id=1050  bank=4  type=NoteOn key=77 chn=1
+EVENT_LED     id=1051  bank=4  type=NoteOn key=78 chn=1
+EVENT_LED     id=1052  bank=4  type=NoteOn key=79 chn=1
+EVENT_LED     id=1053  bank=4  type=NoteOn key=80 chn=1
+EVENT_LED     id=1054  bank=4  type=NoteOn key=81 chn=1
+EVENT_LED     id=1055  bank=4  type=NoteOn key=82 chn=1
+EVENT_LED     id=1056  bank=4  type=NoteOn key=83 chn=1
+
+EVENT_LED     id=1025  bank=4  type=NoteOn key=84 chn=1
+EVENT_LED     id=1026  bank=4  type=NoteOn key=85 chn=1
+EVENT_LED     id=1027  bank=4  type=NoteOn key=86 chn=1
+EVENT_LED     id=1028  bank=4  type=NoteOn key=87 chn=1
+EVENT_LED     id=1029  bank=4  type=NoteOn key=88 chn=1
+EVENT_LED     id=1030  bank=4  type=NoteOn key=89 chn=1
+EVENT_LED     id=1031  bank=4  type=NoteOn key=90 chn=1
+EVENT_LED     id=1032  bank=4  type=NoteOn key=91 chn=1
+
+EVENT_LED     id=1057  bank=4  type=NoteOn key=92 chn=1
+EVENT_LED     id=1058  bank=4  type=NoteOn key=93 chn=1
+EVENT_LED     id=1059  bank=4  type=NoteOn key=94 chn=1
+EVENT_LED     id=1060  bank=4  type=NoteOn key=95 chn=1
+EVENT_LED     id=1061  bank=4  type=NoteOn key=96 chn=1
+EVENT_LED     id=1062  bank=4  type=NoteOn key=97 chn=1
+EVENT_LED     id=1063  bank=4  type=NoteOn key=98 chn=1
+EVENT_LED     id=1064  bank=4  type=NoteOn key=99 chn=1

@@ -807,8 +807,8 @@ s32 parseEvent(char *cmd, char *brkt)
       char *stream_str;
       char *brkt_local = value_str;
       u8 *stream_pos = (u8 *)&stream[item.stream_size];
-      // check for STREAM_MAX_SIZE-1, since a meta entry allocates 2 bytes
-      while( item.stream_size < (STREAM_MAX_SIZE-1) && (stream_str = strtok_r(NULL, separators, &brkt_local)) ) {
+      // check for STREAM_MAX_SIZE-2, since a meta entry allocates up to 3 bytes
+      while( item.stream_size < (STREAM_MAX_SIZE-2) && (stream_str = strtok_r(NULL, separators, &brkt_local)) ) {
 	if( *stream_str == '^' ) {
 	  mbng_event_sysex_var_t sysex_var = MBNG_EVENT_ItemSysExVarFromStrGet((char *)&stream_str[1]);
 	  if( sysex_var == MBNG_EVENT_SYSEX_VAR_UNDEFINED ) {
@@ -865,17 +865,22 @@ s32 parseEvent(char *cmd, char *brkt)
 	return -1;
       }
 
-      int value = 0;
-      if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
-	  (value=get_dec(values_str)) < 0 || value > 255 ) {
-	// ignore - we allow meta events without values
-	value = 0;
-      }
+      item.stream[item.stream_size++] = meta_type;
 
-      int entry = item.stream_size / 2;
-      item.stream[2*entry + 0] = meta_type;
-      item.stream[2*entry + 1] = value;
-      item.stream_size += 2;
+      u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+      int i;
+      for(i=0; i<num_bytes; ++i) {
+	int value = 0;
+	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	    (value=get_dec(values_str)) < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting %d values for meta type in EVENT_%s ... %s=%s\n", num_bytes, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+
+	item.stream[item.stream_size++] = value;
+      }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "range") == 0 ) {
@@ -1739,6 +1744,8 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
   int rows = 0;
   mbng_patch_matrix_inverted_t inverted; inverted.ALL = 0;
   int led_emu_id_offset = 0;
+  int unicolour = 0;
+  int colour_level[3]; colour_level[0] = 15; colour_level[1] = 15; colour_level[2] = 15;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
   int sr_dout_r1 = 0;
@@ -1769,6 +1776,54 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
 #endif
 	return -1; // invalid parameter
       }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "unicolour") == 0 || strcasecmp(parameter, "unicolor") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      unicolour = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "colour_level_r") == 0 || strcasecmp(parameter, "color_level_r") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 15 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0..15 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      colour_level[0] = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "colour_level_g") == 0 || strcasecmp(parameter, "color_level_g") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 15 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0..15 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      colour_level[1] = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "colour_level_b") == 0 || strcasecmp(parameter, "color_level_b") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 15 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0..15 allowed)\n", cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      colour_level[2] = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "inverted") == 0 || strcasecmp(parameter, "inverted_sel") == 0 ) {
@@ -1889,6 +1944,10 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     m->num_rows = rows;
     m->inverted.ALL = inverted.ALL;
     m->led_emu_id_offset = led_emu_id_offset;
+    m->unicolour = unicolour;
+    m->colour_level[0] = colour_level[0];
+    m->colour_level[1] = colour_level[1];
+    m->colour_level[2] = colour_level[2];
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
     m->sr_dout_r1 = sr_dout_r1;
@@ -3400,9 +3459,18 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       case MBNG_EVENT_TYPE_META: {
 	int i;
-	for(i=0; i<item.stream_size/2; ++i) {
-	  sprintf(line_buffer, " meta=%s:%d", MBNG_EVENT_ItemMetaTypeStrGet(&item, i), (int)item.stream[2*i+1]);
+	for(i=0; i<item.stream_size; ++i) {
+	  mbng_event_meta_type_t meta_type = item.stream[i];
+	  sprintf(line_buffer, " meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
 	  FLUSH_BUFFER;
+
+	  u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+	  int j;
+	  for(j=0; j<num_bytes; ++j) {
+	    u8 meta_value = item.stream[++i];
+	    sprintf(line_buffer, ":%d", (int)meta_value);
+	    FLUSH_BUFFER;
+	  }
 	}
       } break;
       }
@@ -3690,6 +3758,26 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       if( m->led_emu_id_offset ) {
 	sprintf(line_buffer, "  led_emu_id_offset=%d", m->led_emu_id_offset);
+	FLUSH_BUFFER;
+      }
+
+      if( m->unicolour ) {
+	sprintf(line_buffer, "  unicolour=%d", m->unicolour);
+	FLUSH_BUFFER;
+      }
+
+      if( m->colour_level[0] != 15 ) {
+	sprintf(line_buffer, "  colour_level_r=%d", m->colour_level[0]);
+	FLUSH_BUFFER;
+      }
+
+      if( m->colour_level[1] != 15 ) {
+	sprintf(line_buffer, "  colour_level_g=%d", m->colour_level[1]);
+	FLUSH_BUFFER;
+      }
+
+      if( m->colour_level[2] != 15 ) {
+	sprintf(line_buffer, "  colour_level_b=%d", m->colour_level[2]);
 	FLUSH_BUFFER;
       }
 

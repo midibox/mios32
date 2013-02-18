@@ -160,6 +160,13 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_SWAP_VALUES,
 
+  MBNG_EVENT_META_TYPE_SET_COLOUR_R,
+  MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE,
+  MBNG_EVENT_META_TYPE_SET_COLOUR_G,
+  MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE,
+  MBNG_EVENT_META_TYPE_SET_COLOUR_B,
+  MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE,
+
   MBNG_EVENT_META_TYPE_SCS_ENC,
   MBNG_EVENT_META_TYPE_SCS_MENU,
   MBNG_EVENT_META_TYPE_SCS_SOFT1,
@@ -379,8 +386,9 @@ extern const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item);
 extern mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format);
 extern const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos);
 extern mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var);
-extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry);
+extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type);
 extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type);
+extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);

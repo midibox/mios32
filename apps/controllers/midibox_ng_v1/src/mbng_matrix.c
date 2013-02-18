@@ -251,6 +251,21 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
     }
   }
 
+  u8 sr_init_value = m->inverted.row ? 0xff : 0x00;
+  {
+    int page;
+    for(page=0; page<MIOS32_SRIO_NUM_DOUT_PAGES; ++page) {
+      if( m->sr_dout_r1 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_r1 - 1, sr_init_value);
+      if( m->sr_dout_r2 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_r2 - 1, sr_init_value);
+
+      if( m->sr_dout_g1 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_g1 - 1, sr_init_value);
+      if( m->sr_dout_g2 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_g2 - 1, sr_init_value);
+
+      if( m->sr_dout_b1 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_b1 - 1, sr_init_value);
+      if( m->sr_dout_b2 ) MIOS32_DOUT_PageSRSet(page, m->sr_dout_b2 - 1, sr_init_value);
+    }
+  }
+    
   return 0;
 }
 
@@ -323,7 +338,7 @@ u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! This function sets the a pin on the given DOUT matrix
+//! This function sets a pin on the given DOUT matrix
 //! The value ranges from 0..NUM_MATRIX_DIM_LEVELS-1
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
@@ -364,7 +379,10 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 value)
     u32 pin_offset = 8*(sr-1) + column;
     int i;
     for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
-      int dout_value = i ? (i <= 2*value) : 0;
+      int dout_value = value ? (i <= 2*value) : 0;
+      if( m->inverted.row )
+	dout_value = dout_value ? 0 : 1;
+
       MIOS32_DOUT_PagePinSet(row + i, pin_offset, dout_value);
     }
   }
@@ -461,6 +479,77 @@ s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets the unicolor level of a given matrix
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_SetUniColour(u8 matrix, u8 color, u8 level)
+{
+  if( matrix >= MBNG_PATCH_NUM_MATRIX_DOUT )
+    return -1; // invalid matrix
+
+  if( color > 2 )
+    return -2; // invalid colour
+
+  mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
+
+  m->colour_level[color] = level;
+
+  // if unicolour mode active: change level of all active LEDs
+  if( m->unicolour ) {
+    u8 sr;
+    for(sr=0; sr<2; ++sr) {
+      u8 sr_r = sr ? m->sr_dout_r2 : m->sr_dout_r1;
+      u8 sr_g = sr ? m->sr_dout_g2 : m->sr_dout_g1;
+      u8 sr_b = sr ? m->sr_dout_b2 : m->sr_dout_b1;
+
+
+      u8 level_r = m->colour_level[0];
+      u8 level_g = m->colour_level[1];
+      u8 level_b = m->colour_level[2];
+
+      // extra: if no colour set anymore, ensure that at least one is dimmed with 1
+      // otherwise the LED state information gets lost!
+      // this case temporary happens during colour re-configuration, e.g. if red colour was set, and we are switching to green with:
+      // meta=SetColourR:1:0   meta=SetColourG:1:15  meta=SetColourB:1:0
+      u8 any_level = (sr_r && level_r) || (sr_g && level_g) || (sr_b && level_b);
+      if( !any_level )
+	level_r = 1;
+
+      u8 row;
+      for(row=0; row < m->num_rows; ++row) {
+	// it's ensured that activated LEDs have a bit set in the first entry - take it as mask!
+	u8 mask =
+	  (sr_r ? MIOS32_DOUT_PageSRGet(row, sr_r - 1) : 0x00) |
+	  (sr_g ? MIOS32_DOUT_PageSRGet(row, sr_g - 1) : 0x00) |
+	  (sr_b ? MIOS32_DOUT_PageSRGet(row, sr_b - 1) : 0x00);
+
+	if( m->inverted.row )
+	  mask ^= 0xff;
+
+	// write new colour levels
+	int i;
+	for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
+	  u8 dout_mask_r = (level_r && i <= 2*level_r) ? mask : 0x00;
+	  u8 dout_mask_g = (level_g && i <= 2*level_g) ? mask : 0x00;
+	  u8 dout_mask_b = (level_b && i <= 2*level_b) ? mask : 0x00;
+
+	  if( m->inverted.row ) {
+	    dout_mask_r ^= 0xff;
+	    dout_mask_g ^= 0xff;
+	    dout_mask_b ^= 0xff;
+	  }
+
+	  if( sr_r ) MIOS32_DOUT_PageSRSet(row + i, sr_r - 1, dout_mask_r);
+	  if( sr_g ) MIOS32_DOUT_PageSRSet(row + i, sr_g - 1, dout_mask_g);
+	  if( sr_b ) MIOS32_DOUT_PageSRSet(row + i, sr_b - 1, dout_mask_b);
+	}
+      }
+    }
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function gets the DIN values of the selected row.
@@ -654,6 +743,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   if( !item->flags.general.led_matrix_pattern ) {
     if( hw_id_ix && hw_id_ix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
       u8 matrix = hw_id_ix - 1;
+      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
       u8 dout_value;
       u8 *map_values;
@@ -679,7 +769,14 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 	  }
 	}
       }
-      MBNG_MATRIX_DOUT_PinSet(matrix, item->flags.general.colour, item->matrix_pin, dout_value);
+
+      if( m->unicolour ) {
+	int colour;
+	for(colour=0; colour<3; ++colour)
+	  MBNG_MATRIX_DOUT_PinSet(matrix, colour, item->matrix_pin, dout_value ? m->colour_level[colour] : 0);
+      } else {
+	MBNG_MATRIX_DOUT_PinSet(matrix, item->flags.general.colour, item->matrix_pin, dout_value);
+      }
     }
   } else {
     int matrix = (hw_id_ix-1) / MBNG_PATCH_NUM_MATRIX_ROWS_MAX;
