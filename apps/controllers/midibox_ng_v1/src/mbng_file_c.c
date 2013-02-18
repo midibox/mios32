@@ -965,7 +965,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
     } else if( strcasecmp(parameter, "colour") == 0 || strcasecmp(parameter, "color") == 0 ) {
       int value;
-      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+      if( (value=get_dec(value_str)) < 0 || value > 2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0..2)\n", event, parameter, value_str);
 #endif
