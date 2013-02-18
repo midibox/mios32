@@ -29,7 +29,7 @@ EVENT_SENDER  id=12  type=Meta  meta=SetColourGFromValue:1  meta=SetColourGFromV
 EVENT_SENDER  id=13  type=Meta  meta=SetColourBFromValue:1  meta=SetColourBFromValue:2
 
 
-# all LEDs are turned on!
+# all LEDs are turned on by default!
 EVENT_LED     id=1001  value=127  type=NoteOn key=36 chn=1
 EVENT_LED     id=1002  value=127  type=NoteOn key=37 chn=1
 EVENT_LED     id=1003  value=127  type=NoteOn key=38 chn=1
