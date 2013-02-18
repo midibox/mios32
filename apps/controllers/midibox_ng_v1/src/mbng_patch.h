@@ -67,6 +67,8 @@ typedef struct {
 typedef struct {
   u16 led_emu_id_offset;
   u8 num_rows;
+  u8 unicolour;
+  u8 colour_level[3];
   mbng_patch_matrix_inverted_t inverted;
   u8 sr_dout_sel1;
   u8 sr_dout_sel2;

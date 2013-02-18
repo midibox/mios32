@@ -1608,9 +1608,8 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 /////////////////////////////////////////////////////////////////////////////
 //! for Meta events
 /////////////////////////////////////////////////////////////////////////////
-const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
+const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 {
-  mbng_event_meta_type_t meta_type = (item->stream_size >= (2*(entry+1))) ? item->stream[2*entry] : MBNG_EVENT_META_TYPE_UNDEFINED;
   switch( meta_type ) {
   case MBNG_EVENT_META_TYPE_SET_BANK:            return "SetBank";
   case MBNG_EVENT_META_TYPE_DEC_BANK:            return "DecBank";
@@ -1629,6 +1628,13 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_item_t *item, u8 entry)
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
+
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_R:        return "SetColourR";
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: return "SetColourRFromValue";
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_G:        return "SetColourG";
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: return "SetColourGFromValue";
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_B:        return "SetColourB";
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: return "SetColourBFromValue";
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
@@ -1666,6 +1672,13 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
   if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
 
+  if( strcasecmp(meta_type, "SetColourR") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_R;
+  if( strcasecmp(meta_type, "SetColourRFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE;
+  if( strcasecmp(meta_type, "SetColourG") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_G;
+  if( strcasecmp(meta_type, "SetColourGFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE;
+  if( strcasecmp(meta_type, "SetColourB") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_B;
+  if( strcasecmp(meta_type, "SetColourBFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE;
+
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
   if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
@@ -1679,6 +1692,52 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "ScsShift") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SHIFT;
   return MBNG_EVENT_META_TYPE_UNDEFINED;
 }
+
+
+u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
+{
+  switch( meta_type ) {
+  case MBNG_EVENT_META_TYPE_SET_BANK:            return 0;
+  case MBNG_EVENT_META_TYPE_DEC_BANK:            return 0;
+  case MBNG_EVENT_META_TYPE_INC_BANK:            return 0;
+  case MBNG_EVENT_META_TYPE_CYCLE_BANK:          return 0;
+
+  case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID:   return 1;
+  case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID:   return 1;
+  case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID:   return 1;
+  case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: return 1;
+
+  case MBNG_EVENT_META_TYPE_ENC_FAST:            return 0;
+
+  case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return 0;
+
+  case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return 0;
+
+  case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return 0;
+
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_R:        return 2;
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: return 1;
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_G:        return 2;
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: return 1;
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_B:        return 2;
+  case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: return 1;
+
+  case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
+  case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT2:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT3:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT4:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT5:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT6:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT7:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SOFT8:           return 0;
+  case MBNG_EVENT_META_TYPE_SCS_SHIFT:           return 0;
+  }
+
+  return 0;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1906,9 +1965,13 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
     // TODO
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
     int i;
-    for(i=0; i<item->stream_size; i+=2) {
+    for(i=0; i<item->stream_size; i++) {
       mbng_event_meta_type_t meta_type = item->stream[i+0];
-      u8 meta_value = item->stream[i+1];
+      u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+      u8 meta_value = item->stream[i+1]; // optional
+      u8 meta_value2 = item->stream[i+2]; // optional
+      i += num_bytes;
+
       switch( meta_type ) {
       case MBNG_EVENT_META_TYPE_SET_BANK: {
 	if( item->value ) {
@@ -1990,6 +2053,25 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	item->value = secondary;
       } break;
 
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_R: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 0, meta_value2);
+      } break;
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 0, item->value);
+      } break;
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_G: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 1, meta_value2);
+      } break;
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 1, item->value);
+      } break;
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_B: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 2, meta_value2);
+      } break;
+      case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: {
+	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 2, item->value);
+      } break;
+
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
 	SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
       } break;
@@ -2055,6 +2137,10 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     pool_item->flags.general.value_from_midi = from_midi;
   }
 
+  // item active?
+  if( !item->flags.general.active )
+    return 0; // stop here
+
   // matching condition?
   s32 cond_match;
   if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(item)) < 1 )
@@ -2107,7 +2193,17 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
     int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
     if( map_len > 0 ) {
       item->value = map_values[(value < map_len) ? value : (map_len-1)];
+    } else {
+      // range?
+      if( value < item->min )
+	item->value = item->min;
+      else if( value > item->max )
+	item->value = item->max;
     }
+
+    // store in pool
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->value = item->value;
   } break;
   }
 

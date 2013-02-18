@@ -101,6 +101,10 @@ s32 MBNG_PATCH_Init(u32 mode)
       m->num_rows = 8;
       m->inverted.ALL = 0;
       m->led_emu_id_offset = 0;
+      m->unicolour=0;
+      m->colour_level[0] = 15;
+      m->colour_level[1] = 15;
+      m->colour_level[2] = 15;
       m->sr_dout_sel1  = 0;
       m->sr_dout_sel2 = 0;
       m->sr_dout_r1 = 0;

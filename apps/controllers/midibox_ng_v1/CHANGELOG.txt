@@ -1,5 +1,13 @@
 $Id$
 
+MIDIbox NG V1.020
+~~~~~~~~~~~~~~~~~
+
+   o LED_MATRIX: support for "unicolour" mode which allows to switch the colour of all
+     LEDs based on Meta Events.
+     See cfg/tests/unicolr.ngc
+
+
 MIDIbox NG V1.019
 ~~~~~~~~~~~~~~~~~
 
