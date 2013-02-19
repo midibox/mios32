@@ -1629,13 +1629,6 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
 
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_R:        return "SetColourR";
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: return "SetColourRFromValue";
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_G:        return "SetColourG";
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: return "SetColourGFromValue";
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_B:        return "SetColourB";
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: return "SetColourBFromValue";
-
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -1672,13 +1665,6 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
   if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
 
-  if( strcasecmp(meta_type, "SetColourR") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_R;
-  if( strcasecmp(meta_type, "SetColourRFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE;
-  if( strcasecmp(meta_type, "SetColourG") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_G;
-  if( strcasecmp(meta_type, "SetColourGFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE;
-  if( strcasecmp(meta_type, "SetColourB") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_B;
-  if( strcasecmp(meta_type, "SetColourBFromValue") == 0 )    return MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE;
-
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
   if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
@@ -1714,13 +1700,6 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return 0;
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return 0;
-
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_R:        return 2;
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: return 1;
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_G:        return 2;
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: return 1;
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_B:        return 2;
-  case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: return 1;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -1969,7 +1948,6 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       mbng_event_meta_type_t meta_type = item->stream[i+0];
       u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
       u8 meta_value = item->stream[i+1]; // optional
-      u8 meta_value2 = item->stream[i+2]; // optional
       i += num_bytes;
 
       switch( meta_type ) {
@@ -2051,25 +2029,6 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	u8 secondary = item->secondary_value;
 	item->secondary_value = item->value;
 	item->value = secondary;
-      } break;
-
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_R: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 0, meta_value2);
-      } break;
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_R_FROM_VALUE: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 0, item->value);
-      } break;
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_G: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 1, meta_value2);
-      } break;
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_G_FROM_VALUE: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 1, item->value);
-      } break;
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_B: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 2, meta_value2);
-      } break;
-      case MBNG_EVENT_META_TYPE_SET_COLOUR_B_FROM_VALUE: {
-	MBNG_MATRIX_DOUT_SetUniColour(meta_value-1, 2, item->value);
       } break;
 
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
