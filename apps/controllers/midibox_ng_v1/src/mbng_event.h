@@ -288,6 +288,15 @@ typedef union {
   };
 } mbng_event_syxdump_pos_t;
 
+typedef union {
+  u16 ALL;
+
+  struct {
+    u16 r:4;
+    u16 g:4;
+    u16 b:4;
+  };
+} mbng_event_rgb_t;
 
 typedef struct {
   u16 id;
@@ -302,6 +311,7 @@ typedef struct {
   s16 max;
   s16 offset;
   u16 matrix_pin;
+  mbng_event_rgb_t rgb;
   mbng_event_syxdump_pos_t syxdump_pos;
   u32 stream_size;
   u8* stream;
@@ -385,7 +395,7 @@ extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
-extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi);
+extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled);
 extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group);
 
