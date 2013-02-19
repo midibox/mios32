@@ -65,6 +65,7 @@ typedef struct { // should be dividable by u16
   mbng_event_syxdump_pos_t syxdump_pos;
   u16 tmp_sysex_match_ctr; // temporary variable which counts matching bytes in SysEx stream
   u16 tmp_sysex_value;     // temporary variable which stores current SysEx value
+  mbng_event_rgb_t rgb;
   runtime_flags_t tmp_runtime_flags;    // several runtime flags
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
@@ -631,7 +632,7 @@ s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	item.flags.general.fwd_to_lcd = 1; // force LCD update
-	MBNG_EVENT_ItemReceive(&item, pool_item->value, 1);
+	MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
       }
     }
 
@@ -659,6 +660,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->max    = 127;
   item->offset = 0;
   item->syxdump_pos.ALL = 0;
+  item->rgb.ALL = 0;
   item->stream_size = 0;
   item->map = 0;
   item->bank = 0;
@@ -748,6 +750,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   item->bank = pool_item->bank;
   item->map = pool_item->map;
   item->secondary_value = pool_item->secondary_value;
+  item->rgb.ALL = pool_item->rgb.ALL;
   item->lcd = pool_item->lcd;
   item->lcd_x = pool_item->lcd_x;
   item->lcd_y = pool_item->lcd_y;
@@ -778,6 +781,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->offset = item->offset;
   pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
   pool_item->map = item->map;
+  pool_item->rgb.ALL = item->rgb.ALL;
   pool_item->bank = item->bank;
   pool_item->secondary_value = item->secondary_value;
   pool_item->lcd = item->lcd;
@@ -2080,7 +2084,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 //! \retval 1 if matching condition (or no condition)
 //! \retval 2 if matching condition and stop requested
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
+s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled)
 {
   // take over new value
   item->value = value;
@@ -2167,7 +2171,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi)
   }
 
   // forward
-  if( item->flags.general.active ) {
+  if( fwd_enabled ) {
     if( item->fwd_id )
       MBNG_EVENT_ItemForward(item);
     else {
@@ -2223,7 +2227,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 
       // notify item (will also store value in pool item)
       fwd_item.secondary_value = item->secondary_value;
-      if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0) == 2 )
+      if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0, 1) == 2 )
 	break; // stop has been requested
     }
   } while( continue_ix );
@@ -2242,11 +2246,9 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     item->hw_id = item->fwd_id;
     item->fwd_id = 0;
     item->flags.general.fwd_to_lcd = 0;
-    item->flags.general.active = 0; // a little bit dirty: to avoid unnecessary radio group forwarding
-                                    // if in future the active flag is used for other purposes in ItemReceive, we've to pass this info as function parameter
     item->map = 0; // we assume that the value has already been mapped
     item->pool_address = 0xffff;
-    MBNG_EVENT_ItemReceive(item, item->value, 0);
+    MBNG_EVENT_ItemReceive(item, item->value, 0, 0); // forwarding not enabled
     item->id = tmp_id;
     item->hw_id = tmp_hw_id;
     item->fwd_id = tmp_fwd_id;
@@ -2399,7 +2401,7 @@ s32 MBNG_EVENT_Refresh(void)
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
       item.flags.general.fwd_to_lcd = 1; // force LCD update
-      MBNG_EVENT_ItemReceive(&item, pool_item->value, 1);
+      MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
     }
 
     pool_ptr += pool_item->len;
@@ -2424,7 +2426,7 @@ static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
 
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      MBNG_EVENT_ItemReceive(&item, value, 1);
+      MBNG_EVENT_ItemReceive(&item, value, 1, 1);
     }
     pool_ptr += pool_item->len;
   }
@@ -2687,11 +2689,11 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  if( item.flags.general.use_key_or_cc ) {
 	    if( item.secondary_value < 128 ) // if != any
 	      item.secondary_value = midi_package.value;
-	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1);
+	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1, 1);
 	  } else {
 	    if( item.secondary_value < 128 ) // if != any
 	      item.secondary_value = midi_package.evnt1;
-	    MBNG_EVENT_ItemReceive(&item, midi_package.value, 1);
+	    MBNG_EVENT_ItemReceive(&item, midi_package.value, 1, 1);
 	  }
 	} else {
 	  // EXTRA for button/led matrices
@@ -2727,25 +2729,25 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	      mbng_event_item_t item;
 	      MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	      item.matrix_pin = evnt1 - first_evnt1;
-	      MBNG_EVENT_ItemReceive(&item, midi_package.value, 1);
+	      MBNG_EVENT_ItemReceive(&item, midi_package.value, 1, 1);
 	    }
 	  }
 	}
       } else if( event_type <= MBNG_EVENT_TYPE_AFTERTOUCH ) {
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	MBNG_EVENT_ItemReceive(&item, evnt1, 1);
+	MBNG_EVENT_ItemReceive(&item, evnt1, 1, 1);
       } else if( event_type == MBNG_EVENT_TYPE_PITCHBEND ) {
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	MBNG_EVENT_ItemReceive(&item, evnt1 | ((u16)midi_package.value << 7), 1);
+	MBNG_EVENT_ItemReceive(&item, evnt1 | ((u16)midi_package.value << 7), 1, 1);
       } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
 	u8 *stream = &pool_item->data_begin;
 	u16 expected_address = stream[1] | ((u16)stream[2] << 7);
 	if( nrpn_address == expected_address ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  MBNG_EVENT_ItemReceive(&item, nrpn_value, 1);
+	  MBNG_EVENT_ItemReceive(&item, nrpn_value, 1, 1);
 	}
       } else {
 	// no additional event types yet...
@@ -2790,7 +2792,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  // notify event when all values have been received
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_match_ctr, 1); // passing byte counter as value, it could be interesting
+	  MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_match_ctr, 1, 1); // passing byte counter as value, it could be interesting
 
 	  // and reset
 	  pool_item->tmp_runtime_flags.ALL = 0; // finished
@@ -2904,7 +2906,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	      // all values matching!
 	      mbng_event_item_t item;
 	      MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	      MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_value, 1);
+	      MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_value, 1, 1);
 	    } else {
 	      ++pool_item->tmp_sysex_match_ctr;
 	    }

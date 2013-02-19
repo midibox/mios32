@@ -968,6 +968,36 @@ s32 parseEvent(char *cmd, char *brkt)
 
       item.flags.general.dimmed = value;
 
+    } else if( strcasecmp(parameter, "rgb") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid rgb format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int i;
+      for(i=0; i<3; ++i) {
+	if( values[i] < 0 || values[i] >= 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid rgb format (digit #%d) in EVENT_%s ... %s=%s\n", i+1, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+      }
+
+      item.rgb.r = values[0];
+      item.rgb.g = values[1];
+      item.rgb.b = values[2];
+
     } else if( strcasecmp(parameter, "colour") == 0 || strcasecmp(parameter, "color") == 0 ) {
       int value;
       if( (value=get_dec(value_str)) < 1 || value > 2 ) {
@@ -3430,7 +3460,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }
 
       if( item.flags.general.dimmed ) {
-	sprintf(line_buffer, " dimmed=1 ");
+	sprintf(line_buffer, "  dimmed=1");
+	FLUSH_BUFFER;
+      }
+
+      if( item.rgb.ALL ) {
+	sprintf(line_buffer, " rgb=%d:%d:%d", item.rgb.r, item.rgb.g, item.rgb.b);
 	FLUSH_BUFFER;
       }
 
