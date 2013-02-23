@@ -70,7 +70,7 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
     }
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      MBNG_EVENT_ItemPrint(&item);
+      MBNG_EVENT_ItemPrint(&item, 0);
     }
 
     // transpose

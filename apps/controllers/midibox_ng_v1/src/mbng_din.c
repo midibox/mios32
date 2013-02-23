@@ -70,7 +70,7 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     }
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      MBNG_EVENT_ItemPrint(&item);
+      MBNG_EVENT_ItemPrint(&item, 0);
     }
 
     // button depressed?
@@ -94,7 +94,13 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 	item.value = toggle_state ? item.min : item.max;
       }
     } else {
-      item.value = depressed ? item.min : item.max;
+      u8 *map_values;
+      int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+      if( map_len > 0 ) {
+	item.value = depressed ? map_values[0] : map_values[map_len-1];
+      } else {
+	item.value = depressed ? item.min : item.max;
+      }
     }
 
     // OnOnly mode: don't send if button depressed

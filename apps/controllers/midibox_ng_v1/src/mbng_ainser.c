@@ -112,7 +112,7 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     }
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      MBNG_EVENT_ItemPrint(&item);
+      MBNG_EVENT_ItemPrint(&item, 0);
     }
 
     // scale 12bit value between min/max with fixed point artithmetic

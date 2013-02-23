@@ -621,7 +621,7 @@ static s32 MBNG_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
     item.matrix_pin = pin;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      MBNG_EVENT_ItemPrint(&item);
+      MBNG_EVENT_ItemPrint(&item, 0);
     }
 
     // button depressed?
