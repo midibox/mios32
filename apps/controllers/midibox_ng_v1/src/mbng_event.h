@@ -368,7 +368,10 @@ extern s32 MBNG_EVENT_MidiLearnStatusMsg(char *line1, char *line2);
 extern s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id);
 
 
-extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all);
+extern s32 MBNG_EVENT_ItemSearchByIdAndPrint(mbng_event_item_id_t id);
+extern s32 MBNG_EVENT_ItemSearchByHwIdAndPrint(mbng_event_item_id_t hw_id);
+
 extern const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id);
 extern mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event);
 extern const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item);

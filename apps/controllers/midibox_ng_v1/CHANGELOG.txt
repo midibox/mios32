@@ -6,6 +6,10 @@ MIDIbox NG V1.020
    o added "rgb" parameter.
      See cfg/tests/rgb_*.ngc for various examples.
 
+   o reduced memory consumption of EVENT_* definitions
+
+   o added MIOS Terminal commands: "show id" and "show hw_id"
+
 
 MIDIbox NG V1.019
 ~~~~~~~~~~~~~~~~~

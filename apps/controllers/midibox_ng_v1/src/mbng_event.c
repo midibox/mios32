@@ -43,40 +43,47 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u8 ALL;
+  u16 ALL;
 
   struct {
-    u8 sysex_dump:1;
-    u8 sysex_txt:1;
+    u16 match_ctr:14;
+    u16 dump:1;
+    u16 txt:1;
   };
-} runtime_flags_t;
+} sysex_runtime_var_t;
+
+typedef union {
+  u16 ALL;
+
+  struct {
+    u16 has_fwd_id:1;
+    u16 has_cond:1;
+    u16 has_min:1;
+    u16 has_max:1;
+    u16 has_offset:1;
+    u16 has_rgb:1;
+    u16 has_map:1;
+    u16 has_lcd:1;
+    u16 has_lcd_x:1;
+    u16 has_lcd_y:1;
+  };
+} extra_par_available_t;
 
 typedef struct { // should be dividable by u16
   u16 id;
   u16 hw_id;
-  mbng_event_cond_t cond;
-  u16 fwd_id;
-  u16 enabled_ports;
   mbng_event_flags_t flags;
+  extra_par_available_t extra_par_available;
+  u16 enabled_ports;
   u16 value;
-  s16 min;
-  s16 max;
-  s16 offset;
   mbng_event_syxdump_pos_t syxdump_pos;
-  u16 tmp_sysex_match_ctr; // temporary variable which counts matching bytes in SysEx stream
-  u16 tmp_sysex_value;     // temporary variable which stores current SysEx value
-  mbng_event_rgb_t rgb;
-  runtime_flags_t tmp_runtime_flags;    // several runtime flags
+  sysex_runtime_var_t sysex_runtime_var;    // several runtime flags
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
   u8 len_label;
-  u8 map;
   u8 bank;
   u8 secondary_value;
-  u8 lcd;
-  u8 lcd_x;
-  u8 lcd_y;
-  u8 data_begin; // data section for streams and label starts here, it can have multiple bytes
+  u8 data_begin; // data section for streams, label and extra parameters starts here, it can have multiple bytes
 } mbng_event_pool_item_t;
 
 typedef struct {
@@ -333,27 +340,6 @@ s32 MBNG_EVENT_PoolUpdate(void)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    // maps
-    int map_len;
-    u8 *map_values;
-    if( pool_item->map && (map_len=MBNG_EVENT_MapGet(pool_item->map, &map_values)) > 0 ) {
-      // determine min/max value of map
-      int pos;
-      u8 min = 255;
-      u8 max = 0;
-      u8 *map_values_ptr = map_values;
-      for(pos=0; pos<map_len; ++pos, ++map_values_ptr) {
-	if( *map_values_ptr >= max )
-	  max = *map_values_ptr;
-	if( *map_values_ptr < min )
-	  min = *map_values_ptr;
-      }
-
-      // transfer min/max to pool item
-      pool_item->min = min;
-      pool_item->max = max;
-    }
-
     // banks
     {
       if( pool_item->bank ) {
@@ -398,7 +384,7 @@ s32 MBNG_EVENT_PoolItemsPrint(void)
 
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      MBNG_EVENT_ItemPrint(&item);
+      MBNG_EVENT_ItemPrint(&item, 0);
 
       pool_ptr += pool_item->len;
     }
@@ -737,26 +723,90 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   u32 pool_address = (u32)pool_item - (u32)event_pool;
   item->pool_address = (pool_address < MBNG_EVENT_POOL_MAX_SIZE) ? pool_address : 0xffff;
   item->flags.ALL = pool_item->flags.ALL;
-  item->enabled_ports = pool_item->enabled_ports;
-  item->fwd_id = pool_item->fwd_id;
   item->hw_id = pool_item->hw_id;
-  item->cond.ALL = pool_item->cond.ALL;
   item->value = pool_item->value;
-  item->min = pool_item->min;
-  item->max = pool_item->max;
-  item->offset = pool_item->offset;
-  item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
-  item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
   item->bank = pool_item->bank;
-  item->map = pool_item->map;
+  item->enabled_ports = pool_item->enabled_ports;
+  item->syxdump_pos.ALL = pool_item->syxdump_pos.ALL;
+
+  item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->secondary_value = pool_item->secondary_value;
-  item->rgb.ALL = pool_item->rgb.ALL;
-  item->lcd = pool_item->lcd;
-  item->lcd_x = pool_item->lcd_x;
-  item->lcd_y = pool_item->lcd_y;
   item->stream_size = pool_item->len_stream;
   item->stream = pool_item->len_stream ? (u8 *)&pool_item->data_begin : NULL;
   item->label = pool_item->len_label ? ((char *)&pool_item->data_begin + pool_item->len_stream) : NULL;
+
+  u8 *extra_par = (u8 *)(&pool_item->data_begin + pool_item->len_stream + pool_item->len_label);
+  extra_par_available_t extra_par_available; extra_par_available.ALL = pool_item->extra_par_available.ALL;
+
+  if( extra_par_available.has_cond ) {
+    item->cond.ALL = extra_par[0] | (extra_par[1] << 8);
+    extra_par += 2;
+  } else {
+    item->cond.ALL = 0;
+  }
+
+  if( extra_par_available.has_fwd_id ) {
+    item->fwd_id = extra_par[0] | (extra_par[1] << 8);
+    extra_par += 2;
+  } else {
+    item->fwd_id = 0;
+  }
+
+  if( extra_par_available.has_min ) {
+    item->min = (s16)(extra_par[0] | (extra_par[1] << 8));
+    extra_par += 2;
+  } else {
+    item->min = 0;
+  }
+
+  if( extra_par_available.has_max ) {
+    item->max = (s16)(extra_par[0] | (extra_par[1] << 8));
+    extra_par += 2;
+  } else {
+    item->max = 127;
+  }
+
+  if( extra_par_available.has_offset ) {
+    item->offset = (s16)(extra_par[0] | (extra_par[1] << 8));
+    extra_par += 2;
+  } else {
+    item->offset = 0;
+  }
+
+  if( extra_par_available.has_rgb ) {
+    item->rgb.ALL = (s16)(extra_par[0] | (extra_par[1] << 8));
+    extra_par += 2;
+  } else {
+    item->rgb.ALL = 0;
+  }
+
+  if( extra_par_available.has_map ) {
+    item->map = extra_par[0];
+    extra_par += 1;
+  } else {
+    item->map = 0;
+  }
+
+  if( extra_par_available.has_lcd ) {
+    item->lcd = extra_par[0];
+    extra_par += 1;
+  } else {
+    item->lcd = 0;
+  }
+
+  if( extra_par_available.has_lcd_x ) {
+    item->lcd_x = extra_par[0];
+    extra_par += 1;
+  } else {
+    item->lcd_x = 0;
+  }
+
+  if( extra_par_available.has_lcd_y ) {
+    item->lcd_y = extra_par[0];
+    extra_par += 1;
+  } else {
+    item->lcd_y = 0;
+  }
 
   return 0; // no error
 }
@@ -766,28 +816,18 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_item_t* pool_item)
 {
+  pool_item->id = item->id;
+  pool_item->flags.ALL = item->flags.ALL;
+  pool_item->hw_id = item->hw_id;
+  pool_item->value = item->value;
+  pool_item->bank = item->bank;
+  pool_item->enabled_ports = item->enabled_ports;
+  pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
+  pool_item->secondary_value = item->secondary_value;
+
   u32 label_len = item->label ? (strlen(item->label)+1) : 0;
   u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
 
-  pool_item->id = item->id;
-  pool_item->flags.ALL = item->flags.ALL;
-  pool_item->enabled_ports = item->enabled_ports;
-  pool_item->hw_id = item->hw_id;
-  pool_item->fwd_id = item->fwd_id;
-  pool_item->cond.ALL = item->cond.ALL;
-  pool_item->value = item->value;
-  pool_item->min = item->min;
-  pool_item->max = item->max;
-  pool_item->offset = item->offset;
-  pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
-  pool_item->map = item->map;
-  pool_item->rgb.ALL = item->rgb.ALL;
-  pool_item->bank = item->bank;
-  pool_item->secondary_value = item->secondary_value;
-  pool_item->lcd = item->lcd;
-  pool_item->lcd_x = item->lcd_x;
-  pool_item->lcd_y = item->lcd_y;
-  pool_item->len = pool_item_len;
   pool_item->len_stream = item->stream ? item->stream_size : 0;
   pool_item->len_label = label_len;
 
@@ -797,13 +837,145 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   if( pool_item->len_label )
     memcpy((u8 *)&pool_item->data_begin + pool_item->len_stream, item->label, pool_item->len_label);
 
+  u8 *extra_par = (u8 *)(&pool_item->data_begin + pool_item->len_stream + pool_item->len_label);
+  pool_item->extra_par_available.ALL = 0;
+
+  if( item->cond.ALL ) {
+    pool_item->extra_par_available.has_cond = 1;
+    extra_par[0] = item->cond.ALL;
+    extra_par[1] = item->cond.ALL >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->fwd_id ) {
+    pool_item->extra_par_available.has_fwd_id = 1;
+    extra_par[0] = item->fwd_id;
+    extra_par[1] = item->fwd_id >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->min ) {
+    pool_item->extra_par_available.has_min = 1;
+    extra_par[0] = (u16)item->min;
+    extra_par[1] = (u16)item->min >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->max != 127 ) {
+    pool_item->extra_par_available.has_max = 1;
+    extra_par[0] = (u16)item->max;
+    extra_par[1] = (u16)item->max >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->offset ) {
+    pool_item->extra_par_available.has_offset = 1;
+    extra_par[0] = (u16)item->offset;
+    extra_par[1] = (u16)item->offset >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->rgb.ALL ) {
+    pool_item->extra_par_available.has_rgb = 1;
+    extra_par[0] = item->rgb.ALL;
+    extra_par[1] = item->rgb.ALL >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
+  if( item->map ) {
+    pool_item->extra_par_available.has_map = 1;
+    extra_par[0] = item->map;
+    extra_par += 1;
+    pool_item_len += 1;
+  }
+
+  if( item->lcd ) {
+    pool_item->extra_par_available.has_lcd = 1;
+    extra_par[0] = item->lcd;
+    extra_par += 1;
+    pool_item_len += 1;
+  }
+
+  if( item->lcd_x ) {
+    pool_item->extra_par_available.has_lcd_x = 1;
+    extra_par[0] = item->lcd_x;
+    extra_par += 1;
+    pool_item_len += 1;
+  }
+
+  if( item->lcd_y ) {
+    pool_item->extra_par_available.has_lcd_y = 1;
+    extra_par[0] = item->lcd_y;
+    extra_par += 1;
+    pool_item_len += 1;
+  }
+
   // temporary variables:
-  pool_item->tmp_sysex_match_ctr = 0;
-  pool_item->tmp_sysex_value = 0;
-  pool_item->tmp_runtime_flags.ALL = 0;
+  pool_item->sysex_runtime_var.ALL = 0;
+
+  // store length
+  pool_item->len = pool_item_len;
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+//! Local function to calculate the expected pool item length
+/////////////////////////////////////////////////////////////////////////////
+static u32 MBNG_EVENT_ItemCalcPoolItemLen(mbng_event_item_t *item)
+{
+  u32 label_len = item->label ? (strlen(item->label)+1) : 0;
+  u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
+
+  if( item->cond.ALL ) {
+    pool_item_len += 2;
+  }
+
+  if( item->fwd_id ) {
+    pool_item_len += 2;
+  }
+
+  if( item->min ) {
+    pool_item_len += 2;
+  }
+
+  if( item->max != 127 ) {
+    pool_item_len += 2;
+  }
+
+  if( item->offset ) {
+    pool_item_len += 2;
+  }
+
+  if( item->rgb.ALL ) {
+    pool_item_len += 2;
+  }
+
+  if( item->map ) {
+    pool_item_len += 1;
+  }
+
+  if( item->lcd ) {
+    pool_item_len += 1;
+  }
+
+  if( item->lcd_x ) {
+    pool_item_len += 1;
+  }
+
+  if( item->lcd_y ) {
+    pool_item_len += 1;
+  }
+
+  return pool_item_len;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! \Returns an item of the event pool with the given index number
@@ -832,8 +1004,7 @@ s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item)
 {
-  u32 label_len = item->label ? (strlen(item->label)+1) : 0;
-  u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
+  u32 pool_item_len = MBNG_EVENT_ItemCalcPoolItemLen(item);
 
   if( pool_item_len > 255 )
     return -1; // too much data
@@ -870,7 +1041,7 @@ s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item)
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
     if( pool_item->id == item->id ) {
       u32 label_len = item->label ? (strlen(item->label)+1) : 0;
-      u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
+      u32 pool_item_len = MBNG_EVENT_ItemCalcPoolItemLen(item);
 
       if( pool_item_len > 255 )
 	return -2; // too much data
@@ -1045,28 +1216,282 @@ s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item)
 /////////////////////////////////////////////////////////////////////////////
 //! Sends the an item description to debug terminal
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item)
+s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 {
+  if( all ) {
+    DEBUG_MSG("id=%s:%d (hw_id=%s:%d)",
+	      MBNG_EVENT_ItemControllerStrGet(item->id), item->id & 0xfff,
+	      MBNG_EVENT_ItemControllerStrGet(item->hw_id), item->hw_id & 0xfff);
+
+    DEBUG_MSG("  - bank=%d", item->bank);
+
+    if( item->cond.condition ) {
+      if( item->cond.hw_id ) {
+	DEBUG_MSG("  - condition: if_%s=%s:%d:%d",
+		  MBNG_EVENT_ItemConditionStrGet(item),
+		  MBNG_EVENT_ItemControllerStrGet(item->cond.hw_id),
+		  item->cond.hw_id & 0xfff, item->cond.value);
+      } else {
+	DEBUG_MSG("  - condition: if_%s=%d",
+		  MBNG_EVENT_ItemConditionStrGet(item),
+		  item->cond.value);
+      }
+    } else {
+      DEBUG_MSG("  - condition: none");
+    }
+
+    DEBUG_MSG("  - fwd_id=%s:%d", MBNG_EVENT_ItemControllerStrGet(item->fwd_id), item->fwd_id & 0xfff);
+    DEBUG_MSG("  - fwd_to_lcd=%d", item->flags.general.fwd_to_lcd);
+    DEBUG_MSG("  - type=%s", MBNG_EVENT_ItemTypeStrGet(item));
+
+    switch( item->flags.general.type ) {
+    case MBNG_EVENT_TYPE_NOTE_OFF:
+    case MBNG_EVENT_TYPE_NOTE_ON:
+    case MBNG_EVENT_TYPE_POLY_PRESSURE: {
+      if( item->stream_size >= 2 ) {
+	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
+	if( item->stream[1] < 128 ) {
+	  DEBUG_MSG("  - key=%d", item->stream[1]);
+	} else {
+	  DEBUG_MSG("  - key=any");
+	}
+	DEBUG_MSG("  - use_key_number=%d", item->flags.general.use_key_or_cc);
+      }
+    } break;
+
+    case MBNG_EVENT_TYPE_CC: {
+      if( item->stream_size >= 2 ) {
+	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
+	if( item->stream[1] < 128 ) {
+	  DEBUG_MSG("  - cc=%d", item->stream[1]);
+	} else {
+	  DEBUG_MSG("  - cc=any");
+	}
+
+	DEBUG_MSG("  - use_cc_number=%d", item->flags.general.use_key_or_cc);
+      }
+    } break;
+
+    case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
+    case MBNG_EVENT_TYPE_AFTERTOUCH:
+    case MBNG_EVENT_TYPE_PITCHBEND: {
+      if( item->stream_size >= 1 ) {
+	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
+      }
+    } break;
+
+    case MBNG_EVENT_TYPE_SYSEX: {
+      if( item->stream_size ) {
+	DEBUG_MSG("  - stream=");
+
+	int pos;
+	for(pos=0; pos<item->stream_size; ++pos) {
+	  if( item->stream[pos] == 0xff ) { // meta indicator
+	    char *var_str = (char *)MBNG_EVENT_ItemSysExVarStrGet(item, pos+1);
+	    if( strcasecmp(var_str, "undef") == 0 ) {
+	      DEBUG_MSG("      0xff 0x%02x", item->stream[pos+1]);
+	    } else {
+	      DEBUG_MSG("      ^%s", var_str);
+	    }
+	    ++pos;
+	  } else {
+	    DEBUG_MSG("      0x%02x", item->stream[pos]);
+	  }
+	}
+      }
+    } break;
+
+    case MBNG_EVENT_TYPE_NRPN: {
+      if( item->stream_size >= 3 ) {
+	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
+	DEBUG_MSG("  - nrpn=%d", item->stream[1] | (int)(item->stream[2] << 7));
+	DEBUG_MSG("  - nrpn_format=%s", MBNG_EVENT_ItemNrpnFormatStrGet(item));
+      }
+    } break;
+
+    case MBNG_EVENT_TYPE_META: {
+      int i;
+      for(i=0; i<item->stream_size; ++i) {
+	mbng_event_meta_type_t meta_type = item->stream[i];
+
+	char str[100]; str[0] = 0;
+	u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+	int j;
+	for(j=0; j<num_bytes; ++j) {
+	  u8 meta_value = item->stream[++i];
+	  sprintf(str, "%s:%d", str, (int)meta_value);
+	}
+
+	DEBUG_MSG("  - meta=%s%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type), str);
+      }
+    } break;
+    }
+
+
+    {
+      char ports_bin[17];
+      int bit;
+      for(bit=0; bit<16; ++bit) {
+	ports_bin[bit] = (item->enabled_ports & (1 << bit)) ? '1' : '0';
+      }
+      ports_bin[16] = 0;
+
+      DEBUG_MSG("  - ports=%s", ports_bin);
+    }
+
+    DEBUG_MSG("  - value=%d", item->value);
+    DEBUG_MSG("  - secondary_value=%d", item->secondary_value);
+    DEBUG_MSG("  - map=%d", item->map);
+    DEBUG_MSG("  - min=%d", item->min);
+    DEBUG_MSG("  - max=%d", item->max);
+    DEBUG_MSG("  - offset=%d", item->offset);
+    DEBUG_MSG("  - dimmed=%d", item->flags.general.dimmed);
+    DEBUG_MSG("  - rgb=%d:%d:%d", item->rgb.r, item->rgb.g, item->rgb.b);
+    DEBUG_MSG("  - syxdump_pos=%d:%d", item->syxdump_pos.receiver, item->syxdump_pos.pos);
+
+    switch( item->id & 0xf000 ) {
+    case MBNG_EVENT_CONTROLLER_SENDER: {
+      DEBUG_MSG("  - radio_group=%d", item->flags.SENDER.radio_group);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_RECEIVER: {
+      DEBUG_MSG("  - radio_group=%d", item->flags.RECEIVER.radio_group);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_BUTTON: {
+      DEBUG_MSG("  - button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(item));
+      DEBUG_MSG("  - radio_group=%d", item->flags.DIN.radio_group);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_LED: {
+      DEBUG_MSG("  - radio_group=%d", item->flags.DOUT.radio_group);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_ENC: {
+      DEBUG_MSG("  - enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item));
+      DEBUG_MSG("  - enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(item), item->flags.ENC.enc_speed_mode_par);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_AIN: {
+      DEBUG_MSG("  - ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(item));
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_AINSER: {
+      DEBUG_MSG("  - ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(item));
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_MF: {
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_CV: {
+      if( item->flags.CV.fwd_gate_to_dout_pin ) {
+	DEBUG_MSG("  - fwd_gate_to_dout_pin=%d.D%d",
+		  ((item->flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
+		  7 - ((item->flags.CV.fwd_gate_to_dout_pin-1) % 8));
+      } else {
+	DEBUG_MSG("  - fwd_gate_to_dout_pin=off");
+      }
+
+      DEBUG_MSG("  - cv_inverted=%d", item->flags.CV.cv_inverted);
+      DEBUG_MSG("  - cv_gate_inverted=%d", item->flags.CV.cv_gate_inverted);
+      DEBUG_MSG("  - cv_hz_v=%d", item->flags.CV.cv_hz_v);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_KB: {
+      DEBUG_MSG("  - kb_transpose=%d", (s8)item->flags.KB.kb_transpose);
+      DEBUG_MSG("  - kb_velocity_map=map%d", (s8)item->flags.KB.kb_velocity_map);
+    } break;
+    }
+
+    DEBUG_MSG("  - led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(item));
+    DEBUG_MSG("  - colour=%d", item->flags.general.colour);
+    DEBUG_MSG("  - lcd_pos=%d:%d:%d", item->lcd+1, item->lcd_x+1, item->lcd_y+1);
+
+    if( item->label && strlen(item->label) ) {
+      DEBUG_MSG("  - label=\"%s\"", item->label);
+    } else {
+      DEBUG_MSG("  - label=none");
+    }
+
+  } else {
 #if 0
-  MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s %s stream:",
-			       item->id,
-			       MBNG_EVENT_ItemControllerStrGet(item->id),
-			       MBNG_EVENT_ItemTypeStrGet(item));
-  if( item->stream_size ) {
-    MIOS32_MIDI_SendDebugHexDump(item->stream, item->stream_size);
-  }
-  return 0;
+    DEBUG_MSG("[EVENT:%04x] %s %s stream:",
+	      item->id,
+	      MBNG_EVENT_ItemControllerStrGet(item->id),
+	      MBNG_EVENT_ItemTypeStrGet(item));
+    if( item->stream_size ) {
+      MIOS32_MIDI_SendDebugHexDump(item->stream, item->stream_size);
+    }
 #else
-  return MIOS32_MIDI_SendDebugMessage("[EVENT:%04x] %s hw_id=%d bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
-				      item->id,
-				      MBNG_EVENT_ItemControllerStrGet(item->id),
-				      item->hw_id & 0xfff,
-				      item->bank,
-				      item->fwd_id,
-				      MBNG_EVENT_ItemTypeStrGet(item),
-				      item->value,
-				      item->label ? item->label : "");
+    return DEBUG_MSG("[EVENT:%04x] %s hw_id=%d bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
+		     item->id,
+		     MBNG_EVENT_ItemControllerStrGet(item->id),
+		     item->hw_id & 0xfff,
+		     item->bank,
+		     item->fwd_id,
+		     MBNG_EVENT_ItemTypeStrGet(item),
+		     item->value,
+		     item->label ? item->label : "");
 #endif
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends detailed item informations to debug terminal
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSearchByIdAndPrint(mbng_event_item_id_t id)
+{
+  int num_found = 0;
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+
+  int i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    if( pool_item->id == id ) {
+      ++num_found;
+
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_EVENT_ItemPrint(&item, 1);
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return num_found;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends detailed item informations to debug terminal
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSearchByHwIdAndPrint(mbng_event_item_id_t hw_id)
+{
+  int num_found = 0;
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+
+  int i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+    if( pool_item->hw_id == hw_id ) {
+      ++num_found;
+
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_EVENT_ItemPrint(&item, 1);
+    }
+    pool_ptr += pool_item->len;
+  }
+
+  return num_found;
 }
 
 
@@ -2110,7 +2535,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     return 0; // stop here
 
   if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_DEBUG ) {
-    MBNG_EVENT_ItemPrint(item);
+    MBNG_EVENT_ItemPrint(item, 0);
   }
 
   switch( item->id & 0xf000 ) {
@@ -2274,7 +2699,7 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
-    u16 id_type = pool_item->id & 0xf000;
+    u16 id_type = pool_item->hw_id & 0xf000;
     u8 is_in_group = 0;
     if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
       is_in_group = pool_item->flags.DIN.radio_group == radio_group;
@@ -2392,7 +2817,7 @@ s32 MBNG_EVENT_Refresh(void)
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
     u8 allow_refresh = 1;
-    switch( pool_item->id & 0xf000 ) {
+    switch( pool_item->hw_id & 0xf000 ) {
     case MBNG_EVENT_CONTROLLER_SENDER:   allow_refresh = 0; break;
     case MBNG_EVENT_CONTROLLER_RECEIVER: allow_refresh = 0; break;
     }
@@ -2670,7 +3095,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     if( pool_item->data_begin == evnt0 && pool_item->len_stream ) { // timing critical
       // first byte is matching - now we've a bit more time for checking
       
-      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) { // a sender doesn't receive
+      if( (pool_item->hw_id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) { // a sender doesn't receive
 	pool_ptr += pool_item->len;
 	continue;
       }
@@ -2697,10 +3122,10 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  }
 	} else {
 	  // EXTRA for button/led matrices
-	  int matrix = (pool_item->id & 0x0fff) - 1;
+	  int matrix = (pool_item->hw_id & 0x0fff) - 1;
 	  int num_pins = -1;
 
-	  switch( pool_item->id & 0xf000 ) {
+	  switch( pool_item->hw_id & 0xf000 ) {
 	  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
 	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DIN ) {
 	      mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[matrix];
@@ -2780,41 +3205,39 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
     if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
       u8 parse_sysex = 1;
 
-      if( (pool_item->id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
+      if( (pool_item->hw_id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) // a sender doesn't receive
 	parse_sysex = 0;
 
       if( !(pool_item->enabled_ports & port_mask) ) // port not enabled
 	parse_sysex = 0;
 
       // receiving a SysEx dump?
-      if( pool_item->tmp_runtime_flags.sysex_dump ) {
+      if( pool_item->sysex_runtime_var.dump ) {
 	if( midi_in >= 0xf0 ) {
 	  // notify event when all values have been received
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_match_ctr, 1, 1); // passing byte counter as value, it could be interesting
+	  MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
 
 	  // and reset
-	  pool_item->tmp_runtime_flags.ALL = 0; // finished
-	  pool_item->tmp_sysex_match_ctr = 0;
+	  pool_item->sysex_runtime_var.ALL = 0; // finished
 	} else {
 	  // notify all events which listen to this dump
-	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->tmp_sysex_match_ctr, midi_in);
+	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->value, midi_in);
 
 	  // waiting for next byte
-	  ++pool_item->tmp_sysex_match_ctr;
+	  ++pool_item->sysex_runtime_var.match_ctr;
 	  parse_sysex = 0;
 	}
       } else {
 	// always reset if 0xf0 has been received
 	if( midi_in == 0xf0 ) { //  || midi_in == 0xf7  --- disabled, could be too confusing for user if the specified stream shouldn't contain F7
-	  pool_item->tmp_sysex_match_ctr = 0;
-	  pool_item->tmp_runtime_flags.ALL = 0;
+	  pool_item->sysex_runtime_var.ALL = 0;
 	}
       }
 
       if( parse_sysex ) {
-	u8 *stream = ((u8 *)&pool_item->data_begin) + pool_item->tmp_sysex_match_ctr;
+	u8 *stream = ((u8 *)&pool_item->data_begin) + pool_item->sysex_runtime_var.match_ctr;
 	u8 again = 0;
 	do {
 	  if( *stream == 0xff ) { // SysEx variable
@@ -2828,18 +3251,18 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_CHK_START:  match = 1; again = 1; break;
 	    case MBNG_EVENT_SYSEX_VAR_CHK:        match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
-	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xff80) | (midi_in & 0x7f); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xf07f) | ((midi_in & 0x7f) << 7); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xfff0) | ((midi_in >>  0) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xff0f) | ((midi_in >>  4) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0xf0ff) | ((midi_in >>  8) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->tmp_sysex_value = (pool_item->tmp_sysex_value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->value = (pool_item->value & 0xff80) | (midi_in & 0x7f); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->value = (pool_item->value & 0xf07f) | ((midi_in & 0x7f) << 7); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->value = (pool_item->value & 0xfff0) | ((midi_in >>  0) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->value = (pool_item->value & 0xff0f) | ((midi_in >>  4) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->value = (pool_item->value & 0xf0ff) | ((midi_in >>  8) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->value = (pool_item->value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
 	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
-	    case MBNG_EVENT_SYSEX_VAR_DUMP:       match = 1; pool_item->tmp_runtime_flags.sysex_dump = 1; pool_item->tmp_sysex_match_ctr = 0; break; // enable dump receiver
+	    case MBNG_EVENT_SYSEX_VAR_DUMP:       match = 1; pool_item->sysex_runtime_var.dump = 1; pool_item->sysex_runtime_var.match_ctr = 0; break; // enable dump receiver
 
 	    case MBNG_EVENT_SYSEX_VAR_CURSOR:
 	      match = 1;
-	      pool_item->tmp_sysex_value = midi_in; // store cursor
+	      pool_item->value = midi_in; // store cursor
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_TXT:
@@ -2849,7 +3272,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	      // wrap at 64 or 56?
 	      u8 x_wrap = (*stream == MBNG_EVENT_SYSEX_VAR_TXT56) ? 56 : 64;
 
-	      pool_item->tmp_runtime_flags.sysex_txt = 1;
+	      pool_item->sysex_runtime_var.txt = 1;
 	      if( midi_in < 0x80 ) {
 		// take initial LCD device and position from item
 		// print also the label (e.g. to initialize font)
@@ -2857,7 +3280,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		MBNG_EVENT_ItemCopy2User(pool_item, &item);
 
 		// mapped X?
-		u8 x = pool_item->tmp_sysex_value % x_wrap;
+		u8 x = pool_item->value % x_wrap;
 		u8 *map_values;
 		int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
 		if( map_len > 0 ) {
@@ -2867,7 +3290,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		    x = map_values[map_len-1];
 		}
 		item.lcd_x += x;
-		item.lcd_y += pool_item->tmp_sysex_value / x_wrap;
+		item.lcd_y += pool_item->value / x_wrap;
 
 		MUTEX_LCD_TAKE;
 		if( item.label ) {
@@ -2879,40 +3302,36 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		MBNG_LCD_PrintChar(midi_in); // print char
 		MUTEX_LCD_GIVE;
 	      }
-	      ++pool_item->tmp_sysex_value; // increment cursor
+	      ++pool_item->value; // increment cursor
 	    } break;
 	    }
 	    if( match ) {
-	      if( !pool_item->tmp_runtime_flags.sysex_dump && !pool_item->tmp_runtime_flags.sysex_txt ) {
-		pool_item->tmp_sysex_match_ctr += 2;
+	      if( !pool_item->sysex_runtime_var.dump && !pool_item->sysex_runtime_var.txt ) {
+		pool_item->sysex_runtime_var.match_ctr += 2;
 	      }
 	    } else {
-	      pool_item->tmp_sysex_match_ctr = 0;
-	      pool_item->tmp_runtime_flags.ALL = 0;
+	      pool_item->sysex_runtime_var.ALL = 0;
 	    }
 	  } else if( *stream == midi_in ) { // matching byte
 	    // begin of stream?
 	    if( midi_in == 0xf0 ) {
-	      pool_item->tmp_sysex_match_ctr = 0;
-	      pool_item->tmp_sysex_value = 0;
-	      pool_item->tmp_runtime_flags.ALL = 0;
+	      pool_item->value = 0;
+	      pool_item->sysex_runtime_var.ALL = 0;
 	    }
 
 	    // end of stream?
 	    if( midi_in == 0xf7 ) {
-	      pool_item->tmp_sysex_match_ctr = 0;
-	      pool_item->tmp_runtime_flags.ALL = 0;
+	      pool_item->sysex_runtime_var.ALL = 0;
 
 	      // all values matching!
 	      mbng_event_item_t item;
 	      MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	      MBNG_EVENT_ItemReceive(&item, pool_item->tmp_sysex_value, 1, 1);
+	      MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
 	    } else {
-	      ++pool_item->tmp_sysex_match_ctr;
+	      ++pool_item->sysex_runtime_var.match_ctr;
 	    }
 	  } else { // no matching byte
-	    pool_item->tmp_sysex_match_ctr = 0;
-	    pool_item->tmp_runtime_flags.ALL = 0;
+	    pool_item->sysex_runtime_var.ALL = 0;
 	  }
 	} while( again );
       }

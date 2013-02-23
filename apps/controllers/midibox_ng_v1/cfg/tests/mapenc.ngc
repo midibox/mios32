@@ -26,22 +26,22 @@ MAP5   7 6 5 4 3 2 1 0
 
 
 # encoder hardware configuration
-ENC n=  1   sr= 5  pins=0:1   type=non_detented
-ENC n=  2   sr= 5  pins=2:3   type=non_detented
-ENC n=  3   sr= 5  pins=4:5   type=non_detented
-ENC n=  4   sr= 5  pins=6:7   type=non_detented
-ENC n=  5   sr= 6  pins=0:1   type=non_detented
-ENC n=  6   sr= 6  pins=2:3   type=non_detented
-ENC n=  7   sr= 6  pins=4:5   type=non_detented
-ENC n=  8   sr= 6  pins=6:7   type=non_detented
-ENC n=  9   sr= 7  pins=0:1   type=non_detented
-ENC n= 10   sr= 7  pins=2:3   type=non_detented
-ENC n= 11   sr= 7  pins=4:5   type=non_detented
-ENC n= 12   sr= 7  pins=6:7   type=non_detented
-ENC n= 13   sr= 8  pins=0:1   type=non_detented
-ENC n= 14   sr= 8  pins=2:3   type=non_detented
-ENC n= 15   sr= 8  pins=4:5   type=non_detented
-ENC n= 16   sr= 8  pins=6:7   type=non_detented
+ENC n=  1   sr= 1  pins=0:1   type=non_detented
+ENC n=  2   sr= 1  pins=2:3   type=non_detented
+ENC n=  3   sr= 1  pins=4:5   type=non_detented
+ENC n=  4   sr= 1  pins=6:7   type=non_detented
+ENC n=  5   sr= 2  pins=0:1   type=non_detented
+ENC n=  6   sr= 2  pins=2:3   type=non_detented
+ENC n=  7   sr= 2  pins=4:5   type=non_detented
+ENC n=  8   sr= 2  pins=6:7   type=non_detented
+ENC n=  9   sr= 3  pins=0:1   type=non_detented
+ENC n= 10   sr= 3  pins=2:3   type=non_detented
+ENC n= 11   sr= 3  pins=4:5   type=non_detented
+ENC n= 12   sr= 3  pins=6:7   type=non_detented
+ENC n= 13   sr= 4  pins=0:1   type=non_detented
+ENC n= 14   sr= 4  pins=2:3   type=non_detented
+ENC n= 15   sr= 4  pins=4:5   type=non_detented
+ENC n= 16   sr= 4  pins=6:7   type=non_detented
 
 
 # LEDring configuration

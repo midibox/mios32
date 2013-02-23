@@ -283,6 +283,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show file:                        shows the current configuration file");
       out("  show pool:                        shows the items of the event pool");
       out("  show poolbin:                     shows the event pool in binary format");
+      out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
+      out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
@@ -395,13 +397,49 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("ERROR: please specify the item which should be displayed!");
       } else {
-	if( strcmp(parameter, "file") == 0 )
+	if( strcmp(parameter, "file") == 0 ) {
 	  MBNG_FILE_C_Debug();
-	else if( strcmp(parameter, "poolbin") == 0 )
+	} else if( strcmp(parameter, "poolbin") == 0 ) {
 	  MBNG_EVENT_PoolPrint();
-	else if( strcmp(parameter, "pool") == 0 ) {
+	} else if( strcmp(parameter, "pool") == 0 ) {
 	  MBNG_EVENT_PoolItemsPrint();
 	  MBNG_EVENT_PoolMapsPrint();
+	} else if( strcmp(parameter, "id") == 0 || strcmp(parameter, "hw_id") == 0 ) {
+	  u8 search_hw_id = strcmp(parameter, "hw_id") == 0;
+	  const char *separator_colon = ":";
+
+	  char *id_str = brkt;
+	  if( id_str == NULL || !strlen(id_str) ) {
+	    out("Please specify <element>:<id> (e.g. LED:1)!");
+	  } else {
+	    char *values_str;
+	    mbng_event_item_id_t id;
+	    if( !(values_str = strtok_r(NULL, separator_colon, &brkt)) ||
+		(id=MBNG_EVENT_ItemIdFromControllerStrGet(values_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
+	      out("Invalid element name '%s'!", id_str);
+	    } else {
+	      char *id_lower_str = brkt;
+	      int id_lower = 0;
+	      if( !(values_str = strtok_r(NULL, separator_colon, &brkt)) ||
+		  (id_lower=get_dec(values_str)) < 1 || id_lower > 0xfff ) {
+		out("Invalid element %s '%s:%s' (expecting %s:1 .. %s:4095)!", search_hw_id ? "hw_id" : "id", id_str, id_lower_str, id_str, id_str);
+	      } else {
+		id = id | id_lower;
+
+		if( search_hw_id ) {
+		  u8 num = MBNG_EVENT_ItemSearchByHwIdAndPrint(id);
+		  if( num < 1 ) {
+		    out("No items found which are assigned to this hw_id!");
+		  }
+		} else {
+		  u8 num = MBNG_EVENT_ItemSearchByIdAndPrint(id);
+		  if( num < 1 ) {
+		    out("No items found which are assigned to this id!");
+		  }
+		}
+	      }
+	    }
+	  }
 	} else {
 	  out("ERROR: invalid item which should be showed - see help for available items!");
 	}

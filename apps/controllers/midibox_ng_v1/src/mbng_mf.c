@@ -102,7 +102,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	    }
 
 	    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	      MBNG_EVENT_ItemPrint(&item);
+	      MBNG_EVENT_ItemPrint(&item, 0);
 	    }
 
 	    // take over new value
@@ -139,7 +139,7 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	  }
 
 	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	    MBNG_EVENT_ItemPrint(&item);
+	    MBNG_EVENT_ItemPrint(&item, 0);
 	  }
 
 	  // scale value from 14bit
