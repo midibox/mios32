@@ -2265,8 +2265,17 @@ s32 parseAin(char *cmd, char *brkt)
 #endif
 	} else {
 	  int pin = values[0] - 1;
-	  mbng_patch_ain.pin_min_value[pin] = values[1];
-	  mbng_patch_ain.pin_max_value[pin] = values[2];
+	  mbng_patch_ain.cali[pin].min = values[1];
+	  mbng_patch_ain.cali[pin].max = values[2];
+
+	  mbng_patch_ain.cali[pin].spread_center = 0;
+	  if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
+	    if( strcasecmp(values_str, "spread_center") != 0 ) {
+	      DEBUG_MSG("[MBNG_FILE_C] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", parameter, value_str);
+	    } else {
+	      mbng_patch_ain.cali[pin].spread_center = 1;
+	    }
+	  }
 	}
       }
 
@@ -2380,8 +2389,18 @@ s32 parseAinSer(char *cmd, char *brkt)
 	  u8 module = (values[0]-1) / AINSER_NUM_PINS;
 	  u8 pin = (values[0]-1) % AINSER_NUM_PINS;
 	  if( module < MBNG_PATCH_NUM_AINSER_MODULES && pin < AINSER_NUM_PINS ) {
-	    mbng_patch_ainser[module].pin_min_value[pin] = values[1];
-	    mbng_patch_ainser[module].pin_max_value[pin] = values[2];
+	    mbng_patch_ainser[module].cali[pin].min = values[1];
+	    mbng_patch_ainser[module].cali[pin].max = values[2];
+
+	    mbng_patch_ainser[module].cali[pin].spread_center = 0;
+	    if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
+	      if( strcasecmp(values_str, "spread_center") != 0 ) {
+		DEBUG_MSG("[MBNG_FILE_C] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", parameter, value_str);
+	      } else {
+		mbng_patch_ainser[module].cali[pin].spread_center = 1;
+	      }
+	  }
+
 	  } else {
 	    DEBUG_MSG("[MBNG_FILE_C] ERROR: something unexpected happened in parseAinSer()!");
 	    DEBUG_MSG("[MBNG_FILE_C] ERROR: while parsing AINSER ... %s=%s\n", parameter, value_str);
@@ -3798,10 +3817,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
     int pin;
     for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
-      int min = mbng_patch_ain.pin_min_value[pin];
-      int max = mbng_patch_ain.pin_max_value[pin];
-      if( min != 0 || max != MBNG_PATCH_AIN_MAX_VALUE ) {
-	sprintf(line_buffer, "AIN pinrange=%d:%d:%d\n", pin+1, min, max);
+      int min = mbng_patch_ain.cali[pin].min;
+      int max = mbng_patch_ain.cali[pin].max;
+      int spread_center = mbng_patch_ain.cali[pin].spread_center;
+      if( min != 0 || max != MBNG_PATCH_AIN_MAX_VALUE || spread_center ) {
+	sprintf(line_buffer, "AIN pinrange=%d:%d:%d%s\n", pin+1, min, max, spread_center ? ":spread_center" : "");
 	FLUSH_BUFFER;
       }
     }
@@ -3836,10 +3856,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       int pin;
       for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
-	int min = ainser->pin_min_value[pin];
-	int max = ainser->pin_max_value[pin];
-	if( min != 0 || max != MBNG_PATCH_AINSER_MAX_VALUE ) {
-	  sprintf(line_buffer, "AINSER pinrange=%d:%d:%d\n", module*AINSER_NUM_PINS + pin + 1, min, max);
+	int min = ainser->cali[pin].min;
+	int max = ainser->cali[pin].max;
+	int spread_center = ainser->cali[pin].spread_center;
+	if( min != 0 || max != MBNG_PATCH_AINSER_MAX_VALUE || spread_center ) {
+	  sprintf(line_buffer, "AINSER pinrange=%d:%d:%d%s\n", module*AINSER_NUM_PINS + pin + 1, min, max, spread_center ? ":spread_center" : "");
 	  FLUSH_BUFFER;
 	}
       }
