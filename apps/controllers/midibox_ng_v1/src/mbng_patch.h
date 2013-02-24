@@ -95,10 +95,20 @@ typedef struct {
   mbng_patch_mf_flags_t flags;
 } mbng_patch_mf_entry_t;
 
+
+typedef union {
+  u32 ALL;
+  
+  struct {
+    u32 min:12;
+    u32 max:12;
+    u32 spread_center:1;
+  };
+} mbng_patch_ain_calibration_t;
+
 typedef struct {
   u8 enable_mask;
-  u16 pin_min_value[MBNG_PATCH_NUM_AIN];
-  u16 pin_max_value[MBNG_PATCH_NUM_AIN];
+  mbng_patch_ain_calibration_t cali[MBNG_PATCH_NUM_AIN];
 } mbng_patch_ain_entry_t;
 
 typedef union {
@@ -112,8 +122,7 @@ typedef union {
 
 typedef struct {
   mbng_patch_ainser_flags_t flags;
-  u16 pin_min_value[AINSER_NUM_PINS];
-  u16 pin_max_value[AINSER_NUM_PINS];
+  mbng_patch_ain_calibration_t cali[AINSER_NUM_PINS];
 } mbng_patch_ainser_entry_t;
 
 #define MBNG_PATCH_SCS_BUTTONS (SCS_NUM_MENU_ITEMS+1)

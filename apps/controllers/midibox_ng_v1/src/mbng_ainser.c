@@ -71,28 +71,12 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
   }
 
   if( mbng_pin < (MBNG_PATCH_NUM_AINSER_MODULES*AINSER_NUM_PINS) ) {
-    int min = mbng_patch_ainser[mapped_module].pin_min_value[pin];
-    int max = mbng_patch_ainser[mapped_module].pin_max_value[pin];
-
-    if( min != 0 || max != MBNG_PATCH_AINSER_MAX_VALUE ) {
-      int range = (min <= max) ? (max-min+1) : (min-max+1);
-
-      int value_normalized = pin_value - min;
-      if( value_normalized < 0 )
-	value_normalized = 0;
-
-      // fixed point arithmetic
-      int value_scaled = (MBNG_PATCH_AINSER_MAX_VALUE * value_normalized) / range;
-
-      if( value_scaled >= MBNG_PATCH_AINSER_MAX_VALUE )
-	value_scaled = MBNG_PATCH_AINSER_MAX_VALUE - 1;
-
-      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	DEBUG_MSG("MBNG_AINSER: pinrange=%d:%d -> scaled %d to %d\n", min, max, pin_value, value_scaled);
-      }
-
-      pin_value = value_scaled;
-    }
+    // Optional Calibration
+    pin_value = MBNG_AIN_HandleCalibration(pin_value,
+					   mbng_patch_ainser[mapped_module].cali[pin].min,
+					   mbng_patch_ainser[mapped_module].cali[pin].max,
+					   MBNG_PATCH_AINSER_MAX_VALUE,
+					   mbng_patch_ainser[mapped_module].cali[pin].spread_center);
   }
 
   // MIDI Learn

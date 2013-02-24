@@ -47,6 +47,55 @@ s32 MBNG_AIN_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function handles the calibration values
+//! Note: it's also used by the AINSER module, therefore public
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_AIN_HandleCalibration(u16 pin_value, u16 min, u16 max, u16 ain_max, u8 spread_center)
+{
+  if( min != 0 || max != ain_max || spread_center ) {
+    int range = max - min + 1;
+
+    if( range < 0 )
+      return pin_value;
+
+    int value_normalized = pin_value - min;
+    if( value_normalized < 0 )
+      value_normalized = 0;
+
+    int value_scaled;
+    int centered = 0;
+    if( spread_center ) {
+      int middle_band = 80; // +/- 40
+      int middle = range / 2;
+
+      if( value_normalized < (middle-(middle_band/2)) ) {
+	value_scaled = (ain_max * value_normalized) / (range-middle_band);
+      } else if( value_normalized < (middle+(middle_band/2)) ) {
+	value_scaled = (ain_max+1) / 2;
+	centered = 1;
+      } else {
+	value_scaled = (ain_max * (value_normalized-middle_band)) / (range-middle_band);
+      }
+    } else {
+      // fixed point arithmetic
+      value_scaled = (ain_max * value_normalized) / range;
+    }
+
+    if( value_scaled > ain_max )
+      value_scaled = ain_max;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("analog pinrange=%d:%d -> scaled %d to %d%s\n", min, max, pin_value, value_scaled, centered ? " (centered)" : "");
+    }
+
+    pin_value = value_scaled;
+  }
+
+  return pin_value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function handles the various AIN modes
 //! Note: it's also used by the AINSER module, therefore public
 /////////////////////////////////////////////////////////////////////////////
@@ -152,30 +201,12 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
     DEBUG_MSG("MBNG_AIN_NotifyChange(%d, %d)\n", hw_id & 0xfff, pin_value);
   }
 
-  {
-    int min = mbng_patch_ain.pin_min_value[pin];
-    int max = mbng_patch_ain.pin_max_value[pin];
-
-    if( min != 0 || max != MBNG_PATCH_AIN_MAX_VALUE ) {
-      int range = (min <= max) ? (max-min+1) : (min-max+1);
-
-      int value_normalized = pin_value - min;
-      if( value_normalized < 0 )
-	value_normalized = 0;
-
-      // fixed point arithmetic
-      int value_scaled = (MBNG_PATCH_AIN_MAX_VALUE * value_normalized) / range;
-
-      if( value_scaled >= MBNG_PATCH_AIN_MAX_VALUE )
-	value_scaled = MBNG_PATCH_AIN_MAX_VALUE - 1;
-
-      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	DEBUG_MSG("MBNG_AIN: pinrange=%d:%d -> scaled %d to %d\n", min, max, pin_value, value_scaled);
-      }
-
-      pin_value = value_scaled;
-    }
-  }
+  // Optional Calibration
+  pin_value = MBNG_AIN_HandleCalibration(pin_value,
+					 mbng_patch_ain.cali[pin].min,
+					 mbng_patch_ain.cali[pin].max,
+					 MBNG_PATCH_AIN_MAX_VALUE,
+					 mbng_patch_ain.cali[pin].spread_center);
 
   // MIDI Learn
   MBNG_EVENT_MidiLearnIt(hw_id);

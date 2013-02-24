@@ -117,8 +117,9 @@ s32 MBNG_PATCH_Init(u32 mode)
 
     int pin;
     for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
-      mbng_patch_ain.pin_min_value[pin] = 0;
-      mbng_patch_ain.pin_max_value[pin] = MBNG_PATCH_AIN_MAX_VALUE;
+      mbng_patch_ain.cali[pin].min = 0;
+      mbng_patch_ain.cali[pin].max = MBNG_PATCH_AIN_MAX_VALUE;
+      mbng_patch_ain.cali[pin].spread_center = 0;
     }
   }
 
@@ -135,8 +136,9 @@ s32 MBNG_PATCH_Init(u32 mode)
 
       int pin;
       for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
-	ainser->pin_min_value[pin] = 0;
-	ainser->pin_max_value[pin] = MBNG_PATCH_AINSER_MAX_VALUE;
+	ainser->cali[pin].min = 0;
+	ainser->cali[pin].max = MBNG_PATCH_AINSER_MAX_VALUE;
+	ainser->cali[pin].spread_center = 0;
       }
     }
   }

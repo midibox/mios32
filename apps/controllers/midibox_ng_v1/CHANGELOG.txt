@@ -6,6 +6,9 @@ MIDIbox NG V1.020
    o added "rgb" parameter.
      See cfg/tests/rgb_*.ngc for various examples.
 
+   o added "spread_center" option to AIN/AINSER calibration.
+     See cfg/tests/kb_1.ngc for an usage example.
+
    o reduced memory consumption of EVENT_* definitions
 
    o added MIOS Terminal commands: "show id" and "show hw_id"

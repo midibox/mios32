@@ -3223,7 +3223,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  pool_item->sysex_runtime_var.ALL = 0; // finished
 	} else {
 	  // notify all events which listen to this dump
-	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->value, midi_in);
+	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->sysex_runtime_var.match_ctr+1, midi_in);
 
 	  // waiting for next byte
 	  ++pool_item->sysex_runtime_var.match_ctr;
