@@ -1,5 +1,12 @@
 $Id$
 
+MIDIbox NG V1.021
+~~~~~~~~~~~~~~~~~
+
+   o added snapshot file (.NGS) which allows to store and restore values.
+     The snapshot can be changed in the "Snap" menu in the SCS
+
+
 MIDIbox NG V1.020
 ~~~~~~~~~~~~~~~~~
 

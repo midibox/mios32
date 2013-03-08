@@ -28,6 +28,7 @@
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
+#include "mbng_file_s.h"
 #include "mbng_event.h"
 
 
@@ -64,6 +65,7 @@ s32 MBNG_FILE_Init(u32 mode)
   status |= FILE_Init(0);
   status |= MBNG_FILE_C_Init(0);
   status |= MBNG_FILE_L_Init(0);
+  status |= MBNG_FILE_S_Init(0);
 
   return status;
 }
@@ -82,6 +84,7 @@ s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
 
   status |= MBNG_FILE_C_Load("DEFAULT");
   status |= MBNG_FILE_L_Load("DEFAULT");
+  status |= MBNG_FILE_S_Load("DEFAULT", -1);
 
   return status;
 }
@@ -95,6 +98,7 @@ s32 MBNG_FILE_UnloadAllFiles(void)
   s32 status = 0;
   status |= MBNG_FILE_C_Unload();
   status |= MBNG_FILE_L_Unload();
+  status |= MBNG_FILE_S_Unload();
   return status;
 }
 
@@ -120,7 +124,7 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
     }
   }
 
-  // check if patch file exists
+  // check if label file exists
   if( !MBNG_FILE_L_Valid() ) {
     // create new one
     DEBUG_MSG("Creating initial DEFAULT.NGL file\n");
@@ -129,6 +133,18 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
       DEBUG_MSG("Failed to create file! (status: %d)\n", status);
     } else {
       DEBUG_MSG("Initial DEFAULT.NGL file has been created.\n");
+    }
+  }
+
+  // check if snapshot file exists
+  if( !MBNG_FILE_S_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.NGS file\n");
+
+    if( (status=MBNG_FILE_S_Write("DEFAULT", -1)) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    } else {
+      DEBUG_MSG("Initial DEFAULT.NGS file has been created.\n");
     }
   }
 
