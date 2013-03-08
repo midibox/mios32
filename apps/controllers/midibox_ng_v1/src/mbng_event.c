@@ -1175,6 +1175,47 @@ s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *i
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Iterates through the event pool to retrieve values/secondary values\n
+//! Used to store a snapshot in \ref MBNG_FILE_S_Write
+//! \returns 0 if a new value set has been found
+//! \returns -1 if no new item
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u8 *secondary_value, u32 *continue_ix)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i = 0;
+
+  if( *continue_ix ) {
+    // lower half: pointer offset to pool item
+    // upper half: index of pool item
+    pool_ptr += (*continue_ix & 0xffff);
+    i = *continue_ix >> 16;
+  }
+
+  for(; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    *id = pool_item->id;
+    *value = pool_item->value;
+    *secondary_value = pool_item->secondary_value;
+
+    // pass pointer offset to pool item + index of pool item in continue_ix for continued search
+    // skip this if the new values exceeding the 16bit boundary, or if this is the last pool item
+    u32 next_pool_offset = (u32)pool_ptr - (u32)event_pool + pool_item->len;
+    u32 next_pool_i = i + 1;
+    if( next_pool_i > 65535 || next_pool_i >= event_pool_num_items || next_pool_offset > 65535 )
+      *continue_ix = 0;
+    else
+      *continue_ix = (next_pool_i << 16) | next_pool_offset;
+
+    return 0; // item found
+  }
+
+  return -1; // no new item
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! \retval 0 if no matching condition
 //! \retval 1 if matching condition (or no condition)
 //! \retval 2 if matching condition and stop requested

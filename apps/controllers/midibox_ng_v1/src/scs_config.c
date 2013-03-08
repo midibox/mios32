@@ -38,6 +38,7 @@
 #include <file.h>
 #include "mbng_file.h"
 #include "mbng_file_c.h"
+#include "mbng_file_s.h"
 #include "mbng_patch.h"
 #include "mbng_lcd.h"
 #include "mbng_enc.h"
@@ -180,6 +181,30 @@ static void stringIp(u32 ix, u16 value, char *label)
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
+static u16  selectSnapshotLOAD(u32 ix, u16 value)
+{
+  if( MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet()) < 0 ) {
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", "Snapshot");
+  } else {
+    char buffer[100];
+    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet()+1);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "restored!");
+  }
+  return value;
+}
+
+static u16  selectSnapshotSAVE(u32 ix, u16 value)
+{
+  if( MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet()) < 0 ) {
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to save", "Snapshot");
+  } else {
+    char buffer[100];
+    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet()+1);
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
+  }
+  return value;
+}
+
 static void selectSAVE_Callback(char *newString)
 {
   s32 status;
@@ -288,6 +313,9 @@ static void sysExVarInsSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_ins = valu
 static u16  sysExVarChnGet(u32 ix)             { return mbng_patch_cfg.sysex_chn; }
 static void sysExVarChnSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_chn = value; }
 
+static u16  snapshotGet(u32 ix)                { return MBNG_FILE_S_SnapshotGet(); }
+static void snapshotSet(u32 ix, u16 value)     { MBNG_FILE_S_SnapshotSet(value); }
+
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -339,6 +367,12 @@ const scs_menu_item_t pageVAR[] = {
   SCS_ITEM("Chn ", 0, 127, sysExVarChnGet, sysExVarChnSet, selectNOP, stringDec, NULL),
 };
 
+const scs_menu_item_t pageSnap[] = {
+  SCS_ITEM("Snap",  0, MBNG_FILE_S_NUM_SNAPSHOTS-1, snapshotGet, snapshotSet, selectNOP,    stringDecP1, NULL),
+  SCS_ITEM("Load ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotLOAD, stringEmpty, NULL),
+  SCS_ITEM("Save ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotSAVE, stringEmpty, NULL),
+};
+
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -383,6 +417,7 @@ const scs_menu_item_t pageLearn[] = {
 
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Var. ", pageVAR),
+  SCS_PAGE("Snap ", pageSnap),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),

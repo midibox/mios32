@@ -28,6 +28,7 @@
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
+#include "mbng_file_s.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -197,6 +198,7 @@ s32 MBNG_PATCH_Load(char *filename)
   // we need a more sophisticated file handling to determine if file *must* exist before error message is print out
   MBNG_FILE_L_Read(filename);
 #endif
+  MBNG_FILE_S_Read(filename, -1);
   MUTEX_SDCARD_GIVE;
 
   // refresh the elements (will update the screen!)

@@ -38,6 +38,12 @@
 #define MBNG_FILE_L_ERR_NO_FILE         -142 // no or invalid bank file
 #define MBNG_FILE_L_ERR_P_TOO_LARGE     -143 // during label write: label too large for slot in bank
 
+// used by mbng_file_s.c
+#define MBNG_FILE_S_ERR_READ            -150 // error while reading file (exact error status cannot be determined anymore)
+#define MBNG_FILE_S_ERR_WRITE           -151 // error while writing file (exact error status cannot be determined anymore)
+#define MBNG_FILE_S_ERR_NO_FILE         -152 // no or invalid bank file
+#define MBNG_FILE_S_ERR_P_TOO_LARGE     -153 // during label write: label too large for slot in bank
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
