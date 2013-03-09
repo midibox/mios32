@@ -37,7 +37,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // Note: verbose level 1 is default - it prints error messages!
-#define DEBUG_VERBOSE_LEVEL 2
+#define DEBUG_VERBOSE_LEVEL 1
 
 // format of the .NGS file (32bit) - has to be changed whenever the .NGS structure changes!
 #define NGS_FILE_FORMAT_NUMBER 0
@@ -129,6 +129,7 @@ s32 MBNG_FILE_S_Load(char *filename, int snapshot)
 s32 MBNG_FILE_S_Unload(void)
 {
   mbng_file_s_info.valid = 0;
+  current_snapshot = 0;
 
   return 0; // no error
 }
@@ -172,6 +173,8 @@ s32 MBNG_FILE_S_SnapshotSet(u8 snapshot)
 //! \param filename the filename which should be read
 //! \param snapshot if < 0: load last snapshot, if >= 0: load given snapshot
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
+//! \returns 0 if snapshot not in file
+//! \returns 1 if snapshot loaded from file
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 {
@@ -246,15 +249,20 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 
   if( snapshot_pos == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_S] snapshot #%d not stored in %s yet!\n", current_snapshot+1, filepath);
+    DEBUG_MSG("[MBNG_FILE_S] snapshot #%d not stored in %s yet\n", current_snapshot, filepath);
 #endif
   } else {
     u32 snapshot_len;
     if( (status=FILE_ReadWord(&snapshot_len)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_S] failed to retrieve snapshot #%d length in %s yet!\n", current_snapshot+1, filepath);
+      DEBUG_MSG("[MBNG_FILE_S] failed to retrieve snapshot #%d length in %s!\n", current_snapshot, filepath);
 #endif
     } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_S] loading snapshot #%d from %s\n", current_snapshot, filepath);
+#endif
+
+      snapshot_len -= 4;
       int pos;
       for(pos=0; pos<snapshot_len; pos+=5) {
 	u16 id;
@@ -264,12 +272,12 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 	    (status=FILE_ReadHWord(&value)) < 0 ||
 	    (status=FILE_ReadByte(&secondary_value)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_S] failed to retrieve value in snapshot #%d of %s yet!\n", current_snapshot+1, filepath);
+	  DEBUG_MSG("[MBNG_FILE_S] failed to retrieve value in snapshot #%d of %s yet!\n", current_snapshot, filepath);
 #endif
 	  break;
 	} else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  DEBUG_MSG("[MBNG_FILE_S] id=%s:%d value=%d svalue=%d\n",
+	  DEBUG_MSG("[MBNG_FILE_S] id=%s:%d value=%d svalue=%d%s\n",
 		    MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value, secondary_value);
 #endif
 	  u32 found_items = 0;
@@ -278,10 +286,12 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 	  while( MBNG_EVENT_ItemSearchById(id, &item, &continue_id_ix) >= 0 ) {
 	    ++found_items;
 
-	    item.secondary_value = value;
-	    u8 from_midi = 0;
-	    u8 fwd_enabled = 1;
-	    MBNG_EVENT_ItemReceive(&item, value, from_midi, fwd_enabled);
+	    if( !item.flags.general.no_dump ) {
+	      item.secondary_value = secondary_value;
+	      u8 from_midi = 0;
+	      u8 fwd_enabled = 1;
+	      MBNG_EVENT_ItemReceive(&item, value, from_midi, fwd_enabled);
+	    }
 
 	    if( continue_id_ix == 0 )
 	      break;
@@ -308,7 +318,10 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
     return MBNG_FILE_S_ERR_READ;
   }
 
-  return 0; // no error
+  // file is valid! :)
+  info->valid = 1;
+
+  return (snapshot_pos == 0) ? 0 : 1; // no error
 }
 
 
@@ -338,7 +351,7 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
   // write snapshot
 
   s32 status = 0;
-  if( snapshot < 0 ) {
+  if( snapshot < 0 || FILE_FileExists(filepath) < 1 ) {
     current_snapshot = 0;
 
     if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
@@ -361,7 +374,10 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
     for(i=0; i<MBNG_FILE_S_NUM_SNAPSHOTS; ++i) {
       status |= FILE_WriteWord(0);
     }
-  } else {
+    FILE_WriteClose(); // important to free memory given by malloc
+  }
+
+  if( snapshot >= 0 ) {
     current_snapshot = snapshot;
     u32 snapshot_pos = 0;
 
@@ -410,10 +426,10 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
 	u32 snapshot_len;
 	if( (status=FILE_ReadWord(&snapshot_len)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_S] failed to retrieve snapshot #%d length in %s yet!\n", current_snapshot+1, filepath);
+	  DEBUG_MSG("[MBNG_FILE_S] failed to retrieve snapshot #%d length in %s yet!\n", current_snapshot, filepath);
 #endif
 	} else {
-	  if( snapshot_len != (5*MBNG_EVENT_PoolNumItemsGet()) ) {
+	  if( snapshot_len != (4+5*MBNG_EVENT_PoolNumItemsGet()) ) {
 	    // new snapshot
 #if DEBUG_VERBOSE_LEVEL >= 2
 	    DEBUG_MSG("[MBNG_FILE_S] snapshot size mismatch - creating new record!!\n");
@@ -439,7 +455,7 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
     status |= FILE_WriteSeek(snapshot_pos);
     int num_items = MBNG_EVENT_PoolNumItemsGet();
     if( status >= 0 )
-      status |= FILE_WriteWord(5*num_items);
+      status |= FILE_WriteWord(4+5*num_items);
 
     // write snapshot values
     if( status >= 0 ) {
@@ -466,6 +482,9 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
       status |= FILE_WriteSeek(8 + snapshot*4);
       status |= FILE_WriteWord(snapshot_pos);
     }
+
+    // close file
+    status |= FILE_WriteClose();
   }
 
   if( status < 0 ) {
@@ -474,9 +493,6 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
 #endif
     return status;
   }
-
-  // close file
-  status |= FILE_WriteClose();
 
   return 0; // no error
 }

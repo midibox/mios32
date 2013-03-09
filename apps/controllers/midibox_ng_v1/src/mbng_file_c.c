@@ -505,6 +505,7 @@ s32 parseEvent(char *cmd, char *brkt)
 {
   mbng_event_item_t item;
   char *event = (char *)&cmd[6]; // remove "EVENT_"
+  u8 no_dump_set = 0;
 
   MBNG_EVENT_ItemInit(&item, MBNG_EVENT_ItemIdFromControllerStrGet(event));
 
@@ -540,11 +541,14 @@ s32 parseEvent(char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
 #endif
 	return -1;
-      } else {
-	item.id = (item.id & 0xf000) | id;
-	if( !(item.hw_id & 0xfff) )
-	  item.hw_id = item.id; // default hardware ID if not already define before
       }
+
+      item.id = (item.id & 0xf000) | id;
+      if( !(item.hw_id & 0xfff) )
+	item.hw_id = item.id; // default hardware ID if not already define before
+
+      if( !no_dump_set )
+	item.flags.general.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "hw_id") == 0 ) {
@@ -554,9 +558,9 @@ s32 parseEvent(char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid HW_ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
 #endif
 	return -1;
-      } else {
-	item.hw_id = (item.hw_id & 0xf000) | hw_id; // HW_ID can be modified
       }
+
+      item.hw_id = (item.hw_id & 0xf000) | hw_id; // HW_ID can be modified
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strncasecmp(parameter, "if_", 3) == 0 ) {
@@ -682,6 +686,9 @@ s32 parseEvent(char *cmd, char *brkt)
 	  item.stream_size = 0;
 	}
       }
+
+      if( !no_dump_set )
+	item.flags.general.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "chn") == 0 ) {
@@ -956,6 +963,18 @@ s32 parseEvent(char *cmd, char *brkt)
       } else {
 	item.secondary_value = value;
       }
+
+    } else if( strcasecmp(parameter, "no_dump") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      item.flags.general.no_dump = value;
+      no_dump_set = 1;
 
     } else if( strcasecmp(parameter, "dimmed") == 0 ) {
       int value;
@@ -3475,6 +3494,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       } else {
 	sprintf(line_buffer, "  range=%3d:%-3d", item.min, item.max);
+	FLUSH_BUFFER;
+      }
+
+      if( item.flags.general.no_dump != MBNG_EVENT_ItemNoDumpDefault(&item) ) {
+	sprintf(line_buffer, "  no_dump=%d", item.flags.general.no_dump);
 	FLUSH_BUFFER;
       }
 

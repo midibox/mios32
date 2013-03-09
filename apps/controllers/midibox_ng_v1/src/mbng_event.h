@@ -152,6 +152,14 @@ typedef enum {
   MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID,
   MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID,
 
+  MBNG_EVENT_META_TYPE_SET_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_DEC_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_INC_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT,
+  MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT,
+
   MBNG_EVENT_META_TYPE_ENC_FAST,
 
   MBNG_EVENT_META_TYPE_MIDI_LEARN,
@@ -189,9 +197,9 @@ typedef union {
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
+    u32 no_dump:1;
     u32 dimmed:1;
     u32 colour:2;
-    u32 spare:1; // for future extensions.... maximum 16 bit in general range
   } general;
 
   struct {
@@ -354,6 +362,8 @@ extern s32 MBNG_EVENT_SelectedBankSet(u8 new_bank);
 extern s32 MBNG_EVENT_HwIdBankGet(u16 hw_id);
 extern s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank);
 
+extern s32 MBNG_EVENT_ItemNoDumpDefault(mbng_event_item_t *item);
+
 extern s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id);
 extern s32 MBNG_EVENT_ItemGet(u32 item_ix, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemAdd(mbng_event_item_t *item);
@@ -404,9 +414,11 @@ extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group);
 
 extern s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item);
-extern s32 MBNG_EVENT_Refresh(void);
 
+extern s32 MBNG_EVENT_Refresh(void);
 extern s32 MBNG_EVENT_UpdateLCD(u8 force);
+
+extern s32 MBNG_EVENT_Dump(void);
 
 extern s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
 extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);

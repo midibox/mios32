@@ -27,6 +27,7 @@
 #include "app.h"
 #include "mbng_lcd.h"
 #include "mbng_file_l.h"
+#include "mbng_file_s.h"
 #include "mbng_event.h"
 #include "mbng_patch.h"
 
@@ -500,6 +501,11 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
 	    MBNG_LCD_PrintFormattedString(format, "");
+	  } break;
+
+	  case 'S': { // Snapshot
+	    *format_type = 'd';
+	    MBNG_LCD_PrintFormattedString(format, MBNG_FILE_S_SnapshotGet());
 	  } break;
 
 	  case 'i': { // ID

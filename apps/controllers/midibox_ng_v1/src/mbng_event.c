@@ -36,6 +36,7 @@
 #include "mbng_cv.h"
 #include "mbng_kb.h"
 #include "mbng_patch.h"
+#include "mbng_file_s.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -630,6 +631,45 @@ s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Returns default no_dump parameter for item depending in id and type
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemNoDumpDefault(mbng_event_item_t *item)
+{
+  switch( item->id & 0xf000 ) {
+  //case MBNG_EVENT_CONTROLLER_DISABLED:
+  case MBNG_EVENT_CONTROLLER_SENDER:
+  //case MBNG_EVENT_CONTROLLER_RECEIVER:
+  case MBNG_EVENT_CONTROLLER_BUTTON:
+  case MBNG_EVENT_CONTROLLER_LED:
+  case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX:
+  case MBNG_EVENT_CONTROLLER_LED_MATRIX:
+  case MBNG_EVENT_CONTROLLER_ENC:
+  case MBNG_EVENT_CONTROLLER_AIN:
+  case MBNG_EVENT_CONTROLLER_AINSER:
+  case MBNG_EVENT_CONTROLLER_MF:
+  case MBNG_EVENT_CONTROLLER_CV:
+  //case MBNG_EVENT_CONTROLLER_KB            = 0xc000,
+    switch( item->flags.general.type ) {
+    //case MBNG_EVENT_TYPE_UNDEFINED:
+    case MBNG_EVENT_TYPE_NOTE_OFF:
+    case MBNG_EVENT_TYPE_NOTE_ON:
+    case MBNG_EVENT_TYPE_POLY_PRESSURE:
+    case MBNG_EVENT_TYPE_CC:
+    case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
+    case MBNG_EVENT_TYPE_AFTERTOUCH:
+    case MBNG_EVENT_TYPE_PITCHBEND:
+    case MBNG_EVENT_TYPE_SYSEX:
+    case MBNG_EVENT_TYPE_NRPN:
+    //case MBNG_EVENT_TYPE_META:
+      return 0; // allow dump by default
+    }
+  }
+
+  return 1; // no dump
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Initializes an item with default settings
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
@@ -699,7 +739,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   case MBNG_EVENT_CONTROLLER_KB: {
   }; break;
   }
-  
+
   return 0; // no error
 }
 
@@ -2091,6 +2131,14 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID:   return "IncBankOfHwId";
   case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: return "CycleBankOfHwId";
 
+  case MBNG_EVENT_META_TYPE_SET_SNAPSHOT:        return "SetSnapshot";
+  case MBNG_EVENT_META_TYPE_DEC_SNAPSHOT:        return "DecSnapshot";
+  case MBNG_EVENT_META_TYPE_INC_SNAPSHOT:        return "IncSnapshot";
+  case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT:      return "CycleSnapshot";
+  case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT:       return "LoadSnapshot";
+  case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return "SaveSnapshot";
+  case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return "DumpSnapshot";
+
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return "EncFast";
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
@@ -2127,6 +2175,14 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "IncBankOfHwId") == 0 )       return MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID;
   if( strcasecmp(meta_type, "CycleBankOfHwId") == 0 )     return MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID;
 
+  if( strcasecmp(meta_type, "SetSnapshot") == 0 )   return MBNG_EVENT_META_TYPE_SET_SNAPSHOT;
+  if( strcasecmp(meta_type, "DecSnapshot") == 0 )   return MBNG_EVENT_META_TYPE_DEC_SNAPSHOT;
+  if( strcasecmp(meta_type, "IncSnapshot") == 0 )   return MBNG_EVENT_META_TYPE_INC_SNAPSHOT;
+  if( strcasecmp(meta_type, "CycleSnapshot") == 0 ) return MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT;
+  if( strcasecmp(meta_type, "LoadSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT;
+  if( strcasecmp(meta_type, "SaveSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT;
+  if( strcasecmp(meta_type, "DumpSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT;
+
   if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
 
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
@@ -2162,6 +2218,14 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID:   return 1;
   case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID:   return 1;
   case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: return 1;
+
+  case MBNG_EVENT_META_TYPE_SET_SNAPSHOT:        return 0;
+  case MBNG_EVENT_META_TYPE_DEC_SNAPSHOT:        return 0;
+  case MBNG_EVENT_META_TYPE_INC_SNAPSHOT:        return 0;
+  case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT:      return 0;
+  case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT:       return 0;
+  case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return 0;
+  case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return 0;
 
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return 0;
 
@@ -2482,6 +2546,48 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
       } break;
 
+
+      case MBNG_EVENT_META_TYPE_SET_SNAPSHOT: {
+	if( item->value < MBNG_FILE_S_NUM_SNAPSHOTS ) {
+	  MBNG_FILE_S_SnapshotSet(item->value);
+	}
+	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_DEC_SNAPSHOT: {
+	int snapshot = MBNG_FILE_S_SnapshotGet();
+	if( snapshot > 1 )
+	  MBNG_FILE_S_SnapshotSet(snapshot - 1);
+	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_INC_SNAPSHOT: {
+	int snapshot = MBNG_FILE_S_SnapshotGet();
+	if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
+	  MBNG_FILE_S_SnapshotSet(snapshot + 1);
+	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT: {
+	int snapshot = MBNG_FILE_S_SnapshotGet();
+	if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
+	  MBNG_FILE_S_SnapshotSet(snapshot + 1);
+	else
+	  MBNG_FILE_S_SnapshotSet(0);
+	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+      } break;
+
+      case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT: {
+	MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+      } break;
+
+      case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT: {
+	MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+      } break;
+
+      case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT: {
+	MBNG_EVENT_Dump();
+      } break;
 
       case MBNG_EVENT_META_TYPE_ENC_FAST: {
 	MBNG_ENC_FastModeSet(item->value);
@@ -2936,6 +3042,30 @@ s32 MBNG_EVENT_UpdateLCD(u8 force)
     mbng_event_item_t item;
     MBNG_EVENT_ItemCopy2User(last_pool_item, &item);
     MBNG_LCD_PrintItemLabel(&item);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function dumps all MIDI events\n
+//! Used in conjunction with snapshots
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_Dump(void)
+{
+  u8 *pool_ptr = (u8 *)&event_pool[0];
+  u32 i;
+  for(i=0; i<event_pool_num_items; ++i) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
+
+    if( !pool_item->flags.general.no_dump ) {
+      mbng_event_item_t item;
+      MBNG_EVENT_ItemCopy2User(pool_item, &item);
+      MBNG_EVENT_NotifySendValue(&item);
+    }
+
+    pool_ptr += pool_item->len;
   }
 
   return 0; // no error
