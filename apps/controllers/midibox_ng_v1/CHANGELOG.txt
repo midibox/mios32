@@ -3,8 +3,31 @@ $Id$
 MIDIbox NG V1.021
 ~~~~~~~~~~~~~~~~~
 
-   o added snapshot file (.NGS) which allows to store and restore values.
+   o added .NGS file which allows to store and restore values into
+     up to 128 snapshots (0..127).
      The snapshot can be changed in the "Snap" menu in the SCS
+
+   o the "Snap" menu also allows to dump all events (e.g. after a new
+     snapshot has been loaded)
+
+   o added new (hopefully selfexplaining) meta events:
+     SetSnapshot, DecSnapshot, IncSnapshot, CycleSnapshot, LoadSnapshot,
+     SaveSnapshot and DumpSnapshot
+     Note that multiple meta commands can be assigned to an event, e.g.
+     to set, auto-load and dump a snapshot from an encoder write:
+     EVENT_ENC ... type=Meta meta=SetSnapshot meta=LoadSnapshot meta=DumpSnapshot
+
+   o added "no_dump" parameter to EVENT_xxx
+     It specifies if an EVENT_xxx should be sent during a DumpSnapshot.
+
+     no_dump=1 is set for EVENT_RECEIVER and EVENT_KB and events which are using
+     type=Meta by default.
+     If such events should be part of the dump, set no_dump=0
+
+     For all other events/types no_dump=0 is set by default, set no_dump=1 if
+     they shouldn't send MIDI events on a snapshot dump.
+
+   o new label printf-control "%S" prints the snapshot number 0..127
 
 
 MIDIbox NG V1.020

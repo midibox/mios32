@@ -183,12 +183,13 @@ static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
 static u16  selectSnapshotLOAD(u32 ix, u16 value)
 {
-  if( MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet()) < 0 ) {
+  s32 status;
+  if( (status=MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet())) < 0 ) {
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", "Snapshot");
   } else {
     char buffer[100];
     sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet()+1);
-    SCS_Msg(SCS_MSG_L, 1000, buffer, "restored!");
+    SCS_Msg(SCS_MSG_L, 1000, buffer, (status == 0) ? "not filed yet" : "restored!");
   }
   return value;
 }
@@ -204,6 +205,14 @@ static u16  selectSnapshotSAVE(u32 ix, u16 value)
   }
   return value;
 }
+
+static u16  selectSnapshotDUMP(u32 ix, u16 value)
+{
+  MBNG_EVENT_Dump();
+  SCS_Msg(SCS_MSG_L, 1000, "All Values", "dumped!");
+  return value;
+}
+
 
 static void selectSAVE_Callback(char *newString)
 {
@@ -368,9 +377,10 @@ const scs_menu_item_t pageVAR[] = {
 };
 
 const scs_menu_item_t pageSnap[] = {
-  SCS_ITEM("Snap",  0, MBNG_FILE_S_NUM_SNAPSHOTS-1, snapshotGet, snapshotSet, selectNOP,    stringDecP1, NULL),
+  SCS_ITEM("Snap",  0, MBNG_FILE_S_NUM_SNAPSHOTS-1, snapshotGet, snapshotSet, selectNOP,    stringDec, NULL),
   SCS_ITEM("Load ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotLOAD, stringEmpty, NULL),
   SCS_ITEM("Save ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotSAVE, stringEmpty, NULL),
+  SCS_ITEM("Dump ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotDUMP, stringEmpty, NULL),
 };
 
 const scs_menu_item_t pageROUT[] = {
