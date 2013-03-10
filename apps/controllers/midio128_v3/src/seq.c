@@ -57,6 +57,7 @@
 static s32 SEQ_PlayOffEvents(void);
 static s32 SEQ_SongPos(u16 new_song_pos);
 static s32 SEQ_Tick(u32 bpm_tick);
+static s32 SEQ_CheckSongFinished(u32 bpm_tick);
 
 static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
 
@@ -86,6 +87,9 @@ static u8 ffwd_silent_mode;
 
 // next tick at which the prefetch should take place
 static u32 next_prefetch;
+
+// end of file reached
+static u32 end_of_file;
 
 // already prefetched ticks
 static u32 prefetch_offset;
@@ -244,6 +248,11 @@ s32 SEQ_Handler(void)
       u32 bpm_tick;
       if( SEQ_BPM_ChkReqClk(&bpm_tick) > 0 ) {
 
+	// check if song is finished
+	if( SEQ_CheckSongFinished(bpm_tick) >= 1 ) {
+	  bpm_tick = 0;
+	}
+
 	// set initial BPM according to MIDI spec
 	if( bpm_tick == 0 && !seq_clk_locked )
 	  SEQ_BPM_Set(120.0);
@@ -304,10 +313,8 @@ s32 SEQ_Reset(u8 play_off_events)
   SEQ_SetPauseMode(0);
   ffwd_silent_mode = 0;
   next_prefetch = 0;
+  end_of_file = 0;
   prefetch_offset = 0;
-
-  // restart song
-  MID_PARSER_RestartSong();
 
   // set initial BPM (according to MIDI file spec)
   SEQ_BPM_PPQN_Set(384); // not specified
@@ -316,6 +323,9 @@ s32 SEQ_Reset(u8 play_off_events)
 
   // reset BPM tick
   SEQ_BPM_TickSet(0);
+
+  // restart song
+  MID_PARSER_RestartSong();
 
   return 0; // no error
 }
@@ -359,6 +369,7 @@ static s32 SEQ_SongPos(u16 new_song_pos)
   }
 
   // when do we expect the next prefetch:
+  end_of_file = 0;
   next_prefetch = new_tick;
   prefetch_offset = new_tick;
 
@@ -383,7 +394,7 @@ s32 SEQ_PlayFile(char *midifile)
 
   // reset BPM tick (to ensure that next file will start at 0 if we are currently in pause mode)
   SEQ_BPM_TickSet(0);
-  next_prefetch = prefetch_offset = 0;
+  end_of_file = next_prefetch = prefetch_offset = 0;
 
   if( MID_FILE_open(midifile) ) { // try to open next file
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -506,7 +517,7 @@ static s32 SEQ_Tick(u32 bpm_tick)
   if( (bpm_tick % 16) == 0 )
     MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
-  if( bpm_tick >= next_prefetch ) {
+  if( !end_of_file && bpm_tick >= next_prefetch ) {
     // get number of prefetch ticks depending on current BPM
     u32 prefetch_ticks = SEQ_BPM_TicksFor_mS(PREFETCH_TIME_MS);
 
@@ -527,27 +538,7 @@ static s32 SEQ_Tick(u32 bpm_tick)
 #endif
 
     if( MID_PARSER_FetchEvents(prefetch_offset, prefetch_ticks) == 0 ) {
-
-      if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ] End of song reached after %u ticks - stopping sequencer!\n", bpm_tick);
-#endif
-
-	SEQ_BPM_Stop();
-	SEQ_Reset(1);
-	SEQ_SetPauseMode(1);
-      } else if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE_LOOP ) {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ] End of song reached after %u ticks - restarting song!\n", bpm_tick);
-#endif
-	SEQ_Reset(1);
-      } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
-#endif
-
-	SEQ_PlayFileReq(1, 0);
-      }
+      end_of_file = 1;
     } else {
       prefetch_offset += prefetch_ticks;
     }
@@ -560,6 +551,43 @@ static s32 SEQ_Tick(u32 bpm_tick)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// handles song restart
+// returns 1 if song has been restarted, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_CheckSongFinished(u32 bpm_tick)
+{
+  // synchronized switch to next file
+  if( end_of_file &&
+      ((bpm_tick+1) % SEQ_BPM_PPQN_Get()) == 0 ) {
+
+    if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[SEQ] End of song reached after %u ticks - stopping sequencer!\n", bpm_tick);
+#endif
+
+      SEQ_BPM_Stop();
+      SEQ_Reset(1);
+      SEQ_SetPauseMode(1);
+    } else if( midi_play_mode == SEQ_MIDI_PLAY_MODE_SINGLE_LOOP ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[SEQ] End of song reached after %u ticks - restarting song!\n", bpm_tick);
+#endif
+      SEQ_Reset(1);
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[SEQ] End of song reached after %u ticks - loading next file!\n", bpm_tick);
+#endif
+
+      SEQ_PlayFileReq(1, 0);
+    }
+
+    return 1;
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // called when a MIDI event should be played at a given tick
