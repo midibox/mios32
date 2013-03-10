@@ -1,6 +1,12 @@
 $Id$
 
 
+MIDIboxSEQ V4L.071
+~~~~~~~~~~~~~~~~~~
+
+   o enabled 4 USB-MIDI ports
+
+
 MIDIboxSEQ V4L.069
 ~~~~~~~~~~~~~~~~~~
 
