@@ -1,5 +1,11 @@
 $Id$
 
+MIDIO128 V3.014
+~~~~~~~~~~~~~~~
+
+   o improved MIDI file loop synchronisation
+
+
 MIDIO128 V3.013
 ~~~~~~~~~~~~~~~
 
