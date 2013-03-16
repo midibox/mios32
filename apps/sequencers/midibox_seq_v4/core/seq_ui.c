@@ -96,6 +96,8 @@ u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 u8 seq_ui_saveall_req;
 
+u8 seq_ui_sent_cc_track;
+
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
@@ -126,6 +128,14 @@ static u16 ui_delayed_action_ctr;
 static seq_ui_page_t ui_page_before_bookmark;
 
 mios32_sys_time_t seq_play_timer;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_Button_StepViewInc(s32 depressed);
+static s32 SEQ_UI_Button_StepViewDec(s32 depressed);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -168,6 +178,8 @@ s32 SEQ_UI_Init(u32 mode)
   seq_ui_backup_req = 0;
   seq_ui_format_req = 0;
   seq_ui_saveall_req = 0;
+
+  seq_ui_sent_cc_track = 0xff; // invalidate
 
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
@@ -564,8 +576,10 @@ static s32 SEQ_UI_Button_Rew(s32 depressed)
     portENTER_CRITICAL();
     SEQ_SONG_Rew();
     portEXIT_CRITICAL();
-  } else
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+  } else {
+    //SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+    SEQ_UI_Button_StepViewDec(depressed);
+  }
 
   return 0; // no error
 }
@@ -580,8 +594,10 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
     portENTER_CRITICAL();
     SEQ_SONG_Fwd();
     portEXIT_CRITICAL();
-  } else
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+  } else {
+    //SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+    SEQ_UI_Button_StepViewInc(depressed);
+  }
 
   return 0; // no error
 }
@@ -1299,6 +1315,49 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
     if( ui_page == SEQ_UI_PAGE_STEPSEL )
       SEQ_UI_PageSet(ui_stepview_prev_page);
   }
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_StepViewInc(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+  int new_step_view = ui_selected_step_view + 1;
+  if( (16*new_step_view) < num_steps ) {
+    // select new step view
+    ui_selected_step_view = new_step_view;
+
+    // select step within view
+    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+  }
+
+  char buffer[20];
+  sprintf(buffer, "%d-%d", ui_selected_step_view*16 + 1, ui_selected_step_view*16 + 16);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Step View", buffer);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  int new_step_view = ui_selected_step_view - 1;
+  if( new_step_view >= 0 ) {
+    // select new step view
+    ui_selected_step_view = new_step_view;
+
+    // select step within view
+    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+  }
+
+  char buffer[20];
+  sprintf(buffer, "%d-%d", ui_selected_step_view*16 + 1, ui_selected_step_view*16 + 16);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Step View", buffer);
 
   return 0; // no error
 }
@@ -2956,6 +3015,20 @@ s32 SEQ_UI_CheckSelections(void)
   if( ui_selected_step < (16*ui_selected_step_view) || 
       ui_selected_step >= (16*(ui_selected_step_view+1)) )
     ui_selected_step_view = ui_selected_step / 16;
+
+  // send selected track via MIDI if it has been changed
+  if( seq_hwcfg_track_cc.mode && seq_ui_sent_cc_track != visible_track ) {
+    seq_ui_sent_cc_track = visible_track;
+
+    switch( seq_hwcfg_track_cc.mode ) {
+    case 1: {
+      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, seq_hwcfg_track_cc.cc, visible_track);
+    } break;
+    case 2: {
+      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, (seq_hwcfg_track_cc.cc + visible_track) & 0x7f, 0x7f);
+    } break;
+    }
+  }
 
   return 0; // no error
 }

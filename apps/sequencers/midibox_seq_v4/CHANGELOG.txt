@@ -6,6 +6,27 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.071
+~~~~~~~~~~~~~~~~~
+
+   o if not in song mode, the Rew/Fwd buttons can now be used to select the step view.
+
+   o the MIDI router provides the new destination "Track".
+
+     If this destination is selected, incoming MIDI events will be routed to the
+     MIDI port and channel of a track depending on the incoming MIDI channel number.
+
+     Usecase: MIDI events, such as CC or Notes, should be sent from a master keyboard
+     or MIDI controller to synths which are assigned to different port and MIDI channels
+     in the track configuration.
+     Just select the track with the MIDI channel on your keyboard/controller, the router
+     will take care that the events reach the right destination.
+
+   o it's now possible to send a CC when a track has been selected.
+     This feature allows to synchronize the track selection with a DAW.
+     It has to be configured in the MBSEQ_HW.V4 file (search for TRACK_CC in hwcfg/*/MBSEQ_HW.V4)
+
+
 MIDIboxSEQ V4.070
 ~~~~~~~~~~~~~~~~~
 
