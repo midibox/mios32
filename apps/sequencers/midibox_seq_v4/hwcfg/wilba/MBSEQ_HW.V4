@@ -38,7 +38,7 @@ TRACK_CC_PORT USB1
 # over which MIDI channel should the CC be sent (1..16)?
 TRACK_CC_CHANNEL 1
 
-# which CC number should be sent (if TRACK_CC_MODE == 1: the first CC)
+# which CC number should be sent (if TRACK_CC_MODE == 2: the first CC)
 TRACK_CC_NUMBER 100
 
 
