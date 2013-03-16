@@ -350,7 +350,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
 		    if( strcmp(arg_src_chn, "---") == 0 || strcmp(arg_src_chn, "off") == 0 )
 		      src_chn = 0;
-		    else if( strcmp(arg_src_chn, "All") == 0 || strcmp(arg_src_chn, "all") == 0 )
+		    else if( strcasecmp(arg_src_chn, "all") == 0 )
 		      src_chn = 17;
 		    else {
 		      src_chn = get_dec(arg_src_chn);
@@ -391,8 +391,10 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
 			    if( strcmp(arg_dst_chn, "---") == 0 || strcmp(arg_dst_chn, "off") == 0 )
 			      dst_chn = 0;
-			    else if( strcmp(arg_dst_chn, "All") == 0 || strcmp(arg_dst_chn, "all") == 0 )
+			    else if( strcasecmp(arg_dst_chn, "all") == 0 )
 			      dst_chn = 17;
+			    else if( strcasecmp(arg_dst_chn, "trk") == 0 || strcasecmp(arg_dst_chn, "track") == 0 )
+			      dst_chn = 18;
 			    else {
 			      dst_chn = get_dec(arg_dst_chn);
 			      if( dst_chn > 16 )
@@ -1124,8 +1126,10 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
     char dst_chn[10];
     if( !n->dst_chn )
       sprintf(dst_chn, "off");
-    else if( n->dst_chn > 16 )
-      sprintf(dst_chn, "all");
+    else if( n->dst_chn == 17 )
+      sprintf(dst_chn, "All");
+    else if( n->dst_chn >= 18 )
+      sprintf(dst_chn, "Trk");
     else
       sprintf(dst_chn, "#%2d", n->dst_chn);
 

@@ -167,6 +167,13 @@ typedef struct {
   u8 cc;
 } seq_hwcfg_midi_remote_t;
 
+typedef struct {
+  u8 mode;
+  mios32_midi_port_t port;
+  u8 chn;
+  u8 cc;
+} seq_hwcfg_track_cc_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -183,6 +190,7 @@ extern seq_hwcfg_led_t seq_hwcfg_led;
 extern seq_hwcfg_enc_t seq_hwcfg_enc;
 extern seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
+extern seq_hwcfg_track_cc_t seq_hwcfg_track_cc;
 extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;

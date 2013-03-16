@@ -174,6 +174,13 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .cc = 0, // disabled
 };
 
+seq_hwcfg_track_cc_t seq_hwcfg_track_cc = {
+  .mode = 0,
+  .port = USB1,
+  .chn = 0,
+  .cc = 100,
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local constant arrays

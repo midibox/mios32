@@ -36,6 +36,7 @@
 #include "seq_hwcfg.h"
 
 #include "seq_ui.h"
+#include "seq_midi_port.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,6 +185,34 @@ static s32 get_dec(char *word)
     return -1;
 
   return l; // value is valid
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which returns the MIDI OUT port
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_port_out(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  mios32_midi_port_t port = 0xff;
+  int port_ix;
+  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
+    // terminate port name at first space
+    char port_name[10];
+    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
+    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+    
+    if( strcmp(word, port_name) == 0 ) {
+      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+      break;
+    }
+  }
+
+  return (port != 0xff) ? port : get_dec(word);
 }
 
 
@@ -773,9 +802,58 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_midi_remote.cc = cc;
 
+	} else if( strcmp(parameter, "TRACK_CC_MODE") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 mode = get_dec(word);
+	  if( mode < 0 || mode > 2 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC mode '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.mode = mode;
+
+	} else if( strcmp(parameter, "TRACK_CC_PORT") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 port = get_port_out(word);
+
+	  if( port < 0 || port >= 0x100 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid port number '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.port = port;
+
+	} else if( strcmp(parameter, "TRACK_CC_CHANNEL") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 chn = get_dec(word);
+	  if( chn < 1 || chn > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC channel '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.chn = chn-1; // counting from 1 for user, from 0 for app
+
+	} else if( strcmp(parameter, "TRACK_CC_NUMBER") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 cc = get_dec(word);
+	  if( cc < 0 || cc >= 128 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC number '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.cc = cc;
+
 	} else if( strcmp(parameter, "RS_OPTIMISATION") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_dec(word);
+	  s32 port = get_port_out(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

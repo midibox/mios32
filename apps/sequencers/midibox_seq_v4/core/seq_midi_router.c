@@ -21,6 +21,8 @@
 #include "tasks.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
+#include "seq_core.h"
+#include "seq_cc.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -82,17 +84,31 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 
       if( midi_package.event >= NoteOff && midi_package.event <= PitchBend ) {
 	if( n->src_chn == 17 || midi_package.chn == (n->src_chn-1) ) {
+	  mios32_midi_port_t fwd_port = n->dst_port;
 	  mios32_midi_package_t fwd_package = midi_package;
-	  if( n->dst_chn <= 16 )
+	  if( n->dst_chn <= 16 ) {
 	    fwd_package.chn = (n->dst_chn-1);
+	  } else if( n->dst_chn >= 18 ) { // Trk
+	    fwd_port = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_PORT);
+	    fwd_package.chn = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_CHANNEL);
+	  }
+
 	  MUTEX_MIDIOUT_TAKE;
-	  MIOS32_MIDI_SendPackage(n->dst_port, fwd_package);
+	  MIOS32_MIDI_SendPackage(fwd_port, fwd_package);
 	  MUTEX_MIDIOUT_GIVE;
 	}
       } else {
-	if( n->dst_chn >= 17 ) { // Realtime events, etc... only forwarded if destination channel set to "All"
+	if( n->dst_chn == 17 ) { // Realtime events, etc... only forwarded if destination channel set to "All"
 	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
+	  MUTEX_MIDIOUT_GIVE;
+	} else if( n->dst_chn >= 18 ) { // Trk: forward to track port
+	  mios32_midi_port_t fwd_port = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_PORT);
+	  mios32_midi_package_t fwd_package = midi_package;
+	  fwd_package.chn = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_CHANNEL);
+
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendPackage(fwd_port, fwd_package);
 	  MUTEX_MIDIOUT_GIVE;
 	}
       }
