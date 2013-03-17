@@ -113,13 +113,18 @@ s32 PRESETS_Init(u32 mode)
       kc->din_sr2 = PRESETS_Read16(PRESETS_ADDR_KB1_DIN_SR2 + offset);
 
       u16 misc = PRESETS_Read16(PRESETS_ADDR_KB1_MISC + offset);
-      kc->din_inverted   = (misc & (1 << 0)) ? 1 : 0;
-      kc->break_inverted = (misc & (1 << 1)) ? 1 : 0;
-      kc->scan_velocity  = (misc & (1 << 2)) ? 1 : 0;
-      kc->scan_optimized = (misc & (1 << 3)) ? 1 : 0;
+      kc->din_inverted          = (misc & (1 << 0)) ? 1 : 0;
+      kc->break_inverted        = (misc & (1 << 1)) ? 1 : 0;
+      kc->scan_velocity         = (misc & (1 << 2)) ? 1 : 0;
+      kc->scan_optimized        = (misc & (1 << 3)) ? 1 : 0;
+      kc->scan_release_velocity = (misc & (1 << 4)) ? 1 : 0;
 
-      kc->delay_fastest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
-      kc->delay_slowest = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
+      kc->delay_fastest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
+      kc->delay_slowest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
+      kc->delay_fastest_black_keys         = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_BLACK_KEYS + offset);
+      kc->delay_fastest_release            = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE + offset);
+      kc->delay_fastest_release_black_keys = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE_BLACK_KEYS + offset);
+      kc->delay_slowest_release 	   = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST_RELEASE + offset);
 
       if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ) {
 	u16 ain_assign = PRESETS_Read16(0xcb + offset);
@@ -229,14 +234,19 @@ s32 PRESETS_StoreAll(void)
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DIN_SR2 + offset, kc->din_sr2);
 
       u16 misc =
-	(kc->din_inverted   << 0) |
-	(kc->break_inverted << 1) |
-	(kc->scan_velocity  << 2) |
-	(kc->scan_optimized << 3);
+	(kc->din_inverted          << 0) |
+	(kc->break_inverted        << 1) |
+	(kc->scan_velocity         << 2) |
+	(kc->scan_optimized        << 3) |
+        (kc->scan_release_velocity << 4);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_MISC + offset, misc);
 
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset, kc->delay_fastest);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset, kc->delay_slowest);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST_BLACK_KEYS + offset, kc->delay_fastest_black_keys);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE + offset, kc->delay_fastest_release);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE_BLACK_KEYS + offset, kc->delay_fastest_release_black_keys);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_SLOWEST_RELEASE + offset, kc->delay_slowest_release);
 
       int i;
       for(i=0; i<KEYBOARD_AIN_NUM; ++i) {

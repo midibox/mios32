@@ -7,7 +7,7 @@
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
- * 
+ *
  * ==========================================================================
  */
 
@@ -76,10 +76,14 @@ typedef struct {
   u8  break_inverted:1;
   u8  scan_velocity:1;
   u8  scan_optimized:1;
+  u8  scan_release_velocity:1;
 
   u16 delay_fastest;
   u16 delay_fastest_black_keys;
+  u16 delay_fastest_release;
+  u16 delay_fastest_release_black_keys;
   u16 delay_slowest;
+  u16 delay_slowest_release;
 
 #if !KEYBOARD_DONT_USE_AIN
   u8  ain_pin[KEYBOARD_AIN_NUM];

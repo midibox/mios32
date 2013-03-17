@@ -1,5 +1,23 @@
 $Id$
 
+MIDIbox KB V1.009
+~~~~~~~~~~~~~~~~~
+
+   o support for the "single_usb" option, which can be enabled with the
+     bootloader update application V1.012 ("set usb_single 1")
+
+     Use this option if you are working with a Windows PC which can't handle
+     the 4 USB ports correctly (e.g. stucking MIDI, Filebrowser operations are failing, etc.)
+
+   o support for Note Off velocity (implemented by Jo aka. Nlate).
+     This feature has to be enabled with the release_velocity parameter. In addition, some
+     suitable delay values have to be specified, such as:
+       set kb 1 release_velocity on
+       set kb 1 delay_fastest_release 100
+       set kb 1 delay_fastest_release_black_keys 80
+       set kb 1 delay_slowest_release 1000
+
+
 MIDIbox KB V1.008
 ~~~~~~~~~~~~~~~~~
 
