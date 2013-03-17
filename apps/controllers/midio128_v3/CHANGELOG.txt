@@ -1,5 +1,15 @@
 $Id$
 
+MIDIO128 V3.015
+~~~~~~~~~~~~~~~
+
+   o support for the "single_usb" option, which can be enabled with the
+     bootloader update application V1.012 ("set usb_single 1")
+
+     Use this option if you are working with a Windows PC which can't handle
+     the 4 USB ports correctly (e.g. stucking MIDI, Filebrowser operations are failing, etc.)
+
+
 MIDIO128 V3.014
 ~~~~~~~~~~~~~~~
 

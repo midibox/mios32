@@ -111,6 +111,11 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_CheckAvailable(u8 cable)
 {
+#ifdef MIOS32_SYS_ADDR_BSL_INFO_BEGIN
+  if( MIOS32_USB_ForceSingleUSB() && cable >= 1 )
+    return 0;
+#endif
+
   if( cable >= MIOS32_USB_MIDI_NUM_PORTS )
     return 0;
 
