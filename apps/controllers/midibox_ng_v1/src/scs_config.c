@@ -188,7 +188,7 @@ static u16  selectSnapshotLOAD(u32 ix, u16 value)
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", "Snapshot");
   } else {
     char buffer[100];
-    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet()+1);
+    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet());
     SCS_Msg(SCS_MSG_L, 1000, buffer, (status == 0) ? "not filed yet" : "restored!");
   }
   return value;
@@ -200,7 +200,7 @@ static u16  selectSnapshotSAVE(u32 ix, u16 value)
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to save", "Snapshot");
   } else {
     char buffer[100];
-    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet()+1);
+    sprintf(buffer, "Snapshot %d", MBNG_FILE_S_SnapshotGet());
     SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
   }
   return value;

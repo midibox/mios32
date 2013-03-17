@@ -3062,7 +3062,18 @@ s32 MBNG_EVENT_Dump(void)
     if( !pool_item->flags.general.no_dump ) {
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      MBNG_EVENT_NotifySendValue(&item);
+
+      u8 radio_group = 0;
+      switch( item.id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item.flags.DIN.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item.flags.DOUT.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item.flags.SENDER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item.flags.RECEIVER.radio_group; break;
+      }
+
+      if( !radio_group || (item.value >= item.min && item.value <= item.max) ) {
+	MBNG_EVENT_NotifySendValue(&item);
+      }
     }
 
     pool_ptr += pool_item->len;
