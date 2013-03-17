@@ -133,6 +133,7 @@ static mios32_lcd_parameters_t BSL_lcd_parameters;
 static u8 BSL_fastboot;
 static char BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN];
 static u8 BSL_device_id;
+static u8 BSL_single_usb;
 #endif
 
 
@@ -260,6 +261,8 @@ s32 UpdateBSL(void)
 	data_value = 0x42 | (BSL_device_id << 8);
       } else if( addr >= MIOS32_SYS_ADDR_FASTBOOT_CONFIRM && (addr < (MIOS32_SYS_ADDR_FASTBOOT_CONFIRM+2)) ) {
 	data_value = 0x42 | (BSL_fastboot << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM && (addr < (MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM+2)) ) {
+	data_value = 0x42 | (BSL_single_usb << 8);
       } else if( addr >= MIOS32_SYS_ADDR_USB_DEV_NAME && (addr < MIOS32_SYS_ADDR_USB_DEV_NAME+MIOS32_SYS_USB_DEV_NAME_LEN) ) {
 	u8 offset = addr-MIOS32_SYS_ADDR_USB_DEV_NAME;
 	data_value = BSL_usb_dev_name[offset+0] | ((u16)BSL_usb_dev_name[offset+1] << 8);
@@ -312,6 +315,9 @@ s32 UpdateBSL(void)
 
       ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_FASTBOOT_CONFIRM] = 0x42;
       ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_FASTBOOT] = BSL_fastboot;
+
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM] = 0x42;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_SINGLE_USB] = BSL_single_usb;
 
       for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN; ++j)
 	ram_buffer_byte_ptr[(0xff & MIOS32_SYS_ADDR_USB_DEV_NAME) + j] = BSL_usb_dev_name[j];
@@ -377,6 +383,12 @@ static s32 RetrieveBootInfos(void)
   u8 *fastboot = (u8 *)MIOS32_SYS_ADDR_FASTBOOT;
   if( *fastboot_confirm == 0x42 && *fastboot < 0x80 )
     BSL_fastboot = *fastboot;
+
+  BSL_single_usb = 0x00;
+  u8 *single_usb_confirm = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM;
+  u8 *single_usb = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB;
+  if( *single_usb_confirm == 0x42 && *single_usb < 0x80 )
+    BSL_single_usb = *fastboot;
 
   BSL_device_id = 0x00;
   u8 *device_id_confirm = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM;
@@ -755,27 +767,28 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
     if( strcmp(parameter, "help") == 0 ) {
       out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
       out("Following commands are available:");
-      out("  set fastboot <1 or 0>:  if 1, the initial bootloader wait phase will be skipped (current: %d)\n", BSL_fastboot);
-      out("  set device_id <value>:  sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
+      out("  set fastboot <1 or 0>:   if 1, the initial bootloader wait phase will be skipped (current: %d)\n", BSL_fastboot);
+      out("  set single_usb <1 or 0>: if 1, USB will only be initialized for a single port (current: %d)\n", BSL_single_usb);
+      out("  set device_id <value>:   sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
 	  BSL_device_id, BSL_device_id);
-      out("  set usb_name <name>:    sets USB device name (current: '%s')\n", BSL_usb_dev_name);
-      out("  set lcd_type <value>:   sets LCD type ID (current: 0x%02x - %s)\n",
+      out("  set usb_name <name>:     sets USB device name (current: '%s')\n", BSL_usb_dev_name);
+      out("  set lcd_type <value>:    sets LCD type ID (current: 0x%02x - %s)\n",
 	  BSL_lcd_parameters.lcd_type,
 	  MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
 	  ? MIOS32_LCD_LcdTypeName(BSL_lcd_parameters.lcd_type)
 	  : "unknown");
-      out("  set lcd_num_x <value>:  sets number of LCD devices (X direction, current: %d)\n", BSL_lcd_parameters.num_x);
-      out("  set lcd_num_y <value>:  sets number of LCD devices (Y direction, current: %d)\n", BSL_lcd_parameters.num_y);
-      out("  set lcd_width <value>:  sets width of a single LCD (current: %d)\n", BSL_lcd_parameters.width);
-      out("  set lcd_height <value>: sets height of a single LCD (current: %d)\n", BSL_lcd_parameters.height);
-      out("  lcd_types:              lists all known LCD types\n");
+      out("  set lcd_num_x <value>:   sets number of LCD devices (X direction, current: %d)\n", BSL_lcd_parameters.num_x);
+      out("  set lcd_num_y <value>:   sets number of LCD devices (Y direction, current: %d)\n", BSL_lcd_parameters.num_y);
+      out("  set lcd_width <value>:   sets width of a single LCD (current: %d)\n", BSL_lcd_parameters.width);
+      out("  set lcd_height <value>:  sets height of a single LCD (current: %d)\n", BSL_lcd_parameters.height);
+      out("  lcd_types:               lists all known LCD types\n");
 #ifdef MIOS32_LCD_universal
       APP_LCD_TerminalHelp(_output_function);
 #endif
-      out("  store:                  stores the changed settings in flash (and updates all LCDs)\n");
-      out("  restore:                restores previous settings from flash\n");
-      out("  reset:                  resets the MIDIbox (!)\n");
-      out("  help:                   this page");
+      out("  store:                   stores the changed settings in flash (and updates all LCDs)\n");
+      out("  restore:                 restores previous settings from flash\n");
+      out("  reset:                   resets the MIDIbox (!)\n");
+      out("  help:                    this page");
     } else if( strcmp(parameter, "lcd_types") == 0 ) {
       out("List of known LCD types:\n");
       u8 lcd_type;
@@ -813,6 +826,20 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      out("Fastboot enabled after 'store'!");
 	    else
 	      out("Fastboot disabled after 'store'!");
+	  }
+	} else if( strcmp(parameter, "single_usb") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 0 || value > 1 ) {
+	    out("Expecting single_usb 0 or 1!");
+	  } else {
+	    BSL_single_usb = value;
+	    if( BSL_single_usb )
+	      out("Forcing of a single USB port enabled after 'store'!");
+	    else
+	      out("Forcing of a single USB port disabled after 'store'!");
 	  }
 	} else if( strcmp(parameter, "id") == 0 || strcmp(parameter, "device_id") == 0 ) {
 	  s32 value = -1;

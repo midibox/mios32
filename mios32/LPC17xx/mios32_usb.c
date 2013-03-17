@@ -94,6 +94,10 @@ static U8 abClassReqData[8];
 # endif
 # define MIOS32_USB_MIDI_SIZ_CLASS_DESC         (7+MIOS32_USB_MIDI_NUM_PORTS*(6+6+9+9)+9+(4+MIOS32_USB_MIDI_NUM_PORTS)+9+(4+MIOS32_USB_MIDI_NUM_PORTS))
 # define MIOS32_USB_MIDI_SIZ_CONFIG_DESC        (9+MIOS32_USB_MIDI_USE_AC_INTERFACE*(9+9)+MIOS32_USB_MIDI_SIZ_CLASS_DESC)
+
+# define MIOS32_USB_MIDI_SIZ_CLASS_DESC_SINGLE_USB  (7+1*(6+6+9+9)+9+(4+1)+9+(4+1))
+# define MIOS32_USB_MIDI_SIZ_CONFIG_DESC_SINGLE_USB (9+MIOS32_USB_MIDI_USE_AC_INTERFACE*(9+9)+MIOS32_USB_MIDI_SIZ_CLASS_DESC)
+
 #else
 # define MIOS32_USB_MIDI_NUM_INTERFACES         0
 # define MIOS32_USB_MIDI_INTERFACE_OFFSET       0
@@ -114,6 +118,7 @@ static U8 abClassReqData[8];
 
 #define MIOS32_USB_NUM_INTERFACES              (MIOS32_USB_MIDI_NUM_INTERFACES + MIOS32_USB_COM_NUM_INTERFACES)
 #define MIOS32_USB_SIZ_CONFIG_DESC             (9 + MIOS32_USB_MIDI_SIZ_CONFIG_DESC + MIOS32_USB_COM_SIZ_CONFIG_DESC)
+#define MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB  (9 + MIOS32_USB_MIDI_SIZ_CONFIG_DESC_SINGLE_USB)
 
 #define MIOS32_USB_SIZ_DEVICE_DESC 18
 
@@ -725,6 +730,178 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Alternative config descriptor with only a single USB MIDI port
+// Workaround for some windows installations where multiple MIDI ports don't work
+/////////////////////////////////////////////////////////////////////////////
+
+#ifndef MIOS32_DONT_USE_USB_MIDI
+static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[] = {
+  (u8)(MIOS32_USB_SIZ_DEVICE_DESC&0xff), // Device Descriptor length
+  DSCR_DEVICE,			// Decriptor type
+  (u8)(0x0200 & 0xff),		// Specification Version (BCD, LSB)
+  (u8)(0x0200 >> 8),		// Specification Version (BCD, MSB)
+  0x00,				// Device class "Composite"
+  0x00,				// Device sub-class
+  0x00,				// Device sub-sub-class
+  0x40,				// Maximum packet size
+  (u8)((MIOS32_USB_VENDOR_ID) & 0xff),  // Vendor ID (LSB)
+  (u8)((MIOS32_USB_VENDOR_ID) >> 8),    // Vendor ID (MSB)
+  (u8)((MIOS32_USB_PRODUCT_ID) & 0xff),	// Product ID (LSB)
+  (u8)((MIOS32_USB_PRODUCT_ID) >> 8),	// Product ID (MSB)
+  (u8)((MIOS32_USB_VERSION_ID) & 0xff),	// Product version ID (LSB)
+  (u8)((MIOS32_USB_VERSION_ID) >> 8),  	// Product version ID (MSB)
+  0x01,				// Manufacturer string index
+  0x02,				// Product string index
+  0x03,				// Serial number string index
+  0x01,				// Number of configurations
+
+
+  // Configuration Descriptor
+  9,				// Descriptor length
+  DSCR_CONFIG,			// Descriptor type
+  (MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB) & 0xff,  // Config + End Points length (LSB)
+  (MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB) >> 8,    // Config + End Points length (LSB)
+  MIOS32_USB_NUM_INTERFACES,    // Number of interfaces
+  0x01,				// Configuration Value
+  0x00,				// Configuration string
+  0x80,				// Attributes (b7 - buspwr, b6 - selfpwr, b5 - rwu)
+  0x32,				// Power requirement (div 2 ma)
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  // USB MIDI
+  ///////////////////////////////////////////////////////////////////////////
+#if MIOS32_USB_MIDI_USE_AC_INTERFACE
+  // Standard AC Interface Descriptor
+  9,				// Descriptor length
+  DSCR_INTRFC,			// Descriptor type
+  MIOS32_USB_MIDI_AC_INTERFACE_IX, // Zero-based index of this interface
+  0x00,				// Alternate setting
+  0x00,				// Number of end points 
+  0x01,				// Interface class  (AUDIO)
+  0x01,				// Interface sub class  (AUDIO_CONTROL)
+  0x00,				// Interface sub sub class
+  0x02,				// Interface descriptor string index
+
+  // MIDI Adapter Class-specific AC Interface Descriptor
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type
+  0x01,				// Header subtype
+  0x00,				// Revision of class specification - 1.0 (LSB)
+  0x01,				// Revision of class specification (MSB)
+  9,				// Total size of class-specific descriptors (LSB)
+  0,				// Total size of class-specific descriptors (MSB)
+  0x01,				// Number of streaming interfaces
+  0x01,				// MIDI Streaming Interface 1 belongs to this AudioControl Interface
+#endif
+
+  // Standard MS Interface Descriptor
+  9,				// Descriptor length
+  DSCR_INTRFC,			// Descriptor type
+  MIOS32_USB_MIDI_AS_INTERFACE_IX, // Zero-based index of this interface
+  0x00,				// Alternate setting
+  0x02,				// Number of end points 
+  0x01,				// Interface class  (AUDIO)
+  0x03,				// Interface sub class  (MIDISTREAMING)
+  0x00,				// Interface sub sub class
+  0x02,				// Interface descriptor string index
+
+  // Class-specific MS Interface Descriptor
+  7,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type
+#if MIOS32_USB_MIDI_USE_AC_INTERFACE
+  0x01,				// Zero-based index of this interface
+#else
+  0x00,				// Zero-based index of this interface
+#endif
+  0x00,				// revision of this class specification (LSB)
+  0x01,				// revision of this class specification (MSB)
+  (u8)(MIOS32_USB_MIDI_SIZ_CLASS_DESC_SINGLE_USB & 0xff), // Total size of class-specific descriptors (LSB)
+  (u8)(MIOS32_USB_MIDI_SIZ_CLASS_DESC_SINGLE_USB >> 8),   // Total size of class-specific descriptors (MSB)
+
+
+  // MIDI IN Jack Descriptor (Embedded)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x01,				// EMBEDDED
+  0x01,				// ID of this jack
+  0x00,				// unused
+
+  // MIDI Adapter MIDI IN Jack Descriptor (External)
+  6,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x02,				// MIDI_IN_JACK subtype
+  0x02,				// EXTERNAL
+  0x02,				// ID of this jack
+  0x00,				// unused
+
+  // MIDI Adapter MIDI OUT Jack Descriptor (Embedded)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x01,				// EMBEDDED
+  0x03,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x02,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+
+  // MIDI Adapter MIDI OUT Jack Descriptor (External)
+  9,				// Descriptor length
+  CS_INTERFACE,			// Descriptor type (CS_INTERFACE)
+  0x03,				// MIDI_OUT_JACK subtype
+  0x02,				// EXTERNAL
+  0x04,				// ID of this jack
+  0x01,				// number of input pins of this jack
+  0x01,				// ID of the entity to which this pin is connected
+  0x01,				// Output Pin number of the entity to which this input pin is connected
+  0x00,				// unused
+
+  // Standard Bulk OUT Endpoint Descriptor
+  9,				// Descriptor length
+  DSCR_ENDPNT,			// Descriptor type
+  0x02,				// Out Endpoint 2
+  0x02,				// Bulk, not shared
+  (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
+  (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
+  0x00,				// ignore for bulk
+  0x00,				// unused
+  0x00,				// unused
+
+  // Class-specific MS Bulk Out Endpoint Descriptor
+  4+1,                     	// Descriptor length
+  CS_ENDPOINT,			// Descriptor type (CS_ENDPOINT)
+  0x01,				// MS_GENERAL
+  1,                       	// number of embedded MIDI IN Jacks
+  0x01,				// ID of embedded MIDI In Jack
+
+  // Standard Bulk IN Endpoint Descriptor
+  9,				// Descriptor length
+  DSCR_ENDPNT,			// Descriptor type
+  0x81,				// In Endpoint 1
+  0x02,				// Bulk, not shared
+  (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
+  (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
+  0x00,				// ignore for bulk
+  0x00,				// unused
+  0x00,				// unused
+
+  // Class-specific MS Bulk In Endpoint Descriptor
+  4+1,                      	// Descriptor length
+  CS_ENDPOINT,			// Descriptor type (CS_ENDPOINT)
+  0x01,				// MS_GENERAL
+  1,                        	// number of embedded MIDI Out Jacks
+  0x03,				// ID of embedded MIDI Out Jack
+
+// terminating zero
+        0
+};
+#endif /* MIOS32_DONT_USE_USB_MIDI */
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -763,7 +940,11 @@ s32 MIOS32_USB_Init(u32 mode)
   USBInit();
 
   // register descriptors
+#ifndef MIOS32_DONT_USE_USB_MIDI
+  USBRegisterDescriptors(MIOS32_USB_ForceSingleUSB() ? MIOS32_USB_ConfigDescriptor_SingleUSB : MIOS32_USB_ConfigDescriptor);
+#else
   USBRegisterDescriptors(MIOS32_USB_ConfigDescriptor);
+#endif
 
   // register class request handler
   USBRegisterRequestHandler(REQTYPE_TYPE_CLASS, HandleClassRequest, abClassReqData);
@@ -830,6 +1011,21 @@ s32 MIOS32_USB_IsInitialized(void)
 {
   // USB taken as initialized if clock enabled (reset value is 0)
   return (LPC_USB->USBClkCtrl & (1 << 1)) ? 1 : 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! \returns != 0 if a single USB port has been forced in the bootloader
+//! config section
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_ForceSingleUSB(void)
+{
+  u8 *single_usb_confirm = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM;
+  u8 *single_usb = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB;
+  if( *single_usb_confirm == 0x42 && *single_usb < 0x80 )
+    return *single_usb;
+
+  return 0;
 }
 
 
