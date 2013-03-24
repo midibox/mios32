@@ -443,15 +443,23 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	long lcd_x;
 	long lcd_y;
 
+	u8 success = 0;
 	if( (lcd_num = strtol(pos_str, &next, 0)) && lcd_num >= 1 && pos_str != next && next[0] == ':' ) {
 	  pos_str = (char *)(next + 1);
 	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
 	    pos_str = (char *)(next + 1);
 	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
 	      MBNG_LCD_CursorSet(lcd_num-1, lcd_x - 1, lcd_y - 1);
-	      str = (char *)&next[1];
+	      success = 1;
 	    }
 	  }
+	}
+
+	if( success ) {
+	  str = (char *)&next[1];
+	} else {
+	  MBNG_LCD_PrintChar('@'); // print invalid string without resolving
+	  ++str; // will be decremented below
 	}
       }
       --str;
