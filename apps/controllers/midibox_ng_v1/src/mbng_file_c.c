@@ -3258,7 +3258,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  // changed error to warning, since people are sometimes confused about these messages
 	  // on file format changes
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: unknown parameter: %s", line_buffer);
+	  DEBUG_MSG("[MBNG_FILE_C] WARNING: unknown command: %s", line_buffer);
 #endif
 	}
       } else {

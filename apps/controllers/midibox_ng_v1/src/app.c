@@ -55,6 +55,7 @@
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
+#include "mbng_file_r.h"
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
@@ -444,6 +445,15 @@ static void TASK_Period_1mS_LP(void *pvParameters)
       }
 
       MBNG_EVENT_UpdateLCD(force);
+
+      // read request for run file?
+      if( mbng_file_r_req.load ) {
+	mbng_file_r_req.load = 0;
+	
+	MUTEX_SDCARD_TAKE;
+	MBNG_FILE_R_Read(mbng_file_r_script_name, mbng_file_r_req.section);
+	MUTEX_SDCARD_GIVE;
+      }
 
       isInMainPage = 1; // static reminder
     } else {

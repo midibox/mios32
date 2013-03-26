@@ -1502,20 +1502,22 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
   } else {
 #if 0
-    DEBUG_MSG("[EVENT:%04x] %s %s stream:",
-	      item->id,
+    DEBUG_MSG("[EVENT] id=%s:%d %s stream:",
 	      MBNG_EVENT_ItemControllerStrGet(item->id),
+	      item->id & 0xfff,
 	      MBNG_EVENT_ItemTypeStrGet(item));
     if( item->stream_size ) {
       MIOS32_MIDI_SendDebugHexDump(item->stream, item->stream_size);
     }
 #else
-    return DEBUG_MSG("[EVENT:%04x] %s hw_id=%d bank=%d fwd_id=0x%04x type=%s value=%d label=%s\n",
-		     item->id,
+    return DEBUG_MSG("[EVENT] id=%s:%d hw_id=%s:%d bank=%d fwd_id=%s:%d type=%s value=%d label=%s\n",
 		     MBNG_EVENT_ItemControllerStrGet(item->id),
+		     item->id & 0xfff,
+		     MBNG_EVENT_ItemControllerStrGet(item->hw_id),
 		     item->hw_id & 0xfff,
 		     item->bank,
-		     item->fwd_id,
+		     MBNG_EVENT_ItemControllerStrGet(item->fwd_id),
+		     item->fwd_id & 0xfff,
 		     MBNG_EVENT_ItemTypeStrGet(item),
 		     item->value,
 		     item->label ? item->label : "");
