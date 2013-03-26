@@ -199,7 +199,10 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
 
     int len = strlen(filename);
 
-    if( len < 5 || len > 12 || strcasecmp((char *)&filename[len-4], ".ngc") != 0 )
+    if( len < 5 || len > 12 || 
+	(strcasecmp((char *)&filename[len-4], ".ngc") != 0 &&
+	 strcasecmp((char *)&filename[len-4], ".ngl") != 0 &&
+	 strcasecmp((char *)&filename[len-4], ".ngr") != 0) )
       return 0; // no .NGC file
 
     int i;

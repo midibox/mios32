@@ -32,6 +32,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_file_c.c \
 		  src/mbng_file_l.c \
 		  src/mbng_file_s.c \
+		  src/mbng_file_r.c \
                   src/terminal.c \
 		  src/scs_config.c
 
