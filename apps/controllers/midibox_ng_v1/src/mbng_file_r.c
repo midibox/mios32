@@ -356,8 +356,10 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 	    DEBUG_MSG("[MBNG_FILE_R] DELAY_MS %d\n", value);
 #endif
 	    int i;
-	    for(i=0; i<value; ++i)
+	    for(i=0; i<value; ++i) {
 	      MIOS32_DELAY_Wait_uS(1000);
+	      taskYIELD();
+	    }
 	  }
 	} else {
 #if DEBUG_VERBOSE_LEVEL >= 1
