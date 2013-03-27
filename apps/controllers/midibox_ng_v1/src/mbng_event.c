@@ -779,8 +779,8 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   extra_par_available_t extra_par_available; extra_par_available.ALL = pool_item->extra_par_available.ALL;
 
   if( extra_par_available.has_cond ) {
-    item->cond.ALL = extra_par[0] | (extra_par[1] << 8);
-    extra_par += 2;
+    item->cond.ALL = extra_par[0] | (extra_par[1] << 8) | (extra_par[2] << 16) | (extra_par[3] << 24);
+    extra_par += 4;
   } else {
     item->cond.ALL = 0;
   }
@@ -884,8 +884,10 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
     pool_item->extra_par_available.has_cond = 1;
     extra_par[0] = item->cond.ALL;
     extra_par[1] = item->cond.ALL >> 8;
-    extra_par += 2;
-    pool_item_len += 2;
+    extra_par[2] = item->cond.ALL >> 16;
+    extra_par[3] = item->cond.ALL >> 24;
+    extra_par += 4;
+    pool_item_len += 4;
   }
 
   if( item->fwd_id ) {
@@ -974,7 +976,7 @@ static u32 MBNG_EVENT_ItemCalcPoolItemLen(mbng_event_item_t *item)
   u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
 
   if( item->cond.ALL ) {
-    pool_item_len += 2;
+    pool_item_len += 4;
   }
 
   if( item->fwd_id ) {

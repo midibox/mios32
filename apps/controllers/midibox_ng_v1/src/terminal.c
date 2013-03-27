@@ -444,7 +444,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    }
 	  }
 	} else {
-	  out("ERROR: invalid item which should be showed - see help for available items!");
+	  out("ERROR: invalid item which should be showed - see 'show pool' for available items!");
 	}
       }
     } else if( strcmp(parameter, "reset") == 0 ) {
