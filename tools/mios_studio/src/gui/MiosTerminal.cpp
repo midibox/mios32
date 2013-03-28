@@ -112,7 +112,8 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
     bool messageReceived = false;
     if( runningStatus == 0xf0 &&
         SysexHelper::isValidMios32DebugMessage(data, size, -1) &&
-        data[7] == 0x40 ) {
+        (data[7] == 0x40 || data[7] == 0x00) ) { // allow 0x40 (received) and 0x00 (sent) terminal message
+                                                 // 0x00 is allowed for the "feedback test" which is described in the MIDI troubleshooting guide
             messageOffset = 8;
             messageReceived = true;
     }

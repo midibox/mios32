@@ -532,10 +532,13 @@ void MiosFileBrowser::openTextEditor(const Array<uint8>& data)
     if( !hasBinaryData ) {
         textEditor->setReadOnly(false);
     } else {
+        // TK: crashes Juce2 - it seems that we are not allowed to use an AlertWindow from the MiosStudio::timerCallback() thread
+#if 0
         AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                     T("Found binary data!"),
                                     T("This file contains binary data, therefore it\nisn't possible modify it with the text editor!\nPlease use the hex editor instead!"),
                                     T("Ok"));
+#endif
     }
 }
 
