@@ -48,6 +48,7 @@
 #define configIDLE_SHOULD_YIELD             1
 #define configUSE_MUTEXES                   1
 #define configUSE_RECURSIVE_MUTEXES         1
+#define configUSE_APPLICATION_TASK_TAG      0
 #define configUSE_COUNTING_SEMAPHORES       0
 #define configUSE_ALTERNATIVE_API           0
 #define configCHECK_FOR_STACK_OVERFLOW      0
@@ -69,6 +70,14 @@
 #define configUSE_MALLOC_FAILED_HOOK        1
 #endif
 
+/* Software timer definitions. */
+#ifndef configUSE_TIMERS
+#define configUSE_TIMERS                0
+#endif
+#define configTIMER_TASK_PRIORITY       3
+#define configTIMER_QUEUE_LENGTH        5
+#define configTIMER_TASK_STACK_DEPTH    ( ( unsigned portSHORT ) (MIOS32_MINIMAL_STACK_SIZE/4) )
+
 
 #define INCLUDE_vTaskPrioritySet            1
 #define INCLUDE_uxTaskPriorityGet           1
@@ -81,6 +90,7 @@
 #define INCLUDE_xTaskGetSchedulerState      1
 #define INCLUDE_xTaskGetCurrentTaskHandle   1
 #define INCLUDE_uxTaskGetStackHighWaterMark 0
+#define INCLUDE_xTimerGetTimerDaemonTaskHandle 1
 
 #define configUSE_CO_ROUTINES               0 
 #define configMAX_CO_ROUTINE_PRIORITIES     ( 2 )

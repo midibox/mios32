@@ -1,54 +1,75 @@
 /*
-    FreeRTOS V6.0.5 - Copyright (C) 2010 Real Time Engineers Ltd.
+    FreeRTOS V7.4.0 - Copyright (C) 2013 Real Time Engineers Ltd.
+
+    FEATURES AND PORTS ARE ADDED TO FREERTOS ALL THE TIME.  PLEASE VISIT
+    http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
     ***************************************************************************
-    *                                                                         *
-    * If you are:                                                             *
-    *                                                                         *
-    *    + New to FreeRTOS,                                                   *
-    *    + Wanting to learn FreeRTOS or multitasking in general quickly       *
-    *    + Looking for basic training,                                        *
-    *    + Wanting to improve your FreeRTOS skills and productivity           *
-    *                                                                         *
-    * then take a look at the FreeRTOS eBook                                  *
-    *                                                                         *
-    *        "Using the FreeRTOS Real Time Kernel - a Practical Guide"        *
-    *                  http://www.FreeRTOS.org/Documentation                  *
-    *                                                                         *
-    * A pdf reference manual is also available.  Both are usually delivered   *
-    * to your inbox within 20 minutes to two hours when purchased between 8am *
-    * and 8pm GMT (although please allow up to 24 hours in case of            *
-    * exceptional circumstances).  Thank you for your support!                *
-    *                                                                         *
+     *                                                                       *
+     *    FreeRTOS tutorial books are available in pdf and paperback.        *
+     *    Complete, revised, and edited pdf reference manuals are also       *
+     *    available.                                                         *
+     *                                                                       *
+     *    Purchasing FreeRTOS documentation will not only help you, by       *
+     *    ensuring you get running as quickly as possible and with an        *
+     *    in-depth knowledge of how to use FreeRTOS, it will also help       *
+     *    the FreeRTOS project to continue with its mission of providing     *
+     *    professional grade, cross platform, de facto standard solutions    *
+     *    for microcontrollers - completely free of charge!                  *
+     *                                                                       *
+     *    >>> See http://www.FreeRTOS.org/Documentation for details. <<<     *
+     *                                                                       *
+     *    Thank you for using FreeRTOS, and thank you for your support!      *
+     *                                                                       *
     ***************************************************************************
+
 
     This file is part of the FreeRTOS distribution.
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
     Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
-    ***NOTE*** The exception to the GPL is included to allow you to distribute
-    a combined work that includes FreeRTOS without being obliged to provide the
-    source code for proprietary components outside of the FreeRTOS kernel.
-    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-    more details. You should have received a copy of the GNU General Public 
-    License and the FreeRTOS license exception along with FreeRTOS; if not it 
-    can be viewed here: http://www.freertos.org/a00114.html and also obtained 
-    by writing to Richard Barry, contact details for whom are available on the
-    FreeRTOS WEB site.
+
+    >>>>>>NOTE<<<<<< The modification to the GPL is included to allow you to
+    distribute a combined work that includes FreeRTOS without being obliged to
+    provide the source code for proprietary components outside of the FreeRTOS
+    kernel.
+
+    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details. You should have received a copy of the GNU General Public License
+    and the FreeRTOS license exception along with FreeRTOS; if not itcan be
+    viewed here: http://www.freertos.org/a00114.html and also obtained by
+    writing to Real Time Engineers Ltd., contact details for whom are available
+    on the FreeRTOS WEB site.
 
     1 tab == 4 spaces!
 
-    http://www.FreeRTOS.org - Documentation, latest information, license and
-    contact details.
+    ***************************************************************************
+     *                                                                       *
+     *    Having a problem?  Start by reading the FAQ "My application does   *
+     *    not run, what could be wrong?"                                     *
+     *                                                                       *
+     *    http://www.FreeRTOS.org/FAQHelp.html                               *
+     *                                                                       *
+    ***************************************************************************
 
-    http://www.SafeRTOS.com - A version that is certified for use in safety
-    critical systems.
 
-    http://www.OpenRTOS.com - Commercial support, development, porting,
-    licensing and training services.
+    http://www.FreeRTOS.org - Documentation, books, training, latest versions, 
+    license and Real Time Engineers Ltd. contact details.
+
+    http://www.FreeRTOS.org/plus - A selection of FreeRTOS ecosystem products,
+    including FreeRTOS+Trace - an indispensable productivity tool, and our new
+    fully thread aware and reentrant UDP/IP stack.
+
+    http://www.OpenRTOS.com - Real Time Engineers ltd license FreeRTOS to High 
+    Integrity Systems, who sell the code with commercial support, 
+    indemnification and middleware, under the OpenRTOS brand.
+    
+    http://www.SafeRTOS.com - High Integrity Systems also provide a safety 
+    engineered and independently SIL3 certified version for use in safety and 
+    mission critical applications that require provable dependability.
 */
 
 /*-----------------------------------------------------------
@@ -123,14 +144,14 @@ static void prvSetupTimerInterrupt( void ) PRIVILEGED_FUNCTION;
  */
 static void prvSetupMPU( void ) PRIVILEGED_FUNCTION;
 
-/* 
+/*
  * Return the smallest MPU region size that a given number of bytes will fit
  * into.  The region size is returned as the value that should be programmed
  * into the region attribute register for that region.
  */
 static unsigned long prvGetMPURegionSizeSetting( unsigned long ulActualSizeInBytes ) PRIVILEGED_FUNCTION;
 
-/* 
+/*
  * Checks to see if being called from the context of an unprivileged task, and
  * if so raises the privilege level and returns false - otherwise does nothing
  * other than return true.
@@ -165,6 +186,7 @@ void MPU_vTaskDelayUntil( portTickType * const pxPreviousWakeTime, portTickType 
 void MPU_vTaskDelay( portTickType xTicksToDelay );
 unsigned portBASE_TYPE MPU_uxTaskPriorityGet( xTaskHandle pxTask );
 void MPU_vTaskPrioritySet( xTaskHandle pxTask, unsigned portBASE_TYPE uxNewPriority );
+eTaskState MPU_eTaskGetState( xTaskHandle pxTask );
 void MPU_vTaskSuspend( xTaskHandle pxTaskToSuspend );
 signed portBASE_TYPE MPU_xTaskIsTaskSuspended( xTaskHandle xTask );
 void MPU_vTaskResume( xTaskHandle pxTaskToResume );
@@ -174,16 +196,16 @@ portTickType MPU_xTaskGetTickCount( void );
 unsigned portBASE_TYPE MPU_uxTaskGetNumberOfTasks( void );
 void MPU_vTaskList( signed char *pcWriteBuffer );
 void MPU_vTaskGetRunTimeStats( signed char *pcWriteBuffer );
-void MPU_vTaskStartTrace( signed char * pcBuffer, unsigned long ulBufferSize );
-unsigned long MPU_ulTaskEndTrace( void );
 void MPU_vTaskSetApplicationTaskTag( xTaskHandle xTask, pdTASK_HOOK_CODE pxTagValue );
 pdTASK_HOOK_CODE MPU_xTaskGetApplicationTaskTag( xTaskHandle xTask );
 portBASE_TYPE MPU_xTaskCallApplicationTaskHook( xTaskHandle xTask, void *pvParameter );
 unsigned portBASE_TYPE MPU_uxTaskGetStackHighWaterMark( xTaskHandle xTask );
 xTaskHandle MPU_xTaskGetCurrentTaskHandle( void );
 portBASE_TYPE MPU_xTaskGetSchedulerState( void );
-xQueueHandle MPU_xQueueCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize );
+xTaskHandle MPU_xTaskGetIdleTaskHandle( void );
+xQueueHandle MPU_xQueueGenericCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize, unsigned char ucQueueType );
 signed portBASE_TYPE MPU_xQueueGenericSend( xQueueHandle xQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition );
+portBASE_TYPE MPU_xQueueGenericReset( xQueueHandle pxQueue, portBASE_TYPE xNewQueue );
 unsigned portBASE_TYPE MPU_uxQueueMessagesWaiting( const xQueueHandle pxQueue );
 signed portBASE_TYPE MPU_xQueueGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking );
 xQueueHandle MPU_xQueueCreateMutex( void );
@@ -193,10 +215,15 @@ portBASE_TYPE MPU_xQueueGiveMutexRecursive( xQueueHandle xMutex );
 signed portBASE_TYPE MPU_xQueueAltGenericSend( xQueueHandle pxQueue, const void * const pvItemToQueue, portTickType xTicksToWait, portBASE_TYPE xCopyPosition );
 signed portBASE_TYPE MPU_xQueueAltGenericReceive( xQueueHandle pxQueue, void * const pvBuffer, portTickType xTicksToWait, portBASE_TYPE xJustPeeking );
 void MPU_vQueueAddToRegistry( xQueueHandle xQueue, signed char *pcName );
+void MPU_vQueueDelete( xQueueHandle xQueue );
 void *MPU_pvPortMalloc( size_t xSize );
 void MPU_vPortFree( void *pv );
 void MPU_vPortInitialiseBlocks( void );
 size_t MPU_xPortGetFreeHeapSize( void );
+xQueueSetHandle MPU_xQueueCreateSet( unsigned portBASE_TYPE uxEventQueueLength );
+xQueueSetMemberHandle MPU_xQueueSelectFromSet( xQueueSetHandle xQueueSet, portTickType xBlockTimeTicks );
+portBASE_TYPE MPU_xQueueAddToSet( xQueueSetMemberHandle xQueueOrSemaphore, xQueueSetHandle xQueueSet );
+portBASE_TYPE MPU_xQueueRemoveFromSet( xQueueSetMemberHandle xQueueOrSemaphore, xQueueSetHandle xQueueSet );
 
 /*-----------------------------------------------------------*/
 
@@ -233,7 +260,7 @@ portSTACK_TYPE *pxPortInitialiseStack( portSTACK_TYPE *pxTopOfStack, pdTASK_CODE
 void vPortSVCHandler( void )
 {
 	/* Assumes psp was in use. */
-	__asm volatile 
+	__asm volatile
 	(
 		#ifndef USE_PROCESS_STACK	/* Code should not be required if a main() is using the process stack. */
 			"	tst lr, #4						\n"
@@ -243,13 +270,9 @@ void vPortSVCHandler( void )
 		#else
 			"	mrs r0, psp						\n"
 		#endif
-			"	b prvSVCHandler					\n"
-			:::"r0"
+			"	b %0							\n"
+			::"i"(prvSVCHandler):"r0"
 	);
-
-	/* This will never get executed, but is required to prevent prvSVCHandler
-	being removed by the optimiser. */
-	prvSVCHandler( NULL );
 }
 /*-----------------------------------------------------------*/
 
@@ -269,7 +292,7 @@ unsigned char ucSVCNumber;
 		case portSVC_YIELD				:	*(portNVIC_INT_CTRL) = portNVIC_PENDSVSET;
 											break;
 
-		case portSVC_RAISE_PRIVILEGE	:	__asm volatile 
+		case portSVC_RAISE_PRIVILEGE	:	__asm volatile
 											(
 												"	mrs r1, control		\n" /* Obtain current control value. */
 												"	bic r1, #1			\n" /* Set privilege bit. */
@@ -286,7 +309,7 @@ unsigned char ucSVCNumber;
 
 static void prvRestoreContextOfFirstTask( void )
 {
-	__asm volatile 
+	__asm volatile
 	(
 		"	ldr r0, =0xE000ED08				\n" /* Use the NVIC offset register to locate the stack. */
 		"	ldr r0, [r0]					\n"
@@ -318,7 +341,11 @@ static void prvRestoreContextOfFirstTask( void )
  */
 portBASE_TYPE xPortStartScheduler( void )
 {
-	/* Make PendSV and SysTick the same priroity as the kernel. */
+	/* configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to 0.  See
+	http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html */
+	configASSERT( ( configMAX_SYSCALL_INTERRUPT_PRIORITY ) );
+
+	/* Make PendSV and SysTick the same priority as the kernel. */
 	*(portNVIC_SYSPRI2) |= portNVIC_PENDSV_PRI;
 	*(portNVIC_SYSPRI2) |= portNVIC_SYSTICK_PRI;
 
@@ -457,14 +484,14 @@ extern unsigned long __privileged_data_end__[];
 		/* First setup the entire flash for unprivileged read only access. */
         *portMPU_REGION_BASE_ADDRESS =	( ( unsigned long ) __FLASH_segment_start__ ) | /* Base address. */
 										( portMPU_REGION_VALID ) |
-										( portUNPRIVILEGED_FLASH_REGION ); 
+										( portUNPRIVILEGED_FLASH_REGION );
 
 		*portMPU_REGION_ATTRIBUTE =		( portMPU_REGION_READ_ONLY ) |
 										( portMPU_REGION_CACHEABLE_BUFFERABLE ) |
 										( prvGetMPURegionSizeSetting( ( unsigned long ) __FLASH_segment_end__ - ( unsigned long ) __FLASH_segment_start__ ) ) |
 										( portMPU_REGION_ENABLE );
 
-		/* Setup the first 16K for privileged only access (even though less 
+		/* Setup the first 16K for privileged only access (even though less
 		than 10K is actually being used).  This is where the kernel code is
 		placed. */
         *portMPU_REGION_BASE_ADDRESS =	( ( unsigned long ) __FLASH_segment_start__ ) | /* Base address. */
@@ -472,8 +499,8 @@ extern unsigned long __privileged_data_end__[];
 										( portPRIVILEGED_FLASH_REGION );
 
 		*portMPU_REGION_ATTRIBUTE =		( portMPU_REGION_PRIVILEGED_READ_ONLY ) |
-										( portMPU_REGION_CACHEABLE_BUFFERABLE ) | 
-										( prvGetMPURegionSizeSetting( ( unsigned long ) __privileged_functions_end__ - ( unsigned long ) __FLASH_segment_start__ ) ) | 
+										( portMPU_REGION_CACHEABLE_BUFFERABLE ) |
+										( prvGetMPURegionSizeSetting( ( unsigned long ) __privileged_functions_end__ - ( unsigned long ) __FLASH_segment_start__ ) ) |
 										( portMPU_REGION_ENABLE );
 
 		/* Setup the privileged data RAM region.  This is where the kernel data
@@ -491,7 +518,7 @@ extern unsigned long __privileged_data_end__[];
 		system peripherals and registers are protected. */
 		*portMPU_REGION_BASE_ADDRESS =	( portPERIPHERALS_START_ADDRESS ) |
 										( portMPU_REGION_VALID ) |
-										( portGENERAL_PERIPHERALS_REGION ); 
+										( portGENERAL_PERIPHERALS_REGION );
 
 		*portMPU_REGION_ATTRIBUTE =		( portMPU_REGION_READ_WRITE | portMPU_REGION_EXECUTE_NEVER ) |
 										( prvGetMPURegionSizeSetting( portPERIPHERALS_END_ADDRESS - portPERIPHERALS_START_ADDRESS ) ) |
@@ -533,7 +560,7 @@ unsigned long ulRegionSize, ulReturnValue = 4;
 static portBASE_TYPE prvRaisePrivilege( void )
 {
 	__asm volatile
-	( 
+	(
 		"	mrs r0, control						\n"
 		"	tst r0, #1							\n" /* Is the task running privileged? */
 		"	itte ne								\n"
@@ -541,7 +568,7 @@ static portBASE_TYPE prvRaisePrivilege( void )
 		"	svcne %0							\n" /* Switch to privileged. */
 		"	moveq r0, #1						\n" /* CONTROL[0]==0, return true. */
 		"	bx lr								\n"
-		:: "i" (portSVC_RAISE_PRIVILEGE) : "r0" 
+		:: "i" (portSVC_RAISE_PRIVILEGE) : "r0"
 	);
 
 	return 0;
@@ -560,34 +587,34 @@ unsigned long ul;
 	if( xRegions == NULL )
 	{
 		/* No MPU regions are specified so allow access to all RAM. */
-        xMPUSettings->xRegion[ 0 ].ulRegionBaseAddress =	
+        xMPUSettings->xRegion[ 0 ].ulRegionBaseAddress =
 				( ( unsigned long ) __SRAM_segment_start__ ) | /* Base address. */
 				( portMPU_REGION_VALID ) |
 				( portSTACK_REGION );
 
-		xMPUSettings->xRegion[ 0 ].ulRegionAttribute =	
-				( portMPU_REGION_READ_WRITE ) | 
+		xMPUSettings->xRegion[ 0 ].ulRegionAttribute =
+				( portMPU_REGION_READ_WRITE ) |
 				( portMPU_REGION_CACHEABLE_BUFFERABLE ) |
 				( prvGetMPURegionSizeSetting( ( unsigned long ) __SRAM_segment_end__ - ( unsigned long ) __SRAM_segment_start__ ) ) |
 				( portMPU_REGION_ENABLE );
 
 		/* Re-instate the privileged only RAM region as xRegion[ 0 ] will have
 		just removed the privileged only parameters. */
-		xMPUSettings->xRegion[ 1 ].ulRegionBaseAddress =	
+		xMPUSettings->xRegion[ 1 ].ulRegionBaseAddress =
 				( ( unsigned long ) __privileged_data_start__ ) | /* Base address. */
 				( portMPU_REGION_VALID ) |
 				( portSTACK_REGION + 1 );
 
-		xMPUSettings->xRegion[ 1 ].ulRegionAttribute =		
+		xMPUSettings->xRegion[ 1 ].ulRegionAttribute =
 				( portMPU_REGION_PRIVILEGED_READ_WRITE ) |
 				( portMPU_REGION_CACHEABLE_BUFFERABLE ) |
 				prvGetMPURegionSizeSetting( ( unsigned long ) __privileged_data_end__ - ( unsigned long ) __privileged_data_start__ ) |
 				( portMPU_REGION_ENABLE );
-				
+
 		/* Invalidate all other regions. */
 		for( ul = 2; ul <= portNUM_CONFIGURABLE_REGIONS; ul++ )
-		{ 
-			xMPUSettings->xRegion[ ul ].ulRegionBaseAddress = ( portSTACK_REGION + ul ) | portMPU_REGION_VALID;	
+		{
+			xMPUSettings->xRegion[ ul ].ulRegionBaseAddress = ( portSTACK_REGION + ul ) | portMPU_REGION_VALID;
 			xMPUSettings->xRegion[ ul ].ulRegionAttribute = 0UL;
 		}
 	}
@@ -600,12 +627,12 @@ unsigned long ul;
 		if( usStackDepth > 0 )
 		{
 			/* Define the region that allows access to the stack. */
-			xMPUSettings->xRegion[ 0 ].ulRegionBaseAddress =	
-					( ( unsigned long ) pxBottomOfStack ) | 
+			xMPUSettings->xRegion[ 0 ].ulRegionBaseAddress =
+					( ( unsigned long ) pxBottomOfStack ) |
 					( portMPU_REGION_VALID ) |
 					( portSTACK_REGION ); /* Region number. */
 
-			xMPUSettings->xRegion[ 0 ].ulRegionAttribute =	
+			xMPUSettings->xRegion[ 0 ].ulRegionAttribute =
 					( portMPU_REGION_READ_WRITE ) | /* Read and write. */
 					( prvGetMPURegionSizeSetting( ( unsigned long ) usStackDepth * ( unsigned long ) sizeof( portSTACK_TYPE ) ) ) |
 					( portMPU_REGION_CACHEABLE_BUFFERABLE ) |
@@ -618,23 +645,23 @@ unsigned long ul;
 		{
 			if( ( xRegions[ lIndex ] ).ulLengthInBytes > 0UL )
 			{
-				/* Translate the generic region definition contained in 
-				xRegions into the CM3 specific MPU settings that are then 
+				/* Translate the generic region definition contained in
+				xRegions into the CM3 specific MPU settings that are then
 				stored in xMPUSettings. */
-				xMPUSettings->xRegion[ ul ].ulRegionBaseAddress =	
-						( ( unsigned long ) xRegions[ lIndex ].pvBaseAddress ) | 
+				xMPUSettings->xRegion[ ul ].ulRegionBaseAddress =
+						( ( unsigned long ) xRegions[ lIndex ].pvBaseAddress ) |
 						( portMPU_REGION_VALID ) |
 						( portSTACK_REGION + ul ); /* Region number. */
 
-				xMPUSettings->xRegion[ ul ].ulRegionAttribute =	
-						( prvGetMPURegionSizeSetting( xRegions[ lIndex ].ulLengthInBytes ) ) | 
-						( xRegions[ lIndex ].ulParameters ) | 
-						( portMPU_REGION_ENABLE ); 
+				xMPUSettings->xRegion[ ul ].ulRegionAttribute =
+						( prvGetMPURegionSizeSetting( xRegions[ lIndex ].ulLengthInBytes ) ) |
+						( xRegions[ lIndex ].ulParameters ) |
+						( portMPU_REGION_ENABLE );
 			}
 			else
 			{
 				/* Invalidate the region. */
-				xMPUSettings->xRegion[ ul ].ulRegionBaseAddress = ( portSTACK_REGION + ul ) | portMPU_REGION_VALID;	
+				xMPUSettings->xRegion[ ul ].ulRegionBaseAddress = ( portSTACK_REGION + ul ) | portMPU_REGION_VALID;
 				xMPUSettings->xRegion[ ul ].ulRegionAttribute = 0UL;
 			}
 
@@ -721,6 +748,32 @@ portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 #endif
 /*-----------------------------------------------------------*/
 
+#if ( INCLUDE_eTaskGetState == 1 )
+	eTaskState MPU_eTaskGetState( xTaskHandle pxTask )
+	{
+    portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+	eTaskState eReturn;
+
+		eReturn = eTaskGetState( pxTask );
+        portRESET_PRIVILEGE( xRunningPrivileged );
+		return eReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
+#if ( INCLUDE_xTaskGetIdleTaskHandle == 1 )
+	xTaskHandle MPU_xTaskGetIdleTaskHandle( void )
+	{
+	xTaskHandle xReturn;
+    portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+		xReturn = xTaskGetIdleTaskHandle();
+        portRESET_PRIVILEGE( xRunningPrivileged );
+		return eReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
 #if ( INCLUDE_vTaskSuspend == 1 )
 	void MPU_vTaskSuspend( xTaskHandle pxTaskToSuspend )
 	{
@@ -802,7 +855,7 @@ portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 	void MPU_vTaskList( signed char *pcWriteBuffer )
 	{
 	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
-	
+
 		vTaskList( pcWriteBuffer );
 		portRESET_PRIVILEGE( xRunningPrivileged );
 	}
@@ -816,30 +869,6 @@ portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 
 		vTaskGetRunTimeStats( pcWriteBuffer );
         portRESET_PRIVILEGE( xRunningPrivileged );
-	}
-#endif
-/*-----------------------------------------------------------*/
-
-#if ( configUSE_TRACE_FACILITY == 1 )
-	void MPU_vTaskStartTrace( signed char * pcBuffer, unsigned long ulBufferSize )
-	{
-    portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
-
-		vTaskStartTrace( pcBuffer, ulBufferSize );
-        portRESET_PRIVILEGE( xRunningPrivileged );
-	}
-#endif
-/*-----------------------------------------------------------*/
-
-#if ( configUSE_TRACE_FACILITY == 1 )
-	unsigned long MPU_ulTaskEndTrace( void )
-	{
-	unsigned long ulReturn;
-    portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
-
-		ulReturn = ulTaskEndTrace();
-        portRESET_PRIVILEGE( xRunningPrivileged );
-		return ulReturn;
 	}
 #endif
 /*-----------------------------------------------------------*/
@@ -920,12 +949,23 @@ portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 #endif
 /*-----------------------------------------------------------*/
 
-xQueueHandle MPU_xQueueCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize )
+xQueueHandle MPU_xQueueGenericCreate( unsigned portBASE_TYPE uxQueueLength, unsigned portBASE_TYPE uxItemSize, unsigned char ucQueueType )
 {
 xQueueHandle xReturn;
 portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 
-	xReturn = xQueueCreate( uxQueueLength, uxItemSize );
+	xReturn = xQueueGenericCreate( uxQueueLength, uxItemSize, ucQueueType );
+	portRESET_PRIVILEGE( xRunningPrivileged );
+	return xReturn;
+}
+/*-----------------------------------------------------------*/
+
+portBASE_TYPE MPU_xQueueGenericReset( xQueueHandle pxQueue, portBASE_TYPE xNewQueue )
+{
+portBASE_TYPE xReturn;
+portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+	xReturn = xQueueGenericReset( pxQueue, xNewQueue );
 	portRESET_PRIVILEGE( xRunningPrivileged );
 	return xReturn;
 }
@@ -970,7 +1010,7 @@ signed portBASE_TYPE xReturn;
     xQueueHandle xReturn;
 	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 
-		xReturn = xQueueCreateMutex();
+		xReturn = xQueueCreateMutex( queueQUEUE_TYPE_MUTEX );
 		portRESET_PRIVILEGE( xRunningPrivileged );
 		return xReturn;
 	}
@@ -983,7 +1023,7 @@ signed portBASE_TYPE xReturn;
     xQueueHandle xReturn;
 	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 
-		xReturn = xQueueHandle xQueueCreateCountingSemaphore( uxCountValue, uxInitialCount );
+		xReturn = xQueueCreateCountingSemaphore( uxCountValue, uxInitialCount );
 		portRESET_PRIVILEGE( xRunningPrivileged );
 		return xReturn;
 	}
@@ -1010,6 +1050,58 @@ signed portBASE_TYPE xReturn;
 	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 
 		xReturn = xQueueGiveMutexRecursive( xMutex );
+		portRESET_PRIVILEGE( xRunningPrivileged );
+		return xReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
+#if ( configUSE_QUEUE_SETS == 1 )
+	xQueueSetHandle MPU_xQueueCreateSet( unsigned portBASE_TYPE uxEventQueueLength )
+	{
+	xQueueSetHandle xReturn;
+	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+		xReturn = xQueueCreateSet( uxEventQueueLength );
+		portRESET_PRIVILEGE( xRunningPrivileged );
+		return xReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
+#if ( configUSE_QUEUE_SETS == 1 )
+	xQueueSetMemberHandle MPU_xQueueSelectFromSet( xQueueSetHandle xQueueSet, portTickType xBlockTimeTicks )
+	{
+	xQueueSetMemberHandle xReturn;
+	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+		xReturn = xQueueSelectFromSet( xQueueSet, xBlockTimeTicks );
+		portRESET_PRIVILEGE( xRunningPrivileged );
+		return xReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
+#if ( configUSE_QUEUE_SETS == 1 )
+	portBASE_TYPE MPU_xQueueAddToSet( xQueueSetMemberHandle xQueueOrSemaphore, xQueueSetHandle xQueueSet )
+	{
+	portBASE_TYPE xReturn;
+	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+		xReturn = xQueueAddToSet( xQueueOrSemaphore, xQueueSet );
+		portRESET_PRIVILEGE( xRunningPrivileged );
+		return xReturn;
+	}
+#endif
+/*-----------------------------------------------------------*/
+
+#if ( configUSE_QUEUE_SETS == 1 )
+	portBASE_TYPE MPU_xQueueRemoveFromSet( xQueueSetMemberHandle xQueueOrSemaphore, xQueueSetHandle xQueueSet )
+	{
+	portBASE_TYPE xReturn;
+	portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+		xReturn = xQueueRemoveFromSet( xQueueOrSemaphore, xQueueSet );
 		portRESET_PRIVILEGE( xRunningPrivileged );
 		return xReturn;
 	}
@@ -1054,6 +1146,16 @@ signed portBASE_TYPE xReturn;
 #endif
 /*-----------------------------------------------------------*/
 
+void MPU_vQueueDelete( xQueueHandle xQueue )
+{
+portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
+
+	vQueueDelete( xQueue );
+
+	portRESET_PRIVILEGE( xRunningPrivileged );
+}
+/*-----------------------------------------------------------*/
+
 void *MPU_pvPortMalloc( size_t xSize )
 {
 void *pvReturn;
@@ -1095,7 +1197,7 @@ portBASE_TYPE xRunningPrivileged = prvRaisePrivilege();
 	xReturn = xPortGetFreeHeapSize();
 
 	portRESET_PRIVILEGE( xRunningPrivileged );
-	
+
 	return xReturn;
 }
 

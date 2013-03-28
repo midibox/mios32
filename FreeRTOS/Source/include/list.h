@@ -1,54 +1,75 @@
 /*
-    FreeRTOS V6.0.5 - Copyright (C) 2010 Real Time Engineers Ltd.
+    FreeRTOS V7.4.0 - Copyright (C) 2013 Real Time Engineers Ltd.
+
+    FEATURES AND PORTS ARE ADDED TO FREERTOS ALL THE TIME.  PLEASE VISIT
+    http://www.FreeRTOS.org TO ENSURE YOU ARE USING THE LATEST VERSION.
 
     ***************************************************************************
-    *                                                                         *
-    * If you are:                                                             *
-    *                                                                         *
-    *    + New to FreeRTOS,                                                   *
-    *    + Wanting to learn FreeRTOS or multitasking in general quickly       *
-    *    + Looking for basic training,                                        *
-    *    + Wanting to improve your FreeRTOS skills and productivity           *
-    *                                                                         *
-    * then take a look at the FreeRTOS eBook                                  *
-    *                                                                         *
-    *        "Using the FreeRTOS Real Time Kernel - a Practical Guide"        *
-    *                  http://www.FreeRTOS.org/Documentation                  *
-    *                                                                         *
-    * A pdf reference manual is also available.  Both are usually delivered   *
-    * to your inbox within 20 minutes to two hours when purchased between 8am *
-    * and 8pm GMT (although please allow up to 24 hours in case of            *
-    * exceptional circumstances).  Thank you for your support!                *
-    *                                                                         *
+     *                                                                       *
+     *    FreeRTOS tutorial books are available in pdf and paperback.        *
+     *    Complete, revised, and edited pdf reference manuals are also       *
+     *    available.                                                         *
+     *                                                                       *
+     *    Purchasing FreeRTOS documentation will not only help you, by       *
+     *    ensuring you get running as quickly as possible and with an        *
+     *    in-depth knowledge of how to use FreeRTOS, it will also help       *
+     *    the FreeRTOS project to continue with its mission of providing     *
+     *    professional grade, cross platform, de facto standard solutions    *
+     *    for microcontrollers - completely free of charge!                  *
+     *                                                                       *
+     *    >>> See http://www.FreeRTOS.org/Documentation for details. <<<     *
+     *                                                                       *
+     *    Thank you for using FreeRTOS, and thank you for your support!      *
+     *                                                                       *
     ***************************************************************************
+
 
     This file is part of the FreeRTOS distribution.
 
     FreeRTOS is free software; you can redistribute it and/or modify it under
     the terms of the GNU General Public License (version 2) as published by the
     Free Software Foundation AND MODIFIED BY the FreeRTOS exception.
-    ***NOTE*** The exception to the GPL is included to allow you to distribute
-    a combined work that includes FreeRTOS without being obliged to provide the
-    source code for proprietary components outside of the FreeRTOS kernel.
-    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-    more details. You should have received a copy of the GNU General Public 
-    License and the FreeRTOS license exception along with FreeRTOS; if not it 
-    can be viewed here: http://www.freertos.org/a00114.html and also obtained 
-    by writing to Richard Barry, contact details for whom are available on the
-    FreeRTOS WEB site.
+
+    >>>>>>NOTE<<<<<< The modification to the GPL is included to allow you to
+    distribute a combined work that includes FreeRTOS without being obliged to
+    provide the source code for proprietary components outside of the FreeRTOS
+    kernel.
+
+    FreeRTOS is distributed in the hope that it will be useful, but WITHOUT ANY
+    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+    FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+    details. You should have received a copy of the GNU General Public License
+    and the FreeRTOS license exception along with FreeRTOS; if not itcan be
+    viewed here: http://www.freertos.org/a00114.html and also obtained by
+    writing to Real Time Engineers Ltd., contact details for whom are available
+    on the FreeRTOS WEB site.
 
     1 tab == 4 spaces!
 
-    http://www.FreeRTOS.org - Documentation, latest information, license and
-    contact details.
+    ***************************************************************************
+     *                                                                       *
+     *    Having a problem?  Start by reading the FAQ "My application does   *
+     *    not run, what could be wrong?"                                     *
+     *                                                                       *
+     *    http://www.FreeRTOS.org/FAQHelp.html                               *
+     *                                                                       *
+    ***************************************************************************
 
-    http://www.SafeRTOS.com - A version that is certified for use in safety
-    critical systems.
 
-    http://www.OpenRTOS.com - Commercial support, development, porting,
-    licensing and training services.
+    http://www.FreeRTOS.org - Documentation, books, training, latest versions, 
+    license and Real Time Engineers Ltd. contact details.
+
+    http://www.FreeRTOS.org/plus - A selection of FreeRTOS ecosystem products,
+    including FreeRTOS+Trace - an indispensable productivity tool, and our new
+    fully thread aware and reentrant UDP/IP stack.
+
+    http://www.OpenRTOS.com - Real Time Engineers ltd license FreeRTOS to High 
+    Integrity Systems, who sell the code with commercial support, 
+    indemnification and middleware, under the OpenRTOS brand.
+    
+    http://www.SafeRTOS.com - High Integrity Systems also provide a safety 
+    engineered and independently SIL3 certified version for use in safety and 
+    mission critical applications that require provable dependability.
 */
 
 /*
@@ -79,12 +100,6 @@
  * \ingroup FreeRTOSIntro
  */
 
-/*
-	Changes from V4.3.1
-
-	+ Included local const within listGET_OWNER_OF_NEXT_ENTRY() to assist
-	  compiler with optimisation.  Thanks B.R.
-*/
 
 #ifndef LIST_H
 #define LIST_H
@@ -130,7 +145,16 @@ typedef struct xLIST
  * \page listSET_LIST_ITEM_OWNER listSET_LIST_ITEM_OWNER
  * \ingroup LinkedList
  */
-#define listSET_LIST_ITEM_OWNER( pxListItem, pxOwner )		( pxListItem )->pvOwner = ( void * ) pxOwner
+#define listSET_LIST_ITEM_OWNER( pxListItem, pxOwner )		( pxListItem )->pvOwner = ( void * ) ( pxOwner )
+
+/*
+ * Access macro to get the owner of a list item.  The owner of a list item
+ * is the object (usually a TCB) that contains the list item.
+ *
+ * \page listSET_LIST_ITEM_OWNER listSET_LIST_ITEM_OWNER
+ * \ingroup LinkedList
+ */
+#define listGET_LIST_ITEM_OWNER( pxListItem )		( pxListItem )->pvOwner
 
 /*
  * Access macro to set the value of the list item.  In most cases the value is
@@ -139,10 +163,10 @@ typedef struct xLIST
  * \page listSET_LIST_ITEM_VALUE listSET_LIST_ITEM_VALUE
  * \ingroup LinkedList
  */
-#define listSET_LIST_ITEM_VALUE( pxListItem, xValue )		( pxListItem )->xItemValue = xValue
+#define listSET_LIST_ITEM_VALUE( pxListItem, xValue )		( pxListItem )->xItemValue = ( xValue )
 
 /*
- * Access macro the retrieve the value of the list item.  The value can
+ * Access macro to retrieve the value of the list item.  The value can
  * represent anything - for example a the priority of a task, or the time at
  * which a task should be unblocked.
  *
@@ -150,6 +174,15 @@ typedef struct xLIST
  * \ingroup LinkedList
  */
 #define listGET_LIST_ITEM_VALUE( pxListItem )				( ( pxListItem )->xItemValue )
+
+/*
+ * Access macro the retrieve the value of the list item at the head of a given
+ * list.
+ *
+ * \page listGET_LIST_ITEM_VALUE listGET_LIST_ITEM_VALUE
+ * \ingroup LinkedList
+ */
+#define listGET_ITEM_VALUE_OF_HEAD_ENTRY( pxList )			( (&( ( pxList )->xListEnd ))->pxNext->xItemValue )
 
 /*
  * Access macro to determine if a list contains any items.  The macro will
@@ -186,7 +219,7 @@ typedef struct xLIST
  */
 #define listGET_OWNER_OF_NEXT_ENTRY( pxTCB, pxList )									\
 {																						\
-xList * const pxConstList = pxList;														\
+xList * const pxConstList = ( pxList );													\
 	/* Increment the index to the next item and return the item, ensuring */			\
 	/* we don't return the marker used at the end of the list.  */						\
 	( pxConstList )->pxIndex = ( pxConstList )->pxIndex->pxNext;						\
@@ -194,7 +227,7 @@ xList * const pxConstList = pxList;														\
 	{																					\
 		( pxConstList )->pxIndex = ( pxConstList )->pxIndex->pxNext;					\
 	}																					\
-	pxTCB = ( pxConstList )->pxIndex->pvOwner;											\
+	( pxTCB ) = ( pxConstList )->pxIndex->pvOwner;										\
 }
 
 
@@ -214,7 +247,7 @@ xList * const pxConstList = pxList;														\
  * \page listGET_OWNER_OF_HEAD_ENTRY listGET_OWNER_OF_HEAD_ENTRY
  * \ingroup LinkedList
  */
-#define listGET_OWNER_OF_HEAD_ENTRY( pxList )  ( ( pxList->uxNumberOfItems != ( unsigned portBASE_TYPE ) 0 ) ? ( (&( pxList->xListEnd ))->pxNext->pvOwner ) : ( NULL ) )
+#define listGET_OWNER_OF_HEAD_ENTRY( pxList )  ( (&( ( pxList )->xListEnd ))->pxNext->pvOwner )
 
 /*
  * Check to see if a list item is within a list.  The list item maintains a
@@ -226,7 +259,22 @@ xList * const pxConstList = pxList;														\
  * @return pdTRUE is the list item is in the list, otherwise pdFALSE.
  * pointer against
  */
-#define listIS_CONTAINED_WITHIN( pxList, pxListItem ) ( ( pxListItem )->pvContainer == ( void * ) pxList )
+#define listIS_CONTAINED_WITHIN( pxList, pxListItem ) ( ( pxListItem )->pvContainer == ( void * ) ( pxList ) )
+
+/*
+ * Return the list a list item is contained within (referenced from).
+ *
+ * @param pxListItem The list item being queried.
+ * @return A pointer to the xList object that references the pxListItem
+ */
+#define listLIST_ITEM_CONTAINER( pxListItem ) ( ( pxListItem )->pvContainer )
+
+/*
+ * This provides a crude means of knowing if a list has been initialised, as
+ * pxList->xListEnd.xItemValue is set to portMAX_DELAY by the vListInitialise()
+ * function.
+ */
+#define listLIST_IS_INITIALISED( pxList ) ( ( pxList )->xListEnd.xItemValue == portMAX_DELAY )
 
 /*
  * Must be called before a list is used!  This initialises all the members
@@ -289,13 +337,16 @@ void vListInsertEnd( xList *pxList, xListItem *pxNewListItem );
  * Remove an item from a list.  The list item has a pointer to the list that
  * it is in, so only the list item need be passed into the function.
  *
- * @param vListRemove The item to be removed.  The item will remove itself from
+ * @param uxListRemove The item to be removed.  The item will remove itself from
  * the list pointed to by it's pxContainer parameter.
+ * 
+ * @return The number of items that remain in the list after the list item has
+ * been removed.
  *
- * \page vListRemove vListRemove
+ * \page uxListRemove uxListRemove
  * \ingroup LinkedList
  */
-void vListRemove( xListItem *pxItemToRemove );
+unsigned portBASE_TYPE uxListRemove( xListItem *pxItemToRemove );
 
 #ifdef __cplusplus
 }
