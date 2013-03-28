@@ -34,7 +34,7 @@
 
 namespace ProjectInfo
 {
-    const char* const  projectName    = "MIOS Studio";
+    const char* const  projectName    = "MIOS_Studio";
     const char* const  versionString  = "2.4.3";
     const int          versionNumber  = 0x20403;
 }

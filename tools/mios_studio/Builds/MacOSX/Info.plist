@@ -9,7 +9,7 @@
 	<key>CFBundleIdentifier</key>
 	<string>org.midibox.MIOSStudio</string>
 	<key>CFBundleName</key>
-	<string>MIOS Studio</string>
+	<string>MIOS_Studio</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>

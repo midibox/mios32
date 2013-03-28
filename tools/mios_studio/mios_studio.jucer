@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="MXNnwm" name="MIOS Studio" projectType="guiapp" version="2.4.3"
+<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.3"
               jucerVersion="3.0.0" bundleIdentifier="org.midibox.MIOSStudio"
               companyName="MIDIbox">
   <EXPORTFORMATS>
@@ -8,29 +8,29 @@
             extraDefs="_CRT_SECURE_NO_WARNINGS">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" targetName="MIOS Studio"/>
+                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="0" optimisation="2" targetName="MIOS Studio"/>
+                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
       </CONFIGURATIONS>
     </VS2010>
     <XCODE_MAC targetFolder="Builds/MacOSX" juceFolder="../juce/modules">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="1" optimisation="1" targetName="MIOS Studio"/>
+                       isDebug="1" optimisation="1" targetName="MIOS_Studio_Debug"/>
         <CONFIGURATION name="Release" osxSDK="default" osxCompatibility="default" osxArchitecture="default"
-                       isDebug="0" optimisation="2" targetName="MIOS Studio"/>
+                       isDebug="0" optimisation="2" targetName="MIOS_Studio"/>
       </CONFIGURATIONS>
     </XCODE_MAC>
     <LINUX_MAKE targetFolder="Builds/Linux" juceFolder="../juce/modules">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
-                       targetName="MIOS Studio"/>
+                       targetName="MIOS_Studio_Debug"/>
         <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="2"
-                       targetName="MIOS Studio"/>
+                       targetName="MIOS_Studio"/>
       </CONFIGURATIONS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
-  <MAINGROUP id="v6A9pi" name="MIOS Studio">
+  <MAINGROUP id="v6A9pi" name="MIOS_Studio">
     <GROUP id="{21AE3CF3-DE72-43D3-6321-7EF6A8529AA1}" name="src">
       <GROUP id="{4295D57C-C3EE-AD2B-7E77-332FCD9652E2}" name="gui">
         <FILE id="cYZBac" name="ConfigTableComponents.cpp" compile="1" resource="0"
