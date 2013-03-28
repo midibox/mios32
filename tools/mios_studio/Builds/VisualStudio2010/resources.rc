@@ -14,9 +14,9 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
       VALUE "CompanyName",  "MIDIbox\0"
-      VALUE "FileDescription",  "MIOS Studio\0"
+      VALUE "FileDescription",  "MIOS_Studio\0"
       VALUE "FileVersion",  "2.4.3\0"
-      VALUE "ProductName",  "MIOS Studio\0"
+      VALUE "ProductName",  "MIOS_Studio\0"
       VALUE "ProductVersion",  "2.4.3\0"
     END
   END
