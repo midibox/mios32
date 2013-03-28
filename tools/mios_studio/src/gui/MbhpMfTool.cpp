@@ -408,7 +408,7 @@ Component* MbhpMfToolCalibrationTable::refreshComponentForCell(int rowNumber, in
 void MbhpMfToolCalibrationTable::resized()
 {
     // position our table with a gap around its edge
-    table->setBoundsInset(BorderSize(8));
+    table->setBoundsInset(BorderSize<int>(8));
 }
 
 
@@ -1007,7 +1007,7 @@ MbhpMfToolControl::MbhpMfToolControl(MiosStudio *_miosStudio, MbhpMfToolConfig *
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("mbhpMfDeviceId"), 0) & 0x7f);
         patchSlider->setValue(propertiesFile->getIntValue(T("mbhpMfPatch"), 0) & 0x7f);
@@ -1072,7 +1072,7 @@ void MbhpMfToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToOpen() ) {
             syxFile = fc.getResult();
             if( loadSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("mbhpMfSyxFile"), syxFile.getFullPathName());
             }
@@ -1084,7 +1084,7 @@ void MbhpMfToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToSave(true) ) {
             syxFile = fc.getResult();
             if( saveSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("mbhpMfSyxFile"), syxFile.getFullPathName());
             }
@@ -1117,12 +1117,12 @@ void MbhpMfToolControl::sliderValueChanged(Slider* slider)
 {
     if( slider == deviceIdSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("mbhpMfDeviceId"), (int)slider->getValue());
     } else if( slider == patchSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("mbhpMfPatch"), (int)slider->getValue());
     }
@@ -1250,7 +1250,7 @@ void MbhpMfToolControl::timerCallback()
 //==============================================================================
 void MbhpMfToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
 
     if( SysexHelper::isValidMbhpMfTraceDump(data, size, (int)deviceIdSlider->getValue()) ) {

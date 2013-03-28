@@ -74,7 +74,7 @@ UploadWindow::UploadWindow(MiosStudio *_miosStudio)
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         String recentlyUsedHexFiles = propertiesFile->getValue(T("recentlyUsedHexFiles"), String::empty);
         // seems that Juce doesn't provide a split function?
@@ -167,7 +167,7 @@ void UploadWindow::filenameComponentChanged(FilenameComponent *fileComponentThat
         startButton->setEnabled(false); // will be enabled if file is valid
 
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile ) {
             String recentlyUsedHexFiles = fileChooser->getRecentlyUsedFilenames().joinIntoString(";");
             propertiesFile->setValue(T("recentlyUsedHexFiles"), recentlyUsedHexFiles);

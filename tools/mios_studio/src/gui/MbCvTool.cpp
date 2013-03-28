@@ -333,7 +333,7 @@ Component* MbCvToolConfigChannels::refreshComponentForCell(int rowNumber, int co
 void MbCvToolConfigChannels::resized()
 {
     // position our table with a gap around its edge
-    table->setBoundsInset(BorderSize(8));
+    table->setBoundsInset(BorderSize<int>(8));
 }
 
 
@@ -501,7 +501,7 @@ MbCvToolControl::MbCvToolControl(MiosStudio *_miosStudio, MbCvToolConfig *_mbCvT
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("mbCvDeviceId"), 0) & 0x7f);
         patchSlider->setValue(propertiesFile->getIntValue(T("mbCvPatch"), 0) & 0x7f);
@@ -558,7 +558,7 @@ void MbCvToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToOpen() ) {
             syxFile = fc.getResult();
             if( loadSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("mbCvSyxFile"), syxFile.getFullPathName());
             }
@@ -570,7 +570,7 @@ void MbCvToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToSave(true) ) {
             syxFile = fc.getResult();
             if( saveSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("mbCvSyxFile"), syxFile.getFullPathName());
             }
@@ -601,12 +601,12 @@ void MbCvToolControl::sliderValueChanged(Slider* slider)
 {
     if( slider == deviceIdSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("mbCvDeviceId"), (int)slider->getValue());
     } else if( slider == patchSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("mbCvPatch"), (int)slider->getValue());
     }
@@ -678,7 +678,7 @@ void MbCvToolControl::timerCallback()
 //==============================================================================
 void MbCvToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
 
     if( receiveDump ) {

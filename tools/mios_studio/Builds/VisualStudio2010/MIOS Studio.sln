@@ -1,0 +1,19 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{691614DC-C1BC-F568-ABF3-EF79B7FC277E}") = "MIOS Studio", "MIOS Studio.vcxproj", "{7713AF19-4341-5D9D-B37B-3CF4E12ED2CB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7713AF19-4341-5D9D-B37B-3CF4E12ED2CB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7713AF19-4341-5D9D-B37B-3CF4E12ED2CB}.Debug|Win32.Build.0 = Debug|Win32
+		{7713AF19-4341-5D9D-B37B-3CF4E12ED2CB}.Release|Win32.ActiveCfg = Release|Win32
+		{7713AF19-4341-5D9D-B37B-3CF4E12ED2CB}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

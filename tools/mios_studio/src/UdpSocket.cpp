@@ -75,7 +75,7 @@ bool UdpSocket::connect(const String& remoteHost, const unsigned& _portNumberRea
 #if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
     remoteHostInfo = gethostbyname((const char *)remoteHost);
 #else
-    remoteHostInfo = gethostbyname(remoteHost.toCString());
+    remoteHostInfo = gethostbyname(remoteHost.toUTF8().getAddress());
 #endif
 
 	// This looks to be required in windows as remoteHostInfo is null if the host is not found

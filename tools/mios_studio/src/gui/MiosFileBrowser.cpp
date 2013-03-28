@@ -66,7 +66,7 @@ public:
         return 100;
     }
 
-    const String getUniqueName() const
+    String getUniqueName() const
     {
         if( fileItem->parentPath.compare(T("/")) == 0 ) {
             return T("/") + fileItem->name;
@@ -134,7 +134,7 @@ public:
             browser->treeItemDoubleClicked(this);
     }
 
-    const String getDragSourceDescription()
+    var getDragSourceDescription()
     {
         return "MIOS Filebrowser Items";
     }
@@ -314,7 +314,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
                 if( textEditor->isVisible() && !textEditor->isReadOnly() ) {
                     // visible & read only mode means, that binary data is edited -> transfer to Hex Editor only in this case!
                     String tmpStr(textEditor->getText());
-                    Array<uint8> data((uint8 *)tmpStr.toCString(), tmpStr.length());
+                    Array<uint8> data((uint8 *)tmpStr.toUTF8().getAddress(), tmpStr.length());
                     openHexEditor(data);
                 } else {
                     // otherwise re-use data in hex editor
@@ -363,7 +363,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
             } else if( textEditor->isVisible() ) {
                 // write back the read file
                 String txt(textEditor->getText());
-                Array<uint8> tmp((uint8 *)txt.toCString(), txt.length());
+                Array<uint8> tmp((uint8 *)txt.toUTF8().getAddress(), txt.length());
                 uploadBuffer(currentReadFileName, tmp);
             }
         }
@@ -442,6 +442,8 @@ void MiosFileBrowser::disableFileButtons(void)
 
 void MiosFileBrowser::enableFileButtons(void)
 {
+    treeView->setEnabled(true);
+
     updateButton->setEnabled(true);
     uploadButton->setEnabled(true);
     downloadButton->setEnabled(true);
@@ -482,9 +484,9 @@ String MiosFileBrowser::convertToString(const Array<uint8>& data, bool& hasBinar
     for(int i=0; i<data.size(); ++i, ++ptr) {
         if( *ptr == 0 ) {
             hasBinaryData = true; // full conversion to string not possible
-            str += T("\\0"); // show \0 instead
+            str += "\\0"; // show \0 instead
         } else {
-            str += (char)*ptr;
+            str += (const wchar_t)*ptr;
         }
     }
 
@@ -582,7 +584,7 @@ void MiosFileBrowser::updateTreeView(bool accessPossible)
 
         if( accessPossible ) {
             if( currentDirOpenStates ) {
-                treeView->restoreOpennessState(*currentDirOpenStates);
+                treeView->restoreOpennessState(*currentDirOpenStates, true);
                 deleteAndZero(currentDirOpenStates);
             }
 
@@ -625,7 +627,7 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
         } else {
             // restore default path
             String defaultPath(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
-            PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+            PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
             if( propertiesFile ) {
                 defaultPath = propertiesFile->getValue(T("defaultFilebrowserPath"), defaultPath);
             }
@@ -788,7 +790,7 @@ bool MiosFileBrowser::uploadFile(void)
 {
     // restore default path
     String defaultPath(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         defaultPath = propertiesFile->getValue(T("defaultFilebrowserPath"), defaultPath);
     }
@@ -1161,7 +1163,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
 //==============================================================================
 void MiosFileBrowser::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
     int messageOffset = 0;
 

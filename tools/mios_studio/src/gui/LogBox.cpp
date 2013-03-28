@@ -29,7 +29,7 @@ LogBox::LogBox(const String &componentName)
 #if defined(JUCE_WIN32)
     , logEntryFont(Font::getDefaultMonospacedFontName(), 10.0, 0)
 #else
-    , logEntryFont(Font::getDefaultMonospacedFontName(), 13.0, 0)
+    , logEntryFont(Font::getDefaultMonospacedFontName(), 12.0, 0)
 #endif
 #endif
 {
@@ -88,7 +88,46 @@ void LogBox::paintOverChildren(Graphics& g)
 
     g.setOpacity(1.0f);
     const Colour shadowColour(findColour(0x1000207)); // TextEditor::shadowColourId
+#if 0
     g.drawBevel(0, 0, getWidth(), getHeight() + 2, 3, shadowColour, shadowColour);
+#else
+    {
+        // drawBevel has been removed in Juce 2 - copy&paste of old code:
+        const int x = 0;
+        const int y = 0;
+        const int width = getWidth();
+        const int height = getHeight() + 2;
+        const int bevelThickness = 3;
+        const Colour& topLeftColour = shadowColour;
+        const Colour& bottomRightColour = shadowColour;
+        const bool useGradient = true;
+        const bool sharpEdgeOnOutside = true;
+     
+        if (g.clipRegionIntersects (Rectangle<int> (x, y, width, height))) {
+            LowLevelGraphicsContext& context = g.getInternalContext();
+            context.saveState();
+
+            const float oldOpacity = 1.0f;//xxx state->colour.getFloatAlpha();
+            const float ramp = oldOpacity / bevelThickness;
+
+            for (int i = bevelThickness; --i >= 0;) {
+                const float op = useGradient ? ramp * (sharpEdgeOnOutside ? bevelThickness - i : i)
+                                                                                 : oldOpacity;
+
+                context.setFill (topLeftColour.withMultipliedAlpha (op));
+                context.fillRect (Rectangle<int> (x + i, y + i, width - i * 2, 1), false);
+                context.setFill (topLeftColour.withMultipliedAlpha (op * 0.75f));
+                context.fillRect (Rectangle<int> (x + i, y + i + 1, 1, height - i * 2 - 2), false);
+                context.setFill (bottomRightColour.withMultipliedAlpha (op));
+                context.fillRect (Rectangle<int> (x + i, y + height - i - 1, width - i * 2, 1), false);
+                context.setFill (bottomRightColour.withMultipliedAlpha (op  * 0.75f));
+                context.fillRect (Rectangle<int> (x + width - i - 1, y + i + 1, 1, height - i * 2 - 2), false);
+            }
+
+            context.restoreState();
+        }
+    }
+#endif
 }
 
 //==============================================================================

@@ -242,7 +242,7 @@ Array<uint8> OscHelper::createString(const String &str)
 #if JUCE_MAJOR_VERSION == 1 && JUCE_MINOR_VERSION < 51
     endPtr = putString(buffer, (const char *)str);
 #else
-    endPtr = putString(buffer, str.toCString());
+    endPtr = putString(buffer, str.toUTF8().getAddress());
 #endif
     Array<uint8> tmp = Array<uint8>(buffer, endPtr-buffer);
     delete buffer;
@@ -924,7 +924,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #if JUCE_MAJOR_VERSION == 1 && JUCE_MINOR_VERSION < 51
 				if( sscanf((const char*)word, "@%u.%u", &seconds, &fraction) != 2 ) {
 #else
-				if( sscanf((const char*)word.toCString(), "@%u.%u", &seconds, &fraction) != 2 ) {
+				if( sscanf((const char*)word.toUTF8().getAddress(), "@%u.%u", &seconds, &fraction) != 2 ) {
 #endif
                     statusMessage = T("syntax: <seconds>.<fraction>");
                     return Array<uint8>();
@@ -984,7 +984,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #if JUCE_MAJOR_VERSION == 1 && JUCE_MINOR_VERSION < 51
             if( sscanf((const char*)word.substring(1), "%d:%x", &len, &value) != 2 ) {
 #else
-            if( sscanf((const char*)word.substring(1).toCString(), "%d:%x", &len, &value) != 2 ) {
+            if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%d:%x", &len, &value) != 2 ) {
 #endif
                 statusMessage = T("please enter blob length and hex value (syntax: <len>:<data>)");
                 return Array<uint8>();
@@ -1019,7 +1019,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #if JUCE_MAJOR_VERSION == 1 && JUCE_MINOR_VERSION < 51
                 if( sscanf((const char*)word.substring(1), "%u.%u", &seconds, &fraction) != 2 ) {
 #else
-                if( sscanf((const char*)word.substring(1).toCString(), "%u.%u", &seconds, &fraction) != 2 ) {
+                if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%u.%u", &seconds, &fraction) != 2 ) {
 #endif
                     statusMessage = T("syntax: <seconds>.<fraction>");
                     return Array<uint8>();
@@ -1065,7 +1065,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #if JUCE_MAJOR_VERSION == 1 && JUCE_MINOR_VERSION < 51
                 if( sscanf((const char*)word.substring(1), "%x", &value) != 1 ) {
 #else
-                if( sscanf((const char*)word.substring(1).toCString(), "%x", &value) != 1 ) {
+                if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%x", &value) != 1 ) {
 #endif
                     statusMessage = String(T("ERROR: expecting hex value for '") + arg + T("' argument!"));
                     return Array<uint8>();

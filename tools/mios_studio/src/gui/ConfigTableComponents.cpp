@@ -30,7 +30,7 @@ ConfigTableComboBox::~ConfigTableComboBox()
 
 void ConfigTableComboBox::resized()
 {
-    comboBox->setBoundsInset(BorderSize(2));
+    comboBox->setBoundsInset(BorderSize<int>(2));
 }
 
 void ConfigTableComboBox::setRowAndColumn(const int newRow, const int newColumn)
@@ -72,14 +72,14 @@ ConfigTableSlider::~ConfigTableSlider()
 
 void ConfigTableSlider::resized()
 {
-    slider->setBoundsInset(BorderSize(2));
+    slider->setBoundsInset(BorderSize<int>(2));
 }
 
 void ConfigTableSlider::setRowAndColumn(const int newRow, const int newColumn)
 {
     row = newRow;
     columnId = newColumn;
-    slider->setValue(owner.getTableValue(row, columnId), true);
+    slider->setValue(owner.getTableValue(row, columnId), dontSendNotification);
 }
 
 void ConfigTableSlider::sliderValueChanged(Slider *slider)
@@ -110,7 +110,7 @@ ConfigTableToggleButton::~ConfigTableToggleButton()
 
 void ConfigTableToggleButton::resized()
 {
-    toggleButton->setBoundsInset(BorderSize(2));
+    toggleButton->setBoundsInset(BorderSize<int>(2));
 }
 
 void ConfigTableToggleButton::setRowAndColumn(const int newRow, const int newColumn)
@@ -144,7 +144,7 @@ ConfigTableLabel::~ConfigTableLabel()
 
 void ConfigTableLabel::resized()
 {
-    label->setBoundsInset(BorderSize(2));
+    label->setBoundsInset(BorderSize<int>(2));
 }
 
 void ConfigTableLabel::setRowAndColumn(const int newRow, const int newColumn)
