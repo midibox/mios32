@@ -33,7 +33,7 @@ OscMonitor::OscMonitor(MiosStudio *_miosStudio)
     monitorLogBox->addEntry(Colours::grey, T("OSC Monitor ready."));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         displayOptionsComboBox->setSelectedId(propertiesFile->getIntValue(T("oscDisplayOption")), true);
     }
@@ -64,7 +64,7 @@ void OscMonitor::resized()
 void OscMonitor::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
     if( comboBoxThatHasChanged == displayOptionsComboBox ) {
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile ) {
             propertiesFile->setValue(T("oscDisplayOption"), String(displayOptionsComboBox->getSelectedId()));
         }

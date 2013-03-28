@@ -198,7 +198,7 @@ MidiSlider::MidiSlider(MiosStudio *_miosStudio, int _num, String _functionName, 
     sliderFunction->addListener(this);
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         _functionName = propertiesFile->getValue("slider" + String(sliderNum) + "FunctionName", _functionName);
         _functionArg = propertiesFile->getIntValue("slider" + String(sliderNum) + "FunctionArg", _functionArg);
@@ -260,10 +260,10 @@ void MidiSlider::setFunction(const String &_functionName, const int &_functionAr
         sliderFunction->clear();
     }
 
-    slider->setValue(initialValue, false); // don't send update message
+    slider->setValue(initialValue, dontSendNotification); // don't send update message
 
     // store settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         propertiesFile->setValue("slider" + String(sliderNum) + "FunctionName",_functionName);
         propertiesFile->setValue("slider" + String(sliderNum) + "FunctionArg", functionArg);

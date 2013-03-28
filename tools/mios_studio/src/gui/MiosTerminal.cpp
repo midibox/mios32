@@ -105,7 +105,7 @@ void MiosTerminal::textEditorFocusLost(TextEditor &editor)
 //==============================================================================
 void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
     int messageOffset = 0;
 

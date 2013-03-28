@@ -64,7 +64,7 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         sendDelaySlider->setValue(propertiesFile->getIntValue(T("sysexSendDelay"), 750));
 
@@ -149,7 +149,7 @@ void SysexToolSend::sliderValueChanged(Slider* slider)
 {
     if( slider == sendDelaySlider ) {
         // store settings
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile ) {
             propertiesFile->setValue(T("sysexSendDelay"), sendDelaySlider->getValue());
         }
@@ -183,7 +183,7 @@ void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentTha
             juce_free(buffer);
 
             // store setting
-            PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+            PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
             if( propertiesFile ) {
                 String recentlyUsedHexFiles = sendFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
                 propertiesFile->setValue(T("recentlyUsedSyxSendFiles"), recentlyUsedHexFiles);
@@ -270,7 +270,7 @@ SysexToolReceive::SysexToolReceive(MiosStudio *_miosStudio)
     receiveClearButton->addListener(this);
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         String recentlyUsedSyxFiles = propertiesFile->getValue(T("recentlyUsedSyxReceiveFiles"), String::empty);
         // seems that Juce doesn't provide a split function?
@@ -366,7 +366,7 @@ void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponent
         }
 
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile ) {
             String recentlyUsedHexFiles = receiveFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
             propertiesFile->setValue(T("recentlyUsedSyxReceiveFiles"), recentlyUsedHexFiles);

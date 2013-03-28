@@ -157,7 +157,7 @@ String MidiMonitor::getNoteString(uint8 note)
 void MidiMonitor::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
     uint32 size = message.getRawDataSize();
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
 
     bool isMidiClock = data[0] == 0xf8;
     bool isActiveSense = data[0] == 0xfe;

@@ -114,7 +114,7 @@ void MiosStudio::resized()
 //==============================================================================
 void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
 
     // TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
@@ -225,7 +225,7 @@ void MiosStudio::timerCallback()
 
                 MidiMessage &message = midiInQueue.front();
 
-                uint8 *data = message.getRawData();
+                uint8 *data = (uint8 *)message.getRawData();
                 if( data[0] >= 0x80 && data[0] < 0xf8 )
                     runningStatus = data[0];
 
@@ -282,7 +282,7 @@ void MiosStudio::setMidiInput(const String &port)
 
     // store setting if MIDI input selected
     if( port != String::empty ) {
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiIn"), port);
     }
@@ -291,7 +291,7 @@ void MiosStudio::setMidiInput(const String &port)
 String MiosStudio::getMidiInput(void)
 {
     // restore setting
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     return propertiesFile ? propertiesFile->getValue(T("midiIn"), String::empty) : String::empty;
 }
 
@@ -305,7 +305,7 @@ void MiosStudio::setMidiOutput(const String &port)
 
     // store setting if MIDI output selected
     if( port != String::empty ) {
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midiOut"), port);
     }
@@ -314,7 +314,7 @@ void MiosStudio::setMidiOutput(const String &port)
 String MiosStudio::getMidiOutput(void)
 {
     // restore setting
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     return propertiesFile ? propertiesFile->getValue(T("midiOut"), String::empty) : String::empty;
 }
 
@@ -322,14 +322,14 @@ String MiosStudio::getMidiOutput(void)
 
 
 //==============================================================================
-const StringArray MiosStudio::getMenuBarNames()
+StringArray MiosStudio::getMenuBarNames()
 {
-    const tchar* const names[] = { T("Application"), T("Tools"), T("Help"), 0 };
+    const char* const names[] = { "Application", "Tools", "Help", 0 };
 
-    return StringArray ((const tchar**) names);
+    return StringArray ((const char**) names);
 }
 
-const PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String& menuName)
+PopupMenu MiosStudio::getMenuForIndex(int topLevelMenuIndex, const String& menuName)
 {
     PopupMenu menu;
 
@@ -412,82 +412,82 @@ void MiosStudio::getCommandInfo(const CommandID commandID, ApplicationCommandInf
     case enableMonitors:
         result.setInfo(T("Show MIDI Monitors"), T("Enables/disables the MIDI IN/OUT Monitors"), applicationCategory, 0);
         result.setTicked(verticalDividerBarMonitors->isVisible());
-        result.addDefaultKeypress(T('M'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('M', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case enableUpload:
         result.setInfo(T("Show Upload Window"), T("Enables/disables the Upload Window"), applicationCategory, 0);
         result.setTicked(uploadWindow->isVisible());
-        result.addDefaultKeypress(T('U'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('U', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case enableTerminal:
         result.setInfo(T("Show MIOS Terminal"), T("Enables/disables the MIOS Terminal"), applicationCategory, 0);
         result.setTicked(miosTerminal->isVisible());
-        result.addDefaultKeypress(T('T'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('T', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case enableKeyboard:
         result.setInfo(T("Show Virtual Keyboard"), T("Enables/disables the virtual Keyboard"), applicationCategory, 0);
         result.setTicked(midiKeyboard->isVisible());
-        result.addDefaultKeypress(T('K'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('K', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case rescanDevices:
         result.setInfo(T("Rescan MIDI Devices"), T("Updates the MIDI In/Out port lists"), applicationCategory, 0);
-        result.addDefaultKeypress(T('R'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('R', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showSysexTool:
         result.setInfo(T("SysEx Tool"), T("Allows to send and receive SysEx dumps"), toolsCategory, 0);
         result.setTicked(sysexToolWindow && sysexToolWindow->isVisible());
-        result.addDefaultKeypress(T('1'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('1', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showSysexLibrarian:
         result.setInfo(T("SysEx Librarian"), T("Allows to manage SysEx files"), toolsCategory, 0);
         result.setTicked(sysexLibrarianWindow && sysexLibrarianWindow->isVisible());
-        result.addDefaultKeypress(T('2'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('2', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showOscTool:
         result.setInfo(T("OSC Tool"), T("Allows to send and receive OSC messages"), toolsCategory, 0);
         result.setTicked(oscToolWindow && oscToolWindow->isVisible());
-        result.addDefaultKeypress(T('3'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('3', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMidio128Tool:
         result.setInfo(T("MIDIO128 V2 Tool"), T("Allows to configure a MIDIO128 V2"), toolsCategory, 0);
         result.setTicked(midio128ToolWindow && midio128ToolWindow->isVisible());
-        result.addDefaultKeypress(T('4'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('4', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbCvTool:
         result.setInfo(T("MIDIbox CV V1 Tool"), T("Allows to configure a MIDIbox CV V1"), toolsCategory, 0);
         result.setTicked(mbCvToolWindow && mbCvToolWindow->isVisible());
-        result.addDefaultKeypress(T('5'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('5', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMbhpMfTool:
         result.setInfo(T("MBHP_MF_NG Tool"), T("Allows to configure the MBHP_MF_NG firmware"), toolsCategory, 0);
         result.setTicked(mbhpMfToolWindow && mbhpMfToolWindow->isVisible());
-        result.addDefaultKeypress(T('6'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('6', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMiosFileBrowser:
         result.setInfo(T("MIOS32 File Browser"), T("Allows to send and receive files to/from MIOS32 applications"), toolsCategory, 0);
         result.setTicked(miosFileBrowserWindow && miosFileBrowserWindow->isVisible());
-        result.addDefaultKeypress(T('7'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress('7', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showMiosStudioPage:
         result.setInfo(T("MIOS Studio Page (Web)"), T("Opens the MIOS Studio page on uCApps.de"), helpCategory, 0);
-        result.addDefaultKeypress (T('H'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress ('H', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
 
     case showTroubleshootingPage:
         result.setInfo(T("MIDI Troubleshooting Page (Web)"), T("Opens the MIDI Troubleshooting page on uCApps.de"), helpCategory, 0);
-        result.addDefaultKeypress (T('I'), ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
+        result.addDefaultKeypress ('I', ModifierKeys::commandModifier|ModifierKeys::shiftModifier);
         break;
     }
 }

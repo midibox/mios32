@@ -310,7 +310,7 @@ Component* Midio128ToolConfigDout::refreshComponentForCell(int rowNumber, int co
 void Midio128ToolConfigDout::resized()
 {
     // position our table with a gap around its edge
-    table->setBoundsInset(BorderSize(8));
+    table->setBoundsInset(BorderSize<int>(8));
 }
 
 
@@ -533,7 +533,7 @@ Component* Midio128ToolConfigDin::refreshComponentForCell(int rowNumber, int col
 void Midio128ToolConfigDin::resized()
 {
     // position our table with a gap around its edge
-    table->setBoundsInset(BorderSize(8));
+    table->setBoundsInset(BorderSize<int>(8));
 }
 
 
@@ -734,7 +734,7 @@ Midio128ToolControl::Midio128ToolControl(MiosStudio *_miosStudio, Midio128ToolCo
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("midio128DeviceId"), 0) & 7);
         String syxFileName(propertiesFile->getValue(T("midio128SyxFile"), String::empty));
@@ -787,7 +787,7 @@ void Midio128ToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToOpen() ) {
             syxFile = fc.getResult();
             if( loadSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("midio128SyxFile"), syxFile.getFullPathName());
             }
@@ -799,7 +799,7 @@ void Midio128ToolControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToSave(true) ) {
             syxFile = fc.getResult();
             if( saveSyx(syxFile) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("midio128SyxFile"), syxFile.getFullPathName());
             }
@@ -829,7 +829,7 @@ void Midio128ToolControl::sliderValueChanged(Slider* slider)
 {
     if( slider == deviceIdSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("midio128DeviceId"), (int)slider->getValue());
     }
@@ -911,7 +911,7 @@ void Midio128ToolControl::timerCallback()
 //==============================================================================
 void Midio128ToolControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
 
     if( receiveDump ) {

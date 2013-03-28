@@ -78,8 +78,8 @@ public:
     void setMidiOutput(const String &port);
     String getMidiOutput(void);
 
-    const StringArray getMenuBarNames();
-    const PopupMenu getMenuForIndex(int topLevelMenuIndex, const String& menuName);
+    StringArray getMenuBarNames();
+    PopupMenu getMenuForIndex(int topLevelMenuIndex, const String& menuName);
     void menuItemSelected(int menuItemID, int topLevelMenuIndex);
 
     ApplicationCommandTarget* getNextCommandTarget();

@@ -390,7 +390,7 @@ SysexLibrarianControl::SysexLibrarianControl(MiosStudio *_miosStudio, SysexLibra
     addAndMakeVisible(progressBar = new ProgressBar(progress));
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceIdSlider->setValue(propertiesFile->getIntValue(T("sysexLibrarianDeviceId"), 0));
         String syxFileName(propertiesFile->getValue(T("sysexLibrarianSyxFile"), String::empty));
@@ -469,7 +469,7 @@ void SysexLibrarianControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToOpen() ) {
             syxFile = fc.getResult();
             if( loadSyx(syxFile, buttonThatWasClicked == loadBankButton) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("sysexLibrarianSyxFile"), syxFile.getFullPathName());
             }
@@ -482,7 +482,7 @@ void SysexLibrarianControl::buttonClicked(Button* buttonThatWasClicked)
         if( fc.browseForFileToSave(true) ) {
             syxFile = fc.getResult();
             if( saveSyx(syxFile, buttonThatWasClicked == saveBankButton) ) {
-                PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+                PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
                 if( propertiesFile )
                     propertiesFile->setValue(T("sysexLibrarianSyxFile"), syxFile.getFullPathName());
             }
@@ -541,7 +541,7 @@ void SysexLibrarianControl::sliderValueChanged(Slider* slider)
 {
     if( slider == deviceIdSlider ) {
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("sysexLibrarianDeviceId"), (int)slider->getValue());
     }
@@ -555,7 +555,7 @@ void SysexLibrarianControl::comboBoxChanged(ComboBox* comboBox)
         setSpec(comboBox->getSelectedId()-1);
 
         // store setting
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue(T("sysexLibrarianDevice"), (int)comboBox->getSelectedId());
     }
@@ -785,7 +785,7 @@ void SysexLibrarianControl::timerCallback()
 //==============================================================================
 void SysexLibrarianControl::handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
 {
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
 
     int spec = deviceTypeSelector->getSelectedId()-1;

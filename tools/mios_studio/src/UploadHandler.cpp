@@ -34,7 +34,7 @@ UploadHandler::UploadHandler(MiosStudio *_miosStudio)
     clearCoreInfo();
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         deviceId = propertiesFile->getIntValue(T("deviceId"), 0x00);
     }
@@ -71,7 +71,7 @@ void UploadHandler::setDeviceId(uint8 id)
     deviceId = id;
 
     // store settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         propertiesFile->setValue(T("deviceId"), deviceId);
     }
@@ -249,7 +249,7 @@ void UploadHandler::handleIncomingMidiMessage(MidiInput* source, const MidiMessa
         return;
 
     // start parsing
-    uint8 *data = message.getRawData();
+    uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
     uint8 currentDeviceId = uploadHandlerThread->deviceId; // ensure that the device ID tagged to the thread will be taken
 

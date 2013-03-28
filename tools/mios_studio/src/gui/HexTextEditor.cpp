@@ -65,7 +65,7 @@ void HexTextEditor::textEditorTextChanged(TextEditor &editor)
 #if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
 	const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
 #else
-	const char *strBuffer = hexStr.toCString(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
+	const char *strBuffer = hexStr.toUTF8().getAddress(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
 #endif
 
     int numBytes = 0;
@@ -158,7 +158,7 @@ Array<uint8> HexTextEditor::getBinary(void)
 #if JUCE_MAJOR_VERSION==1 && JUCE_MINOR_VERSION<51
 	const char *strBuffer = (const char *)hexStr; // for *much* faster access! The String[pos] handling of Juce should be optimized!
 #else
-	const char *strBuffer = hexStr.toCString(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
+	const char *strBuffer = hexStr.toUTF8().getAddress(); // for *much* faster access! The String[pos] handling of Juce should be optimized!
 #endif
 
     Array<uint8> retArray;

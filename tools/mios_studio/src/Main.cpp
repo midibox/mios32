@@ -16,6 +16,8 @@
 #include "version.h"
 #include "gui/MiosStudio.h"
 
+juce_ImplementSingleton (MiosStudioProperties)
+
 class MiosStudioWindow
     : public DocumentWindow
 {
@@ -28,17 +30,10 @@ public:
                          DocumentWindow::allButtons,
                          true)
     {
-        // initialise our settings file..
-        ApplicationProperties::getInstance()->setStorageParameters(T("MIOS_Studio"),
-                                                                   T(".xml"),
-                                                                   String::empty,
-                                                                   1000,
-                                                                   PropertiesFile::storeAsXML);
-
         // Create an instance of our main content component, and add it 
         // to our window.
         MiosStudio* const contentComponent = new MiosStudio();
-        setContentComponent(contentComponent, true, true);
+        setContentOwned(contentComponent, true);
         setUsingNativeTitleBar(true);
         centreWithSize(getWidth(), getHeight());
         setMenuBar(contentComponent);
@@ -114,8 +109,6 @@ public:
 
     void shutdown()
     {
-        ApplicationProperties::getInstance()->closeFiles();
-
         // clear up..
         if( miosStudioWindow != 0 )
             deleteAndZero(miosStudioWindow);

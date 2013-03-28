@@ -71,7 +71,7 @@ OscToolConnect::OscToolConnect(MiosStudio *_miosStudio, OscMonitor* _oscMonitor)
     disconnectButton->addListener(this);
 
     // restore settings
-    PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
         remoteHostLine->setText(propertiesFile->getValue(T("oscRemoteHost"), String::empty));
         portNumberWriteLine->setText(propertiesFile->getValue(T("oscPortWrite"), "10000"));
@@ -112,7 +112,7 @@ void OscToolConnect::buttonClicked(Button* buttonThatWasClicked)
 {
     if( buttonThatWasClicked == connectButton ) {
         // store settings
-        PropertiesFile *propertiesFile = ApplicationProperties::getInstance()->getCommonSettings(true);
+        PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile ) {
             propertiesFile->setValue(T("oscRemoteHost"), remoteHostLine->getText());
             propertiesFile->setValue(T("oscPortWrite"), portNumberWriteLine->getText());
