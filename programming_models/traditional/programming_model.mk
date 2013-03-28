@@ -22,6 +22,7 @@ THUMB_SOURCE += \
 		$(FREE_RTOS)/Source/tasks.c \
 		$(FREE_RTOS)/Source/list.c \
 		$(FREE_RTOS)/Source/queue.c \
+		$(FREE_RTOS)/Source/timers.c \
 		$(FREE_RTOS)/Source/portable/GCC/ARM_CM3/port.c \
 		$(FREE_RTOS)/Source/portable/MemMang/umm_malloc.c 
 

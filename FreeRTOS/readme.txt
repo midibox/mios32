@@ -1,19 +1,32 @@
-The download includes the kernel source code, and a demo application for EVERY
-RTOS port.  See http://www.freertos.org/a00017.html for full details of the 
-directory structure and information on locating the files you require.
+Directories:
 
-The easiest way to use FreeRTOS is start start with one of the demo application 
-projects.  Once this is running the project can be modified to include your own
-source files.  This way the correct files and compiler options will be 
-automatically included in your application.
++ FreeRTOS/source contains the FreeRTOS real time kernel source code.
 
-+ The Source directory contains the real time kernel source files for every 
-port.  The kernel itself is only 3 files.
++ FreeRTOS/demo contains a pre-configured demo project for every official 
+  FreeRTOS port.
+  
++ FreeRTOS-Plus contains additional FreeRTOS components and third party 
+  complementary products.  THESE ARE LICENSED SEPARATELY FROM FreeRTOS although
+  all contain open source options.  See the license files in each respective
+  directory for information.
+  
++ FreeRTOS-Plus/Demo_Projects_Using_FreeRTOS_Simulator contains pre-configured
+  demo projects for the FreeRTOS-Plus components.  The demo projects run in
+  a Windows environment using the FreeRTOS windows simulator.  These are 
+  documented on the FreeRTOS web site http://www.FreeRTOS.org/plus
 
-+ The Demo directory contains the demo application source files for every 
-port.
++ See http://www.freertos.org/a00017.html for full details of the directory 
+  structure and information on locating the files you require.
 
-+ The TraceCon directory contains the trace visualisation exe file.
+Further readme files are contains in sub-directories as appropriate.
+  
+The easiest way to use FreeRTOS is to start with one of the pre-configured demo 
+application projects (found in the FreeRTOS/Demo directory).  That way you will
+have the correct FreeRTOS source files included, and the correct include paths
+configured.  Once a demo application is building and executing you can remove
+the demo application file, and start to add in your own application source
+files.
 
-See the readme files in the respective directories for further information.
-
+See also -
+http://www.freertos.org/FreeRTOS-quick-start-guide.html
+http://www.freertos.org/FAQHelp.html
