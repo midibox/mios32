@@ -734,7 +734,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
 // Workaround for some windows installations where multiple MIDI ports don't work
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef MIOS32_DONT_USE_USB_MIDI
+#if !defined(MIOS32_DONT_USE_USB_MIDI) && MIOS32_USB_MIDI_NUM_PORTS > 1
 static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[] = {
   (u8)(MIOS32_USB_SIZ_DEVICE_DESC&0xff), // Device Descriptor length
   DSCR_DEVICE,			// Decriptor type
@@ -940,7 +940,7 @@ s32 MIOS32_USB_Init(u32 mode)
   USBInit();
 
   // register descriptors
-#ifndef MIOS32_DONT_USE_USB_MIDI
+#if !defined(MIOS32_DONT_USE_USB_MIDI) && MIOS32_USB_MIDI_NUM_PORTS > 1
   USBRegisterDescriptors(MIOS32_USB_ForceSingleUSB() ? MIOS32_USB_ConfigDescriptor_SingleUSB : MIOS32_USB_ConfigDescriptor);
 #else
   USBRegisterDescriptors(MIOS32_USB_ConfigDescriptor);
