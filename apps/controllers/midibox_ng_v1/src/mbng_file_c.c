@@ -3094,7 +3094,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "RESET_HW") == 0 ) {
+	} else if( strcasecmp(parameter, "RESET_HW") == 0 ) {
 	  MBNG_EVENT_PoolClear();
 	  MBNG_PATCH_Init(0);
 	  MBNG_MATRIX_Init(0);
@@ -3106,7 +3106,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  MBNG_MF_Init(0);
 	  MBNG_CV_Init(0);
 	  MBNG_KB_Init(0);
-	} else if( strcmp(parameter, "LCD") == 0 ) {
+	} else if( strcasecmp(parameter, "LCD") == 0 ) {
 	  char *str = brkt;
 	  if( !(str=remove_quotes(str)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -3131,60 +3131,60 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    MBNG_EVENT_PoolClear();
 	  }
 	  parseMap(parameter, brkt);
-	} else if( strcmp(parameter, "SYSEX_VAR") == 0 ) {
+	} else if( strcasecmp(parameter, "SYSEX_VAR") == 0 ) {
 	  parseSysExVar(parameter, brkt);
-	} else if( strcmp(parameter, "ENC") == 0 ) {
+	} else if( strcasecmp(parameter, "ENC") == 0 ) {
 	  parseEnc(parameter, brkt);
-	} else if( strcmp(parameter, "DIN_MATRIX") == 0 ) {
+	} else if( strcasecmp(parameter, "DIN_MATRIX") == 0 ) {
 	  parseDinMatrix(parameter, brkt);
-	} else if( strcmp(parameter, "DOUT_MATRIX") == 0 ) {
+	} else if( strcasecmp(parameter, "DOUT_MATRIX") == 0 ) {
 	  parseDoutMatrix(parameter, brkt);
-	} else if( strcmp(parameter, "KEYBOARD") == 0 ) {
+	} else if( strcasecmp(parameter, "KEYBOARD") == 0 ) {
 	  parseKeyboard(parameter, brkt);
-	} else if( strcmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
+	} else if( strcasecmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
 	  parseLedMatrixPattern(parameter, brkt);
-	} else if( strcmp(parameter, "AIN") == 0 ) {
+	} else if( strcasecmp(parameter, "AIN") == 0 ) {
 	  parseAin(parameter, brkt);
-	} else if( strcmp(parameter, "AINSER") == 0 ) {
+	} else if( strcasecmp(parameter, "AINSER") == 0 ) {
 	  parseAinSer(parameter, brkt);
-	} else if( strcmp(parameter, "MF") == 0 ) {
+	} else if( strcasecmp(parameter, "MF") == 0 ) {
 	  parseMf(parameter, brkt);
-	} else if( strcmp(parameter, "AOUT") == 0 ) {
+	} else if( strcasecmp(parameter, "AOUT") == 0 ) {
 	  parseAout(parameter, brkt);
-	} else if( strcmp(parameter, "SCS") == 0 ) {
+	} else if( strcasecmp(parameter, "SCS") == 0 ) {
 	  parseScs(parameter, brkt);
-	} else if( strcmp(parameter, "ROUTER") == 0 ) {
+	} else if( strcasecmp(parameter, "ROUTER") == 0 ) {
 	  parseRouter(parameter, brkt);
-	} else if( strcmp(parameter, "ETH") == 0 ) {
+	} else if( strcasecmp(parameter, "ETH") == 0 ) {
 	  parseEth(parameter, brkt);
-	} else if( strcmp(parameter, "OSC") == 0 ) {
+	} else if( strcasecmp(parameter, "OSC") == 0 ) {
 	  parseOsc(parameter, brkt);
 
-	} else if( strcmp(parameter, "DebounceCtr") == 0 ) {
+	} else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.debounce_ctr = value;
-	} else if( strcmp(parameter, "GlobalChannel") == 0 ) {
+	} else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.global_chn = value;
-	} else if( strcmp(parameter, "AllNotesOffChannel") == 0 ) {
+	} else if( strcasecmp(parameter, "AllNotesOffChannel") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.all_notes_off_chn = value;
-	} else if( strcmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
+	} else if( strcasecmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.convert_note_off_to_on0 = value;
-	} else if( strcmp(parameter, "BPM_Preset") == 0 ) {
+	} else if( strcasecmp(parameter, "BPM_Preset") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 1, 1000);
 	  if( value >= 0 )
 	    SEQ_BPM_Set((float)value);
-	} else if( strcmp(parameter, "BPM_Mode") == 0 ) {
+	} else if( strcasecmp(parameter, "BPM_Mode") == 0 ) {
 	  int value = parseSimpleValue(parameter, &brkt, 0, 2);
 	  if( value >= 0 )
 	    SEQ_BPM_ModeSet(value);
-	} else if( strcmp(parameter, "MidiFileClkOutPorts") == 0 ) {
+	} else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
 	  s32 enabled_ports = 0;
 	  int bit;
 	  for(bit=0; bit<16; ++bit) {
@@ -3219,7 +3219,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
 	  }	  
 
-	} else if( strcmp(parameter, "MidiFileClkInPorts") == 0 ) {
+	} else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 ) {
 	  s32 enabled_ports = 0;
 	  int bit;
 	  for(bit=0; bit<16; ++bit) {
