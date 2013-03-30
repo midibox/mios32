@@ -746,7 +746,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
 // Workaround for some windows installations where multiple MIDI ports don't work
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef MIOS32_DONT_USE_USB_MIDI
+#if !defined(MIOS32_DONT_USE_USB_MIDI) && MIOS32_USB_MIDI_NUM_PORTS > 1
 static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB] = {
   // Configuration Descriptor
   9,				// Descriptor length
@@ -1573,7 +1573,7 @@ static u8 *MIOS32_USB_CB_GetDeviceDescriptor(u16 Length)
 // gets the configuration descriptor.
 static u8 *MIOS32_USB_CB_GetConfigDescriptor(u16 Length)
 {
-#ifndef MIOS32_DONT_USE_USB_MIDI
+#if !defined(MIOS32_DONT_USE_USB_MIDI) && MIOS32_USB_MIDI_NUM_PORTS > 1
   if( MIOS32_USB_ForceSingleUSB() ) {
     ONE_DESCRIPTOR desc = {(u8 *)MIOS32_USB_ConfigDescriptor_SingleUSB, MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB};
     return Standard_GetDescriptorData(Length, &desc);
