@@ -88,7 +88,7 @@ s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
   status |= MBNG_FILE_L_Load("DEFAULT");
   status |= MBNG_FILE_S_Load("DEFAULT", -1);
   //status |= MBNG_FILE_R_Load("DEFAULT");
-  status |= MBNG_FILE_R_ReadRequest("DEFAULT", 0);
+  status |= MBNG_FILE_R_ReadRequest("DEFAULT", 0, 0, 0);
 
   return status;
 }

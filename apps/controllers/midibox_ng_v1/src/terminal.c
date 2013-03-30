@@ -36,6 +36,7 @@
 #include "mbng_lcd.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
+#include "mbng_file_r.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include <umm_malloc.h>
@@ -289,6 +290,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
       out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
+      out("  run <section> <value>             directly executes the .NGR script with the given section number and value\n");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -365,6 +367,24 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	MBNG_LCD_PrintItemLabel(&item);
 
 	MUTEX_LCD_GIVE;
+      }
+    } else if( strcmp(parameter, "run") == 0 ) {
+      s32 section, value;
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Please specify <section> <value>!");
+      } else if( (section=get_dec(parameter)) < 0 || section >= 256 ) {
+	out("Section number should be between 0..255!");
+      } else if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Please specify <section> <value>! (Missing the <value>)");
+      } else if( (value=get_dec(parameter)) < -16384 || value >= 16383 ) {
+	out("Value should be between -16384..16383!");
+      } else if( mbng_file_r_req.load ) {
+	out("ERROR: can't execute - there is an ongoing run request!");
+      } else if( !MBNG_FILE_R_Valid() ) {
+	out("ERROR: can't execute - missing %s.NGR file!", mbng_file_r_script_name);
+      } else {
+	out("Executing %s.NGR with $section==%d $value==%d", mbng_file_r_script_name, section, value);
+	MBNG_FILE_R_ReadRequest(mbng_file_r_script_name, section, value, 1);
       }
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {

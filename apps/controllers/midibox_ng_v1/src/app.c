@@ -451,8 +451,14 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	mbng_file_r_req.load = 0;
 	
 	MUTEX_SDCARD_TAKE;
-	MBNG_FILE_R_Read(mbng_file_r_script_name, mbng_file_r_req.section);
+	MBNG_FILE_R_Read(mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
 	MUTEX_SDCARD_GIVE;
+
+	if( mbng_file_r_req.notify_done ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  DEBUG_MSG("%s.NGR with $section==%d $value==%d processed.", mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
 
       isInMainPage = 1; // static reminder

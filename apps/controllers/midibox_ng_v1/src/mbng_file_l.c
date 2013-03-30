@@ -507,7 +507,9 @@ s32 MBNG_FILE_L_Read(char *filename)
   char current_cond_label[9];
   current_cond_label[0] = 0;
   int num_labels = 0;
+  u32 line = 0;
   do {
+    ++line;
     status=FILE_ReadLine((u8 *)line_buffer, 200);
 
     if( status > 1 ) {
@@ -527,7 +529,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	} else if( strcasecmp(parameter, "LABEL") == 0 ) {
 	  if( current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", current_cond_label);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", line, current_cond_label);
 #endif
 	    current_cond_label[0] = 0;
 	  }
@@ -536,21 +538,21 @@ s32 MBNG_FILE_L_Read(char *filename)
 	  if( !(label = strtok_r(NULL, separators, &brkt)) ) {
 	    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] ERROR: empty LABEL statement: %s", line_buffer);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: empty LABEL statement: %s", line, line_buffer);
 #endif
 	  } else {
 	    char *str;
 	    if( !(str = getQuotedString(&brkt)) ) {
 	      ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L] ERROR: missing string for LABEL %s!", label);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for LABEL %s!", line, label);
 #endif
 	    } else {
 	      int label_len = strlen(label);
 	      if( label_len > 8 ) {
 		++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_L] ERROR: 'EVENT %s': label too long, should be 8 chars maximum!", label);
+		DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: 'EVENT %s': label too long, should be 8 chars maximum!", line, label);
 #endif
 	      } else {
 		int str_len = strlen(str);
@@ -559,13 +561,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 		  // can never happen, but just for the case...
 		  ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing LABEL statement - please report to TK");
+		  DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing LABEL statement - please report to TK", line);
 #endif
 		} else {
 		  ++num_labels;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-		  DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, MBNG_FILE_L_ITEM_UNCONDITIONAL, label, str);
+		  DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_UNCONDITIONAL, label, str);
 #endif
 		  s32 write_status;
 		  if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -577,7 +579,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		      ) {
 		    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		    DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
+		    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: failed while writing %s, status=%d!\n", line, filepath, write_status);
 #endif
 		  }
 		}
@@ -588,7 +590,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	} else if( strcasecmp(parameter, "COND_LABEL") == 0 ) {
 	  if( current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", current_cond_label);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", line, current_cond_label);
 #endif
 	    current_cond_label[0] = 0;
 	  }
@@ -597,14 +599,14 @@ s32 MBNG_FILE_L_Read(char *filename)
 	  if( !(label = strtok_r(NULL, separators, &brkt)) ) {
 	    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] ERROR: empty COND_LABEL statement: %s", line_buffer);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: empty COND_LABEL statement: %s", line, line_buffer);
 #endif
 	  } else {
 	    int label_len = strlen(label);
 	    if( label_len > 8 ) {
 	      ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L] ERROR: 'COND_LABEL %s': label too long, should be 8 chars maximum!", label);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: 'COND_LABEL %s': label too long, should be 8 chars maximum!", line, label);
 #endif
 	    } else {
 	      int len = 1 + 1 + 1 + label_len + 1;
@@ -612,7 +614,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		++bin_file_errors;
 		// can never happen, but just for the case...
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing COND_LABEL statement - please report to TK");
+		DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND_LABEL statement - please report to TK", line);
 #endif
 	      } else {
 		++num_labels;
@@ -620,7 +622,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		current_cond_label[8] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-		DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, MBNG_FILE_L_ITEM_CONDITIONAL, label, str);
+		DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_CONDITIONAL, label, str);
 #endif
 		s32 write_status;
 		if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -631,7 +633,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		    ) {
 		  ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
+		  DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: failed while writing %s, status=%d!\n", line, filepath, write_status);
 #endif
 		}
 	      }
@@ -640,7 +642,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	} else if( strcasecmp(parameter, "COND_ELSE") == 0 ) {
 	  if( !current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] WARNING: found COND_ELSE without previous COND_LABEL statement!");
+	    DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: found COND_ELSE without previous COND_LABEL statement!", line);
 #endif
 	    current_cond_label[0] = 0;
 	  }
@@ -649,7 +651,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	  if( !(str = getQuotedString(&brkt)) ) {
 	    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] ERROR: missing string for COND_ELSE condition of COND_LABEL %s!", current_cond_label);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for COND_ELSE condition of COND_LABEL %s!", line, current_cond_label);
 #endif
 	  } else {
 	    int str_len = strlen(str);
@@ -658,11 +660,11 @@ s32 MBNG_FILE_L_Read(char *filename)
 	      ++bin_file_errors;
 	      // can never happen, but just for the case...
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing COND_ELSE statement - please report to TK");
+	      DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND_ELSE statement - please report to TK", line);
 #endif
 	    } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	      DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, MBNG_FILE_L_ITEM_COND_ELSE, label, str);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_COND_ELSE, label, str);
 #endif
 	      s32 write_status;
 	      if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -673,7 +675,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 		  ) {
 		++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
+		DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: failed while writing %s, status=%d!\n", line, filepath, write_status);
 #endif
 	      }
 	    }
@@ -682,7 +684,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	} else if( strcasecmp(parameter, "COND") == 0 ) {
 	  if( !current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] WARNING: found COND without previous COND_LABEL statement!");
+	    DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: found COND without previous COND_LABEL statement!", line);
 #endif
 	    current_cond_label[0] = 0;
 	  }
@@ -691,7 +693,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	  if( !(condition = strtok_r(NULL, separators, &brkt)) ) {
 	    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L] ERROR: empty COND statement of COND_LABEL %s: %s", current_cond_label, line_buffer);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: empty COND statement of COND_LABEL %s: %s", line, current_cond_label, line_buffer);
 #endif
 	  } else {
 	    int condition_len = strlen(condition);
@@ -722,26 +724,26 @@ s32 MBNG_FILE_L_Read(char *filename)
 	    if( condition_value == NULL ) {
 	      ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L] ERROR: invalid condition '%s' for COND_LABEL %s", condition, current_cond_label);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: invalid condition '%s' for COND_LABEL %s", line, condition, current_cond_label);
 #endif
 	    } else if( condition_len < 2 ) {
 	      ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L] ERROR: missing value in condition '%s' for COND_LABEL %s", condition, current_cond_label);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing value in condition '%s' for COND_LABEL %s", line, condition, current_cond_label);
 #endif
 	    } else {
 	      int value;
 	      if( (value=get_dec(condition_value)) < 0 || value >= 65536 ) {
 		++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_L] ERROR: invalid condition value '%s' for COND_LABEL %s: %s", condition, current_cond_label, condition_value);
+		DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: invalid condition value '%s' for COND_LABEL %s: %s", line, condition, current_cond_label, condition_value);
 #endif
 	      } else {
 		char *str;
 		if( !(str = getQuotedString(&brkt)) ) {
 		  ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_L] ERROR: missing string for COND condition '%s' of COND_LABEL %s!", condition, current_cond_label);
+		  DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for COND condition '%s' of COND_LABEL %s!", line, condition, current_cond_label);
 #endif
 		} else {
 		  int str_len = strlen(str);
@@ -750,11 +752,11 @@ s32 MBNG_FILE_L_Read(char *filename)
 		    // can never happen, but just for the case...
 		    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		    DEBUG_MSG("[MBNG_FILE_L] FATAL error while parsing COND statement - please report to TK");
+		    DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND statement - please report to TK", line);
 #endif
 		  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-		    DEBUG_MSG("[MBNG_FILE_L] writing: %d %d %s %s", len, condition_type, label, str);
+		    DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, condition_type, label, str);
 #endif
 		    s32 write_status;
 		    if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -766,7 +768,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 			) {
 		      ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		      DEBUG_MSG("[MBNG_FILE_L] ERROR: failed while writing %s, status=%d!\n", filepath, write_status);
+		      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: failed while writing %s, status=%d!\n", line, filepath, write_status);
 #endif
 		    }
 		  }
@@ -778,13 +780,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  // changed error to warning, since people are sometimes confused about these messages
 	  // on file format changes
-	  DEBUG_MSG("[MBNG_FILE_L] WARNING: unknown parameter: %s", line_buffer);
+	  DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: unknown parameter: %s", line, line_buffer);
 #endif
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	// no real error, can for example happen in .csv file
-	DEBUG_MSG("[MBNG_FILE_L] ERROR no space or semicolon separator in following line: %s", line_buffer);
+	DEBUG_MSG("[MBNG_FILE_L:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
 #endif
       }
     }

@@ -1,6 +1,6 @@
-# This run script will be executed after RUNSCR.NGC has been loaded
+# This run script will be executed after RUNSCR1.NGC has been loaded
 
-LCD "OK"
+LCD "%OK"
 
 # normal button functions
 SET BUTTON:1 0

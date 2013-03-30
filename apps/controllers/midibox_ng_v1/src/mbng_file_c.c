@@ -355,13 +355,13 @@ static s32 parseMidiOutPort(char *value_str)
 //! \returns >= 0 if value is valid
 //! \returns < 0 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseSimpleValue(char *parameter, char **brkt, int min, int max)
+static s32 parseSimpleValue(u32 line, char *parameter, char **brkt, int min, int max)
 {
   int value;
   char *value_str = *brkt;
   if( (value=get_dec(*brkt)) < min || value > max ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for parameter '%s %s', range should be within %d..%d!\n", parameter, value_str, min, max);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for parameter '%s %s', range should be within %d..%d!\n", line, parameter, value_str, min, max);
 #endif
     return -1000000000;
   }
@@ -423,7 +423,7 @@ static char *getQuotedString(char **brkt)
 //! \returns >= 0 if parameter is valid
 //! \returns <0 if parameter is invalid or no more parameters found
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str, char **brkt)
+static s32 parseExtendedParameter(u32 line, char *cmd, char **parameter, char **value_str, char **brkt)
 {
   const char *separators = " \t";
 
@@ -464,12 +464,12 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 
   if( *brkt == NULL || (*brkt)[0] == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: missing value after %s ... %s\n", cmd, *parameter);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing value after %s ... %s\n", line, cmd, *parameter);
 #endif
     return -2; // missing value
   } else if( !eq_found ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: missing '=' after %s ... %s\n", cmd, *parameter);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing '=' after %s ... %s\n", line, cmd, *parameter);
 #endif
     return -1;
   }
@@ -483,7 +483,7 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 
   if( *value_str == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: missing value after %s ... %s\n", cmd, *parameter);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing value after %s ... %s\n", line, cmd, *parameter);
 #endif
     return -2; // missing value
   }
@@ -501,7 +501,7 @@ static s32 parseExtendedParameter(char *cmd, char **parameter, char **value_str,
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseEvent(char *cmd, char *brkt)
+s32 parseEvent(u32 line, char *cmd, char *brkt)
 {
   mbng_event_item_t item;
   char *event = (char *)&cmd[6]; // remove "EVENT_"
@@ -521,7 +521,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
   if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_DISABLED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s item not supported!\n", event);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s item not supported!\n", line, event);
 #endif
     return -1;
   }
@@ -529,7 +529,7 @@ s32 parseEvent(char *cmd, char *brkt)
   // parse the parameters
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     const char *separator_colon = ":";
     const char *separators = " \t;";
 
@@ -538,7 +538,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int id;
       if( (id=get_dec(value_str)) < 1 || id > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid ID in EVENT_%s ... %s=%s (expect 1..%d)\n", line, event, parameter, value_str, 0xfff);
 #endif
 	return -1;
       }
@@ -555,7 +555,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int hw_id;
       if( (hw_id=get_dec(value_str)) < 1 || hw_id > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid HW_ID in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid HW_ID in EVENT_%s ... %s=%s (expect 1..%d)\n", line, event, parameter, value_str, 0xfff);
 #endif
 	return -1;
       }
@@ -566,7 +566,7 @@ s32 parseEvent(char *cmd, char *brkt)
     } else if( strncasecmp(parameter, "if_", 3) == 0 ) {
       if( (item.cond.condition=MBNG_EVENT_ItemConditionFromStrGet(parameter+3)) == MBNG_EVENT_IF_COND_NONE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid if_* condition in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid if_* condition in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -576,7 +576,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -585,7 +585,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( (value=get_dec(values_str)) >= 0 ) {
 	if( value >= 16384 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..%d)\n", event, parameter, value_str, 16383);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..%d)\n", line, event, parameter, value_str, 16383);
 #endif
 	  return -1;
 	}
@@ -596,7 +596,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
 	if( (hw_id=MBNG_EVENT_ItemIdFromControllerStrGet(values_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting hardware id or value in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	  return -1;
 	}
@@ -605,7 +605,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	    (id_lower=get_dec(values_str)) < 1 || id_lower > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid hardware idin EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid hardware idin EVENT_%s ... %s=%s (expect 1..%d)\n", line, event, parameter, value_str, 0xfff);
 #endif
 	  return -1;
 	}
@@ -613,7 +613,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	    (value=get_dec(values_str)) < 0  || value >= 16384 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting valid value in EVENT_%s ... %s=%s (0..%d)\n", event, parameter, value_str, 16383);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting valid value in EVENT_%s ... %s=%s (0..%d)\n", line, event, parameter, value_str, 16383);
 #endif
 	  return -1;
 	}
@@ -627,7 +627,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int bank;
       if( (bank=get_dec(value_str)) < 0 || bank > 255 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid bank in EVENT_%s ... %s=%s (expect 0..255)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid bank in EVENT_%s ... %s=%s (expect 0..255)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -639,7 +639,7 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_type_t event_type = MBNG_EVENT_ItemTypeFromStrGet(value_str);
       if( event_type == MBNG_EVENT_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid event type in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid event type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -695,13 +695,13 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 1 || value > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid MIDI channel in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI channel in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( item.flags.general.type == MBNG_EVENT_TYPE_SYSEX || item.flags.general.type == MBNG_EVENT_TYPE_META ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: no MIDI channel expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no MIDI channel expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
 	} else {
 	  // no extra check if event_type already defined...
@@ -716,7 +716,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	value = 128;
       } else if( (value=get_dec(value_str)) < 0 || value > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid key number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid key number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -725,7 +725,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  item.flags.general.type != MBNG_EVENT_TYPE_NOTE_ON &&
 	  item.flags.general.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] WARNING: no key number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no key number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
       } else {
 	// no extra check if event_type already defined...
@@ -737,7 +737,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -752,14 +752,14 @@ s32 parseEvent(char *cmd, char *brkt)
 	value = 128;
       } else if( (value=get_dec(value_str)) < 0 || value > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid CC number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid CC number in EVENT_%s ... %s=%s (expect 0..127 or 'any')\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
 
       if( item.flags.general.type != MBNG_EVENT_TYPE_CC ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] WARNING: no CC number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no CC number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
       } else {
 	// no extra check if event_type already defined...
@@ -773,13 +773,13 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( (value=get_dec(value_str)) < 0 || value >= 16384 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid NRPN number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid NRPN number in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( item.flags.general.type != MBNG_EVENT_TYPE_NRPN ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: no NRPN number expected for EVENT_%s due to type: %s\n", event, MBNG_EVENT_ItemTypeStrGet(&item));
+	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no NRPN number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
 	} else {
 	  // no extra check if event_type already defined...
@@ -794,7 +794,7 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_nrpn_format_t nrpn_format = MBNG_EVENT_ItemNrpnFormatFromStrGet(value_str);
       if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid NRPN format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid NRPN format in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -806,7 +806,7 @@ s32 parseEvent(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "stream") == 0 ) {
       if( item.flags.general.type != MBNG_EVENT_TYPE_SYSEX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: stream is only expected for SysEx events in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: stream is only expected for SysEx events in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -820,7 +820,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  mbng_event_sysex_var_t sysex_var = MBNG_EVENT_ItemSysExVarFromStrGet((char *)&stream_str[1]);
 	  if( sysex_var == MBNG_EVENT_SYSEX_VAR_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: unknown SysEx variable '%s' in EVENT_%s ... %s=%s\n", stream_str, event, parameter, value_str);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: unknown SysEx variable '%s' in EVENT_%s ... %s=%s\n", line, stream_str, event, parameter, value_str);
 #endif
 	    return -1;
 	  } else {
@@ -833,7 +833,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  int value;
 	  if( (value=get_dec(stream_str)) < 0 || value > 0xff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid SysEx value '%s' in EVENT_%s ... %s=%s, expecting 0..127 (0x00..0x7f)\n", stream_str, event, parameter, value_str);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid SysEx value '%s' in EVENT_%s ... %s=%s, expecting 0..255 (0x00..0xff)\n", line, stream_str, event, parameter, value_str);
 #endif
 	    return -1;
 	  } else {
@@ -847,7 +847,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( !item.stream_size ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: stream is empty in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: stream is empty in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
       }
 
@@ -855,7 +855,7 @@ s32 parseEvent(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "meta") == 0 ) {
       if( item.flags.general.type != MBNG_EVENT_TYPE_META ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: meta is only expected for Meta events in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: meta is only expected for Meta events in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -867,7 +867,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
 	  (meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(values_str)) == MBNG_EVENT_META_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid meta type in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid meta type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -881,7 +881,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	    (value=get_dec(values_str)) < 0 || value > 255 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: expecting %d values for meta type in EVENT_%s ... %s=%s\n", num_bytes, event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting %d values for meta type in EVENT_%s ... %s=%s\n", line, num_bytes, event, parameter, value_str);
 #endif
 	  return -1;
 	}
@@ -895,15 +895,15 @@ s32 parseEvent(char *cmd, char *brkt)
 	int value;
 	if( (value=get_dec((char *)&value_str[3])) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map number in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( value == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( value >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", line, event, parameter, value_str);
 #endif
 	} else {
 	  item.map = value; // will modify item.min/max in postprocessing step
@@ -917,17 +917,17 @@ s32 parseEvent(char *cmd, char *brkt)
 	    !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	    (values[1]=get_dec(values_str)) <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid range format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid range format in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	  return -1;
 	} else {
 	  if( values[0] < -16384 || values[0] > 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid min value in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	  } else if( values[1] < -16384 || values[1] > 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid max value in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	  } else {
 	    item.min = values[0];
@@ -944,7 +944,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( (value=get_dec(value_str)) < 0 || value >= 65536 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..65535)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..65535)\n", line, event, parameter, value_str);
 #endif
       } else {
 	item.value = value;
@@ -958,7 +958,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( (value=get_dec(value_str)) < 0 || value >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..255)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expect 0..255)\n", line, event, parameter, value_str);
 #endif
       } else {
 	item.secondary_value = value;
@@ -968,7 +968,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -980,7 +980,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -998,7 +998,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[2]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid rgb format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid rgb format in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1007,7 +1007,7 @@ s32 parseEvent(char *cmd, char *brkt)
       for(i=0; i<3; ++i) {
 	if( values[i] < 0 || values[i] >= 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid rgb format (digit #%d) in EVENT_%s ... %s=%s\n", i+1, event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid rgb format (digit #%d) in EVENT_%s ... %s=%s\n", line, i+1, event, parameter, value_str);
 #endif
 	  return -1;
 	}
@@ -1021,7 +1021,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 1 || value > 2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0..2)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0..2)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1034,11 +1034,11 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( (kb_transpose=get_dec(value_str)) < -128 || kb_transpose >= 128 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expect -128..127, got %d)\n", event, parameter, value_str, kb_transpose);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expect -128..127, got %d)\n", line, event, parameter, value_str, kb_transpose);
 #endif
       } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_KB ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (kb_transpose only supported by EVENT_KB)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (kb_transpose only supported by EVENT_KB)\n", line, event, parameter, value_str);
 #endif
       } else {
 	item.flags.KB.kb_transpose = (u8)kb_transpose;
@@ -1049,25 +1049,25 @@ s32 parseEvent(char *cmd, char *brkt)
 
       if( strncasecmp(value_str, "map", 3) != 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s (value should start with 'map')\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map number in EVENT_%s ... %s=%s (value should start with 'map')\n", line, event, parameter, value_str);
 #endif
       } else {
 	int value;
 	if( (value=get_dec((char *)&value_str[3])) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map number in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( value == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: map0 doesn't make much sense in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( value >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map in EVENT_%s ... %s=%s (expected 1..255)\n", line, event, parameter, value_str);
 #endif
 	} else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_KB ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (kb_velocity_map only supported by EVENT_KB)\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (kb_velocity_map only supported by EVENT_KB)\n", line, event, parameter, value_str);
 #endif
 	} else {
 	  item.flags.KB.kb_velocity_map = (u8)value;
@@ -1083,7 +1083,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
 	  (receiver=get_dec(values_str)) < 1 || receiver > 15 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid receiver number in EVENT_%s ... %s=%s (expect 1..15)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid receiver number in EVENT_%s ... %s=%s (expect 1..15)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1092,7 +1092,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (value=get_dec(value_str)) < 0 || value > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", event, parameter, value_str, 0xfff);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", line, event, parameter, value_str, 0xfff);
 #endif
 	return -1;
       }
@@ -1105,12 +1105,12 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_button_mode_t button_mode = MBNG_EVENT_ItemButtonModeFromStrGet(value_str);
       if( button_mode == MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid button mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid button mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_BUTTON ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1122,7 +1122,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 63 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0..63)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0..63)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_BUTTON ) {
@@ -1135,7 +1135,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	item.flags.RECEIVER.radio_group = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON, LED, SENDER or RECEIVER\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON, LED, SENDER or RECEIVER\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1145,7 +1145,7 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_ain_mode_t ain_mode = MBNG_EVENT_ItemAinModeFromStrGet(value_str);
       if( ain_mode == MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid ain_mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid ain_mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN ) {
@@ -1154,7 +1154,7 @@ s32 parseEvent(char *cmd, char *brkt)
 	item.flags.AINSER.ain_mode = ain_mode;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1164,12 +1164,12 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_enc_mode_t enc_mode = MBNG_EVENT_ItemEncModeFromStrGet(value_str);
       if( enc_mode == MBNG_EVENT_ENC_MODE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid enc_mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid enc_mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1180,7 +1180,7 @@ s32 parseEvent(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "enc_speed_mode") == 0 ) {
       if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_ENC ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_ENC!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1192,7 +1192,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
 	  (enc_speed_mode = MBNG_EVENT_ItemEncSpeedModeFromStrGet(values_str)) == MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid speed mode in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid speed mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1201,7 +1201,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
 	if( (value=get_dec(values_str)) < 0 || value > 7 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid speed mode parameter in EVENT_%s ... %s=%s (expect 0..7)\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid speed mode parameter in EVENT_%s ... %s=%s (expect 0..7)\n", line, event, parameter, value_str);
 #endif
 	  return -1;
 	}
@@ -1215,7 +1215,7 @@ s32 parseEvent(char *cmd, char *brkt)
       mbng_event_led_matrix_pattern_t led_matrix_pattern = MBNG_EVENT_ItemLedMatrixPatternFromStrGet(value_str);
       if( led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid led_matrix_pattern in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid led_matrix_pattern in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1227,7 +1227,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < -16384 || value > 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid offset value in EVENT_%s ... %s=%s (expecting -16384..16383)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid offset value in EVENT_%s ... %s=%s (expecting -16384..16383)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1239,7 +1239,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_bin(value_str, 16, 0)) < 0 || value > 0xffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid port mask in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid port mask in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1255,7 +1255,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
 	  (fwd_id=MBNG_EVENT_ItemIdFromControllerStrGet(value_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid fwd_id controller name in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid fwd_id controller name in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1264,7 +1264,7 @@ s32 parseEvent(char *cmd, char *brkt)
       if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (id_lower=get_dec(value_str)) < 1 || id_lower > 0xfff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid fwd_id in EVENT_%s ... %s=%s (expect 1..%d)\n", event, parameter, value_str, 0xfff);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid fwd_id in EVENT_%s ... %s=%s (expect 1..%d)\n", line, event, parameter, value_str, 0xfff);
 #endif
 	return -1;
       }
@@ -1276,7 +1276,7 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1288,14 +1288,14 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_sr(value_str)) < 0 || value >= 8*MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid DOUT pin in EVENT_%s ... %s=%s (expecting <1..%d>.D<0..7>)\n", event, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid DOUT pin in EVENT_%s ... %s=%s (expecting <1..%d>.D<0..7>)\n", line, event, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
 	item.flags.CV.fwd_gate_to_dout_pin = 1 + ((value & 0xfff8) | (7-(value & 7))); // since DOUT data outputs are mirrored
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1305,14 +1305,14 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
 	item.flags.CV.cv_inverted = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1322,14 +1322,14 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
 	item.flags.CV.cv_gate_inverted = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1339,14 +1339,14 @@ s32 parseEvent(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0 or 1)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
 	item.flags.CV.cv_hz_v = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
@@ -1364,21 +1364,21 @@ s32 parseEvent(char *cmd, char *brkt)
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[2]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD position format in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD position format in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( values[0] < 1 || values[0] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD number (first item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD number (first item) in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( values[1] < 1 || values[1] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD X position (second item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD X position (second item) in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else if( values[2] < 1 || values[2] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD Y position (third item) in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD Y position (third item) in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	} else {
 	  item.lcd = values[0] - 1;
@@ -1391,7 +1391,7 @@ s32 parseEvent(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "label") == 0 ) {
       if( strlen(value_str) >= LABEL_MAX_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: string to long in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: string to long in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -1401,7 +1401,7 @@ s32 parseEvent(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in EVENT_%s ... %s=%s\n", event, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -1413,7 +1413,7 @@ s32 parseEvent(char *cmd, char *brkt)
 
   if( MBNG_EVENT_ItemAdd(&item) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add EVENT_%s ... id=%d: out of memory!\n", event, item.id & 0xfff);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: couldn't add EVENT_%s ... id=%d: out of memory!\n", line, event, item.id & 0xfff);
 #endif
     return -2;
   }
@@ -1428,14 +1428,14 @@ s32 parseEvent(char *cmd, char *brkt)
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseMap(char *cmd, char *brkt)
+s32 parseMap(u32 line, char *cmd, char *brkt)
 {
   const char *separators = " \t;";
   int map;
 
   if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map number in %s\n", cmd);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map number in %s\n", line, cmd);
 #endif
   }
 
@@ -1448,7 +1448,7 @@ s32 parseMap(char *cmd, char *brkt)
     int value;
     if( (value=get_dec(value_str)) < 0 || value > 0xff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid map value '%s' in %s, expecting 0..255 (0x00..0x7f)\n", value_str, cmd);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map value '%s' in %s, expecting 0..255 (0x00..0x7f)\n", line, value_str, cmd);
 #endif
       return -1;
     } else {
@@ -1459,15 +1459,15 @@ s32 parseMap(char *cmd, char *brkt)
 
   if( !pos ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: %s doesn't define any value!\n", cmd);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: %s doesn't define any value!\n", line, cmd);
 #endif
   } else if( pos > MAP_VALUE_MAX_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: too many values defined for %s (max: %d)!\n", cmd, MAP_VALUE_MAX_SIZE);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: too many values defined for %s (max: %d)!\n", line, cmd, MAP_VALUE_MAX_SIZE);
 #endif
   } else if( MBNG_EVENT_MapAdd(map, map_values, pos) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C] ERROR: failed to add %s to the pool!\n", cmd);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: failed to add %s to the pool!\n", line, cmd);
 #endif
   }
 
@@ -1481,12 +1481,12 @@ s32 parseMap(char *cmd, char *brkt)
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseSysExVar(char *cmd, char *brkt)
+s32 parseSysExVar(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     char full_parameter_str[60];
     if( strlen(parameter) < 30 ) // just to ensure...
       sprintf(full_parameter_str, "%s ... %s=", cmd, parameter);
@@ -1495,38 +1495,38 @@ s32 parseSysExVar(char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "dev") == 0 ) {
-      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      int value = parseSimpleValue(line, full_parameter_str, &value_str, 0, 127);
       if( value >= 0 )
 	mbng_patch_cfg.sysex_dev = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "pat") == 0 ) {
-      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      int value = parseSimpleValue(line, full_parameter_str, &value_str, 0, 127);
       if( value >= 0 )
 	mbng_patch_cfg.sysex_pat = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "bnk") == 0 ) {
-      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      int value = parseSimpleValue(line, full_parameter_str, &value_str, 0, 127);
       if( value >= 0 )
 	mbng_patch_cfg.sysex_bnk = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "ins") == 0 ) {
-      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      int value = parseSimpleValue(line, full_parameter_str, &value_str, 0, 127);
       if( value >= 0 )
 	mbng_patch_cfg.sysex_ins = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "chn") == 0 ) {
-      int value = parseSimpleValue(full_parameter_str, &value_str, 0, 127);
+      int value = parseSimpleValue(line, full_parameter_str, &value_str, 0, 127);
       if( value >= 0 )
 	mbng_patch_cfg.sysex_chn = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -1542,7 +1542,7 @@ s32 parseSysExVar(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseEnc(char *cmd, char *brkt)
+s32 parseEnc(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1552,14 +1552,14 @@ s32 parseEnc(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
     const char *separator_colon = ":";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MIOS32_ENC_NUM_MAX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid encoder number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MIOS32_ENC_NUM_MAX-1);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid encoder number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MIOS32_ENC_NUM_MAX-1);
 #endif
 	return -1; // invalid parameter
       }
@@ -1568,7 +1568,7 @@ s32 parseEnc(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr") == 0 ) {
       if( (sr=get_dec(value_str)) < 0 || sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1583,13 +1583,13 @@ s32 parseEnc(char *cmd, char *brkt)
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[1]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pin format for %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pin format for %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       } else {
 	if( values[0] >= 8 ||  (values[0] & 1) ||
 	    values[1] >= 8 || !(values[1] & 1) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pins for %s n=%d ... %s=%s (expecting 0:1, 2:3, 4:5 or 6:7)\n", cmd, num, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pins for %s n=%d ... %s=%s (expecting 0:1, 2:3, 4:5 or 6:7)\n", line, cmd, num, parameter, value_str);
 #endif
 	  return -1; // invalid parameter
 	} else {
@@ -1615,7 +1615,7 @@ s32 parseEnc(char *cmd, char *brkt)
 	enc_type = DETENTED5;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid type for %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid type for %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1623,7 +1623,7 @@ s32 parseEnc(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -1651,7 +1651,7 @@ s32 parseEnc(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseDinMatrix(char *cmd, char *brkt)
+s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1665,13 +1665,13 @@ s32 parseDinMatrix(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DIN ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DIN);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid DIN matrix number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DIN);
 #endif
 	return -1; // invalid parameter
       }
@@ -1680,7 +1680,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "rows") == 0 ) {
       if( (rows=get_dec(value_str)) < 0 || (rows != 4 && rows != 8 && rows != 16) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1690,7 +1690,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1702,7 +1702,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1713,7 +1713,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "button_emu_id_offset") == 0 ) {
       if( (button_emu_id_offset=get_dec(value_str)) < 0 || button_emu_id_offset >= 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ID offset for %s n=%d ... %s=%s (1..4095 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid ID offset for %s n=%d ... %s=%s (1..4095 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1722,7 +1722,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_sel1") == 0 ) {
       if( (sr_dout_sel1=get_dec(value_str)) < 0 || sr_dout_sel1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1731,7 +1731,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_sel2") == 0 ) {
       if( (sr_dout_sel2=get_dec(value_str)) < 0 || sr_dout_sel2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1740,7 +1740,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_din1") == 0 ) {
       if( (sr_din1=get_dec(value_str)) < 0 || sr_din1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1749,7 +1749,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_din2") == 0 ) {
       if( (sr_din2=get_dec(value_str)) < 0 || sr_din2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1757,7 +1757,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -1786,7 +1786,7 @@ s32 parseDinMatrix(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseDoutMatrix(char *cmd, char *brkt)
+s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1804,13 +1804,13 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DOUT ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DOUT matrix number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid DOUT matrix number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT);
 #endif
 	return -1; // invalid parameter
       }
@@ -1819,7 +1819,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "rows") == 0 ) {
       if( (rows=get_dec(value_str)) < 0 || (rows != 4 && rows != 8 && rows != 16) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1829,7 +1829,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1841,7 +1841,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1852,7 +1852,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "led_emu_id_offset") == 0 ) {
       if( (led_emu_id_offset=get_dec(value_str)) < 0 || led_emu_id_offset >= 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid offset for %s n=%d ... %s=%s (1..4095 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid offset for %s n=%d ... %s=%s (1..4095 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1861,7 +1861,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_sel1") == 0 ) {
       if( (sr_dout_sel1=get_dec(value_str)) < 0 || sr_dout_sel1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1870,7 +1870,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_sel2") == 0 ) {
       if( (sr_dout_sel2=get_dec(value_str)) < 0 || sr_dout_sel2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1879,7 +1879,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_r1") == 0 ) {
       if( (sr_dout_r1=get_dec(value_str)) < 0 || sr_dout_r1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1888,7 +1888,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_r2") == 0 ) {
       if( (sr_dout_r2=get_dec(value_str)) < 0 || sr_dout_r2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1897,7 +1897,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_g1") == 0 ) {
       if( (sr_dout_g1=get_dec(value_str)) < 0 || sr_dout_g1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1906,7 +1906,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_g2") == 0 ) {
       if( (sr_dout_g2=get_dec(value_str)) < 0 || sr_dout_g2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1915,7 +1915,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_b1") == 0 ) {
       if( (sr_dout_b1=get_dec(value_str)) < 0 || sr_dout_b1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1924,7 +1924,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "sr_dout_b2") == 0 ) {
       if( (sr_dout_b2=get_dec(value_str)) < 0 || sr_dout_b2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -1932,7 +1932,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -1966,7 +1966,7 @@ s32 parseDoutMatrix(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseKeyboard(char *cmd, char *brkt)
+s32 parseKeyboard(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -1987,13 +1987,13 @@ s32 parseKeyboard(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > KEYBOARD_NUM ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid KEYBOARD number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, KEYBOARD_NUM);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid KEYBOARD number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, KEYBOARD_NUM);
 #endif
 	return -1; // invalid parameter
       }
@@ -2002,7 +2002,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "rows") == 0 ) {
       if( (rows=get_dec(value_str)) < 0 || rows > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid row number for %s n=%d ... %s=%s (1..16)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid row number for %s n=%d ... %s=%s (1..16)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2011,7 +2011,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "dout_sr1") == 0 ) {
       if( (dout_sr1=get_dec(value_str)) < 0 || dout_sr1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -2020,7 +2020,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "dout_sr2") == 0 ) {
       if( (dout_sr2=get_dec(value_str)) < 0 || dout_sr2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -2029,7 +2029,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "din_sr1") == 0 ) {
       if( (din_sr1=get_dec(value_str)) < 0 || din_sr1 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -2038,7 +2038,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "din_sr2") == 0 ) {
       if( (din_sr2=get_dec(value_str)) < 0 || din_sr2 > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid SR number for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, MIOS32_SRIO_NUM_SR);
 #endif
 	return -1; // invalid parameter
       }
@@ -2047,7 +2047,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "din_inverted") == 0 ) {
       if( (din_inverted=get_dec(value_str)) < 0 || din_inverted > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2056,7 +2056,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "break_inverted") == 0 ) {
       if( (break_inverted=get_dec(value_str)) < 0 || break_inverted > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2065,7 +2065,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "din_key_offset") == 0 ) {
       if( (din_key_offset=get_dec(value_str)) < 0 || din_key_offset > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2074,7 +2074,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "scan_velocity") == 0 ) {
       if( (scan_velocity=get_dec(value_str)) < 0 || scan_velocity > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2083,7 +2083,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "scan_optimized") == 0 ) {
       if( (scan_optimized=get_dec(value_str)) < 0 || scan_optimized > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2092,7 +2092,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "note_offset") == 0 ) {
       if( (note_offset=get_dec(value_str)) < 0 || note_offset > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..127)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2101,7 +2101,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "delay_fastest") == 0 ) {
       if( (delay_fastest=get_dec(value_str)) < 0 || delay_fastest > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2110,7 +2110,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "delay_fastest_black_keys") == 0 ) {
       if( (delay_fastest_black_keys=get_dec(value_str)) < 0 || delay_fastest_black_keys > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2119,7 +2119,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "delay_slowest") == 0 ) {
       if( (delay_slowest=get_dec(value_str)) < 0 || delay_slowest > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (expecting 0..65535)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2127,7 +2127,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2163,7 +2163,7 @@ s32 parseKeyboard(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseLedMatrixPattern(char *cmd, char *brkt)
+s32 parseLedMatrixPattern(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -2172,13 +2172,13 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid DOUT pattern number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid DOUT pattern number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS);
 #endif
 	return -1; // invalid parameter
       }
@@ -2187,7 +2187,7 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "pos") == 0 ) {
       if( value_str[0] != 'M' && ((pos=get_dec(value_str)) < 0 || pos > 15) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid pos value for %s n=%d ... %s=%s (only 0..15 and M allowed)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid pos value for %s n=%d ... %s=%s (only 0..15 and M allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2202,7 +2202,7 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "pattern") == 0 ) {
       if( (pattern=get_bin(value_str, 16, 0)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid pattern for %s n=%d ... %s=%s (expecting 16 bits)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid pattern for %s n=%d ... %s=%s (expecting 16 bits)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2210,7 +2210,7 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2233,20 +2233,20 @@ s32 parseLedMatrixPattern(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseAin(char *cmd, char *brkt)
+s32 parseAin(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "enable_mask") == 0 ) {
       int value;
       if( (value=get_bin(value_str, MBNG_PATCH_NUM_AIN, 0)) < 0 || value >= (1 << MBNG_PATCH_NUM_AIN) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid enable mask in AIN ... %s=%s\n", parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid enable mask in AIN ... %s=%s\n", line, parameter, value_str);
 #endif
 	return -1;
       } else {
@@ -2266,21 +2266,21 @@ s32 parseAin(char *cmd, char *brkt)
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[2]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pinrange in AIN ... %s=%s\n", parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pinrange in AIN ... %s=%s\n", line, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( values[0] < 1 || values[0] > MBNG_PATCH_NUM_AIN ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pin number in AIN ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pin number in AIN ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else if( values[1] < 0 || values[1] > MBNG_PATCH_AIN_MAX_VALUE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in AIN ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid min value in AIN ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else if( values[2] < 0 || values[2] > MBNG_PATCH_AIN_MAX_VALUE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in AIN ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid max value in AIN ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else {
 	  int pin = values[0] - 1;
@@ -2290,7 +2290,7 @@ s32 parseAin(char *cmd, char *brkt)
 	  mbng_patch_ain.cali[pin].spread_center = 0;
 	  if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
 	    if( strcasecmp(values_str, "spread_center") != 0 ) {
-	      DEBUG_MSG("[MBNG_FILE_C] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", parameter, value_str);
+	      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", line, parameter, value_str);
 	    } else {
 	      mbng_patch_ain.cali[pin].spread_center = 1;
 	    }
@@ -2301,7 +2301,7 @@ s32 parseAin(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2317,7 +2317,7 @@ s32 parseAin(char *cmd, char *brkt)
 // returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseAinSer(char *cmd, char *brkt)
+s32 parseAinSer(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -2328,13 +2328,13 @@ s32 parseAinSer(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_AINSER_MODULES ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid AINSER module number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid AINSER module number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
 #endif
 	return -1; // invalid parameter
       }
@@ -2343,7 +2343,7 @@ s32 parseAinSer(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "enabled") == 0 ) {
       if( (enabled=get_dec(value_str)) < 0 || enabled > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2352,7 +2352,7 @@ s32 parseAinSer(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "cs") == 0 ) {
       if( (cs=get_dec(value_str)) < 0 || cs > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid CS line for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid CS line for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2361,7 +2361,7 @@ s32 parseAinSer(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "resolution") == 0 ) {
       if( (resolution=get_dec(value_str)) < 1 || resolution > 12 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid resolution for %s n=%d ... %s=%s (4bit .. 12bit)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid resolution for %s n=%d ... %s=%s (4bit .. 12bit)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2370,7 +2370,7 @@ s32 parseAinSer(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "num_pins") == 0 ) {
       if( (num_pins=get_dec(value_str)) < 1 || num_pins > AINSER_NUM_PINS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid number of pins for %s n=%d ... %s=%s (1..%d)\n", cmd, num, parameter, value_str, AINSER_NUM_PINS);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid number of pins for %s n=%d ... %s=%s (1..%d)\n", line, cmd, num, parameter, value_str, AINSER_NUM_PINS);
 #endif
 	return -1; // invalid parameter
       }
@@ -2388,21 +2388,21 @@ s32 parseAinSer(char *cmd, char *brkt)
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[2]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pinrange in AINSER ... %s=%s\n", parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pinrange in AINSER ... %s=%s\n", line, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( values[0] < 1 || values[0] > (MBNG_PATCH_NUM_AINSER_MODULES*AINSER_NUM_PINS) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid pin number in AINSER ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pin number in AINSER ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else if( values[1] < 0 || values[1] > MBNG_PATCH_AINSER_MAX_VALUE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid min value in AINSER ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid min value in AINSER ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else if( values[2] < 0 || values[2] > MBNG_PATCH_AINSER_MAX_VALUE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid max value in AINSER ... %s=%s\n", parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid max value in AINSER ... %s=%s\n", line, parameter, value_str);
 #endif
 	} else {
 	  u8 module = (values[0]-1) / AINSER_NUM_PINS;
@@ -2414,15 +2414,15 @@ s32 parseAinSer(char *cmd, char *brkt)
 	    mbng_patch_ainser[module].cali[pin].spread_center = 0;
 	    if( (values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
 	      if( strcasecmp(values_str, "spread_center") != 0 ) {
-		DEBUG_MSG("[MBNG_FILE_C] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", parameter, value_str);
+		DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: optional keyword ... %s=%s - expecting 'spread_center'\n", line, parameter, value_str);
 	      } else {
 		mbng_patch_ainser[module].cali[pin].spread_center = 1;
 	      }
 	  }
 
 	  } else {
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: something unexpected happened in parseAinSer()!");
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: while parsing AINSER ... %s=%s\n", parameter, value_str);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: something unexpected happened in parseAinSer()!");
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: while parsing AINSER ... %s=%s\n", line, parameter, value_str);
 	  }
 	}
       }
@@ -2430,7 +2430,7 @@ s32 parseAinSer(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2457,7 +2457,7 @@ s32 parseAinSer(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseMf(char *cmd, char *brkt)
+s32 parseMf(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -2470,13 +2470,13 @@ s32 parseMf(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MBNG_PATCH_NUM_MF_MODULES ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid MF module number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MF module number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MBNG_PATCH_NUM_MF_MODULES);
 #endif
 	return -1; // invalid parameter
       }
@@ -2485,7 +2485,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "enabled") == 0 ) {
       if( (enabled=get_dec(value_str)) < 0 || enabled > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2494,7 +2494,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "midi_in_port") == 0 ) {
       if( (midi_in_port = parseMidiInPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid midi_in_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid midi_in_port for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
       }
 
@@ -2502,7 +2502,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "midi_out_port") == 0 ) {
       if( (midi_out_port = parseMidiOutPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid midi_out_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid midi_out_port for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
       }
 
@@ -2510,7 +2510,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "config_port") == 0 ) {
       if( (config_port = parseMidiInPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid config_port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid config_port for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
       }
 
@@ -2518,7 +2518,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "chn") == 0 ) {
       if( (chn=get_dec(value_str)) < 1 || chn > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid channel for %s n=%d ... %s=%s (1,,16)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid channel for %s n=%d ... %s=%s (1,,16)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2528,7 +2528,7 @@ s32 parseMf(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "ts_first_button_id") == 0 ) {
       if( (ts_first_button_id=get_dec(value_str)) < 0 || ts_first_button_id > 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid ts_first_button_id value for %s n=%d ... %s=%s (0..4095)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid ts_first_button_id value for %s n=%d ... %s=%s (0..4095)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2538,7 +2538,7 @@ s32 parseMf(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2564,7 +2564,7 @@ s32 parseMf(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseAout(char *cmd, char *brkt)
+s32 parseAout(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   aout_if_t if_type = AOUT_IF_NONE;
@@ -2573,7 +2573,7 @@ s32 parseAout(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "type") == 0 ) {
@@ -2585,7 +2585,7 @@ s32 parseAout(char *cmd, char *brkt)
 
       if( i >= AOUT_NUM_IF ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid AOUT module type for %s ... %s=%s'\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid AOUT module type for %s ... %s=%s'\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2597,7 +2597,7 @@ s32 parseAout(char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid chip select line for %s ... %s=%s (0 or 1)\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid chip select line for %s ... %s=%s (0 or 1)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2608,7 +2608,7 @@ s32 parseAout(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "num_channels") == 0 ) {
       if( (num_channels=get_dec(value_str)) < 1 || num_channels > AOUT_NUM_CHANNELS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid number of channels for %s ... %s=%s (1..%d)\n", cmd, parameter, value_str, AOUT_NUM_CHANNELS);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid number of channels for %s ... %s=%s (1..%d)\n", line, cmd, parameter, value_str, AOUT_NUM_CHANNELS);
 #endif
 	return -1; // invalid parameter
       }
@@ -2616,7 +2616,7 @@ s32 parseAout(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2641,7 +2641,7 @@ s32 parseAout(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseScs(char *cmd, char *brkt)
+s32 parseScs(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
 
@@ -2652,7 +2652,7 @@ typedef struct {
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     int button = -1;
@@ -2673,7 +2673,7 @@ typedef struct {
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid button emulation id for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid button emulation id for %s ... %s=%s (0..4095)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2685,7 +2685,7 @@ typedef struct {
       int value;
       if( (value=get_dec(value_str)) < 1 || value > SCS_NUM_MENU_ITEMS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s ... %s=%s (0..4095)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2705,21 +2705,21 @@ typedef struct {
 	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
 	  (values[2]=get_dec(values_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD position format in %s ... %s=%s\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD position format in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	return -1;
       } else {
 	if( values[0] < 1 || values[0] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD number (first item) in %s ... %s=%s\n", cmd, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD number (first item) in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	} else if( values[1] < 1 || values[1] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD X position (second item) in %s ... %s=%s\n", cmd, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD X position (second item) in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	} else if( values[2] < 1 || values[2] >= 256 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C] ERROR: invalid LCD Y position (third item) in %s ... %s=%s\n", cmd, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid LCD Y position (third item) in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	} else {
 	  SCS_LCD_DeviceSet(values[0] - 1);
@@ -2733,7 +2733,7 @@ typedef struct {
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid enc emulation id for %s ... %s=%s (0..4095)\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid enc emulation id for %s ... %s=%s (0..4095)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2743,7 +2743,7 @@ typedef struct {
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2760,7 +2760,7 @@ typedef struct {
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseRouter(char *cmd, char *brkt)
+s32 parseRouter(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -2771,13 +2771,13 @@ s32 parseRouter(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > MIDI_ROUTER_NUM_NODES ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid router node number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, MIDI_ROUTER_NUM_NODES);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid router node number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MIDI_ROUTER_NUM_NODES);
 #endif
 	return -1; // invalid parameter
       }
@@ -2786,7 +2786,7 @@ s32 parseRouter(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "src_port") == 0 ) {
       if( (src_port = parseMidiInPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2795,7 +2795,7 @@ s32 parseRouter(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "src_chn") == 0 ) {
       if( (src_chn=get_dec(value_str)) < 0 || src_chn > 17 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2804,7 +2804,7 @@ s32 parseRouter(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "dst_port") == 0 ) {
       if( (dst_port = parseMidiOutPort(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid source port for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2813,7 +2813,7 @@ s32 parseRouter(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "dst_chn") == 0 ) {
       if( (dst_chn=get_dec(value_str)) < 0 || dst_chn > 17 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid source channel for %s n=%d ... %s=%s (0..17)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2821,7 +2821,7 @@ s32 parseRouter(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2845,7 +2845,7 @@ s32 parseRouter(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseEth(char *cmd, char *brkt)
+s32 parseEth(u32 line, char *cmd, char *brkt)
 {
 #if defined(MIOS32_FAMILY_EMULATION)
   return -1;
@@ -2858,13 +2858,13 @@ s32 parseEth(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "dhcp") == 0 ) {
       if( (dhcp=get_dec(value_str)) < 0 || dhcp > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid value for %s ... %s=%s' (expecting 0 or 1)\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s ... %s=%s' (expecting 0 or 1)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2873,7 +2873,7 @@ s32 parseEth(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "local_ip") == 0 ) {
       if( (local_ip = get_ip(value_str)) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid IP format for %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2882,7 +2882,7 @@ s32 parseEth(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "netmask") == 0 ) {
       if( (netmask = get_ip(value_str)) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid IP format for %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2891,7 +2891,7 @@ s32 parseEth(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "gateway") == 0 ) {
       if( (gateway = get_ip(value_str)) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s ... %s=%s\n", cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid IP format for %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2899,7 +2899,7 @@ s32 parseEth(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s ... %s=%s\n", cmd, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -2921,7 +2921,7 @@ s32 parseEth(char *cmd, char *brkt)
 //! \returns <0 if command is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
-s32 parseOsc(char *cmd, char *brkt)
+s32 parseOsc(u32 line, char *cmd, char *brkt)
 {
   // parse the parameters
   int num = 0;
@@ -2932,13 +2932,13 @@ s32 parseOsc(char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
-  while( parseExtendedParameter(cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
       if( (num=get_dec(value_str)) < 1 || num > OSC_SERVER_NUM_CONNECTIONS ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid OSC port number for %s ... %s=%s' (1..%d)\n", cmd, parameter, value_str, OSC_SERVER_NUM_CONNECTIONS);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid OSC port number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, OSC_SERVER_NUM_CONNECTIONS);
 #endif
 	return -1; // invalid parameter
       }
@@ -2947,7 +2947,7 @@ s32 parseOsc(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "remote_ip") == 0 ) {
       if( (remote_ip = get_ip(value_str)) == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid IP format for %s n=%d ... %s=%s (0x00..0xff)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid IP format for %s n=%d ... %s=%s (0x00..0xff)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2956,7 +2956,7 @@ s32 parseOsc(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "remote_port") == 0 ) {
       if( (remote_port=get_dec(value_str)) < 0 || remote_port > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2965,7 +2965,7 @@ s32 parseOsc(char *cmd, char *brkt)
     } else if( strcasecmp(parameter, "local_port") == 0 ) {
       if( (local_port=get_dec(value_str)) < 0 || local_port > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid remote port for %s n=%d ... %s=%s (expect 0..65535)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2991,7 +2991,7 @@ s32 parseOsc(char *cmd, char *brkt)
 
       if( found_mode < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C] ERROR unknown transfer mode %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR unknown transfer mode %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -3001,7 +3001,7 @@ s32 parseOsc(char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", cmd, num, parameter, value_str);
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       // just continue to keep files compatible
     }
@@ -3060,7 +3060,9 @@ s32 MBNG_FILE_C_Read(char *filename)
   }
 
   // read config values
+  u32 line = 0;
   do {
+    ++line;
     status=FILE_ReadLine((u8 *)(line_buffer+line_buffer_len), line_buffer_size-line_buffer_len);
 
     if( status > 1 ) {
@@ -3110,7 +3112,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	  char *str = brkt;
 	  if( !(str=remove_quotes(str)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR: missing string after LCD message!\n");
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing string after LCD message!\n");
 #endif
 	  } else {
 	    // print from a dummy item
@@ -3124,64 +3126,64 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    got_first_event_item = 1;
 	    MBNG_EVENT_PoolClear();
 	  }
-	  parseEvent(parameter, brkt);
+	  parseEvent(line, parameter, brkt);
 	} else if( strncmp(parameter, "MAP", 3) == 0 ) {
 	  if( !got_first_event_item ) {
 	    got_first_event_item = 1;
 	    MBNG_EVENT_PoolClear();
 	  }
-	  parseMap(parameter, brkt);
+	  parseMap(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "SYSEX_VAR") == 0 ) {
-	  parseSysExVar(parameter, brkt);
+	  parseSysExVar(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "ENC") == 0 ) {
-	  parseEnc(parameter, brkt);
+	  parseEnc(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "DIN_MATRIX") == 0 ) {
-	  parseDinMatrix(parameter, brkt);
+	  parseDinMatrix(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "DOUT_MATRIX") == 0 ) {
-	  parseDoutMatrix(parameter, brkt);
+	  parseDoutMatrix(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "KEYBOARD") == 0 ) {
-	  parseKeyboard(parameter, brkt);
+	  parseKeyboard(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
-	  parseLedMatrixPattern(parameter, brkt);
+	  parseLedMatrixPattern(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "AIN") == 0 ) {
-	  parseAin(parameter, brkt);
+	  parseAin(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "AINSER") == 0 ) {
-	  parseAinSer(parameter, brkt);
+	  parseAinSer(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "MF") == 0 ) {
-	  parseMf(parameter, brkt);
+	  parseMf(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "AOUT") == 0 ) {
-	  parseAout(parameter, brkt);
+	  parseAout(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "SCS") == 0 ) {
-	  parseScs(parameter, brkt);
+	  parseScs(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "ROUTER") == 0 ) {
-	  parseRouter(parameter, brkt);
+	  parseRouter(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "ETH") == 0 ) {
-	  parseEth(parameter, brkt);
+	  parseEth(line, parameter, brkt);
 	} else if( strcasecmp(parameter, "OSC") == 0 ) {
-	  parseOsc(parameter, brkt);
+	  parseOsc(line, parameter, brkt);
 
 	} else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 255);
+	  int value = parseSimpleValue(line, parameter, &brkt, 0, 255);
 	  if( value >= 0 )
 	    mbng_patch_cfg.debounce_ctr = value;
 	} else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.global_chn = value;
 	} else if( strcasecmp(parameter, "AllNotesOffChannel") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.all_notes_off_chn = value;
 	} else if( strcasecmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 16);
+	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
 	  if( value >= 0 )
 	    mbng_patch_cfg.convert_note_off_to_on0 = value;
 	} else if( strcasecmp(parameter, "BPM_Preset") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 1, 1000);
+	  int value = parseSimpleValue(line, parameter, &brkt, 1, 1000);
 	  if( value >= 0 )
 	    SEQ_BPM_Set((float)value);
 	} else if( strcasecmp(parameter, "BPM_Mode") == 0 ) {
-	  int value = parseSimpleValue(parameter, &brkt, 0, 2);
+	  int value = parseSimpleValue(line, parameter, &brkt, 0, 2);
 	  if( value >= 0 )
 	    SEQ_BPM_ModeSet(value);
 	} else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
@@ -3198,7 +3200,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 
 	  if( bit != 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
 	  } else {
 	    MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
@@ -3233,7 +3235,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 
 	  if( bit != 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C] ERROR invalid MIDI port format for parameter '%s'\n", parameter);
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
 	  } else {
 	    MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
@@ -3258,13 +3260,13 @@ s32 MBNG_FILE_C_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  // changed error to warning, since people are sometimes confused about these messages
 	  // on file format changes
-	  DEBUG_MSG("[MBNG_FILE_C] WARNING: unknown command: %s", line_buffer);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unknown command: %s", line, line_buffer);
 #endif
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	// no real error, can for example happen in .csv file
-	DEBUG_MSG("[MBNG_FILE_C] ERROR no space or semicolon separator in following line: %s", line_buffer);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
 #endif
       }
     }
