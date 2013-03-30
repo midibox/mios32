@@ -168,6 +168,8 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_SWAP_VALUES,
 
+  MBNG_EVENT_META_TYPE_RUN_SECTION,
+
   MBNG_EVENT_META_TYPE_SCS_ENC,
   MBNG_EVENT_META_TYPE_SCS_MENU,
   MBNG_EVENT_META_TYPE_SCS_SOFT1,
@@ -407,6 +409,9 @@ extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_typ
 extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type);
 extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
+
+extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value);
+extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, u8 *stream_in, u32 stream_size, s16 item_value);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled);

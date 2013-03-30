@@ -28,11 +28,13 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u16 ALL;
+  u32 ALL;
 
   struct {
-    u16 load:1;
-    u16 section:8;
+    s16 value;
+    u32 section:8;
+    u32 load:1;
+    u32 notify_done:1;
   };
 } mbng_file_r_req_t;
 
@@ -46,8 +48,8 @@ extern s32 MBNG_FILE_R_Unload(void);
 
 extern s32 MBNG_FILE_R_Valid(void);
 
-extern s32 MBNG_FILE_R_Read(char *filename, u8 section);
-extern s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section);
+extern s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value);
+extern s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_done);
 
 
 /////////////////////////////////////////////////////////////////////////////

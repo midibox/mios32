@@ -37,6 +37,7 @@
 #include "mbng_kb.h"
 #include "mbng_patch.h"
 #include "mbng_file_s.h"
+#include "mbng_file_r.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2105,7 +2106,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "chk_start") == 0 )  return MBNG_EVENT_SYSEX_VAR_CHK_START;
   if( strcasecmp(sysex_var, "chk") == 0 )        return MBNG_EVENT_SYSEX_VAR_CHK;
   if( strcasecmp(sysex_var, "chk_inv") == 0 )    return MBNG_EVENT_SYSEX_VAR_CHK_INV;
-  if( strcasecmp(sysex_var, "val") == 0 )        return MBNG_EVENT_SYSEX_VAR_VAL;
+  if( strcasecmp(sysex_var, "val") == 0 || strcasecmp(sysex_var, "value") == 0 ) return MBNG_EVENT_SYSEX_VAR_VAL;
   if( strcasecmp(sysex_var, "val_h") == 0 )      return MBNG_EVENT_SYSEX_VAR_VAL_H;
   if( strcasecmp(sysex_var, "val_n1") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N1;
   if( strcasecmp(sysex_var, "val_n2") == 0 )     return MBNG_EVENT_SYSEX_VAR_VAL_N2;
@@ -2151,6 +2152,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
 
+  case MBNG_EVENT_META_TYPE_RUN_SECTION:         return "RunSection";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -2194,6 +2197,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
 
   if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
+
+  if( strcasecmp(meta_type, "RunSection") == 0 )    return MBNG_EVENT_META_TYPE_RUN_SECTION;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -2239,6 +2244,8 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return 0;
 
+  case MBNG_EVENT_META_TYPE_RUN_SECTION:         return 1;
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return 0;
@@ -2255,6 +2262,134 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   return 0;
 }
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a NRPN event. Skips address bytes if they already have been sent!
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value)
+{
+  u8 nrpn_address_msb = (nrpn_address >> 7) & 0x7f;
+  u8 nrpn_address_lsb = (nrpn_address >> 0) & 0x7f;
+  u8 nrpn_value_msb = (nrpn_value >> 7) & 0x7f;
+  u8 nrpn_value_lsb = (nrpn_value >> 0) & 0x7f;
+
+  // create MIDI package
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.type = CC;
+  p.event = CC;
+  p.chn = chn;
+
+  // quick&dirty
+#if MBNG_EVENT_NRPN_SEND_PORTS_MASK != 0x00f0
+# error "Please adapt MBNG_EVENT_SendOptimizedNRPN!"
+#endif
+#if MBNG_EVENT_NRPN_SEND_PORTS_OFFSET != 4
+# error "Please adapt MBNG_EVENT_SendOptimizedNRPN!"
+#endif
+
+  if( port >= UART0 && port <= UART3 ) {
+    int port_ix = port - UART0;
+
+    if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_address == 0xffff
+      p.cc_number = 0x63; // Address MSB
+      p.value = nrpn_address_msb;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
+
+    if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) & 0x7f ) { // new LSB
+      p.cc_number = 0x62; // Address LSB
+      p.value = nrpn_address_lsb;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
+
+    if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_value == 0xffff
+      p.cc_number = 0x06; // Data MSB
+      p.value = nrpn_value_msb;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
+
+    if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) & 0x7f ) { // new LSB
+      p.cc_number = 0x26; // Data LSB
+      p.value = nrpn_value_lsb;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
+
+    nrpn_sent_address[port_ix][p.chn] = nrpn_address;
+    nrpn_sent_value[port_ix][p.chn] = nrpn_value;
+
+  } else {
+    p.cc_number = 0x63; // Address MSB
+    p.value = nrpn_address_msb;
+    MIOS32_MIDI_SendPackage(port, p);
+
+    p.cc_number = 0x62; // Address LSB
+    p.value = nrpn_address_lsb;
+    MIOS32_MIDI_SendPackage(port, p);
+
+    p.cc_number = 0x06; // Data MSB
+    p.value = nrpn_value_msb;
+    MIOS32_MIDI_SendPackage(port, p);
+
+    p.cc_number = 0x26; // Data LSB
+    p.value = nrpn_value_lsb;
+    MIOS32_MIDI_SendPackage(port, p);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a SysEx stream with derived SysEx variables
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, u8 *stream_in, u32 stream_size, s16 item_value)
+{
+#define STREAM_MAX_SIZE 128
+  u8 stream[STREAM_MAX_SIZE]; // note: it's ensure that the out stream isn't longer than the in stream, therefore no size checks required
+  u8 *stream_out = stream;
+  u8 *stream_in_end = (u8 *)(stream_in + stream_size - 1);
+  u8 chk = 0;
+  while( stream_in <= stream_in_end ) {
+    u8 new_value = 1;
+
+    if( *stream_in == 0xff ) {
+      ++stream_in;
+      switch( *stream_in++ ) {
+      case MBNG_EVENT_SYSEX_VAR_DEV:        *stream_out = mbng_patch_cfg.sysex_dev; break;
+      case MBNG_EVENT_SYSEX_VAR_PAT:        *stream_out = mbng_patch_cfg.sysex_pat; break;
+      case MBNG_EVENT_SYSEX_VAR_BNK:        *stream_out = mbng_patch_cfg.sysex_bnk; break;
+      case MBNG_EVENT_SYSEX_VAR_INS:        *stream_out = mbng_patch_cfg.sysex_ins; break;
+      case MBNG_EVENT_SYSEX_VAR_CHN:        *stream_out = mbng_patch_cfg.sysex_chn; break;
+      case MBNG_EVENT_SYSEX_VAR_CHK_START:  new_value = 0; chk = 0; break;
+      case MBNG_EVENT_SYSEX_VAR_CHK:        *stream_out = chk & 0x7f; break;
+      case MBNG_EVENT_SYSEX_VAR_CHK_INV:    *stream_out = (chk ^ 0x7f) & 0x7f; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL:        *stream_out = item_value & 0x7f; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_H:      *stream_out = (item_value >>  7) & 0x7f; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N1:     *stream_out = (item_value >>  0) & 0xf; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N2:     *stream_out = (item_value >>  4) & 0xf; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N3:     *stream_out = (item_value >>  8) & 0xf; break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (item_value >> 12) & 0xf; break;
+      case MBNG_EVENT_SYSEX_VAR_IGNORE:     new_value = 0; break;
+      case MBNG_EVENT_SYSEX_VAR_DUMP:       new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_CURSOR:     new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_TXT:        new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_TXT56:      new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      default: new_value = 0;
+      }
+    } else {
+      new_value = 1;
+      *stream_out = *stream_in++;
+    }
+
+    if( new_value )
+      chk += *stream_out++;
+  }
+
+  u32 len = stream_out - stream + 1;
+  return MIOS32_MIDI_SendSysEx(port, stream, len);
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2333,24 +2468,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
   } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
 
-    // create MIDI package
-    mios32_midi_package_t p;
-    p.ALL = 0;
-    p.type = CC;
-    p.event = CC;
-
-    if( mbng_patch_cfg.global_chn )
-      p.chn = mbng_patch_cfg.global_chn - 1;
-    else
-      p.chn = item->stream[0] & 0xf;
-
     u16 nrpn_address = item->stream[1] | ((u16)item->stream[2] << 7);
     mbng_event_nrpn_format_t nrpn_format = item->stream[3];
-    u8 nrpn_address_msb = (nrpn_address >> 7) & 0x7f;
-    u8 nrpn_address_lsb = (nrpn_address >> 0) & 0x7f;
     u16 nrpn_value = (nrpn_format == MBNG_EVENT_NRPN_FORMAT_SIGNED) ? ((item->value - 8192) & 0x3fff) : item->value;
-    u8 nrpn_value_msb = (nrpn_value >> 7) & 0x7f;
-    u8 nrpn_value_lsb = (nrpn_value >> 0) & 0x7f;
+    mios32_midi_chn_t chn = mbng_patch_cfg.global_chn ? (mbng_patch_cfg.global_chn - 1) : item->stream[0] & 0xf;
 
     // send optimized NRPNs over enabled ports
     int i;
@@ -2360,126 +2481,28 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
 
-	if( mask & MBNG_EVENT_NRPN_SEND_PORTS_MASK ) {
-	  u8 port_ix = i - MBNG_EVENT_NRPN_SEND_PORTS_OFFSET;
-
-	  MUTEX_MIDIOUT_TAKE;
-	  if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_address == 0xffff
-	    p.cc_number = 0x63; // Address MSB
-	    p.value = nrpn_address_msb;
-	    MIOS32_MIDI_SendPackage(port, p);
-	  }
-
-	  if( (nrpn_address ^ nrpn_sent_address[port_ix][p.chn]) & 0x7f ) { // new LSB
-	    p.cc_number = 0x62; // Address LSB
-	    p.value = nrpn_address_lsb;
-	    MIOS32_MIDI_SendPackage(port, p);
-	  }
-
-	  if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) >> 7 ) { // new MSB - will also cover the case that nrpn_sent_value == 0xffff
-	    p.cc_number = 0x06; // Data MSB
-	    p.value = nrpn_value_msb;
-	    MIOS32_MIDI_SendPackage(port, p);
-	  }
-
-	  if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) & 0x7f ) { // new LSB
-	    p.cc_number = 0x26; // Data LSB
-	    p.value = nrpn_value_lsb;
-	    MIOS32_MIDI_SendPackage(port, p);
-	  }
-	  MUTEX_MIDIOUT_GIVE;
-
-	  nrpn_sent_address[port_ix][p.chn] = nrpn_address;
-	  nrpn_sent_value[port_ix][p.chn] = nrpn_value;
-
-	} else {
-	  MUTEX_MIDIOUT_TAKE;
-
-	  p.cc_number = 0x63; // Address MSB
-	  p.value = nrpn_address_msb;
-	  MIOS32_MIDI_SendPackage(port, p);
-
-	  p.cc_number = 0x62; // Address LSB
-	  p.value = nrpn_address_lsb;
-	  MIOS32_MIDI_SendPackage(port, p);
-
-	  p.cc_number = 0x06; // Data MSB
-	  p.value = nrpn_value_msb;
-	  MIOS32_MIDI_SendPackage(port, p);
-
-	  p.cc_number = 0x26; // Data LSB
-	  p.value = nrpn_value_lsb;
-	  MIOS32_MIDI_SendPackage(port, p);
-
-	  MUTEX_MIDIOUT_GIVE;
-	}
+	MUTEX_MIDIOUT_TAKE;
+	MBNG_EVENT_SendOptimizedNRPN(port, chn, nrpn_address, nrpn_value);
+	MUTEX_MIDIOUT_GIVE;
       }
     }
+
     return 0; // no error
 
   } else if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
-#define STREAM_MAX_SIZE 128
-    u8 stream[STREAM_MAX_SIZE]; // note: it's ensure that the out stream isn't longer than the in stream, therefore no size checks required
-    u8 *stream_out = stream;
-    u8 *stream_in = item->stream;
-    u8 *stream_in_end = (u8 *)(item->stream + item->stream_size - 1);
-    u8 chk = 0;
-    while( stream_in <= stream_in_end ) {
-      u8 new_value = 1;
-
-      if( *stream_in == 0xff ) {
-	++stream_in;
-	switch( *stream_in++ ) {
-	case MBNG_EVENT_SYSEX_VAR_DEV:        *stream_out = mbng_patch_cfg.sysex_dev; break;
-	case MBNG_EVENT_SYSEX_VAR_PAT:        *stream_out = mbng_patch_cfg.sysex_pat; break;
-	case MBNG_EVENT_SYSEX_VAR_BNK:        *stream_out = mbng_patch_cfg.sysex_bnk; break;
-	case MBNG_EVENT_SYSEX_VAR_INS:        *stream_out = mbng_patch_cfg.sysex_ins; break;
-	case MBNG_EVENT_SYSEX_VAR_CHN:        *stream_out = mbng_patch_cfg.sysex_chn; break;
-	case MBNG_EVENT_SYSEX_VAR_CHK_START:  new_value = 0; chk = 0; break;
-	case MBNG_EVENT_SYSEX_VAR_CHK:        *stream_out = chk & 0x7f; break;
-	case MBNG_EVENT_SYSEX_VAR_CHK_INV:    *stream_out = (chk ^ 0x7f) & 0x7f; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL:        *stream_out = item->value & 0x7f; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL_H:      *stream_out = (item->value >>  7) & 0x7f; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL_N1:     *stream_out = (item->value >>  0) & 0xf; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL_N2:     *stream_out = (item->value >>  4) & 0xf; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL_N3:     *stream_out = (item->value >>  8) & 0xf; break;
-	case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (item->value >> 12) & 0xf; break;
-	case MBNG_EVENT_SYSEX_VAR_IGNORE:     new_value = 0; break;
-	case MBNG_EVENT_SYSEX_VAR_DUMP:       new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-	case MBNG_EVENT_SYSEX_VAR_CURSOR:     new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-	case MBNG_EVENT_SYSEX_VAR_TXT:        new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-	case MBNG_EVENT_SYSEX_VAR_TXT56:      new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-	default: new_value = 0;
-	}
-      } else {
-	new_value = 1;
-	*stream_out = *stream_in++;
-      }
-
-      if( new_value )
-	chk += *stream_out++;
-    }
-
     // send SysEx over enabled ports
-    {
-      int len = stream_out - stream;
-      if( len >= 1 ) {
-	int i;
-	u16 mask = 1;
-	for(i=0; i<16; ++i, mask <<= 1) {
-	  if( item->enabled_ports & mask ) {
-	    // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-	    mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-	    MUTEX_MIDIOUT_TAKE;
-	    MIOS32_MIDI_SendSysEx(port, stream, len);
-	    MUTEX_MIDIOUT_GIVE;
-	  }
-	}
+    int i;
+    u16 mask = 1;
+    for(i=0; i<16; ++i, mask <<= 1) {
+      if( item->enabled_ports & mask ) {
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	MUTEX_MIDIOUT_TAKE;
+	MBNG_EVENT_SendSysExStream(port, item->stream, item->stream_size, item->value);
+	MUTEX_MIDIOUT_GIVE;
       }
     }
     return 0;
-  } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
-    // TODO
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
     int i;
     for(i=0; i<item->stream_size; i++) {
@@ -2609,6 +2632,10 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	u8 secondary = item->secondary_value;
 	item->secondary_value = item->value;
 	item->value = secondary;
+      } break;
+
+      case MBNG_EVENT_META_TYPE_RUN_SECTION: {
+	MBNG_FILE_R_ReadRequest(mbng_file_r_script_name, meta_value, item->value, 0);
       } break;
 
       case MBNG_EVENT_META_TYPE_SCS_ENC: {

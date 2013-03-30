@@ -200,7 +200,7 @@ s32 MBNG_PATCH_Load(char *filename)
   MBNG_FILE_L_Read(filename);
 #endif
   MBNG_FILE_S_Read(filename, -1);
-  MBNG_FILE_R_ReadRequest(filename, 0);
+  MBNG_FILE_R_ReadRequest(filename, 0, 0, 0);
   MUTEX_SDCARD_GIVE;
 
   // refresh the elements (will update the screen!)
