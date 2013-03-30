@@ -277,7 +277,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 	
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "LCD") == 0 ) {
+	} else if( strcasecmp(parameter, "LCD") == 0 ) {
 	  char *str = brkt;
 	  if( !(str=remove_quotes(str)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -290,7 +290,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 	    item.label = str;
 	    MBNG_LCD_PrintItemLabel(&item);
 	  }
-	} else if( strcmp(parameter, "SET") == 0 ) {
+	} else if( strcasecmp(parameter, "SET") == 0 || strcasecmp(parameter, "TRIGGER") == 0 ) {
+	  u8 trigger = strcasecmp(parameter, "TRIGGER") == 0;
 
 	  mbng_event_item_id_t id;
 
@@ -301,12 +302,12 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 #endif
 	  } else {
 	    char *value_str;
-	    s32 value;
-	    if( !(value_str = strtok_r(NULL, separators, &brkt)) ) {
+	    s32 value = 0;
+	    if( !trigger && !(value_str = strtok_r(NULL, separators, &brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MBNG_FILE_R] ERROR: missing value after '%s %s:%d' command!\n", parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
 #endif
-	    } else if( (value=get_dec(value_str)) < -16384 || value >= 16383 ) {
+	    } else if( !trigger && ((value=get_dec(value_str)) < -16384 || value >= 16383) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MBNG_FILE_R] ERROR: invalid value in '%s %s:%d %s' command (expecting -16384..16383!\n", parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value_str);
 #endif
@@ -315,7 +316,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 	      DEBUG_MSG("[MBNG_FILE_R] %s:%d = %d\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value);
 #endif
 
-	      // search for fwd item
+	      // search for items with matching ID
 	      mbng_event_item_t item;
 	      u32 continue_ix = 0;
 	      u32 num_set = 0;
@@ -326,7 +327,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 		  ++num_set;
 
 		  // notify item
-		  item.value = value;
+		  if( !trigger )
+		    item.value = value;
 		  if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 		    break; // stop has been requested
 		}
@@ -334,13 +336,13 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 
 	      if( !num_set ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_R] 'SET %s:%d %d' failed - item not found!\n", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value);
+		DEBUG_MSG(trigger ? "[MBNG_FILE_R] '%s %s:%d' failed - item not found!\n" : "[MBNG_FILE_R] '%s %s:%d %d' failed - item not found!\n", parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value);
 #endif
 	      }
 	    }
 	  }
 
-	} else if( strcmp(parameter, "DELAY_MS") == 0 ) {
+	} else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
 	  char *value_str;
 	  s32 value;
 	  if( !(value_str = strtok_r(NULL, separators, &brkt)) ) {
@@ -357,8 +359,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section)
 #endif
 	    int i;
 	    for(i=0; i<value; ++i) {
-	      MIOS32_DELAY_Wait_uS(1000);
-	      taskYIELD();
+	      vTaskDelay(1 / portTICK_RATE_MS);
 	    }
 	  }
 	} else {

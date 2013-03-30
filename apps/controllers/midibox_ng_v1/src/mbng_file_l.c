@@ -524,7 +524,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "LABEL") == 0 ) {
+	} else if( strcasecmp(parameter, "LABEL") == 0 ) {
 	  if( current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBNG_FILE_L] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", current_cond_label);
@@ -585,7 +585,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	    }
 	  }
 
-	} else if( strcmp(parameter, "COND_LABEL") == 0 ) {
+	} else if( strcasecmp(parameter, "COND_LABEL") == 0 ) {
 	  if( current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBNG_FILE_L] WARNING: previous COND label '%s' hasn't been finished with COND_ELSE!", current_cond_label);
@@ -637,7 +637,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	      }
 	    }
 	  }
-	} else if( strcmp(parameter, "COND_ELSE") == 0 ) {
+	} else if( strcasecmp(parameter, "COND_ELSE") == 0 ) {
 	  if( !current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBNG_FILE_L] WARNING: found COND_ELSE without previous COND_LABEL statement!");
@@ -679,7 +679,7 @@ s32 MBNG_FILE_L_Read(char *filename)
 	    }
 	  }
 	  current_cond_label[0] = 0;
-	} else if( strcmp(parameter, "COND") == 0 ) {
+	} else if( strcasecmp(parameter, "COND") == 0 ) {
 	  if( !current_cond_label[0] ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBNG_FILE_L] WARNING: found COND without previous COND_LABEL statement!");
