@@ -2092,6 +2092,7 @@ const char *MBNG_EVENT_ItemSysExVarStrGet(mbng_event_item_t *item, u8 stream_pos
   case MBNG_EVENT_SYSEX_VAR_CURSOR:     return "cursor";
   case MBNG_EVENT_SYSEX_VAR_TXT:        return "txt";
   case MBNG_EVENT_SYSEX_VAR_TXT56:      return "txt56";
+  case MBNG_EVENT_SYSEX_VAR_LABEL:      return "label";
   }
   return "undef";
 }
@@ -2116,6 +2117,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "dump") == 0 )       return MBNG_EVENT_SYSEX_VAR_DUMP;
   if( strcasecmp(sysex_var, "cursor") == 0 )     return MBNG_EVENT_SYSEX_VAR_CURSOR;
   if( strcasecmp(sysex_var, "txt56") == 0 )      return MBNG_EVENT_SYSEX_VAR_TXT56;
+  if( strcasecmp(sysex_var, "label") == 0 )      return MBNG_EVENT_SYSEX_VAR_LABEL;
   return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
 }
 
@@ -2344,50 +2346,62 @@ s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn,
 /////////////////////////////////////////////////////////////////////////////
 //! Sends a SysEx stream with derived SysEx variables
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, u8 *stream_in, u32 stream_size, s16 item_value)
+s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
 {
+  u8 *stream_in = item->stream;
+  u32 stream_size = item->stream_size;
+  s16 item_value = item->value;
+
 #define STREAM_MAX_SIZE 128
-  u8 stream[STREAM_MAX_SIZE]; // note: it's ensure that the out stream isn't longer than the in stream, therefore no size checks required
+  u8 stream[STREAM_MAX_SIZE];
   u8 *stream_out = stream;
   u8 *stream_in_end = (u8 *)(stream_in + stream_size - 1);
+  u32 len = 0;
   u8 chk = 0;
-  while( stream_in <= stream_in_end ) {
-    u8 new_value = 1;
 
+  // to simplify stream usage
+#define MBNG_EVENT_ADD_STREAM(b) { if( len < STREAM_MAX_SIZE ) { *stream_out = b; ++len; chk += *stream_out++; } }
+
+  while( stream_in <= stream_in_end ) {
     if( *stream_in == 0xff ) {
       ++stream_in;
       switch( *stream_in++ ) {
-      case MBNG_EVENT_SYSEX_VAR_DEV:        *stream_out = mbng_patch_cfg.sysex_dev; break;
-      case MBNG_EVENT_SYSEX_VAR_PAT:        *stream_out = mbng_patch_cfg.sysex_pat; break;
-      case MBNG_EVENT_SYSEX_VAR_BNK:        *stream_out = mbng_patch_cfg.sysex_bnk; break;
-      case MBNG_EVENT_SYSEX_VAR_INS:        *stream_out = mbng_patch_cfg.sysex_ins; break;
-      case MBNG_EVENT_SYSEX_VAR_CHN:        *stream_out = mbng_patch_cfg.sysex_chn; break;
-      case MBNG_EVENT_SYSEX_VAR_CHK_START:  new_value = 0; chk = 0; break;
-      case MBNG_EVENT_SYSEX_VAR_CHK:        *stream_out = chk & 0x7f; break;
-      case MBNG_EVENT_SYSEX_VAR_CHK_INV:    *stream_out = (chk ^ 0x7f) & 0x7f; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL:        *stream_out = item_value & 0x7f; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL_H:      *stream_out = (item_value >>  7) & 0x7f; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL_N1:     *stream_out = (item_value >>  0) & 0xf; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL_N2:     *stream_out = (item_value >>  4) & 0xf; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL_N3:     *stream_out = (item_value >>  8) & 0xf; break;
-      case MBNG_EVENT_SYSEX_VAR_VAL_N4:     *stream_out = (item_value >> 12) & 0xf; break;
-      case MBNG_EVENT_SYSEX_VAR_IGNORE:     new_value = 0; break;
-      case MBNG_EVENT_SYSEX_VAR_DUMP:       new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-      case MBNG_EVENT_SYSEX_VAR_CURSOR:     new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-      case MBNG_EVENT_SYSEX_VAR_TXT:        new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-      case MBNG_EVENT_SYSEX_VAR_TXT56:      new_value = 0; break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
-      default: new_value = 0;
+      case MBNG_EVENT_SYSEX_VAR_DEV:        MBNG_EVENT_ADD_STREAM(mbng_patch_cfg.sysex_dev); break;
+      case MBNG_EVENT_SYSEX_VAR_PAT:        MBNG_EVENT_ADD_STREAM(mbng_patch_cfg.sysex_pat); break;
+      case MBNG_EVENT_SYSEX_VAR_BNK:        MBNG_EVENT_ADD_STREAM(mbng_patch_cfg.sysex_bnk); break;
+      case MBNG_EVENT_SYSEX_VAR_INS:        MBNG_EVENT_ADD_STREAM(mbng_patch_cfg.sysex_ins); break;
+      case MBNG_EVENT_SYSEX_VAR_CHN:        MBNG_EVENT_ADD_STREAM(mbng_patch_cfg.sysex_chn); break;
+      case MBNG_EVENT_SYSEX_VAR_CHK_START:  chk = 0; break;
+      case MBNG_EVENT_SYSEX_VAR_CHK:        MBNG_EVENT_ADD_STREAM(chk & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_CHK_INV:    MBNG_EVENT_ADD_STREAM((chk ^ 0x7f) & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL:        MBNG_EVENT_ADD_STREAM(item_value & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_H:      MBNG_EVENT_ADD_STREAM((item_value >>  7) & 0x7f); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N1:     MBNG_EVENT_ADD_STREAM((item_value >>  0) & 0xf); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N2:     MBNG_EVENT_ADD_STREAM((item_value >>  4) & 0xf); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N3:     MBNG_EVENT_ADD_STREAM((item_value >>  8) & 0xf); break;
+      case MBNG_EVENT_SYSEX_VAR_VAL_N4:     MBNG_EVENT_ADD_STREAM((item_value >> 12) & 0xf); break;
+      case MBNG_EVENT_SYSEX_VAR_IGNORE:     break;
+      case MBNG_EVENT_SYSEX_VAR_DUMP:       break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_CURSOR:     break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_TXT:        break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_TXT56:      break; // not relevant for transmitter (yet) - or should we allow to send a dump stored dump?
+      case MBNG_EVENT_SYSEX_VAR_LABEL: {
+	u32 max_len = STREAM_MAX_SIZE - len;
+	if( max_len ) {
+	  s32 status;
+	  if( (status=MBNG_LCD_PrintItemLabel(item, (char *)stream_out, max_len)) > 0 ) {
+	    len += status;
+	    stream_out += status;
+	  }
+	}
+      } break;
+      default: {}
       }
     } else {
-      new_value = 1;
-      *stream_out = *stream_in++;
+      MBNG_EVENT_ADD_STREAM(*stream_in++);
     }
-
-    if( new_value )
-      chk += *stream_out++;
   }
 
-  u32 len = stream_out - stream + 1;
   return MIOS32_MIDI_SendSysEx(port, stream, len);
 }
 
@@ -2498,7 +2512,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
 	MUTEX_MIDIOUT_TAKE;
-	MBNG_EVENT_SendSysExStream(port, item->stream, item->stream_size, item->value);
+	MBNG_EVENT_SendSysExStream(port, item);
 	MUTEX_MIDIOUT_GIVE;
       }
     }
@@ -2635,7 +2649,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       } break;
 
       case MBNG_EVENT_META_TYPE_RUN_SECTION: {
-	MBNG_FILE_R_ReadRequest(mbng_file_r_script_name, meta_value, item->value, 0);
+	MBNG_FILE_R_ReadRequest(NULL, meta_value, item->value, 0);
       } break;
 
       case MBNG_EVENT_META_TYPE_SCS_ENC: {
@@ -3056,7 +3070,7 @@ s32 MBNG_EVENT_UpdateLCD(u8 force)
 
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      MBNG_LCD_PrintItemLabel(&item);
+      MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 
       // if force: output the last active item (again) at the end
       if( force && last_event_item_id && pool_item->id == last_event_item_id ) {
@@ -3072,7 +3086,7 @@ s32 MBNG_EVENT_UpdateLCD(u8 force)
   if( last_pool_item ) {
     mbng_event_item_t item;
     MBNG_EVENT_ItemCopy2User(last_pool_item, &item);
-    MBNG_LCD_PrintItemLabel(&item);
+    MBNG_LCD_PrintItemLabel(&item, NULL, 0);
   }
 
   return 0; // no error
@@ -3479,7 +3493,8 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_TXT:
-	    case MBNG_EVENT_SYSEX_VAR_TXT56: {
+	    case MBNG_EVENT_SYSEX_VAR_TXT56:
+	    case MBNG_EVENT_SYSEX_VAR_LABEL: { // handle like txt (although ^label has actually a different meaning: it dumps out the label string)
 	      match = 1;
 
 	      // wrap at 64 or 56?
@@ -3492,8 +3507,11 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		mbng_event_item_t item;
 		MBNG_EVENT_ItemCopy2User(pool_item, &item);
 
-		// mapped X?
+		// X and Y pos
 		u8 x = pool_item->value % x_wrap;
+		u8 y = pool_item->value / x_wrap;
+
+		// mapped X?
 		u8 *map_values;
 		int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
 		if( map_len > 0 ) {
@@ -3502,12 +3520,21 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		  else
 		    x = map_values[map_len-1];
 		}
+
+		// multiply Y due to big GLCD font?
+		if( MIOS32_LCD_TypeIsGLCD() ) {
+		  u8 *glcd_font = MBNG_LCD_FontGet();
+		  u16 font_height = glcd_font ? glcd_font[MIOS32_LCD_FONT_HEIGHT_IX] : 8;
+		  y *= (font_height / 8);
+		}
+
+		// add to cursor pos
 		item.lcd_x += x;
-		item.lcd_y += pool_item->value / x_wrap;
+		item.lcd_y += y;
 
 		MUTEX_LCD_TAKE;
 		if( item.label ) {
-		  MBNG_LCD_PrintItemLabel(&item);
+		  MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 		} else {
 		  MBNG_LCD_FontInit('n');
 		  MBNG_LCD_CursorSet(item.lcd, item.lcd_x, item.lcd_y);

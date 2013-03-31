@@ -1,5 +1,22 @@
 $Id$
 
+MIDIbox NG V1.022
+~~~~~~~~~~~~~~~~~
+
+   o support for run scripts.
+     See also the new manual page: http://www.ucapps.de/midibox_ng_manual_ngr.html
+
+   o the new SysEx command ^label has been added. It allows to insert the ASCII code
+     of a label string into a SysEx stream.
+     See also cfg/tests/syxlabel.ngc
+
+   o big GLCD font now correctly handled by ^txt and ^txt56 SysEx command
+
+   o line number now displayed on errors in .NGC, .NGL or .NGR file
+
+   o various bugfixes and improvements
+
+
 MIDIbox NG V1.021
 ~~~~~~~~~~~~~~~~~
 

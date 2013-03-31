@@ -3119,7 +3119,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	    mbng_event_item_t item;
 	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	    item.label = str;
-	    MBNG_LCD_PrintItemLabel(&item);
+	    MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 	  }
 	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
 	  if( !got_first_event_item ) {

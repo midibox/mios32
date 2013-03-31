@@ -137,6 +137,7 @@ typedef enum {
   MBNG_EVENT_SYSEX_VAR_CURSOR,
   MBNG_EVENT_SYSEX_VAR_TXT,
   MBNG_EVENT_SYSEX_VAR_TXT56,
+  MBNG_EVENT_SYSEX_VAR_LABEL,
 } mbng_event_sysex_var_t;
 
 typedef enum {
@@ -411,7 +412,7 @@ extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
 
 extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value);
-extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, u8 *stream_in, u32 stream_size, s16 item_value);
+extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled);

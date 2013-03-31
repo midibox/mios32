@@ -451,7 +451,7 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	mbng_file_r_req.load = 0;
 
 #if DEBUG_EVENT_HANDLER_PERFORMANCE
-    MIOS32_STOPWATCH_Reset();
+	MIOS32_STOPWATCH_Reset();
 #endif
 
 	MUTEX_SDCARD_TAKE;
@@ -459,11 +459,11 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 	MUTEX_SDCARD_GIVE;
 
 #if DEBUG_EVENT_HANDLER_PERFORMANCE
-  u32 cycles = MIOS32_STOPWATCH_ValueGet();
-  if( cycles == 0xffffffff )
-    DEBUG_MSG("[PERF NGR] overrun!\n");
-  else
-    DEBUG_MSG("[PERF NGR] %5d.%d mS\n", cycles/10, cycles%10);
+	u32 cycles = MIOS32_STOPWATCH_ValueGet();
+	if( cycles == 0xffffffff )
+	  DEBUG_MSG("[PERF NGR] overrun!\n");
+	else
+	  DEBUG_MSG("[PERF NGR] %5d.%d mS\n", cycles/10, cycles%10);
 #endif
 
 	if( mbng_file_r_req.notify_done ) {
