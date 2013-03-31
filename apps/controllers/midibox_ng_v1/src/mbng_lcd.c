@@ -201,6 +201,16 @@ s32 MBNG_LCD_FontInit(char font_name)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the current GLCD font
+/////////////////////////////////////////////////////////////////////////////
+u8 *MBNG_LCD_FontGet(void)
+{
+  return glcd_font;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Sets the cursor on the given LCD
 /////////////////////////////////////////////////////////////////////////////
@@ -321,10 +331,53 @@ s32 MBNG_LCD_PrintSpaces(int num)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Streams a character into the out_buffer
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_LCD_StreamChar(char *out_buffer, u32 max_buffer_len, char c)
+{
+  if( !max_buffer_len )
+    return 0;
+
+  *out_buffer = c;
+
+  return 1; // 1 char print
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Streams a string into the out_buffer
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_LCD_StreamString(char *out_buffer, u32 max_buffer_len, char *str)
+{
+  int len = 0;
+
+  while( len < max_buffer_len && *str != '\0' ) {
+    *(out_buffer++) = *str;
+    ++len;
+    ++str;
+  }
+
+  return len;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Streams a formatted string into the out_buffer
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_LCD_StreamFormattedString(char *out_buffer, u32 max_buffer_len, char *format, ...)
+{
+  char buffer[128]; // hopefully enough?
+  va_list args;
+
+  va_start(args, format);
+  vsprintf((char *)buffer, format, args);
+  return MBNG_LCD_StreamString(out_buffer, max_buffer_len, buffer);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Whenever this function is called, the screen will be cleared once a new
 //! message is print
 /////////////////////////////////////////////////////////////////////////////
-extern s32 MBNG_LCD_ClearScreenOnNextMessage(void)
+s32 MBNG_LCD_ClearScreenOnNextMessage(void)
 {
   first_msg = 0;
 
@@ -333,10 +386,27 @@ extern s32 MBNG_LCD_ClearScreenOnNextMessage(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! prints the string of an item
+//! prints the label of an item
+//! if out_buffer == NULL, the label will be print on LCD
+//! if out_buffer != NULL, the label will be streamed into this buffer
+//! \retval < 0 on errors
+//! \retval >= 0: number of streamed characters (only if out_buffer != NULL)
+//! \retval == 0: no characters print, resp out_buffer == NULL
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
+s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, char *out_buffer, u32 max_buffer_len)
 {
+  int buffer_len = 0;
+
+  // following macros simplify the buffer handling
+#define MBNG_LCD_CLEAR             { if( !out_buffer ) { MBNG_LCD_Clear(); } }
+#define MBNG_LCD_PRINT_CHAR(c)     { if( !out_buffer ) { MBNG_LCD_PrintChar(c); } else \
+				   { s32 len = MBNG_LCD_StreamChar(out_buffer, max_buffer_len, c); out_buffer += len; buffer_len += len; max_buffer_len -= len; } }
+#define MBNG_LCD_PRINT_STRING(str) { if( !out_buffer ) { MBNG_LCD_PrintString(str); } else \
+			           { s32 len = MBNG_LCD_StreamString(out_buffer, max_buffer_len, str); out_buffer += len; buffer_len += len; max_buffer_len -= len; } }
+#define MBNG_LCD_PRINT_FORMATTED_STRING(str, value) { if( !out_buffer ) { MBNG_LCD_PrintFormattedString(str, value); } else \
+				   { s32 len = MBNG_LCD_StreamFormattedString(out_buffer, max_buffer_len, str, value); out_buffer += len; buffer_len += len; max_buffer_len -= len; } }
+
+
   if( !item->label )
     return -1; // no label
   char *str = item->label;
@@ -347,7 +417,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
   if( !first_msg ) {
     first_msg = 1;
-    MBNG_LCD_Clear();
+    MBNG_LCD_CLEAR;
   }
 
   if( *str == '^' ) {
@@ -360,25 +430,27 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
   // GLCD: always start with normal font
   // exception: if label starts with & (font selection)
   u8 current_font = 'n';
-  MBNG_LCD_FontInit(current_font);
+  if( !out_buffer )
+    MBNG_LCD_FontInit(current_font);
   if( *str == '&' ) {
     switch( *(++str) ) {
-    case '&': MBNG_LCD_PrintChar('&'); break;
+    case '&': MBNG_LCD_PRINT_CHAR('&'); break;
     default:
       if( MBNG_LCD_FontInit(*str) >= 0 ) {
 	current_font = *str;
       } else {
 	//current_font = 'n'; // (redundant)
 	//MBNG_LCD_FontInit(current_font);
-	MBNG_LCD_PrintChar('&');
-	MBNG_LCD_PrintChar(*str);
+	MBNG_LCD_PRINT_CHAR('&');
+	MBNG_LCD_PRINT_CHAR(*str);
       }
     }
     ++str;
   }
 
   // set cursor (depending on font...)
-  MBNG_LCD_CursorSet(item->lcd, item->lcd_x, item->lcd_y);
+  if( !out_buffer )
+    MBNG_LCD_CursorSet(item->lcd, item->lcd_x, item->lcd_y);
 
   // string already 0?
   if( *str == 0 )
@@ -395,9 +467,9 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
     if( *str == '^' ) { // label
       ++str;
-      if( *str == '^' || *str == 0 )
-	MBNG_LCD_PrintChar('^');
-      else if( *str == '#' ) {
+      if( *str == '^' || *str == 0 ) {
+	MBNG_LCD_PRINT_CHAR('^');
+      } else if( *str == '#' ) {
 	// ignore... this is for label termination without spaces, e.g. "^label^#MyText"
 	++str;
       } else {
@@ -418,15 +490,15 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 
     if( *str == '&' ) {
       switch( *(++str) ) {
-      case '&': MBNG_LCD_PrintChar('&'); break;
+      case '&': MBNG_LCD_PRINT_CHAR('&'); break;
       default:
 	if( MBNG_LCD_FontInit(*str) >= 0 ) {
 	  current_font = *str;
 	} else {
 	  current_font = 'n';
 	  MBNG_LCD_FontInit(current_font);
-	  MBNG_LCD_PrintChar('&');
-	  MBNG_LCD_PrintChar(*str);
+	  MBNG_LCD_PRINT_CHAR('&');
+	  MBNG_LCD_PRINT_CHAR(*str);
 	}
       }
       continue; // re-start from top - required for "&x^label"
@@ -449,7 +521,8 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  if( (lcd_x = strtol(pos_str, &next, 0)) && lcd_x >= 1 && pos_str != next && next[0] == ':' ) {
 	    pos_str = (char *)(next + 1);
 	    if( (lcd_y = strtol(pos_str, &next, 0)) && lcd_y >= 1 && pos_str != next && next[0] == ')' ) {
-	      MBNG_LCD_CursorSet(lcd_num-1, lcd_x - 1, lcd_y - 1);
+	      if( !out_buffer )
+		MBNG_LCD_CursorSet(lcd_num-1, lcd_x - 1, lcd_y - 1);
 	      success = 1;
 	    }
 	  }
@@ -458,7 +531,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	if( success ) {
 	  str = (char *)&next[1];
 	} else {
-	  MBNG_LCD_PrintChar('@'); // print invalid string without resolving
+	  MBNG_LCD_PRINT_CHAR('@'); // print invalid string without resolving
 	  ++str; // will be decremented below
 	}
       }
@@ -474,15 +547,15 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	break;
     }
 
-    if( *str != '%' )
-      MBNG_LCD_PrintChar(*str);
-    else {
+    if( *str != '%' ) {
+      MBNG_LCD_PRINT_CHAR(*str);
+    } else {
       char *format_begin = str;
 
       ++str;
-      if( *str == '%' || *str == 0 )
-	MBNG_LCD_PrintChar('%');
-      else {
+      if( *str == '%' || *str == 0 ) {
+	MBNG_LCD_PRINT_CHAR('%');
+      } else {
 	// alignment, padding, etc...
 	if( *str == '-' )
 	  ++str;
@@ -504,26 +577,26 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	  case 'X':
 	  case 'u':
 	  case 'c': {
-	    MBNG_LCD_PrintFormattedString(format, (int)item->value + item->offset);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, (int)item->value + item->offset);
 	  } break;
 
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
-	    MBNG_LCD_PrintFormattedString(format, "");
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, "");
 	  } break;
 
 	  case 'S': { // Snapshot
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, MBNG_FILE_S_SnapshotGet());
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, MBNG_FILE_S_SnapshotGet());
 	  } break;
 
 	  case 'i': { // ID
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, item->id & 0xfff);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, item->id & 0xfff);
 	  } break;
 
 	  case 'p': { // Matrix pin number
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, item->matrix_pin);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, item->matrix_pin);
 	  } break;
 
 	  case 'e': { // (MIDI) event
@@ -536,17 +609,17 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	    } else {
 	      sprintf(midi_str, "%02x%02x%02x", item->stream[0], item->stream[1], item->value & 0x7f);
 	    }
-	    MBNG_LCD_PrintFormattedString(format, midi_str);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, midi_str);
 	  } break;
 
 	  case 'm': { // min value
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, item->min);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, item->min);
 	  } break;
 
 	  case 'M': { // max value
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, item->max);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, item->max);
 	  } break;
 
 	  case 'n':
@@ -577,14 +650,14 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	      }
 	    }
 	    note_str[3] = 0;
-	    MBNG_LCD_PrintFormattedString(format, note_str);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, note_str);
 	  } break;
 
 	  case 'b': { // binary digit
 	    *format_type = 'c';
 	    int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 	    u8 dout_value = (item->min <= item->max) ? ((item->value - item->min) >= (range/2)) : ((item->value - item->max) >= (range/2));
-	    MBNG_LCD_PrintFormattedString(format, dout_value ? '*' : 'o');
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, dout_value ? '*' : 'o');
 	  } break;
 
 	  case 'B': { // vertical bar
@@ -620,20 +693,20 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
 	      bar = icon_offset + ((num_icons * normalized_value) / range);
 	    }
 
-	    MBNG_LCD_PrintChar(bar);
+	    MBNG_LCD_PRINT_CHAR(bar);
 	  } break;
 
 	  case 'q': { // selected bank
 	    *format_type = 'd';
-	    MBNG_LCD_PrintFormattedString(format, MBNG_EVENT_SelectedBankGet());
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, MBNG_EVENT_SelectedBankGet());
 	  } break;
 
 	  case 'C': { // clear screens
-	    MBNG_LCD_Clear();
+	    MBNG_LCD_CLEAR;
 	  } break;
 
 	  default:
-	    MBNG_LCD_PrintString(format);
+	    MBNG_LCD_PRINT_STRING(format);
 	  }
 	}
       }
@@ -648,7 +721,7 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item)
     DEBUG_MSG("[PERF] %5d.%d mS\n", cycles/10, cycles%10);
 #endif
 
-  return 0; // no error
+  return buffer_len;
 }
 
 

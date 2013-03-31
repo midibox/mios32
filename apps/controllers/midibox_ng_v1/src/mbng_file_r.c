@@ -61,6 +61,7 @@
 // file informations stored in RAM
 typedef struct {
   unsigned valid: 1;   // file is accessible
+  file_t r_file;
 } mbng_file_r_info_t;
 
 
@@ -500,7 +501,14 @@ s32 parseSend(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 #endif
       return -1;
     }
-    MBNG_EVENT_SendSysExStream(port, stream, stream_size, vars->value);
+
+    // send from a dummy item
+    mbng_event_item_t item;
+    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+    item.stream = stream;
+    item.stream_size = stream_size;
+    item.value = vars->value;
+    MBNG_EVENT_SendSysExStream(port, &item);
   } break;
 
   //case MBNG_EVENT_TYPE_META: // extra handling
@@ -519,25 +527,33 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 {
   s32 status = 0;
   mbng_file_r_info_t *info = &mbng_file_r_info;
-  file_t file;
 
-  info->valid = 0; // will be set to valid if file content has been read successfully
+  if( !info->valid ) {
+    // store current file name in global variable for UI
+    memcpy(mbng_file_r_script_name, filename, MBNG_FILE_R_FILENAME_LEN+1);
 
-  // store current file name in global variable for UI
-  memcpy(mbng_file_r_script_name, filename, MBNG_FILE_R_FILENAME_LEN+1);
-
-  char filepath[MAX_PATH];
-  sprintf(filepath, "%s%s.NGR", MBNG_FILES_PATH, mbng_file_r_script_name);
+    char filepath[MAX_PATH];
+    sprintf(filepath, "%s%s.NGR", MBNG_FILES_PATH, mbng_file_r_script_name);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R] Open config '%s'\n", filepath);
+    DEBUG_MSG("[MBNG_FILE_R] Open config '%s'\n", filepath);
 #endif
 
-  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
+    if( (status=FILE_ReadOpen(&info->r_file, filepath)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R] %s (optional run script) not found\n", filepath);
+      DEBUG_MSG("[MBNG_FILE_R] %s (optional run script) not found\n", filepath);
 #endif
-    return status;
+      return status;
+    }
+  } else {
+    if( (status=FILE_ReadReOpen(&info->r_file)) < 0 ||
+	(status=FILE_ReadSeek(0)) < 0 ) {
+      info->valid = 0;
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R] ERROR: %s can't be re-opened!\n", mbng_file_r_script_name);
+#endif
+      return status;
+    }
   }
 
   // allocate 1024 bytes from heap
@@ -689,7 +705,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 	      mbng_event_item_t item;
 	      MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	      item.label = str;
-	      MBNG_LCD_PrintItemLabel(&item);
+	      MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 	    }
 	  } else if( strcasecmp(parameter, "LOG") == 0 ) {
 	    char *str = brkt;
@@ -809,7 +825,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 #endif
 
   // close file
-  status |= FILE_ReadClose(&file);
+  status |= FILE_ReadClose(&info->r_file);
 
   if( status < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -831,8 +847,13 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_done)
 {
-  // store current file name in global variable for UI
-  memcpy(mbng_file_r_script_name, filename, MBNG_FILE_R_FILENAME_LEN+1);
+  // new file?
+  if( filename ) {
+    mbng_file_r_info.valid = 0; // Ensure that it will be opened
+
+    // store current file name in global variable for UI
+    memcpy(mbng_file_r_script_name, filename, MBNG_FILE_R_FILENAME_LEN+1);
+  }
 
   // set request (and value)
   mbng_file_r_req.section = section;

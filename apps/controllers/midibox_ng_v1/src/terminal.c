@@ -364,7 +364,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	item.label = brkt;
-	MBNG_LCD_PrintItemLabel(&item);
+	MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 
 	MUTEX_LCD_GIVE;
       }
@@ -384,7 +384,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	out("ERROR: can't execute - missing %s.NGR file!", mbng_file_r_script_name);
       } else {
 	out("Executing %s.NGR with $section==%d $value==%d", mbng_file_r_script_name, section, value);
-	MBNG_FILE_R_ReadRequest(mbng_file_r_script_name, section, value, 1);
+	MBNG_FILE_R_ReadRequest(NULL, section, value, 1);
       }
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
