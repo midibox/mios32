@@ -161,6 +161,9 @@ typedef enum {
   MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT,
   MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT,
 
+  MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES,
+  MBNG_EVENT_META_TYPE_RETRIEVE_AINSER_VALUES,
+
   MBNG_EVENT_META_TYPE_ENC_FAST,
 
   MBNG_EVENT_META_TYPE_MIDI_LEARN,
@@ -374,6 +377,7 @@ extern s32 MBNG_EVENT_ItemModify(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t *item, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u8 *secondary_value, u32 *continue_ix);
+extern s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);
@@ -413,6 +417,7 @@ extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
 extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value);
 extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled);

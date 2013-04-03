@@ -32,7 +32,7 @@
 
 extern s32 MBNG_AINSER_Init(u32 mode);
 
-extern s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value);
+extern s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value, u8 no_midi);
 extern s32 MBNG_AINSER_NotifyReceivedValue(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////

@@ -188,7 +188,7 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s
 //! This function should be called from APP_AIN_NotifyChange when an input
 //! has changed its value
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
+s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
 {
   if( pin >= MBNG_PATCH_NUM_AIN )
     return -1; // invalid pin
@@ -218,7 +218,7 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
     if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
       if( continue_ix )
 	return 0; // ok: at least one event was assigned
-      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      if( !no_midi && debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("No event assigned to AIN hw_id=%d\n", hw_id & 0xfff);
       }
       return -2; // no event assigned
@@ -268,8 +268,12 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value)
       item.value = value;
     }
 
-    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-      break; // stop has been requested
+    if( no_midi ) {
+      MBNG_EVENT_ItemCopyValueToPool(&item);
+    } else {
+      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	break; // stop has been requested
+    }
   } while( continue_ix );
 
   return 0; // no error

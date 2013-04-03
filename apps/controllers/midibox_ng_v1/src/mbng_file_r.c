@@ -455,7 +455,7 @@ s32 parseSend(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 
   case MBNG_EVENT_TYPE_META: {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: sending meta events isn't supported (yet)!", line);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: use EXEC_META to send meta events!", line);
 #endif
       return -1;
   }
@@ -511,8 +511,97 @@ s32 parseSend(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
     MBNG_EVENT_SendSysExStream(port, &item);
   } break;
 
-  //case MBNG_EVENT_TYPE_META: // extra handling
+  //case MBNG_EVENT_TYPE_META: // extra handling with EXEC_META
   }
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses a EXEC_META command
+//! \returns >= 0 if condition is valid
+//! \returns < 0 if condition is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseExecMeta(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
+{
+  const char *separators = " \t";
+  const char *separator_colon = ":";
+
+  u8 stream[10];
+
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+  item.stream = stream;
+  item.stream_size = 0;
+
+  char *meta_str;
+  if( !(meta_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing meta type in '%s' command!", line, command);
+#endif
+    return -1;
+  }
+
+  char *values_str = meta_str;
+  char *brkt_local;
+
+  mbng_event_meta_type_t meta_type;
+  if( !(values_str = strtok_r(meta_str, separator_colon, &brkt_local)) ||
+      (meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(meta_str)) == MBNG_EVENT_META_TYPE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unknown or invalid meta type in '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+  item.stream[item.stream_size++] = meta_type;
+
+  u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+  
+  if( num_bytes > 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected required number of meta bytes (%d) - please inform TK!", line, num_bytes);
+#endif
+    return -1;
+  }
+
+  int i;
+  for(i=0; i<num_bytes; ++i) {
+    int value = 0;
+    if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	(value=get_dec(values_str)) < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: expecting %d values for meta type %s\n", line, num_bytes, MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
+#endif
+      return -1;
+    }
+
+    item.stream[item.stream_size++] = value;
+  }
+
+  if( strlen(brkt_local) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: more values specified than expected for meta type %s\n", line, MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
+#endif
+  }
+
+  // parse optional value
+  s32 value = vars->value;
+  if( (values_str = strtok_r(NULL, separators, brkt)) ) {
+
+    if( (value=get_dec(values_str)) < -16384 || value > 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid (optional) value for meta type %s\n", line, MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
+#endif
+      return -1;
+    }
+  }
+  item.value = (s16)value;
+
+  MUTEX_MIDIOUT_TAKE;
+  MBNG_EVENT_ExecMeta(&item);
   MUTEX_MIDIOUT_GIVE;
 
   return 0;
@@ -718,6 +807,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 	    }
 	  } else if( strcasecmp(parameter, "SEND") == 0 ) {
 	    parseSend(line, parameter, &brkt, &vars);
+	  } else if( strcasecmp(parameter, "EXEC_META") == 0 ) {
+	    parseExecMeta(line, parameter, &brkt, &vars);
 	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	    exit = 1;
 	  } else if( strcasecmp(parameter, "SET") == 0 || strcasecmp(parameter, "TRIGGER") == 0 ) {
