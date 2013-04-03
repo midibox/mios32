@@ -45,7 +45,7 @@ s32 MBNG_AINSER_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 //! This hook is called when an AINSER pot has been moved
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
+s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value, u8 no_midi)
 {
   // actual module number based on CS config
   u8 mapped_module = 0;
@@ -89,7 +89,7 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     if( MBNG_EVENT_ItemSearchByHwId(hw_id, &item, &continue_ix) < 0 ) {
       if( continue_ix )
 	return 0; // ok: at least one event was assigned
-      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      if( !no_midi && debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
 	DEBUG_MSG("No event assigned to AINSER hw_id=%d\n", hw_id & 0xfff);
       }
       return -2; // no event assigned
@@ -134,8 +134,12 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
     if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
       continue; // don't send
 
-    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-      break; // stop has been requested
+    if( no_midi ) {
+      MBNG_EVENT_ItemCopyValueToPool(&item);
+    } else {
+      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	break; // stop has been requested
+    }
   } while( continue_ix );
 
   return 0; // no error

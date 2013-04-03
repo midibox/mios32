@@ -393,7 +393,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   // -> MBNG_AIN once enabled
   if( hw_enabled ) {
-    MBNG_AIN_NotifyChange(pin, pin_value);
+    MBNG_AIN_NotifyChange(pin, pin_value, 0); // no_midi==0
   }
 }
 
@@ -405,7 +405,7 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 {
   // -> MBNG_AIN once enabled
   if( hw_enabled ) {
-    MBNG_AINSER_NotifyChange(module, pin, pin_value);
+    MBNG_AINSER_NotifyChange(module, pin, pin_value, 0); // no_midi==0
   }
 }
 

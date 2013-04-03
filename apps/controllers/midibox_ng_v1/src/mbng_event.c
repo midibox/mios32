@@ -331,7 +331,6 @@ s32 MBNG_EVENT_PoolClear(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Called after a new file has been loaded (post-processing step).
-//! Also called on bank changes to update the active flag
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolUpdate(void)
 {
@@ -353,7 +352,6 @@ s32 MBNG_EVENT_PoolUpdate(void)
 	pool_item->flags.general.active = 1;
       }
     }
-    
 
     pool_ptr += pool_item->len;
   }
@@ -1259,6 +1257,25 @@ s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u8 *seco
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! set a value directly
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
+{
+  // take over in pool item
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->value = item->value;
+    pool_item->secondary_value = item->secondary_value;
+    pool_item->flags.general.value_from_midi = 0;
+  }
+
+  return 0; // no error
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! \retval 0 if no matching condition
 //! \retval 1 if matching condition (or no condition)
 //! \retval 2 if matching condition and stop requested
@@ -2146,6 +2163,9 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return "SaveSnapshot";
   case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return "DumpSnapshot";
 
+  case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: return "RetrieveAinValues";
+  case MBNG_EVENT_META_TYPE_RETRIEVE_AINSER_VALUES: return "RetrieveAinserValues";
+
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return "EncFast";
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
@@ -2192,6 +2212,9 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "SaveSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT;
   if( strcasecmp(meta_type, "DumpSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT;
 
+  if( strcasecmp(meta_type, "RetrieveAinValues") == 0 ) return MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES;
+  if( strcasecmp(meta_type, "RetrieveAinserValues") == 0 ) return MBNG_EVENT_META_TYPE_RETRIEVE_AINSER_VALUES;
+
   if( strcasecmp(meta_type, "EncFast") == 0 )       return MBNG_EVENT_META_TYPE_ENC_FAST;
 
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
@@ -2237,6 +2260,9 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT:       return 0;
   case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return 0;
   case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return 0;
+
+  case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: return 0;
+  case MBNG_EVENT_META_TYPE_RETRIEVE_AINSER_VALUES: return 0;
 
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return 0;
 
@@ -2407,6 +2433,202 @@ s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sends a Meta Event
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
+{
+  int i;
+  for(i=0; i<item->stream_size; i++) {
+    mbng_event_meta_type_t meta_type = item->stream[i+0];
+    u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+    u8 meta_value = item->stream[i+1]; // optional
+    i += num_bytes;
+
+    switch( meta_type ) {
+    case MBNG_EVENT_META_TYPE_SET_BANK: {
+      if( item->value ) {
+	MBNG_EVENT_SelectedBankSet(item->value);
+      }
+      item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_DEC_BANK: {
+      int bank = MBNG_EVENT_SelectedBankGet();
+      if( bank > 1 )
+	MBNG_EVENT_SelectedBankSet(bank - 1);
+      item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_INC_BANK: {
+      int bank = MBNG_EVENT_SelectedBankGet();
+      if( bank < MBNG_EVENT_NumBanksGet() )
+	MBNG_EVENT_SelectedBankSet(bank + 1);
+      item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CYCLE_BANK: {
+      int bank = MBNG_EVENT_SelectedBankGet();
+      if( bank < MBNG_EVENT_NumBanksGet() )
+	MBNG_EVENT_SelectedBankSet(bank + 1);
+      else
+	MBNG_EVENT_SelectedBankSet(1);
+      item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+
+    case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID: {
+      if( item->value ) {
+	MBNG_EVENT_HwIdBankSet(meta_value, item->value);
+      }
+      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID: {
+      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      if( bank > 1 )
+	MBNG_EVENT_HwIdBankSet(meta_value, bank - 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID: {
+      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      if( bank < MBNG_EVENT_NumBanksGet() )
+	MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: {
+      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      if( bank < MBNG_EVENT_NumBanksGet() )
+	MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
+      else
+	MBNG_EVENT_HwIdBankSet(meta_value, 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+    } break;
+
+
+    case MBNG_EVENT_META_TYPE_SET_SNAPSHOT: {
+      if( item->value < MBNG_FILE_S_NUM_SNAPSHOTS ) {
+	MBNG_FILE_S_SnapshotSet(item->value);
+      }
+      item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_DEC_SNAPSHOT: {
+      int snapshot = MBNG_FILE_S_SnapshotGet();
+      if( snapshot > 1 )
+	MBNG_FILE_S_SnapshotSet(snapshot - 1);
+      item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_INC_SNAPSHOT: {
+      int snapshot = MBNG_FILE_S_SnapshotGet();
+      if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
+	MBNG_FILE_S_SnapshotSet(snapshot + 1);
+      item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT: {
+      int snapshot = MBNG_FILE_S_SnapshotGet();
+      if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
+	MBNG_FILE_S_SnapshotSet(snapshot + 1);
+      else
+	MBNG_FILE_S_SnapshotSet(0);
+      item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
+    } break;
+
+    case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT: {
+      MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+    } break;
+
+    case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT: {
+      MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+    } break;
+
+    case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT: {
+      MBNG_EVENT_Dump();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: {
+      int pin;
+      for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
+	MBNG_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), 1); // no_midi==1
+      }
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RETRIEVE_AINSER_VALUES: {
+      int module;
+      for(module=0; module<MBNG_PATCH_NUM_AINSER_MODULES; ++module) {
+	int pin;
+	for(pin=0; pin<AINSER_NUM_PINS; ++pin) {
+	  MBNG_AINSER_NotifyChange(module, pin, AINSER_PinGet(module, pin), 1); // no_midi==1
+	}
+      }
+    } break;
+
+    case MBNG_EVENT_META_TYPE_ENC_FAST: {
+      MBNG_ENC_FastModeSet(item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MIDI_LEARN: {
+      MBNG_EVENT_MidiLearnModeSet(item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_UPDATE_LCD: {
+      MBNG_EVENT_Refresh();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_SWAP_VALUES: {
+      u8 secondary = item->secondary_value;
+      item->secondary_value = item->value;
+      item->value = secondary;
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RUN_SECTION: {
+      MBNG_FILE_R_ReadRequest(NULL, meta_value, item->value, 0);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_SCS_ENC: {
+      SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_MENU: {
+      SCS_DIN_NotifyToggle(SCS_PIN_EXIT, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT1: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT1, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT2: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT2, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT3: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT3, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT4: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT4, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT5: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT5, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT6: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT6, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT7: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT7, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SOFT8: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT8, item->value == 0);
+    } break;
+    case MBNG_EVENT_META_TYPE_SCS_SHIFT: {
+      SCS_DIN_NotifyToggle(SCS_PIN_SOFT1 + SCS_NumMenuItemsGet(), item->value == 0);
+    } break;
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Sends the item via MIDI
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
@@ -2516,177 +2738,14 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	MUTEX_MIDIOUT_GIVE;
       }
     }
-    return 0;
+    return 0; // no error
+
   } else if( event_type == MBNG_EVENT_TYPE_META ) {
-    int i;
-    for(i=0; i<item->stream_size; i++) {
-      mbng_event_meta_type_t meta_type = item->stream[i+0];
-      u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
-      u8 meta_value = item->stream[i+1]; // optional
-      i += num_bytes;
+    MUTEX_MIDIOUT_TAKE;
+    MBNG_EVENT_ExecMeta(item);
+    MUTEX_MIDIOUT_GIVE;
+    return 0; // no error
 
-      switch( meta_type ) {
-      case MBNG_EVENT_META_TYPE_SET_BANK: {
-	if( item->value ) {
-	  MBNG_EVENT_SelectedBankSet(item->value);
-	}
-	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_DEC_BANK: {
-	int bank = MBNG_EVENT_SelectedBankGet();
-	if( bank > 1 )
-	  MBNG_EVENT_SelectedBankSet(bank - 1);
-	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_INC_BANK: {
-	int bank = MBNG_EVENT_SelectedBankGet();
-	if( bank < MBNG_EVENT_NumBanksGet() )
-	  MBNG_EVENT_SelectedBankSet(bank + 1);
-	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_CYCLE_BANK: {
-	int bank = MBNG_EVENT_SelectedBankGet();
-	if( bank < MBNG_EVENT_NumBanksGet() )
-	  MBNG_EVENT_SelectedBankSet(bank + 1);
-	else
-	  MBNG_EVENT_SelectedBankSet(1);
-	item->value = MBNG_EVENT_SelectedBankGet(); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-
-      case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID: {
-	if( item->value ) {
-	  MBNG_EVENT_HwIdBankSet(meta_value, item->value);
-	}
-	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID: {
-	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
-	if( bank > 1 )
-	  MBNG_EVENT_HwIdBankSet(meta_value, bank - 1);
-	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID: {
-	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
-	if( bank < MBNG_EVENT_NumBanksGet() )
-	  MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
-	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: {
-	int bank = MBNG_EVENT_HwIdBankGet(meta_value);
-	if( bank < MBNG_EVENT_NumBanksGet() )
-	  MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
-	else
-	  MBNG_EVENT_HwIdBankSet(meta_value, 1);
-	item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
-      } break;
-
-
-      case MBNG_EVENT_META_TYPE_SET_SNAPSHOT: {
-	if( item->value < MBNG_FILE_S_NUM_SNAPSHOTS ) {
-	  MBNG_FILE_S_SnapshotSet(item->value);
-	}
-	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_DEC_SNAPSHOT: {
-	int snapshot = MBNG_FILE_S_SnapshotGet();
-	if( snapshot > 1 )
-	  MBNG_FILE_S_SnapshotSet(snapshot - 1);
-	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_INC_SNAPSHOT: {
-	int snapshot = MBNG_FILE_S_SnapshotGet();
-	if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
-	  MBNG_FILE_S_SnapshotSet(snapshot + 1);
-	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT: {
-	int snapshot = MBNG_FILE_S_SnapshotGet();
-	if( snapshot < (MBNG_FILE_S_NUM_SNAPSHOTS-1) )
-	  MBNG_FILE_S_SnapshotSet(snapshot + 1);
-	else
-	  MBNG_FILE_S_SnapshotSet(0);
-	item->value = MBNG_FILE_S_SnapshotGet(); // take over the new snapshot value (allows to forward it to other components)
-      } break;
-
-      case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT: {
-	MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
-      } break;
-
-      case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT: {
-	MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
-      } break;
-
-      case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT: {
-	MBNG_EVENT_Dump();
-      } break;
-
-      case MBNG_EVENT_META_TYPE_ENC_FAST: {
-	MBNG_ENC_FastModeSet(item->value);
-      } break;
-
-      case MBNG_EVENT_META_TYPE_MIDI_LEARN: {
-	MBNG_EVENT_MidiLearnModeSet(item->value);
-      } break;
-
-      case MBNG_EVENT_META_TYPE_UPDATE_LCD: {
-	MBNG_EVENT_Refresh();
-      } break;
-
-      case MBNG_EVENT_META_TYPE_SWAP_VALUES: {
-	u8 secondary = item->secondary_value;
-	item->secondary_value = item->value;
-	item->value = secondary;
-      } break;
-
-      case MBNG_EVENT_META_TYPE_RUN_SECTION: {
-	MBNG_FILE_R_ReadRequest(NULL, meta_value, item->value, 0);
-      } break;
-
-      case MBNG_EVENT_META_TYPE_SCS_ENC: {
-	SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_MENU: {
-	SCS_DIN_NotifyToggle(SCS_PIN_EXIT, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT1: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT1, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT2: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT2, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT3: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT3, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT4: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT4, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT5: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT5, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT6: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT6, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT7: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT7, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SOFT8: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT8, item->value == 0);
-      } break;
-      case MBNG_EVENT_META_TYPE_SCS_SHIFT: {
-	SCS_DIN_NotifyToggle(SCS_PIN_SOFT1 + SCS_NumMenuItemsGet(), item->value == 0);
-      } break;
-      }
-    }
   } else {
     return -1; // unsupported
   }

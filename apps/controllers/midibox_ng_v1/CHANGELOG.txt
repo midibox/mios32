@@ -1,5 +1,14 @@
 $Id$
 
+MIDIbox NG V1.023
+~~~~~~~~~~~~~~~~~
+
+   o the current AIN/AINSER pot values can now be taken over by the meta events
+     RetrieveAinValues and RetrieveAinserValues
+
+   o new .NGR command: EXEC_META
+
+
 MIDIbox NG V1.022
 ~~~~~~~~~~~~~~~~~
 
