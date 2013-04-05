@@ -43,6 +43,7 @@ ifeq ($(CONFIG),Release)
 endif
 
 OBJECTS := \
+  $(OBJDIR)/CommandLineEditor_537754e2.o \
   $(OBJDIR)/ConfigTableComponents_f9ec0b18.o \
   $(OBJDIR)/HexTextEditor_ee5f672b.o \
   $(OBJDIR)/LogBox_4af6f1bb.o \
@@ -98,6 +99,11 @@ clean:
 strip:
 	@echo Stripping MIOS_Studio
 	-@strip --strip-unneeded $(OUTDIR)/$(TARGET)
+
+$(OBJDIR)/CommandLineEditor_537754e2.o: ../../src/gui/CommandLineEditor.cpp
+	-@mkdir -p $(OBJDIR)
+	@echo "Compiling CommandLineEditor.cpp"
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
 $(OBJDIR)/ConfigTableComponents_f9ec0b18.o: ../../src/gui/ConfigTableComponents.cpp
 	-@mkdir -p $(OBJDIR)
