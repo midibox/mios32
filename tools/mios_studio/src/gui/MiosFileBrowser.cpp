@@ -540,6 +540,7 @@ void MiosFileBrowser::openTextEditor(const Array<uint8>& data)
                                     T("Ok"));
 #endif
     }
+    textEditor->setCaretVisible(true); // TK: required since Juce2 - I don't know why...
 }
 
 void MiosFileBrowser::openHexEditor(const Array<uint8>& data)
@@ -552,6 +553,8 @@ void MiosFileBrowser::openHexEditor(const Array<uint8>& data)
 
     hexEditor->setVisible(true);
     hexEditor->setReadOnly(false);
+
+    hexEditor->setCaretVisible(true); // TK: required since Juce2 - I don't know why...
 }
 
 //==============================================================================

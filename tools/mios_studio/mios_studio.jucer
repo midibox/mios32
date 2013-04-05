@@ -33,6 +33,10 @@
   <MAINGROUP id="v6A9pi" name="MIOS_Studio">
     <GROUP id="{21AE3CF3-DE72-43D3-6321-7EF6A8529AA1}" name="src">
       <GROUP id="{4295D57C-C3EE-AD2B-7E77-332FCD9652E2}" name="gui">
+        <FILE id="M9OabF" name="CommandLineEditor.cpp" compile="1" resource="0"
+              file="src/gui/CommandLineEditor.cpp"/>
+        <FILE id="UMbxps" name="CommandLineEditor.h" compile="0" resource="0"
+              file="src/gui/CommandLineEditor.h"/>
         <FILE id="cYZBac" name="ConfigTableComponents.cpp" compile="1" resource="0"
               file="src/gui/ConfigTableComponents.cpp"/>
         <FILE id="QQvnSD" name="ConfigTableComponents.h" compile="0" resource="0"

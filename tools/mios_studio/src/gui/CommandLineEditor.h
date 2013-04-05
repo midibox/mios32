@@ -1,7 +1,7 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
 // $Id$
 /*
- * MIOS Terminal Component
+ * Text Editor variant which handles a command line (with up/down key)
  *
  * ==========================================================================
  *
@@ -12,28 +12,23 @@
  * ==========================================================================
  */
 
-#ifndef _MIOS_TERMINAL_H
-#define _MIOS_TERMINAL_H
+#ifndef _COMMAND_LINE_EDITOR_H
+#define _COMMAND_LINE_EDITOR_H
 
 #include "../includes.h"
-#include "../SysexHelper.h"
-#include "LogBox.h"
-#include "CommandLineEditor.h"
 
-class MiosStudio; // forward declaration
 
-class MiosTerminal
-    : public Component
+class CommandLineEditor
+    : public TextEditor
     , public TextEditorListener
 {
 public:
     //==============================================================================
-    MiosTerminal(MiosStudio *_miosStudio);
-    ~MiosTerminal();
+    CommandLineEditor(const unsigned maxLines = 1000);
+    ~CommandLineEditor();
 
     //==============================================================================
-    void paint(Graphics& g);
-    void resized();
+    bool keyPressed(const KeyPress& key);
 
     //==============================================================================
     void textEditorTextChanged(TextEditor &editor);
@@ -41,24 +36,15 @@ public:
     void textEditorEscapeKeyPressed(TextEditor &editor);
     void textEditorFocusLost(TextEditor &editor);
 
-    //==============================================================================
-    void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
-
 protected:
-    //==============================================================================
-    LogBox* terminalLogBox;
-    CommandLineEditor* inputLine;
-
-    //==============================================================================
-    MiosStudio *miosStudio;
-
-    //==============================================================================
-    bool gotFirstMessage;
+    unsigned maxLines;
+    unsigned positionInList;
+    StringArray commandList;
 
     //==============================================================================
     // (prevent copy constructor and operator= being generated..)
-    MiosTerminal (const MiosTerminal&);
-    const MiosTerminal& operator= (const MiosTerminal&);
+    CommandLineEditor (const CommandLineEditor&);
+    const CommandLineEditor& operator= (const CommandLineEditor&);
 };
 
-#endif /* _MIOS_TERMINAL_H */
+#endif /* _COMMAND_LINE_EDITOR_H */

@@ -24,13 +24,7 @@ MiosTerminal::MiosTerminal(MiosStudio *_miosStudio)
     addAndMakeVisible(terminalLogBox = new LogBox(T("MIOS Terminal")));
     terminalLogBox->addEntry(Colours::grey, T("MIOS Terminal ready."));
 
-    addAndMakeVisible(inputLine = new TextEditor(String::empty));
-    inputLine->setMultiLine(false);
-    inputLine->setReturnKeyStartsNewLine(false);
-    inputLine->setReadOnly(false);
-    inputLine->setScrollbarsShown(false);
-    inputLine->setCaretVisible(true);
-    inputLine->setPopupMenuEnabled(true);
+    addAndMakeVisible(inputLine = new CommandLineEditor());
     inputLine->setTextToShowWhenEmpty(T("(send a command to MIOS32 application)"), Colours::grey);
     inputLine->addListener(this);
 
@@ -92,9 +86,7 @@ void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
 
 void MiosTerminal::textEditorEscapeKeyPressed(TextEditor &editor)
 {
-    if( &editor == inputLine ) {
-        inputLine->setText(String::empty);
-    }
+    editor.setText(String::empty);
 }
 
 void MiosTerminal::textEditorFocusLost(TextEditor &editor)
