@@ -290,7 +290,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
       out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
-      out("  run <section> <value>             directly executes the .NGR script with the given section number and value\n");
+      out("  run <section> <value>             executes the .NGR script with the given section number and value\n");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
