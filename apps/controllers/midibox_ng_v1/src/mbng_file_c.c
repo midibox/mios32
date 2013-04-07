@@ -548,7 +548,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	item.hw_id = item.id; // default hardware ID if not already define before
 
       if( !no_dump_set )
-	item.flags.general.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
+	item.flags.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "hw_id") == 0 ) {
@@ -643,7 +643,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.general.type = event_type;
+	item.flags.type = event_type;
 
 	switch( event_type ) {
 	case MBNG_EVENT_TYPE_NOTE_OFF:
@@ -688,7 +688,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
       }
 
       if( !no_dump_set )
-	item.flags.general.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
+	item.flags.no_dump = MBNG_EVENT_ItemNoDumpDefault(&item);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "chn") == 0 ) {
@@ -699,7 +699,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	if( item.flags.general.type == MBNG_EVENT_TYPE_SYSEX || item.flags.general.type == MBNG_EVENT_TYPE_META ) {
+	if( item.flags.type == MBNG_EVENT_TYPE_SYSEX || item.flags.type == MBNG_EVENT_TYPE_META ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no MIDI channel expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
@@ -721,9 +721,9 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      if( item.flags.general.type != MBNG_EVENT_TYPE_NOTE_OFF &&
-	  item.flags.general.type != MBNG_EVENT_TYPE_NOTE_ON &&
-	  item.flags.general.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
+      if( item.flags.type != MBNG_EVENT_TYPE_NOTE_OFF &&
+	  item.flags.type != MBNG_EVENT_TYPE_NOTE_ON &&
+	  item.flags.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no key number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
@@ -742,7 +742,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      item.flags.general.use_key_or_cc = value;
+      item.flags.use_key_or_cc = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "cc") == 0 ) {
@@ -757,7 +757,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      if( item.flags.general.type != MBNG_EVENT_TYPE_CC ) {
+      if( item.flags.type != MBNG_EVENT_TYPE_CC ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no CC number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
@@ -777,7 +777,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	if( item.flags.general.type != MBNG_EVENT_TYPE_NRPN ) {
+	if( item.flags.type != MBNG_EVENT_TYPE_NRPN ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no NRPN number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
 #endif
@@ -804,7 +804,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "stream") == 0 ) {
-      if( item.flags.general.type != MBNG_EVENT_TYPE_SYSEX ) {
+      if( item.flags.type != MBNG_EVENT_TYPE_SYSEX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: stream is only expected for SysEx events in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
@@ -853,7 +853,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "meta") == 0 ) {
-      if( item.flags.general.type != MBNG_EVENT_TYPE_META ) {
+      if( item.flags.type != MBNG_EVENT_TYPE_META ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: meta is only expected for Meta events in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
@@ -973,7 +973,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      item.flags.general.no_dump = value;
+      item.flags.no_dump = value;
       no_dump_set = 1;
 
     } else if( strcasecmp(parameter, "dimmed") == 0 ) {
@@ -985,7 +985,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      item.flags.general.dimmed = value;
+      item.flags.dimmed = value;
 
     } else if( strcasecmp(parameter, "rgb") == 0 ) {
       char *values_str = value_str;
@@ -1026,7 +1026,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
-      item.flags.general.colour = value;
+      item.flags.colour = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "kb_transpose") == 0 ) {
@@ -1041,7 +1041,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (kb_transpose only supported by EVENT_KB)\n", line, event, parameter, value_str);
 #endif
       } else {
-	item.flags.KB.kb_transpose = (u8)kb_transpose;
+	item.custom_flags.KB.kb_transpose = (u8)kb_transpose;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1070,7 +1070,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (kb_velocity_map only supported by EVENT_KB)\n", line, event, parameter, value_str);
 #endif
 	} else {
-	  item.flags.KB.kb_velocity_map = (u8)value;
+	  item.custom_flags.KB.kb_velocity_map = (u8)value;
 	}
       }
 
@@ -1114,7 +1114,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.DIN.button_mode = button_mode;
+	item.custom_flags.DIN.button_mode = button_mode;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1126,13 +1126,13 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_BUTTON ) {
-	item.flags.DIN.radio_group = value;
+	item.custom_flags.DIN.radio_group = value;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_LED ) {
-	item.flags.DOUT.radio_group = value;
+	item.custom_flags.DOUT.radio_group = value;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) {
-	item.flags.SENDER.radio_group = value;
+	item.custom_flags.SENDER.radio_group = value;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_RECEIVER ) {
-	item.flags.RECEIVER.radio_group = value;
+	item.custom_flags.RECEIVER.radio_group = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON, LED, SENDER or RECEIVER\n", line, event, parameter, value_str);
@@ -1149,9 +1149,9 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN ) {
-	item.flags.AIN.ain_mode = ain_mode;
+	item.custom_flags.AIN.ain_mode = ain_mode;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER ) {
-	item.flags.AINSER.ain_mode = ain_mode;
+	item.custom_flags.AINSER.ain_mode = ain_mode;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", line, event, parameter, value_str);
@@ -1173,7 +1173,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.ENC.enc_mode = enc_mode;
+	item.custom_flags.ENC.enc_mode = enc_mode;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1207,8 +1207,8 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	}
       }
 
-      item.flags.ENC.enc_speed_mode = enc_speed_mode;
-      item.flags.ENC.enc_speed_mode_par = value;
+      item.custom_flags.ENC.enc_speed_mode = enc_speed_mode;
+      item.custom_flags.ENC.enc_speed_mode_par = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "led_matrix_pattern") == 0 ) {
@@ -1219,7 +1219,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.general.led_matrix_pattern = led_matrix_pattern;
+	item.flags.led_matrix_pattern = led_matrix_pattern;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1280,7 +1280,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else {
-	item.flags.general.fwd_to_lcd = value;
+	item.flags.fwd_to_lcd = value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1292,7 +1292,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
-	item.flags.CV.fwd_gate_to_dout_pin = 1 + ((value & 0xfff8) | (7-(value & 7))); // since DOUT data outputs are mirrored
+	item.custom_flags.CV.fwd_gate_to_dout_pin = 1 + ((value & 0xfff8) | (7-(value & 7))); // since DOUT data outputs are mirrored
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
@@ -1309,7 +1309,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
-	item.flags.CV.cv_inverted = value;
+	item.custom_flags.CV.cv_inverted = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
@@ -1326,7 +1326,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
-	item.flags.CV.cv_gate_inverted = value;
+	item.custom_flags.CV.cv_gate_inverted = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
@@ -1343,7 +1343,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_CV ) {
-	item.flags.CV.cv_hz_v = value;
+	item.custom_flags.CV.cv_hz_v = value;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_CV!\n", line, event, parameter, value_str);
@@ -1690,7 +1690,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1702,12 +1702,24 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
 
       inverted.row = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "mirrored_row") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid mirror flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      inverted.row_mirrored = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "button_emu_id_offset") == 0 ) {
@@ -1829,7 +1841,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -1841,12 +1853,24 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid inverted flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
 
       inverted.row = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "mirrored_row") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid mirror flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      inverted.row_mirrored = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "led_emu_id_offset") == 0 ) {
@@ -3318,7 +3342,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 {
   s32 status = 0;
-  char line_buffer[128];
+  char line_buffer[256];
 
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
@@ -3383,18 +3407,18 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
-      if( item.flags.general.fwd_to_lcd ) {
+      if( item.flags.fwd_to_lcd ) {
 	sprintf(line_buffer, "  fwd_to_lcd=1");
 	FLUSH_BUFFER;
       }
 
-      if( item.flags.general.type ) {
+      if( item.flags.type ) {
 	sprintf(line_buffer, "  type=%-6s",
 		MBNG_EVENT_ItemTypeStrGet(&item));
 	FLUSH_BUFFER;
       }
 
-      switch( item.flags.general.type ) {
+      switch( item.flags.type ) {
       case MBNG_EVENT_TYPE_NOTE_OFF:
       case MBNG_EVENT_TYPE_NOTE_ON:
       case MBNG_EVENT_TYPE_POLY_PRESSURE: {
@@ -3406,7 +3430,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  }
 	  FLUSH_BUFFER;
 
-	  if( item.flags.general.use_key_or_cc ) {
+	  if( item.flags.use_key_or_cc ) {
 	    sprintf(line_buffer, " use_key_number=1 ");
 	    FLUSH_BUFFER;
 	  }
@@ -3422,7 +3446,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  }
 	  FLUSH_BUFFER;
 
-	  if( item.flags.general.use_key_or_cc ) {
+	  if( item.flags.use_key_or_cc ) {
 	    sprintf(line_buffer, " use_cc_number=1 ");
 	    FLUSH_BUFFER;
 	  }
@@ -3499,12 +3523,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
-      if( item.flags.general.no_dump != MBNG_EVENT_ItemNoDumpDefault(&item) ) {
-	sprintf(line_buffer, "  no_dump=%d", item.flags.general.no_dump);
+      if( item.flags.no_dump != MBNG_EVENT_ItemNoDumpDefault(&item) ) {
+	sprintf(line_buffer, "  no_dump=%d", item.flags.no_dump);
 	FLUSH_BUFFER;
       }
 
-      if( item.flags.general.dimmed ) {
+      if( item.flags.dimmed ) {
 	sprintf(line_buffer, "  dimmed=1");
 	FLUSH_BUFFER;
       }
@@ -3534,34 +3558,34 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       // differ between event type
       switch( item.id & 0xf000 ) {
       case MBNG_EVENT_CONTROLLER_SENDER: {
-	if( item.flags.SENDER.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.flags.SENDER.radio_group);
+	if( item.custom_flags.SENDER.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.SENDER.radio_group);
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_RECEIVER: {
-	if( item.flags.RECEIVER.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.flags.RECEIVER.radio_group);
+	if( item.custom_flags.RECEIVER.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.RECEIVER.radio_group);
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON: {
-	if( item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_OFF && item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
+	if( item.custom_flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_OFF && item.custom_flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.DIN.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.flags.DIN.radio_group);
+	if( item.custom_flags.DIN.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.DIN.radio_group);
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_LED: {
-	if( item.flags.DOUT.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.flags.DOUT.radio_group);
+	if( item.custom_flags.DOUT.radio_group ) {
+	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.DOUT.radio_group);
 	  FLUSH_BUFFER;
 	}
       } break;
@@ -3573,26 +3597,26 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
 
       case MBNG_EVENT_CONTROLLER_ENC: {
-	if( item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
+	if( item.custom_flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.custom_flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_AUTO && item.flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED ) {
-	  sprintf(line_buffer, "  enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(&item), item.flags.ENC.enc_speed_mode_par);
+	if( item.custom_flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_AUTO && item.custom_flags.ENC.enc_speed_mode != MBNG_EVENT_ENC_SPEED_MODE_UNDEFINED ) {
+	  sprintf(line_buffer, "  enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(&item), item.custom_flags.ENC.enc_speed_mode_par);
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_AIN: {
-	if( item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
+	if( item.custom_flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.custom_flags.AIN.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_AINSER: {
-	if( item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
+	if( item.custom_flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.custom_flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
@@ -3602,50 +3626,50 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       } break;
 
       case MBNG_EVENT_CONTROLLER_CV: {
-	if( item.flags.CV.fwd_gate_to_dout_pin ) {
+	if( item.custom_flags.CV.fwd_gate_to_dout_pin ) {
 	  sprintf(line_buffer, "  fwd_gate_to_dout_pin=%d.D%d",
-		  ((item.flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
-		  7 - ((item.flags.CV.fwd_gate_to_dout_pin-1) % 8));
+		  ((item.custom_flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
+		  7 - ((item.custom_flags.CV.fwd_gate_to_dout_pin-1) % 8));
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.CV.cv_inverted ) {
-	  sprintf(line_buffer, "  cv_inverted=%d", item.flags.CV.cv_inverted);
+	if( item.custom_flags.CV.cv_inverted ) {
+	  sprintf(line_buffer, "  cv_inverted=%d", item.custom_flags.CV.cv_inverted);
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.CV.cv_gate_inverted ) {
-	  sprintf(line_buffer, "  cv_gate_inverted=%d", item.flags.CV.cv_gate_inverted);
+	if( item.custom_flags.CV.cv_gate_inverted ) {
+	  sprintf(line_buffer, "  cv_gate_inverted=%d", item.custom_flags.CV.cv_gate_inverted);
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.CV.cv_hz_v ) {
-	  sprintf(line_buffer, "  cv_hz_v=%d", item.flags.CV.cv_hz_v);
+	if( item.custom_flags.CV.cv_hz_v ) {
+	  sprintf(line_buffer, "  cv_hz_v=%d", item.custom_flags.CV.cv_hz_v);
 	  FLUSH_BUFFER;
 	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_KB: {
-	if( item.flags.KB.kb_transpose ) {
-	  sprintf(line_buffer, "  kb_transpose=%d", (s8)item.flags.KB.kb_transpose);
+	if( item.custom_flags.KB.kb_transpose ) {
+	  sprintf(line_buffer, "  kb_transpose=%d", (s8)item.custom_flags.KB.kb_transpose);
 	  FLUSH_BUFFER;
 	}
 
-	if( item.flags.KB.kb_velocity_map ) {
-	  sprintf(line_buffer, "  kb_velocity_map=map%d", (s8)item.flags.KB.kb_velocity_map);
+	if( item.custom_flags.KB.kb_velocity_map ) {
+	  sprintf(line_buffer, "  kb_velocity_map=map%d", (s8)item.custom_flags.KB.kb_velocity_map);
 	  FLUSH_BUFFER;
 	}
       } break;
       }
 
-      if( item.flags.general.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	  item.flags.general.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
+      if( item.flags.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	  item.flags.led_matrix_pattern != MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED ) {
 	sprintf(line_buffer, "  led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(&item));
 	FLUSH_BUFFER;
       }
 
-      if( item.flags.general.colour ) {
-	sprintf(line_buffer, "  colour=%d", item.flags.general.colour);
+      if( item.flags.colour ) {
+	sprintf(line_buffer, "  colour=%d", item.flags.colour);
 	FLUSH_BUFFER;
       }
 
@@ -3738,11 +3762,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
 	      matrix+1,
 	      m->num_rows,
 	      m->inverted.sel,
 	      m->inverted.row,
+	      m->inverted.row_mirrored,
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_din1,
@@ -3767,11 +3792,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DOUT_MATRIX n=%d   rows=%d  inverted_sel=%d  inverted_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
+      sprintf(line_buffer, "DOUT_MATRIX n=%d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
 	      matrix+1,
 	      m->num_rows,
 	      m->inverted.sel,
 	      m->inverted.row,
+	      m->inverted.row_mirrored,
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_dout_r1,

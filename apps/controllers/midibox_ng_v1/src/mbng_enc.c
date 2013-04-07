@@ -87,15 +87,15 @@ s32 MBNG_ENC_AutoSpeed(u32 enc, mbng_event_item_t *item, u32 range)
   mios32_enc_speed_t cfg_speed = NORMAL;
   int                cfg_speed_par = 0;
 
-  if(        item->flags.ENC.enc_speed_mode == MBNG_EVENT_ENC_SPEED_MODE_SLOW ) {
+  if(        item->custom_flags.ENC.enc_speed_mode == MBNG_EVENT_ENC_SPEED_MODE_SLOW ) {
     cfg_speed = SLOW;
-    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
-  } else if( item->flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_NORMAL ) {
+    cfg_speed_par = item->custom_flags.ENC.enc_speed_mode_par;
+  } else if( item->custom_flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_NORMAL ) {
     cfg_speed = NORMAL;
-    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
-  } else if( item->flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_FAST ) {
+    cfg_speed_par = item->custom_flags.ENC.enc_speed_mode_par;
+  } else if( item->custom_flags.ENC.enc_speed_mode <= MBNG_EVENT_ENC_SPEED_MODE_FAST ) {
     cfg_speed = FAST;
-    cfg_speed_par = item->flags.ENC.enc_speed_mode_par;
+    cfg_speed_par = item->custom_flags.ENC.enc_speed_mode_par;
   } else { // MBNG_EVENT_ENC_SPEED_MODE_AUTO
     if( enc_config.cfg.type == NON_DETENTED ) {
       if( range < 32  ) {
@@ -177,7 +177,7 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
     // change value
     s32 value = 0;
-    switch( item.flags.ENC.enc_mode ) {
+    switch( item.custom_flags.ENC.enc_mode ) {
     case MBNG_EVENT_ENC_MODE_40SPEED:
       value = 0x40 + event_incrementer;
       if( value < 0 )

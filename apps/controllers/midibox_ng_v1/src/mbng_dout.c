@@ -117,7 +117,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       dout_value = map_values[map_ix];
     } else {
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      if( item->flags.DOUT.radio_group ) {
+      if( item->custom_flags.DOUT.radio_group ) {
 	if( item->min <= item->max )
 	  dout_value = item->value >= item->min && item->value <= item->max;
 	else
@@ -125,7 +125,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       } else if( item->min == item->max ) {      
 	dout_value = (item->value == item->min) ? (NUM_DIM_LEVELS-1) : 0;
       } else {
-	if( !item->flags.general.dimmed || item->rgb.ALL ) {
+	if( !item->flags.dimmed || item->rgb.ALL ) {
 	  if( item->min <= item->max )
 	    dout_value = ((item->value - item->min) >= (range/2)) ? (NUM_DIM_LEVELS-1) : 0;
 	  else
@@ -140,13 +140,13 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     // set LED
     int pin = (hw_id & 0xfff) - 1;
     if( item->rgb.ALL ) {
-      u8 level = (item->flags.general.colour == 1) ? item->rgb.g : (item->flags.general.colour == 2) ? item->rgb.b : item->rgb.r;
+      u8 level = (item->flags.colour == 1) ? item->rgb.g : (item->flags.colour == 2) ? item->rgb.b : item->rgb.r;
       u32 pattern = dout_value ? dim_pattern[level] : 0;
       int i;
       for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, pattern >>= 1) {
 	MIOS32_DOUT_PagePinSet(i, pin, pattern & 1);
       }
-    } else if( !item->flags.general.dimmed ) {
+    } else if( !item->flags.dimmed ) {
       MIOS32_DOUT_PinSet(pin, dout_value);
     } else {
       u32 pattern = dim_pattern[(dout_value < NUM_DIM_LEVELS) ? dout_value : (NUM_DIM_LEVELS-1)];

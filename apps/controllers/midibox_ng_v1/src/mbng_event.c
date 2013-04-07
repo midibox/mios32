@@ -74,8 +74,9 @@ typedef union {
 typedef struct { // should be dividable by u16
   u16 id;
   u16 hw_id;
-  mbng_event_flags_t flags;
-  extra_par_available_t extra_par_available;
+  mbng_event_flags_t flags; // 32bit
+  mbng_event_custom_flags_t custom_flags; // 16bit
+  extra_par_available_t extra_par_available; // 16bit
   u16 enabled_ports;
   u16 value;
   mbng_event_syxdump_pos_t syxdump_pos;
@@ -201,7 +202,7 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_BUTTON + i);
     item.fwd_id = MBNG_EVENT_CONTROLLER_LED | i;
-    item.flags.general.type = MBNG_EVENT_TYPE_NOTE_ON;
+    item.flags.type = MBNG_EVENT_TYPE_NOTE_ON;
     stream[0] = 0x90;
     stream[1] = 0x24 + i - 1;
     item.stream = stream;
@@ -221,7 +222,7 @@ s32 MBNG_EVENT_Init(u32 mode)
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_ENC + i);
     item.fwd_id = MBNG_EVENT_CONTROLLER_LED_MATRIX | i;
-    item.flags.general.type = MBNG_EVENT_TYPE_CC;
+    item.flags.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb0;
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
@@ -241,7 +242,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     u8 stream[20];
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_AINSER + i);
-    item.flags.general.type = MBNG_EVENT_TYPE_CC;
+    item.flags.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb1;
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
@@ -260,7 +261,7 @@ s32 MBNG_EVENT_Init(u32 mode)
     u8 stream[20];
 
     MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_AIN + i);
-    item.flags.general.type = MBNG_EVENT_TYPE_CC;
+    item.flags.type = MBNG_EVENT_TYPE_CC;
     stream[0] = 0xb2;
     stream[1] = 0x10 + i - 1;
     item.stream = stream;
@@ -344,12 +345,12 @@ s32 MBNG_EVENT_PoolUpdate(void)
     // banks
     {
       if( pool_item->bank ) {
-	pool_item->flags.general.active = (pool_item->bank == selected_bank);
+	pool_item->flags.active = (pool_item->bank == selected_bank);
 
 	if( pool_item->bank > num_banks )
 	  num_banks = pool_item->bank;
       } else {
-	pool_item->flags.general.active = 1;
+	pool_item->flags.active = 1;
       }
     }
 
@@ -566,7 +567,7 @@ s32 MBNG_EVENT_SelectedBankSet(u8 new_bank)
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
     if( pool_item->bank ) {
-      pool_item->flags.general.active = (pool_item->bank == new_bank);
+      pool_item->flags.active = (pool_item->bank == new_bank);
     }
 
     pool_ptr += pool_item->len;
@@ -589,7 +590,7 @@ s32 MBNG_EVENT_HwIdBankGet(u16 hw_id)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( (pool_item->hw_id & 0xfff) == hw_id && pool_item->bank && pool_item->flags.general.active ) {
+    if( (pool_item->hw_id & 0xfff) == hw_id && pool_item->bank && pool_item->flags.active ) {
       return pool_item->bank; // bank found
     }
 
@@ -611,13 +612,13 @@ s32 MBNG_EVENT_HwIdBankSet(u16 hw_id, u8 new_bank)
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
     if( (pool_item->hw_id & 0xfff) == hw_id && pool_item->bank ) {
-      pool_item->flags.general.active = (pool_item->bank == new_bank);
+      pool_item->flags.active = (pool_item->bank == new_bank);
 
       // refresh active item
-      if( pool_item->flags.general.active ) {
+      if( pool_item->flags.active ) {
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	item.flags.general.fwd_to_lcd = 1; // force LCD update
+	item.flags.update_lcd = 1; // force LCD update
 	MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
       }
     }
@@ -648,7 +649,7 @@ s32 MBNG_EVENT_ItemNoDumpDefault(mbng_event_item_t *item)
   case MBNG_EVENT_CONTROLLER_MF:
   case MBNG_EVENT_CONTROLLER_CV:
   //case MBNG_EVENT_CONTROLLER_KB            = 0xc000,
-    switch( item->flags.general.type ) {
+    switch( item->flags.type ) {
     //case MBNG_EVENT_TYPE_UNDEFINED:
     case MBNG_EVENT_TYPE_NOTE_OFF:
     case MBNG_EVENT_TYPE_NOTE_ON:
@@ -676,6 +677,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->id = id;
   item->pool_address = 0xffff; // invalid address
   item->flags.ALL = 0;
+  item->custom_flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
   item->hw_id  = id;
@@ -705,7 +707,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_BUTTON: {
-    item->flags.DIN.button_mode = MBNG_EVENT_BUTTON_MODE_ON_OFF;
+    item->custom_flags.DIN.button_mode = MBNG_EVENT_BUTTON_MODE_ON_OFF;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED: {
@@ -718,15 +720,17 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
-    item->flags.general.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
-    item->flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
-    item->flags.ENC.enc_speed_mode = MBNG_EVENT_ENC_SPEED_MODE_AUTO;
+    item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
+    item->custom_flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
+    item->custom_flags.ENC.enc_speed_mode = MBNG_EVENT_ENC_SPEED_MODE_AUTO;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_AIN: {
+    item->custom_flags.AIN.ain_mode = MBNG_EVENT_AIN_MODE_DIRECT;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_AINSER: {
+    item->custom_flags.AINSER.ain_mode = MBNG_EVENT_AIN_MODE_DIRECT;
   }; break;
 
   case MBNG_EVENT_CONTROLLER_MF: {
@@ -762,6 +766,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   u32 pool_address = (u32)pool_item - (u32)event_pool;
   item->pool_address = (pool_address < MBNG_EVENT_POOL_MAX_SIZE) ? pool_address : 0xffff;
   item->flags.ALL = pool_item->flags.ALL;
+  item->custom_flags.ALL = pool_item->custom_flags.ALL;
   item->hw_id = pool_item->hw_id;
   item->value = pool_item->value;
   item->bank = pool_item->bank;
@@ -857,6 +862,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
 {
   pool_item->id = item->id;
   pool_item->flags.ALL = item->flags.ALL;
+  pool_item->custom_flags.ALL = item->custom_flags.ALL;
   pool_item->hw_id = item->hw_id;
   pool_item->value = item->value;
   pool_item->bank = item->bank;
@@ -1194,7 +1200,7 @@ s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *i
   for(; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( pool_item->flags.general.active && pool_item->hw_id == hw_id ) {
+    if( pool_item->flags.active && pool_item->hw_id == hw_id ) {
       MBNG_EVENT_ItemCopy2User(pool_item, item);
 
       // pass pointer offset to pool item + index of pool item in continue_ix for continued search
@@ -1266,7 +1272,7 @@ s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
     pool_item->secondary_value = item->secondary_value;
-    pool_item->flags.general.value_from_midi = 0;
+    pool_item->flags.value_from_midi = 0;
   }
 
   return 0; // no error
@@ -1342,10 +1348,10 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     }
 
     DEBUG_MSG("  - fwd_id=%s:%d", MBNG_EVENT_ItemControllerStrGet(item->fwd_id), item->fwd_id & 0xfff);
-    DEBUG_MSG("  - fwd_to_lcd=%d", item->flags.general.fwd_to_lcd);
+    DEBUG_MSG("  - fwd_to_lcd=%d", item->flags.fwd_to_lcd);
     DEBUG_MSG("  - type=%s", MBNG_EVENT_ItemTypeStrGet(item));
 
-    switch( item->flags.general.type ) {
+    switch( item->flags.type ) {
     case MBNG_EVENT_TYPE_NOTE_OFF:
     case MBNG_EVENT_TYPE_NOTE_ON:
     case MBNG_EVENT_TYPE_POLY_PRESSURE: {
@@ -1356,7 +1362,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 	} else {
 	  DEBUG_MSG("  - key=any");
 	}
-	DEBUG_MSG("  - use_key_number=%d", item->flags.general.use_key_or_cc);
+	DEBUG_MSG("  - use_key_number=%d", item->flags.use_key_or_cc);
       }
     } break;
 
@@ -1369,7 +1375,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 	  DEBUG_MSG("  - cc=any");
 	}
 
-	DEBUG_MSG("  - use_cc_number=%d", item->flags.general.use_key_or_cc);
+	DEBUG_MSG("  - use_cc_number=%d", item->flags.use_key_or_cc);
       }
     } break;
 
@@ -1446,26 +1452,26 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     DEBUG_MSG("  - min=%d", item->min);
     DEBUG_MSG("  - max=%d", item->max);
     DEBUG_MSG("  - offset=%d", item->offset);
-    DEBUG_MSG("  - dimmed=%d", item->flags.general.dimmed);
+    DEBUG_MSG("  - dimmed=%d", item->flags.dimmed);
     DEBUG_MSG("  - rgb=%d:%d:%d", item->rgb.r, item->rgb.g, item->rgb.b);
     DEBUG_MSG("  - syxdump_pos=%d:%d", item->syxdump_pos.receiver, item->syxdump_pos.pos);
 
     switch( item->id & 0xf000 ) {
     case MBNG_EVENT_CONTROLLER_SENDER: {
-      DEBUG_MSG("  - radio_group=%d", item->flags.SENDER.radio_group);
+      DEBUG_MSG("  - radio_group=%d", item->custom_flags.SENDER.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_RECEIVER: {
-      DEBUG_MSG("  - radio_group=%d", item->flags.RECEIVER.radio_group);
+      DEBUG_MSG("  - radio_group=%d", item->custom_flags.RECEIVER.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_BUTTON: {
       DEBUG_MSG("  - button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(item));
-      DEBUG_MSG("  - radio_group=%d", item->flags.DIN.radio_group);
+      DEBUG_MSG("  - radio_group=%d", item->custom_flags.DIN.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_LED: {
-      DEBUG_MSG("  - radio_group=%d", item->flags.DOUT.radio_group);
+      DEBUG_MSG("  - radio_group=%d", item->custom_flags.DOUT.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
@@ -1476,7 +1482,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
     case MBNG_EVENT_CONTROLLER_ENC: {
       DEBUG_MSG("  - enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item));
-      DEBUG_MSG("  - enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(item), item->flags.ENC.enc_speed_mode_par);
+      DEBUG_MSG("  - enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(item), item->custom_flags.ENC.enc_speed_mode_par);
     } break;
 
     case MBNG_EVENT_CONTROLLER_AIN: {
@@ -1491,27 +1497,27 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     } break;
 
     case MBNG_EVENT_CONTROLLER_CV: {
-      if( item->flags.CV.fwd_gate_to_dout_pin ) {
+      if( item->custom_flags.CV.fwd_gate_to_dout_pin ) {
 	DEBUG_MSG("  - fwd_gate_to_dout_pin=%d.D%d",
-		  ((item->flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
-		  7 - ((item->flags.CV.fwd_gate_to_dout_pin-1) % 8));
+		  ((item->custom_flags.CV.fwd_gate_to_dout_pin-1) / 8) + 1,
+		  7 - ((item->custom_flags.CV.fwd_gate_to_dout_pin-1) % 8));
       } else {
 	DEBUG_MSG("  - fwd_gate_to_dout_pin=off");
       }
 
-      DEBUG_MSG("  - cv_inverted=%d", item->flags.CV.cv_inverted);
-      DEBUG_MSG("  - cv_gate_inverted=%d", item->flags.CV.cv_gate_inverted);
-      DEBUG_MSG("  - cv_hz_v=%d", item->flags.CV.cv_hz_v);
+      DEBUG_MSG("  - cv_inverted=%d", item->custom_flags.CV.cv_inverted);
+      DEBUG_MSG("  - cv_gate_inverted=%d", item->custom_flags.CV.cv_gate_inverted);
+      DEBUG_MSG("  - cv_hz_v=%d", item->custom_flags.CV.cv_hz_v);
     } break;
 
     case MBNG_EVENT_CONTROLLER_KB: {
-      DEBUG_MSG("  - kb_transpose=%d", (s8)item->flags.KB.kb_transpose);
-      DEBUG_MSG("  - kb_velocity_map=map%d", (s8)item->flags.KB.kb_velocity_map);
+      DEBUG_MSG("  - kb_transpose=%d", (s8)item->custom_flags.KB.kb_transpose);
+      DEBUG_MSG("  - kb_velocity_map=map%d", (s8)item->custom_flags.KB.kb_velocity_map);
     } break;
     }
 
     DEBUG_MSG("  - led_matrix_pattern=%s", MBNG_EVENT_ItemLedMatrixPatternStrGet(item));
-    DEBUG_MSG("  - colour=%d", item->flags.general.colour);
+    DEBUG_MSG("  - colour=%d", item->flags.colour);
     DEBUG_MSG("  - lcd_pos=%d:%d:%d", item->lcd+1, item->lcd_x+1, item->lcd_y+1);
 
     if( item->label && strlen(item->label) ) {
@@ -1690,7 +1696,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
 
     MBNG_EVENT_ItemInit(&item, id);
   } else {
-    if( item.flags.general.type == MBNG_EVENT_TYPE_META ) {
+    if( item.flags.type == MBNG_EVENT_TYPE_META ) {
       if( item.stream_size && item.stream[0] == MBNG_EVENT_META_TYPE_MIDI_LEARN )
 	return 0; // silently ignore
 
@@ -1720,7 +1726,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     case PolyPressure:
     case CC:
       item_modified = 1;
-      item.flags.general.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
+      item.flags.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
       item.stream_size = 2;
       item.stream = (u8 *)&stream;
       stream[0] = midi_learn_event.evnt0;
@@ -1732,7 +1738,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     case Aftertouch:
     case PitchBend:
       item_modified = 1;
-      item.flags.general.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
+      item.flags.type = MBNG_EVENT_TYPE_NOTE_OFF + (midi_learn_event.type-8);
       item.stream_size = 1;
       item.stream = (u8 *)&stream;
       stream[0] = midi_learn_event.evnt0;
@@ -1741,7 +1747,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
   } else {
     // valid NRPN
     item_modified = 1;
-    item.flags.general.type = MBNG_EVENT_TYPE_NRPN;
+    item.flags.type = MBNG_EVENT_TYPE_NRPN;
     item.stream_size = 4;
     item.stream = (u8 *)&stream;
     stream[0] = midi_learn_event.evnt0;
@@ -1765,7 +1771,7 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
   // add/modify to/in pool
   if( new_item ) {
     // just add it to the pool...
-    item.flags.general.active = 1;
+    item.flags.active = 1;
     if( MBNG_EVENT_ItemAdd(&item) < 0 ) {
       DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add id=%s:%d: out of memory!\n",
 		MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
@@ -1850,7 +1856,7 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 {
-  switch( item->flags.general.type ) {
+  switch( item->flags.type ) {
   case MBNG_EVENT_TYPE_NOTE_OFF:       return "NoteOff";
   case MBNG_EVENT_TYPE_NOTE_ON:        return "NoteOn";
   case MBNG_EVENT_TYPE_POLY_PRESSURE:  return "PolyPressure";
@@ -1929,7 +1935,7 @@ mbng_event_if_cond_t MBNG_EVENT_ItemConditionFromStrGet(char *condition)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item)
 {
-  mbng_event_button_mode_t button_mode = item->flags.DIN.button_mode;
+  mbng_event_button_mode_t button_mode = item->custom_flags.DIN.button_mode;
   switch( button_mode ) {
   case MBNG_EVENT_BUTTON_MODE_ON_OFF:  return "OnOff";
   case MBNG_EVENT_BUTTON_MODE_ON_ONLY: return "OnOnly";
@@ -1953,7 +1959,7 @@ mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item)
 {
-  mbng_event_ain_mode_t ain_mode = item->flags.AIN.ain_mode;
+  mbng_event_ain_mode_t ain_mode = item->custom_flags.AIN.ain_mode;
   switch( ain_mode ) {
   case MBNG_EVENT_AIN_MODE_DIRECT:                return "Direct";
   case MBNG_EVENT_AIN_MODE_SNAP:                  return "Snap";
@@ -1979,7 +1985,7 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
 {
-  mbng_event_enc_mode_t enc_mode = item->flags.ENC.enc_mode;
+  mbng_event_enc_mode_t enc_mode = item->custom_flags.ENC.enc_mode;
   switch( enc_mode ) {
   case MBNG_EVENT_ENC_MODE_ABSOLUTE:              return "Absolute";
   case MBNG_EVENT_ENC_MODE_40SPEED:               return "40Speed";
@@ -2011,7 +2017,7 @@ mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode)
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item)
 {
-  mbng_event_enc_speed_mode_t enc_speed_mode = item->flags.ENC.enc_speed_mode;
+  mbng_event_enc_speed_mode_t enc_speed_mode = item->custom_flags.ENC.enc_speed_mode;
   switch( enc_speed_mode ) {
   case MBNG_EVENT_ENC_SPEED_MODE_AUTO:    return "Auto";
   case MBNG_EVENT_ENC_SPEED_MODE_SLOW:    return "Slow";
@@ -2037,13 +2043,19 @@ mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_spee
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemLedMatrixPatternStrGet(mbng_event_item_t *item)
 {
-  mbng_event_led_matrix_pattern_t led_matrix_pattern = item->flags.general.led_matrix_pattern;
+  mbng_event_led_matrix_pattern_t led_matrix_pattern = item->flags.led_matrix_pattern;
   switch( led_matrix_pattern ) {
   case MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED: return "Undefined";
   case MBNG_EVENT_LED_MATRIX_PATTERN_1:         return "1";
   case MBNG_EVENT_LED_MATRIX_PATTERN_2:         return "2";
   case MBNG_EVENT_LED_MATRIX_PATTERN_3:         return "3";
   case MBNG_EVENT_LED_MATRIX_PATTERN_4:         return "4";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1:    return "Digit1";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2:    return "Digit2";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3:    return "Digit3";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4:    return "Digit4";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5:    return "Digit5";
+  case MBNG_EVENT_LED_MATRIX_PATTERN_LC_DIGIT:  return "LcDigit";
   case MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO:   return "LcAuto";
   }
   return "Undefined";
@@ -2056,6 +2068,12 @@ mbng_event_led_matrix_pattern_t MBNG_EVENT_ItemLedMatrixPatternFromStrGet(char *
   if( strcasecmp(led_matrix_pattern, "2") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_2;
   if( strcasecmp(led_matrix_pattern, "3") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_3;
   if( strcasecmp(led_matrix_pattern, "4") == 0 )         return MBNG_EVENT_LED_MATRIX_PATTERN_4;
+  if( strcasecmp(led_matrix_pattern, "Digit1") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1;
+  if( strcasecmp(led_matrix_pattern, "Digit2") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2;
+  if( strcasecmp(led_matrix_pattern, "Digit3") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3;
+  if( strcasecmp(led_matrix_pattern, "Digit4") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4;
+  if( strcasecmp(led_matrix_pattern, "Digit5") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5;
+  if( strcasecmp(led_matrix_pattern, "LcDigit") == 0 )   return MBNG_EVENT_LED_MATRIX_PATTERN_LC_DIGIT;
   if( strcasecmp(led_matrix_pattern, "LcAuto") == 0 )    return MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO;
 
   return MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED;
@@ -2636,7 +2654,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
   if( !item->stream_size )
     return 0; // nothing to send
 
-  mbng_event_type_t event_type = item->flags.general.type;
+  mbng_event_type_t event_type = item->flags.type;
   if( event_type <= MBNG_EVENT_TYPE_PITCHBEND ) {
     u8 event = (item->stream[0] >> 4) | 8;
 
@@ -2670,7 +2688,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       break;
 
     default:
-      if( item->flags.general.use_key_or_cc ) { // key=any or cc=any
+      if( item->flags.use_key_or_cc ) { // key=any or cc=any
 	p.evnt1 = item->value & 0x7f;
 	p.evnt2 = item->secondary_value;
       } else {
@@ -2766,18 +2784,18 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
   item->value = value;
 
   // value modified from MIDI?
-  item->flags.general.value_from_midi = from_midi;
+  item->flags.value_from_midi = from_midi;
 
   // take over in pool item
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
     pool_item->secondary_value = item->secondary_value;
-    pool_item->flags.general.value_from_midi = from_midi;
+    pool_item->flags.value_from_midi = from_midi;
   }
 
   // item active?
-  if( !item->flags.general.active )
+  if( !item->flags.active )
     return 0; // stop here
 
   // matching condition?
@@ -2853,19 +2871,19 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     else {
       u8 radio_group = 0;
       switch( item->id & 0xf000 ) {
-      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->flags.DIN.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->flags.DOUT.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->flags.SENDER.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->flags.RECEIVER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->custom_flags.DIN.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->custom_flags.DOUT.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->custom_flags.SENDER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->custom_flags.RECEIVER.radio_group; break;
       }
 
       if( radio_group )
 	MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
     }
 
-    if( item->flags.general.fwd_to_lcd && item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    if( item->flags.fwd_to_lcd && item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
       mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
-      pool_item->flags.general.update_lcd = 1;
+      pool_item->flags.update_lcd = 1;
       last_event_item_id = pool_item->id;
     }
   }
@@ -2921,7 +2939,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     item->id = item->fwd_id;
     item->hw_id = item->fwd_id;
     item->fwd_id = 0;
-    item->flags.general.fwd_to_lcd = 0;
+    item->flags.fwd_to_lcd = 0;
     item->map = 0; // we assume that the value has already been mapped
     item->pool_address = 0xffff;
     MBNG_EVENT_ItemReceive(item, item->value, 0, 0); // forwarding not enabled
@@ -2953,13 +2971,13 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
     u16 id_type = pool_item->hw_id & 0xf000;
     u8 is_in_group = 0;
     if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
-      is_in_group = pool_item->flags.DIN.radio_group == radio_group;
+      is_in_group = pool_item->custom_flags.DIN.radio_group == radio_group;
     } else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
-      is_in_group = pool_item->flags.DOUT.radio_group == radio_group;
+      is_in_group = pool_item->custom_flags.DOUT.radio_group == radio_group;
     } else if( id_type == MBNG_EVENT_CONTROLLER_SENDER ) {
-      is_in_group = pool_item->flags.SENDER.radio_group == radio_group;
+      is_in_group = pool_item->custom_flags.SENDER.radio_group == radio_group;
     } else if( id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
-      is_in_group = pool_item->flags.RECEIVER.radio_group == radio_group;
+      is_in_group = pool_item->custom_flags.RECEIVER.radio_group == radio_group;
     }
 
     if( is_in_group ) {
@@ -2982,7 +3000,7 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
 	pool_item->value = fwd_item.value;
 	pool_item->secondary_value = fwd_item.secondary_value;
-	pool_item->flags.general.value_from_midi = item->flags.general.value_from_midi;
+	pool_item->flags.value_from_midi = item->flags.value_from_midi;
       }
       fwd_item.secondary_value = item->secondary_value;
 
@@ -3014,14 +3032,14 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
 {
   // value not modified from MIDI anymore
-  item->flags.general.value_from_midi = 0;
+  item->flags.value_from_midi = 0;
 
   // take over in pool item
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
     pool_item->secondary_value = item->secondary_value;
-    pool_item->flags.general.value_from_midi = 0;
+    pool_item->flags.value_from_midi = 0;
   }
 
   // matching condition?
@@ -3035,10 +3053,10 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   // forward - optionally to whole radio group
   u8 radio_group = 0;
   switch( item->id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->flags.DIN.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->flags.DOUT.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->flags.SENDER.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->flags.RECEIVER.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->custom_flags.DIN.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->custom_flags.DOUT.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->custom_flags.SENDER.radio_group; break;
+  case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->custom_flags.RECEIVER.radio_group; break;
   }
 
   if( radio_group )
@@ -3049,7 +3067,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   // print label
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
-    pool_item->flags.general.update_lcd = 1;
+    pool_item->flags.update_lcd = 1;
     last_event_item_id = pool_item->id;
   }
 
@@ -3076,7 +3094,7 @@ s32 MBNG_EVENT_Refresh(void)
     if( allow_refresh ) {
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      item.flags.general.fwd_to_lcd = 1; // force LCD update
+      item.flags.update_lcd = 1; // force LCD update
       MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
     }
 
@@ -3124,8 +3142,8 @@ s32 MBNG_EVENT_UpdateLCD(u8 force)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( pool_item->flags.general.active && (force || pool_item->flags.general.update_lcd) ) {
-      pool_item->flags.general.update_lcd = 0;
+    if( pool_item->flags.active && (force || pool_item->flags.update_lcd) ) {
+      pool_item->flags.update_lcd = 0;
 
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
@@ -3163,16 +3181,16 @@ s32 MBNG_EVENT_Dump(void)
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
-    if( !pool_item->flags.general.no_dump ) {
+    if( !pool_item->flags.no_dump ) {
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
 
       u8 radio_group = 0;
       switch( item.id & 0xf000 ) {
-      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item.flags.DIN.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item.flags.DOUT.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item.flags.SENDER.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item.flags.RECEIVER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item.custom_flags.DIN.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item.custom_flags.DOUT.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item.custom_flags.SENDER.radio_group; break;
+      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item.custom_flags.RECEIVER.radio_group; break;
       }
 
       if( !radio_group || (item.value >= item.min && item.value <= item.max) ) {
@@ -3391,13 +3409,13 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	continue;
       }
 
-      mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
+      mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
 	u8 *stream = &pool_item->data_begin;
 	if( stream[1] >= 128 || stream[1] == evnt1 ) { // || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  if( item.flags.general.use_key_or_cc ) {
+	  if( item.flags.use_key_or_cc ) {
 	    if( item.secondary_value < 128 ) // if != any
 	      item.secondary_value = midi_package.value;
 	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1, 1);
@@ -3426,7 +3444,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	    if( matrix >= 0 && matrix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
 	      mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
-	      if( m->sr_dout_r1 && !pool_item->flags.general.led_matrix_pattern ) {
+	      if( m->sr_dout_r1 && !pool_item->flags.led_matrix_pattern ) {
 		u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
 		num_pins = row_size * row_size;
 	      }
@@ -3487,7 +3505,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
-    mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).general.type;
+    mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).type;
     if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
       u8 parse_sysex = 1;
 
@@ -3544,7 +3562,15 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->value = (pool_item->value & 0xf0ff) | ((midi_in >>  8) & 0xf); break;
 	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->value = (pool_item->value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
 	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
-	    case MBNG_EVENT_SYSEX_VAR_DUMP:       match = 1; pool_item->sysex_runtime_var.dump = 1; pool_item->sysex_runtime_var.match_ctr = 0; break; // enable dump receiver
+
+	    case MBNG_EVENT_SYSEX_VAR_DUMP:
+	      match = 1; 
+	      pool_item->sysex_runtime_var.dump = 1; // enable dump receiver
+	      pool_item->sysex_runtime_var.match_ctr = 0;
+
+	      // notify all events which listen to this dump
+	      MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->sysex_runtime_var.match_ctr, midi_in);
+	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_CURSOR:
 	      match = 1;

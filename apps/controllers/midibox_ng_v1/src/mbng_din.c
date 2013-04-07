@@ -77,7 +77,7 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     u8 depressed = pin_value ? 1 : 0;
 
     // toggle mode?
-    if( item.flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
+    if( item.custom_flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
       if( depressed )
 	return 0;
 
@@ -104,7 +104,7 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
     }
 
     // OnOnly mode: don't send if button depressed
-    if( !depressed || item.flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
+    if( !depressed || item.custom_flags.DIN.button_mode != MBNG_EVENT_BUTTON_MODE_ON_ONLY ) {
       if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 	break; // stop has been requested
     }

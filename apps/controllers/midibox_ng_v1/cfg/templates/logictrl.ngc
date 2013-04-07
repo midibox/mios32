@@ -75,6 +75,16 @@ MAP1   2  3  4  5  6  7  8 \
 
 
 
+# this generic receiver (without controller assignment) receives the MTC digits
+# and notifies all events which select syxdump_pos=10:<pos-in-dump>
+EVENT_RECEIVER id=10  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x10 ^dump"
+
+# this generic receiver (without controller assignment) receives the status digits
+# and notifies all events which select syxdump_pos=11:<pos-in-dump>
+EVENT_RECEIVER id=11  type=SysEx  stream="0xf0 0x00 0x00 0x66 ^dev 0x11 ^dump"
+
+
+
 ################################################################################
 # Select 1-8 (Note Key: 0x18..0x1f)
 ################################################################################
@@ -311,3 +321,38 @@ EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127
 EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127
 EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127
 EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127
+
+
+################################################################################
+# MTC and Status LED Digits
+################################################################################
+
+# HW definitions for "Common Cathode" Digits
+# see also http://www.ucapps.de/midibox_ng/mbng_led_digits_mtc.pdf
+DOUT_MATRIX n=2   rows=8   sr_dout_r1=13  inverted_row=0  mirrored_row=0  sr_dout_sel1=14  inverted_sel=0
+DOUT_MATRIX n=3   rows=8   sr_dout_r1=15  inverted_row=0  mirrored_row=0  sr_dout_sel1=16  inverted_sel=0
+
+# for "Common Anode" set inverted_row=1 and inverted_sel=1
+# if the segment connections are mirrored, set mirrored_row=1
+
+
+# the digits are accessible with:
+# second matrix (n=2): LED_MATRIX:17 ... LED_MATRIX:24
+# third matrix  (n=3): LED_MATRIX:33 ... LED_MATRIX:40
+
+
+# direct access to the digits via CC#64..CC#73
+EVENT_LED_MATRIX id=33 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 64  syxdump_pos=10:0
+EVENT_LED_MATRIX id=34 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 65  syxdump_pos=10:1
+EVENT_LED_MATRIX id=17 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 66  syxdump_pos=10:2
+EVENT_LED_MATRIX id=18 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 67  syxdump_pos=10:3
+EVENT_LED_MATRIX id=19 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 68  syxdump_pos=10:4
+EVENT_LED_MATRIX id=20 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 69  syxdump_pos=10:5
+EVENT_LED_MATRIX id=21 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 70  syxdump_pos=10:6
+EVENT_LED_MATRIX id=22 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 71  syxdump_pos=10:7
+EVENT_LED_MATRIX id=23 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 72  syxdump_pos=10:8
+EVENT_LED_MATRIX id=24 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 73  syxdump_pos=10:9
+
+# status digits
+EVENT_LED_MATRIX id=39 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 75  syxdump_pos=11:1
+EVENT_LED_MATRIX id=40 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 74  syxdump_pos=11:0

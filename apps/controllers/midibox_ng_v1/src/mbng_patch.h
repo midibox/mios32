@@ -51,6 +51,7 @@ typedef union {
   struct {
     u8 sel:1;
     u8 row:1;
+    u8 row_mirrored:1;
   };
 } mbng_patch_matrix_inverted_t;
 

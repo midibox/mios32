@@ -286,7 +286,7 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
 	  while( MBNG_EVENT_ItemSearchById(id, &item, &continue_id_ix) >= 0 ) {
 	    ++found_items;
 
-	    if( !item.flags.general.no_dump ) {
+	    if( !item.flags.no_dump ) {
 	      item.secondary_value = secondary_value;
 	      u8 from_midi = 0;
 	      u8 fwd_enabled = 1;

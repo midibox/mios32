@@ -85,8 +85,8 @@ s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
     u8 set_value = 1;
     u8 gate_value = 0;
 
-    if( item->flags.general.type == MBNG_EVENT_TYPE_NOTE_ON ) {
-      if( item->flags.general.use_key_or_cc ) {
+    if( item->flags.type == MBNG_EVENT_TYPE_NOTE_ON ) {
+      if( item->flags.use_key_or_cc ) {
 	if( item->secondary_value > 0 ) {
 	  // push note into note stack
 	  NOTESTACK_Push(&cv_notestack[cv_ix], value, item->secondary_value);
@@ -149,25 +149,25 @@ s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
 	value16 = 65535;
 
       // change output curve
-      AOUT_ConfigChannelInvertedSet(cv_ix, item->flags.CV.cv_inverted);
-      AOUT_ConfigChannelHzVSet(cv_ix, item->flags.CV.cv_hz_v);
+      AOUT_ConfigChannelInvertedSet(cv_ix, item->custom_flags.CV.cv_inverted);
+      AOUT_ConfigChannelHzVSet(cv_ix, item->custom_flags.CV.cv_hz_v);
 
       // set CV value
       AOUT_PinSet(cv_ix, value16);
 
       // gate inverted?
-      if( item->flags.CV.cv_gate_inverted ) {
+      if( item->custom_flags.CV.cv_gate_inverted ) {
 	gate_value ^= 1;
       }
 
       // set gates
       AOUT_DigitalPinSet(cv_ix, gate_value);
 
-      if( item->flags.CV.fwd_gate_to_dout_pin ) {
+      if( item->custom_flags.CV.fwd_gate_to_dout_pin ) {
 	if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-	  DEBUG_MSG("-> Setting DOUT Pin #%d=%d\n", item->flags.CV.fwd_gate_to_dout_pin-1, gate_value);
+	  DEBUG_MSG("-> Setting DOUT Pin #%d=%d\n", item->custom_flags.CV.fwd_gate_to_dout_pin-1, gate_value);
 	}	
-	MIOS32_DOUT_PinSet(item->flags.CV.fwd_gate_to_dout_pin-1, gate_value);
+	MIOS32_DOUT_PinSet(item->custom_flags.CV.fwd_gate_to_dout_pin-1, gate_value);
       }
     }
   }

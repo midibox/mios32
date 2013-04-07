@@ -74,7 +74,7 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
     }
 
     // transpose
-    s8 kb_transpose = (s8)item.flags.KB.kb_transpose;
+    s8 kb_transpose = (s8)item.custom_flags.KB.kb_transpose;
     int note = note_number + kb_transpose;
     if( item.stream_size >= 2 ) {
       if( note < 0 )
@@ -84,15 +84,15 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
     }
 
     // velocity map
-    if( item.flags.KB.kb_velocity_map ) {
+    if( item.custom_flags.KB.kb_velocity_map ) {
       u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(item.flags.KB.kb_velocity_map, &map_values);
+      int map_len = MBNG_EVENT_MapGet(item.custom_flags.KB.kb_velocity_map, &map_values);
       if( map_len > 0 ) {
 	velocity = map_values[(velocity > map_len) ? (map_len-1) : velocity];
       }
     }
 
-    if( item.flags.general.use_key_or_cc ) {
+    if( item.flags.use_key_or_cc ) {
       // for keyboard zones
       if( note_number < item.min || note_number > item.max )
 	continue;
