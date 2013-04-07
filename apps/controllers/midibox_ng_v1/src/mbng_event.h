@@ -99,6 +99,12 @@ typedef enum {
   MBNG_EVENT_LED_MATRIX_PATTERN_2,
   MBNG_EVENT_LED_MATRIX_PATTERN_3,
   MBNG_EVENT_LED_MATRIX_PATTERN_4,
+  MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1,
+  MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2,
+  MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3,
+  MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4,
+  MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5,
+  MBNG_EVENT_LED_MATRIX_PATTERN_LC_DIGIT,
   MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO,
 } mbng_event_led_matrix_pattern_t;
 
@@ -197,7 +203,7 @@ typedef union {
 
   struct {
     u32 type:4;
-    u32 led_matrix_pattern:3; // mbng_event_led_matrix_pattern_t
+    u32 led_matrix_pattern:4; // mbng_event_led_matrix_pattern_t
     u32 fwd_to_lcd:1;
     u32 update_lcd:1;
     u32 value_from_midi:1;
@@ -206,80 +212,65 @@ typedef union {
     u32 no_dump:1;
     u32 dimmed:1;
     u32 colour:2;
-  } general;
+  };
+
+} mbng_event_flags_t;
+
+
+typedef union {
+  u16 ALL;
 
   struct {
-    u32 general_flags:16;
-
-    u32 radio_group:6;
+    u16 radio_group:6;
   } SENDER;
 
   struct {
-    u32 general_flags:16;
-
-    u32 radio_group:6;
+    u16 radio_group:6;
   } RECEIVER;
 
   struct {
-    u32 general_flags:16;
-
-    u32 radio_group:6;
-    u32 button_mode:2; // mbng_event_button_mode_t
+    u16 radio_group:6;
+    u16 button_mode:2; // mbng_event_button_mode_t
   } DIN;
 
   struct {
-    u32 general_flags:16;
-
-    u32 radio_group:6;
+    u16 radio_group:6;
   } DOUT;
 
   struct {
-    u32 general_flags:16;
-
-    u32 mapped:1;
+    u16 mapped:1;
   } BUTTON_MATRIX;
 
-  struct {
-    u32 general_flags:16;
-  } LED_MATRIX;
+  //struct {
+  //} LED_MATRIX;
 
   struct {
-    u32 general_flags:16;
-
-    u32 enc_mode:4; // mbng_event_enc_mode_t
-    u32 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
-    u32 enc_speed_mode_par:3;
+    u16 enc_mode:4; // mbng_event_enc_mode_t
+    u16 enc_speed_mode:3; // mbng_event_enc_speed_mode_t
+    u16 enc_speed_mode_par:3;
   } ENC;
 
   struct {
-    u32 general_flags:16;
-
-    u32 ain_mode:4; // mbng_event_ain_mode_t
+    u16 ain_mode:4; // mbng_event_ain_mode_t
   } AIN;
 
   struct {
-    u32 general_flags:16;
-
-    u32 ain_mode:4; // mbng_event_ain_mode_t
+    u16 ain_mode:4; // mbng_event_ain_mode_t
   } AINSER;
 
   struct {
-    u32 general_flags:16;
-
-    u32 fwd_gate_to_dout_pin:9;
-    u32 cv_inverted:1;
-    u32 cv_hz_v:1;
-    u32 cv_gate_inverted:1;
+    u16 fwd_gate_to_dout_pin:9;
+    u16 cv_inverted:1;
+    u16 cv_hz_v:1;
+    u16 cv_gate_inverted:1;
   } CV;
 
   struct {
-    u32 general_flags:16;
-
-    u32 kb_transpose:8; // has to be converted to a signed value
-    u32 kb_velocity_map:8;
+    u16 kb_transpose:8; // has to be converted to a signed value
+    u16 kb_velocity_map:8;
   } KB;
 
-} mbng_event_flags_t;
+} mbng_event_custom_flags_t;
 
 
 typedef union {
@@ -319,6 +310,7 @@ typedef struct {
   u16 pool_address;
   u16 enabled_ports;
   mbng_event_flags_t flags;
+  mbng_event_custom_flags_t custom_flags;
   u16 fwd_id;
   u16 value;
   s16 min;

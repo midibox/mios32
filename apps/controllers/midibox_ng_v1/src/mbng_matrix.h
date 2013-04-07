@@ -42,6 +42,7 @@ extern u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos);
 extern s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level);
 extern s32 MBNG_MATRIX_DOUT_PatternSet(u8 matrix, u8 color, u16 row, u16 value, u16 range, u8 pattern, u8 level);
 extern s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value, u8 level);
+extern s32 MBNG_MATRIX_DOUT_PatternSet_Digit(u8 matrix, u8 color, u16 row, u8 value, u8 level, u8 dot);
 
 extern s32 MBNG_MATRIX_GetRow(void);
 extern s32 MBNG_MATRIX_ButtonHandler(void);

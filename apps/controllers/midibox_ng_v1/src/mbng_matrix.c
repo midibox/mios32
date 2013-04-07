@@ -175,6 +175,61 @@ static const u16 dout_matrix_pattern_preload[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS
 static u16 dout_matrix_pattern[MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS][MBNG_MATRIX_DOUT_NUM_PATTERN_POS];
 
 
+// the LED digit patterns
+static const u8 digit_patterns[64] = {
+  //    a
+  //   ---
+  //  !   !
+  // f! g !b
+  //   ---
+  //  !   !
+  // e!   !c
+  //   ---
+  //    d   h
+  // 0 = on, 1 = off
+  // NOTE: the dod (h) will be set automatically by the driver above when bit 6 is 1
+
+  // NOTE2: due to legacy reasons, the MBNG_MATRIX_DOUT_PatternSet_Digit function will invert and mirror the pattern!
+
+              //    habcdefg     habcdefg
+  0xff, 0x88, //  b'11111111', b'10001000'
+  0x70, 0xb1, //  b'11100000', b'10110001'
+  0xc2, 0xb0, //  b'11000010', b'10110000'
+  0xb8, 0xa1, //  b'10111000', b'10100001'
+  0xe8, 0xcf, //  b'11101000', b'11001111'
+  0xc3, 0xf8, //  b'11000011', b'11111000'
+  0xf1, 0x89, //  b'11110001', b'10001001'
+  0xea, 0xe2, //  b'11101010', b'11100010'
+
+  0x98, 0x8c, //  b'10011000', b'10001100'
+  0xfa, 0x92, //  b'11111010', b'10010010'
+  0xf0, 0xe3, //  b'11110000', b'11100011'
+  0xd8, 0xc1, //  b'11011000', b'11000001'
+  0xc8, 0xc4, //  b'11001000', b'11000100'
+  0x92, 0xb1, //  b'10010010', b'10110001'
+  0xec, 0x87, //  b'11101100', b'10000111'
+  0x9d, 0xf7, //  b'10011101', b'11110111'
+
+  0xff, 0xff, //  b'11111111', b'11111111'
+  0xdd, 0x9c, //  b'11011101', b'10011100'
+  0xa4, 0x98, //  b'10100100', b'10011000'
+  0x82, 0xfd, //  b'10000010', b'11111101'
+  0xb1, 0x87, //  b'10110001', b'10000111'
+  0x9c, 0xce, //  b'10011100', b'11001110'
+  0xfb, 0xfe, //  b'11111011', b'11111110'
+  0xf7, 0xba, //  b'11110111', b'11011010'
+
+  0x81, 0xcf, //  b'10000001', b'11001111'
+  0x92, 0x86, //  b'10010010', b'10000110'
+  0xcc, 0xa4, //  b'11001100', b'10100100'
+  0xa0, 0x8f, //  b'10100000', b'10001111'
+  0x80, 0x84, //  b'10000000', b'10000100'
+  0xff, 0xbb, //  b'11111111', b'10111011'
+  0xce, 0xf6, //  b'11001110', b'11110110'
+  0xf8, 0x9a, //  b'11111000', b'10011010'
+};
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -401,6 +456,14 @@ static s32 Hlp_DOUT_PatternTransfer(u8 matrix, u8 color, u16 row, u16 matrix_pat
 
   mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
+  if( row >= m->num_rows )
+    return -2; // ignore
+
+  if( m->inverted.row_mirrored ) {
+    // mirror the two bytes (don't swap the bytes - should we provide an option for this as well?)
+    matrix_pattern = ((u16)mios32_dout_reverse_tab[matrix_pattern >> 8] << 8) | (u16)mios32_dout_reverse_tab[matrix_pattern & 0xff];
+  }
+
   u8 sr1, sr2;
   switch( color ) {
   case 1:  sr1 = m->sr_dout_g1; sr2 = m->sr_dout_g2; break;
@@ -481,6 +544,22 @@ s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value, u8 l
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This function sets a pattern DOUT matrix row for a ASCII Digit
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_PatternSet_Digit(u8 matrix, u8 color, u16 row, u8 value, u8 level, u8 dot)
+{
+  u8 matrix_pattern = ~digit_patterns[value % 64] | (dot ? 0x80 : 00);
+
+  // mirror pattern (because it's wrongly defined)
+  matrix_pattern = mios32_dout_reverse_tab[matrix_pattern];
+
+  Hlp_DOUT_PatternTransfer(matrix, color, row, matrix_pattern, level);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function gets the DIN values of the selected row.
 //! It should be called from the APP_SRIO_ServiceFinish() hook
 /////////////////////////////////////////////////////////////////////////////
@@ -504,7 +583,11 @@ s32 MBNG_MATRIX_GetRow(void)
 
       if( m->sr_din1 ) {
 	MIOS32_DIN_SRChangedGetAndClear(m->sr_din1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-	sr_value = MIOS32_DIN_SRGet(m->sr_din1-1);
+	u8 sr_value8 = MIOS32_DIN_SRGet(m->sr_din1-1);
+	if( m->inverted.row_mirrored ) {
+	  sr_value8 = mios32_dout_reverse_tab[sr_value8];
+	}
+	sr_value = (u16)sr_value8;
 	if( m->inverted.row )
 	  sr_value ^= 0x00ff;
       } else {
@@ -514,7 +597,11 @@ s32 MBNG_MATRIX_GetRow(void)
 
       if( m->sr_din2 ) {
 	MIOS32_DIN_SRChangedGetAndClear(m->sr_din2-1, 0xff); // ensure that change won't be propagated to normal DIN handler
-	sr_value |= (u16)MIOS32_DIN_SRGet(m->sr_din2-1) << 8;
+	u8 sr_value8 = MIOS32_DIN_SRGet(m->sr_din2-1);
+	if( m->inverted.row_mirrored ) {
+	  sr_value8 = mios32_dout_reverse_tab[sr_value8];
+	}
+	sr_value |= (u16)sr_value8 << 8;
 	if( m->inverted.row )
 	  sr_value ^= 0xff00;
       } else {
@@ -669,7 +756,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 #endif
 
   u16 hw_id_ix = hw_id & 0xfff;
-  if( !item->flags.general.led_matrix_pattern ) {
+  if( !item->flags.led_matrix_pattern ) {
     if( hw_id_ix && hw_id_ix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
       u8 matrix = hw_id_ix - 1;
 
@@ -686,7 +773,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 	  dout_value = (item->value == item->min) ? (NUM_MATRIX_DIM_LEVELS-1) : 0;
 	} else {
 	  int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-	  if( !item->flags.general.dimmed || item->rgb.ALL ) {
+	  if( !item->flags.dimmed || item->rgb.ALL ) {
 	    if( item->min <= item->max )
 	      dout_value = ((item->value - item->min) >= (range/2)) ? (NUM_MATRIX_DIM_LEVELS-1) : 0;
 	    else
@@ -703,7 +790,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 	MBNG_MATRIX_DOUT_PinSet(matrix, 1, item->matrix_pin, dout_value ? item->rgb.g : 0);
 	MBNG_MATRIX_DOUT_PinSet(matrix, 2, item->matrix_pin, dout_value ? item->rgb.b : 0);
       } else {
-	MBNG_MATRIX_DOUT_PinSet(matrix, item->flags.general.colour, item->matrix_pin, dout_value);
+	MBNG_MATRIX_DOUT_PinSet(matrix, item->flags.colour, item->matrix_pin, dout_value);
       }
     }
   } else {
@@ -712,18 +799,52 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     // this is actually a dirty solution: without LED patterns we address the matrix directly with 1..8,
     // and here we multiply by 16 since we've connected 16 LED Rings... :-/
 
-    if( item->flags.general.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
+    if( item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_LC_AUTO ) {
       if( item->rgb.ALL ) {
-	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.general.colour, row, item->value, item->rgb.r);
-	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.general.colour, row, item->value, item->rgb.g);
-	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.general.colour, row, item->value, item->rgb.b);
+	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.colour, row, item->value, item->rgb.r);
+	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.colour, row, item->value, item->rgb.g);
+	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.colour, row, item->value, item->rgb.b);
       } else {
-	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.general.colour, row, item->value, NUM_MATRIX_DIM_LEVELS-1);
+	MBNG_MATRIX_DOUT_PatternSet_LC(matrix, item->flags.colour, row, item->value, NUM_MATRIX_DIM_LEVELS-1);
       }
 
-    } else if( item->flags.general.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
-	       item->flags.general.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
-      u8 pattern = item->flags.general.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
+    } else if( item->flags.led_matrix_pattern == MBNG_EVENT_LED_MATRIX_PATTERN_LC_DIGIT ) {
+      int value = item->value & 0x3f;
+      u8 dot = (item->value & 0x40) ? 1 : 0;
+
+      if( item->rgb.ALL ) {
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.r, dot);
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.g, dot);
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.b, dot);
+      } else {
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, NUM_MATRIX_DIM_LEVELS-1, dot);
+      }
+
+    } else if( item->flags.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1 &&
+	       item->flags.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5 ) {
+      int value = item->value;
+      switch( item->flags.led_matrix_pattern ) {
+      //case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT1: // nothing to do
+      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT2: value = value / 10; break;
+      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT3: value = value / 100; break;
+      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT4: value = value / 1000; break;
+      case MBNG_EVENT_LED_MATRIX_PATTERN_DIGIT5: value = value / 10000; break;
+      }
+      value %= 10;
+      value += 0x30; // numbers
+      u8 dot = 0;
+
+      if( item->rgb.ALL ) {
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.r, dot);
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.g, dot);
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, item->rgb.b, dot);
+      } else {
+	MBNG_MATRIX_DOUT_PatternSet_Digit(matrix, item->flags.colour, row, value, NUM_MATRIX_DIM_LEVELS-1, dot);
+      }
+
+    } else if( item->flags.led_matrix_pattern >= MBNG_EVENT_LED_MATRIX_PATTERN_1 &&
+	       item->flags.led_matrix_pattern <= MBNG_EVENT_LED_MATRIX_PATTERN_4 ) {
+      u8 pattern = item->flags.led_matrix_pattern - MBNG_EVENT_LED_MATRIX_PATTERN_1;
 
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
 
@@ -744,7 +865,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 	MBNG_MATRIX_DOUT_PatternSet(matrix, 1, row, saturated_value, range, pattern, item->rgb.g);
 	MBNG_MATRIX_DOUT_PatternSet(matrix, 2, row, saturated_value, range, pattern, item->rgb.b);
       } else {
-	MBNG_MATRIX_DOUT_PatternSet(matrix, item->flags.general.colour, row, saturated_value, range, pattern, NUM_MATRIX_DIM_LEVELS-1);
+	MBNG_MATRIX_DOUT_PatternSet(matrix, item->flags.colour, row, saturated_value, range, pattern, NUM_MATRIX_DIM_LEVELS-1);
       }
     }
   }

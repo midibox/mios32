@@ -101,14 +101,14 @@ s32 MBNG_AIN_HandleCalibration(u16 pin_value, u16 min, u16 max, u16 ain_max, u8 
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s16 min, s16 max)
 {
-  mbng_event_ain_mode_t ain_mode = item->flags.AIN.ain_mode; // also valid for AINSER
+  mbng_event_ain_mode_t ain_mode = item->custom_flags.AIN.ain_mode; // also valid for AINSER
 
   switch( ain_mode ) {
   case MBNG_EVENT_AIN_MODE_SNAP: {
     if( value == item->value )
       return -1; // value already sent
 
-    if( item->flags.general.value_from_midi ) {
+    if( item->flags.value_from_midi ) {
       int diff = value - prev_value;
       if( diff >= 0 ) { // moved clockwise
 	if( prev_value > item->value || value < item->value ) // wrong direction, or target value not reached yet
@@ -146,7 +146,7 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s
 
   case MBNG_EVENT_AIN_MODE_PARALLAX: {
     // see also http://www.ucapps.de/midibox/midibox_plus_parallax.gif
-    if( item->flags.general.value_from_midi ) {
+    if( item->flags.value_from_midi ) {
       int diff = value - prev_value;
       if( diff >= 0 ) { // moved clockwise
 	if( prev_value > item->value || value < item->value ) { // wrong direction, or target value not reached yet

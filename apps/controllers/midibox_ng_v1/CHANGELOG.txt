@@ -1,5 +1,15 @@
 $Id$
 
+MIDIbox NG V1.024
+~~~~~~~~~~~~~~~~~
+
+   o support for LED Digits (7-segment displays).
+     Configuration examples can be found under cfg/tests/leddig*.ngc
+
+   o the DIN_MATRIX and DOUT_MATRIX configuration command now allows to
+     mirror the row pattern with "mirrored_row=1"
+
+
 MIDIbox NG V1.023
 ~~~~~~~~~~~~~~~~~
 
