@@ -737,7 +737,7 @@ s32 parseSet(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
     // hw_id: send to dummy item    
     MBNG_EVENT_ItemInit(&item, id.id);
     item.flags.active = 1;
-    item.value = value;
+    item.value = cmd_rgb ? 127 : value;
     item.rgb.r = r;
     item.rgb.g = g;
     item.rgb.b = b;
