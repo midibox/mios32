@@ -412,6 +412,8 @@ extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t
 extern s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t send_id);
+
 extern s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled);
 extern s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group);

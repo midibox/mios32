@@ -2773,6 +2773,39 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sends to a virtual item (which doesn't exist in the pool)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t send_id)
+{
+  // notify by temporary changing the ID - forwarding disabled
+  mbng_event_item_id_t tmp_id = item->id;
+  mbng_event_item_id_t tmp_hw_id = item->hw_id;
+  mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
+  mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
+  u8 tmp_map = item->map;
+  u16 tmp_pool_address = item->pool_address;
+
+  item->id = send_id;
+  item->hw_id = send_id;
+  item->fwd_id = 0;
+  item->flags.fwd_to_lcd = 0;
+  item->map = 0; // we assume that the value has already been mapped
+  item->pool_address = 0xffff;
+
+  MBNG_EVENT_ItemReceive(item, item->value, 0, 0); // forwarding not enabled
+
+  item->id = tmp_id;
+  item->hw_id = tmp_hw_id;
+  item->fwd_id = tmp_fwd_id;
+  item->flags.ALL = flags.ALL;
+  item->map = tmp_map;
+  item->pool_address = tmp_pool_address;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Called when an item should be notified about a new value
 //! \retval 0 if no matching condition
 //! \retval 1 if matching condition (or no condition)
@@ -2928,27 +2961,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 
   // no matching ID found - create "virtual" event based on parameters of original item
   if( !num_forwarded ) {
-    // notify by temporary changing the ID - forwarding disabled
-    mbng_event_item_id_t tmp_id = item->id;
-    mbng_event_item_id_t tmp_hw_id = item->hw_id;
-    mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
-    mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
-    u8 tmp_map = item->map;
-    u16 tmp_pool_address = item->pool_address;
-
-    item->id = item->fwd_id;
-    item->hw_id = item->fwd_id;
-    item->fwd_id = 0;
-    item->flags.fwd_to_lcd = 0;
-    item->map = 0; // we assume that the value has already been mapped
-    item->pool_address = 0xffff;
-    MBNG_EVENT_ItemReceive(item, item->value, 0, 0); // forwarding not enabled
-    item->id = tmp_id;
-    item->hw_id = tmp_hw_id;
-    item->fwd_id = tmp_fwd_id;
-    item->flags.ALL = flags.ALL;
-    item->map = tmp_map;
-    item->pool_address = tmp_pool_address;
+    MBNG_EVENT_ItemSendVirtual(item, item->fwd_id);
   }
 
   if( recursion_ctr )

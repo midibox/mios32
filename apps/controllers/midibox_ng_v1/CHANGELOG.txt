@@ -9,6 +9,19 @@ MIDIbox NG V1.024
    o the DIN_MATRIX and DOUT_MATRIX configuration command now allows to
      mirror the row pattern with "mirrored_row=1"
 
+   o .NGR now allows to cast the ID type: (id) or (hw_id).
+     E.g. (id)LED:1 will search for the EVENT specified with id=1, and
+     (hw_id)LED:1 will search for the EVENT specified with hw_id=1
+
+     if (hw_id) is used (default if no type specified), and no EVENT with
+     a matching hw_id can be found, a virtual event will access the control
+     element directly. This is currently only relevant for the SET command.
+
+     This matches with the behaviour of the "EVENT ... fwd_id=<id>" function.
+
+   o new .NGR command: set_rgb <id> <r:g:b>
+     E.g. "set_rgb (id)LED:1001 15:8:4"
+
 
 MIDIbox NG V1.023
 ~~~~~~~~~~~~~~~~~
