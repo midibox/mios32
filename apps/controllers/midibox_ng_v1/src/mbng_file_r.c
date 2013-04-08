@@ -72,6 +72,16 @@ typedef struct {
   u8 bank;
 } mbng_file_r_var_t;
 
+typedef union {
+  u32 ALL;
+
+  struct {
+    mbng_event_item_id_t id:16;
+    u32 valid:1;
+    u32 is_hw_id:1;
+  };
+} mbng_file_r_item_id_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
@@ -83,6 +93,9 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 static mbng_file_r_info_t mbng_file_r_info;
+
+static const char *separators = " \t";
+static const char *separator_colon = ":";
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -190,25 +203,42 @@ static s32 get_dec(char *word)
 //! \returns > 0 if id is valid
 //! \returns == 0 if id is invalid
 /////////////////////////////////////////////////////////////////////////////
-static mbng_event_item_id_t parseId(char *parameter)
+static mbng_file_r_item_id_t parseId(char *parameter)
 {
   char *brkt;
-  const char *separator_colon = ":";
 
-  mbng_event_item_id_t id;
+  mbng_file_r_item_id_t id;
+  id.ALL = 0;
+
+  // by default we assume that the id addresses a hw_id
+  id.is_hw_id = 1;
+
+  if( strncasecmp(parameter, "(id)", 4) == 0 ) {
+    id.is_hw_id = 0;
+    parameter += 4;
+  } else if( strncasecmp(parameter, "(hw_id)", 7) == 0 ) {
+    // normaly not necessary, but this covers the case that somebody explicitely specifies (hw_id)
+    id.is_hw_id = 1;
+    parameter += 7;
+  }
+
   char *value_str;
   if( !(value_str = strtok_r(parameter, separator_colon, &brkt)) ||
-      (id=MBNG_EVENT_ItemIdFromControllerStrGet(value_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
-    return 0;
+      (id.id=MBNG_EVENT_ItemIdFromControllerStrGet(value_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
+    return id;
   }
 
   int id_lower = 0;
   value_str = brkt;
   if( (id_lower=get_dec(value_str)) < 1 || id_lower > 0xfff ) {
-    return 0;
+    return id;
+  } else {
+    id.id |= id_lower;
   }
 
-  return id | id_lower;
+  id.valid = 1;
+
+  return id;
 }
 
 
@@ -237,12 +267,13 @@ static s32 parseValue(u32 line, char *command, char *value_str, mbng_file_r_var_
     }
   }
 
-  mbng_event_item_id_t id;
-  if( (id=parseId(value_str)) ) {
+  mbng_file_r_item_id_t id = parseId(value_str);
+  if( id.valid ) {
     // search for items with matching ID
     mbng_event_item_t item;
     u32 continue_ix = 0;
-    if( MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) >= 0 ) {
+    if( (id.is_hw_id && MBNG_EVENT_ItemSearchByHwId(id.id, &item, &continue_ix) >= 0) ||
+	(!id.is_hw_id && MBNG_EVENT_ItemSearchById(id.id, &item, &continue_ix) >= 0) ) {
       return item.value;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -264,7 +295,6 @@ static s32 parseValue(u32 line, char *command, char *value_str, mbng_file_r_var_
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
 s32 parseCondition(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 {
-  const char *separators = " \t";
   char *lvalue_str, *condition_str, *rvalue_str;
 
   if( !(lvalue_str = strtok_r(NULL, separators, brkt)) ) {
@@ -332,14 +362,10 @@ s32 parseCondition(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses a SEND command
-//! \returns >= 0 if condition is valid
-//! \returns < 0 if condition is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
 s32 parseSend(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 {
-  const char *separators = " \t";
-
   char *event_str;
   if( !(event_str = strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -521,15 +547,10 @@ s32 parseSend(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses a EXEC_META command
-//! \returns >= 0 if condition is valid
-//! \returns < 0 if condition is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
 s32 parseExecMeta(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 {
-  const char *separators = " \t";
-  const char *separator_colon = ":";
-
   u8 stream[10];
 
   mbng_event_item_t item;
@@ -605,6 +626,159 @@ s32 parseExecMeta(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
   MUTEX_MIDIOUT_GIVE;
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses a SET, SET_RGB and TRIGGER command
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseSet(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
+{
+  u8 cmd_trigger = strcasecmp(command, "TRIGGER") == 0;
+  u8 cmd_rgb = strcasecmp(command, "SET_RGB") == 0;
+
+  char *value_str;
+  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  mbng_file_r_item_id_t id = parseId(value_str);
+  if( !id.valid ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, value_str);
+#endif
+    return -1;
+  }
+
+  if( !cmd_trigger && !(value_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s:%d' command!\n", line, command, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff);
+#endif
+    return -1;
+  }
+
+  s32 value = 0;
+  int r = 0;
+  int g = 0;
+  int b = 0;
+
+  if( cmd_rgb ) {
+    char *brkt_local;
+    if( !(value_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	(r=get_dec(value_str)) < 0 ||
+	!(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	(g=get_dec(value_str)) < 0 ||
+	!(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	(b=get_dec(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid rgb format in '%s %s:%d' command!\n", line, command, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff);
+#endif
+      return -1;
+    }
+
+    if( r < 0 || r >= 16 ||
+	g < 0 || g >= 16 ||
+	b < 0 || b >= 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid rgb values in '%s %s:%d' command!\n", line, command, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff);
+#endif
+      return -1;
+    }
+  } else if( !cmd_trigger ) {
+    if( (value=parseValue(line, command, value_str, vars)) < -16384 || value >= 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s:%d %s' command (expecting -16384..16383!\n", line, command, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff, value_str);
+#endif
+      return -1;
+    }
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[MBNG_FILE_R:%d] %s:%d = %d\n", line, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff, value);
+#endif
+
+  // search for items with matching ID
+  mbng_event_item_t item;
+  u32 continue_ix = 0;
+  u32 num_set = 0;
+  do {
+    if( (id.is_hw_id && MBNG_EVENT_ItemSearchByHwId(id.id, &item, &continue_ix) < 0) ||
+	(!id.is_hw_id && MBNG_EVENT_ItemSearchById(id.id, &item, &continue_ix) < 0) ) {
+      break;
+    } else {
+      ++num_set;
+
+      // notify item
+      if( cmd_rgb ) {
+	item.rgb.r = r;
+	item.rgb.g = g;
+	item.rgb.b = b;
+      } else if( !cmd_trigger ) {
+	item.value = value;
+      }
+
+      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	break; // stop has been requested
+    }
+  } while( continue_ix );
+
+  if( !num_set ) {
+    if( cmd_trigger || !id.is_hw_id ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG(cmd_trigger ? "[MBNG_FILE_R:%d] '%s %s:%d' failed - item not found!\n" : "[MBNG_FILE_R:%d] '%s %s:%d %d' failed - item not found!\n", line, command, MBNG_EVENT_ItemControllerStrGet(id.id), id.id & 0xfff, value);
+#endif
+      return -1;
+    }
+
+    // hw_id: send to dummy item    
+    MBNG_EVENT_ItemInit(&item, id.id);
+    item.flags.active = 1;
+    item.value = value;
+    item.rgb.r = r;
+    item.rgb.g = g;
+    item.rgb.b = b;
+    MBNG_EVENT_ItemSendVirtual(&item, item.id);
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses a DELAY_MS command
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
+{
+  char *value_str;
+  s32 value;
+  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  if( (value=parseValue(line, command, value_str, vars)) < 0 || value > 100000 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s' command (expecting 0..100000)!\n", line, command, value_str);
+#endif
+    return -1;
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[MBNG_FILE_R:%d] DELAY_MS %d\n", line, value);
+#endif
+  int i;
+  for(i=0; i<value; ++i) {
+    vTaskDelay(1 / portTICK_RATE_MS);
+  }
+
+  return 0; // no error
 }
 
 
@@ -689,7 +863,6 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
       }
 
       // sscanf consumes too much memory, therefore we parse directly
-      const char *separators = " \t;";
       char *brkt;
       char *parameter;
 
@@ -811,81 +984,12 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 	    parseExecMeta(line, parameter, &brkt, &vars);
 	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	    exit = 1;
-	  } else if( strcasecmp(parameter, "SET") == 0 || strcasecmp(parameter, "TRIGGER") == 0 ) {
-	    u8 trigger = strcasecmp(parameter, "TRIGGER") == 0;
-
-	    mbng_event_item_id_t id;
-	    char *value_str;
-
-	    if( !(value_str = strtok_r(NULL, separators, &brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, parameter);
-#endif
-	    } else if( !(id=parseId(value_str)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, parameter, value_str);
-#endif
-	    } else {
-	      s32 value = 0;
-	      if( !trigger && !(value_str = strtok_r(NULL, separators, &brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s:%d' command!\n", line, parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
-#endif
-	      } else if( !trigger && ((value=parseValue(line, parameter, value_str, &vars)) < -16384 || value >= 16383) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s:%d %s' command (expecting -16384..16383!\n", line, parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value_str);
-#endif
-	      } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-		DEBUG_MSG("[MBNG_FILE_R:%d] %s:%d = %d\n", line, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value);
-#endif
-
-		// search for items with matching ID
-		mbng_event_item_t item;
-		u32 continue_ix = 0;
-		u32 num_set = 0;
-		do {
-		  if( MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0 ) {
-		    break;
-		  } else {
-		    ++num_set;
-
-		    // notify item
-		    if( !trigger )
-		      item.value = value;
-		    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-		      break; // stop has been requested
-		  }
-		} while( continue_ix );
-
-		if( !num_set ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG(trigger ? "[MBNG_FILE_R:%d] '%s %s:%d' failed - item not found!\n" : "[MBNG_FILE_R:%d] '%s %s:%d %d' failed - item not found!\n", line, parameter, MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, value);
-#endif
-		}
-	      }
-	    }
-
+	  } else if( strcasecmp(parameter, "SET") == 0 || 
+		     strcasecmp(parameter, "SET_RGB") == 0 ||
+		     strcasecmp(parameter, "TRIGGER") == 0 ) {
+	    parseSet(line, parameter, &brkt, &vars);
 	  } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
-	    char *value_str;
-	    s32 value;
-	    if( !(value_str = strtok_r(NULL, separators, &brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s' command!\n", line, parameter);
-#endif
-	    } else if( (value=parseValue(line, parameter, value_str, &vars)) < 0 || value > 100000 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s' command (expecting 0..100000)!\n", line, parameter, value_str);
-#endif
-	    } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	      DEBUG_MSG("[MBNG_FILE_R:%d] DELAY_MS %d\n", line, value);
-#endif
-	      int i;
-	      for(i=0; i<value; ++i) {
-		vTaskDelay(1 / portTICK_RATE_MS);
-	      }
-	    }
+	    parseDelay(line, parameter, &brkt, &vars);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    // changed error to warning, since people are sometimes confused about these messages

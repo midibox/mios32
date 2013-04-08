@@ -100,6 +100,9 @@ typedef struct {
 
 static mbng_file_c_info_t mbng_file_c_info;
 
+static const char *separators = " \t";
+static const char *separator_colon = ":";
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Global variables
@@ -425,8 +428,6 @@ static char *getQuotedString(char **brkt)
 /////////////////////////////////////////////////////////////////////////////
 static s32 parseExtendedParameter(u32 line, char *cmd, char **parameter, char **value_str, char **brkt)
 {
-  const char *separators = " \t";
-
   // parameter name + '='
   if( !(*parameter = strtok_r(NULL, separators, brkt)) ) {
     return -1; // no additional parameter
@@ -530,8 +531,6 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
   char *parameter;
   char *value_str;
   while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
-    const char *separator_colon = ":";
-    const char *separators = " \t;";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "id") == 0 ) {
@@ -1430,7 +1429,6 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 //static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
 s32 parseMap(u32 line, char *cmd, char *brkt)
 {
-  const char *separators = " \t;";
   int map;
 
   if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
@@ -1553,7 +1551,6 @@ s32 parseEnc(u32 line, char *cmd, char *brkt)
   char *parameter;
   char *value_str;
   while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
-    const char *separator_colon = ":";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
@@ -2279,7 +2276,6 @@ s32 parseAin(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "pinrange") == 0 ) {
-      const char *separator_colon = ":";
       char *values_str = value_str;
       char *brkt_local;
       int values[3];
@@ -2401,7 +2397,6 @@ s32 parseAinSer(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "pinrange") == 0 ) {
-      const char *separator_colon = ":";
       char *values_str = value_str;
       char *brkt_local;
       int values[3];
@@ -2718,7 +2713,6 @@ typedef struct {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
-      const char *separator_colon = ":";
       char *values_str = value_str;
       char *brkt_local;
       int values[3];
@@ -3112,7 +3106,6 @@ s32 MBNG_FILE_C_Read(char *filename)
       }
 
       // sscanf consumes too much memory, therefore we parse directly
-      const char *separators = " \t;";
       char *brkt;
       char *parameter;
 
