@@ -721,6 +721,9 @@ s32 parseSet(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 	item.value = value;
       }
 
+      if( !cmd_trigger)
+	MBNG_EVENT_ItemReceive(&item, item.value, 1, 0); // "from_midi" and forwarding disabled
+
       if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 	break; // stop has been requested
     }
