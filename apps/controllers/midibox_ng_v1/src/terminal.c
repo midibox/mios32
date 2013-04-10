@@ -378,13 +378,17 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	out("Please specify <section> <value>! (Missing the <value>)");
       } else if( (value=get_dec(parameter)) < -16384 || value >= 16383 ) {
 	out("Value should be between -16384..16383!");
-      } else if( mbng_file_r_req.load ) {
-	out("ERROR: can't execute - there is an ongoing run request!");
       } else if( !MBNG_FILE_R_Valid() ) {
 	out("ERROR: can't execute - missing %s.NGR file!", mbng_file_r_script_name);
       } else {
-	out("Executing %s.NGR with $section==%d $value==%d", mbng_file_r_script_name, section, value);
+	out("Executing %s.NGR with ^section==%d ^value==%d", mbng_file_r_script_name, section, value);
 	MBNG_FILE_R_ReadRequest(NULL, section, value, 1);
+      }
+    } else if( strcmp(parameter, "runstop") == 0 ) {
+      if( MBNG_FILE_R_RunStop() > 0 ) {
+	out("Stopped the execution of %s.NGR", mbng_file_r_script_name);
+      } else {
+	out("%s.NGR script not running.", mbng_file_r_script_name);
       }
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {

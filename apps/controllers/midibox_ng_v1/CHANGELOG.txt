@@ -19,6 +19,10 @@ MIDIbox NG V1.024
 
      This matches with the behaviour of the "EVENT ... fwd_id=<id>" function.
 
+   o added RunStop meta event to stop the execution of a .NGR file
+
+   o added "runstop" terminal command
+
    o new .NGR command: set_rgb <id> <r:g:b>
      E.g. "set_rgb (id)LED:1001 15:8:4"
 

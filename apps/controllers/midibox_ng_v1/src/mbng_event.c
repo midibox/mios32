@@ -2193,6 +2193,7 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
 
   case MBNG_EVENT_META_TYPE_RUN_SECTION:         return "RunSection";
+  case MBNG_EVENT_META_TYPE_RUN_STOP:            return "RunStop";
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
@@ -2242,6 +2243,7 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
 
   if( strcasecmp(meta_type, "RunSection") == 0 )    return MBNG_EVENT_META_TYPE_RUN_SECTION;
+  if( strcasecmp(meta_type, "RunStop") == 0 )       return MBNG_EVENT_META_TYPE_RUN_STOP;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -2291,6 +2293,7 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return 0;
 
   case MBNG_EVENT_META_TYPE_RUN_SECTION:         return 1;
+  case MBNG_EVENT_META_TYPE_RUN_STOP:            return 0;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -2604,6 +2607,10 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
 
     case MBNG_EVENT_META_TYPE_RUN_SECTION: {
       MBNG_FILE_R_ReadRequest(NULL, meta_value, item->value, 0);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RUN_STOP: {
+      MBNG_FILE_R_RunStop();
     } break;
 
     case MBNG_EVENT_META_TYPE_SCS_ENC: {
