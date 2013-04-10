@@ -191,6 +191,9 @@ s32 MBNG_PATCH_Load(char *filename)
 {
   s32 status = 0;
 
+  // ensure that .NCR script isn't executed anymore
+  MBNG_FILE_R_RunStop();
+
   MUTEX_SDCARD_TAKE;
   status |= MBNG_FILE_C_Read(filename);
 #if 0

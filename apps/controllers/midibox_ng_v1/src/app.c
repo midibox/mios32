@@ -446,32 +446,8 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
       MBNG_EVENT_UpdateLCD(force);
 
-      // read request for run file?
-      if( mbng_file_r_req.load ) {
-	mbng_file_r_req.load = 0;
-
-#if DEBUG_EVENT_HANDLER_PERFORMANCE
-	MIOS32_STOPWATCH_Reset();
-#endif
-
-	MUTEX_SDCARD_TAKE;
-	MBNG_FILE_R_Read(mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
-	MUTEX_SDCARD_GIVE;
-
-#if DEBUG_EVENT_HANDLER_PERFORMANCE
-	u32 cycles = MIOS32_STOPWATCH_ValueGet();
-	if( cycles == 0xffffffff )
-	  DEBUG_MSG("[PERF NGR] overrun!\n");
-	else
-	  DEBUG_MSG("[PERF NGR] %5d.%d mS\n", cycles/10, cycles%10);
-#endif
-
-	if( mbng_file_r_req.notify_done ) {
-	  MUTEX_MIDIOUT_TAKE;
-	  DEBUG_MSG("%s.NGR with $section==%d $value==%d processed.", mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
-	  MUTEX_MIDIOUT_GIVE;
-	}
-      }
+      // handles .NGR file execution
+      MBNG_FILE_R_CheckRequest();
 
       isInMainPage = 1; // static reminder
     } else {

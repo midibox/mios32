@@ -42,6 +42,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! for performance measurements
+/////////////////////////////////////////////////////////////////////////////
+#define DEBUG_FILE_HANDLER_PERFORMANCE 0
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -65,6 +71,18 @@ typedef struct {
 } mbng_file_r_info_t;
 
 
+// read request handling
+typedef union {
+  u32 ALL;
+
+  struct {
+    s16 value;
+    u32 section:8;
+    u32 load:1;
+    u32 notify_done:1;
+  };
+} mbng_file_r_req_t;
+
 // script variables
 typedef struct {
   s16 value;
@@ -72,6 +90,7 @@ typedef struct {
   u8 bank;
 } mbng_file_r_var_t;
 
+// script items
 typedef union {
   u32 ALL;
 
@@ -94,6 +113,9 @@ typedef union {
 
 static mbng_file_r_info_t mbng_file_r_info;
 
+static u16 mbng_file_r_delay_ctr;
+static mbng_file_r_req_t mbng_file_r_req;
+
 static const char *separators = " \t";
 static const char *separator_colon = ":";
 
@@ -102,7 +124,6 @@ static const char *separator_colon = ":";
 //! Global variables
 /////////////////////////////////////////////////////////////////////////////
 char mbng_file_r_script_name[MBNG_FILE_R_FILENAME_LEN+1];
-mbng_file_r_req_t mbng_file_r_req;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -125,7 +146,7 @@ s32 MBNG_FILE_R_Init(u32 mode)
 s32 MBNG_FILE_R_Load(char *filename)
 {
   s32 error;
-  error = MBNG_FILE_R_Read(filename, 0, 0);
+  error = MBNG_FILE_R_Read(filename, 0, 0, 0);
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_R] Tried to open script %s, status: %d\n", filename, error);
 #endif
@@ -143,6 +164,7 @@ s32 MBNG_FILE_R_Unload(void)
 {
   mbng_file_r_info.valid = 0;
   mbng_file_r_req.ALL = 0;
+  mbng_file_r_delay_ctr = 0;
 
   return 0; // no error
 }
@@ -753,6 +775,7 @@ s32 parseSet(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses a DELAY_MS command
+//! returns > 0 if a delay has been requested
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
 s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
@@ -776,12 +799,8 @@ s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_R:%d] DELAY_MS %d\n", line, value);
 #endif
-  int i;
-  for(i=0; i<value; ++i) {
-    vTaskDelay(1 / portTICK_RATE_MS);
-  }
 
-  return 0; // no error
+  return value; // no error
 }
 
 
@@ -789,7 +808,7 @@ s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 //! reads the config file content (again)
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
+s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 section, s16 value)
 {
   s32 status = 0;
   mbng_file_r_info_t *info = &mbng_file_r_info;
@@ -813,7 +832,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
     }
   } else {
     if( (status=FILE_ReadReOpen(&info->r_file)) < 0 ||
-	(status=FILE_ReadSeek(0)) < 0 ) {
+	(!cont_script && (status=FILE_ReadSeek(0)) < 0) ) {
       info->valid = 0;
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R] ERROR: %s can't be re-opened!\n", mbng_file_r_script_name);
@@ -987,12 +1006,13 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 	    parseExecMeta(line, parameter, &brkt, &vars);
 	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	    exit = 1;
+	    nesting_level = 0; // doesn't matter anymore
 	  } else if( strcasecmp(parameter, "SET") == 0 || 
 		     strcasecmp(parameter, "SET_RGB") == 0 ||
 		     strcasecmp(parameter, "TRIGGER") == 0 ) {
 	    parseSet(line, parameter, &brkt, &vars);
 	  } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
-	    parseDelay(line, parameter, &brkt, &vars);
+	    mbng_file_r_delay_ctr = parseDelay(line, parameter, &brkt, &vars);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    // changed error to warning, since people are sometimes confused about these messages
@@ -1009,16 +1029,18 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
       }
     }
 
-  } while( !exit && status >= 1 );
+  } while( !exit && !mbng_file_r_delay_ctr && status >= 1 );
 
   // release memory from heap
   vPortFree(line_buffer);
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  if( exit >= 2 ) {
-    DEBUG_MSG("[MBNG_FILE_R:%d] stopped script execution due to previous error!\n", line);
-  } else if( nesting_level > 0 ) {
-    DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: missing ENDIF command!\n", line);
+  if( !mbng_file_r_delay_ctr ) {
+    if( exit >= 2 ) {
+      DEBUG_MSG("[MBNG_FILE_R:%d] stopped script execution due to previous error!\n", line);
+    } else if( nesting_level > 0 ) {
+      DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: missing ENDIF command!\n", line);
+    }
   }
 #endif
 
@@ -1041,7 +1063,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! request to read the script file from run thread
-//! \returns < 0 on errors (error codes are documented in mbng_file.h)
+//! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_done)
 {
@@ -1060,6 +1082,73 @@ s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_don
   mbng_file_r_req.load = 1;
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! checks for a read request, should be called periodically each mS
+//! \returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_CheckRequest(void)
+{
+  // load requested? reset delay counter
+  if( mbng_file_r_req.load )
+    mbng_file_r_delay_ctr = 0;
+
+  // check if script has to be continued after a delay
+  u8 cont_script = 0;
+  if( mbng_file_r_delay_ctr ) {
+    if( --mbng_file_r_delay_ctr ) {
+      return 0; // wait until 0 is reached
+    }
+    cont_script = 1; // continue with script execution
+  }
+
+  // read request for run file?
+  if( cont_script || mbng_file_r_req.load ) {
+    mbng_file_r_req.load = 0;
+
+#if DEBUG_FILE_HANDLER_PERFORMANCE
+    MIOS32_STOPWATCH_Reset();
+#endif
+
+    MUTEX_SDCARD_TAKE;
+    MBNG_FILE_R_Read(mbng_file_r_script_name, cont_script, mbng_file_r_req.section, mbng_file_r_req.value);
+    MUTEX_SDCARD_GIVE;
+
+#if DEBUG_FILE_HANDLER_PERFORMANCE
+    u32 cycles = MIOS32_STOPWATCH_ValueGet();
+    if( cycles == 0xffffffff )
+      DEBUG_MSG("[PERF NGR] overrun!\n");
+    else
+      DEBUG_MSG("[PERF NGR] %5d.%d mS\n", cycles/10, cycles%10);
+#endif
+
+    if( mbng_file_r_req.notify_done ) {
+      MUTEX_MIDIOUT_TAKE;
+      DEBUG_MSG("%s.NGR with ^section==%d ^value==%d processed.", mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
+      MUTEX_MIDIOUT_GIVE;
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Stops the execution of a currently running script
+//! \returns < 0 on errors, 0 if script not running, 1 if script running (or requested)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_RunStop(void)
+{
+  if( mbng_file_r_delay_ctr || mbng_file_r_req.load ) {
+    mbng_file_r_delay_ctr = 0;
+    mbng_file_r_req.load = 0;
+
+    return 1; // script was running
+  }
+
+  return 0; // script wasn't running
 }
 
 //! \}

@@ -1,0 +1,29 @@
+# Run Script demo
+# The run script is located in RUNSCR3.NGR - this file has to be uploaded as well!
+
+RESET_HW
+
+# This LCD line will be overwritten by the run script after the config file has been processed
+LCD "%CPress Button"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+
+# trigger different sections
+# See RUNSCR3.NGR why this button has been configured for toggle mode!
+EVENT_BUTTON id=2000  type=Meta   meta=RunSection:1  button_mode=Toggle lcd_pos=1:1:1 label="Button: %b    "
+
+EVENT_BUTTON id=2001  type=Meta   meta=RunSection:2  button_mode=OnOnly
+EVENT_BUTTON id=2002  type=Meta   meta=RunSection:3  button_mode=OnOnly
+EVENT_BUTTON id=2003  type=Meta   meta=RunSection:4  button_mode=OnOnly
+EVENT_BUTTON id=2004  type=Meta   meta=RunSection:5  button_mode=OnOnly
+
+EVENT_ENC    id=2000  type=Meta   meta=RunSection:10

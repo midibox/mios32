@@ -27,16 +27,6 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef union {
-  u32 ALL;
-
-  struct {
-    s16 value;
-    u32 section:8;
-    u32 load:1;
-    u32 notify_done:1;
-  };
-} mbng_file_r_req_t;
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -48,8 +38,10 @@ extern s32 MBNG_FILE_R_Unload(void);
 
 extern s32 MBNG_FILE_R_Valid(void);
 
-extern s32 MBNG_FILE_R_Read(char *filename, u8 section, s16 value);
+extern s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 section, s16 value);
 extern s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_done);
+extern s32 MBNG_FILE_R_CheckRequest(void);
+extern s32 MBNG_FILE_R_RunStop(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +49,5 @@ extern s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 not
 /////////////////////////////////////////////////////////////////////////////
 
 extern char mbng_file_r_script_name[MBNG_FILE_R_FILENAME_LEN+1];
-extern mbng_file_r_req_t mbng_file_r_req;
 
 #endif /* _MBNG_FILE_R_H */
