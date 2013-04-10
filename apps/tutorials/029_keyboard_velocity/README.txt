@@ -143,7 +143,8 @@ Please note: the MIDIbox KB application contains a more sophisticated
 scanning routine which also considers different keyboard types (e.g. Fatar keyboards)
 
 -> see http://www.ucapps.de/midibox_kb.html
-Sources are located under $MIOS32_PATH/apps/controllers/midibox_kb_v1/src/keyboard.c
+Sources are located under $MIOS32_PATH/apps/controllers/midibox_kb_v1
+and $MIOS32_PATH/modules/keyboard
 
 This scanning routine uses a special optimisation algorithm which allows to scan
 a keyboard with 65 uS (as long as no key is pressed)
