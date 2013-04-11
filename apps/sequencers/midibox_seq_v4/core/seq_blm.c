@@ -105,14 +105,14 @@ typedef union {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
-  };
+  } general;
 
   struct {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
     unsigned PING_BYTE_RECEIVED:1;
-  };
+  } ping;
 
   struct {
     unsigned CTR:3;
@@ -121,7 +121,7 @@ typedef union {
     unsigned COLUMNS_RECEIVED:1;
     unsigned ROWS_RECEIVED:1;
     unsigned COLOURS_RECEIVED:1;
-  };
+  } blm;
 
 } sysex_state_t;
 
@@ -259,28 +259,28 @@ s32 SEQ_BLM_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
     return 0;
 
   // branch depending on state
-  if( !sysex_state.MY_SYSEX ) {
-    if( (sysex_state.CTR < sizeof(seq_blm_sysex_header) && midi_in != seq_blm_sysex_header[sysex_state.CTR]) ||
-	(sysex_state.CTR == sizeof(seq_blm_sysex_header) && midi_in != sysex_device_id) ) {
+  if( !sysex_state.general.MY_SYSEX ) {
+    if( (sysex_state.general.CTR < sizeof(seq_blm_sysex_header) && midi_in != seq_blm_sysex_header[sysex_state.general.CTR]) ||
+	(sysex_state.general.CTR == sizeof(seq_blm_sysex_header) && midi_in != sysex_device_id) ) {
       // incoming byte doesn't match
       SEQ_BLM_SYSEX_CmdFinished();
     } else {
-      if( ++sysex_state.CTR > sizeof(seq_blm_sysex_header) ) {
+      if( ++sysex_state.general.CTR > sizeof(seq_blm_sysex_header) ) {
 	// complete header received, waiting for data
-	sysex_state.MY_SYSEX = 1;
+	sysex_state.general.MY_SYSEX = 1;
       }
     }
   } else {
     // check for end of SysEx message or invalid status byte
     if( midi_in >= 0x80 ) {
-      if( midi_in == 0xf7 && sysex_state.CMD ) {
+      if( midi_in == 0xf7 && sysex_state.general.CMD ) {
       	SEQ_BLM_SYSEX_Cmd(port, SYSEX_CMD_STATE_END, midi_in);
       }
       SEQ_BLM_SYSEX_CmdFinished();
     } else {
       // check if command byte has been received
-      if( !sysex_state.CMD ) {
-	sysex_state.CMD = 1;
+      if( !sysex_state.general.CMD ) {
+	sysex_state.general.CMD = 1;
 	sysex_cmd = midi_in;
 	SEQ_BLM_SYSEX_Cmd(port, SYSEX_CMD_STATE_BEGIN, midi_in);
       }
@@ -345,18 +345,18 @@ static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t c
       break;
 
     case SYSEX_CMD_STATE_CONT:
-      if( !sysex_state.COLUMNS_RECEIVED ) {
-	sysex_state.COLUMNS_RECEIVED = 1;
+      if( !sysex_state.blm.COLUMNS_RECEIVED ) {
+	sysex_state.blm.COLUMNS_RECEIVED = 1;
 	blm_num_columns = midi_in;
 	if( blm_num_columns >= SEQ_BLM_NUM_COLUMNS ) // limit to provided number of steps
 	  blm_num_columns = SEQ_BLM_NUM_COLUMNS;
-      } else if( !sysex_state.ROWS_RECEIVED ) {
-	sysex_state.ROWS_RECEIVED = 1;
+      } else if( !sysex_state.blm.ROWS_RECEIVED ) {
+	sysex_state.blm.ROWS_RECEIVED = 1;
 	blm_num_rows = midi_in;
 	if( blm_num_rows >= SEQ_BLM_NUM_ROWS ) // limit to provided number of tracks
 	  blm_num_rows = SEQ_BLM_NUM_ROWS;
-      } else if( !sysex_state.COLOURS_RECEIVED ) {
-	sysex_state.COLOURS_RECEIVED = 1;
+      } else if( !sysex_state.blm.COLOURS_RECEIVED ) {
+	sysex_state.blm.COLOURS_RECEIVED = 1;
 	blm_num_colours = midi_in;
       }
       // ignore all other bytes
@@ -389,17 +389,17 @@ static s32 SEQ_BLM_SYSEX_Cmd_Ping(mios32_midi_port_t port, sysex_cmd_state_t cmd
   switch( cmd_state ) {
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      sysex_state.PING_BYTE_RECEIVED = 0;
+      sysex_state.ping.PING_BYTE_RECEIVED = 0;
       break;
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      sysex_state.PING_BYTE_RECEIVED = 1;
+      sysex_state.ping.PING_BYTE_RECEIVED = 1;
       break;
 
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
       // send acknowledge if no additional byte has been received
       // to avoid feedback loop if two cores are directly connected
-      if( !sysex_state.PING_BYTE_RECEIVED )
+      if( !sysex_state.ping.PING_BYTE_RECEIVED )
 	SEQ_BLM_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
       // and reload timeout counter
@@ -448,7 +448,7 @@ static s32 SEQ_BLM_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_ar
 s32 SEQ_BLM_SYSEX_TimeOut(mios32_midi_port_t port)
 {
   // if we receive a SysEx command (MY_SYSEX flag set), abort parser if port matches
-  if( sysex_state.MY_SYSEX )
+  if( sysex_state.general.MY_SYSEX )
     SEQ_BLM_SYSEX_CmdFinished();
 
   return 0; // no error

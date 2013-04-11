@@ -104,14 +104,14 @@ typedef union {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
-  };
+  } general;
 
   struct {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
     unsigned PING_BYTE_RECEIVED;
-  };
+  } ping;
 } sysex_state_t;
 
 
@@ -1184,7 +1184,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	    }
 
 #if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	    if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 	      if( sysex_callback_func != NULL ) {
 		filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
 		if( package.type != 0x0f ) {
@@ -1217,7 +1217,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
 #if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
@@ -1229,7 +1229,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
 #if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
@@ -1241,7 +1241,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
 
 #if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 		if( sysex_callback_func != NULL )
 		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
 	      }
@@ -1253,7 +1253,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      sysex_timeout_ctr_flags.ALL = 0;
 
 #if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	    if( !sysex_state.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	    if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
 	      // forward as package if not filtered
 	      if( callback_package != NULL && !filter_sysex )
 		callback_package(port, package);
@@ -1583,7 +1583,7 @@ static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
     return 0;
 
   // TODO: here we could send an error notification, that multiple devices are trying to access the device
-  if( sysex_state.MY_SYSEX && port != last_sysex_port )
+  if( sysex_state.general.MY_SYSEX && port != last_sysex_port )
     return -1;
 
   // USB upload is only allowed via USB0
@@ -1597,28 +1597,28 @@ static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   last_sysex_port = port;
 
   // branch depending on state
-  if( !sysex_state.MY_SYSEX ) {
-    if( (sysex_state.CTR < sizeof(mios32_midi_sysex_header) && midi_in != mios32_midi_sysex_header[sysex_state.CTR]) ||
-	(sysex_state.CTR == sizeof(mios32_midi_sysex_header) && midi_in != sysex_device_id) ) {
+  if( !sysex_state.general.MY_SYSEX ) {
+    if( (sysex_state.general.CTR < sizeof(mios32_midi_sysex_header) && midi_in != mios32_midi_sysex_header[sysex_state.general.CTR]) ||
+	(sysex_state.general.CTR == sizeof(mios32_midi_sysex_header) && midi_in != sysex_device_id) ) {
       // incoming byte doesn't match
       MIOS32_MIDI_SYSEX_CmdFinished();
     } else {
-      if( ++sysex_state.CTR > sizeof(mios32_midi_sysex_header) ) {
+      if( ++sysex_state.general.CTR > sizeof(mios32_midi_sysex_header) ) {
 	// complete header received, waiting for data
-	sysex_state.MY_SYSEX = 1;
+	sysex_state.general.MY_SYSEX = 1;
       }
     }
   } else {
     // check for end of SysEx message or invalid status byte
     if( midi_in >= 0x80 ) {
-      if( midi_in == 0xf7 && sysex_state.CMD ) {
+      if( midi_in == 0xf7 && sysex_state.general.CMD ) {
       	MIOS32_MIDI_SYSEX_Cmd(port, MIOS32_MIDI_SYSEX_CMD_STATE_END, midi_in);
       }
       MIOS32_MIDI_SYSEX_CmdFinished();
     } else {
       // check if command byte has been received
-      if( !sysex_state.CMD ) {
-	sysex_state.CMD = 1;
+      if( !sysex_state.general.CMD ) {
+	sysex_state.general.CMD = 1;
 	sysex_cmd = midi_in;
 	MIOS32_MIDI_SYSEX_Cmd(port, MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN, midi_in);
       }
@@ -1829,11 +1829,11 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex
   switch( cmd_state ) {
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      sysex_state.PING_BYTE_RECEIVED = 0;
+      sysex_state.ping.PING_BYTE_RECEIVED = 0;
       break;
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      sysex_state.PING_BYTE_RECEIVED = 1;
+      sysex_state.ping.PING_BYTE_RECEIVED = 1;
       break;
 
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
@@ -1841,7 +1841,7 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, mios32_midi_sysex
 
       // send acknowledge if no additional byte has been received
       // to avoid feedback loop if two cores are directly connected
-      if( !sysex_state.PING_BYTE_RECEIVED )
+      if( !sysex_state.ping.PING_BYTE_RECEIVED )
 	MIOS32_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
       break;
@@ -1971,7 +1971,7 @@ s32 MIOS32_MIDI_FilebrowserCommandCallback_Init(s32 (*filebrowser_debug_command)
 //! s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 //! {
 //!   // if my SysEx parser receives a command (MY_SYSEX flag set), abort parser if port matches
-//!   if( sysex_state.MY_SYSEX && port == last_sysex_port )
+//!   if( sysex_state.general.MY_SYSEX && port == last_sysex_port )
 //!     MySYSEX_CmdFinished();
 //!
 //!   return 0; // no error
@@ -2001,7 +2001,7 @@ s32 MIOS32_MIDI_TimeOutCallback_Init(s32 (*callback_timeout)(mios32_midi_port_t 
 static s32 MIOS32_MIDI_TimeOut(mios32_midi_port_t port)
 {
   // if MIOS32 receives a SysEx command (MY_SYSEX flag set), abort parser if port matches
-  if( sysex_state.MY_SYSEX && port == last_sysex_port )
+  if( sysex_state.general.MY_SYSEX && port == last_sysex_port )
     MIOS32_MIDI_SYSEX_CmdFinished();
 
   // optional hook to application
