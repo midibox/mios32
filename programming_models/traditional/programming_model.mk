@@ -19,6 +19,7 @@ CFLAGS    +=    -DGCC_ARMCM3
 # add modules to thumb sources
 THUMB_SOURCE += \
 		$(MIOS32_PATH)/programming_models/traditional/main.c \
+		$(MIOS32_PATH)/programming_models/traditional/strtol.c \
 		$(FREE_RTOS)/Source/tasks.c \
 		$(FREE_RTOS)/Source/list.c \
 		$(FREE_RTOS)/Source/queue.c \
