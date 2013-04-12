@@ -136,7 +136,7 @@ int main(void)
   // start the task which calls the application hooks
   xTaskCreate(TASK_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 #if !defined(MIOS32_DONT_USE_MIDI)
-  xTaskCreate(TASK_MIDI_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_MIDI_Hooks, (signed portCHAR *)"MIDI_Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 #endif
 
   // start the scheduler
@@ -181,10 +181,7 @@ void vApplicationTickHook(void)
 /////////////////////////////////////////////////////////////////////////////
 void vApplicationIdleHook(void)
 {
-  // branch endless to application
-  while( 1 ) {
-    APP_Background();
-  }
+  APP_Background();
 }
 
 

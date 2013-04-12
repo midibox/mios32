@@ -565,7 +565,7 @@ s32 TERMINAL_PrintSystem(void *_output_function)
   out("Event Pool Allocation: %d of %d bytes (%d%%)",
       pool_size, pool_max_size, (100*pool_size)/pool_max_size);
 
-#if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
+#if !defined(MIOS32_FAMILY_EMULATION) && (configGENERATE_RUN_TIME_STATS || configUSE_TRACE_FACILITY)
   // send Run Time Stats to MIOS terminal
   out("FreeRTOS Task RunTime Stats:\n");
   FREERTOS_UTILS_RunTimeStats();

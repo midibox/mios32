@@ -89,7 +89,7 @@ extern char mbng_patch_aout_spi_rc_pin;
 #define AOUT_SPI_RC_PIN mbng_patch_aout_spi_rc_pin
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 11*1024
+#define MIOS32_HEAP_SIZE 9*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 
@@ -103,7 +103,8 @@ extern char mbng_patch_aout_spi_rc_pin;
 
 // optionally for task analysis - if enabled, the stats can be displayed with the "system" command in MIOS Terminal
 #if 0
-#define configGENERATE_RUN_TIME_STATS           1
+#define configUSE_TRACE_FACILITY                1
+#define configGENERATE_RUN_TIME_STATS           0
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
 #endif
