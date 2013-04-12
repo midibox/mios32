@@ -672,7 +672,7 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
       root_selection == 0 ? "Keyboard" : "Selection",
       root_note_str);
 
-#if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
+#if !defined(MIOS32_FAMILY_EMULATION) && (configGENERATE_RUN_TIME_STATS || configUSE_TRACE_FACILITY)
   // send Run Time Stats to MIOS terminal
   out("FreeRTOS Task RunTime Stats:\n");
   FREERTOS_UTILS_RunTimeStats();

@@ -62,6 +62,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#include <task.h>
 #include "freertos_utils.h"
 
 
@@ -72,6 +75,7 @@
 #if configGENERATE_RUN_TIME_STATS != 0
 static void PerfTimerIRQ(void);
 #endif
+static s32 FREERTOS_UTILS_PrintBuffer(char *buffer);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -131,21 +135,44 @@ u32 FREERTOS_UTILS_PerfCounterGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 FREERTOS_UTILS_RunTimeStats(void)
 {
-#if configGENERATE_RUN_TIME_STATS == 0
-  return MIOS32_MIDI_SendDebugMessage("configGENERATE_RUN_TIME_STATS not activated!\n");  
+#if configGENERATE_RUN_TIME_STATS == 0 && configUSE_TRACE_FACILITY == 0
+  return MIOS32_MIDI_SendDebugString("configGENERATE_RUN_TIME_STATS and configUSE_TRACE_FACILITY not activated!\n");  
 #else
-  char buffer[400];
+  signed char buffer[400];
   s32 status = 0;
 
-  // get stats
-
+#if configGENERATE_RUN_TIME_STATS
+  // print stats
+  status |= MIOS32_MIDI_SendDebugString("================================================\n");
+  status |= MIOS32_MIDI_SendDebugString("Task, Abs Time, %% Time\n");
   vTaskGetRunTimeStats(buffer);
+  status |= FREERTOS_UTILS_PrintBuffer((char *)buffer);
+#endif
 
-  // print header
-  status |= MIOS32_MIDI_SendDebugMessage("Task                 Abs Time             %% Time\n");  
-  status |= MIOS32_MIDI_SendDebugMessage("================================================\n");  
+#if configUSE_TRACE_FACILITY
+  // print task list
+  status |= MIOS32_MIDI_SendDebugString("================================================\n");
+  status |= MIOS32_MIDI_SendDebugMessage("Task, Status, Priority, StackRemaining/%d, TCB Number\n", sizeof(portSTACK_TYPE));
+  vTaskList(buffer);
+  status |= FREERTOS_UTILS_PrintBuffer((char *)buffer);
+#endif
 
-  // print buffer line by line (since MIOS32_MIDI_SendDebugMessage() will only allow 100 chars maximum)
+  status |= MIOS32_MIDI_SendDebugString("================================================\n");
+
+  return status;
+#endif
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends individual SysEx strings to MIOS terminal which are separated by \n
+/////////////////////////////////////////////////////////////////////////////
+static s32 FREERTOS_UTILS_PrintBuffer(char *buffer)
+{
+  s32 status = 0;
+
+  // print buffer line by line
   char *buffer_start = buffer;
   char *buffer_end = buffer;
   u8 end_of_string;
@@ -157,14 +184,13 @@ s32 FREERTOS_UTILS_RunTimeStats(void)
     // terminate line
     *buffer_end = 0;
     // print line
-    status |= MIOS32_MIDI_SendDebugMessage(buffer_start);
+    status |= MIOS32_MIDI_SendDebugString(buffer_start);
     // continue with next line
     buffer_start = ++buffer_end;
     // until 0 was read
   } while( status >= 0 && !end_of_string );
 
   return status;
-#endif
 }
 
 //! \}

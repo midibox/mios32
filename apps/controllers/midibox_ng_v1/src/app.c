@@ -66,14 +66,6 @@
 #include "osc_client.h"
 
 
-// define priority level for control surface handler
-// use lower priority as MIOS32 specific tasks (2), so that slow LCDs don't affect overall performance
-#define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
-
-// local prototype of the task function
-static void TASK_Period_1mS_LP(void *pvParameters);
-
-
 /////////////////////////////////////////////////////////////////////////////
 //! Local types
 /////////////////////////////////////////////////////////////////////////////
@@ -91,7 +83,7 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 u8  hw_enabled;
 u8  debug_verbose_level;
-u32 app_ms_counter;
+volatile u32 app_ms_counter;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -219,10 +211,6 @@ void APP_Init(void)
   APP_SRIO_ServicePrepare();
   MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
 #endif
-
-  // start tasks
-  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", APP_BIG_STACK_SIZE/4, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-
 }
 
 
@@ -231,10 +219,173 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // endless loop
+  const u16 sdcard_check_delay = 1000;
+  u16 sdcard_check_ctr = 0;
+  u8 lun_available = 0;
+  static u8 isInMainPage = 1;
+
+  SCS_DisplayUpdateInMainPage(0);
+  MBNG_LCD_SpecialCharsReInit();
+
+  u32 last_app_ms_counter = app_ms_counter;
   while( 1 ) {
+    //vTaskDelay(1 / portTICK_RATE_MS);
+    // Background task: use timestamp mechanism to generate delay
+    while( last_app_ms_counter == app_ms_counter );
+    last_app_ms_counter = app_ms_counter;
+
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
+
+    // call SCS handler
+    MUTEX_LCD_TAKE;
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+    SCS_Tick();
+
+    SCS_DisplayUpdateInMainPage(MBNG_EVENT_MidiLearnModeGet() ? 1 : 0);
+
+    // LCD output in mainpage
+    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() ) {
+      u8 force = isInMainPage == 0;
+      if( force ) { // page change
+	MBNG_LCD_SpecialCharsReInit();
+	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 0);
+	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
+	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 1);
+	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
+      }
+
+      MBNG_EVENT_UpdateLCD(force);
+
+      // handles .NGR file execution
+      MBNG_FILE_R_CheckRequest();
+
+      isInMainPage = 1; // static reminder
+    } else {
+      if( isInMainPage && MBNG_EVENT_MidiLearnModeGet() ) {
+	SCS_LCD_Update(1); // force display update when learn mode is entered in mainpage
+      }
+
+      isInMainPage = 0; // static reminder
+    }
+    MUTEX_LCD_GIVE;
+
+    // -> keyboard handler
+    KEYBOARD_Periodic_1mS();
+
+    // MIDI In/Out monitor
+    MIDI_PORT_Period1mS();
+
+    // call MIDI event tick
+    MBNG_EVENT_Tick();
+
+    // each second: check if SD Card (still) available
+    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay ) {
+      sdcard_check_ctr = 0;
+
+      MUTEX_SDCARD_TAKE;
+      s32 status = FILE_CheckSDCard();
+
+      if( status == 1 ) {
+	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+
+	// load all file infos
+	MBNG_FILE_LoadAllFiles(1); // including HW info
+
+	// select the first bank
+	MBNG_EVENT_SelectedBankSet(1);
+
+	// immediately go to next step
+	sdcard_check_ctr = sdcard_check_delay;
+      } else if( status == 2 ) {
+	DEBUG_MSG("SD Card disconnected\n");
+	// invalidate all file infos
+	MBNG_FILE_UnloadAllFiles();
+
+	// stop sequencer
+	SEQ_BPM_Stop();
+
+	// change status
+	MBNG_FILE_StatusMsgSet("No SD Card");
+
+	MUTEX_LCD_TAKE;
+	MBNG_LCD_CursorSet(0, 0, 0);
+	MBNG_LCD_PrintString("*** No SD Card *** ");
+	MBNG_LCD_ClearScreenOnNextMessage();
+	MUTEX_LCD_GIVE;
+      } else if( status == 3 ) {
+	if( !FILE_SDCardAvailable() ) {
+	  DEBUG_MSG("SD Card not found\n");
+	  MBNG_FILE_StatusMsgSet("No SD Card");
+
+	  MUTEX_LCD_TAKE;
+	  MBNG_LCD_CursorSet(0, 0, 0);
+	  MBNG_LCD_PrintString("*** No SD Card *** ");
+	  MBNG_LCD_ClearScreenOnNextMessage();
+	  MUTEX_LCD_GIVE;
+	} else if( !FILE_VolumeAvailable() ) {
+	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	  MBNG_FILE_StatusMsgSet("No FAT");
+
+	  MUTEX_LCD_TAKE;
+	  MBNG_LCD_CursorSet(0, 0, 0);
+	  MBNG_LCD_PrintString("* No FAT on SD Card * ");
+	  MBNG_LCD_ClearScreenOnNextMessage();
+	  MUTEX_LCD_GIVE;
+	} else {
+	  MBNG_FILE_StatusMsgSet(NULL);
+
+	  // create the default files if they don't exist on SD Card
+	  MBNG_FILE_CreateDefaultFiles();
+	}
+
+	hw_enabled = 1; // enable hardware after first read...
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
+
+    // MSD driver
+    if( msd_state != MSD_DISABLED ) {
+      MUTEX_SDCARD_TAKE;
+
+      switch( msd_state ) {
+      case MSD_SHUTDOWN:
+	// switch back to USB MIDI
+	MIOS32_USB_Init(1);
+	msd_state = MSD_DISABLED;
+	break;
+
+      case MSD_INIT:
+	// LUN not mounted yet
+	lun_available = 0;
+
+	// enable MSD USB driver
+	MUTEX_J16_TAKE;
+	if( MSD_Init(0) >= 0 )
+	  msd_state = MSD_READY;
+	else
+	  msd_state = MSD_SHUTDOWN;
+	MUTEX_J16_GIVE;
+	break;
+
+      case MSD_READY:
+	// service MSD USB driver
+	MSD_Periodic_mS();
+
+	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
+	if( lun_available && !MSD_LUN_AvailableGet(0) )
+	  msd_state = MSD_SHUTDOWN;
+	else if( !lun_available && MSD_LUN_AvailableGet(0) )
+	  lun_available = 1;
+	break;
+      }
+
+      MUTEX_SDCARD_GIVE;
+    }
   }
 }
 
@@ -407,176 +558,6 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
   if( hw_enabled ) {
     MBNG_AINSER_NotifyChange(module, pin, pin_value, 0); // no_midi==0
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! This task handles the control surface
-/////////////////////////////////////////////////////////////////////////////
-static void TASK_Period_1mS_LP(void *pvParameters)
-{
-  const u16 sdcard_check_delay = 1000;
-  u16 sdcard_check_ctr = 0;
-  u8 lun_available = 0;
-  static u8 isInMainPage = 1;
-
-  SCS_DisplayUpdateInMainPage(0);
-  MBNG_LCD_SpecialCharsReInit();
-
-  while( 1 ) {
-    vTaskDelay(1 / portTICK_RATE_MS);
-
-    // call SCS handler
-    MUTEX_LCD_TAKE;
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
-    SCS_Tick();
-
-    SCS_DisplayUpdateInMainPage(MBNG_EVENT_MidiLearnModeGet() ? 1 : 0);
-
-    // LCD output in mainpage
-    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() ) {
-      u8 force = isInMainPage == 0;
-      if( force ) { // page change
-	MBNG_LCD_SpecialCharsReInit();
-	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 0);
-	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
-	MBNG_LCD_CursorSet(SCS_LCD_DeviceGet(), SCS_LCD_OffsetXGet(), SCS_LCD_OffsetYGet() + 1);
-	MBNG_LCD_PrintSpaces(SCS_NumMenuItemsGet()*SCS_MENU_ITEM_WIDTH);
-      }
-
-      MBNG_EVENT_UpdateLCD(force);
-
-      // handles .NGR file execution
-      MBNG_FILE_R_CheckRequest();
-
-      isInMainPage = 1; // static reminder
-    } else {
-      if( isInMainPage && MBNG_EVENT_MidiLearnModeGet() ) {
-	SCS_LCD_Update(1); // force display update when learn mode is entered in mainpage
-      }
-
-      isInMainPage = 0; // static reminder
-    }
-    MUTEX_LCD_GIVE;
-
-    // -> keyboard handler
-    KEYBOARD_Periodic_1mS();
-
-    // MIDI In/Out monitor
-    MIDI_PORT_Period1mS();
-
-    // call MIDI event tick
-    MBNG_EVENT_Tick();
-
-    // each second: check if SD Card (still) available
-    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay ) {
-      sdcard_check_ctr = 0;
-
-      MUTEX_SDCARD_TAKE;
-      s32 status = FILE_CheckSDCard();
-
-      if( status == 1 ) {
-	DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
-
-	// stop sequencer
-	SEQ_BPM_Stop();
-
-	// load all file infos
-	MBNG_FILE_LoadAllFiles(1); // including HW info
-
-	// select the first bank
-	MBNG_EVENT_SelectedBankSet(1);
-
-	// immediately go to next step
-	sdcard_check_ctr = sdcard_check_delay;
-      } else if( status == 2 ) {
-	DEBUG_MSG("SD Card disconnected\n");
-	// invalidate all file infos
-	MBNG_FILE_UnloadAllFiles();
-
-	// stop sequencer
-	SEQ_BPM_Stop();
-
-	// change status
-	MBNG_FILE_StatusMsgSet("No SD Card");
-
-	MUTEX_LCD_TAKE;
-	MBNG_LCD_CursorSet(0, 0, 0);
-	MBNG_LCD_PrintString("*** No SD Card *** ");
-	MBNG_LCD_ClearScreenOnNextMessage();
-	MUTEX_LCD_GIVE;
-      } else if( status == 3 ) {
-	if( !FILE_SDCardAvailable() ) {
-	  DEBUG_MSG("SD Card not found\n");
-	  MBNG_FILE_StatusMsgSet("No SD Card");
-
-	  MUTEX_LCD_TAKE;
-	  MBNG_LCD_CursorSet(0, 0, 0);
-	  MBNG_LCD_PrintString("*** No SD Card *** ");
-	  MBNG_LCD_ClearScreenOnNextMessage();
-	  MUTEX_LCD_GIVE;
-	} else if( !FILE_VolumeAvailable() ) {
-	  DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-	  MBNG_FILE_StatusMsgSet("No FAT");
-
-	  MUTEX_LCD_TAKE;
-	  MBNG_LCD_CursorSet(0, 0, 0);
-	  MBNG_LCD_PrintString("* No FAT on SD Card * ");
-	  MBNG_LCD_ClearScreenOnNextMessage();
-	  MUTEX_LCD_GIVE;
-	} else {
-	  MBNG_FILE_StatusMsgSet(NULL);
-
-	  // create the default files if they don't exist on SD Card
-	  MBNG_FILE_CreateDefaultFiles();
-	}
-
-	hw_enabled = 1; // enable hardware after first read...
-      }
-
-      MUTEX_SDCARD_GIVE;
-    }
-
-    // MSD driver
-    if( msd_state != MSD_DISABLED ) {
-      MUTEX_SDCARD_TAKE;
-
-      switch( msd_state ) {
-      case MSD_SHUTDOWN:
-	// switch back to USB MIDI
-	MIOS32_USB_Init(1);
-	msd_state = MSD_DISABLED;
-	break;
-
-      case MSD_INIT:
-	// LUN not mounted yet
-	lun_available = 0;
-
-	// enable MSD USB driver
-	MUTEX_J16_TAKE;
-	if( MSD_Init(0) >= 0 )
-	  msd_state = MSD_READY;
-	else
-	  msd_state = MSD_SHUTDOWN;
-	MUTEX_J16_GIVE;
-	break;
-
-      case MSD_READY:
-	// service MSD USB driver
-	MSD_Periodic_mS();
-
-	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
-	if( lun_available && !MSD_LUN_AvailableGet(0) )
-	  msd_state = MSD_SHUTDOWN;
-	else if( !lun_available && MSD_LUN_AvailableGet(0) )
-	  lun_available = 1;
-	break;
-      }
-
-      MUTEX_SDCARD_GIVE;
-    }
-  }
-
 }
 
 
