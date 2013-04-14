@@ -20,6 +20,7 @@
 #include <mios32.h>
 
 #include "seq_scale.h"
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -304,9 +305,8 @@ s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
   // add octave and root note
   note_scaled += 12*octave + root;
 
-  // decrement octave as long as note number outside allowed range
-  while( note_scaled >= 128 )
-    note_scaled -= 12;
+  // ensure that note is in the 0..127 range
+  note_scaled = SEQ_CORE_TrimNote(note_scaled, 0, 127);
 
   // replace note number in package
   p->note = note_scaled;

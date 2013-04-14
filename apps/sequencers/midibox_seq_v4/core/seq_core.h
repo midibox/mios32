@@ -224,6 +224,8 @@ extern s32 SEQ_CORE_BPM_SweepHandler(void);
 
 extern s32 SEQ_CORE_Scrub(s32 incrementer);
 
+extern u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

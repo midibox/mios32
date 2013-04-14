@@ -410,8 +410,8 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	      mios32_midi_package_t p = midi_package;
 	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
 		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		while( normalized_note > 127 ) normalized_note -= 12;
-		while( normalized_note < 0 ) normalized_note += 12;
+		// ensure that note is in the 0..127 range
+		normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
 		p.note = normalized_note;
 	      }
 	      SEQ_MIDI_IN_BusReceive(bus, p, 0);
@@ -451,8 +451,8 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		mios32_midi_package_t p = midi_package;
 		if( seq_midi_in_lower[bus] ) { // normalize to first octave
 		  int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		  while( normalized_note > 127 ) normalized_note -= 12;
-		  while( normalized_note < 0 ) normalized_note += 12;
+		  // ensure that note is in the 0..127 range
+		  normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
 		  p.note = normalized_note;
 		}
 		SEQ_MIDI_IN_BusReceive(bus, p, 0);

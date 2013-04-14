@@ -4,6 +4,8 @@ $Id$
 MIDIboxSEQ V4L.073
 ~~~~~~~~~~~~~~~~~~
 
+   o bugfix for "single_usb" option
+
    o Martijn adapted the MIDI Remote Keyboard functions for MBSEQV4L
      The key assignments are documented in doc/mbseq_lite_remote_functions.pdf
 

@@ -552,7 +552,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_R_DST_CHN:
-      if( SEQ_UI_Var8_Inc(&n->dst_chn, 0, 18, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&n->dst_chn, 0, 19, incrementer) >= 0 ) {
 	store_file_required = 1;
 	return 1; // value changed
       }
@@ -912,10 +912,14 @@ static s32 LCD_Handler(u8 high_prio)
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_R_DST_PORT && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(4);
+	if( n->dst_chn >= 18 ) {
+	  SEQ_LCD_PrintSpaces(2);
+	} else {
+	  SEQ_LCD_PrintSpaces(4);
+	}
       } else {
 	if( n->dst_chn >= 18 ) {
-	  SEQ_LCD_PrintSpaces(4);
+	  SEQ_LCD_PrintSpaces(2);
 	} else {
 	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(n->dst_port)));
 	}
@@ -923,14 +927,20 @@ static s32 LCD_Handler(u8 high_prio)
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_R_DST_CHN && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(5);
+	if( n->dst_chn >= 18 ) {
+	  SEQ_LCD_PrintSpaces(7);
+	} else {
+	  SEQ_LCD_PrintSpaces(5);
+	}
       } else {
 	if( !n->dst_chn ) {
 	  SEQ_LCD_PrintString(" --- ");
 	} else if( n->dst_chn == 17 ) {
 	  SEQ_LCD_PrintString(" All ");
-	} else if( n->dst_chn >= 18 ) {
-	  SEQ_LCD_PrintString("Track");
+	} else if( n->dst_chn == 18 ) {
+	  SEQ_LCD_PrintString("  Track");
+	} else if( n->dst_chn >= 19 ) {
+	  SEQ_LCD_PrintString("Sel.Trk");
 	} else {
 	  SEQ_LCD_PrintFormattedString(" #%2d ", n->dst_chn);
 	}

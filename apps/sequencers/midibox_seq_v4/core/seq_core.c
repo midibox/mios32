@@ -1459,25 +1459,14 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
   // apply transpose octave/semitones parameter
   if( inc_oct ) {
     note += 12 * inc_oct;
-    if( inc_oct < 0 ) {
-      while( note < 0 )
-	note += 12;
-    } else {
-      while( note >= 128 )
-	note -= 12;
-    }
   }
 
   if( inc_semi ) {
     note += inc_semi;
-    if( inc_semi < 0 ) {
-      while( note < 0 )
-	note += 12;
-    } else {
-      while( note >= 128 )
-	note -= 12;
-    }
   }
+
+  // ensure that note is in the 0..127 range
+  note = SEQ_CORE_TrimNote(note, 0, 127);
 
   if( is_cc ) // if CC, Pitchbender, ProgramChange
     p->value = note;
@@ -1530,6 +1519,10 @@ s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
   if( p->type != NoteOn )
     return 0; // no Note
 
+  // if not set: allow full range
+  if( !upper )
+    upper = 127;
+
   // swap if lower value is greater than upper
   if( lower > upper ) {
     u8 tmp = upper;
@@ -1538,16 +1531,7 @@ s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
   }
 
   // apply limit
-  s32 note = p->note; // we need a signed value
-  if( tcc->limit_lower )
-    while( (note-12) < lower )
-      note += 12;
-
-  if( tcc->limit_upper )
-    while( (note+12) > upper )
-      note -= 12;
-
-  p->note = note;
+  p->note = SEQ_CORE_TrimNote(p->note, lower, upper);
 
   return 0; // no error
 }
@@ -1711,10 +1695,9 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
 	fb_note = fb_note_base + ((s32)SEQ_RANDOM_Gen_Range(0, 48) - 24);
       else
 	fb_note = fb_note + ((s32)tcc->echo_fb_note-24);
-      while( fb_note < 0 )
-	fb_note += 12;
-      while( fb_note > 127 )
-	fb_note -= 12;
+
+      // ensure that note is in the 0..127 range
+      fb_note = SEQ_CORE_TrimNote(fb_note, 0, 127);
 
       p.note = (u8)fb_note;
     }
@@ -1897,3 +1880,37 @@ s32 SEQ_CORE_Scrub(s32 incrementer)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function ensures, that a (transposed) note is within
+// the <lower>..<upper> range.
+//
+// If the note is outside the range, it will be "trimmed" in the semitone
+// range, and the octave will be kept.
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper)
+{
+  // negative note (e.g. after transpose?)
+  // shift it to the positive range
+  if( note < 0 )
+    note = 11 - ((-note - 1) % 12);
+
+  // check for lower boundary
+  if( note < (s32)lower ) {
+    note = 12*(lower/12) + (note % 12);
+  }
+
+  // check for upper boundary
+  if( note > (s32)upper ) {
+    note = 12*(upper/12) + (note % 12);
+
+    // if note still > upper value (e.g. upper is set to >= 120)
+    // an if (instead of while) should work in all cases, because note will be (12*int(127/12)) + 11 = 131 in worst case!
+    if( note > upper )
+      note -= 12;
+  }
+
+  return note;
+}
+
