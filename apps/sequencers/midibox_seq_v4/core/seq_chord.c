@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_chord.h"
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -133,13 +134,9 @@ s32 SEQ_CHORD_NoteGet(u8 key_num, u8 chord)
 
   // transpose octave
   note += oct_transpose * 12;
-  if( oct_transpose > 0 ) {
-    while( note >= 128 )
-      note -= 12;
-  } else if( oct_transpose < 0 ) {
-    while( note < 0 )
-      note += 12;
-  }
+
+  // ensure that note is in the 0..127 range
+  note = SEQ_CORE_TrimNote(note, 0, 127);
 
   return note;
 }

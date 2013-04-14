@@ -60,11 +60,10 @@ s32 SEQ_HUMANIZE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   if( mode & (1 << 0) ) { // Note Event
     u8 note_intensity = intensity / 4; // important for combination with velocity/gatelength
     s16 value = e->midi_package.note + ((note_intensity/2) - (s16)SEQ_RANDOM_Gen_Range(0, note_intensity));
-    if( value < 0 ) {
-      while( value < 0 ) value += 12;
-    } else if( value > 127 ) {
-      while( value > 127 ) value -= 12;
-    }
+
+    // ensure that note is in the 0..127 range
+    value = SEQ_CORE_TrimNote(value, 0, 127);
+
     e->midi_package.note = value;
   }
 

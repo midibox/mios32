@@ -395,6 +395,12 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 			      dst_chn = 17;
 			    else if( strcasecmp(arg_dst_chn, "trk") == 0 || strcasecmp(arg_dst_chn, "track") == 0 )
 			      dst_chn = 18;
+			    else if( strcasecmp(arg_dst_chn, "stk") == 0 ||
+				     strcasecmp(arg_dst_chn, "strk") == 0 ||
+				     strcasecmp(arg_dst_chn, "seltrk") == 0 ||
+				     strcasecmp(arg_dst_chn, "seltrack") == 0 ||
+				     strcasecmp(arg_dst_chn, "track") == 0 )
+			      dst_chn = 19;
 			    else {
 			      dst_chn = get_dec(arg_dst_chn);
 			      if( dst_chn > 16 )
@@ -1128,8 +1134,10 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
       sprintf(dst_chn, "off");
     else if( n->dst_chn == 17 )
       sprintf(dst_chn, "All");
-    else if( n->dst_chn >= 18 )
+    else if( n->dst_chn == 18 )
       sprintf(dst_chn, "Trk");
+    else if( n->dst_chn >= 19 )
+      sprintf(dst_chn, "STk");
     else
       sprintf(dst_chn, "#%2d", n->dst_chn);
 

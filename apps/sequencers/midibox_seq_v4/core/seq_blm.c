@@ -1937,25 +1937,14 @@ static u8 SEQ_BLM_BUTTON_Hlp_TransposeNote(u8 track, u8 note)
   // apply transpose octave/semitones parameter
   if( inc_oct ) {
     tr_note += 12 * inc_oct;
-    if( inc_oct < 0 ) {
-      while( tr_note < 0 )
-	tr_note += 12;
-    } else {
-      while( tr_note >= 128 )
-	tr_note -= 12;
-    }
   }
 
   if( inc_semi ) {
     tr_note += inc_semi;
-    if( inc_semi < 0 ) {
-      while( tr_note < 0 )
-	tr_note += 12;
-    } else {
-      while( tr_note >= 128 )
-	tr_note -= 12;
-    }
   }
+
+  // ensure that note is in the 0..127 range
+  tr_note = SEQ_CORE_TrimNote(tr_note, 0, 127);
 
   return tr_note;
 }

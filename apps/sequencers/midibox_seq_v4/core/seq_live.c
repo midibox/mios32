@@ -117,8 +117,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       } else {
 #endif
 	effective_note = (int)p.note + 12*seq_live_options.OCT_TRANSPOSE;
-	while( effective_note < 0   ) effective_note += 12;
-	while( effective_note > 127 ) effective_note -= 12;
+
+	// ensure that note is in the 0..127 range
+	effective_note = SEQ_CORE_TrimNote(effective_note, 0, 127);
 #if KEYBOARD_DRUM_MAPPING
       }
 #endif

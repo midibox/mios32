@@ -128,11 +128,10 @@ s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e)
   if( e->midi_package.type == NoteOn ) {
     if( tcc->lfo_enable_flags.NOTE ) {
       s16 value = e->midi_package.note + lfo_value;
-      if( value < 0 ) {
-	while( value < 0 ) value += 12;
-      } else if( value > 127 ) {
-	while( value > 127 ) value -= 12;
-      }
+
+      // ensure that note is in the 0..127 range
+      value = SEQ_CORE_TrimNote(value, 0, 127);
+
       e->midi_package.note = value;
     }
 

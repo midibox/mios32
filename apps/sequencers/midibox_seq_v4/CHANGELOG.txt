@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.073
+~~~~~~~~~~~~~~~~~
+
+   o bugfix for "single_usb" option
+
+   o the MIDI router provides the new destination "Sel.Trk"
+
+     Usecase: MIDI events, such as CC or Notes, should be sent from a master keyboard
+     or MIDI controller to the MIDI port and channel of the currently selected track.
+
+
 MIDIboxSEQ V4.072
 ~~~~~~~~~~~~~~~~~
 
