@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox KB V1.010
+~~~~~~~~~~~~~~~~~
+
+   o bugfix for "single_usb" option
+
+
 MIDIbox KB V1.009
 ~~~~~~~~~~~~~~~~~
 
