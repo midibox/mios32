@@ -2914,7 +2914,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 	break;
 
       case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED:
-	incrementer = (item->value < 64) ? item->value : (0x40 + (128-(s32)item->value));
+	incrementer = (item->value < 64) ? item->value : -(((s32)item->value) - 0x40);
 	break;
 
       case MBNG_EVENT_ENC_MODE_INC41_DEC3F:
