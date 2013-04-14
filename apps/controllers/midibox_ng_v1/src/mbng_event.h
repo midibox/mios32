@@ -213,6 +213,7 @@ typedef union {
     u32 no_dump:1;
     u32 dimmed:1;
     u32 colour:2;
+    u32 radio_group:6;
   };
 
 } mbng_event_flags_t;
@@ -221,22 +222,20 @@ typedef union {
 typedef union {
   u16 ALL;
 
-  struct {
-    u16 radio_group:6;
-  } SENDER;
+  //struct {
+  //} SENDER;
 
   struct {
-    u16 radio_group:6;
+    u16 emu_enc_mode:4; // mbng_event_enc_mode_t
+    u16 emu_enc_hw_id:8;
   } RECEIVER;
 
   struct {
-    u16 radio_group:6;
     u16 button_mode:2; // mbng_event_button_mode_t
   } DIN;
 
-  struct {
-    u16 radio_group:6;
-  } DOUT;
+  //struct {
+  //} DOUT;
 
   struct {
     u16 mapped:1;
@@ -393,7 +392,7 @@ extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
 extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
 extern const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item);
 extern mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode);
-extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item);
+extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_enc_mode_t enc_mode);
 extern mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode);
 extern const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item);
 extern mbng_event_enc_speed_mode_t MBNG_EVENT_ItemEncSpeedModeFromStrGet(char *enc_speed_mode);

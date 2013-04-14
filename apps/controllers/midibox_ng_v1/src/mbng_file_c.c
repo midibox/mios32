@@ -1124,20 +1124,8 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value in EVENT_%s ... %s=%s (expecting 0..63)\n", line, event, parameter, value_str);
 #endif
 	return -1;
-      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_BUTTON ) {
-	item.custom_flags.DIN.radio_group = value;
-      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_LED ) {
-	item.custom_flags.DOUT.radio_group = value;
-      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_SENDER ) {
-	item.custom_flags.SENDER.radio_group = value;
-      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_RECEIVER ) {
-	item.custom_flags.RECEIVER.radio_group = value;
-      } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON, LED, SENDER or RECEIVER\n", line, event, parameter, value_str);
-#endif
-	return -1;
       }
+      item.flags.radio_group = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "ain_mode") == 0 ) {
@@ -1173,6 +1161,35 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       } else {
 	item.custom_flags.ENC.enc_mode = enc_mode;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "emu_enc_mode") == 0 ) {
+      mbng_event_enc_mode_t emu_enc_mode = MBNG_EVENT_ItemEncModeFromStrGet(value_str);
+      if( emu_enc_mode == MBNG_EVENT_ENC_MODE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid emu_enc_mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) != MBNG_EVENT_CONTROLLER_RECEIVER ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_RECEIVER!\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+	item.custom_flags.RECEIVER.emu_enc_mode = emu_enc_mode;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "emu_enc_hw_id") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 1 || value > MBNG_PATCH_NUM_ENC ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid hw_id value in EVENT_%s ... %s=%s (expecting 1..%d)\n", line, event, parameter, value_str, MBNG_PATCH_NUM_ENC);
+#endif
+	return -1;
+      } else {
+	item.custom_flags.RECEIVER.emu_enc_hw_id = value;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3548,18 +3565,24 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
+      if( item.flags.radio_group ) {
+	sprintf(line_buffer, "  radio_group=%d", item.flags.radio_group);
+	FLUSH_BUFFER;
+      }
+
       // differ between event type
       switch( item.id & 0xf000 ) {
       case MBNG_EVENT_CONTROLLER_SENDER: {
-	if( item.custom_flags.SENDER.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.SENDER.radio_group);
-	  FLUSH_BUFFER;
-	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_RECEIVER: {
-	if( item.custom_flags.RECEIVER.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.RECEIVER.radio_group);
+	if( item.custom_flags.RECEIVER.emu_enc_mode ) {
+	  sprintf(line_buffer, "  emu_enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item.custom_flags.RECEIVER.emu_enc_mode));
+	  FLUSH_BUFFER;
+	}
+
+	if( item.custom_flags.RECEIVER.emu_enc_hw_id ) {
+	  sprintf(line_buffer, "  emu_enc_hw_id=%d", item.custom_flags.RECEIVER.emu_enc_hw_id);
 	  FLUSH_BUFFER;
 	}
       } break;
@@ -3569,18 +3592,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
-
-	if( item.custom_flags.DIN.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.DIN.radio_group);
-	  FLUSH_BUFFER;
-	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_LED: {
-	if( item.custom_flags.DOUT.radio_group ) {
-	  sprintf(line_buffer, "  radio_group=%d", item.custom_flags.DOUT.radio_group);
-	  FLUSH_BUFFER;
-	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
@@ -3591,7 +3605,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       case MBNG_EVENT_CONTROLLER_ENC: {
 	if( item.custom_flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_ABSOLUTE && item.custom_flags.ENC.enc_mode != MBNG_EVENT_ENC_MODE_UNDEFINED ) {
-	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(&item));
+	  sprintf(line_buffer, "  enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item.custom_flags.ENC.enc_mode));
 	  FLUSH_BUFFER;
 	}
 
