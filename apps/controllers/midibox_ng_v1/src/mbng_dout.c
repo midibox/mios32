@@ -117,7 +117,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       dout_value = map_values[map_ix];
     } else {
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
-      if( item->custom_flags.DOUT.radio_group ) {
+      if( item->flags.radio_group ) {
 	if( item->min <= item->max )
 	  dout_value = item->value >= item->min && item->value <= item->max;
 	else

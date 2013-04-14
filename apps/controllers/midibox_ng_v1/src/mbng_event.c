@@ -1455,23 +1455,22 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     DEBUG_MSG("  - dimmed=%d", item->flags.dimmed);
     DEBUG_MSG("  - rgb=%d:%d:%d", item->rgb.r, item->rgb.g, item->rgb.b);
     DEBUG_MSG("  - syxdump_pos=%d:%d", item->syxdump_pos.receiver, item->syxdump_pos.pos);
+    DEBUG_MSG("  - radio_group=%d", item->flags.radio_group);
 
     switch( item->id & 0xf000 ) {
     case MBNG_EVENT_CONTROLLER_SENDER: {
-      DEBUG_MSG("  - radio_group=%d", item->custom_flags.SENDER.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_RECEIVER: {
-      DEBUG_MSG("  - radio_group=%d", item->custom_flags.RECEIVER.radio_group);
+      DEBUG_MSG("  - emu_enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item->custom_flags.RECEIVER.emu_enc_mode));
+      DEBUG_MSG("  - emu_enc_hw_id=%d", item->custom_flags.RECEIVER.emu_enc_hw_id);
     } break;
 
     case MBNG_EVENT_CONTROLLER_BUTTON: {
       DEBUG_MSG("  - button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(item));
-      DEBUG_MSG("  - radio_group=%d", item->custom_flags.DIN.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_LED: {
-      DEBUG_MSG("  - radio_group=%d", item->custom_flags.DOUT.radio_group);
     } break;
 
     case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
@@ -1481,7 +1480,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     } break;
 
     case MBNG_EVENT_CONTROLLER_ENC: {
-      DEBUG_MSG("  - enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item));
+      DEBUG_MSG("  - enc_mode=%s", MBNG_EVENT_ItemEncModeStrGet(item->custom_flags.ENC.enc_mode));
       DEBUG_MSG("  - enc_speed_mode=%s:%d", MBNG_EVENT_ItemEncSpeedModeStrGet(item), item->custom_flags.ENC.enc_speed_mode_par);
     } break;
 
@@ -1983,9 +1982,8 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
 /////////////////////////////////////////////////////////////////////////////
 //! for ENC Mode
 /////////////////////////////////////////////////////////////////////////////
-const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_item_t *item)
+const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_enc_mode_t enc_mode)
 {
-  mbng_event_enc_mode_t enc_mode = item->custom_flags.ENC.enc_mode;
   switch( enc_mode ) {
   case MBNG_EVENT_ENC_MODE_ABSOLUTE:              return "Absolute";
   case MBNG_EVENT_ENC_MODE_40SPEED:               return "40Speed";
@@ -2901,6 +2899,55 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     // store in pool
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
+
+    // ENC emulation mode?
+    if( item->custom_flags.RECEIVER.emu_enc_hw_id ) {
+      s32 incrementer = 0;
+
+      switch( item->custom_flags.RECEIVER.emu_enc_mode ) {
+      case MBNG_EVENT_ENC_MODE_40SPEED:
+	incrementer = (s32)item->value - 0x40;
+	break;
+
+      case MBNG_EVENT_ENC_MODE_00SPEED:
+	incrementer = (item->value < 64) ? item->value : -(128-(s32)item->value);
+	break;
+
+      case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED:
+	incrementer = (item->value < 64) ? item->value : (0x40 + (128-(s32)item->value));
+	break;
+
+      case MBNG_EVENT_ENC_MODE_INC41_DEC3F:
+	if( item->value != 0x40 ) {
+	  incrementer = (item->value > 0x40) ? 1 : -1;
+	}
+	break;
+
+      case MBNG_EVENT_ENC_MODE_INC01_DEC7F:
+	if( item->value != 0x00 ) {
+	  incrementer = (item->value < 0x40) ? 1 : -1;
+	}
+	break;
+
+      case MBNG_EVENT_ENC_MODE_INC01_DEC41:
+	if( item->value != 0x00 && item->value != 0x40 ) {
+	  incrementer = (item->value < 0x40) ? 1 : -1;
+	}
+	break;
+
+    default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
+      // forward value directly to ENC
+      mbng_event_item_id_t fwd_id = item->fwd_id;
+      item->fwd_id = MBNG_EVENT_CONTROLLER_ENC | item->custom_flags.RECEIVER.emu_enc_hw_id;
+      MBNG_EVENT_ItemForward(item);
+      item->fwd_id = fwd_id;
+    }
+    }
+
+    if( incrementer ) {
+      MBNG_ENC_NotifyChange(item->custom_flags.RECEIVER.emu_enc_hw_id - 1, incrementer);
+    }
+    }
   } break;
   }
 
@@ -2909,16 +2956,8 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     if( item->fwd_id )
       MBNG_EVENT_ItemForward(item);
     else {
-      u8 radio_group = 0;
-      switch( item->id & 0xf000 ) {
-      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->custom_flags.DIN.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->custom_flags.DOUT.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->custom_flags.SENDER.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->custom_flags.RECEIVER.radio_group; break;
-      }
-
-      if( radio_group )
-	MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
+      if( item->flags.radio_group )
+	MBNG_EVENT_ItemForwardToRadioGroup(item, item->flags.radio_group);
     }
 
     if( item->flags.fwd_to_lcd && item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
@@ -2988,19 +3027,8 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
   u32 i;
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
-    u16 id_type = pool_item->hw_id & 0xf000;
-    u8 is_in_group = 0;
-    if( id_type == MBNG_EVENT_CONTROLLER_BUTTON ) {
-      is_in_group = pool_item->custom_flags.DIN.radio_group == radio_group;
-    } else if( id_type == MBNG_EVENT_CONTROLLER_LED ) {
-      is_in_group = pool_item->custom_flags.DOUT.radio_group == radio_group;
-    } else if( id_type == MBNG_EVENT_CONTROLLER_SENDER ) {
-      is_in_group = pool_item->custom_flags.SENDER.radio_group == radio_group;
-    } else if( id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
-      is_in_group = pool_item->custom_flags.RECEIVER.radio_group == radio_group;
-    }
 
-    if( is_in_group ) {
+    if( pool_item->flags.radio_group == radio_group ) {
       mbng_event_item_t fwd_item;
       MBNG_EVENT_ItemCopy2User(pool_item, &fwd_item);
       fwd_item.value = item->value; // forward the value of the sender
@@ -3071,16 +3099,8 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   MBNG_EVENT_ItemSend(item);
 
   // forward - optionally to whole radio group
-  u8 radio_group = 0;
-  switch( item->id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item->custom_flags.DIN.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_LED:      radio_group = item->custom_flags.DOUT.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item->custom_flags.SENDER.radio_group; break;
-  case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item->custom_flags.RECEIVER.radio_group; break;
-  }
-
-  if( radio_group )
-    MBNG_EVENT_ItemForwardToRadioGroup(item, radio_group);
+  if( item->flags.radio_group )
+    MBNG_EVENT_ItemForwardToRadioGroup(item, item->flags.radio_group);
   else
     MBNG_EVENT_ItemForward(item);
 
@@ -3205,15 +3225,7 @@ s32 MBNG_EVENT_Dump(void)
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
 
-      u8 radio_group = 0;
-      switch( item.id & 0xf000 ) {
-      case MBNG_EVENT_CONTROLLER_BUTTON:   radio_group = item.custom_flags.DIN.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_LED:      radio_group = item.custom_flags.DOUT.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_SENDER:   radio_group = item.custom_flags.SENDER.radio_group; break;
-      case MBNG_EVENT_CONTROLLER_RECEIVER: radio_group = item.custom_flags.RECEIVER.radio_group; break;
-      }
-
-      if( !radio_group || (item.value >= item.min && item.value <= item.max) ) {
+      if( !item.flags.radio_group || (item.value >= item.min && item.value <= item.max) ) {
 	MBNG_EVENT_NotifySendValue(&item);
       }
     }
