@@ -3572,7 +3572,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	}
       }
 
-      if( parse_sysex ) {
+      if( parse_sysex && pool_item->sysex_runtime_var.match_ctr < pool_item->len_stream ) {
 	u8 *stream = ((u8 *)&pool_item->data_begin) + pool_item->sysex_runtime_var.match_ctr;
 	u8 again = 0;
 	do {
@@ -3588,11 +3588,11 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    case MBNG_EVENT_SYSEX_VAR_CHK:        match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_CHK_INV:    match = 1; break; // ignore checksum
 	    case MBNG_EVENT_SYSEX_VAR_VAL:        match = 1; pool_item->value = (pool_item->value & 0xff80) | (midi_in & 0x7f); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->value = (pool_item->value & 0xf07f) | ((midi_in & 0x7f) << 7); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->value = (pool_item->value & 0xfff0) | ((midi_in >>  0) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->value = (pool_item->value & 0xff0f) | ((midi_in >>  4) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->value = (pool_item->value & 0xf0ff) | ((midi_in >>  8) & 0xf); break;
-	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->value = (pool_item->value & 0x0fff) | ((midi_in >> 12) & 0xf); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_H:      match = 1; pool_item->value = (pool_item->value & 0xf07f) | (((u16)midi_in & 0x7f) << 7); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N1:     match = 1; pool_item->value = (pool_item->value & 0xfff0) | (((u16)midi_in <<  0) & 0x000f); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N2:     match = 1; pool_item->value = (pool_item->value & 0xff0f) | (((u16)midi_in <<  4) & 0x00f0); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N3:     match = 1; pool_item->value = (pool_item->value & 0xf0ff) | (((u16)midi_in <<  8) & 0x0f00); break;
+	    case MBNG_EVENT_SYSEX_VAR_VAL_N4:     match = 1; pool_item->value = (pool_item->value & 0x0fff) | (((u16)midi_in << 12) & 0xf000); break;
 	    case MBNG_EVENT_SYSEX_VAR_IGNORE:     match = 1; break;
 
 	    case MBNG_EVENT_SYSEX_VAR_DUMP:
@@ -3689,6 +3689,18 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	    }
 	  } else { // no matching byte
 	    pool_item->sysex_runtime_var.ALL = 0;
+	  }
+
+	  // end of parse stream reached?
+	  if( pool_item->sysex_runtime_var.match_ctr == pool_item->len_stream ) {
+	    again = 0;
+
+	    pool_item->sysex_runtime_var.ALL = 0;
+
+	    // all values matching!
+	    mbng_event_item_t item;
+	    MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	    MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
 	  }
 	} while( again );
       }
