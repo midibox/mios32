@@ -502,7 +502,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 void SEQ_TASK_Period1S(void)
 {
 #ifndef MBSEQV4L
-  static u8 wait_boot_ctr = 2; // wait 2 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
+  static s8 wait_boot_ctr = 3; // wait 3 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
   // don't check for SD Card if MSD enabled
@@ -518,9 +518,10 @@ void SEQ_TASK_Period1S(void)
 #endif  
 
   // boot phase of 2 seconds finished?
-  if( wait_boot_ctr ) {
+  if( wait_boot_ctr > 0 ) {
     --wait_boot_ctr;
-    return;
+    if( wait_boot_ctr )
+      return;
   }
 
   // BLM timeout counter
@@ -535,42 +536,54 @@ void SEQ_TASK_Period1S(void)
   s32 status = FILE_CheckSDCard();
 
   if( status == 1 ) {
-    char str[21];
-    sprintf(str, "Label: %s", FILE_VolumeLabel());
-    SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, " SD Card connected", "        :-D");
+    if( wait_boot_ctr != 0 ) { // don't print message if we just booted
+      char str[21];
+      sprintf(str, "Label: %s", FILE_VolumeLabel());
+      SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, " SD Card connected", "        :-D");
+    }
     SEQ_FILE_LoadSessionName();
     SEQ_FILE_LoadAllFiles(1);
   } else if( status == 2 ) {
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "SD Card disconnected", "        :-/");
     SEQ_FILE_UnloadAllFiles();
+    wait_boot_ctr = -1;
   } else if( status == 3 ) {
     if( !FILE_SDCardAvailable() ) {
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "  No SD Card found  ", "        :-(");
       SEQ_FILE_HW_LockConfig(); // lock configuration
+      wait_boot_ctr = -1;
     } else if( !FILE_VolumeAvailable() ) {
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
       SEQ_FILE_HW_LockConfig(); // lock configuration
+      wait_boot_ctr = -1;
     } else {
-      char str1[30];
-      sprintf(str1, "Banks: ....");
-      u8 bank;
-      for(bank=0; bank<4; ++bank)
-	str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
-      char str2[30];
-      sprintf(str2, 
-	      "M:%c S:%c G:%c C:%c%c HW:%c", 
-	      SEQ_FILE_M_NumMaps() ? '*':'-',
-	      SEQ_FILE_S_NumSongs() ? '*':'-',
-	      SEQ_FILE_G_Valid() ? '*':'-',
-	      SEQ_FILE_C_Valid() ? 'S':'-',
-	      SEQ_FILE_GC_Valid() ? 'G':'-',
-	      SEQ_FILE_HW_Valid() ? '*':'-');
-      SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+
+      if( wait_boot_ctr != 0 ) { // don't print message if we just booted
+	char str1[30];
+	sprintf(str1, "Banks: ....");
+	u8 bank;
+	for(bank=0; bank<4; ++bank)
+	  str1[7+bank] = SEQ_FILE_B_NumPatterns(bank) ? ('1'+bank) : '-';
+	char str2[30];
+	sprintf(str2, 
+		"M:%c S:%c G:%c C:%c%c HW:%c", 
+		SEQ_FILE_M_NumMaps() ? '*':'-',
+		SEQ_FILE_S_NumSongs() ? '*':'-',
+		SEQ_FILE_G_Valid() ? '*':'-',
+		SEQ_FILE_C_Valid() ? 'S':'-',
+		SEQ_FILE_GC_Valid() ? 'G':'-',
+		SEQ_FILE_HW_Valid() ? '*':'-');
+	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
+      }
 
       // request to load content of SD card
       load_sd_content = 1;
+
+      // notify that boot finished
+      wait_boot_ctr = -1;
     }
   } else if( status < 0 ) {
+    wait_boot_ctr = -1;
     SEQ_UI_SDCardErrMsg(2000, status);
   }
 

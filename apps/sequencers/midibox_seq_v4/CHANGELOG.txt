@@ -6,6 +6,31 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.074_pre1
+~~~~~~~~~~~~~~~~~~~~~~
+
+   o "SD Card connected" message not displayed after boot anymore, instead only 
+     when the SD Card is exchanged
+
+   o whenever the ALL function is active, you can now directly select the steps
+     which should be modified with the GP buttons (LEDs will show the selection pattern)
+
+   o the ALL function has been enhanced:
+     - press & hold the ALL button and move the encoder of the already selected step
+       (marked with >...<) to change all steps to the same value (like before)
+
+     - if ALL button not pushed (but active), move the encoder of the already selected step
+       (marked with >...<) to change all step values relatively (like before)
+
+     - NEW: if ALL button is active (regardless if pushed or not), and the encoder
+       of an unselected step is moved, the editor will generate a ramp between the
+       selected step and the moved encoder.
+       This feature has been borrowed from Sequentix Cirklon - thanks for the inspiration! :-)
+
+     The "selected step" can either be changed with the datawheel, or it will be
+     changed if the ALL function isn't active (as before)
+
+
 MIDIboxSEQ V4.073
 ~~~~~~~~~~~~~~~~~
 

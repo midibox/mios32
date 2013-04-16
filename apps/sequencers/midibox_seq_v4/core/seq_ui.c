@@ -1332,7 +1332,9 @@ static s32 SEQ_UI_Button_StepViewInc(s32 depressed)
     ui_selected_step_view = new_step_view;
 
     // select step within view
-    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    }
   }
 
   char buffer[20];
@@ -1352,7 +1354,9 @@ static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
     ui_selected_step_view = new_step_view;
 
     // select step within view
-    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    }
   }
 
   char buffer[20];
@@ -3012,9 +3016,11 @@ s32 SEQ_UI_CheckSelections(void)
     ui_selected_step %= 16;
   }
 
-  if( ui_selected_step < (16*ui_selected_step_view) || 
-      ui_selected_step >= (16*(ui_selected_step_view+1)) )
-    ui_selected_step_view = ui_selected_step / 16;
+  if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the view if ALL function is active, otherwise the ramp can't be changed over multiple views
+    if( ui_selected_step < (16*ui_selected_step_view) || 
+	ui_selected_step >= (16*(ui_selected_step_view+1)) )
+      ui_selected_step_view = ui_selected_step / 16;
+  }
 
   // send selected track via MIDI if it has been changed
   if( seq_hwcfg_track_cc.mode && seq_ui_sent_cc_track != visible_track ) {
