@@ -96,7 +96,9 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
     }
   } else {
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS ) {
+      *gp_leds = ui_cursor_flash ? 0x0000 : selected_steps;
+    } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       *gp_leds = selected_steps;
     } else {
 
@@ -357,16 +359,23 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
     }
 
+    u8 edit_ramp = 0;
+    u8 changed_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
     if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
-      u8 new_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
-      if( ui_selected_step != new_step && edit_passive_mode ) {
+      if( ui_selected_step != changed_step && edit_passive_mode ) {
 	PassiveEditTakeOver();
-	ui_selected_step = new_step;
+	ui_selected_step = changed_step;
 	PassiveEditEnter();
       } else {
-	ui_selected_step = new_step;
+	// take over new step if "ALL" button not pressed to support "ramp" editing
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	  ui_selected_step = changed_step;
+	} else {
+	  if( ui_selected_step != changed_step )
+	    edit_ramp = 1;
+	}
       }
 
     }
@@ -394,10 +403,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       incrementer *= 4;
 
     // first change the selected value
-    if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
+    if( seq_ui_button_state.CHANGE_ALL_STEPS && (edit_ramp || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) ) {
       u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
-      u16 par_step = ui_selected_step;
-      u16 trg_step = ui_selected_step;
+      u16 par_step = changed_step;
+      u16 trg_step = changed_step;
 
       // mirrored layer in drum mode?
       u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -410,21 +419,54 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       value_changed |= 1;
     }
 
+    int value_selected_step = SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+    int value_changed_step = SEQ_PAR_Get(visible_track, changed_step, ui_selected_par_layer, ui_selected_instrument);
+
     // change value of all selected steps
     u8 track;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	u16 num_steps = SEQ_PAR_NumStepsGet(track);
-	u16 trg_step = (ui_selected_step & ~(num_steps-1));
-	
+	u16 trg_step = (changed_step & ~(num_steps-1));
+
 	u16 par_step;
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
-	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || par_step == ui_selected_step || (selected_steps & (1 << (par_step % 16))) ) {
-	    change_gate = trg_step == ui_selected_step;
-	    u8 dont_change_gate = par_step != ui_selected_step;
+	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
+	    change_gate = trg_step == changed_step;
+	    u8 dont_change_gate = par_step != changed_step;
 	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
-	      if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate, dont_change_gate) >= 0 )
-		value_changed |= 1;
+	      s32 local_forced_value = edit_ramp ? -1 : forced_value;
+
+	      s32 edit_ramp_num_steps = 0;
+	      if( edit_ramp ) {
+		if( changed_step > ui_selected_step && par_step > ui_selected_step && par_step < changed_step ) {
+		  edit_ramp_num_steps = changed_step - ui_selected_step;
+		} else if( changed_step < ui_selected_step && par_step < ui_selected_step && par_step > changed_step ) {
+		  edit_ramp_num_steps = ui_selected_step - changed_step;
+		}
+
+		if( edit_ramp_num_steps ) {
+		  if( par_step == changed_step ) {
+		    local_forced_value = value_changed_step;
+		  } else {
+		    int diff = value_changed_step - value_selected_step;
+		    if( diff == 0 ) {
+		      local_forced_value = value_changed_step;
+		    } else {
+		      if( changed_step > ui_selected_step ) {
+			local_forced_value = value_selected_step + (((par_step - ui_selected_step) * diff) / edit_ramp_num_steps);
+		      } else {
+			local_forced_value = value_selected_step + (((ui_selected_step - par_step) * diff) / edit_ramp_num_steps);
+		      }
+		    }
+		  }
+		}
+	      }
+
+	      if( !edit_ramp || edit_ramp_num_steps ) {
+		if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, local_forced_value, change_gate, dont_change_gate) >= 0 )
+		  value_changed |= 1;
+	      }
 	    }
 	  }
 	}
@@ -460,7 +502,8 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     if( show_edit_config_page )
       return Encoder_Handler(button, 0);
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+    if( (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
+	seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       selected_steps ^= (1 << button);
       return 1; // value changed
     }
