@@ -90,7 +90,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
     int matrix;
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
-      if( m->led_emu_id_offset && m->sr_dout_r1 && hw_id_ix >= m->led_emu_id_offset ) {
+      if( m->led_emu_id_offset && (m->sr_dout_r1 || m->flags.max72xx_enabled) && hw_id_ix >= m->led_emu_id_offset ) {
 
 	u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
 	if( hw_id_ix < (m->num_rows * (m->led_emu_id_offset + row_size)) ) {

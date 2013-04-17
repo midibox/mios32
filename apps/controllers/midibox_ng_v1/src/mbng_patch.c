@@ -46,6 +46,7 @@ mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES];
 mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
 
 char mbng_patch_aout_spi_rc_pin;
+char mbng_patch_max72xx_spi_rc_pin;
 
 mbng_patch_scs_t mbng_patch_scs;
 static const mbng_patch_scs_t mbng_patch_scs_default = {
@@ -87,7 +88,7 @@ s32 MBNG_PATCH_Init(u32 mode)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
       m->num_rows = 8;
-      m->inverted.ALL = 0;
+      m->flags.ALL = 0;
       m->button_emu_id_offset = 0;
       m->sr_dout_sel1 = 0;
       m->sr_dout_sel2 = 0;
@@ -101,7 +102,7 @@ s32 MBNG_PATCH_Init(u32 mode)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
       m->num_rows = 8;
-      m->inverted.ALL = 0;
+      m->flags.ALL = 0;
       m->led_emu_id_offset = 0;
       m->sr_dout_sel1  = 0;
       m->sr_dout_sel2 = 0;
@@ -143,6 +144,9 @@ s32 MBNG_PATCH_Init(u32 mode)
 	ainser->cali[pin].spread_center = 0;
       }
     }
+
+    // MAX72xx CS pin
+    mbng_patch_max72xx_spi_rc_pin = 0;
   }
 
   {

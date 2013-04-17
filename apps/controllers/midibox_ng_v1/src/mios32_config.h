@@ -88,6 +88,14 @@
 extern char mbng_patch_aout_spi_rc_pin;
 #define AOUT_SPI_RC_PIN mbng_patch_aout_spi_rc_pin
 
+// enable 1 MAX72xx chain with up to 16 devices
+#define MAX72XX_NUM_CHAINS 1
+#define MAX72XX_NUM_DEVICES_PER_CHAIN 16
+// configurable chip select pin
+extern char mbng_patch_max72xx_spi_rc_pin;
+#define MAX72XX_SPI_RC_PIN_CHAIN1 mbng_patch_max72xx_spi_rc_pin
+
+
 // reserved memory for FreeRTOS pvPortMalloc function
 #define MIOS32_HEAP_SIZE 9*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)

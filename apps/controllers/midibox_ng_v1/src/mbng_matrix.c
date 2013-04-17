@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <max72xx.h>
 
 #include "app.h"
 #include "mbng_lcd.h"
@@ -57,6 +58,12 @@ static u16 button_row_changed[MBNG_PATCH_NUM_MATRIX_DIN][MBNG_PATCH_NUM_MATRIX_R
 static u16 button_debounce_ctr[MBNG_PATCH_NUM_MATRIX_DIN];
 
 static u8 debounce_reload;
+
+static u8 max72xx_init_req; // requests MAX72xx chain initialisation
+#if MAX72XX_NUM_DEVICES_PER_CHAIN > 16
+# error "update the max72xx_update_chain_req variable type, it's only u16!"
+#endif
+static u16 max72xx_update_digit_req; // requests MAX72xx digit update (16 flags for 16 digits)
 
 
 // pre-calculated selection patterns, since we need them very often
@@ -244,6 +251,9 @@ s32 MBNG_MATRIX_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+  max72xx_init_req = 0;
+  max72xx_update_digit_req = 0;
+
   {
     int matrix, row;
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix) {
@@ -283,6 +293,13 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
   if( !m->num_rows )
     return -2; // no rows
 
+  // special handling for MAX72xx
+  if( m->flags.max72xx_enabled ) {
+    // request initialisation
+    max72xx_init_req = 1;
+    return 0;
+  }
+
   int row;
   for(row=0; row<MBNG_PATCH_NUM_MATRIX_ROWS_MAX; ++row) {
     // update selection pattern based on the matrix parameters
@@ -291,7 +308,7 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
     else if( m->num_rows <= 8 ) dout_value = selection_8rows[row];
     else dout_value = selection_16rows[row];
 
-    if( m->inverted.sel ) {
+    if( m->flags.inverted_sel ) {
       dout_value ^= 0xffff;
     }
 
@@ -306,7 +323,7 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
     }
   }
 
-  u8 sr_init_value = m->inverted.row ? 0xff : 0x00;
+  u8 sr_init_value = m->flags.inverted_row ? 0xff : 0x00;
   {
     int page;
     for(page=0; page<MIOS32_SRIO_NUM_DOUT_PAGES; ++page) {
@@ -346,7 +363,7 @@ s32 MBNG_MATRIX_ButtonMatrixChanged(u8 matrix)
     else if( m->num_rows <= 8 ) dout_value = selection_8rows[row];
     else dout_value = selection_16rows[row];
 
-    if( m->inverted.sel ) {
+    if( m->flags.inverted_sel ) {
       dout_value ^= 0xffff;
     }
 
@@ -403,6 +420,35 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level)
 
   mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
+  // special handling for MAX72xx
+  if( m->flags.max72xx_enabled ) {
+    u16 num_pins = 64*MAX72XX_NUM_DEVICES_PER_CHAIN;
+    if( pin >= num_pins )
+      return -1; // invalid pin
+
+    u8 chain = 0; // only a single chain is supported
+    u8 device = pin / 64;
+    u8 digit = ((pin % 64) / 8);
+    u8 digit_mask = m->flags.mirrored_row ? (1 << (7-(pin % 8))) : (1 << (pin % 8));
+
+    if( m->flags.inverted_row )
+      level = level ? 0 : 1;
+
+    // operation should be atomic
+    MIOS32_IRQ_Disable();
+    u8 value = MAX72XX_DigitGet(chain, device, digit);
+    if( level )
+      value |= digit_mask;
+    else
+      value &= ~digit_mask;
+    MAX72XX_DigitSet(chain, device, digit, value);
+
+    max72xx_update_digit_req |= (1 << digit);
+    MIOS32_IRQ_Enable();
+
+    return 0;
+  }
+
   u8 row_size;
   switch( color ) {
   case 1:  row_size = m->sr_dout_g2 ? 16 : 8; break;
@@ -435,7 +481,7 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level)
     int i;
     for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
       int dout_value = level ? (i <= 2*level) : 0;
-      if( m->inverted.row )
+      if( m->flags.inverted_row )
 	dout_value = dout_value ? 0 : 1;
 
       MIOS32_DOUT_PagePinSet(row + i, pin_offset, dout_value);
@@ -456,10 +502,37 @@ static s32 Hlp_DOUT_PatternTransfer(u8 matrix, u8 color, u16 row, u16 matrix_pat
 
   mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[matrix];
 
+  // special handling for MAX72xx
+  if( m->flags.max72xx_enabled ) {
+    u16 num_rows = 8*MAX72XX_NUM_DEVICES_PER_CHAIN;
+    if( row >= num_rows )
+      return -1; // invalid pin
+
+    u8 chain = 0; // only a single chain is supported
+    u8 device = row / 8;
+    u8 digit = row % 8;
+
+    u8 value = level ? matrix_pattern : 0x00; // only 8bit used!
+    if( m->flags.mirrored_row ) {
+      value = mios32_dout_reverse_tab[value];
+    }
+
+    if( m->flags.inverted_row )
+      level = level ? 0 : 1;
+
+    // operation should be atomic
+    MIOS32_IRQ_Disable();
+    MAX72XX_DigitSet(chain, device, digit, value);
+    max72xx_update_digit_req |= (1 << digit);
+    MIOS32_IRQ_Enable();
+
+    return 0;
+  }
+
   if( row >= m->num_rows )
     return -2; // ignore
 
-  if( m->inverted.row_mirrored ) {
+  if( m->flags.mirrored_row ) {
     // mirror the two bytes (don't swap the bytes - should we provide an option for this as well?)
     matrix_pattern = ((u16)mios32_dout_reverse_tab[matrix_pattern >> 8] << 8) | (u16)mios32_dout_reverse_tab[matrix_pattern & 0xff];
   }
@@ -471,7 +544,7 @@ static s32 Hlp_DOUT_PatternTransfer(u8 matrix, u8 color, u16 row, u16 matrix_pat
   default: sr1 = m->sr_dout_r1; sr2 = m->sr_dout_r2; break;
   }
 
-  if( m->inverted.row )
+  if( m->flags.inverted_row )
     matrix_pattern ^= 0xffff;
 
   u8 sr1_value = matrix_pattern;
@@ -584,28 +657,28 @@ s32 MBNG_MATRIX_GetRow(void)
       if( m->sr_din1 ) {
 	MIOS32_DIN_SRChangedGetAndClear(m->sr_din1-1, 0xff); // ensure that change won't be propagated to normal DIN handler
 	u8 sr_value8 = MIOS32_DIN_SRGet(m->sr_din1-1);
-	if( m->inverted.row_mirrored ) {
+	if( m->flags.mirrored_row ) {
 	  sr_value8 = mios32_dout_reverse_tab[sr_value8];
 	}
 	sr_value = (u16)sr_value8;
-	if( m->inverted.row )
+	if( m->flags.inverted_row )
 	  sr_value ^= 0x00ff;
       } else {
-	if( !m->inverted.row )
+	if( !m->flags.inverted_row )
 	  sr_value = 0x00ff;
       }
 
       if( m->sr_din2 ) {
 	MIOS32_DIN_SRChangedGetAndClear(m->sr_din2-1, 0xff); // ensure that change won't be propagated to normal DIN handler
 	u8 sr_value8 = MIOS32_DIN_SRGet(m->sr_din2-1);
-	if( m->inverted.row_mirrored ) {
+	if( m->flags.mirrored_row ) {
 	  sr_value8 = mios32_dout_reverse_tab[sr_value8];
 	}
 	sr_value |= (u16)sr_value8 << 8;
-	if( m->inverted.row )
+	if( m->flags.inverted_row )
 	  sr_value ^= 0xff00;
       } else {
-	if( !m->inverted.row )
+	if( !m->flags.inverted_row )
 	  sr_value |= 0xff00;
       }
 
@@ -665,6 +738,61 @@ s32 MBNG_MATRIX_ButtonHandler(void)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function is periodically called from app.c to update the
+//! MAX72xx chain
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_MAX72xx_Update(void)
+{
+  int matrix;
+  mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
+  for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
+    if( !m->flags.max72xx_enabled )
+      continue;
+
+    u8 chain = 0; // only a single chain is supported
+
+    // MAX72xx found (we only support a single MAX72xx - ignore the remaining matrix configurations)
+    if( max72xx_init_req ) {
+      max72xx_init_req = 0;
+      MAX72XX_Init(0);
+
+      if( m->flags.inverted_row ) {
+	int digit;
+	for(digit=0; digit<MAX72XX_NUM_DEVICES_PER_CHAIN; ++digit) {
+	  int i;
+	  for(i=0; i<8; ++i) {
+	    MAX72XX_DigitSet(chain, digit, 0, 0xff);
+	  }
+	}
+      }
+
+      // update all digits
+      max72xx_update_digit_req = ~0;
+    }
+
+    if( max72xx_update_digit_req ) {
+      // should be atomic
+      MIOS32_IRQ_Disable();
+      u16 update_req = max72xx_update_digit_req;
+      max72xx_update_digit_req = 0;
+      MIOS32_IRQ_Enable();
+
+      int digit;
+      for(digit=0; digit<MAX72XX_NUM_DEVICES_PER_CHAIN; ++digit, update_req >>= 1) {
+	if( update_req & 1 ) {
+	  MAX72XX_UpdateDigit(chain, digit);
+	}
+      }
+    }
+
+    return 0;
+  }
+
+  return -1; // no MAX72xx assigned
 }
 
 

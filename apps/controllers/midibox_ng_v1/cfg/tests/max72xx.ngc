@@ -1,0 +1,229 @@
+
+# Control 192 LEDs connected to 3 chained MAX72xx devices
+
+RESET_HW
+
+LCD "%CMAX72xx Demo"
+
+# MAX72xx chain connected to J19
+# no schematic yet
+# Handled like a DOUT_MATRIX (although values are not output to DOUT shift registers, but MAX72xx shift registers)
+# if max72xx_cs == 0 -> connect CS line to J19.RC1
+# if max72xx_cs == 1 -> connect CS line to J19.RC2
+# rows: 8*<number-of-devices>, e.g. 24 for 3 devices
+# following parameters are relevant:
+DOUT_MATRIX n=1  rows=24  max72xx_enabled=1  max72xx_cs=0  inverted_row=0  mirrored_row=0  led_emu_id_offset=1001
+
+
+# The event definitions have been generated with following perl script:
+# my $id = 1001;
+# 
+# for($device=0; $device<3; ++$device) {
+#   printf("# LED functions for MAX72xx device #%d\n", $device+1);
+#   for($pin=0; $pin<64; ++$pin) {
+#     printf("EVENT_LED id=%4d  type=NoteOn  chn=%2d  key=%3d\n", $id, $device+1, $pin+36);
+#     ++$id;
+#   }
+#   printf("\n");
+# }
+
+
+
+# LED functions for MAX72xx device #1
+EVENT_LED id=1001  type=NoteOn  chn= 1  key= 36
+EVENT_LED id=1002  type=NoteOn  chn= 1  key= 37
+EVENT_LED id=1003  type=NoteOn  chn= 1  key= 38
+EVENT_LED id=1004  type=NoteOn  chn= 1  key= 39
+EVENT_LED id=1005  type=NoteOn  chn= 1  key= 40
+EVENT_LED id=1006  type=NoteOn  chn= 1  key= 41
+EVENT_LED id=1007  type=NoteOn  chn= 1  key= 42
+EVENT_LED id=1008  type=NoteOn  chn= 1  key= 43
+EVENT_LED id=1009  type=NoteOn  chn= 1  key= 44
+EVENT_LED id=1010  type=NoteOn  chn= 1  key= 45
+EVENT_LED id=1011  type=NoteOn  chn= 1  key= 46
+EVENT_LED id=1012  type=NoteOn  chn= 1  key= 47
+EVENT_LED id=1013  type=NoteOn  chn= 1  key= 48
+EVENT_LED id=1014  type=NoteOn  chn= 1  key= 49
+EVENT_LED id=1015  type=NoteOn  chn= 1  key= 50
+EVENT_LED id=1016  type=NoteOn  chn= 1  key= 51
+EVENT_LED id=1017  type=NoteOn  chn= 1  key= 52
+EVENT_LED id=1018  type=NoteOn  chn= 1  key= 53
+EVENT_LED id=1019  type=NoteOn  chn= 1  key= 54
+EVENT_LED id=1020  type=NoteOn  chn= 1  key= 55
+EVENT_LED id=1021  type=NoteOn  chn= 1  key= 56
+EVENT_LED id=1022  type=NoteOn  chn= 1  key= 57
+EVENT_LED id=1023  type=NoteOn  chn= 1  key= 58
+EVENT_LED id=1024  type=NoteOn  chn= 1  key= 59
+EVENT_LED id=1025  type=NoteOn  chn= 1  key= 60
+EVENT_LED id=1026  type=NoteOn  chn= 1  key= 61
+EVENT_LED id=1027  type=NoteOn  chn= 1  key= 62
+EVENT_LED id=1028  type=NoteOn  chn= 1  key= 63
+EVENT_LED id=1029  type=NoteOn  chn= 1  key= 64
+EVENT_LED id=1030  type=NoteOn  chn= 1  key= 65
+EVENT_LED id=1031  type=NoteOn  chn= 1  key= 66
+EVENT_LED id=1032  type=NoteOn  chn= 1  key= 67
+EVENT_LED id=1033  type=NoteOn  chn= 1  key= 68
+EVENT_LED id=1034  type=NoteOn  chn= 1  key= 69
+EVENT_LED id=1035  type=NoteOn  chn= 1  key= 70
+EVENT_LED id=1036  type=NoteOn  chn= 1  key= 71
+EVENT_LED id=1037  type=NoteOn  chn= 1  key= 72
+EVENT_LED id=1038  type=NoteOn  chn= 1  key= 73
+EVENT_LED id=1039  type=NoteOn  chn= 1  key= 74
+EVENT_LED id=1040  type=NoteOn  chn= 1  key= 75
+EVENT_LED id=1041  type=NoteOn  chn= 1  key= 76
+EVENT_LED id=1042  type=NoteOn  chn= 1  key= 77
+EVENT_LED id=1043  type=NoteOn  chn= 1  key= 78
+EVENT_LED id=1044  type=NoteOn  chn= 1  key= 79
+EVENT_LED id=1045  type=NoteOn  chn= 1  key= 80
+EVENT_LED id=1046  type=NoteOn  chn= 1  key= 81
+EVENT_LED id=1047  type=NoteOn  chn= 1  key= 82
+EVENT_LED id=1048  type=NoteOn  chn= 1  key= 83
+EVENT_LED id=1049  type=NoteOn  chn= 1  key= 84
+EVENT_LED id=1050  type=NoteOn  chn= 1  key= 85
+EVENT_LED id=1051  type=NoteOn  chn= 1  key= 86
+EVENT_LED id=1052  type=NoteOn  chn= 1  key= 87
+EVENT_LED id=1053  type=NoteOn  chn= 1  key= 88
+EVENT_LED id=1054  type=NoteOn  chn= 1  key= 89
+EVENT_LED id=1055  type=NoteOn  chn= 1  key= 90
+EVENT_LED id=1056  type=NoteOn  chn= 1  key= 91
+EVENT_LED id=1057  type=NoteOn  chn= 1  key= 92
+EVENT_LED id=1058  type=NoteOn  chn= 1  key= 93
+EVENT_LED id=1059  type=NoteOn  chn= 1  key= 94
+EVENT_LED id=1060  type=NoteOn  chn= 1  key= 95
+EVENT_LED id=1061  type=NoteOn  chn= 1  key= 96
+EVENT_LED id=1062  type=NoteOn  chn= 1  key= 97
+EVENT_LED id=1063  type=NoteOn  chn= 1  key= 98
+EVENT_LED id=1064  type=NoteOn  chn= 1  key= 99
+
+# LED functions for MAX72xx device #2
+EVENT_LED id=1065  type=NoteOn  chn= 2  key= 36
+EVENT_LED id=1066  type=NoteOn  chn= 2  key= 37
+EVENT_LED id=1067  type=NoteOn  chn= 2  key= 38
+EVENT_LED id=1068  type=NoteOn  chn= 2  key= 39
+EVENT_LED id=1069  type=NoteOn  chn= 2  key= 40
+EVENT_LED id=1070  type=NoteOn  chn= 2  key= 41
+EVENT_LED id=1071  type=NoteOn  chn= 2  key= 42
+EVENT_LED id=1072  type=NoteOn  chn= 2  key= 43
+EVENT_LED id=1073  type=NoteOn  chn= 2  key= 44
+EVENT_LED id=1074  type=NoteOn  chn= 2  key= 45
+EVENT_LED id=1075  type=NoteOn  chn= 2  key= 46
+EVENT_LED id=1076  type=NoteOn  chn= 2  key= 47
+EVENT_LED id=1077  type=NoteOn  chn= 2  key= 48
+EVENT_LED id=1078  type=NoteOn  chn= 2  key= 49
+EVENT_LED id=1079  type=NoteOn  chn= 2  key= 50
+EVENT_LED id=1080  type=NoteOn  chn= 2  key= 51
+EVENT_LED id=1081  type=NoteOn  chn= 2  key= 52
+EVENT_LED id=1082  type=NoteOn  chn= 2  key= 53
+EVENT_LED id=1083  type=NoteOn  chn= 2  key= 54
+EVENT_LED id=1084  type=NoteOn  chn= 2  key= 55
+EVENT_LED id=1085  type=NoteOn  chn= 2  key= 56
+EVENT_LED id=1086  type=NoteOn  chn= 2  key= 57
+EVENT_LED id=1087  type=NoteOn  chn= 2  key= 58
+EVENT_LED id=1088  type=NoteOn  chn= 2  key= 59
+EVENT_LED id=1089  type=NoteOn  chn= 2  key= 60
+EVENT_LED id=1090  type=NoteOn  chn= 2  key= 61
+EVENT_LED id=1091  type=NoteOn  chn= 2  key= 62
+EVENT_LED id=1092  type=NoteOn  chn= 2  key= 63
+EVENT_LED id=1093  type=NoteOn  chn= 2  key= 64
+EVENT_LED id=1094  type=NoteOn  chn= 2  key= 65
+EVENT_LED id=1095  type=NoteOn  chn= 2  key= 66
+EVENT_LED id=1096  type=NoteOn  chn= 2  key= 67
+EVENT_LED id=1097  type=NoteOn  chn= 2  key= 68
+EVENT_LED id=1098  type=NoteOn  chn= 2  key= 69
+EVENT_LED id=1099  type=NoteOn  chn= 2  key= 70
+EVENT_LED id=1100  type=NoteOn  chn= 2  key= 71
+EVENT_LED id=1101  type=NoteOn  chn= 2  key= 72
+EVENT_LED id=1102  type=NoteOn  chn= 2  key= 73
+EVENT_LED id=1103  type=NoteOn  chn= 2  key= 74
+EVENT_LED id=1104  type=NoteOn  chn= 2  key= 75
+EVENT_LED id=1105  type=NoteOn  chn= 2  key= 76
+EVENT_LED id=1106  type=NoteOn  chn= 2  key= 77
+EVENT_LED id=1107  type=NoteOn  chn= 2  key= 78
+EVENT_LED id=1108  type=NoteOn  chn= 2  key= 79
+EVENT_LED id=1109  type=NoteOn  chn= 2  key= 80
+EVENT_LED id=1110  type=NoteOn  chn= 2  key= 81
+EVENT_LED id=1111  type=NoteOn  chn= 2  key= 82
+EVENT_LED id=1112  type=NoteOn  chn= 2  key= 83
+EVENT_LED id=1113  type=NoteOn  chn= 2  key= 84
+EVENT_LED id=1114  type=NoteOn  chn= 2  key= 85
+EVENT_LED id=1115  type=NoteOn  chn= 2  key= 86
+EVENT_LED id=1116  type=NoteOn  chn= 2  key= 87
+EVENT_LED id=1117  type=NoteOn  chn= 2  key= 88
+EVENT_LED id=1118  type=NoteOn  chn= 2  key= 89
+EVENT_LED id=1119  type=NoteOn  chn= 2  key= 90
+EVENT_LED id=1120  type=NoteOn  chn= 2  key= 91
+EVENT_LED id=1121  type=NoteOn  chn= 2  key= 92
+EVENT_LED id=1122  type=NoteOn  chn= 2  key= 93
+EVENT_LED id=1123  type=NoteOn  chn= 2  key= 94
+EVENT_LED id=1124  type=NoteOn  chn= 2  key= 95
+EVENT_LED id=1125  type=NoteOn  chn= 2  key= 96
+EVENT_LED id=1126  type=NoteOn  chn= 2  key= 97
+EVENT_LED id=1127  type=NoteOn  chn= 2  key= 98
+EVENT_LED id=1128  type=NoteOn  chn= 2  key= 99
+
+# LED functions for MAX72xx device #3
+EVENT_LED id=1129  type=NoteOn  chn= 3  key= 36
+EVENT_LED id=1130  type=NoteOn  chn= 3  key= 37
+EVENT_LED id=1131  type=NoteOn  chn= 3  key= 38
+EVENT_LED id=1132  type=NoteOn  chn= 3  key= 39
+EVENT_LED id=1133  type=NoteOn  chn= 3  key= 40
+EVENT_LED id=1134  type=NoteOn  chn= 3  key= 41
+EVENT_LED id=1135  type=NoteOn  chn= 3  key= 42
+EVENT_LED id=1136  type=NoteOn  chn= 3  key= 43
+EVENT_LED id=1137  type=NoteOn  chn= 3  key= 44
+EVENT_LED id=1138  type=NoteOn  chn= 3  key= 45
+EVENT_LED id=1139  type=NoteOn  chn= 3  key= 46
+EVENT_LED id=1140  type=NoteOn  chn= 3  key= 47
+EVENT_LED id=1141  type=NoteOn  chn= 3  key= 48
+EVENT_LED id=1142  type=NoteOn  chn= 3  key= 49
+EVENT_LED id=1143  type=NoteOn  chn= 3  key= 50
+EVENT_LED id=1144  type=NoteOn  chn= 3  key= 51
+EVENT_LED id=1145  type=NoteOn  chn= 3  key= 52
+EVENT_LED id=1146  type=NoteOn  chn= 3  key= 53
+EVENT_LED id=1147  type=NoteOn  chn= 3  key= 54
+EVENT_LED id=1148  type=NoteOn  chn= 3  key= 55
+EVENT_LED id=1149  type=NoteOn  chn= 3  key= 56
+EVENT_LED id=1150  type=NoteOn  chn= 3  key= 57
+EVENT_LED id=1151  type=NoteOn  chn= 3  key= 58
+EVENT_LED id=1152  type=NoteOn  chn= 3  key= 59
+EVENT_LED id=1153  type=NoteOn  chn= 3  key= 60
+EVENT_LED id=1154  type=NoteOn  chn= 3  key= 61
+EVENT_LED id=1155  type=NoteOn  chn= 3  key= 62
+EVENT_LED id=1156  type=NoteOn  chn= 3  key= 63
+EVENT_LED id=1157  type=NoteOn  chn= 3  key= 64
+EVENT_LED id=1158  type=NoteOn  chn= 3  key= 65
+EVENT_LED id=1159  type=NoteOn  chn= 3  key= 66
+EVENT_LED id=1160  type=NoteOn  chn= 3  key= 67
+EVENT_LED id=1161  type=NoteOn  chn= 3  key= 68
+EVENT_LED id=1162  type=NoteOn  chn= 3  key= 69
+EVENT_LED id=1163  type=NoteOn  chn= 3  key= 70
+EVENT_LED id=1164  type=NoteOn  chn= 3  key= 71
+EVENT_LED id=1165  type=NoteOn  chn= 3  key= 72
+EVENT_LED id=1166  type=NoteOn  chn= 3  key= 73
+EVENT_LED id=1167  type=NoteOn  chn= 3  key= 74
+EVENT_LED id=1168  type=NoteOn  chn= 3  key= 75
+EVENT_LED id=1169  type=NoteOn  chn= 3  key= 76
+EVENT_LED id=1170  type=NoteOn  chn= 3  key= 77
+EVENT_LED id=1171  type=NoteOn  chn= 3  key= 78
+EVENT_LED id=1172  type=NoteOn  chn= 3  key= 79
+EVENT_LED id=1173  type=NoteOn  chn= 3  key= 80
+EVENT_LED id=1174  type=NoteOn  chn= 3  key= 81
+EVENT_LED id=1175  type=NoteOn  chn= 3  key= 82
+EVENT_LED id=1176  type=NoteOn  chn= 3  key= 83
+EVENT_LED id=1177  type=NoteOn  chn= 3  key= 84
+EVENT_LED id=1178  type=NoteOn  chn= 3  key= 85
+EVENT_LED id=1179  type=NoteOn  chn= 3  key= 86
+EVENT_LED id=1180  type=NoteOn  chn= 3  key= 87
+EVENT_LED id=1181  type=NoteOn  chn= 3  key= 88
+EVENT_LED id=1182  type=NoteOn  chn= 3  key= 89
+EVENT_LED id=1183  type=NoteOn  chn= 3  key= 90
+EVENT_LED id=1184  type=NoteOn  chn= 3  key= 91
+EVENT_LED id=1185  type=NoteOn  chn= 3  key= 92
+EVENT_LED id=1186  type=NoteOn  chn= 3  key= 93
+EVENT_LED id=1187  type=NoteOn  chn= 3  key= 94
+EVENT_LED id=1188  type=NoteOn  chn= 3  key= 95
+EVENT_LED id=1189  type=NoteOn  chn= 3  key= 96
+EVENT_LED id=1190  type=NoteOn  chn= 3  key= 97
+EVENT_LED id=1191  type=NoteOn  chn= 3  key= 98
+EVENT_LED id=1192  type=NoteOn  chn= 3  key= 99
+
