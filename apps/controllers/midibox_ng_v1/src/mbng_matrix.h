@@ -47,6 +47,8 @@ extern s32 MBNG_MATRIX_DOUT_PatternSet_Digit(u8 matrix, u8 color, u16 row, u8 va
 extern s32 MBNG_MATRIX_GetRow(void);
 extern s32 MBNG_MATRIX_ButtonHandler(void);
 
+extern s32 MBNG_MATRIX_MAX72xx_Update(void);
+
 extern s32 MBNG_MATRIX_DIN_NotifyReceivedValue(mbng_event_item_t *item);
 extern s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item);
 

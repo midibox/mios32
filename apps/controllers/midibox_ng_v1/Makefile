@@ -95,6 +95,9 @@ include $(MIOS32_PATH)/modules/ainser/ainser.mk
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk
 
+# MAX72xx Driver
+include $(MIOS32_PATH)/modules/max72xx/max72xx.mk
+
 # Notestack functions
 include $(MIOS32_PATH)/modules/notestack/notestack.mk
 

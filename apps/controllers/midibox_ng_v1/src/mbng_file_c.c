@@ -1670,7 +1670,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
   // parse the parameters
   int num = 0;
   int rows = 0;
-  mbng_patch_matrix_inverted_t inverted; inverted.ALL = 0;
+  mbng_patch_matrix_flags_t flags; flags.ALL = 0;
   int button_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
@@ -1709,7 +1709,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.sel = value;
+      flags.inverted_sel = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "inverted_row") == 0 ) {
@@ -1721,7 +1721,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.row = value;
+      flags.inverted_row = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "mirrored_row") == 0 ) {
@@ -1733,7 +1733,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.row_mirrored = value;
+      flags.mirrored_row = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "button_emu_id_offset") == 0 ) {
@@ -1792,7 +1792,7 @@ s32 parseDinMatrix(u32 line, char *cmd, char *brkt)
   if( num >= 1 ) {
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[num-1];
     m->num_rows = rows;
-    m->inverted.ALL = inverted.ALL;
+    m->flags.ALL = flags.ALL;
     m->button_emu_id_offset = button_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
@@ -1817,7 +1817,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
   // parse the parameters
   int num = 0;
   int rows = 0;
-  mbng_patch_matrix_inverted_t inverted; inverted.ALL = 0;
+  mbng_patch_matrix_flags_t flags; flags.ALL = 0;
   int led_emu_id_offset = 0;
   int sr_dout_sel1 = 0;
   int sr_dout_sel2 = 0;
@@ -1843,12 +1843,21 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "rows") == 0 ) {
+#if 0
       if( (rows=get_dec(value_str)) < 0 || (rows != 4 && rows != 8 && rows != 16) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid row number for %s n=%d ... %s=%s (only 4, 8 or 16 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
+#else
+      if( (rows=get_dec(value_str)) < 0 || (rows != 4 && (rows % 8) != 0) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid row number for %s n=%d ... %s=%s (only 4 or n*8 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+#endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "inverted") == 0 || strcasecmp(parameter, "inverted_sel") == 0 ) {
@@ -1860,7 +1869,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.sel = value;
+      flags.inverted_sel = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "inverted_row") == 0 ) {
@@ -1872,7 +1881,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.row = value;
+      flags.inverted_row = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "mirrored_row") == 0 ) {
@@ -1884,7 +1893,31 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
 
-      inverted.row_mirrored = value;
+      flags.mirrored_row = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "max72xx_enabled") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid max72xx_enabled flag for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      flags.max72xx_enabled = value;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "max72xx_cs") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid max72xx_cs value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      mbng_patch_max72xx_spi_rc_pin = value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "led_emu_id_offset") == 0 ) {
@@ -1977,9 +2010,16 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
   }
 
   if( num >= 1 ) {
+    if( flags.max72xx_enabled && rows > 16 ) {
+      rows = 16;
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: max72xx_enabled=0, reduce rows=16 in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
+#endif
+    }
+
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[num-1];
     m->num_rows = rows;
-    m->inverted.ALL = inverted.ALL;
+    m->flags.ALL = flags.ALL;
     m->led_emu_id_offset = led_emu_id_offset;
     m->sr_dout_sel1 = sr_dout_sel1;
     m->sr_dout_sel2 = sr_dout_sel2;
@@ -3769,12 +3809,15 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_din_entry_t *m = (mbng_patch_matrix_din_entry_t *)&mbng_patch_matrix_din[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
+      sprintf(line_buffer, "DIN_MATRIX n=%2d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d \\\n",
 	      matrix+1,
 	      m->num_rows,
-	      m->inverted.sel,
-	      m->inverted.row,
-	      m->inverted.row_mirrored,
+	      m->flags.inverted_sel,
+	      m->flags.inverted_row,
+	      m->flags.mirrored_row);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "                   sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_din1=%2d sr_din2=%2d",
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_din1,
@@ -3782,7 +3825,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
 
       if( m->button_emu_id_offset ) {
-	sprintf(line_buffer, "  button_emu_id_offset=%d", m->button_emu_id_offset);
+	sprintf(line_buffer, "\\\n                   button_emu_id_offset=%d", m->button_emu_id_offset);
 	FLUSH_BUFFER;
       }
 
@@ -3799,12 +3842,15 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
     for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
 
-      sprintf(line_buffer, "DOUT_MATRIX n=%d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d  sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
+      sprintf(line_buffer, "DOUT_MATRIX n=%d   rows=%d  inverted_sel=%d  inverted_row=%d  mirrored_row=%d \\\n",
 	      matrix+1,
 	      m->num_rows,
-	      m->inverted.sel,
-	      m->inverted.row,
-	      m->inverted.row_mirrored,
+	      m->flags.inverted_sel,
+	      m->flags.inverted_row,
+	      m->flags.mirrored_row);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "                   sr_dout_sel1=%2d sr_dout_sel2=%2d  sr_dout_r1=%2d sr_dout_r2=%2d  sr_dout_g1=%2d sr_dout_g2=%2d  sr_dout_b1=%2d sr_dout_b2=%2d",
 	      m->sr_dout_sel1,
 	      m->sr_dout_sel2,
 	      m->sr_dout_r1,
@@ -3815,8 +3861,15 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      m->sr_dout_b2);
       FLUSH_BUFFER;
 
+      if( m->flags.max72xx_enabled || mbng_patch_max72xx_spi_rc_pin ) {
+	sprintf(line_buffer, "\\\n                   max72xx_enabled=%d  max72xx_cs=%d",
+		m->flags.max72xx_enabled,
+		mbng_patch_max72xx_spi_rc_pin);
+	FLUSH_BUFFER;
+      }
+
       if( m->led_emu_id_offset ) {
-	sprintf(line_buffer, "  led_emu_id_offset=%d", m->led_emu_id_offset);
+	sprintf(line_buffer, "\\\n                   led_emu_id_offset=%d", m->led_emu_id_offset);
 	FLUSH_BUFFER;
       }
 

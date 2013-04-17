@@ -49,16 +49,17 @@ typedef union {
   u8 ALL;
   
   struct {
-    u8 sel:1;
-    u8 row:1;
-    u8 row_mirrored:1;
+    u8 inverted_sel:1;
+    u8 inverted_row:1;
+    u8 mirrored_row:1;
+    u8 max72xx_enabled:1;
   };
-} mbng_patch_matrix_inverted_t;
+} mbng_patch_matrix_flags_t;
 
 typedef struct {
   u16 button_emu_id_offset;
   u8 num_rows;
-  mbng_patch_matrix_inverted_t inverted;
+  mbng_patch_matrix_flags_t flags;
   u8 sr_dout_sel1;
   u8 sr_dout_sel2;
   u8 sr_din1;
@@ -68,7 +69,7 @@ typedef struct {
 typedef struct {
   u16 led_emu_id_offset;
   u8 num_rows;
-  mbng_patch_matrix_inverted_t inverted;
+  mbng_patch_matrix_flags_t flags;
   u8 sr_dout_sel1;
   u8 sr_dout_sel2;
   u8 sr_dout_r1;
@@ -168,6 +169,7 @@ extern mbng_patch_ainser_entry_t mbng_patch_ainser[MBNG_PATCH_NUM_AINSER_MODULES
 extern mbng_patch_mf_entry_t mbng_patch_mf[MBNG_PATCH_NUM_MF_MODULES];
 
 extern char mbng_patch_aout_spi_rc_pin;
+extern char mbng_patch_max72xx_spi_rc_pin;
 
 extern mbng_patch_scs_t mbng_patch_scs;
 

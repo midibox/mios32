@@ -586,6 +586,9 @@ void APP_Tick(void)
   // update CV outputs
   MBNG_CV_Update();
 
+  // update MAX72xx chain
+  MBNG_MATRIX_MAX72xx_Update();
+
   // scan AINSER pins
   AINSER_Handler(APP_AINSER_NotifyChange);
 }
