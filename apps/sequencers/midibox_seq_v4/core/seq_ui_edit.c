@@ -170,16 +170,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     switch( datawheel_mode ) {
     case DATAWHEEL_MODE_SCROLL_CURSOR:
-      // note: SEQ_UI_CheckSelections() will automatically change the page if required
-      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
+      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 ) {
+	ui_selected_step_view = ui_selected_step / 16;
 	return 1;
-      else
+      } else
 	return 0;
 
     case DATAWHEEL_MODE_SCROLL_VIEW:
       if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
-	// select step within view
-	ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	  // select step within view
+	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	}
 	return 1;
       } else {
 	return 0;
@@ -235,7 +237,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP9:
       case SEQ_UI_ENCODER_GP10: {
 	if( incrementer == 0 ) // button
-	  incrementer = (encoder == SEQ_UI_ENCODER_GP7) ? -1 : 1;
+	  incrementer = (encoder == SEQ_UI_ENCODER_GP9) ? -1 : 1;
 
 	if( SEQ_UI_Var8_Inc(&datawheel_mode, 0, DATAWHEEL_MODE_NUM-1, incrementer) >= 1 )
 	  return 1;
