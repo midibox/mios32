@@ -35,6 +35,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_record.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
 #include "seq_blm.h"
@@ -522,6 +523,26 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	      }
 	    }
 	  }
+
+	} else if( strcmp(parameter, "rec_quantisation") == 0 ) {
+	  char *arg;
+	  int value;
+	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify quantisation between 1%%..100%% (default: 10%%, current: %d%%)\n", seq_record_quantize);
+	  } else {
+	    int len;
+	    while( (len=strlen(arg)) && arg[len-1] == '%' ) {
+	      arg[len-1] = 0;
+	    }
+
+	    if( (value=get_dec(arg)) < 0 || value > 100 ) {
+	      out("Quantisation should be between 1%%..100%%!\n");
+	    } else {
+	      seq_record_quantize = value;
+	      out("Quantisation set to %d%%\n", seq_record_quantize);
+	      out("Enter 'store' to save this setting on SD Card.\n");
+	    }
+	  }
 	} else {
 	  out("Unknown set parameter: '%s'!", parameter);
 	}
@@ -587,6 +608,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
+  out("  set rec_quantisation <1..100>: change record quantisation (default: 10%%, current: %d%%)\n", seq_record_quantize);
   out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
   AOUT_TerminalHelp(_output_function);
