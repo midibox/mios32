@@ -42,6 +42,7 @@
 #include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
 #include "seq_pattern.h"
+#include "seq_record.h"
 #include "seq_core.h"
 #include "seq_cv.h"
 #include "seq_blm.h"
@@ -286,6 +287,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_metronome_note_m = value;
 	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
+	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
+	    seq_record_quantize = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
@@ -455,6 +458,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecQuantisation %d\n", (u8)seq_record_quantize);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);

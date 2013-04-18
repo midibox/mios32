@@ -1,6 +1,13 @@
 $Id$
 
 
+MIDIboxSEQ V4L.074
+~~~~~~~~~~~~~~~~~~
+
+   o added "set rec_quantisation" command to set the quantisation used for
+     recording Note On/Off events from MIOS Terminal.
+
+
 MIDIboxSEQ V4L.073
 ~~~~~~~~~~~~~~~~~~
 
