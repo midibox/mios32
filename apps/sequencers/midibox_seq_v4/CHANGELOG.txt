@@ -6,8 +6,8 @@ Wishlist for future features
 -> see bottom of this document
 
 
-MIDIboxSEQ V4.074_pre1
-~~~~~~~~~~~~~~~~~~~~~~
+MIDIboxSEQ V4.074
+~~~~~~~~~~~~~~~~~
 
    o "SD Card connected" message not displayed after boot anymore, instead only 
      when the SD Card is exchanged
