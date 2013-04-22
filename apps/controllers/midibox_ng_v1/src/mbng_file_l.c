@@ -495,7 +495,9 @@ s32 MBNG_FILE_L_Read(char *filename)
   }
 
   // read label definitions
-  char *line_buffer = pvPortMalloc(1024);
+  u32 line_buffer_size = 1024;
+  char *line_buffer = pvPortMalloc(line_buffer_size);
+  u32 line_buffer_len = 0;
   if( !line_buffer ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_L] FATAL: out of heap memory!\n");
@@ -510,12 +512,29 @@ s32 MBNG_FILE_L_Read(char *filename)
   u32 line = 0;
   do {
     ++line;
-    status=FILE_ReadLine((u8 *)line_buffer, 200);
+    status=FILE_ReadLine((u8 *)(line_buffer+line_buffer_len), line_buffer_size-line_buffer_len);
 
     if( status > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
-      DEBUG_MSG("[MBNG_FILE_L] read: %s", line_buffer);
+      if( line_buffer_len )
+	MIOS32_MIDI_SendDebugString("+++");
+      MIOS32_MIDI_SendDebugString(line_buffer);
 #endif
+
+      // concatenate?
+      u32 new_len = strlen(line_buffer);
+      // remove spaces
+      while( new_len >= 1 && line_buffer[new_len-1] == ' ' ) {
+	line_buffer[new_len-1] = 0;
+	--new_len;
+      }
+      if( new_len >= 1 && line_buffer[new_len-1] == '\\' ) {
+	line_buffer[new_len-1] = 0;
+	line_buffer_len = new_len - 1;
+	continue; // read next line
+      } else {
+	line_buffer_len = 0; // for next round we start at 0 again
+      }
 
       // sscanf consumes too much memory, therefore we parse directly
       char *separators = " \t;";
@@ -558,10 +577,9 @@ s32 MBNG_FILE_L_Read(char *filename)
 		int str_len = strlen(str);
 		int len = 1 + 1 + 1 + label_len + 1 + str_len+1;
 		if( len >= 256 ) {
-		  // can never happen, but just for the case...
 		  ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing LABEL statement - please report to TK", line);
+		  DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: LABEL string length is greater than %d characters!", line, 256-1-1-1-label_len-1-1);
 #endif
 		} else {
 		  ++num_labels;
@@ -610,19 +628,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 #endif
 	    } else {
 	      int len = 1 + 1 + 1 + label_len + 1;
-	      if( len >= 256 ) {
-		++bin_file_errors;
-		// can never happen, but just for the case...
-#if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND_LABEL statement - please report to TK", line);
-#endif
-	      } else {
+	      {
 		++num_labels;
 		memcpy(current_cond_label, label, 8);
 		current_cond_label[8] = 0;
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-		DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_CONDITIONAL, label, str);
+		DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_CONDITIONAL, label, current_cond_label);
 #endif
 		s32 write_status;
 		if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -658,13 +670,12 @@ s32 MBNG_FILE_L_Read(char *filename)
 	    int len = 1 + 1 + 1 + 1 + str_len+1;
 	    if( len >= 256 ) {
 	      ++bin_file_errors;
-	      // can never happen, but just for the case...
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND_ELSE statement - please report to TK", line);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: COND_ELSE string length is greater than %d characters!", line, 256-1-1-1-1-1);
 #endif
 	    } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-	      DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, MBNG_FILE_L_ITEM_COND_ELSE, label, str);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s", line, len, MBNG_FILE_L_ITEM_COND_ELSE, str);
 #endif
 	      s32 write_status;
 	      if( (write_status=FILE_WriteByte(len)) < 0 ||
@@ -749,14 +760,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 		  int str_len = strlen(str);
 		  int len = 1 + 1 + 1 + 2 + 1 + str_len+1;
 		  if( len >= 256 ) {
-		    // can never happen, but just for the case...
 		    ++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		    DEBUG_MSG("[MBNG_FILE_L:%d] FATAL error while parsing COND statement - please report to TK", line);
+		    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: COND string length is greater than %d characters!", line, 256-1-1-1-2-1-1);
 #endif
 		  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
-		    DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s %s", line, len, condition_type, label, str);
+		    DEBUG_MSG("[MBNG_FILE_L:%d] writing: %d %d %s", line, len, condition_type, str);
 #endif
 		    s32 write_status;
 		    if( (write_status=FILE_WriteByte(len)) < 0 ||
