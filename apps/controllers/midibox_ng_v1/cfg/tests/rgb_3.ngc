@@ -18,10 +18,14 @@ SCS soft1_button_emu_id=2000 \
 
 
 # Controlled from SCS buttons at J10 in main page
-EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1  lcd_pos=1:1:2 label="Bnk%q"
-EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2  lcd_pos=1:1:2 label="Bnk%q"
-EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3  lcd_pos=1:1:2 label="Bnk%q"
-EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4  lcd_pos=1:1:2 label="Bnk%q"
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:2 label="Bnk%q"
 
 
 # In the SR configuration we assume that the DINs/DOUTs are directly connected to J8/9 of the core

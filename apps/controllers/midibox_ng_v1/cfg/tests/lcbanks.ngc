@@ -4,7 +4,11 @@ RESET_HW
 LCD "%C@(1:1:1)LC Banks Test"
 
 # select the bank with the jogwheel
-EVENT_ENC id=  9  type=Meta   meta=SetBank range=1:4  lcd_pos=1:1:2 label="Bank #%q"
+EVENT_ENC id=  9  type=Meta   meta=SetBank range=1:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:2 label="Bank #%q"
 
 # use button 9 as "FAST" button (it's outside the bank)
 EVENT_BUTTON id=9 type=Meta   meta=EncFast  range=0:5 lcd_pos=1:10:2 label="FAST%d"

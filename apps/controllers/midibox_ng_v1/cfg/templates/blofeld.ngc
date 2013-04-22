@@ -29,7 +29,11 @@ SCS soft1_button_emu_id=2000 \
 # The selected bank will be displayed at lcd_pos=1:1:1 (first LCD, X=1, Y=1)
 # as a mapped label
 ################################################################################
-EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:5                  lcd_pos=1:1:1 label="^bank"
+EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:5
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:1:1 label="^bank"
 
 
 ################################################################################
