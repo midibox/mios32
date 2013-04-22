@@ -14,15 +14,19 @@ SCS soft1_button_emu_id=2000 \
 
 
 # Controlled from SCS buttons at J10 in main page
-EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1  lcd_pos=1:17:1 label="Bnk%q"
-EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2  lcd_pos=1:17:1 label="Bnk%q"
-EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3  lcd_pos=1:17:1 label="Bnk%q"
-EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4  lcd_pos=1:17:1 label="Bnk%q"
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
 EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
 
 # the SCS encoder at J10 just increments/decrements the bank
 # redundant function - could be changed in future
-EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4                     lcd_pos=1:17:1 label="Bnk%q"
+EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4
+
+# This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.
+# the purpose of this EVENT item is to print the bank whenever the LCD is refreshed (e.g. after startup or bank change)
+EVENT_LED id=2000 fwd_to_lcd=1 lcd_pos=1:17:1 label="Bnk%q"
 
 
 # Bank 1
