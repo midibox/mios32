@@ -1,5 +1,20 @@
 $Id$
 
+MIDIbox NG V1.025
+~~~~~~~~~~~~~~~~~
+
+   o new terminal commands:
+     - ngc: allows to execute a .NGC command directly
+     - ngr: allows to execute a .NGR command directly
+     - ngr_section: sets the ^section for .NGR execution
+     - ngr_value: sets the ^value for .NGR execution
+     - run: can now also executed without specified <section> <value>
+       (the previously set values will be taken in this case)
+
+   o inofficial support for MAX72xx chains - see cfg/tests/max72xx.ngc for
+     a configuration example (no schematic available yet)
+
+
 MIDIbox NG V1.024
 ~~~~~~~~~~~~~~~~~
 

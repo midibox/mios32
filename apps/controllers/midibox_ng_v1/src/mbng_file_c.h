@@ -38,6 +38,8 @@ extern s32 MBNG_FILE_C_Unload(void);
 
 extern s32 MBNG_FILE_C_Valid(void);
 
+extern s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item);
+
 extern s32 MBNG_FILE_C_Read(char *filename);
 extern s32 MBNG_FILE_C_Write(char *filename);
 extern s32 MBNG_FILE_C_Debug(void);

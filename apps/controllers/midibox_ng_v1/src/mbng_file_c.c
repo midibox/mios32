@@ -3094,6 +3094,200 @@ s32 parseOsc(u32 line, char *cmd, char *brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Parses a .NGC command line
+//! \returns < 0 on errors (error codes are documented in mbng_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
+{
+  s32 status = 0;
+
+  // sscanf consumes too much memory, therefore we parse directly
+  char *brkt;
+  char *parameter;
+
+  if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
+	
+    if( *parameter == 0 || *parameter == '#' ) {
+      // ignore comments and empty lines
+    } else if( strcasecmp(parameter, "RESET_HW") == 0 ) {
+      MBNG_EVENT_PoolClear();
+      MBNG_PATCH_Init(0);
+      MBNG_MATRIX_Init(0);
+      MBNG_ENC_Init(0);
+      MBNG_DOUT_Init(0);
+      MBNG_DIN_Init(0);
+      MBNG_AIN_Init(0);
+      MBNG_AINSER_Init(0);
+      MBNG_MF_Init(0);
+      MBNG_CV_Init(0);
+      MBNG_KB_Init(0);
+    } else if( strcasecmp(parameter, "LCD") == 0 ) {
+      char *str = brkt;
+      if( !(str=remove_quotes(str)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing string after LCD message!\n");
+#endif
+      } else {
+	// print from a dummy item
+	mbng_event_item_t item;
+	MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+	item.label = str;
+	MBNG_LCD_PrintItemLabel(&item, NULL, 0);
+      }
+    } else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
+      if( !*got_first_event_item ) {
+	*got_first_event_item = 1;
+	MBNG_EVENT_PoolClear();
+      }
+      parseEvent(line, parameter, brkt);
+    } else if( strncmp(parameter, "MAP", 3) == 0 ) {
+      if( !*got_first_event_item ) {
+	*got_first_event_item = 1;
+	MBNG_EVENT_PoolClear();
+      }
+      parseMap(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "SYSEX_VAR") == 0 ) {
+      parseSysExVar(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "ENC") == 0 ) {
+      parseEnc(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "DIN_MATRIX") == 0 ) {
+      parseDinMatrix(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "DOUT_MATRIX") == 0 ) {
+      parseDoutMatrix(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "KEYBOARD") == 0 ) {
+      parseKeyboard(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
+      parseLedMatrixPattern(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "AIN") == 0 ) {
+      parseAin(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "AINSER") == 0 ) {
+      parseAinSer(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "MF") == 0 ) {
+      parseMf(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "AOUT") == 0 ) {
+      parseAout(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "SCS") == 0 ) {
+      parseScs(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "ROUTER") == 0 ) {
+      parseRouter(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "ETH") == 0 ) {
+      parseEth(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "OSC") == 0 ) {
+      parseOsc(line, parameter, brkt);
+
+    } else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 255);
+      if( value >= 0 )
+	mbng_patch_cfg.debounce_ctr = value;
+    } else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
+      if( value >= 0 )
+	mbng_patch_cfg.global_chn = value;
+    } else if( strcasecmp(parameter, "AllNotesOffChannel") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
+      if( value >= 0 )
+	mbng_patch_cfg.all_notes_off_chn = value;
+    } else if( strcasecmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
+      if( value >= 0 )
+	mbng_patch_cfg.convert_note_off_to_on0 = value;
+    } else if( strcasecmp(parameter, "BPM_Preset") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 1, 1000);
+      if( value >= 0 )
+	SEQ_BPM_Set((float)value);
+    } else if( strcasecmp(parameter, "BPM_Mode") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 2);
+      if( value >= 0 )
+	SEQ_BPM_ModeSet(value);
+    } else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
+      s32 enabled_ports = 0;
+      int bit;
+      for(bit=0; bit<16; ++bit) {
+	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	int enable = get_dec(word);
+	if( enable < 0 )
+	  break;
+	if( enable >= 1 )
+	  enabled_ports |= (1 << bit);
+      }
+
+      if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
+#endif
+      } else {
+	MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+      }	  
+
+    } else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 ) {
+      s32 enabled_ports = 0;
+      int bit;
+      for(bit=0; bit<16; ++bit) {
+	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	int enable = get_dec(word);
+	if( enable < 0 )
+	  break;
+	if( enable >= 1 )
+	  enabled_ports |= (1 << bit);
+      }
+
+      if( bit != 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
+#endif
+      } else {
+	MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+      }
+
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      // changed error to warning, since people are sometimes confused about these messages
+      // on file format changes
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unknown command: %s", line, line_buffer);
+#endif
+    }
+  } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    // no real error, can for example happen in .csv file
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
+#endif
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! reads the config file content (again)
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -3140,7 +3334,7 @@ s32 MBNG_FILE_C_Read(char *filename)
     ++line;
     status=FILE_ReadLine((u8 *)(line_buffer+line_buffer_len), line_buffer_size-line_buffer_len);
 
-    if( status > 1 ) {
+    if( status >= 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 3
       if( line_buffer_len )
 	MIOS32_MIDI_SendDebugString("+++");
@@ -3162,187 +3356,7 @@ s32 MBNG_FILE_C_Read(char *filename)
 	line_buffer_len = 0; // for next round we start at 0 again
       }
 
-      // sscanf consumes too much memory, therefore we parse directly
-      char *brkt;
-      char *parameter;
-
-      if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
-	
-	if( *parameter == 0 || *parameter == '#' ) {
-	  // ignore comments and empty lines
-	} else if( strcasecmp(parameter, "RESET_HW") == 0 ) {
-	  MBNG_EVENT_PoolClear();
-	  MBNG_PATCH_Init(0);
-	  MBNG_MATRIX_Init(0);
-	  MBNG_ENC_Init(0);
-	  MBNG_DOUT_Init(0);
-	  MBNG_DIN_Init(0);
-	  MBNG_AIN_Init(0);
-	  MBNG_AINSER_Init(0);
-	  MBNG_MF_Init(0);
-	  MBNG_CV_Init(0);
-	  MBNG_KB_Init(0);
-	} else if( strcasecmp(parameter, "LCD") == 0 ) {
-	  char *str = brkt;
-	  if( !(str=remove_quotes(str)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing string after LCD message!\n");
-#endif
-	  } else {
-	    // print from a dummy item
-	    mbng_event_item_t item;
-	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
-	    item.label = str;
-	    MBNG_LCD_PrintItemLabel(&item, NULL, 0);
-	  }
-	} else if( strncmp(parameter, "EVENT_", 6) == 0 ) {
-	  if( !got_first_event_item ) {
-	    got_first_event_item = 1;
-	    MBNG_EVENT_PoolClear();
-	  }
-	  parseEvent(line, parameter, brkt);
-	} else if( strncmp(parameter, "MAP", 3) == 0 ) {
-	  if( !got_first_event_item ) {
-	    got_first_event_item = 1;
-	    MBNG_EVENT_PoolClear();
-	  }
-	  parseMap(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "SYSEX_VAR") == 0 ) {
-	  parseSysExVar(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "ENC") == 0 ) {
-	  parseEnc(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "DIN_MATRIX") == 0 ) {
-	  parseDinMatrix(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "DOUT_MATRIX") == 0 ) {
-	  parseDoutMatrix(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "KEYBOARD") == 0 ) {
-	  parseKeyboard(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
-	  parseLedMatrixPattern(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "AIN") == 0 ) {
-	  parseAin(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "AINSER") == 0 ) {
-	  parseAinSer(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "MF") == 0 ) {
-	  parseMf(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "AOUT") == 0 ) {
-	  parseAout(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "SCS") == 0 ) {
-	  parseScs(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "ROUTER") == 0 ) {
-	  parseRouter(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "ETH") == 0 ) {
-	  parseEth(line, parameter, brkt);
-	} else if( strcasecmp(parameter, "OSC") == 0 ) {
-	  parseOsc(line, parameter, brkt);
-
-	} else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 0, 255);
-	  if( value >= 0 )
-	    mbng_patch_cfg.debounce_ctr = value;
-	} else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
-	  if( value >= 0 )
-	    mbng_patch_cfg.global_chn = value;
-	} else if( strcasecmp(parameter, "AllNotesOffChannel") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
-	  if( value >= 0 )
-	    mbng_patch_cfg.all_notes_off_chn = value;
-	} else if( strcasecmp(parameter, "ConvertNoteOffToOn0") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
-	  if( value >= 0 )
-	    mbng_patch_cfg.convert_note_off_to_on0 = value;
-	} else if( strcasecmp(parameter, "BPM_Preset") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 1, 1000);
-	  if( value >= 0 )
-	    SEQ_BPM_Set((float)value);
-	} else if( strcasecmp(parameter, "BPM_Mode") == 0 ) {
-	  int value = parseSimpleValue(line, parameter, &brkt, 0, 2);
-	  if( value >= 0 )
-	    SEQ_BPM_ModeSet(value);
-	} else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
-	  s32 enabled_ports = 0;
-	  int bit;
-	  for(bit=0; bit<16; ++bit) {
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int enable = get_dec(word);
-	    if( enable < 0 )
-	      break;
-	    if( enable >= 1 )
-	      enabled_ports |= (1 << bit);
-	  }
-
-	  if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
-#endif
-	  } else {
-	    MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
-	  }	  
-
-	} else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 ) {
-	  s32 enabled_ports = 0;
-	  int bit;
-	  for(bit=0; bit<16; ++bit) {
-	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	    int enable = get_dec(word);
-	    if( enable < 0 )
-	      break;
-	    if( enable >= 1 )
-	      enabled_ports |= (1 << bit);
-	  }
-
-	  if( bit != 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid MIDI port format for parameter '%s'\n", line, parameter);
-#endif
-	  } else {
-	    MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
-	    MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
-	  }
-
-	} else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	  // changed error to warning, since people are sometimes confused about these messages
-	  // on file format changes
-	  DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unknown command: %s", line, line_buffer);
-#endif
-	}
-      } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	// no real error, can for example happen in .csv file
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
-#endif
-      }
+      status |= MBNG_FILE_C_Parser(line, line_buffer, &got_first_event_item);
     }
 
   } while( status >= 1 );
@@ -3365,18 +3379,18 @@ s32 MBNG_FILE_C_Read(char *filename)
     return MBNG_FILE_C_ERR_READ;
   }
 
-#if DEBUG_VERBOSE_LEVEL >= 1
   if( got_first_event_item ) {
     // post-processing step
     MBNG_EVENT_PoolUpdate();
 
+#if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C] Event Pool Number of Items: %d", MBNG_EVENT_PoolNumItemsGet());
     u32 pool_size = MBNG_EVENT_PoolSizeGet();
     u32 pool_max_size = MBNG_EVENT_PoolMaxSizeGet();
     DEBUG_MSG("[MBNG_FILE_C] Event Pool Allocation: %d of %d bytes (%d%%)",
 	      pool_size, pool_max_size, (100*pool_size)/pool_max_size);
-  }
 #endif
+  }
 
   // file is valid! :)
   info->valid = 1;
