@@ -562,11 +562,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 	  } else {
 	    char *str;
 	    if( !(str = getQuotedString(&brkt)) ) {
-	      ++bin_file_errors;
+	      //++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for LABEL %s!", line, label);
+	      DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: missing string for LABEL %s!", line, label);
 #endif
-	    } else {
+	    }
+
+	    { // else {
 	      int label_len = strlen(label);
 	      if( label_len > 8 ) {
 		++bin_file_errors;
@@ -661,11 +663,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 
 	  char *str;
 	  if( !(str = getQuotedString(&brkt)) ) {
-	    ++bin_file_errors;
+	    //++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for COND_ELSE condition of COND_LABEL %s!", line, current_cond_label);
+	    DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: missing string for COND_ELSE condition of COND_LABEL %s!", line, current_cond_label);
 #endif
-	  } else {
+	  }
+
+	  { // else {
 	    int str_len = strlen(str);
 	    int len = 1 + 1 + 1 + 1 + str_len+1;
 	    if( len >= 256 ) {
@@ -752,11 +756,13 @@ s32 MBNG_FILE_L_Read(char *filename)
 	      } else {
 		char *str;
 		if( !(str = getQuotedString(&brkt)) ) {
-		  ++bin_file_errors;
+		  //++bin_file_errors;
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[MBNG_FILE_L:%d] ERROR: missing string for COND condition '%s' of COND_LABEL %s!", line, condition, current_cond_label);
+		  DEBUG_MSG("[MBNG_FILE_L:%d] WARNING: missing string for COND condition '%s' of COND_LABEL %s!", line, condition, current_cond_label);
 #endif
-		} else {
+		}
+
+		{ // else {
 		  int str_len = strlen(str);
 		  int len = 1 + 1 + 1 + 2 + 1 + str_len+1;
 		  if( len >= 256 ) {

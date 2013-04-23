@@ -59,6 +59,9 @@ static u16 line_ix;
 static char autoload_ngc_file[9];
 static u8 autoload_enabled;
 
+static u8 ngr_section;
+static s16 ngr_value;
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
@@ -88,6 +91,10 @@ s32 TERMINAL_Init(u32 mode)
   autoload_ngc_file[0] = 0;
   // enable autoload by default
   autoload_enabled = 1;
+
+  // for .NGR file/command handling
+  ngr_section = 0;
+  ngr_value = 0;
 
   return 0; // no error
 }
@@ -290,7 +297,11 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
       out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
-      out("  run <section> <value>:            executes the .NGR script with the given section number and value");
+      out("  run [<section>] [<value>]:        executes the .NGR script with the optional section number and value");
+      out("  ngr_value:                        value used for 'run' (without parameter) and 'ngr' (is: %d)", ngr_value);
+      out("  ngr_section:                      section used for 'run' (without parameter) and 'ngr' (is: %d)", ngr_section);
+      out("  ngr <command>:                    directly executes a NGR command");
+      out("  ngc <command>:                    directly executes a NGC command");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -370,19 +381,27 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       }
     } else if( strcmp(parameter, "run") == 0 ) {
       s32 section, value;
-      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
-	out("Please specify <section> <value>!");
-      } else if( (section=get_dec(parameter)) < 0 || section >= 256 ) {
-	out("Section number should be between 0..255!");
-      } else if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
-	out("Please specify <section> <value>! (Missing the <value>)");
-      } else if( (value=get_dec(parameter)) < -16384 || value >= 16383 ) {
-	out("Value should be between -16384..16383!");
-      } else if( !MBNG_FILE_R_Valid() ) {
+      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	if( (section=get_dec(parameter)) < 0 || section >= 256 ) {
+	  out("Section number should be between 0..255!");
+	} else {
+	  ngr_section = section;
+	}
+
+	if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	  if( (value=get_dec(parameter)) < -16384 || value >= 16383 ) {
+	    out("Value should be between -16384..16383!");
+	  } else {
+	    ngr_value = value;
+	  }
+	}
+      }
+
+      if( !MBNG_FILE_R_Valid() ) {
 	out("ERROR: can't execute - missing %s.NGR file!", mbng_file_r_script_name);
       } else {
-	out("Executing %s.NGR with ^section==%d ^value==%d", mbng_file_r_script_name, section, value);
-	MBNG_FILE_R_ReadRequest(NULL, section, value, 1);
+	out("Executing %s.NGR with ^section==%d ^value==%d", mbng_file_r_script_name, ngr_section, ngr_value);
+	MBNG_FILE_R_ReadRequest(NULL, ngr_section, ngr_value, 1);
       }
     } else if( strcmp(parameter, "runstop") == 0 ) {
       if( MBNG_FILE_R_RunStop() > 0 ) {
@@ -390,6 +409,34 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       } else {
 	out("%s.NGR script not running.", mbng_file_r_script_name);
       }
+    } else if( strcasecmp(parameter, "ngr_section") == 0 ) {
+      s32 section;
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Please specify <ngr-section>! Current value: %d", ngr_section);
+      } else if( (section=get_dec(parameter)) < 0 || section >= 256 ) {
+	out("Section number should be between 0..255!");
+      } else {
+	ngr_section = section;
+	out(".NGR section set to %d", ngr_section);
+      }
+    } else if( strcasecmp(parameter, "ngr_value") == 0 ) {
+      s32 value;
+
+      if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	out("Please specify <ngr-value>! Current value: %d", ngr_value);
+      } else if( (value=get_dec(parameter)) < -16384 || value >= 16383 ) {
+	out("Value should be between -16384..16383!");
+      } else {
+	ngr_value = value;
+	out(".NGR value set to %d", ngr_value);
+      }
+    } else if( strcasecmp(parameter, "ngr") == 0 ) {
+      MBNG_FILE_R_Parser(0, brkt, NULL, NULL, ngr_section, ngr_value);
+      out("Executed command with ^section==%d ^value==%d", ngr_section, ngr_value);
+    } else if( strcasecmp(parameter, "ngc") == 0 ) {
+      u8 got_first_event_item = 0;
+      MBNG_FILE_C_Parser(0, brkt, &got_first_event_item);
+      out("Executed command.");
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("ERROR: please specify filename for patch (up to 8 characters)!");

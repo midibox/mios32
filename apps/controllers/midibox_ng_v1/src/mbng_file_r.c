@@ -805,6 +805,192 @@ s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Parses a .NGR command line
+//! \returns < 0 on errors (error codes are documented in mbng_file.h)
+/////////////////////////////////////////////////////////////////////////////
+#define IF_MAX_NESTING_LEVEL 16
+s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, u8 section, s16 value)
+{
+  s32 status = 0;
+
+  // sscanf consumes too much memory, therefore we parse directly
+  char *brkt;
+  char *parameter;
+
+  mbng_file_r_var_t vars;
+  vars.section = section;
+  vars.value = value;
+  vars.bank = MBNG_EVENT_SelectedBankGet(); // this can change with each line!
+
+  if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
+
+    if( *parameter == 0 || *parameter == '#' ) {
+      // ignore comments and empty lines
+      return 0;
+    }
+
+    if( strcasecmp(parameter, "IF") == 0 ) {
+      if( !if_state ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not supported from terminal command line!\n", line, parameter);
+#endif
+	return -1;
+      }
+
+      if( *nesting_level >= IF_MAX_NESTING_LEVEL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: max nesting level (%d) for if commands reached!\n", line, IF_MAX_NESTING_LEVEL);
+#endif
+	return 2; // due to error
+      } else {
+	++(*nesting_level);
+
+	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this IF is executed inside a non-matching block
+	  if_state[*nesting_level-1] = 0;
+	} else {
+	  s32 match = parseCondition(line, parameter, &brkt, &vars);
+	  if( match < 0 ) {
+	    return 2; // exit due to error
+	  } else {
+	    if_state[*nesting_level-1] = match ? 1 : 0;
+	  }
+	}
+      }
+      return 0; // read next line
+    }
+
+    if( strcasecmp(parameter, "ELSEIF") == 0 || strcasecmp(parameter, "ELSIF") == 0 ) {
+      if( !if_state ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not supported from terminal command line!\n", line, parameter);
+#endif
+	return -1;
+      }
+
+      if( *nesting_level == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
+#endif
+      } else {
+	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
+	  if_state[*nesting_level-1] = 0;
+	} else {
+	  if( if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
+	    s32 match = parseCondition(line, parameter, &brkt, &vars);
+	    if( match < 0 ) {
+	      return 2; // exit due to error
+	    } else {
+	      if_state[*nesting_level-1] = match ? 1 : 0;
+	    }
+	  } else {
+	    if_state[*nesting_level-1] = 2; // IF has been processed
+	  }
+	}
+      }
+      return 0; // read next line
+    }
+
+    if( strcasecmp(parameter, "ENDIF") == 0 ) {
+      if( !if_state ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not supported from terminal command line!\n", line, parameter);
+#endif
+	return -1;
+      }
+
+      if( *nesting_level == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
+#endif
+      } else {
+	--(*nesting_level);
+      }
+      return 0; // read next line
+    }
+
+    if( strcasecmp(parameter, "ELSE") == 0 ) {
+      if( !if_state ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not supported from terminal command line!\n", line, parameter);
+#endif
+	return -1;
+      }
+
+      if( *nesting_level == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
+#endif
+      } else {
+	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
+	  if_state[*nesting_level-1] = 0;
+	} else {
+	  if( if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
+	    if_state[*nesting_level-1] = 1; // matching condition
+	  } else {
+	    if_state[*nesting_level-1] = 2; // IF has been processed
+	  }
+	}
+      }
+      return 0; // read next line
+    }
+
+    if( !if_state || *nesting_level == 0 || if_state[*nesting_level-1] == 1 ) {
+      if( strcasecmp(parameter, "LCD") == 0 ) {
+	char *str = brkt;
+	if( !(str=remove_quotes(str)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LCD message!\n", line);
+#endif
+	} else {
+	  // print from a dummy item
+	  mbng_event_item_t item;
+	  MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+	  item.label = str;
+	  MBNG_LCD_PrintItemLabel(&item, NULL, 0);
+	}
+      } else if( strcasecmp(parameter, "LOG") == 0 ) {
+	char *str = brkt;
+	if( !(str=remove_quotes(str)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LOG message!\n", line);
+#endif
+	} else {
+	  MIOS32_MIDI_SendDebugString(str);
+	}
+      } else if( strcasecmp(parameter, "SEND") == 0 ) {
+	parseSend(line, parameter, &brkt, &vars);
+      } else if( strcasecmp(parameter, "EXEC_META") == 0 ) {
+	parseExecMeta(line, parameter, &brkt, &vars);
+      } else if( strcasecmp(parameter, "EXIT") == 0 ) {
+	if( nesting_level )
+	  *nesting_level = 0; // doesn't matter anymore
+	return 1;
+      } else if( strcasecmp(parameter, "SET") == 0 || 
+		 strcasecmp(parameter, "SET_RGB") == 0 ||
+		 strcasecmp(parameter, "TRIGGER") == 0 ) {
+	parseSet(line, parameter, &brkt, &vars);
+      } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
+	mbng_file_r_delay_ctr = parseDelay(line, parameter, &brkt, &vars);
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	// changed error to warning, since people are sometimes confused about these messages
+	// on file format changes
+	DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: unknown command: %s", line, line_buffer);
+#endif
+      }
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      // no real error, can for example happen in .csv file
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
+#endif
+    }
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! reads the config file content (again)
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -853,9 +1039,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 section, s16 value)
   }
 
   // read commands
-  u8 exit = 0;
+  s32 exit = 0;
   u32 line = 0;
-#define IF_MAX_NESTING_LEVEL 16
   u8 nesting_level = 0;
   u8 if_state[IF_MAX_NESTING_LEVEL];
   do {
@@ -879,154 +1064,12 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 section, s16 value)
       if( new_len >= 1 && line_buffer[new_len-1] == '\\' ) {
 	line_buffer[new_len-1] = 0;
 	line_buffer_len = new_len - 1;
-	continue; // read next line
+	return 0; // read next line
       } else {
 	line_buffer_len = 0; // for next round we start at 0 again
       }
 
-      // sscanf consumes too much memory, therefore we parse directly
-      char *brkt;
-      char *parameter;
-
-      mbng_file_r_var_t vars;
-      vars.section = section;
-      vars.value = value;
-      vars.bank = MBNG_EVENT_SelectedBankGet(); // this can change with each line!
-
-      if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
-	
-	if( *parameter == 0 || *parameter == '#' ) {
-	  // ignore comments and empty lines
-	  continue;
-	}
-
-	if( strcasecmp(parameter, "IF") == 0 ) {
-	  if( nesting_level >= IF_MAX_NESTING_LEVEL ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: max nesting level (%d) for if commands reached!\n", line, IF_MAX_NESTING_LEVEL);
-#endif
-	    exit = 2; // due to error
-	  } else {
-	    ++nesting_level;
-
-	    if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this IF is executed inside a non-matching block
-	      if_state[nesting_level-1] = 0;
-	    } else {
-	      s32 match = parseCondition(line, parameter, &brkt, &vars);
-	      if( match < 0 ) {
-		exit = 2; // exit due to error
-	      } else {
-		if_state[nesting_level-1] = match ? 1 : 0;
-	      }
-	    }
-	  }
-	  continue; // read next line
-	}
-
-	if( strcasecmp(parameter, "ELSEIF") == 0 || strcasecmp(parameter, "ELSIF") == 0 ) {
-	  if( nesting_level == 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
-#endif
-	  } else {
-	    if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
-	      if_state[nesting_level-1] = 0;
-	    } else {
-	      if( if_state[nesting_level-1] == 0 ) { // no matching IF condition yet?
-		s32 match = parseCondition(line, parameter, &brkt, &vars);
-		if( match < 0 ) {
-		  exit = 2; // exit due to error
-		} else {
-		  if_state[nesting_level-1] = match ? 1 : 0;
-		}
-	      } else {
-		if_state[nesting_level-1] = 2; // IF has been processed
-	      }
-	    }
-	  }
-	  continue; // read next line
-	}
-
-	if( strcasecmp(parameter, "ENDIF") == 0 ) {
-	  if( nesting_level == 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
-#endif
-	  } else {
-	    --nesting_level;
-	  }
-	  continue; // read next line
-	}
-
-	if( strcasecmp(parameter, "ELSE") == 0 ) {
-	  if( nesting_level == 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
-#endif
-	  } else {
-	    if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
-	      if_state[nesting_level-1] = 0;
-	    } else {
-	      if( if_state[nesting_level-1] == 0 ) { // no matching IF condition yet?
-		if_state[nesting_level-1] = 1; // matching condition
-	      } else {
-		if_state[nesting_level-1] = 2; // IF has been processed
-	      }
-	    }
-	  }
-	  continue; // read next line
-	}
-
-	if( nesting_level == 0 || if_state[nesting_level-1] == 1 ) {
-	  if( strcasecmp(parameter, "LCD") == 0 ) {
-	    char *str = brkt;
-	    if( !(str=remove_quotes(str)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LCD message!\n", line);
-#endif
-	    } else {
-	      // print from a dummy item
-	      mbng_event_item_t item;
-	      MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
-	      item.label = str;
-	      MBNG_LCD_PrintItemLabel(&item, NULL, 0);
-	    }
-	  } else if( strcasecmp(parameter, "LOG") == 0 ) {
-	    char *str = brkt;
-	    if( !(str=remove_quotes(str)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LOG message!\n", line);
-#endif
-	    } else {
-	      MIOS32_MIDI_SendDebugString(str);
-	    }
-	  } else if( strcasecmp(parameter, "SEND") == 0 ) {
-	    parseSend(line, parameter, &brkt, &vars);
-	  } else if( strcasecmp(parameter, "EXEC_META") == 0 ) {
-	    parseExecMeta(line, parameter, &brkt, &vars);
-	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
-	    exit = 1;
-	    nesting_level = 0; // doesn't matter anymore
-	  } else if( strcasecmp(parameter, "SET") == 0 || 
-		     strcasecmp(parameter, "SET_RGB") == 0 ||
-		     strcasecmp(parameter, "TRIGGER") == 0 ) {
-	    parseSet(line, parameter, &brkt, &vars);
-	  } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
-	    mbng_file_r_delay_ctr = parseDelay(line, parameter, &brkt, &vars);
-	  } else {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    // changed error to warning, since people are sometimes confused about these messages
-	    // on file format changes
-	    DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: unknown command: %s", line, line_buffer);
-#endif
-	  }
-	} else {
-#if DEBUG_VERBOSE_LEVEL >= 2
-	  // no real error, can for example happen in .csv file
-	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
-#endif
-	}
-      }
+      exit = MBNG_FILE_R_Parser(line, line_buffer, if_state, &nesting_level, section, value);
     }
 
   } while( !exit && !mbng_file_r_delay_ctr && status >= 1 );
@@ -1124,7 +1167,7 @@ s32 MBNG_FILE_R_CheckRequest(void)
       DEBUG_MSG("[PERF NGR] %5d.%d mS\n", cycles/10, cycles%10);
 #endif
 
-    if( mbng_file_r_req.notify_done ) {
+    if( mbng_file_r_req.notify_done && !mbng_file_r_delay_ctr ) {
       MUTEX_MIDIOUT_TAKE;
       DEBUG_MSG("%s.NGR with ^section==%d ^value==%d processed.", mbng_file_r_script_name, mbng_file_r_req.section, mbng_file_r_req.value);
       MUTEX_MIDIOUT_GIVE;
