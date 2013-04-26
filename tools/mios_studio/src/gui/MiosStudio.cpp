@@ -110,6 +110,8 @@ MiosStudio::MiosStudio()
                 command.trimCharactersAtStart(" \t\"");
                 command.trimCharactersAtEnd(" \t\"");
                 batchJobs.add(String("wait ") + command);
+            } else if( commandLineArray[i].startsWith("-psn") ) {
+                // ignore for MacOS
             } else {
                 commandLineErrorMessages += String("ERROR: unknown command line parameter: ") + commandLineArray[i] + String("\n");
                 ++numErrors;
