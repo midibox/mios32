@@ -13,7 +13,7 @@
  */
 
 #include "MiosStudio.h"
-#include "version.h"
+#include "../version.h"
 
 //==============================================================================
 MiosStudio::MiosStudio()
