@@ -13,16 +13,132 @@
  */
 
 #include "MiosStudio.h"
+#include "version.h"
 
 //==============================================================================
 MiosStudio::MiosStudio()
-    : uploadWindow(0)
+    : batchMode(false)
+    , uploadWindow(0)
     , midiInMonitor(0)
     , midiOutMonitor(0)
     , miosTerminal(0)
     , midiKeyboard(0)
     , initialMidiScanCounter(1) // start step-wise MIDI port scan
+    , batchWaitCounter(0)
 {
+    // parse the command line
+    {
+        int numErrors = 0;
+        bool quitIfBatch = false;
+        StringArray commandLineArray = JUCEApplication::getCommandLineParameterArray();
+        for(int i=0; i<commandLineArray.size(); ++i) {
+            if( commandLineArray[i].compare("--help") == 0 ) {
+                commandLineInfoMessages += "Command Line Parameters:\n";
+                commandLineInfoMessages += "--help                  this page\n";
+                commandLineInfoMessages += "--version               shows version number\n";
+                commandLineInfoMessages += "--batch                 don't open GUI\n";
+                commandLineInfoMessages += "--in=<port>             optional search string for MIDI IN port\n";
+                commandLineInfoMessages += "--out=<port>            optional search string for MIDI OUT port\n";
+                commandLineInfoMessages += "--device_id=<id>        sets the device id, should be done before upload if necessary\n";
+                commandLineInfoMessages += "--query                 queries the selected core\n";
+                commandLineInfoMessages += "--upload_hex=<file>     upload specified .hex file to core. Multiple --upload_hex allowed!\n";
+                commandLineInfoMessages += "--upload_file=<file>    upload specified file to SD Card. Multiple --upload_file allowed!\n";
+                commandLineInfoMessages += "--send_syx=<file>       send specified .syx file to core. Multiple --send_syx allowed!\n";
+                commandLineInfoMessages += "--terminal=<command>    send a MIOS terminal command. Multiple --terminal allowed!\n";
+                commandLineInfoMessages += "--wait=<seconds>        Waits for the given seconds.\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "Usage Examples:\n";
+                commandLineInfoMessages += "  MIOS_Studio --in=MIOS32 --out=MIOS32\n";
+                commandLineInfoMessages += "    starts MIOS Studio with MIDI IN/OUT port matching with 'MIOS32'\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "  MIOS_Studio --upload_hex=project.hex\n";
+                commandLineInfoMessages += "    starts MIOS Studio and uploads the project.hex file immediately\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "  MIOS_Studio --batch --upload_hex=project.hex\n";
+                commandLineInfoMessages += "    starts MIOS Studio without GUI and uploads the project.hex file\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "  MIOS_Studio --batch --upload_file=default.ngc --upload_file default.ngl\n";
+                commandLineInfoMessages += "    starts MIOS Studio without GUI and uploads two files to SD Card (MIOS32 only)\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "  MIOS_Studio --batch --terminal=\"help\" --wait=1\n";
+                commandLineInfoMessages += "    starts MIOS Studio, executes the \"help\" command in MIOS Terminal and waits 1 second for response\n";
+                commandLineInfoMessages += "\n";
+                commandLineInfoMessages += "NOTE: most parameters can be combined to a sequence of operations.\n";
+                commandLineInfoMessages += "      E.g. upload a .hex file, upload files to SD Card, execute a terminal command and wait some seconds before exit.\n";
+                quitIfBatch = true;
+            } else if( commandLineArray[i].compare("--version") == 0 ) {
+                commandLineInfoMessages += String("MIOS Studio ") + String(MIOS_STUDIO_VERSION) + String("\n");
+            } else if( commandLineArray[i].compare("--batch") == 0 ) {
+                batchMode = true;
+            } else if( commandLineArray[i].startsWith("--in=") ) {
+                inPortFromCommandLine = commandLineArray[i].substring(5);
+                inPortFromCommandLine.trimCharactersAtStart(" \t\"");
+                inPortFromCommandLine.trimCharactersAtEnd(" \t\"");
+                std::cout << "Preselected MIDI IN Port: " << inPortFromCommandLine << std::endl;
+            } else if( commandLineArray[i].startsWith("--out=") ) {
+                outPortFromCommandLine = commandLineArray[i].substring(6);
+                outPortFromCommandLine.trimCharactersAtStart(" \t\"");
+                outPortFromCommandLine.trimCharactersAtEnd(" \t\"");
+                std::cout << "Preselected MIDI OUT Port: " << outPortFromCommandLine << std::endl;
+            } else if( commandLineArray[i].startsWith("--device_id") ) {
+                String id = commandLineArray[i].substring(12);
+                batchJobs.add(String("device_id ") + id);
+            } else if( commandLineArray[i].startsWith("--query") ) {
+                batchJobs.add(String("query"));
+            } else if( commandLineArray[i].startsWith("--upload_hex") ) {
+                String file = commandLineArray[i].substring(13);
+                file.trimCharactersAtStart(" \t\"");
+                file.trimCharactersAtEnd(" \t\"");
+                batchJobs.add(String("upload_hex ") + file);
+            } else if( commandLineArray[i].startsWith("--upload_file") ) {
+                String file = commandLineArray[i].substring(14);
+                file.trimCharactersAtStart(" \t\"");
+                file.trimCharactersAtEnd(" \t\"");
+                batchJobs.add(String("upload_file ") + file);
+            } else if( commandLineArray[i].startsWith("--send_syx") ) {
+                String file = commandLineArray[i].substring(11);
+                file.trimCharactersAtStart(" \t\"");
+                file.trimCharactersAtEnd(" \t\"");
+                batchJobs.add(String("send_syx ") + file);
+            } else if( commandLineArray[i].startsWith("--terminal") ) {
+                String command = commandLineArray[i].substring(11);
+                command.trimCharactersAtStart(" \t\"");
+                command.trimCharactersAtEnd(" \t\"");
+                batchJobs.add(String("terminal ") + command);
+            } else if( commandLineArray[i].startsWith("--wait") ) {
+                String command = commandLineArray[i].substring(7);
+                command.trimCharactersAtStart(" \t\"");
+                command.trimCharactersAtEnd(" \t\"");
+                batchJobs.add(String("wait ") + command);
+            } else {
+                commandLineErrorMessages += String("ERROR: unknown command line parameter: ") + commandLineArray[i] + String("\n");
+                ++numErrors;
+            }
+        }
+
+        std::cout << commandLineInfoMessages;
+
+        if( numErrors ) {
+            quitIfBatch = true;
+
+            if( runningInBatchMode() ) {
+                std::cerr << commandLineErrorMessages;
+            } else {
+                // AlertWindow will be shown from timerCallback() once MIOS Studio is running
+            }
+        }
+
+        if( runningInBatchMode() && quitIfBatch ) {
+            JUCEApplication::getInstance()->setApplicationReturnValue(1); // error
+            JUCEApplication::quit();
+        }
+
+        if( batchJobs.size() ) {
+            batchJobs.add("quit");
+        }
+    }
+
+    // instantiate components
     uploadHandler = new UploadHandler(this);
     sysexPatchDb = new SysexPatchDb();
 
@@ -63,7 +179,8 @@ MiosStudio::MiosStudio()
 
 MiosStudio::~MiosStudio()
 {
-	deleteAndZero(uploadHandler);
+    if( uploadHandler )
+        deleteAndZero(uploadHandler);
     if( sysexToolWindow )
         deleteAndZero(sysexToolWindow);
     if( oscToolWindow )
@@ -110,6 +227,12 @@ void MiosStudio::resized()
     resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
 }
 
+
+//==============================================================================
+bool MiosStudio::runningInBatchMode(void)
+{
+    return batchMode;
+}
 
 //==============================================================================
 void MiosStudio::handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message)
@@ -198,21 +321,53 @@ void MiosStudio::timerCallback()
     if( initialMidiScanCounter ) {
         switch( initialMidiScanCounter ) {
         case 1:
-            midiInMonitor->scanMidiDevices();
+            Timer::stopTimer();
+
+            midiInMonitor->scanMidiDevices(inPortFromCommandLine);
             ++initialMidiScanCounter;
+
+            Timer::startTimer(1);
             break;
 
         case 2:
-            midiOutMonitor->scanMidiDevices();
+            Timer::stopTimer();
+
+            midiOutMonitor->scanMidiDevices(outPortFromCommandLine);
             ++initialMidiScanCounter;
+
+            Timer::startTimer(1);
             break;
 
         case 3:
+            Timer::stopTimer();
+
+            // and check for infos
+            if( commandLineInfoMessages.length() ) {
+                AlertWindow::showMessageBox(AlertWindow::InfoIcon,
+                                            T("Info"),
+                                            commandLineInfoMessages,
+                                            String::empty);
+                commandLineInfoMessages = String::empty;
+            }
+
+            // now also check for command line errors
+            if( commandLineErrorMessages.length() ) {
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("Command Line Error"),
+                                            commandLineErrorMessages,
+                                            String::empty);
+                commandLineErrorMessages = String::empty;
+            }
+
+            // try to query selected core
             audioDeviceManager.addMidiInputCallback(String::empty, this);
+
             if( getMidiOutput() != String::empty )
                 uploadWindow->queryCore();
 
             initialMidiScanCounter = 0; // stop scan
+
+            Timer::startTimer(1);
             break;
         }
     } else {
@@ -244,8 +399,9 @@ void MiosStudio::timerCallback()
                         mbhpMfToolWindow->handleIncomingMidiMessage(message, runningStatus);
                     if( sysexLibrarianWindow )
                         sysexLibrarianWindow->handleIncomingMidiMessage(message, runningStatus);
-                    if( miosFileBrowserWindow )
+                    if( miosFileBrowserWindow ) {
                         miosFileBrowserWindow->handleIncomingMidiMessage(message, runningStatus);
+                    }
                     miosTerminal->handleIncomingMidiMessage(message, runningStatus);
                     midiKeyboard->handleIncomingMidiMessage(message, runningStatus);
                 }
@@ -261,6 +417,83 @@ void MiosStudio::timerCallback()
                 midiOutMonitor->handleIncomingMidiMessage(message, message.getRawData()[0]);
 
                 midiOutQueue.pop();
+            }
+        }
+
+        if( batchJobs.size() ) {
+            if( batchWaitCounter ) {
+                --batchWaitCounter;
+            } else if( uploadWindow->uploadInProgress() ||
+                       (sysexToolWindow && sysexToolWindow->sendSyxInProgress()) ||
+                       (miosFileBrowserWindow && miosFileBrowserWindow->uploadFileInProgress()) ) {
+                // wait...
+            } else {
+                String job(batchJobs[0]);
+                batchJobs.remove(0);
+
+                if( job.startsWithIgnoreCase("device_id ") ) {
+                    int id = job.substring(10).getIntValue();
+                    if( id < 0 || id > 127 ) {
+                        std::cerr << "ERROR: device ID should be within 0..127!" << std::endl;
+                    } else {
+                        std::cout << "Setting Device ID=" << id << std::endl;
+                        uploadWindow->setDeviceId(id);
+                    }
+                } else if( job.startsWithIgnoreCase("query") ) {
+                    std::cout << "Query Core..." << std::endl;
+                    uploadWindow->queryFromExternal();
+                } else if( job.startsWithIgnoreCase("upload_hex ") ) {
+                    String filename = job.substring(11);
+
+                    std::cout << "Uploading " << filename << "..." << std::endl;
+                    uploadWindow->uploadFileFromExternal(filename);
+                } else if( job.startsWithIgnoreCase("upload_file ") ) {
+                    String filename = job.substring(12);
+
+                    std::cout << "Uploading " << filename << "..." << std::endl;
+                    if( !miosFileBrowserWindow ) {
+                        miosFileBrowserWindow = new MiosFileBrowserWindow(this);
+                        if( !runningInBatchMode() ) {
+                            miosFileBrowserWindow->setVisible(true);
+                        }
+                    }
+                    miosFileBrowserWindow->uploadFileFromExternal(filename);
+                } else if( job.startsWithIgnoreCase("send_syx ") ) {
+                    String filename = job.substring(9);
+
+                    std::cout << "Sending SysEx " << filename << "..." << std::endl;
+                    if( !sysexToolWindow ) {
+                        sysexToolWindow = new SysexToolWindow(this);
+                        if( !runningInBatchMode() ) {
+                            sysexToolWindow->setVisible(true);
+                        }
+                    }
+                    sysexToolWindow->sendSyxFile(filename);
+                } else if( job.startsWithIgnoreCase("terminal ") ) {
+                    String command = job.substring(9);
+
+                    std::cout << "MIOS Terminal command: " << command << std::endl;
+                    miosTerminal->execCommand(command);
+                } else if( job.startsWithIgnoreCase("wait ") ) {
+                    int counter = job.substring(5).getIntValue();
+                    if( counter < 0 ) {
+                        counter = 0;
+                    }
+                    std::cout << "Waiting for " << counter << " second" << ((counter == 1) ? "" : "s") << "..." << std::endl;
+                    batchWaitCounter = counter*1000;
+                } else if( job.startsWithIgnoreCase("quit") ) {
+                    if( runningInBatchMode() ) {
+                        JUCEApplication::getInstance()->setApplicationReturnValue(0); // no error
+                        JUCEApplication::quit();
+                    } else {
+                        AlertWindow::showMessageBox(AlertWindow::InfoIcon,
+                                                    T("Info"),
+                                                    T("All batch jobs executed."),
+                                                    String::empty);
+                    }
+                } else {
+                    std::cerr << "ERROR: unknown batch job: '" << job << "'!" << std::endl;
+                }
             }
         }
     }

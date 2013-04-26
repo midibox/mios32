@@ -38,6 +38,10 @@ public:
     void resized();
 
     //==============================================================================
+    bool sendSyxFile(const String& filename, const bool& sendImmediately);
+    bool sendSyxInProgress(void);
+
+    //==============================================================================
     void buttonClicked (Button* buttonThatWasClicked);
     void sliderValueChanged(Slider* slider);
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
@@ -65,6 +69,7 @@ protected:
     int numBytesToSend;
     int numBytesSent;
     double progress;
+    int previousProgress;
 };
 
 
@@ -165,6 +170,17 @@ public:
     }
 
     SysexTool *sysexTool;
+
+    //==============================================================================
+    bool sendSyxInProgress(void)
+    {
+        return sysexTool->sysexToolSend->sendSyxInProgress();
+    }
+
+    bool sendSyxFile(const String& filename)
+    {
+        return sysexTool->sysexToolSend->sendSyxFile(filename, true);
+    }
 
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)

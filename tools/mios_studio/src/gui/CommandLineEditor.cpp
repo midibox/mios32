@@ -51,7 +51,7 @@ bool CommandLineEditor::keyPressed(const KeyPress& key)
             }
         }
 
-        positionInList = commandList.size() ? (commandList.size() - 1) : 0;
+        positionInList = commandList.size();
     } else if( key == KeyPress::upKey ) {
         if( commandList.size() && positionInList > 0 ) {
             String command(getText());

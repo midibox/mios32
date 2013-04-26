@@ -36,6 +36,9 @@ public:
     void resized();
 
     //==============================================================================
+    bool execCommand(const String& command);
+
+    //==============================================================================
     void textEditorTextChanged(TextEditor &editor);
     void textEditorReturnKeyPressed(TextEditor &editor);
     void textEditorEscapeKeyPressed(TextEditor &editor);

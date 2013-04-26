@@ -285,6 +285,16 @@ void MiosFileBrowser::resized()
 }
 
 //==============================================================================
+void MiosFileBrowser::setStatus(const String& str)
+{
+    if( miosStudio->runningInBatchMode() ) {
+        std::cout << str << std::endl;
+    } else {
+        statusLabel->setText(str, true);
+    }
+}
+
+//==============================================================================
 void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 {
     if( buttonThatWasClicked == updateButton ) {
@@ -292,7 +302,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
         treeView->clearSelectedItems();
         treeView->scrollToKeepItemVisible(rootItem);
         // change label
-        statusLabel->setText(T(""), true);
+        setStatus(T(""));
         // request update
         requestUpdateTreeView();
     } else if( buttonThatWasClicked == downloadButton || 
@@ -309,7 +319,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
 
             if( buttonThatWasClicked == editTextButton && hexEditor->isVisible() ) {
                 openTextEditor(hexEditor->getBinary());
-                statusLabel->setText(T("Editing ") + currentReadFileName + T(" in text mode."), true);
+                setStatus(T("Editing ") + currentReadFileName + T(" in text mode."));
             } else if( buttonThatWasClicked == editHexButton && textEditor->isVisible() ) {
                 if( textEditor->isVisible() && !textEditor->isReadOnly() ) {
                     // visible & read only mode means, that binary data is edited -> transfer to Hex Editor only in this case!
@@ -320,7 +330,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
                     // otherwise re-use data in hex editor
                     openHexEditor(hexEditor->getBinary());
                 }
-                statusLabel->setText(T("Editing ") + currentReadFileName + T(" in hex mode."), true);
+                setStatus(T("Editing ") + currentReadFileName + T(" in hex mode."));
             }
         } else {
             if( treeView->getNumSelectedItems() ) {
@@ -378,7 +388,7 @@ void MiosFileBrowser::textEditorTextChanged(TextEditor &editor)
 #if 0
     int pos = editor.getCaretPosition();
     String txt(editor.getText());
-    statusLabel->setText(String::formatted(T("(%d/%d)"), pos, txt.length()), true);
+    setStatus(String::formatted(T("(%d/%d)"), pos, txt.length()));
 #endif
 }
 
@@ -642,7 +652,7 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
             File defaultPathFile(defaultPath + "/" + readFileName);
             FileChooser myChooser(T("Store ") + currentReadFileName, defaultPathFile);
             if( !myChooser.browseForFileToSave(true) ) {
-                statusLabel->setText(T("Cancled save operation for ") + currentReadFileName, true);
+                setStatus(T("Cancled save operation for ") + currentReadFileName);
             } else {
                 currentReadFile = myChooser.getResult();
 
@@ -659,7 +669,7 @@ bool MiosFileBrowser::downloadFileSelection(unsigned selection)
                                                 String::empty,
                                                 T("File cannot be created!"),
                                                 String::empty);
-                    statusLabel->setText(T("Failed to open ") + currentReadFile.getFullPathName(), true);
+                    setStatus(T("Failed to open ") + currentReadFile.getFullPathName());
                 } else {
                     disableFileButtons();
                     sendCommand(T("read ") + currentReadFileName);
@@ -680,16 +690,16 @@ bool MiosFileBrowser::downloadFinished(void)
 {
     if( openHexEditorAfterRead ) {
         openHexEditor(currentReadData);
-        statusLabel->setText(T("Editing ") + currentReadFileName, true);
+        setStatus(T("Editing ") + currentReadFileName);
         editLabel->setText(currentReadFileName, true);
     } else if( openTextEditorAfterRead ) {
         openTextEditor(currentReadData);
-        statusLabel->setText(T("Editing ") + currentReadFileName, true);
+        setStatus(T("Editing ") + currentReadFileName);
         editLabel->setText(currentReadFileName, true);
     } else if( currentReadFileStream ) {
         currentReadFileStream->write((uint8 *)&currentReadData.getReference(0), currentReadData.size());
         delete currentReadFileStream;
-        statusLabel->setText(T("Saved ") + currentReadFile.getFullPathName(), true);
+        setStatus(T("Saved ") + currentReadFile.getFullPathName());
 
         // try next file (if there is still another selection
         downloadFileSelection(++transferSelectionCtr);
@@ -725,7 +735,7 @@ bool MiosFileBrowser::deleteFileSelection(unsigned selection)
 
 bool MiosFileBrowser::deleteFinished(void)
 {
-    statusLabel->setText(T("File has been removed!"), true);
+    setStatus(T("File has been removed!"));
 
     // try next file (if there is still another selection
     deleteFileSelection(++transferSelectionCtr);
@@ -759,7 +769,7 @@ bool MiosFileBrowser::createDir(void)
 
 bool MiosFileBrowser::createDirFinished(void)
 {
-    statusLabel->setText(T("Directory has been created!"), true);
+    setStatus(T("Directory has been created!"));
 
     requestUpdateTreeView();
 
@@ -792,7 +802,7 @@ bool MiosFileBrowser::createFile(void)
 }
 
 //==============================================================================
-bool MiosFileBrowser::uploadFile(void)
+bool MiosFileBrowser::uploadFile(String filename)
 {
     // restore default path
     String defaultPath(File::getSpecialLocation(File::userHomeDirectory).getFullPathName());
@@ -802,42 +812,50 @@ bool MiosFileBrowser::uploadFile(void)
     }
     File defaultPathFile(defaultPath);
     FileChooser myChooser(T("Upload File to Core"), defaultPathFile);
-    if( !myChooser.browseForFileToOpen() ) {
+    if( !filename.length() && !myChooser.browseForFileToOpen() ) {
         return false;
-    } else {
-        File inFile(myChooser.getResult());
+    }
 
-        // store default path
-        if( propertiesFile ) {
-            propertiesFile->setValue(T("defaultFilebrowserPath"), inFile.getParentDirectory().getFullPathName());
-        }
+    File inFile(filename.length() ? filename : myChooser.getResult());
 
-        FileInputStream *inFileStream = inFile.createInputStream();
-        if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+    // store default path
+    if( propertiesFile ) {
+        propertiesFile->setValue(T("defaultFilebrowserPath"), inFile.getParentDirectory().getFullPathName());
+    }
+
+    FileInputStream *inFileStream = inFile.createInputStream();
+    if( !inFileStream || inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        if( miosStudio->runningInBatchMode() ) {
+            std::cerr << "The file " << inFile.getFileName() << " doesn't exist!" << std::endl;
+        } else {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("doesn't exist!"),
                                         String::empty);
-        } else if( inFileStream->isExhausted() ) { // || !inFileStream->getTotalLength() -> disabled, we also want to handle zero-length files
+        }
+    } else if( inFileStream->isExhausted() ) { // || !inFileStream->getTotalLength() -> disabled, we also want to handle zero-length files
+        if( miosStudio->runningInBatchMode() ) {
+            std::cerr << "The file " << inFile.getFileName() << " can't be read!" << std::endl;
+        } else {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("can't be read!"),
                                         String::empty);
-        } else {
-            disableFileButtons();
-
-            uint64 size = inFileStream->getTotalLength();
-            uint8 *buffer = (uint8 *)juce_malloc(size);
-            size = inFileStream->read(buffer, size);
-            //currentWriteData.resize(currentWriteSize); // doesn't exist in Juce 1.53
-            Array<uint8> tmp(buffer, size);
-            juce_free(buffer);
-            uploadBuffer(getSelectedPath() + inFile.getFileName(), tmp);
         }
-
-        if( inFileStream )
-            delete inFileStream;
+    } else {
+        disableFileButtons();
+        
+        uint64 size = inFileStream->getTotalLength();
+        uint8 *buffer = (uint8 *)juce_malloc(size);
+        size = inFileStream->read(buffer, size);
+        //currentWriteData.resize(currentWriteSize); // doesn't exist in Juce 1.53
+        Array<uint8> tmp(buffer, size);
+        juce_free(buffer);
+        uploadBuffer(getSelectedPath() + inFile.getFileName(), tmp);
     }
+
+    if( inFileStream )
+        delete inFileStream;
 
     return true;
 }
@@ -848,7 +866,7 @@ bool MiosFileBrowser::uploadBuffer(String filename, const Array<uint8>& buffer)
     currentWriteData = buffer;
     currentWriteSize = buffer.size();
 
-    statusLabel->setText(T("Uploading ") + currentWriteFileName + T(" (") + String(currentWriteSize) + T(" bytes)"), true);
+    setStatus(T("Uploading ") + currentWriteFileName + T(" (") + String(currentWriteSize) + T(" bytes)"));
 
     currentWriteInProgress = true;
     currentWriteError = false;
@@ -887,10 +905,10 @@ bool MiosFileBrowser::uploadFinished(void)
     float dataRate = ((float)currentWriteSize/1000.0) / downloadTime;
 
 
-    statusLabel->setText(T("Upload of ") + currentWriteFileName +
+    setStatus(T("Upload of ") + currentWriteFileName +
                          T(" (") + String(currentWriteSize) + T(" bytes) completed in ") +
                          String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate) +
-                         extraText, true);
+                         extraText);
 
 #if 0 // not required
     requestUpdateTreeView();
@@ -909,12 +927,12 @@ void MiosFileBrowser::timerCallback()
 {
     if( currentReadInProgress ) {
         if( currentReadError ) {
-            statusLabel->setText(T("Invalid response from MIOS32 core during read operation!"), true);
+            setStatus(T("Invalid response from MIOS32 core during read operation!"));
         } else {
-            statusLabel->setText(T("No response from MIOS32 core during read operation!"), true);
+            setStatus(T("No response from MIOS32 core during read operation!"));
         }
     } else {
-        statusLabel->setText(T("No response from MIOS32 core!"), true);
+        setStatus(T("No response from MIOS32 core!"));
     }
 }
 
@@ -1014,7 +1032,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     // fake transfer:
                     currentReadInProgress = false;
                     currentReadData.clear();
-                    statusLabel->setText(statusMessage, true);
+                    setStatus(statusMessage);
                     downloadFinished();
                     statusMessage = String::empty; // status has been updated by downloadFinished()
                 }
@@ -1050,7 +1068,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                                                String::formatted(T("%2.1fs (%2.1f kb/s)"), downloadTime, dataRate));
                         currentReadInProgress = false;
 
-                        statusLabel->setText(statusMessage, true);
+                        setStatus(statusMessage);
                         downloadFinished();
                         statusMessage = String::empty; // status has been updated by downloadFinished()
                     } else {
@@ -1088,7 +1106,7 @@ void MiosFileBrowser::receiveCommand(const String& command)
                     unsigned expectedOffset = currentWriteFirstBlockOffset + (writeBlockSizeDefault*(currentWriteBlockCtr+1));
                     if( addressOffset != expectedOffset ) {
                         currentWriteError = true;
-                        statusLabel->setText(String::formatted(T("ERROR: the application has requested file position 0x%08X, but filebrowser expected 0x%08X! Please check with TK!"), addressOffset, expectedOffset), true);
+                        setStatus(String::formatted(T("ERROR: the application has requested file position 0x%08X, but filebrowser expected 0x%08X! Please check with TK!"), addressOffset, expectedOffset));
                     } else {
                         ++currentWriteBlockCtr; // block received
                     }                    
@@ -1162,8 +1180,19 @@ void MiosFileBrowser::receiveCommand(const String& command)
     }
 
     if( statusMessage.length() ) {
-        statusLabel->setText(statusMessage, true);
+        setStatus(statusMessage);
     }
+}
+
+//==============================================================================
+bool MiosFileBrowser::uploadFileInProgress(void)
+{
+    return currentWriteInProgress || currentReadInProgress;
+}
+
+bool MiosFileBrowser::uploadFileFromExternal(const String& filename)
+{
+    return uploadFile(filename);
 }
 
 //==============================================================================
@@ -1172,7 +1201,6 @@ void MiosFileBrowser::handleIncomingMidiMessage(const MidiMessage& message, uint
     uint8 *data = (uint8 *)message.getRawData();
     uint32 size = message.getRawDataSize();
     int messageOffset = 0;
-
     bool messageReceived = false;
     if( runningStatus == 0xf0 &&
         SysexHelper::isValidMios32DebugMessage(data, size, -1) &&
@@ -1183,7 +1211,7 @@ void MiosFileBrowser::handleIncomingMidiMessage(const MidiMessage& message, uint
         SysexHelper::isValidMios32Error(data, size, -1) &&
         data[7] == 0x10 ) {
         stopTimer();
-        statusLabel->setText(T("Filebrowser access not implemented by this application!"), true);
+        setStatus(T("Filebrowser access not implemented by this application!"));
     }
 
     if( messageReceived ) {
