@@ -22,6 +22,7 @@ SysexToolSend::SysexToolSend(MiosStudio *_miosStudio)
     , numBytesToSend(0)
     , numBytesSent(0)
     , progress(0)
+    , previousProgress(100)
 {
     addAndMakeVisible(statusLabel = new Label(T("Number of Bytes"), String::empty));
     statusLabel->setJustificationType(Justification::right);
@@ -122,6 +123,7 @@ void SysexToolSend::buttonClicked(Button* buttonThatWasClicked)
         numBytesToSend = sendData.size();
         numBytesSent = 0;
         progress = 0;
+        previousProgress = 100;
         if( numBytesToSend > 0 ) {
             startTimer(1);
             sendStartButton->setEnabled(false);
@@ -138,6 +140,7 @@ void SysexToolSend::buttonClicked(Button* buttonThatWasClicked)
         sendFileChooser->setEnabled(true);
         sendClearButton->setEnabled(true);
         progress = 0;
+        previousProgress = 100;
     } else if( buttonThatWasClicked == sendClearButton ) {
         sendBox->clear();
     }
@@ -158,40 +161,68 @@ void SysexToolSend::sliderValueChanged(Slider* slider)
 
 
 //==============================================================================
-void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
+bool SysexToolSend::sendSyxFile(const String& filename, const bool& sendImmediately)
 {
-    if( fileComponentThatHasChanged == sendFileChooser ) {
-        File inFile = sendFileChooser->getCurrentFile();
+    File inFile(filename);
+    FileInputStream *inFileStream = inFile.createInputStream();
 
-        FileInputStream *inFileStream = inFile.createInputStream();
-
-        if( !inFileStream ) {
+    if( !inFileStream ) {
+        if( miosStudio->runningInBatchMode() ) {
+            std::cerr << "ERROR: the file " << inFile.getFileName() << " doesn't exist!" << std::endl;
+        } else {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("doesn't exist!"),
                                         String::empty);
-        } else if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        }
+        return false;
+    }
+
+    if( inFileStream->isExhausted() || !inFileStream->getTotalLength() ) {
+        if( miosStudio->runningInBatchMode() ) {
+            std::cerr << "ERROR: the file " << inFile.getFileName() << " is empty!" << std::endl;
+        } else {
             AlertWindow::showMessageBox(AlertWindow::WarningIcon,
                                         T("The file ") + inFile.getFileName(),
                                         T("is empty!"),
                                         String::empty);
-        } else {
-            int64 size = inFileStream->getTotalLength();
-            uint8 *buffer = (uint8 *)juce_malloc(size);
-            int64 readNumBytes = inFileStream->read(buffer, size);
-            sendBox->setBinary(buffer, readNumBytes);
-            juce_free(buffer);
-
-            // store setting
-            PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
-            if( propertiesFile ) {
-                String recentlyUsedHexFiles = sendFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
-                propertiesFile->setValue(T("recentlyUsedSyxSendFiles"), recentlyUsedHexFiles);
-                propertiesFile->setValue(T("defaultSyxSendFile"), inFile.getFullPathName());
-            }
         }
-
         deleteAndZero(inFileStream);
+        return false;
+    }
+
+    int64 size = inFileStream->getTotalLength();
+    uint8 *buffer = (uint8 *)juce_malloc(size);
+    int64 readNumBytes = inFileStream->read(buffer, size);
+    sendBox->setBinary(buffer, readNumBytes);
+    juce_free(buffer);
+
+    // store setting
+    PropertiesFile *propertiesFile = MiosStudioProperties::getInstance()->getCommonSettings(true);
+    if( propertiesFile ) {
+        String recentlyUsedHexFiles = sendFileChooser->getRecentlyUsedFilenames().joinIntoString(";");
+        propertiesFile->setValue(T("recentlyUsedSyxSendFiles"), recentlyUsedHexFiles);
+        propertiesFile->setValue(T("defaultSyxSendFile"), inFile.getFullPathName());
+    }
+
+    if( sendImmediately ) {
+        buttonClicked(sendStartButton);
+    }
+
+    return true;
+}
+
+bool SysexToolSend::sendSyxInProgress(void)
+{
+    return sendData.size() ? true : false;
+}
+
+//==============================================================================
+void SysexToolSend::filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged)
+{
+    if( fileComponentThatHasChanged == sendFileChooser ) {
+        File inFile = sendFileChooser->getCurrentFile();
+        sendSyxFile(inFile.getFullPathName(), false);
     }
 }
 
@@ -208,6 +239,7 @@ void SysexToolSend::timerCallback()
         sendFileChooser->setEnabled(true);
         sendClearButton->setEnabled(true);
         progress = 0;
+        previousProgress = 100;
     } else {
         int streamEnd = sendData.indexOf(0xf7);
         if( streamEnd < 0 ) {
@@ -224,6 +256,11 @@ void SysexToolSend::timerCallback()
         }
 
         progress = (double)numBytesSent / (double)numBytesToSend;
+
+        if( miosStudio->runningInBatchMode() && int(progress*100) != previousProgress ) {
+            previousProgress = int(progress*100);
+            printf("%d of %d bytes (%d%%)\n", numBytesSent, numBytesToSend, previousProgress);
+        }
 
         if( sendData.size() > 0 ) {
             int delay = sendDelaySlider->getValue();

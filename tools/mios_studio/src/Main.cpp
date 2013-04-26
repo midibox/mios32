@@ -38,8 +38,8 @@ public:
         centreWithSize(getWidth(), getHeight());
         setMenuBar(contentComponent);
 
-        setVisible(true);
-
+        if( !contentComponent->runningInBatchMode() )
+            setVisible(true);
     }
 
     ~MiosStudioWindow()

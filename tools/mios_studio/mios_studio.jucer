@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.3"
+<JUCERPROJECT id="MXNnwm" name="MIOS_Studio" projectType="guiapp" version="2.4.5"
               jucerVersion="3.0.0" bundleIdentifier="org.midibox.MIOSStudio"
               companyName="MIDIbox">
   <EXPORTFORMATS>

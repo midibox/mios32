@@ -66,6 +66,9 @@ public:
     void resized();
 
     //==============================================================================
+    bool runningInBatchMode(void);
+
+    //==============================================================================
     void handleIncomingMidiMessage(MidiInput* source, const MidiMessage& message);
 
     void timerCallback();
@@ -113,6 +116,16 @@ public:
 	// This is needed by MSVC in debug mode (please #ifdef if it causes Mac problems)
     juce_UseDebuggingNewOperator
 protected:
+    //==============================================================================
+    bool batchMode;
+    String commandLineErrorMessages;
+    String commandLineInfoMessages;
+    String inPortFromCommandLine;
+    String outPortFromCommandLine;
+
+    StringArray batchJobs;
+    unsigned batchWaitCounter;
+
     //==============================================================================
     UploadWindow *uploadWindow;
     MidiMonitor *midiInMonitor;

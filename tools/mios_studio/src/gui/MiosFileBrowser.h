@@ -43,7 +43,10 @@ public:
     void resized();
 
     //==============================================================================
-    void buttonClicked (Button* buttonThatWasClicked);
+    void setStatus(const String& str);
+
+    //==============================================================================
+    void buttonClicked(Button* buttonThatWasClicked);
 
     //==============================================================================
     void textEditorTextChanged(TextEditor &editor);
@@ -89,7 +92,7 @@ public:
     bool createFile(void);
 
     //==============================================================================
-    bool uploadFile(void);
+    bool uploadFile(String filename = String::empty);
     bool uploadBuffer(String filename, const Array<uint8>& buffer);
     bool uploadFinished(void);
 
@@ -99,6 +102,10 @@ public:
     //==============================================================================
     void sendCommand(const String& command);
     void receiveCommand(const String& command);
+
+    //==============================================================================
+    bool uploadFileInProgress(void);
+    bool uploadFileFromExternal(const String& filename);
 
     //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
@@ -191,10 +198,27 @@ public:
     MiosFileBrowser *miosFileBrowser;
 
     //==============================================================================
+    bool uploadFileInProgress(void)
+    {
+        return miosFileBrowser->uploadFileInProgress();
+    }
+
+    bool uploadFileFromExternal(const String& filename)
+    {
+        return miosFileBrowser->uploadFileFromExternal(filename);
+    }
+
+
+    //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus)
     {
+#if 0
         if( isVisible() )
             miosFileBrowser->handleIncomingMidiMessage(message, runningStatus);
+#else
+        // (also in batch mode)
+        miosFileBrowser->handleIncomingMidiMessage(message, runningStatus);
+#endif
     }
 
     void closeButtonPressed()

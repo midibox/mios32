@@ -46,7 +46,7 @@ MidiMonitor::~MidiMonitor()
 
 //==============================================================================
 // Should be called after startup once window is visible
-void MidiMonitor::scanMidiDevices()
+void MidiMonitor::scanMidiDevices(const String& searchPort)
 {
     monitorLogBox->clear();
 
@@ -71,7 +71,15 @@ void MidiMonitor::scanMidiDevices()
     int current = -1;
     for(int i=0; i<midiPorts.size(); ++i) {
         midiPortSelector->addItem(midiPorts[i], i+1);
-        bool enabled = midiPorts[i] == selectedPort;
+        bool enabled = false;
+
+        if( current < 0 ) {
+            if( searchPort.length() ) {
+                enabled = midiPorts[i].containsIgnoreCase(searchPort);
+            } else {
+                enabled = midiPorts[i] == selectedPort;
+            }
+        }
 
         if( enabled )
             current = i + 1;
@@ -89,8 +97,24 @@ void MidiMonitor::scanMidiDevices()
     if( current == -1 ) {
         if( inPort ) {
             miosStudio->setMidiInput(String::empty);
+
+            if( searchPort.length() ) {
+                std::cout << "ERROR: MIDI IN Port '" << searchPort << "' not found!" << std::endl;
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("Unknown MIDI IN Port"),
+                                            String("MIDI IN Port '") + searchPort + String("' not found!"),
+                                            String::empty);
+            }
         } else {
             miosStudio->setMidiOutput(String::empty);
+
+            if( searchPort.length() ) {
+                std::cout << "ERROR: MIDI OUT Port '" << searchPort << "' not found!" << std::endl;
+                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                            T("Unknown MIDI OUT Port"),
+                                            String("MIDI OUT Port '") + searchPort + String("' not found!"),
+                                            String::empty);
+            }
         }
     }
 

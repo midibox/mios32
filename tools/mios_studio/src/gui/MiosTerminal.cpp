@@ -48,6 +48,37 @@ void MiosTerminal::resized()
 }
 
 //==============================================================================
+bool MiosTerminal::execCommand(const String& command)
+{
+    Array<uint8> dataArray = SysexHelper::createMios32DebugMessage(miosStudio->uploadHandler->getDeviceId());
+    dataArray.add(0x00); // input string
+    for(int i=0; i<command.length(); ++i)
+        dataArray.add(command[i] & 0x7f);
+    dataArray.add('\n');
+    dataArray.add(0xf7);
+    MidiMessage message = SysexHelper::createMidiMessage(dataArray);
+    miosStudio->sendMidiMessage(message);
+
+    inputLine->setText(String::empty);
+
+    if( !gotFirstMessage )
+        terminalLogBox->clear();
+    gotFirstMessage = 1;
+
+#if 0
+    String timeStampStr = T("input");
+#else
+    double timeStamp = Time::getMillisecondCounter() / 1000.0; // Note: it's intented that this is the system up time
+    String timeStampStr = (timeStamp > 0)
+        ? String::formatted(T("%8.3f"), timeStamp)
+        : T("now");
+#endif
+    terminalLogBox->addEntry(Colours::grey, "[" + timeStampStr + "] " + command);
+
+    return true;
+}
+
+//==============================================================================
 void MiosTerminal::textEditorTextChanged(TextEditor &editor)
 {
 }
@@ -55,32 +86,7 @@ void MiosTerminal::textEditorTextChanged(TextEditor &editor)
 void MiosTerminal::textEditorReturnKeyPressed(TextEditor &editor)
 {
     if( &editor == inputLine ) {
-        String command = inputLine->getText();
-
-        Array<uint8> dataArray = SysexHelper::createMios32DebugMessage(miosStudio->uploadHandler->getDeviceId());
-        dataArray.add(0x00); // input string
-        for(int i=0; i<command.length(); ++i)
-            dataArray.add(command[i] & 0x7f);
-        dataArray.add('\n');
-        dataArray.add(0xf7);
-        MidiMessage message = SysexHelper::createMidiMessage(dataArray);
-        miosStudio->sendMidiMessage(message);
-
-        inputLine->setText(String::empty);
-
-        if( !gotFirstMessage )
-            terminalLogBox->clear();
-        gotFirstMessage = 1;
-
-#if 0
-        String timeStampStr = T("input");
-#else
-        double timeStamp = Time::getMillisecondCounter() / 1000.0; // Note: it's intented that this is the system up time
-        String timeStampStr = (timeStamp > 0)
-            ? String::formatted(T("%8.3f"), timeStamp)
-            : T("now");
-#endif
-        terminalLogBox->addEntry(Colours::grey, "[" + timeStampStr + "] " + command);
+        execCommand(inputLine->getText());
     }
 }
 
@@ -129,6 +135,11 @@ void MiosTerminal::handleIncomingMidiMessage(const MidiMessage& message, uint8 r
             ? String::formatted(T("%8.3f"), timeStamp)
             : T("now");
 
-        terminalLogBox->addEntry(Colours::black, "[" + timeStampStr + "] " + str);
+        String terminalStr = "[" + timeStampStr + "] " + str;
+        if( miosStudio->runningInBatchMode() ) {
+            std::cout << terminalStr << std::endl;
+        } else {
+            terminalLogBox->addEntry(Colours::black, terminalStr);
+        }
     }
 }

@@ -44,6 +44,16 @@ public:
     void filenameComponentChanged(FilenameComponent *fileComponentThatHasChanged);
 
     //==============================================================================
+    bool uploadInProgress(void);
+    bool uploadFileFromExternal(const String& filename);
+    bool queryFromExternal(void);
+    void setDeviceId(const int& newId);
+
+    //==============================================================================
+    void addQueryEntry(const Colour &colour, const String &textLine);
+    void addLogEntry(const Colour &colour, const String &textLine);
+
+    //==============================================================================
     void handleIncomingMidiMessage(const MidiMessage& message, uint8 runningStatus);
 
     void midiPortChanged(void);
@@ -75,7 +85,11 @@ protected:
     MiosStudio *miosStudio;
 
     //==============================================================================
+    File uploadHexFile;
+
+    //==============================================================================
     double progress;
+    int previousProgress;
     bool waitUploadRequestMessagePrint;
 
     //==============================================================================
