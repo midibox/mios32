@@ -15,6 +15,15 @@
 #include "MiosStudio.h"
 #include "../version.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <io.h>
+#include <iostream>
+#include <fstream>
+#endif
+
 //==============================================================================
 MiosStudio::MiosStudio()
     : batchMode(false)
@@ -25,7 +34,16 @@ MiosStudio::MiosStudio()
     , midiKeyboard(0)
     , initialMidiScanCounter(1) // start step-wise MIDI port scan
     , batchWaitCounter(0)
+    , initialGuiX(-1) // centered
+    , initialGuiY(-1) // centered
 {
+    bool hideMonitors = false;
+    bool hideUpload = false;
+    bool hideTerminal = false;
+    bool hideKeyboard = false;
+    int  guiWidth = 800;
+    int  guiHeight = 650;
+
     // parse the command line
     {
         int numErrors = 0;
@@ -46,6 +64,15 @@ MiosStudio::MiosStudio()
                 commandLineInfoMessages += "--send_syx=<file>       send specified .syx file to core. Multiple --send_syx allowed!\n";
                 commandLineInfoMessages += "--terminal=<command>    send a MIOS terminal command. Multiple --terminal allowed!\n";
                 commandLineInfoMessages += "--wait=<seconds>        Waits for the given seconds.\n";
+                commandLineInfoMessages += "--gui_x=<x>:            specifies the initial window X position\n";
+                commandLineInfoMessages += "--gui_y=<y>:            specifies the initial window Y position\n";
+                commandLineInfoMessages += "--gui_width=<width>:    specifies the initial window width\n";
+                commandLineInfoMessages += "--gui_height=<height>:  specifies the initial window height\n";
+                commandLineInfoMessages += "--gui_title=<name>:     changes the name of the application in the title bar\n";
+                commandLineInfoMessages += "--gui_hide_monitors:    disables the MIDI IN/OUT monitor when GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_upload:      disables the upload panel when GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_terminal:    disables the terminal panel when GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_keyboard:    disables the virtual keyboard panel when GUI is started\n";
                 commandLineInfoMessages += "\n";
                 commandLineInfoMessages += "Usage Examples:\n";
                 commandLineInfoMessages += "  MIOS_Studio --in=MIOS32 --out=MIOS32\n";
@@ -57,7 +84,7 @@ MiosStudio::MiosStudio()
                 commandLineInfoMessages += "  MIOS_Studio --batch --upload_hex=project.hex\n";
                 commandLineInfoMessages += "    starts MIOS Studio without GUI and uploads the project.hex file\n";
                 commandLineInfoMessages += "\n";
-                commandLineInfoMessages += "  MIOS_Studio --batch --upload_file=default.ngc --upload_file default.ngl\n";
+                commandLineInfoMessages += "  MIOS_Studio --batch --upload_file=default.ngc --upload_file=default.ngl\n";
                 commandLineInfoMessages += "    starts MIOS Studio without GUI and uploads two files to SD Card (MIOS32 only)\n";
                 commandLineInfoMessages += "\n";
                 commandLineInfoMessages += "  MIOS_Studio --batch --terminal=\"help\" --wait=1\n";
@@ -68,8 +95,10 @@ MiosStudio::MiosStudio()
                 quitIfBatch = true;
             } else if( commandLineArray[i].compare("--version") == 0 ) {
                 commandLineInfoMessages += String("MIOS Studio ") + String(MIOS_STUDIO_VERSION) + String("\n");
+                quitIfBatch = true;
             } else if( commandLineArray[i].compare("--batch") == 0 ) {
                 batchMode = true;
+                redirectIOToConsole();
             } else if( commandLineArray[i].startsWith("--in=") ) {
                 inPortFromCommandLine = commandLineArray[i].substring(5);
                 inPortFromCommandLine.trimCharactersAtStart(" \t\"");
@@ -110,10 +139,39 @@ MiosStudio::MiosStudio()
                 command.trimCharactersAtStart(" \t\"");
                 command.trimCharactersAtEnd(" \t\"");
                 batchJobs.add(String("wait ") + command);
+            } else if( commandLineArray[i].startsWith("--gui_x") ) {
+                int value = commandLineArray[i].substring(8).getIntValue();
+                if( value >= 0 )
+                    initialGuiX = value;
+            } else if( commandLineArray[i].startsWith("--gui_y") ) {
+                int value = commandLineArray[i].substring(8).getIntValue();
+                if( value >= 0 )
+                    initialGuiY = value;
+            } else if( commandLineArray[i].startsWith("--gui_width") ) {
+                int value = commandLineArray[i].substring(12).getIntValue();
+                if( value > 0 )
+                    guiWidth = value;
+            } else if( commandLineArray[i].startsWith("--gui_height") ) {
+                int value = commandLineArray[i].substring(13).getIntValue();
+                if( value > 0 )
+                    guiHeight = value;
+            } else if( commandLineArray[i].startsWith("--gui_title") ) {
+                initialGuiTitle = commandLineArray[i].substring(12);
+                initialGuiTitle.trimCharactersAtStart(" \t\"");
+                initialGuiTitle.trimCharactersAtEnd(" \t\"");
+            } else if( commandLineArray[i].startsWith("--gui_hide_monitors") ) {
+                hideMonitors = true;
+            } else if( commandLineArray[i].startsWith("--gui_hide_upload") ) {
+                hideUpload = true;
+            } else if( commandLineArray[i].startsWith("--gui_hide_terminal") ) {
+                hideTerminal = true;
+            } else if( commandLineArray[i].startsWith("--gui_hide_keyboard") ) {
+                hideKeyboard = true;
             } else if( commandLineArray[i].startsWith("-psn") ) {
                 // ignore for MacOS
             } else {
                 commandLineErrorMessages += String("ERROR: unknown command line parameter: ") + commandLineArray[i] + String("\n");
+                commandLineErrorMessages += String("Enter '--help' to get a list of all available options!\n");
                 ++numErrors;
             }
         }
@@ -131,6 +189,11 @@ MiosStudio::MiosStudio()
         }
 
         if( runningInBatchMode() && quitIfBatch ) {
+#ifdef _WIN32
+            std::cout << "Press <enter> to quit console." << std::endl;
+            while (GetAsyncKeyState(VK_RETURN) & 0x8000) {}
+            while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)) {}
+#endif
             JUCEApplication::getInstance()->setApplicationReturnValue(1); // error
             JUCEApplication::quit();
         }
@@ -172,11 +235,29 @@ MiosStudio::MiosStudio()
     addKeyListener(commandManager->getKeyMappings());
     setApplicationCommandManagerToWatch(commandManager);
 
+    if( hideMonitors ) {
+        midiInMonitor->setVisible(false);
+        verticalDividerBarMonitors->setVisible(false);
+        midiOutMonitor->setVisible(false);
+    }
+    if( hideUpload ) {
+        horizontalDividerBar1->setVisible(false);
+        uploadWindow->setVisible(false);
+    }
+    if( hideTerminal ) {
+        horizontalDividerBar2->setVisible(false);
+        miosTerminal->setVisible(false);
+    }
+    if( hideKeyboard ) {
+        horizontalDividerBar3->setVisible(false);
+        midiKeyboard->setVisible(false);
+    }
+
     updateLayout();
 
     Timer::startTimer(1);
 
-    setSize(800, 650);
+    setSize(guiWidth, guiHeight);
 }
 
 MiosStudio::~MiosStudio()
@@ -201,6 +282,59 @@ MiosStudio::~MiosStudio()
     // try: avoid crash under Windows by disabling all MIDI INs/OUTs
     closeMidiPorts();
 }
+
+//==============================================================================
+#ifdef _WIN32
+// see http://www.rawmaterialsoftware.com/viewtopic.php?f=2&t=9868
+
+// Code taken from here: http://dslweb.nwnexus.com/~ast/dload/guicon.htm
+// Modified to support attaching to an owner console.
+void MiosStudio::redirectIOToConsole()
+{
+    int hConHandle;
+    long lStdHandle;
+    FILE *fp;
+    if (1) // TK: crashes the application: AttachConsole(ATTACH_PARENT_PROCESS) == 0)
+    {
+      // We couldn't obtain a parent console.  Probably application was launched 
+      // from inside Explorer (E.G. the run prompt, or a shortcut).
+      // We'll spawn a new console window instead then!
+      CONSOLE_SCREEN_BUFFER_INFO coninfo;
+      AllocConsole();
+      GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &coninfo);
+      coninfo.dwSize.Y = 500;
+      SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
+    }
+    // redirect unbuffered STDOUT to the console
+    lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+    hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+    fp = _fdopen( hConHandle, "w" );
+    *stdout = *fp;
+    setvbuf( stdout, NULL, _IONBF, 0 );
+    // redirect unbuffered STDIN to the console
+    lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
+    hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+    fp = _fdopen( hConHandle, "r" );
+    *stdin = *fp;
+    setvbuf( stdin, NULL, _IONBF, 0 );
+    // redirect unbuffered STDERR to the console
+    lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
+    hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+    fp = _fdopen( hConHandle, "w" );
+    *stderr = *fp;
+    setvbuf( stderr, NULL, _IONBF, 0 );
+    // make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
+    // point to console as well
+    std::ios::sync_with_stdio();
+}
+
+#else
+
+// Empty function avoid ifdefs elsewhere.
+void MiosStudio::redirectIOToConsole() {}
+
+#endif
+
 
 //==============================================================================
 void MiosStudio::paint (Graphics& g)
@@ -343,22 +477,24 @@ void MiosStudio::timerCallback()
         case 3:
             Timer::stopTimer();
 
-            // and check for infos
-            if( commandLineInfoMessages.length() ) {
-                AlertWindow::showMessageBox(AlertWindow::InfoIcon,
-                                            T("Info"),
-                                            commandLineInfoMessages,
-                                            String::empty);
-                commandLineInfoMessages = String::empty;
-            }
+            if( !runningInBatchMode() ) {
+                // and check for infos
+                if( commandLineInfoMessages.length() ) {
+                    AlertWindow::showMessageBox(AlertWindow::InfoIcon,
+                                                T("Info"),
+                                                commandLineInfoMessages,
+                                                String::empty);
+                    commandLineInfoMessages = String::empty;
+                }
 
-            // now also check for command line errors
-            if( commandLineErrorMessages.length() ) {
-                AlertWindow::showMessageBox(AlertWindow::WarningIcon,
-                                            T("Command Line Error"),
-                                            commandLineErrorMessages,
-                                            String::empty);
-                commandLineErrorMessages = String::empty;
+                // now also check for command line errors
+                if( commandLineErrorMessages.length() ) {
+                    AlertWindow::showMessageBox(AlertWindow::WarningIcon,
+                                                T("Command Line Error"),
+                                                commandLineErrorMessages,
+                                                String::empty);
+                    commandLineErrorMessages = String::empty;
+                }
             }
 
             // try to query selected core
@@ -485,6 +621,11 @@ void MiosStudio::timerCallback()
                     batchWaitCounter = counter*1000;
                 } else if( job.startsWithIgnoreCase("quit") ) {
                     if( runningInBatchMode() ) {
+#ifdef _WIN32
+                        std::cout << "Press <enter> to quit console." << std::endl;
+                        while (GetAsyncKeyState(VK_RETURN) & 0x8000) {}
+                        while (!(GetAsyncKeyState(VK_RETURN) & 0x8000)) {}
+#endif
                         JUCEApplication::getInstance()->setApplicationReturnValue(0); // no error
                         JUCEApplication::quit();
                     } else {
