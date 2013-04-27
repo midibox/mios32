@@ -62,6 +62,9 @@ public:
     ~MiosStudio();
 
     //==============================================================================
+    void redirectIOToConsole();
+
+    //==============================================================================
     void paint (Graphics& g);
     void resized();
 
@@ -111,6 +114,11 @@ public:
 
     //==============================================================================
     SysexPatchDb *sysexPatchDb;
+
+    //==============================================================================
+    int initialGuiX; // if -1: centered
+    int initialGuiY; // if -1: centered
+    String initialGuiTitle;
 
     //==============================================================================
 	// This is needed by MSVC in debug mode (please #ifdef if it causes Mac problems)

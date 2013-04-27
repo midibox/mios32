@@ -36,6 +36,14 @@ public:
         setContentOwned(contentComponent, true);
         setUsingNativeTitleBar(true);
         centreWithSize(getWidth(), getHeight());
+
+        int guiX = (contentComponent->initialGuiX >= 0) ? contentComponent->initialGuiX : getX();
+        int guiY = (contentComponent->initialGuiY >= 0) ? contentComponent->initialGuiY : getY();
+        setTopLeftPosition(guiX, guiY);
+
+        if( contentComponent->initialGuiTitle.length() )
+            setName(contentComponent->initialGuiTitle);
+
         setMenuBar(contentComponent);
 
         if( !contentComponent->runningInBatchMode() )
