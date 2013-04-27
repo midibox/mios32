@@ -109,8 +109,18 @@ public:
             // in your app.
             if( getNumSubItems() == 0 ) {
                 for(int i=0; i<fileItem->childs.size(); ++i) {
-                    MiosFileBrowserItem* item;
-                    addSubItem(item = new MiosFileBrowserItem(fileItem->childs[i], browser));
+                    MiosFileBrowserItem* item = new MiosFileBrowserItem(fileItem->childs[i], browser);
+
+                    // sorting
+                    int pos;
+                    for(pos=0; pos<getNumSubItems(); ++pos) {
+                        if( getSubItem(pos)->getUniqueName().compareIgnoreCase(item->getUniqueName()) > 0 )
+                            break;
+                    }
+                    if( pos >= getNumSubItems() )
+                        addSubItem(item);
+                    else
+                        addSubItem(item, pos);
                 }
             }
         } else {
@@ -138,6 +148,7 @@ public:
     {
         return "MIOS Filebrowser Items";
     }
+
 
 private:
 };
