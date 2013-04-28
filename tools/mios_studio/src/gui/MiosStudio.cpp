@@ -106,7 +106,6 @@ MiosStudio::MiosStudio()
                 quitIfBatch = true;
             } else if( commandLineArray[i].compare("--version") == 0 ) {
                 commandLineInfoMessages += String("MIOS Studio ") + String(MIOS_STUDIO_VERSION) + String("\n");
-                quitIfBatch = true;
             } else if( commandLineArray[i].compare("--batch") == 0 ) {
                 // already handled above
             } else if( commandLineArray[i].startsWith("--in=") ) {
