@@ -110,16 +110,18 @@ MiosStudio::MiosStudio()
                 // already handled above
             } else if( commandLineArray[i].startsWith("--in=") ) {
                 inPortFromCommandLine = commandLineArray[i].substring(5);
-                inPortFromCommandLine.trimCharactersAtStart(" \t\"");
-                inPortFromCommandLine.trimCharactersAtEnd(" \t\"");
+                inPortFromCommandLine.trimCharactersAtStart(" \t\"'");
+                inPortFromCommandLine.trimCharactersAtEnd(" \t\"'");
                 std::cout << "Preselected MIDI IN Port: " << inPortFromCommandLine << std::endl;
             } else if( commandLineArray[i].startsWith("--out=") ) {
                 outPortFromCommandLine = commandLineArray[i].substring(6);
-                outPortFromCommandLine.trimCharactersAtStart(" \t\"");
-                outPortFromCommandLine.trimCharactersAtEnd(" \t\"");
+                outPortFromCommandLine.trimCharactersAtStart(" \t\"'");
+                outPortFromCommandLine.trimCharactersAtEnd(" \t\"'");
                 std::cout << "Preselected MIDI OUT Port: " << outPortFromCommandLine << std::endl;
             } else if( commandLineArray[i].startsWith("--device_id") ) {
                 String id = commandLineArray[i].substring(12);
+                id.trimCharactersAtStart(" \t\"'");
+                id.trimCharactersAtEnd(" \t\"'");
                 int idValue = id.getIntValue();
                 if( idValue < 0 || idValue > 127 ) {
                     commandLineErrorMessages += String("ERROR: device ID should be within 0..127!\n");
@@ -135,28 +137,28 @@ MiosStudio::MiosStudio()
                 batchJobs.add(String("query"));
             } else if( commandLineArray[i].startsWith("--upload_hex") ) {
                 String file = commandLineArray[i].substring(13);
-                file.trimCharactersAtStart(" \t\"");
-                file.trimCharactersAtEnd(" \t\"");
+                file.trimCharactersAtStart(" \t\"'");
+                file.trimCharactersAtEnd(" \t\"'");
                 batchJobs.add(String("upload_hex ") + file);
             } else if( commandLineArray[i].startsWith("--upload_file") ) {
                 String file = commandLineArray[i].substring(14);
-                file.trimCharactersAtStart(" \t\"");
-                file.trimCharactersAtEnd(" \t\"");
+                file.trimCharactersAtStart(" \t\"'");
+                file.trimCharactersAtEnd(" \t\"'");
                 batchJobs.add(String("upload_file ") + file);
             } else if( commandLineArray[i].startsWith("--send_syx") ) {
                 String file = commandLineArray[i].substring(11);
-                file.trimCharactersAtStart(" \t\"");
-                file.trimCharactersAtEnd(" \t\"");
+                file.trimCharactersAtStart(" \t\"'");
+                file.trimCharactersAtEnd(" \t\"'");
                 batchJobs.add(String("send_syx ") + file);
             } else if( commandLineArray[i].startsWith("--terminal") ) {
                 String command = commandLineArray[i].substring(11);
-                command.trimCharactersAtStart(" \t\"");
-                command.trimCharactersAtEnd(" \t\"");
+                command.trimCharactersAtStart(" \t\"'");
+                command.trimCharactersAtEnd(" \t\"'");
                 batchJobs.add(String("terminal ") + command);
             } else if( commandLineArray[i].startsWith("--wait") ) {
                 String command = commandLineArray[i].substring(7);
-                command.trimCharactersAtStart(" \t\"");
-                command.trimCharactersAtEnd(" \t\"");
+                command.trimCharactersAtStart(" \t\"'");
+                command.trimCharactersAtEnd(" \t\"'");
                 batchJobs.add(String("wait ") + command);
             } else if( commandLineArray[i].startsWith("--gui_x") ) {
                 int value = commandLineArray[i].substring(8).getIntValue();
@@ -176,8 +178,8 @@ MiosStudio::MiosStudio()
                     guiHeight = value;
             } else if( commandLineArray[i].startsWith("--gui_title") ) {
                 initialGuiTitle = commandLineArray[i].substring(12);
-                initialGuiTitle.trimCharactersAtStart(" \t\"");
-                initialGuiTitle.trimCharactersAtEnd(" \t\"");
+                initialGuiTitle.trimCharactersAtStart(" \t\"'");
+                initialGuiTitle.trimCharactersAtEnd(" \t\"'");
             } else if( commandLineArray[i].startsWith("--gui_hide_monitors") ) {
                 hideMonitors = true;
             } else if( commandLineArray[i].startsWith("--gui_hide_upload") ) {
