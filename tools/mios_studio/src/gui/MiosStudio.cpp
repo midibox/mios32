@@ -43,12 +43,23 @@ MiosStudio::MiosStudio()
     bool hideKeyboard = false;
     int  guiWidth = 800;
     int  guiHeight = 650;
+    int  firstDeviceId = -1;
 
     // parse the command line
     {
         int numErrors = 0;
         bool quitIfBatch = false;
         StringArray commandLineArray = JUCEApplication::getCommandLineParameterArray();
+
+        // first search for --batch option
+        for(int i=0; i<commandLineArray.size(); ++i) {
+            if( commandLineArray[i].compare("--batch") == 0 ) {
+                batchMode = true;
+                redirectIOToConsole();
+            }
+        }
+
+        // now for the remaining options
         for(int i=0; i<commandLineArray.size(); ++i) {
             if( commandLineArray[i].compare("--help") == 0 ) {
                 commandLineInfoMessages += "Command Line Parameters:\n";
@@ -64,15 +75,15 @@ MiosStudio::MiosStudio()
                 commandLineInfoMessages += "--send_syx=<file>       send specified .syx file to core. Multiple --send_syx allowed!\n";
                 commandLineInfoMessages += "--terminal=<command>    send a MIOS terminal command. Multiple --terminal allowed!\n";
                 commandLineInfoMessages += "--wait=<seconds>        Waits for the given seconds.\n";
-                commandLineInfoMessages += "--gui_x=<x>:            specifies the initial window X position\n";
-                commandLineInfoMessages += "--gui_y=<y>:            specifies the initial window Y position\n";
-                commandLineInfoMessages += "--gui_width=<width>:    specifies the initial window width\n";
-                commandLineInfoMessages += "--gui_height=<height>:  specifies the initial window height\n";
-                commandLineInfoMessages += "--gui_title=<name>:     changes the name of the application in the title bar\n";
-                commandLineInfoMessages += "--gui_hide_monitors:    disables the MIDI IN/OUT monitor when GUI is started\n";
-                commandLineInfoMessages += "--gui_hide_upload:      disables the upload panel when GUI is started\n";
-                commandLineInfoMessages += "--gui_hide_terminal:    disables the terminal panel when GUI is started\n";
-                commandLineInfoMessages += "--gui_hide_keyboard:    disables the virtual keyboard panel when GUI is started\n";
+                commandLineInfoMessages += "--gui_x=<x>             specifies the initial window X position\n";
+                commandLineInfoMessages += "--gui_y=<y>             specifies the initial window Y position\n";
+                commandLineInfoMessages += "--gui_width=<width>     specifies the initial window width\n";
+                commandLineInfoMessages += "--gui_height=<height>   specifies the initial window height\n";
+                commandLineInfoMessages += "--gui_title=<name>      changes the name of the application in the title bar\n";
+                commandLineInfoMessages += "--gui_hide_monitors     disables the MIDI IN/OUT monitor when the GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_upload       disables the upload panel when the GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_terminal     disables the terminal panel when the GUI is started\n";
+                commandLineInfoMessages += "--gui_hide_keyboard     disables the virtual keyboard panel when the GUI is started\n";
                 commandLineInfoMessages += "\n";
                 commandLineInfoMessages += "Usage Examples:\n";
                 commandLineInfoMessages += "  MIOS_Studio --in=MIOS32 --out=MIOS32\n";
@@ -97,8 +108,7 @@ MiosStudio::MiosStudio()
                 commandLineInfoMessages += String("MIOS Studio ") + String(MIOS_STUDIO_VERSION) + String("\n");
                 quitIfBatch = true;
             } else if( commandLineArray[i].compare("--batch") == 0 ) {
-                batchMode = true;
-                redirectIOToConsole();
+                // already handled above
             } else if( commandLineArray[i].startsWith("--in=") ) {
                 inPortFromCommandLine = commandLineArray[i].substring(5);
                 inPortFromCommandLine.trimCharactersAtStart(" \t\"");
@@ -111,7 +121,17 @@ MiosStudio::MiosStudio()
                 std::cout << "Preselected MIDI OUT Port: " << outPortFromCommandLine << std::endl;
             } else if( commandLineArray[i].startsWith("--device_id") ) {
                 String id = commandLineArray[i].substring(12);
-                batchJobs.add(String("device_id ") + id);
+                int idValue = id.getIntValue();
+                if( idValue < 0 || idValue > 127 ) {
+                    commandLineErrorMessages += String("ERROR: device ID should be within 0..127!\n");
+                    ++numErrors;
+                } else {
+                    if( firstDeviceId < 0 ) {
+                        firstDeviceId = idValue;
+                    } else {
+                        batchJobs.add(String("device_id ") + id);
+                    }
+                }
             } else if( commandLineArray[i].startsWith("--query") ) {
                 batchJobs.add(String("query"));
             } else if( commandLineArray[i].startsWith("--upload_hex") ) {
@@ -198,7 +218,7 @@ MiosStudio::MiosStudio()
             JUCEApplication::quit();
         }
 
-        if( batchJobs.size() ) {
+        if( runningInBatchMode() ) {
             batchJobs.add("quit");
         }
     }
@@ -254,6 +274,11 @@ MiosStudio::MiosStudio()
     }
 
     updateLayout();
+
+    if( firstDeviceId >= 0 ) {
+        std::cout << "Setting Device ID=" << firstDeviceId << std::endl;
+        uploadWindow->setDeviceId(firstDeviceId);
+    }
 
     Timer::startTimer(1);
 
