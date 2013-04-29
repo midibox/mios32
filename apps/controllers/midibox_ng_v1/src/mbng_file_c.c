@@ -1571,7 +1571,7 @@ s32 parseEnc(u32 line, char *cmd, char *brkt)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "n") == 0 ) {
-      if( (num=get_dec(value_str)) < 1 || num > MIOS32_ENC_NUM_MAX ) {
+      if( (num=get_dec(value_str)) < 1 || num >= MIOS32_ENC_NUM_MAX ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid encoder number for %s ... %s=%s' (1..%d)\n", line, cmd, parameter, value_str, MIOS32_ENC_NUM_MAX-1);
 #endif
