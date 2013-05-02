@@ -677,6 +677,26 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   out("Flash Memory Size: %d bytes\n", MIOS32_SYS_FlashSizeGet());
   out("RAM Size: %d bytes\n", MIOS32_SYS_RAMSizeGet());
 
+  {
+    out("MIDI IN Ports:\n");
+    int num = SEQ_MIDI_PORT_InNumGet();
+    int i;
+    for(i=0; i<num; ++i) {
+      mios32_midi_port_t port = SEQ_MIDI_PORT_InPortGet(i);
+      out("  - %s (%s)\n", SEQ_MIDI_PORT_InNameGet(i), SEQ_MIDI_PORT_InCheckAvailable(port) ? "available" : "not available");
+    }    
+  }
+
+  {
+    out("MIDI OUT Ports:\n");
+    int num = SEQ_MIDI_PORT_OutNumGet();
+    int i;
+    for(i=0; i<num; ++i) {
+      mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(i);
+      out("  - %s (%s)\n", SEQ_MIDI_PORT_OutNameGet(i), SEQ_MIDI_PORT_OutCheckAvailable(port) ? "available" : "not available");
+    }    
+  }
+
   out("Systime: %02d:%02d:%02d\n", hours, minutes, seconds);
   out("CPU Load: %02d%%\n", SEQ_STATISTICS_CurrentCPULoad());
   out("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",

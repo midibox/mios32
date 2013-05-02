@@ -554,6 +554,9 @@ static void EV_IRQHandler(iic_rec_t *iicx)
   // Read SR1 and SR2 at the beginning (if not done so, flags may get lost)
   u32 event = I2C_GetLastEvent(iicx->base);
 
+  if( event == 0x00030000 ) // TK: required for newer gcc versions, e.g. 4.2.1
+    return; // don't know why, but it helps...
+
   // The order of the handling blocks is chosen by test results @ 1MHZ
   // don't change this order
 
@@ -679,7 +682,7 @@ static void EV_IRQHandler(iic_rec_t *iicx)
   I2C_AcknowledgeConfig(iicx->base, DISABLE);
   b = I2C_ReceiveData(iicx->base);
   I2C_GenerateSTOP(iicx->base, ENABLE);
-  }
+}
 
 
 
