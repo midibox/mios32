@@ -42,8 +42,8 @@
 #endif
 
 
-// enable 65 encoders (because SCS allocates one encoder as well)
-#define MIOS32_ENC_NUM_MAX 65
+// enable 128 encoders (because SCS allocates one encoder as well)
+#define MIOS32_ENC_NUM_MAX 129
 
 
 // the SCS is entered by pressing the EXIT button
