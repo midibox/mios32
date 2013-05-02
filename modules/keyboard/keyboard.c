@@ -420,8 +420,10 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 #if FANTOM_XR_VARIANT
   // check if key is assigned to an "break contact"
   u8 break_contact = column < 8;  // break contact on DIN 1
-  int pin_break = row*MATRIX_NUM_ROWS + ((column % 8) + 0);  // break pin on DIN 1
-  int pin_make  = row*MATRIX_NUM_ROWS + ((column % 8) + 8);  // make  pin on DIN 2
+  u8 row_break = row;
+  u8 row_make = row;
+  int pin_break = row_break*MATRIX_NUM_ROWS + ((column % 8) + 0);  // break pin on DIN 1
+  int pin_make  = row_make*MATRIX_NUM_ROWS + ((column % 8) + 8);  // make  pin on DIN 2
   // determine key number based on row/column
   int key = row*6 + (column % 8); // (6 keys are connected to each DIN)
 

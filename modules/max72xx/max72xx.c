@@ -288,7 +288,7 @@ s32 MAX72XX_WriteReg(u8 chain, u8 device, u8 reg, u8 value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Load a 16bit value into all MAX72XX devices of the given chain
+//! Load a 8bit value into all MAX72XX devices of the given chain
 /////////////////////////////////////////////////////////////////////////////
 s32 MAX72XX_WriteAllRegs(u8 chain, u8 reg, u8 value)
 {
