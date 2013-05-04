@@ -122,21 +122,28 @@ s32 MIOS32_IIC_Init(u32 mode)
 static void MIOS32_IIC_InitPeripheral(u8 iic_port)
 {
   iic_rec_t *iicx = &iic_rec[iic_port];// simplify addressing of record
+  u32 frq_clocks;
 
   switch( iic_port ) {
     case 0:
       // define base address
       iicx->base = LPC_I2C0;
 
+      // frequency
+      frq_clocks = I2C_PERIPHERAL_FRQ / (MIOS32_IIC0_BUS_FREQUENCY);
+
       // init pins
-      MIOS32_SYS_LPC_PINSEL(0, 27, 1); // SDA: P0.27 (function 1)
-      MIOS32_SYS_LPC_PINSEL(0, 28, 1); // SCK: P0.28 (function 1)
+      MIOS32_SYS_LPC_PINSEL (0, 27, 1); // SDA: P0.27 (function 1)
+      MIOS32_SYS_LPC_PINSEL (0, 28, 1); // SCK: P0.28 (function 1)
       break;
 
 #if MIOS32_IIC_NUM >= 2
     case 1:
       // define base address
       iicx->base = LPC_I2C1;
+
+      // frequency
+      frq_clocks = I2C_PERIPHERAL_FRQ / (MIOS32_IIC1_BUS_FREQUENCY);
 
       // init pins
       MIOS32_SYS_LPC_PINSEL(0, 19, 3); // SDA: P0.19 (function 3)
@@ -148,6 +155,9 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
     case 2:
       // define base address
       iicx->base = LPC_I2C2;
+
+      // frequency
+      frq_clocks = I2C_PERIPHERAL_FRQ / (MIOS32_IIC2_BUS_FREQUENCY);
 
       // init pins
       MIOS32_SYS_LPC_PINSEL(0, 10, 2); // SDA: P0.10 (function 2)
@@ -163,7 +173,6 @@ static void MIOS32_IIC_InitPeripheral(u8 iic_port)
   iicx->base->I2CONCLR = 0x6c; // I2EN, STA, SIC, AAC
 
   // init clock
-  u32 frq_clocks = I2C_PERIPHERAL_FRQ / (MIOS32_IIC0_BUS_FREQUENCY);
   u32 clk_l = frq_clocks / 2;
   u32 clk_h = frq_clocks-clk_l; // consider rounding error...
   iicx->base->I2SCLL = clk_l;
