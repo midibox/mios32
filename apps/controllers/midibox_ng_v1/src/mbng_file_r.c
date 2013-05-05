@@ -48,6 +48,14 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Nesting vars
+/////////////////////////////////////////////////////////////////////////////
+#define IF_MAX_NESTING_LEVEL 16
+static u8 nesting_level;
+static u8 if_state[IF_MAX_NESTING_LEVEL];
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -808,7 +816,6 @@ s32 parseDelay(u32 line, char *command, char **brkt, mbng_file_r_var_t *vars)
 //! Parses a .NGR command line
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
-#define IF_MAX_NESTING_LEVEL 16
 s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, u8 section, s16 value)
 {
   s32 status = 0;
@@ -970,7 +977,8 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 		 strcasecmp(parameter, "TRIGGER") == 0 ) {
 	parseSet(line, parameter, &brkt, &vars);
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
-	mbng_file_r_delay_ctr = parseDelay(line, parameter, &brkt, &vars);
+	s32 delay = parseDelay(line, parameter, &brkt, &vars);
+	mbng_file_r_delay_ctr = (delay >= 0 ) ? delay : 0;
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	// changed error to warning, since people are sometimes confused about these messages
@@ -1041,8 +1049,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 section, s16 value)
   // read commands
   s32 exit = 0;
   u32 line = 0;
-  u8 nesting_level = 0;
-  u8 if_state[IF_MAX_NESTING_LEVEL];
+  if( !cont_script )
+    nesting_level = 0;
   do {
     ++line;
     status=FILE_ReadLine((u8 *)(line_buffer+line_buffer_len), line_buffer_size-line_buffer_len);
