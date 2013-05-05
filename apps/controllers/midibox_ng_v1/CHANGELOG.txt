@@ -16,6 +16,10 @@ MIDIbox NG V1.025
 
    o .NGR: fixed "delay statements in if branches" issue
 
+   o the AIN command now supports the "resolution" parameter
+
+   o added "ain_filter_delay_ms" to support sensors
+
 
 MIDIbox NG V1.024
 ~~~~~~~~~~~~~~~~~

@@ -252,6 +252,7 @@ typedef union {
 
   struct {
     u16 ain_mode:4; // mbng_event_ain_mode_t
+    u16 ain_filter_delay_ms:8;
   } AIN;
 
   struct {

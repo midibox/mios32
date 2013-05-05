@@ -28,6 +28,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 previous_ain_value[MBNG_PATCH_NUM_AIN];
+static u32 ain_timestamp[MBNG_PATCH_NUM_AIN];
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function initializes the AIN handler
@@ -40,6 +41,7 @@ s32 MBNG_AIN_Init(u32 mode)
   int i;
   for(i=0; i<MBNG_PATCH_NUM_AIN; ++i) {
     previous_ain_value[i] = 0;
+    ain_timestamp[i] = 0;
   }
 
   return 0; // no error
@@ -202,6 +204,7 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
   }
 
   // Optional Calibration
+  u8 is_pin_value_min = pin_value <= mbng_patch_ain.cali[pin].min;
   pin_value = MBNG_AIN_HandleCalibration(pin_value,
 					 mbng_patch_ain.cali[pin].min,
 					 mbng_patch_ain.cali[pin].max,
@@ -228,6 +231,8 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
       MBNG_EVENT_ItemPrint(&item, 0);
     }
 
+    u16 prev_item_value = item.value;
+
     // scale 12bit value between min/max with fixed point artithmetic
     int value = pin_value;
     s16 min = item.min;
@@ -252,6 +257,18 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
     if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
       int prev_value = previous_ain_value[pin];
       previous_ain_value[pin] = pin_value; // for next notification
+
+      u32 timestamp = ain_timestamp[pin];
+      ain_timestamp[pin] = app_ms_counter;
+
+      if( !no_midi && item.custom_flags.AIN.ain_filter_delay_ms ) {
+	int diff = pin_value - prev_value;
+	if( diff < 0 ) diff = -diff;
+	if( !is_pin_value_min && diff > 32*16 && (app_ms_counter-timestamp) < item.custom_flags.AIN.ain_filter_delay_ms ) {
+	  continue; // don't send
+	}
+      }
+
       if( min <= max ) {
 	prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
       } else {
@@ -271,6 +288,13 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
     if( no_midi ) {
       MBNG_EVENT_ItemCopyValueToPool(&item);
     } else {
+      if( item.flags.type == MBNG_EVENT_TYPE_NOTE_ON ) {
+	// only send once when min threshold is reached
+	if( (prev_item_value && !is_pin_value_min) || (!prev_item_value && is_pin_value_min) ) {
+	  continue; // don't send
+	}
+      }
+
       if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 	break; // stop has been requested
     }
