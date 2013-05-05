@@ -1486,6 +1486,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
     case MBNG_EVENT_CONTROLLER_AIN: {
       DEBUG_MSG("  - ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(item));
+      DEBUG_MSG("  - ain_filter_delay_ms=%d", item->custom_flags.AIN.ain_filter_delay_ms);
     } break;
 
     case MBNG_EVENT_CONTROLLER_AINSER: {

@@ -118,6 +118,8 @@ s32 MBNG_PATCH_Init(u32 mode)
   {
     mbng_patch_ain.enable_mask = 0x0000;
 
+    MIOS32_AIN_DeadbandSet(31); // matches with 7bit
+
     int pin;
     for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
       mbng_patch_ain.cali[pin].min = 0;

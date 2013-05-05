@@ -1147,6 +1147,28 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_filter_delay_ms") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid delay value in EVENT_%s ... %s=%s (expecting 0..255)\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN ) {
+	item.custom_flags.AIN.ain_filter_delay_ms = value;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s not supported for AINSER yet (but soon)!\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "enc_mode") == 0 ) {
       mbng_event_enc_mode_t enc_mode = MBNG_EVENT_ItemEncModeFromStrGet(value_str);
       if( enc_mode == MBNG_EVENT_ENC_MODE_UNDEFINED ) {
@@ -2317,6 +2339,7 @@ s32 parseAin(u32 line, char *cmd, char *brkt)
 
   char *parameter;
   char *value_str;
+
   while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2330,6 +2353,21 @@ s32 parseAin(u32 line, char *cmd, char *brkt)
       } else {
 	mbng_patch_ain.enable_mask = value;
       }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "resolution") == 0 ) {
+      int value;
+
+      if( (value=get_dec(value_str)) < 1 || value > 12 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid resolution for %s ... %s=%s (4bit .. 12bit)\n", line, cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      //                        0bit 1bit 2bit 3bit 4bit 5bit 6bit 7bit 8bit 9bit 10   11   12
+      const u8 deadband[13] = { 255, 255, 255, 255, 255, 127,  63,  31,  15,   7,   3,   1,  0 };
+      MIOS32_AIN_DeadbandSet(deadband[value]);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "pinrange") == 0 ) {
@@ -3674,6 +3712,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
+
+	if( item.custom_flags.AIN.ain_filter_delay_ms ) {
+	  sprintf(line_buffer, "  ain_filter_delay_ms=%d", item.custom_flags.AIN.ain_filter_delay_ms);
+	  FLUSH_BUFFER;
+	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_AINSER: {
@@ -3941,11 +3984,31 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "AIN enable_mask=%s\n", enable_bin);
     FLUSH_BUFFER;
 
+    {
+      int resolution = 7;
+      u8 deadband = MIOS32_AIN_DeadbandGet();
+      if( deadband <=   0 )      resolution = 12;
+      else if( deadband <=   1 ) resolution = 11;
+      else if( deadband <=   3 ) resolution = 10;
+      else if( deadband <=   7 ) resolution =  9;
+      else if( deadband <=  15 ) resolution =  8;
+      else if( deadband <=  31 ) resolution =  7;
+      else if( deadband <=  63 ) resolution =  6;
+      else if( deadband <= 127 ) resolution =  5;
+      else                       resolution =  4;
+
+      if( resolution != 7 ) {
+	sprintf(line_buffer, "AIN resolution=%dbit\n", resolution);
+	FLUSH_BUFFER;
+      }
+    }
+
     int pin;
     for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin) {
       int min = mbng_patch_ain.cali[pin].min;
       int max = mbng_patch_ain.cali[pin].max;
       int spread_center = mbng_patch_ain.cali[pin].spread_center;
+
       if( min != 0 || max != MBNG_PATCH_AIN_MAX_VALUE || spread_center ) {
 	sprintf(line_buffer, "AIN pinrange=%d:%d:%d%s\n", pin+1, min, max, spread_center ? ":spread_center" : "");
 	FLUSH_BUFFER;
