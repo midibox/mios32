@@ -582,6 +582,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, edit_layer_type);
 		  SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Layer Type", "has been changed.");
+		} else {
+		  // send MIDI event
+		  if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
+		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		  }
 		}
 	      }
 	      break;
@@ -600,6 +605,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+		} else {
+		  // send MIDI event
+		  if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
+		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		  }
 		}
 	      }
 	      break;

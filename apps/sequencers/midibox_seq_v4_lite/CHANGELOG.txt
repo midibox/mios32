@@ -1,6 +1,12 @@
 $Id$
 
 
+MIDIboxSEQ V4L.075
+~~~~~~~~~~~~~~~~~~
+
+   o MIDI remote keyboard function now also deactivated when Note On with velocity 0 received
+
+
 MIDIboxSEQ V4L.074
 ~~~~~~~~~~~~~~~~~~
 

@@ -55,6 +55,8 @@ extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events
 
 extern s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event);
 
+extern s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer);
+
 extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 init_assignments);
 extern s32 SEQ_LAYER_CopyParLayerPreset(u8 track, u8 par_layer);
 
