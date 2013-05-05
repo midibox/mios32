@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
 
 #include "seq_bpm.h"
 #include "seq_layer.h"
@@ -792,6 +793,58 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
   return -1; // no matching event found!
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Sends the last CC/PB/PC value of the given track and layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  seq_par_layer_type_t layer_type = tcc->lay_const[par_layer];
+  mios32_midi_package_t p;
+
+  p.cable    = track;
+  p.chn      = tcc->midi_chn;
+
+  switch( layer_type ) {
+  case SEQ_PAR_Type_CC: {
+    u8 value = (cc_last_value[track][par_layer] < 0x80) ? cc_last_value[track][par_layer] : 0x40;
+
+    p.type      = CC;
+    p.event     = CC;
+    p.cc_number = tcc->lay_const[1*16 + par_layer];
+    p.value     = value;
+  } break;
+
+  case SEQ_PAR_Type_PitchBend: {
+    u8 value = (pb_last_value[track] < 0x80) ? pb_last_value[track] : 0x40;
+
+    p.type      = PitchBend;
+    p.event     = PitchBend;
+    p.evnt1     = (value == 0x40) ? 0x00 : value; // LSB
+    p.evnt2     = value;
+  } break;
+
+  case SEQ_PAR_Type_ProgramChange: {
+    u8 value = (pc_last_value[track] < 0x80) ? pc_last_value[track] : 0x40;
+
+    p.type      = ProgramChange;
+    p.event     = ProgramChange;
+    p.evnt1     = value;
+    p.evnt2     = 0x00; // don't care
+  } break;
+
+  default:
+    return -1; // other parameter types are not supported
+  }
+
+  // send MIDI event
+  MUTEX_MIDIOUT_TAKE;
+  MIOS32_MIDI_SendPackage(tcc->midi_port, p);
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes a track depending on selected event mode

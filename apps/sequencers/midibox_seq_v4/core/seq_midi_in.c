@@ -376,6 +376,12 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
      midi_package.chn == (seq_midi_in_rec_channel-1));
 
+  // simplify Note On/Off handling
+  if( midi_package.event == NoteOff ) {
+    midi_package.event = NoteOn;
+    midi_package.velocity = 0;
+  }
+
   // search for matching ports
   // status[0] set if at least one port matched
   // status[1] set if remote function active
@@ -386,59 +392,25 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	midi_package.chn == (seq_midi_in_channel[bus]-1) ) {
 
       switch( midi_package.event ) {
-      case NoteOff: 
-	if( remote_active ) {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    remote_active = 0;
-
-	    // send "button depressed" state to all remote functions
-	    int i;
-	    for(i=0; i<128; ++i)
-	      SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
-	  } else {
-	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
-	  }
-	  status |= 2;
-	} else {
-	  if( !should_be_recorded &&
-	      midi_package.note >= seq_midi_in_lower[bus] &&
-	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
-
-	    if( !seq_midi_in_options[bus].MODE_PLAY ) {
-#if 0
-	      // octave normalisation - too complicated for normal users...
-	      mios32_midi_package_t p = midi_package;
-	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
-		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		// ensure that note is in the 0..127 range
-		normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
-		p.note = normalized_note;
-	      }
-	      SEQ_MIDI_IN_BusReceive(bus, p, 0);
-#else
-	      SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
-#endif
-	    }
-
-	    if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
-		) {
-	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-	    }
-
-	    status |= 1;
-	  }
-	}
-	break;
-
+      case NoteOff:
       case NoteOn:
-	if( remote_active )
-	  SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
-	else {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    remote_active = 1;
+
+	if( midi_package.velocity == 0 ) {
+	  if( remote_active ) {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      remote_active = 0;
+
+	      MUTEX_MIDIOUT_TAKE;
+	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access deactivated");
+	      MUTEX_MIDIOUT_GIVE;
+
+	      // send "button depressed" state to all remote functions
+	      int i;
+	      for(i=0; i<128; ++i)
+		SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
+	    } else {
+	      SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
+	    }
 	    status |= 2;
 	  } else {
 	    if( !should_be_recorded &&
@@ -463,13 +435,56 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 	      if( seq_midi_in_options[bus].MODE_PLAY
 #ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+		  || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
 #endif
 		  ) {
 		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	      }
-
+	      
 	      status |= 1;
+	    }
+	  }
+	} else {
+	  if( remote_active )
+	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 0);
+	  else {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      MUTEX_MIDIOUT_TAKE;
+	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access activated");
+	      MUTEX_MIDIOUT_GIVE;
+	      remote_active = 1;
+	      status |= 2;
+	    } else {
+	      if( !should_be_recorded &&
+		  midi_package.note >= seq_midi_in_lower[bus] &&
+		  (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+
+		if( !seq_midi_in_options[bus].MODE_PLAY ) {
+#if 0
+		  // octave normalisation - too complicated for normal users...
+		  mios32_midi_package_t p = midi_package;
+		  if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		    int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		    // ensure that note is in the 0..127 range
+		    normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
+		    p.note = normalized_note;
+		  }
+		  SEQ_MIDI_IN_BusReceive(bus, p, 0);
+#else
+		  SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
+#endif
+		}
+
+		if( seq_midi_in_options[bus].MODE_PLAY
+#ifdef MBSEQV4L
+		    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+#endif
+		    ) {
+		  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+		}
+
+		status |= 1;
+	      }
 	    }
 	  }
 	}
@@ -635,6 +650,9 @@ s32 SEQ_MIDI_IN_BusReceive(u8 bus, mios32_midi_package_t midi_package, u8 from_l
       // MIDI Remote Function?
       if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == midi_package.cc_number ) {
 	remote_active = midi_package.value >= 0x40;
+	MUTEX_MIDIOUT_TAKE;
+	DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access %sactivated", remote_active ? "" : "de");
+	MUTEX_MIDIOUT_GIVE;
       }
     }
     break;

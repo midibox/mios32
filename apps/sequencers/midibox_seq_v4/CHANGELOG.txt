@@ -6,6 +6,18 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.075
+~~~~~~~~~~~~~~~~~
+
+   o MBHP_IIC_MIDI working properly again on a STM32 core (issue was caused by a compiler change)
+
+   o Track event configuration page: if a parameter layer is configured for CC,
+     Pitchbender or Program Change, it's now possible to send the event manually
+     by pressing one of the GP buttons below the controller configuration (GP10, 11, 12, 13)
+
+   o MIDI remote keyboard function now also deactivated when Note On with velocity 0 received
+
+
 MIDIboxSEQ V4.074
 ~~~~~~~~~~~~~~~~~
 
