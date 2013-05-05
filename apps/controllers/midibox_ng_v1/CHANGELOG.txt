@@ -14,6 +14,8 @@ MIDIbox NG V1.025
    o inofficial support for MAX72xx chains - see cfg/tests/max72xx.ngc for
      a configuration example (no schematic available yet)
 
+   o .NGR: fixed "delay statements in if branches" issue
+
 
 MIDIbox NG V1.024
 ~~~~~~~~~~~~~~~~~
