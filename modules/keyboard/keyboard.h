@@ -86,11 +86,15 @@ typedef struct {
   u16 delay_slowest_release;
 
 #if !KEYBOARD_DONT_USE_AIN
+  u32 ain_timestamp[KEYBOARD_AIN_NUM];
   u8  ain_pin[KEYBOARD_AIN_NUM];
   u8  ain_ctrl[KEYBOARD_AIN_NUM];
   u8  ain_min[KEYBOARD_AIN_NUM];
   u8  ain_max[KEYBOARD_AIN_NUM];
   u8  ain_last_value7[KEYBOARD_AIN_NUM];
+  u8  ain_inverted[KEYBOARD_AIN_NUM];
+  u8  ain_sustain_switch;
+  u8  ain_bandwidth_ms;
 #endif
 } keyboard_config_t;
 
@@ -109,7 +113,7 @@ extern void KEYBOARD_SRIO_ServiceFinish(void);
 extern void KEYBOARD_Periodic_1mS(void);
 
 #if !KEYBOARD_DONT_USE_AIN
-extern void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value);
+extern void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value, u32 timestamp);
 #endif
 
 extern s32 KEYBOARD_TerminalHelp(void *_output_function);

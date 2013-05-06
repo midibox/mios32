@@ -160,8 +160,12 @@ s32 KEYBOARD_Init(u32 mode)
 
 	kc->ain_min[i] = 1;
 	kc->ain_max[i] = 254;
+	kc->ain_inverted[i] = 0;
 	kc->ain_last_value7[i] = 0xff; // will force to send the value
+	kc->ain_timestamp[i] = 0;
       }
+      kc->ain_sustain_switch = 0;
+      kc->ain_bandwidth_ms = 0;
 #endif
     }
 
@@ -683,9 +687,25 @@ void KEYBOARD_Periodic_1mS(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function should be called from AIN_NotifyChange in app.c
+//!
+//! In addition it should be called periodically from a task to handle
+//! the reduced bandwidth function.\n
+//! See also apps/controllers/midibox_kb_v1/src/app.c
+//! 
+//! \code
+//!     // update AINs with current value
+//!     // the keyboard driver will only send events on value changes
+//!     {
+//!       int pin;
+//! 
+//!       for(pin=0; pin<6; ++pin) {
+//! 	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), app_ms_counter);
+//!       }
+//!     }
+//! \endcode
 /////////////////////////////////////////////////////////////////////////////
 #if !KEYBOARD_DONT_USE_AIN
-void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
+void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value, u32 timestamp)
 {
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
@@ -738,9 +758,26 @@ void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
 	  DEBUG_MSG("value16bit=%d, range8bit=%d, value7bit=%d\n", value16bit, range8bit, value7bit);
 #endif
 
-	  if( value7bit != kc->ain_last_value7[i] ) {
+	  if( value7bit != kc->ain_last_value7[i] &&
+	      (!kc->ain_bandwidth_ms || ((timestamp - kc->ain_timestamp[i]) >= kc->ain_bandwidth_ms)) ) {
+	    u8 last_value7 = kc->ain_last_value7[i];
 	    kc->ain_last_value7[i] = value7bit;
-	    KEYBOARD_MIDI_SendCtrl(kb, kc->ain_ctrl[i], value7bit);
+	    kc->ain_timestamp[i] = timestamp;
+
+	    int sent_value = kc->ain_inverted[i] ? (127-value7bit) : value7bit;
+
+	    if( i == KEYBOARD_AIN_SUSTAIN && kc->ain_sustain_switch ) {
+	      if( (value7bit >= 0x40 && last_value7 >= 0x40) ||
+		  (value7bit <  0x40 && last_value7 <  0x40) ) {
+		sent_value = -1; // don't send
+	      } else {
+		sent_value = (sent_value >= 0x40) ? 0x7f : 0x00;
+	      }
+	    }
+
+	    if( sent_value >= 0 ) {
+	      KEYBOARD_MIDI_SendCtrl(kb, kc->ain_ctrl[i], sent_value);
+	    }
 	  }
 	}
       }
@@ -966,12 +1003,17 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> delay_slowest <0-65535>:   slowest delay for velocity calculation");
   out("  set kb <1|2> delay_slowest_release <0-65535>: slowest release delay for velocity calculation");
 #if !KEYBOARD_DONT_USE_AIN
-  out("  set kb <1|2> ain_pitchwheel <0..5> or off: assigns pitchwheel to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_pitchwheel <0-129>: assigns CC/PB(=128)/AT(=129) to PitchWheel");
-  out("  set kb <1|2> ain_modwheel <0..5> or off: assigns ModWheel to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_modwheel <0-129>:   assigns CC/PB(=128)/AT(=129) to ModWheel");
-  out("  set kb <1|2> ain_sustain <0..5> or off: assigns Sustain Pedal to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_sustain <0-129>:   assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
+  out("  set kb <1|2> ain_pitchwheel <0..5> or off:     assigns pitchwheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_pitchwheel <0-129>:          assigns CC/PB(=128)/AT(=129) to PitchWheel");
+  out("  set kb <1|2> ain_pitchwheel_inverted <on|off>: inverts the pitchwheel controller");
+  out("  set kb <1|2> ain_modwheel <0..5> or off:       assigns ModWheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_modwheel <0-129>:            assigns CC/PB(=128)/AT(=129) to ModWheel");
+  out("  set kb <1|2> ain_modwheel_inverted <on|off>:   inverts the modwheel controller");
+  out("  set kb <1|2> ain_sustain <0..5> or off:        assigns Sustain Pedal to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_sustain <0-129>:             assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
+  out("  set kb <1|2> ain_sustain_inverted <on|off>:    inverts the sustain controller");
+  out("  set kb <1|2> ain_sustain_switch <on|off>:      set to on if the pedal should behave like a switch");
+  out("  set kb <1|2> ain_bandwidth_ms <delay>:         defines the bandwidth of AIN scans in milliseconds");
   out("  set kb <1|2> calibration <off|pitchwheel|modwheel|sustain>: starts AIN calibration");
 #endif
 
@@ -1471,6 +1513,38 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  }
 
 	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "ain_pitchwheel_inverted") == 0 ||
+		   strcmp(parameter, "ain_modwheel_inverted") == 0 ||
+		   strcmp(parameter, "ain_sustain_inverted") == 0 ) {
+	  u8 pitchwheel = strcmp(parameter, "ain_pitchwheel_inverted") == 0;
+	  u8 modwheel = strcmp(parameter, "ain_modwheel_inverted") == 0;
+
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off!");
+	    return 1; // command taken
+	  }
+
+	  int value;
+	  if( (value=get_on_off(parameter)) < 0 ) {
+	    out("Invalid value, please specify on or off!");
+	    return 1; // command taken
+	  }
+
+	  char wheel_name[20];
+	  if( pitchwheel ) {
+	    strcpy(wheel_name, "PitchWheel");
+	    kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] = value;
+	  } else if( modwheel ) {
+	    strcpy(wheel_name, "ModWheel");
+	    kc->ain_inverted[KEYBOARD_AIN_MODWHEEL] = value;
+	  } else {
+	    strcpy(wheel_name, "Sustain Pedal");
+	    kc->ain_inverted[KEYBOARD_AIN_SUSTAIN] = value;
+	  }
+
+	  out("Keyboard #%d: %s controller inversion %s!", kb+1, wheel_name, value ? "on" : "off");
+
+	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "calibration") == 0 || strcmp(parameter, "calibrate") == 0 ) {
 
 	  int pin = -1;
@@ -1508,6 +1582,40 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("The calibration will be finished by selection a new source, or with 'set kb %d calibration off'", kb+1);
 	    out("Enter 'store' to save the calibration values");
 	  }
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "ain_bandwidth_ms") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify the AIN bandwidth in milliseconds!");
+	    return 1; // command taken
+	  }
+
+	  int bandwidth_ms = get_dec(parameter);
+
+	  if( bandwidth_ms < 0 || bandwidth_ms > 255 ) {
+	    out("Bandwidth delay should be in the range between 0..255");
+	    return 1; // command taken
+	  } else {
+	    kc->ain_bandwidth_ms = bandwidth_ms;
+	    out("Keyboard #%d: ain_bandwidth_ms set to %d!", kb+1, kc->ain_bandwidth_ms);
+	  }
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "ain_sustain_switch") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off!");
+	    return 1; // command taken
+	  }
+
+	  int value;
+	  if( (value=get_on_off(parameter)) < 0 ) {
+	    out("Please specify on or off!");
+	    return 1; // command taken
+	  }
+
+	  kc->ain_sustain_switch = value;
+
+	  out("Sustain controller behaves like a %s", kc->ain_sustain_switch ? "switch" : "pot");
 #endif
 
 	/////////////////////////////////////////////////////////////////////
@@ -1577,6 +1685,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
     out("kb %d ain_pitchwheel off", kb+1);
   out("kb %d ctrl_pitchwheel %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL],
       (kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] == 128 ? "PitchBend" : "Aftertouch"));
+  out("kb %d ain_pitchwheel_inverted %s", kb+1, kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] ? "on" : "off");
 
   if( kc->ain_pin[KEYBOARD_AIN_MODWHEEL] )
     out("kb %d ain_modwheel %d", kb+1, kc->ain_pin[KEYBOARD_AIN_MODWHEEL]-1);
@@ -1584,6 +1693,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
     out("kb %d ain_modwheel off", kb+1);
   out("kb %d ctrl_modwheel %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL],
       (kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL] == 128 ? "PitchBend" : "Aftertouch"));
+  out("kb %d ain_modwheel_inverted %s", kb+1, kc->ain_inverted[KEYBOARD_AIN_MODWHEEL] ? "on" : "off");
 
   if( kc->ain_pin[KEYBOARD_AIN_SUSTAIN] )
     out("kb %d ain_sustain %d", kb+1, kc->ain_pin[KEYBOARD_AIN_SUSTAIN]-1);
@@ -1591,6 +1701,10 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
     out("kb %d ain_sustain off", kb+1);
   out("kb %d ctrl_sustain %d (%s)", kb+1, kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN],
       (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] < 128) ? "CC" : (kc->ain_ctrl[KEYBOARD_AIN_SUSTAIN] == 128 ? "PitchBend" : "Aftertouch"));
+  out("kb %d ain_sustain_inverted %s", kb+1, kc->ain_inverted[KEYBOARD_AIN_SUSTAIN] ? "on" : "off");
+
+  out("kb %d ain_sustain_switch %s", kb+1, kc->ain_sustain_switch ? "on" : "off");
+  out("kb %d ain_bandwidth_ms %d", kb+1, kc->ain_bandwidth_ms);
 
   KEYBOARD_TerminalCaliMode(_output_function);
 #endif

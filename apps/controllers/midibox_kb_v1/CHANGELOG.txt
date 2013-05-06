@@ -1,5 +1,16 @@
 $Id$
 
+MIDIbox KB V1.011
+~~~~~~~~~~~~~~~~~
+
+   o support for "ain_bandwidth_ms" which allows to reduce the number of generated events
+     over time.
+
+   o added "ain_pitchwheel_inverted", "ain_modwheel_inverted", "ain_sustain_inverted"
+
+   o added "ain_sustain_switch", which allows to change between switch and pot behaviour
+
+
 MIDIbox KB V1.010
 ~~~~~~~~~~~~~~~~~
 
