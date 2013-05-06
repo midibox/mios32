@@ -1271,7 +1271,8 @@ s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
-    pool_item->secondary_value = item->secondary_value;
+    if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+      pool_item->secondary_value = item->secondary_value;
     pool_item->flags.value_from_midi = 0;
   }
 
@@ -2829,7 +2830,8 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
-    pool_item->secondary_value = item->secondary_value;
+    if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+      pool_item->secondary_value = item->secondary_value;
     pool_item->flags.value_from_midi = from_midi;
   }
 
@@ -3000,7 +3002,8 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
       ++num_forwarded;
 
       // notify item (will also store value in pool item)
-      fwd_item.secondary_value = item->secondary_value;
+      if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+	fwd_item.secondary_value = item->secondary_value;
       if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0, 1) == 2 )
 	break; // stop has been requested
     }
@@ -3048,10 +3051,12 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
       if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
 	pool_item->value = fwd_item.value;
-	pool_item->secondary_value = fwd_item.secondary_value;
+	if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+	  pool_item->secondary_value = fwd_item.secondary_value;
 	pool_item->flags.value_from_midi = item->flags.value_from_midi;
       }
-      fwd_item.secondary_value = item->secondary_value;
+      if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+	fwd_item.secondary_value = item->secondary_value;
 
       // notify button/LED element
       if( fwd_id_type == MBNG_EVENT_CONTROLLER_BUTTON )
@@ -3087,7 +3092,8 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
-    pool_item->secondary_value = item->secondary_value;
+    if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+      pool_item->secondary_value = item->secondary_value;
     pool_item->flags.value_from_midi = 0;
   }
 
