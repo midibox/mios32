@@ -44,5 +44,7 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern volatile u32 app_ms_counter;
+
 
 #endif /* _APP_H */

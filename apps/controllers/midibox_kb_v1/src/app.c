@@ -53,18 +53,15 @@ xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
 
 
-
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+//! global variables
 /////////////////////////////////////////////////////////////////////////////
-
-static u32 ms_counter;
+volatile u32 app_ms_counter;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void);
 
 // local prototype of the task function
 static void TASK_Period_1mS(void *pvParameters);
@@ -80,7 +77,7 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 void APP_Init(void)
 {
   // clear mS counter
-  ms_counter = 0;
+  app_ms_counter = 0;
 
   // create semaphores
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -117,9 +114,6 @@ void APP_Init(void)
 
   // start uIP task
   UIP_TASK_Init(0);
-
-  // install timer function which is called each 100 uS
-  MIOS32_TIMER_Init(0, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
 
   // print welcome message on MIOS terminal
   MIOS32_MIDI_SendDebugMessage("\n");
@@ -177,7 +171,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, app_ms_counter, filter_sysex_message);
 }
 
 
@@ -243,27 +237,10 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   // -> keyboard
-  KEYBOARD_AIN_NotifyChange(pin, pin_value);
+  KEYBOARD_AIN_NotifyChange(pin, pin_value, app_ms_counter);
 #if 0
   MIOS32_MIDI_SendCC(DEFAULT, Chn1, 0x10 + pin, pin_value >> 5);
 #endif
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This timer function is periodically called each 100 uS
-/////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void)
-{
-  static u8 pre_ctr = 0;
-
-  // increment the microsecond counter each 10th tick
-  if( ++pre_ctr >= 10 ) {
-    pre_ctr = 0;
-    ++ms_counter;
-  }
-
 }
 
 
@@ -286,12 +263,25 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
+    // increment MS counter
+    ++app_ms_counter;
+
     // -> keyboard handler
     KEYBOARD_Periodic_1mS();
 
     // MIDI In/Out monitor
     // TODO: call from low-prio task
     MIDI_PORT_Period1mS();
+
+    // update AINs with current value
+    // the keyboard driver will only send events on value changes
+    {
+      int pin;
+
+      for(pin=0; pin<6; ++pin) {
+	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), app_ms_counter);
+      }
+    }
   }
 }
 

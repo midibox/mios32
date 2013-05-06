@@ -145,7 +145,17 @@ s32 PRESETS_Init(u32 mode)
 	  u16 ain_cfg2 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset);
 	  kc->ain_min[i] = (ain_cfg2 >> 0) & 0xff;
 	  kc->ain_max[i] = (ain_cfg2 >> 8) & 0xff;
-	}	  
+	}
+
+#if KEYBOARD_AIN_NUM != 3
+# error "please adapt the code below"
+#endif
+	u16 ain_cfg4 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG4 + offset);
+	kc->ain_bandwidth_ms = (ain_cfg4 >> 0) & 0xff;
+	kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] = (ain_cfg4 >>  8) & 1;
+	kc->ain_inverted[KEYBOARD_AIN_MODWHEEL]   = (ain_cfg4 >>  9) & 1;
+	kc->ain_inverted[KEYBOARD_AIN_SUSTAIN]    = (ain_cfg4 >> 10) & 1;
+	kc->ain_sustain_switch                    = (ain_cfg4 >> 15) & 1;
       }
     }
     KEYBOARD_Init(1); // without overwriting default configuration
@@ -260,6 +270,17 @@ s32 PRESETS_StoreAll(void)
 	  (kc->ain_max[i] << 8);
 	status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset, ain_cfg2);
       }
+
+#if KEYBOARD_AIN_NUM != 3
+# error "please adapt the code below"
+#endif
+      u16 ain_cfg4 =
+	(kc->ain_bandwidth_ms << 0) |
+	(kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] ? 0x0100 : 0) |
+	(kc->ain_inverted[KEYBOARD_AIN_MODWHEEL]   ? 0x0200 : 0) |
+	(kc->ain_inverted[KEYBOARD_AIN_SUSTAIN]    ? 0x0400 : 0) |
+	(kc->ain_sustain_switch                    ? 0x8000 : 0);
+      status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG4 + offset, ain_cfg4);
     }
 
   return 0; // no error
