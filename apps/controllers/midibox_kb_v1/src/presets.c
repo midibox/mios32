@@ -18,11 +18,13 @@
 #include <mios32.h>
 
 #include <eeprom.h>
+#include <keyboard.h>
+#include <midi_router.h>
+
 #include "presets.h"
 #include "midimon.h"
 #include "uip_task.h"
 #include "osc_server.h"
-#include "keyboard.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,9 +57,11 @@ s32 PRESETS_Init(u32 mode)
 
   // check for magic number in EEPROM - if not available, initialize the structure
   u32 magic = PRESETS_Read32(PRESETS_ADDR_MAGIC01);
-  if( magic != EEPROM_MAGIC_NUMBER && magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 ) {
+  if( magic != EEPROM_MAGIC_NUMBER &&
+      magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 &&
+      magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[PRESETS] magic number not found - initialize EEPROM!\n");
+    DEBUG_MSG("[PRESETS] magic number not found (was 0x%08x) - initialize EEPROM!\n", magic);
 #endif
 
     // clear EEPROM
@@ -66,6 +70,19 @@ s32 PRESETS_Init(u32 mode)
       status |= PRESETS_Write16(addr, 0x00);
 
     status |= PRESETS_StoreAll();
+  }
+
+  if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ||
+      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT2 ) {
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[PRESETS] new format detected: clearing upper part of EEPROM...\n");
+#endif
+
+    // clear EEPROM
+    int addr;
+    for(addr=0x100; addr<PRESETS_EEPROM_SIZE; ++addr)
+      status |= PRESETS_Write16(addr, 0x00);
   }
 
   if( status >= 0 ) {
@@ -162,6 +179,32 @@ s32 PRESETS_Init(u32 mode)
 
   }
 
+  // restore MIDI router settings
+  {
+#if MIDI_ROUTER_NUM_NODES != 16
+# error "EEPROM format only prepared for 16 nodes"
+#endif
+    u8 node;
+    midi_router_node_entry_t *n = &midi_router_node[0];
+    for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+      u16 cfg1 = PRESETS_Read16(PRESETS_ADDR_ROUTER_BEGIN + node*2 + 0);
+      u16 cfg2 = PRESETS_Read16(PRESETS_ADDR_ROUTER_BEGIN + node*2 + 1);
+
+      // default setup
+      if( !cfg1 && !cfg2 ) {
+	n->src_port = USB0;
+	n->src_chn = 0;
+	n->dst_port = UART0;
+	n->dst_chn = 17; // All
+      } else {
+	n->src_port = (cfg1 >> 0) & 0xff;
+	n->src_chn  = (cfg1 >> 8) & 0xff;
+	n->dst_port = (cfg2 >> 0) & 0xff;
+	n->dst_chn  = (cfg2 >> 8) & 0xff;
+      }
+    }
+  }
+
   return 0; // no error
 }
 
@@ -169,12 +212,12 @@ s32 PRESETS_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Help functions to read a value from EEPROM (big endian coding!)
 /////////////////////////////////////////////////////////////////////////////
-u16 PRESETS_Read16(u8 addr)
+u16 PRESETS_Read16(u16 addr)
 {
   return EEPROM_Read(addr);
 }
 
-u32 PRESETS_Read32(u8 addr)
+u32 PRESETS_Read32(u16 addr)
 {
   return ((u32)EEPROM_Read(addr) << 16) | EEPROM_Read(addr+1);
 }
@@ -182,12 +225,12 @@ u32 PRESETS_Read32(u8 addr)
 /////////////////////////////////////////////////////////////////////////////
 // Help function to write a value into EEPROM (big endian coding!)
 /////////////////////////////////////////////////////////////////////////////
-s32 PRESETS_Write16(u8 addr, u16 value)
+s32 PRESETS_Write16(u16 addr, u16 value)
 {
   return EEPROM_Write(addr, value);
 }
 
-s32 PRESETS_Write32(u8 addr, u32 value)
+s32 PRESETS_Write32(u16 addr, u32 value)
 {
   return EEPROM_Write(addr, (value >> 16) & 0xffff) | EEPROM_Write(addr+1, (value >> 0) & 0xffff);
 }
@@ -230,6 +273,7 @@ s32 PRESETS_StoreAll(void)
     status |= PRESETS_Write16(PRESETS_ADDR_OSC0_LOCAL_PORT + offset, OSC_SERVER_LocalPortGet(con));
   }
 
+  {
     int kb;
     keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
     for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
@@ -282,6 +326,29 @@ s32 PRESETS_StoreAll(void)
 	(kc->ain_sustain_switch                    ? 0x8000 : 0);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG4 + offset, ain_cfg4);
     }
+  }
+
+  // store MIDI router settings
+  {
+#if MIDI_ROUTER_NUM_NODES != 16
+# error "EEPROM format only prepared for 16 nodes"
+#endif
+    u8 node;
+    midi_router_node_entry_t *n = &midi_router_node[0];
+    for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+      u16 cfg1 = n->src_port | ((u16)n->src_chn << 8);
+      u16 cfg2 = n->dst_port | ((u16)n->dst_chn << 8);
+
+      status |= PRESETS_Write16(PRESETS_ADDR_ROUTER_BEGIN + node*2 + 0, cfg1);
+      status |= PRESETS_Write16(PRESETS_ADDR_ROUTER_BEGIN + node*2 + 1, cfg2);
+    }
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  if( status < 0 ) {
+    DEBUG_MSG("[PRESETS] ERROR while writing into EEPROM!");
+  }
+#endif
 
   return 0; // no error
 }

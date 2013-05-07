@@ -21,7 +21,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // EEPROM locations
-#define PRESETS_EEPROM_SIZE    EEPROM_EMULATED_SIZE // prepared for up to 128 entries
+#define PRESETS_EEPROM_SIZE    EEPROM_EMULATED_SIZE // prepared for up to 4096 entries
 
 #define PRESETS_ADDR_RESERVED  0x00 // should not be written
 #define PRESETS_ADDR_MAGIC01   0x01
@@ -113,6 +113,10 @@
 #define PRESETS_ADDR_KB2_AIN_CFG4        (0xd5 + 1*PRESETS_OFFSET_BETWEEN_KB_RECORDS) // 0xf5
 
 
+#define PRESETS_ADDR_ROUTER_BEGIN        0x100 // allocates 2*16 halfwords (4*16 bytes)
+#define PRESETS_ADDR_ROUTER_END          0x11f
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -124,11 +128,11 @@
 
 extern s32 PRESETS_Init(u32 mode);
 
-extern u16 PRESETS_Read16(u8 addr);
-extern u32 PRESETS_Read32(u8 addr);
+extern u16 PRESETS_Read16(u16 addr);
+extern u32 PRESETS_Read32(u16 addr);
 
-extern s32 PRESETS_Write16(u8 addr, u16 value);
-extern s32 PRESETS_Write32(u8 addr, u32 value);
+extern s32 PRESETS_Write16(u16 addr, u16 value);
+extern s32 PRESETS_Write32(u16 addr, u32 value);
 
 extern s32 PRESETS_StoreAll(void);
 

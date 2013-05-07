@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox KB V1.012
+~~~~~~~~~~~~~~~~~
+
+   o MIDI router configuration now stored in EEPROM
+
+
 MIDIbox KB V1.011
 ~~~~~~~~~~~~~~~~~
 
