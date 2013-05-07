@@ -1157,7 +1157,8 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 
-  out("MIDI Router Nodes (change with 'set router <in-port> <channel> <out-port> <channel>)");
+  out("MIDI Router Nodes (change with 'set router <node> <in-port> <channel> <out-port> <channel>)");
+  out("Example: set router 1 IN1 all USB1 all");
 
   u8 node;
   seq_midi_router_node_t *n = &seq_midi_router_node[0];

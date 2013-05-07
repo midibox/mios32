@@ -614,7 +614,8 @@ s32 MIDI_ROUTER_TerminalPrintConfig(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  out("MIDI Router Nodes (change with 'set router <in-port> <channel> <out-port> <channel>)");
+  out("MIDI Router Nodes (change with 'set router <node> <in-port> <channel> <out-port> <channel>)");
+  out("Example: set router 1 IN1 all USB1 all");
 
   u8 node;
   midi_router_node_entry_t *n = &midi_router_node[0];
