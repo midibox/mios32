@@ -1669,3 +1669,14 @@ so it would be possible to have some nice variation with accent, slide , rolls, 
 
 Marxon http://midibox.org/forums/topic/17484-suggestion-deincrement-values-in-mixer-mode
 It would be usefull to have a mixer page to send also relative de/increment values.
+
+----------------------------------------------------------
+FFW:
+Auf der LFO Page müsste man den CC der dem LFO zugewiesen werden kann auch mit den GP Buttons senden können.
+
+Für den Humanizer könnte man rechts im Display die Möglichkeit einfügen,
+den / die CC´s auszuwählen, auf welche sich der Humanizer beziehen soll.
+
+Man könnte bei der Global-Loop FX Funktion im rechten Display eine Option anbieten,
+welche es ermöglicht, den Loop quantisiert ein-/aussetzen zu lassen.
+Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Takt etc. ein.
