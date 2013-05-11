@@ -1680,3 +1680,7 @@ den / die CC´s auszuwählen, auf welche sich der Humanizer beziehen soll.
 Man könnte bei der Global-Loop FX Funktion im rechten Display eine Option anbieten,
 welche es ermöglicht, den Loop quantisiert ein-/aussetzen zu lassen.
 Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Takt etc. ein.
+
+----------------------------------------------------------
+lukas412
+Has the possibility of routing a track output to another tracks input ever come up?
