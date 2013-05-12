@@ -2151,6 +2151,7 @@ mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
   if( strcasecmp(sysex_var, "ignore") == 0 )     return MBNG_EVENT_SYSEX_VAR_IGNORE;
   if( strcasecmp(sysex_var, "dump") == 0 )       return MBNG_EVENT_SYSEX_VAR_DUMP;
   if( strcasecmp(sysex_var, "cursor") == 0 )     return MBNG_EVENT_SYSEX_VAR_CURSOR;
+  if( strcasecmp(sysex_var, "txt") == 0 )        return MBNG_EVENT_SYSEX_VAR_TXT;
   if( strcasecmp(sysex_var, "txt56") == 0 )      return MBNG_EVENT_SYSEX_VAR_TXT56;
   if( strcasecmp(sysex_var, "label") == 0 )      return MBNG_EVENT_SYSEX_VAR_LABEL;
   return MBNG_EVENT_SYSEX_VAR_UNDEFINED;
