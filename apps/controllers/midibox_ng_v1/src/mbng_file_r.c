@@ -1163,9 +1163,11 @@ s32 MBNG_FILE_R_CheckRequest(void)
     MIOS32_STOPWATCH_Reset();
 #endif
 
+    MUTEX_MIDIOUT_TAKE;
     MUTEX_SDCARD_TAKE;
     MBNG_FILE_R_Read(mbng_file_r_script_name, cont_script, mbng_file_r_req.section, mbng_file_r_req.value);
     MUTEX_SDCARD_GIVE;
+    MUTEX_MIDIOUT_GIVE;
 
 #if DEBUG_FILE_HANDLER_PERFORMANCE
     u32 cycles = MIOS32_STOPWATCH_ValueGet();
