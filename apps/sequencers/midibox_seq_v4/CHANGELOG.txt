@@ -1684,3 +1684,8 @@ Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Tak
 ----------------------------------------------------------
 lukas412
 Has the possibility of routing a track output to another tracks input ever come up?
+
+----------------------------------------------------------
+Duggle:
+- dedicated SAVE and SAVE_ALL button
+- pass SysEx also with source channel set to 1..16
