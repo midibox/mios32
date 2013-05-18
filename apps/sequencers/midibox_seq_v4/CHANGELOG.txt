@@ -1689,3 +1689,4 @@ Has the possibility of routing a track output to another tracks input ever come 
 Duggle:
 - dedicated SAVE and SAVE_ALL button
 - pass SysEx also with source channel set to 1..16
+- edit mixer map name
