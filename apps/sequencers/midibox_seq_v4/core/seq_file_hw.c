@@ -445,6 +445,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.undo = din_value;
 	  } else if( strcmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_button.mixer = din_value;
+	  } else if( strcmp(parameter, "SAVE") == 0 ) {
+	    seq_hwcfg_button.save = din_value;
+	  } else if( strcmp(parameter, "SAVE_ALL") == 0 ) {
+	    seq_hwcfg_button.save_all = din_value;
 	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
 	    seq_hwcfg_button.track_mode = din_value;
 	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {

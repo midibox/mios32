@@ -193,6 +193,11 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //              SR   ignore    Pin
   .mixer     = ((( 0   -1)<<3)+    0),
 
+  //              SR   ignore    Pin
+  .save      = ((( 0   -1)<<3)+    0),
+  .save_all  = ((( 0   -1)<<3)+    0),
+
+  //              SR   ignore    Pin
   .track_mode      = ((( 0   -1)<<3)+    0),
   .track_groove    = ((( 0   -1)<<3)+    0),
   .track_length    = ((( 0   -1)<<3)+    0),

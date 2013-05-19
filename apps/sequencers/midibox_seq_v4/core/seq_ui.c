@@ -1691,6 +1691,36 @@ static s32 SEQ_UI_Button_Mixer(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Save(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 group = ui_selected_group;
+  seq_pattern_t pattern = seq_pattern[group];
+  s32 status;
+  if( (status=SEQ_PATTERN_Save(group, pattern)) < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+  } else {
+    char str1[21];
+    char str2[21];
+    sprintf(str1, "Track Group G%d", group + 1);
+    sprintf(str2, "stored into %d:%c%d", pattern.bank+1, (pattern.lower ? 'a' : 'A') + pattern.group, pattern.num + 1);
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, str1, str2);
+  }
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_SaveAll(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Complete Session", "stored!");
+  seq_ui_saveall_req = 1;
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_TrackMode(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
@@ -1961,6 +1991,11 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 
   if( pin == seq_hwcfg_button.mixer )
     return SEQ_UI_Button_Mixer(pin_value);
+
+  if( pin == seq_hwcfg_button.save )
+    return SEQ_UI_Button_Save(pin_value);
+  if( pin == seq_hwcfg_button.save_all )
+    return SEQ_UI_Button_SaveAll(pin_value);
 
   if( pin == seq_hwcfg_button.track_mode )
     return SEQ_UI_Button_TrackMode(pin_value);

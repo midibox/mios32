@@ -16,6 +16,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <tasks.h>
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
@@ -160,6 +162,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  SEQ_CC_Set(visible_track, SEQ_CC_LFO_CC, edit_cc_number);
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
 	}
+
+	// send event
+	mios32_midi_package_t p;
+	if( SEQ_LFO_FastCC_Event(visible_track, 0, &p, 1) >= 1 ) {
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendPackage(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT), p);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
       break;
 
@@ -202,7 +212,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       s32 status = SEQ_UI_Var8_Inc(&edit_cc_number, 0, 127, incrementer);
       mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
       u8 loopback = port == 0xf0;
-      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, loopback ? "Loopback CC" : "Controller:", (char *)SEQ_CC_LABELS_Get(port, edit_cc_number));
+      if( !edit_cc_number ) {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "LFO CC", "disabled");
+      } else {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, loopback ? "Loopback CC" : "Controller:", (char *)SEQ_CC_LABELS_Get(port, edit_cc_number));
+      }
       return status;
     } break;
 
