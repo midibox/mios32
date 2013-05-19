@@ -171,11 +171,11 @@ s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e)
 /////////////////////////////////////////////////////////////////////////////
 // Returns a fast modulated CC event if return value >= 1
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p)
+s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p, u8 ignore_waveform)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  if( !tcc->lfo_waveform )
+  if( !ignore_waveform && !tcc->lfo_waveform )
     return 0; // LFO disabled
 
   if( !tcc->lfo_cc )

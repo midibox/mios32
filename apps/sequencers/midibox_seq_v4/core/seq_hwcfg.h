@@ -105,6 +105,9 @@ typedef struct {
 
   u8 mixer;
 
+  u8 save;
+  u8 save_all;
+
   u8 track_mode;
   u8 track_groove;
   u8 track_length;

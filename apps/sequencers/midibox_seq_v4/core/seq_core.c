@@ -649,7 +649,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       // send LFO CC (if enabled)
       if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute ) {
 	mios32_midi_package_t p;
-	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
+	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p, 0) > 0 ) {
 	  if( loopback_port )
 	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else

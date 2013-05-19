@@ -6,6 +6,21 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.076
+~~~~~~~~~~~~~~~~~
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+   o added optional "SAVE" and "SAVE_ALL" button function to the MBSEQ_HW.V4 file
+
+   o it's now possible to change the mixer map name.
+     In the mixer page, press SELECT + GP16 button to enter the name editor.
+
+   o LFO page: the current CC can be sent manually by pressing the GP14 button.
+
+
 MIDIboxSEQ V4.075
 ~~~~~~~~~~~~~~~~~
 
@@ -1626,14 +1641,6 @@ Multiple Mutex (semaphores) will decrease the general performance
 
 ----------------------------------------------------------
 
-
->> -Run out of MIDI Router assignements. Is it possible to have more than 8? Or perhaps if each one could have different OUTS for the same IN... then I wouldn't have to use 2 different assignements to route, say, "IN1 chn10" to "OUT1 chn10" and also to "OUT2 chn10".
-
-TK: check if more router nodes significantly lead to a worse performance
-alternatively check if there is still place in the menu page to edit the requested configuration (probably not...)
-
-----------------------------------------------------------
-
 >> I have a question regarding the arpeggiator (and transposer)
 >> 
 >> I noticed that the arpeggiator (and transposer) behave different when they are contorlled from external eg. keyboard or from an internal track:
@@ -1666,18 +1673,16 @@ in the fx section , theres the humanizer which now can "randomize" notes, vel/cc
 so it would be possible to have some nice variation with accent, slide , rolls, random value etc... each with it´s own amount...?! 
 
 ----------------------------------------------------------
+FFW: Für den Humanizer könnte man rechts im Display die Möglichkeit einfügen,
+den / die CC´s auszuwählen, auf welche sich der Humanizer beziehen soll.
+
+----------------------------------------------------------
 
 Marxon http://midibox.org/forums/topic/17484-suggestion-deincrement-values-in-mixer-mode
 It would be usefull to have a mixer page to send also relative de/increment values.
 
 ----------------------------------------------------------
-FFW:
-Auf der LFO Page müsste man den CC der dem LFO zugewiesen werden kann auch mit den GP Buttons senden können.
-
-Für den Humanizer könnte man rechts im Display die Möglichkeit einfügen,
-den / die CC´s auszuwählen, auf welche sich der Humanizer beziehen soll.
-
-Man könnte bei der Global-Loop FX Funktion im rechten Display eine Option anbieten,
+FFW: Man könnte bei der Global-Loop FX Funktion im rechten Display eine Option anbieten,
 welche es ermöglicht, den Loop quantisiert ein-/aussetzen zu lassen.
 Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Takt etc. ein.
 
@@ -1685,8 +1690,3 @@ Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Tak
 lukas412
 Has the possibility of routing a track output to another tracks input ever come up?
 
-----------------------------------------------------------
-Duggle:
-- dedicated SAVE and SAVE_ALL button
-- pass SysEx also with source channel set to 1..16
-- edit mixer map name
