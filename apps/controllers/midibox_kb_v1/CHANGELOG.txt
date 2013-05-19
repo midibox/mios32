@@ -1,5 +1,13 @@
 $Id$
 
+MIDIbox KB V1.013
+~~~~~~~~~~~~~~~~~
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+
 MIDIbox KB V1.012
 ~~~~~~~~~~~~~~~~~
 

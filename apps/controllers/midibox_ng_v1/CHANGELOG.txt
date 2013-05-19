@@ -20,6 +20,10 @@ MIDIbox NG V1.025
 
    o added "ain_filter_delay_ms" to support sensors
 
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
 
 MIDIbox NG V1.024
 ~~~~~~~~~~~~~~~~~
