@@ -20,6 +20,8 @@ MIDIboxSEQ V4.076
 
    o LFO page: the current CC can be sent manually by pressing the GP14 button.
 
+   o Multi-Arp events are working like intended (again)
+
 
 MIDIboxSEQ V4.075
 ~~~~~~~~~~~~~~~~~
