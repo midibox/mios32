@@ -28,6 +28,7 @@
 
 static u8 num_used_modules = AINSER_NUM_MODULES;
 static u8 ainser_enable_mask;
+static u8 ainser_muxed_mask;
 static u8 num_used_pins[AINSER_NUM_MODULES];
 
 static u16 ain_pin_values[AINSER_NUM_MODULES][AINSER_NUM_PINS];
@@ -72,6 +73,9 @@ s32 AINSER_Init(u32 mode)
 #if AINSER_NUM_MODULES > 8
 # error "If more than 8 AINSER_NUM_MODULES should be supported, the ainser_enable_mask variable type has to be changed from u8 to u16 (up to 16) or u32 (up to 32)"
 #endif
+#if AINSER_NUM_MODULES > 8
+# error "If more than 8 AINSER_NUM_MODULES should be supported, the ainser_muxed_mask variable type has to be changed from u8 to u16 (up to 16) or u32 (up to 32)"
+#endif
 
   for(module=0; module<AINSER_NUM_MODULES; ++module) {
     num_used_pins[module] = AINSER_NUM_PINS;
@@ -80,6 +84,7 @@ s32 AINSER_Init(u32 mode)
     AINSER_SetCs(module, 1);
 
     AINSER_EnabledSet(module, 1);
+    AINSER_MuxedSet(module, 1);
     AINSER_NumPinsSet(module, AINSER_NUM_PINS);
     AINSER_DeadbandSet(module, MIOS32_AIN_DEADBAND);
 
@@ -139,6 +144,36 @@ s32 AINSER_EnabledSet(u8 module, u8 enabled)
     ainser_enable_mask |= (1 << module);
   else
     ainser_enable_mask &= ~(1 << module);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! \retval 0 if 1-to-8 multiplexers disabled for the given module
+//! \retval 1 if 1-to-8 multiplexers enabled for the given module (default)
+/////////////////////////////////////////////////////////////////////////////
+s32 AINSER_MuxedGet(u8 module)
+{
+  if( module >= AINSER_NUM_MODULES )
+    return 0;
+
+  return (ainser_muxed_mask & (1 << module)) ? 1 : 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Enables/disables the 1-to-8 multiplexer handling.\n
+//! Use muxed=0 for AINSER8 module, and muxed=1 for AINSER64 module (default)
+/////////////////////////////////////////////////////////////////////////////
+s32 AINSER_MuxedSet(u8 module, u8 muxed)
+{
+  if( module >= AINSER_NUM_MODULES )
+    return -1; // invalid module
+
+  if( muxed )
+    ainser_muxed_mask |= (1 << module);
+  else
+    ainser_muxed_mask &= ~(1 << module);
 
   return 0; // no error
 }
@@ -271,10 +306,13 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
 
   // loop over connected modules
   int module;
-  for(module=0; module<num_used_modules; ++module) {
+  u32 module_mask = 1;
+  for(module=0; module<num_used_modules; ++module, module_mask <<= 1) {
 
-    if( !(ainser_enable_mask & (1 << module)) )
+    if( !(ainser_enable_mask & module_mask) )
       continue;
+
+    u8 muxed = ainser_muxed_mask & module_mask;
 
     // loop over channels
     int chn;
@@ -294,7 +332,7 @@ s32 AINSER_Handler(void (*_callback)(u32 module, u32 pin, u32 value))
       AINSER_SetCs(module, 1);
 
       // store conversion value if difference to old value is outside the deadband
-      u16 pin = mux_pin_map[mux_ctr] + 8*(7-chn); // the mux/chn -> pin mapping is layout dependend
+      u16 pin = muxed ? (mux_pin_map[mux_ctr] + 8*(7-chn)) : (7-chn); // the mux/chn -> pin mapping is layout dependend
       u16 value = (b2 | (b1 << 8)) & 0xfff;
       previous_ain_pin_value = ain_pin_values[module][pin];
       int diff = value - previous_ain_pin_value;

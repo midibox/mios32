@@ -78,6 +78,9 @@ extern s32 AINSER_NumModulesSet(u8 num_modules);
 extern s32 AINSER_EnabledGet(u8 module);
 extern s32 AINSER_EnabledSet(u8 module, u8 enabled);
 
+extern s32 AINSER_MuxedGet(u8 module);
+extern s32 AINSER_MuxedSet(u8 module, u8 muxed);
+
 extern s32 AINSER_NumPinsGet(u8 module);
 extern s32 AINSER_NumPinsSet(u8 module, u8 num_pins);
 

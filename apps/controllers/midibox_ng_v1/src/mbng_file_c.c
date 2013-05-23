@@ -2440,6 +2440,7 @@ s32 parseAinSer(u32 line, char *cmd, char *brkt)
   int cs = 0;
   int resolution = 7;
   int num_pins = 64;
+  int muxed = 1;
 
   char *parameter;
   char *value_str;
@@ -2459,6 +2460,15 @@ s32 parseAinSer(u32 line, char *cmd, char *brkt)
       if( (enabled=get_dec(value_str)) < 0 || enabled > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid enabled value for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "muxed") == 0 ) {
+      if( (muxed=get_dec(value_str)) < 0 || muxed > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid muxed value for %s n=%d ... %s=%s (0 or 1)\n", line, cmd, num, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
@@ -2554,6 +2564,7 @@ s32 parseAinSer(u32 line, char *cmd, char *brkt)
     mbng_patch_ainser_entry_t *ainser = (mbng_patch_ainser_entry_t *)&mbng_patch_ainser[num-1];
     ainser->flags.cs = cs;
     AINSER_EnabledSet(cs, enabled);
+    AINSER_MuxedSet(cs, muxed);
     AINSER_NumPinsSet(cs, num_pins);
 
     //                        0bit 1bit 2bit 3bit 4bit 5bit 6bit 7bit 8bit 9bit 10   11   12
@@ -4035,9 +4046,10 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       else if( deadband <= 127 ) resolution =  5;
       else                       resolution =  4;
 
-      sprintf(line_buffer, "AINSER n=%d   enabled=%d  cs=%d  num_pins=%d  resolution=%dbit\n",
+      sprintf(line_buffer, "AINSER n=%d   enabled=%d  muxed=%d  cs=%d  num_pins=%d  resolution=%dbit\n",
 	      module+1,
 	      AINSER_EnabledGet(ainser->flags.cs),
+	      AINSER_MuxedGet(ainser->flags.cs),
 	      ainser->flags.cs,
 	      AINSER_NumPinsGet(ainser->flags.cs),
 	      resolution);
