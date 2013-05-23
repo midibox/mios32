@@ -136,6 +136,7 @@ s32 MBNG_PATCH_Init(u32 mode)
       ainser->flags.resolution = 7; // bit
 
       AINSER_EnabledSet(module, 0);
+      AINSER_MuxedSet(module, 1);
       AINSER_DeadbandSet(module, 31); // matches with 7bit
       AINSER_NumPinsSet(module, AINSER_NUM_PINS);
 
