@@ -431,12 +431,22 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	out(".NGR value set to %d", ngr_value);
       }
     } else if( strcasecmp(parameter, "ngr") == 0 ) {
-      MBNG_FILE_R_Parser(0, brkt, NULL, NULL, ngr_section, ngr_value);
-      out("Executed command with ^section==%d ^value==%d", ngr_section, ngr_value);
+      if( brkt == NULL ) {
+	out("Please specify command!");
+      } else {
+	MBNG_FILE_R_VarSectionSet(ngr_section);
+	MBNG_FILE_R_VarValueSet(ngr_value);
+	MBNG_FILE_R_Parser(0, brkt, NULL, NULL);
+	out("Executed command with ^section==%d ^value==%d", ngr_section, ngr_value);
+      }
     } else if( strcasecmp(parameter, "ngc") == 0 ) {
-      u8 got_first_event_item = 0;
-      MBNG_FILE_C_Parser(0, brkt, &got_first_event_item);
-      out("Executed command.");
+      if( brkt == NULL ) {
+	out("Please specify command!");
+      } else {
+	u8 got_first_event_item = 0;
+	MBNG_FILE_C_Parser(0, brkt, &got_first_event_item);
+	out("Executed command.");
+      }
     } else if( strcmp(parameter, "save") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	out("ERROR: please specify filename for patch (up to 8 characters)!");

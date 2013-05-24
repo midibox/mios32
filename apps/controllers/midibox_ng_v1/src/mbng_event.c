@@ -48,9 +48,10 @@ typedef union {
   u16 ALL;
 
   struct {
-    u16 match_ctr:14;
+    u16 match_ctr:13;
     u16 dump:1;
     u16 txt:1;
+    u16 cursor_set:1;
   };
 } sysex_runtime_var_t;
 
@@ -75,11 +76,11 @@ typedef struct { // should be dividable by u16
   u16 id;
   u16 hw_id;
   mbng_event_flags_t flags; // 32bit
+  mbng_event_syxdump_pos_t syxdump_pos; // 32bit
   mbng_event_custom_flags_t custom_flags; // 16bit
   extra_par_available_t extra_par_available; // 16bit
   u16 enabled_ports;
   u16 value;
-  mbng_event_syxdump_pos_t syxdump_pos;
   sysex_runtime_var_t sysex_runtime_var;    // several runtime flags
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
   u8 len_stream;
@@ -1280,6 +1281,21 @@ s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+//! locks/unlocks an event for write operations (when items have received a new value)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
+{
+  // take over in pool item
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->flags.write_locked = lock;
+  }
+
+  return 0; // no error
+}
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1879,7 +1895,7 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 {
   if( strcasecmp(event_type, "NoteOff") == 0 )       return MBNG_EVENT_TYPE_NOTE_OFF;
-  if( strcasecmp(event_type, "NoteOn") == 0 )        return MBNG_EVENT_TYPE_NOTE_ON;
+  if( strcasecmp(event_type, "NoteOn") == 0 || strcasecmp(event_type, "Note") == 0 ) return MBNG_EVENT_TYPE_NOTE_ON;
   if( strcasecmp(event_type, "PolyPressure") == 0 )  return MBNG_EVENT_TYPE_POLY_PRESSURE;
   if( strcasecmp(event_type, "CC") == 0 )            return MBNG_EVENT_TYPE_CC;
   if( strcasecmp(event_type, "ProgramChange") == 0 ) return MBNG_EVENT_TYPE_PROGRAM_CHANGE;
@@ -2821,6 +2837,10 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 fwd_enabled)
 {
+  // write operation locked?
+  if( from_midi && item->flags.write_locked )
+    return 0; // stop here
+
   // take over new value
   item->value = value;
 
@@ -3089,9 +3109,14 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   // value not modified from MIDI anymore
   item->flags.value_from_midi = 0;
 
+
   // take over in pool item
+  s16 prev_value = 0;
+  s16 prev_secondary_value = 0;
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    prev_value = pool_item->value;
+    prev_secondary_value = pool_item->secondary_value;
     pool_item->value = item->value;
     if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
       pool_item->secondary_value = item->secondary_value;
@@ -3102,6 +3127,28 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   s32 cond_match;
   if( (cond_match=MBNG_EVENT_ItemCheckMatchingCondition(item)) < 1 )
     return 0; // stop here
+
+  // extra for AIN and AINSER: send NoteOff if required
+  switch( item->id & 0xf000 ) {
+  case MBNG_EVENT_CONTROLLER_AIN:
+  case MBNG_EVENT_CONTROLLER_AINSER:
+    if( (item->flags.type == MBNG_EVENT_TYPE_NOTE_ON || item->flags.type == MBNG_EVENT_TYPE_NOTE_OFF) && prev_value ) {
+      s16 tmp_value = item->value;
+      u8 tmp_secondary_value = item->secondary_value;
+
+      if( item->flags.use_key_or_cc ) {
+	item->secondary_value = 0;
+	item->value = prev_value;
+	MBNG_EVENT_ItemSend(item);
+      } else {
+	item->value = 0;
+	MBNG_EVENT_ItemSend(item);
+      }
+      item->value = tmp_value;
+      item->secondary_value = tmp_secondary_value;
+    }
+    break;
+  }
 
   // send MIDI event
   MBNG_EVENT_ItemSend(item);
@@ -3156,7 +3203,7 @@ s32 MBNG_EVENT_Refresh(void)
 /////////////////////////////////////////////////////////////////////////////
 //! called from MBNG_EVENT_ReceiveSysEx() when a Syxdump is received
 /////////////////////////////////////////////////////////////////////////////
-static s32 MBNG_EVENT_NotifySyxDump(u8 from_receiver, u16 dump_pos, u8 value)
+static s32 MBNG_EVENT_NotifySyxDump(u16 from_receiver, u16 dump_pos, u8 value)
 {
   // search in pool for events which listen to this receiver and dump_pos
   u8 *pool_ptr = (u8 *)&event_pool[0];
@@ -3567,7 +3614,7 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	  pool_item->sysex_runtime_var.ALL = 0; // finished
 	} else {
 	  // notify all events which listen to this dump
-	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->sysex_runtime_var.match_ctr+1, midi_in);
+	  MBNG_EVENT_NotifySyxDump(pool_item->id & 0xfff, pool_item->sysex_runtime_var.match_ctr+1, midi_in);
 
 	  // waiting for next byte
 	  ++pool_item->sysex_runtime_var.match_ctr;
@@ -3609,12 +3656,13 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 	      pool_item->sysex_runtime_var.match_ctr = 0;
 
 	      // notify all events which listen to this dump
-	      MBNG_EVENT_NotifySyxDump(pool_item->id & 0xff, pool_item->sysex_runtime_var.match_ctr, midi_in);
+	      MBNG_EVENT_NotifySyxDump(pool_item->id & 0xfff, pool_item->sysex_runtime_var.match_ctr, midi_in);
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_CURSOR:
 	      match = 1;
 	      pool_item->value = midi_in; // store cursor
+	      pool_item->sysex_runtime_var.cursor_set = 1;
 	      break;
 
 	    case MBNG_EVENT_SYSEX_VAR_TXT:
@@ -3631,6 +3679,12 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		// print also the label (e.g. to initialize font)
 		mbng_event_item_t item;
 		MBNG_EVENT_ItemCopy2User(pool_item, &item);
+
+		// set cursor?
+		if( !pool_item->sysex_runtime_var.cursor_set ) {
+		  pool_item->sysex_runtime_var.cursor_set = 1;
+		  pool_item->value = 0;
+		}
 
 		// X and Y pos
 		u8 x = pool_item->value % x_wrap;

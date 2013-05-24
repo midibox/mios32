@@ -39,6 +39,7 @@
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_s.h"
+#include "mbng_file_r.h"
 #include "mbng_patch.h"
 #include "mbng_lcd.h"
 #include "mbng_enc.h"
@@ -181,6 +182,21 @@ static void stringIp(u32 ix, u16 value, char *label)
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
+static u16  selectRunScript(u32 ix, u16 value)
+{
+  if( !MBNG_FILE_R_Valid() ) {
+    char buffer[21];
+    sprintf(buffer, "%s.NGR!", mbng_file_r_script_name);
+    SCS_Msg(SCS_MSG_L, 1000, "Missing", buffer);
+  } else {
+    char buffer[21];
+    sprintf(buffer, "%s.NGR %3d %3d", mbng_file_r_script_name, MBNG_FILE_R_VarSectionGet(), MBNG_FILE_R_VarValueGet());
+    SCS_Msg(SCS_MSG_L, 1000, "Executed", buffer);
+    MBNG_FILE_R_ReadRequest(NULL, MBNG_FILE_R_VarSectionGet(), MBNG_FILE_R_VarValueGet(), 0);
+  }
+  return value;
+}
+
 static u16  selectSnapshotLOAD(u32 ix, u16 value)
 {
   s32 status;
@@ -322,6 +338,12 @@ static void sysExVarInsSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_ins = valu
 static u16  sysExVarChnGet(u32 ix)             { return mbng_patch_cfg.sysex_chn; }
 static void sysExVarChnSet(u32 ix, u16 value)  { mbng_patch_cfg.sysex_chn = value; }
 
+static u16  runSectionGet(u32 ix)              { return MBNG_FILE_R_VarSectionGet(); }
+static void runSectionSet(u32 ix, u16 value)   { MBNG_FILE_R_VarSectionSet(value); }
+
+static u16  runValueGet(u32 ix)                { return MBNG_FILE_R_VarValueGet(); }
+static void runValueSet(u32 ix, u16 value)     { MBNG_FILE_R_VarValueSet(value); }
+
 static u16  snapshotGet(u32 ix)                { return MBNG_FILE_S_SnapshotGet(); }
 static void snapshotSet(u32 ix, u16 value)     { MBNG_FILE_S_SnapshotSet(value); }
 
@@ -376,6 +398,12 @@ const scs_menu_item_t pageVAR[] = {
   SCS_ITEM("Chn ", 0, 127, sysExVarChnGet, sysExVarChnSet, selectNOP, stringDec, NULL),
 };
 
+const scs_menu_item_t pageRun[] = {
+  SCS_ITEM("Run ",  0, 0,    dummyGet,      dummySet,      selectRunScript, stringEmpty, NULL),
+  SCS_ITEM("Sec.",  0, 255,  runSectionGet, runSectionSet, selectNOP,    stringDec, NULL),
+  SCS_ITEM("Val.",  0, 255,  runValueGet,   runValueSet,   selectNOP,    stringDec, NULL),
+};
+
 const scs_menu_item_t pageSnap[] = {
   SCS_ITEM("Snap",  0, MBNG_FILE_S_NUM_SNAPSHOTS-1, snapshotGet, snapshotSet, selectNOP,    stringDec, NULL),
   SCS_ITEM("Load ", 0, 0,                           dummyGet,    dummySet,    selectSnapshotLOAD, stringEmpty, NULL),
@@ -427,6 +455,7 @@ const scs_menu_item_t pageLearn[] = {
 
 const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("Var. ", pageVAR),
+  SCS_PAGE(".NGR ", pageRun),
   SCS_PAGE("Snap ", pageSnap),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
