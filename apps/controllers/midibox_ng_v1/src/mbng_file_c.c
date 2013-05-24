@@ -1080,18 +1080,18 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
       int receiver;
       if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
-	  (receiver=get_dec(values_str)) < 1 || receiver > 15 ) {
+	  (receiver=get_dec(values_str)) < 1 || receiver > 4095 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid receiver number in EVENT_%s ... %s=%s (expect 1..15)\n", line, event, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid receiver number in EVENT_%s ... %s=%s (expect 1..4095)\n", line, event, parameter, value_str);
 #endif
 	return -1;
       }
 
       int value = 0;
       if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
-	  (value=get_dec(value_str)) < 0 || value > 0xfff ) {
+	  (value=get_dec(value_str)) < 0 || value > 0x7ff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", line, event, parameter, value_str, 0xfff);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid dump position in EVENT_%s ... %s=%s (expect 0..%d)\n", line, event, parameter, value_str, 0x7ff);
 #endif
 	return -1;
       }

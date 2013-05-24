@@ -210,6 +210,7 @@ typedef union {
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
     u32 active:1;
+    u32 write_locked:1;
     u32 no_dump:1;
     u32 dimmed:1;
     u32 colour:2;
@@ -286,11 +287,11 @@ typedef union {
 
 
 typedef union {
-  u16 ALL;
+  u32 ALL;
 
   struct {
     u16 pos:12;
-    u16 receiver:4;
+    u16 receiver:12;
   };
 } mbng_event_syxdump_pos_t;
 
@@ -371,6 +372,7 @@ extern s32 MBNG_EVENT_ItemSearchById(mbng_event_item_id_t id, mbng_event_item_t 
 extern s32 MBNG_EVENT_ItemSearchByHwId(mbng_event_item_id_t hw_id, mbng_event_item_t *item, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u8 *secondary_value, u32 *continue_ix);
 extern s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item);
+extern s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);

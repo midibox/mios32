@@ -6,7 +6,7 @@ RESET_HW
 LCD "%C@(1:1:1)AINSER Test"
 
 
-# AINSER hardware
+# AINSER64 hardware
 AINSER n=  1   enabled=1  muxed=1  cs=0  resolution=7bit
 AINSER n=  2   enabled=1  muxed=1  cs=1  resolution=7bit
 

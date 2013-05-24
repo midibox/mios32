@@ -16,12 +16,39 @@ MIDIbox NG V1.025
 
    o .NGR: fixed "delay statements in if branches" issue
 
+   o .NGR: added "set_lock" command. It allows to prevent, that received
+     events will overwrite a value of an event.
+
+   o .NGR: the "set" command now also allows to change variables, e.g.:
+       set ^value 1
+       set ^section 2
+       set ^bank 3
+       (etc...)
+     the last one (^bank) will also switch MBNG to the specified bank
+
+   o .NGR: added variables ^dev, ^pat, ^bnk, ^ins, ^chn
+     These are the same which can be used in SysEx strings, and which can
+     be changed in a SCS page (e.g. the variables could also be used for
+     different purposes)
+
+   o added new SCS menu page to execute the .NGR file with given
+     ^section and ^value
+
    o the AIN command now supports the "resolution" parameter
 
    o the AINSER command now supports the "muxed" parameter.
      Use muxed=1 for the AINSER64 module (default), and muxed=0 for the AINSER8 module.
 
-   o added "ain_filter_delay_ms" to support sensors
+   o AIN and AINSER events, which are assigned to Note events, send velocity 0
+     before a new Note is sent with velocity > 0 to avoid hanging notes.
+
+   o added "ain_filter_delay_ms" to support sensors (experimental stage)
+
+   o EVENT_RECEIVER in conjunction with ^txt or ^txt56: if ^cursor is not specified
+     in the SysEx stream, it will start at offset 0 from the specified lcd_pos=<device>:<x>:<y>
+
+   o EVENT ... syxdumppos now supports the full receiver range 1..4095 (previously
+     only 1..15)
 
    o the MIDI router forwards SysEx messages regardless if channels are filtered,
      or "All" is used. It's ensured that messages are only sent once if multiple
