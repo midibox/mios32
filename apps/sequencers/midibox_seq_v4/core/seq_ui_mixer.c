@@ -484,6 +484,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("Assignment for CC%d ", mixer_par-SEQ_MIXER_PAR_CC1_NUM+1);
     }
 
+    SEQ_LCD_PrintSpaces(2);
     SEQ_LCD_PrintMIDIOutPort(SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_PORT));
     SEQ_LCD_PrintFormattedString(" Chn#%2d", SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_CHANNEL)+1);
 
