@@ -1692,3 +1692,17 @@ Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Tak
 lukas412
 Has the possibility of routing a track output to another tracks input ever come up?
 
+----------------------------------------------------------
+FFW: allow to set the init value for CC lines
+
+----------------------------------------------------------
+FFW: enhance phrase mode by a function, which stores the current
+tracks into new (predefined) patterns, and stores the references
+into a phrase slot
+
+----------------------------------------------------------
+
+Duggle: optionally send parameter changes via NRPN
+
+----------------------------------------------------------
+
