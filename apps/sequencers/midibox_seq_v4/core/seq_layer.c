@@ -477,9 +477,12 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    break;
 
 	  // don't send CC if value hasn't changed (== invalid value)
+	  // but only if LFO not assigned to CC layer
 	  if( !insert_empty_notes ) {
-	    if( value >= 0x80 || value == cc_last_value[track][par_layer] )
-	      break;
+	    if( !tcc->lfo_enable_flags.CC &&
+		( value >= 0x80 || value == cc_last_value[track][par_layer]) ) {
+		break;
+	    }
 	    cc_last_value[track][par_layer] = value;
 	  }
 

@@ -42,6 +42,7 @@
 #include "seq_record.h"
 #include "seq_midi_sysex.h"
 #include "seq_midi_port.h"
+#include "seq_midi_in.h"
 #include "seq_blm.h"
 
 #include "file.h"
@@ -3190,37 +3191,29 @@ s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Increments a CC within given min/max range
-// OUT: 1 if value has been changed, otherwise 0
+// Sends the current CC parameter of the given track to seq_midi_in_ext_ctrl_out_port
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer)
+s32 SEQ_UI_CC_SendParameter(u8 track, u8 cc)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int new_value = SEQ_CC_Get(visible_track, cc);
-  int prev_value = new_value;
+  if( seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] &&
+      seq_midi_in_ext_ctrl_out_port &&
+      seq_midi_in_ext_ctrl_channel ) {
+    mios32_midi_port_t port = seq_midi_in_ext_ctrl_out_port;
+    mios32_midi_chn_t chn = seq_midi_in_ext_ctrl_channel - 1;
+    u8 mapped_cc;
+    s32 value = SEQ_CC_MIDI_Get(track, cc, &mapped_cc);
 
-  if( incrementer >= 0 ) {
-    if( (new_value += incrementer) >= max )
-      new_value = max;
-  } else {
-    if( (new_value += incrementer) < min )
-      new_value = min;
+    if( value >= 0 ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, 0x63, track);
+      MIOS32_MIDI_SendCC(port, chn, 0x62, mapped_cc);
+      MIOS32_MIDI_SendCC(port, chn, 0x06, value & 0x7f);
+      MUTEX_MIDIOUT_GIVE;
+    }
   }
 
-  if( new_value == prev_value )
-    return 0; // no change
-
-  SEQ_CC_Set(visible_track, cc, new_value);
-
-  // set same value for all selected tracks
-  u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
-      SEQ_CC_Set(track, cc, new_value);
-
-  return 1; // value changed
+  return 0; // no error
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets a CC value on all selected tracks
@@ -3234,16 +3227,42 @@ s32 SEQ_UI_CC_Set(u8 cc, u8 value)
   if( value == prev_value )
     return 0; // no change
 
-  SEQ_CC_Set(visible_track, cc, value);
-
   // set same value for all selected tracks
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( SEQ_UI_IsSelectedTrack(track) ) {
       SEQ_CC_Set(track, cc, value);
+      SEQ_UI_CC_SendParameter(track, cc);
+    }
+  }
 
   return 1; // value changed
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments a CC within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int new_value = SEQ_CC_Get(visible_track, cc);
+
+  if( incrementer >= 0 ) {
+    if( (new_value += incrementer) >= max )
+      new_value = max;
+  } else {
+    if( (new_value += incrementer) < min )
+      new_value = min;
+  }
+
+  // set value
+  SEQ_UI_CC_Set(cc, new_value);
+
+  return 1; // value changed
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Modifies a bitfield in a CC value to a given value
@@ -3260,16 +3279,16 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
   if( new_value == prev_value )
     return 0; // no change
 
-  SEQ_CC_Set(visible_track, cc, new_value);
-
   // do same modification for all selected tracks
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) ) {
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( SEQ_UI_IsSelectedTrack(track) ) {
       int new_value = SEQ_CC_Get(track, cc);
       new_value = (new_value & ~flag_mask) | value;
       SEQ_CC_Set(track, cc, new_value);
+      SEQ_UI_CC_SendParameter(track, cc);
     }
+  }
 
   return 1; // value changed
 }

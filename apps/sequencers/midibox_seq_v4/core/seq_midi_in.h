@@ -82,6 +82,9 @@ extern s32 SEQ_MIDI_IN_Init(u32 mode);
 extern const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl);
 extern const char *SEQ_MIDI_IN_ExtCtrlPcModeStr(u8 pc_mode);
 
+// since there is currently no better place (somebody could expect this function in SEQ_MIDI_OUT...)
+extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value);
+
 extern s32 SEQ_MIDI_IN_ResetTransArpStacks(void);
 extern s32 SEQ_MIDI_IN_ResetChangerStacks(void);
 extern s32 SEQ_MIDI_IN_ResetAllStacks(void);
@@ -109,6 +112,7 @@ extern mios32_midi_port_t seq_midi_in_rec_port;
 
 extern u8 seq_midi_in_ext_ctrl_channel;
 extern mios32_midi_port_t seq_midi_in_ext_ctrl_port;
+extern mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
 extern u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
 
 extern u8 seq_midi_in_sect_channel;

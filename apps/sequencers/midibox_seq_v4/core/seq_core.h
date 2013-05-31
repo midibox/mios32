@@ -30,13 +30,15 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u8 ALL;
+  u16 ALL;
   struct {
-    u8 SYNCHED_PATTERN_CHANGE:1;
-    u8 PASTE_CLR_ALL:1;
-    u8 RATOPC:1;
-    u8 SYNCHED_MUTE:1;
-    u8 SYNCHED_UNMUTE:1;
+    u16 SYNCHED_PATTERN_CHANGE:1;
+    u16 PASTE_CLR_ALL:1;
+    u16 RATOPC:1;
+    u16 SYNCHED_MUTE:1;
+    u16 SYNCHED_UNMUTE:1;
+    u16 PATTERN_MIXER_MAP_COUPLING:1;
+    u16 INIT_CC:7;
   };
 } seq_core_options_t;
 

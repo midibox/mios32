@@ -35,19 +35,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#if 0
-#define NUM_OF_ITEMS       9
-#define ITEM_STEPS_MEASURE 0
-#define ITEM_STEPS_PATTERN 1
-#define ITEM_SYNC_CHANGE   2
-#define ITEM_RATOPC        3
-#define ITEM_REMOTE_MODE   4
-#define ITEM_REMOTE_ID     5
-#define ITEM_REMOTE_PORT   6
-#define ITEM_REMOTE_REQUEST 7
-#define ITEM_PASTE_CLR_ALL 8
-#else
-#define NUM_OF_ITEMS       7
+#define NUM_OF_ITEMS       8
 #define ITEM_STEPS_MEASURE 0
 #define ITEM_STEPS_PATTERN 1
 #define ITEM_SYNC_CHANGE   2
@@ -55,7 +43,8 @@
 #define ITEM_SYNC_MUTE     4
 #define ITEM_SYNC_UNMUTE   5
 #define ITEM_PASTE_CLR_ALL 6
-#endif
+#define ITEM_INIT_CC       7
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -77,16 +66,10 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_STEPS_PATTERN:  *gp_leds = 0x000c; break;
     case ITEM_SYNC_CHANGE:    *gp_leds = 0x0030; break;
     case ITEM_RATOPC:         *gp_leds = 0x00c0; break;
-#if 0
-    case ITEM_REMOTE_MODE:    *gp_leds = 0x0100; break;
-    case ITEM_REMOTE_ID:      *gp_leds = 0x0200; break;
-    case ITEM_REMOTE_PORT:    *gp_leds = 0x0400; break;
-    case ITEM_REMOTE_REQUEST: *gp_leds = 0x1800; break;
-#else
     case ITEM_SYNC_MUTE:      *gp_leds = 0x0100; break;
     case ITEM_SYNC_UNMUTE:    *gp_leds = 0x0200; break;
-#endif
-    case ITEM_PASTE_CLR_ALL:  *gp_leds = 0xc000; break;
+    case ITEM_PASTE_CLR_ALL:  *gp_leds = 0x3000; break;
+    case ITEM_INIT_CC:        *gp_leds = 0xc000; break;
   }
 
   return 0; // no error
@@ -124,21 +107,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       ui_selected_item = ITEM_RATOPC;
       break;
 
-#if 0
-    case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_REMOTE_MODE;
-      break;      
-    case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_REMOTE_ID;
-      break;
-    case SEQ_UI_ENCODER_GP11:
-      ui_selected_item = ITEM_REMOTE_PORT;
-      break;      
-    case SEQ_UI_ENCODER_GP12:
-    case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_REMOTE_REQUEST;
-      break;
-#else
     case SEQ_UI_ENCODER_GP9:
       ui_selected_item = ITEM_SYNC_MUTE;
       break;
@@ -149,15 +117,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
-    case SEQ_UI_ENCODER_GP13:
-    case SEQ_UI_ENCODER_GP14:
       return -1; // not mapped
 
-#endif
-      
+    case SEQ_UI_ENCODER_GP13:
+    case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_PASTE_CLR_ALL;
+      break;
+
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_PASTE_CLR_ALL;
+      ui_selected_item = ITEM_INIT_CC;
       break;
   }
 
@@ -213,6 +182,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       store_file_required = 1;
       return 1;
 
+    case ITEM_INIT_CC: {
+      u8 value = seq_core_options.INIT_CC;
+      if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
+	seq_core_options.INIT_CC = value;
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    } break;
+
     case ITEM_RATOPC:
       if( incrementer )
 	seq_core_options.RATOPC = incrementer > 0 ? 1 : 0;
@@ -221,61 +200,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       store_file_required = 1;
       return 1;
 
-#if 0
-    case ITEM_REMOTE_MODE: {
-      u8 value = (u8)seq_ui_remote_mode;
-      if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) >= 0 ) {
-	seq_ui_remote_mode = value;
-
-	switch( seq_ui_remote_mode ) {
-	  case SEQ_UI_REMOTE_MODE_AUTO:
-  	  case SEQ_UI_REMOTE_MODE_SERVER:
-	    if( seq_ui_remote_active_mode == SEQ_UI_REMOTE_MODE_CLIENT )
-	      SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_AUTO);
-	    seq_ui_remote_active_mode = SEQ_UI_REMOTE_MODE_AUTO;
-	    break;
-	  case SEQ_UI_REMOTE_MODE_CLIENT:
-	    SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_SERVER); // request server
-	    break;
-	}
-
-	store_file_required = 1;
-	return 1;
-      }
-      return 0;
-    } break;
-
-    case ITEM_REMOTE_ID:
-      if( SEQ_UI_Var8_Inc(&seq_ui_remote_id, 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
-	return 1;
-      }
-      return 0;
-
-    case ITEM_REMOTE_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_ui_remote_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
-	seq_ui_remote_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
-    } break;
-
-    case ITEM_REMOTE_REQUEST: {
-      switch( seq_ui_remote_mode ) {
-        case SEQ_UI_REMOTE_MODE_SERVER:
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Not in", "Server Mode!");
-	  break;
-        case SEQ_UI_REMOTE_MODE_AUTO:
-        case SEQ_UI_REMOTE_MODE_CLIENT:
-	  SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_UI_REMOTE_MODE_SERVER);
-	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Remote Server", "requested.");
-	  break;
-      }
-      return 1;
-    } break;
-#else
     case ITEM_SYNC_MUTE: {
       if( incrementer )
 	seq_core_options.SYNCHED_MUTE = incrementer > 0 ? 1 : 0;
@@ -293,7 +217,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       store_file_required = 1;
       return 1;
     } break;
-#endif
   }
 
   return -1; // invalid or unsupported encoder
@@ -361,23 +284,15 @@ static s32 LCD_Handler(u8 high_prio)
     return 0; // there are no high-priority updates
 
   // layout:
-#if 0
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  SyncChange   RATOPC Remote ID Port Request         Paste/Clr
-  //  16 Steps  16 Steps     off       off    Auto  00 Def. Connect:yes       Steps  
-#else
-  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-  // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  SyncChange   RATOPC  SyncMute                      Paste/Clr
-  //  16 Steps  16 Steps     off       off   Mute Unmute                      Steps  
-#endif
+  //  Measure   Pattern  SyncChange   RATOPC  SyncMute            Paste/Clr  Init CC 
+  //  16 Steps  16 Steps     off       off   Mute Unmute            Steps       64   
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange   RATOPC  SyncMute                      Paste/Clr");
+  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange   RATOPC  SyncMute            Paste/Clr  Init CC ");
   SEQ_LCD_PrintSpaces(18);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -415,43 +330,6 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(3);
 
 
-#if 0
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_REMOTE_MODE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
-  } else {
-    const char mode_str[3][7] = {
-      " Auto ",
-      "Server",
-      "Client",
-    };
-    SEQ_LCD_PrintString((char *)mode_str[seq_ui_remote_mode]);
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_REMOTE_ID && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(2);
-  } else {
-    SEQ_LCD_PrintFormattedString("%02x", seq_ui_remote_id);
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_REMOTE_PORT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_ui_remote_port)));
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_REMOTE_REQUEST && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(12);
-  } else {
-    SEQ_LCD_PrintFormattedString(" Connect:%s", (seq_ui_remote_active_mode != SEQ_UI_REMOTE_MODE_AUTO) ? "yes" : "no ");
-  }
-  SEQ_LCD_PrintSpaces(7);
-#else
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_SYNC_MUTE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
@@ -466,8 +344,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(seq_core_options.SYNCHED_UNMUTE ? "Unmute" : "  off ");
   }
-  SEQ_LCD_PrintSpaces(22);  
-#endif
+  SEQ_LCD_PrintSpaces(12);  
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
@@ -475,7 +352,15 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Track" : "Steps");
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(6);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_INIT_CC && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintFormattedString("%3d", seq_core_options.INIT_CC);
+  }
+  SEQ_LCD_PrintSpaces(3);
 
 
   return 0; // no error

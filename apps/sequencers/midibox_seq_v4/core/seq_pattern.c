@@ -183,31 +183,32 @@ s32 SEQ_PATTERN_Handler(void)
       seq_pattern_req[group].REQ = 0;
       portEXIT_CRITICAL();
 
-			u8 mixer_num = 0;
-			u8 track;
+      if( seq_core_options.PATTERN_MIXER_MAP_COUPLING ) {
+	u8 mixer_num = 0;
+	u8 track;
 				
-			if (seq_pattern_req[0].lower) {
-				mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
-			} else {
-				mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
-			}
+	if (seq_pattern_req[0].lower) {
+	  mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
+	} else {
+	  mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
+	}
 				
-			// setup our requested pattern mixer map
-			SEQ_MIXER_NumSet(mixer_num);
-			SEQ_MIXER_Load(mixer_num);
+	// setup our requested pattern mixer map
+	SEQ_MIXER_NumSet(mixer_num);
+	SEQ_MIXER_Load(mixer_num);
 			
-			// dump mixer for tracks
-			for(track = group * 4; track<((group+1)*4); ++track) {
+	// dump mixer for tracks
+	for(track = group * 4; track<((group+1)*4); ++track) {
 					
-				// if we got the track bit setup inside our remix_map, them do not send mixer data for that track channel, let it be mixed down
-				if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
-					// do nothing for now...
-				} else {
-					SEQ_MIXER_SendAllByChannel(track);
-				}
-					
-			}
-			
+	  // if we got the track bit setup inside our remix_map, them do not send mixer data for that track channel, let it be mixed down
+	  if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
+	    // do nothing for now...
+	  } else {
+	    SEQ_MIXER_SendAllByChannel(track);
+	  }
+	}
+      }
+
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
 
       // restart *all* patterns?

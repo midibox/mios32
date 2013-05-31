@@ -44,7 +44,7 @@
 
 
 
-#define NUM_OF_ITEMS       22
+#define NUM_OF_ITEMS       27
 
 // Transpose
 #define ITEM_IN_BUS        0
@@ -75,12 +75,13 @@
 
 // Ext. Ctrl
 #define ITEM_EXT_PORT      21
-#define ITEM_EXT_CHN       22
-#define ITEM_EXT_CTRL      23
-#define ITEM_EXT_VALUE     24
+#define ITEM_EXT_PORT_OUT  22
+#define ITEM_EXT_CHN       23
+#define ITEM_EXT_CTRL      24
+#define ITEM_EXT_VALUE     25
 
 // Misc
-#define ITEM_BLM_SCALAR_PORT 25
+#define ITEM_BLM_SCALAR_PORT 26
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -146,10 +147,11 @@ static s32 LED_Handler(u16 *gp_leds)
 
     case SUBPAGE_EXT_CTRL:
       switch( ui_selected_item ) {
-        case ITEM_EXT_PORT:  *gp_leds |= 0x0100; break;
-        case ITEM_EXT_CHN:   *gp_leds |= 0x0200; break;
-        case ITEM_EXT_CTRL:  *gp_leds |= 0x3800; break;
-        case ITEM_EXT_VALUE: *gp_leds |= 0x4000; break;
+        case ITEM_EXT_PORT:     *gp_leds |= 0x0100; break;
+        case ITEM_EXT_PORT_OUT: *gp_leds |= 0x0200; break;
+        case ITEM_EXT_CHN:      *gp_leds |= 0x0400; break;
+        case ITEM_EXT_CTRL:     *gp_leds |= 0x3800; break;
+        case ITEM_EXT_VALUE:    *gp_leds |= 0x4000; break;
       }
       break;
 
@@ -340,11 +342,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  break;
 
         case SEQ_UI_ENCODER_GP10:
-	  ui_selected_item = ITEM_EXT_CHN;
+	  ui_selected_item = ITEM_EXT_PORT_OUT;
 	  break;
 
         case SEQ_UI_ENCODER_GP11:
-	  return -1; // not used (yet)
+	  ui_selected_item = ITEM_EXT_CHN;
+	  break;
 
         case SEQ_UI_ENCODER_GP12:
         case SEQ_UI_ENCODER_GP13:
@@ -437,6 +440,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_RESET_STACKS: {
       SEQ_MIDI_IN_ResetTransArpStacks();
       SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Transposer/Arp.", "Stacks cleared!");
+
+      // send to external
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127);
+
       return 1;
     } break;
 
@@ -512,6 +519,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_S_RESET_STACKS: {
       SEQ_MIDI_IN_ResetChangerStacks();
       SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Section Changer", "Stacks cleared!");
+
+      // send to external
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127);
+
       return 1;
     } break;
 
@@ -573,6 +584,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_ext_ctrl_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	store_file_required = 1;
+	return 1; // value changed
+      }
+      return 0; // no change
+    } break;
+
+    case ITEM_EXT_PORT_OUT: {
+      u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_midi_in_ext_ctrl_out_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	seq_midi_in_ext_ctrl_out_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
 	store_file_required = 1;
 	return 1; // value changed
       }
@@ -703,9 +724,10 @@ static s32 LCD_Handler(u8 high_prio)
   //  and Arp.   Control   Router  Ctrl Misc. #1  Def. All  Def. # 1    |    USB1    
 
   // Transposer  Section    MIDI   Ext.      Port Chn.      Function        CC#      
-  //  and Arp.   Control   Router  Ctrl Misc. All ---       Morph Value       1      
+  // Transposer  Section    MIDI   Ext.       IN  OUT Chn.| Function        CC#      
+  //  and Arp.   Control   Router  Ctrl Misc. All off --- | Morph Value       1      
 
-  // Transposer  Section    MIDI   Ext.      BLM_SCALAR connected            MIDI   
+  // Transposer  Section    MIDI   Ext.      BLM_SCALAR                       MIDI   
   //  and Arp.   Control   Router  Ctrl Misc.Port: OUT2                     Monitor 
 
 
@@ -963,7 +985,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
     case SUBPAGE_EXT_CTRL: {
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("Port Chn.      Function        ");
+      SEQ_LCD_PrintString(" IN  OUT  Chn.|Function        ");
       if( selected_ext_ctrl < SEQ_MIDI_IN_EXT_CTRL_NUM_IX_CC ) {
 	SEQ_LCD_PrintString("CC#      ");
       } else {
@@ -983,6 +1005,17 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(1);
 
       ///////////////////////////////////////////////////////////////////////
+      if( ui_selected_item == ITEM_EXT_PORT_OUT && ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	if( seq_midi_in_ext_ctrl_out_port )
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_midi_in_ext_ctrl_out_port)));
+	else
+	  SEQ_LCD_PrintString("off ");
+      }
+      SEQ_LCD_PrintSpaces(1);
+
+      ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_EXT_CHN && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(3);
       } else {
@@ -991,7 +1024,7 @@ static s32 LCD_Handler(u8 high_prio)
 	else
 	  SEQ_LCD_PrintString("---");
       }
-      SEQ_LCD_PrintSpaces(7);
+      SEQ_LCD_PrintString(" |");
 
       ///////////////////////////////////////////////////////////////////////
       if( ui_selected_item == ITEM_EXT_CTRL && ui_cursor_flash ) {
@@ -1026,9 +1059,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
     case SUBPAGE_MISC: {
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintString("BLM_SCALAR ");
-      SEQ_LCD_PrintString(blm_timeout_ctr ? "connected    " : "not found    ");
-      SEQ_LCD_PrintString("         MIDI   ");
+      SEQ_LCD_PrintString("BLM_SCALAR                       MIDI   ");
       SEQ_LCD_CursorSet(40, 1);
 
       ///////////////////////////////////////////////////////////////////////
@@ -1041,7 +1072,11 @@ static s32 LCD_Handler(u8 high_prio)
 	else
 	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
       }
-      SEQ_LCD_PrintSpaces(22);
+
+      SEQ_LCD_PrintString(blm_timeout_ctr ? " (found)  " : "          ");
+
+      // free for new parameters
+      SEQ_LCD_PrintSpaces(12);
 
       ///////////////////////////////////////////////////////////////////////
       SEQ_LCD_PrintString("Monitor ");

@@ -1014,7 +1014,7 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     SEQ_MIDPLY_Reset();
 
     // clear all patterns/etc.. to have a clean start
-    SEQ_CORE_Init(0);
+    SEQ_CORE_Init(1); // except for global parameters
     SEQ_GROOVE_Init(0);
     SEQ_SONG_Init(0);
     SEQ_MIXER_Init(0);

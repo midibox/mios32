@@ -110,6 +110,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = SEQ_MORPH_ValueGet();
       if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) > 0 ) {
 	SEQ_MORPH_ValueSet(value);
+
+	// send to external
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MORPH, value);
+
 	return 1;
       }
       return 0;
