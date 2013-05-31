@@ -26,7 +26,7 @@ CC Implementation of MIDIbox SEQ V4
      Allowed values: 0..15 for Track 1-16
      All others ignored
 
-   o CC#6 (0x06 - NRPN Value, LSB)
+   o CC#6 (0x06 - NRPN Value, MSB)
      Sets a Sequencer Parameter depending on the preselected track and parameter number
 
    o CC#123 (0x7b - All Notes Off)
@@ -364,3 +364,9 @@ Example: Loopback Channel #3, CC#49 controls the Octave Transpose of Track 3
 Note also, that the Morphing Parameter can be controlled via Loopback
 as well. It's available on all channels, independent from the Morph
 Channel selection of the MIDI In port
+
+
+Since V4.077, it's possible to send parameter changes, done from the user interface,
+to a specified MIDI output port. This allows to record such changes with a DAW.
+The output port has to be selected in the MIDI->Ext.Ctrl page, where also the input
+port and channel is specified.

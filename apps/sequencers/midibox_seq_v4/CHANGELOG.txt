@@ -6,6 +6,61 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.077
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to send parameter changes, done from the user interface,
+     to a specified MIDI output port. This allows to record such changes with a DAW.
+     The output port has to be selected in the MIDI->Ext.Ctrl page, where also the
+     input port and channel is specified.
+
+   o a very useful "quick save" function has been added which significantly improves
+     the song phrases handling.
+
+     The new function will store the current mixer and pattern setup into predefined
+     bank positions:
+       - Phrase A will use Mixer Map #1 and Patterns 1:A1 2:A1 3:A1 4:A1
+       - Phrase B will use Mixer Map #2 and Patterns 1:A2 2:A2 3:A2 4:A2
+       - Phrase C will use Mixer Map #3 and Patterns 1:A3 2:A3 3:A3 4:A3
+       - ...
+       - Phrase P will use Mixer Map #16 and Patterns 1:B8 2:B8 3:B8 4:B8
+
+     After the store operation, following references will be copied into the phrase
+     slot of the song:
+       - 1st phrase step: the current mutes
+       - 2nd phrase step: selects the new mixer map
+       - 3rd phrase step: selects the new pattern set
+       - 4th phrase step: jumps to the 3rd phrase step (could be useful in song mode)
+
+     How to use this function:
+     Start a new session, edit some tracks, start jamming.
+     Whenever you found sequences which play well together, change to the SONG page,
+     press&hold the SELECT button, then select "Save&Take over Patterns" with GP button 16.
+     Thereafter release the SELECT button, and select the target phrase slot with
+     one of the GP buttons -> this will store the current mutes/mixer map/patterns
+     into the predefined bank positions and insert references into the phrase slot.
+
+     Now you can continue jamming, change tracks, change mixer values, change mutes.
+     Whenever you found a new nice working sequence, go to the SONG page and store
+     it into another phrase slot (or overwrite an existing slot).
+
+     The stored phrases can be restored as usual with the GP buttons in the song page.
+
+   o it's now possible to specify the initial CC value (for the CLEAR and INIT
+     function) in the UTILITY->Options page
+
+   o LFO: CC layer modulation is working properly again
+
+   o Mixer Map not switched on pattern changes anymore (this is actually only
+     part of the "Remix" feature).
+     To get the Remix function properly working again, please open your 
+     MBSEQ_GC.V4 file with the MIOS Filebrowser, search for "PatternMixerMapCoupling" 
+     and set it to 1.
+     If this parameter doesn't exist yet, please create it:
+     PatternMixerMapCoupling 1
+
+     
+
 MIDIboxSEQ V4.076
 ~~~~~~~~~~~~~~~~~
 
@@ -1691,18 +1746,6 @@ Also zb der Loop setzt, nach Aktivierung (drücken des "on" Tasters) auf 1/8 Tak
 ----------------------------------------------------------
 lukas412
 Has the possibility of routing a track output to another tracks input ever come up?
-
-----------------------------------------------------------
-FFW: allow to set the init value for CC lines
-
-----------------------------------------------------------
-FFW: enhance phrase mode by a function, which stores the current
-tracks into new (predefined) patterns, and stores the references
-into a phrase slot
-
-----------------------------------------------------------
-
-Duggle: optionally send parameter changes via NRPN
 
 ----------------------------------------------------------
 

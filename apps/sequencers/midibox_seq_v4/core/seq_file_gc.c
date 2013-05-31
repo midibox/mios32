@@ -291,6 +291,10 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_record_quantize = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
+	  } else if( strcmp(parameter, "InitCC") == 0 ) {
+	    seq_core_options.INIT_CC = value;
+	  } else if( strcmp(parameter, "PatternMixerMapCoupling") == 0 ) {
+	    seq_core_options.PATTERN_MIXER_MAP_COUPLING = value;
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
 	    seq_midi_port_multi_enable_flags = value;
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
@@ -464,6 +468,12 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "InitCC %d\n", seq_core_options.INIT_CC);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "PatternMixerMapCoupling %d\n", seq_core_options.PATTERN_MIXER_MAP_COUPLING);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MultiPortEnableFlags 0x%06x\n", seq_midi_port_multi_enable_flags);

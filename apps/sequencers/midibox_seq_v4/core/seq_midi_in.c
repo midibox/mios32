@@ -112,6 +112,8 @@ seq_midi_in_options_t seq_midi_in_options[SEQ_MIDI_IN_NUM_BUSSES];
 u8 seq_midi_in_ext_ctrl_channel;
 // which IN port should be used? (0: All)
 mios32_midi_port_t seq_midi_in_ext_ctrl_port;
+// and which optional out port? (0: Off)
+mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
 // external controller assignments
 u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
 
@@ -181,6 +183,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
 
   seq_midi_in_ext_ctrl_channel = 0; // 0 disables MIDI IN
   seq_midi_in_ext_ctrl_port = DEFAULT; // All ports
+  seq_midi_in_ext_ctrl_out_port = 0; // off
 
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = 1;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE] = 3;
@@ -264,6 +267,36 @@ const char *SEQ_MIDI_IN_ExtCtrlPcModeStr(u8 pc_mode)
     return "UnknwnMde";
 
   return ext_ctrl_pc_mode_str[pc_mode];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// since there is currently no better place (somebody could expect this function in SEQ_MIDI_OUT...)
+/////////////////////////////////////////////////////////////////////////////
+extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value)
+{
+  if( seq_midi_in_ext_ctrl_out_port && seq_midi_in_ext_ctrl_channel ) {
+    mios32_midi_port_t port = seq_midi_in_ext_ctrl_out_port;
+    mios32_midi_chn_t chn = seq_midi_in_ext_ctrl_channel - 1;
+
+    u8 cc = seq_midi_in_ext_ctrl_asg[ext_ctrl];
+    if( cc <= 127 ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, cc, value);
+      MUTEX_MIDIOUT_GIVE;    
+    }
+
+    u8 pc_mode = seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE];
+    if( (pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PATTERNS && ext_ctrl >= SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 && ext_ctrl <= SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4) ||
+	(pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_SONG && ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_SONG) ||
+	(pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PHRASE && ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_PHRASE) ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendProgramChange(port, chn, value);
+      MUTEX_MIDIOUT_GIVE;    
+    }
+  }
+
+  return 0;
 }
 
 
@@ -869,7 +902,7 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
     nrpn_msb = value;
     break;
 
-  case 0x06: // NRPN Value LSB (sets parameter)
+  case 0x06: // NRPN Value MSB (sets parameter)
     if( nrpn_msb < SEQ_CORE_NUM_TRACKS && seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] )
       SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
     break;

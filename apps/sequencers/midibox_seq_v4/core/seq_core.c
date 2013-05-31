@@ -128,6 +128,7 @@ static float seq_core_bpm_sweep_inc;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
+// \param mode if 0: clear all parameters, if 1: don't clear global parameters which are stored in the MBSEQ_GC.V4 file
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Init(u32 mode)
 {
@@ -137,7 +138,11 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_trk_muted = 0;
   seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
   seq_core_options.ALL = 0;
-  seq_core_options.PASTE_CLR_ALL = 1;
+  if( mode == 0 ) {
+    seq_core_options.INIT_CC = 64;
+    seq_core_options.PASTE_CLR_ALL = 1;
+    seq_core_options.PATTERN_MIXER_MAP_COUPLING = 0;
+  }
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
   seq_core_global_scale = 0;
@@ -147,10 +152,12 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_global_transpose_enabled = 0;
   seq_core_din_sync_pulse_ctr = 0; // used to generate a 1 mS pulse
 
-  seq_core_metronome_port = DEFAULT;
-  seq_core_metronome_chn = 10;
-  seq_core_metronome_note_m = 0x25; // C#1
-  seq_core_metronome_note_b = 0x25; // C#1
+  if( mode == 0 ) {
+    seq_core_metronome_port = DEFAULT;
+    seq_core_metronome_chn = 10;
+    seq_core_metronome_note_m = 0x25; // C#1
+    seq_core_metronome_note_b = 0x25; // C#1
+  }
 
   seq_core_bpm_preset_num = 13; // 140.0
   for(i=0; i<SEQ_CORE_NUM_BPM_PRESETS; ++i) {
