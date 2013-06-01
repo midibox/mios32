@@ -22,7 +22,7 @@
 // STM32: (1: I2C2(iic_port 0) available ; 2: I2C2 and I2C1(iic_port 1) available)
 // LPC17: (1: I2C0(iic_port 0) available ; 2: I2C1 (EEPROM) in addition, 3: I2C2 assigned to iic_port 1 available)
 #ifndef MIOS32_IIC_NUM
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
 #define MIOS32_IIC_NUM 1
 #elif defined(MIOS32_FAMILY_LPC17xx)
 // The third IIC port at J4B is disabled by default so that the app can decide if it's used for UART or IIC

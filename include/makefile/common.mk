@@ -55,6 +55,10 @@ ifeq ($(FAMILY),STM32F10x)
 CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
 endif
 
+ifeq ($(FAMILY),STM32F4xx)
+CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
+endif
+
 ifeq ($(FAMILY),LPC17xx)
 CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
 endif

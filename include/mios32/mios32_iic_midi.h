@@ -41,7 +41,7 @@
 //             3 = interface enabled, check RI_N pin instead of polling receive status
 // _RI_N_PORT: Port to which RI_N is connected
 // _RI_N_PIN:  pin to which RI_N is connected
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
 #ifndef MIOS32_IIC_MIDI0_ENABLED
 #define MIOS32_IIC_MIDI0_ENABLED    2
 #endif

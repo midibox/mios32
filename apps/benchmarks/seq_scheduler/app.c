@@ -131,6 +131,9 @@ void APP_Background(void)
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ) {
+    // change debug interface (where messages are forwarded)
+    MIOS32_MIDI_DebugPortSet(port);
+
     // reset benchmark
     BENCHMARK_Reset();
 

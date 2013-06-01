@@ -34,7 +34,7 @@ MIDIboxSEQ V4.077
 
      How to use this function:
      Start a new session, edit some tracks, start jamming.
-     Whenever you found sequences which play well together, change to the SONG page,
+     Whenever you've found sequences which play well together, change to the SONG page,
      press&hold the SELECT button, then select "Save&Take over Patterns" with GP button 16.
      Thereafter release the SELECT button, and select the target phrase slot with
      one of the GP buttons -> this will store the current mutes/mixer map/patterns

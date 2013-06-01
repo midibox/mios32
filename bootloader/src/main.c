@@ -20,6 +20,8 @@
 
 #if defined(MIOS32_FAMILY_STM32F10x)
 #include <usb_lib.h>
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+#include <usb_core.h>
 #endif
 
 
@@ -35,13 +37,17 @@
 //   o jumper already available (J27)
 //   o pull-up already available
 //   o normaly used in Open Drain mode, so that no short circuit if jumper is stuffed
-#if defined(MIOS32_FAMILY_STM32F10x)
-#define BSL_HOLD_PORT        GPIOB
-#define BSL_HOLD_PIN         GPIO_Pin_2
-#define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+# define BSL_HOLD_PORT        GPIOB
+# define BSL_HOLD_PIN         GPIO_Pin_2
+#if defined(MIOS32_FAMILY_STM32F4xx)
+# define BSL_HOLD_STATE       0 // not used yet
 #else
-#define BSL_HOLD_INIT        { MIOS32_SYS_LPC_PINSEL(1, 27, 0); MIOS32_SYS_LPC_PINDIR(1, 27, 0); MIOS32_SYS_LPC_PINMODE(1, 27, 0); }
-#define BSL_HOLD_STATE       ((LPC_GPIO1->FIOPIN & (1 << 27)) ? 0 : 1)
+# define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
+#endif
+#else
+# define BSL_HOLD_INIT        { MIOS32_SYS_LPC_PINSEL(1, 27, 0); MIOS32_SYS_LPC_PINDIR(1, 27, 0); MIOS32_SYS_LPC_PINMODE(1, 27, 0); }
+# define BSL_HOLD_STATE       ((LPC_GPIO1->FIOPIN & (1 << 27)) ? 0 : 1)
 #endif
 
 
@@ -51,7 +57,7 @@
 
 // note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
 // since these functions access the ports directly
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
 typedef struct {
   GPIO_TypeDef *port;
   u16 pin_mask;
@@ -138,7 +144,7 @@ int main(void)
   MIOS32_DELAY_Init(0);
 
   MIOS32_BOARD_LED_Init(BSL_LED_MASK);
-#if !defined(MIOS32_FAMILY_STM32F10x)
+#if !defined(MIOS32_FAMILY_STM32F10x) && !defined(MIOS32_FAMILY_STM32F4xx)
   BSL_HOLD_INIT; // e.g. for LPC17xx
 #endif
 
@@ -163,7 +169,7 @@ int main(void)
     // if initialized, this function will only set some variables - it won't re-init the peripheral.
     // if hold mode activated via external pin, force re-initialisation by resetting USB
     if( hold_mode_active_after_reset ) {
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
       RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
       RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
 #endif
@@ -246,7 +252,7 @@ int main(void)
 	     (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
   }
 
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
   // ensure that flash write access is locked
   FLASH_Lock();
 #endif
@@ -255,31 +261,48 @@ int main(void)
   MIOS32_BOARD_LED_Set(BSL_LED_MASK, 0);
 
   // branch to application if reset vector is valid (should be inside flash range)
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
   u32 *reset_vector = (u32 *)0x08004004;
   if( (*reset_vector >> 24) == 0x08 ) {
     // reset all peripherals
-#ifdef MIOS32_BOARD_STM32_PRIMER
-    RCC_APB2PeriphResetCmd(0xfffffff0, ENABLE); // Primer: don't reset GPIOA/AF + GPIOB due to USB detach pin
+#if defined(MIOS32_FAMILY_STM32F4xx)
+    RCC_AHB1PeriphResetCmd(0xfffffff8, ENABLE); // don't reset GPIOA/AF due to USB pins
+    RCC_AHB2PeriphResetCmd(0xffffff7f, ENABLE); // don't reset OTG_FS, so that the connectuion can survive
+    RCC_AHB1PeriphResetCmd(0xffffffff, DISABLE);
+    RCC_AHB2PeriphResetCmd(0xffffffff, DISABLE);
 #else
+# ifdef MIOS32_BOARD_STM32_PRIMER
+    RCC_APB2PeriphResetCmd(0xfffffff0, ENABLE); // Primer: don't reset GPIOA/AF + GPIOB due to USB detach pin
+# else
     RCC_APB2PeriphResetCmd(0xfffffff8, ENABLE); // MBHP_CORE_STM32: don't reset GPIOA/AF due to USB pins
-#endif
+# endif
     RCC_APB1PeriphResetCmd(0xff7fffff, ENABLE); // don't reset USB, so that the connection can survive!
     RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
     RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+#endif
 
     if( hold_mode_active_after_reset ) {
       // if hold mode activated via external pin, force re-initialisation by resetting USB
+#if defined(MIOS32_FAMILY_STM32F4xx)
+      RCC_AHB2PeriphResetCmd(0x00000080, ENABLE); // reset OTG_FS
+      RCC_AHB2PeriphResetCmd(0x00000080, DISABLE);
+#else
       RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
       RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
+#endif
     } else {
       // no hold mode: ensure that USB interrupts won't be triggered while jumping into application
-#ifdef STM32F10X_CL
+#if defined(STM32F10X_CL)
       if( MIOS32_USB_IsInitialized() )
 	OTGD_FS_DisableGlobalInt();
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+      if( MIOS32_USB_IsInitialized() ) {
+	// TODO: needs handle...
+	//USB_OTG_DisableGlobalInt();
+      }
 #else
-      _SetCNTR(0); // clear interrupt mask
-      _SetISTR(0); // clear all requests
+      _SetCNTR(0); // clear USB interrupt mask
+      _SetISTR(0); // clear all USB interrupt requests
 #endif
     }
 
@@ -350,7 +373,7 @@ static s32 ResetSRIOChains(void)
   return -1; // not supported
 #else
 
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
   int i;
 
   GPIO_InitTypeDef GPIO_InitStructure;

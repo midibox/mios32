@@ -16,7 +16,7 @@
 #define _MIOS32_DATATYPES_H
 
 // following check to ensure that typedefs won't be declared again from stm32f10x.h
-#ifndef __STM32F10x_H
+#if !defined(__STM32F10x_H) && !defined(__STM32F4xx_H)
 
 typedef signed long  s32;
 typedef signed short s16;
