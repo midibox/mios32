@@ -99,6 +99,8 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   u32 num_loops = 100;
 
   if( midi_package.type == NoteOn && midi_package.velocity > 0 ) {
+    // change debug interface (where messages are forwarded)
+    MIOS32_MIDI_DebugPortSet(port);
 
     // determine test number (use note number, remove octave)
     u8 test_number = midi_package.note % 12;

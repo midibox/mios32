@@ -1,0 +1,11 @@
+# $Id: STM32F10x_upload.script 1115 2010-10-23 21:42:40Z tk $
+
+reset_config srst_only
+reset halt
+wait_halt
+poll
+flash probe 0
+stm32f2x mass_erase 0
+flash write_image project_build/project.bin 0x08000000 bin
+reset run
+#shutdown

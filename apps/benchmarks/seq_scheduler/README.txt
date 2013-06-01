@@ -71,5 +71,7 @@ Updates for LPC1768 @ 100 MHz
 Updates for LPC1769 @ 120 MHz
 3: internal static allocation with 32bit flags                303.5 mS
 
+Updates for STM32F407 @ 168 MHz
+3: internal static allocation with 32bit flags                93.4 mS
 
 ===============================================================================

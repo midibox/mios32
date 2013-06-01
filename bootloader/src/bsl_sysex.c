@@ -44,6 +44,35 @@
 # define SRAM_START_ADDR   (0x20000000)
 # define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
 
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+
+// sector base addresses
+
+#define MAX_FLASH_SECTOR 12
+const unsigned sector_start_map[MAX_FLASH_SECTOR][2] = {
+  { ((uint32_t)0xffffffff), FLASH_Sector_0 }, /* Base @ of Sector 0, 16 Kbyte */ // TK: actually 0x08000000, ensure that it won't be taken
+  { ((uint32_t)0x08004000), FLASH_Sector_1 }, /* Base @ of Sector 1, 16 Kbyte */
+  { ((uint32_t)0x08008000), FLASH_Sector_2 }, /* Base @ of Sector 2, 16 Kbyte */
+  { ((uint32_t)0x0800C000), FLASH_Sector_3 }, /* Base @ of Sector 3, 16 Kbyte */
+  { ((uint32_t)0x08010000), FLASH_Sector_4 }, /* Base @ of Sector 4, 64 Kbyte */
+  { ((uint32_t)0x08020000), FLASH_Sector_5 }, /* Base @ of Sector 5, 128 Kbyte */
+  { ((uint32_t)0x08040000), FLASH_Sector_6 }, /* Base @ of Sector 6, 128 Kbyte */
+  { ((uint32_t)0x08060000), FLASH_Sector_7 }, /* Base @ of Sector 7, 128 Kbyte */
+  { ((uint32_t)0x08080000), FLASH_Sector_8 }, /* Base @ of Sector 8, 128 Kbyte */
+  { ((uint32_t)0x080A0000), FLASH_Sector_9 }, /* Base @ of Sector 9, 128 Kbyte */
+  { ((uint32_t)0x080C0000), FLASH_Sector_10 }, /* Base @ of Sector 10, 128 Kbyte */
+  { ((uint32_t)0x080E0000), FLASH_Sector_11 }, /* Base @ of Sector 11, 128 Kbyte */
+};
+
+  // STM32: flash memory range (16k BSL range excluded)
+# define FLASH_START_ADDR  (0x08000000 + 0x4000)
+# define FLASH_END_ADDR    (0x08000000 + MIOS32_SYS_FlashSizeGet() - 0x4000 - 1)
+
+
+  // STM32: base address of SRAM
+# define SRAM_START_ADDR   (0x20000000)
+# define SRAM_END_ADDR     (0x20000000 + MIOS32_SYS_RAMSizeGet() - 1)
+
 #elif defined(MIOS32_FAMILY_LPC17xx)
 
 #include <sbl_iap.h>
@@ -183,6 +212,9 @@ s32 BSL_SYSEX_ReleaseHaltState(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 BSL_SYSEX_Cmd(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_t cmd_state, u8 midi_in, u8 sysex_cmd)
 {
+  // change debug port
+  MIOS32_MIDI_DebugPortSet(port);
+
   // wait 2 additional seconds whenever a SysEx message has been received
   MIOS32_STOPWATCH_Reset();
 
@@ -520,6 +552,48 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 
       // TODO: verify programmed code
     }
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+    // FLASH_* routines are part of the STM32 code library
+    FLASH_Unlock();
+
+    // erase if new sector is reached
+    {
+      int sector;
+      for(sector=0; sector<MAX_FLASH_SECTOR; ++sector) {
+	if( addr == sector_start_map[sector][0] ) {
+	  FLASH_Status status = FLASH_EraseSector(sector_start_map[sector][1], VoltageRange_3);
+	  if( status != FLASH_COMPLETE ) {
+#if 1
+	    MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
+#endif
+	  }
+	  break;
+	}
+      }
+    }
+
+    int i;
+    for(i=0; i<len; addr+=4, i+=4) {
+      uint32_t data =
+	((uint64_t)buffer[i+0] <<  0) |
+	((uint64_t)buffer[i+1] <<  8) |
+	((uint64_t)buffer[i+2] << 16) |
+	((uint64_t)buffer[i+3] << 24);
+
+      FLASH_Status status = FLASH_ProgramWord(addr, data);
+      if( status != FLASH_COMPLETE ) {
+#if 1
+	MIOS32_MIDI_SendDebugMessage("program flash failed for 0x%08x: code %d\n", addr, status);
+#endif
+	FLASH_ClearFlag(FLASH_FLAG_OPERR); // clear error flags, otherwise next program attempts will fail
+	return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
+      }
+
+      FLASH_WaitForLastOperation();
+
+      // TODO: verify programmed code
+    }
+
 #elif defined(MIOS32_FAMILY_LPC17xx)
     MIOS32_IRQ_Disable();
 

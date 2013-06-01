@@ -27,6 +27,8 @@
 #ifndef MIOS32_SYS_CPU_FREQUENCY
 #if defined(MIOS32_FAMILY_STM32F10x)
 # define MIOS32_SYS_CPU_FREQUENCY 72000000
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+# define MIOS32_SYS_CPU_FREQUENCY 168000000
 #elif defined(MIOS32_FAMILY_LPC17xx) && defined(MIOS32_PROCESSOR_LPC1768)
 # define MIOS32_SYS_CPU_FREQUENCY 100000000
 #elif defined(MIOS32_FAMILY_LPC17xx) && defined(MIOS32_PROCESSOR_LPC1769)
@@ -64,7 +66,7 @@
 
 // location of the Device ID and USB device name
 // The bootloader update tool allows to change these values from MIOS terminal
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
 # define MIOS32_SYS_ADDR_BSL_INFO_BEGIN    0x08003f00
 #elif defined(MIOS32_FAMILY_LPC17xx)
 # define MIOS32_SYS_ADDR_BSL_INFO_BEGIN    0x00003f00
