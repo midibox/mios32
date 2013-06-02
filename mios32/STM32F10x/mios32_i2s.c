@@ -62,17 +62,17 @@
 // Pin definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define MIOS32_I2S_WS_PIN    GPIO_Pin_12;
 #define MIOS32_I2S_WS_PORT   GPIOB
+#define MIOS32_I2S_WS_PIN    GPIO_Pin_12
 
-#define MIOS32_I2S_CK_PIN    GPIO_Pin_13;
 #define MIOS32_I2S_CK_PORT   GPIOB
+#define MIOS32_I2S_CK_PIN    GPIO_Pin_13
 
-#define MIOS32_I2S_SD_PIN    GPIO_Pin_15;
 #define MIOS32_I2S_SD_PORT   GPIOB
+#define MIOS32_I2S_SD_PIN    GPIO_Pin_15
 
-#define MIOS32_I2S_MCLK_PIN  GPIO_Pin_6;
 #define MIOS32_I2S_MCLK_PORT GPIOC
+#define MIOS32_I2S_MCLK_PIN  GPIO_Pin_6
 
 
 /////////////////////////////////////////////////////////////////////////////

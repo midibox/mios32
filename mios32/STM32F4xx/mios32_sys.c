@@ -83,8 +83,13 @@ s32 MIOS32_SYS_Init(u32 mode)
     return -1; // unsupported mode
 
   // Enable GPIOA, GPIOB, GPIOC, GPIOD, GPIOE and AFIO clocks
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOB | RCC_AHB1Periph_GPIOC
-			 | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOE, ENABLE);
+  RCC_AHB1PeriphClockCmd(
+			 RCC_AHB1Periph_GPIOA | 
+			 RCC_AHB1Periph_GPIOB | 
+			 RCC_AHB1Periph_GPIOC |
+			 RCC_AHB1Periph_GPIOD | 
+			 RCC_AHB1Periph_GPIOE
+			 , ENABLE);
 
 #if 0
   // Activate pull-ups on all pins by default

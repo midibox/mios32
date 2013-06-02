@@ -55,39 +55,52 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define MIOS32_SPI0_PTR        SPI1
-#define MIOS32_SPI0_DMA_RX_PTR DMA1_Stream2
-#define MIOS32_SPI0_DMA_TX_PTR DMA1_Stream3
+#define MIOS32_SPI0_DMA_RX_PTR DMA2_Stream2
+#define MIOS32_SPI0_DMA_RX_CHN DMA_Channel_3
+#define MIOS32_SPI0_DMA_TX_PTR DMA2_Stream3
+#define MIOS32_SPI0_DMA_TX_CHN DMA_Channel_3
 #define MIOS32_SPI0_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF2 | DMA_FLAG_TEIF2 | DMA_FLAG_HTIF2 | DMA_FLAG_FEIF2)
-#define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA1_Stream2_IRQn
-#define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMA1_Stream2_IRQHandler(void)
+#define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA2_Stream2_IRQn
+#define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMA2_Stream2_IRQHandler(void)
 
 #define MIOS32_SPI0_RCLK1_PORT GPIOA
 #define MIOS32_SPI0_RCLK1_PIN  GPIO_Pin_4
+#define MIOS32_SPI0_RCLK1_AF   { GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_SPI1); } // only relevant for slave mode
 #define MIOS32_SPI0_RCLK2_PORT GPIOC
 #define MIOS32_SPI0_RCLK2_PIN  GPIO_Pin_15
+#define MIOS32_SPI0_RCLK2_AF   { }
 #define MIOS32_SPI0_SCLK_PORT  GPIOA
 #define MIOS32_SPI0_SCLK_PIN   GPIO_Pin_5
+#define MIOS32_SPI0_SCLK_AF    { GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_SPI1); }
 #define MIOS32_SPI0_MISO_PORT  GPIOA
 #define MIOS32_SPI0_MISO_PIN   GPIO_Pin_6
+#define MIOS32_SPI0_MISO_AF    { GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_SPI1); }
 #define MIOS32_SPI0_MOSI_PORT  GPIOA
 #define MIOS32_SPI0_MOSI_PIN   GPIO_Pin_7
+#define MIOS32_SPI0_MOSI_AF    { GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_SPI1); }
 
 
 #define MIOS32_SPI1_PTR        SPI2
-#define MIOS32_SPI1_DMA_RX_PTR DMA1_Stream4
-#define MIOS32_SPI1_DMA_TX_PTR DMA1_Stream5
+#define MIOS32_SPI1_DMA_RX_PTR DMA1_Stream3
+#define MIOS32_SPI1_DMA_RX_CHN DMA_Channel_0
+#define MIOS32_SPI1_DMA_TX_PTR DMA1_Stream4
+#define MIOS32_SPI1_DMA_TX_CHN DMA_Channel_0
 #define MIOS32_SPI1_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4 | DMA_FLAG_HTIF4 | DMA_FLAG_FEIF4)
 #define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Stream4_IRQn
 #define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMA1_Stream4_IRQHandler(void)
 
 #define MIOS32_SPI1_RCLK1_PORT GPIOB
 #define MIOS32_SPI1_RCLK1_PIN  GPIO_Pin_12
+#define MIOS32_SPI1_RCLK1_AF   { GPIO_PinAFConfig(GPIOB, GPIO_PinSource12, GPIO_AF_SPI2); } // only relevant for slave mode
 #define MIOS32_SPI1_SCLK_PORT  GPIOB
 #define MIOS32_SPI1_SCLK_PIN   GPIO_Pin_13
+#define MIOS32_SPI1_SCLK_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_SPI2); }
 #define MIOS32_SPI1_MISO_PORT  GPIOB
 #define MIOS32_SPI1_MISO_PIN   GPIO_Pin_14
+#define MIOS32_SPI1_MISO_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_SPI2); }
 #define MIOS32_SPI1_MOSI_PORT  GPIOB
 #define MIOS32_SPI1_MOSI_PIN   GPIO_Pin_15
+#define MIOS32_SPI1_MOSI_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_SPI2); }
 
 
 #define MIOS32_SPI2_PTR        NULL
@@ -171,11 +184,13 @@ s32 MIOS32_SPI_Init(u32 mode)
   // enable SPI peripheral clock (APB2 == high speed)
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 
-  // enable DMA1 clock
+  // enable DMA1 and DMA2 clock
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
 
   // DMA Configuration for SPI Rx Event
   DMA_Cmd(MIOS32_SPI0_DMA_RX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI0_DMA_RX_CHN;
   DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&MIOS32_SPI0_PTR->DR;
   DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
@@ -191,6 +206,7 @@ s32 MIOS32_SPI_Init(u32 mode)
   // DMA Configuration for SPI Tx Event
   // (partly re-using previous DMA setup)
   DMA_Cmd(MIOS32_SPI0_DMA_TX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI0_DMA_TX_CHN;
   DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
   DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
   DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
@@ -229,11 +245,13 @@ s32 MIOS32_SPI_Init(u32 mode)
   // enable SPI peripheral clock (APB1 == slow speed)
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
 
-  // enable DMA1 clock
+  // enable DMA1 and DMA2 clock
   RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
 
   // DMA Configuration for SPI Rx Event
   DMA_Cmd(MIOS32_SPI1_DMA_RX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI1_DMA_RX_CHN;
   DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&MIOS32_SPI1_PTR->DR;
   DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
@@ -249,6 +267,7 @@ s32 MIOS32_SPI_Init(u32 mode)
   // DMA Configuration for SPI Tx Event
   // (partly re-using previous DMA setup)
   DMA_Cmd(MIOS32_SPI1_DMA_TX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI1_DMA_TX_CHN;
   DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
   DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
   DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
@@ -357,6 +376,12 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 #ifdef MIOS32_DONT_USE_SPI0
       return -1; // disabled SPI port
 #else
+      MIOS32_SPI0_RCLK1_AF;
+      MIOS32_SPI0_RCLK2_AF;
+      MIOS32_SPI0_SCLK_AF;
+      MIOS32_SPI0_MISO_AF;
+      MIOS32_SPI0_MOSI_AF;
+
       if( slave ) {
 	// SCLK and DOUT are inputs assigned to alternate functions
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -405,6 +430,12 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 #ifdef MIOS32_DONT_USE_SPI1
       return -1; // disabled SPI port
 #else
+      MIOS32_SPI1_RCLK1_AF;
+      //MIOS32_SPI1_RCLK2_AF;
+      MIOS32_SPI1_SCLK_AF;
+      MIOS32_SPI1_MISO_AF;
+      MIOS32_SPI1_MOSI_AF;
+
       if( slave ) {
 	// SCLK and DOUT are inputs assigned to alternate functions
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
