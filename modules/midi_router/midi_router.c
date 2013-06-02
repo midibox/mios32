@@ -186,19 +186,20 @@ s32 MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
     int node;
     midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
     for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+      if( n->src_chn && n->dst_chn && (n->src_port == port) ) {
+	// SysEx, only forwarded once per destination port
+	u32 mask = MIDI_ROUTER_PortMaskGet(n->dst_port);
+	if( !mask || !(sysex_dst_fwd_done & mask) ) {
+	  sysex_dst_fwd_done |= mask;
 
-      // SysEx, only forwarded once per destination port
-      u32 mask = MIDI_ROUTER_PortMaskGet(n->dst_port);
-      if( !mask || !(sysex_dst_fwd_done & mask) ) {
-	sysex_dst_fwd_done |= mask;
-
-	mios32_midi_port_t port = n->dst_port;
-	MUTEX_MIDIOUT_TAKE;
-	if( (port & 0xf0) == OSC0 )
-	  OSC_CLIENT_SendSysEx(port & 0x0f, sysex_buffer[sysex_in], sysex_buffer_len[sysex_in]);
-	else
-	  MIOS32_MIDI_SendSysEx(port, sysex_buffer[sysex_in], sysex_buffer_len[sysex_in]);
-	MUTEX_MIDIOUT_GIVE;
+	  mios32_midi_port_t port = n->dst_port;
+	  MUTEX_MIDIOUT_TAKE;
+	  if( (port & 0xf0) == OSC0 )
+	    OSC_CLIENT_SendSysEx(port & 0x0f, sysex_buffer[sysex_in], sysex_buffer_len[sysex_in]);
+	  else
+	    MIOS32_MIDI_SendSysEx(port, sysex_buffer[sysex_in], sysex_buffer_len[sysex_in]);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
     }
 
