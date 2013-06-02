@@ -43,15 +43,13 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_tim.c \
 	$(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_usart.c \
 	$(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_wwdg.c \
+	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_core.c \
+	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_ioreq.c \
+	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_req.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_core.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd_int.c
 
-
-#	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_core.c \
-#	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_ioreq.c \
-#	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_req.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_bsp_template.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_core.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd_int.c \
 #	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd.c \
 #	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd_int.c \
 #	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_otg.c

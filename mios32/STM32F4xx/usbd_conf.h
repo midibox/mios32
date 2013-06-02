@@ -26,50 +26,16 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 
-
-
-/** @defgroup USB_CONF_Exported_Defines
-  * @{
-  */ 
-#define USE_USB_OTG_HS  
+//#define USE_USB_OTG_HS  
+#define USE_USB_OTG_FS
 
 #define USBD_CFG_MAX_NUM           1
-#define USB_MAX_STR_DESC_SIZ       64 
-#define USBD_EP0_MAX_PACKET_SIZE   64
+#define USBD_ITF_MAX_NUM           1
 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USB_CONF_Exported_Types
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USB_CONF_Exported_Macros
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-/** @defgroup USB_CONF_Exported_Variables
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-/** @defgroup USB_CONF_Exported_FunctionsPrototype
-  * @{
-  */ 
-/**
-  * @}
-  */ 
+// created in STM32_USB_Device_Library/Core/src/usbd_req.c
+// used in mios32_usb.c as temporary string buffer
+#define USB_MAX_STR_DESC_SIZ       100
+extern uint8_t USBD_StrDesc[USB_MAX_STR_DESC_SIZ];
 
 
 #endif //__USBD_CONF__H__
