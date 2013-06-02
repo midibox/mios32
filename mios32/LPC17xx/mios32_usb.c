@@ -33,13 +33,6 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
-// 1: Endpoint 1 used for IN and OUT
-// 0: Endpoint 1 used for IN (Tx), Endpoint 2 used for OUT (Rx)
-/////////////////////////////////////////////////////////////////////////////
-#define LEGACY_ENDPOINT_ASSIGNMENTS 0
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
@@ -555,11 +548,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-#if LEGACY_ENDPOINT_ASSIGNMENTS
-  0x01,				// Out Endpoint 1
-#else
-  0x02,				// Out Endpoint 2
-#endif
+  MIOS32_USB_MIDI_DATA_OUT_EP,	// Out Endpoint 2
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -598,7 +587,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[] = {
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x81,				// In Endpoint 1
+  MIOS32_USB_MIDI_DATA_IN_EP,	// In Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
@@ -861,7 +850,7 @@ static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[] = {
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x02,				// Out Endpoint 2
+  MIOS32_USB_MIDI_DATA_OUT_EP,	// Out Endpoint 2
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -879,7 +868,7 @@ static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[] = {
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x81,				// In Endpoint 1
+  MIOS32_USB_MIDI_DATA_IN_EP,	// In Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
@@ -954,14 +943,8 @@ s32 MIOS32_USB_Init(u32 mode)
 
   // register endpoint handlers
 #ifndef MIOS32_DONT_USE_USB_MIDI
-#if LEGACY_ENDPOINT_ASSIGNMENTS
-  USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback); // (dummy callback)
-  // note: shared callback, IN and OUT irq will trigger MIOS32_USB_MIDI_EP1_OUT_Callback
-  USBHwRegisterEPIntHandler(0x01, MIOS32_USB_MIDI_EP2_OUT_Callback); // (no error, function has been renamed)
-#else
-  USBHwRegisterEPIntHandler(0x81, MIOS32_USB_MIDI_EP1_IN_Callback);
-  USBHwRegisterEPIntHandler(0x02, MIOS32_USB_MIDI_EP2_OUT_Callback);
-#endif
+  USBHwRegisterEPIntHandler(MIOS32_USB_MIDI_DATA_IN_EP, MIOS32_USB_MIDI_EP1_IN_Callback);
+  USBHwRegisterEPIntHandler(MIOS32_USB_MIDI_DATA_OUT_EP, MIOS32_USB_MIDI_EP2_OUT_Callback);
 #endif
         
   // enable bulk-in interrupts on NAKs

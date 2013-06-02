@@ -573,7 +573,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x02,				// Out Endpoint 2
+  MIOS32_USB_MIDI_DATA_OUT_EP,	// Out Endpoint 2
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -612,7 +612,7 @@ static const u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_DESC] = {
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x81,				// In Endpoint 1
+  MIOS32_USB_MIDI_DATA_IN_EP,	// In Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
@@ -853,7 +853,7 @@ static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_SIZ_CONFIG_DESC
   // Standard Bulk OUT Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x02,				// Out Endpoint 2
+  MIOS32_USB_MIDI_DATA_OUT_EP,	// Out Endpoint 2
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_IN_SIZE>>8),	// num of bytes per packet (MSB)
@@ -871,7 +871,7 @@ static const u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_SIZ_CONFIG_DESC
   // Standard Bulk IN Endpoint Descriptor
   9,				// Descriptor length
   DSCR_ENDPNT,			// Descriptor type
-  0x81,				// In Endpoint 1
+  MIOS32_USB_MIDI_DATA_IN_EP,	// In Endpoint 1
   0x02,				// Bulk, not shared
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE&0xff),	// num of bytes per packet (LSB)
   (u8)(MIOS32_USB_MIDI_DATA_OUT_SIZE>>8),	// num of bytes per packet (MSB)
@@ -1441,6 +1441,13 @@ static void MIOS32_USB_CB_Reset(void)
   
 
 #ifndef MIOS32_DONT_USE_USB_MIDI
+#if MIOS32_USB_MIDI_DATA_OUT_EP != 0x02
+# error "Please adapt the code for different endpoints"
+#endif
+#if MIOS32_USB_MIDI_DATA_IN_EP != 0x81
+# error "Please adapt the code for different endpoints"
+#endif
+
 # ifdef STM32F10X_CL   
   // Init EP1 IN
   OTG_DEV_EP_Init(EP1_IN, OTG_DEV_EP_TYPE_BULK, MIOS32_USB_MIDI_DATA_IN_SIZE);

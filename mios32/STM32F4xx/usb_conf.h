@@ -25,6 +25,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
+#include "usbd_conf.h"
 
 
 /** @addtogroup USB_OTG_DRIVER
@@ -45,11 +46,6 @@
         configuration, you can declare the needed define in your toolchain
         compiler preprocessor.
    */
-
-// TK: in MIOS32, we use the OTG_FS
-#define USE_USB_OTG_FS
-
-
 
 #ifndef USE_USB_OTG_FS
 //#define USE_USB_OTG_FS

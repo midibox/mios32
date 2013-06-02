@@ -24,11 +24,16 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_USB_MIDI)
 
-//#include <usb_lib.h>
+#include <usb_core.h>
+#include <usbd_req.h>
+#include <usb_regs.h>
 
-#ifdef STM32F10X_CL
-extern USB_OTG_CORE_REGS USB_OTG_FS_regs;
-#endif
+
+// imported from mios32_usb.c
+extern USB_OTG_CORE_HANDLE  USB_OTG_dev;
+extern uint32_t USB_Rx_Buffer[MIOS32_USB_MIDI_DATA_OUT_SIZE/4];
+static uint32_t USB_Tx_Buffer[MIOS32_USB_MIDI_DATA_IN_SIZE/4];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -254,7 +259,78 @@ s32 MIOS32_USB_MIDI_Periodic_mS(void)
 /////////////////////////////////////////////////////////////////////////////
 static void MIOS32_USB_MIDI_TxBufferHandler(void)
 {
-  // TODO
+  // before using the handle: ensure that device (and class) already configured
+  if( USB_OTG_dev.dev.class_cb == NULL )
+    return;
+
+  // send buffered packages if
+  //   - last transfer finished
+  //   - new packages are in the buffer
+  //   - the device is configured
+
+  // atomic operation to avoid conflict with other interrupts
+  MIOS32_IRQ_Disable();
+
+  if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
+    s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
+
+#if 0
+    // this method doesn't work with the new STM USB driver anymore... :-/
+
+    u32 ep_num = MIOS32_USB_MIDI_DATA_IN_EP & 0x7f;
+
+    // Set transfer size
+    USB_OTG_DEPXFRSIZ_TypeDef deptsiz;
+    deptsiz.d32 = 0;
+    deptsiz.b.xfersize = count * 4;
+    deptsiz.b.pktcnt = 1;
+    USB_OTG_WRITE_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPTSIZ, deptsiz.d32);
+
+    // Enable the Tx FIFO Empty Interrupt for this EP
+    uint32_t fifoemptymsk = 1 << ep_num;
+    USB_OTG_MODIFY_REG32(&USB_OTG_dev.regs.DREGS->DIEPEMPMSK, 0, fifoemptymsk);
+
+    /* EP enable, IN data in FIFO */
+    USB_OTG_DEPCTL_TypeDef depctl;
+    depctl.d32 = USB_OTG_READ_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPCTL);
+    depctl.b.cnak = 1;
+    depctl.b.epena = 1;
+    USB_OTG_WRITE_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPCTL, depctl.d32); 
+#endif
+
+    // notify that new package is sent
+    tx_buffer_busy = 1;
+
+    // send to IN pipe
+    tx_buffer_size -= count;
+
+#if 0
+    // this method doesn't work with the new STM USB driver anymore... :-/
+
+    // copy into EP FIFO
+    __IO uint32_t *fifo = (uint32_t *)&USB_OTG_dev.regs.DFIFO[ep_num];
+    do {
+      USB_OTG_WRITE_REG32(fifo, tx_buffer[tx_buffer_tail]);
+      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+	tx_buffer_tail = 0;
+    } while( --count );
+#else
+    u32 *buf_addr = (u32 *)USB_Tx_Buffer;
+    int i;
+    for(i=0; i<count; ++i) {
+      *(buf_addr++) = tx_buffer[tx_buffer_tail];
+      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+	tx_buffer_tail = 0;
+    }
+
+    DCD_EP_Tx(&USB_OTG_dev,
+	      MIOS32_USB_MIDI_DATA_IN_EP,
+	      (uint8_t*)&USB_Tx_Buffer,
+	      count*4);
+#endif
+  }
+
+  MIOS32_IRQ_Enable();
 }
 
 
@@ -263,7 +339,51 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 /////////////////////////////////////////////////////////////////////////////
 static void MIOS32_USB_MIDI_RxBufferHandler(void)
 {
-  // TODO
+  s16 count;
+
+  // before using the handle: ensure that device (and class) already configured
+  if( USB_OTG_dev.dev.class_cb == NULL ) {
+    return;
+  }
+
+  // atomic operation to avoid conflict with other interrupts
+  MIOS32_IRQ_Disable();
+
+  // check if we can receive new data and get packages to be received from OUT pipe
+  u32 ep_num = MIOS32_USB_MIDI_DATA_OUT_EP & 0x7f;
+  USB_OTG_EP *ep = &USB_OTG_dev.dev.out_ep[ep_num];
+  if( rx_buffer_new_data && (count=ep->xfer_count>>2) ) {
+    // check if buffer is free
+    if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
+      u32 *buf_addr = (u32 *)USB_Rx_Buffer;
+
+      // copy received packages into receive buffer
+      // this operation should be atomic
+      do {
+	mios32_midi_package_t package;
+	package.ALL = *buf_addr++;
+
+	if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
+	  rx_buffer[rx_buffer_head] = package.ALL;
+
+	  if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+	    rx_buffer_head = 0;
+	  ++rx_buffer_size;
+	}
+      } while( --count > 0 );
+
+      // notify, that data has been put into buffer
+      rx_buffer_new_data = 0;
+
+      // configuration for next transfer
+      DCD_EP_PrepareRx(&USB_OTG_dev,
+		       MIOS32_USB_MIDI_DATA_OUT_EP,
+		       (uint8_t*)(USB_Rx_Buffer),
+		       MIOS32_USB_MIDI_DATA_OUT_SIZE);
+    }
+  }
+
+  MIOS32_IRQ_Enable();
 }
 
 
@@ -276,7 +396,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 {
   // package has been sent
   tx_buffer_busy = 0;
-  
+
   // check for next package
   MIOS32_USB_MIDI_TxBufferHandler();
 }
