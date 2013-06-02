@@ -163,6 +163,8 @@ const u8 mux_selection_order[8] = { 5, 7, 3, 1, 2, 4, 0, 6 };
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Init(u32 mode)
 {
+#warning "TODO!!!"
+#if 0
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -229,7 +231,8 @@ s32 MIOS32_AIN_Init(u32 mode)
 
   // configure MUX pins if enabled
 #if MIOS32_AIN_MUX_PINS >= 0
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 #if MIOS32_AIN_MUX_PINS >= 1
   GPIO_InitStructure.GPIO_Pin = MIOS32_AIN_MUX0_PIN;
   GPIO_Init(MIOS32_AIN_MUX0_PORT, &GPIO_InitStructure);
@@ -257,7 +260,7 @@ s32 MIOS32_AIN_Init(u32 mode)
         (num_channels & 1) ? ADC2 : ADC1, 
 	adc_chn_map[i], 
 	(num_channels>>1)+1, 
-	ADC_SampleTime_239Cycles5);
+	ADC_SampleTime_144Cycles);
       ++num_channels;
     }
   }
@@ -270,7 +273,7 @@ s32 MIOS32_AIN_Init(u32 mode)
   // configure ADCs
   ADC_InitTypeDef ADC_InitStructure;
   ADC_StructInit(&ADC_InitStructure);
-  ADC_InitStructure.ADC_Mode = ADC_Mode_RegSimult;
+  ADC_InitStructure.ADC_Mode = ADC_DualMode_RegSimult;
   ADC_InitStructure.ADC_ScanConvMode = ENABLE;
   ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
   ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
@@ -331,6 +334,7 @@ s32 MIOS32_AIN_Init(u32 mode)
   // finally start initial conversion
   ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 
+#endif
   return 0;
 #endif
 }
@@ -463,8 +467,11 @@ s32 MIOS32_AIN_Handler(void *_callback)
   if( service_prepare_callback != NULL && service_prepare_callback() >= 1 )
     return 0; // scan skipped - no error
 
+#warning "TODO!!!"
+#if 0
   // start next scan
   ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+#endif
 
   return 0; // no error
 #endif
@@ -481,8 +488,12 @@ void DMA1_Channel1_IRQHandler(void)
   int i;
   u16 *src_ptr, *dst_ptr;
 
+#warning "TODO!!!"
+#if 0
+
   // clear the pending flag(s)
   DMA_ClearFlag(DMA1_FLAG_TC1 | DMA1_FLAG_TE1 | DMA1_FLAG_HT1 | DMA1_FLAG_GL1);
+#endif
 
 #if MIOS32_AIN_OVERSAMPLING_RATE >= 2
   // accumulate conversion result

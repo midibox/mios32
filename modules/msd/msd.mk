@@ -14,6 +14,12 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/msd/STM32F10x/msd_memory.c
 endif
 
+ifeq ($(FAMILY),STM32F4xx)
+C_INCLUDE += -I $(MIOS32_PATH)/modules/msd/STM32F4xx
+THUMB_SOURCE += \
+	$(MIOS32_PATH)/modules/msd/STM32F4xx/msd.c
+endif
+
 ifeq ($(FAMILY),LPC17xx)
 C_INCLUDE += -I $(MIOS32_PATH)/modules/msd/LPC17xx
 THUMB_SOURCE += \
