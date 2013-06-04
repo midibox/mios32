@@ -32,6 +32,19 @@ cp project.hex $RELEASE_DIR/MBHP_CORE_STM32
 cp project_build/project.bin $RELEASE_DIR/MBHP_CORE_STM32
 
 ###############################################################################
+echo "Building for STM32F4DISCOVERY"
+
+make cleanall
+export MIOS32_FAMILY=STM32F4xx
+export MIOS32_PROCESSOR=STM32F407VG
+export MIOS32_BOARD=STM32F4DISCOVERY
+export MIOS32_LCD=universal
+mkdir -p $RELEASE_DIR/STM32F4DISCOVERY
+make > $RELEASE_DIR/STM32F4DISCOVERY/log.txt
+cp project.hex $RELEASE_DIR/STM32F4DISCOVERY
+cp project_build/project.bin $RELEASE_DIR/STM32F4DISCOVERY
+
+###############################################################################
 echo "Building for MBHP_CORE_LPC17 (LPC1768)"
 
 make cleanall
