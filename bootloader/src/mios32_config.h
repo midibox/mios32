@@ -32,14 +32,6 @@
 //#define MIOS32_DONT_USE_USB_MIDI
 //#define MIOS32_USE_USB_COM
 
-#ifdef STM32F10X_CL
-// UART disabled for STM32F105x due to higher memory consumption of the USB driver
-// UART doesn't make much sense anyhow, since PA9 is used for VBUS detection,
-// and since STM32F105x chip contains an internal USB bootloader as fallback solution
-# define MIOS32_DONT_USE_UART
-# define MIOS32_DONT_USE_UART_MIDI
-#endif
-
 #define MIOS32_DONT_USE_IIC
 #define MIOS32_DONT_USE_IIC_MIDI
 //#define MIOS32_USE_I2S
@@ -84,9 +76,30 @@
 #define MIOS32_DONT_INCLUDE_BSL
 
 // to save memory on STM32 build:
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
 # define MIOS32_SYS_DONT_INIT_RTC
 # define MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
 #endif
+
+// to save some additional memory for STM32F4:
+#if defined(MIOS32_FAMILY_STM32F4xx)
+#define MIOS32_UART_NUM 1
+#define MIOS32_BOARD_J15_LED_NUM 1
+
+// unfortunately!!! Only 584 bytes are missing, maybe the USB driver could be optimized by removing irrelevant code
+# define MIOS32_DONT_USE_UART
+# define MIOS32_DONT_USE_UART_MIDI
+#endif
+
+
+#ifdef STM32F10X_CL
+// UART disabled for STM32F105x due to higher memory consumption of the USB driver
+// UART doesn't make much sense anyhow, since PA9 is used for VBUS detection,
+// and since STM32F105x chip contains an internal USB bootloader as fallback solution
+# define MIOS32_DONT_USE_UART
+# define MIOS32_DONT_USE_UART_MIDI
+#endif
+
+
 
 #endif /* _MIOS32_CONFIG_H */

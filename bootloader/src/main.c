@@ -22,6 +22,9 @@
 #include <usb_lib.h>
 #elif defined(MIOS32_FAMILY_STM32F4xx)
 #include <usb_core.h>
+
+// imported from mios32_usb.c
+extern USB_OTG_CORE_HANDLE  USB_OTG_dev;
 #endif
 
 
@@ -169,9 +172,12 @@ int main(void)
     // if initialized, this function will only set some variables - it won't re-init the peripheral.
     // if hold mode activated via external pin, force re-initialisation by resetting USB
     if( hold_mode_active_after_reset ) {
-#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+#if defined(MIOS32_FAMILY_STM32F10x)
       RCC_APB1PeriphResetCmd(0x00800000, ENABLE); // reset USB device
       RCC_APB1PeriphResetCmd(0x00800000, DISABLE);
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+      RCC_AHB2PeriphResetCmd(0x00000080, ENABLE); // reset USB device
+      RCC_AHB2PeriphResetCmd(0x00000080, DISABLE);
 #endif
     }
 
@@ -246,7 +252,6 @@ int main(void)
       // SysEx requests will be parsed by MIOS32 internally, BSL_SYSEX_Cmd() will be called
       // directly by MIOS32 to enhance command set
       MIOS32_MIDI_Receive_Handler(NULL);
-
     } while( MIOS32_STOPWATCH_ValueGet() < 20000 ||             // wait for 2 seconds
 	     BSL_SYSEX_HaltStateGet() ||                        // BSL not halted due to flash write operation
 	     (hold_mode_active_after_reset && BSL_HOLD_STATE)); // BSL not actively halted by pin
@@ -268,8 +273,12 @@ int main(void)
 #if defined(MIOS32_FAMILY_STM32F4xx)
     RCC_AHB1PeriphResetCmd(0xfffffff8, ENABLE); // don't reset GPIOA/AF due to USB pins
     RCC_AHB2PeriphResetCmd(0xffffff7f, ENABLE); // don't reset OTG_FS, so that the connectuion can survive
+    RCC_APB1PeriphResetCmd(0xffffffff, ENABLE);
+    RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
     RCC_AHB1PeriphResetCmd(0xffffffff, DISABLE);
     RCC_AHB2PeriphResetCmd(0xffffffff, DISABLE);
+    RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+    RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
 #else
 # ifdef MIOS32_BOARD_STM32_PRIMER
     RCC_APB2PeriphResetCmd(0xfffffff0, ENABLE); // Primer: don't reset GPIOA/AF + GPIOB due to USB detach pin
@@ -296,9 +305,8 @@ int main(void)
       if( MIOS32_USB_IsInitialized() )
 	OTGD_FS_DisableGlobalInt();
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-      if( MIOS32_USB_IsInitialized() ) {
-	// TODO: needs handle...
-	//USB_OTG_DisableGlobalInt();
+      if( MIOS32_USB_IsInitialized() && USB_OTG_dev.dev.class_cb != NULL ) {
+	USB_OTG_DisableGlobalInt(&USB_OTG_dev);
       }
 #else
       _SetCNTR(0); // clear USB interrupt mask

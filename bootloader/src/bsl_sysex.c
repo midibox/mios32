@@ -339,7 +339,9 @@ s32 BSL_SYSEX_Cmd_WriteMem(mios32_midi_port_t port, mios32_midi_sysex_cmd_state_
 
       if( sysex_receive_ctr < sysex_len ) {
 	// for remote analysis...
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
 	MIOS32_MIDI_SendDebugMessage("[BSL_SYSEX] expected %d, got %d bytes (retry)\n", sysex_len, sysex_receive_ctr);
+#endif
 	// not enough bytes received
 	BSL_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, MIOS32_MIDI_SYSEX_DISACK_LESS_BYTES_THAN_EXP);
       } else if( sysex_rec_state == BSL_SYSEX_REC_INVALID ) {
@@ -561,11 +563,15 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
       int sector;
       for(sector=0; sector<MAX_FLASH_SECTOR; ++sector) {
 	if( addr == sector_start_map[sector][0] ) {
+	  //MIOS32_IRQ_Disable();
 	  FLASH_Status status = FLASH_EraseSector(sector_start_map[sector][1], VoltageRange_3);
+	  //MIOS32_IRQ_Enable();
 	  if( status != FLASH_COMPLETE ) {
-#if 1
+	    FLASH_ClearFlag(0xffffffff); // clear error flags, otherwise next program attempts will fail
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
 	    MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
 #endif
+	    return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
 	  }
 	  break;
 	}
@@ -580,12 +586,14 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 	((uint64_t)buffer[i+2] << 16) |
 	((uint64_t)buffer[i+3] << 24);
 
+      //MIOS32_IRQ_Disable();
       FLASH_Status status = FLASH_ProgramWord(addr, data);
+      //MIOS32_IRQ_Enable();
       if( status != FLASH_COMPLETE ) {
-#if 1
+	FLASH_ClearFlag(0xffffffff); // clear error flags, otherwise next program attempts will fail
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
 	MIOS32_MIDI_SendDebugMessage("program flash failed for 0x%08x: code %d\n", addr, status);
 #endif
-	FLASH_ClearFlag(FLASH_FLAG_OPERR); // clear error flags, otherwise next program attempts will fail
 	return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
       }
 
@@ -600,13 +608,13 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
     s32 status;
     if( (status=find_erase_prepare_sector(SYSTEM_CORE_CLOCK_KHZ, addr)) < 0 ) {
       MIOS32_IRQ_Enable();
-#if 1
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
       MIOS32_MIDI_SendDebugMessage("erase failed for 0x%08x: code %d\n", addr, status);
 #endif
       return -MIOS32_MIDI_SYSEX_DISACK_WRITE_FAILED;
     } else if( (status=write_data(SYSTEM_CORE_CLOCK_KHZ, addr, (unsigned *)buffer, len)) < 0 ) {
       MIOS32_IRQ_Enable();
-#if 1
+#ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
       MIOS32_MIDI_SendDebugMessage("write_data failed for 0x%08x: code %d\n", addr, status);
 #endif
 
