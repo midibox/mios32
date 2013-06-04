@@ -24,6 +24,19 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// On-Board LEDs
+/////////////////////////////////////////////////////////////////////////////
+
+
+#if !defined(MIOS32_BOARD_J15_LED_NUM)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#  define MIOS32_BOARD_J15_LED_NUM 4
+# else
+#  warning "Please define number of available LEDs (take only 1 by default)"
+# endif
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
 // J5 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
@@ -200,6 +213,7 @@ s32 MIOS32_BOARD_Init(u32 mode)
 s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
 #if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if MIOS32_BOARD_J15_LED_NUM >= 1
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
@@ -212,24 +226,31 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
     GPIO_Init(GPIOD, &GPIO_InitStructure);
   }
 
+#if MIOS32_BOARD_J15_LED_NUM >= 2
   if( leds & 2 ) {
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13; // LED3 (Orange)
     GPIO_Init(GPIOD, &GPIO_InitStructure);
   }
+#endif
 
+#if MIOS32_BOARD_J15_LED_NUM >= 3
   if( leds & 4 ) {
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14; // LED5 (Red)
     GPIO_Init(GPIOD, &GPIO_InitStructure);
   }
+#endif
 
+#if MIOS32_BOARD_J15_LED_NUM >= 4
   if( leds & 8 ) {
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15; // LED6 (Blue)
     GPIO_Init(GPIOD, &GPIO_InitStructure);
   }
+#endif
 
   if( leds & 0xfffffff0)
     return -2; // LED doesn't exist
 
+#endif
   return 0; // no error
 #else
   return -1; // no LED specified for board
@@ -248,30 +269,38 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 {
 #if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if MIOS32_BOARD_J15_LED_NUM >= 1
   if( leds & 1 ) { // LED4 (Green)
     if( value & 1 )
       GPIOD->BSRRL = GPIO_Pin_12;
     else
       GPIOD->BSRRH = GPIO_Pin_12;
   }
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 2
   if( leds & 2 ) { // LED3 (Orange)
     if( value & 2 )
       GPIOD->BSRRL = GPIO_Pin_13;
     else
       GPIOD->BSRRH = GPIO_Pin_13;
   }
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 3
   if( leds & 4 ) { // LED5 (Red)
     if( value & 4 )
       GPIOD->BSRRL = GPIO_Pin_14;
     else
       GPIOD->BSRRH = GPIO_Pin_14;
   }
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 4
   if( leds & 8 ) { // LED6 (Blue)
     if( value & 8 )
       GPIOD->BSRRL = GPIO_Pin_15;
     else
       GPIOD->BSRRH = GPIO_Pin_15;
   }
+#endif
 
   if( leds & 0xfffffff0)
     return -2; // LED doesn't exist
@@ -291,15 +320,23 @@ u32 MIOS32_BOARD_LED_Get(void)
 {
   u32 values = 0;
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if MIOS32_BOARD_J15_LED_NUM >= 1
   if( GPIOD->ODR & GPIO_Pin_12 ) // LED4 (Green)
     values |= (1 << 0);
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 2
   if( GPIOD->ODR & GPIO_Pin_13 ) // LED3 (Orange)
     values |= (1 << 1);
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 3
   if( GPIOD->ODR & GPIO_Pin_14 ) // LED4 (Red)
     values |= (1 << 2);
+#endif
+#if MIOS32_BOARD_J15_LED_NUM >= 4
   if( GPIOD->ODR & GPIO_Pin_15 ) // LED6 (Blue)
     values |= (1 << 3);
+#endif
 #endif
 
   return values;

@@ -41,7 +41,6 @@ extern u32 mios32_sys_isr_vector;
 
 
 #define EXT_CRYSTAL_FRQ 8000000  // used for MBHP_CORE_STM32, should we define this somewhere else or select via MIOS32_BOARD?
-#define RTC_PREDIVIDER  (EXT_CRYSTAL_FRQ/85) // TODO - uneven value
 
 #if EXT_CRYSTAL_FRQ != 8000000
 # error "Please provide alternative PLL config"
@@ -55,8 +54,6 @@ extern u32 mios32_sys_isr_vector;
 
 /* USB OTG FS, SDIO and RNG Clock =  PLL_VCO / PLLQ */
 #define PLL_Q      7
-
-const  __I uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -109,32 +106,34 @@ s32 MIOS32_SYS_Init(u32 mode)
 #endif
 
   /* FPU settings ------------------------------------------------------------*/
-  #if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
+#if (__FPU_PRESENT == 1) && (__FPU_USED == 1)
     SCB->CPACR |= ((3UL << 10*2)|(3UL << 11*2));  /* set CP10 and CP11 Full Access */
-  #endif
-
-  /* Reset the RCC clock configuration to the default reset state ------------*/
-  /* Set HSION bit */
-  RCC->CR |= (uint32_t)0x00000001;
-
-  /* Reset CFGR register */
-  RCC->CFGR = 0x00000000;
-
-  /* Reset HSEON, CSSON and PLLON bits */
-  RCC->CR &= (uint32_t)0xFEF6FFFF;
-
-  /* Reset PLLCFGR register */
-  RCC->PLLCFGR = 0x24003010;
-
-  /* Reset HSEBYP bit */
-  RCC->CR &= (uint32_t)0xFFFBFFFF;
-
-  /* Disable all interrupts */
-  RCC->CIR = 0x00000000;
+#endif
 
   // init clock system if chip doesn't already run with PLL
   __IO uint32_t HSEStatus = 0;
-  {
+  if( (RCC->CFGR & (uint32_t)RCC_CFGR_SWS) == RCC_CFGR_SWS_PLL ) {
+    HSEStatus = SUCCESS;
+  } else {
+    /* Reset the RCC clock configuration to the default reset state ------------*/
+    /* Set HSION bit */
+    RCC->CR |= (uint32_t)0x00000001;
+
+    /* Reset CFGR register */
+    RCC->CFGR = 0x00000000;
+
+    /* Reset HSEON, CSSON and PLLON bits */
+    RCC->CR &= (uint32_t)0xFEF6FFFF;
+
+    /* Reset PLLCFGR register */
+    RCC->PLLCFGR = 0x24003010;
+
+    /* Reset HSEBYP bit */
+    RCC->CR &= (uint32_t)0xFFFBFFFF;
+
+    /* Disable all interrupts */
+    RCC->CIR = 0x00000000;
+
     /* Configure the System clock source, PLL Multiplier and Divider factors, 
        AHB/APBx prescalers and Flash settings ----------------------------------*/
 
@@ -190,7 +189,7 @@ s32 MIOS32_SYS_Init(u32 mode)
       RCC->CFGR |= RCC_CFGR_SW_PLL;
 
       /* Wait till the main PLL is used as system clock source */
-      while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS ) != RCC_CFGR_SWS_PLL);
+      while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
     } else {
       /* If HSE fails to start-up, the application will have wrong clock
          configuration. User can add here some code to deal with this error */
@@ -258,17 +257,15 @@ s32 MIOS32_SYS_Reset(void)
 
   // send all-0 to MF control chain (if enabled) (TODO)
 
-  // reset STM32
-#if 0
-  // doesn't work for some reasons...
-  // in addition, causes a USB disconnect on Primer (probably since GPIOB is reseted?)
-  NVIC_GenerateSystemReset();
-#else
-  //  NVIC_GenerateSystemReset();
-  RCC_AHB1PeriphResetCmd(0xfffffff8, ENABLE); // don't reset GPIOA/AF due to USB pins
+  // reset peripherals
+  RCC_AHB1PeriphResetCmd(0xfffffffe, ENABLE); // don't reset GPIOA due to USB pins
   RCC_AHB2PeriphResetCmd(0xffffff7f, ENABLE); // don't reset OTG_FS, so that the connectuion can survive
+  RCC_APB1PeriphResetCmd(0xffffffff, ENABLE);
+  RCC_APB2PeriphResetCmd(0xffffffff, ENABLE);
   RCC_AHB1PeriphResetCmd(0xffffffff, DISABLE);
   RCC_AHB2PeriphResetCmd(0xffffffff, DISABLE);
+  RCC_APB1PeriphResetCmd(0xffffffff, DISABLE);
+  RCC_APB2PeriphResetCmd(0xffffffff, DISABLE);
 
 #if 0
   // v2.0.1
@@ -281,8 +278,6 @@ s32 MIOS32_SYS_Reset(void)
 #if 1
   // and this is the code for v3.3.0
   SCB->AIRCR = (0x5fa << SCB_AIRCR_VECTKEY_Pos) | (1 << SCB_AIRCR_VECTRESET_Pos);
-#endif
-
 #endif
 
   while( 1 );
@@ -374,47 +369,38 @@ s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
   // taken from STM32 example "RTC/Calendar"
   // adapted to clock RTC via HSE  oscillator
 
-#if 0
   // Enable PWR and BKP clocks
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
   // Allow access to BKP Domain
   PWR_BackupAccessCmd(ENABLE);
 
-  // Reset Backup Domain
-  BKP_DeInit();
-
-  // Select HSE (divided by 128) as RTC Clock Source
-  RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div128);
+  // Select HSE (divided by 16) as RTC Clock Source
+#if EXT_CRYSTAL_FRQ != 8000000
+# error "Please configure alternative clock divider here"
+#endif
+  RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div16); // -> each 1/(8 MHz / 16) = 2 uS
 
   // Enable RTC Clock
   RCC_RTCCLKCmd(ENABLE);
 
-  // Wait for RTC registers synchronization
-  RTC_WaitForSynchro();
+  // initialize RTC
+  RTC_InitTypeDef RTC_InitStruct;
+  RTC_StructInit(&RTC_InitStruct);
 
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-
-  // Enable the RTC Second
-  RTC_ITConfig(RTC_IT_SEC, ENABLE);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-
-  // Set RTC prescaler: set RTC period to 1sec
-  RTC_SetPrescaler(RTC_PREDIVIDER-1);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
+  // Set RTC prescaler: set RTC period from 2 uS to 1 S
+  RTC_InitStruct.RTC_AsynchPrediv = 100 - 1; // 7bit maximum
+  RTC_InitStruct.RTC_SynchPrediv = 5000 - 1; // 13 bit maximum
+  RTC_Init(&RTC_InitStruct);
 
   // Change the current time
+  RTC_TimeTypeDef RTC_TimeStruct;
+  RTC_TimeStructInit(&RTC_TimeStruct);
+  RTC_TimeStruct.RTC_Hours = t.seconds / 3600;
+  RTC_TimeStruct.RTC_Minutes = (t.seconds % 3600) / 60;
+  RTC_TimeStruct.RTC_Seconds = t.seconds % 60; 
+  RTC_SetTime(RTC_Format_BIN, &RTC_TimeStruct);
   // (fraction not taken into account here)
-  RTC_SetCounter(t.seconds);
-
-  // Wait until last write operation on RTC registers has finished
-  RTC_WaitForLastTask();
-#endif
 
   return 0; // no error
 }
@@ -436,39 +422,12 @@ s32 MIOS32_SYS_TimeSet(mios32_sys_time_t t)
 /////////////////////////////////////////////////////////////////////////////
 mios32_sys_time_t MIOS32_SYS_TimeGet(void)
 {
-  u32 seconds, divider;
-  u32 last_seconds, last_divider;
-
-#if 0
-  // counter values are changing with a period of 1/(12 MHz / 128) = ca. 11 uS
-  // in order to ensure, that we are reading a consistent counter set, the
-  // accesses have to be repeated until we read two times the same values
-
-  // use direct register accesses instead ofto RTC_GetCounter()/RTC_GetDivider()
-  // to speed up routine
-
-  // note: we could have an issue here if routine is permanently interrupted,
-  // so that we never reach the same values...
-
-  // therefore interrupts are disabled
-  // Disadvantage: bad for interrupt latency...
-  // However, expected execution time is ca. 500 nS for two loops (best case),
-  // and 750 nS for three loops (worst case)
-
-  MIOS32_IRQ_Disable();
-  seconds = divider = 0;
-  do {
-    last_seconds = seconds;
-    last_divider = divider;
-    seconds = ((u32)RTC->CNTH << 16) | RTC->CNTL;
-    divider = ((u32)RTC->DIVH << 16) | RTC->DIVL;
-  } while( seconds != last_seconds && divider != last_divider );
-  MIOS32_IRQ_Enable();
-#endif
+  RTC_TimeTypeDef RTC_TimeStruct;
+  RTC_GetTime(RTC_Format_BIN, &RTC_TimeStruct);
 
   mios32_sys_time_t t = {
-    .seconds = seconds,
-    .fraction_ms = (1000 * (RTC_PREDIVIDER-1-divider)) / RTC_PREDIVIDER
+    .seconds = RTC_TimeStruct.RTC_Hours * 3600 + RTC_TimeStruct.RTC_Minutes * 60 + RTC_TimeStruct.RTC_Seconds,
+    .fraction_ms = 0 // not supported
   };
 
   return t;

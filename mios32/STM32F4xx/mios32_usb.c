@@ -1049,10 +1049,7 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
   RCC_AHB1PeriphClockCmd( RCC_AHB1Periph_GPIOA , ENABLE);
 
   /* Configure SOF VBUS ID DM DP Pins */
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8  |
-    GPIO_Pin_9  |
-      GPIO_Pin_11 |
-        GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_11 | GPIO_Pin_12;
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -1065,25 +1062,18 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_OTG1_FS) ;
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource12,GPIO_AF_OTG1_FS) ;
 
+#if 0
   /* this for ID line debug */
-
-
   GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_10;
   GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_OTG1_FS) ;
+#endif
 
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
   RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_OTG_FS, ENABLE) ;
-
-
-  /* enable the PWR clock */
-  RCC_APB1PeriphResetCmd(RCC_APB1Periph_PWR, ENABLE);
-
-  /* Configure the Key button in EXTI mode */
-  //STM_EVAL_PBInit(BUTTON_USER, BUTTON_MODE_EXTI);
 
   EXTI_ClearITPendingBit(EXTI_Line0);
 }
@@ -1246,20 +1236,6 @@ static uint8_t  MIOS32_USB_CLASS_DataOut (void *pdev, uint8_t epnum)
 }
 
 /**
-  * @brief  usbd_audio_SOF
-  *         Start Of Frame event management
-  * @param  pdev: instance
-  * @param  epnum: endpoint number
-  * @retval status
-  */
-static uint8_t  MIOS32_USB_CLASS_SOF (void *pdev)
-{      
-  // not used
-  
-  return USBD_OK;
-}
-
-/**
   * @brief  MIOS32_USB_CLASS_GetCfgDesc 
   *         Return configuration descriptor
   * @param  speed : current device speed
@@ -1289,7 +1265,7 @@ static const USBD_Class_cb_TypeDef MIOS32_USB_CLASS_cb =
   MIOS32_USB_CLASS_EP0_RxReady,
   MIOS32_USB_CLASS_DataIn,
   MIOS32_USB_CLASS_DataOut,
-  MIOS32_USB_CLASS_SOF,
+  NULL, // MIOS32_USB_CLASS_SOF // not used
   NULL,
   NULL,     
   MIOS32_USB_CLASS_GetCfgDesc,
@@ -1317,23 +1293,50 @@ s32 MIOS32_USB_Init(u32 mode)
     return -1; // unsupported mode
   
   // change connection state to disconnected
-#ifndef MIOS32_DONT_USE_USB_MIDI
-  MIOS32_USB_MIDI_ChangeConnectionState(0);
-#endif
+  USBD_USR_DeviceDisconnected();
 
-  // if mode == 0: don't initialize USB if not required (important for BSL)
   if( mode == 0 && MIOS32_USB_IsInitialized() ) {
-    // Perform OTG Device initialization procedure (including EP0 init) again
-    // this is unfortunately required since the OTG driver has to initialize internal variables after reset
+    // if mode == 0: no reconnection, important for BSL!
 
+#if 0
+    // init USB device and driver
     USBD_Init(&USB_OTG_dev,
 	      USB_OTG_FS_CORE_ID,
 	      (USBD_DEVICE *)&USR_desc,
 	      (USBD_Class_cb_TypeDef *)&MIOS32_USB_CLASS_cb,
 	      (USBD_Usr_cb_TypeDef *)&USR_cb);
-  } else {
+#else
 
-    // Perform OTG Device initialization procedure
+    // don't run complete driver init sequence to ensure that the connection doesn't get lost!
+
+    // phys interface re-initialisation (just to ensure)
+    USB_OTG_BSP_Init(&USB_OTG_dev);
+
+    // USBD_Init sets these pointer in the handle
+    USB_OTG_dev.dev.class_cb = (USBD_Class_cb_TypeDef *)&MIOS32_USB_CLASS_cb;
+    USB_OTG_dev.dev.usr_cb = (USBD_Usr_cb_TypeDef *)&USR_cb;
+    USB_OTG_dev.dev.usr_device = (USBD_DEVICE *)&USR_desc;
+
+    // some additional handle init stuff which doesn't hurt
+    USB_OTG_SelectCore(&USB_OTG_dev, USB_OTG_FS_CORE_ID);
+
+    // enable interrupts
+    USB_OTG_EnableGlobalInt(&USB_OTG_dev);
+    USB_OTG_EnableDevInt(&USB_OTG_dev);
+    USB_OTG_BSP_EnableInterrupt(&USB_OTG_dev);
+#endif
+
+    // select configuration
+    USB_OTG_dev.dev.device_config = 1;
+    USB_OTG_dev.dev.device_status = USB_OTG_CONFIGURED;
+
+    // init endpoints
+    MIOS32_USB_CLASS_Init(&USB_OTG_dev, 1);
+
+    // assume that device is (still) configured
+    USBD_USR_DeviceConfigured();
+  } else {
+    // init USB device and driver
     USBD_Init(&USB_OTG_dev,
 	      USB_OTG_FS_CORE_ID,
 	      (USBD_DEVICE *)&USR_desc,
@@ -1350,7 +1353,7 @@ s32 MIOS32_USB_Init(u32 mode)
     DCD_DevConnect(&USB_OTG_dev);
   }
 
-  return -1; // TODO
+  return 0; // no error
 }
 
 
@@ -1364,7 +1367,7 @@ s32 MIOS32_USB_IsInitialized(void)
 {
   // we assume that initialisation has been done when B-Session valid flag is set
   __IO USB_OTG_GREGS *GREGS = (USB_OTG_GREGS *)(USB_OTG_FS_BASE_ADDR + USB_OTG_CORE_GLOBAL_REGS_OFFSET);
-  return (GREGS->GOTGCTL & (1 << 19));
+  return (GREGS->GOTGCTL & (1 << 19)) ? 1 : 0;
 }
 
 
