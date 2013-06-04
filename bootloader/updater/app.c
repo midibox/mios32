@@ -24,11 +24,13 @@
 
 
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-#ifdef STM32F10X_CL
-# include "bsl_image_MBHP_CORE_STM32_CL.inc"
-#else
-# include "bsl_image_MBHP_CORE_STM32.inc"
+# ifdef STM32F10X_CL
+#  include "bsl_image_MBHP_CORE_STM32_CL.inc"
+# else
+#  include "bsl_image_MBHP_CORE_STM32.inc"
 #endif
+#elif defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# include "bsl_image_STM32F4DISCOVERY.inc"
 #elif defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
 #if defined(MIOS32_PROCESSOR_LPC1769)
 # include "bsl_image_LPCXPRESSO_1769.inc"
@@ -56,6 +58,11 @@
 # define FLASH_PAGE_SIZE   (MIOS32_SYS_FlashSizeGet() >= (256*1024) ? 0x800 : 0x400)
 
   // STM32: flash memory range of BSL
+# define BSL_START_ADDR  0x08000000
+# define BSL_END_ADDR    0x08003fff
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  // STM32F4: flash memory range of BSL
+# define FLASH_PAGE_SIZE 0x4000
 # define BSL_START_ADDR  0x08000000
 # define BSL_END_ADDR    0x08003fff
 #elif defined(MIOS32_FAMILY_LPC17xx)
@@ -225,7 +232,7 @@ s32 UpdateBSL(void)
   // disable interrupts - this is really a critical section!
   MIOS32_IRQ_Disable();
 
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
   // FLASH_* routines are part of the STM32 code library
   FLASH_Unlock();
 
@@ -239,11 +246,19 @@ s32 UpdateBSL(void)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
     if( (addr % FLASH_PAGE_SIZE) == 0 ) {
-      if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE ) {
-	FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+#if defined(MIOS32_FAMILY_STM32F4xx)
+      if( (status=FLASH_EraseSector(FLASH_Sector_0, VoltageRange_3)) != FLASH_COMPLETE ) {
+	FLASH_ClearFlag(0xffffffff);
 	MIOS32_IRQ_Enable();
 	return -1; // erase failed
       }
+#else
+      if( (status=FLASH_ErasePage(addr)) != FLASH_COMPLETE ) {
+	FLASH_ClearFlag(0xffffffff);
+	MIOS32_IRQ_Enable();
+	return -1; // erase failed
+      }
+#endif
     }
 
     u16 data_value = bsl_image[i+0] | ((u16)bsl_image[i+1] << 8);
@@ -270,7 +285,7 @@ s32 UpdateBSL(void)
     }
 
     if( (status=FLASH_ProgramHalfWord(addr, data_value)) != FLASH_COMPLETE ) {
-      FLASH_ClearFlag(FLASH_FLAG_PGERR | FLASH_FLAG_WRPRTERR); // clear error flags, otherwise next program attempts will fail
+      FLASH_ClearFlag(0xffffffff); // clear error flags, otherwise next program attempts will fail
       MIOS32_IRQ_Enable();
       return -2; // programming failed
     }
@@ -388,7 +403,7 @@ static s32 RetrieveBootInfos(void)
   u8 *single_usb_confirm = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM;
   u8 *single_usb = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB;
   if( *single_usb_confirm == 0x42 && *single_usb < 0x80 )
-    BSL_single_usb = *fastboot;
+    BSL_single_usb = *single_usb;
 
   BSL_device_id = 0x00;
   u8 *device_id_confirm = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM;
