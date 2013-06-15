@@ -22,6 +22,15 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_DELAY)
 
+// timer used for MIOS32_DELAY functions (TIM1..TIM8)
+#ifndef MIOS32_DELAY_TIMER
+#define MIOS32_DELAY_TIMER  TIM1
+#endif
+
+#ifndef MIOS32_DELAY_TIMER_RCC
+#define MIOS32_DELAY_TIMER_RCC RCC_APB2Periph_TIM1
+#endif
+
 // timers clocked at CPU clock
 #define TIM_PERIPHERAL_FRQ MIOS32_SYS_CPU_FREQUENCY
 
@@ -44,7 +53,7 @@ s32 MIOS32_DELAY_Init(u32 mode)
     return -1; // unsupported mode
 
   // enable timer clock
-  if( MIOS32_DELAY_TIMER_RCC == RCC_APB2Periph_TIM1 || MIOS32_DELAY_TIMER_RCC == RCC_APB2Periph_TIM8 )
+  if( MIOS32_DELAY_TIMER == TIM1 || MIOS32_DELAY_TIMER == TIM8 )
     RCC_APB2PeriphClockCmd(MIOS32_DELAY_TIMER_RCC, ENABLE);
   else
     RCC_APB1PeriphClockCmd(MIOS32_DELAY_TIMER_RCC, ENABLE);

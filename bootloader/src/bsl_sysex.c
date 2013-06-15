@@ -563,9 +563,9 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
       int sector;
       for(sector=0; sector<MAX_FLASH_SECTOR; ++sector) {
 	if( addr == sector_start_map[sector][0] ) {
-	  //MIOS32_IRQ_Disable();
+	  MIOS32_IRQ_Disable();
 	  FLASH_Status status = FLASH_EraseSector(sector_start_map[sector][1], VoltageRange_3);
-	  //MIOS32_IRQ_Enable();
+	  MIOS32_IRQ_Enable();
 	  if( status != FLASH_COMPLETE ) {
 	    FLASH_ClearFlag(0xffffffff); // clear error flags, otherwise next program attempts will fail
 #ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
@@ -586,9 +586,9 @@ static s32 BSL_SYSEX_WriteMem(u32 addr, u32 len, u8 *buffer)
 	((uint64_t)buffer[i+2] << 16) |
 	((uint64_t)buffer[i+3] << 24);
 
-      //MIOS32_IRQ_Disable();
+      MIOS32_IRQ_Disable();
       FLASH_Status status = FLASH_ProgramWord(addr, data);
-      //MIOS32_IRQ_Enable();
+      MIOS32_IRQ_Enable();
       if( status != FLASH_COMPLETE ) {
 	FLASH_ClearFlag(0xffffffff); // clear error flags, otherwise next program attempts will fail
 #ifndef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE

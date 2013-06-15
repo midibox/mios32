@@ -100,7 +100,7 @@ s32 MIOS32_TIMER_Init(u8 timer, u32 period, void (*_irq_handler)(void), u8 irq_p
     return -2;
 
   // enable timer clock
-  if( rcc[timer] == RCC_APB2Periph_TIM1 || rcc[timer] == RCC_APB2Periph_TIM8 )
+  if( timer_base[timer] == TIM1 || timer_base[timer] == TIM8 )
     RCC_APB2PeriphClockCmd(rcc[timer], ENABLE);
   else
     RCC_APB1PeriphClockCmd(rcc[timer], ENABLE);

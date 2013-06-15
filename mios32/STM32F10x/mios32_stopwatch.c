@@ -67,14 +67,14 @@
 //!   else
 //!     printf("%d.%d mS\n\r", delay/10, delay%10);
 //! \endcode
-//! \note: this function uses TIM4 on the STM32 chip
+//! \note: this function uses TIM6 of the STM32 chip
 //! \param[in] resolution 1, 10, 100 or 1000
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_STOPWATCH_Init(u32 resolution)
 {
   // enable timer clock
-  if( STOPWATCH_TIMER_RCC == RCC_APB2Periph_TIM1 || STOPWATCH_TIMER_RCC == RCC_APB2Periph_TIM8 )
+  if( STOPWATCH_TIMER_BASE == TIM1 || STOPWATCH_TIMER_BASE == TIM8 )
     RCC_APB2PeriphClockCmd(STOPWATCH_TIMER_RCC, ENABLE);
   else
     RCC_APB1PeriphClockCmd(STOPWATCH_TIMER_RCC, ENABLE);

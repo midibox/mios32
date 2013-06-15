@@ -43,7 +43,7 @@ Results LPC1769 @ 120 MHz:
 - Testing linear search with known length in AHB RAM    0.242 mS (no change compared to CPU RAM - interesting...)
 
 Results STM32F407 @ 168 MHz:
-- Testing linear search in RAM                          0.064 mS
-- Testing linear search with known length in RAM        0.081 mS
+- Testing linear search in RAM                          0.126 mS
+- Testing linear search with known length in RAM        0.161 mS
 
 ===============================================================================
