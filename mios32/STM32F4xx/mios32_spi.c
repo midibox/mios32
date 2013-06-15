@@ -57,9 +57,10 @@
 #define MIOS32_SPI0_PTR        SPI1
 #define MIOS32_SPI0_DMA_RX_PTR DMA2_Stream2
 #define MIOS32_SPI0_DMA_RX_CHN DMA_Channel_3
+#define MIOS32_SPI0_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF2 | DMA_FLAG_TEIF2 | DMA_FLAG_HTIF2 | DMA_FLAG_FEIF2)
 #define MIOS32_SPI0_DMA_TX_PTR DMA2_Stream3
 #define MIOS32_SPI0_DMA_TX_CHN DMA_Channel_3
-#define MIOS32_SPI0_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF2 | DMA_FLAG_TEIF2 | DMA_FLAG_HTIF2 | DMA_FLAG_FEIF2)
+#define MIOS32_SPI0_DMA_TX_IRQ_FLAGS (DMA_FLAG_TCIF3 | DMA_FLAG_TEIF3 | DMA_FLAG_HTIF3 | DMA_FLAG_FEIF3)
 #define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA2_Stream2_IRQn
 #define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMA2_Stream2_IRQHandler(void)
 
@@ -83,9 +84,10 @@
 #define MIOS32_SPI1_PTR        SPI2
 #define MIOS32_SPI1_DMA_RX_PTR DMA1_Stream3
 #define MIOS32_SPI1_DMA_RX_CHN DMA_Channel_0
+#define MIOS32_SPI1_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF3 | DMA_FLAG_TEIF3 | DMA_FLAG_HTIF3 | DMA_FLAG_FEIF3)
 #define MIOS32_SPI1_DMA_TX_PTR DMA1_Stream4
 #define MIOS32_SPI1_DMA_TX_CHN DMA_Channel_0
-#define MIOS32_SPI1_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4 | DMA_FLAG_HTIF4 | DMA_FLAG_FEIF4)
+#define MIOS32_SPI1_DMA_TX_IRQ_FLAGS (DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4 | DMA_FLAG_HTIF4 | DMA_FLAG_FEIF4)
 #define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Stream4_IRQn
 #define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMA1_Stream4_IRQHandler(void)
 
@@ -1047,6 +1049,7 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 {
   SPI_TypeDef *spi_ptr;
   DMA_Stream_TypeDef *dma_tx_ptr, *dma_rx_ptr;
+  u32 dma_tx_irq_flags, dma_rx_irq_flags;
 
   switch( spi ) {
     case 0:
@@ -1055,7 +1058,9 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #else
       spi_ptr = MIOS32_SPI0_PTR;
       dma_tx_ptr = MIOS32_SPI0_DMA_TX_PTR;
+      dma_tx_irq_flags = MIOS32_SPI0_DMA_TX_IRQ_FLAGS;
       dma_rx_ptr = MIOS32_SPI0_DMA_RX_PTR;
+      dma_rx_irq_flags = MIOS32_SPI0_DMA_RX_IRQ_FLAGS;
       break;
 #endif
 
@@ -1065,7 +1070,9 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #else
       spi_ptr = MIOS32_SPI1_PTR;
       dma_tx_ptr = MIOS32_SPI1_DMA_TX_PTR;
+      dma_tx_irq_flags = MIOS32_SPI1_DMA_TX_IRQ_FLAGS;
       dma_rx_ptr = MIOS32_SPI1_DMA_RX_PTR;
+      dma_rx_irq_flags = MIOS32_SPI1_DMA_RX_IRQ_FLAGS;
       break;
 #endif
 
@@ -1154,6 +1161,10 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
     tx_CCR &= ~DMA_MemoryInc_Enable;
   }
   dma_tx_ptr->NDTR = len;
+
+  // new for STM32F4 DMA: it's required to clear interrupt flags before DMA channel is enabled again
+  DMA_ClearFlag(dma_rx_ptr, dma_rx_irq_flags);
+  DMA_ClearFlag(dma_tx_ptr, dma_tx_irq_flags);
 
   // enable DMA interrupt if callback function active
   if( callback != NULL ) {
