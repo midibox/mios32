@@ -6,7 +6,9 @@ ifndef CONFIG
 endif
 
 ifeq ($(TARGET_ARCH),)
-  TARGET_ARCH := -march=native
+# TK: leads to segfault if the processor is older than the one the program was compiled with
+# I got this info from forum user Musical
+#  TARGET_ARCH := -march=native
 endif
 
 # (this disables dependency generation if multiple architectures are set)
