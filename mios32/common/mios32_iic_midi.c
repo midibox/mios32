@@ -62,11 +62,16 @@ s32 MIOS32_IIC_MIDI_Init(u32 mode)
   return -1; // IIC MIDI interface not explicitely enabled in mios32_config.h
 #else
 
-#if defined(MIOS32_FAMILY_STM32F10x)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
   // configure RI_N pins as inputs with internal pull-up
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
+# if defined(MIOS32_FAMILY_STM32F10x)
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU; // STM32F1
+# else
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN; // STM32F4
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+# endif
 
 #if MIOS32_IIC_MIDI0_ENABLED == 3
   GPIO_InitStructure.GPIO_Pin   = MIOS32_IIC_MIDI0_RI_N_PIN;

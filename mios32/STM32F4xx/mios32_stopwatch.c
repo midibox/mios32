@@ -33,8 +33,8 @@
 #define STOPWATCH_TIMER_BASE                 TIM6
 #define STOPWATCH_TIMER_RCC   RCC_APB1Periph_TIM6
 
-// timers clocked at CPU clock
-#define TIM_PERIPHERAL_FRQ MIOS32_SYS_CPU_FREQUENCY
+// timers clocked at CPU/2 clock
+#define TIM_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/2)
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@
 //!  <LI>1: 1 uS resolution, time measurement possible in the range of 0.001mS .. 65.535 mS
 //!  <LI>10: 10 uS resolution: 0.01 mS .. 655.35 mS
 //!  <LI>100: 100 uS resolution: 0.1 mS .. 6.5535 seconds
-//!  <LI>1000: 1 mS resolution: 1 mS .. 65.535 seconds
+//!  <LI>1000: NOT SUPPORTED FOR STM32F4!!!
 //!  <LI>other values should not be used!
 //! <UL>
 //!
@@ -67,14 +67,14 @@
 //!   else
 //!     printf("%d.%d mS\n\r", delay/10, delay%10);
 //! \endcode
-//! \note: this function uses TIM4 on the STM32 chip
+//! \note: this function uses TIM6 of the STM32 chip
 //! \param[in] resolution 1, 10, 100 or 1000
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_STOPWATCH_Init(u32 resolution)
 {
   // enable timer clock
-  if( STOPWATCH_TIMER_RCC == RCC_APB2Periph_TIM1 || STOPWATCH_TIMER_RCC == RCC_APB2Periph_TIM8 )
+  if( STOPWATCH_TIMER_BASE == TIM1 || STOPWATCH_TIMER_BASE == TIM8 )
     RCC_APB2PeriphClockCmd(STOPWATCH_TIMER_RCC, ENABLE);
   else
     RCC_APB1PeriphClockCmd(STOPWATCH_TIMER_RCC, ENABLE);

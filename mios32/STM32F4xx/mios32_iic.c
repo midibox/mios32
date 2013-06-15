@@ -52,13 +52,17 @@
 
 #define MIOS32_IIC0_SCL_PORT    GPIOB
 #define MIOS32_IIC0_SCL_PIN     GPIO_Pin_10
+#define MIOS32_IIC0_SCL_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_I2C2); }
 #define MIOS32_IIC0_SDA_PORT    GPIOB
 #define MIOS32_IIC0_SDA_PIN     GPIO_Pin_11
+#define MIOS32_IIC0_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_I2C2); }
 
 #define MIOS32_IIC1_SCL_PORT    GPIOB
 #define MIOS32_IIC1_SCL_PIN     GPIO_Pin_6
+#define MIOS32_IIC1_SCL_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1); }
 #define MIOS32_IIC1_SDA_PORT    GPIOB
 #define MIOS32_IIC1_SDA_PIN     GPIO_Pin_7
+#define MIOS32_IIC1_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Duty cycle definitions
@@ -156,14 +160,20 @@ s32 MIOS32_IIC_Init(u32 mode)
 
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SCL_PIN;
   GPIO_Init(MIOS32_IIC0_SCL_PORT, &GPIO_InitStructure);
+  MIOS32_IIC0_SCL_AF;
+
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC0_SDA_PIN;
   GPIO_Init(MIOS32_IIC0_SDA_PORT, &GPIO_InitStructure);
+  MIOS32_IIC0_SDA_AF;
 
 #if MIOS32_IIC_NUM >= 2
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC1_SCL_PIN;
   GPIO_Init(MIOS32_IIC1_SCL_PORT, &GPIO_InitStructure);
+  MIOS32_IIC1_SCL_AF;
+
   GPIO_InitStructure.GPIO_Pin = MIOS32_IIC1_SDA_PIN;
   GPIO_Init(MIOS32_IIC1_SDA_PORT, &GPIO_InitStructure);
+  MIOS32_IIC1_SDA_AF;
 #endif
 
   for(i=0; i<MIOS32_IIC_NUM; ++i) {

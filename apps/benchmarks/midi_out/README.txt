@@ -54,4 +54,12 @@ Results LPC1769 @ 120 MHz:
 - OSC with one datagram per event:         8.8 mS
 - OSC with 8 events bundled in datagram:   2.5 mS
 
+Results STM32F4 @ 168 MHz:
+- USB0 with RS disabled:                   2.0 mS
+- USB0 with RS enabled:                    2.0 mS
+- UART0 with RS disabled:                245.3 mS
+- UART0 with RS enabled:                 163.4 mS
+- OSC with one datagram per event:         not tested yet
+- OSC with 8 events bundled in datagram:   not tested yet
+
 ===============================================================================
