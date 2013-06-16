@@ -1503,11 +1503,13 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
     case MBNG_EVENT_CONTROLLER_AIN: {
       DEBUG_MSG("  - ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(item));
+      DEBUG_MSG("  - ain_sensor_mode=%s", MBNG_EVENT_ItemAinSensorModeStrGet(item));
       DEBUG_MSG("  - ain_filter_delay_ms=%d", item->custom_flags.AIN.ain_filter_delay_ms);
     } break;
 
     case MBNG_EVENT_CONTROLLER_AINSER: {
       DEBUG_MSG("  - ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(item));
+      DEBUG_MSG("  - ain_sensor_mode=%s", MBNG_EVENT_ItemAinSensorModeStrGet(item));
     } break;
 
     case MBNG_EVENT_CONTROLLER_MF: {
@@ -1998,6 +2000,27 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! for AIN Sensor Mode
+/////////////////////////////////////////////////////////////////////////////
+const char *MBNG_EVENT_ItemAinSensorModeStrGet(mbng_event_item_t *item)
+{
+  mbng_event_ain_sensor_mode_t ain_sensor_mode = item->custom_flags.AIN.ain_sensor_mode;
+  switch( ain_sensor_mode ) {
+  case MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF:    return "NoteOnOff";
+  }
+  return "None";
+}
+
+mbng_event_ain_sensor_mode_t MBNG_EVENT_ItemAinSensorModeFromStrGet(char *ain_sensor_mode)
+{
+  if( strcasecmp(ain_sensor_mode, "None") == 0 )         return MBNG_EVENT_AIN_SENSOR_MODE_NONE;
+  if( strcasecmp(ain_sensor_mode, "NoteOnOff") == 0 )    return MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF;
+
+  return MBNG_EVENT_AIN_SENSOR_MODE_NONE;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! for ENC Mode
 /////////////////////////////////////////////////////////////////////////////
 const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_enc_mode_t enc_mode)
@@ -2104,6 +2127,7 @@ const char *MBNG_EVENT_ItemNrpnFormatStrGet(mbng_event_item_t *item)
   mbng_event_nrpn_format_t nrpn_format = (item->stream_size >= 3) ? item->stream[2] : MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
   switch( nrpn_format ) {
   case MBNG_EVENT_NRPN_FORMAT_SIGNED: return "Signed";
+  case MBNG_EVENT_NRPN_FORMAT_MSB_ONLY: return "MsbOnly";
   }
   return "Unsigned";
 }
@@ -2112,6 +2136,7 @@ mbng_event_nrpn_format_t MBNG_EVENT_ItemNrpnFormatFromStrGet(char *nrpn_format)
 {
   if( strcasecmp(nrpn_format, "Unsigned") == 0 ) return MBNG_EVENT_NRPN_FORMAT_UNSIGNED;
   if( strcasecmp(nrpn_format, "Signed") == 0 ) return MBNG_EVENT_NRPN_FORMAT_SIGNED;
+  if( strcasecmp(nrpn_format, "MsbOnly") == 0 ) return MBNG_EVENT_NRPN_FORMAT_MSB_ONLY;
 
   return MBNG_EVENT_NRPN_FORMAT_UNDEFINED;
 }
@@ -2333,7 +2358,7 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
 /////////////////////////////////////////////////////////////////////////////
 //! Sends a NRPN event. Skips address bytes if they already have been sent!
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value)
+s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value, u8 msb_only)
 {
   u8 nrpn_address_msb = (nrpn_address >> 7) & 0x7f;
   u8 nrpn_address_lsb = (nrpn_address >> 0) & 0x7f;
@@ -2376,10 +2401,12 @@ s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn,
       MIOS32_MIDI_SendPackage(port, p);
     }
 
-    if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) & 0x7f ) { // new LSB
-      p.cc_number = 0x26; // Data LSB
-      p.value = nrpn_value_lsb;
-      MIOS32_MIDI_SendPackage(port, p);
+    if( !msb_only ) {
+      if( (nrpn_value ^ nrpn_sent_value[port_ix][p.chn]) & 0x7f ) { // new LSB
+	p.cc_number = 0x26; // Data LSB
+	p.value = nrpn_value_lsb;
+	MIOS32_MIDI_SendPackage(port, p);
+      }
     }
 
     nrpn_sent_address[port_ix][p.chn] = nrpn_address;
@@ -2398,9 +2425,11 @@ s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn,
     p.value = nrpn_value_msb;
     MIOS32_MIDI_SendPackage(port, p);
 
-    p.cc_number = 0x26; // Data LSB
-    p.value = nrpn_value_lsb;
-    MIOS32_MIDI_SendPackage(port, p);
+    if( !msb_only ) {
+      p.cc_number = 0x26; // Data LSB
+      p.value = nrpn_value_lsb;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
   }
 
   return 0; // no error
@@ -2748,7 +2777,17 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
     u16 nrpn_address = item->stream[1] | ((u16)item->stream[2] << 7);
     mbng_event_nrpn_format_t nrpn_format = item->stream[3];
-    u16 nrpn_value = (nrpn_format == MBNG_EVENT_NRPN_FORMAT_SIGNED) ? ((item->value - 8192) & 0x3fff) : item->value;
+    u8 msb_only = nrpn_format == MBNG_EVENT_NRPN_FORMAT_MSB_ONLY;
+
+    u16 nrpn_value = item->value;
+    if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_SIGNED ) {
+      nrpn_value = (nrpn_value - 8192) & 0x3fff;
+    } else if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_MSB_ONLY ) {
+      nrpn_value = nrpn_value * 128;
+      if( nrpn_value > 16383 )
+	nrpn_value = 16383;
+    }
+
     mios32_midi_chn_t chn = mbng_patch_cfg.global_chn ? (mbng_patch_cfg.global_chn - 1) : item->stream[0] & 0xf;
 
     // send optimized NRPNs over enabled ports
@@ -2760,7 +2799,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
 
 	MUTEX_MIDIOUT_TAKE;
-	MBNG_EVENT_SendOptimizedNRPN(port, chn, nrpn_address, nrpn_value);
+	MBNG_EVENT_SendOptimizedNRPN(port, chn, nrpn_address, nrpn_value, msb_only);
 	MUTEX_MIDIOUT_GIVE;
       }
     }
@@ -3129,25 +3168,30 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     return 0; // stop here
 
   // extra for AIN and AINSER: send NoteOff if required
-  switch( item->id & 0xf000 ) {
-  case MBNG_EVENT_CONTROLLER_AIN:
-  case MBNG_EVENT_CONTROLLER_AINSER:
-    if( (item->flags.type == MBNG_EVENT_TYPE_NOTE_ON || item->flags.type == MBNG_EVENT_TYPE_NOTE_OFF) && prev_value ) {
-      s16 tmp_value = item->value;
-      u8 tmp_secondary_value = item->secondary_value;
+  {
+    mbng_event_ain_sensor_mode_t ain_sensor_mode = MBNG_EVENT_AIN_SENSOR_MODE_NONE;
+    if( (item->id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN )
+      ain_sensor_mode = item->custom_flags.AIN.ain_sensor_mode;
+    else if( (item->id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER )
+      ain_sensor_mode = item->custom_flags.AINSER.ain_sensor_mode;
 
-      if( item->flags.use_key_or_cc ) {
-	item->secondary_value = 0;
-	item->value = prev_value;
-	MBNG_EVENT_ItemSend(item);
-      } else {
-	item->value = 0;
-	MBNG_EVENT_ItemSend(item);
+    if( ain_sensor_mode == MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF ) {
+      if( (item->flags.type == MBNG_EVENT_TYPE_NOTE_ON || item->flags.type == MBNG_EVENT_TYPE_NOTE_OFF) && prev_value ) {
+	s16 tmp_value = item->value;
+	u8 tmp_secondary_value = item->secondary_value;
+
+	if( item->flags.use_key_or_cc ) {
+	  item->secondary_value = 0;
+	  item->value = prev_value;
+	  MBNG_EVENT_ItemSend(item);
+	} else {
+	  item->value = 0;
+	  MBNG_EVENT_ItemSend(item);
+	}
+	item->value = tmp_value;
+	item->secondary_value = tmp_secondary_value;
       }
-      item->value = tmp_value;
-      item->secondary_value = tmp_secondary_value;
     }
-    break;
   }
 
   // send MIDI event
@@ -3316,6 +3360,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
   // on CC:
   u16 nrpn_address = 0xffff; // taken if < 0xffff
   u16 nrpn_value = 0;
+  u8 nrpn_msb_only = 0;
   if( midi_package.event == CC ) {
 
     // track NRPN event
@@ -3351,11 +3396,11 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
         case 0x06: { // Data MSB
 	  nrpn_received_value[port_ix][midi_package.chn] &= ~0x3f80;
 	  nrpn_received_value[port_ix][midi_package.chn] |= ((midi_package.value << 7) & 0x3f80);
-#if 0
-	  // MEMO: it's better to update only when LSB has been received
 	  nrpn_value = nrpn_received_value[port_ix][midi_package.chn]; // pass to parser
 	  nrpn_address = nrpn_received_address[port_ix][midi_package.chn];
-
+	  nrpn_msb_only = 1; // for the MsbOnly format
+#if 0
+	  // MEMO: it's better to update only when LSB has been received
 	  if( port != midi_learn_nrpn_port || midi_package.chn != (midi_learn_nrpn_chn-1) ) {
 	    midi_learn_nrpn_port = port;
 	    midi_learn_nrpn_chn = midi_package.chn + 1;
@@ -3404,6 +3449,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     }
 
     if( midi_learn_mode >= 2 && nrpn_address != 0xffff && midi_learn_nrpn_valid == 0x07 ) {
+      // TK: it will be interesting if a user will ever notice, that MsbOnly (e.g. for MBSEQ) won't be assigned automatically
       if( nrpn_address != midi_learn_nrpn_address ) {
 	midi_learn_min = 0xffff;
 	midi_learn_max = 0xffff;
@@ -3560,10 +3606,16 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
       } else if( event_type == MBNG_EVENT_TYPE_NRPN ) {
 	u8 *stream = &pool_item->data_begin;
 	u16 expected_address = stream[1] | ((u16)stream[2] << 7);
-	if( nrpn_address == expected_address ) {
+	mbng_event_nrpn_format_t nrpn_format = stream[3];
+	if( nrpn_address == expected_address &&
+	    (!nrpn_msb_only || nrpn_format == MBNG_EVENT_NRPN_FORMAT_MSB_ONLY) ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
-	  MBNG_EVENT_ItemReceive(&item, nrpn_value, 1, 1);
+
+	  if( nrpn_format == MBNG_EVENT_NRPN_FORMAT_MSB_ONLY )
+	    MBNG_EVENT_ItemReceive(&item, nrpn_value / 128, 1, 1);
+	  else
+	    MBNG_EVENT_ItemReceive(&item, nrpn_value, 1, 1);
 	}
       } else {
 	// no additional event types yet...

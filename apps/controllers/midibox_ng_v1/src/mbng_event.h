@@ -117,9 +117,15 @@ typedef enum {
 } mbng_event_ain_mode_t;
 
 typedef enum {
+  MBNG_EVENT_AIN_SENSOR_MODE_NONE = 0,
+  MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF,
+} mbng_event_ain_sensor_mode_t;
+
+typedef enum {
   MBNG_EVENT_NRPN_FORMAT_UNDEFINED = 0,
   MBNG_EVENT_NRPN_FORMAT_UNSIGNED,
   MBNG_EVENT_NRPN_FORMAT_SIGNED,
+  MBNG_EVENT_NRPN_FORMAT_MSB_ONLY,
 } mbng_event_nrpn_format_t;
 
 typedef enum {
@@ -253,11 +259,13 @@ typedef union {
 
   struct {
     u16 ain_mode:4; // mbng_event_ain_mode_t
+    u16 ain_sensor_mode:4;  // mbng_event_ain_sensor_mode_t
     u16 ain_filter_delay_ms:8;
   } AIN;
 
   struct {
     u16 ain_mode:4; // mbng_event_ain_mode_t
+    u16 ain_sensor_mode:4;  // mbng_event_ain_sensor_mode_t
   } AINSER;
 
   struct {
@@ -395,6 +403,8 @@ extern const char *MBNG_EVENT_ItemButtonModeStrGet(mbng_event_item_t *item);
 extern mbng_event_button_mode_t MBNG_EVENT_ItemButtonModeFromStrGet(char *button_mode);
 extern const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item);
 extern mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode);
+extern const char *MBNG_EVENT_ItemAinSensorModeStrGet(mbng_event_item_t *item);
+extern mbng_event_ain_sensor_mode_t MBNG_EVENT_ItemAinSensorModeFromStrGet(char *ain_sensor_mode);
 extern const char *MBNG_EVENT_ItemEncModeStrGet(mbng_event_enc_mode_t enc_mode);
 extern mbng_event_enc_mode_t MBNG_EVENT_ItemEncModeFromStrGet(char *enc_mode);
 extern const char *MBNG_EVENT_ItemEncSpeedModeStrGet(mbng_event_item_t *item);
@@ -410,7 +420,7 @@ extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
 
 
-extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value);
+extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value, u8 msb_only);
 extern s32 MBNG_EVENT_SendSysExStream(mios32_midi_port_t port, mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item);
 
