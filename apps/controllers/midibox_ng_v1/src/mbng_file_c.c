@@ -1147,6 +1147,25 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "ain_sensor_mode") == 0 ) {
+      mbng_event_ain_sensor_mode_t ain_sensor_mode = MBNG_EVENT_ItemAinSensorModeFromStrGet(value_str);
+      if( ain_sensor_mode == MBNG_EVENT_AIN_SENSOR_MODE_NONE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid ain_sensor_mode in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AIN ) {
+	item.custom_flags.AIN.ain_sensor_mode = ain_sensor_mode;
+      } else if( (item.id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER ) {
+	item.custom_flags.AINSER.ain_sensor_mode = ain_sensor_mode;
+      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_AIN or EVENT_AINSER!\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "ain_filter_delay_ms") == 0 ) {
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 255 ) {
@@ -3398,7 +3417,8 @@ s32 MBNG_FILE_C_Read(char *filename)
 	--new_len;
       }
       if( new_len >= 1 && line_buffer[new_len-1] == '\\' ) {
-	line_buffer[new_len-1] = 0;
+	line_buffer[new_len-1] = ' ';
+	line_buffer[new_len] = 0;
 	line_buffer_len = new_len - 1;
 	continue; // read next line
       } else {
@@ -3724,6 +3744,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  FLUSH_BUFFER;
 	}
 
+	if( item.custom_flags.AIN.ain_sensor_mode != MBNG_EVENT_AIN_SENSOR_MODE_NONE ) {
+	  sprintf(line_buffer, "  ain_sensor_mode=%s", MBNG_EVENT_ItemAinSensorModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+
 	if( item.custom_flags.AIN.ain_filter_delay_ms ) {
 	  sprintf(line_buffer, "  ain_filter_delay_ms=%d", item.custom_flags.AIN.ain_filter_delay_ms);
 	  FLUSH_BUFFER;
@@ -3733,6 +3758,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_CONTROLLER_AINSER: {
 	if( item.custom_flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_DIRECT && item.custom_flags.AINSER.ain_mode != MBNG_EVENT_AIN_MODE_UNDEFINED ) {
 	  sprintf(line_buffer, "  ain_mode=%s", MBNG_EVENT_ItemAinModeStrGet(&item));
+	  FLUSH_BUFFER;
+	}
+
+	if( item.custom_flags.AIN.ain_sensor_mode != MBNG_EVENT_AIN_SENSOR_MODE_NONE ) {
+	  sprintf(line_buffer, "  ain_sensor_mode=%s", MBNG_EVENT_ItemAinSensorModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
       } break;

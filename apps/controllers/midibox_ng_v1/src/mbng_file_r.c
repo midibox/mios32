@@ -588,7 +588,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   case MBNG_EVENT_TYPE_PROGRAM_CHANGE: MIOS32_MIDI_SendProgramChange(port, (values[0]-1) & 0xf, values[1] & 0x7f); break;
   case MBNG_EVENT_TYPE_AFTERTOUCH:     MIOS32_MIDI_SendAftertouch(port, (values[0]-1) & 0xf, values[1] & 0x7f); break;
   case MBNG_EVENT_TYPE_PITCHBEND:      MIOS32_MIDI_SendPitchBend(port, (values[0]-1) & 0xf, (values[1] + 8192) & 0x3fff); break;
-  case MBNG_EVENT_TYPE_NRPN:           MBNG_EVENT_SendOptimizedNRPN(port, (values[0]-1) & 0xf, values[1], values[2]); break;
+  case MBNG_EVENT_TYPE_NRPN:           MBNG_EVENT_SendOptimizedNRPN(port, (values[0]-1) & 0xf, values[1], values[2], 0); break; // msb_only == 0
 
   case MBNG_EVENT_TYPE_SYSEX: {
     if( !stream_size ) {
@@ -1342,9 +1342,10 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
 	--new_len;
       }
       if( new_len >= 1 && line_buffer[new_len-1] == '\\' ) {
-	line_buffer[new_len-1] = 0;
-	line_buffer_len = new_len - 1;
-	return 0; // read next line
+	line_buffer[new_len-1] = ' ';
+	line_buffer[new_len] = 0;
+	line_buffer_len = new_len;
+	continue; // read next line
       } else {
 	line_buffer_len = 0; // for next round we start at 0 again
       }
