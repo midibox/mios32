@@ -165,10 +165,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_GXTY:
+    case ITEM_GXTY: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
       return SEQ_UI_GxTyInc(incrementer);
+    }
 
     case ITEM_MUTE: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
+
       u8 visible_track = SEQ_UI_VisibleTrackGet();
       u16 mask = 1 << visible_track;
 
@@ -176,9 +182,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_trk_muted |= mask;
       else
 	seq_core_trk_muted &= ~mask;
+      return 1; // value changed
     } break;
 
     case ITEM_OCT_TRANSPOSE: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
+
       u8 tmp = seq_live_options.OCT_TRANSPOSE + 5;
       if( SEQ_UI_Var8_Inc(&tmp, 0, 10, incrementer) >= 0 ) {
 	seq_live_options.OCT_TRANSPOSE = (s8)tmp - 5;
@@ -189,6 +199,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_LIVE_VELOCITY: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
+
       if( SEQ_UI_Var8_Inc(&seq_live_options.VELOCITY, 1, 127, incrementer) >= 0 ) {
 	store_file_required = 1;
 	return 1; // value changed
@@ -197,6 +210,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
 
     case ITEM_LIVE_FORCE_SCALE: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
+
       u8 tmp = seq_live_options.FORCE_SCALE;
       if( SEQ_UI_Var8_Inc(&tmp, 0, 1, incrementer) >= 0 ) {
 	seq_live_options.FORCE_SCALE = tmp;
@@ -207,6 +223,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
 
     case ITEM_LIVE_FX: {
+      if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+	return -1;
+
       u8 tmp = seq_live_options.FX;
       if( SEQ_UI_Var8_Inc(&tmp, 0, 1, incrementer) >= 0 ) {
 	seq_live_options.FX = tmp;
@@ -285,6 +304,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( button <= SEQ_UI_BUTTON_GP16 ) {
+    if( !seq_midi_in_options[selected_bus].MODE_PLAY )
+      return -1;
+
     u8 visible_track = SEQ_UI_VisibleTrackGet();
     mios32_midi_package_t p;
 
@@ -350,66 +372,81 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk. Mute Oct. Vel. FTS   Fx             Bus Port Chn. Lower/Upper Mode   Reset 
   // G1T1       +0  100   on   on              1  IN1  #16   ---   ---  T&A    Stacks
 
+  // The selected Bus1 is not configured      Bus Port Chn. Lower/Upper Mode   Reset 
+  // for Play mode (but for Transposer&Arp.)   1  IN1  #16   ---   ---  T&A    Stacks
+
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Mute Oct. Vel. FTS   Fx             Bus Port Chn. Lower/Upper Mode   Reset ");
+  if( !seq_midi_in_options[selected_bus].MODE_PLAY ) {
+    SEQ_LCD_PrintFormattedString("The selected Bus%d is not configured     ", selected_bus+1);
+  } else {
+    SEQ_LCD_PrintString("Trk. Mute Oct. Vel. FTS   Fx            ");
+  }
+
+  SEQ_LCD_CursorSet(40, 0);
+  SEQ_LCD_PrintString(" Bus Port Chn. Lower/Upper Mode   Reset ");
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
-
-  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
+  if( !seq_midi_in_options[selected_bus].MODE_PLAY ) {
+    SEQ_LCD_PrintString("for Play mode (but for Transposer&Arp.) ");
   } else {
-    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-  }
-  SEQ_LCD_PrintSpaces(1);
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_MUTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
-  } else {
-    SEQ_LCD_PrintSpaces(2);
-    SEQ_LCD_PrintChar((seq_core_trk_muted & (1 << visible_track)) ? '*' : 'o');
-    SEQ_LCD_PrintSpaces(2);
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_OCT_TRANSPOSE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      SEQ_LCD_PrintString("Drum");
+    if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(4);
     } else {
-      SEQ_LCD_PrintFormattedString(" %c%d ", (seq_live_options.OCT_TRANSPOSE < 0) ? '-' : '+', abs(seq_live_options.OCT_TRANSPOSE));
+      SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
     }
-  }
-  SEQ_LCD_PrintSpaces(1);
+    SEQ_LCD_PrintSpaces(1);
 
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_LIVE_VELOCITY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintFormattedString("%3d", seq_live_options.VELOCITY);
-  }
-  SEQ_LCD_PrintSpaces(2);
+    ///////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_MUTE && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(5);
+    } else {
+      SEQ_LCD_PrintSpaces(2);
+      SEQ_LCD_PrintChar((seq_core_trk_muted & (1 << visible_track)) ? '*' : 'o');
+      SEQ_LCD_PrintSpaces(2);
+    }
 
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_LIVE_FORCE_SCALE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_live_options.FORCE_SCALE ? " on" : "off");
-  }
-  SEQ_LCD_PrintSpaces(2);
+    ///////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_OCT_TRANSPOSE && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(4);
+    } else {
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	SEQ_LCD_PrintString("Drum");
+      } else {
+	SEQ_LCD_PrintFormattedString(" %c%d ", (seq_live_options.OCT_TRANSPOSE < 0) ? '-' : '+', abs(seq_live_options.OCT_TRANSPOSE));
+      }
+    }
+    SEQ_LCD_PrintSpaces(1);
 
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_LIVE_FX && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_live_options.FX ? " on" : "off");
+    ///////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LIVE_VELOCITY && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d", seq_live_options.VELOCITY);
+    }
+    SEQ_LCD_PrintSpaces(2);
+
+    ///////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LIVE_FORCE_SCALE && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintString(seq_live_options.FORCE_SCALE ? " on" : "off");
+    }
+    SEQ_LCD_PrintSpaces(2);
+
+    ///////////////////////////////////////////////////////////////////////////
+    if( ui_selected_item == ITEM_LIVE_FX && ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintString(seq_live_options.FX ? " on" : "off");
+    }
+    SEQ_LCD_PrintSpaces(2 + 10);
   }
-  SEQ_LCD_PrintSpaces(2 + 10);
+
+
 
   ///////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_IN_BUS && ui_cursor_flash ) {

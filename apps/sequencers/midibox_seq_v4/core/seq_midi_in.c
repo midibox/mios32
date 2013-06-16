@@ -200,6 +200,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF] = 123;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = 1;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = SEQ_MIDI_IN_EXT_CTRL_PC_MODE_OFF;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = 128;
 
   seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_rec_port = DEFAULT; // All ports
@@ -241,6 +242,7 @@ const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl)
     "All Notes Off",
     "NRPNs",
     "PrgChange Mode",
+    "Mutes(first CC)",
   };
 
   if( ext_ctrl >= SEQ_MIDI_IN_EXT_CTRL_NUM )
@@ -273,13 +275,13 @@ const char *SEQ_MIDI_IN_ExtCtrlPcModeStr(u8 pc_mode)
 /////////////////////////////////////////////////////////////////////////////
 // since there is currently no better place (somebody could expect this function in SEQ_MIDI_OUT...)
 /////////////////////////////////////////////////////////////////////////////
-extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value)
+extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value, u8 cc_offset)
 {
   if( seq_midi_in_ext_ctrl_out_port && seq_midi_in_ext_ctrl_channel ) {
     mios32_midi_port_t port = seq_midi_in_ext_ctrl_out_port;
     mios32_midi_chn_t chn = seq_midi_in_ext_ctrl_channel - 1;
 
-    u8 cc = seq_midi_in_ext_ctrl_asg[ext_ctrl];
+    int cc = seq_midi_in_ext_ctrl_asg[ext_ctrl] + cc_offset;
     if( cc <= 127 ) {
       MUTEX_MIDIOUT_TAKE;
       MIOS32_MIDI_SendCC(port, chn, cc, value);
@@ -970,12 +972,27 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
 	portEXIT_CRITICAL();
       } break;
 
-      case SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF:
+      case SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF: {
 	if( value == 0 ) {
 	  SEQ_MIDI_IN_ResetAllStacks();
 	  SEQ_CV_ResetAllChannels();
 	}
       } break;
+      }
+    }
+  }
+
+  {
+    int mute_cc = seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES];
+    if( mute_cc < 128 && cc >= mute_cc && cc < (mute_cc+SEQ_CORE_NUM_TRACKS) ) {
+      u8 track = cc - mute_cc;
+      portENTER_CRITICAL();
+      if( value >= 64 ) {
+	seq_core_trk_muted |= (1 << track);
+      } else {
+	seq_core_trk_muted &= ~(1 << track);
+      }
+      portEXIT_CRITICAL();      
     }
   }
 

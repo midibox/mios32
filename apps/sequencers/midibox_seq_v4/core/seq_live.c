@@ -77,6 +77,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
   mios32_midi_port_t port = seq_cc_trk[track].midi_port;
   u8 chn = seq_cc_trk[track].midi_chn;
 
+  // temporary mute matching events from the sequencer
+  SEQ_CORE_NotifyIncomingMIDIEvent(track, p);
+
   // Note Events:
   if( p.type == NoteOff ) {
     p.type = NoteOn;

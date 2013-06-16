@@ -167,8 +167,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     int group;
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
       if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
-	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern);
-	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern, 0);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank, 0);
       }
     }
   }
@@ -224,8 +224,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	selected_pattern[group].num = button-8;
 
 	// send to external
-	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern);
-	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern, 0);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank, 0);
 
 	SEQ_PATTERN_Change(group, selected_pattern[group], 0);
       }

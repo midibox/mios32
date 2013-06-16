@@ -46,8 +46,11 @@
 #define SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED  13
 #define SEQ_MIDI_IN_EXT_CTRL_PC_MODE       14
 
+// extra CC handling (we listen to 16 CCs)
+#define SEQ_MIDI_IN_EXT_CTRL_MUTES         15
+
 // total number of external controllers
-#define SEQ_MIDI_IN_EXT_CTRL_NUM           15
+#define SEQ_MIDI_IN_EXT_CTRL_NUM           16
 
 
 // program change modes
@@ -83,7 +86,7 @@ extern const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl);
 extern const char *SEQ_MIDI_IN_ExtCtrlPcModeStr(u8 pc_mode);
 
 // since there is currently no better place (somebody could expect this function in SEQ_MIDI_OUT...)
-extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value);
+extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value, u8 cc_offset);
 
 extern s32 SEQ_MIDI_IN_ResetTransArpStacks(void);
 extern s32 SEQ_MIDI_IN_ResetChangerStacks(void);

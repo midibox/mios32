@@ -505,10 +505,6 @@ void SEQ_TASK_Period1S(void)
   static s8 wait_boot_ctr = 3; // wait 3 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
-  // don't check for SD Card if MSD enabled
-  if( TASK_MSD_EnableGet() > 0 )
-    return;
-
   // poll for IIC modules as long as HW config hasn't been locked (read from SD card)
   // TODO: use proper mutex handling here
 #ifndef MIOS32_FAMILY_EMULATION
@@ -674,10 +670,6 @@ void SEQ_TASK_Period1S(void)
   }
 #else
   // MBSEQV4L handling (could be combined with code above later)
-
-  // don't check for SD Card if MSD enabled
-  if( TASK_MSD_EnableGet() > 0 )
-    return;
 
   MUTEX_SDCARD_TAKE;
   s32 status = FILE_CheckSDCard();

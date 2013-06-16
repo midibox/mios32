@@ -112,7 +112,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	SEQ_MORPH_ValueSet(value);
 
 	// send to external
-	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MORPH, value);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MORPH, value, 0);
 
 	return 1;
       }

@@ -442,7 +442,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Transposer/Arp.", "Stacks cleared!");
 
       // send to external
-      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127);
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127, 0);
 
       return 1;
     } break;
@@ -521,7 +521,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Section Changer", "Stacks cleared!");
 
       // send to external
-      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127);
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF, 127, 0);
 
       return 1;
     } break;

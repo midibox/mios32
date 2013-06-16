@@ -18,7 +18,6 @@
 
 #include <mios32.h>
 
-#include <msd.h>
 #include "uip_task.h"
 
 #include "tasks.h"
@@ -49,13 +48,6 @@ xSemaphoreHandle xJ16Semaphore;
 // Local types
 /////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-  MSD_DISABLED,
-  MSD_INIT,
-  MSD_READY,
-  MSD_SHUTDOWN
-} msd_state_t;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -84,17 +76,12 @@ static void TASK_Pattern(void *pvParameters);
 
 static xTaskHandle xPatternHandle;
 
-static volatile msd_state_t msd_state;
-
  
 /////////////////////////////////////////////////////////////////////////////
 // Initialize all tasks
 /////////////////////////////////////////////////////////////////////////////
 s32 TASKS_Init(u32 mode)
 {
-  // disable MSD by default (has to be enabled in SEQ_UI_FILE menu)
-  msd_state = MSD_DISABLED;
-
   // create semaphores
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -123,7 +110,6 @@ s32 TASKS_Init(u32 mode)
 static void TASK_MIDI(void *pvParameters)
 {
   portTickType xLastExecutionTime;
-  u8 lun_available = 0;
 
   // Initialise the xLastExecutionTime variable on task entry
   xLastExecutionTime = xTaskGetTickCount();
@@ -137,47 +123,8 @@ static void TASK_MIDI(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-    // MSD driver handling overrules MIDI
-    if( msd_state == MSD_DISABLED ) {
-      // continue in application hook
-      SEQ_TASK_MIDI();
-    } else {
-      MUTEX_SDCARD_TAKE;
-
-      switch( msd_state ) {
-      case MSD_SHUTDOWN:
-	// switch back to USB MIDI
-	MIOS32_USB_Init(1);
-	msd_state = MSD_DISABLED;
-	break;
-
-      case MSD_INIT:
-	// LUN not mounted yet
-	lun_available = 0;
-
-	// enable MSD USB driver
-	MUTEX_J16_TAKE;
-	if( MSD_Init(0) >= 0 )
-	  msd_state = MSD_READY;
-	else
-	  msd_state = MSD_SHUTDOWN;
-	MUTEX_J16_GIVE;
-	break;
-
-      case MSD_READY:
-	// service MSD USB driver
-	MSD_Periodic_mS();
-
-	// this mechanism shuts down the MSD driver if SD card has been unmounted by OS
-	if( lun_available && !MSD_LUN_AvailableGet(0) )
-	  msd_state = MSD_SHUTDOWN;
-	else if( !lun_available && MSD_LUN_AvailableGet(0) )
-	  lun_available = 1;
-	break;
-      }
-
-      MUTEX_SDCARD_GIVE;
-    }
+    // continue in application hook
+    SEQ_TASK_MIDI();
   }
 }
 
@@ -255,50 +202,18 @@ void SEQ_TASK_PatternResume(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// MSD access functions
-/////////////////////////////////////////////////////////////////////////////
-s32 TASK_MSD_EnableSet(u8 enable)
-{
-  MIOS32_IRQ_Disable();
-  if( msd_state == MSD_DISABLED && enable ) {
-    msd_state = MSD_INIT;
-  } else if( msd_state == MSD_READY && !enable )
-    msd_state = MSD_SHUTDOWN;
-  MIOS32_IRQ_Enable();
-
-  return 0; // no error
-}
-
-s32 TASK_MSD_EnableGet()
-{
-  return (msd_state == MSD_READY) ? 1 : 0;
-}
-
-s32 TASK_MSD_FlagStrGet(char str[5])
-{
-  str[0] = MSD_CheckAvailable() ? 'U' : '-';
-  str[1] = MSD_LUN_AvailableGet(0) ? 'M' : '-';
-  str[2] = MSD_RdLEDGet(250) ? 'R' : '-';
-  str[3] = MSD_WrLEDGet(250) ? 'W' : '-';
-  str[4] = 0;
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // functions to access J16 semaphore
 // see also mios32_config.h
 /////////////////////////////////////////////////////////////////////////////
 void TASKS_J16SemaphoreTake(void)
 {
-  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+  if( xJ16Semaphore != NULL )
     MUTEX_J16_TAKE;
 }
 
 void TASKS_J16SemaphoreGive(void)
 {
-  if( xJ16Semaphore != NULL && msd_state == MSD_DISABLED )
+  if( xJ16Semaphore != NULL )
     MUTEX_J16_GIVE;
 }
 

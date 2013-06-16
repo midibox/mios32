@@ -24,6 +24,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_bpm.h"
+#include "seq_midi_in.h"
 
 #include "seq_core.h"
 
@@ -47,7 +48,7 @@ static s32 LED_Handler(u16 *gp_leds)
   } else {
     if( seq_ui_button_state.MUTE_PRESSED ) {
       track = SEQ_UI_VisibleTrackGet();
-      *gp_leds = seq_core_trk[track].layer_muted;
+      *gp_leds = seq_core_trk[track].layer_muted | seq_core_trk[track].layer_muted_from_midi;
     } else {
       *gp_leds = seq_core_trk_muted;
     }
@@ -110,6 +111,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	*muted ^= mask;
 
       portEXIT_CRITICAL();
+
+      if( !seq_ui_button_state.MUTE_PRESSED ) {
+	// send to external
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MUTES, (*muted & mask) ? 127 : 0, encoder);
+      }
     }
 
     return 1; // value changed
@@ -199,6 +205,7 @@ static s32 LCD_Handler(u8 high_prio)
 
     u8 track;
     u16 mute_flags = 0;
+    u16 mute_flags_from_midi = 0;
 
     if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
       mute_flags = latched_mute;
@@ -206,6 +213,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( seq_ui_button_state.MUTE_PRESSED ) {
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	mute_flags = seq_core_trk[visible_track].layer_muted;
+	mute_flags_from_midi = seq_core_trk[visible_track].layer_muted_from_midi;
       } else {
 	mute_flags = seq_core_trk_muted;
       }
@@ -215,10 +223,13 @@ static s32 LCD_Handler(u8 high_prio)
       u8 layer;
       u16 mask = (1 << 0);
       for(layer=0; layer<16; ++layer, mask <<= 1)
-	if( mute_flags & mask )
+	if( mute_flags_from_midi & mask ) {
+	  SEQ_LCD_PrintString("MIDI ");
+	} else if( mute_flags & mask ) {
 	  SEQ_LCD_PrintString("Mute ");
-	else
+	} else {
 	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
+	}
     } else {
       int remaining_steps = (seq_core_steps_per_measure - seq_core_state.ref_step) + 1;
       seq_core_trk_t *t = &seq_core_trk[0];
@@ -262,7 +273,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  }
 	} else {
 	  // print 'm' if one or more layers are muted
-	  SEQ_LCD_PrintChar(seq_core_trk[track].layer_muted ? 'm' : ' ');
+	  SEQ_LCD_PrintChar(seq_core_trk[track].layer_muted ? 'm' : (seq_core_trk[track].layer_muted_from_midi ? 'M' : ' '));
 
 	  if( SEQ_UI_IsSelectedTrack(track) )
 	    SEQ_LCD_PrintFormattedString(">%2d<", track+1);

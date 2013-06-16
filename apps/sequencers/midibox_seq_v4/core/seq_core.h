@@ -94,6 +94,8 @@ typedef struct seq_core_trk_t {
   u8                   step_repeat_ctr;  // step repeat counter
   u8                   step_skip_ctr;    // step skip counter
   u16                  layer_muted;      // separate layer mutes
+  u16                  layer_muted_from_midi; // temporary layer mutes on incoming (and matching) events
+  u16                  layer_muted_from_midi_next; // will be taken over with the next step
   u8                   arp_pos;          // arpeggiator position
   u8                   vu_meter;         // for visualisation in mute menu
   u32                  rec_timestamp;    // for recording function
@@ -218,6 +220,8 @@ extern s32 SEQ_CORE_ResetTrkPosAll(void);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks);
+
+extern s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p);
 
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
