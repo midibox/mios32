@@ -404,7 +404,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       SEQ_SONG_Save(old_song_num);
 
       // send to external
-      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_SONG, song_num);
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_SONG, song_num, 0);
 
       // change to new song
       SEQ_SONG_Load(song_num);
@@ -659,7 +659,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   
 
       // send to external
-      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PHRASE, ui_song_edit_pos >> 3);
+      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PHRASE, ui_song_edit_pos >> 3, 0);
 
       // set song position and fetch patterns
       SEQ_SONG_PosSet(ui_song_edit_pos);

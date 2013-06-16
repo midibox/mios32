@@ -282,33 +282,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
     } else if( strcmp(parameter, "grooves") == 0 ) {
       SEQ_TERMINAL_PrintGrooveTemplates(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
-      char *arg = NULL;
-      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(arg, "on") == 0 ) {
-	  if( TASK_MSD_EnableGet() ) {
-	    out("Mass Storage Device Mode already activated!\n");
-	  } else {
-	    out("Mass Storage Device Mode activated - USB MIDI will be disabled!!!\n");
-	    // wait a second to ensure that this message is print in MIOS Terminal
-	    int d;
-	    for(d=0; d<1000; ++d)
-	      MIOS32_DELAY_Wait_uS(1000);
-	    // activate MSD mode
-	    TASK_MSD_EnableSet(1);
-	  }
-	} else if( strcmp(arg, "off") == 0 ) {
-	  if( !TASK_MSD_EnableGet() ) {
-	    out("Mass Storage Device Mode already deactivated!\n");
-	  } else {
-	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again.n");
-	    TASK_MSD_EnableSet(0);
-	  }
-	} else
-	  arg = NULL;
-      }
-      if( arg == NULL ) {
-	out("Please enter 'msd on' or 'msd off'\n");
-      }
+      out("Mass Storage Device Mode not supported by this application!\n");
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "router") == 0 ) {
@@ -609,7 +583,6 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
   out("  set rec_quantisation <1..100>: change record quantisation (default: 10%%, current: %d%%)\n", seq_record_quantize);
-  out("  msd <on|off>:   enables Mass Storage Device driver\n");
 #if !defined(MIOS32_FAMILY_EMULATION)
   AOUT_TerminalHelp(_output_function);
 #endif

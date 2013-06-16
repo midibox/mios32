@@ -106,10 +106,16 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 	  } else if( n->dst_chn == 18 ) { // Trk
 	    fwd_port = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_PORT);
 	    fwd_package.chn = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_CHANNEL);
+
+	    // temporary mute matching events from the sequencer
+	    SEQ_CORE_NotifyIncomingMIDIEvent(midi_package.chn, midi_package);
 	  } else if( n->dst_chn >= 19 ) { // SelTrk
 	    u8 visible_track = SEQ_UI_VisibleTrackGet();
 	    fwd_port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	    fwd_package.chn = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL);
+
+	    // temporary mute matching events from the sequencer
+	    SEQ_CORE_NotifyIncomingMIDIEvent(visible_track, midi_package);
 	  }
 
 	  MUTEX_MIDIOUT_TAKE;

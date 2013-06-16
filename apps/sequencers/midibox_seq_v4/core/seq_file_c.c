@@ -454,6 +454,8 @@ s32 SEQ_FILE_C_Read(char *session)
 		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = value;
 	      } else if( strcmp(parameter+8+7, "PcMode") == 0 ) {
 		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = value;
+	      } else if( strcmp(parameter+8+7, "CcMutes") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = value;
 	      } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
@@ -710,6 +712,7 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcAllNotesOff %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlNrpnEnabled %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlPcMode %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMutes %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES]); FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
   FLUSH_BUFFER;

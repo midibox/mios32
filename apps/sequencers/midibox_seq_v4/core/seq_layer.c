@@ -240,7 +240,7 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  u16 layer_muted = seq_core_trk[track].layer_muted;
+  u16 layer_muted = seq_core_trk[track].layer_muted | seq_core_trk[track].layer_muted_from_midi;
   u8 num_events = 0;
 
   u8 handle_vu_meter = (ui_page == SEQ_UI_PAGE_TRGSEL || ui_page == SEQ_UI_PAGE_PARSEL || ui_page == SEQ_UI_PAGE_MUTE) && track == SEQ_UI_VisibleTrackGet();
@@ -495,7 +495,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    p->cable    = track;
 	    p->event    = CC;
 	    p->chn      = tcc->midi_chn;
-	    p->note     = tcc->lay_const[1*16 + par_layer];
+	    p->cc_number = tcc->lay_const[1*16 + par_layer];
 	    p->value    = value;
 	    e->len      = -1;
 	    e->layer_tag = par_layer;

@@ -20,6 +20,8 @@
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 
+#include "tasks.h"
+
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_random.h"
@@ -456,6 +458,9 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
     t->state.ALL = 0;
     SEQ_CORE_ResetTrkPos(track, t, tcc);
 
+    t->layer_muted_from_midi = 0;
+    t->layer_muted_from_midi_next = 0;
+
     // add track offset depending on start position
     if( bpm_start ) {
 #if 0
@@ -527,6 +532,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       if( seq_core_state.reset_trkpos_req & (1 << track) ) {
 	SEQ_CORE_ResetTrkPos(track, t, tcc);
       }
+
+      // NEW: temporary layer mutes on incoming MIDI
+      // take over _next mutes
+      t->layer_muted_from_midi = t->layer_muted_from_midi_next;
+      t->layer_muted_from_midi_next = 0;
     }
     seq_core_state.reset_trkpos_req = 0;
 
@@ -853,7 +863,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  continue;
 
 	// parameter layer mute flags (only if not in drum mode)
-	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? t->layer_muted : 0;
+	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? (t->layer_muted | t->layer_muted_from_midi) : 0;
 
 	// check probability if not in drum mode
 	// if probability < 100: play step with given probability
@@ -1781,6 +1791,93 @@ s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks)
       t->state.SYNC_MEASURE = 1;
 
   MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by the "Live" function on incoming MIDI events,
+// currently we use it to control the temporary layer mutes.
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
+{
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return -1; // invalid track
+
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
+    return 0; // (currently) not relevant in drum mode
+
+  switch( p.event ) {
+  //case NoteOff:
+  case NoteOn: {
+    if( p.velocity == 0 ) // ignore Note Offs
+      break;
+
+    // temporary mute layers which are assigned to notes or chords
+    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+    int par_layer;
+    int num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 mask = 1;
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
+      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+	// hm... should we also play a note off for active notes?
+	// and should we mute the sequencer notes as long as no Note Off has been played?
+	// problem: we would have to track all actively played MIDI notes, this consumes a lot of memory
+
+	portENTER_CRITICAL();
+	t->layer_muted_from_midi |= mask;      // mute layer immediately
+	t->layer_muted_from_midi_next |= mask; // and for the next step
+	portEXIT_CRITICAL();
+      }
+    }
+  } break;
+
+  //case PolyPressure:
+  case CC:
+  case ProgramChange:
+  //case Aftertouch:
+  case PitchBend: {
+    // temporary mute layers which are assigned to the corresponding event
+    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+    int par_layer;
+    int num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 mask = 1;
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
+      switch( *layer_type_ptr ) {
+      case SEQ_PAR_Type_CC: {
+	if( p.event == CC && p.cc_number == tcc->lay_const[1*16 + par_layer] ) {
+	  portENTER_CRITICAL();
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	  portEXIT_CRITICAL();
+	}
+      } break;
+
+      case SEQ_PAR_Type_PitchBend: {
+	if( p.event == PitchBend ) {
+	  portENTER_CRITICAL();
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	  portEXIT_CRITICAL();
+	}
+      } break;
+
+      case SEQ_PAR_Type_ProgramChange: {
+	if( p.event == ProgramChange ) {
+	  portENTER_CRITICAL();
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	  portEXIT_CRITICAL();
+	}
+      } break;
+      }
+    }
+  } break;
+  }
 
   return 0; // no error
 }

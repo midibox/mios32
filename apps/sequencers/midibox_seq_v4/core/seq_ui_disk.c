@@ -53,7 +53,6 @@
 #define ITEM_MF_IMPORT         2
 #define ITEM_MF_EXPORT         3
 #define ITEM_MF_PLAY           4
-#define ITEM_ENABLE_MSD        5
 
 #define EXPORT_NUM_OF_ITEMS    6
 #define EXPORT_ITEM_MODE       0
@@ -114,8 +113,6 @@ static const int session_copy_max_items[SESSION_COPY_TYPE_NUM] = {
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void MSD_EnableReq(u32 enable);
-
 static s32 SEQ_UI_DISK_UpdateSessionDirList(void);
 static s32 SEQ_UI_DISK_UpdateMfDirList(void);
 
@@ -214,20 +211,13 @@ static s32 LED_Handler(u16 *gp_leds)
     break;
 
   default: {
-#if 0
     switch( ui_selected_item ) {
     case ITEM_S_IMPORT: *gp_leds |= 0x0001; break;
     case ITEM_S_EXPORT: *gp_leds |= 0x0006; break;
     case ITEM_MF_IMPORT: *gp_leds |= 0x0010; break;
     case ITEM_MF_EXPORT: *gp_leds |= 0x0060; break;
     case ITEM_MF_PLAY: *gp_leds |= 0x0080; break;
-    case ITEM_ENABLE_MSD: *gp_leds |= 0x0300; break;
     }
-#else
-    s32 status = TASK_MSD_EnableGet();
-    if( status == 1 )
-      *gp_leds |= 0x0300;
-#endif
   }
   }
 
@@ -857,9 +847,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
         case SEQ_UI_ENCODER_GP9:
         case SEQ_UI_ENCODER_GP10:
-          ui_selected_item = ITEM_ENABLE_MSD;
-          break;
-    
         case SEQ_UI_ENCODER_GP11:
         case SEQ_UI_ENCODER_GP12:
         case SEQ_UI_ENCODER_GP13:
@@ -914,10 +901,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  ui_selected_item = 0;
           menu_dialog = DIALOG_MF_PLAY;
           SEQ_UI_DISK_UpdateMfDirList();
-          return 1;    
-
-        case ITEM_ENABLE_MSD:
-          SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Please use", "GP Button!");
           return 1;    
       }
   }
@@ -1137,24 +1120,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       if( button <= SEQ_UI_BUTTON_GP16 ) {
         s32 incrementer = 0;
     
-        // GP9/10 toggles MSD enable/disable
-        if( button == SEQ_UI_BUTTON_GP9 || button == SEQ_UI_BUTTON_GP10 ) {
-	  u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
-	  if( depressed )
-	    SEQ_UI_UnInstallDelayedActionCallback(MSD_EnableReq);
-	  else {
-	    if( !do_enable ) {
-	      // wait a bit longer... normaly it would be better to print a warning that "unmounting via OS" is better
-	      SEQ_UI_InstallDelayedActionCallback(MSD_EnableReq, 5000, do_enable);
-	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 5001, "", "to disable MSD USB!");
-	    } else {
-	      SEQ_UI_InstallDelayedActionCallback(MSD_EnableReq, 2000, do_enable);
-	      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 2001, "", "to enable MSD USB!");
-	    }
-	  }
-	  return 1;
-	}
-
 	if( depressed ) return 0; // ignore when button depressed
 
 	// re-use encoder function
@@ -1213,8 +1178,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //    Sessions              MIDI Files      MSD USB (UMRW)                         
-  // Import  Export      Import  Export  Play enabled                                
+  //    Sessions              MIDI Files                                             
+  // Import  Export      Import  Export  Play                                        
 
 
   // Session Import dialog:
@@ -1692,31 +1657,13 @@ static s32 LCD_Handler(u8 high_prio)
     default:
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
-      SEQ_LCD_PrintString("   Sessions              MIDI Files      MSD USB ");
-      if( TASK_MSD_EnableGet() == 1 ) {
-	char str[5];
-	TASK_MSD_FlagStrGet(str);
-	SEQ_LCD_PrintFormattedString("(%s)", str);
-      } else {
-        SEQ_LCD_PrintSpaces(6);
-      }
-      SEQ_LCD_PrintSpaces(40-15);
+      SEQ_LCD_PrintString("   Sessions              MIDI Files     ");
+      SEQ_LCD_PrintSpaces(40);
     
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
       SEQ_LCD_PrintString("Import  Export      Import  Export  Play");
-
-      if( ui_selected_item == ITEM_ENABLE_MSD && ui_cursor_flash ) {
-        SEQ_LCD_PrintSpaces(14);
-      } else {
-        s32 status = TASK_MSD_EnableGet();
-        switch( status ) {
-          case 0:  SEQ_LCD_PrintString(" disabled     "); break;
-          case 1:  SEQ_LCD_PrintString("  enabled     "); break;
-          default: SEQ_LCD_PrintString(" Not Emulated!"); break;
-        }
-      }
-      SEQ_LCD_PrintSpaces(40-14);
+      SEQ_LCD_PrintSpaces(40);
   }
 
   return 0; // no error
@@ -1742,18 +1689,6 @@ s32 SEQ_UI_DISK_Init(u32 mode)
 
   return 0; // no error
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-// help function for MSD enable/disable
-/////////////////////////////////////////////////////////////////////////////
-static void MSD_EnableReq(u32 enable)
-{
-  TASK_MSD_EnableSet(enable);
-  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Mass Storage via USB", enable ? "enabled!" : "disabled!");
-}
-
-
 
 
 /////////////////////////////////////////////////////////////////////////////
