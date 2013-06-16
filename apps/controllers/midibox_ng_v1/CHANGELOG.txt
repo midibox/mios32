@@ -3,7 +3,7 @@ $Id$
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~
 
-   o support for nrpn_mode=MsbOnly (e.g. for MBSEQ V4 NRPNs)
+   o support for nrpn_format=MsbOnly (e.g. for MBSEQ V4 NRPNs)
 
    o new EVENT parameter ain_sensor_mode:
 
@@ -11,8 +11,8 @@ MIDIbox NG V1.026
      assigned to Note events, send velocity 0 before a new Note is sent
      with velocity > 0 to avoid hanging notes.
 
-     With ain_sensor_mode=None (default if no sensor mode specified), Note
-     events will be generated as a continuous stream like CCs
+     With ain_sensor_mode=None (default if no sensor mode specified),
+     Note events will be generated as a continuous stream like CCs
 
 
 MIDIbox NG V1.025

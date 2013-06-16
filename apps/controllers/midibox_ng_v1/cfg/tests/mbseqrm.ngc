@@ -2,7 +2,7 @@
 # Remote control of MBSEQ parameters with the 16 LEDrings/Encoders PCB of Fairlightiii
 # see also http://www.midibox.org/dokuwiki/doku.php?id=fairlightiii
 
-# this .NGC is only intended for checking the nrpn_mode=MsbOnly option!
+# this .NGC is only intended for checking the nrpn_format=MsbOnly option!
 
 
 RESET_HW
