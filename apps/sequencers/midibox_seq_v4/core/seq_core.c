@@ -460,6 +460,8 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 
     t->layer_muted_from_midi = 0;
     t->layer_muted_from_midi_next = 0;
+    t->lfo_cc_muted_from_midi = 0;
+    t->lfo_cc_muted_from_midi_next = 0;
 
     // add track offset depending on start position
     if( bpm_start ) {
@@ -535,8 +537,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       // NEW: temporary layer mutes on incoming MIDI
       // take over _next mutes
-      t->layer_muted_from_midi = t->layer_muted_from_midi_next;
-      t->layer_muted_from_midi_next = 0;
+      // TEST: do this only each 8th note
+      if( (bpm_tick % (384/2)) ) {
+	// layer mutes
+	t->layer_muted_from_midi = t->layer_muted_from_midi_next;
+	t->layer_muted_from_midi_next = 0;
+
+	// the same for the LFO CC
+	t->lfo_cc_muted_from_midi = t->lfo_cc_muted_from_midi_next;
+	t->lfo_cc_muted_from_midi_next = 0;
+      }
     }
     seq_core_state.reset_trkpos_req = 0;
 
@@ -663,8 +673,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       // handle LFO effect
       SEQ_LFO_HandleTrk(track, bpm_tick);
 
-      // send LFO CC (if enabled)
-      if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute ) {
+      // send LFO CC (if enabled and not muted)
+      if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute && !t->lfo_cc_muted_from_midi ) {
 	mios32_midi_package_t p;
 	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p, 0) > 0 ) {
 	  if( loopback_port )
@@ -1876,6 +1886,15 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
       } break;
       }
     }
+
+    // check also LFO CC
+    if( p.event == CC && p.cc_number == tcc->lfo_cc ) {
+      portENTER_CRITICAL();
+      t->lfo_cc_muted_from_midi = 1;
+      t->lfo_cc_muted_from_midi_next = 1;
+      portEXIT_CRITICAL();
+    }
+
   } break;
   }
 

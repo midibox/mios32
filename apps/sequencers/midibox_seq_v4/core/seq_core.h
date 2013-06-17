@@ -96,6 +96,8 @@ typedef struct seq_core_trk_t {
   u16                  layer_muted;      // separate layer mutes
   u16                  layer_muted_from_midi; // temporary layer mutes on incoming (and matching) events
   u16                  layer_muted_from_midi_next; // will be taken over with the next step
+  u8                   lfo_cc_muted_from_midi:1; // the same for the LFO CC
+  u8                   lfo_cc_muted_from_midi_next:1;
   u8                   arp_pos;          // arpeggiator position
   u8                   vu_meter;         // for visualisation in mute menu
   u32                  rec_timestamp;    // for recording function
