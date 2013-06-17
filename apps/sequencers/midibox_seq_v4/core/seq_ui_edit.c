@@ -361,8 +361,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
     }
 
+    u8 changed_step;
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
+      changed_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
+    } else {
+      changed_step = ui_selected_step;
+    }
+
     u8 edit_ramp = 0;
-    u8 changed_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
     if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
 
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
