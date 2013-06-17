@@ -3,10 +3,8 @@
 
 Preparation:
 
-To get the Remix function properly working, please open your MBSEQ_GC.V4 file with
-the MIOS Filebrowser, search for "PatternMixerMapCoupling" and set it to 1.
-If this parameter doesn't exist yet, please create it:
-PatternMixerMapCoupling 1
+To get the Remix function properly working, please go to the UTILITY->Options
+page, and enable the "Dump a predef. Mixer Map on Pattern Chng" option
 
 *** IMPORTANT ***
 
