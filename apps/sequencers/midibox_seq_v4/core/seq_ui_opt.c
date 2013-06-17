@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 #include "tasks.h"
 
 #include "seq_lcd.h"
@@ -35,22 +36,79 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
-#define ITEM_STEPS_MEASURE 0
-#define ITEM_STEPS_PATTERN 1
-#define ITEM_SYNC_CHANGE   2
-#define ITEM_RATOPC        3
-#define ITEM_SYNC_MUTE     4
-#define ITEM_SYNC_UNMUTE   5
-#define ITEM_PASTE_CLR_ALL 6
-#define ITEM_INIT_CC       7
+#define ITEM_STEPS_MEASURE   0
+#define ITEM_STEPS_PATTERN   1
+#define ITEM_SYNC_CHANGE     2
+#define ITEM_RATOPC          3
+#define ITEM_PATTERN_MIXER_MAP_COUPLING 4
+#define ITEM_SYNC_MUTE       5
+#define ITEM_SYNC_UNMUTE     6
+#define ITEM_PASTE_CLR_ALL   7
+#define ITEM_INIT_CC         8
+#define ITEM_LIVE_LAYER_MUTE 9
 
+#define NUM_OF_ITEMS         10
+
+
+static const char *item_text[NUM_OF_ITEMS][2] = {
+  
+  {//<-------------------------------------->
+    "Track Synchronisation",
+    "Steps per Measure:" // %3d
+  },
+
+  {//<-------------------------------------->
+    "Pattern Change Synchronisation",
+    "Change considered each " // %3d steps
+  },
+
+  {//<-------------------------------------->
+    "Pattern Change Synchronisation",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Restart all Tracks on Pattern Change",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Dump a predefined Mixer Map on",
+    "Pattern Changes: ", // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Synchronize MUTE to Measure",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Synchronize UNMUTE to Measure",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Paste and Clear button will modify",
+    NULL, // Only Steps/Complete Track
+  },
+
+  {//<-------------------------------------->
+    "Initial CC value for Clear and Init",
+    "is: ",
+  },
+
+  {//<-------------------------------------->
+    "If Live function, matching received",
+    "MIDI Events will: ",
+  },
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 store_file_required;
+static u8 local_selected_item = 0; // stays stable when menu is exit
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,16 +119,7 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  switch( ui_selected_item ) {
-    case ITEM_STEPS_MEASURE:  *gp_leds = 0x0003; break;
-    case ITEM_STEPS_PATTERN:  *gp_leds = 0x000c; break;
-    case ITEM_SYNC_CHANGE:    *gp_leds = 0x0030; break;
-    case ITEM_RATOPC:         *gp_leds = 0x00c0; break;
-    case ITEM_SYNC_MUTE:      *gp_leds = 0x0100; break;
-    case ITEM_SYNC_UNMUTE:    *gp_leds = 0x0200; break;
-    case ITEM_PASTE_CLR_ALL:  *gp_leds = 0x3000; break;
-    case ITEM_INIT_CC:        *gp_leds = 0xc000; break;
-  }
+  *gp_leds = 0xffc0;
 
   return 0; // no error
 }
@@ -86,54 +135,21 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  switch( encoder ) {
-    case SEQ_UI_ENCODER_GP1:
-    case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_STEPS_MEASURE;
-      break;
+  if( encoder <= SEQ_UI_ENCODER_GP6 )
+    return -1; // not mapped
 
-    case SEQ_UI_ENCODER_GP3:
-    case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_STEPS_PATTERN;
-      break;
-
-    case SEQ_UI_ENCODER_GP5:
-    case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_SYNC_CHANGE;
-      break;
-
-    case SEQ_UI_ENCODER_GP7:
-    case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_RATOPC;
-      break;
-
-    case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_SYNC_MUTE;
-      break;
-
-    case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_SYNC_UNMUTE;
-      break;
-
-    case SEQ_UI_ENCODER_GP11:
-    case SEQ_UI_ENCODER_GP12:
-      return -1; // not mapped
-
-    case SEQ_UI_ENCODER_GP13:
-    case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_PASTE_CLR_ALL;
-      break;
-
-    case SEQ_UI_ENCODER_GP15:
-    case SEQ_UI_ENCODER_GP16:
-      ui_selected_item = ITEM_INIT_CC;
-      break;
+  // change page
+  if( encoder == SEQ_UI_ENCODER_GP7 || encoder == SEQ_UI_ENCODER_GP8 ) {
+    if( SEQ_UI_Var8_Inc(&local_selected_item, 0, NUM_OF_ITEMS-1, incrementer) >= 0 ) {
+      return 1; // changed
+    }
+    return 0; // not changed
   }
 
   // for GP encoders and Datawheel
-  switch( ui_selected_item ) {
+  switch( local_selected_item ) {
     case ITEM_STEPS_MEASURE:
-      if( encoder == SEQ_UI_ENCODER_GP1 ) {
+      if( encoder == SEQ_UI_ENCODER_GP16 ) {
 	// increment in +/- 16 steps
 	u8 value = seq_core_steps_per_measure >> 4;
 	if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 0 ) {
@@ -150,7 +166,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0;
 
     case ITEM_STEPS_PATTERN:
-      if( encoder == SEQ_UI_ENCODER_GP3 ) {
+      if( encoder == SEQ_UI_ENCODER_GP16 ) {
 	// increment in +/- 16 steps
 	u8 value = seq_core_steps_per_pattern >> 4;
 	if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 0 ) {
@@ -174,6 +190,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       store_file_required = 1;
       return 1;
 
+    case ITEM_PATTERN_MIXER_MAP_COUPLING:
+      if( incrementer )
+	seq_core_options.PATTERN_MIXER_MAP_COUPLING = incrementer > 0 ? 1 : 0;
+      else
+	seq_core_options.PATTERN_MIXER_MAP_COUPLING ^= 1;
+      store_file_required = 1;
+      return 1;
+
     case ITEM_PASTE_CLR_ALL:
       if( incrementer )
 	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
@@ -181,16 +205,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.PASTE_CLR_ALL ^= 1;
       store_file_required = 1;
       return 1;
-
-    case ITEM_INIT_CC: {
-      u8 value = seq_core_options.INIT_CC;
-      if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
-	seq_core_options.INIT_CC = value;
-	store_file_required = 1;
-	return 1;
-      }
-      return 0;
-    } break;
 
     case ITEM_RATOPC:
       if( incrementer )
@@ -217,6 +231,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       store_file_required = 1;
       return 1;
     } break;
+
+    case ITEM_INIT_CC: {
+      u8 value = seq_core_options.INIT_CC;
+      if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
+	seq_core_options.INIT_CC = value;
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    } break;
+
+    case ITEM_LIVE_LAYER_MUTE: {
+      u8 value = seq_core_options.LIVE_LAYER_MUTE_STEPS;
+      if( SEQ_UI_Var8_Inc(&value, 0, 7, incrementer) >= 0 ) {
+	seq_core_options.LIVE_LAYER_MUTE_STEPS = value;
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    } break;
+
   }
 
   return -1; // invalid or unsupported encoder
@@ -249,16 +284,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
       if( depressed ) return -1;
-      if( ++ui_selected_item >= NUM_OF_ITEMS )
-	ui_selected_item = 0;
+      if( ++local_selected_item >= NUM_OF_ITEMS )
+	local_selected_item = 0;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Left:
       if( depressed ) return -1;
-      if( ui_selected_item == 0 )
-	ui_selected_item = NUM_OF_ITEMS-1;
+      if( local_selected_item == 0 )
+	local_selected_item = NUM_OF_ITEMS-1;
       else
-	--ui_selected_item;
+	--local_selected_item;
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Up:
@@ -287,81 +322,136 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Measure   Pattern  SyncChange   RATOPC  SyncMute            Paste/Clr  Init CC 
-  //  16 Steps  16 Steps     off       off   Mute Unmute            Steps       64   
+  //                                 Option  Track Synchronisation
+  //                                   1/10  Steps per Measure:  16
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Measure   Pattern  SyncChange   RATOPC  SyncMute            Paste/Clr  Init CC ");
-  SEQ_LCD_PrintSpaces(18);
+  SEQ_LCD_PrintSpaces(32);
+  SEQ_LCD_PrintString("Option  ");
+  SEQ_LCD_PrintStringPadded((char *)item_text[local_selected_item][0], 40);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
+  SEQ_LCD_PrintSpaces(33);
+  SEQ_LCD_PrintFormattedString("%2d/%-2d  ", local_selected_item+1, NUM_OF_ITEMS);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_STEPS_MEASURE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(10);
-  } else {
-    SEQ_LCD_PrintFormattedString("%3d Steps ", (int)seq_core_steps_per_measure + 1);
-  }
+  char *str = (char *)item_text[local_selected_item][1];
+  u32 len = strlen(str);
+  int enabled_value = -1; // cheap: will print enabled/disabled in second line if >= 0
+
+  switch( local_selected_item ) {
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_STEPS_PATTERN && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(10);
-  } else {
-    SEQ_LCD_PrintFormattedString("%3d Steps ", (int)seq_core_steps_per_pattern + 1);
-  }
-  SEQ_LCD_PrintSpaces(4);
+  case ITEM_STEPS_MEASURE: {
+    SEQ_LCD_PrintString(str);
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d", (int)seq_core_steps_per_measure + 1);
+    }
+    SEQ_LCD_PrintSpaces(40-3-len);
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_SYNC_CHANGE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.SYNCHED_PATTERN_CHANGE ? "on " : "off");
-  }
-  SEQ_LCD_PrintSpaces(7);
+  case ITEM_STEPS_PATTERN: {
+    SEQ_LCD_PrintString(str);
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(9);
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d steps", (int)seq_core_steps_per_pattern + 1);
+    }
+    SEQ_LCD_PrintSpaces(40-9-len);
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_RATOPC && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.RATOPC ? " on" : "off");
-  }
-  SEQ_LCD_PrintSpaces(3);
-
+  case ITEM_SYNC_CHANGE: {
+    enabled_value = seq_core_options.SYNCHED_PATTERN_CHANGE;
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_SYNC_MUTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.SYNCHED_MUTE ? "Mute" : " off");
-  }
-  SEQ_LCD_PrintSpaces(1);
+  case ITEM_RATOPC: {
+    enabled_value = seq_core_options.RATOPC;
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_SYNC_UNMUTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.SYNCHED_UNMUTE ? "Unmute" : "  off ");
-  }
-  SEQ_LCD_PrintSpaces(12);  
+  case ITEM_PATTERN_MIXER_MAP_COUPLING: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40-len);
+    } else {
+      SEQ_LCD_PrintStringPadded(seq_core_options.PATTERN_MIXER_MAP_COUPLING ? "enabled" : "disabled", 40-len);
+    }
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_PASTE_CLR_ALL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
-  } else {
-    SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Track" : "Steps");
-  }
-  SEQ_LCD_PrintSpaces(6);
+  case ITEM_SYNC_MUTE: {
+    enabled_value = seq_core_options.SYNCHED_MUTE;
+  } break;
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_INIT_CC && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
-    SEQ_LCD_PrintFormattedString("%3d", seq_core_options.INIT_CC);
-  }
-  SEQ_LCD_PrintSpaces(3);
+  case ITEM_SYNC_UNMUTE: {
+    enabled_value = seq_core_options.SYNCHED_UNMUTE;
+  } break;
 
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_PASTE_CLR_ALL: {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(14);
+    } else {
+      SEQ_LCD_PrintFormattedString("%-8s", seq_core_options.PASTE_CLR_ALL ? "Complete Track" : "Only Steps    ");
+    }
+    SEQ_LCD_PrintSpaces(40-14);
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_INIT_CC: {
+    SEQ_LCD_PrintString(str);
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d", seq_core_options.INIT_CC);
+    }
+    SEQ_LCD_PrintSpaces(40-3-len);
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_LIVE_LAYER_MUTE: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(22);
+    } else {
+      if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 0 ) {
+	SEQ_LCD_PrintStringPadded("do nothing", 22);
+      } else if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 1 ) {
+	SEQ_LCD_PrintStringPadded("mute the appr. layer", 22);
+      } else if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 2 ) {
+	SEQ_LCD_PrintStringPadded("mute layer for 1 step ", 22);
+      } else {
+	SEQ_LCD_PrintFormattedString("mute layer for %d steps", seq_core_options.LIVE_LAYER_MUTE_STEPS-1);
+      }
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  default:
+    SEQ_LCD_PrintSpaces(40);
+  }
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+
+
+  // for cheap enabled/disabled
+  if( enabled_value >= 0 ) {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      SEQ_LCD_PrintStringPadded(enabled_value ? "enabled" : "disabled", 40);
+    }
+  }
 
   return 0; // no error
 }

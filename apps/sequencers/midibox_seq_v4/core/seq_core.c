@@ -537,8 +537,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       // NEW: temporary layer mutes on incoming MIDI
       // take over _next mutes
-      // TEST: do this only each 8th note
-      if( (bpm_tick % (384/2)) ) {
+      int num_steps = (seq_core_options.LIVE_LAYER_MUTE_STEPS < 2) ? 1 : (seq_core_options.LIVE_LAYER_MUTE_STEPS-2+1);
+      if( (bpm_tick % (num_steps*(384/4))) == 0 ) {
 	// layer mutes
 	t->layer_muted_from_midi = t->layer_muted_from_midi_next;
 	t->layer_muted_from_midi_next = 0;
@@ -1815,6 +1815,9 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
   if( track >= SEQ_CORE_NUM_TRACKS )
     return -1; // invalid track
 
+  if( !seq_core_options.LIVE_LAYER_MUTE_STEPS )
+    return 0; // disabled
+
   seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
@@ -1839,8 +1842,12 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
 	// problem: we would have to track all actively played MIDI notes, this consumes a lot of memory
 
 	portENTER_CRITICAL();
-	t->layer_muted_from_midi |= mask;      // mute layer immediately
-	t->layer_muted_from_midi_next |= mask; // and for the next step
+	if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 1 ) {
+	  t->layer_muted |= mask;      // mute layer immediately
+	} else {
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	}
 	portEXIT_CRITICAL();
       }
     }
@@ -1856,38 +1863,41 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
     int par_layer;
     int num_p_layers = SEQ_PAR_NumLayersGet(track);
     u16 mask = 1;
+    u8 apply_mask = 0;
     for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
       switch( *layer_type_ptr ) {
       case SEQ_PAR_Type_CC: {
 	if( p.event == CC && p.cc_number == tcc->lay_const[1*16 + par_layer] ) {
-	  portENTER_CRITICAL();
-	  t->layer_muted_from_midi |= mask;      // mute layer immediately
-	  t->layer_muted_from_midi_next |= mask; // and for the next step
-	  portEXIT_CRITICAL();
+	  apply_mask = 1;
 	}
       } break;
 
       case SEQ_PAR_Type_PitchBend: {
 	if( p.event == PitchBend ) {
-	  portENTER_CRITICAL();
-	  t->layer_muted_from_midi |= mask;      // mute layer immediately
-	  t->layer_muted_from_midi_next |= mask; // and for the next step
-	  portEXIT_CRITICAL();
+	  apply_mask = 1;
 	}
       } break;
 
       case SEQ_PAR_Type_ProgramChange: {
 	if( p.event == ProgramChange ) {
-	  portENTER_CRITICAL();
-	  t->layer_muted_from_midi |= mask;      // mute layer immediately
-	  t->layer_muted_from_midi_next |= mask; // and for the next step
-	  portEXIT_CRITICAL();
+	  apply_mask = 1;
 	}
       } break;
       }
+
+      if( apply_mask ) {
+	portENTER_CRITICAL();
+	if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 1 ) {
+	  t->layer_muted |= mask;      // mute layer immediately
+	} else {
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	}
+	portEXIT_CRITICAL();
+      }
     }
 
-    // check also LFO CC
+    // check also LFO CC (note: only handled as temporary change)
     if( p.event == CC && p.cc_number == tcc->lfo_cc ) {
       portENTER_CRITICAL();
       t->lfo_cc_muted_from_midi = 1;

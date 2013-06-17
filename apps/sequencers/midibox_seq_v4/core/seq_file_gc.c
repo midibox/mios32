@@ -293,6 +293,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_options.PASTE_CLR_ALL = value;
 	  } else if( strcmp(parameter, "InitCC") == 0 ) {
 	    seq_core_options.INIT_CC = value;
+	  } else if( strcmp(parameter, "LiveLayerMuteSteps") == 0 ) {
+	    seq_core_options.LIVE_LAYER_MUTE_STEPS = value;
 	  } else if( strcmp(parameter, "PatternMixerMapCoupling") == 0 ) {
 	    seq_core_options.PATTERN_MIXER_MAP_COUPLING = value;
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
@@ -471,6 +473,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "InitCC %d\n", seq_core_options.INIT_CC);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveLayerMuteSteps %d\n", seq_core_options.LIVE_LAYER_MUTE_STEPS);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "PatternMixerMapCoupling %d\n", seq_core_options.PATTERN_MIXER_MAP_COUPLING);
