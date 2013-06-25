@@ -1776,6 +1776,55 @@ static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_MuteAllTracks(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  seq_core_trk_muted = 0xffff;
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_MuteTrackLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_core_trk[visible_track].layer_muted = 0xffff;
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_MuteAllTracksAndLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  int track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    seq_core_trk[track].layer_muted = 0xffff;
+  seq_core_trk_muted = 0xffff;
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteAllTracks(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  seq_core_trk_muted = 0xffff;
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteTrackLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_core_trk[visible_track].layer_muted = 0xffff;
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteAllTracksAndLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  int track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    seq_core_trk[track].layer_muted = 0xffff;
+  seq_core_trk_muted = 0xffff;
+  return 0; // no error
+}
 
 // only used by keyboard remote function
 static s32 SEQ_UI_Button_ToggleGate(s32 depressed)
@@ -2014,6 +2063,20 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_FootSwitch(pin_value);
   if( pin == seq_hwcfg_button.pattern_remix )
     return SEQ_UI_Button_Pattern_Remix(pin_value);
+
+  if( pin == seq_hwcfg_button.mute_all_tracks )
+    return SEQ_UI_Button_MuteAllTracks(pin_value);
+  if( pin == seq_hwcfg_button.mute_track_layers )
+    return SEQ_UI_Button_MuteTrackLayers(pin_value);
+  if( pin == seq_hwcfg_button.mute_all_tracks_and_layers )
+    return SEQ_UI_Button_MuteAllTracksAndLayers(pin_value);
+  if( pin == seq_hwcfg_button.unmute_all_tracks )
+    return SEQ_UI_Button_UnMuteAllTracks(pin_value);
+  if( pin == seq_hwcfg_button.unmute_track_layers )
+    return SEQ_UI_Button_UnMuteTrackLayers(pin_value);
+  if( pin == seq_hwcfg_button.unmute_all_tracks_and_layers )
+    return SEQ_UI_Button_UnMuteAllTracksAndLayers(pin_value);
+
   // always print debugging message
 #if 1
   MUTEX_MIDIOUT_TAKE;
@@ -2563,6 +2626,7 @@ s32 SEQ_UI_LCD_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
   static u8 remote_led_sr[SEQ_LED_NUM_SR];
 
   // ignore in remote client mode
@@ -2696,6 +2760,20 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
 
+  SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk_muted == 0xffff);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk[visible_track].layer_muted == 0xffff);
+  SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk_muted == 0x0000);
+  SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk[visible_track].layer_muted == 0x0000);
+  // only consume CPU time if LEDs really assigned...
+  if( seq_hwcfg_led.mute_all_tracks_and_layers || seq_hwcfg_led.unmute_all_tracks_and_layers ) {
+    u16 all_layers_muted_mask = 0;
+    int track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+      all_layers_muted_mask |= seq_core_trk[track].layer_muted;
+
+    SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks_and_layers, seq_core_trk_muted == 0xffff && all_layers_muted_mask == 0xffff);
+    SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks_and_layers, seq_core_trk_muted == 0x0000 && all_layers_muted_mask == 0x0000);
+  }
 
   // in MENU page: overrule GP LEDs as long as MENU button is pressed/active
   if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {

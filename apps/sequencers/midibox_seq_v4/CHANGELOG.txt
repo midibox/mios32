@@ -24,11 +24,30 @@ MIDIboxSEQ V4.078
      an external MIDI keyboard or controller.
      This feature has to be configured in the UTILITY->Options page, it's disabled by default!
 
+   o activate the ALL function (press ALL button) in the mute page to get a new 
+     menu page which allows to mute/unmute all tracks, layers of current track or 
+     mute&layers of all tracks.
+     Sidenote: this obsoletes the UTILITY->MUTE and UNMUTE function, which might
+     be replaced by something else in future.
+
+   o the 6 new mute/unmute functions are now also accessible from dedicated buttons
+     (and LEDs). They have to be assigned in the MBSEQ_HW.V4 file.
+
    o it's now possible to control the track mutes via CCs.
      The first CC (for the first track) has to be configured in the MENU->MIDI->Ext.Ctrl
      page. The remaining tracks are controlled from the 15 consecutive CCs.
      E.g. if the CC number is set to 16, the mutes of track 1-16 are controlled with
      CC#16 .. CC#31
+
+   o a CC assigned to a sequencer layer won't be sent if it's also assigned to
+     the LFO "Extra CC"
+
+   o if a track is initialized, CC layers will be assigned to "off" by default
+     (no CC will be sent). The desired CC number has to set explicitly before a
+     CC layer will send an event.
+
+   o in record mode, a free CC layer (assigned to "off") will be automatically
+     assigned to the incoming CC number (like known from MBSEQ V4L)
 
    o Trigger/Layer/303 edit view working again
 

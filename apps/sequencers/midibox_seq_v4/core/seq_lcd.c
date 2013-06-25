@@ -731,8 +731,12 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
       SEQ_LCD_PrintString("----");
     } else {
       u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;
-      SEQ_LCD_PrintFormattedString("%3d", value);
-      SEQ_LCD_PrintVBar(value >> 4);
+      if( value >= 0x80 ) {
+	SEQ_LCD_PrintFormattedString("####"); // currently used for CC in live recording mode: unrecorded value
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", value);
+	SEQ_LCD_PrintVBar(value >> 4);
+      }
     }
   } break;
 

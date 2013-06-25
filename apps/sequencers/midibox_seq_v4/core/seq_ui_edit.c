@@ -950,7 +950,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintChar(':');
 
   if( layer_type == SEQ_PAR_Type_CC ) {
-    SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+    if( layer_event.midi_package.cc_number >= 0x80 ) {
+      SEQ_LCD_PrintFormattedString("CC#off ");
+    } else {
+      SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+    }
   } else {
     SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
     SEQ_LCD_PrintSpaces(2);
@@ -970,8 +974,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     if( loopback )
       SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
-    else
-      SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+    else {
+      if( layer_event.midi_package.cc_number >= 0x80 ) {
+	SEQ_LCD_PrintFormattedString("  CC#off");
+      } else {
+	SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+      }
+    }
     SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {

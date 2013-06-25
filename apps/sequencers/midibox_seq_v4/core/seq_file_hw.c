@@ -465,6 +465,18 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.footswitch = din_value;
           } else if( strcmp(parameter, "PATTERN_RMX") == 0 ) {
             seq_hwcfg_button.pattern_remix = din_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_button.mute_all_tracks = din_value;
+          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_button.mute_track_layers = din_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_button.mute_all_tracks_and_layers = din_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_button.unmute_all_tracks = din_value;
+          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_button.unmute_track_layers = din_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_button.unmute_all_tracks_and_layers = din_value;
 	  } else if( strncmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
 	    parameter += 15;
 
@@ -628,6 +640,18 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.track_morph = dout_value;
 	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_led.track_transpose = dout_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_led.mute_all_tracks = dout_value;
+          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_led.mute_track_layers = dout_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_led.mute_all_tracks_and_layers = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_led.unmute_all_tracks = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_led.unmute_track_layers = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_led.unmute_all_tracks_and_layers = dout_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED function 'LED_%s'!", parameter);

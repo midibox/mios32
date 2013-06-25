@@ -197,13 +197,21 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .save      = ((( 0   -1)<<3)+    0),
   .save_all  = ((( 0   -1)<<3)+    0),
 
-  //              SR   ignore    Pin
+  //                     SR   ignore    Pin
   .track_mode      = ((( 0   -1)<<3)+    0),
   .track_groove    = ((( 0   -1)<<3)+    0),
   .track_length    = ((( 0   -1)<<3)+    0),
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+
+  //                                   SR   ignore    Pin
+  .mute_all_tracks               = ((( 0   -1)<<3)+    0),
+  .mute_track_layers             = ((( 0   -1)<<3)+    0),
+  .mute_all_tracks_and_layers    = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks             = ((( 0   -1)<<3)+    0),
+  .unmute_track_layers           = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
 
   .footswitch      = ((( 0   -1)<<3)+    0),
   .pattern_remix   = ((( 0   -1)<<3)+    0),
@@ -395,6 +403,14 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+
+  //                                   SR   ignore    Pin
+  .mute_all_tracks               = ((( 0   -1)<<3)+    0),
+  .mute_track_layers             = ((( 0   -1)<<3)+    0),
+  .mute_all_tracks_and_layers    = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks             = ((( 0   -1)<<3)+    0),
+  .unmute_track_layers           = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
 #endif
 };
 

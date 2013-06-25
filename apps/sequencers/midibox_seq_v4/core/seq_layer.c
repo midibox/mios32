@@ -470,18 +470,21 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
         case SEQ_PAR_Type_CC: {
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 cc_number = tcc->lay_const[1*16 + par_layer];
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
-	  // new: don't send CC if assigned to invalid CC number (not recorded yet)
-	  if( tcc->lay_const[1*16 + par_layer] >= 0x80 )
-	    break;
-
-	  // don't send CC if value hasn't changed (== invalid value)
-	  // but only if LFO not assigned to CC layer
 	  if( !insert_empty_notes ) {
+	    // new: don't send CC if assigned to invalid CC number (not recorded yet)
+	    // new: don't send if CC is assigned to LFO extra CC function
+	    if( cc_number >= 0x80 ||
+		(tcc->lfo_waveform && tcc->lfo_cc == cc_number) )
+	      break;
+
+	    // don't send CC if value hasn't changed (== invalid value)
+	    // but only if LFO not assigned to CC layer
 	    if( !tcc->lfo_enable_flags.CC &&
 		( value >= 0x80 || value == cc_last_value[track][par_layer]) ) {
-		break;
+	      break;
 	    }
 	    cc_last_value[track][par_layer] = value;
 	  }
@@ -811,7 +814,11 @@ s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer)
 
   switch( layer_type ) {
   case SEQ_PAR_Type_CC: {
+    u8 cc_number = tcc->lay_const[1*16 + par_layer];
     u8 value = (cc_last_value[track][par_layer] < 0x80) ? cc_last_value[track][par_layer] : 0x40;
+
+    if( cc_number >= 0x80 )
+      return 0; // CC disabled
 
     p.type      = CC;
     p.event     = CC;
@@ -906,8 +913,9 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	      SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_Note);
 	  }
 
+	  // new: assign disabled CCs by default
 	  for(i=0; i<16; ++i)
-	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 16+i);
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 0x80);
 
         } break;
 
@@ -921,8 +929,8 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1+i, SEQ_PAR_Type_CC);
 
 #ifndef MBSEQV4L
-	  for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
-	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
+	  for(i=0; i<16; ++i) // disable all CCs by default
+	    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 0x80);
 #else
 	  // extra for MBSEQ V4L:
 	  // CCs disabled and will be assigned during recording
@@ -975,15 +983,9 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
       case SEQ_EVENT_MODE_Chord:
       case SEQ_EVENT_MODE_CC:
       case SEQ_EVENT_MODE_Combined: {
-#ifdef MBSEQV4L
-	// extra for MBSEQ V4L:
-	// CCs disabled and will be assigned during recording
+	// CCs disabled and will be assigned in INIT page or during recording
 	for(i=0; i<16; ++i)
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, 0x80);
-#else
-	for(i=0; i<16; ++i) // CC#1, CC#16, CC#17, ...
-	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+i, (i == 0) ? 1 : (16+i-1));
-#endif
         } break;
 
       case SEQ_EVENT_MODE_Drum: {

@@ -718,7 +718,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, 0, 127, incrementer);
 	    } else {
 	      // CC number selection now has to be confirmed with GP button
-	      return SEQ_UI_Var8_Inc(&edit_cc_number, 0, 127, incrementer);
+	      return SEQ_UI_Var8_Inc(&edit_cc_number, 0, 128, incrementer);
 	    }
 	    
 	  case ITEM_LAYER_CONTROL: {
@@ -1387,10 +1387,14 @@ static s32 LCD_Handler(u8 high_prio)
 	      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	      u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
 	      u8 edit_value = ui_selected_item == ITEM_LAYER_PAR ? edit_cc_number : current_value;
-	      SEQ_LCD_PrintFormattedString("%03d%c(%s) ", 
-					   edit_value,
-					   (current_value != edit_value) ? '!' : ' ',
-					   SEQ_CC_LABELS_Get(port, edit_value));
+
+	      if( edit_value >= 0x80 ) {
+		SEQ_LCD_PrintFormattedString("off%c(no CC   ) ", (current_value != edit_value) ? '!' : ' ');
+	      } else {
+		SEQ_LCD_PrintFormattedString("%03d%c(%s) ", edit_value,
+					     (current_value != edit_value) ? '!' : ' ',
+					     SEQ_CC_LABELS_Get(port, edit_value));
+	      }
 	    } break;
 
             default:
