@@ -136,6 +136,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	case SEQ_UI_ENCODER_GP1:
 	case SEQ_UI_ENCODER_GP2:
 	  *muted = 0xffff;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Tracks", "muted");
 	  break;
 
 	case SEQ_UI_ENCODER_GP3:
@@ -143,6 +144,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	case SEQ_UI_ENCODER_GP5:
 	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
 	  *muted = 0xffff;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Layers", "of current Track muted");
 	  break;
 
 	case SEQ_UI_ENCODER_GP6:
@@ -154,11 +156,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	    seq_core_trk[track].layer_muted = 0xffff;
 	  }
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Layers", "and Tracks muted");
 	} break;
 
 	case SEQ_UI_ENCODER_GP9:
 	case SEQ_UI_ENCODER_GP10:
 	  *muted = 0x0000;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "unmuted");
 	  break;
 
 	case SEQ_UI_ENCODER_GP11:
@@ -166,6 +170,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	case SEQ_UI_ENCODER_GP13:
 	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
 	  *muted = 0x0000;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track unmuted");
 	  break;
 
 	case SEQ_UI_ENCODER_GP14:
@@ -177,6 +182,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	    seq_core_trk[track].layer_muted = 0x0000;
 	  }
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks unmuted");
 	} break;
 	}
       } else {
@@ -304,7 +310,11 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_CursorSet(0, 0);
     SEQ_LCD_PrintString("   Mute       Mute       Mute all Tracks  Unmute      Unmute   Unmute all Tracks");
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString("all Tracks G1T1 Layers    and all Layersall Tracks G1T1 Layers    and all Layers");
+    SEQ_LCD_PrintString("all Tracks ");
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintString(" Layers    and all Layersall Tracks ");
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintString(" Layers    and all Layers");
 
     return 0;
   }
