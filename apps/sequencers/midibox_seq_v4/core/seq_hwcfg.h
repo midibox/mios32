@@ -115,6 +115,13 @@ typedef struct {
   u8 track_morph;
   u8 track_transpose;
 
+  u8 mute_all_tracks;
+  u8 mute_track_layers;
+  u8 mute_all_tracks_and_layers;
+  u8 unmute_all_tracks;
+  u8 unmute_track_layers;
+  u8 unmute_all_tracks_and_layers;
+
   u8 footswitch;
   u8 pattern_remix;
 } seq_hwcfg_button_t;
@@ -215,6 +222,13 @@ typedef struct {
   u8 track_direction;
   u8 track_transpose;
   u8 track_morph;
+
+  u8 mute_all_tracks;
+  u8 mute_track_layers;
+  u8 mute_all_tracks_and_layers;
+  u8 unmute_all_tracks;
+  u8 unmute_track_layers;
+  u8 unmute_all_tracks_and_layers;
 } seq_hwcfg_led_t;
 
 

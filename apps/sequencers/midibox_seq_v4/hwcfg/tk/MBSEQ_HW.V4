@@ -366,6 +366,14 @@ LED_TRACK_DIRECTION  0   0
 LED_TRACK_MORPH      0   0
 LED_TRACK_TRANSPOSE  0   0
 
+#                                SR  Pin
+LED_MUTE_ALL_TRACKS               0   0
+LED_MUTE_TRACK_LAYERS             0   0
+LED_MUTE_ALL_TRACKS_AND_LAYERS    0   0
+LED_UNMUTE_ALL_TRACKS             0   0
+LED_UNMUTE_TRACK_LAYERS           0   0
+LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
+
 
 ##################################################
 # Button assignments to DIN pins
@@ -522,6 +530,15 @@ BUTTON_TRACK_LENGTH     0   0
 BUTTON_TRACK_DIRECTION  0   0
 BUTTON_TRACK_MORPH      0   0
 BUTTON_TRACK_TRANSPOSE  0   0
+
+
+#                                   SR  Pin
+BUTTON_MUTE_ALL_TRACKS               0   0
+BUTTON_MUTE_TRACK_LAYERS             0   0
+BUTTON_MUTE_ALL_TRACKS_AND_LAYERS    0   0
+BUTTON_UNMUTE_ALL_TRACKS             0   0
+BUTTON_UNMUTE_TRACK_LAYERS           0   0
+BUTTON_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
 
 
 # alternative (individual) bookmark buttons
