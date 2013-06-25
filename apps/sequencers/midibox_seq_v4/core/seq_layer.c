@@ -818,7 +818,7 @@ s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer)
     u8 value = (cc_last_value[track][par_layer] < 0x80) ? cc_last_value[track][par_layer] : 0x40;
 
     if( cc_number >= 0x80 )
-      return 0; // CC disabled
+      return -1; // CC disabled
 
     p.type      = CC;
     p.event     = CC;
