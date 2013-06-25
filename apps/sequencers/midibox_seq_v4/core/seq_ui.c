@@ -1780,6 +1780,7 @@ static s32 SEQ_UI_Button_MuteAllTracks(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
   seq_core_trk_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "muted");
   return 0; // no error
 }
 
@@ -1788,6 +1789,7 @@ static s32 SEQ_UI_Button_MuteTrackLayers(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   seq_core_trk[visible_track].layer_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track muted");
   return 0; // no error
 }
 
@@ -1798,13 +1800,15 @@ static s32 SEQ_UI_Button_MuteAllTracksAndLayers(s32 depressed)
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
     seq_core_trk[track].layer_muted = 0xffff;
   seq_core_trk_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks muted");
   return 0; // no error
 }
 
 static s32 SEQ_UI_Button_UnMuteAllTracks(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
-  seq_core_trk_muted = 0xffff;
+  seq_core_trk_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "unmuted");
   return 0; // no error
 }
 
@@ -1812,7 +1816,8 @@ static s32 SEQ_UI_Button_UnMuteTrackLayers(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  seq_core_trk[visible_track].layer_muted = 0xffff;
+  seq_core_trk[visible_track].layer_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track unmuted");
   return 0; // no error
 }
 
@@ -1821,8 +1826,9 @@ static s32 SEQ_UI_Button_UnMuteAllTracksAndLayers(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
   int track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    seq_core_trk[track].layer_muted = 0xffff;
-  seq_core_trk_muted = 0xffff;
+    seq_core_trk[track].layer_muted = 0x0000;
+  seq_core_trk_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks unmuted");
   return 0; // no error
 }
 
