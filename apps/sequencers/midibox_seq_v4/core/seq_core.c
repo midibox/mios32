@@ -1863,8 +1863,8 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
     int par_layer;
     int num_p_layers = SEQ_PAR_NumLayersGet(track);
     u16 mask = 1;
-    u8 apply_mask = 0;
     for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
+      u8 apply_mask = 0;
       switch( *layer_type_ptr ) {
       case SEQ_PAR_Type_CC: {
 	if( p.event == CC && p.cc_number == tcc->lay_const[1*16 + par_layer] ) {
