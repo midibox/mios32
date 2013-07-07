@@ -1282,6 +1282,35 @@ s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! activates/deactivates an event (like bank mechanism)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active)
+{
+  // take over in pool item
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->flags.active = active;
+    item->flags.active = active;
+
+    if( active ) {
+      u8 allow_refresh = 1;
+      switch( item->hw_id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_SENDER:   allow_refresh = 0; break;
+      case MBNG_EVENT_CONTROLLER_RECEIVER: allow_refresh = 0; break;
+      }
+
+      if( allow_refresh ) {
+	pool_item->flags.update_lcd = 1; // force LCD update
+	MBNG_EVENT_ItemReceive(item, pool_item->value, 1, 1);
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! locks/unlocks an event for write operations (when items have received a new value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
@@ -3233,7 +3262,7 @@ s32 MBNG_EVENT_Refresh(void)
     if( allow_refresh ) {
       mbng_event_item_t item;
       MBNG_EVENT_ItemCopy2User(pool_item, &item);
-      item.flags.update_lcd = 1; // force LCD update
+      pool_item->flags.update_lcd = 1; // force LCD update
       MBNG_EVENT_ItemReceive(&item, pool_item->value, 1, 1);
     }
 

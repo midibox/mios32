@@ -1055,6 +1055,78 @@ s32 parseTrigger(u32 line, char *command, char **brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! help function which parses a SET_ACTIVE command
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseSetActive(u32 line, char *command, char **brkt)
+{
+  char *dst_str = NULL;
+  char *value_str = NULL;
+  mbng_file_r_item_id_t id; id.ALL = 0;
+
+  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  id = parseId(dst_str);
+  if( !id.valid ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
+#endif
+    return -1;
+  }
+
+  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
+#endif
+    return -1;
+  }
+
+  s32 value = 0;
+  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
+#endif
+    return -1;
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
+#endif
+
+  // search for items with matching ID
+  mbng_event_item_t item;
+  u32 continue_ix = 0;
+  u32 num_set = 0;
+  do {
+    if( (id.is_hw_id && MBNG_EVENT_ItemSearchByHwId(id.id, &item, &continue_ix) < 0) ||
+	(!id.is_hw_id && MBNG_EVENT_ItemSearchById(id.id, &item, &continue_ix) < 0) ) {
+      break;
+    } else {
+      ++num_set;
+
+      // activate/deactivate
+      MBNG_EVENT_ItemSetActive(&item, value);
+    }
+  } while( continue_ix );
+
+  if( !num_set ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] '%s %s %d' failed - item not found!\n", line, command, dst_str, value);
+#endif
+    return -1;
+  }
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! help function which parses a DELAY_MS command
 //! returns > 0 if a delay has been requested
 /////////////////////////////////////////////////////////////////////////////
@@ -1246,6 +1318,8 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	parseSetRgb(line, parameter, &brkt);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
 	parseSetLock(line, parameter, &brkt);
+      } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
+	parseSetActive(line, parameter, &brkt);
       } else if( strcasecmp(parameter, "TRIGGER") == 0 ) {
 	parseTrigger(line, parameter, &brkt);
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
