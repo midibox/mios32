@@ -166,8 +166,10 @@ s32 SEQ_MIXER_SendAllByChannel(u8 chn)
   seq_mixer_par_t par;
   s32 status = 0;
 	
+  MUTEX_MIDIOUT_TAKE;
   for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
     status |= SEQ_MIXER_Send(chn, par);
+  MUTEX_MIDIOUT_GIVE;
 	
   return status;
 }
@@ -181,9 +183,11 @@ s32 SEQ_MIXER_SendAll(void)
   seq_mixer_par_t par;
   s32 status = 0;
 
+  MUTEX_MIDIOUT_TAKE;
   for(chn=0; chn<SEQ_MIXER_NUM_CHANNELS; ++chn)
     for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
       status |= SEQ_MIXER_Send(chn, par);
+  MUTEX_MIDIOUT_GIVE;
 
   return status;
 }

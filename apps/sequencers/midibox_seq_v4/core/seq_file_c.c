@@ -432,6 +432,8 @@ s32 SEQ_FILE_C_Read(char *session)
 		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = value;
 	      } else if( strcmp(parameter+8+7, "CcPhrase") == 0 ) {
 		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = value;
+	      } else if( strcmp(parameter+8+7, "CcMixerMap") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG1") == 0 ) {
 		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG2") == 0 ) {
@@ -701,6 +703,7 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcScale %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcSong %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPhrase %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMixerMap %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG1 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG2 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG3 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3]); FLUSH_BUFFER;

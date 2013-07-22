@@ -26,6 +26,7 @@
 #include "seq_core.h"
 #include "seq_pattern.h"
 #include "seq_mixer.h"
+#include "seq_midi_in.h"
 
 #include "seq_file.h"
 #include "seq_file_s.h"
@@ -317,6 +318,7 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 
       case SEQ_SONG_ACTION_SelMixerMap:
 	SEQ_MIXER_Load(s->action_value);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, s->action_value, 0);
 	SEQ_MIXER_SendAll();
 	++song_pos;
 	again = 1;
