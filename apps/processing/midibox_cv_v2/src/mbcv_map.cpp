@@ -59,6 +59,9 @@ extern "C" s32 MBCV_MAP_Init(u32 mode)
   // initialize AOUT driver
   AOUT_Init(0);
 
+  // change default config to AOUT by default
+  MBCV_MAP_IfSet(AOUT_IF_MAX525);
+
   return 0; // no error
 }
 
