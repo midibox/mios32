@@ -39,6 +39,9 @@ MIDIboxSEQ V4.078
      E.g. if the CC number is set to 16, the mutes of track 1-16 are controlled with
      CC#16 .. CC#31
 
+   o it's now possible to dump a mixer map via CC. The CC has to be configured in the 
+     MENU->MIDI->Ext.Ctrl page.
+
    o a CC assigned to a sequencer layer won't be sent if it's also assigned to
      the LFO "Extra CC"
 
@@ -1797,5 +1800,12 @@ Has the possibility of routing a track output to another tracks input ever come 
 Alex:  I'm wondering if being able to control AOUT tracks with the LRE8x2 (MBNG) is possible yet? 
 I have my ssm2044 boards hooked up to the AOUT_NG, and would like to use encoders to control cutoff and resonance through NRPN messages.
 
+----------------------------------------------------------
+Rio: little request in that mixermap section: I don't know, if you like the feature, that the 
+user can decide whether any of these additional CCs  (1-4) could send before all the standard 
+Mixer CCs (like Prog.Change) will send out, so that e.g. Bank.Change Commandos (CC 0 and/or CC 32) 
+can be supported by that mixermap (so that it will send out ahead of Prog.Change).
+
+TK: any other mixer map CC handling requests before I start to implement this as an option?
 ----------------------------------------------------------
 

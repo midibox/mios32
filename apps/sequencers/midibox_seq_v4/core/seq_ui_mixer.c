@@ -18,6 +18,8 @@
 #include <mios32.h>
 #include <string.h>
 
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
@@ -25,6 +27,7 @@
 #include "seq_file.h"
 #include "seq_file_m.h"
 #include "seq_midi_port.h"
+#include "seq_midi_in.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -139,8 +142,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
 	      SEQ_MIXER_NumSet(mixer_map);
 
+	      // send to external
+	      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, mixer_map, 0);
+
 	      // load page
 	      SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+
 	      // print message
 	      in_menu_msg = MSG_LOAD & 0x7f;
 	      ui_hold_msg_ctr = 1000;
@@ -199,6 +206,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 1;
 
         case SEQ_UI_ENCODER_GP8: // Dump
+	  // send to external
+	  SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, SEQ_MIXER_NumGet(), 0);
 	  // dump all values
 	  SEQ_MIXER_SendAll();
 	  // print message
@@ -292,7 +301,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_MIXER_PAR_CC2_NUM:
       case SEQ_MIXER_PAR_CC3_NUM:
       case SEQ_MIXER_PAR_CC4_NUM:
-	min=0x00; max=0x70;
+	min=0x00; max=0x7f;
 	break;
       default:
 	return -1; // unsupported parameter
@@ -322,7 +331,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( chn == ui_selected_item || seq_ui_button_state.CHANGE_ALL_STEPS ) {
 	if( forced_value >= 0 ) {
 	  SEQ_MIXER_Set(chn, mixer_par, forced_value);
+	  MUTEX_MIDIOUT_TAKE;
 	  SEQ_MIXER_Send(chn, mixer_par);
+	  MUTEX_MIDIOUT_GIVE;
 	} else {
 	  u8 value = SEQ_MIXER_Get(chn, mixer_par);
 	  if( mixer_par == SEQ_MIXER_PAR_PORT )
@@ -331,7 +342,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    if( mixer_par == SEQ_MIXER_PAR_PORT )
 	      value = SEQ_MIDI_PORT_OutPortGet(value);
 	    SEQ_MIXER_Set(chn, mixer_par, value);
+	    MUTEX_MIDIOUT_TAKE;
 	    SEQ_MIXER_Send(chn, mixer_par);
+	    MUTEX_MIDIOUT_GIVE;
 	    value_changed |= 1;
 	  }
 	}

@@ -27,6 +27,7 @@
 #include "seq_cc.h"
 #include "seq_pattern.h"
 #include "seq_song.h"
+#include "seq_mixer.h"
 #include "seq_morph.h"
 #include "seq_core.h"
 #include "seq_record.h"
@@ -110,7 +111,7 @@ seq_midi_in_options_t seq_midi_in_options[SEQ_MIDI_IN_NUM_BUSSES];
 // For External Control functions:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_ext_ctrl_channel;
-// which IN port should be used? (0: All)
+// which IN port should be used? (0: Off, 0xff == All)
 mios32_midi_port_t seq_midi_in_ext_ctrl_port;
 // and which optional out port? (0: Off)
 mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
@@ -182,7 +183,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   }
 
   seq_midi_in_ext_ctrl_channel = 0; // 0 disables MIDI IN
-  seq_midi_in_ext_ctrl_port = DEFAULT; // All ports
+  seq_midi_in_ext_ctrl_port = 0; // off
   seq_midi_in_ext_ctrl_out_port = 0; // off
 
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = 1;
@@ -193,6 +194,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4] = 115;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = 102;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = 103;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = 111;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1] = 116;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2] = 117;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3] = 118;
@@ -231,6 +233,7 @@ const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl)
     "Scale",
     "Song Number",
     "Song Phrase",
+    "Mixer Map",
     "Pattern G1",
     "Pattern G2",
     "Pattern G3",
@@ -564,7 +567,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
   // External Control
   if( !(status & 2) &&
-      (seq_midi_in_ext_ctrl_port && port == seq_midi_in_ext_ctrl_port &&
+      ((seq_midi_in_ext_ctrl_port == 0xff || port == seq_midi_in_ext_ctrl_port) &&
        midi_package.chn == (seq_midi_in_ext_ctrl_channel-1)) ) {
 
     switch( midi_package.event ) {
@@ -954,6 +957,11 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
 	  SEQ_SONG_FetchPos(0);
 	  ui_song_edit_pos = song_pos;
 	}
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP: {
+	SEQ_MIXER_Load(value);
+	SEQ_MIXER_SendAll();	
       } break;
 
       case SEQ_MIDI_IN_EXT_CTRL_BANK_G1:

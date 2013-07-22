@@ -581,9 +581,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_EXT_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port);
-      if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_midi_in_ext_ctrl_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+      u8 numPorts = SEQ_MIDI_PORT_InNumGet();
+      u8 port_ix = (seq_midi_in_ext_ctrl_port == 0xff) ? numPorts : SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port);
+      if( SEQ_UI_Var8_Inc(&port_ix, 0, numPorts, incrementer) >= 0 ) {
+	seq_midi_in_ext_ctrl_port = (port_ix == numPorts) ? 0xff : SEQ_MIDI_PORT_InPortGet(port_ix);
 	store_file_required = 1;
 	return 1; // value changed
       }
@@ -997,10 +998,12 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_selected_item == ITEM_EXT_PORT && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	if( seq_midi_in_ext_ctrl_port )
-	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port)));
-	else
+	if( seq_midi_in_ext_ctrl_port == 0xff )
 	  SEQ_LCD_PrintString(" All");
+	else if( !seq_midi_in_ext_ctrl_port )
+	  SEQ_LCD_PrintString(" off");
+	else
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port)));
       }
       SEQ_LCD_PrintSpaces(1);
 
