@@ -64,4 +64,5 @@ include $(MIOS32_PATH)/modules/uip/uip.mk
 include $(MIOS32_PATH)/modules/mbnet/mbnet.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

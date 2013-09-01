@@ -66,4 +66,5 @@ include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 include $(MIOS32_PATH)/modules/file/file.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

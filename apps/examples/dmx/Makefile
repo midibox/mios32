@@ -58,4 +58,5 @@ include $(MIOS32_PATH)/modules/glcd_font/glcd_font.mk
 include $(MIOS32_PATH)/modules/dmx/dmx.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

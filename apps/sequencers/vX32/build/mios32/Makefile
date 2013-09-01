@@ -36,7 +36,7 @@ ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
 C_INCLUDE = 	-I . -I ../../core/inc/ -I ../../vxmodules/inc/
-				
+
 A_INCLUDE = 	-I .
 
 LIBS = 	
@@ -70,4 +70,5 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk
