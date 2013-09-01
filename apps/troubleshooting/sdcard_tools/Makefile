@@ -54,4 +54,5 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

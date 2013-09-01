@@ -59,4 +59,5 @@ include $(MIOS32_PATH)/modules/notestack/notestack.mk
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

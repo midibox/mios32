@@ -74,4 +74,5 @@ include $(MIOS32_PATH)/modules/dosfs/dosfs.mk
 include $(MIOS32_PATH)/modules/uip/uip.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk

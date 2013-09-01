@@ -52,4 +52,5 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # common make rules
+# Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk
