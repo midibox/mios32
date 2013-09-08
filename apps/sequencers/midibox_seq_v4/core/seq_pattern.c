@@ -252,6 +252,9 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 
   MUTEX_SDCARD_GIVE;
 
+  // reset latched PB/CC values (because assignments could change)
+  SEQ_LAYER_ResetLatchedValues();
+
   return status;
 }
 

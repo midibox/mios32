@@ -5,6 +5,11 @@ Wishlist for future features
 
 -> see bottom of this document
 
+MIDIboxSEQ V4.079
+~~~~~~~~~~~~~~~~~
+
+   o groove page: added possibility to change the intensity for all tracks at once
+
 
 MIDIboxSEQ V4.078
 ~~~~~~~~~~~~~~~~~

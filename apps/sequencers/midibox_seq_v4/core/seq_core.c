@@ -651,7 +651,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     seq_core_trk_synched_unmute = 0;
   }
 
-
   // process all tracks
   // first the loopback port Bus1, thereafter parameters sent to common MIDI ports
   int round;
