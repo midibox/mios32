@@ -35,11 +35,12 @@
 #define ITEM_GXTY              0
 #define ITEM_GROOVE_STYLE      1
 #define ITEM_GROOVE_VALUE      2
-#define ITEM_GROOVE_STEP       3
-#define ITEM_GROOVE_DELAY      4
-#define ITEM_GROOVE_LENGTH     5
-#define ITEM_GROOVE_VELOCITY   6
-#define ITEM_GROOVE_NUM_STEPS  7
+#define ITEM_GROOVE_VALUE_GLB  3
+#define ITEM_GROOVE_STEP       4
+#define ITEM_GROOVE_DELAY      5
+#define ITEM_GROOVE_LENGTH     6
+#define ITEM_GROOVE_VELOCITY   7
+#define ITEM_GROOVE_NUM_STEPS  8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -62,6 +63,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_GXTY: *gp_leds = 0x0001; break;
     case ITEM_GROOVE_STYLE: *gp_leds = 0x000e; break;
     case ITEM_GROOVE_VALUE: *gp_leds = 0x0030; break;
+    case ITEM_GROOVE_VALUE_GLB: *gp_leds = 0x00c0; break;
     case ITEM_GROOVE_STEP: *gp_leds = 0x0100; break;
     case ITEM_GROOVE_DELAY: *gp_leds = 0x0200; break;
     case ITEM_GROOVE_LENGTH: *gp_leds = 0x0400; break;
@@ -102,7 +104,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      return -1; // not mapped
+      ui_selected_item = ITEM_GROOVE_VALUE_GLB;
+      break;
 
     case SEQ_UI_ENCODER_GP9:
       ui_selected_item = ITEM_GROOVE_STEP;
@@ -145,6 +148,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_GROOVE_STYLE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_STYLE, 0, grooves_total-1, incrementer);
     case ITEM_GROOVE_VALUE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer);
     case ITEM_GROOVE_STEP:       return SEQ_UI_Var8_Inc(&edit_step, 0, g->num_steps-1, incrementer);
+
+    case ITEM_GROOVE_VALUE_GLB: {
+      if( SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer) > 0 ) {
+	// change value for all tracks
+	u8 value = SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE);
+	u8 track;
+	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	  SEQ_CC_Set(track, SEQ_CC_GROOVE_VALUE, value);
+	}
+	return 1;
+      }
+      return 0;
+    }
 
     case ITEM_GROOVE_DELAY: {
       if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
@@ -270,8 +286,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps        Clr 
-  // G1T1  Inv. Shuffle     15                 1    0    0    0  Preset not editable!
+  // Trk.  Groove Style  Intensity Change forStep Dly. Len. Vel. NumSteps        Clr 
+  // G1T1  Inv. Shuffle     15     all Tracks  1    0    0    0  Preset not editable!
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -286,7 +302,13 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity           Step Dly. Len. Vel. NumSteps        Clr ");
+  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity ");
+  if( ui_selected_item == ITEM_GROOVE_VALUE_GLB && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(10);
+  } else {
+    SEQ_LCD_PrintString("Change for");
+  }
+  SEQ_LCD_PrintString("Step Dly. Len. Vel. NumSteps        Clr ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -313,8 +335,15 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE));
   }
+  SEQ_LCD_PrintSpaces(4);
 
-  SEQ_LCD_PrintSpaces(14);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_GROOVE_VALUE_GLB && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(10);
+  } else {
+    SEQ_LCD_PrintString("all Tracks");
+  }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GROOVE_STEP && ui_cursor_flash ) {
