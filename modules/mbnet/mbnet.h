@@ -106,6 +106,9 @@ typedef union {
 
 extern s32 MBNET_Init(u32 mode);
 
+extern s32 MBNET_VerboseLevelSet(u8 level);
+extern s32 MBNET_VerboseLevelGet();
+
 extern s32 MBNET_NodeIDSet(u8 node_id);
 extern s32 MBNET_NodeIDGet(void);
 
@@ -128,6 +131,9 @@ extern s32 MBNET_Handler(void (*callback)(u8 master_id, mbnet_tos_req_t tos, u16
 extern s32 MBNET_InstallTxHandler(s32 (*tx_handler_callback)(mbnet_id_t *mbnet_id, mbnet_msg_t *msg, u8 *dlc));
 extern s32 MBNET_TriggerTxHandler(void);
 
+extern s32 MBNET_TerminalHelp(void *_output_function);
+extern s32 MBNET_TerminalParseLine(char *input, void *_output_function);
+extern s32 MBNET_TerminalPrintStatus(void *_output_function);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

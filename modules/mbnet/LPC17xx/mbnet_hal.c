@@ -27,7 +27,7 @@
 // Peripheral/Pin definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#if 0
+#if 1
 // pointer to CAN peripheral
 #define MBNET_CAN      LPC_CAN2
 // index of CAN counted from 0 (0..1)
