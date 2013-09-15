@@ -952,7 +952,7 @@ s32 MBNET_TerminalPrintStatus(void *_output_function)
       } else {
 	mbnet_msg_t *info;
 	if( MBNET_SlaveNodeInfoGet(slave_id, &info) >= 0 ) {
-	  out("Slave #%2d  ID 0x%02x  P:%d T:%c%c%c%c V:%d.%d\n", 
+	  out("Slave #%2d: ID 0x%02x  P:%d T:%c%c%c%c V:%d.%d\n", 
 	      ix + 1,
 	      slave_id,
 	      info->protocol_version,
