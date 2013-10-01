@@ -1227,12 +1227,24 @@ s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port)
 #endif
       successcount = 0;
       status = FILE_ERR_SYSEX_READ;
-    } else {
+    } else if( successcount ) {
+      // ensure that only a single sysex string is sent
+      // if buffer contains multiple strings, continue file read at the next F0
+      u32 len = (tmp_buffer[0] >= 0x80) ? 1 : 0;
+      u8 *ptr = (u8 *)&tmp_buffer[len];
+      for(; len<successcount; ++len, ++ptr) {
+	if( *ptr >= 0x80 && *ptr != 0xf7 ) // like "== 0xf0", but we also consider unusual content, such as CCs, Notes, etc...
+	  break;
+      }
 #if DEBUG_VERBOSE_LEVEL >= 2
-      MIOS32_MIDI_SendDebugHexDump(tmp_buffer, successcount);
+      MIOS32_MIDI_SendDebugHexDump(tmp_buffer, len);
 #endif
-      MIOS32_MIDI_SendSysEx(port, tmp_buffer, successcount);
-      num_bytes += successcount;
+      MIOS32_MIDI_SendSysEx(port, tmp_buffer, len);
+      num_bytes += len;
+
+      if( len != successcount ) {
+	FILE_ReadSeek(num_bytes);
+      }
     }
   } while( status == 0 && successcount > 0 );
 
