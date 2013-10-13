@@ -162,8 +162,9 @@ s32 LC_LCD_Init(u32 mode)
     LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_glcd);
 
     // buffered LCD is only used to print host message
-    BUFLCD_NumDevicesSet(1);
-    BUFLCD_ColumnsPerDeviceSet(56);
+    // TK: obsolete, now has to be configured in the bootloader
+    //BUFLCD_NumDevicesSet(1);
+    //BUFLCD_ColumnsPerDeviceSet(56);
   } else {
     LC_LCD_DisplayPageSet(lc_hwcfg_display_cfg.initial_page_clcd);
   }
