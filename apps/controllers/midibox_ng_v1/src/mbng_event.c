@@ -60,6 +60,7 @@ typedef union {
 
   struct {
     u16 has_fwd_id:1;
+    u16 has_fwd_value:1;
     u16 has_cond:1;
     u16 has_min:1;
     u16 has_max:1;
@@ -681,6 +682,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->custom_flags.ALL = 0;
   item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
+  item->fwd_value = 0xffff;
   item->hw_id  = id;
   item->cond.ALL = 0;
   item->value  = 0;
@@ -797,6 +799,13 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
     item->fwd_id = 0;
   }
 
+  if( extra_par_available.has_fwd_value ) {
+    item->fwd_value = extra_par[0] | (extra_par[1] << 8);
+    extra_par += 2;
+  } else {
+    item->fwd_value = 0xffff;
+  }
+
   if( extra_par_available.has_min ) {
     item->min = (s16)(extra_par[0] | (extra_par[1] << 8));
     extra_par += 2;
@@ -904,6 +913,14 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
     pool_item_len += 2;
   }
 
+  if( item->fwd_value != 0xffff ) {
+    pool_item->extra_par_available.has_fwd_value = 1;
+    extra_par[0] = item->fwd_value;
+    extra_par[1] = item->fwd_value >> 8;
+    extra_par += 2;
+    pool_item_len += 2;
+  }
+
   if( item->min ) {
     pool_item->extra_par_available.has_min = 1;
     extra_par[0] = (u16)item->min;
@@ -986,6 +1003,10 @@ static u32 MBNG_EVENT_ItemCalcPoolItemLen(mbng_event_item_t *item)
   }
 
   if( item->fwd_id ) {
+    pool_item_len += 2;
+  }
+
+  if( item->fwd_value != 0xffff ) {
     pool_item_len += 2;
   }
 
@@ -1394,6 +1415,11 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     }
 
     DEBUG_MSG("  - fwd_id=%s:%d", MBNG_EVENT_ItemControllerStrGet(item->fwd_id), item->fwd_id & 0xfff);
+    if( item->fwd_value != 0xffff ) {
+      DEBUG_MSG("  - fwd_value=%d", item->fwd_value);
+    } else {
+      DEBUG_MSG("  - fwd_value=off");
+    }
     DEBUG_MSG("  - fwd_to_lcd=%d", item->flags.fwd_to_lcd);
     DEBUG_MSG("  - type=%s", MBNG_EVENT_ItemTypeStrGet(item));
 
@@ -1476,6 +1502,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 	}
 
 	DEBUG_MSG("  - meta=%s%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type), str);
+	DEBUG_MSG("  - use_cc_number=%d", item->flags.use_key_or_cc);
       }
     } break;
     }
@@ -3093,8 +3120,13 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
       // notify item (will also store value in pool item)
       if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
 	fwd_item.secondary_value = item->secondary_value;
-      if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0, 1) == 2 )
-	break; // stop has been requested
+      if( item->fwd_value == 0xffff ) { // no forward value
+	if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0, 1) == 2 )
+	  break; // stop has been requested
+      } else { // with forward value
+	if( MBNG_EVENT_ItemReceive(&fwd_item, item->fwd_value, 0, 1) == 2 )
+	  break; // stop has been requested
+      }
     }
   } while( continue_ix );
 

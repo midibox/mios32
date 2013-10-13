@@ -323,6 +323,7 @@ typedef struct {
   mbng_event_custom_flags_t custom_flags;
   u16 fwd_id;
   u16 value;
+  u16 fwd_value;
   s16 min;
   s16 max;
   s16 offset;

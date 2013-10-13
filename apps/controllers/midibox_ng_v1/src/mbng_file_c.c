@@ -1326,7 +1326,17 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	return -1;
       }
 
+      u16 fwd_value = 0xffff;
+      if( (value_str = strtok_r(NULL, separator_colon, &brkt_local)) &&
+	  (fwd_value=get_dec(value_str)) > 0x3fff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid fwd_id in EVENT_%s ... %s=%s (expect forward value 0..%d)\n", line, event, parameter, value_str, 0x3fff);
+#endif
+	return -1;
+      }
+
       item.fwd_id = fwd_id | id_lower;
+      item.fwd_value = fwd_value;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "fwd_to_lcd") == 0 ) {
@@ -3536,7 +3546,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }
 
       if( item.fwd_id ) {
-	sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);
+	if( item.fwd_value != 0xffff ) {
+	  sprintf(line_buffer, "  fwd_id=%s:%-3d:%d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff, item.fwd_value);
+	} else {
+	  sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);
+	}
 	FLUSH_BUFFER;
       }
 

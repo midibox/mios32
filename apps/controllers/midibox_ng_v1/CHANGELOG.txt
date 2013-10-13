@@ -9,6 +9,13 @@ MIDIbox NG V1.027
      available in several banks)
      A demo can be found under cfg/tests/multibnk.*
 
+   o it's now possible to set a static forward value independent from the
+     actual value of the event which initiates the forwarding.
+
+     E.g. with
+        EVENT_xxx fwd_id=SENDER:1:42
+     the SENDER:1 will always get value 42 for additional processing
+
 
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~
