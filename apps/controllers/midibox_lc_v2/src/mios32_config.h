@@ -32,8 +32,5 @@
 // magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
 #define EEPROM_MAGIC_NUMBER 0x47115200
 
-// support for GLCD
-#define BUFLCD_SUPPORT_GLCD_FONTS 1
-
 
 #endif /* _MIOS32_CONFIG_H */

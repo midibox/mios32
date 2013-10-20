@@ -208,7 +208,11 @@ s32 BUFLCD_DeviceHeightGet(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 BUFLCD_DeviceFontHandlingEnabled(void)
 {
+#if BUFLCD_SUPPORT_GLCD_FONTS
   return glcd_font_handling;
+#else
+  return 0;
+#endif
 }
 
 
@@ -291,7 +295,9 @@ s32 BUFLCD_Clear(void)
     for(i=0; i<BUFLCD_BUFFER_SIZE; ++i)
       *ptr++ = ' ';
   }
+#if BUFLCD_SUPPORT_GLCD_FONTS
   lcd_current_font = 'n';
+#endif
 
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
