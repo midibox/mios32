@@ -33,6 +33,6 @@
 #define MBNET_SLAVE_NODES_BEGIN 0x00
 
 // last node to be scanned
-#define MBNET_SLAVE_NODES_END   0x07
+#define MBNET_SLAVE_NODES_END   0x1f
 
 #endif /* _MIOS32_CONFIG_H */
