@@ -1817,6 +1817,6 @@ can be supported by that mixermap (so that it will send out ahead of Prog.Change
 
 TK: any other mixer map CC handling requests before I start to implement this as an option?
 ----------------------------------------------------------
-Stuartm: global groove intensity
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=159270
+fcebreros: remote control on dedicated MIDI port without the need for a remote key
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
 ----------------------------------------------------------
