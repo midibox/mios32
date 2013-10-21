@@ -410,6 +410,8 @@ void UploadWindow::timerCallback(const int timerId)
                 addQueryEntry(Colours::red, errorMessage);
                 addQueryEntry(Colours::red, T("Check MIDI IN/OUT connections"));
                 addQueryEntry(Colours::red, T("and Device ID!"));
+                addQueryEntry(Colours::red, T("For debugging see also"));
+                addQueryEntry(Colours::red, T("Help->MIDI Troubleshooting"));
             } else {
                 String str;
                 uploadQuery->clear();
