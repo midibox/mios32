@@ -75,6 +75,8 @@ typedef struct {
 #if defined(MIOS32_BOARD_MBHP_CORE_STM32)
 #define SRIO_RESET_SUPPORTED 1
 
+#define SRIO_GPIO_MODE GPIO_Mode_Out_OD
+
 #define SRIO_NUM_SCLK_PINS 3
 static const srio_pin_t srio_sclk_pin[SRIO_NUM_SCLK_PINS] = {
   { GPIOA, GPIO_Pin_5  }, // SPI0
@@ -89,6 +91,37 @@ static const srio_pin_t srio_rclk_pin[SRIO_NUM_RCLK_PINS] = {
   { GPIOB, GPIO_Pin_12 }, // SPI1, RCLK1
   { GPIOC, GPIO_Pin_13 }, // SPI2, RCLK1
   { GPIOC, GPIO_Pin_14 }, // SPI2, RCLK2
+};
+
+#define SRIO_NUM_MOSI_PINS 3
+static const srio_pin_t srio_mosi_pin[SRIO_NUM_MOSI_PINS] = {
+  { GPIOA, GPIO_Pin_7  }, // SPI0
+  { GPIOB, GPIO_Pin_15 }, // SPI1
+  { GPIOB, GPIO_Pin_5  }, // SPI2
+};
+
+
+#elif defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#define SRIO_RESET_SUPPORTED 1
+
+#define SRIO_GPIO_MODE  GPIO_Mode_OUT
+#define SRIO_GPIO_OTYPE GPIO_OType_PP
+
+#define SRIO_NUM_SCLK_PINS 3
+static const srio_pin_t srio_sclk_pin[SRIO_NUM_SCLK_PINS] = {
+  { GPIOA, GPIO_Pin_5  }, // SPI0
+  { GPIOB, GPIO_Pin_13 }, // SPI1
+  { GPIOB, GPIO_Pin_3  }, // SPI2
+};
+
+#define SRIO_NUM_RCLK_PINS 6
+static const srio_pin_t srio_rclk_pin[SRIO_NUM_RCLK_PINS] = {
+  { GPIOB, GPIO_Pin_2  }, // SPI0, RCLK1
+  { GPIOD, GPIO_Pin_11 }, // SPI0, RCLK2
+  { GPIOB, GPIO_Pin_12 }, // SPI1, RCLK1
+  { GPIOD, GPIO_Pin_10 }, // SPI1, RCLK2
+  { GPIOA, GPIO_Pin_15 }, // SPI2, RCLK1
+  { GPIOB, GPIO_Pin_8  }, // SPI2, RCLK2
 };
 
 #define SRIO_NUM_MOSI_PINS 3
@@ -387,23 +420,38 @@ static s32 ResetSRIOChains(void)
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+  GPIO_InitStructure.GPIO_Mode = SRIO_GPIO_MODE;
+#ifdef SRIO_GPIO_OTYPE
+  GPIO_InitStructure.GPIO_OType = SRIO_GPIO_OTYPE;
+#endif
 
   // init GPIO driver modes
   for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1 by default
+#else
+    srio_sclk_pin[i].port->BSRRL = srio_sclk_pin[i].pin_mask; // SCLK=1 by default
+#endif
     GPIO_InitStructure.GPIO_Pin = srio_sclk_pin[i].pin_mask;
     GPIO_Init(srio_sclk_pin[i].port, &GPIO_InitStructure);
   }
 
   for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1 by default
+#else
+    srio_rclk_pin[i].port->BSRRL = srio_rclk_pin[i].pin_mask; // RCLK=1 by default
+#endif
     GPIO_InitStructure.GPIO_Pin = srio_rclk_pin[i].pin_mask;
     GPIO_Init(srio_rclk_pin[i].port, &GPIO_InitStructure);
   }
 
   for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     srio_mosi_pin[i].port->BRR = srio_mosi_pin[i].pin_mask; // MOSI=0 by default
+#else
+    srio_mosi_pin[i].port->BSRRH = srio_mosi_pin[i].pin_mask; // MOSI=0 by default
+#endif
     GPIO_InitStructure.GPIO_Pin = srio_mosi_pin[i].pin_mask;
     GPIO_Init(srio_mosi_pin[i].port, &GPIO_InitStructure);
   }
@@ -411,30 +459,55 @@ static s32 ResetSRIOChains(void)
   // send 128 clocks to all SPI ports
   int cycle;
   for(cycle=0; cycle<128; ++cycle) {
-    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
       srio_sclk_pin[i].port->BRR = srio_sclk_pin[i].pin_mask; // SCLK=0
+#else
+      srio_sclk_pin[i].port->BSRRH = srio_sclk_pin[i].pin_mask; // SCLK=0
+#endif
+    }
 
     MIOS32_DELAY_Wait_uS(1);
 
-    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i)
+    for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
       srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1
+#else
+      srio_sclk_pin[i].port->BSRRL = srio_sclk_pin[i].pin_mask; // SCLK=1
+#endif
+    }
 
     MIOS32_DELAY_Wait_uS(1);
   }
 
   // latch values
-  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     srio_rclk_pin[i].port->BRR = srio_rclk_pin[i].pin_mask; // RCLK=0
+#else
+    srio_rclk_pin[i].port->BSRRH = srio_rclk_pin[i].pin_mask; // RCLK=0
+#endif
+  }
 
   MIOS32_DELAY_Wait_uS(1);
 
-  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i)
+  for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
+#if defined(MIOS32_FAMILY_STM32F10x)
     srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1
+#else
+    srio_rclk_pin[i].port->BSRRL = srio_rclk_pin[i].pin_mask; // RCLK=1
+#endif
+  }
 
   MIOS32_DELAY_Wait_uS(1);
 
   // switch back driver modes to input with pull-up enabled
+#if defined(MIOS32_FAMILY_STM32F10x)
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+#else
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+#endif
 
   // init GPIO driver modes
   for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {

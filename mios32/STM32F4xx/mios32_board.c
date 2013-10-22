@@ -40,7 +40,7 @@
 // J5 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#if 0 // defined(MIOS32_BOARD_STM32F4DISCOVERY)
 
 // note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
 // since these functions access the ports directly
@@ -49,21 +49,15 @@ typedef struct {
   u16 pin_mask;
 } j5_pin_t;
 
-#define J5_NUM_PINS 12
+#define J5_NUM_PINS 8
 static const j5_pin_t j5_pin[J5_NUM_PINS] = {
   // J5A
-  { GPIOC, 1 << 0 },
   { GPIOC, 1 << 1 },
   { GPIOC, 1 << 2 },
-  { GPIOC, 1 << 3 },
+  { GPIOA, 1 << 1 },
+  { GPIOA, 1 << 4 },
 
   // J5B
-  { GPIOA, 1 << 0 },
-  { GPIOA, 1 << 1 },
-  { GPIOA, 1 << 2 },
-  { GPIOA, 1 << 3 },
-
-  // J5C
   { GPIOC, 1 << 4 },
   { GPIOC, 1 << 5 },
   { GPIOB, 1 << 0 },

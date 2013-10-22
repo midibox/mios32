@@ -512,12 +512,12 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 //! </UL>
 //! \param[in] spi_prescaler configures the SPI speed:
 //! <UL>
-//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 27.7~ uS @ 72 MHz (36 MBit/s) (only supported for spi==0, spi1 uses 4 instead)
-//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 55.5~ uS @ 72 MHz (18 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 111.1~ uS @ 72 MHz (9 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 222.2~ uS @ 72 MHz (4.5 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 444.4~ uS @ 72 MHz (2.25 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 888.8~ uS @ 72 MHz (1.125 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 27.7~ nS @ 72 MHz (36 MBit/s) (only supported for spi==0, spi1 uses 4 instead)
+//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 55.5~ nS @ 72 MHz (18 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 111.1~ nS @ 72 MHz (9 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 222.2~ nS @ 72 MHz (4.5 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 444.4~ nS @ 72 MHz (2.25 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 888.8~ nS @ 72 MHz (1.125 MBit/s)
 //!   <LI>MIOS32_SPI_PRESCALER_128: sets clock rate 1.7~ uS @ 72 MHz (0.562 MBit/s)
 //!   <LI>MIOS32_SPI_PRESCALER_256: sets clock rate 3.5~ uS @ 72 MHz (0.281 MBit/s)
 //! </UL>
