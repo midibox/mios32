@@ -40,14 +40,14 @@ extern USB_OTG_CORE_HANDLE  USB_OTG_dev;
 //   o jumper already available (J27)
 //   o pull-up already available
 //   o normaly used in Open Drain mode, so that no short circuit if jumper is stuffed
-#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+#if defined(MIOS32_FAMILY_STM32F10x)
 # define BSL_HOLD_PORT        GPIOB
 # define BSL_HOLD_PIN         GPIO_Pin_2
-#if defined(MIOS32_FAMILY_STM32F4xx)
-# define BSL_HOLD_STATE       0 // not used yet
-#else
 # define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 0 : 1)
-#endif
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+# define BSL_HOLD_PORT        GPIOA
+# define BSL_HOLD_PIN         GPIO_Pin_0
+# define BSL_HOLD_STATE       ((BSL_HOLD_PORT->IDR & BSL_HOLD_PIN) ? 1 : 0) // the "User Button" has a pull-down device
 #else
 # define BSL_HOLD_INIT        { MIOS32_SYS_LPC_PINSEL(1, 27, 0); MIOS32_SYS_LPC_PINDIR(1, 27, 0); MIOS32_SYS_LPC_PINMODE(1, 27, 0); }
 # define BSL_HOLD_STATE       ((LPC_GPIO1->FIOPIN & (1 << 27)) ? 0 : 1)
