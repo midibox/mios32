@@ -1,23 +1,20 @@
 // $Id$
 //! \defgroup MIOS32_SPI
 //!
-//! Hardware Abstraction Layer for SPI ports of STM32
+//! Hardware Abstraction Layer for SPI ports of STM32F4
 //!
 //! Three ports are provided at J16 (SPI0), J8/9 (SPI1) and J19 (SPI2) of the 
-//! MBHP_CORE_STM32 module..
+//! MBHP_CORE_STM32F4 module..
 //!
-//! J16 provides two RCLK (alias Chip Select) lines, and is normaly
+//! J16 provides SPI + two RCLK (alias Chip Select) lines at 3V, and is normaly
 //! connected to a SD Card or/and an Ethernet Interface like ENC28J60.
 //!
-//! J8/9 only supports a single RCLK line, and is normaly connected to
-//! the SRIO chain to scan DIN/DOUT modules.
+//! J8/9 provides SPI + two RCLK lines at 5V.
+//! It is normally connected to the SRIO chain to scan DIN/DOUT modules.
 //!
-//! J19 provides two RCLK (alias Chip Select) lines.<BR>
-//! It's a software emulated SPI, therefore the selected spi_prescaler has no
-//! effect! Bytes are transfered so fast as possible. The usage of
-//! MIOS32_SPI_PIN_DRIVER_STRONG is strongly recommented ;)<BR>
-//! DMA transfers are not supported by the emulation, so that 
-//! MIOS32_SPI_TransferBlock() will consume CPU time (but the callback handling does work).
+//! J19 provides SPI + two RCLK lines at 5V.
+//! It's some kind of general purpose SPI, and used to communicate with
+//! various MBHP modules, such as MBHP_AOUT* and MBHP_AINSER*
 //!
 //! If SPI low-level functions should be used to access other peripherals,
 //! please ensure that the appr. MIOS32_* drivers are disabled (e.g.
@@ -64,11 +61,11 @@
 #define MIOS32_SPI0_DMA_IRQ_CHANNEL DMA2_Stream2_IRQn
 #define MIOS32_SPI0_DMA_IRQHANDLER_FUNC void DMA2_Stream2_IRQHandler(void)
 
-#define MIOS32_SPI0_RCLK1_PORT GPIOA
-#define MIOS32_SPI0_RCLK1_PIN  GPIO_Pin_4
-#define MIOS32_SPI0_RCLK1_AF   { GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_SPI1); } // only relevant for slave mode
-#define MIOS32_SPI0_RCLK2_PORT GPIOC
-#define MIOS32_SPI0_RCLK2_PIN  GPIO_Pin_15
+#define MIOS32_SPI0_RCLK1_PORT GPIOB
+#define MIOS32_SPI0_RCLK1_PIN  GPIO_Pin_2
+#define MIOS32_SPI0_RCLK1_AF   { } // slave not supported!
+#define MIOS32_SPI0_RCLK2_PORT GPIOD
+#define MIOS32_SPI0_RCLK2_PIN  GPIO_Pin_11
 #define MIOS32_SPI0_RCLK2_AF   { }
 #define MIOS32_SPI0_SCLK_PORT  GPIOA
 #define MIOS32_SPI0_SCLK_PIN   GPIO_Pin_5
@@ -88,12 +85,15 @@
 #define MIOS32_SPI1_DMA_TX_PTR DMA1_Stream4
 #define MIOS32_SPI1_DMA_TX_CHN DMA_Channel_0
 #define MIOS32_SPI1_DMA_TX_IRQ_FLAGS (DMA_FLAG_TCIF4 | DMA_FLAG_TEIF4 | DMA_FLAG_HTIF4 | DMA_FLAG_FEIF4)
-#define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Stream4_IRQn
-#define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMA1_Stream4_IRQHandler(void)
+#define MIOS32_SPI1_DMA_IRQ_CHANNEL DMA1_Stream3_IRQn
+#define MIOS32_SPI1_DMA_IRQHANDLER_FUNC void DMA1_Stream3_IRQHandler(void)
 
 #define MIOS32_SPI1_RCLK1_PORT GPIOB
 #define MIOS32_SPI1_RCLK1_PIN  GPIO_Pin_12
 #define MIOS32_SPI1_RCLK1_AF   { GPIO_PinAFConfig(GPIOB, GPIO_PinSource12, GPIO_AF_SPI2); } // only relevant for slave mode
+#define MIOS32_SPI1_RCLK2_PORT GPIOD
+#define MIOS32_SPI1_RCLK2_PIN  GPIO_Pin_10
+#define MIOS32_SPI1_RCLK2_AF   { }
 #define MIOS32_SPI1_SCLK_PORT  GPIOB
 #define MIOS32_SPI1_SCLK_PIN   GPIO_Pin_13
 #define MIOS32_SPI1_SCLK_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_SPI2); }
@@ -105,29 +105,32 @@
 #define MIOS32_SPI1_MOSI_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_SPI2); }
 
 
-#define MIOS32_SPI2_PTR        NULL
-#define MIOS32_SPI2_DMA_RX_PTR NULL
-#define MIOS32_SPI2_DMA_TX_PTR NULL
-#define MIOS32_SPI2_DMA_RX_IRQ_FLAGS 0
-#define MIOS32_SPI2_DMA_IRQ_CHANNEL NULL
-#define MIOS32_SPI2_DMA_IRQHANDLER_FUNC NULL
+#define MIOS32_SPI2_PTR        SPI3
+#define MIOS32_SPI2_DMA_RX_PTR DMA1_Stream2
+#define MIOS32_SPI2_DMA_RX_CHN DMA_Channel_0
+#define MIOS32_SPI2_DMA_RX_IRQ_FLAGS (DMA_FLAG_TCIF2 | DMA_FLAG_TEIF2 | DMA_FLAG_HTIF2 | DMA_FLAG_FEIF2)
+#define MIOS32_SPI2_DMA_TX_PTR DMA1_Stream5
+#define MIOS32_SPI2_DMA_TX_CHN DMA_Channel_0
+#define MIOS32_SPI2_DMA_TX_IRQ_FLAGS (DMA_FLAG_TCIF5 | DMA_FLAG_TEIF5 | DMA_FLAG_HTIF5 | DMA_FLAG_FEIF5)
+#define MIOS32_SPI2_DMA_IRQ_CHANNEL DMA1_Stream2_IRQn
+#define MIOS32_SPI2_DMA_IRQHANDLER_FUNC void DMA1_Stream2_IRQHandler(void)
 
-#define MIOS32_SPI2_RCLK1_PORT GPIOC
-#define MIOS32_SPI2_RCLK1_PIN  GPIO_Pin_13
-#define MIOS32_SPI2_RCLK2_PORT GPIOC
-#define MIOS32_SPI2_RCLK2_PIN  GPIO_Pin_14
+#define MIOS32_SPI2_RCLK1_PORT GPIOA
+#define MIOS32_SPI2_RCLK1_PIN  GPIO_Pin_15
+#define MIOS32_SPI2_RCLK1_AF   { GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_SPI3); } // only relevant for slave mode
+#define MIOS32_SPI2_RCLK2_PORT GPIOB
+#define MIOS32_SPI2_RCLK2_PIN  GPIO_Pin_8
+#define MIOS32_SPI2_RCLK2_AF   { }
 #define MIOS32_SPI2_SCLK_PORT  GPIOB
-#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_3
+#define MIOS32_SPI2_SCLK_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource3, GPIO_AF_SPI3); }
 #define MIOS32_SPI2_MISO_PORT  GPIOB
-#define MIOS32_SPI2_MISO_PIN   GPIO_Pin_7
+#define MIOS32_SPI2_MISO_PIN   GPIO_Pin_4
+#define MIOS32_SPI2_MISO_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_SPI3); }
 #define MIOS32_SPI2_MOSI_PORT  GPIOB
 #define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
+#define MIOS32_SPI2_MOSI_AF    { GPIO_PinAFConfig(GPIOB, GPIO_PinSource5, GPIO_AF_SPI3); }
 
-// help macros for SW emulation
-#define MIOS32_SPI2_SET_MOSI(b) { if( b ) MIOS32_SPI2_MOSI_PORT->BSRRL = MIOS32_SPI2_MOSI_PIN; else MIOS32_SPI2_MOSI_PORT->BSRRH = MIOS32_SPI2_MOSI_PIN; }
-#define MIOS32_SPI2_GET_MISO    ( MIOS32_SPI2_MISO_PORT->IDR & MIOS32_SPI2_MISO_PIN )
-#define MIOS32_SPI2_SET_SCLK_0  { MIOS32_SPI2_SCLK_PORT->BSRRH = MIOS32_SPI2_SCLK_PIN; }
-#define MIOS32_SPI2_SET_SCLK_1  { MIOS32_SPI2_SCLK_PORT->BSRRL = MIOS32_SPI2_SCLK_PIN; }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -145,8 +148,6 @@ static void (*spi_callback[3])(void);
 
 static u8 tx_dummy_byte;
 static u8 rx_dummy_byte;
-
-static mios32_spi_mode_t sw_spi2_mode;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -181,9 +182,9 @@ s32 MIOS32_SPI_Init(u32 mode)
   MIOS32_SPI_RC_PinSet(0, 1, 1); // spi, rc_pin, pin_value
 
   // IO configuration
-  MIOS32_SPI_IO_Init(0, MIOS32_SPI_PIN_DRIVER_WEAK_OD);
+  MIOS32_SPI_IO_Init(0, MIOS32_SPI_PIN_DRIVER_WEAK);
 
-  // enable SPI peripheral clock (APB2 == high speed)
+  // enable SPI peripheral clock
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 
   // enable DMA1 and DMA2 clock
@@ -242,9 +243,9 @@ s32 MIOS32_SPI_Init(u32 mode)
   MIOS32_SPI_RC_PinSet(1, 1, 1); // spi, rc_pin, pin_value
 
   // IO configuration
-  MIOS32_SPI_IO_Init(1, MIOS32_SPI_PIN_DRIVER_WEAK_OD);
+  MIOS32_SPI_IO_Init(1, MIOS32_SPI_PIN_DRIVER_WEAK);
 
-  // enable SPI peripheral clock (APB1 == slow speed)
+  // enable SPI peripheral clock
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI2, ENABLE);
 
   // enable DMA1 and DMA2 clock
@@ -291,7 +292,7 @@ s32 MIOS32_SPI_Init(u32 mode)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  // SPI2 (software emulated)
+  // SPI2
   ///////////////////////////////////////////////////////////////////////////
 #ifndef MIOS32_DONT_USE_SPI2
 
@@ -303,12 +304,53 @@ s32 MIOS32_SPI_Init(u32 mode)
   MIOS32_SPI_RC_PinSet(2, 1, 1); // spi, rc_pin, pin_value
 
   // IO configuration
-  MIOS32_SPI_IO_Init(2, MIOS32_SPI_PIN_DRIVER_WEAK_OD);
+  MIOS32_SPI_IO_Init(2, MIOS32_SPI_PIN_DRIVER_WEAK);
+
+  // enable SPI peripheral clock
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);
+
+  // enable DMA1 and DMA2 clock
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA1, ENABLE);
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
+
+  // DMA Configuration for SPI Rx Event
+  DMA_Cmd(MIOS32_SPI2_DMA_RX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI2_DMA_RX_CHN;
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&MIOS32_SPI2_PTR->DR;
+  DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
+  DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
+  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+  DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+  DMA_Init(MIOS32_SPI2_DMA_RX_PTR, &DMA_InitStructure);
+
+  // DMA Configuration for SPI Tx Event
+  // (partly re-using previous DMA setup)
+  DMA_Cmd(MIOS32_SPI2_DMA_TX_PTR, DISABLE);
+  DMA_InitStructure.DMA_Channel = MIOS32_SPI2_DMA_TX_CHN;
+  DMA_InitStructure.DMA_Memory0BaseAddr = 0; // will be configured later
+  DMA_InitStructure.DMA_BufferSize = 0; // will be configured later
+  DMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_Init(MIOS32_SPI2_DMA_TX_PTR, &DMA_InitStructure);
+
+  // enable SPI
+  SPI_Cmd(MIOS32_SPI2_PTR, ENABLE);
+
+  // enable SPI interrupts to DMA
+  SPI_I2S_DMACmd(MIOS32_SPI2_PTR, SPI_I2S_DMAReq_Tx | SPI_I2S_DMAReq_Rx, ENABLE);
+
+  // Configure DMA interrupt
+  MIOS32_IRQ_Install(MIOS32_SPI2_DMA_IRQ_CHANNEL, MIOS32_IRQ_SPI_DMA_PRIORITY);
 
   // initial SPI peripheral configuration
   MIOS32_SPI_TransferModeInit(2, MIOS32_SPI_MODE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
-
 #endif /* MIOS32_DONT_USE_SPI2 */
+
 
   return 0; // no error
 }
@@ -385,6 +427,9 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
       MIOS32_SPI0_MOSI_AF;
 
       if( slave ) {
+#if 1
+	return -3; // slave mode not supported for this pin
+#else
 	// SCLK and DOUT are inputs assigned to alternate functions
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI0_SCLK_PIN;
@@ -404,6 +449,7 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI0_MISO_PIN;
 	GPIO_Init(MIOS32_SPI0_MISO_PORT, &GPIO_InitStructure);
+#endif
       } else {
 	// SCLK and DOUT are outputs assigned to alternate functions
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -433,7 +479,7 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
       return -1; // disabled SPI port
 #else
       MIOS32_SPI1_RCLK1_AF;
-      //MIOS32_SPI1_RCLK2_AF;
+      MIOS32_SPI1_RCLK2_AF;
       MIOS32_SPI1_SCLK_AF;
       MIOS32_SPI1_MISO_AF;
       MIOS32_SPI1_MOSI_AF;
@@ -450,11 +496,8 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_RCLK1_PIN;
 	GPIO_Init(MIOS32_SPI1_RCLK1_PORT, &GPIO_InitStructure);
-#if 0
-	// not available for J8/9
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_RCLK2_PIN;
 	GPIO_Init(MIOS32_SPI1_RCLK2_PORT, &GPIO_InitStructure);
-#endif
 
 	// DOUT is output assigned to alternate function
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -472,11 +515,8 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_RCLK1_PIN;
 	GPIO_Init(MIOS32_SPI1_RCLK1_PORT, &GPIO_InitStructure);
-#if 0
-	// not available for J8/9
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI1_RCLK2_PIN;
 	GPIO_Init(MIOS32_SPI1_RCLK2_PORT, &GPIO_InitStructure);
-#endif
     
 	// DIN is input with pull-up
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -492,26 +532,52 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
-      if( slave ) {
-	return -3; // slave mode not supported for this pin
-      }
+      MIOS32_SPI2_RCLK1_AF;
+      MIOS32_SPI2_RCLK2_AF;
+      MIOS32_SPI2_SCLK_AF;
+      MIOS32_SPI2_MISO_AF;
+      MIOS32_SPI2_MOSI_AF;
 
-      // RCLK, SCLK and DOUT assigned to GPIO (due to SW emulation)
-      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_SCLK_PIN;
-      GPIO_Init(MIOS32_SPI2_SCLK_PORT, &GPIO_InitStructure);
-      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MOSI_PIN;
-      GPIO_Init(MIOS32_SPI2_MOSI_PORT, &GPIO_InitStructure);
-      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK1_PIN;
-      GPIO_Init(MIOS32_SPI2_RCLK1_PORT, &GPIO_InitStructure);
-      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK2_PIN;
-      GPIO_Init(MIOS32_SPI2_RCLK2_PORT, &GPIO_InitStructure);
+      if( slave ) {
+	// SCLK and DOUT are inputs assigned to alternate functions
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_SCLK_PIN;
+	GPIO_Init(MIOS32_SPI2_SCLK_PORT, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MOSI_PIN;
+	GPIO_Init(MIOS32_SPI2_MOSI_PORT, &GPIO_InitStructure);
     
-      // DIN is input with pull-up
-      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-      GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-      GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MISO_PIN;
-      GPIO_Init(MIOS32_SPI2_MISO_PORT, &GPIO_InitStructure);
+	// RCLK (resp. CS) are configured as inputs as well
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK1_PIN;
+	GPIO_Init(MIOS32_SPI2_RCLK1_PORT, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK2_PIN;
+	GPIO_Init(MIOS32_SPI2_RCLK2_PORT, &GPIO_InitStructure);
+
+	// DOUT is output assigned to alternate function
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MISO_PIN;
+	GPIO_Init(MIOS32_SPI2_MISO_PORT, &GPIO_InitStructure);    
+      } else {
+	// SCLK and DIN are inputs
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_SCLK_PIN;
+	GPIO_Init(MIOS32_SPI2_SCLK_PORT, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MOSI_PIN;
+	GPIO_Init(MIOS32_SPI2_MOSI_PORT, &GPIO_InitStructure);
+    
+	// RCLK (resp. CS) are configured as inputs as well
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK1_PIN;
+	GPIO_Init(MIOS32_SPI2_RCLK1_PORT, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_RCLK2_PIN;
+	GPIO_Init(MIOS32_SPI2_RCLK2_PORT, &GPIO_InitStructure);
+    
+	// DIN is input with pull-up
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MISO_PIN;
+	GPIO_Init(MIOS32_SPI2_MISO_PORT, &GPIO_InitStructure);
+      }
 
       break;
 #endif
@@ -539,14 +605,14 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 //! </UL>
 //! \param[in] spi_prescaler configures the SPI speed:
 //! <UL>
-//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 27.7~ uS @ 72 MHz (36 MBit/s) (only supported for spi==0, spi1 uses 4 instead)
-//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 55.5~ uS @ 72 MHz (18 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 111.1~ uS @ 72 MHz (9 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 222.2~ uS @ 72 MHz (4.5 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 444.4~ uS @ 72 MHz (2.25 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 888.8~ uS @ 72 MHz (1.125 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_128: sets clock rate 1.7~ uS @ 72 MHz (0.562 MBit/s)
-//!   <LI>MIOS32_SPI_PRESCALER_256: sets clock rate 3.5~ uS @ 72 MHz (0.281 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_2: sets clock rate 23.4 nS @ 84 MHz (42.67 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_4: sets clock rate 46,8 nS @ 84 MHz (21.33 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_8: sets clock rate 93.8 nS @ 84 MHz (10.67 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_16: sets clock rate 187 nS @ 84 MHz (5.333 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_32: sets clock rate 375 nS @ 84 MHz (2.667 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_64: sets clock rate 750 nS @ 84 MHz (1.333 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_128: sets clock rate 1.5 uS @ 84 MHz (0.667 MBit/s)
+//!   <LI>MIOS32_SPI_PRESCALER_256: sets clock rate 3 uS @ 84 MHz (0.333 MBit/s)
 //! </UL>
 //! \return 0 if no error
 //! \return -1 if disabled SPI port selected
@@ -609,9 +675,10 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 #ifdef MIOS32_DONT_USE_SPI0
       return -1; // disabled SPI port
 #else
+      if( SPI_InitStructure.SPI_Mode == SPI_Mode_Slave ) {
+	return -3; // slave mode not supported for this SPI
+      }
       u16 prev_cr1 = MIOS32_SPI0_PTR->CR1;
-      // SPI1 perpipheral is located in APB2 domain and clocked at full speed
-      // therefore we have to add +1 to the prescaler
       SPI_InitStructure.SPI_BaudRatePrescaler = ((u16)spi_prescaler&7) << 3;
       SPI_Init(MIOS32_SPI0_PTR, &SPI_InitStructure);
 
@@ -632,11 +699,7 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 #else
       u16 prev_cr1 = MIOS32_SPI1_PTR->CR1;
 
-      // SPI2 perpipheral is located in APB1 domain and clocked at half speed
-      if( spi_prescaler == 0 )
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
-      else
-	SPI_InitStructure.SPI_BaudRatePrescaler = (((u16)spi_prescaler&7)-1) << 3;
+      SPI_InitStructure.SPI_BaudRatePrescaler = (((u16)spi_prescaler&7)-1) << 3;
       SPI_Init(MIOS32_SPI1_PTR, &SPI_InitStructure);
 
       if( SPI_InitStructure.SPI_Mode == SPI_Mode_Master ) {
@@ -650,34 +713,25 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 #endif
     } break;
 
-    case 2:
+    case 2: {
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
-      if( SPI_InitStructure.SPI_Mode == SPI_Mode_Slave ) {
-	return -3; // slave mode not supported for this SPI
+      u16 prev_cr1 = MIOS32_SPI2_PTR->CR1;
+
+      SPI_InitStructure.SPI_BaudRatePrescaler = (((u16)spi_prescaler&7)-1) << 3;
+      SPI_Init(MIOS32_SPI2_PTR, &SPI_InitStructure);
+
+      if( SPI_InitStructure.SPI_Mode == SPI_Mode_Master ) {
+	if( (prev_cr1 ^ MIOS32_SPI2_PTR->CR1) & 3 ) { // CPOL and CPHA located at bit #1 and #0
+	  // clock configuration has been changed - we should send a dummy byte
+	  // before the application activates chip select.
+	  // this solves a dependency between SDCard and ENC28J60 driver
+	  MIOS32_SPI_TransferByte(spi, 0xff);
+	}
       }
-
-      // no clock prescaler for SW emulated SPI
-      // remember mode settings
-      sw_spi2_mode = spi_mode;
-
-      // set clock idle level
-      switch( sw_spi2_mode ) {
-        case MIOS32_SPI_MODE_CLK0_PHASE0:
-        case MIOS32_SPI_MODE_CLK0_PHASE1:
-	  MIOS32_SPI2_SET_SCLK_0;
-	  break;
-        case MIOS32_SPI_MODE_CLK1_PHASE0:
-        case MIOS32_SPI_MODE_CLK1_PHASE1:
-	  MIOS32_SPI2_SET_SCLK_1;
-	  break;
-        default:
-	  return -4; // invalid SPI clock/phase mode
-      }
-
-      break;
 #endif
+    } break;
 
     default:
       return -2; // unsupported SPI port
@@ -735,6 +789,13 @@ s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
 	    MIOS32_SPI1_RCLK1_PORT->BSRRL = MIOS32_SPI1_RCLK1_PIN;
 	  else
 	    MIOS32_SPI1_RCLK1_PORT->BSRRH  = MIOS32_SPI1_RCLK1_PIN;
+	  break;
+
+        case 1:
+	  if( pin_value )
+	    MIOS32_SPI1_RCLK2_PORT->BSRRL = MIOS32_SPI1_RCLK2_PIN;
+	  else
+	    MIOS32_SPI1_RCLK2_PORT->BSRRH  = MIOS32_SPI1_RCLK2_PIN;
 	  break;
 
         default:
@@ -810,190 +871,9 @@ s32 MIOS32_SPI_TransferByte(u8 spi, u8 b)
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
-    // Software Emulation
-    {
-      u8 in_data = 0;
-
-      switch( sw_spi2_mode ) {
-        case MIOS32_SPI_MODE_CLK0_PHASE0:
-	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_SCLK_1; // no error - SCLK_1 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_0;
-	  break;
-
-        case MIOS32_SPI_MODE_CLK0_PHASE1:
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
-	  break;
-
-        case MIOS32_SPI_MODE_CLK1_PHASE0:
-	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0;
-	  MIOS32_SPI2_SET_SCLK_0; // no error - SCLK_0 doubled to stretch pulse width
-	  MIOS32_SPI2_SET_SCLK_1;
-	  break;
-
-        case MIOS32_SPI_MODE_CLK1_PHASE1:
-	  MIOS32_SPI2_SET_MOSI(b & 0x80); // D7
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x01 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x40); // D6
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x02 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x20); // D5
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x04 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x10); // D4
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x08 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x08); // D3
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x10 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x04); // D2
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x20 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x02); // D1
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x40 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  MIOS32_SPI2_SET_MOSI(b & 0x01); // D0
-	  MIOS32_SPI2_SET_SCLK_0;
-	  in_data |= MIOS32_SPI2_GET_MISO ? 0x80 : 0x00;
-	  MIOS32_SPI2_SET_SCLK_1;
-	  break;
-
-        default:
-	  return -3; // unsupported SPI mode
-      }
-
-      return in_data; // END of SW emulation - EXIT here!
+      spi_ptr = MIOS32_SPI2_PTR;
+      break;
 #endif
-    } break;
 
     default:
       return -2; // unsupported SPI port
@@ -1080,36 +960,12 @@ s32 MIOS32_SPI_TransferBlock(u8 spi, u8 *send_buffer, u8 *receive_buffer, u16 le
 #ifdef MIOS32_DONT_USE_SPI2
       return -1; // disabled SPI port
 #else
-    // Software Emulation
-    {
-      u32 pos;
-
-      // we have 4 cases:
-      if( receive_buffer != NULL ) {
-	if( send_buffer != NULL ) {
-	  for(pos=0; pos<len; ++pos)
-	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, *send_buffer++);
-	} else {
-	  for(pos=0; pos<len; ++pos)
-	    *receive_buffer++ = MIOS32_SPI_TransferByte(spi, 0xff);
-	}
-      } else {
-	// TODO: we could use an optimized "send only" function to speed up the SW emulation!
-	if( send_buffer != NULL ) {
-	  for(pos=0; pos<len; ++pos)
-	    MIOS32_SPI_TransferByte(spi, *send_buffer++);
-	} else {
-	  // nothing to do...
-	}
-      }
-
-      // set callback function
-      spi_callback[spi] = callback;
-      if( spi_callback[spi] != NULL )
-	spi_callback[spi]();
-
-      return 0; // END of SW emulation - EXIT here!
-    } break;
+      spi_ptr = MIOS32_SPI2_PTR;
+      dma_tx_ptr = MIOS32_SPI2_DMA_TX_PTR;
+      dma_tx_irq_flags = MIOS32_SPI2_DMA_TX_IRQ_FLAGS;
+      dma_rx_ptr = MIOS32_SPI2_DMA_RX_PTR;
+      dma_rx_irq_flags = MIOS32_SPI2_DMA_RX_IRQ_FLAGS;
+      break;
 #endif
 
     default:
@@ -1205,6 +1061,14 @@ MIOS32_SPI1_DMA_IRQHANDLER_FUNC
 
   if( spi_callback[1] != NULL )
     spi_callback[1]();
+}
+
+MIOS32_SPI2_DMA_IRQHANDLER_FUNC
+{
+  DMA_ClearFlag(MIOS32_SPI2_DMA_RX_PTR, MIOS32_SPI2_DMA_RX_IRQ_FLAGS);
+
+  if( spi_callback[2] != NULL )
+    spi_callback[2]();
 }
 
 //! \}

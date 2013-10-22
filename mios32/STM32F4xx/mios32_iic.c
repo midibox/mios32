@@ -61,8 +61,8 @@
 #define MIOS32_IIC1_SCL_PIN     GPIO_Pin_6
 #define MIOS32_IIC1_SCL_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_I2C1); }
 #define MIOS32_IIC1_SDA_PORT    GPIOB
-#define MIOS32_IIC1_SDA_PIN     GPIO_Pin_7
-#define MIOS32_IIC1_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_I2C1); }
+#define MIOS32_IIC1_SDA_PIN     GPIO_Pin_9
+#define MIOS32_IIC1_SDA_AF      { GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_I2C1); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Duty cycle definitions
