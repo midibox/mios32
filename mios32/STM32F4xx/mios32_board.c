@@ -100,24 +100,24 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // J15 (LCD) pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
 
 #define J15_AVAILABLE 1
 
-#define J15_SCLK_PORT      GPIOA
-#define J15_SCLK_PIN       GPIO_Pin_8
+#define J15_SCLK_PORT      GPIOD
+#define J15_SCLK_PIN       GPIO_Pin_6
 
-#define J15_RCLK_PORT      GPIOC
-#define J15_RCLK_PIN       GPIO_Pin_9
+#define J15_RCLK_PORT      GPIOD
+#define J15_RCLK_PIN       GPIO_Pin_3
 
-#define J15_SER_PORT       GPIOC        // also used as DC (data/command select) for serial interfaces
+#define J15_SER_PORT       GPIOA        // also used as DC (data/command select) for serial interfaces
 #define J15_SER_PIN        GPIO_Pin_8
 
 #define J15_E1_PORT        GPIOC        // also used to control SCLK of serial interfaces
-#define J15_E1_PIN         GPIO_Pin_7
+#define J15_E1_PIN         GPIO_Pin_8
 
 #define J15_E2_PORT        GPIOC
-#define J15_E2_PIN         GPIO_Pin_6
+#define J15_E2_PIN         GPIO_Pin_9
 
 #ifdef MIOS32_BOARD_LCD_E3_PORT
 #define LCD_E3_PORT        MIOS32_BOARD_LCD_E3_PORT
@@ -129,37 +129,38 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 #define LCD_E4_PIN         MIOS32_BOARD_LCD_E4_PIN
 #endif
 
-#define J15_RW_PORT        GPIOB        // also used to control data output of serial interfaces
-#define J15_RW_PIN         GPIO_Pin_2
+#define J15_RW_PORT        GPIOC        // also used to control data output of serial interfaces
+#define J15_RW_PIN         GPIO_Pin_11
 
-#define J15_D7_PORT        GPIOC
-#define J15_D7_PIN         GPIO_Pin_12
+#define J15_D7_PORT        GPIOD
+#define J15_D7_PIN         GPIO_Pin_7
 
 // 0: RS connected to SER input of 74HC595 shift register
 // 1: RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
-#define J15_RS_AT_D7APOSTROPHE 0
 
 // following macros simplify the access to J15 pins
-#define J15_PIN_SER(b)  { J15_SER_PORT->BSRR = (b) ? J15_SER_PIN : (J15_SER_PIN << 16); }
-#define J15_PIN_E1(b)   { J15_E1_PORT->BSRR  = (b) ? J15_E1_PIN  : (J15_E1_PIN << 16); }
-#define J15_PIN_E2(b)   { J15_E2_PORT->BSRR  = (b) ? J15_E2_PIN  : (J15_E2_PIN << 16); }
+#define J15_PIN_HLP(port, pin, b) { if( b ) port->BSRRL = pin; else port->BSRRH = pin; }
+
+#define J15_PIN_SER(b)  J15_PIN_HLP(J15_SER_PORT, J15_SER_PIN, b)
+#define J15_PIN_E1(b)   J15_PIN_HLP(J15_E1_PORT, J15_E1_PIN, b)
+#define J15_PIN_E2(b)   J15_PIN_HLP(J15_E2_PORT, J15_E2_PIN, b)
 #ifdef MIOS32_BOARD_LCD_E3_PORT
-#define LCD_PIN_E3(b)   { LCD_E3_PORT->BSRR  = (b) ? LCD_E3_PIN  : (LCD_E3_PIN << 16); }
+#define J15_PIN_E3(b)   J15_PIN_HLP(J15_E3_PORT, J15_E3_PIN, b)
 #endif
 #ifdef MIOS32_BOARD_LCD_E4_PORT
-#define LCD_PIN_E4(b)   { LCD_E4_PORT->BSRR  = (b) ? LCD_E4_PIN  : (LCD_E4_PIN << 16); }
+#define J15_PIN_E4(b)   J15_PIN_HLP(J15_E4_PORT, J15_E4_PIN, b)
 #endif
-#define J15_PIN_RW(b)   { J15_RW_PORT->BSRR  = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
+#define J15_PIN_RW(b)   J15_PIN_HLP(J15_RW_PORT, J15_RW_PIN, b)
 
-#define J15_PIN_SERLCD_DATAOUT(b) { J15_RW_PORT->BSRR = (b) ? J15_RW_PIN  : (J15_RW_PIN << 16); }
-#define J15_PIN_SERLCD_SCLK_0     { J15_E1_PORT->BRR  = J15_E1_PIN; }
-#define J15_PIN_SERLCD_SCLK_1     { J15_E1_PORT->BSRR = J15_E1_PIN; }
+#define J15_PIN_SERLCD_DATAOUT(b) J15_PIN_HLP(J15_RW_PORT, J15_RW_PIN, b)
+#define J15_PIN_SERLCD_SCLK_0     { J15_E1_PORT->BSRRH = J15_E1_PIN; }
+#define J15_PIN_SERLCD_SCLK_1     { J15_E1_PORT->BSRRL = J15_E1_PIN; }
 
-#define J15_PIN_RCLK_0  { J15_RCLK_PORT->BRR  = J15_RCLK_PIN; }
-#define J15_PIN_RCLK_1  { J15_RCLK_PORT->BSRR = J15_RCLK_PIN; }
+#define J15_PIN_RCLK_0  { J15_RCLK_PORT->BSRRH = J15_RCLK_PIN; }
+#define J15_PIN_RCLK_1  { J15_RCLK_PORT->BSRRL = J15_RCLK_PIN; }
 
-#define J15_PIN_SCLK_0  { J15_SCLK_PORT->BRR  = J15_SCLK_PIN; }
-#define J15_PIN_SCLK_1  { J15_SCLK_PORT->BSRR = J15_SCLK_PIN; }
+#define J15_PIN_SCLK_0  { J15_SCLK_PORT->BSRRH = J15_SCLK_PIN; }
+#define J15_PIN_SCLK_1  { J15_SCLK_PORT->BSRRL = J15_SCLK_PIN; }
 
 #define J15_PIN_D7_IN   (J15_D7_PORT->IDR & J15_D7_PIN)
 
@@ -769,8 +770,9 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
 #endif
 
   // configure push-pull pins
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz; // weak driver to reduce transients
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz; // weak driver to reduce transients
 
   GPIO_InitStructure.GPIO_Pin = J15_SCLK_PIN;
   GPIO_Init(J15_SCLK_PORT, &GPIO_InitStructure);
@@ -780,7 +782,7 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
 
   // configure open-drain pins (if OD option enabled)
   if( mode )
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
 
   GPIO_InitStructure.GPIO_Pin = J15_SER_PIN;
   GPIO_Init(J15_SER_PORT, &GPIO_InitStructure);
@@ -805,7 +807,8 @@ s32 MIOS32_BOARD_J15_PortInit(u32 mode)
   GPIO_Init(J15_RW_PORT, &GPIO_InitStructure);
 
   // configure "busy" input with pull-up
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
   GPIO_InitStructure.GPIO_Pin = J15_D7_PIN;
   GPIO_Init(J15_D7_PORT, &GPIO_InitStructure);
 
@@ -826,35 +829,62 @@ s32 MIOS32_BOARD_J15_DataSet(u8 data)
   return -1; // LCD port not available
 #else
   // shift in 8bit data
-  // whole function takes ca. 1.5 uS @ 72MHz
+  // whole function takes ca. 1 uS @ 168MHz
   // thats acceptable for a (C)LCD, which is normaly busy after each access for ca. 20..40 uS
 
   J15_PIN_SER(data & 0x80); // D7
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x40); // D6
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x20); // D5
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x10); // D4
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x08); // D3
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x04); // D2
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x02); // D1
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x01); // D0
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
 
   // transfer to output register
+  J15_PIN_RCLK_1;
+  J15_PIN_RCLK_1;
+  J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
@@ -879,27 +909,51 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
 #else
   J15_PIN_SERLCD_DATAOUT(data & 0x80); // D7
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x40); // D6
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x20); // D5
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x10); // D4
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x08); // D3
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x04); // D2
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x02); // D1
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_DATAOUT(data & 0x01); // D0
   J15_PIN_SERLCD_SCLK_0; // setup delay
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
   J15_PIN_SERLCD_SCLK_1;
 
   return 0; // no error
@@ -919,29 +973,6 @@ s32 MIOS32_BOARD_J15_RS_Set(u8 rs)
   return -1; // LCD port not available
 #else
   J15_PIN_SER(rs);
-
-#if J15_RS_AT_D7APOSTROPHE
-  // RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
-  // shift RS to D7' 
-  // These 8 shifts take ca. 500 nS @ 72MHz, they don't really hurt
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_0;
-#endif
 
   return 0; // no error
 #endif
