@@ -77,7 +77,7 @@
 // number of channels currently defined locally
 // we could derive it from number of bits in MIOS32_AIN_CHANNEL_MASK?
 // Currently this number is only available as variable: num_used_channels
-#define NUM_CHANNELS_MAX 16
+#define NUM_CHANNELS_MAX 8
 
 // derive number of AIN pins from number of ADC and mux channels
 #define NUM_AIN_PINS (NUM_CHANNELS_MAX * (1 << MIOS32_AIN_MUX_PINS))
@@ -125,24 +125,22 @@ static s32 (*service_prepare_callback)(void);
 
 #if MIOS32_AIN_CHANNEL_MASK
 
-// this table maps ADC channels to J5.Ax and J16 pins
-static const u8 adc_chn_map[16] = {
-  ADC_Channel_10, // J5A.A0
-  ADC_Channel_11, // J5A.A1
-  ADC_Channel_12, // J5A.A2
-  ADC_Channel_13, // J5A.A3
-  ADC_Channel_0,  // J5B.A4
-  ADC_Channel_1,  // J5B.A5
-  ADC_Channel_2,  // J5B.A6
-  ADC_Channel_3,  // J5B.A7
-  ADC_Channel_14, // J5C.A8
-  ADC_Channel_15, // J5C.A9
-  ADC_Channel_8,  // J5C.A10
-  ADC_Channel_9,  // J5C.A11
-  ADC_Channel_4,  // J16.RC
-  ADC_Channel_5,  // J16.SC
-  ADC_Channel_6,  // J16.SI
-  ADC_Channel_7   // J16.SO
+// this table maps ADC channels to J5.Ax pins
+typedef struct {
+  u8            chn;
+  GPIO_TypeDef *port;
+  u16           pin_mask;
+} adc_chn_map_t;
+
+static const adc_chn_map_t adc_chn_map[NUM_CHANNELS_MAX] = {
+  { ADC_Channel_11, GPIOC, GPIO_Pin_1 }, // J5A.A0
+  { ADC_Channel_12, GPIOC, GPIO_Pin_2 }, // J5A.A1
+  { ADC_Channel_1,  GPIOA, GPIO_Pin_1 }, // J5A.A2
+  { ADC_Channel_4,  GPIOA, GPIO_Pin_4 }, // J5A.A3
+  { ADC_Channel_14, GPIOC, GPIO_Pin_4 }, // J5B.A4
+  { ADC_Channel_15, GPIOC, GPIO_Pin_5 }, // J5B.A5
+  { ADC_Channel_8,  GPIOB, GPIO_Pin_0 }, // J5B.A6
+  { ADC_Channel_9,  GPIOB, GPIO_Pin_1 }, // J5B.A7
 };
 
 
@@ -163,8 +161,6 @@ const u8 mux_selection_order[8] = { 5, 7, 3, 1, 2, 4, 0, 6 };
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_AIN_Init(u32 mode)
 {
-#warning "TODO!!!"
-#if 0
   // currently only mode 0 supported
   if( mode != 0 )
     return -1; // unsupported mode
@@ -201,33 +197,15 @@ s32 MIOS32_AIN_Init(u32 mode)
   // set analog pins
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AIN;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AN;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 
-  // J5A.0..3 -> Channel 10..13 -> Pin C0..3
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x000f) >> 0;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-  // J5B.4..7 -> Channel 0..3 -> Pin A0..3
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x00f0) >> 4;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-  // J5C.8..9 -> Channel 14..15 -> Pin C4..5
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0300) >> 4;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-  // J5C.A10..11 -> Channel 8..9 -> Pin B0..1
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0c00) >> 10;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-  // J5C.A8..11 -> Channel 10..13 -> Pin C0..C3
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0x0f00) >> 8;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-  // J16 -> Channel 4..7 -> Pin A4..7
-  GPIO_InitStructure.GPIO_Pin = (MIOS32_AIN_CHANNEL_MASK & 0xf000) >> 8;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-
+  for(i=0; i<NUM_CHANNELS_MAX; ++i) {
+    if( MIOS32_AIN_CHANNEL_MASK & (1 << i) ) {      
+      GPIO_InitStructure.GPIO_Pin = adc_chn_map[i].pin_mask;
+      GPIO_Init(adc_chn_map[i].port, &GPIO_InitStructure);
+    }
+  }
 
   // configure MUX pins if enabled
 #if MIOS32_AIN_MUX_PINS >= 0
@@ -258,7 +236,7 @@ s32 MIOS32_AIN_Init(u32 mode)
     if( MIOS32_AIN_CHANNEL_MASK & (1 << i) ) {
       ADC_RegularChannelConfig(
         (num_channels & 1) ? ADC2 : ADC1, 
-	adc_chn_map[i], 
+	adc_chn_map[i].chn, 
 	(num_channels>>1)+1, 
 	ADC_SampleTime_144Cycles);
       ++num_channels;
@@ -271,49 +249,45 @@ s32 MIOS32_AIN_Init(u32 mode)
       ++num_used_channels;
 
   // configure ADCs
+  ADC_CommonInitTypeDef ADC_CommonInitStructure;
+  ADC_CommonStructInit(&ADC_CommonInitStructure);
+  ADC_CommonInitStructure.ADC_Mode = ADC_DualMode_RegSimult;
+  ADC_CommonInitStructure.ADC_Prescaler = ADC_Prescaler_Div2;
+  ADC_CommonInitStructure.ADC_DMAAccessMode = ADC_DMAAccessMode_2;
+  ADC_CommonInitStructure.ADC_TwoSamplingDelay = ADC_TwoSamplingDelay_5Cycles;
+  ADC_CommonInit(&ADC_CommonInitStructure);
+
   ADC_InitTypeDef ADC_InitStructure;
   ADC_StructInit(&ADC_InitStructure);
-  ADC_InitStructure.ADC_Mode = ADC_DualMode_RegSimult;
   ADC_InitStructure.ADC_ScanConvMode = ENABLE;
   ADC_InitStructure.ADC_ContinuousConvMode = DISABLE;
-  ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
+  ADC_InitStructure.ADC_ExternalTrigConvEdge = ADC_ExternalTrigConvEdge_None;
+  //ADC_InitStructure.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
   ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
-  ADC_InitStructure.ADC_NbrOfChannel = num_used_channels >> 1;
+  ADC_InitStructure.ADC_NbrOfConversion = num_used_channels >> 1;
   ADC_Init(ADC1, &ADC_InitStructure);
   ADC_Init(ADC2, &ADC_InitStructure);
 
-  // enable ADC2 external trigger conversion (to synch with ADC1)
-  ADC_ExternalTrigConvCmd(ADC2, ENABLE);
-
   // enable ADC1->DMA request
   ADC_DMACmd(ADC1, ENABLE);
+  ADC_MultiModeDMARequestAfterLastTransferCmd(ENABLE);
 
-
-  // ADC1 calibration
+  // enable ADCs
   ADC_Cmd(ADC1, ENABLE);
-  ADC_ResetCalibration(ADC1);
-  while( ADC_GetResetCalibrationStatus(ADC1) );
-  ADC_StartCalibration(ADC1);
-  while( ADC_GetCalibrationStatus(ADC1) );
-
-  // ADC2 calibration
   ADC_Cmd(ADC2, ENABLE);
-  ADC_ResetCalibration(ADC2);
-  while( ADC_GetResetCalibrationStatus(ADC2) );
-  ADC_StartCalibration(ADC2);
-  while( ADC_GetCalibrationStatus(ADC2) );
 
 
-  // enable DMA1 clock
-  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+  // enable DMA2 clock
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
 
   // configure DMA1 channel 1 to fetch data from ADC result register
+  DMA_Cmd(DMA2_Stream0, DISABLE);
   DMA_InitTypeDef DMA_InitStructure;
   DMA_StructInit(&DMA_InitStructure);
-  DMA_DeInit(DMA1_Channel1);
-  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&ADC1->DR;
-  DMA_InitStructure.DMA_MemoryBaseAddr = (u32)&adc_conversion_values;
-  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+  DMA_InitStructure.DMA_Channel = DMA_Channel_0;
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)&ADC->CDR;
+  DMA_InitStructure.DMA_Memory0BaseAddr = (u32)&adc_conversion_values;
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
   DMA_InitStructure.DMA_BufferSize = num_used_channels >> 1; // number of conversions depends on number of used channels
   DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
   DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
@@ -321,20 +295,18 @@ s32 MIOS32_AIN_Init(u32 mode)
   DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
   DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
   DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-  DMA_Init(DMA1_Channel1, &DMA_InitStructure);
-  DMA_Cmd(DMA1_Channel1, ENABLE);
+  DMA_Init(DMA2_Stream0, &DMA_InitStructure);
+  DMA_Cmd(DMA2_Stream0, ENABLE);
 
   // trigger interrupt when all conversion values have been fetched
-  DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
+  DMA_ITConfig(DMA2_Stream0, DMA_IT_TC, ENABLE);
 
   // Configure and enable DMA interrupt
-  MIOS32_IRQ_Install(DMA1_Channel1_IRQn, MIOS32_IRQ_AIN_DMA_PRIORITY);
+  MIOS32_IRQ_Install(DMA2_Stream0_IRQn, MIOS32_IRQ_AIN_DMA_PRIORITY);
 
   // finally start initial conversion
-  ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+  ADC_SoftwareStartConv(ADC1);
 
-#endif
   return 0;
 #endif
 }
@@ -467,11 +439,8 @@ s32 MIOS32_AIN_Handler(void *_callback)
   if( service_prepare_callback != NULL && service_prepare_callback() >= 1 )
     return 0; // scan skipped - no error
 
-#warning "TODO!!!"
-#if 0
   // start next scan
-  ADC_SoftwareStartConvCmd(ADC1, ENABLE);
-#endif
+  ADC_SoftwareStartConv(ADC1);
 
   return 0; // no error
 #endif
@@ -483,17 +452,13 @@ s32 MIOS32_AIN_Handler(void *_callback)
 //! \note shouldn't be called directly from application
 /////////////////////////////////////////////////////////////////////////////
 #if MIOS32_AIN_CHANNEL_MASK
-void DMA1_Channel1_IRQHandler(void)
+void DMA2_Stream0_IRQHandler(void)
 {
   int i;
   u16 *src_ptr, *dst_ptr;
 
-#warning "TODO!!!"
-#if 0
-
   // clear the pending flag(s)
-  DMA_ClearFlag(DMA1_FLAG_TC1 | DMA1_FLAG_TE1 | DMA1_FLAG_HT1 | DMA1_FLAG_GL1);
-#endif
+  DMA_ClearFlag(DMA2_Stream0, DMA_FLAG_TCIF0 | DMA_FLAG_TEIF0 | DMA_FLAG_HTIF0 | DMA_FLAG_FEIF0);
 
 #if MIOS32_AIN_OVERSAMPLING_RATE >= 2
   // accumulate conversion result
@@ -611,7 +576,7 @@ void DMA1_Channel1_IRQHandler(void)
 
   // request next conversion as long as oversampling/mux counter haven't reached the end
   if( mux_ctr || oversampling_ctr )
-    ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+    ADC_SoftwareStartConv(ADC1);
 }
 #endif
 
