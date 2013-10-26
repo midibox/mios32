@@ -24,6 +24,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Help Macro
+/////////////////////////////////////////////////////////////////////////////
+#define PIN_SET(port, pin_mask, b) { if( b ) port->BSRRL = pin_mask; else port->BSRRH = pin_mask; }
+#define PIN_GET(port, pin_mask)    ((port->IDR & (1 << pin_mask)) ? 1 : 0)
+
+
+/////////////////////////////////////////////////////////////////////////////
 // On-Board LEDs
 /////////////////////////////////////////////////////////////////////////////
 
@@ -40,10 +47,8 @@
 // J5 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if 0 // defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
 
-// note: adaptions also have to be done in MIOS32_BOARD_J5_(Set/Get),
-// since these functions access the ports directly
 typedef struct {
   GPIO_TypeDef *port;
   u16 pin_mask;
@@ -52,16 +57,16 @@ typedef struct {
 #define J5_NUM_PINS 8
 static const j5_pin_t j5_pin[J5_NUM_PINS] = {
   // J5A
-  { GPIOC, 1 << 1 },
-  { GPIOC, 1 << 2 },
-  { GPIOA, 1 << 1 },
-  { GPIOA, 1 << 4 },
+  { GPIOC, GPIO_Pin_1 },
+  { GPIOC, GPIO_Pin_2 },
+  { GPIOA, GPIO_Pin_1 },
+  { GPIOA, GPIO_Pin_4 },
 
   // J5B
-  { GPIOC, 1 << 4 },
-  { GPIOC, 1 << 5 },
-  { GPIOB, 1 << 0 },
-  { GPIOB, 1 << 1 },
+  { GPIOC, GPIO_Pin_4 },
+  { GPIOC, GPIO_Pin_5 },
+  { GPIOB, GPIO_Pin_0 },
+  { GPIOB, GPIO_Pin_1 },
 };
 
 #else
@@ -74,9 +79,38 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // J10 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-#define J10_NUM_PINS 0
-// not supported by this board
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+
+// note: adaptions also have to be done in MIOS32_BOARD_J10_Get,
+// since this function access the ports directly
+typedef struct {
+  GPIO_TypeDef *port;
+  u16 pin_mask;
+} j10_pin_t;
+
+#define J10_NUM_PINS 16
+static const j10_pin_t j10_pin[J10_NUM_PINS] = {
+  // J10A
+  { GPIOE, GPIO_Pin_8 },
+  { GPIOE, GPIO_Pin_9 },
+  { GPIOE, GPIO_Pin_10 },
+  { GPIOE, GPIO_Pin_11 },
+  { GPIOE, GPIO_Pin_12 },
+  { GPIOE, GPIO_Pin_13 },
+  { GPIOE, GPIO_Pin_14 },
+  { GPIOE, GPIO_Pin_15 },
+
+  // J10B
+  { GPIOC, GPIO_Pin_13 },
+  { GPIOC, GPIO_Pin_14 },
+  { GPIOC, GPIO_Pin_15 },
+  { GPIOE, GPIO_Pin_3 },
+  { GPIOE, GPIO_Pin_4 },
+  { GPIOE, GPIO_Pin_5 },
+  { GPIOE, GPIO_Pin_6 },
+  { GPIOE, GPIO_Pin_7 },
+};
+
 #else
 #define J10_NUM_PINS 0
 #warning "No J10 pins defined for this MIOS32_BOARD"
@@ -87,12 +121,12 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // J28 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-#define J28_NUM_PINS 0
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# define J28_NUM_PINS 0
 // not supported by this board
 #else
-#define J28_NUM_PINS 0
-#warning "No J28 pins defined for this MIOS32_BOARD"
+# define J28_NUM_PINS 0
+# warning "No J28 pins defined for this MIOS32_BOARD"
 #endif
 
 
@@ -139,20 +173,18 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // 1: RS connected to D7' output of the 74HC595 register (only required if no open drain mode is used, and a 5V RS signal is needed)
 
 // following macros simplify the access to J15 pins
-#define J15_PIN_HLP(port, pin, b) { if( b ) port->BSRRL = pin; else port->BSRRH = pin; }
-
-#define J15_PIN_SER(b)  J15_PIN_HLP(J15_SER_PORT, J15_SER_PIN, b)
-#define J15_PIN_E1(b)   J15_PIN_HLP(J15_E1_PORT, J15_E1_PIN, b)
-#define J15_PIN_E2(b)   J15_PIN_HLP(J15_E2_PORT, J15_E2_PIN, b)
+#define J15_PIN_SER(b)  PIN_SET(J15_SER_PORT, J15_SER_PIN, b)
+#define J15_PIN_E1(b)   PIN_SET(J15_E1_PORT, J15_E1_PIN, b)
+#define J15_PIN_E2(b)   PIN_SET(J15_E2_PORT, J15_E2_PIN, b)
 #ifdef MIOS32_BOARD_LCD_E3_PORT
-#define J15_PIN_E3(b)   J15_PIN_HLP(J15_E3_PORT, J15_E3_PIN, b)
+#define J15_PIN_E3(b)   PIN_SET(J15_E3_PORT, J15_E3_PIN, b)
 #endif
 #ifdef MIOS32_BOARD_LCD_E4_PORT
-#define J15_PIN_E4(b)   J15_PIN_HLP(J15_E4_PORT, J15_E4_PIN, b)
+#define J15_PIN_E4(b)   PIN_SET(J15_E4_PORT, J15_E4_PIN, b)
 #endif
-#define J15_PIN_RW(b)   J15_PIN_HLP(J15_RW_PORT, J15_RW_PIN, b)
+#define J15_PIN_RW(b)   PIN_SET(J15_RW_PORT, J15_RW_PIN, b)
 
-#define J15_PIN_SERLCD_DATAOUT(b) J15_PIN_HLP(J15_RW_PORT, J15_RW_PIN, b)
+#define J15_PIN_SERLCD_DATAOUT(b) PIN_SET(J15_RW_PORT, J15_RW_PIN, b)
 #define J15_PIN_SERLCD_SCLK_0     { J15_E1_PORT->BSRRH = J15_E1_PIN; }
 #define J15_PIN_SERLCD_SCLK_1     { J15_E1_PORT->BSRRL = J15_E1_PIN; }
 
@@ -175,6 +207,7 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 j5_enable_mask;
+static u16 j10_enable_mask;
 
 
 
@@ -190,6 +223,55 @@ s32 MIOS32_BOARD_Init(u32 mode)
     return -1; // unsupported mode
 
   j5_enable_mask = 0;
+  j10_enable_mask = 0;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Internally used help function to initialize a pin
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIOS32_BOARD_PinInitHlp(GPIO_TypeDef *port, u16 pin_mask, mios32_board_pin_mode_t mode)
+{
+  GPIO_InitTypeDef GPIO_InitStructure;
+  GPIO_StructInit(&GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Pin = pin_mask;
+
+  switch( mode ) {
+  case MIOS32_BOARD_PIN_MODE_IGNORE:
+    return 0; // don't touch
+  case MIOS32_BOARD_PIN_MODE_ANALOG:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    break;
+  case MIOS32_BOARD_PIN_MODE_INPUT:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    break;
+  case MIOS32_BOARD_PIN_MODE_INPUT_PD:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
+    break;
+  case MIOS32_BOARD_PIN_MODE_INPUT_PU:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    break;
+  case MIOS32_BOARD_PIN_MODE_OUTPUT_PP:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    break;
+  case MIOS32_BOARD_PIN_MODE_OUTPUT_OD:
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+    break;
+  default:
+    return -2; // invalid pin mode
+  }
+
+  // init IO mode
+  GPIO_Init(port, &GPIO_InitStructure);
 
   return 0; // no error
 }
@@ -209,36 +291,27 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
 #if defined(MIOS32_BOARD_STM32F4DISCOVERY)
 #if MIOS32_BOARD_J15_LED_NUM >= 1
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
   // 4 LEDs are available
   if( leds & 1 ) {
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12; // LED4 (Green)
-    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    MIOS32_BOARD_PinInitHlp(GPIOD, GPIO_Pin_12, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // LED4 (Green)
   }
 
 #if MIOS32_BOARD_J15_LED_NUM >= 2
   if( leds & 2 ) {
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13; // LED3 (Orange)
-    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    MIOS32_BOARD_PinInitHlp(GPIOD, GPIO_Pin_13, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // LED3 (Orange)
   }
 #endif
 
 #if MIOS32_BOARD_J15_LED_NUM >= 3
   if( leds & 4 ) {
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_14; // LED5 (Red)
-    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    MIOS32_BOARD_PinInitHlp(GPIOD, GPIO_Pin_14, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // LED5 (Red)
   }
 #endif
 
 #if MIOS32_BOARD_J15_LED_NUM >= 4
   if( leds & 8 ) {
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15; // LED6 (Blue)
-    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    MIOS32_BOARD_PinInitHlp(GPIOD, GPIO_Pin_15, MIOS32_BOARD_PIN_MODE_OUTPUT_PP); // LED6 (Blue)
   }
 #endif
 
@@ -368,46 +441,10 @@ s32 MIOS32_BOARD_J5_PinInit(u8 pin, mios32_board_pin_mode_t mode)
     // enable pin
     j5_enable_mask |= (1 << pin);
 
-    GPIO_InitTypeDef GPIO_InitStructure;
-    GPIO_StructInit(&GPIO_InitStructure);
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_InitStructure.GPIO_Pin = j5_pin[pin].pin_mask;
+    s32 status = MIOS32_BOARD_PinInitHlp(j5_pin[pin].port, j5_pin[pin].pin_mask, mode);
 
-    switch( mode ) {
-      case MIOS32_BOARD_PIN_MODE_ANALOG:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-	break;
-      case MIOS32_BOARD_PIN_MODE_INPUT:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	break;
-      case MIOS32_BOARD_PIN_MODE_INPUT_PD:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
-	break;
-      case MIOS32_BOARD_PIN_MODE_INPUT_PU:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	break;
-      case MIOS32_BOARD_PIN_MODE_OUTPUT_PP:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	break;
-      case MIOS32_BOARD_PIN_MODE_OUTPUT_OD:
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
-	break;
-      default:
-	return -2; // invalid pin mode
-    }
-
-#if 0
-    // set pin value to 0
-    // This should be done before IO mode configuration, because
-    // in input mode, this bit will control Pull Up/Down (configured
-    // by GPIO_Init)
-    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
-    // TK: disabled since there are application which have to switch between Input/Output
-    // without destroying the current pin value
-#endif
-
-    // init IO mode
-    GPIO_Init(j5_pin[pin].port, &GPIO_InitStructure);
+    if( status < 0 )
+      return status;
   }
 
   return 0; // no error
@@ -425,33 +462,15 @@ s32 MIOS32_BOARD_J5_Set(u16 value)
 #if J5_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J5 not supported
 #else
-# if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-  // J5A[3:0] -> GPIOC[3:0]
-  // J5B[3:0] -> GPIOA[3:0]
-  // J5C[1:0] -> GPIOC[5:4]
-  // J5C[3:2] -> GPIOB[1:0]
-
-  // BSRR[15:0] sets output register to 1, BSRR[31:16] to 0
-
-  GPIOC->BSRR =
-    (( value & j5_enable_mask & 0x000f) <<  0) |  // set flags
-    ((~value & j5_enable_mask & 0x000f) << 16) |  // clear flags
-    (( value & j5_enable_mask & 0x0300) >>  4) |  // set flags
-    ((~value & j5_enable_mask & 0x0300) << 12);   // clear flags
-
-  GPIOA->BSRR =
-    (( value & j5_enable_mask & 0x00f0) >>  4) |  // set flags
-    ((~value & j5_enable_mask & 0x00f0) << 12);   // clear flags
-
-  GPIOB->BSRR =
-    (( value & j5_enable_mask & 0x0c00) >> 10) |  // set flags
-    ((~value & j5_enable_mask & 0x0c00) <<  6);   // clear flags
+  int pin;
+  u32 mask = 1;
+  j5_pin_t *j5_pin_ptr = (j5_pin_t *)&j5_pin[0];
+  for(pin=0; pin<J5_NUM_PINS; ++pin, ++j5_pin_ptr, mask <<= 1) {
+    if( j5_enable_mask & mask )
+      PIN_SET(j5_pin_ptr->port, j5_pin_ptr->pin_mask, value & mask);
+  }
 
   return 0; // no error
-# else
-# warning "Not prepared for this MIOS32_BOARD"
-  return -2; // board not supported
-# endif
 #endif
 }
 
@@ -473,10 +492,7 @@ s32 MIOS32_BOARD_J5_PinSet(u8 pin, u8 value)
   if( !(j5_enable_mask & (1 << pin)) )
     return -2; // pin disabled
 
-  if( value )
-    j5_pin[pin].port->BSRR = j5_pin[pin].pin_mask;
-  else
-    j5_pin[pin].port->BRR = j5_pin[pin].pin_mask;
+  PIN_SET(j5_pin[pin].port, j5_pin[pin].pin_mask, value);
 
   return 0; // no error
 #endif
@@ -492,21 +508,15 @@ s32 MIOS32_BOARD_J5_Get(void)
 #if J5_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J5 not supported
 #else
-# if defined(MIOS32_BOARD_MBHP_CORE_STM32)
-  // J5A[3:0] -> GPIOC[3:0]
-  // J5B[3:0] -> GPIOA[3:0]
-  // J5C[1:0] -> GPIOC[5:4]
-  // J5C[3:2] -> GPIOB[1:0]
+  u16 value = 0;
+  int pin;
+  j5_pin_t *j5_pin_ptr = (j5_pin_t *)&j5_pin[0];
+  for(pin=0; pin<J5_NUM_PINS; ++pin, ++j5_pin_ptr) {
+    if( PIN_GET(j5_pin_ptr->port, j5_pin_ptr->pin_mask) )
+      value |= (1 << pin);
+  }
 
-  return
-    (((GPIOC->IDR & 0x000f) <<  0) |
-     ((GPIOA->IDR & 0x000f) <<  4) |
-     ((GPIOC->IDR & 0x0030) <<  4) |
-     ((GPIOB->IDR & 0x0003) << 10)) & j5_enable_mask;
-# else
-# warning "Not prepared for this MIOS32_BOARD"
-  return -2; // board not supported
-# endif
+  return value & j5_enable_mask;
 #endif
 }
 
@@ -528,7 +538,7 @@ s32 MIOS32_BOARD_J5_PinGet(u8 pin)
   if( !(j5_enable_mask & (1 << pin)) )
     return -2; // pin disabled
 
-  return (j5_pin[pin].port->IDR & j5_pin[pin].pin_mask) ? 1 : 0;
+  return PIN_GET(j5_pin[pin].port, j5_pin[pin].pin_mask);
 #endif
 }
 
@@ -554,8 +564,24 @@ s32 MIOS32_BOARD_J10_PinInit(u8 pin, mios32_board_pin_mode_t mode)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# error "Not prepared for STM32"
-  return -1;
+
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( mode == MIOS32_BOARD_PIN_MODE_IGNORE ) {
+    // don't touch
+    j10_enable_mask &= ~(1 << pin);
+  } else {
+    // enable pin
+    j10_enable_mask |= (1 << pin);
+
+    s32 status = MIOS32_BOARD_PinInitHlp(j10_pin[pin].port, j10_pin[pin].pin_mask, mode);
+
+    if( status < 0 )
+      return status;
+  }
+
+  return 0; // no error
 #endif
 }
 
@@ -570,8 +596,20 @@ s32 MIOS32_BOARD_J10_Set(u16 value)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# error "Not prepared for STM32"
-  return -1;
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  int pin;
+  u32 mask = 1;
+  j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[0];
+  for(pin=0; pin<J10_NUM_PINS; ++pin, ++j10_pin_ptr, mask <<= 1) {
+    if( j10_enable_mask & mask )
+      PIN_SET(j10_pin_ptr->port, j10_pin_ptr->pin_mask, value & mask);
+  }
+
+  return 0; // no error
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
 #endif
 }
 
@@ -587,8 +625,15 @@ s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# error "Not prepared for STM32"
-  return -1;
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( !(j10_enable_mask & (1 << pin)) )
+    return -2; // pin disabled
+
+  PIN_SET(j10_pin[pin].port, j10_pin[pin].pin_mask, value);
+
+  return 0; // no error
 #endif
 }
 
@@ -602,8 +647,19 @@ s32 MIOS32_BOARD_J10_Get(void)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# error "Not prepared for STM32"
-  return -1;
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  // J10[7:0]   -> GPIOE[15:8]
+  // J10[10:8]  -> GPIOC[15:13]
+  // J10[15:11] -> GPIOE[7:3]
+
+  return
+    (((GPIOE->IDR & 0xff00) >>  8) |
+     ((GPIOC->IDR & 0xe000) >>  5) |
+     ((GPIOE->IDR & 0x00f8) <<  8)) & j10_enable_mask;
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
 #endif
 }
 
@@ -619,8 +675,13 @@ s32 MIOS32_BOARD_J10_PinGet(u8 pin)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# error "Not prepared for STM32"
-  return -1;
+  if( pin >= J10_NUM_PINS )
+    return -1; // pin not supported
+
+  if( !(j10_enable_mask & (1 << pin)) )
+    return -2; // pin disabled
+
+  return PIN_GET(j10_pin[pin].port, j10_pin[pin].pin_mask);
 #endif
 }
 

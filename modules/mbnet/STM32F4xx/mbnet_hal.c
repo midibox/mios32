@@ -1,4 +1,4 @@
-// $Id$
+// $Id: mbnet_hal.c 1182 2011-04-21 21:18:08Z tk $
 /*
  * MBNet Hardware Abstraction Layer for STM32F10x derivatives
  *
@@ -29,12 +29,11 @@
 
 // note: remapped CAN IO - for different pins, 
 // the MBNET_Init() function has to be enhanced
-#define MBNET_RX_PORT     GPIOB
-#define MBNET_RX_PIN      GPIO_Pin_8
-#define MBNET_TX_PORT     GPIOB
-#define MBNET_TX_PIN      GPIO_Pin_9
-#define MBNET_REMAP_FUNC  { GPIO_PinRemapConfig(GPIO_Remap1_CAN1, ENABLE); }
-
+#define MBNET_RX_PORT     GPIOD
+#define MBNET_RX_PIN      GPIO_Pin_0
+#define MBNET_TX_PORT     GPIOD
+#define MBNET_TX_PIN      GPIO_Pin_1
+#define MBNET_REMAP_FUNC  { GPIO_PinAFConfig(GPIOD, GPIO_PinSource0, GPIO_AF_CAN1); GPIO_PinAFConfig(GPIOD, GPIO_PinSource1, GPIO_AF_CAN1); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes CAN interface
@@ -55,12 +54,14 @@ s32 MBNET_HAL_Init(u32 mode)
   // configure CAN pins
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_StructInit(&GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_25MHz;
 
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
   GPIO_InitStructure.GPIO_Pin = MBNET_RX_PIN;
   GPIO_Init(MBNET_RX_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
   GPIO_InitStructure.GPIO_Pin = MBNET_TX_PIN;
   GPIO_Init(MBNET_TX_PORT, &GPIO_InitStructure);
 
@@ -88,9 +89,9 @@ s32 MBNET_HAL_Init(u32 mode)
   CAN1->MCR |= (1 << 3); // CAN_MCR_RFLM
 
   // bit timings for 2 MBaud:
-  // -> 72 Mhz / 2 / 3 -> 12 MHz --> 6 quanta for 2 MBaud
+  // -> 84 Mhz / 2 / 3 -> 14 MHz --> 7 quanta for 2 MBaud
   //          normal mode               Resynch. Jump Width   Time Segment 1         Time Segment 2       Prescaler
-  CAN1->BTR = (CAN_Mode_Normal << 30) | (CAN_SJW_1tq << 24) | (CAN_BS1_3tq << 16) | (CAN_BS2_2tq << 20) | (3 - 1);
+  CAN1->BTR = (CAN_Mode_Normal << 30) | (CAN_SJW_1tq << 24) | (CAN_BS1_4tq << 16) | (CAN_BS2_2tq << 20) | (3 - 1);
 
   // leave initialisation mode and wait for acknowledge
   // Datasheet: we expect that the bus is unbusy after CAN has monitored a sequence of 11 consecutive recessive bits

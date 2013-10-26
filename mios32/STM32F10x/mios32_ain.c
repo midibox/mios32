@@ -126,7 +126,7 @@ static s32 (*service_prepare_callback)(void);
 #if MIOS32_AIN_CHANNEL_MASK
 
 // this table maps ADC channels to J5.Ax and J16 pins
-static const u8 adc_chn_map[16] = {
+static const u8 adc_chn_map[NUM_CHANNELS_MAX] = {
   ADC_Channel_10, // J5A.A0
   ADC_Channel_11, // J5A.A1
   ADC_Channel_12, // J5A.A2

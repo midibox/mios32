@@ -54,14 +54,18 @@
 #define MIOS32_UART1_IRQHANDLER_FUNC void USART3_IRQHandler(void)
 #define MIOS32_UART1_REMAP_FUNC  { GPIO_PinAFConfig(GPIOD, GPIO_PinSource8, GPIO_AF_USART3); GPIO_PinAFConfig(GPIOD, GPIO_PinSource9, GPIO_AF_USART3); }
 
-#define MIOS32_UART2_TX_PORT     GPIOB
+// Since pin PB6 is allocated by the SCL input of the Audio DAC, we've to use a TX pin of a different UART! :-/
+#define MIOS32_UART2_TX_PORT     GPIOC
 #define MIOS32_UART2_TX_PIN      GPIO_Pin_6
 #define MIOS32_UART2_RX_PORT     GPIOB
 #define MIOS32_UART2_RX_PIN      GPIO_Pin_7
-#define MIOS32_UART2             USART1
-#define MIOS32_UART2_IRQ_CHANNEL USART1_IRQn
-#define MIOS32_UART2_IRQHANDLER_FUNC void USART1_IRQHandler(void)
-#define MIOS32_UART2_REMAP_FUNC  { GPIO_PinAFConfig(GPIOB, GPIO_PinSource6, GPIO_AF_USART1); GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_USART1); }
+#define MIOS32_UART2_TX             USART6
+#define MIOS32_UART2_RX             USART1
+#define MIOS32_UART2_TX_IRQ_CHANNEL USART6_IRQn
+#define MIOS32_UART2_RX_IRQ_CHANNEL USART1_IRQn
+#define MIOS32_UART2_TX_IRQHANDLER_FUNC void USART6_IRQHandler(void)
+#define MIOS32_UART2_RX_IRQHANDLER_FUNC void USART1_IRQHandler(void)
+#define MIOS32_UART2_REMAP_FUNC  { GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_USART6); GPIO_PinAFConfig(GPIOB, GPIO_PinSource7, GPIO_AF_USART1); }
 
 #define MIOS32_UART3_TX_PORT     GPIOC
 #define MIOS32_UART3_TX_PIN      GPIO_Pin_12
@@ -195,8 +199,8 @@ s32 MIOS32_UART_Init(u32 mode)
 
   // enable all USART clocks
   // TODO: more generic approach for different UART selections
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 | RCC_APB1Periph_USART3 | RCC_APB1Periph_UART4, ENABLE);
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_USART6, ENABLE);
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2 | RCC_APB1Periph_USART3 | RCC_APB1Periph_UART4 | RCC_APB1Periph_UART5, ENABLE);
 
   // USART configuration
 #if MIOS32_UART0_ASSIGNMENT != 0
@@ -224,8 +228,9 @@ s32 MIOS32_UART_Init(u32 mode)
 #endif
 
 #if NUM_SUPPORTED_UARTS >= 3 && MIOS32_UART2_ASSIGNMENT != 0
-  MIOS32_IRQ_Install(MIOS32_UART2_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
-  USART_ITConfig(MIOS32_UART2, USART_IT_RXNE, ENABLE);
+  MIOS32_IRQ_Install(MIOS32_UART2_TX_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
+  MIOS32_IRQ_Install(MIOS32_UART2_RX_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
+  USART_ITConfig(MIOS32_UART2_RX, USART_IT_RXNE, ENABLE);
 #endif
 
 #if NUM_SUPPORTED_UARTS >= 4 && MIOS32_UART3_ASSIGNMENT != 0
@@ -248,7 +253,8 @@ s32 MIOS32_UART_Init(u32 mode)
   USART_Cmd(MIOS32_UART1, ENABLE);
 #endif
 #if NUM_SUPPORTED_UARTS >= 3 && MIOS32_UART2_ASSIGNMENT != 0
-  USART_Cmd(MIOS32_UART2, ENABLE);
+  USART_Cmd(MIOS32_UART2_RX, ENABLE);
+  USART_Cmd(MIOS32_UART2_TX, ENABLE);
 #endif
 #if NUM_SUPPORTED_UARTS >= 4 && MIOS32_UART3_ASSIGNMENT != 0
   USART_Cmd(MIOS32_UART3, ENABLE);
@@ -291,7 +297,7 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
   case 1: USART_Init(MIOS32_UART1, &USART_InitStructure); break;
 #endif
 #if NUM_SUPPORTED_UARTS >= 3
-  case 2: USART_Init(MIOS32_UART2, &USART_InitStructure); break;
+  case 2: USART_Init(MIOS32_UART2_TX, &USART_InitStructure); USART_Init(MIOS32_UART2_RX, &USART_InitStructure); break;
 #endif
 #if NUM_SUPPORTED_UARTS >= 4
   case 3: USART_Init(MIOS32_UART3, &USART_InitStructure); break;
@@ -571,7 +577,7 @@ s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
       switch( uart ) {
         case 0: MIOS32_UART0->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         case 1: MIOS32_UART1->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
-        case 2: MIOS32_UART2->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
+        case 2: MIOS32_UART2_TX->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         case 3: MIOS32_UART3->CR1 |= (1 << 7); break; // enable TXE interrupt (TXEIE=1)
         default: MIOS32_IRQ_Enable(); return -3; // uart not supported by routine (yet)
       }
@@ -721,10 +727,33 @@ MIOS32_UART1_IRQHANDLER_FUNC
 // Interrupt handler for third UART
 /////////////////////////////////////////////////////////////////////////////
 #if NUM_SUPPORTED_UARTS >= 3
-MIOS32_UART2_IRQHANDLER_FUNC
+MIOS32_UART2_TX_IRQHANDLER_FUNC
 {
-  if( MIOS32_UART2->SR & (1 << 5) ) { // check if RXNE flag is set
-    u8 b = MIOS32_UART2->DR;
+  if( MIOS32_UART2_TX->SR & (1 << 5) ) { // check if RXNE flag is set
+    // dummy... this UART is only used for output transfers
+    u8 b = MIOS32_UART2_TX->DR;
+    if( b ); // prevent "unused variable" warning
+  }
+  
+  if( MIOS32_UART2_TX->SR & (1 << 7) ) { // check if TXE flag is set
+    if( MIOS32_UART_TxBufferUsed(2) > 0 ) {
+      s32 b = MIOS32_UART_TxBufferGet(2);
+      if( b < 0 ) {
+	// here we could add some error handling
+	MIOS32_UART2_TX->DR = 0xff;
+      } else {
+	MIOS32_UART2_TX->DR = b;
+      }
+    } else {
+      MIOS32_UART2_TX->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
+    }
+  }
+}
+
+MIOS32_UART2_RX_IRQHANDLER_FUNC
+{
+  if( MIOS32_UART2_RX->SR & (1 << 5) ) { // check if RXNE flag is set
+    u8 b = MIOS32_UART2_RX->DR;
 
 #if MIOS32_UART2_ASSIGNMENT == 1
     s32 status = MIOS32_MIDI_SendByteToRxCallback(UART2, b);
@@ -737,18 +766,9 @@ MIOS32_UART2_IRQHANDLER_FUNC
     }
   }
   
-  if( MIOS32_UART2->SR & (1 << 7) ) { // check if TXE flag is set
-    if( MIOS32_UART_TxBufferUsed(2) > 0 ) {
-      s32 b = MIOS32_UART_TxBufferGet(2);
-      if( b < 0 ) {
-	// here we could add some error handling
-	MIOS32_UART2->DR = 0xff;
-      } else {
-	MIOS32_UART2->DR = b;
-      }
-    } else {
-      MIOS32_UART2->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
-    }
+  if( MIOS32_UART2_RX->SR & (1 << 7) ) { // check if TXE flag is set
+    // dummy... this UART is only used for output transfers
+    MIOS32_UART2_RX->CR1 &= ~(1 << 7); // disable TXE interrupt (TXEIE=0)
   }
 }
 #endif
@@ -775,7 +795,7 @@ MIOS32_UART3_IRQHANDLER_FUNC
   }
   
   if( MIOS32_UART3->SR & (1 << 7) ) { // check if TXE flag is set
-    if( MIOS32_UART_TxBufferUsed(2) > 0 ) {
+    if( MIOS32_UART_TxBufferUsed(3) > 0 ) {
       s32 b = MIOS32_UART_TxBufferGet(3);
       if( b < 0 ) {
 	// here we could add some error handling
