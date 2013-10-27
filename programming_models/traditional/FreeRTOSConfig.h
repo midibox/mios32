@@ -32,7 +32,7 @@
 #define configUSE_TICK_HOOK                 1
 #define configCPU_CLOCK_HZ                  ( ( unsigned portLONG ) MIOS32_SYS_CPU_FREQUENCY )
 #define configTICK_RATE_HZ                  ( ( portTickType ) 1000 )
-#define configMAX_PRIORITIES                ( ( unsigned portBASE_TYPE ) 5 )
+#define configMAX_PRIORITIES                ( 5 )
 #define configMINIMAL_STACK_SIZE            ( ( unsigned portSHORT ) (MIOS32_MINIMAL_STACK_SIZE/4) )
 #define configTOTAL_HEAP_SIZE               ( ( size_t ) ( MIOS32_HEAP_SIZE ) )
 #define configMAX_TASK_NAME_LEN             ( 16 )
@@ -53,6 +53,8 @@
 #define configUSE_ALTERNATIVE_API           0
 #define configCHECK_FOR_STACK_OVERFLOW      0
 #define configQUEUE_REGISTRY_SIZE           10
+
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 // see http://www.freertos.org/index.html?http://www.freertos.org/rtos-run-time-stats.html
 // and http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
