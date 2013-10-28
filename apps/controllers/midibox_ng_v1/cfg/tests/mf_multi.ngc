@@ -61,7 +61,7 @@ RESET_HW
 LCD "%C@(1:1:1)MF CC Test"
 
 MF n=1  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=1  ts_first_button_id=2001  config_port=USB2
-MF n=2  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=2  ts_first_button_id=2001  config_port=USB2
+MF n=2  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=2  ts_first_button_id=2009  config_port=USB2
 
 ################################################################################
 
@@ -95,3 +95,12 @@ EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127  lcd_pos=1:1:2 
 EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127  lcd_pos=1:1:2  label="^std_btn"
 EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127  lcd_pos=1:1:2  label="^std_btn"
 EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+
+EVENT_BUTTON  id= 2009  type=NoteOn chn= 1 key=0x76  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2010  type=NoteOn chn= 1 key=0x77  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2011  type=NoteOn chn= 1 key=0x78  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2012  type=NoteOn chn= 1 key=0x79  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2013  type=NoteOn chn= 1 key=0x7a  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2014  type=NoteOn chn= 1 key=0x7b  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2015  type=NoteOn chn= 1 key=0x7c  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2016  type=NoteOn chn= 1 key=0x7d  range=0:127  lcd_pos=1:1:2  label="^std_btn"
