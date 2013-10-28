@@ -16,6 +16,9 @@ MIDIbox NG V1.027
         EVENT_xxx fwd_id=SENDER:1:42
      the SENDER:1 will always get value 42 for additional processing
 
+   o support for multiple MBHP_MF_NG modules in a chain.
+     See cfg/test/mf_multi.ngc for a configuration example
+
 
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~
