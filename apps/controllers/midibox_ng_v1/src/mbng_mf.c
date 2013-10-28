@@ -53,6 +53,20 @@ s32 MBNG_MF_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns 32bit selection mask for USB0..7, UART0..7, IIC0..7, OSC0..7
+/////////////////////////////////////////////////////////////////////////////
+static inline u32 MBNG_MF_PortMaskGet(mios32_midi_port_t port)
+{
+  u8 port_ix = port & 0xf;
+  if( port >= USB0 && port <= OSC7 && port_ix <= 7 ) {
+    return 1 << ((((port-USB0) & 0x30) >> 1) | port_ix);
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function should be called from APP_MIDI_NotifyPackage whenver a new
 //! MIDI event has been received
 /////////////////////////////////////////////////////////////////////////////
@@ -187,6 +201,8 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 {
   int module;
+  u32 sysex_dst_fwd_done = 0;
+
   mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[0];
   for(module=0; module<MBNG_PATCH_NUM_MF_MODULES; ++module, ++mf) {
     if( mf->flags.enabled &&
@@ -196,13 +212,20 @@ s32 MBNG_MF_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
       // forward as single byte
       // TODO: optimize this by collecting up to 3 data words and put it into package
-      MUTEX_MIDIOUT_TAKE;
-      mios32_midi_package_t midi_package;
-      midi_package.ALL = 0x00000000;
-      midi_package.type = 0xf; // single byte
-      midi_package.evnt0 = midi_in;
-      MIOS32_MIDI_SendPackage(out_port, midi_package);
-      MUTEX_MIDIOUT_GIVE;
+
+      // Realtime events: ensure that they are only forwarded once
+      u32 mask = MBNG_MF_PortMaskGet(out_port);
+      if( !mask || !(sysex_dst_fwd_done & mask) ) {
+	sysex_dst_fwd_done |= mask;
+
+	MUTEX_MIDIOUT_TAKE;
+	mios32_midi_package_t midi_package;
+	midi_package.ALL = 0x00000000;
+	midi_package.type = 0xf; // single byte
+	midi_package.evnt0 = midi_in;
+	MIOS32_MIDI_SendPackage(out_port, midi_package);
+	MUTEX_MIDIOUT_GIVE;
+      }
     }
   }
 
