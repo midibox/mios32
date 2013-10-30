@@ -72,7 +72,7 @@ void APP_Background(void)
   MIOS32_MIDI_SendDebugMessage("width:    %4d\n", mios32_lcd_parameters.width);
   MIOS32_MIDI_SendDebugMessage("height:   %4d\n", mios32_lcd_parameters.height);
 
-  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
+  if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306 && mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED ) {
     // print warning if correct LCD hasn't been selected
     MIOS32_MIDI_SendDebugMessage("WARNING: your core module hasn't been configured for the SSD1306 GLCD!\n");
     MIOS32_MIDI_SendDebugMessage("Please do this with the bootloader update application!\n");
