@@ -869,6 +869,17 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
   J15_PIN_SERLCD_DATAOUT(data & 0x01); // D0
   J15_PIN_SERLCD_SCLK_0; // setup delay
   J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
+  J15_PIN_SERLCD_SCLK_1;
+
+  // set SERLCD_DATAOUT (=J15.RW) to an active level
+  // RW is unfortunately also connected to OE# of the 74HC595, which drives the CS lines.
+  // With RW=1 the CS lines will go into high impedance state, and after 100..200 uS we will
+  // see on the scope how CS line levels are changing, e.g. from high to mid level.
+  // Although I assume that this can't cause an issue (because CS is only relevant when
+  // the display gets a SCLK_0->SCLK_1 clock), I feel better when we ensure a proper CS state
+  // after each MIOS32_BOARD_J15_SerDataShift call.
+  J15_PIN_SERLCD_DATAOUT(0); 
 
   return 0; // no error
 #endif
