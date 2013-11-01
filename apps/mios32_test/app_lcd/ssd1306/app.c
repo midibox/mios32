@@ -35,10 +35,12 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-#define MAX_LCDS 12
+#define MAX_LCDS 16
   int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
-  if( num_lcds > MAX_LCDS )
+  if( num_lcds > MAX_LCDS ) {
+    MIOS32_MIDI_SendDebugMessage("WARNING: this application only supports up to 16 displays!\n");
     num_lcds = MAX_LCDS;
+  }
 
   // clear LCDs
   {
@@ -49,15 +51,15 @@ void APP_Background(void)
     }
   }
 
-  u8 vmeter_icon_ctr[MAX_LCDS][2] = {{0,5},{3,14},{7,1},{3,9},{13,6},{10,2},{1,4},{6,2},{13,6},{10,2},{1,4},{6,2}}; // memo: 28 icons (14 used)
-  u8 vmeter_icon_dir[MAX_LCDS][2] = {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};
-  u8 vmeter_icon_delay_ctr[MAX_LCDS][2] = {{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4}};
+  u8 vmeter_icon_ctr[MAX_LCDS][2] = {{0,5},{3,14},{7,1},{3,9},{13,6},{10,2},{1,4},{6,2},{13,6},{10,2},{1,4},{6,2},{1,2},{13,14},{5,5},{6,1}}; // memo: 28 icons (14 used)
+  u8 vmeter_icon_dir[MAX_LCDS][2] = {{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1},{1,1}};
+  u8 vmeter_icon_delay_ctr[MAX_LCDS][2] = {{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4},{1,4}};
   const u8 vmeter_icon_x[2] = {0, 120}; // memo: icon width 8
   const u8 vmeter_icon_y[2] = {12, 12}; // memo: icon height 32
 
-  u8 hmeter_icon_ctr[MAX_LCDS][2] = {{6,11},{2,27},{23,1},{15,6},{18,9},{10,12},{3,25},{26,7},{18,9},{10,12},{3,25},{26,7}}; // memo: 28 icons (14 used)
-  u8 hmeter_icon_dir[MAX_LCDS][2] = {{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0}};
-  u8 hmeter_icon_delay_ctr[MAX_LCDS][2] = {{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2}};
+  u8 hmeter_icon_ctr[MAX_LCDS][2] = {{6,11},{2,27},{23,1},{15,6},{18,9},{10,12},{3,25},{26,7},{18,9},{10,12},{3,25},{26,7},{6,9},{18,18},{20,10},{3,10}}; // memo: 28 icons (14 used)
+  u8 hmeter_icon_dir[MAX_LCDS][2] = {{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0},{1,0}};
+  u8 hmeter_icon_delay_ctr[MAX_LCDS][2] = {{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2},{4,2}};
   const u8 hmeter_icon_x[2] = {20, 80}; // memo: icon width 28
   const u8 hmeter_icon_y[2] = {60, 60}; // memo: icon height 8
 
@@ -71,6 +73,7 @@ void APP_Background(void)
   MIOS32_MIDI_SendDebugMessage("num_y:    %4d\n", mios32_lcd_parameters.num_y);
   MIOS32_MIDI_SendDebugMessage("width:    %4d\n", mios32_lcd_parameters.width);
   MIOS32_MIDI_SendDebugMessage("height:   %4d\n", mios32_lcd_parameters.height);
+  MIOS32_MIDI_SendDebugMessage("Testing %d LCDs\n", num_lcds);
 
   if( mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306 && mios32_lcd_parameters.lcd_type != MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED ) {
     // print warning if correct LCD hasn't been selected
@@ -96,8 +99,8 @@ void APP_Background(void)
       int i;
 #if 0
       // X/Y "position" of displays
-      const u8 lcd_x[MAX_LCDS] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
-      const u8 lcd_y[MAX_LCDS] = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 4};
+      const u8 lcd_x[MAX_LCDS] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}; // CS#0..7
+      const u8 lcd_y[MAX_LCDS] = {0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7};
 
       // X/Y "position" of displays
       u8 x_offset = 128*lcd_x[n];
