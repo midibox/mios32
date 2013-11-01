@@ -89,6 +89,30 @@ static s32 APP_LCD_GLCD_CS_Init(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// Initializes the CS pins for GLCDs with serial port
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_LCD_SERGLCD_CS_Init(void)
+{
+  int i;
+  int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
+
+  if( num_lcds > 12 ) {
+    // access via serial SR
+    for(i=0; i<4; ++i) {
+      MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    }
+    display_available |= (1 << num_lcds)-1;
+  } else {
+    for(i=0; i<(num_lcds-8); ++i) {
+      MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+      display_available |= (1 << (8+i));
+    }
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Sets the CS line of GLCDs with parallel port depending on X cursor position
 // if "all" flag is set, commands are sent to all segments
 /////////////////////////////////////////////////////////////////////////////
@@ -394,15 +418,7 @@ s32 APP_LCD_Init(u32 mode)
 
       display_available |= 0xff;
 
-      int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
-      if( num_additional_lcds >= 4 )
-	num_additional_lcds = 4;
-
-      int i;
-      for(i=0; i<num_additional_lcds; ++i) {
-	MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-	display_available |= (1 << (8+i));
-      }
+      APP_LCD_SERGLCD_CS_Init(); // will also enhance display_available depending on total number of LCDs
 
       // initialisation sequence based on EA-DOGL/M datasheet
   
@@ -440,20 +456,14 @@ s32 APP_LCD_Init(u32 mode)
 
       display_available |= 0xff;
 
-      int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
-      if( num_additional_lcds >= 4 )
-	num_additional_lcds = 4;
-
-      int i;
-      for(i=0; i<num_additional_lcds; ++i) {
-	MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-	display_available |= (1 << (8+i));
-      }
-
+      APP_LCD_SERGLCD_CS_Init(); // will also enhance display_available depending on total number of LCDs
 
       // wait 500 mS to ensure that the reset is released
-      for(i=0; i<500; ++i)
-	MIOS32_DELAY_Wait_uS(1000);
+      {
+	int i;
+	for(i=0; i<500; ++i)
+	  MIOS32_DELAY_Wait_uS(1000);
+      }
 
 
       // initialize LCDs

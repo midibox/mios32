@@ -28,7 +28,7 @@
 # via SysEx. This means, that neither a MIOS Studio Query, Firmware update, nor
 # configuration with the MBHP_MF_NG tool is possible.
 # Communication only works with the last core in the chain.
-# Even more annoying: on a MIOS Studio query, the addresses core will reset
+# Even more annoying: on a MIOS Studio query, the addressed core will reset
 # after ca. 3..4 seconds since it assumes a code upload... This reset may
 # cause confusion as well (because temporary no MIDI events are forwarded anymore).
 #
@@ -40,7 +40,7 @@
 # events unintentionally) and your DAW.
 #
 # NOTE for myself:
-# I've check that the firmware can be updated, and that the first MBHP_MF_NG
+# I've checked that the firmware can be updated, and that the first MBHP_MF_NG
 # core can be configured with this workaround via USB2 -> seems to be sufficient! :)
 #
 # With the MBHP_MF_NG tool it's important to know, that whenver the Device ID
