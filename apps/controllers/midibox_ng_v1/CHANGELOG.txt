@@ -19,6 +19,10 @@ MIDIbox NG V1.027
    o support for multiple MBHP_MF_NG modules in a chain.
      See cfg/test/mf_multi.ngc for a configuration example
 
+   o support for Logic Control Meters
+     Configuration example: see cfg/templates/logictrl.ngc
+     (search for "meter")
+
 
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~

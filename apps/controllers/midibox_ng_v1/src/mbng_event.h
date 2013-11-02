@@ -182,6 +182,8 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_UPDATE_LCD,
 
+  MBNG_EVENT_META_TYPE_RESET_METERS,
+
   MBNG_EVENT_META_TYPE_SWAP_VALUES,
 
   MBNG_EVENT_META_TYPE_RUN_SECTION,
@@ -384,6 +386,8 @@ extern s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock);
 extern s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
+
+extern s32 MBNG_EVENT_LCMeters_Init(void);
 
 extern s32 MBNG_EVENT_MidiLearnModeSet(u8 mode);
 extern s32 MBNG_EVENT_MidiLearnModeGet(void);

@@ -150,12 +150,22 @@ static mios32_midi_port_t    midi_learn_nrpn_port;
 static u16                   midi_learn_nrpn_address;
 static u16                   midi_learn_nrpn_value;
 
+// hardcoded "Logic Control Meters"
+// receive on USB1..USB4 and OUT1..OUT4
+#define LC_METERS_NUM_PORTS 8
+#define LC_METERS_NUM_ITEMS 8
+static u8 lc_meters[LC_METERS_NUM_PORTS][LC_METERS_NUM_ITEMS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_event_item_t *item);
 static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_item_t* pool_item);
+
+static s32 MBNG_EVENT_LCMeters_Update(void);
+static s32 MBNG_EVENT_LCMeters_Set(u8 port_ix, u8 lc_meter_value);
+static s32 MBNG_EVENT_LCMeters_Tick(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -189,6 +199,8 @@ s32 MBNG_EVENT_Init(u32 mode)
       }
     }
   }
+
+  MBNG_EVENT_LCMeters_Init();
 
   MBNG_EVENT_MidiLearnModeSet(0);
 
@@ -287,28 +299,41 @@ s32 MBNG_EVENT_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_Tick(void)
 {
-  static u16 ms_counter = 0;
-
-  // each second:
-  if( ++ms_counter < 1000 )
-    return 0; // no error
-  ms_counter = 0;
-
-  // invalidate the NRPN optimizer
-  portENTER_CRITICAL(); // should be atomic!
   {
-    int i, j;
+    static u16 ms_counter = 0;
 
-    u16 *nrpn_sent_address_ptr = (u16 *)&nrpn_sent_address[0][0];
-    u16 *nrpn_sent_value_ptr = (u16 *)&nrpn_sent_value[0][0];
-    for(i=0; i<MBNG_EVENT_NRPN_SEND_PORTS; ++i) {
-      for(j=0; j<MBNG_EVENT_NRPN_SEND_CHANNELS; ++j) {
-	*nrpn_sent_address_ptr = 0xffff; // invalidate
-	*nrpn_sent_value_ptr = 0xffff; // invalidate
+    // each second:
+    if( ++ms_counter >= 1000 ) {
+      ms_counter = 0;
+
+      // invalidate the NRPN optimizer
+      portENTER_CRITICAL(); // should be atomic!
+      {
+	int i, j;
+
+	u16 *nrpn_sent_address_ptr = (u16 *)&nrpn_sent_address[0][0];
+	u16 *nrpn_sent_value_ptr = (u16 *)&nrpn_sent_value[0][0];
+	for(i=0; i<MBNG_EVENT_NRPN_SEND_PORTS; ++i) {
+	  for(j=0; j<MBNG_EVENT_NRPN_SEND_CHANNELS; ++j) {
+	    *nrpn_sent_address_ptr = 0xffff; // invalidate
+	    *nrpn_sent_value_ptr = 0xffff; // invalidate
+	  }
+	}
       }
+      portEXIT_CRITICAL();
     }
   }
-  portEXIT_CRITICAL();
+
+  {
+    static u16 ms_counter = 0;
+
+    // each 300 mS
+    if( ++ms_counter >= 300 ) {
+      ms_counter = 0;
+
+      MBNG_EVENT_LCMeters_Tick();
+    }
+  }
 
   return 0; // no error
 }
@@ -1679,6 +1704,124 @@ s32 MBNG_EVENT_ItemSearchByHwIdAndPrint(mbng_event_item_id_t hw_id)
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Logic Control Meters
+/////////////////////////////////////////////////////////////////////////////
+
+//! updates all events which are assigned to a meter value
+static s32 MBNG_EVENT_LCMeters_Update(void)
+{
+  int matrix;
+  mbng_patch_matrix_dout_entry_t *m = (mbng_patch_matrix_dout_entry_t *)&mbng_patch_matrix_dout[0];
+  for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix, ++m) {
+    if( m->lc_meter_port ) {
+      int port_ix = -1;
+      if( m->lc_meter_port >= USB0 && m->lc_meter_port <= USB3 ) {
+	port_ix = (m->lc_meter_port & 3) + 0;
+      } else if( m->lc_meter_port >= UART0 && m->lc_meter_port <= UART3 ) {
+	port_ix = (m->lc_meter_port & 3) + 4;
+      }
+
+      if( port_ix >= 0 ) {
+	u8 color = 0;
+	u8 level = 127;
+
+	int row;
+	u8 *meter_value = (u8 *)&lc_meters[port_ix][0];
+	for(row=0; row<8; ++row, ++meter_value) {
+	  MBNG_MATRIX_DOUT_PatternSet_LCMeter(matrix, color, row, *meter_value, level);
+	}
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+//! reset meters
+//! can also be called from external, e.g. used by mbng_file_c
+s32 MBNG_EVENT_LCMeters_Init(void)
+{
+  int port_ix;
+  for(port_ix=0; port_ix<LC_METERS_NUM_PORTS; ++port_ix) {
+    int i;
+    u8 *ptr = (u8 *)&lc_meters[port_ix];
+    for(i=0; i<LC_METERS_NUM_ITEMS; ++i)
+      *ptr++ = 0;
+  }
+
+  MBNG_EVENT_LCMeters_Update();
+
+  return 0; // no error
+}
+
+//! set a meter of a given port
+static s32 MBNG_EVENT_LCMeters_Set(u8 port_ix, u8 lc_meter_value)
+{
+  if( port_ix >= LC_METERS_NUM_PORTS )
+    return -1;
+
+  // lc_meter_value layout:
+  // [7:4] channel
+  // [3:0] 0x0..0xc: lever meter 0..100% (overload not cleared!)
+  //       0xe: set overload
+  //       0xf: clear overload
+  u8 meter_ix = (lc_meter_value >> 4) & 0x7;
+  u8 meter_value = lc_meter_value & 0xf;
+
+  u8 *meter = (u8 *)&lc_meters[port_ix][meter_ix];
+  u8 prev_value = *meter;
+
+  if( meter_value == 0xe ) {
+    //*meter |= 0x80;
+    *meter = 0xff; // also set value to max
+  } else if( meter_value == 0xf ) {
+    *meter &= 0x7f;
+  } else if( meter_value == 0xd ) {
+    *meter |= 0x7f; // unspecified, set value to max
+  } else if( meter_value <= 0xc ) {
+    u8 scaled = ((u32)meter_value * 127) / 12;
+    if( scaled > 127 ) // just to ensure...
+      scaled = 127;
+    *meter = (*meter & 0x80) | scaled;
+  }
+
+  if( *meter != prev_value )
+    MBNG_EVENT_LCMeters_Update();
+
+  return 0; // no error
+}
+
+//! should be called each 300 mS to handle the meter animation
+static s32 MBNG_EVENT_LCMeters_Tick(void)
+{
+  u8 port_ix;
+  u8 meter;
+  u8 any_update = 0;
+
+  u8 *ptr = (u8 *)&lc_meters[0][0];
+  for(port_ix=0; port_ix<LC_METERS_NUM_PORTS; ++port_ix) {
+    for(meter=0; meter<LC_METERS_NUM_ITEMS; ++meter, ++ptr) {
+      u8 prev_value = *ptr;
+      s32 value = *ptr & 0x7f;
+      if( value != 0 ) {
+	value -= 10; // 128/13 segments
+	if( value < 0 )
+	  value = 0;
+	*ptr = (*ptr & 0x80) | value;
+      }
+      if( *ptr != prev_value )
+	any_update |= 1;
+    }
+  }
+
+  if( any_update )
+    MBNG_EVENT_LCMeters_Update();
+
+  return 0; // no error
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //! Enable/Get Learn Mode Status
 /////////////////////////////////////////////////////////////////////////////
@@ -2288,6 +2431,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
 
+  case MBNG_EVENT_META_TYPE_RESET_METERS:        return "ResetMeters";
+
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return "SwapValues";
 
   case MBNG_EVENT_META_TYPE_RUN_SECTION:         return "RunSection";
@@ -2338,6 +2483,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
   if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
 
+  if( strcasecmp(meta_type, "ResetMeters") == 0 )   return MBNG_EVENT_META_TYPE_RESET_METERS;
+
   if( strcasecmp(meta_type, "SwapValues") == 0 )    return MBNG_EVENT_META_TYPE_SWAP_VALUES;
 
   if( strcasecmp(meta_type, "RunSection") == 0 )    return MBNG_EVENT_META_TYPE_RUN_SECTION;
@@ -2387,6 +2534,8 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return 0;
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return 0;
+
+  case MBNG_EVENT_META_TYPE_RESET_METERS:        return 0;
 
   case MBNG_EVENT_META_TYPE_SWAP_VALUES:         return 0;
 
@@ -2699,6 +2848,10 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
 
     case MBNG_EVENT_META_TYPE_UPDATE_LCD: {
       MBNG_EVENT_Refresh();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RESET_METERS: {
+      MBNG_EVENT_LCMeters_Init();
     } break;
 
     case MBNG_EVENT_META_TYPE_SWAP_VALUES: {
@@ -3581,6 +3734,13 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 		  (midi_learn_max == 0xffff) ? 127 : midi_learn_max);
       }
     }
+  }
+
+  // Logic Control Meters
+  if( midi_package.evnt0 == 0xd0 &&
+      ((port >= USB0 && port <= USB3) || (port >= UART0 && port <= UART3)) ) {
+    u8 port_ix = (((port & 0xf0) == USB0) ? 0 : 4) + (port & 0x3);
+    MBNG_EVENT_LCMeters_Set(port_ix, midi_package.evnt1);
   }
 
   // search in pool for matching events

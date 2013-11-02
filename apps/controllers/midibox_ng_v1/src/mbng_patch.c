@@ -112,6 +112,7 @@ s32 MBNG_PATCH_Init(u32 mode)
       m->sr_dout_g2 = 0;
       m->sr_dout_r1 = 0;
       m->sr_dout_r2 = 0;
+      m->lc_meter_port = 0;
     }
   }
 

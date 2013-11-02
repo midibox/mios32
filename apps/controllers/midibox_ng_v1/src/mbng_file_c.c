@@ -1878,6 +1878,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
   int sr_dout_g2 = 0;
   int sr_dout_b1 = 0;
   int sr_dout_b2 = 0;
+  int lc_meter_port = 0x00;
 
   char *parameter;
   char *value_str;
@@ -2052,6 +2053,18 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "lc_meter_port") == 0 ) {
+      if( (lc_meter_port = parseMidiInPort(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid lc_meter_port for %s n=%d ... %s=%s (USB1..USB4/IN1..IN4)\n", line, cmd, num, parameter, value_str);
+#endif
+      } else if( !((lc_meter_port >= USB0 && lc_meter_port <= USB3) || (lc_meter_port >= UART0 && lc_meter_port <= UART3)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING unsupported lc_meter_port for %s n=%d (expect USB1..USB4/IN1..IN4)\n", line, cmd, num);
+#endif
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
@@ -2080,6 +2093,7 @@ s32 parseDoutMatrix(u32 line, char *cmd, char *brkt)
     m->sr_dout_g2 = sr_dout_g2;
     m->sr_dout_b1 = sr_dout_b1;
     m->sr_dout_b2 = sr_dout_b2;
+    m->lc_meter_port = lc_meter_port;
 
     MBNG_MATRIX_LedMatrixChanged(num-1);
   }
@@ -2351,6 +2365,59 @@ s32 parseLedMatrixPattern(u32 line, char *cmd, char *brkt)
     if( pos == 7 ) // pre-set "middle" pattern for the case that it won't be defined
       MBNG_MATRIX_PatternSet(num-1, pos+1, pattern);
   }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses LC_METER_PATTERN definitions
+//! \returns >= 0 if command is valid
+//! \returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseLcMeterPattern(u32 line, char *cmd, char *brkt)
+{
+  // parse the parameters
+  int pos = 0;
+  u16 pattern = 0x5555; // checkerboard to output anything by default
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "pos") == 0 ) {
+      if( value_str[0] != 'O' && ((pos=get_dec(value_str)) < 0 || pos > 15) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid pos value for %s ... %s=%s (only 0..15 and O allowed)\n", line, cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+      // modify pos ix:
+      if( value_str[0] == 'O' )
+	pos = 16;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "pattern") == 0 ) {
+      if( (pattern=get_bin(value_str, 16, 0)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid pattern for %s ... %s=%s (expecting 16 bits)\n", line, cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  MBNG_MATRIX_LcMeterPatternSet(pos, pattern);
 
   return 0; // no error
 }
@@ -3189,6 +3256,7 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       // ignore comments and empty lines
     } else if( strcasecmp(parameter, "RESET_HW") == 0 ) {
       MBNG_EVENT_PoolClear();
+      MBNG_EVENT_LCMeters_Init();
       MBNG_PATCH_Init(0);
       MBNG_MATRIX_Init(0);
       MBNG_ENC_Init(0);
@@ -3236,6 +3304,8 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       parseKeyboard(line, parameter, brkt);
     } else if( strcasecmp(parameter, "LED_MATRIX_PATTERN") == 0 ) {
       parseLedMatrixPattern(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "LC_METER_PATTERN") == 0 ) {
+      parseLcMeterPattern(line, parameter, brkt);
     } else if( strcasecmp(parameter, "AIN") == 0 ) {
       parseAin(line, parameter, brkt);
     } else if( strcasecmp(parameter, "AINSER") == 0 ) {
@@ -3937,7 +4007,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
 
       if( m->button_emu_id_offset ) {
-	sprintf(line_buffer, "\\\n                   button_emu_id_offset=%d", m->button_emu_id_offset);
+	sprintf(line_buffer, " \\\n                   button_emu_id_offset=%d", m->button_emu_id_offset);
 	FLUSH_BUFFER;
       }
 
@@ -3974,14 +4044,27 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
 
       if( m->flags.max72xx_enabled || mbng_patch_max72xx_spi_rc_pin ) {
-	sprintf(line_buffer, "\\\n                   max72xx_enabled=%d  max72xx_cs=%d",
+	sprintf(line_buffer, " \\\n                   max72xx_enabled=%d  max72xx_cs=%d",
 		m->flags.max72xx_enabled,
 		mbng_patch_max72xx_spi_rc_pin);
 	FLUSH_BUFFER;
       }
 
       if( m->led_emu_id_offset ) {
-	sprintf(line_buffer, "\\\n                   led_emu_id_offset=%d", m->led_emu_id_offset);
+	sprintf(line_buffer, " \\\n                   led_emu_id_offset=%d", m->led_emu_id_offset);
+	FLUSH_BUFFER;
+      }
+
+      if( m->lc_meter_port ) {
+	u8 ix;
+	char lc_meter_port_str[10];
+	if( (ix=MIDI_PORT_InIxGet(m->lc_meter_port)) > 0 ) {
+	  strcpy(lc_meter_port_str, MIDI_PORT_InNameGet(ix));
+	} else {
+	  sprintf(lc_meter_port_str, "0x%02x", m->lc_meter_port);
+	}
+
+	sprintf(line_buffer, " \\\n                   lc_meter_port=%s", lc_meter_port_str);
 	FLUSH_BUFFER;
       }
 
@@ -4023,6 +4106,40 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       sprintf(line_buffer, "\n");
       FLUSH_BUFFER;
     }
+  }
+
+
+  {
+    sprintf(line_buffer, "\n\n# LC_METER_PATTERNs\n");
+    FLUSH_BUFFER;
+
+    int pos;
+    for(pos=0; pos<17; ++pos) {
+      sprintf(line_buffer, "LC_METER_PATTERN");
+      FLUSH_BUFFER;
+
+      if( pos == 16 )
+	  sprintf(line_buffer, " pos= O");
+	else
+	  sprintf(line_buffer, " pos=%2d", pos);
+	FLUSH_BUFFER;
+
+	{
+	  u16 pattern = MBNG_MATRIX_LcMeterPatternGet(pos);
+	  char pattern_bin[17];
+	  int bit;
+	  for(bit=0; bit<16; ++bit) {
+	    pattern_bin[bit] = (pattern & (1 << bit)) ? '1' : '0';
+	  }
+	  pattern_bin[16] = 0;
+
+	  sprintf(line_buffer, "  pattern=%s\n", pattern_bin);
+	  FLUSH_BUFFER;
+	}
+    }
+
+    sprintf(line_buffer, "\n");
+    FLUSH_BUFFER;
   }
 
   {

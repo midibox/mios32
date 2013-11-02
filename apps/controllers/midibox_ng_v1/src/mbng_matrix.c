@@ -237,6 +237,30 @@ static const u8 digit_patterns[64] = {
 };
 
 
+static const u16 lc_meter_pattern_preload[17] = {
+  // 17 entries for LED pattern #1 - requires 11 LEDs
+  0x0000, // [ 0] b'0000000000000000'
+  0x0001, // [ 1] b'0000000000000001'
+  0x0003, // [ 2] b'0000000000000011'
+  0x0007, // [ 3] b'0000000000000111'
+  0x0007, // [ 4] b'0000000000000111'
+  0x000f, // [ 5] b'0000000000001111'
+  0x001f, // [ 6] b'0000000000011111'
+  0x003f, // [ 7] b'0000000000111111'
+  0x007f, // [ 8] b'0000000001111111'
+  0x00ff, // [ 9] b'0000000011111111'
+  0x00ff, // [10] b'0000000011111111'
+  0x01ff, // [11] b'0000000111111111'
+  0x01ff, // [12] b'0000000111111111'
+  0x03ff, // [13] b'0000001111111111'
+  0x03ff, // [14] b'0000001111111111'
+  0x07ff, // [15] b'0000011111111111'
+  0x0800, // [16] b'0000100000000000' // specifies the position of the overload LED
+};
+
+static u16 lc_meter_pattern[17];
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -276,6 +300,7 @@ s32 MBNG_MATRIX_Init(u32 mode)
 
   // initial LED patterns
   memcpy((u16 *)dout_matrix_pattern, (u16 *)dout_matrix_pattern_preload, 2*MBNG_PATCH_NUM_MATRIX_DOUT_PATTERNS*MBNG_MATRIX_DOUT_NUM_PATTERN_POS);
+  memcpy((u16 *)lc_meter_pattern, (u16 *)lc_meter_pattern_preload, 2*17);
 
   return 0; // no error
 }
@@ -406,6 +431,25 @@ u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos)
     return 0x0000;
 
   return dout_matrix_pattern[num][pos];
+}
+
+
+s32 MBNG_MATRIX_LcMeterPatternSet(u8 pos, u16 pattern)
+{
+  if( pos >= 17 )
+    return -2;
+
+  lc_meter_pattern[pos] = pattern;
+
+  return 0; // no error
+}
+
+u16 MBNG_MATRIX_LcMeterPatternGet(u8 pos)
+{
+  if( pos >= 17 )
+    return 0x0000;
+  
+  return lc_meter_pattern[pos];
 }
 
 
@@ -610,6 +654,21 @@ s32 MBNG_MATRIX_DOUT_PatternSet_LC(u8 matrix, u8 color, u16 row, u16 value, u8 l
   u8 center_led = value & 0x40;
 
   u16 matrix_pattern = dout_matrix_pattern[pattern][pattern_ix] | (center_led ? (1 << 11) : 0);
+  Hlp_DOUT_PatternTransfer(matrix, color, row, matrix_pattern, level);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets a pattern DOUT matrix row for a Meter of the LC protocol
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_DOUT_PatternSet_LCMeter(u8 matrix, u8 color, u16 row, u8 meter_value, u8 level)
+{
+  u8 pattern_ix = (meter_value >> 3) & 0x0f;
+  u8 overload = meter_value & 0x80;
+
+  u16 matrix_pattern = lc_meter_pattern[pattern_ix] | (overload ? lc_meter_pattern[16] : 0);
   Hlp_DOUT_PatternTransfer(matrix, color, row, matrix_pattern, level);
 
   return 0; // no error
