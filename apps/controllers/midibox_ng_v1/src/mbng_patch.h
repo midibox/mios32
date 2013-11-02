@@ -78,6 +78,7 @@ typedef struct {
   u8 sr_dout_g2;
   u8 sr_dout_b1;
   u8 sr_dout_b2;
+  u8 lc_meter_port;
 } mbng_patch_matrix_dout_entry_t;
 
 typedef union {
