@@ -44,6 +44,10 @@ PROJECT_OUT ?= $(PROJECT)_build
 # default linker flags
 LDFLAGS += -T $(LD_FILE) -mthumb -u _start -Wl,--gc-section  -Xlinker -M -Xlinker -Map=$(PROJECT_OUT)/$(PROJECT).map  -nostartfiles -lstdc++
 
+# for https://launchpad.net/gcc-arm-embedded: enable newlib-nano for better performance
+# not compatible with other toolchains (users have to switch to new version, or disable the line below)
+LDFLAGS += --specs=nano.specs
+
 # default assembler flags
 AFLAGS += $(A_DEFINES) $(A_INCLUDE) -Wa,-adhlns=$(<:.s=.lst)
 
@@ -56,7 +60,11 @@ CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -f
 endif
 
 ifeq ($(FAMILY),STM32F4xx)
-CFLAGS += -mcpu=cortex-m3 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
+# leads to a crash - reason not analysed yet
+#CFLAGS += -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mthumb -mfloat-abi=hard -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
+
+# works (but FPU not enabled)
+CFLAGS += -mcpu=cortex-m4 -mlittle-endian -ffunction-sections -fdata-sections -fomit-frame-pointer
 endif
 
 ifeq ($(FAMILY),LPC17xx)
