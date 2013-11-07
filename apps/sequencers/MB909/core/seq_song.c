@@ -1,4 +1,4 @@
-// $Id: seq_song.c 1493 2012-08-03 20:54:45Z tk $
+// $Id: seq_song.c 1816 2013-07-22 17:38:58Z tk $
 /*
  * Song Routines
  *
@@ -26,6 +26,7 @@
 #include "seq_core.h"
 #include "seq_pattern.h"
 #include "seq_mixer.h"
+#include "seq_midi_in.h"
 
 #include "seq_file.h"
 #include "seq_file_s.h"
@@ -319,6 +320,7 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 
       case SEQ_SONG_ACTION_SelMixerMap:
 	SEQ_MIXER_Load(s->action_value);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, s->action_value, 0);
 	SEQ_MIXER_SendAll();
 	++song_pos;
 	again = 1;
@@ -346,6 +348,13 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 
 	portEXIT_CRITICAL();
 
+	++song_pos;
+	again = 1;
+      } break;
+
+      case SEQ_SONG_ACTION_GuideTrack: {
+	if( s->action_value <= 16 )
+	  seq_song_guide_track = s->action_value;
 	++song_pos;
 	again = 1;
       } break;
@@ -448,7 +457,8 @@ s32 SEQ_SONG_PrevPos(void)
       while( song_pos && // on certain actions we should go back one additional step
 	     (s->action == SEQ_SONG_ACTION_SelMixerMap ||
 	      s->action == SEQ_SONG_ACTION_Tempo ||
-	      s->action == SEQ_SONG_ACTION_Mutes ) ) {
+	      s->action == SEQ_SONG_ACTION_Mutes ||
+	      s->action == SEQ_SONG_ACTION_GuideTrack ) ) {
 	--song_pos;
 	--s;
       }

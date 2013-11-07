@@ -1,4 +1,4 @@
-// $Id: seq_live.c 1470 2012-04-16 21:30:30Z tk $
+// $Id: seq_live.c 1806 2013-06-16 19:17:37Z tk $
 /*
  * Live Play Functions
  *
@@ -77,6 +77,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
   mios32_midi_port_t port = seq_cc_trk[track].midi_port;
   u8 chn = seq_cc_trk[track].midi_chn;
 
+  // temporary mute matching events from the sequencer
+  SEQ_CORE_NotifyIncomingMIDIEvent(track, p);
+
   // Note Events:
   if( p.type == NoteOff ) {
     p.type = NoteOn;
@@ -117,8 +120,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       } else {
 #endif
 	effective_note = (int)p.note + 12*seq_live_options.OCT_TRANSPOSE;
-	while( effective_note < 0   ) effective_note += 12;
-	while( effective_note > 127 ) effective_note -= 12;
+
+	// ensure that note is in the 0..127 range
+	effective_note = SEQ_CORE_TrimNote(effective_note, 0, 127);
 #if KEYBOARD_DRUM_MAPPING
       }
 #endif

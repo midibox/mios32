@@ -1,4 +1,4 @@
-// $Id: seq_lfo.h 848 2010-01-23 23:20:56Z tk $
+// $Id: seq_lfo.h 1787 2013-05-19 15:23:20Z tk $
 /*
  * Header file for LFO routines
  *
@@ -73,7 +73,7 @@ extern s32 SEQ_LFO_Init(u32 mode);
 extern s32 SEQ_LFO_ResetTrk(u8 track);
 extern s32 SEQ_LFO_HandleTrk(u8 track, u32 bpm_tick);
 extern s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e);
-extern s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p);
+extern s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p, u8 ignore_waveform);
 
 
 /////////////////////////////////////////////////////////////////////////////

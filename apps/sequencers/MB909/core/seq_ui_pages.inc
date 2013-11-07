@@ -179,7 +179,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Track Transpose   ", (void *)&SEQ_UI_TRKTRAN_Init },
   { "Track Groove      ", (void *)&SEQ_UI_TRKGRV_Init },
   { "Track Triggers    ", (void *)&SEQ_UI_TRGASG_Init },
- // { "Track Morphing    ", (void *)&SEQ_UI_TRKMORPH_Init },
+  { "Track Morphing    ", (void *)&SEQ_UI_TRKMORPH_Init },
   { "Random Generator  ", (void *)&SEQ_UI_TRKRND_Init },
   { "Record            ", (void *)&SEQ_UI_TRKREC_Init },
   { "Manual Trigger    ", (void *)&SEQ_UI_MANUAL_Init },

@@ -1,4 +1,4 @@
-// $Id: seq_ui_pattern.c 1420 2012-02-08 20:08:35Z tk $
+// $Id: seq_ui_pattern.c 1806 2013-06-16 19:17:37Z tk $
 /*
  * Pattern page
  *
@@ -24,6 +24,7 @@
 #include "seq_file_b.h"
 #include "seq_bpm.h"
 #include "seq_core.h"
+#include "seq_midi_in.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -101,11 +102,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   int group;
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
+//<<<<<<< .mine
       if( encoder == SEQ_UI_ENCODER_Datawheel ) {
     selected_pattern[group].pattern = pattern->pattern;
       } else if( encoder  == SEQ_UI_ENCODER_GP1){
     // in order to avoid accidents the bank won't be changed
     // because normally each group has it's dedicated bank
+//=======
+//      if( encoder & 1 ) {
+//	selected_pattern[group].pattern = pattern->pattern;
+
+ //     } else {
+	// in order to avoid accidents the bank won't be changed
+	// because normally each group has it's dedicated bank
+//>>>>>>> .r1826
 #if 0
     selected_pattern[group].bank = pattern->bank;
 #endif
@@ -117,6 +127,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
   if( is_critical )
     portEXIT_CRITICAL();
+
+  // send to external
+  {
+    int group;
+    for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+      if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern, 0);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank, 0);
+      }
+    }
+  }
+
 
   return 1; // value as been changed
 }
@@ -167,6 +189,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
       if( seq_ui_button_state.CHANGE_ALL_STEPS || group == ui_selected_group ) {
 	selected_pattern[group].num = button-8;
+
+	// send to external
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern, 0);
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank, 0);
+
 	SEQ_PATTERN_Change(group, selected_pattern[group], 0);
       }
     }

@@ -1,4 +1,4 @@
-// $Id: seq_ui.h 1454 2012-04-03 22:54:57Z midilab $
+// $Id: seq_ui.h 1794 2013-05-31 19:25:43Z tk $
 /*
  * Header file for user interface routines
  *
@@ -276,6 +276,7 @@ extern s32 SEQ_UI_SelectedStepSet(u8 step);
 extern s32 SEQ_UI_GxTyInc(s32 incrementer);
 extern s32 SEQ_UI_Var16_Inc(u16 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
+extern s32 SEQ_UI_CC_SendParameter(u8 track, u8 cc);
 extern s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer);
 extern s32 SEQ_UI_CC_Set(u8 cc, u8 value);
 extern s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value);

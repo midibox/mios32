@@ -1,4 +1,4 @@
-// $Id: seq_ui_bpm.c 1313 2011-08-28 22:13:24Z tk $
+// $Id: seq_ui_bpm.c 1529 2012-11-04 10:42:39Z tk $
 /*
  * BPM configuration page
  *
@@ -535,7 +535,7 @@ s32 SEQ_UI_BPM_TapTempo(void)
     int accumulated_delay = 0;
     for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap)
       accumulated_delay += tap_tempo_delay[tap];
-    u32 bpm = 60000000 / (accumulated_delay / tap_tempo_beat_ctr);
+    u32 bpm = 60000000 / (accumulated_delay / TAP_DELAY_STORAGE_SIZE);
 
     // set BPM
     float bpmF = bpm / 1000.0;

@@ -1,4 +1,4 @@
-// $Id: tasks.h 1123 2010-11-14 20:49:44Z tk $
+// $Id: tasks.h 1806 2013-06-16 19:17:37Z tk $
 /*
  * Header file for tasks which have to be serviced by FreeRTOS/MacOS
  *
@@ -118,11 +118,6 @@ extern void SEQ_TASK_Pattern(void);
 
 // located in tasks.c
 extern void SEQ_TASK_PatternResume(void);
-
-// located in tasks.c
-extern s32 TASK_MSD_EnableSet(u8 enable);
-extern s32 TASK_MSD_EnableGet();
-extern s32 TASK_MSD_FlagStrGet(char str[5]);
 
 
 /////////////////////////////////////////////////////////////////////////////

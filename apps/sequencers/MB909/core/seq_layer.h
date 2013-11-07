@@ -1,4 +1,4 @@
-// $Id: seq_layer.h 1316 2011-08-30 21:20:05Z tk $
+// $Id: seq_layer.h 1771 2013-05-05 14:30:16Z tk $
 /*
  * Header file for parameter layer routines
  *
@@ -54,6 +54,8 @@ extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument,
 extern s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes);
 
 extern s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event);
+
+extern s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer);
 
 extern s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 init_assignments);
 extern s32 SEQ_LAYER_CopyParLayerPreset(u8 track, u8 par_layer);

@@ -1,4 +1,4 @@
-// $Id: seq_midi_in.c 1322 2011-09-03 20:19:14Z tk $
+// $Id: seq_midi_in.c 1816 2013-07-22 17:38:58Z tk $
 /*
  * MIDI IN Routines
  *
@@ -26,6 +26,8 @@
 #include "seq_cv.h"
 #include "seq_cc.h"
 #include "seq_pattern.h"
+#include "seq_song.h"
+#include "seq_mixer.h"
 #include "seq_morph.h"
 #include "seq_core.h"
 #include "seq_record.h"
@@ -81,7 +83,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity);
-static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value);
+static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value);
+static s32 SEQ_MIDI_IN_Receive_ExtCtrlPC(u8 value);
 static s32 SEQ_MIDI_IN_Receive_NoteSC(u8 note, u8 velocity);
 #if PATCH_CHANGER_ENABLED
 static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity);
@@ -103,6 +106,17 @@ u8 seq_midi_in_upper[SEQ_MIDI_IN_NUM_BUSSES];
 
 // options
 seq_midi_in_options_t seq_midi_in_options[SEQ_MIDI_IN_NUM_BUSSES];
+
+
+// For External Control functions:
+// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
+u8 seq_midi_in_ext_ctrl_channel;
+// which IN port should be used? (0: Off, 0xff == All)
+mios32_midi_port_t seq_midi_in_ext_ctrl_port;
+// and which optional out port? (0: Off)
+mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
+// external controller assignments
+u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
 
 // For Record function:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
@@ -146,6 +160,9 @@ static notestack_item_t arp_unsorted_hold[SEQ_MIDI_IN_NUM_BUSSES][4];
 // for MIDI remote keyboard function
 static u8 remote_active;
 
+// for automatic note-stack reset
+static u8 last_bus_received_from_loopback;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -165,6 +182,28 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
     seq_midi_in_options[bus].ALL = 0; // disable all options
   }
 
+  seq_midi_in_ext_ctrl_channel = 0; // 0 disables MIDI IN
+  seq_midi_in_ext_ctrl_port = 0; // off
+  seq_midi_in_ext_ctrl_out_port = 0; // off
+
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = 1;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE] = 3;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1] = 112;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2] = 113;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3] = 114;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4] = 115;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = 102;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = 103;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = 111;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1] = 116;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2] = 117;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3] = 118;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G4] = 119;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF] = 123;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = 1;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = SEQ_MIDI_IN_EXT_CTRL_PC_MODE_OFF;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = 128;
+
   seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_rec_port = DEFAULT; // All ports
 
@@ -177,7 +216,129 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
     seq_midi_in_sect_note[i] = 0x30 + 12*i;
 
   remote_active = 0;
+  last_bus_received_from_loopback = 0x00;
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the name of an external controller (up to 15 chars)
+/////////////////////////////////////////////////////////////////////////////
+const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl)
+{
+  const char* ext_ctrl_str[SEQ_MIDI_IN_EXT_CTRL_NUM] = {
+  //<--------------->
+    "Morph Value",
+    "Scale",
+    "Song Number",
+    "Song Phrase",
+    "Mixer Map",
+    "Pattern G1",
+    "Pattern G2",
+    "Pattern G3",
+    "Pattern G4",
+    "Bank G1",
+    "Bank G2",
+    "Bank G3",
+    "Bank G4",
+    "All Notes Off",
+    "NRPNs",
+    "PrgChange Mode",
+    "Mutes(first CC)",
+  };
+
+  if( ext_ctrl >= SEQ_MIDI_IN_EXT_CTRL_NUM )
+    return "Invalid Ctrl.";
+
+  return ext_ctrl_str[ext_ctrl];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the name of an external controller program change mode (up to 9 chars)
+/////////////////////////////////////////////////////////////////////////////
+const char *SEQ_MIDI_IN_ExtCtrlPcModeStr(u8 pc_mode)
+{
+  const char* ext_ctrl_pc_mode_str[SEQ_MIDI_IN_EXT_CTRL_PC_MODE_NUM] = {
+  //<---------->
+    "off",
+    "Patterns",
+    "Song",
+    "Phrase",
+  };
+
+  if( pc_mode >= SEQ_MIDI_IN_EXT_CTRL_PC_MODE_NUM )
+    return "UnknwnMde";
+
+  return ext_ctrl_pc_mode_str[pc_mode];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// since there is currently no better place (somebody could expect this function in SEQ_MIDI_OUT...)
+/////////////////////////////////////////////////////////////////////////////
+extern s32 SEQ_MIDI_IN_ExtCtrlSend(u8 ext_ctrl, u8 value, u8 cc_offset)
+{
+  if( seq_midi_in_ext_ctrl_out_port && seq_midi_in_ext_ctrl_channel ) {
+    mios32_midi_port_t port = seq_midi_in_ext_ctrl_out_port;
+    mios32_midi_chn_t chn = seq_midi_in_ext_ctrl_channel - 1;
+
+    int cc = seq_midi_in_ext_ctrl_asg[ext_ctrl] + cc_offset;
+    if( cc <= 127 ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, cc, value);
+      MUTEX_MIDIOUT_GIVE;    
+    }
+
+    u8 pc_mode = seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE];
+    if( (pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PATTERNS && ext_ctrl >= SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 && ext_ctrl <= SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4) ||
+	(pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_SONG && ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_SONG) ||
+	(pc_mode == SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PHRASE && ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_PHRASE) ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendProgramChange(port, chn, value);
+      MUTEX_MIDIOUT_GIVE;    
+    }
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// resets note stacks used for transposer/arpeggiator
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_IN_ResetSingleTransArpStacks(u8 bus)
+{
+  if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
+    return -1;
+
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_TRANSPOSER][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED],
+		 NOTESTACK_MODE_SORT,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_ARP_SORTED][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED],
+		 NOTESTACK_MODE_PUSH_TOP,
+		 &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
+		 SEQ_MIDI_IN_NOTESTACK_SIZE);
+
+  transposer_hold_note[bus] = 0x3c; // C-3
+
+  int i;
+  for(i=0; i<4; ++i)
+    arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
+
+  arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
+  arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
+  arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
+  arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
+    
   return 0; // no error
 }
 
@@ -189,31 +350,7 @@ s32 SEQ_MIDI_IN_ResetTransArpStacks(void)
 {
   int bus;
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER],
-		   NOTESTACK_MODE_PUSH_TOP,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_TRANSPOSER][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_SORTED],
-		   NOTESTACK_MODE_SORT,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_SORTED][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    NOTESTACK_Init(&bus_notestack[bus][BUS_NOTESTACK_ARP_UNSORTED],
-		   NOTESTACK_MODE_PUSH_TOP,
-		   &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
-		   SEQ_MIDI_IN_NOTESTACK_SIZE);
-
-    transposer_hold_note[bus] = 0x3c; // C-3
-
-    int i;
-    for(i=0; i<4; ++i)
-      arp_sorted_hold[bus][i].ALL = arp_unsorted_hold[bus][i].ALL = 0;
-
-    arp_sorted_hold[bus][0].note = arp_unsorted_hold[bus][0].note = 0x3c; // C-3
-    arp_sorted_hold[bus][1].note = arp_unsorted_hold[bus][1].note = 0x40; // E-3
-    arp_sorted_hold[bus][2].note = arp_unsorted_hold[bus][2].note = 0x43; // G-3
-    arp_sorted_hold[bus][3].note = arp_unsorted_hold[bus][3].note = 0x48; // C-4
+    SEQ_MIDI_IN_ResetSingleTransArpStacks(bus);
   }
     
   return 0; // no error
@@ -277,6 +414,12 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
      midi_package.chn == (seq_midi_in_rec_channel-1));
 
+  // simplify Note On/Off handling
+  if( midi_package.event == NoteOff ) {
+    midi_package.event = NoteOn;
+    midi_package.velocity = 0;
+  }
+
   // search for matching ports
   // status[0] set if at least one port matched
   // status[1] set if remote function active
@@ -287,59 +430,25 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	midi_package.chn == (seq_midi_in_channel[bus]-1) ) {
 
       switch( midi_package.event ) {
-      case NoteOff: 
-	if( remote_active ) {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    remote_active = 0;
-
-	    // send "button depressed" state to all remote functions
-	    int i;
-	    for(i=0; i<128; ++i)
-	      SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
-	  } else {
-	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
-	  }
-	  status |= 2;
-	} else {
-	  if( !should_be_recorded &&
-	      midi_package.note >= seq_midi_in_lower[bus] &&
-	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
-
-	    if( !seq_midi_in_options[bus].MODE_PLAY ) {
-#if 0
-	      // octave normalisation - too complicated for normal users...
-	      mios32_midi_package_t p = midi_package;
-	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
-		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		while( normalized_note > 127 ) normalized_note -= 12;
-		while( normalized_note < 0 ) normalized_note += 12;
-		p.note = normalized_note;
-	      }
-	      SEQ_MIDI_IN_BusReceive(0xf0+bus, p, 0);
-#else
-	      SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
-#endif
-	    }
-
-	    if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
-		) {
-	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-	    }
-
-	    status |= 1;
-	  }
-	}
-	break;
-
+      case NoteOff:
       case NoteOn:
-	if( remote_active )
-	  SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, midi_package.velocity ? 0 : 1); // depressed
-	else {
-	  if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
-	    remote_active = 1;
+
+	if( midi_package.velocity == 0 ) {
+	  if( remote_active ) {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      remote_active = 0;
+
+	      MUTEX_MIDIOUT_TAKE;
+	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access deactivated");
+	      MUTEX_MIDIOUT_GIVE;
+
+	      // send "button depressed" state to all remote functions
+	      int i;
+	      for(i=0; i<128; ++i)
+		SEQ_UI_REMOTE_MIDI_Keyboard(i, 1); // depressed
+	    } else {
+	      SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
+	    }
 	    status |= 2;
 	  } else {
 	    if( !should_be_recorded &&
@@ -352,25 +461,68 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		mios32_midi_package_t p = midi_package;
 		if( seq_midi_in_lower[bus] ) { // normalize to first octave
 		  int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		  while( normalized_note > 127 ) normalized_note -= 12;
-		  while( normalized_note < 0 ) normalized_note += 12;
+		  // ensure that note is in the 0..127 range
+		  normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
 		  p.note = normalized_note;
 		}
-		SEQ_MIDI_IN_BusReceive(0xf0+bus, p, 0);
+		SEQ_MIDI_IN_BusReceive(bus, p, 0);
 #else
-		SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+		SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
 #endif
 	      }
 
 	      if( seq_midi_in_options[bus].MODE_PLAY
 #ifdef MBSEQV4L
-		|| (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+		  || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
 #endif
 		  ) {
 		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	      }
-
+	      
 	      status |= 1;
+	    }
+	  }
+	} else {
+	  if( remote_active )
+	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 0);
+	  else {
+	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	      MUTEX_MIDIOUT_TAKE;
+	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access activated");
+	      MUTEX_MIDIOUT_GIVE;
+	      remote_active = 1;
+	      status |= 2;
+	    } else {
+	      if( !should_be_recorded &&
+		  midi_package.note >= seq_midi_in_lower[bus] &&
+		  (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+
+		if( !seq_midi_in_options[bus].MODE_PLAY ) {
+#if 0
+		  // octave normalisation - too complicated for normal users...
+		  mios32_midi_package_t p = midi_package;
+		  if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		    int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		    // ensure that note is in the 0..127 range
+		    normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
+		    p.note = normalized_note;
+		  }
+		  SEQ_MIDI_IN_BusReceive(bus, p, 0);
+#else
+		  SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
+#endif
+		}
+
+		if( seq_midi_in_options[bus].MODE_PLAY
+#ifdef MBSEQV4L
+		    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
+#endif
+		    ) {
+		  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+		}
+
+		status |= 1;
+	      }
 	    }
 	  }
 	}
@@ -380,7 +532,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	if( !should_be_recorded ) {
 
 	  if( !seq_midi_in_options[bus].MODE_PLAY ) {
-	    SEQ_MIDI_IN_BusReceive(0xf0+bus, midi_package, 0);
+	    SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
 	  }
 
 	  if( seq_midi_in_options[bus].MODE_PLAY
@@ -412,6 +564,27 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   if( !(status & 2) && should_be_recorded ) {
     SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
   }
+
+  // External Control
+  if( !(status & 2) &&
+      ((seq_midi_in_ext_ctrl_port == 0xff || port == seq_midi_in_ext_ctrl_port) &&
+       midi_package.chn == (seq_midi_in_ext_ctrl_channel-1)) ) {
+
+    switch( midi_package.event ) {
+      case CC: 
+	MUTEX_MIDIIN_TAKE;
+	SEQ_MIDI_IN_Receive_ExtCtrlCC(midi_package.cc_number, midi_package.value);
+	MUTEX_MIDIIN_GIVE;
+	break;
+
+      case ProgramChange:
+	MUTEX_MIDIIN_TAKE;
+	SEQ_MIDI_IN_Receive_ExtCtrlPC(midi_package.program_change);
+	MUTEX_MIDIIN_GIVE;
+	break;
+    }
+  }
+
 
   // Section Changer
   if( !(status & 2) &&
@@ -480,10 +653,19 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 /////////////////////////////////////////////////////////////////////////////
 // Receives a MIDI package from a loopback port (Bus1..Bus4)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_IN_BusReceive(mios32_midi_port_t port, mios32_midi_package_t midi_package, u8 from_loopback_port)
+s32 SEQ_MIDI_IN_BusReceive(u8 bus, mios32_midi_package_t midi_package, u8 from_loopback_port)
 {
   s32 status = 0;
-  u8 bus = (port >= 0xf0) ? (port-0xf0) : 0xf0;
+
+  if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
+    return -1;
+
+  if( from_loopback_port ) {
+    last_bus_received_from_loopback |= (1 << bus);
+  } else if( (last_bus_received_from_loopback & (1 << bus)) ) {
+    last_bus_received_from_loopback &= ~(1 << bus);
+    SEQ_MIDI_IN_ResetSingleTransArpStacks(bus);
+  }
 
   // Access to MIDI IN functions controlled by Mutex, since this function is access
   // by different tasks (APP_NotifyReceivedEvent() for received MIDI events, and 
@@ -502,8 +684,15 @@ s32 SEQ_MIDI_IN_BusReceive(mios32_midi_port_t port, mios32_midi_package_t midi_p
   case CC:
     if( from_loopback_port )
       status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
-    else
-      status = SEQ_MIDI_IN_Receive_CC(bus, midi_package.cc_number, midi_package.value);
+    else {
+      // MIDI Remote Function?
+      if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == midi_package.cc_number ) {
+	remote_active = midi_package.value >= 0x40;
+	MUTEX_MIDIOUT_TAKE;
+	DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access %sactivated", remote_active ? "" : "de");
+	MUTEX_MIDIOUT_GIVE;
+      }
+    }
     break;
   }
 
@@ -701,33 +890,138 @@ static s32 SEQ_MIDI_IN_Receive_NotePC(u8 note, u8 velocity)
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-// CC has been received over selected port and channel
+// CC has been received over external control port and channel
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
+static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
 {
   static u8 nrpn_lsb = 0;
   static u8 nrpn_msb = 0;
 
-  if( bus >= SEQ_MIDI_IN_NUM_BUSSES )
-    return -1;
+  // NRPN handling
+  switch( cc ) {
+  case 0x62: // NRPN LSB (selects parameter)
+    nrpn_lsb = value;
+    break;
 
-  // MIDI Remote Function?
-  if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == cc ) {
-    remote_active = value >= 0x40;
-    return 1;
+  case 0x63: // NRPN MSB (selects track)
+    nrpn_msb = value;
+    break;
+
+  case 0x06: // NRPN Value MSB (sets parameter)
+    if( nrpn_msb < SEQ_CORE_NUM_TRACKS && seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] )
+      SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
+    break;
   }
 
-  // Remaining functions
-  switch( cc ) {
-    case 0x01: // ModWheel -> Morph Value
-    case 0x03: // Global Scale
-      return SEQ_CC_MIDI_Set(0, cc, value);
 
-    case 0x70: // Pattern Group #1
-    case 0x71: // Pattern Group #2
-    case 0x72: // Pattern Group #3
-    case 0x73: { // Pattern Group #4
-      u8 group = cc-0x70;
+  // search for matching CCs
+  int i;
+  u8 *asg = (u8 *)&seq_midi_in_ext_ctrl_asg[0];
+  for(i=0; i<SEQ_MIDI_IN_EXT_CTRL_NUM_IX_CC; ++i, ++asg) {
+    if( cc == *asg ) {
+      switch( i ) {
+      case SEQ_MIDI_IN_EXT_CTRL_MORPH:
+	SEQ_MORPH_ValueSet(value);
+	break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_SCALE:
+	seq_core_global_scale = value;
+	break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1:
+      case SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2:
+      case SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3:
+      case SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4: {
+	u8 group = i - SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1;
+	portENTER_CRITICAL();
+	seq_pattern_t pattern = seq_pattern[group];
+	if( value < SEQ_FILE_B_NumPatterns(pattern.bank) ) {
+	  pattern.pattern = value;
+	  pattern.DISABLED = 0;
+	  pattern.SYNCHED = 0;
+	  SEQ_PATTERN_Change(group, pattern, 0);
+	}
+	portEXIT_CRITICAL();
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_SONG: {
+	if( value < SEQ_SONG_NUM && value != SEQ_SONG_NumGet() ) {
+	  SEQ_SONG_Load(value);
+	}
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_PHRASE: {
+	if( value <= 15 ) {
+	  u8 song_pos = value << 3;
+	  SEQ_SONG_PosSet(song_pos);
+	  SEQ_SONG_FetchPos(0);
+	  ui_song_edit_pos = song_pos;
+	}
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP: {
+	SEQ_MIXER_Load(value);
+	SEQ_MIXER_SendAll();	
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_BANK_G1:
+      case SEQ_MIDI_IN_EXT_CTRL_BANK_G2:
+      case SEQ_MIDI_IN_EXT_CTRL_BANK_G3:
+      case SEQ_MIDI_IN_EXT_CTRL_BANK_G4: {
+	u8 group = i - SEQ_MIDI_IN_EXT_CTRL_BANK_G1;
+	portENTER_CRITICAL();
+	seq_pattern_t pattern = seq_pattern[group];
+	if( value < SEQ_FILE_B_NUM_BANKS ) {
+	  pattern.bank = value;
+	  pattern.DISABLED = 0;
+	  pattern.SYNCHED = 0;
+	  SEQ_PATTERN_Change(group, pattern, 0);
+	}
+	portEXIT_CRITICAL();
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF: {
+	if( value == 0 ) {
+	  SEQ_MIDI_IN_ResetAllStacks();
+	  SEQ_CV_ResetAllChannels();
+	}
+      } break;
+      }
+    }
+  }
+
+  {
+    int mute_cc = seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES];
+    if( mute_cc < 128 && cc >= mute_cc && cc < (mute_cc+SEQ_CORE_NUM_TRACKS) ) {
+      u8 track = cc - mute_cc;
+      portENTER_CRITICAL();
+      if( value >= 64 ) {
+	seq_core_trk_muted |= (1 << track);
+      } else {
+	seq_core_trk_muted &= ~(1 << track);
+      }
+      portEXIT_CRITICAL();      
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// PC has been received over external control port and channel
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_MIDI_IN_Receive_ExtCtrlPC(u8 value)
+{
+  switch( seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] ) {
+  case SEQ_MIDI_IN_EXT_CTRL_PC_MODE_OFF:
+    break; // do nothing...
+
+  case SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PATTERNS: {
+    portENTER_CRITICAL();
+    // switch all patterns (don't switch banks!)
+    int group;
+    for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
       seq_pattern_t pattern = seq_pattern[group];
       if( value < SEQ_FILE_B_NumPatterns(pattern.bank) ) {
 	pattern.pattern = value;
@@ -735,43 +1029,24 @@ static s32 SEQ_MIDI_IN_Receive_CC(u8 bus, u8 cc, u8 value)
 	pattern.SYNCHED = 0;
 	SEQ_PATTERN_Change(group, pattern, 0);
       }
-      return 1;
-    } break;
-      
-    case 0x74: // Bank Group #1
-    case 0x75: // Bank Group #2
-    case 0x76: // Bank Group #3
-    case 0x77: { // Bank Group #4
-      u8 group = cc-0x74;
-      seq_pattern_t pattern = seq_pattern[group];
-      if( value < SEQ_FILE_B_NUM_BANKS ) {
-	pattern.bank = value;
-	pattern.DISABLED = 0;
-	pattern.SYNCHED = 0;
-	SEQ_PATTERN_Change(group, pattern, 0);
-      }
-      return 1;
-    } break;
-      
-    case 0x62: // NRPN LSB (selects parameter)
-      nrpn_lsb = value;
-      return 1;
+    }
+    portEXIT_CRITICAL();
+  } break;
+    
+  case SEQ_MIDI_IN_EXT_CTRL_PC_MODE_SONG:
+    if( value < SEQ_SONG_NUM && value != SEQ_SONG_NumGet() ) {
+      SEQ_SONG_Load(value);
+    }
+    break;
 
-    case 0x63: // NRPN MSB (selects track)
-      nrpn_msb = value;
-      return 1;
-
-    case 0x06: // NRPN Value LSB (sets parameter)
-      if( nrpn_msb < SEQ_CORE_NUM_TRACKS)
-	return SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
-      break;
-
-    case 0x7b: // all notes off (transposer, arpeggiator, patch changer)
-      if( value == 0 ) {
-	SEQ_MIDI_IN_ResetAllStacks();
-	SEQ_CV_ResetAllChannels();
-      }
-      break;
+  case SEQ_MIDI_IN_EXT_CTRL_PC_MODE_PHRASE:
+    if( value <= 15 ) {
+      u8 song_pos = value << 3;
+      SEQ_SONG_PosSet(song_pos);
+      SEQ_SONG_FetchPos(0);
+      ui_song_edit_pos = song_pos;
+    }
+    break;
   }
 
   return 0; // no error

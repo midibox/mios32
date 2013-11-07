@@ -1,4 +1,4 @@
-// $Id: seq_file_gc.c 1323 2011-09-11 21:20:18Z tk $
+// $Id: seq_file_gc.c 1810 2013-06-17 21:14:23Z tk $
 /*
  * Global Config File access functions
  *
@@ -42,6 +42,7 @@
 #include "seq_midi_router.h"
 #include "seq_midi_sysex.h"
 #include "seq_pattern.h"
+#include "seq_record.h"
 #include "seq_core.h"
 #include "seq_cv.h"
 #include "seq_blm.h"
@@ -287,8 +288,16 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_metronome_note_m = value;
 	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
+	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
+	    seq_record_quantize = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
+	  } else if( strcmp(parameter, "InitCC") == 0 ) {
+	    seq_core_options.INIT_CC = value;
+	  } else if( strcmp(parameter, "LiveLayerMuteSteps") == 0 ) {
+	    seq_core_options.LIVE_LAYER_MUTE_STEPS = value;
+	  } else if( strcmp(parameter, "PatternMixerMapCoupling") == 0 ) {
+	    seq_core_options.PATTERN_MIXER_MAP_COUPLING = value;
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
 	    seq_midi_port_multi_enable_flags = value;
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
@@ -334,8 +343,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    lcd_contrast = value;
 		if (lcd_contrast <15) 
 			lcd_contrast = 15;
-		  else if (lcd_contrast >63)
-			lcd_contrast = 63;
+		  else if (lcd_contrast >33)
+			lcd_contrast = 33;
 		SEQ_LCD_Contrastset(lcd_contrast);	
 
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
@@ -466,7 +475,19 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
   FLUSH_BUFFER;
 
+  sprintf(line_buffer, "RecQuantisation %d\n", (u8)seq_record_quantize);
+  FLUSH_BUFFER;
+
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "InitCC %d\n", seq_core_options.INIT_CC);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveLayerMuteSteps %d\n", seq_core_options.LIVE_LAYER_MUTE_STEPS);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "PatternMixerMapCoupling %d\n", seq_core_options.PATTERN_MIXER_MAP_COUPLING);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MultiPortEnableFlags 0x%06x\n", seq_midi_port_multi_enable_flags);

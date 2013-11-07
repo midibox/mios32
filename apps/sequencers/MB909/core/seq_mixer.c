@@ -1,4 +1,4 @@
-// $Id: seq_mixer.c 1454 2012-04-03 22:54:57Z midilab $
+// $Id: seq_mixer.c 1816 2013-07-22 17:38:58Z tk $
 /*
  * Mixer Routines
  *
@@ -30,7 +30,10 @@
 
 // should only be directly accessed by SEQ_FILE_M, remaining functions should
 // use SEQ_MIXER_Get/Set
-u8 seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
+#ifndef AHB_SECTION
+#define AHB_SECTION
+#endif
+u8 AHB_SECTION seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 char seq_mixer_map_name[21];
 
 
@@ -163,8 +166,10 @@ s32 SEQ_MIXER_SendAllByChannel(u8 chn)
   seq_mixer_par_t par;
   s32 status = 0;
 	
+  MUTEX_MIDIOUT_TAKE;
   for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
     status |= SEQ_MIXER_Send(chn, par);
+  MUTEX_MIDIOUT_GIVE;
 	
   return status;
 }
@@ -178,9 +183,11 @@ s32 SEQ_MIXER_SendAll(void)
   seq_mixer_par_t par;
   s32 status = 0;
 
+  MUTEX_MIDIOUT_TAKE;
   for(chn=0; chn<SEQ_MIXER_NUM_CHANNELS; ++chn)
     for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
       status |= SEQ_MIXER_Send(chn, par);
+  MUTEX_MIDIOUT_GIVE;
 
   return status;
 }

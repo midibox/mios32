@@ -1,4 +1,4 @@
-// $Id: seq_ui_stepsel.c 1348 2011-11-02 21:52:17Z tk $
+// $Id: seq_ui_stepsel.c 1751 2013-04-16 19:55:51Z tk $
 /*
  * Step selection page (entered with Step View button)
  *
@@ -98,7 +98,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     ui_selected_step_view = (encoder * (num_steps/16)) / 16;
 
     // select step within view
-    ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    }
 
     if( seq_hwcfg_button_beh.step_view ) {
       // if toggle function active: jump back to previous menu
@@ -114,7 +116,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
     if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
       // select step within view
-      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+      if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+	ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+      }
     } else {
       return 0;
     }

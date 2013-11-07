@@ -1,4 +1,4 @@
-// $Id: seq_ui_mute.c 1262 2011-07-18 22:54:03Z tk $
+// $Id: seq_ui_mute.c 1814 2013-06-25 21:39:06Z tk $
 /*
  * Mute page
  *
@@ -24,6 +24,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_bpm.h"
+#include "seq_midi_in.h"
 
 #include "seq_core.h"
 
@@ -42,12 +43,54 @@ static s32 LED_Handler(u16 *gp_leds)
 {
   u8 track;
 
-  if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
+  if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    *gp_leds = 0;
+
+    u16 all_layers_muted_mask = 0;
+    int track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+      all_layers_muted_mask |= seq_core_trk[track].layer_muted;
+
+#if 1
+    if( seq_core_trk_muted == 0xffff )
+      *gp_leds |= 0x0003;
+    if( seq_core_trk[visible_track].layer_muted == 0xffff )
+      *gp_leds |= 0x001c;
+    if( seq_core_trk_muted == 0xffff && all_layers_muted_mask == 0xffff )
+      *gp_leds |= 0x00e0;
+
+    if( seq_core_trk_muted == 0x0000 )
+      *gp_leds |= 0x0300;
+    if( seq_core_trk[visible_track].layer_muted == 0x0000 )
+      *gp_leds |= 0x1c00;
+    if( seq_core_trk_muted == 0x0000 && all_layers_muted_mask == 0x0000 )
+      *gp_leds |= 0xe000;
+#else
+    // Better? Mayber to difficult to understand for users, therefore disabled by default
+    // e.g. all tracks muted: activate LEDs of the "all tracks unmuted" button.
+    // it should signal: something will happen when you push here...
+    if( seq_core_trk_muted == 0xffff )
+      *gp_leds |= 0x0300;
+    if( seq_core_trk[visible_track].layer_muted == 0xffff )
+      *gp_leds |= 0x1c00;
+    if( seq_core_trk_muted == 0xffff && all_layers_muted_mask == 0xffff )
+      *gp_leds |= 0xe000;
+
+    if( seq_core_trk_muted == 0x0000 )
+      *gp_leds |= 0x0003;
+    if( seq_core_trk[visible_track].layer_muted == 0x0000 )
+      *gp_leds |= 0x001c;
+    if( seq_core_trk_muted == 0x0000 && all_layers_muted_mask == 0x0000 )
+      *gp_leds |= 0x00e0;
+#endif
+
+  } else if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
     *gp_leds = latched_mute;
   } else {
     if( seq_ui_button_state.MUTE_PRESSED ) {
       track = SEQ_UI_VisibleTrackGet();
-      *gp_leds = seq_core_trk[track].layer_muted;
+      *gp_leds = seq_core_trk[track].layer_muted | seq_core_trk[track].layer_muted_from_midi;
     } else {
       *gp_leds = seq_core_trk_muted;
     }
@@ -72,13 +115,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
-    if( seq_ui_button_state.SELECT_PRESSED ) {
-      // select button pressed: indirect MUTED flag modification (taken over when select button depressed)
-      u16 mask = 1 << encoder;
-      if( incrementer < 0 || (incrementer == 0 && !(latched_mute & mask)) )
-	latched_mute |= mask;
-      else
-	latched_mute &= ~mask;
+    if( seq_ui_button_state.SELECT_PRESSED && !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	// select button pressed: indirect MUTED flag modification (taken over when select button depressed)
+	u16 mask = 1 << encoder;
+	if( incrementer < 0 || (incrementer == 0 && !(latched_mute & mask)) )
+	  latched_mute |= mask;
+	else
+	  latched_mute &= ~mask;
     } else {
       // select button not pressed: direct MUTED flag modification
       // access to seq_core_trk[] must be atomic!
@@ -88,28 +131,89 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 mask = 1 << encoder;
       u16 *muted = (u16 *)&seq_core_trk_muted;
 
-      if( seq_ui_button_state.MUTE_PRESSED )
-	muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
-      else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
-	if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE ) {
-	  muted = (u16 *)&seq_core_trk_synched_mute;
-	} else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE ) {
-	  muted = (u16 *)&seq_core_trk_synched_unmute;
+      if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	switch( encoder ) {
+	case SEQ_UI_ENCODER_GP1:
+	case SEQ_UI_ENCODER_GP2:
+	  *muted = 0xffff;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Tracks", "muted");
+	  break;
+
+	case SEQ_UI_ENCODER_GP3:
+	case SEQ_UI_ENCODER_GP4:
+	case SEQ_UI_ENCODER_GP5:
+	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
+	  *muted = 0xffff;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Layers", "of current Track muted");
+	  break;
+
+	case SEQ_UI_ENCODER_GP6:
+	case SEQ_UI_ENCODER_GP7:
+	case SEQ_UI_ENCODER_GP8: {
+	  *muted = 0xffff;
+
+	  int track;
+	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	    seq_core_trk[track].layer_muted = 0xffff;
+	  }
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "All Layers", "and Tracks muted");
+	} break;
+
+	case SEQ_UI_ENCODER_GP9:
+	case SEQ_UI_ENCODER_GP10:
+	  *muted = 0x0000;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "unmuted");
+	  break;
+
+	case SEQ_UI_ENCODER_GP11:
+	case SEQ_UI_ENCODER_GP12:
+	case SEQ_UI_ENCODER_GP13:
+	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
+	  *muted = 0x0000;
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track unmuted");
+	  break;
+
+	case SEQ_UI_ENCODER_GP14:
+	case SEQ_UI_ENCODER_GP15:
+	case SEQ_UI_ENCODER_GP16: {
+	  *muted = 0x0000;
+
+	  int track;
+	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	    seq_core_trk[track].layer_muted = 0x0000;
+	  }
+	  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks unmuted");
+	} break;
 	}
       } else {
-	// clear synched mutes/unmutes if sequencer not running
-	seq_core_trk_synched_mute = 0;
-	seq_core_trk_synched_unmute = 0;
+	if( seq_ui_button_state.MUTE_PRESSED )
+	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
+	else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
+	  if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE ) {
+	    muted = (u16 *)&seq_core_trk_synched_mute;
+	  } else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE ) {
+	    muted = (u16 *)&seq_core_trk_synched_unmute;
+	  }
+	} else {
+	  // clear synched mutes/unmutes if sequencer not running
+	  seq_core_trk_synched_mute = 0;
+	  seq_core_trk_synched_unmute = 0;
+	}
+	  
+	if( incrementer < 0 )
+	  *muted |= mask;
+	else if( incrementer > 0 )
+	  *muted &= ~mask;
+	else
+	  *muted ^= mask;
       }
 
-      if( incrementer < 0 )
-	*muted |= mask;
-      else if( incrementer > 0 )
-	*muted &= ~mask;
-      else
-	*muted ^= mask;
-
       portEXIT_CRITICAL();
+
+      if( muted == ((u16 *)&seq_core_trk_muted) ) {
+	// send to external
+	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MUTES, (*muted & mask) ? 127 : 0, encoder);
+      }
     }
 
     return 1; // value changed
@@ -192,6 +296,29 @@ static s32 LCD_Handler(u8 high_prio)
   //  > 1<   2    3    4    5    6    7    8    9   10   11   12   13   14   15   16 
   // ...horizontal VU meters...
 
+  // Mute All screen:
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
+  //    Mute       Mute       Mute all Tracks  Unmute      Unmute   Unmute all Tracks
+  // all Tracks G1T1 Layers    and all Layersall Tracks G1T1 Layers    and all Layers
+
+  if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+    if( high_prio )
+      return 0;
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("   Mute       Mute       Mute all Tracks  Unmute      Unmute   Unmute all Tracks");
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString("all Tracks ");
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintString(" Layers    and all Layersall Tracks ");
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintString(" Layers    and all Layers");
+
+    return 0;
+  }
+
   if( high_prio ) {
     ///////////////////////////////////////////////////////////////////////////
     // frequently update VU meters
@@ -199,6 +326,7 @@ static s32 LCD_Handler(u8 high_prio)
 
     u8 track;
     u16 mute_flags = 0;
+    u16 mute_flags_from_midi = 0;
 
     if( !ui_cursor_flash && seq_ui_button_state.SELECT_PRESSED ) {
       mute_flags = latched_mute;
@@ -206,6 +334,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( seq_ui_button_state.MUTE_PRESSED ) {
 	u8 visible_track = SEQ_UI_VisibleTrackGet();
 	mute_flags = seq_core_trk[visible_track].layer_muted;
+	mute_flags_from_midi = seq_core_trk[visible_track].layer_muted_from_midi;
       } else {
 	mute_flags = seq_core_trk_muted;
       }
@@ -214,6 +343,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( seq_ui_button_state.MUTE_PRESSED ) {
       u8 layer;
       u16 mask = (1 << 0);
+//<<<<<<< .mine
       for(layer=0; layer<16; ++layer, mask <<= 1){
 		switch( layer ) {
 			case 0:
@@ -230,12 +360,34 @@ static s32 LCD_Handler(u8 high_prio)
 				break;
 			}
 	  
-		if( mute_flags & mask )
+/*		if( mute_flags & mask )
 			SEQ_LCD_PrintString("Mute ");
 		else
 			SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
+*/
+      for(layer=0; layer<16; ++layer, mask <<= 1)
+	if( mute_flags_from_midi & mask ) {
+	  SEQ_LCD_PrintString("MIDI ");
+	} else if( mute_flags & mask ) {
+	  SEQ_LCD_PrintString("Mute ");
+	} else {
+	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
+//>>>>>>> .r1826
+	}
+
 	  
 		}
+/*=======
+      for(layer=0; layer<16; ++layer, mask <<= 1)
+	if( mute_flags_from_midi & mask ) {
+	  SEQ_LCD_PrintString("MIDI ");
+	} else if( mute_flags & mask ) {
+	  SEQ_LCD_PrintString("Mute ");
+	} else {
+	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[layer] >> 3) & 0xf);
+//>>>>>>> .r1826
+	}
+*/
     } else {
       int remaining_steps = (seq_core_steps_per_measure - seq_core_state.ref_step) + 1;
       seq_core_trk_t *t = &seq_core_trk[0];
@@ -312,7 +464,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  }
 	} else {
 	  // print 'm' if one or more layers are muted
-	  SEQ_LCD_PrintChar(seq_core_trk[track].layer_muted ? 'm' : ' ');
+	  SEQ_LCD_PrintChar(seq_core_trk[track].layer_muted ? 'm' : (seq_core_trk[track].layer_muted_from_midi ? 'M' : ' '));
 
 	  if( SEQ_UI_IsSelectedTrack(track) )
 	    SEQ_LCD_PrintFormattedString(">%2d<", track+1);

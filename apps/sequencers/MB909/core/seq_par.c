@@ -1,4 +1,4 @@
-// $Id: seq_par.c 1422 2012-02-12 11:22:43Z tk $
+// $Id: seq_par.c 1794 2013-05-31 19:25:43Z tk $
 /*
  * Parameter Layer Routines
  *
@@ -64,7 +64,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0x40, // Chord: 0
   100,  // Velocity
   71,   // Length
-  64,   // CC
+  64,   // CC // NEW: overruled via seq_core_options.INIT_CC !!!
   64,   // PitchBender
   0,    // Probability (reversed: 100%)
   0,    // Delay
@@ -402,6 +402,10 @@ u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer)
 
   if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord) )
     return 0x00; // Note/Chords are 0 by default if not in Layer A
+
+  // new: variable init value
+  if( par_type == SEQ_PAR_Type_CC )
+    return seq_core_options.INIT_CC;
 
   return seq_par_default_value[par_type];
 }

@@ -1,4 +1,4 @@
-// $Id: seq_lcd.c 1422 2012-02-12 11:22:43Z tk $
+// $Id: seq_lcd.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * LCD utility functions
  *
@@ -145,6 +145,7 @@ static const u8 charset_drum_symbols_small[64] = {
 };
 
 static u16 lcd_buffer[LCD_MAX_LINES][LCD_MAX_COLUMNS]; // WAS U8
+static u8 font_buffer[LCD_MAX_LINES][LCD_MAX_COLUMNS]; //  for using more than one font
 
 static u16 lcd_cursor_x;
 static u16 lcd_cursor_y;
@@ -181,7 +182,33 @@ s32 SEQ_LCD_Init(u32 mode)
 s32 SEQ_LCD_FontInit(u8 *font)
 {
 
-	MIOS32_LCD_FontInit((u8 *)font);
+//if( lcd_cursor_y >= LCD_MAX_LINES ||  lcd_cursor_x >= LCD_MAX_COLUMNS )
+ //   return -1; // invalid cursor range
+
+	u8 *ptrf; 
+	ptrf = &font_buffer[lcd_cursor_y][lcd_cursor_x];
+  
+
+	if( font==  (u8 *)GLCD_FONT_NORMAL && *ptrf != 0x01){
+		DEBUG_MSG("Font init set to: normal\n");
+		*ptrf= 0x01;
+		DEBUG_MSG("Fontbuffer %d, %d set to: %x\n", lcd_cursor_y,lcd_cursor_x, font_buffer[lcd_cursor_y][lcd_cursor_x]);
+	  } else if 	( font==  (u8 *)GLCD_FONT_NORMAL_INV && *ptrf != 0x02){
+		DEBUG_MSG("Font init set to: normal inverted\n");
+		*ptrf= 0x02;
+		DEBUG_MSG("Fontbuffer %d, %d set to: %x\n", lcd_cursor_y,lcd_cursor_x, font_buffer[lcd_cursor_y][lcd_cursor_x]);
+	  } else if 	( font==  (u8 *)GLCD_FONT_BIG && *ptrf != 0x03){
+		DEBUG_MSG("Font init set to: BIG\n");
+		*ptrf= 0x03;
+		DEBUG_MSG("Fontbuffer %d, %d set to: %x\n", lcd_cursor_y,lcd_cursor_x, font_buffer[lcd_cursor_y][lcd_cursor_x]);
+	   } else if 	( font==  (u8 *)GLCD_FONT_METER_ICONS_H && *ptrf != 0x04){
+		DEBUG_MSG("Font init set to: BIG\n");
+		*ptrf= 0x04;
+		DEBUG_MSG("Fontbuffer %d, %d set to: %x\n", lcd_cursor_y,lcd_cursor_x, font_buffer[lcd_cursor_y][lcd_cursor_x]);		
+	 }	
+
+
+	//MIOS32_LCD_FontInit((u8 *)font);
   return 0; // no error
 }
 
@@ -227,8 +254,8 @@ s32 SEQ_LCD_Contrastget(void)
 
 	if (lcd_contrast <15) 
 		lcd_contrast = 15;
-	  else if (lcd_contrast >63)
-		lcd_contrast = 63;
+	  else if (lcd_contrast >33)
+		lcd_contrast = 33;
   return lcd_contrast; // no error
 }
 
@@ -243,11 +270,16 @@ s32 SEQ_LCD_Clear(void)
   
   //u8 *ptr = (u8 *)lcd_buffer;
   u16 *ptr = (u16 *)lcd_buffer;
-  for(i=0; i<LCD_MAX_LINES*LCD_MAX_COLUMNS; ++i)
-    *ptr++ = ' ';
+  u8 *ptrf = (u8 *)font_buffer;
+  for(i=0; i<LCD_MAX_LINES*LCD_MAX_COLUMNS; ++i){
+		*ptr++ = ' ';
+		*ptrf++ = 0x00;
+	}
 
+	
   lcd_cursor_x = 0;
   lcd_cursor_y = 0;
+  font_buffer[lcd_cursor_y][lcd_cursor_x] = 0x01;
   //MIOS32_LCD_Clear();
   return 0; // no error
 }
@@ -320,31 +352,63 @@ s32 SEQ_LCD_Update(u8 force)
   u16 *ptr = (u16 *)lcd_buffer;
   for(y=0; y<LCD_MAX_LINES; ++y)
     for(x=0; x<LCD_MAX_COLUMNS; ++x) {
+/*
+		if( font_buffer[y][x] != 0x00 ){
+			//DEBUG_MSG("Display update Fontbuffer %d, %d set to: %x\n", y,x, font_buffer[y][x]);
 
+			if( font_buffer[y][x]== 0x01){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+				DEBUG_MSG("Display update Font NORMAL");
+			 } else if( font_buffer[y][x]== 0x02){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+				DEBUG_MSG("Display update Font NORMAL INV");
+			 } else if( font_buffer[y][x]== 0x03){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
+			 } else if( font_buffer[y][x]== 0x04){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H);
+			}				
+		}	
+*/	
       if( force || !(*ptr & 0x80) ) {
-	if( remote_first_x[y] == -1 )
-	  remote_first_x[y] = x;
-	remote_last_x[y] = x;
+		if( remote_first_x[y] == -1 )
+			remote_first_x[y] = x;
+		remote_last_x[y] = x;
 
-	if( x != next_x || y != next_y ) {
-	  //MIOS32_LCD_DeviceSet(x / LCD_COLUMNS_PER_DEVICE);
-		MIOS32_LCD_DeviceSet(0); 
-		MIOS32_LCD_CursorSet(x % LCD_COLUMNS_PER_DEVICE, y);
-	}
-	//MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);	
-	MIOS32_LCD_PrintChar(*ptr & 0x7f);
+		if( x != next_x || y != next_y ) {
+			//MIOS32_LCD_DeviceSet(x / LCD_COLUMNS_PER_DEVICE);
+			MIOS32_LCD_DeviceSet(0); 
+			MIOS32_LCD_CursorSet(x % LCD_COLUMNS_PER_DEVICE, y);
+			DEBUG_MSG("Funny cursorset\n");
+		}
+		if( font_buffer[y][x] != 0x00 ){
+			DEBUG_MSG("Display update Fontbuffer %d, %d set to: %x\n", y,x, font_buffer[y][x]);
 
-	MIOS32_IRQ_Disable(); // must be atomic
-	*ptr |= 0x80;
-	MIOS32_IRQ_Enable();
+			if( font_buffer[y][x]== 0x01){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+				DEBUG_MSG("Display update Font NORMAL");
+			 } else if( font_buffer[y][x]== 0x02){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+				DEBUG_MSG("Display update Font NORMAL INV");
+			 } else if( font_buffer[y][x]== 0x03){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_BIG);
+			 } else if( font_buffer[y][x]== 0x04){
+				MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H);
+			}				
+		}
+		MIOS32_LCD_PrintChar(*ptr & 0x7f);
 
-	next_y = y;
-	next_x = x+1;
+		MIOS32_IRQ_Disable(); // must be atomic
+		*ptr |= 0x80;
+		MIOS32_IRQ_Enable();
 
-	// for multiple LCDs: ensure that cursor is set when we reach the next partition
-	//if( (next_x % LCD_COLUMNS_PER_DEVICE) == 0 )
-	//  next_x = -1;
-      }
+		next_y = y;
+		next_x = x+1;
+
+		// for multiple LCDs: ensure that cursor is set when we reach the next partition
+		//if( (next_x % LCD_COLUMNS_PER_DEVICE) == 0 )
+		//  next_x = -1;
+	  }
+	  
       ++ptr;
     }
 
@@ -804,8 +868,12 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
       SEQ_LCD_PrintString("----");
     } else {
       u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;
-      SEQ_LCD_PrintFormattedString("%3d", value);
-      SEQ_LCD_PrintVBar(value >> 4);
+      if( value >= 0x80 ) {
+	SEQ_LCD_PrintFormattedString("####"); // currently used for CC in live recording mode: unrecorded value
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", value);
+	SEQ_LCD_PrintVBar(value >> 4);
+      }
     }
   } break;
 

@@ -1,4 +1,4 @@
-// $Id: seq_pattern.c 1493 2012-08-03 20:54:45Z tk $
+// $Id: seq_pattern.c 1821 2013-09-08 11:09:47Z tk $
 /*
  * Pattern Routines
  *
@@ -186,39 +186,40 @@ s32 SEQ_PATTERN_Handler(void)
       seq_pattern_req[group].REQ = 0;
       portEXIT_CRITICAL();
 
-			
-      if( group == 0 ) {
+      if( seq_core_options.PATTERN_MIXER_MAP_COUPLING ) {
 	u8 mixer_num = 0;
 	u8 track;
-
+				
 	if (seq_pattern_req[0].lower) {
 	  mixer_num = ((seq_pattern_req[0].group) * 8) + seq_pattern_req[0].num;
 	} else {
 	  mixer_num = (((seq_pattern_req[0].group) + 8) * 8) + seq_pattern_req[0].num;
 	}
-
-        // setup our requested pattern mixer map
-        SEQ_MIXER_NumSet(mixer_num);
-	SEQ_MIXER_Load(mixer_num);
-        //SEQ_MIXER_SendAll();
 				
-        // mixer_map support
-        for(track=0; track<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++track) {
-					
-          // if we got the track bit setup inside our remix_map, them do not send mixer data for that track channel, let it be mixed down
-          if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
-            // do nothing for now...
-          } else {
-            SEQ_MIXER_SendAllByChannel(track);
-          }
-        }
-      }
+	// setup our requested pattern mixer map
+	SEQ_MIXER_NumSet(mixer_num);
+	SEQ_MIXER_Load(mixer_num);
 			
+	// dump mixer for tracks
+	for(track = group * 4; track<((group+1)*4); ++track) {
+					
+	  // if we got the track bit setup inside our remix_map, them do not send mixer data for that track channel, let it be mixed down
+	  if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
+	    // do nothing for now...
+	  } else {
+	    SEQ_MIXER_SendAllByChannel(track);
+	  }
+	}
+      }
+
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
 
       // restart *all* patterns?
-      if( seq_core_options.RATOPC )
-	SEQ_CORE_ResetTrkPosAll();
+      if( seq_core_options.RATOPC ) {
+	MIOS32_IRQ_Disable(); // must be atomic
+	seq_core_state.reset_trkpos_req |= (0xf << (4*group));
+	MIOS32_IRQ_Enable();
+      }
     }
   }
 
@@ -253,6 +254,9 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 #endif
 
   MUTEX_SDCARD_GIVE;
+
+  // reset latched PB/CC values (because assignments could change)
+  SEQ_LAYER_ResetLatchedValues();
 
   return status;
 }

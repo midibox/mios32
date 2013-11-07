@@ -1,4 +1,4 @@
-// $Id: seq_cc.c 1316 2011-08-30 21:20:05Z tk $
+// $Id: seq_cc.c 1794 2013-05-31 19:25:43Z tk $
 /*
  * CC layer
  *
@@ -219,6 +219,36 @@ s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value)
     }
 
     return SEQ_CC_Set(track, mapped_cc, value); // 0x10..0x5f -> 0x30..0x7f
+  }
+
+  return -1; // CC not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the CC value for MIDI (different mapping, especially used by Loopback Feature)
+// see also doc/mbseqv4_cc_implementation.txt
+// Returns < 0 if CC value not mapped
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CC_MIDI_Get(u8 track, u8 cc, u8 *mapped_cc)
+{
+  if( cc >= 0x30 && cc <= 0x7f ) {
+    *mapped_cc = cc - 0x20;
+
+    u8 value = SEQ_CC_Get(track, cc);
+    switch( cc ) {
+      case SEQ_CC_LFO_AMPLITUDE:
+	value /= 2; // 8bit -> 7bit
+	break;
+      case SEQ_CC_MIDI_PORT:
+	if( value >= 0xf0 )
+	  value = 0x70 | (value & 0x0f); // map to Bus
+	else if( value >= 0x80 )
+	  value = 0x60 | (value & 0x0f); // map to AOUT
+	break;
+    }
+
+    return value;
   }
 
   return -1; // CC not mapped

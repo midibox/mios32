@@ -63,12 +63,12 @@ static const char preset_drum[][6] = {
   " LT  ",
   " MT  ",
   " HT  ",
-  " CP  ",
   " RS  ",
-  " CYC ", // was CY
-  " CYR ", //was PH  
-  " CH  ",
-  " OH  ",
+  " CL  ",
+  " CH  ", // was CY
+  " OH  ", //was PH  
+  " CR  ",
+  " RD  ",
   " MA  ",
   " CB  ",
   "Ext1 ",

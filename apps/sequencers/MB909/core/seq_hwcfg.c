@@ -1,4 +1,4 @@
-// $Id: seq_hwcfg.c 1454 2012-04-03 22:54:57Z midilab $
+// $Id: seq_hwcfg.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * Hardware Soft-Configuration
  *
@@ -41,27 +41,27 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //              SR   ignore    Pin
   .scrub     = ((( 0   -1)<<3)+    0),
   .metronome = ((( 0   -1)<<3)+    0),
-  .record    = ((( 5   -1)<<3)+    4),
+  .record    = ((( 0   -1)<<3)+    4),
   .live      = ((( 0   -1)<<3)+    0),
 
   //          SR   ignore    Pin
-  .stop  = ((( 5   -1)<<3)+    6),
-  .pause = ((( 0   -1)<<3)+    0),
-  .play  = ((( 5   -1)<<3)+    7),
+  .stop  = ((( 0   -1)<<3)+    6),
+  .pause = ((( 1   -1)<<3)+    4),
+  .play  = ((( 1   -1)<<3)+    5),
   .rew   = ((( 0   -1)<<3)+    0),
   .fwd   = ((( 0   -1)<<3)+    0),
 
   //           SR   ignore    Pin
-  .menu     = ((( 5   -1)<<3)+    3),
+  .menu     = ((( 1   -1)<<3)+    2),
   .bookmark = ((( 0   -1)<<3)+    0),
-  .select   = ((( 2   -1)<<3)+    5),
-  .exit     = ((( 2   -1)<<3)+    4),
+  .select   = ((( 4   -1)<<3)+    5),
+  .exit     = ((( 4   -1)<<3)+    4),
 
   //             SR   ignore    Pin
-  .track[0] = ((( 3   -1)<<3)+    7),
-  .track[1] = ((( 3   -1)<<3)+    6),
-  .track[2] = ((( 3   -1)<<3)+    5),
-  .track[3] = ((( 3   -1)<<3)+    4),
+  .track[0] = ((( 5   -1)<<3)+    7),
+  .track[1] = ((( 5   -1)<<3)+    6),
+  .track[2] = ((( 5   -1)<<3)+    5),
+  .track[3] = ((( 5   -1)<<3)+    4),
 
   //                     SR   ignore    Pin
   .direct_track[0]  = ((( 0   -1)<<3)+    0),
@@ -100,50 +100,50 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .direct_bookmark[15] = ((( 0   -1)<<3)+    0),
 
   //                 SR   ignore    Pin
-  .par_layer[0] = ((( 5   -1)<<3)+    5),
-  .par_layer[1] = ((( 5   -1)<<3)+    1),
-  .par_layer[2] = ((( 5   -1)<<3)+    0),
+  .par_layer[0] = ((( 1   -1)<<3)+    7),
+  .par_layer[1] = ((( 1   -1)<<3)+    1),
+  .par_layer[2] = ((( 0   -1)<<3)+    0),
 
   //            SR   ignore    Pin
-  .edit    = ((( 2  -1)<<3)+    3),
-  .mute    = ((( 2  -1)<<3)+    2),
-  .pattern = ((( 2  -1)<<3)+    1),
-  .song    = ((( 2  -1)<<3)+    0),
+  .edit       = ((( 4  -1)<<3)+    3),
+  .mute       = ((( 0  -1)<<3)+    2),
+  .pattern = ((( 4  -1)<<3)+    1),
+  .song       = ((( 4  -1)<<3)+    0),
 
   //         SR   ignore    Pin
-  .solo  = ((( 2   -1)<<3)+    6),
+  .solo  = ((( 4   -1)<<3)+    6),
   .fast  = ((( 0   -1)<<3)+    0),
   .fast2 = ((( 0   -1)<<3)+    0),
-  .all   = ((( 0   -1)<<3)+    0),
+  .all   = ((( 4   -1)<<3)+    7),
 
   //           SR   ignore    Pin
-  .gp[ 0] = ((( 6   -1)<<3)+    6),
-  .gp[ 1] = ((( 6   -1)<<3)+    7),
-  .gp[ 2] = ((( 6   -1)<<3)+    0),
-  .gp[ 3] = ((( 6   -1)<<3)+    1),
-  .gp[ 4] = ((( 6   -1)<<3)+    2),
-  .gp[ 5] = ((( 6   -1)<<3)+    3),
-  .gp[ 6] = ((( 6   -1)<<3)+    4),
-  .gp[ 7] = ((( 6   -1)<<3)+    5),
-  .gp[ 8] = ((( 1   -1)<<3)+    6),
-  .gp[ 9] = ((( 1   -1)<<3)+    7),
-  .gp[10] = ((( 1   -1)<<3)+    0),
-  .gp[11] = ((( 1   -1)<<3)+    1),
-  .gp[12] = ((( 1   -1)<<3)+    2),
-  .gp[13] = ((( 1   -1)<<3)+    3),
-  .gp[14] = ((( 1   -1)<<3)+    4),
-  .gp[15] = ((( 1   -1)<<3)+    5),
+  .gp[ 0] = ((( 2   -1)<<3)+    6),
+  .gp[ 1] = ((( 2   -1)<<3)+    7),
+  .gp[ 2] = ((( 2   -1)<<3)+    0),
+  .gp[ 3] = ((( 2   -1)<<3)+    1),
+  .gp[ 4] = ((( 2   -1)<<3)+    2),
+  .gp[ 5] = ((( 2   -1)<<3)+    3),
+  .gp[ 6] = ((( 2   -1)<<3)+    4),
+  .gp[ 7] = ((( 2   -1)<<3)+    5),
+  .gp[ 8] = ((( 3   -1)<<3)+    6),
+  .gp[ 9] = ((( 3   -1)<<3)+    7),
+  .gp[10] = ((( 3   -1)<<3)+    0),
+  .gp[11] = ((( 3   -1)<<3)+    1),
+  .gp[12] = ((( 3   -1)<<3)+    2),
+  .gp[13] = ((( 3   -1)<<3)+    3),
+  .gp[14] = ((( 3   -1)<<3)+    4),
+  .gp[15] = ((( 3   -1)<<3)+    5),
 
   //             SR   ignore    Pin
-  .group[0] = ((( 3   -1)<<3)+    3),
-  .group[1] = ((( 3   -1)<<3)+    2),
-  .group[2] = ((( 3   -1)<<3)+    1),
-  .group[3] = ((( 3   -1)<<3)+    0),
+  .group[0] = ((( 5   -1)<<3)+    3),
+  .group[1] = ((( 5   -1)<<3)+    2),
+  .group[2] = ((( 5   -1)<<3)+    1),
+  .group[3] = ((( 5   -1)<<3)+    0),
 
   //                 SR   ignore    Pin
-  .trg_layer[0] = ((( 0   -1)<<3)+    0),
-  .trg_layer[1] = ((( 0   -1)<<3)+    0),
-  .trg_layer[2] = ((( 0   -1)<<3)+    0),
+  .trg_layer[0] = ((( 1   -1)<<3)+    6),
+  .trg_layer[1] = ((( 1   -1)<<3)+    3),
+  .trg_layer[2] = ((( 1   -1)<<3)+    0),
 
 #ifdef MIOS32_FAMILY_EMULATION
   //                  SR   ignore    Pin
@@ -162,7 +162,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //            SR   ignore    Pin
   .copy    = ((( 0   -1)<<3)+    0),
   .paste   = ((( 0   -1)<<3)+    0),
-  .clear   = ((( 5   -1)<<3)+    2),
+  .clear   = ((( 0   -1)<<3)+    2),
   .undo    = ((( 0   -1)<<3)+    0),
 #else
   //                  SR   ignore    Pin
@@ -182,23 +182,36 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //            SR   ignore    Pin
   .copy    = ((( 0   -1)<<3)+    0),
   .paste   = ((( 0   -1)<<3)+    0),
-  .clear   = ((( 5   -1)<<3)+    2),
+  .clear   = ((( 0   -1)<<3)+    2),
   .undo    = ((( 0   -1)<<3)+    0),
 #endif
 
   //            SR   ignore    Pin
-  .loop    = ((( 0   -1)<<3)+    0),
+  .loop    = ((( 4   -1)<<3)+    2),
   .follow  = ((( 0   -1)<<3)+    0),
 
   //              SR   ignore    Pin
   .mixer     = ((( 0   -1)<<3)+    0),
 
+  //              SR   ignore    Pin
+  .save      = ((( 0   -1)<<3)+    0),
+  .save_all  = ((( 0   -1)<<3)+    0),
+
+  //                     SR   ignore    Pin
   .track_mode      = ((( 0   -1)<<3)+    0),
   .track_groove    = ((( 0   -1)<<3)+    0),
   .track_length    = ((( 0   -1)<<3)+    0),
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+
+  //                                   SR   ignore    Pin
+  .mute_all_tracks               = ((( 0   -1)<<3)+    0),
+  .mute_track_layers             = ((( 0   -1)<<3)+    0),
+  .mute_all_tracks_and_layers    = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks             = ((( 0   -1)<<3)+    0),
+  .unmute_track_layers           = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
 
   .footswitch      = ((( 0   -1)<<3)+    0),
   .pattern_remix   = ((( 0   -1)<<3)+    0),
@@ -237,15 +250,15 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
 
 seq_hwcfg_led_t seq_hwcfg_led = {
   // GP LEDs DOUT shiftregister assignments
-  .gp_dout_l_sr = 7,
-  .gp_dout_r_sr = 1,
+  .gp_dout_l_sr = 5,
+  .gp_dout_r_sr = 2,
 
 #ifdef MIOS32_FAMILY_EMULATION
-  .gp_dout_l2_sr = 8,
-  .gp_dout_r2_sr = 2,
+  .gp_dout_l2_sr = 6,
+  .gp_dout_r2_sr = 3,
 #else
-  .gp_dout_l2_sr = 8,
-  .gp_dout_r2_sr = 2,
+  .gp_dout_l2_sr = 6,
+  .gp_dout_r2_sr = 3,
 #endif
 
   .tracks_dout_l_sr = 0,
@@ -254,10 +267,10 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   // DOUT pin assignments
 
   //             SR    ignore    Pin
-  .track[0] = ((( 6   -1)<<3)+    0),
-  .track[1] = ((( 6   -1)<<3)+    1),
-  .track[2] = ((( 6   -1)<<3)+    2),
-  .track[3] = ((( 6   -1)<<3)+    3),
+  .track[0] = ((( 4   -1)<<3)+    0),
+  .track[1] = ((( 4   -1)<<3)+    1),
+  .track[2] = ((( 4   -1)<<3)+    2),
+  .track[3] = ((( 4   -1)<<3)+    3),
 
   //                 SR    ignore    Pin
   .par_layer[0] = ((( 0   -1)<<3)+    0),
@@ -272,22 +285,22 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .midi_out_combined = ((( 0   -1)<<3)+    0),
 
   //            SR    ignore    Pin
-  .edit    = ((( 3   -1)<<3)+    3),
-  .mute    = ((( 3   -1)<<3)+    0),
-  .pattern = ((( 3   -1)<<3)+    1),
-  .song    = ((( 3   -1)<<3)+    2),
+  .edit    = ((( 1   -1)<<3)+    3),
+  .mute    = ((( 1   -1)<<3)+    6),
+  .pattern = ((( 1   -1)<<3)+    1),
+  .song    = ((( 1   -1)<<3)+    0),
 
   //         SR    ignore    Pin
-  .solo  = ((( 0   -1)<<3)+    0),
+  .solo  = ((( 1   -1)<<3)+    6),
   .fast  = ((( 0   -1)<<3)+    0),
   .fast2 = ((( 0   -1)<<3)+    0),
-  .all   = ((( 0   -1)<<3)+    0),
+  .all   = ((( 1   -1)<<3)+    7),
 
   //             SR    ignore    Pin
-  .group[0] = ((( 6   -1)<<3)+    4),
-  .group[1] = ((( 6   -1)<<3)+    7),
-  .group[2] = ((( 6   -1)<<3)+    6),
-  .group[3] = ((( 6   -1)<<3)+    5),
+  .group[0] = ((( 4   -1)<<3)+    7),
+  .group[1] = ((( 4   -1)<<3)+    6),
+  .group[2] = ((( 4   -1)<<3)+    5),
+  .group[3] = ((( 4   -1)<<3)+    4),
 
   //                 SR    ignore    Pin
   .trg_layer[0] = ((( 0   -1)<<3)+    0),
@@ -305,8 +318,8 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .follow = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
-  .exit      = ((( 0   -1)<<3)+    0),
-  .select    = ((( 0   -1)<<3)+    0),
+  .exit      = ((( 1   -1)<<3)+    4),
+  .select    = ((( 4   -1)<<3)+    5),
   .menu      = ((( 0   -1)<<3)+    0),
   .bookmark  = ((( 0   -1)<<3)+    0),
   .scrub     = ((( 0   -1)<<3)+    0),
@@ -320,7 +333,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .live      = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
-  .step_view     = ((( 0   -1)<<3)+    0),
+  .step_view     = ((( 1   -1)<<3)+    2),
   .par_layer_sel = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 0   -1)<<3)+    0),
   .track_sel     = ((( 0   -1)<<3)+    0),
@@ -366,7 +379,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .undo      = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
-  .step_view     = ((( 0   -1)<<3)+    0),
+  .step_view     = ((( 1   -1)<<3)+    2),
   .par_layer_sel = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 0   -1)<<3)+    0),
   .track_sel     = ((( 0   -1)<<3)+    0),
@@ -390,6 +403,14 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+
+  //                                   SR   ignore    Pin
+  .mute_all_tracks               = ((( 0   -1)<<3)+    0),
+  .mute_track_layers             = ((( 0   -1)<<3)+    0),
+  .mute_all_tracks_and_layers    = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks             = ((( 0   -1)<<3)+    0),
+  .unmute_track_layers           = ((( 0   -1)<<3)+    0),
+  .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
 #endif
 };
 
@@ -407,25 +428,27 @@ seq_hwcfg_blm_t seq_hwcfg_blm = {
   .dout_duocolour = 1,
   .buttons_enabled = 1,
   .buttons_no_ui = 1,
+  .gp_always_select_menu_page = 0,
 };
 
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
   .enabled = 0,
   .dout_gp_mapping = 1,
+  .din_gp_mapping = 0,
 };
 
 seq_hwcfg_mb909_t seq_hwcfg_mb909 = {
   .enabled = 1,
-  .multimachine = 1,
+  .multimachine = 0,
 };
 
 seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits = {
   .enabled = 1,
-  .segments_sr = 4,
+  .segments_sr = 7,
   .common1_pin = ((( 0   -1)<<3)+    0),
-  .common2_pin = ((( 5   -1)<<3)+    6),
-  .common3_pin = ((( 5   -1)<<3)+    5),
-  .common4_pin = ((( 5   -1)<<3)+    4),
+  .common2_pin = ((( 8   -1)<<3)+    6),
+  .common3_pin = ((( 8   -1)<<3)+    5),
+  .common4_pin = ((( 8   -1)<<3)+    4),
 };
 
 
@@ -450,6 +473,13 @@ seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
   .cc = 0, // disabled
 };
 
+seq_hwcfg_track_cc_t seq_hwcfg_track_cc = {
+  .mode = 0,
+  .port = USB1,
+  .chn = 0,
+  .cc = 100,
+};
+
 
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
@@ -460,9 +490,9 @@ u8 seq_hwcfg_dout_gate_1ms = 0;
 /////////////////////////////////////////////////////////////////////////////
 
 static const mios32_enc_config_t enc_config[SEQ_HWCFG_NUM_ENCODERS] = {
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=0 }, // Data Wheel
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 6, .cfg.pos=2 }, // Data Wheel
 
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=2 }, // GP1
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 6, .cfg.pos=0 }, // GP1
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // GP2
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // GP3
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // GP4
@@ -479,7 +509,7 @@ static const mios32_enc_config_t enc_config[SEQ_HWCFG_NUM_ENCODERS] = {
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // GP15
   { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 0, .cfg.pos=0 }, // GP16
 
-  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 4, .cfg.pos=6 }, // BPM
+  { .cfg.type=DETENTED2, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr= 6, .cfg.pos=6 }, // BPM
 };
 
 

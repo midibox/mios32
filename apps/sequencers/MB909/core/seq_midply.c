@@ -1,4 +1,4 @@
-// $Id: seq_midply.c 1261 2011-07-17 18:21:45Z tk $
+// $Id: seq_midply.c 1540 2012-11-23 22:15:17Z tk $
 /*
  * MIDI File Player
  *
@@ -579,8 +579,8 @@ static u32 SEQ_MIDPLY_read(void *buffer, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_MIDPLY_eof(void)
 {
-  if( midifile_pos >= midifile_len )
-    return 1; // end of file reached
+  if( midifile_pos >= midifile_len || !FILE_SDCardAvailable() )
+    return 1; // end of file reached or SD card disconnected
 
   return 0;
 }
@@ -676,7 +676,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
     case 0x00: // Sequence Number
       if( len == 2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	u32 seq_number = (*buffer++ << 8) | *buffer;
+	u32 seq_number = (buffer[0] << 8) | buffer[1];
 	DEBUG_MSG("[SEQ_MIDPLY:%d:%u] Meta - Sequence Number %u\n", track, tick, seq_number);
 #endif
       } else {
@@ -751,7 +751,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
       // tempo handled by SEQ_CORE !
       if( len == 3 ) {
 #if 0
-	u32 tempo_us = (*buffer++ << 16) | (*buffer++ << 8) | *buffer;
+	u32 tempo_us = (buffer[0] << 16) | (buffer[1] << 8) | buffer[2];
 	float bpm = 60.0 * (1E6 / (float)tempo_us);
 	SEQ_BPM_PPQN_Set(MIDI_PARSER_PPQN_Get());
 

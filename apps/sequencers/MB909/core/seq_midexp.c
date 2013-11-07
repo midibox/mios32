@@ -1,4 +1,4 @@
-// $Id: seq_midexp.c 1261 2011-07-17 18:21:45Z tk $
+// $Id: seq_midexp.c 1538 2012-11-21 22:02:21Z tk $
 /*
  * MIDI File Exporter
  *
@@ -188,13 +188,13 @@ static s32 Hook_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t 
     case NoteOn:
     case PolyPressure:
     case CC:
-    case Aftertouch:
+    case PitchBend:
       word = ((u32)package.evnt0 << 16) | ((u32)package.evnt1 << 8) | ((u32)package.evnt2 << 0);
       num_bytes = 3;
       break;
 
     case ProgramChange:
-    case PitchBend:
+    case Aftertouch:
       word = ((u32)package.evnt0 << 8) | ((u32)package.evnt1 << 0);
       num_bytes = 2;
       break;

@@ -55,15 +55,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   if (encoder == SEQ_UI_ENCODER_Datawheel){
 	u8 value= SEQ_LCD_Contrastget();
+	value= value-14;
 	MIOS32_DELAY_Wait_uS(50000); 
 	if (incrementer <= -1) 
 		incrementer = -1;
 	if (incrementer >= 1) 
 		incrementer = 1;
-	if( SEQ_UI_Var8_Inc(&value, 15, 63, incrementer) >= 1 ){
+	if( SEQ_UI_Var8_Inc(&value, 1, 32, incrementer) >= 1 ){
 
 
-			 lcd_contrast = value;
+			 lcd_contrast = value+14;
 
 			store_file_required = 1;
 			return 1;
@@ -103,13 +104,18 @@ static s32 LCD_Handler(u8 high_prio)
   //SEQ_LCD_PrintFormattedString("%02d", lcd_contrast);
   SEQ_LCD_Contrastset(lcd_contrast);
 	
-  MIOS32_LCD_GCursorSet(2, 0);
-  SEQ_LCD_FontInit((u8 *)GLCD_FONT_BIG);
-  MIOS32_LCD_PrintFormattedString("%2d", lcd_contrast);
-  MIOS32_LCD_GCursorSet(2, 24);
-  MIOS32_LCD_PrintString("contrast");
-   MIOS32_LCD_GCursorSet(2, 40);
-  MIOS32_LCD_PrintString("SETUP");
+  SEQ_LCD_CursorSet(1, 0);
+  //MIOS32_LCD_CursorSet(1, 0);
+  //SEQ_LCD_FontInit((u8 *)GLCD_FONT_BIG);
+  SEQ_LCD_PrintFormattedString("%2d", lcd_contrast-14);
+  SEQ_LCD_CursorSet(1, 3);
+  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+  SEQ_LCD_PrintString("contrast");
+  //MIOS32_LCD_GCursorSet(4, 40);
+  SEQ_LCD_CursorSet(1, 4);
+  //SEQ_LCD_FontInit((u8 *)GLCD_FONT_BIG);	
+  SEQ_LCD_PrintString("SETUP");
+  //SEQ_LCD_CursorSet(1, 7); 
   SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 		
 

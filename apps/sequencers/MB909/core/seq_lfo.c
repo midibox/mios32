@@ -1,4 +1,4 @@
-// $Id: seq_lfo.c 1024 2010-05-23 12:30:16Z tk $
+// $Id: seq_lfo.c 1787 2013-05-19 15:23:20Z tk $
 /*
  * LFO Functions
  *
@@ -128,11 +128,10 @@ s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e)
   if( e->midi_package.type == NoteOn ) {
     if( tcc->lfo_enable_flags.NOTE ) {
       s16 value = e->midi_package.note + lfo_value;
-      if( value < 0 ) {
-	while( value < 0 ) value += 12;
-      } else if( value > 127 ) {
-	while( value > 127 ) value -= 12;
-      }
+
+      // ensure that note is in the 0..127 range
+      value = SEQ_CORE_TrimNote(value, 0, 127);
+
       e->midi_package.note = value;
     }
 
@@ -172,11 +171,11 @@ s32 SEQ_LFO_Event(u8 track, seq_layer_evnt_t *e)
 /////////////////////////////////////////////////////////////////////////////
 // Returns a fast modulated CC event if return value >= 1
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p)
+s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p, u8 ignore_waveform)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  if( !tcc->lfo_waveform )
+  if( !ignore_waveform && !tcc->lfo_waveform )
     return 0; // LFO disabled
 
   if( !tcc->lfo_cc )
