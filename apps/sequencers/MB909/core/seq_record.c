@@ -1,4 +1,4 @@
-// $Id: seq_record.c 1341 2011-10-16 21:06:08Z tk $
+// $Id: seq_record.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * Sequencer Recording Routines
  *
@@ -196,9 +196,6 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   } else if( midi_package.event == PitchBend ) {
     track += 3; // G1T4 resp. G3T4
   } else if( midi_package.event == CC ) {
-    if( midi_package.cc_number == 0 )
-      return 0; // not recordable
-
     track += 3; // starting at G1T4 resp. G3T4
     // search for same (or free) CC entry
     seq_cc_trk_t *tcc = &seq_cc_trk[track];
@@ -221,7 +218,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  if( *layer_cc_ptr >= 0x80 ) {
 	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
 
-	    // initialize whole layer with invalud value 0xc0 (indicates: not recorded)
+	    // initialize whole layer with invalid value 0xc0 (indicates: not recorded)
 	    int num_p_steps = SEQ_PAR_NumStepsGet(track);
 	    int instrument = 0;
 	    int step;
@@ -253,6 +250,48 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   // exit if track not armed
   if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
     return 0;
+#else
+  // MBSEQV4 (without L)
+  if( midi_package.event == CC && track == SEQ_UI_VisibleTrackGet() ) {
+    // search for same (or free) CC entry
+    seq_cc_trk_t *tcc = &seq_cc_trk[track];
+    u8 free_layer_found = 0;
+    {
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+      u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+      u8 *layer_cc_ptr = (u8 *)&tcc->lay_const[1*16];
+      int par_layer;
+      for(par_layer=0; par_layer<num_p_layers && !free_layer_found; ++par_layer, ++layer_type_ptr, ++layer_cc_ptr) {
+	if( *layer_type_ptr == SEQ_PAR_Type_CC &&
+	    (*layer_cc_ptr >= 0x80 || *layer_cc_ptr == midi_package.cc_number) ) {
+
+	  if( *layer_cc_ptr >= 0x80 ) {
+	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
+
+	    // initialize whole layer with invalid value 0xc0 (indicates: not recorded)
+	    int num_p_steps = SEQ_PAR_NumStepsGet(track);
+	    int instrument = 0;
+	    int step;
+	    for(step=0; step<num_p_steps; ++step)
+	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
+#if DEBUG_VERBOSE_LEVEL >= 2
+	    DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
+#endif
+	  }
+
+	  free_layer_found = 1;
+	  break;
+	}
+      }
+    }
+
+    if( !free_layer_found ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[SEQ_RECORD_Receive] no free CC layer found for CC#%d\n", midi_package.cc_number);
+#endif
+      return 0; // no free layer
+    }
+  }
 #endif
 
 #if DEBUG_VERBOSE_LEVEL >= 2

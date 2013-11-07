@@ -1,4 +1,4 @@
-// $Id: seq_hwcfg.h 1454 2012-04-03 22:54:57Z midilab $
+// $Id: seq_hwcfg.h 1811 2013-06-25 20:50:00Z tk $
 /*
  * Header file for HW configuration routines
  *
@@ -105,12 +105,22 @@ typedef struct {
 
   u8 mixer;
 
+  u8 save;
+  u8 save_all;
+
   u8 track_mode;
   u8 track_groove;
   u8 track_length;
   u8 track_direction;
   u8 track_morph;
   u8 track_transpose;
+
+  u8 mute_all_tracks;
+  u8 mute_track_layers;
+  u8 mute_all_tracks_and_layers;
+  u8 unmute_all_tracks;
+  u8 unmute_track_layers;
+  u8 unmute_all_tracks_and_layers;
 
   u8 footswitch;
   u8 pattern_remix;
@@ -212,6 +222,13 @@ typedef struct {
   u8 track_direction;
   u8 track_transpose;
   u8 track_morph;
+
+  u8 mute_all_tracks;
+  u8 mute_track_layers;
+  u8 mute_all_tracks_and_layers;
+  u8 unmute_all_tracks;
+  u8 unmute_track_layers;
+  u8 unmute_all_tracks_and_layers;
 } seq_hwcfg_led_t;
 
 
@@ -224,16 +241,18 @@ typedef struct {
 
 
 typedef struct {
-  u8 enabled;
-  u8 dout_duocolour;
-  u8 buttons_enabled;
-  u8 buttons_no_ui;
+  u8 enabled:1;
+  u8 dout_duocolour:2;
+  u8 buttons_enabled:1;
+  u8 buttons_no_ui:1;
+  u8 gp_always_select_menu_page:1;
 } seq_hwcfg_blm_t;
 
 
 typedef struct {
-  u8 enabled;
-  u8 dout_gp_mapping;
+  u8 enabled:1;
+  u8 dout_gp_mapping:1;
+  u8 din_gp_mapping:1;
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {
@@ -269,6 +288,13 @@ typedef struct {
   u8 cc;
 } seq_hwcfg_midi_remote_t;
 
+typedef struct {
+  u8 mode;
+  mios32_midi_port_t port;
+  u8 chn;
+  u8 cc;
+} seq_hwcfg_track_cc_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -290,7 +316,11 @@ extern seq_hwcfg_bpm_digits_t seq_hwcfg_bpm_digits;
 extern seq_hwcfg_step_digits_t seq_hwcfg_step_digits;
 extern seq_hwcfg_tpd_t seq_hwcfg_tpd;
 extern seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote;
+///<<<<<<< .mine
 extern seq_hwcfg_mb909_t seq_hwcfg_mb909;
+//=======
+extern seq_hwcfg_track_cc_t seq_hwcfg_track_cc;
+//>>>>>>> .r1826
 
 extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 extern u8 seq_hwcfg_dout_gate_1ms;

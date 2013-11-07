@@ -1,4 +1,4 @@
-// $Id: seq_ui_mixer.c 1142 2011-02-17 23:19:36Z tk $
+// $Id: seq_ui_mixer.c 1816 2013-07-22 17:38:58Z tk $
 /*
  * Mixer page
  *
@@ -16,6 +16,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
+
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
 
@@ -23,6 +27,7 @@
 #include "seq_file.h"
 #include "seq_file_m.h"
 #include "seq_midi_port.h"
+#include "seq_midi_in.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -39,6 +44,7 @@
 #define MSG_LOAD    0x84
 #define MSG_SAVE    0x85
 #define MSG_DUMP    0x86
+#define MSG_NAME    0x87
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +63,10 @@ static const char in_menu_msg_str[6][9] = {
 };
 
 
+#define MIXER_UTIL_PAGE_OFF      0
+#define MIXER_UTIL_PAGE_OPTIONS  1
+#define MIXER_UTIL_PAGE_NAME     2
+
 static u8 show_mixer_util_page;
 
 static u8 mixer_par;
@@ -67,6 +77,8 @@ static u8 copypaste_buffer[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 static u8 undo_buffer_filled = 0;
 static u8 undo_buffer[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 static u8 undo_map;
+
+static char edit_mixer_map_name[20];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,10 +98,17 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  if( show_mixer_util_page )
-    *gp_leds = 0x0001;
-  else
+  switch( show_mixer_util_page ) {
+  case MIXER_UTIL_PAGE_OFF:
     *gp_leds = seq_ui_button_state.CHANGE_ALL_STEPS ? 0xffff : (1 << ui_selected_item);
+    break;
+  case MIXER_UTIL_PAGE_OPTIONS:
+    *gp_leds = 0x0001;
+    break;
+  case MIXER_UTIL_PAGE_NAME:
+    *gp_leds = 0x0000;
+    break;
+  }
 
   return 0; // no error
 }
@@ -114,16 +133,143 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
     if( show_mixer_util_page ) {
-      if( SEQ_FILE_M_NumMaps() && (encoder == SEQ_UI_ENCODER_GP1) ) {
-	u8 mixer_map = SEQ_MIXER_NumGet();
-        if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
-	  SEQ_MIXER_NumSet(mixer_map);
-	  return 1; // value changed
+      switch( show_mixer_util_page ) {
+      case MIXER_UTIL_PAGE_OPTIONS: {
+	switch( encoder ) {
+	case SEQ_UI_ENCODER_GP1: {
+	  if( incrementer && SEQ_FILE_M_NumMaps() ) {
+	    u8 mixer_map = SEQ_MIXER_NumGet();
+	    if( SEQ_UI_Var8_Inc(&mixer_map, 0, SEQ_FILE_M_NumMaps()-1, incrementer) >= 0 ) {
+	      SEQ_MIXER_NumSet(mixer_map);
+
+	      // send to external
+	      SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, mixer_map, 0);
+
+	      // load page
+	      SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+
+	      // print message
+	      in_menu_msg = MSG_LOAD & 0x7f;
+	      ui_hold_msg_ctr = 1000;
+
+	      return 1; // value changed
+	    }
+	  }
+	  return 0; // no change
+	} break;
+
+        case SEQ_UI_ENCODER_GP2: // Copy
+	  // copy map
+	  SEQ_UI_MIXER_Copy();
+	  // print message
+	  in_menu_msg = MSG_COPY & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP3: // Paste
+	  // update undo buffer
+	  SEQ_UI_MIXER_UndoUpdate();
+	  // paste map
+	  SEQ_UI_MIXER_Paste();
+	  // print message
+	  in_menu_msg = MSG_PASTE & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP4: // Clear
+	  // update undo buffer
+	  SEQ_UI_MIXER_UndoUpdate();
+	  // clear map
+	  SEQ_UI_MIXER_Clear();
+	  // print message
+	  in_menu_msg = MSG_CLEAR & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP5:
+	  return -1; // not used
+
+        case SEQ_UI_ENCODER_GP6: // Load
+	  // load page
+	  SEQ_MIXER_Load(SEQ_MIXER_NumGet());
+	  // print message
+	  in_menu_msg = MSG_LOAD & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP7: // Save
+	  // store current page
+	  SEQ_MIXER_Save(SEQ_MIXER_NumGet());
+	  // print message
+	  in_menu_msg = MSG_SAVE & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP8: // Dump
+	  // send to external
+	  SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, SEQ_MIXER_NumGet(), 0);
+	  // dump all values
+	  SEQ_MIXER_SendAll();
+	  // print message
+	  in_menu_msg = MSG_DUMP & 0x7f;
+	  ui_hold_msg_ctr = 1000;
+	  return 1;
+
+        case SEQ_UI_ENCODER_GP9: // select CC1 Number page
+        case SEQ_UI_ENCODER_GP10: // select CC2 Number page
+        case SEQ_UI_ENCODER_GP11: // select CC3 Number page
+        case SEQ_UI_ENCODER_GP12: // select CC4 Number page
+	  show_mixer_util_page = MIXER_UTIL_PAGE_OFF;
+	  mixer_par = SEQ_MIXER_PAR_CC1_NUM + (encoder-8);
+	  return 1; // always changed
+
+        case SEQ_UI_ENCODER_GP16: // Mixermap name
+	  // Unnamed -> empty string
+	  if( strncmp(seq_mixer_map_name, "Unnamed             ", 20) == 0 ) {
+	    int i;
+	    for(i=0; i<20; ++i) {
+	      edit_mixer_map_name[i] = ' ';
+	    }
+	  } else {
+	    int i;
+	    for(i=0; i<20 && seq_mixer_map_name[i] != 0; ++i) {
+	      edit_mixer_map_name[i] = seq_mixer_map_name[i];
+	    }
+	    for(; i<20; ++i) {
+	      edit_mixer_map_name[i] = ' ';
+	    }
+	  }
+
+	  // init keypad editor
+	  SEQ_UI_KeyPad_Init();
+
+	  // set cursor to last char
+	  ui_edit_name_cursor = 20;
+	  while( ui_edit_name_cursor && edit_mixer_map_name[ui_edit_name_cursor-1] == ' ' ) {
+	    --ui_edit_name_cursor;
+	  }
+
+	  show_mixer_util_page = MIXER_UTIL_PAGE_NAME;
+	  
+	  return 1; // always changed	  
 	}
-	return 0; // no change
-      } else if( encoder >= SEQ_UI_ENCODER_GP2 && encoder <= SEQ_UI_ENCODER_GP16 ) {
-	// -> forward to button function
-	return Button_Handler((seq_ui_button_t)encoder, 1);
+      } break;
+
+      case MIXER_UTIL_PAGE_NAME: {
+	switch( encoder ) {
+	case SEQ_UI_ENCODER_GP15:
+	  return -1; // no function
+	case SEQ_UI_ENCODER_GP16: // back to options page
+	  // take over new name
+	  strncpy(seq_mixer_map_name, edit_mixer_map_name, 20);
+
+	  // back to options name
+	  show_mixer_util_page = MIXER_UTIL_PAGE_OPTIONS;
+	  return 1;
+	}
+
+	return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&edit_mixer_map_name, 20);
+      } break;
       }
 
       return -1;
@@ -155,7 +301,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_MIXER_PAR_CC2_NUM:
       case SEQ_MIXER_PAR_CC3_NUM:
       case SEQ_MIXER_PAR_CC4_NUM:
-	min=0x00; max=0x70;
+	min=0x00; max=0x7f;
 	break;
       default:
 	return -1; // unsupported parameter
@@ -185,7 +331,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( chn == ui_selected_item || seq_ui_button_state.CHANGE_ALL_STEPS ) {
 	if( forced_value >= 0 ) {
 	  SEQ_MIXER_Set(chn, mixer_par, forced_value);
+	  MUTEX_MIDIOUT_TAKE;
 	  SEQ_MIXER_Send(chn, mixer_par);
+	  MUTEX_MIDIOUT_GIVE;
 	} else {
 	  u8 value = SEQ_MIXER_Get(chn, mixer_par);
 	  if( mixer_par == SEQ_MIXER_PAR_PORT )
@@ -194,7 +342,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    if( mixer_par == SEQ_MIXER_PAR_PORT )
 	      value = SEQ_MIDI_PORT_OutPortGet(value);
 	    SEQ_MIXER_Set(chn, mixer_par, value);
+	    MUTEX_MIDIOUT_TAKE;
 	    SEQ_MIXER_Send(chn, mixer_par);
+	    MUTEX_MIDIOUT_GIVE;
 	    value_changed |= 1;
 	  }
 	}
@@ -240,75 +390,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     if( show_mixer_util_page ) {
       if( depressed ) return 0; // ignore when button depressed
 
-      switch( button ) {
-        case SEQ_UI_BUTTON_GP1: // Mixer Map
-	  return 1; // nothing to do for button
-
-        case SEQ_UI_BUTTON_GP2: // Copy
-	  // copy map
-	  SEQ_UI_MIXER_Copy();
-	  // print message
-	  in_menu_msg = MSG_COPY & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP3: // Paste
-	  // update undo buffer
-	  SEQ_UI_MIXER_UndoUpdate();
-	  // paste map
-	  SEQ_UI_MIXER_Paste();
-	  // print message
-	  in_menu_msg = MSG_PASTE & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP4: // Clear
-	  // update undo buffer
-	  SEQ_UI_MIXER_UndoUpdate();
-	  // clear map
-	  SEQ_UI_MIXER_Clear();
-	  // print message
-	  in_menu_msg = MSG_CLEAR & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP5:
-	  return -1; // not used
-
-        case SEQ_UI_BUTTON_GP6: // Load
-	  // load page
-	  SEQ_MIXER_Load(SEQ_MIXER_NumGet());
-	  // print message
-	  in_menu_msg = MSG_LOAD & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP7: // Save
-	  // store current page
-	  SEQ_MIXER_Save(SEQ_MIXER_NumGet());
-	  // print message
-	  in_menu_msg = MSG_SAVE & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP8: // Dump
-	  // dump all values
-	  SEQ_MIXER_SendAll();
-	  // print message
-	  in_menu_msg = MSG_DUMP & 0x7f;
-	  ui_hold_msg_ctr = 1000;
-	  return 1;
-
-        case SEQ_UI_BUTTON_GP9: // select CC1 Number page
-        case SEQ_UI_BUTTON_GP10: // select CC2 Number page
-        case SEQ_UI_BUTTON_GP11: // select CC3 Number page
-        case SEQ_UI_BUTTON_GP12: // select CC4 Number page
-	  show_mixer_util_page = 0;
-	  mixer_par = SEQ_MIXER_PAR_CC1_NUM + (button-8);
-	  return 1; // always changed
-      }
-
-      return -1; // not used
+      // -> continue with encoder handler
+      return Encoder_Handler((seq_ui_encoder_t)button, 0);
     } else {
       if( depressed ) return 0; // ignore when button depressed
       ui_selected_item = button;
@@ -318,7 +401,11 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
-      show_mixer_util_page = depressed ? 0 : 1;
+      if( depressed && show_mixer_util_page == MIXER_UTIL_PAGE_NAME ) {
+	// ignore
+      } else {
+	show_mixer_util_page = depressed ? MIXER_UTIL_PAGE_OFF : MIXER_UTIL_PAGE_OPTIONS;
+      }
       return 1; // value always changed
 
     case SEQ_UI_BUTTON_Right:
@@ -365,96 +452,43 @@ static s32 LCD_Handler(u8 high_prio)
 
   if( SEQ_FILE_FormattingRequired() ) {
   
-    MIOS32_LCD_CursorSet(0, 0);
-    MIOS32_LCD_PrintString("No Mixr Map available"); 
-	MIOS32_LCD_CursorSet(0, 1);
-    MIOS32_LCD_PrintString(" as long as Session  ");
-	MIOS32_LCD_CursorSet(0, 2);
-    MIOS32_LCD_PrintString("hasn't been created! ");
-    MIOS32_LCD_CursorSet(0, 3);
-    MIOS32_LCD_PrintString("Please press EXIT and");
-	MIOS32_LCD_CursorSet(0, 4);
-    MIOS32_LCD_PrintString("create a new Session!");
-	MIOS32_LCD_CursorSet(0, 5);
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("No Mixr Map available"); 
+	SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintString(" as long as Session  ");
+	SEQ_LCD_CursorSet(0, 2);
+    SEQ_LCD_PrintString("hasn't been created! ");
+    SEQ_LCD_CursorSet(0, 3);
+    SEQ_LCD_PrintString("Please press EXIT and");
+	SEQ_LCD_CursorSet(0, 4);
+    SEQ_LCD_PrintString("create a new Session!");
+	SEQ_LCD_CursorSet(0, 5);
 	SEQ_LCD_PrintSpaces(21);
-	MIOS32_LCD_CursorSet(0, 6);
+	SEQ_LCD_CursorSet(0, 6);
 	SEQ_LCD_PrintSpaces(21);
-	MIOS32_LCD_CursorSet(0, 7);
+	SEQ_LCD_CursorSet(0, 7);
 	SEQ_LCD_PrintSpaces(21);  
 
     return 0;
   }
 
-  if( show_mixer_util_page ) {
-    // layout:
-    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-    // <--------------------------------------><-------------------------------------->
-    // Map#   Mixer Utility Functions          CC Assignments                          
-    // 128  Copy Paste Clr      Load Save Dump  CC1  CC2  CC3  CC4                     
-    SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintFormattedString("Map Number: %3d      ", SEQ_MIXER_NumGet()+1);
-	
-	/////////////////////////////////////////////////////////////////////////////
-	SEQ_LCD_CursorSet(0, 1);
-	SEQ_LCD_PrintString("Mixer ");
-	//Utilities");
-    if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
-      SEQ_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
-	  SEQ_LCD_PrintSpaces(7);
-    } else {
-	  SEQ_LCD_PrintString("utilities      ");
-      //SEQ_LCD_PrintSpaces(8);
-    }
-
-    //SEQ_LCD_PrintFormattedString("CC Assignments");
-    //SEQ_LCD_PrintSpaces(26);
-
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 2);
-    //SEQ_LCD_PrintFormattedString(" Copy Paste Clr      Load Save Dump ", SEQ_MIXER_NumGet()+1);
-    //SEQ_LCD_PrintFormattedString(" CC1  CC2  CC3  CC4");
-    //SEQ_LCD_PrintSpaces(21);
-	SEQ_LCD_PrintString("Copy Paste Clr Load  ");
-	
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 3);	
-	SEQ_LCD_PrintString("Save Dump            ");
-	
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 4);	
-	SEQ_LCD_PrintSpaces(21);	
-	
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 5);	
-	SEQ_LCD_PrintString("CC Assignments       ");	
-	
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 6);	
-	SEQ_LCD_PrintString("CC1   CC2   CC3  CC4");
-	
-	/////////////////////////////////////////////////////////////////////////////
-    SEQ_LCD_CursorSet(0, 7);	
-	SEQ_LCD_PrintSpaces(21);
-	
-  } else {
+  switch( show_mixer_util_page ) {
+  case MIXER_UTIL_PAGE_OFF: {
     // layout:
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
     // <--------------------------------------><-------------------------------------->
     // Mixer Map #  1      xxxxxxxxxxxxxxxxxxxxPage [ 4] Volume             IIC1 Chn#12
     //  127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_ 127_
-
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintFormattedString("Mixer Map #%3d       ", SEQ_MIXER_NumGet()+1);
-	
-	/////////////////////////////////////////////////////////////////////////////	
-    SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString(SEQ_MIXER_MapNameGet()); // 20 characters
-	
+    SEQ_LCD_PrintFormattedString("Mixer Map #%3d", SEQ_MIXER_NumGet()+1);
 	/////////////////////////////////////////////////////////////////////////////
+	SEQ_LCD_CursorSet(0, 1);
+	SEQ_LCD_PrintString(SEQ_MIXER_MapNameGet()); // 20 characters
+
 	SEQ_LCD_CursorSet(0, 2);
-    SEQ_LCD_PrintFormattedString("Page%2d", mixer_par+1);
+    SEQ_LCD_PrintFormattedString("Page%2d  ", mixer_par+1);	
+
 
     if( mixer_par < SEQ_MIXER_PAR_CC1_NUM ) {
       if( mixer_par < SEQ_MIXER_PAR_CC1 ) {
@@ -479,8 +513,12 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintFormattedString("Asgn for CC%d", mixer_par-SEQ_MIXER_PAR_CC1_NUM+1);
     }
 
+//<<<<<<< .mine
 	/////////////////////////////////////////////////////////////////////////////
 	SEQ_LCD_CursorSet(0, 3);	
+//=======
+ //   SEQ_LCD_PrintSpaces(2);
+//>>>>>>> .r1826
     SEQ_LCD_PrintMIDIOutPort(SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_PORT));
     SEQ_LCD_PrintFormattedString(" Chn#%2d", SEQ_MIXER_Get(ui_selected_item, SEQ_MIXER_PAR_CHANNEL)+1);
 	SEQ_LCD_PrintSpaces(10);
@@ -520,6 +558,57 @@ static s32 LCD_Handler(u8 high_prio)
 	}
       }
     }
+  } break;
+
+  case MIXER_UTIL_PAGE_OPTIONS: {
+    // layout:
+    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+    // <--------------------------------------><-------------------------------------->
+    // Map#   Mixer Utility Functions          CC Assignments                     Edit 
+    // 128  Copy Paste Clr      Load Save Dump  CC1  CC2  CC3  CC4                Name 
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintFormattedString("Map#   Mixer Utility Functions  ");
+    if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
+      SEQ_LCD_PrintString((char *)in_menu_msg_str[(in_menu_msg & 0x7f)-1]);
+    } else {
+      SEQ_LCD_PrintSpaces(8);
+    }
+
+    SEQ_LCD_PrintFormattedString("CC Assignments                     Edit ");
+
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintFormattedString("%3d  Copy Paste Clr      Load Save Dump ", SEQ_MIXER_NumGet()+1);
+    SEQ_LCD_PrintFormattedString(" CC1  CC2  CC3  CC4                Name ");
+  } break;
+
+  case MIXER_UTIL_PAGE_NAME: {
+    // layout:
+    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+    // <--------------------------------------><-------------------------------------->
+    // Please enter name for Mixer Map #  1    <xxxxxxxxxxxxxxxxxxxx>                  
+    // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins        Done
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintFormattedString("Please enter name for Mixer Map #%3d    ", SEQ_MIXER_NumGet()+1);
+
+    SEQ_LCD_PrintChar('<');
+    int i;
+    for(i=0; i<20; ++i)
+      SEQ_LCD_PrintChar(edit_mixer_map_name[i]);
+    SEQ_LCD_PrintChar('>');
+    SEQ_LCD_PrintSpaces(18);
+
+    // insert flashing cursor
+    if( ui_cursor_flash ) {
+      SEQ_LCD_CursorSet(41 + ui_edit_name_cursor, 0);
+      SEQ_LCD_PrintChar('*');
+    }
+
+    SEQ_UI_KeyPad_LCD_Msg();
+    SEQ_LCD_PrintString("       Done");
+  } break;
   }
 
   return 0; // no error
@@ -539,10 +628,13 @@ s32 SEQ_UI_MIXER_Init(u32 mode)
 
   in_menu_msg = MSG_DEFAULT;
   ui_hold_msg_ctr = 0;
-  show_mixer_util_page = 0;
+  show_mixer_util_page = MIXER_UTIL_PAGE_OFF;
 
   // we want to show vertical VU meters
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+
+  // initialize label editor
+  SEQ_UI_KeyPad_Init();
 
   // disabled: don't change previous settings (values will be initialized with 0 by gcc)
   // SEQ_MIXER_NumSet(0);

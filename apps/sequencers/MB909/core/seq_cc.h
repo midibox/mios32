@@ -1,4 +1,4 @@
-// $Id: seq_cc.h 1121 2010-10-31 21:16:25Z tk $
+// $Id: seq_cc.h 1794 2013-05-31 19:25:43Z tk $
 /*
  * Header file for CC parameters
  *
@@ -226,6 +226,7 @@ extern s32 SEQ_CC_Init(u32 mode);
 
 extern s32 SEQ_CC_Set(u8 track, u8 cc, u8 value);
 extern s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value);
+extern s32 SEQ_CC_MIDI_Get(u8 track, u8 cc, u8 *mapped_cc);
 extern s32 SEQ_CC_Get(u8 track, u8 cc);
 
 extern s32 SEQ_CC_LinkUpdate(u8 track);

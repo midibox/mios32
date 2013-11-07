@@ -1,4 +1,4 @@
-// $Id: seq_ui.c 1488 2012-07-16 18:10:24Z tk $
+// $Id: seq_ui.c 1814 2013-06-25 21:39:06Z tk $
 /*
  * User Interface Routines
  *
@@ -33,6 +33,7 @@
 #include "seq_lcd.h"
 #include "seq_led.h"
 #include "seq_midply.h"
+#include "seq_mixer.h"
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_par.h"
@@ -41,6 +42,7 @@
 #include "seq_record.h"
 #include "seq_midi_sysex.h"
 #include "seq_midi_port.h"
+#include "seq_midi_in.h"
 #include "seq_blm.h"
 
 
@@ -97,6 +99,8 @@ u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 u8 seq_ui_saveall_req;
 
+u8 seq_ui_sent_cc_track;
+
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
@@ -127,6 +131,14 @@ static u16 ui_delayed_action_ctr;
 static seq_ui_page_t ui_page_before_bookmark;
 
 mios32_sys_time_t seq_play_timer;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_Button_StepViewInc(s32 depressed);
+static s32 SEQ_UI_Button_StepViewDec(s32 depressed);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -170,8 +182,13 @@ s32 SEQ_UI_Init(u32 mode)
   seq_ui_format_req = 0;
   seq_ui_saveall_req = 0;
 
+//<<<<<<< .mine
   // init contrast
 
+//=======
+  seq_ui_sent_cc_track = 0xff; // invalidate
+
+//>>>>>>> .r1826
   // change to edit page
   ui_page = SEQ_UI_PAGE_NONE;
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
@@ -329,7 +346,8 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_exit_callback = NULL;
     ui_delayed_action_callback = NULL;
     portEXIT_CRITICAL();
-
+	DEBUG_MSG("page value= %05d\n",  page);
+	DEBUG_MSG("page value= %s\n",  SEQ_UI_PageNameGet(page));
     // always disable ALL button when changing page
     seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE = 0;
     seq_ui_button_state.CHANGE_ALL_STEPS = 0;
@@ -365,6 +383,32 @@ char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local help functions for copy/paste/clear/undo operations
+/////////////////////////////////////////////////////////////////////////////
+static void SEQ_UI_Msg_Track(char *line2)
+{
+  char buffer[20];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  sprintf(buffer, "Track G%dT%d", 1 + (visible_track / 4), 1 + (visible_track % 4));
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+static void SEQ_UI_Msg_MixerMap(char *line2)
+{
+  char buffer[20];
+  sprintf(buffer, "Mixer Map #%d", SEQ_MIXER_NumGet()+1);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+static void SEQ_UI_Msg_SongPos(char *line2)
+{
+  char buffer[20];
+  sprintf(buffer, "Song Position %c%d", 'A' + (ui_song_edit_pos >> 3), (ui_song_edit_pos&7)+1);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Dedicated button functions
 // Mapped to physical buttons in SEQ_UI_Button_Handler()
 // Will also be mapped to MIDI keys later (for MIDI remote function)
@@ -372,7 +416,7 @@ char *SEQ_UI_PageNameGet(seq_ui_page_t page)
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
   // in MENU page: overrule GP buttons as long as MENU button is pressed/active
-  if( seq_ui_button_state.MENU_PRESSED ) {
+  if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( depressed ) return -1;
     SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
   } else {
@@ -556,8 +600,10 @@ static s32 SEQ_UI_Button_Rew(s32 depressed)
     portENTER_CRITICAL();
     SEQ_SONG_Rew();
     portEXIT_CRITICAL();
-  } else
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+  } else {
+    //SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+    SEQ_UI_Button_StepViewDec(depressed);
+  }
 
   return 0; // no error
 }
@@ -572,8 +618,10 @@ static s32 SEQ_UI_Button_Fwd(s32 depressed)
     portENTER_CRITICAL();
     SEQ_SONG_Fwd();
     portEXIT_CRITICAL();
-  } else
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+  } else {
+    //SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "We are not", "in Song Mode!");
+    SEQ_UI_Button_StepViewInc(depressed);
+  }
 
   return 0; // no error
 }
@@ -815,12 +863,12 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Copy();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "copied");
+    SEQ_UI_Msg_MixerMap("copied");
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed ) return -1;
     SEQ_UI_SONG_Copy();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "copied");
+    SEQ_UI_Msg_SongPos("copied");
     return 1;
   } else {
     if( !depressed ) {
@@ -834,7 +882,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "copied");
+      SEQ_UI_Msg_Track("copied");
     }
 
     return status;
@@ -913,12 +961,12 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Paste();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "pasted");
+    SEQ_UI_Msg_MixerMap("pasted");
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed ) return -1;
     SEQ_UI_SONG_Paste();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "pasted");
+    SEQ_UI_Msg_SongPos("pasted");
     return 1;
   } else {
     if( !depressed ) {
@@ -932,7 +980,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "pasted");
+      SEQ_UI_Msg_Track("pasted");
     }
 
     return status;
@@ -944,14 +992,14 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 static void SEQ_UI_Button_Clear_Mixer(u32 dummy)
 {
   SEQ_UI_MIXER_Clear();
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "cleared");
+  SEQ_UI_Msg_MixerMap("cleared");
 }
 
 // callback function for delayed Clear SongPos function
 static void SEQ_UI_Button_Clear_SongPos(u32 dummy)
 {
   SEQ_UI_SONG_Clear();
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Song Position", "cleared");
+  SEQ_UI_Msg_SongPos("cleared");
 }
 
 // callback function for clear track
@@ -959,35 +1007,40 @@ static void SEQ_UI_Button_Clear_Track(u32 dummy)
 {
   SEQ_UI_UTIL_ClearButton(0); // button pressed
   SEQ_UI_UTIL_ClearButton(1); // button depressed
-  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "cleared");
+  SEQ_UI_Msg_Track("cleared");
 }
 
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
+#if 0
+  u32 clear_delay = 2000;
+#else
+  u32 clear_delay = 50; // TK: I prefer a much faster clear
+#endif
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Mixer Map");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Mixer Map");
     }
     return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear SongPos");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
     }
     return 1;
   } else {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Track);
     else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, 2000, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, 2001, "", "to clear Track");
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Track");
     }
     return 1;
   }
@@ -1003,7 +1056,7 @@ static s32 SEQ_UI_Button_Undo(s32 depressed)
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
     if( depressed ) return -1;
     SEQ_UI_MIXER_Undo();
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Mixer Map", "Undo applied");
+    SEQ_UI_Msg_MixerMap("Undo applied");
     return 1;
   } else {
     if( !depressed ) {
@@ -1017,7 +1070,7 @@ static s32 SEQ_UI_Button_Undo(s32 depressed)
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
 
-      SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Track", "Undo applied");
+      SEQ_UI_Msg_Track("Undo applied");
     }
 
     return status;
@@ -1291,6 +1344,53 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
     if( ui_page == SEQ_UI_PAGE_STEPSEL )
       SEQ_UI_PageSet(ui_stepview_prev_page);
   }
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_StepViewInc(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+  int new_step_view = ui_selected_step_view + 1;
+  if( (16*new_step_view) < num_steps ) {
+    // select new step view
+    ui_selected_step_view = new_step_view;
+
+    // select step within view
+    if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    }
+  }
+
+  char buffer[20];
+  sprintf(buffer, "%d-%d", ui_selected_step_view*16 + 1, ui_selected_step_view*16 + 16);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Step View", buffer);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  int new_step_view = ui_selected_step_view - 1;
+  if( new_step_view >= 0 ) {
+    // select new step view
+    ui_selected_step_view = new_step_view;
+
+    // select step within view
+    if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the selected step if ALL function is active, otherwise the ramp can't be changed over multiple views
+      ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+    }
+  }
+
+  char buffer[20];
+  sprintf(buffer, "%d-%d", ui_selected_step_view*16 + 1, ui_selected_step_view*16 + 16);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Step View", buffer);
 
   return 0; // no error
 }
@@ -1687,6 +1787,36 @@ static s32 SEQ_UI_Button_Mixer(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_Save(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  u8 group = ui_selected_group;
+  seq_pattern_t pattern = seq_pattern[group];
+  s32 status;
+  if( (status=SEQ_PATTERN_Save(group, pattern)) < 0 ) {
+    SEQ_UI_SDCardErrMsg(2000, status);
+  } else {
+    char str1[21];
+    char str2[21];
+    sprintf(str1, "Track Group G%d", group + 1);
+    sprintf(str2, "stored into %d:%c%d", pattern.bank+1, (pattern.lower ? 'a' : 'A') + pattern.group, pattern.num + 1);
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, str1, str2);
+  }
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_SaveAll(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "Complete Session", "stored!");
+  seq_ui_saveall_req = 1;
+
+  return 0; // no error
+}
+
 static s32 SEQ_UI_Button_TrackMode(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
@@ -1741,6 +1871,61 @@ static s32 SEQ_UI_Button_TrackTranspose(s32 depressed)
   return 0; // no error
 }
 
+static s32 SEQ_UI_Button_MuteAllTracks(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  seq_core_trk_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "muted");
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_MuteTrackLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_core_trk[visible_track].layer_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track muted");
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_MuteAllTracksAndLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  int track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    seq_core_trk[track].layer_muted = 0xffff;
+  seq_core_trk_muted = 0xffff;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks muted");
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteAllTracks(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  seq_core_trk_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Tracks", "unmuted");
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteTrackLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_core_trk[visible_track].layer_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "of current Track unmuted");
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_UnMuteAllTracksAndLayers(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+  int track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+    seq_core_trk[track].layer_muted = 0x0000;
+  seq_core_trk_muted = 0x0000;
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "All Layers", "and Tracks unmuted");
+  return 0; // no error
+}
 
 // only used by keyboard remote function
 static s32 SEQ_UI_Button_ToggleGate(s32 depressed)
@@ -1958,6 +2143,11 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   if( pin == seq_hwcfg_button.mixer )
     return SEQ_UI_Button_Mixer(pin_value);
 
+  if( pin == seq_hwcfg_button.save )
+    return SEQ_UI_Button_Save(pin_value);
+  if( pin == seq_hwcfg_button.save_all )
+    return SEQ_UI_Button_SaveAll(pin_value);
+
   if( pin == seq_hwcfg_button.track_mode )
     return SEQ_UI_Button_TrackMode(pin_value);
   if( pin == seq_hwcfg_button.track_groove )
@@ -1974,6 +2164,20 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_FootSwitch(pin_value);
   if( pin == seq_hwcfg_button.pattern_remix )
     return SEQ_UI_Button_Pattern_Remix(pin_value);
+
+  if( pin == seq_hwcfg_button.mute_all_tracks )
+    return SEQ_UI_Button_MuteAllTracks(pin_value);
+  if( pin == seq_hwcfg_button.mute_track_layers )
+    return SEQ_UI_Button_MuteTrackLayers(pin_value);
+  if( pin == seq_hwcfg_button.mute_all_tracks_and_layers )
+    return SEQ_UI_Button_MuteAllTracksAndLayers(pin_value);
+  if( pin == seq_hwcfg_button.unmute_all_tracks )
+    return SEQ_UI_Button_UnMuteAllTracks(pin_value);
+  if( pin == seq_hwcfg_button.unmute_track_layers )
+    return SEQ_UI_Button_UnMuteTrackLayers(pin_value);
+  if( pin == seq_hwcfg_button.unmute_all_tracks_and_layers )
+    return SEQ_UI_Button_UnMuteAllTracksAndLayers(pin_value);
+
   // always print debugging message
 #if 1
   MUTEX_MIDIOUT_TAKE;
@@ -2068,8 +2272,18 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     u16 value = (u16)(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num]*10);
     if( SEQ_UI_Var16_Inc(&value, 25, 3000, incrementer) ) { // at 384ppqn, the minimum BPM rate is ca. 2.5
       // set new BPM
-      //seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
-	  seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = floor((int)value/10.0);
+      DEBUG_MSG("enc 17 in seq_ui ");
+	  DEBUG_MSG("bmb  voor afronden value= %05d\n",  value);
+	  seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
+	  DEBUG_MSG("bmb  na d afronden= %05d\n",  (float)value/10.0);
+	  DEBUG_MSG("bmb  na x afronden= %x\n",  (float)value/10.0);
+	/* 
+	 if( incrementer <0 )
+		seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = floor((int)value/10.0); 
+	 else if( incrementer >0 )
+		seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = ceil((int)value/10.0);
+		
+	*/	
       SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
       //store_file_required = 1;
       seq_ui_display_update_req = 1;      
@@ -2533,6 +2747,7 @@ s32 SEQ_UI_LCD_Update(void)
     }
   }
 
+/*<<<<<<< .mine
   // MSD USB notification at right corner if not in Disk page
   // to warn user that USB MIDI is disabled and seq performance is bad now!
   if( (TASK_MSD_EnableGet() > 0) && ui_page != SEQ_UI_PAGE_DISK ) {
@@ -2544,6 +2759,9 @@ s32 SEQ_UI_LCD_Update(void)
     if( ui_cursor_flash ) SEQ_LCD_PrintSpaces(13); else SEQ_LCD_PrintFormattedString(" [ %s  ] ", str);
   }
 
+=======
+>>>>>>> .r1826
+*/
   // transfer all changed characters to LCD
   // SEQ_LCD_Update provides a MUTEX handling to allow updates from different tasks
   return SEQ_LCD_Update(0);
@@ -2556,6 +2774,7 @@ s32 SEQ_UI_LCD_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_LED_Handler(void)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
   static u8 remote_led_sr[SEQ_LED_NUM_SR];
 
   // ignore in remote client mode
@@ -2689,9 +2908,23 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.down, seq_ui_button_state.DOWN);
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
 
+  SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk_muted == 0xffff);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk[visible_track].layer_muted == 0xffff);
+  SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk_muted == 0x0000);
+  SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk[visible_track].layer_muted == 0x0000);
+  // only consume CPU time if LEDs really assigned...
+  if( seq_hwcfg_led.mute_all_tracks_and_layers || seq_hwcfg_led.unmute_all_tracks_and_layers ) {
+    u16 all_layers_muted_mask = 0;
+    int track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+      all_layers_muted_mask |= seq_core_trk[track].layer_muted;
+
+    SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks_and_layers, seq_core_trk_muted == 0xffff && all_layers_muted_mask == 0xffff);
+    SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks_and_layers, seq_core_trk_muted == 0x0000 && all_layers_muted_mask == 0x0000);
+  }
 
   // in MENU page: overrule GP LEDs as long as MENU button is pressed/active
-  if( seq_ui_button_state.MENU_PRESSED ) {
+  if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( ui_cursor_flash ) // if flashing flag active: no LED flag set
       ui_gp_leds = 0x0000;
     else {
@@ -3066,9 +3299,25 @@ s32 SEQ_UI_CheckSelections(void)
     ui_selected_step %= 16;
   }
 
-  if( ui_selected_step < (16*ui_selected_step_view) || 
-      ui_selected_step >= (16*(ui_selected_step_view+1)) )
-    ui_selected_step_view = ui_selected_step / 16;
+  if( !seq_ui_button_state.CHANGE_ALL_STEPS ) { // don't change the view if ALL function is active, otherwise the ramp can't be changed over multiple views
+    if( ui_selected_step < (16*ui_selected_step_view) || 
+	ui_selected_step >= (16*(ui_selected_step_view+1)) )
+      ui_selected_step_view = ui_selected_step / 16;
+  }
+
+  // send selected track via MIDI if it has been changed
+  if( seq_hwcfg_track_cc.mode && seq_ui_sent_cc_track != visible_track ) {
+    seq_ui_sent_cc_track = visible_track;
+
+    switch( seq_hwcfg_track_cc.mode ) {
+    case 1: {
+      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, seq_hwcfg_track_cc.cc, visible_track);
+    } break;
+    case 2: {
+      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, (seq_hwcfg_track_cc.cc + visible_track) & 0x7f, 0x7f);
+    } break;
+    }
+  }
 
   return 0; // no error
 }
@@ -3189,37 +3438,29 @@ s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Increments a CC within given min/max range
-// OUT: 1 if value has been changed, otherwise 0
+// Sends the current CC parameter of the given track to seq_midi_in_ext_ctrl_out_port
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer)
+s32 SEQ_UI_CC_SendParameter(u8 track, u8 cc)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  int new_value = SEQ_CC_Get(visible_track, cc);
-  int prev_value = new_value;
+  if( seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] &&
+      seq_midi_in_ext_ctrl_out_port &&
+      seq_midi_in_ext_ctrl_channel ) {
+    mios32_midi_port_t port = seq_midi_in_ext_ctrl_out_port;
+    mios32_midi_chn_t chn = seq_midi_in_ext_ctrl_channel - 1;
+    u8 mapped_cc;
+    s32 value = SEQ_CC_MIDI_Get(track, cc, &mapped_cc);
 
-  if( incrementer >= 0 ) {
-    if( (new_value += incrementer) >= max )
-      new_value = max;
-  } else {
-    if( (new_value += incrementer) < min )
-      new_value = min;
+    if( value >= 0 ) {
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, 0x63, track);
+      MIOS32_MIDI_SendCC(port, chn, 0x62, mapped_cc);
+      MIOS32_MIDI_SendCC(port, chn, 0x06, value & 0x7f);
+      MUTEX_MIDIOUT_GIVE;
+    }
   }
 
-  if( new_value == prev_value )
-    return 0; // no change
-
-  SEQ_CC_Set(visible_track, cc, new_value);
-
-  // set same value for all selected tracks
-  u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
-      SEQ_CC_Set(track, cc, new_value);
-
-  return 1; // value changed
+  return 0; // no error
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets a CC value on all selected tracks
@@ -3233,16 +3474,42 @@ s32 SEQ_UI_CC_Set(u8 cc, u8 value)
   if( value == prev_value )
     return 0; // no change
 
-  SEQ_CC_Set(visible_track, cc, value);
-
   // set same value for all selected tracks
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) )
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( SEQ_UI_IsSelectedTrack(track) ) {
       SEQ_CC_Set(track, cc, value);
+      SEQ_UI_CC_SendParameter(track, cc);
+    }
+  }
 
   return 1; // value changed
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Increments a CC within given min/max range
+// OUT: 1 if value has been changed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_CC_Inc(u8 cc, u8 min, u8 max, s32 incrementer)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  int new_value = SEQ_CC_Get(visible_track, cc);
+
+  if( incrementer >= 0 ) {
+    if( (new_value += incrementer) >= max )
+      new_value = max;
+  } else {
+    if( (new_value += incrementer) < min )
+      new_value = min;
+  }
+
+  // set value
+  SEQ_UI_CC_Set(cc, new_value);
+
+  return 1; // value changed
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Modifies a bitfield in a CC value to a given value
@@ -3259,16 +3526,16 @@ s32 SEQ_UI_CC_SetFlags(u8 cc, u8 flag_mask, u8 value)
   if( new_value == prev_value )
     return 0; // no change
 
-  SEQ_CC_Set(visible_track, cc, new_value);
-
   // do same modification for all selected tracks
   u8 track;
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( track != visible_track && SEQ_UI_IsSelectedTrack(track) ) {
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( SEQ_UI_IsSelectedTrack(track) ) {
       int new_value = SEQ_CC_Get(track, cc);
       new_value = (new_value & ~flag_mask) | value;
       SEQ_CC_Set(track, cc, new_value);
+      SEQ_UI_CC_SendParameter(track, cc);
     }
+  }
 
   return 1; // value changed
 }

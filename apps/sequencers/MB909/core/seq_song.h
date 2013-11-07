@@ -1,4 +1,4 @@
-// $Id: seq_song.h 1493 2012-08-03 20:54:45Z tk $
+// $Id: seq_song.h 1515 2012-09-24 20:39:06Z tk $
 /*
  * Header file for song routines
  *
@@ -26,7 +26,7 @@
 #define SEQ_SONG_NUM_STEPS 128
 
 // number of action types (must match with seq_song_action_t)
-#define SEQ_SONG_NUM_ACTIONS 22
+#define SEQ_SONG_NUM_ACTIONS 23
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -56,6 +56,7 @@ typedef enum {
   SEQ_SONG_ACTION_SelMixerMap,
   SEQ_SONG_ACTION_Tempo,
   SEQ_SONG_ACTION_Mutes,
+  SEQ_SONG_ACTION_GuideTrack,
 } seq_song_action_t;
 
 typedef union {

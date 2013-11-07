@@ -1,4 +1,4 @@
-// $Id: seq_terminal.c 1492 2012-07-29 20:41:49Z tk $
+// $Id: seq_terminal.c 1806 2013-06-16 19:17:37Z tk $
 /*
  * MIDIbox SEQ MIDI Terminal
  *
@@ -22,6 +22,7 @@
 #include <ff.h>
 
 #include <aout.h>
+#include <app_lcd.h>
 
 #include "tasks.h"
 
@@ -34,6 +35,7 @@
 #include "seq_layer.h"
 #include "seq_par.h"
 #include "seq_trg.h"
+#include "seq_record.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
 #include "seq_blm.h"
@@ -66,7 +68,7 @@
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-#define STRING_MAX 80
+#define STRING_MAX 100 // recommended size for file transfers via FILE_BrowserHandler()
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -78,13 +80,22 @@ static u16 line_ix;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TERMINAL_Init(u32 mode)
 {
-  // install the callback function which is called on incoming characters
-  // from MIOS Terminal
+  // install the callback function which is called on incoming characters from MIOS Terminal
   MIOS32_MIDI_DebugCommandCallback_Init(SEQ_TERMINAL_Parse);
+
+  // install the callback function which is called on incoming characters from MIOS Filebrowser
+  MIOS32_MIDI_FilebrowserCommandCallback_Init(TERMINAL_ParseFilebrowser);
 
   // clear line buffer
   line_buffer[0] = 0;
@@ -160,6 +171,30 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, char byte)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Parser for Filebrowser
+/////////////////////////////////////////////////////////////////////////////
+s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
+{
+  if( byte == '\r' ) {
+    // ignore
+  } else if( byte == '\n' ) {
+    MUTEX_MIDIOUT_TAKE;
+    MUTEX_SDCARD_TAKE;
+    FILE_BrowserHandler(port, line_buffer);
+    MUTEX_SDCARD_GIVE;
+    MUTEX_MIDIOUT_GIVE;
+    line_ix = 0;
+    line_buffer[line_ix] = 0;
+  } else if( line_ix < (STRING_MAX-1) ) {
+    line_buffer[line_ix++] = byte;
+    line_buffer[line_ix] = 0;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Parser for a complete line - also used by shell.c for telnet
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
@@ -179,11 +214,47 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
     return 0; // command parsed
 #endif
 
+#ifdef MIOS32_LCD_universal
+  if( APP_LCD_TerminalParseLine(input, _output_function) >= 1 )
+    return 0; // command parsed
+#endif
+
   if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
       SEQ_TERMINAL_PrintHelp(out);
     } else if( strcmp(parameter, "system") == 0 ) {
       SEQ_TERMINAL_PrintSystem(out);
+    } else if( strcmp(parameter, "memory") == 0 ) {
+      SEQ_TERMINAL_PrintMemoryInfo(out);
+    } else if( strcmp(parameter, "sdcard") == 0 ) {
+      SEQ_TERMINAL_PrintSdCardInfo(out);
+    } else if( strcmp(parameter, "sdcard_format") == 0 ) {
+      if( !brkt || strcasecmp(brkt, "yes, I'm sure") != 0 ) {
+	out("ATTENTION: this command will format your SD Card!!!");
+	out("           ALL DATA WILL BE DELETED FOREVER!!!");
+	out("           Check the current content with the 'sdcard' command");
+	out("           Create a backup on your computer if necessary!");
+	out("To start formatting, please enter: sdcard_format yes, I'm sure");
+	if( brkt ) {
+	  out("('%s' wasn't the right \"password\")", brkt);
+	}
+      } else {
+	MUTEX_SDCARD_TAKE;
+	out("Formatting SD Card...");
+	FRESULT res;
+	if( (res=f_mkfs(0,0,0)) != FR_OK ) {
+	  out("Formatting failed with error code: %d!", res);
+	} else {
+	  out("...with success!");
+#ifdef MBSEQV4L    
+	  out("Please upload your MBSEQ_HW.V4L file with the MIOS Filebrowser now!");
+#else
+	  out("Please upload your MBSEQ_HW.V4 file with the MIOS Filebrowser now!");
+#endif
+	  out("Thereafter enter 'reset' to restart the application.");
+	}
+	MUTEX_SDCARD_GIVE;
+      }
     } else if( strcmp(parameter, "global") == 0 ) {
       SEQ_TERMINAL_PrintGlobalConfig(out);
     } else if( strcmp(parameter, "bookmarks") == 0 ) {
@@ -210,36 +281,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintCurrentSong(out);
     } else if( strcmp(parameter, "grooves") == 0 ) {
       SEQ_TERMINAL_PrintGrooveTemplates(out);
-    } else if( strcmp(parameter, "memory") == 0 ) {
-      SEQ_TERMINAL_PrintMemoryInfo(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
-      char *arg = NULL;
-      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcmp(arg, "on") == 0 ) {
-	  if( TASK_MSD_EnableGet() ) {
-	    out("Mass Storage Device Mode already activated!\n");
-	  } else {
-	    out("Mass Storage Device Mode activated - USB MIDI will be disabled!!!\n");
-	    // wait a second to ensure that this message is print in MIOS Terminal
-	    int d;
-	    for(d=0; d<1000; ++d)
-	      MIOS32_DELAY_Wait_uS(1000);
-	    // activate MSD mode
-	    TASK_MSD_EnableSet(1);
-	  }
-	} else if( strcmp(arg, "off") == 0 ) {
-	  if( !TASK_MSD_EnableGet() ) {
-	    out("Mass Storage Device Mode already deactivated!\n");
-	  } else {
-	    out("Mass Storage Device Mode deactivated - USB MIDI will be available again.n");
-	    TASK_MSD_EnableSet(0);
-	  }
-	} else
-	  arg = NULL;
-      }
-      if( arg == NULL ) {
-	out("Please enter 'msd on' or 'msd off'\n");
-      }
+      out("Mass Storage Device Mode not supported by this application!\n");
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "router") == 0 ) {
@@ -282,7 +325,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
 		    if( strcmp(arg_src_chn, "---") == 0 || strcmp(arg_src_chn, "off") == 0 )
 		      src_chn = 0;
-		    else if( strcmp(arg_src_chn, "All") == 0 || strcmp(arg_src_chn, "all") == 0 )
+		    else if( strcasecmp(arg_src_chn, "all") == 0 )
 		      src_chn = 17;
 		    else {
 		      src_chn = get_dec(arg_src_chn);
@@ -323,8 +366,16 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 
 			    if( strcmp(arg_dst_chn, "---") == 0 || strcmp(arg_dst_chn, "off") == 0 )
 			      dst_chn = 0;
-			    else if( strcmp(arg_dst_chn, "All") == 0 || strcmp(arg_dst_chn, "all") == 0 )
+			    else if( strcasecmp(arg_dst_chn, "all") == 0 )
 			      dst_chn = 17;
+			    else if( strcasecmp(arg_dst_chn, "trk") == 0 || strcasecmp(arg_dst_chn, "track") == 0 )
+			      dst_chn = 18;
+			    else if( strcasecmp(arg_dst_chn, "stk") == 0 ||
+				     strcasecmp(arg_dst_chn, "strk") == 0 ||
+				     strcasecmp(arg_dst_chn, "seltrk") == 0 ||
+				     strcasecmp(arg_dst_chn, "seltrack") == 0 ||
+				     strcasecmp(arg_dst_chn, "track") == 0 )
+			      dst_chn = 19;
 			    else {
 			      dst_chn = get_dec(arg_dst_chn);
 			      if( dst_chn > 16 )
@@ -446,14 +497,32 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	      }
 	    }
 	  }
+
+	} else if( strcmp(parameter, "rec_quantisation") == 0 ) {
+	  char *arg;
+	  int value;
+	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify quantisation between 1%%..100%% (default: 10%%, current: %d%%)\n", seq_record_quantize);
+	  } else {
+	    int len;
+	    while( (len=strlen(arg)) && arg[len-1] == '%' ) {
+	      arg[len-1] = 0;
+	    }
+
+	    if( (value=get_dec(arg)) < 0 || value > 100 ) {
+	      out("Quantisation should be between 1%%..100%%!\n");
+	    } else {
+	      seq_record_quantize = value;
+	      out("Quantisation set to %d%%\n", seq_record_quantize);
+	      out("Enter 'store' to save this setting on SD Card.\n");
+	    }
+	  }
 	} else {
 	  out("Unknown set parameter: '%s'!", parameter);
 	}
       } else {
 	out("Missing parameter after 'set'!");
       }
-    } else if( strcmp(parameter, "sdcard") == 0 ) {
-      SEQ_TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "router") == 0 ) {
       SEQ_TERMINAL_PrintRouterInfo(out);
     } else if( strcmp(parameter, "play") == 0 || strcmp(parameter, "start") == 0 ) { // play or start do the same
@@ -497,6 +566,9 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
   out("Following commands are available:");
   out("  system:         print system info\n");
+  out("  memory:         print memory allocation info\n");
+  out("  sdcard:         print SD Card info\n");
+  out("  sdcard_format:  formats the SD Card (you will be asked for confirmation)\n");
   out("  global:         print global configuration\n");
   out("  config:         print local session configuration\n");
   out("  tracks:         print overview of all tracks\n");
@@ -505,16 +577,17 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  song:           print current song info\n");
   out("  grooves:        print groove templates\n");
   out("  bookmarks:      print bookmarks\n");
-  out("  memory:         print memory allocation info\n");
-  out("  sdcard:         print SD Card info\n");
   out("  router:         print MIDI router info\n");
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
-  out("  msd <on|off>:   enables Mass Storage Device driver\n");
+  out("  set rec_quantisation <1..100>: change record quantisation (default: 10%%, current: %d%%)\n", seq_record_quantize);
 #if !defined(MIOS32_FAMILY_EMULATION)
   AOUT_TerminalHelp(_output_function);
+#endif
+#ifdef MIOS32_LCD_universal
+  APP_LCD_TerminalHelp(_output_function);
 #endif
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
@@ -577,6 +650,26 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   out("Flash Memory Size: %d bytes\n", MIOS32_SYS_FlashSizeGet());
   out("RAM Size: %d bytes\n", MIOS32_SYS_RAMSizeGet());
 
+  {
+    out("MIDI IN Ports:\n");
+    int num = SEQ_MIDI_PORT_InNumGet();
+    int i;
+    for(i=0; i<num; ++i) {
+      mios32_midi_port_t port = SEQ_MIDI_PORT_InPortGet(i);
+      out("  - %s (%s)\n", SEQ_MIDI_PORT_InNameGet(i), SEQ_MIDI_PORT_InCheckAvailable(port) ? "available" : "not available");
+    }    
+  }
+
+  {
+    out("MIDI OUT Ports:\n");
+    int num = SEQ_MIDI_PORT_OutNumGet();
+    int i;
+    for(i=0; i<num; ++i) {
+      mios32_midi_port_t port = SEQ_MIDI_PORT_OutPortGet(i);
+      out("  - %s (%s)\n", SEQ_MIDI_PORT_OutNameGet(i), SEQ_MIDI_PORT_OutCheckAvailable(port) ? "available" : "not available");
+    }    
+  }
+
   out("Systime: %02d:%02d:%02d\n", hours, minutes, seconds);
   out("CPU Load: %02d%%\n", SEQ_STATISTICS_CurrentCPULoad());
   out("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
@@ -600,7 +693,7 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
       root_selection == 0 ? "Keyboard" : "Selection",
       root_note_str);
 
-#if !defined(MIOS32_FAMILY_EMULATION) && configGENERATE_RUN_TIME_STATS
+#if !defined(MIOS32_FAMILY_EMULATION) && (configGENERATE_RUN_TIME_STATS || configUSE_TRACE_FACILITY)
   // send Run Time Stats to MIOS terminal
   out("FreeRTOS Task RunTime Stats:\n");
   FREERTOS_UTILS_RunTimeStats();
@@ -1037,7 +1130,8 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 
-  out("MIDI Router Nodes (change with 'set router <in-port> <channel> <out-port> <channel>)");
+  out("MIDI Router Nodes (change with 'set router <node> <in-port> <channel> <out-port> <channel>)");
+  out("Example: set router 1 IN1 all USB1 all");
 
   u8 node;
   seq_midi_router_node_t *n = &seq_midi_router_node[0];
@@ -1054,8 +1148,12 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
     char dst_chn[10];
     if( !n->dst_chn )
       sprintf(dst_chn, "off");
-    else if( n->dst_chn > 16 )
-      sprintf(dst_chn, "all");
+    else if( n->dst_chn == 17 )
+      sprintf(dst_chn, "All");
+    else if( n->dst_chn == 18 )
+      sprintf(dst_chn, "Trk");
+    else if( n->dst_chn >= 19 )
+      sprintf(dst_chn, "STk");
     else
       sprintf(dst_chn, "#%2d", n->dst_chn);
 

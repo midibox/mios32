@@ -1,4 +1,4 @@
-// $Id: seq_ui_menu.c 1421 2012-02-11 23:44:23Z tk $
+// $Id: seq_ui_menu.c 1794 2013-05-31 19:25:43Z tk $
 /*
  * Menu page (visible when EXIT button is pressed)
  *
@@ -21,7 +21,9 @@
 #include <seq_bpm.h>
 #include "tasks.h"
 
-#include "file.h"
+#include <file.h>
+#include <ff.h>
+
 #include "seq_file.h"
 
 #include "seq_lcd.h"
@@ -39,14 +41,14 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           2
 #define ITEM_LIST1             0
 #define ITEM_LIST2             1
 #define ITEM_OPEN              2
 #define ITEM_SAVE              3
 #define ITEM_SAVE_AS           4
 #define ITEM_NEW               5
-#define ITEM_INFO              6
+#define ITEM_DELETE            6
+#define ITEM_INFO              7
 
 
 
@@ -57,6 +59,8 @@
 #define MENU_DIALOG_SAVE_DEXISTS  3
 #define MENU_DIALOG_NEW           4
 #define MENU_DIALOG_NEW_DEXISTS   5
+#define MENU_DIALOG_DELETE        6
+#define MENU_DIALOG_DELETE_CONFIRM 7
 
 #define MENU_NUM_LIST_DISPLAYED_ITEMS 1
 #define MENU_LIST_ENTRY_WIDTH 21
@@ -86,6 +90,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void);
 static s32 SEQ_UI_MENU_UpdateSessionList(void);
 static s32 DoSessionSave(u8 force_overwrite);
 static s32 DoSessionNew(u8 force_overwrite);
+static s32 DoSessionDelete(u8 check_only);
 static s32 OpenSession(void);
 
 /////////////////////////////////////////////////////////////////////////////
@@ -104,6 +109,7 @@ static s32 LED_Handler(u16 *gp_leds)
     break;
 
   case MENU_DIALOG_OPEN:
+  case MENU_DIALOG_DELETE:
     *gp_leds = (3 << (2*ui_selected_item));
     break;
 
@@ -111,6 +117,7 @@ static s32 LED_Handler(u16 *gp_leds)
   case MENU_DIALOG_SAVE_DEXISTS:
   case MENU_DIALOG_NEW:
   case MENU_DIALOG_NEW_DEXISTS:
+  case MENU_DIALOG_DELETE_CONFIRM:
     // no LED functions yet
     break;
   }
@@ -204,37 +211,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  case MENU_DIALOG_NEW: {
-    switch( encoder ) {
-    case SEQ_UI_ENCODER_GP15: {
-      // NEW only via button
-      if( incrementer != 0 )
-	return 0;
-
-      if( DoSessionNew(0) == 0 ) { // don't force overwrite
-	// exit keypad editor
-	SEQ_UI_MENU_UpdatePageList();
-	menu_dialog = MENU_DIALOG_NONE;
-      }
-
-      return 1;
-    } break;
-
-    case SEQ_UI_ENCODER_GP16: {
-      // EXIT only via button
-      if( incrementer == 0 ) {
-	SEQ_UI_MENU_UpdatePageList();
-	menu_dialog = MENU_DIALOG_NONE;
-      }
-      return 1;
-    } break;
-    }
-
-    return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&dir_name[0], 8);
-  }
-
-
-  ///////////////////////////////////////////////////////////////////////////
   case MENU_DIALOG_SAVE_DEXISTS: {
     switch( encoder ) {
     case SEQ_UI_ENCODER_GP11: {
@@ -278,6 +254,37 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  case MENU_DIALOG_NEW: {
+    switch( encoder ) {
+    case SEQ_UI_ENCODER_GP15: {
+      // NEW only via button
+      if( incrementer != 0 )
+	return 0;
+
+      if( DoSessionNew(0) == 0 ) { // don't force overwrite
+	// exit keypad editor
+	SEQ_UI_MENU_UpdatePageList();
+	menu_dialog = MENU_DIALOG_NONE;
+      }
+
+      return 1;
+    } break;
+
+    case SEQ_UI_ENCODER_GP16: {
+      // EXIT only via button
+      if( incrementer == 0 ) {
+	SEQ_UI_MENU_UpdatePageList();
+	menu_dialog = MENU_DIALOG_NONE;
+      }
+      return 1;
+    } break;
+    }
+
+    return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&dir_name[0], 8);
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
   case MENU_DIALOG_NEW_DEXISTS: {
     switch( encoder ) {
     case SEQ_UI_ENCODER_GP11: {
@@ -303,6 +310,76 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       ui_selected_item = 0;
       menu_dialog = MENU_DIALOG_NEW;
+      return 1;
+    } break;
+
+    case SEQ_UI_ENCODER_GP16: {
+      // EXIT only via button
+      if( incrementer == 0 ) {
+	SEQ_UI_MENU_UpdatePageList();
+	menu_dialog = MENU_DIALOG_NONE;
+      }
+      return 1;
+    } break;
+    }
+
+    return -1; // not mapped
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  case MENU_DIALOG_DELETE:
+    switch( encoder ) {
+    case SEQ_UI_ENCODER_GP9:
+    case SEQ_UI_ENCODER_GP10:
+    case SEQ_UI_ENCODER_GP11:
+    case SEQ_UI_ENCODER_GP12:
+    case SEQ_UI_ENCODER_GP13:
+    case SEQ_UI_ENCODER_GP14:
+    case SEQ_UI_ENCODER_GP15:
+      return -1; // not mapped
+
+    case SEQ_UI_ENCODER_GP16:
+      // EXIT only via button
+      if( incrementer == 0 ) {
+	SEQ_UI_MENU_UpdatePageList();
+	menu_dialog = MENU_DIALOG_NONE;
+      }
+      return 1;
+
+    default:
+      if( SEQ_UI_SelectListItem(incrementer, dir_num_items, SESSION_NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
+	SEQ_UI_MENU_UpdateSessionList();
+    }
+    break;
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  case MENU_DIALOG_DELETE_CONFIRM: {
+    switch( encoder ) {
+    case SEQ_UI_ENCODER_GP12: {
+      // YES only via button
+      if( incrementer != 0 )
+	return 0;
+
+      // YES: delete session
+      DoSessionDelete(0);
+
+      // exit keypad editor
+      SEQ_UI_MENU_UpdatePageList();
+      menu_dialog = MENU_DIALOG_NONE;
+      return 1;
+    } break;
+
+    case SEQ_UI_ENCODER_GP13: {
+      // NO only via button
+      if( incrementer != 0 )
+	return 0;
+
+      // NO: don't delete session - back to dirname entry
+
+      ui_selected_item = 0;
+      menu_dialog = MENU_DIALOG_DELETE;
       return 1;
     } break;
 
@@ -363,7 +440,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	// print message immediately for better "look&feel"
 	// otherwise we could think that the button isn't working
-	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "All 4 patterns", "stored!");
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Complete session", "stored!");
       }
       return 1;
 
@@ -400,9 +477,15 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	dir_name[i] = ' ';
       ui_selected_item = 0;
       menu_dialog = MENU_DIALOG_NEW;
-    } return 1;
+      return 1;
+    }
 
-    case SEQ_UI_BUTTON_GP13:
+    case SEQ_UI_BUTTON_GP13: {
+      ui_selected_item = 0;
+      menu_dialog = MENU_DIALOG_DELETE;
+      SEQ_UI_MENU_UpdateSessionList();
+    }
+
     case SEQ_UI_BUTTON_GP14:
       return 1;
 
@@ -456,10 +539,41 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     break;
 
   ///////////////////////////////////////////////////////////////////////////
+  case MENU_DIALOG_DELETE:
+    if( depressed ) return 0; // ignore when button depressed
+
+    if( button >= SEQ_UI_BUTTON_GP9 && button <= SEQ_UI_BUTTON_GP16 )
+      return Encoder_Handler(button, 0); // re-use encoder handler
+
+    if( button <= SEQ_UI_BUTTON_GP8 || button == SEQ_UI_BUTTON_Select ) {
+      if( button != SEQ_UI_BUTTON_Select )
+	ui_selected_item = button / 2;
+
+      if( dir_num_items >= 1 && (ui_selected_item+dir_view_offset) < dir_num_items ) {
+	// get filename
+	int i;
+	char *p = (char *)&dir_name[0];
+	for(i=0; i<8; ++i) {
+	  char c = ui_global_dir_list[SESSION_LIST_ENTRY_WIDTH*ui_selected_item + i];
+	  if( c != ' ' )
+	    *p++ = c;
+	}
+	*p++ = 0;
+
+	// change to confirmation page if delete is possible
+	if( DoSessionDelete(1) >= 0 ) // check only
+	  menu_dialog = MENU_DIALOG_DELETE_CONFIRM;
+	return 1;
+      }
+    }
+    break;
+
+  ///////////////////////////////////////////////////////////////////////////
   case MENU_DIALOG_SAVE_AS:
   case MENU_DIALOG_SAVE_DEXISTS:
   case MENU_DIALOG_NEW:
   case MENU_DIALOG_NEW_DEXISTS:
+  case MENU_DIALOG_DELETE_CONFIRM:
     if( depressed ) return 0; // ignore when button depressed
     if( button <= SEQ_UI_BUTTON_GP16 )
       return Encoder_Handler((seq_ui_encoder_t)button, 0);
@@ -501,7 +615,7 @@ static s32 LCD_Handler(u8 high_prio)
     // 01234567890123456789 01234567890123456789 01234567890123456789 01234567890123456789
     // <--------------------------------------><-------------------------------------->
     // MIDIbox SEQ V4.0Beta17         1.  1.  0/SESSION/20100309              140.0 BPM
-    //        Edit             Mute Tracks     Open Save SaveAs New               Info 
+    //        Edit             Mute Tracks     Open Save SaveAs New Delete        Info 
 
     if( high_prio ) {
       ///////////////////////////////////////////////////////////////////////////
@@ -541,16 +655,23 @@ static s32 LCD_Handler(u8 high_prio)
 
     SEQ_LCD_PrintList((char *)ui_global_dir_list, MENU_LIST_ENTRY_WIDTH, SEQ_UI_NUM_MENU_PAGES, MENU_NUM_LIST_DISPLAYED_ITEMS, menu_selected_item, menu_view_offset);
 
+//<<<<<<< .mine
 	SEQ_LCD_CursorSet(0, 5);
 	SEQ_LCD_PrintSpaces(20);
 	
     SEQ_LCD_CursorSet(0, 6);
     SEQ_LCD_PrintString("Open Save SaveAs New");
 	SEQ_LCD_CursorSet(0, 7);
-    SEQ_LCD_PrintString("                Info ");
-  } break;
+    //SEQ_LCD_PrintString("                Info ");
+	SEQ_LCD_PrintString(" Delete         Info ");
+/*=======
+    SEQ_LCD_CursorSet(40, 1);
+    SEQ_LCD_PrintString("Open Save SaveAs New Delete        Info ");
+>>>>>>> .r1826
+*/  } break;
 
-  case MENU_DIALOG_OPEN: {
+  case MENU_DIALOG_OPEN:
+  case MENU_DIALOG_DELETE: {
     // layout:
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789 01234567890123456789 01234567890123456789 01234567890123456789
@@ -558,9 +679,20 @@ static s32 LCD_Handler(u8 high_prio)
     // Open Session (10 found)                 Current Session: /SESSION/xxxxxxxx      
     //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx                                     EXIT
 
+//<<<<<<< .mine
     
     //SEQ_LCD_PrintSpaces(21);
+//=======
+    // layout:
+    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+    // <--------------------------------------><-------------------------------------->
+    // Delete Session (10 found)               Current Session: /SESSION/xxxxxxxx      
+    //  xxxxxxxx  xxxxxxxx  xxxxxxxx  xxxxxxxx                                     EXIT
+
+//>>>>>>> .r1826
     SEQ_LCD_CursorSet(0, 0);
+//<<<<<<< .mine
 	
 	      if( dir_num_items < 0 ) {
 			if( dir_num_items == FILE_ERR_NO_DIR ){
@@ -577,12 +709,34 @@ static s32 LCD_Handler(u8 high_prio)
 					SEQ_LCD_CursorSet(0, 1);
 					SEQ_LCD_PrintFormattedString("under /SESSIONS!     ");
 		} else {
+			if( menu_dialog == MENU_DIALOG_DELETE ){
+				SEQ_LCD_PrintString("Delete Session        ");
+				SEQ_LCD_CursorSet(0, 1);
+				SEQ_LCD_PrintFormattedString(" (%d found)            ", dir_num_items);
+			}else{
 				SEQ_LCD_PrintString("Open Session         ");
 				SEQ_LCD_CursorSet(0, 1);
 				SEQ_LCD_PrintFormattedString(" (%d found)            ", dir_num_items);
-		
+			}
 		}
-
+/*=======
+    SEQ_LCD_PrintSpaces(40);
+    SEQ_LCD_CursorSet(0, 0);
+    if( dir_num_items < 0 ) {
+      if( dir_num_items == FILE_ERR_NO_DIR )
+	SEQ_LCD_PrintFormattedString("%s directory not found on SD Card!", SEQ_FILE_SESSION_PATH);
+      else
+	SEQ_LCD_PrintFormattedString("SD Card Access Error: %d", dir_num_items);
+    } else if( dir_num_items == 0 ) {
+      SEQ_LCD_PrintFormattedString("No directories found under %s!", SEQ_FILE_SESSION_PATH);
+    } else {
+      if( menu_dialog == MENU_DIALOG_DELETE )
+	SEQ_LCD_PrintFormattedString("Delete Session (%d found)", dir_num_items);
+      else
+	SEQ_LCD_PrintFormattedString("Open Session (%d found)", dir_num_items);
+    }
+>>>>>>> .r1826
+*/
     ///////////////////////////////////////////////////////////////////////////
     //SEQ_LCD_CursorSet(0, 2);
     //SEQ_LCD_PrintSpaces(21);
@@ -688,6 +842,27 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(20);
 	SEQ_LCD_CursorSet(0, 7);
     SEQ_LCD_PrintSpaces(15);	
+    SEQ_LCD_PrintString("EXIT");
+  } break;
+
+  case MENU_DIALOG_DELETE_CONFIRM: {
+    // layout:
+    // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+    // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+    // <--------------------------------------><-------------------------------------->
+    //                                         '/SESSIONS/xxxxxxxx' should be deleted! 
+    //                                         Really DELETE? YES  NO              EXIT
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintSpaces(40);
+
+    SEQ_LCD_PrintFormattedString("%s/%s should be deleted!", SEQ_FILE_SESSION_PATH, dir_name);
+    SEQ_LCD_PrintSpaces(5+13);
+
+    SEQ_LCD_CursorSet(0, 1);
+    SEQ_LCD_PrintSpaces(40);
+
+    SEQ_LCD_PrintString("Really DELETE? YES  NO");
+    SEQ_LCD_PrintSpaces(14);
     SEQ_LCD_PrintString("EXIT");
   } break;
   }
@@ -914,7 +1089,7 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
     SEQ_MIDPLY_Reset();
 
     // clear all patterns/etc.. to have a clean start
-    SEQ_CORE_Init(0);
+    SEQ_CORE_Init(1); // except for global parameters
     SEQ_GROOVE_Init(0);
     SEQ_SONG_Init(0);
     SEQ_MIXER_Init(0);
@@ -948,6 +1123,86 @@ static s32 DoSessionNew(u8 force_overwrite)
   return DoSessionSaveOrNew(1, force_overwrite);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Deletes a session
+/////////////////////////////////////////////////////////////////////////////
+static s32 DoSessionDelete(u8 check_only)
+{
+  // get directory name
+  char session_dir[20];
+  int i;
+  char *p = (char *)&session_dir[0];
+  for(i=0; i<8; ++i) {
+    char c = ui_global_dir_list[SESSION_LIST_ENTRY_WIDTH*ui_selected_item + i];
+    if( c != ' ' )
+      *p++ = c;
+  }
+  *p++ = 0;
+
+  // check if this is the active session
+  if( strcasecmp(session_dir, seq_file_session_name) == 0 ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "This is the active Session!", "It can't be deleted!");
+    return -1;
+  }
+
+  // we also don't allow to delete the default session
+  if( strcasecmp(session_dir, "default") == 0 ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "The DEFAULT session", "can't be deleted!");
+    return -2;
+  }
+
+  if( check_only )
+    return 0; // ok - delete will be allowed
+
+  // complete path
+  char path[30];
+  sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
+
+  // remove all files of this path (the debug message are intented - could also be helpful for the user)
+  s32 status = 0;
+
+  {
+    DIR di;
+    FILINFO de;
+
+    DEBUG_MSG("Deleting %s\n", path);
+
+    if( f_opendir(&di, path) != FR_OK ) {
+      DEBUG_MSG("Failed to open directory!");
+      status = FILE_ERR_NO_DIR;
+    } else {
+      while( f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+	if( de.fname[0] && de.fname[0] != '.' ) {
+	  char filepath[30];
+	  sprintf(filepath, "%s/%s", path, de.fname);
+
+	  s32 del_status;
+	  if( (del_status=FILE_Remove(filepath)) < 0 ) {
+	    DEBUG_MSG("FAILED to delete %s (status: %d)", filepath, del_status);
+	  } else {
+	    DEBUG_MSG("%s deleted", filepath);
+	  }
+	}
+      }
+    }
+  }
+
+
+  // try to remove session directory
+  if( status < 0 || (status=FILE_Remove(path)) < 0 ) {
+    char buffer[40];
+    sprintf(buffer, "FAILED status %d", status);
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, path, buffer);
+    DEBUG_MSG("FAILED to delete %s (status: %d)", path, status);
+    return -3; // delete failed
+  } else {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, path, "has been deleted!");
+    DEBUG_MSG("%s has been successfully deleted!", path);
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Open a session

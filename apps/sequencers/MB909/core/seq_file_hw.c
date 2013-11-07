@@ -1,4 +1,4 @@
-// $Id: seq_file_hw.c 1454 2012-04-03 22:54:57Z midilab $
+// $Id: seq_file_hw.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * Hardware Soft-Config File access functions
  *
@@ -36,6 +36,7 @@
 #include "seq_hwcfg.h"
 
 #include "seq_ui.h"
+#include "seq_midi_port.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,6 +185,34 @@ static s32 get_dec(char *word)
     return -1;
 
   return l; // value is valid
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which returns the MIDI OUT port
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_port_out(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  mios32_midi_port_t port = 0xff;
+  int port_ix;
+  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
+    // terminate port name at first space
+    char port_name[10];
+    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
+    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+    
+    if( strcmp(word, port_name) == 0 ) {
+      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+      break;
+    }
+  }
+
+  return (port != 0xff) ? port : get_dec(word);
 }
 
 
@@ -416,6 +445,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.undo = din_value;
 	  } else if( strcmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_button.mixer = din_value;
+	  } else if( strcmp(parameter, "SAVE") == 0 ) {
+	    seq_hwcfg_button.save = din_value;
+	  } else if( strcmp(parameter, "SAVE_ALL") == 0 ) {
+	    seq_hwcfg_button.save_all = din_value;
 	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
 	    seq_hwcfg_button.track_mode = din_value;
 	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {
@@ -432,6 +465,18 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.footswitch = din_value;
           } else if( strcmp(parameter, "PATTERN_RMX") == 0 ) {
             seq_hwcfg_button.pattern_remix = din_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_button.mute_all_tracks = din_value;
+          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_button.mute_track_layers = din_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_button.mute_all_tracks_and_layers = din_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_button.unmute_all_tracks = din_value;
+          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_button.unmute_track_layers = din_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_button.unmute_all_tracks_and_layers = din_value;
 	  } else if( strncmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
 	    parameter += 15;
 
@@ -595,6 +640,18 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.track_morph = dout_value;
 	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_led.track_transpose = dout_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_led.mute_all_tracks = dout_value;
+          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_led.mute_track_layers = dout_value;
+          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_led.mute_all_tracks_and_layers = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+            seq_hwcfg_led.unmute_all_tracks = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+            seq_hwcfg_led.unmute_track_layers = dout_value;
+          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+            seq_hwcfg_led.unmute_all_tracks_and_layers = dout_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown LED function 'LED_%s'!", parameter);
@@ -801,6 +858,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_blm.buttons_enabled = value;
 	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
 	    seq_hwcfg_blm.buttons_no_ui = value;
+	  } else if( strcmp(parameter, "GP_ALWAYS_SELECT_MENU_PAGE") == 0 ) {
+	    seq_hwcfg_blm.gp_always_select_menu_page = value;
 	  } else if( strcmp(parameter, "DIN_L_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.din_l_sr = value;
@@ -1053,9 +1112,58 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_midi_remote.cc = cc;
 
+	} else if( strcmp(parameter, "TRACK_CC_MODE") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 mode = get_dec(word);
+	  if( mode < 0 || mode > 2 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC mode '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.mode = mode;
+
+	} else if( strcmp(parameter, "TRACK_CC_PORT") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 port = get_port_out(word);
+
+	  if( port < 0 || port >= 0x100 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid port number '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.port = port;
+
+	} else if( strcmp(parameter, "TRACK_CC_CHANNEL") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 chn = get_dec(word);
+	  if( chn < 1 || chn > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC channel '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.chn = chn-1; // counting from 1 for user, from 0 for app
+
+	} else if( strcmp(parameter, "TRACK_CC_NUMBER") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 cc = get_dec(word);
+	  if( cc < 0 || cc >= 128 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC number '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	  seq_hwcfg_track_cc.cc = cc;
+
 	} else if( strcmp(parameter, "RS_OPTIMISATION") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_dec(word);
+	  s32 port = get_port_out(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1091,7 +1199,13 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
+	  // common DINs
 	  MIOS32_SRIO_DebounceSet(delay);
+
+	  // BLM_X based DINs
+	  blm_x_config_t config = BLM_X_ConfigGet();
+	  config.debounce_delay = delay;
+	  BLM_X_ConfigSet(config);
 
 	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!

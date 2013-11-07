@@ -1,4 +1,4 @@
-// $Id: seq_ui_sysex.c 1261 2011-07-17 18:21:45Z tk $
+// $Id: seq_ui_sysex.c 1827 2013-10-01 18:36:26Z tk $
 /*
  * SysEx page
  *
@@ -199,7 +199,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    else {
 	      char buffer[20];
 	      sprintf(buffer, "Sent %d bytes", status);
-	      SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, buffer, syx_file);
+	      SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 1000, buffer, syx_file);
 	    }
 	  }
       }

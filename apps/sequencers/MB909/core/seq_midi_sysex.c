@@ -1,4 +1,4 @@
-// $Id: seq_midi_sysex.c 1316 2011-08-30 21:20:05Z tk $
+// $Id: seq_midi_sysex.c 1742 2013-04-11 17:36:50Z tk $
 /*
  * MIDI SysEx Routines
  *
@@ -94,14 +94,14 @@ typedef union {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
-  };
+  } general;
 
   struct {
     unsigned CTR:3;
     unsigned MY_SYSEX:1;
     unsigned CMD:1;
     unsigned PING_BYTE_RECEIVED:1;
-  };
+  } ping;
 
   struct {
     unsigned CTR:3;
@@ -114,7 +114,7 @@ typedef union {
     unsigned REMOTE_CMD:8;
     s8       REMOTE_LCD_X;
     s8       REMOTE_LCD_Y;
-  };
+  } remote_lcd;
 
   struct {
     unsigned CTR:3;
@@ -126,7 +126,7 @@ typedef union {
     unsigned REMOTE_NO_ACK:1;
     unsigned REMOTE_CMD:8;
     s8       REMOTE_LED_SR_CTR;
-  };
+  } remote_led;
 } sysex_state_t;
 
 
@@ -191,34 +191,34 @@ s32 SEQ_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 
   // TODO: here we could send an error notification, that multiple devices are trying to access the device
   // TODO: support for independent streams of MBSEQ Remote and remaining stuff
-  if( sysex_state.MY_SYSEX && port != last_sysex_port )
+  if( sysex_state.general.MY_SYSEX && port != last_sysex_port )
     return -1;
 
   last_sysex_port = port;
 
   // branch depending on state
-  if( !sysex_state.MY_SYSEX ) {
-    if( (sysex_state.CTR < sizeof(seq_midi_sysex_header) && midi_in != seq_midi_sysex_header[sysex_state.CTR]) ||
-	(sysex_state.CTR == sizeof(seq_midi_sysex_header) && midi_in != sysex_device_id) ) {
+  if( !sysex_state.general.MY_SYSEX ) {
+    if( (sysex_state.general.CTR < sizeof(seq_midi_sysex_header) && midi_in != seq_midi_sysex_header[sysex_state.general.CTR]) ||
+	(sysex_state.general.CTR == sizeof(seq_midi_sysex_header) && midi_in != sysex_device_id) ) {
       // incoming byte doesn't match
       SEQ_MIDI_SYSEX_CmdFinished();
     } else {
-      if( ++sysex_state.CTR > sizeof(seq_midi_sysex_header) ) {
+      if( ++sysex_state.general.CTR > sizeof(seq_midi_sysex_header) ) {
 	// complete header received, waiting for data
-	sysex_state.MY_SYSEX = 1;
+	sysex_state.general.MY_SYSEX = 1;
       }
     }
   } else {
     // check for end of SysEx message or invalid status byte
     if( midi_in >= 0x80 ) {
-      if( midi_in == 0xf7 && sysex_state.CMD ) {
+      if( midi_in == 0xf7 && sysex_state.general.CMD ) {
       	SEQ_MIDI_SYSEX_Cmd(port, SYSEX_CMD_STATE_END, midi_in);
       }
       SEQ_MIDI_SYSEX_CmdFinished();
     } else {
       // check if command byte has been received
-      if( !sysex_state.CMD ) {
-	sysex_state.CMD = 1;
+      if( !sysex_state.general.CMD ) {
+	sysex_state.general.CMD = 1;
 	sysex_cmd = midi_in;
 	SEQ_MIDI_SYSEX_Cmd(port, SYSEX_CMD_STATE_BEGIN, midi_in);
       }
@@ -277,30 +277,30 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
   switch( cmd_state ) {
 
     case SYSEX_CMD_STATE_BEGIN:
-      sysex_state.REMOTE_CMD_RECEIVED = 0;
-      sysex_state.REMOTE_CMD_VALID = 0;
-      sysex_state.REMOTE_CMD_COMPLETE = 0;
-      sysex_state.REMOTE_NO_ACK = 0;
-      sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_ERROR;
-      sysex_state.REMOTE_LCD_X = -1; // same as REMOTE_LED_SR_CTR
-      sysex_state.REMOTE_LCD_Y = -1;
+      sysex_state.remote_lcd.REMOTE_CMD_RECEIVED = 0;
+      sysex_state.remote_lcd.REMOTE_CMD_VALID = 0;
+      sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 0;
+      sysex_state.remote_lcd.REMOTE_NO_ACK = 0;
+      sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_ERROR;
+      sysex_state.remote_lcd.REMOTE_LCD_X = -1; // same as REMOTE_LED_SR_CTR
+      sysex_state.remote_lcd.REMOTE_LCD_Y = -1;
       break;
 
     case SYSEX_CMD_STATE_CONT:
       if( (seq_midi_sysex_remote_port != DEFAULT && port != seq_midi_sysex_remote_port) ||
 	  (seq_midi_sysex_remote_active_port != DEFAULT && seq_midi_sysex_remote_active_port != port) ) {
-	sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_ALLOCATED;
-      } else if( !sysex_state.REMOTE_CMD_RECEIVED ) {
-	sysex_state.REMOTE_CMD = midi_in;
-	sysex_state.REMOTE_CMD_RECEIVED = 1;
+	sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_ALLOCATED;
+      } else if( !sysex_state.remote_lcd.REMOTE_CMD_RECEIVED ) {
+	sysex_state.remote_lcd.REMOTE_CMD = midi_in;
+	sysex_state.remote_lcd.REMOTE_CMD_RECEIVED = 1;
 
-	switch( sysex_state.REMOTE_CMD ) {
+	switch( sysex_state.remote_lcd.REMOTE_CMD ) {
 	  case SYSEX_REMOTE_CMD_MODE:
 	    break;
 
 	  case SYSEX_REMOTE_CMD_REFRESH:
-	    sysex_state.REMOTE_CMD_VALID = 1;
-	    sysex_state.REMOTE_CMD_COMPLETE = 1;
+	    sysex_state.remote_lcd.REMOTE_CMD_VALID = 1;
+	    sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 
 	    // should we check for remote mode here? Refresh Command is sent by client to server
 	    seq_midi_sysex_remote_active_port = port; // important, otherwise incoming button/encoder events will be ignored if client hasn't sent server command
@@ -317,55 +317,55 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 	  case SYSEX_REMOTE_CMD_CHARSET:
 	  case SYSEX_REMOTE_CMD_LED:
 	    if( seq_midi_sysex_remote_mode != SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO && seq_midi_sysex_remote_mode != SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
-	      sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
+	      sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
 	    else {
-	      sysex_state.REMOTE_CMD_VALID = 1;
+	      sysex_state.remote_lcd.REMOTE_CMD_VALID = 1;
 	      seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT;
 	      seq_midi_sysex_remote_active_port = port;
 	    }
 	    break;
 
 	  default:
-	    sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_ERROR;
+	    sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_ERROR;
 	}
 
 
       } else {
-	switch( sysex_state.REMOTE_CMD ) {
+	switch( sysex_state.remote_lcd.REMOTE_CMD ) {
 	  case SYSEX_REMOTE_CMD_MODE:
-	    if( sysex_state.REMOTE_CMD_COMPLETE )
+	    if( sysex_state.remote_lcd.REMOTE_CMD_COMPLETE )
 	      break;
 
-	    sysex_state.REMOTE_CMD_COMPLETE = 1;
+	    sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 
 	    switch( midi_in ) {
 	      case SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO: // Off
 		if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO || seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT ) {
-		  sysex_state.REMOTE_CMD_VALID = 1;
-		  sysex_state.REMOTE_CMD_COMPLETE = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_VALID = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 		  seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO;
 		  seq_midi_sysex_remote_active_port = DEFAULT;
 		} else {
-		  sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
+		  sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
 		}
 		break;
 
 	      case SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER:
 		if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO || seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER ) {
-		  sysex_state.REMOTE_CMD_VALID = 1;
-		  sysex_state.REMOTE_CMD_COMPLETE = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_VALID = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 		  seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_SERVER;
 		  seq_midi_sysex_remote_active_port = port;
 		  seq_midi_sysex_remote_force_lcd_update = 1;
 		  seq_midi_sysex_remote_force_led_update = 1;
 		} else
-		  sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
+		  sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
 		break;
 
 	      case SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT:
 		if( seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_AUTO || seq_midi_sysex_remote_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT ) {
-		  sysex_state.REMOTE_CMD_VALID = 1;
-		  sysex_state.REMOTE_CMD_COMPLETE = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_VALID = 1;
+		  sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 
 		  if( seq_midi_sysex_remote_active_mode != SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT ) {
 		    seq_midi_sysex_remote_active_mode = SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT;
@@ -379,60 +379,60 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
 		  seq_midi_sysex_remote_active_port = port;
 		  seq_midi_sysex_remote_client_timeout_ctr = 0; // the only command which can cancel the timeout counter!
 		} else
-		  sysex_state.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
+		  sysex_state.remote_lcd.REMOTE_CMD = SYSEX_REMOTE_CMD_DISABLED;
 		break;
 
 	      default:
-		sysex_state.REMOTE_CMD_VALID = 0;
+		sysex_state.remote_lcd.REMOTE_CMD_VALID = 0;
 	    }
 
 	  case SYSEX_REMOTE_CMD_REFRESH:
 	    break;
 
 	  case SYSEX_REMOTE_CMD_LCD:
-	    if( sysex_state.REMOTE_LCD_X < 0 )
-	      sysex_state.REMOTE_LCD_X = midi_in;
-	    else if( sysex_state.REMOTE_LCD_Y < 0 ) {
-	      sysex_state.REMOTE_LCD_Y = midi_in;
+	    if( sysex_state.remote_lcd.REMOTE_LCD_X < 0 )
+	      sysex_state.remote_lcd.REMOTE_LCD_X = midi_in;
+	    else if( sysex_state.remote_lcd.REMOTE_LCD_Y < 0 ) {
+	      sysex_state.remote_lcd.REMOTE_LCD_Y = midi_in;
 	    } else {
-	      sysex_state.REMOTE_CMD_COMPLETE = 1;
-	      sysex_state.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
-	      if( sysex_state.REMOTE_LCD_X < 80 && sysex_state.REMOTE_LCD_Y < 2 ) {
+	      sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
+	      sysex_state.remote_lcd.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
+	      if( sysex_state.remote_lcd.REMOTE_LCD_X < 80 && sysex_state.remote_lcd.REMOTE_LCD_Y < 2 ) {
 #ifndef MBSEQV4L
-		SEQ_LCD_CursorSet(sysex_state.REMOTE_LCD_X, sysex_state.REMOTE_LCD_Y);
+		SEQ_LCD_CursorSet(sysex_state.remote_lcd.REMOTE_LCD_X, sysex_state.remote_lcd.REMOTE_LCD_Y);
 		SEQ_LCD_PrintChar(midi_in);
 #endif
-		++sysex_state.REMOTE_LCD_X;
+		++sysex_state.remote_lcd.REMOTE_LCD_X;
 	      }
 	    }
 	    break;
 
 	  case SYSEX_REMOTE_CMD_CHARSET:
-	    if( sysex_state.REMOTE_CMD_COMPLETE )
+	    if( sysex_state.remote_lcd.REMOTE_CMD_COMPLETE )
 	      break;
-	    sysex_state.REMOTE_CMD_COMPLETE = 1;
+	    sysex_state.remote_lcd.REMOTE_CMD_COMPLETE = 1;
 #ifndef MBSEQV4L
 	    SEQ_LCD_InitSpecialChars(midi_in);
 #endif
 	    break;
 
 	  case SYSEX_REMOTE_CMD_LED:
-	    if( sysex_state.REMOTE_LED_SR_CTR < 0 )
-	      sysex_state.REMOTE_LED_SR_CTR = midi_in;
+	    if( sysex_state.remote_led.REMOTE_LED_SR_CTR < 0 )
+	      sysex_state.remote_led.REMOTE_LED_SR_CTR = midi_in;
 	    else {
-	      sysex_state.REMOTE_CMD_COMPLETE = 1;
-	      sysex_state.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
+	      sysex_state.remote_led.REMOTE_CMD_COMPLETE = 1;
+	      sysex_state.remote_led.REMOTE_NO_ACK = 1; // no acknowledge to save bandwidth!
 #ifndef MBSEQV4L
-	      if( sysex_state.REMOTE_LED_SR_CTR < (2*SEQ_LED_NUM_SR) ) {
-		u8 sr = sysex_state.REMOTE_LED_SR_CTR >> 1;
+	      if( sysex_state.remote_led.REMOTE_LED_SR_CTR < (2*SEQ_LED_NUM_SR) ) {
+		u8 sr = sysex_state.remote_led.REMOTE_LED_SR_CTR >> 1;
 		u8 sr_value = SEQ_LED_SRGet(sr);
-		if( sysex_state.REMOTE_LED_SR_CTR & 1 )
+		if( sysex_state.remote_led.REMOTE_LED_SR_CTR & 1 )
 		  sr_value = (sr_value & 0x0f) | ((midi_in << 4) & 0xf0);
 		else
 		  sr_value = (sr_value & 0xf0) | ((midi_in << 0) & 0x0f);
 		SEQ_LED_SRSet(sr, sr_value);
 
-		++sysex_state.REMOTE_LED_SR_CTR;
+		++sysex_state.remote_led.REMOTE_LED_SR_CTR;
 	      }
 #endif
 	    }
@@ -442,15 +442,15 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Remote(mios32_midi_port_t port, sysex_cmd_state_t 
       break;
 
     default: // SYSEX_CMD_STATE_END
-      if( !sysex_state.REMOTE_CMD_VALID )
-	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, sysex_state.REMOTE_CMD); // e.g. ERROR or DISABLED code
-      else if( !sysex_state.REMOTE_CMD_COMPLETE ) {
+      if( !sysex_state.remote_lcd.REMOTE_CMD_VALID )
+	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, sysex_state.remote_lcd.REMOTE_CMD); // e.g. ERROR or DISABLED code
+      else if( !sysex_state.remote_lcd.REMOTE_CMD_COMPLETE ) {
 	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_DISACK, SYSEX_REMOTE_CMD_INCOMPLETE);
-      } else if( !sysex_state.REMOTE_NO_ACK )
-	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, sysex_state.REMOTE_CMD);
+      } else if( !sysex_state.remote_lcd.REMOTE_NO_ACK )
+	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, sysex_state.remote_lcd.REMOTE_CMD);
 
       // Refresh has been received: send Client Mode request to clear timeout counter at the client side
-      if( sysex_state.REMOTE_CMD_VALID && sysex_state.REMOTE_CMD == sysex_state.REMOTE_CMD_COMPLETE && SYSEX_REMOTE_CMD_REFRESH ) {
+      if( sysex_state.remote_lcd.REMOTE_CMD_VALID && sysex_state.remote_lcd.REMOTE_CMD == sysex_state.remote_lcd.REMOTE_CMD_COMPLETE && SYSEX_REMOTE_CMD_REFRESH ) {
 	SEQ_MIDI_SYSEX_REMOTE_SendMode(SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT);
       }
   }
@@ -466,17 +466,17 @@ static s32 SEQ_MIDI_SYSEX_Cmd_Ping(mios32_midi_port_t port, sysex_cmd_state_t cm
   switch( cmd_state ) {
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_BEGIN:
-      sysex_state.PING_BYTE_RECEIVED = 0;
+      sysex_state.ping.PING_BYTE_RECEIVED = 0;
       break;
 
     case MIOS32_MIDI_SYSEX_CMD_STATE_CONT:
-      sysex_state.PING_BYTE_RECEIVED = 1;
+      sysex_state.ping.PING_BYTE_RECEIVED = 1;
       break;
 
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
       // send acknowledge if no additional byte has been received
       // to avoid feedback loop if two cores are directly connected
-      if( !sysex_state.PING_BYTE_RECEIVED )
+      if( !sysex_state.ping.PING_BYTE_RECEIVED )
 	SEQ_MIDI_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
       break;
@@ -522,7 +522,7 @@ static s32 SEQ_MIDI_SYSEX_SendAck(mios32_midi_port_t port, u8 ack_code, u8 ack_a
 s32 SEQ_MIDI_SYSEX_TimeOut(mios32_midi_port_t port)
 {
   // if we receive a SysEx command (MY_SYSEX flag set), abort parser if port matches
-  if( sysex_state.MY_SYSEX && port == last_sysex_port )
+  if( sysex_state.general.MY_SYSEX && port == last_sysex_port )
     SEQ_MIDI_SYSEX_CmdFinished();
 
   return 0; // no error

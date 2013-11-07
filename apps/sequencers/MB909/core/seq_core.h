@@ -1,4 +1,4 @@
-// $Id: seq_core.h 1320 2011-09-03 12:16:40Z tk $
+// $Id: seq_core.h 1810 2013-06-17 21:14:23Z tk $
 /*
  * Header file for core routines
  *
@@ -30,13 +30,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-  u8 ALL;
+  u32 ALL;
   struct {
-    u8 SYNCHED_PATTERN_CHANGE:1;
-    u8 PASTE_CLR_ALL:1;
-    u8 RATOPC:1;
-    u8 SYNCHED_MUTE:1;
-    u8 SYNCHED_UNMUTE:1;
+    u32 SYNCHED_PATTERN_CHANGE:1;
+    u32 PASTE_CLR_ALL:1;
+    u32 RATOPC:1;
+    u32 SYNCHED_MUTE:1;
+    u32 SYNCHED_UNMUTE:1;
+    u32 PATTERN_MIXER_MAP_COUPLING:1;
+    u32 INIT_CC:7;
+    u32 LIVE_LAYER_MUTE_STEPS:3; // 0=off, 1=permanent, 2..4 steps
   };
 } seq_core_options_t;
 
@@ -44,14 +47,17 @@ typedef union {
   u32 ALL;
   struct {
     u16 ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
+    u16 ref_step_song; // reference step can be different in song mode if a guide track is used
+    u16 reset_trkpos_req; // resets the track with the next step
 
-    u8  FIRST_CLK:1;
-    u8  METRONOME:1;
-    u8  MANUAL_TRIGGER_STOP_REQ:1;
-    u8  MANUAL_TRIGGER_STEP_REQ:1;
-    u8  EXT_RESTART_REQ:1;
-    u8  LOOP:1;
-    u8  FOLLOW:1;
+    u16 FIRST_CLK:1;
+    u16 FORCE_REF_STEP_RESET:1;
+    u16 METRONOME:1;
+    u16 MANUAL_TRIGGER_STOP_REQ:1;
+    u16 MANUAL_TRIGGER_STEP_REQ:1;
+    u16 EXT_RESTART_REQ:1;
+    u16 LOOP:1;
+    u16 FOLLOW:1;
   };
 } seq_core_state_t;
 
@@ -89,6 +95,10 @@ typedef struct seq_core_trk_t {
   u8                   step_repeat_ctr;  // step repeat counter
   u8                   step_skip_ctr;    // step skip counter
   u16                  layer_muted;      // separate layer mutes
+  u16                  layer_muted_from_midi; // temporary layer mutes on incoming (and matching) events
+  u16                  layer_muted_from_midi_next; // will be taken over with the next step
+  u8                   lfo_cc_muted_from_midi:1; // the same for the LFO CC
+  u8                   lfo_cc_muted_from_midi_next:1;
   u8                   arp_pos;          // arpeggiator position
   u8                   vu_meter;         // for visualisation in mute menu
   u32                  rec_timestamp;    // for recording function
@@ -214,12 +224,16 @@ extern s32 SEQ_CORE_ResetTrkPosAll(void);
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks);
 
+extern s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p);
+
 extern s32 SEQ_CORE_AddForwardDelay(u16 delay_ms);
 
 extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
 extern s32 SEQ_CORE_BPM_SweepHandler(void);
 
 extern s32 SEQ_CORE_Scrub(s32 incrementer);
+
+extern u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper);
 
 
 /////////////////////////////////////////////////////////////////////////////

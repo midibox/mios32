@@ -1,4 +1,4 @@
-// $Id: seq_ui_edit.c 1483 2012-07-01 17:54:40Z tk $
+// $Id: seq_ui_edit.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * Edit page
  *
@@ -75,7 +75,6 @@ static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 //static u16 playstart = 0;
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -103,7 +102,9 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
     }
   } else {
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS ) {
+      *gp_leds = ui_cursor_flash ? 0x0000 : selected_steps;
+    } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       *gp_leds = selected_steps;
     } else {
 
@@ -159,7 +160,6 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 		*gp_leds =
 		(SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+1, ui_selected_trg_layer, ui_selected_instrument) << 8) |
 		(SEQ_TRG_Get8(visible_track, 2*ui_selected_step_view+0, ui_selected_trg_layer, ui_selected_instrument) << 0);
-	  
     }
   }
 }
@@ -183,16 +183,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     switch( datawheel_mode ) {
     case DATAWHEEL_MODE_SCROLL_CURSOR:
-      // note: SEQ_UI_CheckSelections() will automatically change the page if required
-      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
+      if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 ) {
+	ui_selected_step_view = ui_selected_step / 16;
 	return 1;
-      else
+      } else
 	return 0;
 
     case DATAWHEEL_MODE_SCROLL_VIEW:
       if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
-	// select step within view
-	ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	  // select step within view
+	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
+	}
 	return 1;
       } else {
 	return 0;
@@ -249,7 +251,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP9:
       case SEQ_UI_ENCODER_GP10: {
 	if( incrementer == 0 ) // button
-	  incrementer = (encoder == SEQ_UI_ENCODER_GP7) ? -1 : 1;
+	  incrementer = (encoder == SEQ_UI_ENCODER_GP9) ? -1 : 1;
 
 	if( SEQ_UI_Var8_Inc(&datawheel_mode, 0, DATAWHEEL_MODE_NUM-1, incrementer) >= 1 )
 	  return 1;
@@ -377,8 +379,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
     }
 
+    u8 changed_step;
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
+      changed_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
+    } else {
+      changed_step = ui_selected_step;
+    }
+
+    u8 edit_ramp = 0;
     if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
-      u8 new_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
 		u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);	
 	  if( encoder == SEQ_UI_ENCODER_GP1 ) {
 			if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
@@ -387,12 +396,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 			return 0;
 		}
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
-      if( ui_selected_step != new_step && edit_passive_mode ) {
+      if( ui_selected_step != changed_step && edit_passive_mode ) {
 	PassiveEditTakeOver();
-	ui_selected_step = new_step;
+	ui_selected_step = changed_step;
 	PassiveEditEnter();
       } else {
-	ui_selected_step = new_step;
+	// take over new step if "ALL" button not pressed to support "ramp" editing
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	  ui_selected_step = changed_step;
+	} else {
+	  if( ui_selected_step != changed_step )
+	    edit_ramp = 1;
+	}
       }
 
     }
@@ -420,10 +435,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       incrementer *= 4;
 
     // first change the selected value
-    if( seq_ui_button_state.CHANGE_ALL_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
+    if( seq_ui_button_state.CHANGE_ALL_STEPS && (edit_ramp || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) ) {
       u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
-      u16 par_step = ui_selected_step;
-      u16 trg_step = ui_selected_step;
+      u16 par_step = changed_step;
+      u16 trg_step = changed_step;
 
       // mirrored layer in drum mode?
       u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -436,21 +451,54 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       value_changed |= 1;
     }
 
+    int value_selected_step = SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+    int value_changed_step = SEQ_PAR_Get(visible_track, changed_step, ui_selected_par_layer, ui_selected_instrument);
+
     // change value of all selected steps
     u8 track;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	u16 num_steps = SEQ_PAR_NumStepsGet(track);
-	u16 trg_step = (ui_selected_step & ~(num_steps-1));
-	
+	u16 trg_step = (changed_step & ~(num_steps-1));
+
 	u16 par_step;
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
-	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || par_step == ui_selected_step || (selected_steps & (1 << (par_step % 16))) ) {
-	    change_gate = trg_step == ui_selected_step;
-	    u8 dont_change_gate = par_step != ui_selected_step;
+	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
+	    change_gate = trg_step == changed_step;
+	    u8 dont_change_gate = par_step != changed_step;
 	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
-	      if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, forced_value, change_gate, dont_change_gate) >= 0 )
-		value_changed |= 1;
+	      s32 local_forced_value = edit_ramp ? -1 : forced_value;
+
+	      s32 edit_ramp_num_steps = 0;
+	      if( edit_ramp ) {
+		if( changed_step > ui_selected_step && par_step > ui_selected_step && par_step < changed_step ) {
+		  edit_ramp_num_steps = changed_step - ui_selected_step;
+		} else if( changed_step < ui_selected_step && par_step < ui_selected_step && par_step > changed_step ) {
+		  edit_ramp_num_steps = ui_selected_step - changed_step;
+		}
+
+		if( edit_ramp_num_steps ) {
+		  if( par_step == changed_step ) {
+		    local_forced_value = value_changed_step;
+		  } else {
+		    int diff = value_changed_step - value_selected_step;
+		    if( diff == 0 ) {
+		      local_forced_value = value_changed_step;
+		    } else {
+		      if( changed_step > ui_selected_step ) {
+			local_forced_value = value_selected_step + (((par_step - ui_selected_step) * diff) / edit_ramp_num_steps);
+		      } else {
+			local_forced_value = value_selected_step + (((ui_selected_step - par_step) * diff) / edit_ramp_num_steps);
+		      }
+		    }
+		  }
+		}
+	      }
+
+	      if( !edit_ramp || edit_ramp_num_steps ) {
+		if( ChangeSingleEncValue(track, par_step, trg_step, incrementer, local_forced_value, change_gate, dont_change_gate) >= 0 )
+		  value_changed |= 1;
+	      }
 	    }
 	  }
 	}
@@ -486,7 +534,8 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     if( show_edit_config_page )
       return Encoder_Handler(button, 0);
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+    if( (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
+	seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       selected_steps ^= (1 << button);
       return 1; // value changed
     }
@@ -842,7 +891,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       else {
 	int print_edit_value = PassiveEditValid() ? edit_passive_value : -1;
 	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0, print_edit_value);
-	MIOS32_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
       }
 
     SEQ_LCD_PrintSpaces(10 - (5*num_p_layers));
@@ -899,7 +948,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       else {
 	int print_edit_value = PassiveEditValid() ? edit_passive_value : -1;
 	SEQ_LCD_PrintLayerEvent(visible_track, ui_selected_step, i, ui_selected_instrument, 0, print_edit_value);
-	MIOS32_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(' ');
       }
 
     SEQ_LCD_PrintSpaces(10 - (5*num_p_layers));
@@ -1027,7 +1076,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintChar(':');
 
   if( layer_type == SEQ_PAR_Type_CC ) {
-    SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+    if( layer_event.midi_package.cc_number >= 0x80 ) {
+      SEQ_LCD_PrintFormattedString("CC#off ");
+    } else {
+      SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
+    }
   } else {
     SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
     SEQ_LCD_PrintSpaces(2);
@@ -1051,8 +1104,19 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     if( loopback )
       SEQ_LCD_PrintString((char *)SEQ_CC_LABELS_Get(port, layer_event.midi_package.cc_number));
+/*<<<<<<< .mine
     else
       SEQ_LCD_PrintFormattedString(" CC#%3d", layer_event.midi_package.cc_number);
+=======
+*/    
+	else {
+      if( layer_event.midi_package.cc_number >= 0x80 ) {
+	SEQ_LCD_PrintFormattedString("  CC#off");
+      } else {
+	SEQ_LCD_PrintFormattedString("  CC#%3d", layer_event.midi_package.cc_number);
+      }
+    }
+//>>>>>>> .r1826
     SEQ_LCD_PrintFormattedString(" %3d ", layer_event.midi_package.value);
     SEQ_LCD_PrintVBar(layer_event.midi_package.value >> 4);
   } else {
@@ -1131,7 +1195,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //if (show_drum_triggers ) SEQ_LCD_PrintString("Drumtriggers");
 	//  else
 	//	SEQ_LCD_PrintString("geen drumtriggers!");
-  MIOS32_LCD_CursorSet(0, 4);
+  SEQ_LCD_CursorSet(0, 4);
 	
   // extra handling for gatelength (shows vertical bars)
   if( !show_drum_triggers && layer_type == SEQ_PAR_Type_Length ) {
@@ -1184,7 +1248,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
 
     // initial cursor position
-    MIOS32_LCD_CursorSet(0, 4);
+    SEQ_LCD_CursorSet(0, 4);
 	
     int step_region_begin;
     int step_region_end;
@@ -1211,6 +1275,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     u16 step;
     for(step=0; step<16; ++step) {
       u16 visible_step = step + 16*ui_selected_step_view;
+/*
 	  switch( step ) {
 		case 0:  MIOS32_LCD_CursorSet(0, 4); break;
 		case 4:  MIOS32_LCD_CursorSet(0, 5); 
@@ -1219,7 +1284,18 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 				break;
 		case 12: MIOS32_LCD_CursorSet(0, 7);
       }
-      if( ui_cursor_flash && 
+ */
+	  switch( step ) {
+		case 0:  SEQ_LCD_CursorSet(0, 4); break;
+		case 4:  SEQ_LCD_CursorSet(0, 5); 
+				break;
+		case 8:  SEQ_LCD_CursorSet(0, 6); 
+				break;
+		case 12: SEQ_LCD_CursorSet(0, 7);
+      }
+
+
+ if( ui_cursor_flash && 
 	  edit_mode != SEQ_UI_EDIT_MODE_NORMAL && 
 	  visible_step >= step_region_begin && visible_step <= step_region_end ) {
 	SEQ_LCD_PrintSpaces(5);
@@ -1235,18 +1311,28 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 		//int played_step = seq_core_state.ref_step ;
 		if (visible_step==ui_selected_step){
 
-		MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H);
+		//MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H);
 		//DEBUG_MSG("drumsymbols geinit vanuit seq ui edit");
-		MIOS32_LCD_PrintChar(gate_accent+24);
-		MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		//MIOS32_LCD_PrintChar(gate_accent+24);
+		//MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_H);
+		SEQ_LCD_PrintChar(gate_accent+24);
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 		
 		} else {
-		
+/*		
 		MIOS32_LCD_PrintChar(' ');
 		MIOS32_LCD_PrintChar(' ');
 		MIOS32_LCD_PrintChar(gate_accent);
 		MIOS32_LCD_PrintChar(' ');
 		MIOS32_LCD_PrintChar(' ');
+*/		
+		SEQ_LCD_PrintChar(' ');
+		SEQ_LCD_PrintChar(' ');
+		SEQ_LCD_PrintChar(gate_accent);
+		SEQ_LCD_PrintChar(' ');
+		SEQ_LCD_PrintChar(' ');
 		
 		}
 
@@ -1257,7 +1343,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 	
       if( !show_drum_triggers ) {
-		  MIOS32_LCD_PrintChar((visible_step == step_region_end) ? '<' 
+//		  MIOS32_LCD_PrintChar((visible_step == step_region_end) ? '<' 
+		  SEQ_LCD_PrintChar((visible_step == step_region_end) ? '<' 
 			  : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
       }
       

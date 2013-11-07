@@ -1,4 +1,4 @@
-// $Id: seq_core.c 1493 2012-08-03 20:54:45Z tk $
+// $Id: seq_core.c 1821 2013-09-08 11:09:47Z tk $
 /*
  * Sequencer Core Routines
  *
@@ -19,6 +19,8 @@
 #include <string.h>
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
+
+#include "tasks.h"
 
 #include "seq_core.h"
 #include "seq_song.h"
@@ -129,6 +131,7 @@ static float seq_core_bpm_sweep_inc;
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
+// \param mode if 0: clear all parameters, if 1: don't clear global parameters which are stored in the MBSEQ_GC.V4 file
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_Init(u32 mode)
 {
@@ -138,7 +141,11 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_trk_muted = 0;
   seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
   seq_core_options.ALL = 0;
-  seq_core_options.PASTE_CLR_ALL = 1;
+  if( mode == 0 ) {
+    seq_core_options.INIT_CC = 64;
+    seq_core_options.PASTE_CLR_ALL = 1;
+    seq_core_options.PATTERN_MIXER_MAP_COUPLING = 0;
+  }
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
   seq_core_global_scale = 0;
@@ -148,10 +155,12 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_global_transpose_enabled = 0;
   seq_core_din_sync_pulse_ctr = 0; // used to generate a 1 mS pulse
 
-  seq_core_metronome_port = DEFAULT;
-  seq_core_metronome_chn = 10;
-  seq_core_metronome_note_m = 0x25; // C#1
-  seq_core_metronome_note_b = 0x25; // C#1
+  if( mode == 0 ) {
+    seq_core_metronome_port = DEFAULT;
+    seq_core_metronome_chn = 10;
+    seq_core_metronome_note_m = 0x25; // C#1
+    seq_core_metronome_note_b = 0x25; // C#1
+  }
 
   seq_core_bpm_preset_num = 13; // 140.0
   for(i=0; i<SEQ_CORE_NUM_BPM_PRESETS; ++i) {
@@ -372,14 +381,16 @@ s32 SEQ_CORE_Handler(void)
 	  if( (bpm_tick % 96) == 20 ) {
 	    if( SEQ_SONG_ActiveGet() ) {
 	      if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
-		    seq_core_state.ref_step == seq_cc_trk[seq_song_guide_track-1].length) ||
-		  (!seq_song_guide_track && seq_core_state.ref_step == seq_core_steps_per_pattern) ) {
+		    seq_core_state.ref_step_song == seq_cc_trk[seq_song_guide_track-1].length) ||
+		  (!seq_song_guide_track && seq_core_state.ref_step_song == seq_core_steps_per_pattern) ) {
 
 		if( seq_song_guide_track ) {
-		  // reset reference step if guide track is used for consistent sync
-		  seq_core_state.ref_step = seq_core_steps_per_measure;
 		  // request synch-to-measure for all tracks
 		  SEQ_CORE_ManualSynchToMeasure(0xffff);
+
+		  // corner case: we will load new tracks and the length of the guide track could change
+		  // in order to ensure that the reference step jumps back to 0, we've to force this here:
+		  seq_core_state.FORCE_REF_STEP_RESET = 1;
 		}
 
 		SEQ_SONG_NextPos();
@@ -448,6 +459,11 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
     t->state.ALL = 0;
     SEQ_CORE_ResetTrkPos(track, t, tcc);
 
+    t->layer_muted_from_midi = 0;
+    t->layer_muted_from_midi_next = 0;
+    t->lfo_cc_muted_from_midi = 0;
+    t->lfo_cc_muted_from_midi_next = 0;
+
     // add track offset depending on start position
     if( bpm_start ) {
 #if 0
@@ -484,7 +500,12 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
 
   // reset reference step
-  seq_core_state.ref_step = (u8)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
+  seq_core_state.ref_step = (u16)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
+  if( seq_song_guide_track ) {
+    seq_core_state.ref_step_song = (u16)((bpm_start / 96) % ((u32)seq_cc_trk[seq_song_guide_track-1].length+1));
+  } else {
+    seq_core_state.ref_step_song = seq_core_state.ref_step;
+  }
 
   return 0; // no error
 }
@@ -506,11 +527,56 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
   // increment reference step on each 16th note
   // set request flag on overrun (tracks can synch to measure)
   u8 synch_to_measure_req = 0;
-  if( (bpm_tick % (384/4)) == 0 &&
-      (seq_core_state.FIRST_CLK || ++seq_core_state.ref_step > seq_core_steps_per_measure) ) {
-    if( !seq_core_state.FIRST_CLK )
+  if( (bpm_tick % (384/4)) == 0 ) {
+    seq_core_trk_t *t = &seq_core_trk[0];
+    seq_cc_trk_t *tcc = &seq_cc_trk[0];
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
+      if( seq_core_state.reset_trkpos_req & (1 << track) ) {
+	SEQ_CORE_ResetTrkPos(track, t, tcc);
+      }
+
+      // NEW: temporary layer mutes on incoming MIDI
+      // take over _next mutes
+      int num_steps = (seq_core_options.LIVE_LAYER_MUTE_STEPS < 2) ? 1 : (seq_core_options.LIVE_LAYER_MUTE_STEPS-2+1);
+      if( (bpm_tick % (num_steps*(384/4))) == 0 ) {
+	// layer mutes
+	t->layer_muted_from_midi = t->layer_muted_from_midi_next;
+	t->layer_muted_from_midi_next = 0;
+
+	// the same for the LFO CC
+	t->lfo_cc_muted_from_midi = t->lfo_cc_muted_from_midi_next;
+	t->lfo_cc_muted_from_midi_next = 0;
+      }
+    }
+    seq_core_state.reset_trkpos_req = 0;
+
+    if( seq_core_state.FIRST_CLK || seq_core_state.FORCE_REF_STEP_RESET ) {
+      seq_core_state.FORCE_REF_STEP_RESET = 0;
+      synch_to_measure_req = 1;
       seq_core_state.ref_step = 0;
-    synch_to_measure_req = 1;
+      seq_core_state.ref_step_song = 0;
+    } else {
+      if( ++seq_core_state.ref_step > seq_core_steps_per_measure ) {
+	seq_core_state.ref_step = 0;
+      }
+
+      if( seq_song_guide_track ) {
+	if( ++seq_core_state.ref_step_song > seq_cc_trk[seq_song_guide_track-1].length ) {
+	  seq_core_state.ref_step_song = 0;
+	}
+      } else {
+	seq_core_state.ref_step_song = seq_core_state.ref_step;
+      }
+
+      if( SEQ_SONG_ActiveGet() ) {
+	if( seq_core_state.ref_step_song == 0 )
+	  synch_to_measure_req = 1;
+      } else {
+	if( seq_core_state.ref_step == 0 )
+	  synch_to_measure_req = 1;
+      }
+    }
   }
 
   // disable slave clock mute if not in slave mode anymore
@@ -586,7 +652,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     seq_core_trk_synched_unmute = 0;
   }
 
-
   // process all tracks
   // first the loopback port Bus1, thereafter parameters sent to common MIDI ports
   int round;
@@ -610,12 +675,12 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       // handle LFO effect
       SEQ_LFO_HandleTrk(track, bpm_tick);
 
-      // send LFO CC (if enabled)
-      if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute ) {
+      // send LFO CC (if enabled and not muted)
+      if( !(seq_core_trk_muted & (1 << track)) && !seq_core_slaveclk_mute && !t->lfo_cc_muted_from_midi ) {
 	mios32_midi_package_t p;
-	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p) > 0 ) {
+	if( SEQ_LFO_FastCC_Event(track, bpm_tick, &p, 0) > 0 ) {
 	  if( loopback_port )
-	    SEQ_MIDI_IN_BusReceive(tcc->midi_port, p, 1); // forward to MIDI IN handler immediately
+	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else
 	    SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 	}
@@ -643,7 +708,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
       if( next_step_event ) {
 
-	if( next_step_event ) {
+	{
 	  // calculate step length
 	  u16 step_length_pre = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
 	  t->step_length = step_length_pre;
@@ -655,118 +720,119 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    t->timestamp_next_step_ref += t->step_length;
 
 	  // increment step if not in arpeggiator mode or arp position == 0
-	  if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos ) {
-	    // wrap step position around length - especially required for "section selection" later,
-	    // which can set t->step beyond tcc->length+1
-	    u8 prev_step = (u8)((int)t->step % ((int)tcc->length + 1));
-	    t->step = prev_step; // store back wrapped step position
+	  u8 inc_step = tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos;
 
-	    u8 skip_ctr = 0;
-	    do {
-	      if( t->state.MANUAL_STEP_REQ ) {
-		// manual step requested
-		t->state.MANUAL_STEP_REQ = 0;
-		t->step = t->manual_step;
-		t->step_saved = t->manual_step;
-	      } else {
-		// determine next step depending on direction mode
-		if( !t->state.FIRST_CLK )
-		  SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
-		else {
-		  // ensure that position reset request is cleared
-		  t->state.POS_RESET = 0;
-		}
+	  // wrap step position around length - especially required for "section selection" later,
+	  // which can set t->step beyond tcc->length+1
+	  u8 prev_step = (u8)((int)t->step % ((int)tcc->length + 1));
+	  t->step = prev_step; // store back wrapped step position
+
+	  u8 skip_ctr = 0;
+	  do {
+	    if( t->state.MANUAL_STEP_REQ ) {
+	      // manual step requested
+	      t->state.MANUAL_STEP_REQ = 0;
+	      t->step = t->manual_step;
+	      t->step_saved = t->manual_step;
+	      t->arp_pos = 0;
+	    } else {
+	      // determine next step depending on direction mode
+	      if( !t->state.FIRST_CLK && inc_step )
+		SEQ_CORE_NextStep(t, tcc, 0, 0); // 0, 0=with progression, not reverse
+	      else {
+		// ensure that position reset request is cleared
+		t->state.POS_RESET = 0;
 	      }
+	    }
 	    
-	      // clear "first clock" flag (on following clock ticks we can continue as usual)
-	      t->state.FIRST_CLK = 0;
+	    // clear "first clock" flag (on following clock ticks we can continue as usual)
+	    t->state.FIRST_CLK = 0;
   
-	      // if skip flag set for this flag: try again
-	      if( SEQ_TRG_SkipGet(track, t->step, 0) )
-		++skip_ctr;
-	      else
-		break;
+	    // if skip flag set for this flag: try again
+	    if( SEQ_TRG_SkipGet(track, t->step, 0) )
+	      ++skip_ctr;
+	    else
+	      break;
+	    
+	  } while( skip_ctr < 32 ); // try 32 times maximum
 
-	    } while( skip_ctr < 32 ); // try 32 times maximum
+	  // Section selection
+	  // Approach:
+	  // o enabled with t->play_section > 0
+	  // o section width matches with the Track length, which means that the sequencer will
+	  //   play steps beyond the "last step" with t->play_section > 0
+	  // o section controlled via UI, MIDI Keyboard or BLM
+	  // o lower priority than global loop mode
+	  if( t->play_section > 0 ) {
+	    // note: SEQ_TRG_Get() will return 0 if t->step beyond total track size - no need to consider this here
+	    int step_offset = t->play_section * ((int)tcc->length+1);
+	    t->step += step_offset;
+	  }
 
-	    // Section selection
-	    // Approach:
-	    // o enabled with t->play_section > 0
-	    // o section width matches with the Track length, which means that the sequencer will
-	    //   play steps beyond the "last step" with t->play_section > 0
-	    // o section controlled via UI, MIDI Keyboard or BLM
-	    // o lower priority than global loop mode
-	    if( t->play_section > 0 ) {
-	      // note: SEQ_TRG_Get() will return 0 if t->step beyond total track size - no need to consider this here
-	      int step_offset = t->play_section * ((int)tcc->length+1);
-	      t->step += step_offset;
+	  // global loop mode handling
+	  // requirements:
+	  // o loop all or only select tracks
+	  // o allow to loop the step view (16 step window) or a definable number of steps
+	  // o wrap step position properly when loop mode is activated so that this
+	  //   doesn't "dirsturb" the sequence output (ensure that the track doesn't get out of sync)
+	  if( seq_core_state.LOOP ) {
+	    u8 loop_active = 0;
+	    int step_offset = 0;
+	    
+	    switch( seq_core_glb_loop_mode ) {
+	    case SEQ_CORE_LOOP_MODE_ALL_TRACKS_STATIC:
+	      loop_active = 1;
+	      break;
+
+	    case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_STATIC:
+	      if( SEQ_UI_IsSelectedTrack(track) )
+		loop_active = 1;
+	      break;
+
+	    case SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW:
+	      loop_active = 1;
+	      // no break!
+
+	    case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_VIEW:
+	      if( SEQ_UI_IsSelectedTrack(track) )
+		loop_active = 1;
+
+	      step_offset = 16 * ui_selected_step_view;
+	      break;
 	    }
 
-	    // global loop mode handling
-	    // requirements:
-	    // o loop all or only select tracks
-	    // o allow to loop the step view (16 step window) or a definable number of steps
-	    // o wrap step position properly when loop mode is activated so that this
-	    //   doesn't "dirsturb" the sequence output (ensure that the track doesn't get out of sync)
-	    if( seq_core_state.LOOP ) {
-	      u8 loop_active = 0;
-	      int step_offset = 0;
+	    if( loop_active ) {
+	      // wrap step position within given boundaries if required
+	      step_offset += seq_core_glb_loop_offset;
+	      step_offset %= ((int)tcc->length+1);
 
-	      switch( seq_core_glb_loop_mode ) {
-	      case SEQ_CORE_LOOP_MODE_ALL_TRACKS_STATIC:
-		loop_active = 1;
-		break;
+	      int loop_steps = seq_core_glb_loop_steps + 1;
+	      int max_steps = (int)tcc->length + 1;
+	      if( loop_steps > max_steps )
+		loop_steps = max_steps;
 
-	      case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_STATIC:
-		if( SEQ_UI_IsSelectedTrack(track) )
-		  loop_active = 1;
-		break;
+	      int new_step = (int)t->step;
+	      new_step = step_offset + ((new_step-step_offset) % loop_steps);
 
-	      case SEQ_CORE_LOOP_MODE_ALL_TRACKS_VIEW:
-		loop_active = 1;
-		// no break!
-
-	      case SEQ_CORE_LOOP_MODE_SELECTED_TRACK_VIEW:
-		if( SEQ_UI_IsSelectedTrack(track) )
-		  loop_active = 1;
-
-		step_offset = 16 * ui_selected_step_view;
-		break;
-	      }
-
-	      if( loop_active ) {
-		// wrap step position within given boundaries if required
-		step_offset += seq_core_glb_loop_offset;
-		step_offset %= ((int)tcc->length+1);
-
-		int loop_steps = seq_core_glb_loop_steps + 1;
-		int max_steps = (int)tcc->length + 1;
-		if( loop_steps > max_steps )
-		  loop_steps = max_steps;
-
-		int new_step = (int)t->step;
-		new_step = step_offset + ((new_step-step_offset) % loop_steps);
-
-		if( new_step > tcc->length )
-		  new_step = step_offset;
-		t->step = new_step;
-	      }
+	      if( new_step > tcc->length )
+		new_step = step_offset;
+	      t->step = new_step;
 	    }
+	  }
 
-	    // calculate number of cycles to next step
+	  // calculate number of cycles to next step
 #if 0
-	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
+	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
 #else
-	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
+	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	    skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
-	    // forward new step to recording function (only used in live recording mode)
-	    SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
+	  skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	  // forward new step to recording function (only used in live recording mode)
+	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 
-	    // inform UI about a new step (UI will clear this variable)
-	    seq_core_step_update_req = 1;
-	  }
+	  // inform UI about a new step (UI will clear this variable)
+	  seq_core_step_update_req = 1;
 	}
 
         // solo function: don't play MIDI event if track not selected
@@ -809,7 +875,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  continue;
 
 	// parameter layer mute flags (only if not in drum mode)
-	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? t->layer_muted : 0;
+	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? (t->layer_muted | t->layer_muted_from_midi) : 0;
 
 	// check probability if not in drum mode
 	// if probability < 100: play step with given probability
@@ -971,6 +1037,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  // Second pass: schedule new events
 	  //////////////////////////////////////////////////////////////////////////////////////////
           e = &layer_events[0];
+	  u8 reset_stacks_done = 0;
           for(i=0; i<number_of_events; ++e, ++i) {
             mios32_midi_package_t *p = &e->midi_package;
 
@@ -980,7 +1047,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    if( p->type != NoteOn ) {
 	      // e.g. CC, PitchBend, ProgramChange
 	      if( loopback_port )
-		SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1); // forward to MIDI IN handler immediately
+		SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1); // forward to MIDI IN handler immediately
 	      else
 		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
@@ -992,27 +1059,38 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	      // sustained/glided note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
 	      if( gen_sustained_events ) {
-		u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
-
-		// glide: if same note already played, play the new one a tick later for 
-		// proper handling of "fingered portamento" function on some synths
-		if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
-		  scheduled_tick += 1;
-
 		// for visualisation in mute menu
 		t->vu_meter = p->velocity;
 
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+		if( loopback_port ) {
+		  if( !reset_stacks_done ) {
+		    // reset current stack
+		    SEQ_MIDI_IN_ResetSingleTransArpStacks(tcc->midi_port & 0x0f);
+		    reset_stacks_done = 1;
+		  }
+		  // forward to MIDI IN handler immediately
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1);
+		} else {
+		  u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
 
-		// apply Post-FX
-		if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		  u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
-		  SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		  // glide: if same note already played, play the new one a tick later for 
+		  // proper handling of "fingered portamento" function on some synths
+		  if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
+		    scheduled_tick += 1;
+
+		  // Note On
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+
+		  // apply Post-FX
+		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
+		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+		  }
+
+		  // Note Off
+		  p->velocity = 0;
+		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 		}
-
-		// Note Off
-		p->velocity = 0;
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
@@ -1027,8 +1105,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		t->vu_meter = p->velocity;
 
 		if( loopback_port ) {
+		  if( !reset_stacks_done ) {
+		    reset_stacks_done = 1;
+		    // reset current stack
+		    SEQ_MIDI_IN_ResetSingleTransArpStacks(tcc->midi_port & 0x0f);
+		  }
 		  // forward to MIDI IN handler immediately
-		  SEQ_MIDI_IN_BusReceive(tcc->midi_port, *p, 1);
+		  SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1);
 		  // multi triggers, but also echo not possible on loopback ports
 		} else {
 		  u16 gatelength = e->len;
@@ -1406,25 +1489,14 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
   // apply transpose octave/semitones parameter
   if( inc_oct ) {
     note += 12 * inc_oct;
-    if( inc_oct < 0 ) {
-      while( note < 0 )
-	note += 12;
-    } else {
-      while( note >= 128 )
-	note -= 12;
-    }
   }
 
   if( inc_semi ) {
     note += inc_semi;
-    if( inc_semi < 0 ) {
-      while( note < 0 )
-	note += 12;
-    } else {
-      while( note >= 128 )
-	note -= 12;
-    }
   }
+
+  // ensure that note is in the 0..127 range
+  note = SEQ_CORE_TrimNote(note, 0, 127);
 
   if( is_cc ) // if CC, Pitchbender, ProgramChange
     p->value = note;
@@ -1477,6 +1549,10 @@ s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
   if( p->type != NoteOn )
     return 0; // no Note
 
+  // if not set: allow full range
+  if( !upper )
+    upper = 127;
+
   // swap if lower value is greater than upper
   if( lower > upper ) {
     u8 tmp = upper;
@@ -1485,16 +1561,7 @@ s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e)
   }
 
   // apply limit
-  s32 note = p->note; // we need a signed value
-  if( tcc->limit_lower )
-    while( (note-12) < lower )
-      note += 12;
-
-  if( tcc->limit_upper )
-    while( (note+12) > upper )
-      note -= 12;
-
-  p->note = note;
+  p->note = SEQ_CORE_TrimNote(p->note, lower, upper);
 
   return 0; // no error
 }
@@ -1658,10 +1725,9 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
 	fb_note = fb_note_base + ((s32)SEQ_RANDOM_Gen_Range(0, 48) - 24);
       else
 	fb_note = fb_note + ((s32)tcc->echo_fb_note-24);
-      while( fb_note < 0 )
-	fb_note += 12;
-      while( fb_note > 127 )
-	fb_note -= 12;
+
+      // ensure that note is in the 0..127 range
+      fb_note = SEQ_CORE_TrimNote(fb_note, 0, 127);
 
       p.note = (u8)fb_note;
     }
@@ -1737,6 +1803,112 @@ s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks)
       t->state.SYNC_MEASURE = 1;
 
   MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called by the "Live" function on incoming MIDI events,
+// currently we use it to control the temporary layer mutes.
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
+{
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return -1; // invalid track
+
+  if( !seq_core_options.LIVE_LAYER_MUTE_STEPS )
+    return 0; // disabled
+
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
+    return 0; // (currently) not relevant in drum mode
+
+  switch( p.event ) {
+  //case NoteOff:
+  case NoteOn: {
+    if( p.velocity == 0 ) // ignore Note Offs
+      break;
+
+    // temporary mute layers which are assigned to notes or chords
+    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+    int par_layer;
+    int num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 mask = 1;
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
+      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+	// hm... should we also play a note off for active notes?
+	// and should we mute the sequencer notes as long as no Note Off has been played?
+	// problem: we would have to track all actively played MIDI notes, this consumes a lot of memory
+
+	portENTER_CRITICAL();
+	if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 1 ) {
+	  t->layer_muted |= mask;      // mute layer immediately
+	} else {
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	}
+	portEXIT_CRITICAL();
+      }
+    }
+  } break;
+
+  //case PolyPressure:
+  case CC:
+  case ProgramChange:
+  //case Aftertouch:
+  case PitchBend: {
+    // temporary mute layers which are assigned to the corresponding event
+    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
+    int par_layer;
+    int num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u16 mask = 1;
+    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
+      u8 apply_mask = 0;
+      switch( *layer_type_ptr ) {
+      case SEQ_PAR_Type_CC: {
+	if( p.event == CC && p.cc_number == tcc->lay_const[1*16 + par_layer] ) {
+	  apply_mask = 1;
+	}
+      } break;
+
+      case SEQ_PAR_Type_PitchBend: {
+	if( p.event == PitchBend ) {
+	  apply_mask = 1;
+	}
+      } break;
+
+      case SEQ_PAR_Type_ProgramChange: {
+	if( p.event == ProgramChange ) {
+	  apply_mask = 1;
+	}
+      } break;
+      }
+
+      if( apply_mask ) {
+	portENTER_CRITICAL();
+	if( seq_core_options.LIVE_LAYER_MUTE_STEPS == 1 ) {
+	  t->layer_muted |= mask;      // mute layer immediately
+	} else {
+	  t->layer_muted_from_midi |= mask;      // mute layer immediately
+	  t->layer_muted_from_midi_next |= mask; // and for the next step
+	}
+	portEXIT_CRITICAL();
+      }
+    }
+
+    // check also LFO CC (note: only handled as temporary change)
+    if( p.event == CC && p.cc_number == tcc->lfo_cc ) {
+      portENTER_CRITICAL();
+      t->lfo_cc_muted_from_midi = 1;
+      t->lfo_cc_muted_from_midi_next = 1;
+      portEXIT_CRITICAL();
+    }
+
+  } break;
+  }
 
   return 0; // no error
 }
@@ -1845,3 +2017,37 @@ s32 SEQ_CORE_Scrub(s32 incrementer)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function ensures, that a (transposed) note is within
+// the <lower>..<upper> range.
+//
+// If the note is outside the range, it will be "trimmed" in the semitone
+// range, and the octave will be kept.
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper)
+{
+  // negative note (e.g. after transpose?)
+  // shift it to the positive range
+  if( note < 0 )
+    note = 11 - ((-note - 1) % 12);
+
+  // check for lower boundary
+  if( note < (s32)lower ) {
+    note = 12*(lower/12) + (note % 12);
+  }
+
+  // check for upper boundary
+  if( note > (s32)upper ) {
+    note = 12*(upper/12) + (note % 12);
+
+    // if note still > upper value (e.g. upper is set to >= 120)
+    // an if (instead of while) should work in all cases, because note will be (12*int(127/12)) + 11 = 131 in worst case!
+    if( note > upper )
+      note -= 12;
+  }
+
+  return note;
+}
+

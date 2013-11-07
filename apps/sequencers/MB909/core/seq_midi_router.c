@@ -1,4 +1,4 @@
-// $Id: seq_midi_router.c 1470 2012-04-16 21:30:30Z tk $
+// $Id: seq_midi_router.c 1806 2013-06-16 19:17:37Z tk $
 /*
  * MIDI router functions of MIDIbox SEQ
  *
@@ -21,6 +21,9 @@
 #include "tasks.h"
 #include "seq_midi_port.h"
 #include "seq_midi_router.h"
+#include "seq_core.h"
+#include "seq_cc.h"
+#include "seq_ui.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,17 +61,31 @@ s32 SEQ_MIDI_ROUTER_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Returns 32bit selection mask for USB0..7, UART0..7, IIC0..7, OSC0..7
+/////////////////////////////////////////////////////////////////////////////
+static inline u32 SEQ_MIDI_ROUTER_PortMaskGet(mios32_midi_port_t port)
+{
+  u8 port_ix = port & 0xf;
+  if( port >= USB0 && port <= OSC7 && port_ix <= 7 ) {
+    return 1 << ((((port-USB0) & 0x30) >> 1) | port_ix);
+  }
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Receives a MIDI package from APP_NotifyReceivedEvent (-> app.c)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
-  u8 node;
-
-  // filter SysEx
-  if( midi_package.cin == 0xf ||
-      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7) )
+  // filter SysEx which is handled by separate parser
+  if( midi_package.evnt0 < 0xf8 &&
+      (midi_package.cin == 0xf ||
+      (midi_package.cin >= 0x4 && midi_package.cin <= 0x7)) )
     return 0; // no error
 
+  u32 sysex_dst_fwd_done = 0;
+  u8 node;
   mios32_midi_port_t def_port = MIOS32_MIDI_DefaultPortGet();
 
   seq_midi_router_node_t *n = &seq_midi_router_node[0];
@@ -82,15 +99,34 @@ s32 SEQ_MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_
 
       if( midi_package.event >= NoteOff && midi_package.event <= PitchBend ) {
 	if( n->src_chn == 17 || midi_package.chn == (n->src_chn-1) ) {
+	  mios32_midi_port_t fwd_port = n->dst_port;
 	  mios32_midi_package_t fwd_package = midi_package;
-	  if( n->dst_chn <= 16 )
+	  if( n->dst_chn <= 16 ) {
 	    fwd_package.chn = (n->dst_chn-1);
+	  } else if( n->dst_chn == 18 ) { // Trk
+	    fwd_port = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_PORT);
+	    fwd_package.chn = SEQ_CC_Get(midi_package.chn, SEQ_CC_MIDI_CHANNEL);
+
+	    // temporary mute matching events from the sequencer
+	    SEQ_CORE_NotifyIncomingMIDIEvent(midi_package.chn, midi_package);
+	  } else if( n->dst_chn >= 19 ) { // SelTrk
+	    u8 visible_track = SEQ_UI_VisibleTrackGet();
+	    fwd_port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
+	    fwd_package.chn = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL);
+
+	    // temporary mute matching events from the sequencer
+	    SEQ_CORE_NotifyIncomingMIDIEvent(visible_track, midi_package);
+	  }
+
 	  MUTEX_MIDIOUT_TAKE;
-	  MIOS32_MIDI_SendPackage(n->dst_port, fwd_package);
+	  MIOS32_MIDI_SendPackage(fwd_port, fwd_package);
 	  MUTEX_MIDIOUT_GIVE;
 	}
       } else {
-	if( n->dst_chn >= 17 ) { // Realtime events, etc... only forwarded if destination channel set to "All"
+	// Realtime events: ensure that they are only forwarded once
+	u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(n->dst_port);
+	if( !mask || !(sysex_dst_fwd_done & mask) ) {
+	  sysex_dst_fwd_done |= mask;
 	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
 	  MUTEX_MIDIOUT_GIVE;
@@ -112,21 +148,27 @@ s32 SEQ_MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 
   mios32_midi_port_t def_port = MIOS32_MIDI_DefaultPortGet();
 
+  u32 sysex_dst_fwd_done = 0;
   seq_midi_router_node_t *n = &seq_midi_router_node[0];
   for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-    // SysEx, only forwarded if source and destination channel set to "All"
-    if( n->src_chn >= 17 && n->dst_chn >= 17 &&
+    if( n->src_chn && n->dst_chn&&
 	(n->src_port == port || (n->src_port == DEFAULT && port == def_port)) ) {
 
-      // forward as single byte
-      // TODO: optimize this by collecting up to 3 data words and put it into package
-      MUTEX_MIDIOUT_TAKE;
-      mios32_midi_package_t midi_package;
-      midi_package.ALL = 0x00000000;
-      midi_package.type = 0xf; // single byte
-      midi_package.evnt0 = midi_in;
-      MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
-      MUTEX_MIDIOUT_GIVE;
+      // SysEx, only forwarded once per destination port
+      u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(n->dst_port);
+      if( !mask || !(sysex_dst_fwd_done & mask) ) {
+	sysex_dst_fwd_done |= mask;
+
+	// forward as single byte
+	// TODO: optimize this by collecting up to 3 data words and put it into package
+	MUTEX_MIDIOUT_TAKE;
+	mios32_midi_package_t midi_package;
+	midi_package.ALL = 0x00000000;
+	midi_package.type = 0xf; // single byte
+	midi_package.evnt0 = midi_in;
+	MIOS32_MIDI_SendPackage(n->dst_port, midi_package);
+	MUTEX_MIDIOUT_GIVE;
+      }
     }
   }
 
@@ -142,14 +184,13 @@ s32 SEQ_MIDI_ROUTER_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_MIDIClockInGet(mios32_midi_port_t port)
 {
-  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
-  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
-    // extra: MIDI IN Clock function not supported for IIC0..7 (yet)
-    if( port >= IIC0 && port <= (IIC0+15) )
-      return -2; // MIDI In function disabled
+  // extra: MIDI IN Clock function not supported for IIC (yet)
+  if( (port & 0xf0) == IIC0 )
+    return -2; // MIDI In function disabled
 
-    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
-    return (seq_midi_router_mclk_in & (1 << port_flag)) ? 1 : 0;
+  u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(port);
+  if( mask ) {
+    return (seq_midi_router_mclk_in & mask) ? 1 : 0;
   }
 
   return -1; // port not supported
@@ -160,13 +201,12 @@ s32 SEQ_MIDI_ROUTER_MIDIClockInGet(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_MIDIClockInSet(mios32_midi_port_t port, u8 enable)
 {
-  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
-  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
-    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+  u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(port);
+  if( mask ) {
     if( enable )
-      seq_midi_router_mclk_in |= (1 << port_flag);
+      seq_midi_router_mclk_in |= mask;
     else
-      seq_midi_router_mclk_in &= ~(1 << port_flag);
+      seq_midi_router_mclk_in &= ~mask;
 
     return 0; // no error
   }
@@ -183,10 +223,9 @@ s32 SEQ_MIDI_ROUTER_MIDIClockInSet(mios32_midi_port_t port, u8 enable)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_MIDIClockOutGet(mios32_midi_port_t port)
 {
-  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
-  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
-    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
-    return (seq_midi_router_mclk_out & (1 << port_flag)) ? 1 : 0;
+  u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(port);
+  if( mask ) {
+    return (seq_midi_router_mclk_out & mask) ? 1 : 0;
   }
 
   return -1; // port not supported
@@ -197,13 +236,12 @@ s32 SEQ_MIDI_ROUTER_MIDIClockOutGet(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_MIDI_ROUTER_MIDIClockOutSet(mios32_midi_port_t port, u8 enable)
 {
-  // coding: USB0..7, UART0..7, IIC0..7, OSC0..7
-  if( !(port & 0x08) && port >= 0x10 && port < 0x50 ) {
-    int port_flag = (((port&0xf0)-0x10) >> 1) | (port & 0x7);    
+  u32 mask = SEQ_MIDI_ROUTER_PortMaskGet(port);
+  if( mask ) {
     if( enable )
-      seq_midi_router_mclk_out |= (1 << port_flag);
+      seq_midi_router_mclk_out |= mask;
     else
-      seq_midi_router_mclk_out &= ~(1 << port_flag);
+      seq_midi_router_mclk_out &= ~mask;
 
     return 0; // no error
   }

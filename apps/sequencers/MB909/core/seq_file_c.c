@@ -1,4 +1,4 @@
-// $Id: seq_file_c.c 1319 2011-09-01 23:12:10Z tk $
+// $Id: seq_file_c.c 1816 2013-07-22 17:38:58Z tk $
 /*
  * Config File access functions
  *
@@ -308,6 +308,8 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_core_glb_loop_offset = value-1;
 	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
 	    seq_core_glb_loop_steps = value-1;
+	  } else if( strcmp(parameter, "MIDI_OUT_ExtCtrlPort") == 0 ) {
+	    seq_midi_in_ext_ctrl_out_port = (mios32_midi_port_t)value;
 	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
 	    int i;
 	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
@@ -378,39 +380,93 @@ s32 SEQ_FILE_C_Read(char *session)
 		else if( strcmp(parameter+9, "Options") == 0 )
 		  seq_midi_in_options[bus].ALL = v;
 	      }
-	    }
-	  } else if( strcmp(parameter, "MIDI_IN_MClock_Ports") == 0 ) {
-	    seq_midi_router_mclk_in = value;
-	  } else if( strcmp(parameter, "MIDI_IN_RecChannel") == 0 ) {
-	    seq_midi_in_rec_channel = value;
-	  } else if( strcmp(parameter, "MIDI_IN_RecPort") == 0 ) {
-	    seq_midi_in_rec_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "MIDI_IN_SectChannel") == 0 ) {
-	    seq_midi_in_sect_channel = value;
-	  } else if( strcmp(parameter, "MIDI_IN_SectPort") == 0 ) {
-	    seq_midi_in_sect_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "MIDI_IN_SectFwdPort") == 0 ) {
-	    seq_midi_in_sect_fwd_port = (mios32_midi_port_t)value;
-	  } else if( strcmp(parameter, "MIDI_IN_SectNotes") == 0 ) {
-	    int values[4];
-
-	    values[0] = value;
-	    int i;
-	    for(i=1; i<4; ++i) {
-	      word = strtok_r(NULL, separators, &brkt);
-	      values[i] = get_dec(word);
-	      if( values[i] < 0 ) {
-		break;
-	      }
-	    }
-
-	    if( i != 4 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_IN_SectNotes: missing parameter %d\n", i);
-#endif
 	    } else {
-	      for(i=0; i<4; ++i)
-		seq_midi_in_sect_note[i] = values[i];
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+#endif
+	    }
+	  } else if( strncmp(parameter, "MIDI_IN_", 8) == 0 ) {
+	    if( strcmp(parameter+8, "MClock_Ports") == 0 ) {
+	      seq_midi_router_mclk_in = value;
+	    } else if( strcmp(parameter+8, "RecChannel") == 0 ) {
+	      seq_midi_in_rec_channel = value;
+	    } else if( strcmp(parameter+8, "RecPort") == 0 ) {
+	      seq_midi_in_rec_port = (mios32_midi_port_t)value;
+	    } else if( strcmp(parameter+8, "SectChannel") == 0 ) {
+	      seq_midi_in_sect_channel = value;
+	    } else if( strcmp(parameter+8, "SectPort") == 0 ) {
+	      seq_midi_in_sect_port = (mios32_midi_port_t)value;
+	    } else if( strcmp(parameter+8, "SectFwdPort") == 0 ) {
+	      seq_midi_in_sect_fwd_port = (mios32_midi_port_t)value;
+	    } else if( strcmp(parameter+8, "SectNotes") == 0 ) {
+	      int values[4];
+
+	      values[0] = value;
+	      int i;
+	      for(i=1; i<4; ++i) {
+		word = strtok_r(NULL, separators, &brkt);
+		values[i] = get_dec(word);
+		if( values[i] < 0 ) {
+		  break;
+		}
+	      }
+
+	      if( i != 4 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_IN_SectNotes: missing parameter %d\n", i);
+#endif
+	      } else {
+		for(i=0; i<4; ++i)
+		  seq_midi_in_sect_note[i] = values[i];
+	      }
+	    } else if( strncmp(parameter+8, "ExtCtrl", 7) == 0 ) {
+	      if( strcmp(parameter+8+7, "Channel") == 0 ) {
+		seq_midi_in_ext_ctrl_channel = value;
+	      } else if( strcmp(parameter+8+7, "Port") == 0 ) {
+		seq_midi_in_ext_ctrl_port = (mios32_midi_port_t)value;
+	      } else if( strcmp(parameter+8+7, "CcMorph") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = value;
+	      } else if( strcmp(parameter+8+7, "CcScale") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE] = value;
+	      } else if( strcmp(parameter+8+7, "CcSong") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = value;
+	      } else if( strcmp(parameter+8+7, "CcPhrase") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = value;
+	      } else if( strcmp(parameter+8+7, "CcMixerMap") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = value;
+	      } else if( strcmp(parameter+8+7, "CcPatternG1") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1] = value;
+	      } else if( strcmp(parameter+8+7, "CcPatternG2") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2] = value;
+	      } else if( strcmp(parameter+8+7, "CcPatternG3") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3] = value;
+	      } else if( strcmp(parameter+8+7, "CcPatternG4") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4] = value;
+	      } else if( strcmp(parameter+8+7, "CcBankG1") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1] = value;
+	      } else if( strcmp(parameter+8+7, "CcBankG2") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2] = value;
+	      } else if( strcmp(parameter+8+7, "CcBankG3") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3] = value;
+	      } else if( strcmp(parameter+8+7, "CcBankG4") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G4] = value;
+	      } else if( strcmp(parameter+8+7, "CcAllNotesOff") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF] = value;
+	      } else if( strcmp(parameter+8+7, "NrpnEnabled") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = value;
+	      } else if( strcmp(parameter+8+7, "PcMode") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = value;
+	      } else if( strcmp(parameter+8+7, "CcMutes") == 0 ) {
+		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = value;
+	      } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+#endif
+	      }
+	    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+#endif
 	    }
 	  } else if( strcmp(parameter, "MIDI_OUT_MClock_Ports") == 0 ) {
 	    seq_midi_router_mclk_out = value;
@@ -634,6 +690,32 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "MIDI_IN_SectNotes %d %d %d %d\n", (u8)seq_midi_in_sect_note[0], (u8)seq_midi_in_sect_note[1], (u8)seq_midi_in_sect_note[2], (u8)seq_midi_in_sect_note[3]);
   FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlChannel %d\n", seq_midi_in_ext_ctrl_channel);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlPort %d\n", (u8)seq_midi_in_ext_ctrl_port);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_OUT_ExtCtrlPort %d\n", (u8)seq_midi_in_ext_ctrl_out_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMorph %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcScale %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcSong %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPhrase %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMixerMap %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG1 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG2 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG3 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPatternG4 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcBankG1 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcBankG2 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcBankG3 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcBankG4 %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G4]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcAllNotesOff %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlNrpnEnabled %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlPcMode %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMutes %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES]); FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
   FLUSH_BUFFER;
