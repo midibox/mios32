@@ -182,8 +182,10 @@ s32 MBNG_LCD_FontInit(char font_name)
 {
   switch( font_name ) {
   case 'n': glcd_font = (u8 *)GLCD_FONT_NORMAL; break;
-  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+  case 'i': glcd_font = (u8 *)GLCD_FONT_NORMAL_INV; break;
   case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
+  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+  case 't': glcd_font = (u8 *)GLCD_FONT_TINY; break;
   case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
   case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
   case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;

@@ -23,6 +23,10 @@ MIDIbox NG V1.027
      Configuration example: see cfg/templates/logictrl.ngc
      (search for "meter")
 
+   o added new GLCD fonts (provided by Pcbatterij): Inverted and Tiny.
+     In order to test these fonts, try following commands in the MIOS Terminal:
+     lcd %C&t@(1:1:1)Tiny Font
+     lcd %C&i@(1:1:1)Inverted Font
 
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~
