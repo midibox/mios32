@@ -315,8 +315,10 @@ s32 BUFLCD_FontInit(u8 *font)
 #else
 
   if     ( font == GLCD_FONT_NORMAL )        lcd_current_font = 'n';
+  else if( font == GLCD_FONT_NORMAL_INV )    lcd_current_font = 'i';
   else if( font == GLCD_FONT_BIG )           lcd_current_font = 'b';
   else if( font == GLCD_FONT_SMALL )         lcd_current_font = 's';
+  else if( font == GLCD_FONT_TINY )          lcd_current_font = 't';
   else if( font == GLCD_FONT_KNOB_ICONS )    lcd_current_font = 'k';
   else if( font == GLCD_FONT_METER_ICONS_H ) lcd_current_font = 'h';
   else if( font == GLCD_FONT_METER_ICONS_V ) lcd_current_font = 'v';
@@ -409,8 +411,10 @@ s32 BUFLCD_Update(u8 force)
 	if( glcd_font_handling ) {
 	  switch( *font_ptr & 0x7f ) {
 	  case 'n': glcd_font = (u8 *)GLCD_FONT_NORMAL; break;
+	  case 'i': glcd_font = (u8 *)GLCD_FONT_NORMAL_INV; break;
 	  case 'b': glcd_font = (u8 *)GLCD_FONT_BIG; break;
 	  case 's': glcd_font = (u8 *)GLCD_FONT_SMALL; break;
+	  case 't': glcd_font = (u8 *)GLCD_FONT_TINY; break;
 	  case 'k': glcd_font = (u8 *)GLCD_FONT_KNOB_ICONS; break;
 	  case 'h': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_H; break;
 	  case 'v': glcd_font = (u8 *)GLCD_FONT_METER_ICONS_V; break;
