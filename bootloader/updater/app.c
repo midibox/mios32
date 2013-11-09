@@ -438,9 +438,8 @@ void APP_Background(void)
   // init all specified LCDs
   LCD_Update();
 
-  MIOS32_LCD_Clear();
-
   // print welcome message on MIOS terminal
+  MIOS32_LCD_DeviceSet(0);
   DEBUG_MSG("\n");
   DEBUG_MSG("====================\n");
   DEBUG_MSG1("%s\n", MIOS32_LCD_BOOT_MSG_LINE1);
