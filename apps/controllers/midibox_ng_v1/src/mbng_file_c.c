@@ -3255,6 +3255,7 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
     if( *parameter == 0 || *parameter == '#' ) {
       // ignore comments and empty lines
     } else if( strcasecmp(parameter, "RESET_HW") == 0 ) {
+      MBNG_LCD_Init(0);
       MBNG_EVENT_PoolClear();
       MBNG_EVENT_LCMeters_Init();
       MBNG_PATCH_Init(0);
