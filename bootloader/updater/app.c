@@ -675,6 +675,8 @@ s32 prepare_sector(unsigned start_sector, unsigned end_sector, unsigned cclk)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Update(void)
 {
+  MIOS32_LCD_Init(0); // retrieve new LCD configuration...
+
   int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
 
   // initialize all LCDs (although programming_models/traditional/main.c will only initialize the first two)
