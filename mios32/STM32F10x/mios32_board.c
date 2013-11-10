@@ -821,6 +821,7 @@ s32 MIOS32_BOARD_J15_DataSet(u8 data)
   J15_PIN_SER(data & 0x01); // D0
   J15_PIN_SCLK_0; // setup delay
   J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
 
   // transfer to output register
   J15_PIN_RCLK_1;
