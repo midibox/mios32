@@ -8,30 +8,19 @@ All other rights reserved.
 ===============================================================================
 
 Required tools:
-  -> http://svnmios.midibox.org/filedetails.php?repname=svn.mios32&path=%2Ftrunk%2Fdoc%2FMEMO
+  -> http://www.ucapps.de/mio32_c.html
 
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 module
+   o MBHP_CORE_STM32, MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 module
    o at least one IIC_MIDI module
-
-Optional hardware:
-   o LCD to display connection status of IIC_MIDI modules
 
 
 ===============================================================================
 
-This application scans for available MBHP_IIC_MIDI devices each second
-and displays the (dis)connection status on the LCD.
-
-In addition, the status will be sent to the MIOS Terminal whenever it has changed.
-
-To test the MIDI In/Out port of a module, just connect them with the
-MIDI interface of your PC, select the MIDI ports of your interface in MIOS Studio,
-and press the "Query" button. You should get a response like if you would
-query via USB.
-
+This application scans for available MBHP_IIC_MIDI devices each 200 mS
+and displays the (dis)connection status in the MIOS Terminal (MIOS Studio)
 
 Module behaviour:
    o Power LED (green) on: the PIC is running, initialization phase finished
@@ -51,5 +40,37 @@ Notes:
      MIOS32_IIC_MIDIx_ENABLED switch to "2", ensure that the correct
      pin is specified with MIOS32_IIC_MIDIx_RI_N_* and rebuild this
      application.
+
+
+Available commands (enter 'help' in MIOS terminal)
+
+scan:                    scan for available IIC_MIDI interfaces
+ping:                    ping all IIC_MIDI interfaces
+stress:                  stressing all IIC_MIDI interfaces for ca. 1 second
+outtest:                 enables/disables MIDI OUT test (sends a CC each 200 mS)
+reset:                   resets the MIDIbox (!)
+help:                    this page
+
+
+The "outtest" is the most useful test, because it sends CC events over each
+module periodically in a round robin manner.
+
+Means:
+- first the red (Tx) LED of the module assigned to IIC1 should flicker
+- after 200 mS the red (Tx) LED of the module assigned to IIC2 should flicker
+- after 200 mS the red (Tx) LED of the module assigned to IIC3 should flicker
+- etc
+
+It's allowed to connect/disconnect the modules during runtime, they will be
+automatically detected, and a message will appear, such as:
+
+[407563.920] MBHP_IIC_MIDI module #1 has been disconnected!
+[407563.920] MBHP_IIC_MIDI module #2 has been disconnected!
+[407563.921] MBHP_IIC_MIDI module #3 has been disconnected!
+[407563.921] MBHP_IIC_MIDI module #4 has been disconnected!
+[407564.520] MBHP_IIC_MIDI module #1 connected!
+[407564.520] MBHP_IIC_MIDI module #2 connected!
+[407564.521] MBHP_IIC_MIDI module #3 connected!
+[407564.521] MBHP_IIC_MIDI module #4 connected!
 
 ===============================================================================
