@@ -25,7 +25,7 @@
 #include "seq_groove.h"
 #include "seq_file.h"
 #include "seq_file_g.h"
-
+#include <glcd_font.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -309,10 +309,42 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk.  Groove Style  ");
+  
+    if( ui_selected_item == ITEM_GXTY ) {
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+    SEQ_LCD_PrintString("Trk. ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  } else {
+    SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	SEQ_LCD_PrintString("Trk. ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  }
+  
+  if( ui_selected_item == ITEM_GROOVE_STYLE ) {
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+    SEQ_LCD_PrintString(" Groove Style  ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  } else {
+    SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	SEQ_LCD_PrintString(" Groove Style  ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  }
+  
+  
   
   SEQ_LCD_CursorSet(0, 2);
-  SEQ_LCD_PrintString("Intensity ");
+  
+    if( ui_selected_item == ITEM_GROOVE_VALUE ) {
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+    SEQ_LCD_PrintString("Intensity ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  } else {
+    SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	SEQ_LCD_PrintString("Intensity ");
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  }
+  
+
    if( ui_selected_item == ITEM_GROOVE_VALUE_GLB && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(10);
   } else {
@@ -329,29 +361,29 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
-  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(4);
-  } else {
+  //if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
+  //  SEQ_LCD_PrintSpaces(4);
+ // } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-  }
+  //}
   SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_GROOVE_STYLE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(12);
-  } else {
+  //if( ui_selected_item == ITEM_GROOVE_STYLE && ui_cursor_flash ) {
+  //  SEQ_LCD_PrintSpaces(12);
+ // } else {
     SEQ_LCD_PrintString(SEQ_GROOVE_NameGet(selected_groove));
-  }
+ // }
   SEQ_LCD_PrintSpaces(5);
 
   
   SEQ_LCD_CursorSet(0, 3);
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_GROOVE_VALUE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
+  //if( ui_selected_item == ITEM_GROOVE_VALUE && ui_cursor_flash ) {
+    //SEQ_LCD_PrintSpaces(3);
+  //} else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE));
-  }
+ // }
   SEQ_LCD_PrintSpaces(4);
 
 

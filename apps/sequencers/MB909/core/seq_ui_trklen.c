@@ -19,7 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
-
+#include <glcd_font.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions

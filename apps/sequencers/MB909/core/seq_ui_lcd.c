@@ -112,7 +112,7 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
   SEQ_LCD_PrintString("contrast");
   //MIOS32_LCD_GCursorSet(4, 40);
-  SEQ_LCD_CursorSet(1, 4);
+  SEQ_LCD_CursorSet(1, 5);
   //SEQ_LCD_FontInit((u8 *)GLCD_FONT_BIG);	
   SEQ_LCD_PrintString("SETUP");
   //SEQ_LCD_CursorSet(1, 7); 

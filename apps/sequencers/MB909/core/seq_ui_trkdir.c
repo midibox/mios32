@@ -19,7 +19,7 @@
 #include "seq_lcd.h"
 #include "seq_ui.h"
 #include "seq_cc.h"
-
+#include <glcd_font.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -77,7 +77,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
 		SEQ_UI_Var8_Inc(&ui_selected_item, 0, NUM_OF_ITEMS, incrementer);
-		if (ui_selected_item == ITEM_DIRECTION) SEQ_UI_CC_Set(SEQ_CC_DIRECTION, encoder-1);
+		if (ui_selected_item == ITEM_DIRECTION) {
+			//SEQ_UI_CC_Set(SEQ_CC_DIRECTION, encoder-1);
+			SEQ_UI_CC_Set(SEQ_CC_DIRECTION, 7);
+			SEQ_LCD_Update(1);
+		}
       //ui_selected_item = ITEM_GXTY;
       break;
 
@@ -245,11 +249,16 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
-  } else {
+  if( ui_selected_item == ITEM_GXTY ) {
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
     SEQ_LCD_PrintSpaces(2);
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+  } else {
+    SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintSpaces(2);
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -264,9 +273,81 @@ static s32 LCD_Handler(u8 high_prio)
   };
   int i;
   int selected_direction = SEQ_CC_Get(visible_track, SEQ_CC_DIRECTION);
+  if( ui_selected_item == ITEM_DIRECTION && 0 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString("     Forward ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString("     Forward ");
+	  
+  }	
+	
+	SEQ_LCD_CursorSet(0, 1);  
+   if( ui_selected_item == ITEM_DIRECTION && 1 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" Backward ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" Backward ");
+	  
+  }	 
+   if( ui_selected_item == ITEM_DIRECTION && 2 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" PingPong ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" PingPong ");
+	  
+  }	  
+  
+  
+	SEQ_LCD_CursorSet(0, 2);    
+    if( ui_selected_item == ITEM_DIRECTION && 3 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" Pendulum ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" Pendulum ");
+	  
+  }	 
+   if( ui_selected_item == ITEM_DIRECTION && 4 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" Rand.Dir ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" Rand.Dir ");
+	  
+  }	   
+ 
+	SEQ_LCD_CursorSet(0, 3);    
+    if( ui_selected_item == ITEM_DIRECTION && 5 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" Ran.Step ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" Ran.Step ");
+	  
+  }	 
+   if( ui_selected_item == ITEM_DIRECTION && 6 == selected_direction ){
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+	  SEQ_LCD_PrintString(" Rand.D+S ");
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}else{
+	  SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	  SEQ_LCD_PrintString(" Rand.D+S ");
+	  
+  }	   
+
+ /*
   for(i=0; i<7; ++i) {
     u8 x = 5*i;
-    SEQ_LCD_CursorSet(x, i);
+    SEQ_LCD_CursorSet(x, i%2);
 
     // print unmodified name if item selected
     // replace '>' and '<' by space if item not selected
@@ -288,7 +369,7 @@ static s32 LCD_Handler(u8 high_prio)
       }
     }
   }
-
+*/
   // 3 additional spaces to fill LCD (avoids artefacts on page switches)
   //SEQ_LCD_CursorSet(37, 1);
   //SEQ_LCD_PrintSpaces(3);
@@ -296,39 +377,84 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 4);
-  SEQ_LCD_PrintString("Fwd Back Rplay Repeat");
+   if( ui_selected_item == ITEM_STEPS_FORWARD ) {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Fwd ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		
+    } else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		SEQ_LCD_PrintString("Fwd ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}
+	
+	if( ui_selected_item == ITEM_STEPS_JMPBCK ) {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Back ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		
+    } else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		SEQ_LCD_PrintString("Back ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}
+		
+	if( ui_selected_item == ITEM_STEPS_REPLAY ) {		
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Rplay ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		
+    } else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		SEQ_LCD_PrintString("Rplay ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}		
 
+	if( ui_selected_item == ITEM_STEPS_REPEAT ) {		
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Repeat");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		
+    } else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		SEQ_LCD_PrintString("Repeat");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+	}			
+
+		
+  
+   
 /////////////////////////////////////////////////////////////////////////////  
   SEQ_LCD_CursorSet(0, 5);
-  if( ui_selected_item == ITEM_STEPS_FORWARD && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
+//  if( ui_selected_item == ITEM_STEPS_FORWARD && ui_cursor_flash ) {
+  //  SEQ_LCD_PrintSpaces(3);
+ // } else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_FORWARD)+1);
-  }
+ // }
   SEQ_LCD_PrintSpaces(3);
 
-  if( ui_selected_item == ITEM_STEPS_JMPBCK && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
+ // if( ui_selected_item == ITEM_STEPS_JMPBCK && ui_cursor_flash ) {
+  //  SEQ_LCD_PrintSpaces(3);
+ // } else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_JMPBCK));
-  }
-  SEQ_LCD_PrintSpaces(4);
+ // }
+  SEQ_LCD_PrintSpaces(3);
 
-  if( ui_selected_item == ITEM_STEPS_REPLAY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
+ // if( ui_selected_item == ITEM_STEPS_REPLAY && ui_cursor_flash ) {
+  //  SEQ_LCD_PrintSpaces(3);
+  //} else {
     int value = SEQ_CC_Get(visible_track, SEQ_CC_STEPS_REPLAY)+1;
     SEQ_LCD_PrintFormattedString("x%d", value);
     if( value < 10 )
       SEQ_LCD_PrintSpaces(1);
-  }  
-  SEQ_LCD_PrintSpaces(4);
+ // }  
+  SEQ_LCD_PrintSpaces(3);
 
-  if( ui_selected_item == ITEM_STEPS_REPEAT && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
-  } else {
+  //if( ui_selected_item == ITEM_STEPS_REPEAT && ui_cursor_flash ) {
+    //SEQ_LCD_PrintSpaces(3);
+  //} else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_REPEAT));
-  }
+  //}
   SEQ_LCD_PrintSpaces(2);
 
 /////////////////////////////////////////////////////////////////////////////  
@@ -349,7 +475,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_STEPS_RS_INTERVAL)+1);
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(4);
 
   if( ui_selected_item == ITEM_SYNCH_TO_MEASURE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
