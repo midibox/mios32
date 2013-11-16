@@ -1379,9 +1379,6 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   
   
- // if (lcd_contrast != 0)
-//	SEQ_LCD_Contrastset(lcd_contrast);
- // DEBUG_MSG("LCD contrast set to %02d ", lcd_contrast);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
 
   show_edit_config_page = 0;

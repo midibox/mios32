@@ -1,4 +1,4 @@
-// $Id: seq_ui_trkevnt.c 1316 2011-08-30 21:20:05Z tk $
+// $Id: seq_ui_trkevnt.c 1811 2013-06-25 20:50:00Z tk $
 /*
  * Track event page
  *
@@ -33,7 +33,7 @@
 #include "file.h"
 #include "seq_file.h"
 #include "seq_file_t.h"
-
+#include <glcd_font.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -120,6 +120,7 @@ static u8 selected_layer_config;
 static u8 selected_layer_config_track;
 
 static u8 edit_cc_number;
+static u8 edit_layer_type;
 
 static const layer_config_t layer_config[] = {
   //      mode                par_layers  par_steps  trg_layers  trg_steps  instruments
@@ -534,10 +535,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  switch( encoder ) {
 	  
 		case SEQ_UI_ENCODER_GP1:
-			DEBUG_MSG("encoder GP1 bij drum");
 			return SEQ_UI_Var8_Inc(&ui_selected_item, 0, NUM_OF_ITEMS_DRUM, incrementer);
-			
-				
 			//return SEQ_UI_Var8_Inc(&ui_selected_item, 0, NUM_OF_ITEMS_DRUM, incrementer);
 			//ui_selected_item = ITEM_GXTY;
 		break;
@@ -582,7 +580,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  switch( encoder ) {
 	  
 		case SEQ_UI_ENCODER_GP1:
-			DEBUG_MSG("encoder GP1 geen drum");
 			return SEQ_UI_Var8_Inc(&ui_selected_item, 0, NUM_OF_ITEMS_NORMAL, incrementer);
 			//ui_selected_item = ITEM_GXTY;
 		break;
@@ -591,21 +588,47 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      break;
 
 	    case SEQ_UI_ENCODER_GP10:
-	      ui_selected_item = ITEM_LAYER_CONTROL;
+	      // Layer selection now has to be confirmed with GP button
+	      if( incrementer ) {
+		if( ui_selected_item != ITEM_LAYER_CONTROL ) {
+		  edit_layer_type = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer);
+		  ui_selected_item = ITEM_LAYER_CONTROL;
+		}
+		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm new type", "with GP button!");
+	      } else {
+		if( edit_layer_type != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer) ) {
+		  // TODO: has to be done for all selected tracks
+		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, edit_layer_type);
+		  SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
+		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Layer Type", "has been changed.");
+		} else {
+		  // send MIDI event
+		  if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
+		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		  }
+		}
+	      }
 	      break;
 
 	    case SEQ_UI_ENCODER_GP11:
 	    case SEQ_UI_ENCODER_GP12:
 	    case SEQ_UI_ENCODER_GP13:
 	      // CC number selection now has to be confirmed with GP button
-	      if( ui_selected_item != ITEM_LAYER_PAR ) {
-		edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
-		ui_selected_item = ITEM_LAYER_PAR;
+	      if( incrementer ) {
+		if( ui_selected_item != ITEM_LAYER_PAR ) {
+		  edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+		  ui_selected_item = ITEM_LAYER_PAR;
+		}
 		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
-	      } else if( incrementer == 0 ) {
+	      } else {
 		if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
 		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
 		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+		} else {
+		  // send MIDI event
+		  if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
+		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		  }
 		}
 	      }
 	      break;
@@ -659,7 +682,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
         case ITEM_GXTY: 
 			
 			if (encoder == SEQ_UI_ENCODER_Datawheel){
-			DEBUG_MSG("encoder datawheel");
 			return SEQ_UI_GxTyInc(incrementer);
 			}
         case ITEM_EVENT_MODE: {
@@ -728,21 +750,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	      return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, 0, 127, incrementer);
 	    } else {
 	      // CC number selection now has to be confirmed with GP button
-	      return SEQ_UI_Var8_Inc(&edit_cc_number, 0, 127, incrementer);
+	      return SEQ_UI_Var8_Inc(&edit_cc_number, 0, 128, incrementer);
 	    }
 	    
 	  case ITEM_LAYER_CONTROL: {
-	    // TODO: has to be done for all selected tracks
-	    if( SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
-	      SEQ_LAYER_CopyParLayerPreset(visible_track, ui_selected_par_layer);
-	      return 1;
-	    }
-	    return 0;
+	    // Layer Control selection now has to be confirmed with GP button
+	    return SEQ_UI_Var8_Inc(&edit_layer_type, 0, SEQ_PAR_NUM_TYPES-1, incrementer);
 	  } break;
 	}
       }
   }
-
+  
   return -1; // invalid or unsupported encoder
 }
 
@@ -1034,7 +1052,7 @@ static s32 LCD_Handler(u8 high_prio)
   
   case PR_DIALOG_EDIT_LABEL: {
       int i;
-	  DEBUG_MSG("edit layout 0,0");
+
       SEQ_LCD_CursorSet(0, 0);
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	SEQ_LCD_PrintString("Please enter Drum  ");
@@ -1044,7 +1062,7 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintFormattedString("-%2d:", ui_selected_instrument + 1);
 	SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
 	SEQ_LCD_PrintSpaces(1);
-	DEBUG_MSG("eerste bug 0,2");
+
 	SEQ_LCD_CursorSet(0, 2);
 	SEQ_LCD_PrintChar('<');
 	for(i=0; i<5; ++i)
@@ -1076,7 +1094,6 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
 	  SEQ_LCD_PrintSpaces(7);
 	}
-	DEBUG_MSG("tweede bug 0,2");
 	SEQ_LCD_CursorSet(0, 2);
 	SEQ_LCD_PrintChar('<');
 	for(i=0; i<5; ++i)
@@ -1103,7 +1120,7 @@ static s32 LCD_Handler(u8 high_prio)
     ///////////////////////////////////////////////////////////////////////////
     case PR_DIALOG_PRESETS: {
       SEQ_LCD_CursorSet(0, 0);
-	  DEBUG_MSG("preset dialog 0,0");
+
       SEQ_LCD_PrintSpaces(20);
 
       SEQ_LCD_CursorSet(0, 0);
@@ -1136,7 +1153,7 @@ static s32 LCD_Handler(u8 high_prio)
     case PR_DIALOG_IMPORT: {
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 0);
-	  DEBUG_MSG("import 0,0");
+
       SEQ_LCD_PrintFormattedString("Import /PRESETS/%s.V4T to ", dir_name);
       SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
       //SEQ_LCD_PrintSpaces(10);
@@ -1244,13 +1261,25 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 0);
 	  //DEBUG_MSG("default 0,0");
 	  if  ((0) == ui_selected_item) {
-		SEQ_LCD_PrintString(">Trk<Type ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Trk. ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Type ");
+		SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? " StepsP/T " : " Steps/Par ");
+		
 	   } else if ((1) == ui_selected_item) {
-		SEQ_LCD_PrintString("Trk.>Type ");
-		SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? "StepsP/T< " : "Steps/Par<");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Trk. ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Type ");
+		SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? " StepsP/T " : " Steps/Par ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 	   } else  {
-		SEQ_LCD_PrintString("Trk. Type ");
-		SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? "StepsP/T  " : "Steps/ParL");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Trk. ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Type ");
+		SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? " StepsP/T " : " Steps/Par ");
 	   }	
 	  //SEQ_LCD_PrintString(((0) == ui_selected_item) ? ">Trk.< Type ": "Trk. Type ");
       //SEQ_LCD_PrintString("Trk. Type ");
@@ -1258,15 +1287,33 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_CursorSet(0, 2);
 	  SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? "Drums" : "/TrgL");
 	  if  ((2) == ui_selected_item) {
-		SEQ_LCD_PrintString(">Port<Chn. ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString(" Port ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Chn.");
 		SEQ_LCD_PrintFormattedString("Edit ");
 	   } else if ((3) == ui_selected_item) {
-		SEQ_LCD_PrintString(" Port>Chn.<");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString(" Port ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString("Chn.");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
 		SEQ_LCD_PrintFormattedString("Edit ");
 	   } else  {
-		SEQ_LCD_PrintString(" Port Chn.");
-		if ((4) == ui_selected_item) SEQ_LCD_PrintFormattedString(">Edit<");
-		 else SEQ_LCD_PrintFormattedString(" Edit ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString(" Port ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Chn.");
+		
+		if ((4) == ui_selected_item) {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);		
+		SEQ_LCD_PrintFormattedString(" Edit ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);		
+		} else {
+			SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+			SEQ_LCD_PrintFormattedString(" Edit ");
+		  
+		  }
 	   }
 	  //SEQ_LCD_PrintString("Port Chn. ");
 
@@ -1277,25 +1324,52 @@ static s32 LCD_Handler(u8 high_prio)
       }
 	*/
 	  SEQ_LCD_CursorSet(0, 4);
+	  
       if( selected_layer_config != GetLayerConfig(visible_track) ) {
+	 SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL); 
 	SEQ_LCD_PrintStringPadded("Please initialize",20);
 	SEQ_LCD_CursorSet(0, 5);
+	SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL); 
 	SEQ_LCD_PrintStringPadded("the track",20);
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	SEQ_LCD_PrintString(((5) == ui_selected_item) ? "LayA<" : "LayA ");
-	//SEQ_LCD_PrintString("LayA ");
+	//SEQ_LCD_PrintString(((5) == ui_selected_item) ? "LayA<" : "LayA ");
+	if  ((5) == ui_selected_item) {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);		
+		SEQ_LCD_PrintString("LayA ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	} else  {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("LayA ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);		
+	}
 	if  ((6) == ui_selected_item) {
-		SEQ_LCD_CursorSet(4, 4);
-		SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? ">LayB<" : ">   <");
-	} else SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
-	
+		//SEQ_LCD_CursorSet(4, 4);
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);	
+		SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	} else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
+	}
 	
 	if  ((7) == ui_selected_item) {
-		SEQ_LCD_PrintString(">Drum<Note ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);	
+		SEQ_LCD_PrintString(" Drum ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Note ");
+		
+		
 	} else if ((8) == ui_selected_item) {
-		SEQ_LCD_PrintString(" Drum>Note<");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString(" Drum ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);	
+		SEQ_LCD_PrintString("Note ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 	} else  {
-		SEQ_LCD_PrintString(" Drum Note ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString(" Drum ");
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString("Note ");;
 
 	}
 	
@@ -1321,52 +1395,85 @@ static s32 LCD_Handler(u8 high_prio)
       ///////////////////////////////////////////////////////////////////////////
       SEQ_LCD_CursorSet(0, 1);
 
-      if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(5);
+      //if( ui_selected_item == ITEM_GXTY && ui_cursor_flash ) {
+	  if( ui_selected_item == ITEM_GXTY ) {
+
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+		SEQ_LCD_PrintSpaces(1);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
       } else {
-	SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-	SEQ_LCD_PrintSpaces(1);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+		SEQ_LCD_PrintSpaces(1);
       }
 
       ///////////////////////////////////////////////////////////////////////////
 
-      if( ui_selected_item == ITEM_EVENT_MODE && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(21);
+      //if( ui_selected_item == ITEM_EVENT_MODE && ui_cursor_flash ) {
+	  if( ui_selected_item == ITEM_EVENT_MODE ) {
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+		SEQ_LCD_PrintString((char *)SEQ_LAYER_GetEvntModeName(event_mode));
+		
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
       } else {
-	SEQ_LCD_PrintString((char *)SEQ_LAYER_GetEvntModeName(event_mode));
-
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintString((char *)SEQ_LAYER_GetEvntModeName(event_mode));
+	}
 	layer_config_t *lc = (layer_config_t *)&layer_config[selected_layer_config];
 	if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	  //SEQ_LCD_PrintChar(' ');
 	  SEQ_LCD_PrintChar('(');
 	  SEQ_LCD_PrintSpaces(14); // for easier handling
 	  SEQ_LCD_CursorSet(11, 1);
-	  
+/*	  
+	  if( ui_selected_item == ITEM_EVENT_MODE ) {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+      } else {
+		SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	}
+*/	  
 	  if( lc->par_layers > 1 )
 	    SEQ_LCD_PrintFormattedString("%d*", lc->par_layers);
 	  SEQ_LCD_PrintFormattedString("%d/", lc->par_steps);
 	  if( lc->trg_layers > 1 )
 	    SEQ_LCD_PrintFormattedString("%d*", lc->trg_layers);
 	  SEQ_LCD_PrintFormattedString("%d)", lc->trg_steps);
-	  SEQ_LCD_CursorSet(0, 3);
+	  //SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);	
+		SEQ_LCD_CursorSet(0, 3);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	
 	  SEQ_LCD_PrintFormattedString(" %d", lc->instruments);
-	  SEQ_LCD_CursorSet(6, 3);
+		SEQ_LCD_CursorSet(6, 3);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+
 	} else {
 		
 		SEQ_LCD_PrintFormattedString("  %3d %3d ", lc->par_steps, lc->par_layers, lc->trg_layers);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
 		SEQ_LCD_CursorSet(0, 3);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		
 		SEQ_LCD_PrintFormattedString(" %3d ", lc->trg_layers);
 		SEQ_LCD_CursorSet(6, 3);
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+	
 	}
-      }
+      //}
 
       ///////////////////////////////////////////////////////////////////////////
       mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
-      if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(5);
+     // if( ui_selected_item == ITEM_MIDI_PORT && ui_cursor_flash ) {
+	  if( ui_selected_item == ITEM_MIDI_PORT ) {
+			//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL_INV);
+			SEQ_LCD_PrintMIDIOutPort(port);
+			SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
+			//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		//SEQ_LCD_PrintSpaces(5);
       } else {
-	SEQ_LCD_PrintMIDIOutPort(port);
-	SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
+		//SEQ_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+		SEQ_LCD_PrintMIDIOutPort(port);
+		SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
       }
 
       ///////////////////////////////////////////////////////////////////////////
@@ -1458,28 +1565,43 @@ static s32 LCD_Handler(u8 high_prio)
 	} else {
 	  SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
 	}
-	SEQ_LCD_PrintSpaces(4);
+	SEQ_LCD_PrintSpaces(3);
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_LAYER_CONTROL && ui_cursor_flash ) {
-	  SEQ_LCD_PrintSpaces(5);
+	  SEQ_LCD_PrintSpaces(6);
 	} else {
-	  SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+	  u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer);
+	  if( ui_selected_item == ITEM_LAYER_CONTROL && edit_layer_type != current_value ) {
+	    SEQ_LCD_PrintChar('!');
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(edit_layer_type));
+	  } else {
+	    SEQ_LCD_PrintChar(' ');
+	    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+	  }
 	}
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_LAYER_PAR && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(15);
 	} else {
-	  switch( SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer) ) {
+	  u8 assignment = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
+	  if( ui_selected_item == ITEM_LAYER_CONTROL )
+	    assignment = edit_layer_type;
+
+	  switch( assignment ) {
             case SEQ_PAR_Type_CC: {
 	      mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT);
 	      u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
 	      u8 edit_value = ui_selected_item == ITEM_LAYER_PAR ? edit_cc_number : current_value;
-	      SEQ_LCD_PrintFormattedString("%03d%c(%s) ", 
-					   edit_value,
-					   (current_value != edit_value) ? '!' : ' ',
-					   SEQ_CC_LABELS_Get(port, edit_value));
+
+	      if( edit_value >= 0x80 ) {
+		SEQ_LCD_PrintFormattedString("off%c(no CC   ) ", (current_value != edit_value) ? '!' : ' ');
+	      } else {
+		SEQ_LCD_PrintFormattedString("%03d%c(%s) ", edit_value,
+					     (current_value != edit_value) ? '!' : ' ',
+					     SEQ_CC_LABELS_Get(port, edit_value));
+	      }
 	    } break;
 
             default:
