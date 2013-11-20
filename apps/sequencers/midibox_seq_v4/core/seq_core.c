@@ -264,6 +264,7 @@ s32 SEQ_CORE_Init(u32 mode)
 s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len)
 {
   s32 status = 0;
+  mios32_midi_port_t fx_midi_port = tcc->fx_midi_port ? tcc->fx_midi_port : tcc->midi_port;
 
   if( !tcc->fx_midi_num_chn ) {
     status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
@@ -280,7 +281,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
 	} else {
 	  midi_package.chn = (tcc->fx_midi_chn + (t->fx_midi_ctr-1)) % 16;
-	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
       } break;
 	
@@ -291,7 +292,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
 	} else {
 	  midi_package.chn = (tcc->fx_midi_chn + ix-1) % 16;
-	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
       } break;
 
@@ -305,7 +306,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	int ix;
 	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
-	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
       } break;
 
@@ -320,7 +321,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	int ix;
 	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
-	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
       }
     }

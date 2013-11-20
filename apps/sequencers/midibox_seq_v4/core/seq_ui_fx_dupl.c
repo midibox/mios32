@@ -111,7 +111,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_PORT: {
     mios32_midi_port_t port = SEQ_CC_Get(visible_track, SEQ_CC_FX_MIDI_PORT);
     u8 port_ix = SEQ_MIDI_PORT_OutIxGet(port);
-    if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) ) {
+    if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1-4, incrementer) ) { // -4 so that Bus1..Bus4 can't be selected (not supported)
       mios32_midi_port_t new_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
       SEQ_UI_CC_Set(SEQ_CC_FX_MIDI_PORT, new_port);
       return 1; // value changed
@@ -197,7 +197,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Number of additional  First ChannelPort Non-Notes  Mode                    
-  // GxTy     Channels:  3            2      Def. Forwarded  Alternate with EchoSynch
+  // GxTy     Channels:  3            2      Same Forwarded  Alternate with EchoSynch
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -239,8 +239,12 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_PORT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
-    SEQ_LCD_PrintMIDIOutPort(port);
-    SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
+    if( port == DEFAULT ) {
+      SEQ_LCD_PrintString("Same ");
+    } else {
+      SEQ_LCD_PrintMIDIOutPort(port);
+      SEQ_LCD_PrintChar(SEQ_MIDI_PORT_OutCheckAvailable(port) ? ' ' : '*');
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////
