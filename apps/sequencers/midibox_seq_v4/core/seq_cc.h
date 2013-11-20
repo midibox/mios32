@@ -146,8 +146,14 @@
 #define SEQ_CC_ECHO_FB_GATELENGTH 0x75
 #define SEQ_CC_ECHO_FB_TICKS    0x76
 
-// free: 0x77..0x7f
+// free: 0x77
 
+#define SEQ_CC_FX_MIDI_MODE         0x78
+#define SEQ_CC_FX_MIDI_PORT         0x79
+#define SEQ_CC_FX_MIDI_CHANNEL      0x7a
+#define SEQ_CC_FX_MIDI_NUM_CHANNELS 0x7b
+
+// free: 0x7c..0x7f
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -162,6 +168,10 @@ typedef struct {
   seq_core_busasg_t busasg;     // T&A bus port (0..3)
   mios32_midi_port_t midi_port; // MIDI port
   mios32_midi_chn_t midi_chn:4; // MIDI channel
+  mios32_midi_chn_t fx_midi_chn:4; // Fx MIDI channel
+  mios32_midi_port_t fx_midi_port; // Fx MIDI port
+  u8       fx_midi_num_chn;     // number of allocated MIDI channels (upward counting) - 0=1 channel, 1=2 channels, etc
+  seq_core_fx_midi_mode_t fx_midi_mode; // Fx MIDI mode
   u8       dir_mode:4;        // track direction mode (limited to 4 bits, see also seq_cc_trk_dir_t)
   u8       steps_replay:4;    // steps replay value
   u8       steps_forward:4;   // steps forward value

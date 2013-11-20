@@ -258,6 +258,79 @@ s32 SEQ_CORE_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function schedules a MIDI event by considering the "normal" and "Fx"
+// MIDI port
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len)
+{
+  s32 status = 0;
+
+  if( !tcc->fx_midi_num_chn ) {
+    status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+  } else {
+    if( event_type == SEQ_MIDI_OUT_OnOffEvent ) {
+      switch( tcc->fx_midi_mode.beh ) {
+      case SEQ_CORE_FX_MIDI_MODE_BEH_Alternate:
+      case SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho: {
+	// forward to next channel
+	if( ++t->fx_midi_ctr > tcc->fx_midi_num_chn )
+	  t->fx_midi_ctr = 0;
+
+	if( t->fx_midi_ctr == 0 ) {
+	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+	} else {
+	  midi_package.chn = (tcc->fx_midi_chn + (t->fx_midi_ctr-1)) % 16;
+	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+      } break;
+	
+      case SEQ_CORE_FX_MIDI_MODE_BEH_Random: {
+	// select random channel
+	int ix = SEQ_RANDOM_Gen_Range(0, tcc->fx_midi_num_chn);
+	if( ix == 0 ) {
+	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+	} else {
+	  midi_package.chn = (tcc->fx_midi_chn + ix-1) % 16;
+	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+      } break;
+
+      default: { // && SEQ_CORE_FX_MIDI_MODE_BEH_Forward
+	// forward to all channels
+
+	// original channel
+	status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+
+	// all other channels
+	int ix;
+	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
+	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+      } break;
+
+
+      }
+    } else {
+      // original channel
+      status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+
+      if( tcc->fx_midi_mode.fwd_non_notes ) {
+	// all other channels
+	int ix;
+	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
+	  status |= SEQ_MIDI_OUT_Send(tcc->fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+      }
+    }
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // this sequencer handler is called periodically to check for new requests
 // from BPM generator
 /////////////////////////////////////////////////////////////////////////////
@@ -679,7 +752,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  if( loopback_port )
 	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else
-	    SEQ_MIDI_OUT_Send(tcc->midi_port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
+	    SEQ_CORE_ScheduleEvent(t, tcc, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0);
 	}
       }
 
@@ -1046,7 +1119,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( loopback_port )
 		SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1); // forward to MIDI IN handler immediately
 	      else
-		SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
+		SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      // skip in record mode if the same note is already played
@@ -1076,7 +1149,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		    scheduled_tick += 1;
 
 		  // Note On
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
+		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
 
 		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
@@ -1086,7 +1159,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // Note Off
 		  p->velocity = 0;
-		  SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
+		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 		}
 
 		// notify stretched gatelength if not in sustain mode
@@ -1145,7 +1218,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       	      
 		      int i;
 		      for(i=triggers-1; i>=0; --i)
-			SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
+			SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 		    } else {
 		      // force gatelength depending on number of triggers
 		      if( triggers < 6 ) {
@@ -1170,14 +1243,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      if( roll_mode & 0x40 ) { // upwards
 			int i;
 			for(i=triggers-1; i>=0; --i) {
-			  SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
+			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 			  u16 velocity = roll_attenuation * p_multi.velocity;
 			  p_multi.velocity = velocity >> 8;
 			}
 		      } else { // downwards
 			int i;
 			for(i=0; i<triggers; ++i) {
-			  SEQ_MIDI_OUT_Send(tcc->midi_port, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
+			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength);
 			  if( roll_mode ) {
 			    u16 velocity = roll_attenuation * p_multi.velocity;
 			    p_multi.velocity = velocity >> 8;
@@ -1190,7 +1263,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      gatelength = 1;
 		    else // scale length (0..95) over next clock counter to consider the selected clock divider
 		      gatelength = (gatelength * t->step_length) / 96;
-		    SEQ_MIDI_OUT_Send(tcc->midi_port, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
+		    SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
 
 		  // apply Post-FX
@@ -1238,6 +1311,9 @@ static s32 SEQ_CORE_ResetTrkPos(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc)
   t->step_interval_ctr = 0;
   t->step_repeat_ctr = 0;
   t->step_skip_ctr = 0;
+
+  // and MIDI Fx channel counter
+  t->fx_midi_ctr = 0xff; // start with original channel
 
   // next part depends on forward/backward direction
   if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
@@ -1680,8 +1756,6 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
   s32 fb_note = p.note;
   s32 fb_note_base = fb_note; // for random function
 
-  // TODO: echo port and MIDI channel
-  
   // the initial velocity value allows to start with a low velocity,
   // and to increase it with each step via FB velocity value
   s32 fb_velocity = p.velocity;
@@ -1699,6 +1773,12 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
   // for the case that force-to-scale is activated
   u8 scale, root_selection, root;
   SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+
+  // synchronize fx_midi counter?
+  if( tcc->fx_midi_mode.beh == SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho ) {
+    if( event_type == SEQ_MIDI_OUT_OnOffEvent && tcc->echo_repeats )
+      t->fx_midi_ctr = 0xff; // start with original channel
+  }
 
   u32 echo_offset = fb_ticks;
   int i;
@@ -1740,7 +1820,7 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
       SEQ_SCALE_Note(&p, scale, root);
     }
 
-    SEQ_MIDI_OUT_Send(tcc->midi_port, p, event_type, bpm_tick + echo_offset, gatelength);
+    SEQ_CORE_ScheduleEvent(t, tcc, p, event_type, bpm_tick + echo_offset, gatelength);
   }
 
   return 0; // no error
@@ -2046,4 +2126,3 @@ u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper)
 
   return note;
 }
-

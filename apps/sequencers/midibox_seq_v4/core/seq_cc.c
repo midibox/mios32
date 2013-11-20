@@ -50,11 +50,17 @@ s32 SEQ_CC_Init(u32 mode)
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;
     tcc->midi_port = DEFAULT;
+    tcc->fx_midi_chn = 0;
+    tcc->fx_midi_port = DEFAULT;
+    tcc->fx_midi_num_chn = 0; // off!
     tcc->event_mode = SEQ_EVENT_MODE_Note;
 #else
     // extra for MBSEQ V4L: use same channel by default
     tcc->midi_chn = 0;
     tcc->midi_port = DEFAULT;
+    tcc->fx_midi_chn = 0;
+    tcc->fx_midi_port = DEFAULT;
+    tcc->fx_midi_num_chn = 0; // off!
 
     // set combined mode for first 3 tracks of a sequence
     // set all other tracks to CC
@@ -99,6 +105,11 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 
       case SEQ_CC_MIDI_CHANNEL: tcc->midi_chn = value; break;
       case SEQ_CC_MIDI_PORT: tcc->midi_port = value; break;
+
+      case SEQ_CC_FX_MIDI_MODE: tcc->fx_midi_mode.ALL = value; break;
+      case SEQ_CC_FX_MIDI_PORT: tcc->fx_midi_port = value; break;
+      case SEQ_CC_FX_MIDI_CHANNEL: tcc->fx_midi_chn = value; break;
+      case SEQ_CC_FX_MIDI_NUM_CHANNELS: tcc->fx_midi_num_chn = value; break;
 
       case SEQ_CC_BUSASG: tcc->busasg.bus = value; break;
 
@@ -210,6 +221,7 @@ s32 SEQ_CC_MIDI_Set(u8 track, u8 cc, u8 value)
 	value *= 2; // 7bit -> 8bit
 	break;
       case SEQ_CC_MIDI_PORT:
+      case SEQ_CC_FX_MIDI_PORT:
 	if( value >= 0x70 )
 	  value = 0xf0 | (value & 0x0f); // map to Bus
 	else if( value >= 0x60 )
@@ -240,6 +252,7 @@ s32 SEQ_CC_MIDI_Get(u8 track, u8 cc, u8 *mapped_cc)
 	value /= 2; // 8bit -> 7bit
 	break;
       case SEQ_CC_MIDI_PORT:
+      case SEQ_CC_FX_MIDI_PORT:
 	if( value >= 0xf0 )
 	  value = 0x70 | (value & 0x0f); // map to Bus
 	else if( value >= 0x80 )
@@ -274,6 +287,10 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_MIDI_EVENT_MODE: return tcc->event_mode;
     case SEQ_CC_MIDI_CHANNEL: return tcc->midi_chn;
     case SEQ_CC_MIDI_PORT: return tcc->midi_port;
+    case SEQ_CC_FX_MIDI_MODE: return tcc->fx_midi_mode.ALL;
+    case SEQ_CC_FX_MIDI_PORT: return tcc->fx_midi_port;
+    case SEQ_CC_FX_MIDI_CHANNEL: return tcc->fx_midi_chn;
+    case SEQ_CC_FX_MIDI_NUM_CHANNELS: return tcc->fx_midi_num_chn;
     case SEQ_CC_BUSASG: return tcc->busasg.bus;
 
     case SEQ_CC_LIMIT_LOWER: return tcc->limit_lower;
