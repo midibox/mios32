@@ -104,6 +104,7 @@ typedef struct seq_core_trk_t {
   u32                  rec_timestamp;    // for recording function
   u8                   rec_poly_ctr;     // for recording function
   u8                   play_section;     // selects the section which should be played. If -1, no section selection
+  u8                   fx_midi_ctr;      // Fx MIDI channel counter
 } seq_core_trk_t;
 
 
@@ -170,6 +171,20 @@ typedef union {
   };
 } seq_core_trkmode_flags_t;
 
+typedef enum {
+  SEQ_CORE_FX_MIDI_MODE_BEH_Forward,   // forward to all channels
+  SEQ_CORE_FX_MIDI_MODE_BEH_Alternate, // alternate between channels
+  SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho, // alternate between channels, reset to original channel on each echo
+  SEQ_CORE_FX_MIDI_MODE_BEH_Random,    // forward to random channel
+} seq_core_fx_midi_mode_beh_t;
+
+typedef union {
+  u8 ALL;
+  struct {
+    u8 beh:3;           // Fx behaviour (seq_core_fx_midi_mode_beh_t)
+    u8 fwd_non_notes:1; // forward CCs, PitchBender, Channel Pressure, Program Change to all Fx channels
+  };
+} seq_core_fx_midi_mode_t;
 
 typedef union {
   u16 ALL;
@@ -200,8 +215,11 @@ typedef enum {
 
 #include "seq_cc.h"
 #include "seq_layer.h"
+#include <seq_midi_out.h>
 
 extern s32 SEQ_CORE_Init(u32 mode);
+
+extern s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len);
 
 extern s32 SEQ_CORE_Reset(u32 bpm_start);
 extern s32 SEQ_CORE_PlayOffEvents(void);

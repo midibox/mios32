@@ -75,9 +75,10 @@ typedef enum {
   SEQ_UI_PAGE_TRKLIVE = 53,
   SEQ_UI_PAGE_PATTERN_RMX = 54,
   SEQ_UI_PAGE_TRKEUCLID = 55,
+  SEQ_UI_PAGE_FX_DUPL = 56,
 } seq_ui_page_t;
 
-#define SEQ_UI_PAGES (SEQ_UI_PAGE_TRKEUCLID + 1)
+#define SEQ_UI_PAGES (SEQ_UI_PAGE_FX_DUPL + 1)
 #define SEQ_UI_FIRST_MENU_SELECTION_PAGE SEQ_UI_PAGE_EDIT
 #define SEQ_UI_NUM_MENU_PAGES (SEQ_UI_PAGES-SEQ_UI_FIRST_MENU_SELECTION_PAGE)
 
@@ -113,6 +114,7 @@ extern s32 SEQ_UI_GROOVE_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
 extern s32 SEQ_UI_FX_HUMANIZE_Init(u32 mode);
 extern s32 SEQ_UI_FX_LIMIT_Init(u32 mode);
+extern s32 SEQ_UI_FX_DUPL_Init(u32 mode);
 extern s32 SEQ_UI_FX_LFO_Init(u32 mode);
 extern s32 SEQ_UI_FX_LOOP_Init(u32 mode);
 extern s32 SEQ_UI_FX_SCALE_Init(u32 mode);
@@ -203,6 +205,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "Live Play         ", (void *)&SEQ_UI_TRKLIVE_Init },
   { "Pattern Remix     ", (void *)&SEQ_UI_PATTERN_RMX_Init },
   { "Track Euclid Gen. ", (void *)&SEQ_UI_TRKEUCLID_Init },
+  { "Track Fx: Duplict.", (void *)&SEQ_UI_FX_DUPL_Init }, // TK: time to add a mapping table for the menu page order
 };
 
 // following pages are directly accessible with the GP buttons when MENU button is pressed
