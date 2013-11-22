@@ -268,8 +268,13 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 
   if( !tcc->fx_midi_num_chn ) {
     status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+
+    if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+      midi_package.velocity = 0;
+      status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
+    }
   } else {
-    if( midi_package.type == NoteOn || midi_package.type == NoteOff ) {
+    if( event_type == SEQ_MIDI_OUT_OnEvent || event_type == SEQ_MIDI_OUT_OnOffEvent ) {
       switch( tcc->fx_midi_mode.beh ) {
       case SEQ_CORE_FX_MIDI_MODE_BEH_Alternate:
       case SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho: {
@@ -277,22 +282,38 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	if( ++t->fx_midi_ctr > tcc->fx_midi_num_chn )
 	  t->fx_midi_ctr = 0;
 
+	mios32_midi_port_t midi_port;
 	if( t->fx_midi_ctr == 0 ) {
-	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+	  midi_port = tcc->midi_port;
 	} else {
+	  midi_port = fx_midi_port;
 	  midi_package.chn = (tcc->fx_midi_chn + (t->fx_midi_ctr-1)) % 16;
-	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+
+	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
+
+	if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+	  midi_package.velocity = 0;
+	  status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 	}
       } break;
 	
       case SEQ_CORE_FX_MIDI_MODE_BEH_Random: {
 	// select random channel
 	int ix = SEQ_RANDOM_Gen_Range(0, tcc->fx_midi_num_chn);
+	mios32_midi_port_t midi_port;
 	if( ix == 0 ) {
-	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
+	  midi_port = tcc->midi_port;
 	} else {
+	  midi_port = fx_midi_port;
 	  midi_package.chn = (tcc->fx_midi_chn + ix-1) % 16;
-	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+
+	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
+
+	if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+	  midi_package.velocity = 0;
+	  status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 	}
       } break;
 
@@ -307,6 +328,18 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
 	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
+	}
+
+	if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+	  midi_package.velocity = 0;
+
+	  midi_package.chn = tcc->midi_chn % 16;
+	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
+
+	  for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	    midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
+	    status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
+	  }
 	}
       } break;
 
@@ -1149,7 +1182,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
 		    scheduled_tick += 1;
 
-		  // Note On
+		  // Note On (the Note Off will be prepared as well in SEQ_CORE_ScheduleEvent)
 		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0);
 
 		  // apply Post-FX
@@ -1157,10 +1190,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
 		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
 		  }
-
-		  // Note Off
-		  p->velocity = 0;
-		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 		}
 
 		// notify stretched gatelength if not in sustain mode
