@@ -219,7 +219,7 @@ typedef enum {
 
 extern s32 SEQ_CORE_Init(u32 mode);
 
-extern s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len);
+extern s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo);
 
 extern s32 SEQ_CORE_Reset(u32 bpm_start);
 extern s32 SEQ_CORE_PlayOffEvents(void);
