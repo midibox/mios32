@@ -261,6 +261,16 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    if( flags.CHN ) tcc->midi_port = value;
 	  } else if( strcmp(parameter, "MIDI_Channel") == 0 ) {
 	    if( flags.CHN ) tcc->midi_chn = value;
+	  } else if( strcmp(parameter, "FxMIDI_Port") == 0 ) {
+	    if( flags.CHN ) tcc->fx_midi_port = value;
+	  } else if( strcmp(parameter, "FxMIDI_Channel") == 0 ) {
+	    if( flags.CHN ) tcc->fx_midi_chn = value;
+	  } else if( strcmp(parameter, "FxMIDI_NumChannels") == 0 ) {
+	    if( flags.CHN ) tcc->fx_midi_num_chn = value;
+	  } else if( strcmp(parameter, "FxMIDI_Mode") == 0 ) {
+	    if( flags.CHN ) tcc->fx_midi_mode.beh = value;
+	  } else if( strcmp(parameter, "FxMIDI_FwdNonNotes") == 0 ) {
+	    if( flags.CHN ) tcc->fx_midi_mode.fwd_non_notes = value;
 	  } else if( strcmp(parameter, "DirectionMode") == 0 ) {
 	    if( flags.CFG ) tcc->dir_mode = value;
 	  } else if( strcmp(parameter, "StepsForward") == 0 ) {
@@ -509,6 +519,24 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_Channel %d (#%d)\n", tcc->midi_chn, (int)tcc->midi_chn + 1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "FxMIDI_Port 0x%02x (%s%c)\n",
+	  tcc->fx_midi_port,
+	  SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(tcc->fx_midi_port)),
+	  SEQ_MIDI_PORT_OutCheckAvailable(tcc->fx_midi_port) ? ' ' : '*');
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "FxMIDI_Channel %d (#%d)\n", tcc->fx_midi_chn, (int)tcc->fx_midi_chn + 1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "FxMIDI_NumChannels %d\n", tcc->fx_midi_num_chn);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "FxMIDI_Mode %d\n", tcc->fx_midi_mode.beh);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "FxMIDI_FwdNonNotes %d\n", tcc->fx_midi_mode.fwd_non_notes);
   FLUSH_BUFFER;
 
   switch( tcc->dir_mode ) {

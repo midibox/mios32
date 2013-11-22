@@ -269,7 +269,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
   if( !tcc->fx_midi_num_chn ) {
     status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
   } else {
-    if( event_type == SEQ_MIDI_OUT_OnOffEvent ) {
+    if( midi_package.type == NoteOn || midi_package.type == NoteOff ) {
       switch( tcc->fx_midi_mode.beh ) {
       case SEQ_CORE_FX_MIDI_MODE_BEH_Alternate:
       case SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho: {
