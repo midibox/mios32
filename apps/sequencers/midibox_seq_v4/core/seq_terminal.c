@@ -41,6 +41,7 @@
 #include "seq_blm.h"
 #include "seq_song.h"
 #include "seq_mixer.h"
+#include "seq_hwcfg.h"
 
 #include "file.h"
 #include "seq_file.h"
@@ -77,13 +78,15 @@
 
 static char line_buffer[STRING_MAX];
 static u16 line_ix;
-
+static u8 uploading_hwcfg_file;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
+
+static s32 TERMINAL_BrowserUploadCallback(char *filename);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -100,6 +103,9 @@ s32 SEQ_TERMINAL_Init(u32 mode)
   // clear line buffer
   line_buffer[0] = 0;
   line_ix = 0;
+
+  // for HWCFG autoload
+  uploading_hwcfg_file = 0;
 
   return 0; // no error
 }
@@ -178,6 +184,9 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
+    // for the auto-load function
+    FILE_BrowserUploadCallback_Init(TERMINAL_BrowserUploadCallback);
+
     MUTEX_MIDIOUT_TAKE;
     MUTEX_SDCARD_TAKE;
     FILE_BrowserHandler(port, line_buffer);
@@ -193,6 +202,25 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! For the auto-load function
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_BrowserUploadCallback(char *filename)
+{
+  if( filename ) {
+    // check for MBSEQ_HW.V4
+    uploading_hwcfg_file = strcasecmp(filename, "/mbseq_hw.v4") == 0;
+  } else {
+    if( uploading_hwcfg_file ) {
+      DEBUG_MSG("AUTOLOAD '/MBSEQ_HW.V4'\n");
+      SEQ_HWCFG_Init(0);
+      SEQ_FILE_HW_Init(0);
+      SEQ_FILE_HW_Load();      
+    }
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Parser for a complete line - also used by shell.c for telnet

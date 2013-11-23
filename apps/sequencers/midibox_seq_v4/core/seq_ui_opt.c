@@ -30,6 +30,7 @@
 #include "seq_cc.h"
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
+#include "seq_tpd.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,8 +47,9 @@
 #define ITEM_PASTE_CLR_ALL   7
 #define ITEM_INIT_CC         8
 #define ITEM_LIVE_LAYER_MUTE 9
+#define ITEM_TPD_MODE        10
 
-#define NUM_OF_ITEMS         10
+#define NUM_OF_ITEMS         11
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -100,6 +102,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "If Live function, matching received",
     "MIDI Events will: ",
+  },
+
+  {//<-------------------------------------->
+    "Track Position Display (TPD) Mode",
+    ""
   },
 };
 
@@ -246,6 +253,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = seq_core_options.LIVE_LAYER_MUTE_STEPS;
       if( SEQ_UI_Var8_Inc(&value, 0, 7, incrementer) >= 0 ) {
 	seq_core_options.LIVE_LAYER_MUTE_STEPS = value;
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    } break;
+
+    case ITEM_TPD_MODE: {
+      u8 value = SEQ_TPD_ModeGet();
+      if( SEQ_UI_Var8_Inc(&value, 0, SEQ_TPD_NUM_MODES-1, incrementer) >= 0 ) {
+	SEQ_TPD_ModeSet(value);
 	store_file_required = 1;
 	return 1;
       }
@@ -433,6 +450,31 @@ static s32 LCD_Handler(u8 high_prio)
       } else {
 	SEQ_LCD_PrintFormattedString("mute layer for %d steps", seq_core_options.LIVE_LAYER_MUTE_STEPS-1);
       }
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_TPD_MODE: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(22);
+    } else {
+      const char *tpd_mode_str[SEQ_TPD_NUM_MODES] = {
+       //<-------------------------------------->
+	"Green LED: Pos      Red LED: Track",
+	"Green LED: Pos      Red LED: Track (Rot)",
+	"Green LED: Meter    Red LED: Pos",
+	"Green LED: Meter    Red LED: Pos   (Rot)",
+	"Green LED: DotMeter Red LED: Pos",
+	"Green LED: DotMeter Red LED: Pos   (Rot)",
+      };
+
+      u8 mode = SEQ_TPD_ModeGet();
+      if( mode >= SEQ_TPD_NUM_MODES )
+	mode = 0;
+
+      SEQ_LCD_PrintStringPadded((char *)tpd_mode_str[mode], 40);
     }
   } break;
 

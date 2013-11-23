@@ -327,12 +327,30 @@ s32 SEQ_FILE_HW_Read(void)
 	  parameter += 7;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 32 ) {
+
+	  // M1..M8 -> SR 24..31
+	  s32 sr = -1;
+	  u8 blm8x8_selected = 0;
+	  if( word[0] == 'M' ) {
+	    blm8x8_selected = 1;
+	    ++word;
+	    s32 m = get_dec(word);
+
+	    if( m < 1 || m > 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
-	    continue;
+	      continue;
+	    }
+	    sr = 24 + m-1;
+	  } else {
+	    sr = get_dec(word);
+	    if( sr < 0 || sr > 32 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
 	  }
 
 	  word = strtok_r(NULL, separators, &brkt);
@@ -345,6 +363,12 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	  u8 din_value = ((sr-1)<<3) | pin;
+
+	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
+	  // then map DIN SR 17..24 to 24..31
+	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && din_value >= 128 && din_value < 192 ) {
+	    din_value += 56;
+	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
 	  DEBUG_MSG("[SEQ_FILE_HW] Button %s: SR %d Pin %d (DIN: 0x%02x)", line_buffer, sr, pin, din_value);
@@ -512,12 +536,30 @@ s32 SEQ_FILE_HW_Read(void)
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 32 ) {
+
+	  // M1..M8 -> SR 24..31
+	  s32 sr = -1;
+	  u8 blm8x8_selected = 0;
+	  if( word[0] == 'M' ) {
+	    blm8x8_selected = 1;
+	    ++word;
+	    s32 m = get_dec(word);
+
+	    if( m < 1 || m > 8 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value '%s'!", parameter, word);
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
-	    continue;
+	      continue;
+	    }
+	    sr = 24 + m-1;
+	  } else {
+	    sr = get_dec(word);
+	    if( sr < 0 || sr > 32 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
 	  }
 
 	  word = strtok_r(NULL, separators, &brkt);
@@ -530,6 +572,13 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	  u8 dout_value = ((sr-1)<<3) | pin;
+
+	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
+	  // then map DOUT SR 17..24 to 24..31
+	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && dout_value >= 128 && dout_value < 192 ) {
+	    dout_value += 56;
+	  }
+
 #if DEBUG_VERBOSE_LEVEL >= 3
 	  DEBUG_MSG("[SEQ_FILE_HW] LED %s: SR %d Pin %d (DOUT: 0x%02x)", parameter, sr, pin, dout_value);
 #endif
@@ -667,7 +716,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 16 ) {
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid first value '%s'!", parameter, word);
 #endif
@@ -757,7 +806,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 16 ) {
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -770,6 +819,30 @@ s32 SEQ_FILE_HW_Read(void)
 	  }
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	// SRIO_NUM_SR
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "SRIO_NUM_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 num_sr = get_dec(word);
+	  if( num_sr < 1 || num_sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in SRIO_NUM_SR definition: invalid value '%s'!", word);
+#endif
+	    continue;
+	  }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	  DEBUG_MSG("[SEQ_FILE_HW] SRIO_NUM_SR %d", num_sr);
+#endif
+
+	  MIOS32_SRIO_ScanNumSet(num_sr);
+
+	  // clear all DOUTs (for the case that the number has been decreased)
+	  int i;
+	  for(i=0; i<MIOS32_SRIO_NUM_SR; ++i)
+	    MIOS32_DOUT_SRSet(i, 0x00);
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	// GP_DOUT_
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strncmp(parameter, "GP_DOUT_", 8) == 0 ) {
@@ -777,7 +850,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 16 ) {
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in GP_DOUT_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1044,10 +1117,18 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  if( strcmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_tpd.enabled = value;
-	  } else if( strcmp(parameter, "COLUMNS_SR") == 0 ) {
-	    seq_hwcfg_tpd.columns_sr = value;
-	  } else if( strcmp(parameter, "ROWS_SR") == 0 ) {
-	    seq_hwcfg_tpd.rows_sr = value;	    
+	  } else if( strcmp(parameter, "COLUMNS_SR") == 0 || strcmp(parameter, "COLUMNS_SR_L") == 0 ) {
+	    seq_hwcfg_tpd.columns_sr[0] = value;
+	  } else if( strcmp(parameter, "COLUMNS_SR_R") == 0 ) {
+	    seq_hwcfg_tpd.columns_sr[1] = value;
+	  } else if( strcmp(parameter, "ROWS_SR") == 0 || strcmp(parameter, "ROWS_SR_GREEN_L") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr_green[0] = value;
+	  } else if( strcmp(parameter, "ROWS_SR_GREEN_R") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr_green[1] = value;
+	  } else if( strcmp(parameter, "ROWS_SR_RED_L") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr_red[0] = value;
+	  } else if( strcmp(parameter, "ROWS_SR_RED_R") == 0 ) {
+	    seq_hwcfg_tpd.rows_sr_red[1] = value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown STEP_TPM_* name '%s'!", parameter);
@@ -1203,7 +1284,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 16 ) {
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif

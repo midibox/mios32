@@ -198,6 +198,9 @@ s32 SEQ_HWCFG_Init(u32 mode)
 {
   int i;
 
+  // using 16 SRs by default, can be increased to up to 23 SRs
+  MIOS32_SRIO_ScanNumSet(16);
+
   // initialize encoders
   for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
     MIOS32_ENC_ConfigSet(i, enc_config[i]);

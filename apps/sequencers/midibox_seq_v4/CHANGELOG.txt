@@ -8,14 +8,35 @@ Wishlist for future features
 MIDIboxSEQ V4.079
 ~~~~~~~~~~~~~~~~~
 
-   o added new Fx which allows to send to one or more additional MIDI channels from
-     a single track with various behaviours (forward to all, alternate between channels,
-     randomly select channel)
-
+   o added new Fx which allows to send to one or more additional MIDI channels
+     from a single track with various behaviours (forward to all, alternate
+     between channels, randomly select channel)
      The new functions can be configured at the Fx->Dupl (like Duplicate) page
 
    o groove page: added possibility to change the intensity for all tracks at once
 
+   o MBSEQ_HW.V4 file: SR numbers for BUTTON and LED functions which are
+     assigned to the BLM8x8 matrix (-> Wilba's Frontpanel) are now named M1..M8
+     instead of 17..24
+     See also the configuration template under hwcfg/wilba/MBSEQ_HW.V4
+     The old syntax is still provided to keep old MBSEQ_HW.V4 files compatible.
+     Once the new SRIO_NUM_SR parameter is set to 17 or more SRs, the new syntax
+     has to be used.
+
+   o MBSEQ_HW.V4 file: new parameter SRIO_NUM_SR allows to specify the maximum
+     number of DIN/DOUT shift registers in a chain. Up to 23 DINs/DOUTs can be
+     chained now - this is also the new default value in the MBSEQ_HW.V4 templates.
+
+   o whenever a MBSEQ_HW.V4 file is uploaded with the MIOS Filebrowser, the
+     configuration will be automatically reloaded (no need to reset the core)
+
+   o official support for Ilmenator's Track Position Display.
+     See also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
+     An example configuration (TPD directly connected to J2 of Wilba's Frontpanel PCB)
+     can be found under hwcfg/wilba_tpd/MBSEQ_HW.V4
+
+   o the TPD display mode can now be configured in the Utility->Options menu (item #11)
+     
 
 MIDIboxSEQ V4.078
 ~~~~~~~~~~~~~~~~~

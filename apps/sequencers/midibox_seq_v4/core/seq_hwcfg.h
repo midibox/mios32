@@ -274,8 +274,9 @@ typedef struct {
 
 typedef struct {
   u8 enabled;
-  u8 columns_sr;
-  u8 rows_sr;
+  u8 columns_sr[2];
+  u8 rows_sr_green[2];
+  u8 rows_sr_red[2];
 } seq_hwcfg_tpd_t;
 
 typedef struct {

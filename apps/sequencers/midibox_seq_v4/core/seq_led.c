@@ -42,23 +42,20 @@ s32 SEQ_LED_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets a LED, differs between LEDs directly connected to DOUT pins 
-// (pin = 0..127) and LEDS which are connected to a 8x8 matrix (pin = 128..195)
+// (pin = 0..191) and LEDS which are connected to a 8x8 matrix (pin = 192..255)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_PinSet(u32 pin, u32 value)
 {
 #ifdef MBSEQV4L
   if( pin < 64 )
     return BLM_CHEAPO_DOUT_PinSet(pin, value);
-
-  if( pin >= 128 && pin < 196 )
-    return BLM_X_LEDSet(pin-128, 0, value);
 #else
-  if( pin < 128 )
+  if( pin < 184 )
     return MIOS32_DOUT_PinSet(pin, value);
-
-  if( pin < 196 )
-    return BLM_X_LEDSet(pin-128, 0, value);
 #endif
+
+  if( pin >= 184 && pin < 248 )
+    return BLM_X_LEDSet(pin-184, 0, value);
 
   return -1; // pin not available
 }
@@ -66,7 +63,7 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
 
 /////////////////////////////////////////////////////////////////////////////
 // Sets a DOUT SR (8 LEDs), differs between LEDs directly connected to DOUT SR
-// (sr=0..15) and LEDS which are connected to a 8x8 matrix (sr=16..23)
+// (sr=0..23) and LEDS which are connected to a 8x8 matrix (sr=24..31)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRSet(u32 sr, u8 value)
 {
@@ -76,23 +73,20 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
 #ifdef MBSEQV4L
   if( sr < 8 )
     return BLM_CHEAPO_DOUT_SRSet(sr, value);
-
-  if( sr >= 16 && sr < 24 )
-    return BLM_X_LEDSRSet(sr-16, 0, value);
 #else
-  if( sr < 16 )
+  if( sr < 23 )
     return MIOS32_DOUT_SRSet(sr, value);
-
-  if( sr < 24 )
-    return BLM_X_LEDSRSet(sr-16, 0, value);
 #endif
+
+  if( sr >= 23 && sr < 31 )
+    return BLM_X_LEDSRSet(sr-23, 0, value);
 
   return -1; // SR not available
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // returns the value of a DOUT SR (8 LEDs), differs between LEDs directly connected to DOUT SR
-// (sr=0..15) and LEDS which are connected to a 8x8 matrix (sr=16..23)
+// (sr=0..23) and LEDS which are connected to a 8x8 matrix (sr=24..31)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRGet(u32 sr)
 {
@@ -102,16 +96,13 @@ s32 SEQ_LED_SRGet(u32 sr)
 #ifdef MBSEQV4L
   if( sr < 8 )
     return BLM_CHEAPO_DOUT_SRGet(sr);
-
-  if( sr >= 16 && sr < 24 )
-    return BLM_X_LEDSRGet(sr-16, 0);
 #else
-  if( sr < 16 )
+  if( sr < 23 )
     return MIOS32_DOUT_SRGet(sr);
-
-  if( sr < 24 )
-    return BLM_X_LEDSRGet(sr-16, 0);
 #endif
+
+  if( sr >= 23 && sr < 31 )
+    return BLM_X_LEDSRGet(sr-23, 0);
 
   return 0; // SR not available... return 0
 }

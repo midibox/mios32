@@ -51,6 +51,9 @@
 #endif
 
 
+// increased number of SRs (MBSEQ uses 16 SRs by default, but it's possible to increase the number in MBSEQ_HW.V4)
+#define MIOS32_SRIO_NUM_SR 23
+
 // to save some RAM (only 128 bytes, but "Kleinvieh macht auch Mist" - especially for LPC17)
 #define MIOS32_ENC_NUM_MAX 32
 

@@ -19,7 +19,29 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+typedef enum {
+  SEQ_TPD_Mode_PosAndTrack = 0,
+  SEQ_TPD_Mode_RotatedPosAndTrack,
+  SEQ_TPD_Mode_MeterAndPos,
+  SEQ_TPD_Mode_RotatedMeterAndPos,
+  SEQ_TPD_Mode_DotMeterAndPos,
+  SEQ_TPD_Mode_RotatedDotMeterAndPos,
+} seq_tpd_mode_t;
+
+#define SEQ_TPD_NUM_MODES 6 // for seq_ui_opt.c
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Global functions
+/////////////////////////////////////////////////////////////////////////////
+
 extern s32 SEQ_TPD_Init(u32 mode);
-extern s32 SEQ_TPD_LED_Update();
+
+extern s32 SEQ_TPD_ModeSet(seq_tpd_mode_t mode);
+extern seq_tpd_mode_t SEQ_TPD_ModeGet(void);
+
+extern s32 SEQ_TPD_LED_Update(void);
+
+extern s32 SEQ_TPD_Handler(void);
 
 #endif 

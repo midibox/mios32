@@ -68,6 +68,9 @@ RS_OPTIMISATION OUT4 1
 # Shift Register Setup
 ##################################################
 
+# maximum number of connected shift registers in a DIN or DOUT chain (1..23)
+SRIO_NUM_SR    23
+
 # number of first and second DOUT shift register used for GP LEDs
 GP_DOUT_L_SR    3
 GP_DOUT_R_SR    4
@@ -216,19 +219,33 @@ STEP_DIGITS_COMMON3_PIN   0   0
 
 
 ##################################################
-# Optional 8x8 LED Relative Track Position Display 
+# Optional LED Track Position Display 
+# See also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
 ##################################################
 
 # set to 1 or 2 to enable the relative track position display
 # 0: TPD disabled
-# 1: TPD enabled - columns are anodes, rows are cathodes
+# 1: TPD enabled - columns are cathodes, rows are anodes
+# 2: TPD enabled - columns are anodes, rows are cathodes
 TPD_ENABLED 0
 
 # define the DOUT shift register to which the columns are connected (0=disabled)
-TPD_COLUMNS_SR 0
+TPD_COLUMNS_SR_L 0
 
-# define the DOUT shift register to which the rows are connected (0=disabled)
-TPD_ROWS_SR 0
+# for a 16x16 TPD: define the SR to which the right columns are connected (0=disabled, use only 8x8 TPD)
+TPD_COLUMNS_SR_R 0
+
+# define the DOUT shift register to which the green LED rows are connected (0=disabled)
+TPD_ROWS_SR_GREEN_L 0
+
+# define the DOUT shift register to which the right green LED rows are connected (0=disabled, use only 8x8 TPD)
+TPD_ROWS_SR_GREEN_R 0
+
+# define the DOUT shift register to which the red LED rows are connected (0=disabled)
+TPD_ROWS_SR_RED_L 0
+
+# define the DOUT shift register to which the right red LED rows are connected (0=disabled, use only 8x8 TPD)
+TPD_ROWS_SR_RED_R 0
 
 
 ##################################################
@@ -271,8 +288,8 @@ J5_ENABLED 1
 ##################################################
 # LED assignments to DOUT pins
 # SR = 0: LED disabled
-# SR = 1..16:  directly forwarded to DOUT pin
-# SR = 17..24: forwarded to a 8x8 LED matrix
+# SR = 1..23:  directly forwarded to DOUT pin
+# SR = M1..M8: forwarded to a 8x8 LED matrix
 ##################################################
 
 #           SR  Pin
@@ -379,8 +396,8 @@ LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
 ##################################################
 # Button assignments to DIN pins
 # SR = 0: Button disabled
-# SR = 1..16:  directly triggered from DIN pin
-# SR = 17..24: triggered from a 8x8 button matrix
+# SR = 1..23:  directly triggered from DIN pin
+# SR = M1..M8: triggered from a 8x8 button matrix
 ##################################################
 
 #            SR  Pin
