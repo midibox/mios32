@@ -48,6 +48,8 @@
 #include "seq_pattern.h"
 #include "seq_song.h"
 
+#include "seq_tpd.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -152,6 +154,9 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
     // change song to the one stored in MBSEQ_C.V4
     SEQ_SONG_Load(SEQ_SONG_NumGet());
   }
+
+  // print new session name on TPD
+  SEQ_TPD_PrintString(seq_file_session_name);
 
   return status;
 }

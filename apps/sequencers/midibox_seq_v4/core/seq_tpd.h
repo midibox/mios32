@@ -40,6 +40,8 @@ extern s32 SEQ_TPD_Init(u32 mode);
 extern s32 SEQ_TPD_ModeSet(seq_tpd_mode_t mode);
 extern seq_tpd_mode_t SEQ_TPD_ModeGet(void);
 
+extern s32 SEQ_TPD_PrintString(char *str);
+
 extern s32 SEQ_TPD_LED_Update(void);
 
 extern s32 SEQ_TPD_Handler(void);
