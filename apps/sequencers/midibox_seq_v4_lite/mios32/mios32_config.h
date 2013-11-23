@@ -54,6 +54,10 @@
 #endif
 
 
+// increased number of SRs (MBSEQ uses 16 SRs by default, but it's possible to increase the number in MBSEQ_HW.V4)
+#define MIOS32_SRIO_NUM_SR 23
+
+
 // optional performance measuring
 // see documentation under http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
 #define configUSE_TRACE_FACILITY                0

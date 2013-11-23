@@ -1,5 +1,6 @@
 ##################################################
-# Setup File for Standard Frontpanel
+# Setup File for Wilba's Frontpanel + Ilmenators TPD
+# see also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
 # $Id$
 ##################################################
 
@@ -72,8 +73,8 @@ RS_OPTIMISATION OUT4 1
 SRIO_NUM_SR    23
 
 # number of first and second DOUT shift register used for GP LEDs
-GP_DOUT_L_SR    3
-GP_DOUT_R_SR    4
+GP_DOUT_L_SR    0
+GP_DOUT_R_SR    0
 
 # DOUTs for Dual Color option:
 GP_DOUT_L2_SR  0
@@ -104,14 +105,14 @@ BLM_ENABLED     1
 
 # define the shift registers to which the anodes of these LEDs are connected
 # Note: they can be equal to GP_DOUT_[LH]_SR, this saves two shift registers, but doesn't allow a separate view of UI selections
-BLM_DOUT_L1_SR	6
-BLM_DOUT_R1_SR	9
+BLM_DOUT_L1_SR	0
+BLM_DOUT_R1_SR	0
 
 # define the shift register to which the cathodes of these LEDs are connected
 # Note that the whole shift register (8 pins) will be allocated! The 4 select lines are duplicated (4 for LED matrix, 4 for button matrix)
 # The second DOUT_CATHODES2 selection is optional if LEDs with high power consumption are used - set this to 0 if not used
-BLM_DOUT_CATHODES_SR1  5
-BLM_DOUT_CATHODES_SR2  8
+BLM_DOUT_CATHODES_SR1  0
+BLM_DOUT_CATHODES_SR2  0
 
 # set an inversion mask for the DOUT shift registers if sink drivers (transistors)
 # have been added to the cathode lines
@@ -123,11 +124,11 @@ BLM_DOUT_CATHODES_INV_MASK 0x00
 # 0: no DUO colour LEDs are connected to the LED matrix (position marker inverts step LED)
 # 1: DUO colour LEDs are connected to the LED matrix, second LED displays position marker
 # 2: Like option 1, but the first LED is turned off when the position marker activates the second LED
-BLM_DOUT_DUOCOLOUR  1
+BLM_DOUT_DUOCOLOUR  0
 
 # define the shift registers to which the anodes of the "second colour" (red) LEDs are connected
-BLM_DOUT_L2_SR  7
-BLM_DOUT_R2_SR  10
+BLM_DOUT_L2_SR  0
+BLM_DOUT_R2_SR  0
 
 # set this to 1 if a button matrix is connected
 BLM_BUTTONS_ENABLED 1
@@ -142,8 +143,8 @@ BLM_BUTTONS_NO_UI   1
 BLM_GP_ALWAYS_SELECT_MENU_PAGE 0
 
 # define the DIN shift registers to which the button matrix is connected
-BLM_DIN_L_SR  11
-BLM_DIN_R_SR  12
+BLM_DIN_L_SR  0
+BLM_DIN_R_SR  0
 
 
 ##################################################
@@ -151,7 +152,7 @@ BLM_DIN_R_SR  12
 ##################################################
 
 # set to 1 to enable 8x8 BLM driver
-BLM8X8_ENABLED  0
+BLM8X8_ENABLED  1
 
 # to which shift register are the select lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
@@ -181,19 +182,19 @@ BLM8X8_DIN_SR  2
 # 0: BPM digits disabled
 # 1: BPM digits with common cathode
 # 2: BPM digits with common anode
-BPM_DIGITS_ENABLED 0
+BPM_DIGITS_ENABLED 1
 
 # define the DOUT shift register to which the segments are connected (0=disabled)
-BPM_DIGITS_SEGMENTS_SR 0
+BPM_DIGITS_SEGMENTS_SR 3
 
 # define the DOUT SR and pin to which the common pins are connected
 # we are counting from right to left
-# Example: 140.5 BPM: (COMMON1 = 5, COMMON2=0., COMMON3=4, COMMON4=1)
+# Example: 140.5 BPM: (COMMON1 = .5, COMMON2=0., COMMON3=4, COMMON4=1)
 #                       SR  Pin
-BPM_DIGITS_COMMON1_PIN   0   0
-BPM_DIGITS_COMMON2_PIN   0   0
-BPM_DIGITS_COMMON3_PIN   0   0
-BPM_DIGITS_COMMON4_PIN   0   0
+BPM_DIGITS_COMMON1_PIN   4   0
+BPM_DIGITS_COMMON2_PIN   4   1
+BPM_DIGITS_COMMON3_PIN   4   2
+BPM_DIGITS_COMMON4_PIN   4   3
 
 
 ##################################################
@@ -204,18 +205,18 @@ BPM_DIGITS_COMMON4_PIN   0   0
 # 0: STEP digits disabled
 # 1: STEP digits with common cathode
 # 2: STEP digits with common anode
-STEP_DIGITS_ENABLED 0
+STEP_DIGITS_ENABLED 1
 
 # define the DOUT shift register to which the segments are connected (0=disabled)
-STEP_DIGITS_SEGMENTS_SR 0
+STEP_DIGITS_SEGMENTS_SR 3
 
 # define the DOUT SR and pin to which the common pins are connected
 # we are counting from right to left
 # Example: Step 123: (COMMON1 = 3, COMMON2=2, COMMON3=1)
 #                       SR  Pin
-STEP_DIGITS_COMMON1_PIN   0   0
-STEP_DIGITS_COMMON2_PIN   0   0
-STEP_DIGITS_COMMON3_PIN   0   0
+STEP_DIGITS_COMMON1_PIN   4   4
+STEP_DIGITS_COMMON2_PIN   4   5
+STEP_DIGITS_COMMON3_PIN   4   6
 
 
 ##################################################
@@ -227,25 +228,25 @@ STEP_DIGITS_COMMON3_PIN   0   0
 # 0: TPD disabled
 # 1: TPD enabled - columns are cathodes, rows are anodes
 # 2: TPD enabled - columns are anodes, rows are cathodes
-TPD_ENABLED 0
+TPD_ENABLED 2
 
 # define the DOUT shift register to which the columns are connected (0=disabled)
-TPD_COLUMNS_SR_L 0
+TPD_COLUMNS_SR_L 10
 
 # for a 16x16 TPD: define the SR to which the right columns are connected (0=disabled, use only 8x8 TPD)
-TPD_COLUMNS_SR_R 0
+TPD_COLUMNS_SR_R 7
 
 # define the DOUT shift register to which the green LED rows are connected (0=disabled)
-TPD_ROWS_SR_GREEN_L 0
+TPD_ROWS_SR_GREEN_L 8
 
 # define the DOUT shift register to which the right green LED rows are connected (0=disabled, use only 8x8 TPD)
-TPD_ROWS_SR_GREEN_R 0
+TPD_ROWS_SR_GREEN_R 5
 
 # define the DOUT shift register to which the red LED rows are connected (0=disabled)
-TPD_ROWS_SR_RED_L 0
+TPD_ROWS_SR_RED_L 9
 
 # define the DOUT shift register to which the right red LED rows are connected (0=disabled, use only 8x8 TPD)
-TPD_ROWS_SR_RED_R 0
+TPD_ROWS_SR_RED_R 6
 
 
 ##################################################
@@ -293,58 +294,58 @@ J5_ENABLED 1
 ##################################################
 
 #           SR  Pin
-LED_TRACK1   1   0
-LED_TRACK2   1   1
-LED_TRACK3   1   2
-LED_TRACK4   1   3
+LED_TRACK1  M7   2
+LED_TRACK2  M7   1
+LED_TRACK3  M5   2
+LED_TRACK4  M5   1
 
 #                SR  Pin
-LED_PAR_LAYER_A   1   4
-LED_PAR_LAYER_B   1   5
-LED_PAR_LAYER_C   1   6
+LED_PAR_LAYER_A  M4   2
+LED_PAR_LAYER_B  M4   1
+LED_PAR_LAYER_C  M4   0
 
 #         SR  Pin
-LED_BEAT   1   7
+LED_BEAT  M1   1
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
 LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
-LED_EDIT     2   0
-LED_MUTE     2   1
-LED_PATTERN  2   2
-LED_SONG     2   3
+LED_EDIT    M5   3
+LED_MUTE    M6   3
+LED_PATTERN M6   2
+LED_SONG    M7   3
 
 #           SR  Pin
-LED_SOLO     2   4
-LED_FAST     2   5
+LED_SOLO    M6   1
+LED_FAST    M6   0
 LED_FAST2    0   0
-LED_ALL      2   6
+LED_ALL     M7   0
 
 #           SR  Pin
-LED_GROUP1  11   0
-LED_GROUP2  11   2
-LED_GROUP3  11   4
-LED_GROUP4  11   6
+LED_GROUP1  M8   3
+LED_GROUP2  M8   2
+LED_GROUP3  M8   1
+LED_GROUP4  M8   0
 
 #                SR  Pin
-LED_TRG_LAYER_A   0   0
-LED_TRG_LAYER_B   0   1
-LED_TRG_LAYER_C   0   2
+LED_TRG_LAYER_A  M2   2
+LED_TRG_LAYER_B  M2   1
+LED_TRG_LAYER_C  M2   0
 
 #          SR  Pin
-LED_EXIT    0   0
-LED_SELECT  0   0
-LED_PLAY    0   0
-LED_STOP    0   0
-LED_PAUSE   0   0
-LED_REW     0   0
-LED_FWD     0   0
+LED_PLAY   M1   3
+LED_STOP   M3   3
+LED_PAUSE  M2   3
+LED_REW    M3   2
+LED_FWD    M1   2
 LED_LOOP    0   0
 LED_FOLLOW  0   0
 
 #              SR  Pin
+LED_EXIT        0   0
+LED_SELECT      0   0
 LED_MENU        0   0
 LED_BOOKMARK    0   0
 LED_SCRUB       0   0
@@ -358,7 +359,7 @@ LED_CLEAR       0   0
 LED_UNDO        0   0
 
 #                  SR  Pin
-LED_STEP_VIEW       0   0
+LED_STEP_VIEW      M3   1
 LED_PAR_LAYER_SEL   0   0
 LED_TRG_LAYER_SEL   0   0
 LED_TRACK_SEL       0   0
@@ -400,78 +401,77 @@ LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
 ##################################################
 
 #            SR  Pin
-BUTTON_DOWN   1   0
-BUTTON_UP     1   1
+BUTTON_DOWN  M4   2
+BUTTON_UP    M4   3
 BUTTON_LEFT   0   0
 BUTTON_RIGHT  0   0
 
 #                SR  Pin
-BUTTON_SCRUB      1   2
-BUTTON_METRONOME  1   3
+BUTTON_SCRUB     M4   4
+BUTTON_METRONOME M4   5
 BUTTON_RECORD     0   0
 BUTTON_LIVE       0   0
 
 #             SR  Pin
-BUTTON_STOP    1   4
-BUTTON_PAUSE   1   5
-BUTTON_PLAY    1   6
-BUTTON_REW     1   7
-BUTTON_FWD     2   0
+BUTTON_STOP   M3   5
+BUTTON_PAUSE  M2   4
+BUTTON_PLAY   M2   5
+BUTTON_REW    M3   4
+BUTTON_FWD    M1   4
 BUTTON_LOOP    0   0
 BUTTON_FOLLOW  0   0
 
 #              SR  Pin
-BUTTON_MENU     2   5
-BUTTON_BOOKMARK 0   0
-BUTTON_SELECT   2   6
-BUTTON_EXIT     2   7
+BUTTON_MENU    M7   5
+BUTTON_SELECT  M8   4
+BUTTON_EXIT    M8   5
 
 #              SR  Pin
-BUTTON_TRACK1   3   0
-BUTTON_TRACK2   3   1
-BUTTON_TRACK3   3   2
-BUTTON_TRACK4   3   3
+BUTTON_TRACK1  M7   6
+BUTTON_TRACK2  M7   7
+BUTTON_TRACK3  M5   6
+BUTTON_TRACK4  M5   7
 
 #                  SR  Pin
-BUTTON_PAR_LAYER_A  3   4
-BUTTON_PAR_LAYER_B  3   5
-BUTTON_PAR_LAYER_C  3   6
+BUTTON_PAR_LAYER_A M4   6
+BUTTON_PAR_LAYER_B M4   7
+BUTTON_PAR_LAYER_C M3   6
 
 #               SR  Pin
-BUTTON_EDIT      4   0
-BUTTON_MUTE      4   1
-BUTTON_PATTERN   4   2
-BUTTON_SONG      4   3
+BUTTON_EDIT     M5   3
+BUTTON_MUTE     M6   2
+BUTTON_PATTERN  M6   3
+BUTTON_SONG     M7   2
 
 #            SR  Pin
-BUTTON_SOLO   4   4
-BUTTON_FAST   4   5
+BUTTON_SOLO  M6   4
+BUTTON_FAST  M6   5
 BUTTON_FAST2  0   0
-BUTTON_ALL    4   6
+BUTTON_ALL   M7   4
 
 #            SR  Pin
-BUTTON_GP1    7   0
-BUTTON_GP2    7   1
-BUTTON_GP3    7   2
-BUTTON_GP4    7   3
-BUTTON_GP5    7   4
-BUTTON_GP6    7   5
-BUTTON_GP7    7   6
-BUTTON_GP8    7   7
-BUTTON_GP9   10   0
-BUTTON_GP10  10   1
-BUTTON_GP11  10   2
-BUTTON_GP12  10   3
-BUTTON_GP13  10   4
-BUTTON_GP14  10   5
-BUTTON_GP15  10   6
-BUTTON_GP16  10   7
+BUTTON_GP1   M5   0
+BUTTON_GP2   M5   1
+BUTTON_GP3   M6   0
+BUTTON_GP4   M6   1
+BUTTON_GP5   M7   0
+BUTTON_GP6   M7   1
+BUTTON_GP7   M8   0
+BUTTON_GP8   M8   1
+BUTTON_GP9   M4   0
+BUTTON_GP10  M4   1
+BUTTON_GP11  M3   0
+BUTTON_GP12  M3   1
+BUTTON_GP13  M2   0
+BUTTON_GP14  M2   1
+BUTTON_GP15  M1   0
+BUTTON_GP16  M1   1
 
 #              SR  Pin
-BUTTON_GROUP1  13   0
-BUTTON_GROUP2  13   1
-BUTTON_GROUP3  13   2
-BUTTON_GROUP4  13   3
+BUTTON_GROUP1  M8   6
+BUTTON_GROUP2  M8   7
+BUTTON_GROUP3  M6   6
+BUTTON_GROUP4  M6   7
 
 # alternative (individual) track selection buttons
 # LEDs have to be assigned to TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR
@@ -494,37 +494,39 @@ BUTTON_DIRECT_TRACK15  0   0
 BUTTON_DIRECT_TRACK16  0   0
 
 #                   SR  Pin
-BUTTON_TRG_LAYER_A  13   4
-BUTTON_TRG_LAYER_B  13   5
-BUTTON_TRG_LAYER_C  13   6
+BUTTON_TRG_LAYER_A  M2   6
+BUTTON_TRG_LAYER_B  M2   7
+BUTTON_TRG_LAYER_C  M1   6
 
 
 # Following button functions are usually assigned to Fx
 # buttons, or to dedicated (labeled) buttons
-# In the standard frontpanel layout:
-# F1 is located at SR 2 Pin 1
-# F2 is located at SR 2 Pin 2
-# F3 is located at SR 2 Pin 3
-# F4 is located at SR 2 Pin 4
+# In Wilba's frontpanel layout:
+# F1 is located at SR M3 Pin 3
+# F2 is located at SR M2 Pin 2
+# F3 is located at SR M2 Pin 3
+# F4 is located at SR M1 Pin 2
+# and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
 
-#                   SR  Pin
-BUTTON_UTILITY       2   1
-BUTTON_STEP_VIEW     2   2
-BUTTON_TRG_LAYER_SEL 2   3
-BUTTON_TRACK_SEL     2   4
-
-BUTTON_PAR_LAYER_SEL  0   0
-
-#                   SR  Pin
-BUTTON_TAP_TEMPO     0   0
-BUTTON_TEMPO_PRESET  0   0
-BUTTON_EXT_RESTART   0   0
+#                    SR  Pin
+BUTTON_BOOKMARK      M3   3
+BUTTON_PAR_LAYER_SEL M2   2
+BUTTON_TRG_LAYER_SEL M2   3
+BUTTON_TRACK_SEL     M1   2
 
 #               SR  Pin
-BUTTON_COPY      0   0
-BUTTON_PASTE     0   0
-BUTTON_CLEAR     0   0
+BUTTON_UTILITY  M3   2
+BUTTON_COPY     M7   3
+BUTTON_PASTE    M8   2
+BUTTON_CLEAR    M8   3
 BUTTON_UNDO      0   0
+
+#                 SR  Pin
+BUTTON_STEP_VIEW  M5   5
+
+#                 SR  Pin
+BUTTON_TAP_TEMPO   0   0
+BUTTON_EXT_RESTART 0   0
 
 #                SR  Pin
 BUTTON_MIXER      0   0
@@ -539,7 +541,6 @@ BUTTON_PATTERN_RMX   0   0
 #                 SR  Pin
 BUTTON_FOOTSWITCH  0   0
 
-
 #                      SR  Pin
 BUTTON_TRACK_MODE       0   0
 BUTTON_TRACK_GROOVE     0   0
@@ -547,6 +548,7 @@ BUTTON_TRACK_LENGTH     0   0
 BUTTON_TRACK_DIRECTION  0   0
 BUTTON_TRACK_MORPH      0   0
 BUTTON_TRACK_TRANSPOSE  0   0
+BUTTON_TEMPO_PRESET     0    0
 
 
 #                                   SR  Pin
@@ -577,6 +579,7 @@ BUTTON_DIRECT_BOOKMARK13  0   0
 BUTTON_DIRECT_BOOKMARK14  0   0
 BUTTON_DIRECT_BOOKMARK15  0   0
 BUTTON_DIRECT_BOOKMARK16  0   0
+
 
 
 ##################################################
@@ -618,28 +621,28 @@ BUTTON_BEH_ALL_WITH_TRIGGERS 0
 ##################################################
 
 #              SR  Pin  Type
-ENC_DATAWHEEL   1   0   DETENTED3
+ENC_DATAWHEEL   6   2   DETENTED3
 
 # the speed value for the datawheel which is used when the "FAST" button is activated:
 ENC_DATAWHEEL_FAST_SPEED 3
 
 #        SR  Pin  Type
-ENC_GP1   5   0   DETENTED3
-ENC_GP2   5   2   DETENTED3
-ENC_GP3   5   4   DETENTED3
-ENC_GP4   5   6   DETENTED3
-ENC_GP5   6   0   DETENTED3
-ENC_GP6   6   2   DETENTED3
-ENC_GP7   6   4   DETENTED3
-ENC_GP8   6   6   DETENTED3
-ENC_GP9   8   0   DETENTED3
-ENC_GP10  8   2   DETENTED3
-ENC_GP11  8   4   DETENTED3
-ENC_GP12  8   6   DETENTED3
-ENC_GP13  9   0   DETENTED3
-ENC_GP14  9   2   DETENTED3
-ENC_GP15  9   4   DETENTED3
-ENC_GP16  9   6   DETENTED3
+ENC_GP1   1   6   DETENTED3
+ENC_GP2   1   4   DETENTED3
+ENC_GP3   1   2   DETENTED3
+ENC_GP4   1   0   DETENTED3
+ENC_GP5   3   6   DETENTED3
+ENC_GP6   3   4   DETENTED3
+ENC_GP7   3   2   DETENTED3
+ENC_GP8   3   0   DETENTED3
+ENC_GP9   4   6   DETENTED3
+ENC_GP10  4   4   DETENTED3
+ENC_GP11  4   2   DETENTED3
+ENC_GP12  4   0   DETENTED3
+ENC_GP13  5   6   DETENTED3
+ENC_GP14  5   4   DETENTED3
+ENC_GP15  5   2   DETENTED3
+ENC_GP16  5   0   DETENTED3
 
 # the speed value for GP encoders which is used when the "FAST" button is activated:
 ENC_GP_FAST_SPEED 3
@@ -650,7 +653,7 @@ ENC_AUTO_FAST        1
 
 # optional BPM encoder
 #              SR  Pin  Type
-ENC_BPM         0   0   DETENTED3
+ENC_BPM         7   0   DETENTED3
 
 # the speed value for the BPM encoder which is used when the "FAST" function is activated
 ENC_BPM_FAST_SPEED 3

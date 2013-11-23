@@ -111,6 +111,8 @@ void APP_Init(void)
 #endif
   BLM_X_Init();
 
+  SEQ_TPD_Init(0);
+
   // initialize CV
   SEQ_CV_Init(0);
 
@@ -322,9 +324,7 @@ void APP_SRIO_ServicePrepare(void)
     }    
   }
   
-  if( seq_hwcfg_tpd.enabled ) {
-     SEQ_TPD_LED_Update();     
-  }
+  SEQ_TPD_LED_Update();     
 }
 
 
@@ -399,11 +399,11 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("BLM8x8 Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
+  DEBUG_MSG("BLM8x8 Pin %3d (M%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 
   // forward to UI button handler
-  SEQ_UI_Button_Handler(pin + 128, pin_value);
+  SEQ_UI_Button_Handler(pin + 184, pin_value);
 }
 
 
@@ -474,6 +474,9 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 
   // update LEDs
   SEQ_UI_LED_Handler();
+
+  // update TPD
+  SEQ_TPD_Handler();
 
   // MIDI In/Out monitor
   SEQ_MIDI_PORT_Period1mS();

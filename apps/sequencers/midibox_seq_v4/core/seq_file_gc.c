@@ -46,6 +46,7 @@
 #include "seq_core.h"
 #include "seq_cv.h"
 #include "seq_blm.h"
+#include "seq_tpd.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -338,6 +339,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    SEQ_CV_ClkPulseWidthSet(value);
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
 	    SEQ_CV_ClkDividerSet(value);
+	  } else if( strcmp(parameter, "TpdMode") == 0 ) {
+	    SEQ_TPD_ModeSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
 	    seq_blm_port = value;
 
@@ -509,6 +512,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "CV_ClkDivider %d\n", SEQ_CV_ClkDividerGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);

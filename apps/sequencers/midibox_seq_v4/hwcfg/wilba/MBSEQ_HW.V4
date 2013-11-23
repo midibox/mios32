@@ -68,6 +68,9 @@ RS_OPTIMISATION OUT4 1
 # Shift Register Setup
 ##################################################
 
+# maximum number of connected shift registers in a DIN or DOUT chain (1..23)
+SRIO_NUM_SR    23
+
 # number of first and second DOUT shift register used for GP LEDs
 GP_DOUT_L_SR    0
 GP_DOUT_R_SR    0
@@ -216,19 +219,33 @@ STEP_DIGITS_COMMON3_PIN   0   0
 
 
 ##################################################
-# Optional 8x8 LED Relative Track Position Display 
+# Optional LED Track Position Display 
+# See also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
 ##################################################
 
 # set to 1 or 2 to enable the relative track position display
 # 0: TPD disabled
-# 1: TPD enabled - columns are anodes, rows are cathodes
+# 1: TPD enabled - columns are cathodes, rows are anodes
+# 2: TPD enabled - columns are anodes, rows are cathodes
 TPD_ENABLED 0
 
 # define the DOUT shift register to which the columns are connected (0=disabled)
-TPD_COLUMNS_SR 0
+TPD_COLUMNS_SR_L 0
 
-# define the DOUT shift register to which the rows are connected (0=disabled)
-TPD_ROWS_SR 0
+# for a 16x16 TPD: define the SR to which the right columns are connected (0=disabled, use only 8x8 TPD)
+TPD_COLUMNS_SR_R 0
+
+# define the DOUT shift register to which the green LED rows are connected (0=disabled)
+TPD_ROWS_SR_GREEN_L 0
+
+# define the DOUT shift register to which the right green LED rows are connected (0=disabled, use only 8x8 TPD)
+TPD_ROWS_SR_GREEN_R 0
+
+# define the DOUT shift register to which the red LED rows are connected (0=disabled)
+TPD_ROWS_SR_RED_L 0
+
+# define the DOUT shift register to which the right red LED rows are connected (0=disabled, use only 8x8 TPD)
+TPD_ROWS_SR_RED_R 0
 
 
 ##################################################
@@ -271,57 +288,57 @@ J5_ENABLED 1
 ##################################################
 # LED assignments to DOUT pins
 # SR = 0: LED disabled
-# SR = 1..16:  directly forwarded to DOUT pin
-# SR = 17..24: forwarded to a 8x8 LED matrix
+# SR = 1..23:  directly forwarded to DOUT pin
+# SR = M1..M8: forwarded to a 8x8 LED matrix
 ##################################################
 
 #           SR  Pin
-LED_TRACK1  23   2
-LED_TRACK2  23   1
-LED_TRACK3  21   2
-LED_TRACK4  21   1
+LED_TRACK1  M7   2
+LED_TRACK2  M7   1
+LED_TRACK3  M5   2
+LED_TRACK4  M5   1
 
 #                SR  Pin
-LED_PAR_LAYER_A  20   2
-LED_PAR_LAYER_B  20   1
-LED_PAR_LAYER_C  20   0
+LED_PAR_LAYER_A  M4   2
+LED_PAR_LAYER_B  M4   1
+LED_PAR_LAYER_C  M4   0
 
 #         SR  Pin
-LED_BEAT  17   1
+LED_BEAT  M1   1
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
 LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
-LED_EDIT    21   3
-LED_MUTE    22   3
-LED_PATTERN 22   2
-LED_SONG    23   3
+LED_EDIT    M5   3
+LED_MUTE    M6   3
+LED_PATTERN M6   2
+LED_SONG    M7   3
 
 #           SR  Pin
-LED_SOLO    22   1
-LED_FAST    22   0
+LED_SOLO    M6   1
+LED_FAST    M6   0
 LED_FAST2    0   0
-LED_ALL     23   0
+LED_ALL     M7   0
 
 #           SR  Pin
-LED_GROUP1  24   3
-LED_GROUP2  24   2
-LED_GROUP3  24   1
-LED_GROUP4  24   0
+LED_GROUP1  M8   3
+LED_GROUP2  M8   2
+LED_GROUP3  M8   1
+LED_GROUP4  M8   0
 
 #                SR  Pin
-LED_TRG_LAYER_A  18   2
-LED_TRG_LAYER_B  18   1
-LED_TRG_LAYER_C  18   0
+LED_TRG_LAYER_A  M2   2
+LED_TRG_LAYER_B  M2   1
+LED_TRG_LAYER_C  M2   0
 
 #          SR  Pin
-LED_PLAY   17   3
-LED_STOP   19   3
-LED_PAUSE  18   3
-LED_REW    19   2
-LED_FWD    17   2
+LED_PLAY   M1   3
+LED_STOP   M3   3
+LED_PAUSE  M2   3
+LED_REW    M3   2
+LED_FWD    M1   2
 LED_LOOP    0   0
 LED_FOLLOW  0   0
 
@@ -341,7 +358,7 @@ LED_CLEAR       0   0
 LED_UNDO        0   0
 
 #                  SR  Pin
-LED_STEP_VIEW      19   1
+LED_STEP_VIEW      M3   1
 LED_PAR_LAYER_SEL   0   0
 LED_TRG_LAYER_SEL   0   0
 LED_TRACK_SEL       0   0
@@ -378,82 +395,82 @@ LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
 ##################################################
 # Button assignments to DIN pins
 # SR = 0: Button disabled
-# SR = 1..16:  directly triggered from DIN pin
-# SR = 17..24: triggered from a 8x8 button matrix
+# SR = 1..23:  directly triggered from DIN pin
+# SR = M1..M8: triggered from a 8x8 button matrix
 ##################################################
 
 #            SR  Pin
-BUTTON_DOWN  20   2
-BUTTON_UP    20   3
+BUTTON_DOWN  M4   2
+BUTTON_UP    M4   3
 BUTTON_LEFT   0   0
 BUTTON_RIGHT  0   0
 
 #                SR  Pin
-BUTTON_SCRUB     20   4
-BUTTON_METRONOME 20   5
+BUTTON_SCRUB     M4   4
+BUTTON_METRONOME M4   5
 BUTTON_RECORD     0   0
 BUTTON_LIVE       0   0
 
 #             SR  Pin
-BUTTON_STOP   19   5
-BUTTON_PAUSE  18   4
-BUTTON_PLAY   18   5
-BUTTON_REW    19   4
-BUTTON_FWD    17   4
+BUTTON_STOP   M3   5
+BUTTON_PAUSE  M2   4
+BUTTON_PLAY   M2   5
+BUTTON_REW    M3   4
+BUTTON_FWD    M1   4
 BUTTON_LOOP    0   0
 BUTTON_FOLLOW  0   0
 
 #              SR  Pin
-BUTTON_MENU    23   5
-BUTTON_SELECT  24   4
-BUTTON_EXIT    24   5
+BUTTON_MENU    M7   5
+BUTTON_SELECT  M8   4
+BUTTON_EXIT    M8   5
 
 #              SR  Pin
-BUTTON_TRACK1  23   6
-BUTTON_TRACK2  23   7
-BUTTON_TRACK3  21   6
-BUTTON_TRACK4  21   7
+BUTTON_TRACK1  M7   6
+BUTTON_TRACK2  M7   7
+BUTTON_TRACK3  M5   6
+BUTTON_TRACK4  M5   7
 
 #                  SR  Pin
-BUTTON_PAR_LAYER_A 20   6
-BUTTON_PAR_LAYER_B 20   7
-BUTTON_PAR_LAYER_C 19   6
+BUTTON_PAR_LAYER_A M4   6
+BUTTON_PAR_LAYER_B M4   7
+BUTTON_PAR_LAYER_C M3   6
 
 #               SR  Pin
-BUTTON_EDIT     21   3
-BUTTON_MUTE     22   2
-BUTTON_PATTERN  22   3
-BUTTON_SONG     23   2
+BUTTON_EDIT     M5   3
+BUTTON_MUTE     M6   2
+BUTTON_PATTERN  M6   3
+BUTTON_SONG     M7   2
 
 #            SR  Pin
-BUTTON_SOLO  22   4
-BUTTON_FAST  22   5
+BUTTON_SOLO  M6   4
+BUTTON_FAST  M6   5
 BUTTON_FAST2  0   0
-BUTTON_ALL   23   4
+BUTTON_ALL   M7   4
 
 #            SR  Pin
-BUTTON_GP1   21   0
-BUTTON_GP2   21   1
-BUTTON_GP3   22   0
-BUTTON_GP4   22   1
-BUTTON_GP5   23   0
-BUTTON_GP6   23   1
-BUTTON_GP7   24   0
-BUTTON_GP8   24   1
-BUTTON_GP9   20   0
-BUTTON_GP10  20   1
-BUTTON_GP11  19   0
-BUTTON_GP12  19   1
-BUTTON_GP13  18   0
-BUTTON_GP14  18   1
-BUTTON_GP15  17   0
-BUTTON_GP16  17   1
+BUTTON_GP1   M5   0
+BUTTON_GP2   M5   1
+BUTTON_GP3   M6   0
+BUTTON_GP4   M6   1
+BUTTON_GP5   M7   0
+BUTTON_GP6   M7   1
+BUTTON_GP7   M8   0
+BUTTON_GP8   M8   1
+BUTTON_GP9   M4   0
+BUTTON_GP10  M4   1
+BUTTON_GP11  M3   0
+BUTTON_GP12  M3   1
+BUTTON_GP13  M2   0
+BUTTON_GP14  M2   1
+BUTTON_GP15  M1   0
+BUTTON_GP16  M1   1
 
 #              SR  Pin
-BUTTON_GROUP1  24   6
-BUTTON_GROUP2  24   7
-BUTTON_GROUP3  22   6
-BUTTON_GROUP4  22   7
+BUTTON_GROUP1  M8   6
+BUTTON_GROUP2  M8   7
+BUTTON_GROUP3  M6   6
+BUTTON_GROUP4  M6   7
 
 # alternative (individual) track selection buttons
 # LEDs have to be assigned to TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR
@@ -476,35 +493,35 @@ BUTTON_DIRECT_TRACK15  0   0
 BUTTON_DIRECT_TRACK16  0   0
 
 #                   SR  Pin
-BUTTON_TRG_LAYER_A  18   6
-BUTTON_TRG_LAYER_B  18   7
-BUTTON_TRG_LAYER_C  17   6
+BUTTON_TRG_LAYER_A  M2   6
+BUTTON_TRG_LAYER_B  M2   7
+BUTTON_TRG_LAYER_C  M1   6
 
 
 # Following button functions are usually assigned to Fx
 # buttons, or to dedicated (labeled) buttons
 # In Wilba's frontpanel layout:
-# F1 is located at SR 19 Pin 3
-# F2 is located at SR 18 Pin 2
-# F3 is located at SR 18 Pin 3
-# F4 is located at SR 17 Pin 2
+# F1 is located at SR M3 Pin 3
+# F2 is located at SR M2 Pin 2
+# F3 is located at SR M2 Pin 3
+# F4 is located at SR M1 Pin 2
 # and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
 
 #                    SR  Pin
-BUTTON_BOOKMARK      19   3
-BUTTON_PAR_LAYER_SEL 18   2
-BUTTON_TRG_LAYER_SEL 18   3
-BUTTON_TRACK_SEL     17   2
+BUTTON_BOOKMARK      M3   3
+BUTTON_PAR_LAYER_SEL M2   2
+BUTTON_TRG_LAYER_SEL M2   3
+BUTTON_TRACK_SEL     M1   2
 
 #               SR  Pin
-BUTTON_UTILITY  19   2
-BUTTON_COPY     23   3
-BUTTON_PASTE    24   2
-BUTTON_CLEAR    24   3
+BUTTON_UTILITY  M3   2
+BUTTON_COPY     M7   3
+BUTTON_PASTE    M8   2
+BUTTON_CLEAR    M8   3
 BUTTON_UNDO      0   0
 
 #                 SR  Pin
-BUTTON_STEP_VIEW  21   5
+BUTTON_STEP_VIEW  M5   5
 
 #                 SR  Pin
 BUTTON_TAP_TEMPO   0   0

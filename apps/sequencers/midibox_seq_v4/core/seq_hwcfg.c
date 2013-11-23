@@ -459,8 +459,9 @@ seq_hwcfg_step_digits_t seq_hwcfg_step_digits = {
 
 seq_hwcfg_tpd_t seq_hwcfg_tpd = {
   .enabled = 0,
-  .columns_sr = 0,
-  .rows_sr = 0,
+  .columns_sr = {0, 0},
+  .rows_sr_green = {0, 0},
+  .rows_sr_red = {0, 0},
 };
 
 
@@ -515,6 +516,9 @@ static const mios32_enc_config_t enc_config[SEQ_HWCFG_NUM_ENCODERS] = {
 s32 SEQ_HWCFG_Init(u32 mode)
 {
   int i;
+
+  // using 16 SRs by default, can be increased to up to 23 SRs
+  MIOS32_SRIO_ScanNumSet(16);
 
   // initialize encoders
   for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
