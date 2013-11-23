@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <glcd_font.h>
 
 #include "seq_tpd.h"
 #include "seq_hwcfg.h"
@@ -33,6 +34,9 @@
 
 static seq_tpd_mode_t tpd_mode;
 
+#define TPD_TEXT_LENGTH 41
+static char tpd_scroll_text[TPD_TEXT_LENGTH];
+
 #define TPD_NUM_COL_SR 2 // left/right half
 #define TPD_NUM_ROW_SR 2 // green/red colour
 #define TPD_NUM_ROWS   8 // don't change
@@ -44,6 +48,12 @@ static u8 tpd_display[TPD_NUM_COL_SR][TPD_NUM_ROW_SR][TPD_NUM_ROWS];
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_TPD_ScrollTextHandler(void);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Init function
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TPD_Init(u32 mode)
@@ -51,9 +61,15 @@ s32 SEQ_TPD_Init(u32 mode)
   // initial mode
   tpd_mode = SEQ_TPD_Mode_PosAndTrack;
 
+  SEQ_TPD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
+
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Mode Selection
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_TPD_ModeSet(seq_tpd_mode_t mode)
 {
   tpd_mode = mode;
@@ -65,6 +81,22 @@ seq_tpd_mode_t SEQ_TPD_ModeGet(void)
   return tpd_mode;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Optional Scroll Text
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TPD_PrintString(char *str)
+{
+  // first three chars should be ' '
+  int i;
+  for(i=0; i<3; ++i)
+    tpd_scroll_text[i] = ' ';
+
+  strncpy(tpd_scroll_text+3, str, TPD_TEXT_LENGTH-3);
+  tpd_scroll_text[TPD_TEXT_LENGTH-1] = 0; // to ensure that the text is terminated
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // LED update routine (should be called from APP_SRIO_ServicePrepare)
@@ -116,6 +148,11 @@ s32 SEQ_TPD_Handler(void)
 #if TPD_NUM_COL_SR != 2 || TPD_NUM_ROW_SR != 2 || TPD_NUM_ROWS != 8
 # error "only hardcoded for specific display dimension with up to 16x8 LEDs"
 #endif
+
+  // text scroll mode?
+  if( tpd_scroll_text[0] ) {
+    return SEQ_TPD_ScrollTextHandler();
+  }
 
   // clear display
   {
@@ -213,5 +250,79 @@ s32 SEQ_TPD_Handler(void)
   }
   }
   
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Print text on TPD
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_TPD_ScrollTextHandler(void)
+{
+  static u32 prev_timestamp = 0;
+  static u8 pixel_ctr = 0;
+
+  // update each 50 mS
+  if( (seq_core_timestamp_ms-prev_timestamp) < 50 ) // should also work correctly on overruns...
+    return 0;
+  prev_timestamp = seq_core_timestamp_ms;
+
+  const u8 *font = (const u8 *)&GLCD_FONT_NORMAL; // this is a 8x6 font -> almost 3 characters can be displayed
+  mios32_lcd_bitmap_t font_bitmap;
+  font_bitmap.memory = (u8 *)&font[MIOS32_LCD_FONT_BITMAP_IX] + (size_t)font[MIOS32_LCD_FONT_X0_IX];
+  font_bitmap.width = font[MIOS32_LCD_FONT_WIDTH_IX];
+  font_bitmap.height = font[MIOS32_LCD_FONT_HEIGHT_IX];
+  font_bitmap.line_offset = font[MIOS32_LCD_FONT_OFFSET_IX];
+
+  if( ++pixel_ctr > font_bitmap.line_offset ) {
+    pixel_ctr = 0;
+    memmove(tpd_scroll_text, tpd_scroll_text+1, TPD_TEXT_LENGTH-1);
+  }
+
+  // copy 4 characters to temporary 8x32 screen
+  u32 screen_buffer[8];
+  {
+    int i;
+    for(i=0; i<8; ++i)
+      screen_buffer[i] = 0;
+  }
+
+  int pos;
+  for(pos=0; pos<4; ++pos) {
+    char c = tpd_scroll_text[pos];
+    if( !c )
+      break;
+
+    u8 *font_ptr = font_bitmap.memory + (font_bitmap.height>>3) * font_bitmap.line_offset * (size_t)c;
+    u8 x, y;
+    for(x=0; x<font_bitmap.width; ++x) {
+      u8 x_pos = pos*font_bitmap.line_offset + x;
+
+      if( x_pos < 32 ) { // limited by u32
+	u8 b = *font_ptr++;
+	u32 mask = 1 << x_pos;
+	for(y=0; y<8; ++y) {
+	  if( b & (1 << y)  )
+	    screen_buffer[y] |= mask;
+	  else
+	    screen_buffer[y] &= ~mask;
+	}
+      }
+    }      
+  }
+
+  // copy temporary screen into TPD display
+  {
+    u8 col, row;
+    for(col=0; col<TPD_NUM_COL_SR; ++col) {
+      u32 *screen_buffer_ptr = (u32 *)&screen_buffer[0];
+      for(row=0; row<TPD_NUM_ROWS; ++row) {
+	u8 pattern = (*screen_buffer_ptr++) >> (col*8 + pixel_ctr);
+	tpd_display[col][TPD_GREEN][row] = pattern;
+	tpd_display[col][TPD_RED][row] = pattern;
+      }
+    }
+  }
+
   return 0; // no error
 }

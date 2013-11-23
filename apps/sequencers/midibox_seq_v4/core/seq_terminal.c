@@ -42,6 +42,7 @@
 #include "seq_song.h"
 #include "seq_mixer.h"
 #include "seq_hwcfg.h"
+#include "seq_tpd.h"
 
 #include "file.h"
 #include "seq_file.h"
@@ -311,6 +312,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintGrooveTemplates(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
       out("Mass Storage Device Mode not supported by this application!\n");
+    } else if( strcmp(parameter, "tpd") == 0 ) {
+      SEQ_TPD_PrintString(brkt); // easter egg ;-)
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "router") == 0 ) {
@@ -606,6 +609,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  grooves:        print groove templates\n");
   out("  bookmarks:      print bookmarks\n");
   out("  router:         print MIDI router info\n");
+  out("  tpd <string>:   print a scrolled text on the TPD\n");
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
