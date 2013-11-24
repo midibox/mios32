@@ -370,7 +370,7 @@ UNS_32 EMAC_ReadPacket(void * pPacket)
     return 0;
 
   if( RX_STAT_INFO(Index) & RINFO_ERR_MASK ) {
-#if 1
+#if 0
     size = 0;
 
     MIOS32_MIDI_SendDebugMessage("[EMAC_ReadPacket] ERROR during receive:\n");
