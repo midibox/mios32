@@ -302,7 +302,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	  SEQ_TERMINAL_PrintTrack(out, track-1);
 	}
       } else {
-	out("Please specify track, e.g. \"track 1\"\n");
+	out("Please specify track, e.g. \"track 1\"");
       }
     } else if( strcmp(parameter, "mixer") == 0 ) {
       SEQ_TERMINAL_PrintCurrentMixerMap(out);
@@ -311,7 +311,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
     } else if( strcmp(parameter, "grooves") == 0 ) {
       SEQ_TERMINAL_PrintGrooveTemplates(out);
     } else if( strcmp(parameter, "msd") == 0 ) {
-      out("Mass Storage Device Mode not supported by this application!\n");
+      out("Mass Storage Device Mode not supported by this application!");
     } else if( strcmp(parameter, "tpd") == 0 ) {
       SEQ_TPD_PrintString(brkt); // easter egg ;-)
     } else if( strcmp(parameter, "set") == 0 ) {
@@ -541,11 +541,11 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	    }
 
 	    if( (value=get_dec(arg)) < 0 || value > 100 ) {
-	      out("Quantisation should be between 1%%..100%%!\n");
+	      out("Quantisation should be between 1%%..100%%!");
 	    } else {
 	      seq_record_quantize = value;
 	      out("Quantisation set to %d%%\n", seq_record_quantize);
-	      out("Enter 'store' to save this setting on SD Card.\n");
+	      out("Enter 'store' to save this setting on SD Card.");
 	    }
 	  }
 	} else {
@@ -558,30 +558,187 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       SEQ_TERMINAL_PrintRouterInfo(out);
     } else if( strcmp(parameter, "play") == 0 || strcmp(parameter, "start") == 0 ) { // play or start do the same
       SEQ_UI_Button_Play(0);
-      out("Sequencer started...\n");
+      out("Sequencer started...");
     } else if( strcmp(parameter, "stop") == 0 ) {
       SEQ_UI_Button_Stop(0);
-      out("Sequencer stopped...\n");
-    } else if( strcmp(parameter, "store") == 0 ) {
-      MUTEX_SDCARD_TAKE;
-      if( SEQ_FILE_SaveAllFiles() < 0 ) {
-	out("Failed to store session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      out("Sequencer stopped...");
+    } else if( strcmp(parameter, "store") == 0 || (strcmp(parameter, "save") == 0 && strlen(brkt) == 0) ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else if( strlen(brkt) ) {
+	out("ERROR: use 'save' if you want to store the session under a new name!");
       } else {
-	out("Stored complete session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
+	seq_ui_saveall_req = 1;
+	out("Storing complete session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
       }
-      MUTEX_SDCARD_GIVE;
+    } else if( strcmp(parameter, "new") == 0 || strcmp(parameter, "saveas") == 0 || strcmp(parameter, "save") == 0 ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else {
+	MUTEX_SDCARD_TAKE;
+
+	char *session_dir = brkt;
+	u8 new_session = strcmp(parameter, "new") == 0;
+
+	if( !strlen(session_dir) ) {
+	  out("Please specifiy a session name!");
+	} else {
+	  if( strlen(session_dir) > 8 ) {
+	    out("Session name '%s' too long, only 8 characters allowed!\n", session_dir);
+	  } else if( SEQ_FILE_IsValidSessionName(session_dir) < 1 ) {
+	    out("Session name '%s' contains invalid characters!!\n", session_dir);
+	  } else {
+	    s32 status;
+	    char path[30];
+	    sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
+	    status = FILE_DirExists(path);
+	    if( status < 0 ) {
+	      out("SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+	    } else if( status >= 1 ) {
+	      out("The session '%s' already exists, please delete it first!\n", session_dir);
+	    } else if( !new_session && SEQ_FILE_SaveAllFiles() < 0 ) {
+	      out("Failed to store session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
+	    } else {
+	      FILE_MakeDir(path); // create directory
+	      status = FILE_DirExists(path);
+	      if( status < 1 ) {
+		out("Failed to create new session (Error code %d, FatFs: D%3d)\n", status, file_dfs_errno);
+	      } else {
+		if( (status=SEQ_FILE_CreateSession(session_dir, new_session)) < 0 ) {
+		  out("Failed to create new session during final call (Error code %d, FatFs: D%3d)\n", status, file_dfs_errno);
+		} else {
+		  if( new_session ) {
+		    out("Creating new session '%s' - please wait, this can take a while!!!\n", session_dir);
+		  } else {
+		    out("Copy current session to '%s' - please wait, this can take a while!!!\n", session_dir);
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+
+	MUTEX_SDCARD_GIVE;
+      }
+    } else if( strcmp(parameter, "open") == 0 || strcmp(parameter, "load") == 0 ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else {
+	MUTEX_SDCARD_TAKE;
+	char *session_dir = brkt;
+
+	if( !strlen(session_dir) ) {
+	  out("Please specifiy a session name!");
+	} else {
+	  char path[30];
+	  sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
+
+	  s32 status = FILE_DirExists(path);
+	  if( status < 0 ) {
+	    out("SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+	  } else if( status < 1 ) {
+	    out("The session '%s' doesn't exist!\n", session_dir);
+	  } else {
+	    // remember previous session and switch to new name
+	    char prev_session_name[13];
+	    strcpy(prev_session_name, seq_file_session_name);
+	    strcpy(seq_file_session_name, session_dir);
+
+	    // try to load files
+	    status = SEQ_FILE_LoadAllFiles(0); // excluding HW config
+
+	    if( status < 0 ) {
+	      // session invalid - switch back to previous one!
+	      strcpy(seq_file_session_name, prev_session_name);
+	      out("The session '%s' is invalid!\n", session_dir);
+	    } else {
+	      out("Changed to session '%s'\n", session_dir);
+
+	      // store session name
+	      status |= SEQ_FILE_StoreSessionName();
+	    }
+	  }
+	}
+	MUTEX_SDCARD_GIVE;
+      }
+    } else if( strcmp(parameter, "delete") == 0 ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else {
+	MUTEX_SDCARD_TAKE;
+	char *session_dir = brkt;
+
+	if( !strlen(session_dir) ) {
+	  out("Please specifiy a session name!");
+	} else {
+	  char path[30];
+	  sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
+
+	  s32 status = FILE_DirExists(path);
+	  if( status < 0 ) {
+	    out("SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+	  } else if( status < 1 ) {
+	    out("The session '%s' doesn't exist!\n", session_dir);
+	  } else if( strcasecmp(session_dir, seq_file_session_name) == 0 ) {
+	    out("This is the active session! It can't be deleted!");
+	  } else if( strcasecmp(session_dir, "default") == 0 ) {
+	    out("The default session can't be deleted!");
+	  } else if( (status=SEQ_FILE_DeleteSession(session_dir)) < 0 ) {
+	    out("ERROR: delete %s failed!\n", session_dir);
+	  }
+	}
+	MUTEX_SDCARD_GIVE;
+      }
+    } else if( strcmp(parameter, "session") == 0 ) {
+      out("Current session: %s", seq_file_session_name);
+    } else if( strcmp(parameter, "sessions") == 0 ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else {
+	MUTEX_SDCARD_TAKE;
+	s32 status = 0;
+	DIR di;
+	FILINFO de;
+
+	if( f_opendir(&di, SEQ_FILE_SESSION_PATH) != FR_OK ) {
+	  out("ERROR: the %s directory doesn't exist!", SEQ_FILE_SESSION_PATH);
+	} else {
+	  int num_dirs = 0;
+	  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+	    if( de.fname[0] && de.fname[0] != '.' && (de.fattrib & AM_DIR) && !(de.fattrib & AM_HID) ) {
+	      ++num_dirs;
+
+	      out("Session #%3d: %s", num_dirs, de.fname);
+	    }
+	  }
+	  if( num_dirs < 1 ) {
+	    out("No session found!");
+	  } else if( num_dirs < 2 ) {
+	    out("%d session found!", num_dirs);
+	  } else {
+	    out("%d sessions found!", num_dirs);
+	  }
+	}
+	MUTEX_SDCARD_GIVE;
+      }
     } else if( strcmp(parameter, "restore") == 0 ) {
-      MUTEX_SDCARD_TAKE;
-      if( SEQ_FILE_LoadAllFiles(1) < 0 ) {
-	out("Failed to restore session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else if( strlen(brkt) ) {
+	out("ERROR: use 'open' if you want to load a specific session!");
       } else {
-	out("Restored complete session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+	MUTEX_SDCARD_TAKE;
+	if( SEQ_FILE_LoadAllFiles(1) < 0 ) {
+	  out("Failed to restore session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+	} else {
+	  out("Restored complete session from SD Card: /SESSIONS/%s\n", seq_file_session_name);
+	}
+	MUTEX_SDCARD_GIVE;
       }
-      MUTEX_SDCARD_GIVE;
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else {
-      out("Unknown command - type 'help' to list available commands!\n");
+      out("Unknown command - type 'help' to list available commands!");
     }
   }
 
@@ -596,20 +753,20 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   MUTEX_MIDIOUT_TAKE;
   out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
   out("Following commands are available:");
-  out("  system:         print system info\n");
-  out("  memory:         print memory allocation info\n");
-  out("  sdcard:         print SD Card info\n");
-  out("  sdcard_format:  formats the SD Card (you will be asked for confirmation)\n");
-  out("  global:         print global configuration\n");
-  out("  config:         print local session configuration\n");
-  out("  tracks:         print overview of all tracks\n");
-  out("  track <track>:  print info about a specific track\n");
-  out("  mixer:          print current mixer map\n");
-  out("  song:           print current song info\n");
-  out("  grooves:        print groove templates\n");
-  out("  bookmarks:      print bookmarks\n");
-  out("  router:         print MIDI router info\n");
-  out("  tpd <string>:   print a scrolled text on the TPD\n");
+  out("  system:         print system info");
+  out("  memory:         print memory allocation info");
+  out("  sdcard:         print SD Card info");
+  out("  sdcard_format:  formats the SD Card (you will be asked for confirmation)");
+  out("  global:         print global configuration");
+  out("  config:         print local session configuration");
+  out("  tracks:         print overview of all tracks");
+  out("  track <track>:  print info about a specific track");
+  out("  mixer:          print current mixer map");
+  out("  song:           print current song info");
+  out("  grooves:        print groove templates");
+  out("  bookmarks:      print bookmarks");
+  out("  router:         print MIDI router info");
+  out("  tpd <string>:   print a scrolled text on the TPD");
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
@@ -624,12 +781,17 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
 #endif
-  out("  play or start:  emulates the PLAY button\n");
-  out("  stop:           emulates the STOP button\n");
-  out("  store:          stores complete session on SD Card\n");
-  out("  restore:        restores complete session from SD Card\n");
-  out("  reset:          resets the MIDIbox SEQ (!)\n");
-  out("  help:           this page\n");
+  out("  play or start:  emulates the PLAY button");
+  out("  stop:           emulates the STOP button");
+  out("  store or save:  stores session under the current name on SD Card");
+  out("  restore:        restores complete session from SD Card");
+  out("  saveas <name>:  saves the current session under a new name");
+  out("  new <name>:     creates a new session");
+  out("  delete <name>:  deletes a session");
+  out("  session:        prints the current session name");
+  out("  sessions:       prints all available sessions");
+  out("  reset:          resets the MIDIbox SEQ (!)");
+  out("  help:           this page");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -663,27 +825,27 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 
-  out("System Informations:\n");
-  out("====================\n");
-  out(MIOS32_LCD_BOOT_MSG_LINE1 " " MIOS32_LCD_BOOT_MSG_LINE2 "\n");
+  out("System Informations:");
+  out("====================");
+  out(MIOS32_LCD_BOOT_MSG_LINE1 " " MIOS32_LCD_BOOT_MSG_LINE2 "");
 
   mios32_sys_time_t t = MIOS32_SYS_TimeGet();
   int hours = (t.seconds / 3600) % 24;
   int minutes = (t.seconds % 3600) / 60;
   int seconds = (t.seconds % 3600) % 60;
 
-  out("Operating System: MIOS32\n");
-  out("Board: " MIOS32_BOARD_STR "\n");
-  out("Chip Family: " MIOS32_FAMILY_STR "\n");
+  out("Operating System: MIOS32");
+  out("Board: " MIOS32_BOARD_STR "");
+  out("Chip Family: " MIOS32_FAMILY_STR "");
   if( MIOS32_SYS_SerialNumberGet((char *)str_buffer) >= 0 )
     out("Serial Number: %s\n", str_buffer);
   else
-    out("Serial Number: ?\n");
+    out("Serial Number: ?");
   out("Flash Memory Size: %d bytes\n", MIOS32_SYS_FlashSizeGet());
   out("RAM Size: %d bytes\n", MIOS32_SYS_RAMSizeGet());
 
   {
-    out("MIDI IN Ports:\n");
+    out("MIDI IN Ports:");
     int num = SEQ_MIDI_PORT_InNumGet();
     int i;
     for(i=0; i<num; ++i) {
@@ -693,7 +855,7 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   }
 
   {
-    out("MIDI OUT Ports:\n");
+    out("MIDI OUT Ports:");
     int num = SEQ_MIDI_PORT_OutNumGet();
     int i;
     for(i=0; i<num; ++i) {
@@ -710,9 +872,9 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   u32 stopwatch_value_max = SEQ_STATISTICS_StopwatchGetValueMax();
   u32 stopwatch_value = SEQ_STATISTICS_StopwatchGetValue();
   if( stopwatch_value_max == 0xffffffff ) {
-    out("Stopwatch: Overrun!\n");
+    out("Stopwatch: Overrun!");
   } else if( !stopwatch_value_max ) {
-    out("Stopwatch: no result yet\n");
+    out("Stopwatch: no result yet");
   } else {
     out("Stopwatch: %d/%d uS\n", stopwatch_value, stopwatch_value_max);
   }
@@ -727,11 +889,11 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
 
 #if !defined(MIOS32_FAMILY_EMULATION) && (configGENERATE_RUN_TIME_STATS || configUSE_TRACE_FACILITY)
   // send Run Time Stats to MIOS terminal
-  out("FreeRTOS Task RunTime Stats:\n");
+  out("FreeRTOS Task RunTime Stats:");
   FREERTOS_UTILS_RunTimeStats();
 #endif
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -743,11 +905,11 @@ s32 SEQ_TERMINAL_PrintGlobalConfig(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Global Configuration:\n");
-  out("=====================\n");
+  out("Global Configuration:");
+  out("=====================");
   SEQ_FILE_GC_Debug();
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -758,17 +920,17 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Global Bookmarks:\n");
-  out("=================\n");
+  out("Global Bookmarks:");
+  out("=================");
   SEQ_FILE_BM_Debug(1);
 
-  out("\n");
+  out("");
 
-  out("Session Bookmarks:\n");
-  out("==================\n");
+  out("Session Bookmarks:");
+  out("==================");
   SEQ_FILE_BM_Debug(0);
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -779,11 +941,11 @@ s32 SEQ_TERMINAL_PrintSessionConfig(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Session Configuration:\n");
-  out("======================\n");
+  out("Session Configuration:");
+  out("======================");
   SEQ_FILE_C_Debug();
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -795,11 +957,11 @@ s32 SEQ_TERMINAL_PrintTracks(void *_output_function)
   char str_buffer[128];
 
   MUTEX_MIDIOUT_TAKE;
-  out("Track Overview:\n");
-  out("===============\n");
+  out("Track Overview:");
+  out("===============");
 
-  out("| Track | Mode  | Layer P/T/I | Steps P/T | Length | Port  | Chn. | Muted |\n");
-  out("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
+  out("| Track | Mode  | Layer P/T/I | Steps P/T | Length | Port  | Chn. | Muted |");
+  out("+-------+-------+-------------+-----------+--------+-------+------+-------+");
 
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
@@ -826,18 +988,18 @@ s32 SEQ_TERMINAL_PrintTracks(void *_output_function)
 	    midi_chn);
 
     if( seq_core_trk_muted & (1 << track) )
-      sprintf((char *)(str_buffer + strlen(str_buffer)), "  yes  |\n");
+      sprintf((char *)(str_buffer + strlen(str_buffer)), "  yes  |");
     else if( seq_core_trk[track].layer_muted )
-      sprintf((char *)(str_buffer + strlen(str_buffer)), " layer |\n");
+      sprintf((char *)(str_buffer + strlen(str_buffer)), " layer |");
     else
-      sprintf((char *)(str_buffer + strlen(str_buffer)), "  no   |\n");
+      sprintf((char *)(str_buffer + strlen(str_buffer)), "  no   |");
 
     out(str_buffer);
   }
 
-  out("+-------+-------+-------------+-----------+--------+-------+------+-------+\n");
+  out("+-------+-------+-------------+-----------+--------+-------+------+-------+");
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -850,11 +1012,11 @@ s32 SEQ_TERMINAL_PrintTrack(void *_output_function, u8 track)
   MUTEX_MIDIOUT_TAKE;
 
   out("Track Parameters of G%dT%d", (track/4)+1, (track%4)+1);
-  out("========================\n");
+  out("========================");
 
   SEQ_FILE_T_Debug(track);
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -870,10 +1032,10 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
   int i;
 
   out("Mixer Map #%3d\n", map+1);
-  out("==============\n");
+  out("==============");
 
-  out("|Num|Port|Chn|Prg|Vol|Pan|Rev|Cho|Mod|CC1|CC2|CC3|CC4|C1A|C2A|C3A|C4A|\n");
-  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
+  out("|Num|Port|Chn|Prg|Vol|Pan|Rev|Cho|Mod|CC1|CC2|CC3|CC4|C1A|C2A|C3A|C4A|");
+  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+");
 
   for(i=0; i<16; ++i) {
     sprintf(str_buffer, "|%3d|%s|", i, SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(SEQ_MIXER_Get(i, SEQ_MIXER_PAR_PORT))));
@@ -897,8 +1059,8 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
     out("%s\n", str_buffer);
   }
 
-  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+\n");
-  out("done.\n");
+  out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -913,12 +1075,12 @@ s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
   u8 song = SEQ_SONG_NumGet();
 
   out("Song #%2d\n", song+1);
-  out("========\n");
+  out("========");
 
   out("Name: '%s'\n", seq_song_name);
   MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_song_steps[0], SEQ_SONG_NUM_STEPS*sizeof(seq_song_step_t));
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -929,11 +1091,11 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
 
   MUTEX_MIDIOUT_TAKE;
-  out("Groove Templates:\n");
-  out("=================\n");
+  out("Groove Templates:");
+  out("=================");
   SEQ_FILE_G_Debug();
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
@@ -1005,8 +1167,8 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 
   MUTEX_MIDIOUT_TAKE;
 
-  out("SD Card Informations\n");
-  out("====================\n");
+  out("SD Card Informations");
+  out("====================");
 
 #if !defined(MIOS32_FAMILY_EMULATION)
   // this yield ensures, that Debug Messages are sent before we continue the execution
@@ -1019,9 +1181,9 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   MUTEX_SDCARD_GIVE;
 #endif
 
-  out("\n");
-  out("Reading Root Directory\n");
-  out("======================\n");
+  out("");
+  out("Reading Root Directory");
+  out("======================");
 
   taskYIELD();
 
@@ -1030,7 +1192,7 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   } else if( !FILE_VolumeAvailable() ) {
     sprintf(str_buffer, "Invalid FAT");
   } else {
-    out("Retrieving SD Card informations - please wait!\n");
+    out("Retrieving SD Card informations - please wait!");
     MUTEX_MIDIOUT_GIVE;
     MUTEX_SDCARD_TAKE;
     FILE_UpdateFreeBytes();
@@ -1083,9 +1245,9 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 
   taskYIELD();
 
-  out("\n");
-  out("Checking SD Card at application layer\n");
-  out("=====================================\n");
+  out("");
+  out("Checking SD Card at application layer");
+  out("=====================================");
 
   out("Current session: /SESSIONS/%s\n", seq_file_session_name);
 
@@ -1127,29 +1289,29 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
       out("File /SESSIONS/%s/MBSEQ_C.V4: doesn't exist\n", seq_file_session_name);
 
     if( SEQ_FILE_GC_Valid() )
-      out("File /MBSEQ_C.V4: valid\n");
+      out("File /MBSEQ_C.V4: valid");
     else
-      out("File /MBSEQ_C.V4: doesn't exist\n");
+      out("File /MBSEQ_C.V4: doesn't exist");
 
     if( SEQ_FILE_BM_Valid(1) )
-      out("File /MBSEQ_BM.V4: valid\n");
+      out("File /MBSEQ_BM.V4: valid");
     else
-      out("File /MBSEQ_BM.V4: doesn't exist\n");
+      out("File /MBSEQ_BM.V4: doesn't exist");
 
 #ifndef MBSEQV4L    
     if( SEQ_FILE_HW_Valid() )
-      out("File /MBSEQ_HW.V4: valid\n");
+      out("File /MBSEQ_HW.V4: valid");
     else
-      out("File /MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded\n");
+      out("File /MBSEQ_HW.V4: doesn't exist or hasn't been re-loaded");
 #else
     if( SEQ_FILE_HW_Valid() )
-      out("File /MBSEQ_HW.V4L: valid\n");
+      out("File /MBSEQ_HW.V4L: valid");
     else
-      out("File /MBSEQ_HW.V4L: doesn't exist or hasn't been re-loaded\n");
+      out("File /MBSEQ_HW.V4L: doesn't exist or hasn't been re-loaded");
 #endif
   }
 
-  out("done.\n");
+  out("done.");
   MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error

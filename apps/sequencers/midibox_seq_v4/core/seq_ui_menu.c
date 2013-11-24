@@ -905,10 +905,7 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   ui_selected_item = 0;
   menu_dialog = new_session ? MENU_DIALOG_NEW : MENU_DIALOG_SAVE_AS;
 
-  u8 dirname_valid = 1;
-  for(i=0; i<8; ++i)
-    if( dir_name[i] == '.' || dir_name[i] == '?' || dir_name[i] == ',' || dir_name[i] == '!' )
-      dirname_valid = 0;
+  u8 dirname_valid = SEQ_FILE_IsValidSessionName(dir_name) >= 1;
 
   if( !dirname_valid ) {
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Name not valid!", "(remove . ? , !)");
@@ -994,39 +991,13 @@ static s32 DoSessionSaveOrNew(u8 new_session, u8 force_overwrite)
   FILE_MakeDir(path); // create directory
   status = FILE_DirExists(path);
   MUTEX_SDCARD_GIVE;
-	    
+
   if( status < 0 ) {
     SEQ_UI_SDCardErrMsg(2000, status);
     return -6;
   }
 
-  // take over session name
-  strcpy(seq_file_new_session_name, session_dir);
-  seq_file_backup_percentage = 0;
-  file_copy_percentage = 0; // for percentage display
-
-  if( new_session ) {
-    // stop sequencer if it is still running
-    if( SEQ_BPM_IsRunning() )
-      SEQ_BPM_Stop();
-    SEQ_SONG_Reset(0);
-    SEQ_CORE_Reset(0);
-    SEQ_MIDPLY_Reset();
-
-    // clear all patterns/etc.. to have a clean start
-    SEQ_CORE_Init(1); // except for global parameters
-    SEQ_GROOVE_Init(0);
-    SEQ_SONG_Init(0);
-    SEQ_MIXER_Init(0);
-
-    // formatting handled by low-priority task in app.c
-    // messages print in seq_ui.c as long as request is active
-    seq_ui_format_req = 1;
-  } else {
-    // Copy operation handled by low-priority task in app.c
-    // messages print in seq_ui.c as long as request is active
-    seq_ui_backup_req = 1;
-  }
+  SEQ_FILE_CreateSession(session_dir, new_session);
 
   return 0; // no error
 }
@@ -1080,50 +1051,16 @@ static s32 DoSessionDelete(u8 check_only)
   if( check_only )
     return 0; // ok - delete will be allowed
 
-  // complete path
-  char path[30];
-  sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, session_dir);
-
   // remove all files of this path (the debug message are intented - could also be helpful for the user)
-  s32 status = 0;
+  s32 status = SEQ_FILE_DeleteSession(dir_name);
 
-  {
-    DIR di;
-    FILINFO de;
-
-    DEBUG_MSG("Deleting %s\n", path);
-
-    if( f_opendir(&di, path) != FR_OK ) {
-      DEBUG_MSG("Failed to open directory!");
-      status = FILE_ERR_NO_DIR;
-    } else {
-      while( f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
-	if( de.fname[0] && de.fname[0] != '.' ) {
-	  char filepath[30];
-	  sprintf(filepath, "%s/%s", path, de.fname);
-
-	  s32 del_status;
-	  if( (del_status=FILE_Remove(filepath)) < 0 ) {
-	    DEBUG_MSG("FAILED to delete %s (status: %d)", filepath, del_status);
-	  } else {
-	    DEBUG_MSG("%s deleted", filepath);
-	  }
-	}
-      }
-    }
-  }
-
-
-  // try to remove session directory
-  if( status < 0 || (status=FILE_Remove(path)) < 0 ) {
+  if( status < 0 ) {
     char buffer[40];
     sprintf(buffer, "FAILED status %d", status);
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, path, buffer);
-    DEBUG_MSG("FAILED to delete %s (status: %d)", path, status);
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, dir_name, buffer);
     return -3; // delete failed
   } else {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, path, "has been deleted!");
-    DEBUG_MSG("%s has been successfully deleted!", path);
+    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, dir_name, "has been deleted!");
   }
 
   return 0; // no error

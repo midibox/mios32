@@ -36,6 +36,9 @@ MIDIboxSEQ V4.079
      can be found under hwcfg/wilba_tpd/MBSEQ_HW.V4
 
    o the TPD display mode can now be configured in the Utility->Options menu (item #11)
+
+   o added new MIOS Terminal commands:
+     new, saveas, save, load, delete, session, sessions
      
 
 MIDIboxSEQ V4.078
