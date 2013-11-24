@@ -48,6 +48,10 @@
 #include "seq_pattern.h"
 #include "seq_song.h"
 
+#include "seq_midply.h"
+#include "seq_groove.h"
+#include <seq_bpm.h>
+
 #include "seq_tpd.h"
 
 
@@ -342,10 +346,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
     if( (status=SEQ_FILE_B_Create(seq_file_session_name, bank)) < 0 )
@@ -382,10 +385,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
   if( (status=SEQ_FILE_M_Create(seq_file_session_name)) >= 0 ) {
@@ -407,10 +409,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
   if( (status=SEQ_FILE_S_Create(seq_file_session_name)) >= 0 ) {
@@ -433,10 +434,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
   if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
@@ -449,10 +449,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
   if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -465,10 +464,9 @@ s32 SEQ_FILE_Format(void)
 
 #ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#else
+#endif
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
-#endif
 #endif
 
   if( (status=SEQ_FILE_BM_Write(seq_file_session_name, 0)) < 0 )
@@ -539,6 +537,7 @@ s32 SEQ_FILE_CreateBackup(void)
 #define COPY_FILE_MACRO(name) if( status >= 0 ) { \
     sprintf(src_file, "%s/%s", src_path, name);   \
     sprintf(dst_file, "%s/%s", dst_path, name);   \
+    DEBUG_MSG("Copy %s/%s to %s/%s\n", src_path, name, dst_path, name);	\
     seq_file_backup_notification = dst_file;      \
     SEQ_UI_LCD_Handler();                         \
     status = FILE_Copy(src_file, dst_file); \
@@ -568,7 +567,7 @@ s32 SEQ_FILE_CreateBackup(void)
   if( status >= 0 ) {
     // we were successfull!
     status = 1;
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_CreateBackup] backup of %s passed, new name: %s\n", seq_file_session_name, seq_file_new_session_name);
 #endif
 
@@ -578,13 +577,13 @@ s32 SEQ_FILE_CreateBackup(void)
     // load files
     status = SEQ_FILE_LoadAllFiles(0); // excluding HW config
 
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
     if( status < 0 )
       DEBUG_MSG("[SEQ_FILE_CreateBackup] failed during LoadAllFiles at %s, status %d\n", seq_file_new_session_name, status);
 #endif
 
   } else { // found errors!
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_CreateBackup] backup of %s failed, status %d\n", seq_file_new_session_name, status);
 #endif
     status = FILE_ERR_COPY;
@@ -592,6 +591,119 @@ s32 SEQ_FILE_CreateBackup(void)
 
   // in any case invalidate new session name
   seq_file_new_session_name[0] = 0;
+
+  return status;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Validate session name
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_IsValidSessionName(char *name)
+{
+  int i;
+  int len = strlen(name);
+  if( len > 8 )
+    return 0;
+
+  for(i=0; i<len; ++i) {
+    char c = name[i];
+    if( !c || c == ' ' )
+      break;
+
+    if( (c >= '0' && c <= '9') ||
+	(c >= 'a' && c <= 'z') ||
+	(c >= 'A' && c <= 'Z') ||
+	(c == '_' || c == '-' ) )
+      continue;
+
+    return 0; // invalid
+  }
+
+  return 1; // valid
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Create a new session
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_CreateSession(char *name, u8 new_session)
+{
+  // take over session name
+  strcpy(seq_file_new_session_name, name);
+  seq_file_backup_percentage = 0;
+  file_copy_percentage = 0; // for percentage display
+
+  if( new_session ) {
+    // stop sequencer if it is still running
+    if( SEQ_BPM_IsRunning() )
+      SEQ_BPM_Stop();
+    SEQ_SONG_Reset(0);
+    SEQ_CORE_Reset(0);
+    SEQ_MIDPLY_Reset();
+
+    // clear all patterns/etc.. to have a clean start
+    SEQ_CORE_Init(1); // except for global parameters
+    SEQ_GROOVE_Init(0);
+    SEQ_SONG_Init(0);
+    SEQ_MIXER_Init(0);
+
+    // formatting handled by low-priority task in app.c
+    // messages print in seq_ui.c as long as request is active
+    seq_ui_format_req = 1;
+  } else {
+    // Copy operation handled by low-priority task in app.c
+    // messages print in seq_ui.c as long as request is active
+    seq_ui_backup_req = 1;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Delete a session
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_FILE_DeleteSession(char *name)
+{
+  s32 status = 0;
+
+  // complete path
+  char path[30];
+  sprintf(path, "%s/%s", SEQ_FILE_SESSION_PATH, name);
+
+  {
+    DIR di;
+    FILINFO de;
+
+    DEBUG_MSG("Deleting %s\n", path);
+
+    if( f_opendir(&di, path) != FR_OK ) {
+      DEBUG_MSG("Failed to open directory!");
+      status = FILE_ERR_NO_DIR;
+    } else {
+      while( f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+	if( de.fname[0] && de.fname[0] != '.' ) {
+	  char filepath[30];
+	  sprintf(filepath, "%s/%s", path, de.fname);
+
+	  s32 del_status;
+	  if( (del_status=FILE_Remove(filepath)) < 0 ) {
+	    DEBUG_MSG("FAILED to delete %s (status: %d)", filepath, del_status);
+	  } else {
+	    DEBUG_MSG("%s deleted", filepath);
+	  }
+	}
+      }
+    }
+  }
+
+  // try to remove session directory
+  if( status < 0 || (status=FILE_Remove(path)) < 0 ) {
+    char buffer[40];
+    sprintf(buffer, "FAILED status %d", status);
+    DEBUG_MSG("FAILED to delete %s (status: %d)", path, status);
+    return status;
+  } else {
+    DEBUG_MSG("%s has been successfully deleted!", path);
+  }
 
   return status;
 }

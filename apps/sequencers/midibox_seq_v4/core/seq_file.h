@@ -118,6 +118,10 @@ extern s32 SEQ_FILE_Format(void);
 
 extern s32 SEQ_FILE_CreateBackup(void);
 
+extern s32 SEQ_FILE_IsValidSessionName(char *name);
+extern s32 SEQ_FILE_CreateSession(char *name, u8 new_session);
+extern s32 SEQ_FILE_DeleteSession(char *name);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
