@@ -344,9 +344,8 @@ s32 SEQ_FILE_Format(void)
     seq_file_backup_percentage = (u8)(((u32)100 * (u32)bank) / num_operations);
     sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_B%d.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name, bank+1);
 
-#ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
@@ -354,9 +353,7 @@ s32 SEQ_FILE_Format(void)
     if( (status=SEQ_FILE_B_Create(seq_file_session_name, bank)) < 0 )
       goto SEQ_FILE_Format_failed;
 
-#ifndef MBSEQV4L
     SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
 
     // fill patterns with useful data
     int pattern;
@@ -365,9 +362,7 @@ s32 SEQ_FILE_Format(void)
       file_copy_percentage = (u8)(((u32)100 * (u32)pattern) / num_patterns); // for percentage display
       u8 group = bank % SEQ_CORE_NUM_GROUPS; // note: bank selects source group
 
-#ifndef MBSEQV4L
       SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
 
       if( (status=SEQ_FILE_B_PatternWrite(seq_file_session_name, bank, pattern, group, 0)) < 0 )
 	goto SEQ_FILE_Format_failed;
@@ -383,11 +378,10 @@ s32 SEQ_FILE_Format(void)
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+0)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_M.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-#ifndef MBSEQV4L
-    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+  DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
 
   if( (status=SEQ_FILE_M_Create(seq_file_session_name)) >= 0 ) {
@@ -407,11 +401,9 @@ s32 SEQ_FILE_Format(void)
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+1)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_S.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-#ifndef MBSEQV4L
-    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+  DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
 
   if( (status=SEQ_FILE_S_Create(seq_file_session_name)) >= 0 ) {
@@ -432,11 +424,10 @@ s32 SEQ_FILE_Format(void)
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+2)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_G.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-#ifndef MBSEQV4L
-    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+  DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
 
   if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
@@ -447,11 +438,10 @@ s32 SEQ_FILE_Format(void)
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_C.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-#ifndef MBSEQV4L
-    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+  DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
 
   if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -462,11 +452,10 @@ s32 SEQ_FILE_Format(void)
   seq_file_backup_percentage = (u8)(((u32)100 * (u32)(SEQ_FILE_B_NUM_BANKS+3)) / num_operations);
   sprintf(seq_file_backup_notification, "%s/%s/MBSEQ_BM.V4", SEQ_FILE_SESSION_PATH, seq_file_new_session_name);
 
-#ifndef MBSEQV4L
-    SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
-#endif
+  SEQ_UI_LCD_Handler(); // update LCD (required, since file and LCD task have been merged)
+
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
+  DEBUG_MSG("[SEQ_FILE_Format] Creating %s\n", seq_file_backup_notification);
 #endif
 
   if( (status=SEQ_FILE_BM_Write(seq_file_session_name, 0)) < 0 )

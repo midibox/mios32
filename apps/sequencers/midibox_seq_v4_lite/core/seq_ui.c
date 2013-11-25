@@ -68,6 +68,10 @@ u8 ui_seq_pause;
 
 u8 ui_song_edit_pos;
 
+u8 seq_ui_backup_req;
+u8 seq_ui_format_req;
+u8 seq_ui_saveall_req;
+
 u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
 u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
 u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
@@ -117,6 +121,11 @@ s32 SEQ_UI_Init(u32 mode)
   ui_cursor_flash = 0;
 
   seq_ui_display_update_req = 1;
+
+  // misc
+  seq_ui_backup_req = 0;
+  seq_ui_format_req = 0;
+  seq_ui_saveall_req = 0;
 
   ui_controller_mode = UI_CONTROLLER_MODE_OFF;
   //ui_controller_port = 0xc0; // combined
@@ -655,7 +664,11 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   int i;
 
   // ignore as long as hardware config hasn't been read
-  if( !SEQ_FILE_HW_ConfigLocked() || seq_file_backup_notification )
+  if( !SEQ_FILE_HW_ConfigLocked() )
+    return -1;
+
+  // ignore during a backup or format is created
+  if( seq_ui_backup_req || seq_ui_format_req )
     return -1;
 
   // ensure that selections are matching with track constraints
@@ -1271,6 +1284,16 @@ s32 SEQ_UI_LED_Handler_Periodic()
     break;
   }
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// dummy-stub for MBSEQV4L
+// called each mS
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_LCD_Handler(void)
+{
   return 0; // no error
 }
 

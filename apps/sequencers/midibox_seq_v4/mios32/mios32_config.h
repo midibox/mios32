@@ -25,7 +25,8 @@
 //#define MIOS32_MIDI_DEBUG_PORT USB0
 
 // function used to output debug messages (must be printf compatible!)
-#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+extern void APP_SendDebugMessage(char *format, ...);
+#define DEBUG_MSG APP_SendDebugMessage
 
 
 // Stack size for FreeRTOS tasks as defined by the programming model
