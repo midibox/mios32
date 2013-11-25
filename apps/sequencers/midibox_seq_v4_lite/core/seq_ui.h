@@ -170,6 +170,7 @@ extern s32 SEQ_UI_Button_Stop(s32 depressed);
 
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();
+extern s32 SEQ_UI_LCD_Handler(void);
 extern s32 SEQ_UI_MENU_Handler_Periodic();
 
 extern s32 SEQ_UI_CheckSelections(void);
@@ -232,6 +233,10 @@ extern u8 ui_song_edit_pos;
 extern u8 ui_quicksel_length[UI_QUICKSEL_NUM_PRESETS];
 extern u8 ui_quicksel_loop_length[UI_QUICKSEL_NUM_PRESETS];
 extern u8 ui_quicksel_loop_loop[UI_QUICKSEL_NUM_PRESETS];
+
+extern u8 seq_ui_backup_req;
+extern u8 seq_ui_format_req;
+extern u8 seq_ui_saveall_req;
 
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 

@@ -174,7 +174,7 @@ typedef union {
 typedef enum {
   SEQ_CORE_FX_MIDI_MODE_BEH_Forward,   // forward to all channels
   SEQ_CORE_FX_MIDI_MODE_BEH_Alternate, // alternate between channels
-  SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho, // alternate between channels, reset to original channel on each echo
+  SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho, // Alternate only on echo taps
   SEQ_CORE_FX_MIDI_MODE_BEH_Random,    // forward to random channel
 } seq_core_fx_midi_mode_beh_t;
 

@@ -318,7 +318,7 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    ...
         |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x52/ 83|   0 - 40  |      15 | Feedback Velocity Level:
+0x53/ 83|   0 - 40  |      15 | Feedback Velocity Level:
         |           |         |    0:   0%
         |           |         |    1:   5%
         |           |         |    2:  10%
@@ -327,12 +327,12 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    ...
         |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x53/ 84|   0 - 127 |      64 | Feedback Note Value:
+0x54/ 84|   0 - 127 |      64 | Feedback Note Value:
         |           |         |    0..63: decrements (-64..-1)
         |           |         |    64: no increment
         |           |         |    65..127: increments (+1..+63)
 --------+-----------+---------+------------------------------------------------
-0x54/ 85|   0 - 40  |      15 | Feedback Gatelength:
+0x55/ 85|   0 - 40  |      15 | Feedback Gatelength:
         |           |         |    0:   0%
         |           |         |    1:   5%
         |           |         |    2:  10%
@@ -341,7 +341,7 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    ...
         |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x55/ 86|   0 - 40  |      15 | Feedback Ticks (Delay):
+0x56/ 86|   0 - 40  |      15 | Feedback Ticks (Delay):
         |           |         |    0:   0%
         |           |         |    1:   5%
         |           |         |    2:  10%
@@ -350,7 +350,39 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    ...
         |           |         |    40:  200%
 --------+-----------+---------+------------------------------------------------
-0x56/ 84| -         |    -    | reserved
+0x57/ 87| -         |    -    | reserved
+--------+-----------+---------+------------------------------------------------
+0x58/ 88|   0 - 40  |       0 | Fx MIDI Mode
+        |           |         |    bit 0..3: Behaviour
+        |           |         |              0: Forward to all channels
+        |           |         |              1: Alternate between channels
+        |           |         |              2: Alternate only on Echo Taps
+        |           |         |              3: Forward to Random channel
+        |           |         |           4..7: reserved
+        |           |         |    bit 4: Forward CCs, PitchBender, Channel
+        |           |         |           Pressure, Program Change to all Fx channels
+--------+-----------+---------+------------------------------------------------
+0x59/ 89|   0 - 40  |       0 | Fx MIDI Port
+        |           |         |    0x00: Same as configured for track
+        |           |         |    0x10: USB1
+        |           |         |    0x11: USB2
+        |           |         |    0x12: USB3
+        |           |         |    0x13: USB4
+        |           |         |    0x20: OUT1 (MIDI Out Port #1)
+        |           |         |    0x21: OUT2 (MIDI Out Port #2)
+        |           |         |    0x22: OUT3 (MIDI Out Port #3)
+        |           |         |    0x23: OUT4 (MIDI Out Port #4)
+        |           |         |    0x30: IIC1
+        |           |         |    0x31: IIC2
+        |           |         |    0x32: IIC3
+        |           |         |    0x33: IIC4
+        |           |         |    0x60: AOUT1
+--------+-----------+---------+------------------------------------------------
+0x5a/ 90|   0 - 15  |       0 | Fx MIDI Channel
+--------+-----------+---------+------------------------------------------------
+0x5b/ 91|   0 - 15  |       0 | Number of Fx MIDI Channels
+--------+-----------+---------+------------------------------------------------
+0x5c/ 92| -         |    -    | reserved
   ...   |           |         | 
 0x7f/127|           |         | 
 --------+-----------+---------+------------------------------------------------

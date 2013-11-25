@@ -160,9 +160,7 @@ s32 SEQ_TERMINAL_Parse(mios32_midi_port_t port, char byte)
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
-    MUTEX_MIDIOUT_TAKE;
-    SEQ_TERMINAL_ParseLine(line_buffer, MIOS32_MIDI_SendDebugMessage);
-    MUTEX_MIDIOUT_GIVE;
+    SEQ_TERMINAL_ParseLine(line_buffer, APP_SendDebugMessage);
     line_ix = 0;
     line_buffer[line_ix] = 0;
   } else if( line_ix < (STRING_MAX-1) ) {
@@ -233,6 +231,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
   char *brkt;
   char *parameter;
 
+  MUTEX_MIDIOUT_TAKE;
+
 #if !defined(MIOS32_FAMILY_EMULATION)
   if( UIP_TERMINAL_ParseLine(input, _output_function) >= 1 )
     return 0; // command parsed by UIP Terminal
@@ -247,6 +247,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
   if( APP_LCD_TerminalParseLine(input, _output_function) >= 1 )
     return 0; // command parsed
 #endif
+
+  MUTEX_MIDIOUT_GIVE;
 
   if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
     if( strcmp(parameter, "help") == 0 ) {
@@ -750,7 +752,6 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   out("Welcome to " MIOS32_LCD_BOOT_MSG_LINE1 "!");
   out("Following commands are available:");
   out("  system:         print system info");
@@ -772,6 +773,8 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
   out("  set rec_quantisation <1..100>: change record quantisation (default: 10%%, current: %d%%)\n", seq_record_quantize);
+
+  MUTEX_MIDIOUT_TAKE;
 #if !defined(MIOS32_FAMILY_EMULATION)
   AOUT_TerminalHelp(_output_function);
 #endif
@@ -781,6 +784,8 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
 #if !defined(MIOS32_FAMILY_EMULATION)
   UIP_TERMINAL_Help(_output_function);
 #endif
+  MUTEX_MIDIOUT_GIVE;
+
   out("  play or start:  emulates the PLAY button");
   out("  stop:           emulates the STOP button");
   out("  store or save:  stores session under the current name on SD Card");
@@ -792,7 +797,6 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  sessions:       prints all available sessions");
   out("  reset:          resets the MIDIbox SEQ (!)");
   out("  help:           this page");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -822,8 +826,6 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
   char str_buffer[128];
-
-  MUTEX_MIDIOUT_TAKE;
 
   out("System Informations:");
   out("====================");
@@ -894,7 +896,6 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
 #endif
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -904,13 +905,11 @@ s32 SEQ_TERMINAL_PrintGlobalConfig(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   out("Global Configuration:");
   out("=====================");
   SEQ_FILE_GC_Debug();
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -919,7 +918,6 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   out("Global Bookmarks:");
   out("=================");
   SEQ_FILE_BM_Debug(1);
@@ -931,7 +929,6 @@ s32 SEQ_TERMINAL_PrintBookmarks(void *_output_function)
   SEQ_FILE_BM_Debug(0);
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -940,13 +937,11 @@ s32 SEQ_TERMINAL_PrintSessionConfig(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   out("Session Configuration:");
   out("======================");
   SEQ_FILE_C_Debug();
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -956,7 +951,6 @@ s32 SEQ_TERMINAL_PrintTracks(void *_output_function)
   void (*out)(char *format, ...) = _output_function;
   char str_buffer[128];
 
-  MUTEX_MIDIOUT_TAKE;
   out("Track Overview:");
   out("===============");
 
@@ -1000,7 +994,6 @@ s32 SEQ_TERMINAL_PrintTracks(void *_output_function)
   out("+-------+-------+-------------+-----------+--------+-------+------+-------+");
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1009,15 +1002,12 @@ s32 SEQ_TERMINAL_PrintTrack(void *_output_function, u8 track)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
-
   out("Track Parameters of G%dT%d", (track/4)+1, (track%4)+1);
   out("========================");
 
   SEQ_FILE_T_Debug(track);
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1026,7 +1016,6 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   char str_buffer[128];
   u8 map = SEQ_MIXER_NumGet();
   int i;
@@ -1061,7 +1050,6 @@ s32 SEQ_TERMINAL_PrintCurrentMixerMap(void *_output_function)
 
   out("+---+----+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+");
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1071,7 +1059,6 @@ s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   u8 song = SEQ_SONG_NumGet();
 
   out("Song #%2d\n", song+1);
@@ -1081,7 +1068,6 @@ s32 SEQ_TERMINAL_PrintCurrentSong(void *_output_function)
   MIOS32_MIDI_SendDebugHexDump((u8 *)&seq_song_steps[0], SEQ_SONG_NUM_STEPS*sizeof(seq_song_step_t));
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1090,13 +1076,11 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  MUTEX_MIDIOUT_TAKE;
   out("Groove Templates:");
   out("=================");
   SEQ_FILE_G_Debug();
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1164,8 +1148,6 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   DIR dir;
   char *fn;
   char str_buffer[128];
-
-  MUTEX_MIDIOUT_TAKE;
 
   out("SD Card Informations");
   out("====================");
@@ -1312,7 +1294,6 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
   }
 
   out("done.");
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }
@@ -1321,8 +1302,6 @@ s32 SEQ_TERMINAL_PrintSdCardInfo(void *_output_function)
 s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
-
-  MUTEX_MIDIOUT_TAKE;
 
   out("MIDI Router Nodes (change with 'set router <node> <in-port> <channel> <out-port> <channel>)");
   out("Example: set router 1 IN1 all USB1 all");
@@ -1380,8 +1359,6 @@ s32 SEQ_TERMINAL_PrintRouterInfo(void *_output_function)
 	(enab_rx == 0) ? "off" : ((enab_rx == 1) ? "on " : "---"),
 	(enab_tx == 0) ? "off" : ((enab_tx == 1) ? "on " : "---"));
   }
-
-  MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error
 }

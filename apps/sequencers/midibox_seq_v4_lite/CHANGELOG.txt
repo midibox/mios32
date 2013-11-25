@@ -1,6 +1,24 @@
 $Id$
 
 
+MIDIboxSEQ V4L.079
+~~~~~~~~~~~~~~~~~~
+
+   o added new MIOS Terminal commands:
+     new, saveas, save, load, delete, session, sessions
+
+     Similar to "the big brother" MIDIbox SEQ V4, you are now able to create multiple
+     sessions on SD Card, or to create a backup of your current session.
+
+
+MIDIboxSEQ V4L.076
+~~~~~~~~~~~~~~~~~~
+
+   o the MIDI router forwards SysEx messages regardless if channels are filtered,
+     or "All" is used. It's ensured that messages are only sent once if multiple
+     router nodes forward to the same destination port.
+
+
 MIDIboxSEQ V4L.075
 ~~~~~~~~~~~~~~~~~~
 

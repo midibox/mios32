@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -467,10 +468,8 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1mS_LowPrio(void)
 {
-#ifndef MBSEQV4L
   // call LCD Handler
   SEQ_UI_LCD_Handler();
-#endif
 
   // update LEDs
   SEQ_UI_LED_Handler();
@@ -504,7 +503,6 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
-#ifndef MBSEQV4L
   static s8 wait_boot_ctr = 3; // wait 3 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
@@ -538,25 +536,38 @@ void SEQ_TASK_Period1S(void)
     if( wait_boot_ctr != 0 ) { // don't print message if we just booted
       char str[21];
       sprintf(str, "Label: %s", FILE_VolumeLabel());
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, " SD Card connected", "        :-D");
+#endif
+      DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
     }
     SEQ_FILE_LoadSessionName();
+    DEBUG_MSG("Loading session %s\n", seq_file_session_name);
     SEQ_FILE_LoadAllFiles(1);
   } else if( status == 2 ) {
+#ifndef MBSEQV4L
     SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "SD Card disconnected", "        :-/");
+#endif
+    DEBUG_MSG("SD Card disconnected\n");
     SEQ_FILE_UnloadAllFiles();
     wait_boot_ctr = -1;
   } else if( status == 3 ) {
     if( !FILE_SDCardAvailable() ) {
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "  No SD Card found  ", "        :-(");
+#endif
+      DEBUG_MSG("SD Card not found\n");
       SEQ_FILE_HW_LockConfig(); // lock configuration
       wait_boot_ctr = -1;
     } else if( !FILE_VolumeAvailable() ) {
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, "!! SD Card Error !!!", "!! Invalid FAT !!!!!");
+#endif
+      DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
       SEQ_FILE_HW_LockConfig(); // lock configuration
       wait_boot_ctr = -1;
     } else {
-
+#ifndef MBSEQV4L
       if( wait_boot_ctr != 0 ) { // don't print message if we just booted
 	char str1[30];
 	sprintf(str1, "Banks: ....");
@@ -574,6 +585,23 @@ void SEQ_TASK_Period1S(void)
 		SEQ_FILE_HW_Valid() ? '*':'-');
 	SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, 2000, str1, str2);
       }
+#endif
+
+#if MBSEQV4L
+      // auto-format
+      // check if formatting is required
+      if( SEQ_FILE_FormattingRequired() ) {
+	strcpy(seq_file_new_session_name, "DEF_V4L");
+	DEBUG_MSG("Creating initial session '%s'... this can take some seconds!\n", seq_file_new_session_name);
+
+	if( (status=SEQ_FILE_Format()) < 0 ) {
+	  DEBUG_MSG("Failed to create session! (status: %d)\n", status);
+	} else {
+	  SEQ_FILE_StoreSessionName();
+	  DEBUG_MSG("Done!\n");
+	}
+      }
+#endif
 
       // request to load content of SD card
       load_sd_content = 1;
@@ -583,17 +611,26 @@ void SEQ_TASK_Period1S(void)
     }
   } else if( status < 0 ) {
     wait_boot_ctr = -1;
+#ifndef MBSEQV4L
     SEQ_UI_SDCardErrMsg(2000, status);
+#endif
+    DEBUG_MSG("ERROR: SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
   }
 
   // check for format request
   // this is running with low priority, so that LCD is updated in parallel!
   if( seq_ui_format_req ) {
     // note: request should be cleared at the end of this process to avoid double-triggers!
-    if( (status = SEQ_FILE_Format()) < 0 )
+    if( (status = SEQ_FILE_Format()) < 0 ) {
+#ifndef MBSEQV4L
       SEQ_UI_SDCardErrMsg(2000, status);
-    else {
+#endif
+      DEBUG_MSG("ERROR: SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+    } else {
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files created", "successfully!");
+#endif
+      DEBUG_MSG("Files created successfully!\n");
 
       // store session name
       status |= SEQ_FILE_StoreSessionName();
@@ -613,13 +650,23 @@ void SEQ_TASK_Period1S(void)
     status = SEQ_FILE_CreateBackup();
       
     if( status < 0 ) {
-      if( status == FILE_ERR_COPY )
+      if( status == FILE_ERR_COPY ) {
+#ifndef MBSEQV4L
 	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "COPY FAILED!", "ERROR :-(");
-      else
+#endif
+	DEBUG_MSG("ERROR: copy failed!\n");
+      } else {
+#ifndef MBSEQV4L
 	SEQ_UI_SDCardErrMsg(2000, status);
+#endif
+	DEBUG_MSG("ERROR: SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+      }
     }
     else {
+#ifndef MBSEQV4L
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Files copied", "successfully!");
+#endif
+      DEBUG_MSG("Files copied successfully!\n");
 
       // store session name
       status |= SEQ_FILE_StoreSessionName();
@@ -649,8 +696,12 @@ void SEQ_TASK_Period1S(void)
     if( status >= 0 )
       status |= SEQ_FILE_StoreSessionName();
 
-    if( status < 0 )
+    if( status < 0 ) {
+#ifndef MBSEQV4L
       SEQ_UI_SDCardErrMsg(2000, status);
+#endif
+      DEBUG_MSG("ERROR: SD Card Error %d (FatFs: D%3d)\n", status, file_dfs_errno);
+    }
 
     // finally clear request
     seq_ui_saveall_req = 0;
@@ -671,47 +722,6 @@ void SEQ_TASK_Period1S(void)
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
     SEQ_SONG_Load(SEQ_SONG_NumGet());
   }
-#else
-  // MBSEQV4L handling (could be combined with code above later)
-
-  MUTEX_SDCARD_TAKE;
-  s32 status = FILE_CheckSDCard();
-
-  if( status == 1 ) {
-    DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
-    // load all file infos
-    SEQ_FILE_LoadSessionName();
-    DEBUG_MSG("Loading session %s\n", seq_file_session_name);
-    SEQ_FILE_LoadAllFiles(1); // including HW info
-  } else if( status == 2 ) {
-    DEBUG_MSG("SD Card disconnected\n");
-    // invalidate all file infos
-    SEQ_FILE_UnloadAllFiles();
-  } else if( status == 3 ) {
-    if( !FILE_SDCardAvailable() ) {
-      DEBUG_MSG("SD Card not found\n");
-      SEQ_FILE_HW_LockConfig(); // lock configuration
-    } else if( !FILE_VolumeAvailable() ) {
-      DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
-      SEQ_FILE_HW_LockConfig(); // lock configuration
-    } else {
-      // check if formatting is required
-      if( SEQ_FILE_FormattingRequired() ) {
-	strcpy(seq_file_new_session_name, "DEF_V4L");
-	DEBUG_MSG("Creating initial session '%s'... this can take some seconds!\n", seq_file_new_session_name);
-
-	if( (status=SEQ_FILE_Format()) < 0 ) {
-	  DEBUG_MSG("Failed to create session! (status: %d)\n", status);
-	} else {
-	  SEQ_FILE_StoreSessionName();
-	  DEBUG_MSG("Done!\n");
-	}
-      }
-    }
-  }
-
-  MUTEX_SDCARD_GIVE;
-#endif
 }
 
 
@@ -782,3 +792,42 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 
   return 0;
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Send a Mutex protected debug messages (referenced by DEBUG_MSG macro)
+/////////////////////////////////////////////////////////////////////////////
+void APP_SendDebugMessage(char *format, ...)
+{
+  MUTEX_MIDIOUT_TAKE;
+
+  {
+    char str[128]; // 128 chars allowed
+    va_list args;
+
+    // failsave: if format string is longer than 100 chars, break here
+    // note that this is a weak protection: if %s is used, or a lot of other format tokens,
+    // the resulting string could still lead to a buffer overflow
+    // other the other hand we don't want to allocate too many byte for buffer[] to save stack
+    if( strlen(format) > 100 ) {
+      // exit with less costly message
+      MIOS32_MIDI_SendDebugString("(ERROR: string passed to MIOS32_MIDI_SendDebugMessage() is longer than 100 chars!\n");
+    } else {
+      // transform formatted string into string
+      va_start(args, format);
+      vsprintf(str, format, args);
+    }
+
+    u32 len = strlen(str);
+    u8 *str_ptr = (u8 *)str;
+    int i;
+    for(i=0; i<len; ++i) {
+      *str_ptr++ &= 0x7f; // ensure that MIDI protocol won't be violated
+    }
+
+    MIOS32_MIDI_SendDebugString(str);
+  }
+
+  MUTEX_MIDIOUT_GIVE;
+}
+

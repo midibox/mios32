@@ -14,7 +14,7 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4L.075"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4L.079"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T. Klose"
 
 // USB settings
@@ -30,7 +30,8 @@
 //#define MIOS32_MIDI_DEBUG_PORT USB0
 
 // function used to output debug messages (must be printf compatible!)
-#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+extern void APP_SendDebugMessage(char *format, ...);
+#define DEBUG_MSG APP_SendDebugMessage
 
 
 // Stack size for FreeRTOS tasks as defined by the programming model
