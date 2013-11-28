@@ -100,7 +100,8 @@ s32 MIOS32_ENC_Init(u32 mode)
 //!   <LI>enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)<BR>
 //!   <LI>enc_config.cfg.speed_par speed parameter (0-7)<BR>
 //!   <LI>enc_config.cfg.sr shift register (1-16) or application control (0) for the case that encoders are directly connected to GPIO pins<BR>
-//!   <LI>enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)<BR>
+//!   <LI>enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6).<BR>
+//!       If an odd number is specified (1, 3, 5 or 7), the pins will be reversed!<BR>
 //! </UL>
 //! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
@@ -123,8 +124,9 @@ s32 MIOS32_ENC_ConfigSet(u32 encoder, mios32_enc_config_t config)
 //! \return enc_config.cfg.type encoder type (DISABLED/NON_DETENTED/DETENTED1..3)
 //! \return enc_config.cfg.speed encoder speed mode (NORMAL/FAST/SLOW)
 //! \return enc_config.cfg.speed_par speed parameter (0-7)
-//! \return enc_config.cfg.sr shift register (1-16) or application control (0) for the case that encoders are directly connected to GPIO pins<BR>
-//! \return enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)
+//! \return enc_config.cfg.sr shift register (1-16) or application control (0) for the case that encoders are directly connected to GPIO pins
+//! \return enc_config.cfg.pos pin position of first pin (0, 2, 4 or 6)<BR>If an odd number is specified (1, 3, 5 or 7), the pins will be reversed!<BR>
+
 /////////////////////////////////////////////////////////////////////////////
 mios32_enc_config_t MIOS32_ENC_ConfigGet(u32 encoder)
 {
@@ -212,10 +214,16 @@ s32 MIOS32_ENC_UpdateStates(void)
       // check if encoder state has been changed, and clear changed flags, so that the changes won't be propagated to DIN handler
       u8 sr = enc_config_ptr->cfg.sr-1;
       u8 pos = enc_config_ptr->cfg.pos;
-      u8 changed_mask = 3 << pos; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
+      u8 pos_normalized = pos & 6; // (0, 2, 4 or 6)
+      u8 changed_mask = 3 << pos_normalized; // note: by checking mios32_srio_din_changed[sr] directly, we speed up the scanning of unmoved encoders by factor 3!
       enc_state_ptr->last12 = enc_state_ptr->act12;
-      if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) )
-	enc_state_ptr->act12 = (MIOS32_DIN_SRGet(sr) >> pos) & 3;
+      if( (mios32_srio_din_changed[sr] & changed_mask) && MIOS32_DIN_SRChangedGetAndClear(sr, changed_mask) ) {
+	u8 state = (mios32_srio_din[sr] >> pos_normalized) & 3;
+	if( pos & 1 ) { // swap pins?
+	  state = ((state << 1) & 2) | (state >> 1);
+	}
+	enc_state_ptr->act12 = state;
+      }
     }
 
     // new encoder state?
