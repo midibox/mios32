@@ -1,5 +1,5 @@
 
-# Control five LED Digits to output 7bit values
+# Control 5x3 LED Digits to output 7bit values
 
 RESET_HW
 
