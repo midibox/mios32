@@ -19,6 +19,7 @@ mkdir $RELEASE_DIR
 cp README.txt $RELEASE_DIR
 cp CHANGELOG.txt $RELEASE_DIR
 cp -r cfg $RELEASE_DIR
+cp -r touchosc $RELEASE_DIR
 find $RELEASE_DIR/cfg -type d | grep .svn$ | xargs rm -rf
 
 ################################################################################

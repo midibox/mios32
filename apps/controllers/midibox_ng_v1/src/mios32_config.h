@@ -97,7 +97,7 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 9*1024
+#define MIOS32_HEAP_SIZE 10*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 
@@ -107,7 +107,7 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 // for the MIOS32 hooks in main.c
 #define MIOS32_MINIMAL_STACK_SIZE APP_BIG_STACK_SIZE
 // for the UIP task
-#define UIP_TASK_STACK_SIZE       APP_REDUCED_STACK_SIZE
+#define UIP_TASK_STACK_SIZE       APP_BIG_STACK_SIZE
 
 // optionally for task analysis - if enabled, the stats can be displayed with the "system" command in MIOS Terminal
 #if 0

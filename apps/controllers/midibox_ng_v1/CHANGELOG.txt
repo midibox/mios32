@@ -28,6 +28,9 @@ MIDIbox NG V1.027
      lcd %C&t@(1:1:1)Tiny Font
      lcd %C&i@(1:1:1)Inverted Font
 
+   o fixed OSC receiver (avoided stack overflow)
+
+
 MIDIbox NG V1.026
 ~~~~~~~~~~~~~~~~~
 
