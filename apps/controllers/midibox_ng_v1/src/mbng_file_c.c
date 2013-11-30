@@ -1651,10 +1651,12 @@ s32 parseEnc(u32 line, char *cmd, char *brkt)
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pin format for %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
 #endif
       } else {
-	if( values[0] >= 8 ||  (values[0] & 1) ||
-	    values[1] >= 8 || !(values[1] & 1) ) {
+	if( values[0] >= 8 || values[1] >= 8 ||
+	    ((values[0] & 6) != (values[1] & 6)) ||
+	    (values[0] == values[1]) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pins for %s n=%d ... %s=%s (expecting 0:1, 2:3, 4:5 or 6:7)\n", line, cmd, num, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid pins for %s n=%d ... %s=%s\n", line, cmd, num, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d]        (expecting 0:1, 1:0, 2:3, 3:2, 4:5, 5:4, 6:7 or 7:6)\n", line);
 #endif
 	  return -1; // invalid parameter
 	} else {
