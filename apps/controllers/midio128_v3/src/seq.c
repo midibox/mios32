@@ -279,7 +279,6 @@ static s32 SEQ_PlayOffEvents(void)
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
-  return 0;
   // send Note Off to all channels
   // TODO: howto handle different ports?
   // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
