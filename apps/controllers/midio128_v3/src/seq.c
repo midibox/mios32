@@ -279,6 +279,7 @@ static s32 SEQ_PlayOffEvents(void)
   // play "off events"
   SEQ_MIDI_OUT_FlushQueue();
 
+  return 0;
   // send Note Off to all channels
   // TODO: howto handle different ports?
   // TODO: should we also send Note Off events? Or should we trace Note On events and send Off if required?
@@ -513,8 +514,8 @@ s32 SEQ_PauseEnabled(void)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_Tick(u32 bpm_tick)
 {
-  // send MIDI clock on each 16th tick (since we are working at 384ppqn)
-  if( (bpm_tick % 16) == 0 )
+  // send MIDI clock depending on ppqn
+  if( (bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0 )
     MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
 
   if( !end_of_file && bpm_tick >= next_prefetch ) {

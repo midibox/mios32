@@ -8,6 +8,8 @@ MIDIO128 V3.017
      or "All" is used. It's ensured that messages are only sent once if multiple
      router nodes forward to the same destination port.
 
+   o corrected MIDI clock output
+
 
 MIDIO128 V3.016
 ~~~~~~~~~~~~~~~
