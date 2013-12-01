@@ -5,6 +5,20 @@ Wishlist for future features
 
 -> see bottom of this document
 
+
+MIDIboxSEQ V4.080
+~~~~~~~~~~~~~~~~~
+
+   o SELECT+PASTE transfers the parameter layer, which was active during COPY, to
+     the current parameter layer.
+     If a drum track is selected, it's doing this for the trigger layer (and not
+     for the parameter layer).
+
+   o SELECT+CLEAR clears only the current parameter layer.
+     If a drum track is selected, it's doing this for the trigger layer (and not
+     for the parameter layer)
+
+
 MIDIboxSEQ V4.079
 ~~~~~~~~~~~~~~~~~
 

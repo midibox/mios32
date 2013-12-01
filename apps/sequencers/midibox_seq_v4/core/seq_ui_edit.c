@@ -710,7 +710,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //        Select the steps which should be  controlled by the ALL function:        
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
-  if( show_edit_config_page ) {
+  if( !edit_mode && show_edit_config_page ) {
     const char datawheel_mode_str[DATAWHEEL_MODE_NUM][11] = {
       " Cursor   ",
       " StepView ",
