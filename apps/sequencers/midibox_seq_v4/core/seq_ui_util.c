@@ -628,9 +628,8 @@ static s32 PASTE_Track(u8 track)
       }
 
       // copy parameter type
-      u8 cc = SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer;
-      seq_par_layer_type_t par_type = copypaste_cc[cc];
-      SEQ_CC_Set(track, cc, (u8)par_type);
+      seq_par_layer_type_t par_type = copypaste_cc[SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer];
+      SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, (u8)par_type);
       SEQ_CC_LinkUpdate(track);
 
       // some additional operations depending on parameter type
