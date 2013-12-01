@@ -42,16 +42,16 @@ EVENT_SENDER   id=  3 \
 
 
 # Special Query for Mackie Control
-EVENT_RECEIVER id=  3  fwd_id=SENDER:3 \
+EVENT_RECEIVER id=  4  fwd_id=SENDER:4 \
                type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
-EVENT_SENDER   id=  3 \
+EVENT_SENDER   id=  4 \
                type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
 
 # LCD Messages
 # Note: we use ^txt56 instead of ^txt, so that the cursor will jump 
 #       to the next line after the 56th character has been reached
 #       Use map=1 to map the cursor positions over a 2x80 LCD
-EVENT_RECEIVER id=  4 \
+EVENT_RECEIVER id=  5 \
                type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x12 ^cursor ^txt56" \
 	       range=map1
 
@@ -69,7 +69,7 @@ MAP1   2  3  4  5  6  7  8 \
 # use this definition instead of the one above to print on a GLCD with small font (will work with a 240x64 LCD)
 # if multiple GLCDs are used, you could also use the normal font (&n)
 # not shown here: of course, it's possible to map to different cursor positions as well.
-#EVENT_RECEIVER id=  4 \
+#EVENT_RECEIVER id= 5 \
 #               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x12 ^cursor ^txt56" \
 #	       lcd_pos=1:3:1 label="&s"
 
@@ -303,14 +303,14 @@ EVENT_ENC    id= 9  type=CC  chn= 1 cc=0x3c  enc_mode=Inc00Speed_Dec40Speed
 MF n=1  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2001  config_port=USB3
 
 # on motorfader movements
-EVENT_MF  id= 1  fwd_id=MF:1  type=PitchBend  chn= 1  range=0:16383
-EVENT_MF  id= 2  fwd_id=MF:2  type=PitchBend  chn= 2  range=0:16383
-EVENT_MF  id= 3  fwd_id=MF:3  type=PitchBend  chn= 3  range=0:16383
-EVENT_MF  id= 4  fwd_id=MF:4  type=PitchBend  chn= 4  range=0:16383
-EVENT_MF  id= 5  fwd_id=MF:5  type=PitchBend  chn= 5  range=0:16383
-EVENT_MF  id= 6  fwd_id=MF:6  type=PitchBend  chn= 6  range=0:16383
-EVENT_MF  id= 7  fwd_id=MF:7  type=PitchBend  chn= 7  range=0:16383
-EVENT_MF  id= 8  fwd_id=MF:8  type=PitchBend  chn= 8  range=0:16383
+EVENT_MF  id= 1  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id= 2  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id= 3  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id= 4  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id= 5  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id= 6  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id= 7  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id= 8  type=PitchBend  chn= 8  range=0:16383
 
 # on touchsensor event (first id has been specified in the MF configuration above)
 EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127
