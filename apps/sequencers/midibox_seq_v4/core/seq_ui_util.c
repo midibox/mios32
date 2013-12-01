@@ -75,6 +75,8 @@ static u16 copypaste_par_steps;
 static u8 copypaste_trg_layers;
 static u16 copypaste_trg_steps;
 static u8 copypaste_num_instruments;
+static u8 copypaste_selected_par_layer;
+static u8 copypaste_selected_instrument;
 
 static u8 undo_buffer_filled = 0;
 static u8 undo_track = 0;
@@ -561,6 +563,8 @@ static s32 COPY_Track(u8 track)
   copypaste_trg_layers = SEQ_TRG_NumLayersGet(track);
   copypaste_trg_steps = SEQ_TRG_NumStepsGet(track);
   copypaste_num_instruments = SEQ_PAR_NumInstrumentsGet(track);
+  copypaste_selected_par_layer = ui_selected_par_layer;
+  copypaste_selected_instrument = ui_selected_instrument;
 
   // notify that copy&paste buffer is filled
   copypaste_buffer_filled = 1;
@@ -582,29 +586,6 @@ static s32 PASTE_Track(u8 track)
   if( !copypaste_buffer_filled )
     return CLEAR_Track(track);
 
-  //seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
-
-  // take over mode - but only if it has been changed so that new partitioning is required!
-  if( SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE) != copypaste_cc[SEQ_CC_MIDI_EVENT_MODE] ) {
-    SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
-    SEQ_CC_LinkUpdate(track);
-    SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
-    SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
-  }
-
-  // copy CCs
-  if( seq_core_options.PASTE_CLR_ALL ) {
-    int i;
-
-    for(i=0; i<128; ++i)
-	SEQ_CC_Set(track, i, copypaste_cc[i]);
-  } else {
-    // we have to copy the 48 lower CCs to avoid garbage output
-    int i;
-    for(i=0; i<48; ++i)
-      SEQ_CC_Set(track, i, copypaste_cc[i]);
-  }
-
   // determine begin/end boundary
   int step_begin = copypaste_begin;
   int step_end = copypaste_end;
@@ -615,40 +596,118 @@ static s32 PASTE_Track(u8 track)
     step_begin = tmp;
   }
 
-  // copy layers from buffer
-  int num_instruments = SEQ_PAR_NumInstrumentsGet(track);
-  int num_layers = SEQ_PAR_NumLayersGet(track);
-  int num_steps = SEQ_PAR_NumStepsGet(track);
-  for(instrument=0; instrument<num_instruments && instrument < copypaste_num_instruments; ++instrument) {
-    for(layer=0; layer<num_layers && layer<copypaste_par_layers; ++layer) {
+  int num_par_instruments = SEQ_PAR_NumInstrumentsGet(track);
+  int num_par_layers = SEQ_PAR_NumLayersGet(track);
+  int num_par_steps = SEQ_PAR_NumStepsGet(track);
+  int num_trg_instruments = SEQ_TRG_NumInstrumentsGet(track);
+  int num_trg_layers = SEQ_TRG_NumLayersGet(track);
+  int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+
+  // paste only layer?
+  if( seq_ui_button_state.SELECT_PRESSED ) {
+    u8 event_mode = SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_MIDI_EVENT_MODE);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      for(layer=0; layer<num_trg_layers && layer<copypaste_trg_layers; ++layer) {
+	int step_offset = ui_selected_step;
+	for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+	  if( step_offset < num_trg_steps ) {
+	    u8 step8_ix = (copypaste_selected_instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
+	    u8 step_mask = (1 << (step&7));
+	    SEQ_TRG_Set(track, step_offset, layer, ui_selected_instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+	  }
+	}
+      }
+    } else {
+      u8 instrument = 0;
       int step_offset = ui_selected_step;
       for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
-	if( step_offset < num_steps ) {
-	  u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + layer * copypaste_par_steps + step;
-	  SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
+	if( step_offset < num_par_steps ) {
+	  u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + copypaste_selected_par_layer * copypaste_par_steps + step;
+	  SEQ_PAR_Set(track, step_offset, ui_selected_par_layer, instrument, copypaste_par_layer[step_ix]);
+	}
+      }
+
+      // copy parameter type
+      u8 cc = SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer;
+      seq_par_layer_type_t par_type = copypaste_cc[cc];
+      SEQ_CC_Set(track, cc, (u8)par_type);
+      SEQ_CC_LinkUpdate(track);
+
+      // some additional operations depending on parameter type
+      if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord ) {
+	// set gates (don't clear already enabled gates)
+	u8 trg_gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
+	if( trg_gate_assignment >= 1 ) {
+	  trg_gate_assignment -= 1;
+
+	  int step_offset = ui_selected_step;
+	  for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+	    if( step_offset < num_trg_steps ) {
+	      u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + trg_gate_assignment * (copypaste_trg_steps/8) + (step/8);
+	      u8 step_mask = (1 << (step&7));
+	      if( copypaste_trg_layer[step8_ix] & step_mask ) {
+		SEQ_TRG_GateSet(track, step_offset, instrument, 1);
+	      }
+	    }
+	  }
 	}
       }
     }
-  }
+  } else {
 
-  num_instruments = SEQ_TRG_NumInstrumentsGet(track);
-  num_layers = SEQ_TRG_NumLayersGet(track);
-  num_steps = SEQ_TRG_NumStepsGet(track);
-  for(instrument=0; instrument<num_instruments && instrument < copypaste_num_instruments; ++instrument) {
-    for(layer=0; layer<num_layers && layer<copypaste_trg_layers; ++layer) {
-      int step_offset = ui_selected_step;
-      for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
-	if( step_offset < num_steps ) {
-	  u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
-	  u8 step_mask = (1 << (step&7));
-	  SEQ_TRG_Set(track, step_offset, layer, instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+    //seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+
+    // take over mode - but only if it has been changed so that new partitioning is required!
+    if( SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE) != copypaste_cc[SEQ_CC_MIDI_EVENT_MODE] ) {
+      SEQ_CC_Set(track, SEQ_CC_MIDI_EVENT_MODE, copypaste_cc[SEQ_CC_MIDI_EVENT_MODE]);
+      SEQ_CC_LinkUpdate(track);
+      SEQ_PAR_TrackInit(track, copypaste_par_steps, copypaste_par_layers, copypaste_num_instruments);
+      SEQ_TRG_TrackInit(track, copypaste_trg_steps, copypaste_trg_layers, copypaste_num_instruments);
+    }
+
+    // copy CCs
+    if( seq_core_options.PASTE_CLR_ALL ) {
+      int i;
+
+      for(i=0; i<128; ++i)
+	SEQ_CC_Set(track, i, copypaste_cc[i]);
+    } else {
+      // we have to copy the 48 lower CCs to avoid garbage output
+      int i;
+      for(i=0; i<48; ++i)
+	SEQ_CC_Set(track, i, copypaste_cc[i]);
+    }
+
+    // copy layers from buffer
+    for(instrument=0; instrument<num_par_instruments && instrument < copypaste_num_instruments; ++instrument) {
+      for(layer=0; layer<num_par_layers && layer<copypaste_par_layers; ++layer) {
+	int step_offset = ui_selected_step;
+	for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
+	  if( step_offset < num_par_steps ) {
+	    u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + layer * copypaste_par_steps + step;
+	    SEQ_PAR_Set(track, step_offset, layer, instrument, copypaste_par_layer[step_ix]);
+	  }
 	}
       }
     }
-  }
 
-  // copy track name
-  memcpy((u8 *)seq_core_trk[track].name, (u8 *)copypaste_trk_name, 81);
+    // copy triggers from buffer
+    for(instrument=0; instrument<num_trg_instruments && instrument < copypaste_num_instruments; ++instrument) {
+      for(layer=0; layer<num_trg_layers && layer<copypaste_trg_layers; ++layer) {
+	int step_offset = ui_selected_step;
+	for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+	  if( step_offset < num_trg_steps ) {
+	    u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
+	    u8 step_mask = (1 << (step&7));
+	    SEQ_TRG_Set(track, step_offset, layer, instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+	  }
+	}
+      }
+    }
+
+    // copy track name
+    memcpy((u8 *)seq_core_trk[track].name, (u8 *)copypaste_trk_name, 81);
+  }
 
 
   return 0; // no error
@@ -659,14 +718,31 @@ static s32 PASTE_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 CLEAR_Track(u8 track)
 {
-  // copy preset
-  u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
-  u8 all_triggers_cleared = 0;
-  u8 init_assignments = 0;
-  SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
+  // clear only layer?
+  if( seq_ui_button_state.SELECT_PRESSED ) {
+    u8 event_mode = SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_MIDI_EVENT_MODE);
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      int num_trg_layers = SEQ_TRG_NumLayersGet(track);
+      int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+      int layer, step;
+      for(layer=0; layer<num_trg_layers; ++layer) {
+	for(step=0; step<num_trg_steps; ++step) {
+	  SEQ_TRG_Set(track, step, layer, ui_selected_instrument, 0);
+	}
+      }
+    } else {
+      SEQ_LAYER_CopyParLayerPreset(track, ui_selected_par_layer);
+    }
+  } else {
+    // copy preset
+    u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
+    u8 all_triggers_cleared = 0;
+    u8 init_assignments = 0;
+    SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
 
-  // clear all triggers
-  memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
+    // clear all triggers
+    memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
+  }
 
   return 0; // no error
 }
