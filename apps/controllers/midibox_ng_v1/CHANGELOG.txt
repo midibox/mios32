@@ -4,9 +4,9 @@ MIDIbox NG V1.027
 ~~~~~~~~~~~~~~~~~
 
    o .NGR: added "set_active" command. It can be alternatively used
-     for the bank mechanism to activate/deactivate events.
-     Use this command if you need a more flexible handling (e.g. same events
-     available in several banks)
+     instead of the bank mechanism to activate/deactivate events,
+     e.g. if the same events should be activated in multiple banks under
+     certain conditions.
      A demo can be found under cfg/tests/multibnk.*
 
    o it's now possible to set a static forward value independent from the
@@ -29,6 +29,8 @@ MIDIbox NG V1.027
      lcd %C&i@(1:1:1)Inverted Font
 
    o fixed OSC receiver (avoided stack overflow)
+
+   o various minor bugfixes
 
 
 MIDIbox NG V1.026
