@@ -27,7 +27,7 @@
 // Help Macro
 /////////////////////////////////////////////////////////////////////////////
 #define PIN_SET(port, pin_mask, b) { if( b ) port->BSRRL = pin_mask; else port->BSRRH = pin_mask; }
-#define PIN_GET(port, pin_mask)    ((port->IDR & (1 << pin_mask)) ? 1 : 0)
+#define PIN_GET(port, pin_mask)    ((port->IDR & (pin_mask)) ? 1 : 0)
 
 
 /////////////////////////////////////////////////////////////////////////////
