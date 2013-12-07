@@ -226,7 +226,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	u32 any_mismatches_found = 0;
 	for(address=0; address<size; address+=BUFFER_SIZE) {
 	  MIOS32_MIDI_SendDebugMessage("Checking block 0x%04x\n", address);
-	  for(i=0; i<BUFFER_SIZE; ++i)
+	  for(i=0; i<BUFFER_SIZE/2; ++i)
 	    rd_buffer_16[i] = 0xeeee;
 
 	  if( (status=MIOS32_IIC_BS_Read(bs, address, (u8 *)rd_buffer_16, BUFFER_SIZE)) < 0 ) {

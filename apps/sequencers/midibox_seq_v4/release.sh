@@ -25,7 +25,7 @@ mkdir -p $RELEASE_DIR/hwcfg/tk
 cp hwcfg/tk/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/tk
 mkdir -p $RELEASE_DIR/hwcfg/wilba
 cp hwcfg/wilba/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/wilba
-cp hwcfg/wilba_tpd/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg_tpd/wilba
+cp hwcfg/wilba_tpd/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/wilba_tpd
 cp hwcfg/README.txt $RELEASE_DIR/hwcfg
 
 ###############################################################################

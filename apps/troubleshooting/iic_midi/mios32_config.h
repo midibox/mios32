@@ -20,24 +20,25 @@
 
 // Interface and RI_N port configuration
 // _ENABLED:   0 = interface disabled
-//             1 = interface enabled
-//             2 = interface enabled, check RI_N pin instead of polling receive status
+//             1 = interface enabled, don't poll receive status (OUT only)
+//             2 = interface enabled, poll receive status
+//             3 = interface enabled, check RI_N pin instead of polling receive status
 // _RI_N_PORT: Port to which RI_N is connected
 // _RI_N_PIN:  pin to which RI_N is connected
-#define MIOS32_IIC_MIDI0_ENABLED 1
-#define MIOS32_IIC_MIDI0_RI_N_PORT  GPIOC        // not used due to mode #1
+#define MIOS32_IIC_MIDI0_ENABLED 2
+#define MIOS32_IIC_MIDI0_RI_N_PORT  GPIOC        // not used due to mode #2
 #define MIOS32_IIC_MIDI0_RI_N_PIN   GPIO_Pin_0
 
-#define MIOS32_IIC_MIDI1_ENABLED 1
-#define MIOS32_IIC_MIDI1_RI_N_PORT  GPIOC        // not used due to mode #1
+#define MIOS32_IIC_MIDI1_ENABLED 2
+#define MIOS32_IIC_MIDI1_RI_N_PORT  GPIOC        // not used due to mode #2
 #define MIOS32_IIC_MIDI1_RI_N_PIN   GPIO_Pin_1
 
-#define MIOS32_IIC_MIDI2_ENABLED 1
-#define MIOS32_IIC_MIDI2_RI_N_PORT  GPIOC        // not used due to mode #1
+#define MIOS32_IIC_MIDI2_ENABLED 2
+#define MIOS32_IIC_MIDI2_RI_N_PORT  GPIOC        // not used due to mode #2
 #define MIOS32_IIC_MIDI2_RI_N_PIN   GPIO_Pin_2
 
-#define MIOS32_IIC_MIDI3_ENABLED 1
-#define MIOS32_IIC_MIDI3_RI_N_PORT  GPIOC        // not used due to mode #1
+#define MIOS32_IIC_MIDI3_ENABLED 2
+#define MIOS32_IIC_MIDI3_RI_N_PORT  GPIOC        // not used due to mode #2
 #define MIOS32_IIC_MIDI3_RI_N_PIN   GPIO_Pin_3
 
 
