@@ -87,6 +87,9 @@ s32 MIOS32_LCD_Init(u32 mode)
     mios32_lcd_parameters.num_y = *lcd_par_num_y;
     u8 *lcd_par_width = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_WIDTH;
     mios32_lcd_parameters.width = *lcd_par_width;
+    // extra: if width == 255, increase to 256 (255 is very uncommon, and 256 can't be configured due to byte limitation)
+    if( mios32_lcd_parameters.width == 255 )
+      mios32_lcd_parameters.width = 256; // in future, we could also provide additional codings for higher widths, e.g. 254 for 320 pixel
     u8 *lcd_par_height = (u8 *)MIOS32_SYS_ADDR_LCD_PAR_HEIGHT;
     mios32_lcd_parameters.height = *lcd_par_height;
   }
