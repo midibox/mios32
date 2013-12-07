@@ -27,9 +27,6 @@
 #include "app.h"
 
 
-// from mios32_iic
-extern volatile u32 MIOS32_IIC_unexpected_event;
-
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -193,7 +190,7 @@ static s32 TERMINAL_Ping(u8 iic_midi, void *_output_function, u8 success_message
       MIOS32_MIDI_SendDebugMessage("IIC%d: MIOS32_IIC_Transfer failed with %d!\n", iic_midi+1, status);
     else {
       if( (status=MIOS32_IIC_TransferWait(MIOS32_IIC_MIDI_PORT)) < 0 )
-	MIOS32_MIDI_SendDebugMessage("IIC%d: MIOS32_IIC_TransferWait failed with %d (event: %02x)!\n", iic_midi+1, status, MIOS32_IIC_unexpected_event);
+	MIOS32_MIDI_SendDebugMessage("IIC%d: MIOS32_IIC_TransferWait failed with %d!\n", iic_midi+1, status);
       else {
 	MIOS32_IIC_TransferFinished(MIOS32_IIC_MIDI_PORT);
 	if( success_message ) {
