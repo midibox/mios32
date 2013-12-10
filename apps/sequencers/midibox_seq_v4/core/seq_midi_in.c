@@ -203,6 +203,7 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = 1;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = SEQ_MIDI_IN_EXT_CTRL_PC_MODE_OFF;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = 128;
+  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS] = 128;
 
   seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
   seq_midi_in_rec_port = DEFAULT; // All ports
@@ -246,6 +247,7 @@ const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl)
     "NRPNs",
     "PrgChange Mode",
     "Mutes(first CC)",
+    "Steps(first CC)",
   };
 
   if( ext_ctrl >= SEQ_MIDI_IN_EXT_CTRL_NUM )
@@ -1000,6 +1002,16 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
       } else {
 	seq_core_trk_muted &= ~(1 << track);
       }
+      portEXIT_CRITICAL();      
+    }
+  }
+
+  {
+    int step_cc = seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS];
+    if( step_cc < 128 && cc >= step_cc && cc < (step_cc+SEQ_CORE_NUM_TRACKS) ) {
+      u8 track = cc - step_cc;
+      portENTER_CRITICAL();
+      SEQ_CORE_SetTrkPos(track, value, 0); // don't scale, otherwise manual trigger won't work with satisfying results...
       portEXIT_CRITICAL();      
     }
   }

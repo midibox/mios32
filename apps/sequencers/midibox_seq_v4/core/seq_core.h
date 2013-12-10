@@ -190,12 +190,13 @@ typedef union {
   u16 ALL;
   struct {
     u8 value;                // clock divider value
-    u8 flags:6;              // combines all flags (for CC access)
+    u8 flags;                // combines all flags (for CC access)
   };
   struct {
     u8 value_dummy;          // clock divider value
-    u8 SYNCH_TO_MEASURE:1; // synch to globally selectable measure
-    u8 TRIPLETS:1;     // play triplets
+    u8 SYNCH_TO_MEASURE:1;   // synch to globally selectable measure
+    u8 TRIPLETS:1;           // play triplets
+    u8 MANUAL:1;             // clock to next step only on manual requests (or via Step CC)
   };
 } seq_core_clkdiv_t;
 
@@ -238,6 +239,7 @@ extern s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t
 extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength);
 
 extern s32 SEQ_CORE_ResetTrkPosAll(void);
+extern s32 SEQ_CORE_SetTrkPos(u8 track, u8 value, u8 scale_value);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks);

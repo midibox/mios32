@@ -511,10 +511,12 @@ s32 SEQ_CORE_Handler(void)
 	  }
 	}
 
+	if( is_prefetch ) {
 #if 0
-	if( is_prefetch )
+
 	  DEBUG_MSG("[SEQ_CORE:%u] prefetching finished, saved %d ticks\n", SEQ_BPM_TickGet(), bpm_tick_target-SEQ_BPM_TickGet());
 #endif
+	}
       }
     }
   } while( again && num_loops < 10 );
@@ -811,6 +813,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       u8 skip_this_step = 0;
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
+
       if( next_step_event ) {
 
 	{
@@ -840,6 +843,9 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      t->step = t->manual_step;
 	      t->step_saved = t->manual_step;
 	      t->arp_pos = 0;
+	    } else if( tcc->clkdiv.MANUAL ) {
+	      // if clkdiv MANUAL mode: step was not requested, skip it!
+	      skip_this_step = 1;
 	    } else {
 	      // determine next step depending on direction mode
 	      if( !t->state.FIRST_CLK && inc_step )
@@ -932,7 +938,9 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	  skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	  if( !skip_this_step ) { // if not already skipped (e.g. MANUAL mode)
+	    skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	  }
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 
@@ -1379,6 +1387,47 @@ s32 SEQ_CORE_ResetTrkPosAll(void)
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc)
     SEQ_CORE_ResetTrkPos(track, t, tcc);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets the track position for the given track (optionally scaled over 7bit)
+// the manual flag will set the step immediately, and play it
+/////////////////////////////////////////////////////////////////////////////
+extern s32 SEQ_CORE_SetTrkPos(u8 track, u8 value, u8 scale_value)
+{
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return -1; // invalid track
+
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  // scale CC value over track length
+  // selectable steps: 128 maximum
+  int step = value;
+  if( scale_value ) {
+    int length = (int)tcc->length + 1;
+    if( length > 128 )
+      length = 128;
+    step = ((step * length) / 128);
+  }
+
+  if( !SEQ_BPM_IsRunning() ) {
+    // reset track position
+    SEQ_CORE_ResetTrkPos(track, t, tcc);
+
+    // change step
+    t->step = step;
+    t->step_saved = t->step;
+  } else {
+    // request next step
+    t->manual_step = step;
+    t->state.MANUAL_STEP_REQ = 1;
+
+    if( tcc->clkdiv.MANUAL )
+      t->state.FIRST_CLK = 1; // change to step immediately (not synchronized)
+  }
 
   return 0; // no error
 }
@@ -1860,22 +1909,9 @@ s32 SEQ_CORE_ManualTrigger(u8 step)
   MIOS32_IRQ_Disable();
 
   u8 track;
-  seq_core_trk_t *t = &seq_core_trk[0];
-  seq_cc_trk_t *tcc = &seq_cc_trk[0];
-  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     if( SEQ_UI_IsSelectedTrack(track) ) {
-      if( !SEQ_BPM_IsRunning() ) {
-	// reset track position
-	SEQ_CORE_ResetTrkPos(track, t, tcc);
-
-	// change step
-	t->step = step;
-	t->step_saved = t->step;
-      } else {
-	// request next step
-	t->manual_step = step;
-	t->state.MANUAL_STEP_REQ = 1;
-      }
+      SEQ_CORE_SetTrkPos(track, step, 0);
     }
   }
 

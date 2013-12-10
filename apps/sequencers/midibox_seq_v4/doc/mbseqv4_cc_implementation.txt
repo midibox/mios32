@@ -183,6 +183,7 @@ NRPN LSB|   Range   | Default | Description
 0x2f/ 47|   0 - 3   |       0 | Clock Divider Flags:
         |           |         |   Bit 0: Synch to Measure
         |           |         |   Bit 1: Triplets
+        |           |         |   Bit 2: Manual (Clock the next step only on manual requests (or via Step CC)
 --------+-----------+---------+------------------------------------------------
 0x30/ 48|   0 - 15  |       0 | Transpose Semitones
         |           |         |     8: -8 semitones
