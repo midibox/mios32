@@ -50,8 +50,11 @@
 // extra CC handling (we listen to 16 CCs)
 #define SEQ_MIDI_IN_EXT_CTRL_MUTES         16
 
+// extra CC handling (we listen to 16 CCs)
+#define SEQ_MIDI_IN_EXT_CTRL_STEPS         17
+
 // total number of external controllers
-#define SEQ_MIDI_IN_EXT_CTRL_NUM           17
+#define SEQ_MIDI_IN_EXT_CTRL_NUM           18
 
 
 // program change modes

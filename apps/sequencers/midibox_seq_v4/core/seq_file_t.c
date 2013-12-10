@@ -289,6 +289,8 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    if( flags.CFG ) tcc->clkdiv.value = value;
 	  } else if( strcmp(parameter, "Triplets") == 0 ) {
 	    if( flags.CFG ) tcc->clkdiv.TRIPLETS = value;
+	  } else if( strcmp(parameter, "ManualClock") == 0 ) {
+	    if( flags.CFG ) tcc->clkdiv.MANUAL = value;
 	  } else if( strcmp(parameter, "SynchToMeasure") == 0 ) {
 	    if( flags.CFG ) tcc->clkdiv.SYNCH_TO_MEASURE = value;
 	  } else if( strcmp(parameter, "Length") == 0 ) {
@@ -574,6 +576,9 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "Triplets %d (%s)\n", tcc->clkdiv.TRIPLETS, tcc->clkdiv.TRIPLETS ? "yes" : "no");
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "ManualClock %d (%s)\n", tcc->clkdiv.MANUAL, tcc->clkdiv.MANUAL ? "yes" : "no");
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "SynchToMeasure %d (%s)\n", tcc->clkdiv.SYNCH_TO_MEASURE, tcc->clkdiv.SYNCH_TO_MEASURE ? "yes" : "no");

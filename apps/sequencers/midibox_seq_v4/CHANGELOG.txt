@@ -18,6 +18,31 @@ MIDIboxSEQ V4.080
      If a drum track is selected, it's doing this for the trigger layer (and not
      for the parameter layer)
 
+   o it's now possible to control the track steps with CCs.
+     Each track has a dedicated CC which has to be configured in the
+     MIDI->Ext.Ctrl page.
+
+   o it's now possible to turn off the track clock by enabling the new "Manual"
+     mode in the DIVIDER page. Once enabled, a step will only be played if:
+     - manually triggered in the MANUAL page
+     - set with the new CC based step control feature (MIDI->Ext.Ctrl page)
+
+     Use cases:
+     - predefined MIDI events, stored in the track layers, should be manually
+       triggered (and not sequenced).
+       E.g. in conjunction with a sampler, you could set each step to a note
+       which "fires" a certain sample. In addition, you can fire CCs,
+       Program Change, Aftertouch etc. from the MANUAL page.
+
+     - the track should be controlled from an analog modulation source (e.g. a
+       sawwave from a LFO). MIDIbox SEQ doesn't provide analog inputs, so that
+       an external CV-to-MIDI interface is required.
+       Note that this interface also has to scale the CC value over the desired
+       step range. If the modulation source should sweep over step 1..16, then
+       the CV-to-MIDI interface has to scale down the converted value to the
+       CC value range 0..15!
+
+
 
 MIDIboxSEQ V4.079
 ~~~~~~~~~~~~~~~~~
