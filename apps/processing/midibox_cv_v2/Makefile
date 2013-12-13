@@ -43,7 +43,8 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/components/MbCvMidiVoice.cpp \
 		    src/components/MbCvSeq.cpp \
 		    src/components/MbCvSeqBassline.cpp \
-		    src/components/MbCvTables.cpp
+		    src/components/MbCvTables.cpp \
+		    src/components/MbCvScope.cpp
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
