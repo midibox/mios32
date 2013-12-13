@@ -37,6 +37,8 @@ void MbCvScope::init(u8 _displayNum)
 {
     displayNum = _displayNum;
 
+    sprintf(scopeLabel, "CV%d", displayNum % 10);
+
     oversamplingFactor = 8;
     updatePeriod = 5000;
     triggerLevel = 0;
@@ -58,6 +60,9 @@ void MbCvScope::clear(void)
     oversamplingCounter = 0;
     oversamplingValue = 0;
 
+    capturedMinValue = minValue = MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE;
+    capturedMaxValue = maxValue = MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE;
+
     u8 *bufferPtr = (u8 *)&displayBuffer[0];
     for(int i=0; i<MBCV_SCOPE_DISPLAY_BUFFER_SIZE; ++i)
         *(bufferPtr++) = 0x40; // mid value
@@ -69,6 +74,13 @@ void MbCvScope::clear(void)
 void MbCvScope::addValue(u32 timestamp, s16 value)
 {
     bool ongoingCapture = displayBufferHead < MBCV_SCOPE_DISPLAY_BUFFER_SIZE;
+
+    if( ongoingCapture ) {
+        if( value > maxValue )
+            maxValue = value;
+        if( value < minValue )
+            minValue = value;
+    }
 
     if( !ongoingCapture ) {
         bool reset = false;
@@ -84,6 +96,9 @@ void MbCvScope::addValue(u32 timestamp, s16 value)
             lastUpdateTimestamp = timestamp;
             displayBufferHead = 0;
             ongoingCapture = 1;
+
+            minValue = MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE;
+            maxValue = MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE;
         }
     }
 
@@ -110,6 +125,9 @@ void MbCvScope::addValue(u32 timestamp, s16 value)
                 displayUpdateReq = true;
             }
         }
+
+        capturedMinValue = minValue;
+        capturedMaxValue = maxValue;
     }
 }
 
@@ -150,9 +168,35 @@ void MbCvScope::tick(void)
             }
         }
 
+        MIOS32_LCD_CursorSet(0, 7);
+        MIOS32_LCD_PrintFormattedString("%-3s ", scopeLabel);
+
+        if( capturedMinValue == MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE ) {
+            MIOS32_LCD_PrintFormattedString("Min:???%%");
+        } else {
+            u32 percent = ((capturedMinValue + 0x8000) * 100) / 65535;
+            MIOS32_LCD_PrintFormattedString("Min:%3d%%", percent);
+        }
+
+        if( capturedMaxValue == MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE ) {
+            MIOS32_LCD_PrintFormattedString(" Max:???%%");
+        } else {
+            u32 percent = ((capturedMaxValue + 0x8000) * 100) / 65535;
+            MIOS32_LCD_PrintFormattedString(" Max:%3d%%", percent);
+        }
+
         // change back to original display
         MIOS32_LCD_DeviceSet(prevDevice);
     }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// set label of scope channel
+/////////////////////////////////////////////////////////////////////////////
+void MbCvScope::setLabel(char *label)
+{
+    strncpy(scopeLabel, label, 3);
 }
 
 

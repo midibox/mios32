@@ -19,6 +19,8 @@
 #include "MbCv.h"
 
 #define MBCV_SCOPE_DISPLAY_BUFFER_SIZE 128
+#define MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE    32767
+#define MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE   -32768
 
 class MbCvScope
 {
@@ -40,6 +42,9 @@ public:
 
     // Prints the display content on screen (should be called from a low-prio task!)    
     void tick(void);
+
+    // set label of scope channel
+    void setLabel(char *label);
 
     // control oversampling
     void setOversamplingFactor(u8 factor);
@@ -79,6 +84,15 @@ protected:
     u32 lastUpdateTimestamp;
     u32 updatePeriod;
 
+    // scope label
+    char scopeLabel[4];
+
+    // statistics
+    s16 minValue;
+    s16 capturedMinValue;
+    s16 maxValue;
+    s16 capturedMaxValue;
+    
 };
 
 #endif /* _MB_CV_SCOPE_H */
