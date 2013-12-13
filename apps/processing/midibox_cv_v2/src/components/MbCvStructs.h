@@ -29,6 +29,9 @@
 
 #define CV_PATCH_SIZE        0x400
 
+#define CV_SCOPE_NUM          4 // 4 scopes
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

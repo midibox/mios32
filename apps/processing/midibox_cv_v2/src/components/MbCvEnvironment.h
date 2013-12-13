@@ -22,6 +22,7 @@
 //#include "MbCvSysEx.h"
 #include "MbCvClock.h"
 #include "MbCvPatch.h"
+#include "MbCvScope.h"
 
 class MbCvEnvironment
 {
@@ -44,7 +45,11 @@ public:
 
     // sound patch
     MbCvPatch mbCvPatch;
-    
+
+    // instantiate the scopes for GLCD output
+    array<MbCvScope, CV_SCOPE_NUM> mbCvScope;
+    u8 scopeUpdateCtr;
+
     // sets the update factor
     void updateSpeedFactorSet(u8 _updateSpeedFactor);
 
@@ -54,6 +59,9 @@ public:
 
     // Should be called each mS from a thread, e.g. for synchronized patch changes
     void tick_1mS(void);
+
+    // Should be called each mS from a low-prio thread to update scope displays
+    void tickScopes(void);
 
     // speed factor compared to MBCVV2
     u8 updateSpeedFactor;
@@ -108,6 +116,9 @@ public:
     // last port and CV channels used for NRPN communication
     mios32_midi_port_t lastNrpnMidiPort;
     u16 lastNrpnCvChannels;
+
+    // global timestamp (incremented with each tick())
+    u32 timestamp;
 
 };
 

@@ -33,6 +33,9 @@
 /////////////////////////////////////////////////////////////////////////////
 MbCvEnvironment::MbCvEnvironment()
 {
+    // initialize global timestamp
+    timestamp = 0;
+
     // initialize NRPN address/values
     for(int i=0; i<16; ++i) {
         nrpnAddress[i] = 0;
@@ -59,6 +62,16 @@ MbCvEnvironment::MbCvEnvironment()
 
     // default content of copy buffer
     channelCopy(0, copyBuffer);
+
+    // scope assignments (starting from second GLCD!)
+    {
+        MbCvScope *scope = mbCvScope.first();
+        for(int i=0; i < mbCvScope.size; ++i, ++scope) {
+            scope->init(1 + i);
+        }
+
+        scopeUpdateCtr = 0;
+    }
 }
 
 
@@ -87,6 +100,9 @@ bool MbCvEnvironment::tick(void)
 {
     bool updateRequired = false;
 
+    // global timestamp
+    ++timestamp;
+
     // Tempo Clock
     mbCvClock.tick();
 
@@ -109,6 +125,16 @@ bool MbCvEnvironment::tick(void)
     for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s)) {
         if( s->tick(updateSpeedFactor) )
             updateRequired = true;
+    }
+
+    // Transfer values to scope
+    // we do this as a second step, so that it will be possible to map values
+    {
+        MbCvScope *scope = mbCvScope.first();
+        for(int i=0; i < mbCvScope.size; ++i, ++scope) {
+            s16 out = cvOut[i] - 0x8000; // TODO: map scopes to channels
+            scope->addValue(timestamp, out);
+        }
     }
 
     if( updateRequired ) {
@@ -154,6 +180,21 @@ void MbCvEnvironment::tick_1mS(void)
     // synchronized patch change?
     if( mbCvPatch.reqChangeAck )
         bankLoad(mbCvPatch.nextBankNum, mbCvPatch.nextPatchNum, true);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Should be called each mS from a low-prio thread to update scope displays
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::tickScopes(void)
+{
+    if( MIOS32_LCD_TypeIsGLCD() >= 1 ) {
+        // with each round we update another display
+        if( ++scopeUpdateCtr >= mbCvScope.size )
+            scopeUpdateCtr = 0;
+
+        mbCvScope[scopeUpdateCtr].tick();
+    }
 }
 
 

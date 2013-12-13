@@ -315,6 +315,9 @@ void APP_TASK_Period_1mS_LP(void)
   // call SCS handler
   SCS_Tick();
 
+  // CV Scopes
+  mbCvEnvironment.tickScopes();
+
   // MIDI In/Out monitor
   MIDI_PORT_Period1mS();
 
