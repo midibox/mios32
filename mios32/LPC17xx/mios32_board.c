@@ -1059,6 +1059,8 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
   // Although I assume that this can't cause an issue (because CS is only relevant when
   // the display gets a SCLK_0->SCLK_1 clock), I feel better when we ensure a proper CS state
   // after each MIOS32_BOARD_J15_SerDataShift call.
+  J15_PIN_SERLCD_SCLK_0;
+  J15_PIN_SERLCD_SCLK_0;
   J15_PIN_SERLCD_DATAOUT(0); 
 
   return 0; // no error
