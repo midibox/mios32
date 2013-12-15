@@ -116,6 +116,11 @@ public:
     // modulation matrix
     MbCvMod mbCvMod;
 
+    // scope parameters
+    u8 scopeSelect;
+    u8 scopeOversamplingFactor;
+    u8 scopeTriggerLevelPercent;
+
     // note handling
     void noteOn(u8 note, u8 velocity, bool bypassNotestack);
     void noteOff(u8 note, bool bypassNotestack);

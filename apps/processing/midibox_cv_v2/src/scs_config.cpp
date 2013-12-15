@@ -76,6 +76,7 @@ static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 //static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDecPM128(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 128); }
+static void stringDecPercent(u32 ix, u16 value, char *label)  { sprintf(label, "%3d%% ", value); }
 //static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
@@ -107,6 +108,15 @@ static void stringNote(u32 ix, u16 value, char *label)
     sprintf(label, "%s%d  ",
 	    noteTab[note],
 	    (int)octave-2);
+  }
+}
+
+static void stringScope(u32 ix, u16 value, char *label)
+{
+  if( value == 0 ) {
+    sprintf(label, "CV- ");
+  } else {
+    sprintf(label, "CV%d ", value);
   }
 }
 
@@ -612,6 +622,15 @@ static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, 
 static u16  aoutIfGet(u32 ix)              { return MBCV_MAP_IfGet(); }
 static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet((aout_if_t)value); }
 
+static u16  cvScopeGet(u32 ix)            { return env->mbCv[selectedCv].scopeSelect; }
+static void cvScopeSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeSelect = value; env->updateScopeParameters(); }
+
+static u16  cvScopeOversamplingGet(u32 ix)            { return env->mbCv[selectedCv].scopeOversamplingFactor; }
+static void cvScopeOversamplingSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeOversamplingFactor = value; env->updateScopeParameters(); }
+
+static u16  cvScopeTriggerLevelGet(u32 ix)            { return env->mbCv[selectedCv].scopeTriggerLevelPercent; }
+static void cvScopeTriggerLevelSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeTriggerLevelPercent = value; env->updateScopeParameters(); }
+
 static u16  routerNodeGet(u32 ix)             { return selectedRouterNode; }
 static void routerNodeSet(u32 ix, u16 value)  { selectedRouterNode = value; }
 
@@ -757,6 +776,13 @@ const scs_menu_item_t pageAOUT[] = {
   SCS_ITEM("le   ", 1, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
 };
 
+const scs_menu_item_t pageSCPE[] = {
+  SCS_ITEM(" CV ", 0, CV_SE_NUM-1,    cvGet,                  cvSet,                  selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Scpe", 0, CV_SCOPE_NUM,   cvScopeGet,             cvScopeSet,             selectNOP, stringScope, NULL),
+  SCS_ITEM("OSmp", 1, 255,            cvScopeOversamplingGet, cvScopeOversamplingSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("TLvl", 0, 100,            cvScopeTriggerLevelGet, cvScopeTriggerLevelSet, selectNOP, stringDecPercent, NULL),
+};
+
 const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Node", 0, MIDI_ROUTER_NUM_NODES-1,  routerNodeGet, routerNodeSet,selectNOP, stringDecP1, NULL),
   SCS_ITEM("SrcP", 0, MIDI_PORT_NUM_IN_PORTS-1, routerSrcPortGet, routerSrcPortSet,selectNOP, stringInPort, NULL),
@@ -799,6 +825,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("LFO  ", pageLFO),
   SCS_PAGE("ENV1 ", pageENV1),
   SCS_PAGE("AOUT ", pageAOUT),
+  SCS_PAGE("Scpe ", pageSCPE),
   SCS_PAGE("Rout ", pageROUT),
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),

@@ -39,6 +39,9 @@ public:
     // CV Output value (will be mapped in MbCvEnvironment::tick() !!!)
     array<u16, CV_SE_NUM> cvOut;
 
+    // CV Output meter values (with delayed dec)
+    array<u16, CV_SE_NUM> cvOutMeter;
+
     // CV Gates (will be mapped in MbCvEnvironment::tick() !!!)
     // up to 32 gates should be sufficient for future extensions? (currently we only use 8!)
     u32 cvGates;
@@ -62,6 +65,9 @@ public:
 
     // Should be called each mS from a low-prio thread to update scope displays
     void tickScopes(void);
+
+    // Should be called whenever the scope mapping has been changed
+    void updateScopeParameters(void);
 
     // speed factor compared to MBCVV2
     u8 updateSpeedFactor;

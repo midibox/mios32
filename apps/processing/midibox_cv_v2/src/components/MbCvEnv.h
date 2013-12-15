@@ -45,6 +45,9 @@ public:
     // requests to use accented parameters
     bool accentReq;
 
+protected:
+    u16 envInitialLevel;
+
 };
 
 #endif /* _MB_CV_ENV_H */

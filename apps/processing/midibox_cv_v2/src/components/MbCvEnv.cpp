@@ -66,11 +66,15 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
         restartReq = false;
         envState = MBCV_ENV_STATE_ATTACK;
         envDelayCtr = envDelay ? 1 : 0;
+        envInitialLevel = envWaveOut;
+        envCtr = 0;
     }
 
-    if( releaseReq ) {
+    if( releaseReq ) {        
         releaseReq = false;
         envState = MBCV_ENV_STATE_RELEASE;
+        envInitialLevel = envWaveOut;
+        envCtr = 0;
     }
 
     // if clock sync enabled: only increment on each 16th clock event
@@ -97,7 +101,7 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
             if( attack > 255 ) attack = 255; else if( attack < 0 ) attack = 0;
   
             u16 incrementer = mbCvEnvTable[attack] / (envModeFast ? 1 : updateSpeedFactor);
-            if( step(0x0000, 0xffff, incrementer, false) )
+            if( step(envInitialLevel, 0xffff, incrementer, false) )
                 envState = MBCV_ENV_STATE_DECAY;
         } break;
   
@@ -113,21 +117,27 @@ bool MbCvEnv::tick(const u8 &updateSpeedFactor)
   
                 // propagate sustain phase to trigger matrix
                 sustainPhase = true;
+
+                envInitialLevel = envWaveOut;
+                envCtr = 0;
             }
         } break;
   
         case MBCV_ENV_STATE_SUSTAIN:
             // always update sustain level
             envWaveOut = envSustain << 8;
+            envInitialLevel = envWaveOut;
+            envCtr = 0;
             break;
   
         case MBCV_ENV_STATE_RELEASE: {
+
             // the rate can be modulated
             s32 release = envRelease + (envRateModulation / 512);
             if( release > 255 ) release = 255; else if( release < 0 ) release = 0;
 
             u16 incrementer = mbCvEnvTable[release] / (envModeFast ? 1 : updateSpeedFactor);
-            if( step(envSustain << 8, 0x0000, incrementer, false) ) {
+            if( step(envInitialLevel, 0x0000, incrementer, false) ) {
                 if( envModeOneshot ) {
                     envState = MBCV_ENV_STATE_IDLE;
                 } else {

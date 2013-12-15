@@ -82,6 +82,7 @@ bool MbCvEnvMulti::tick(const u8 &updateSpeedFactor)
     if( releaseReq ) {
         releaseReq = false;
         envState = MBCV_ENV_STATE_RELEASE;
+
         if( envSustainStep && envSustainStep <= MBCV_ENV_MULTI_NUM_STEPS ) {
             envCurrentStep = envSustainStep - 1;
             envCtr = 0;

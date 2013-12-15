@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <aout.h>
+#include <glcd_font.h>
 #include "tasks.h"
 #include "app.h"
 #include "MbCvEnvironment.h"
@@ -25,6 +26,7 @@
 
 // include source of the SCS
 #include <scs.h>
+#include <scs_lcd.h>
 #include "scs_config.h"
 
 #include <seq_bpm.h>
@@ -151,8 +153,13 @@ extern "C" void APP_Init(void)
   MIDI_ROUTER_Init(0);
   MBCV_PATCH_Init(0);
   UIP_TASK_Init(0);
+
   SCS_Init(0);
   SCS_CONFIG_Init(0);
+
+  if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 )
+    SCS_LCD_OffsetYSet(6);
+
   TERMINAL_Init(0);
   MIDIMON_Init(0);
   MBCV_FILE_Init(0);
@@ -310,13 +317,33 @@ extern void CV_TIMER_SE_Update(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_TASK_Period_1mS_LP(void)
 {
+  static u8 clear_lcd = 1;
   static u16 performance_print_ctr = 0;
+
+  if( clear_lcd ) {
+    clear_lcd = 0;
+    MIOS32_LCD_Clear();
+  }
 
   // call SCS handler
   SCS_Tick();
 
   // CV Scopes
   mbCvEnvironment.tickScopes();
+
+  // CV Bars (currently only for SSD1306)
+  if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
+    MIOS32_LCD_DeviceSet(0);
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); // memo: 28 icons, 14 used, icon size: 8x32
+
+    u16 *outMeter = mbCvEnvironment.cvOutMeter.first();
+    for(int cv=0; cv<CV_SE_NUM; ++cv, ++outMeter) {
+      MIOS32_LCD_CursorSet(0 + 2*cv, 4);
+      MIOS32_LCD_PrintChar((*outMeter * 13) / 65535);
+    }
+
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
+  }
 
   // MIDI In/Out monitor
   MIDI_PORT_Period1mS();
