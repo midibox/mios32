@@ -14,6 +14,10 @@
 #ifndef _SCS_LCD_H
 #define _SCS_LCD_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <scs.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,6 +58,8 @@ typedef enum {
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+
+
 extern s32 SCS_LCD_Init(u32 mode);
 
 extern s32 SCS_LCD_DeviceGet(void);
@@ -81,5 +87,9 @@ extern s32 SCS_LCD_PrintStringCentered(char *str, u32 width);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SCS_H */
