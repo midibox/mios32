@@ -13,7 +13,7 @@
  */
 
 #include "MbCv.h"
-
+#include <app.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -42,6 +42,10 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
     mbCvVoice.init(_cvNum, &mbCvMidiVoice);
     mbCvMidiVoice.init();
     mbCvMod.init(_cvNum);
+
+    scopeSelect = _cvNum + 1;
+    scopeOversamplingFactor = 8;
+    scopeTriggerLevelPercent = 50;
 
     updatePatch(true);
 }
@@ -348,6 +352,10 @@ bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
         case 0x33: mbCvVoice.voiceTransposeSemitone = (int)value - 8; return true;
         case 0x34: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
         case 0x35: mbCvVoice.voicePortamentoRate = value; return true;
+
+        case 0x40: scopeSelect = value; APP_GetEnv()->updateScopeParameters(); return true;
+        case 0x41: scopeOversamplingFactor = value; APP_GetEnv()->updateScopeParameters(); return true;
+        case 0x42: scopeTriggerLevelPercent = value; APP_GetEnv()->updateScopeParameters(); return true;
         }
     } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
 
@@ -522,6 +530,10 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
         case 0x33: *value = (int)mbCvVoice.voiceTransposeSemitone + 8; return true;
         case 0x34: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
         case 0x35: *value = mbCvVoice.voicePortamentoRate; return true;
+
+        case 0x40: *value = scopeSelect; return true;
+        case 0x41: *value = scopeOversamplingFactor; return true;
+        case 0x42: *value = scopeTriggerLevelPercent; return true;
         }
     } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
 

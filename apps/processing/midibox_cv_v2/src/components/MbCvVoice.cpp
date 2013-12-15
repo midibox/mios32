@@ -353,8 +353,7 @@ bool MbCvVoice::noteOn(u8 note, u8 velocity)
     if( voiceSusKey ) {
         // in SusKey mode, we activate portamento only if at least two keys are played
         // omit portamento if first key played after patch initialisation
-        if( midiVoicePtr->midivoiceNotestack.len >= 2 && voicePortamentoInitialized )
-            voicePortamentoActive = 1;
+        voicePortamentoActive = midiVoicePtr->midivoiceNotestack.len >= 2 && voicePortamentoInitialized;
     } else {
         // portamento always activated (will immediately finish if portamento value = 0)
         // omit portamento if first key played after patch initialisation

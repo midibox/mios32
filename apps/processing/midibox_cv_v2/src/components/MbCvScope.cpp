@@ -37,12 +37,11 @@ void MbCvScope::init(u8 _displayNum)
 {
     displayNum = _displayNum;
 
-    sprintf(scopeLabel, "CV%d", displayNum % 10);
-
     oversamplingFactor = 8;
     updatePeriod = 5000;
     triggerLevel = 0;
     triggerOnRisingEdge = true;
+    assignedFunction = 0;
     clear();
 }
 
@@ -169,7 +168,11 @@ void MbCvScope::tick(void)
         }
 
         MIOS32_LCD_CursorSet(0, 7);
-        MIOS32_LCD_PrintFormattedString("%-3s ", scopeLabel);
+        if( assignedFunction > 0 ) {
+            MIOS32_LCD_PrintFormattedString("CV%d ", assignedFunction);
+        } else {
+            MIOS32_LCD_PrintFormattedString("CV- ");
+        }
 
         if( capturedMinValue == MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE ) {
             MIOS32_LCD_PrintFormattedString("Min:???%%");
@@ -188,15 +191,6 @@ void MbCvScope::tick(void)
         // change back to original display
         MIOS32_LCD_DeviceSet(prevDevice);
     }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// set label of scope channel
-/////////////////////////////////////////////////////////////////////////////
-void MbCvScope::setLabel(char *label)
-{
-    strncpy(scopeLabel, label, 3);
 }
 
 
@@ -241,4 +235,29 @@ s16 MbCvScope::getTriggerLevel(void)
 {
     return triggerLevel;
 }
+
+void MbCvScope::setTriggerLevelPercent(u8 levelPercent)
+{
+    triggerLevel = (((s32)levelPercent - 50) * 65535) / 100;
+}
+
+u8 MbCvScope::getTriggerLevelPercent(void)
+{
+    return ((triggerLevel * 100) / 65535) + 50;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Function Assignment
+/////////////////////////////////////////////////////////////////////////////
+void MbCvScope::setAssignedFunction(u8 function)
+{
+    assignedFunction = function;
+}
+
+u8 MbCvScope::getAssignedFunction(void)
+{
+    return assignedFunction;
+}
+
+
 

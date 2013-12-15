@@ -43,9 +43,6 @@ public:
     // Prints the display content on screen (should be called from a low-prio task!)    
     void tick(void);
 
-    // set label of scope channel
-    void setLabel(char *label);
-
     // control oversampling
     void setOversamplingFactor(u8 factor);
     u8   getOversamplingFactor(void);
@@ -57,6 +54,12 @@ public:
     // control trigger level
     void setTriggerLevel(s16 level);
     s16  getTriggerLevel(void);
+    void setTriggerLevelPercent(u8 levelPercent);
+    u8   getTriggerLevelPercent(void);
+
+    // control function assignment
+    void setAssignedFunction(u8 function);
+    u8   getAssignedFunction(void);
 
 protected:
     // display number
@@ -84,8 +87,8 @@ protected:
     u32 lastUpdateTimestamp;
     u32 updatePeriod;
 
-    // scope label
-    char scopeLabel[4];
+    // function assignment (currently only CV channels)
+    u8 assignedFunction;
 
     // statistics
     s16 minValue;

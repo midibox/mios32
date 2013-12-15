@@ -72,6 +72,7 @@ MbCvEnvironment::MbCvEnvironment()
 
         scopeUpdateCtr = 0;
     }
+    updateScopeParameters();
 }
 
 
@@ -129,11 +130,16 @@ bool MbCvEnvironment::tick(void)
 
     // Transfer values to scope
     // we do this as a second step, so that it will be possible to map values
-    {
+    if( MIOS32_LCD_TypeIsGLCD() >= 1 ) {
         MbCvScope *scope = mbCvScope.first();
         for(int i=0; i < mbCvScope.size; ++i, ++scope) {
-            s16 out = cvOut[i] - 0x8000; // TODO: map scopes to channels
-            scope->addValue(timestamp, out);
+            u8 cvNumber = scope->getAssignedFunction();
+            if( cvNumber > 0 && cvNumber <= cvOut.size ) {
+                s16 out = cvOut[cvNumber-1] - 0x8000;
+                scope->addValue(timestamp, out);
+            } else {
+                scope->addValue(timestamp, 0);
+            }
         }
     }
 
@@ -144,7 +150,8 @@ bool MbCvEnvironment::tick(void)
         cvGates = 0;
         MbCv *s = mbCv.first();
         u16 *out = cvOut.first();
-        for(int cv=0; cv < cvOut.size; ++cv, ++s, ++out) {
+        u16 *outMeter = cvOutMeter.first();
+        for(int cv=0; cv < cvOut.size; ++cv, ++s, ++out, ++outMeter) {
             MbCvVoice *v = &s->mbCvVoice;
             MbCvMidiVoice *mv = (MbCvMidiVoice *)v->midiVoicePtr;
 
@@ -165,6 +172,10 @@ bool MbCvEnvironment::tick(void)
                 case MBCV_MIDI_EVENT_MODE_CONST_MAX: *out = v->transpose(0xffff); break;
                 }
             }
+
+            if( *out > *outMeter ) {
+                *outMeter = *out;
+            }
         }
     }
 
@@ -180,6 +191,22 @@ void MbCvEnvironment::tick_1mS(void)
     // synchronized patch change?
     if( mbCvPatch.reqChangeAck )
         bankLoad(mbCvPatch.nextBankNum, mbCvPatch.nextPatchNum, true);
+
+    // handle meters
+    {
+        u16 *out = cvOut.first();
+        u16 *outMeter = cvOutMeter.first();
+        for(int cv=0; cv < cvOut.size; ++cv, ++out, ++outMeter) {
+            if( *outMeter > *out ) {
+                MIOS32_IRQ_Disable(); // must be atomic
+                s32 newValue = *outMeter - 1000;
+                if( newValue < *out )
+                    newValue = *out;
+                *outMeter = newValue;
+                MIOS32_IRQ_Enable();
+            }
+        }
+    }
 }
 
 
@@ -194,6 +221,39 @@ void MbCvEnvironment::tickScopes(void)
             scopeUpdateCtr = 0;
 
         mbCvScope[scopeUpdateCtr].tick();
+    }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Should be called whenever the scope mapping has been changed
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::updateScopeParameters(void)
+{
+    u32 scopeAssigned = 0;
+
+    {
+        MbCvScope *scope = mbCvScope.first();
+        for(int i=0; i < mbCvScope.size; ++i, ++scope) {
+            scope->setAssignedFunction(0);
+        }
+    }
+
+    MbCv *s = mbCv.first();
+    for(int cv=0; cv < cvOut.size; ++cv, ++s) {
+        if( s->scopeSelect > 0 ) {
+            u8 scopeNumber = s->scopeSelect - 1;
+            if( scopeNumber < mbCvScope.size ) {
+                if( !(scopeAssigned & (1 << scopeNumber)) ) {
+                    scopeAssigned |= (1 << scopeNumber);
+
+                    MbCvScope *scope = &mbCvScope[scopeNumber];
+                    scope->setAssignedFunction(cv+1);
+                    scope->setOversamplingFactor(s->scopeOversamplingFactor);
+                    scope->setTriggerLevelPercent(s->scopeTriggerLevelPercent);
+                }
+            }
+        }
     }
 }
 
