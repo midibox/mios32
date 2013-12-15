@@ -994,6 +994,8 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
 #if J15_AVAILABLE == 0
   return -1; // LCD port not available
 #else
+  MIOS32_IRQ_Disable();
+
   J15_PIN_SERLCD_DATAOUT(data & 0x80); // D7
   J15_PIN_SERLCD_SCLK_0; // setup delay
   J15_PIN_SERLCD_SCLK_0;
@@ -1062,6 +1064,8 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
   J15_PIN_SERLCD_SCLK_0;
   J15_PIN_SERLCD_SCLK_0;
   J15_PIN_SERLCD_DATAOUT(0); 
+
+  MIOS32_IRQ_Enable();
 
   return 0; // no error
 #endif
