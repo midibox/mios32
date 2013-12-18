@@ -56,7 +56,7 @@ extern "C" {
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
-#define AOUT_NUM_IF 5 // including "NONE"
+#define AOUT_NUM_IF 7 // including "NONE"
 
 // following types must be aligned with AOUT_IfNameGet()
 typedef enum {
@@ -64,6 +64,8 @@ typedef enum {
   AOUT_IF_MAX525,
   AOUT_IF_74HC595,
   AOUT_IF_TLV5630,
+  AOUT_IF_MCP4922_1, // with gain=1
+  AOUT_IF_MCP4922_2, // with gain=2
   AOUT_IF_INTDAC // should always be located at last position to allow the application (like MBSEQ) to remove it from the list (clash with SD Card port)
 } aout_if_t;
 
