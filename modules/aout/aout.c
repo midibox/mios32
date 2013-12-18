@@ -68,6 +68,14 @@
 //!      CV: one TLV5630 (MBHP_AOUT_NG module) with 8 channels at
 //!      12bit resolution<BR>
 //!      Digital: none</LI>
+//!  <LI>4 (AOUT_IF_MCP4922_1):<BR>
+//!      CV: one MCP4922 with gain set to 1 with 2 channels at
+//!      12bit resolution<BR>
+//!      Digital: none</LI>
+//!  <LI>4 (AOUT_IF_MCP4922_2):<BR>
+//!      CV: one MCP4922 with gain set to 2 with 2 channels at
+//!      12bit resolution<BR>
+//!      Digital: none</LI>
 //!  <LI>4 (AOUT_IF_INTDAC):<BR>
 //!      CV: two channels available at pin RA4 (J16:RC1) and RA5 (J16:SC) at
 //!      12bit resolution<BR>
@@ -396,6 +404,19 @@ s32 AOUT_IF_Init(u32 mode)
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     } break;
 
+    case AOUT_IF_MCP4922_2:
+    case AOUT_IF_MCP4922_1: {
+      // only 1 device per CS line
+      aout_num_devices = 1;
+
+      // ensure that CS is deactivated
+      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+      // init SPI
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
+      
+    } break;
+
     case AOUT_IF_INTDAC: {
       // one device and up to 2 channels
       aout_num_devices = 1;
@@ -421,11 +442,13 @@ s32 AOUT_IF_Init(u32 mode)
 // \return the interface name (8 chars)
 /////////////////////////////////////////////////////////////////////////////
 // located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
-static const char if_name[AOUT_NUM_IF][9] = {
+static const char *if_name[AOUT_NUM_IF] = {
   "none", // note: don't add spaces! this string is used for parsing as well
   "AOUT",
   "AOUT_LC",
   "AOUT_NG",
+  "MCP_Gx1",
+  "MCP_Gx2",
   "INTDAC",
 };
 const char* AOUT_IfNameGet(aout_if_t if_type)
@@ -1094,6 +1117,41 @@ s32 AOUT_Update(void)
 	}
       } break;
 
+      case AOUT_IF_MCP4922_1:
+      case AOUT_IF_MCP4922_2: {
+	// only 1 device can be connected to a CS line, and only 2 channels available
+	int chn;
+	for(chn=0; chn<2; ++chn) {
+
+	  // check if channel has to be updated for any device
+	  if( req & (1 << chn) ) {
+	    // activate chip select
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+
+	    {
+	      // build command:
+	      u8 chn_ix = chn;
+	      u16 dac_value = currentValueGet(chn_ix) >> 4; // 16bit -> 12bit
+
+	      // [15] channel select, [14] buffer enable, [13] gain select, [12] shutdown (low-active), [11:0] DAC value
+	      u16 hword = (chn << 15) | (1 << 14) | (1 << 12) | dac_value;
+	      if( aout_config.if_type == AOUT_IF_MCP4922_1 ) {
+		hword |= (1 << 13); // Gain x1
+	      }
+
+	      // transfer word
+	      MIOS32_IRQ_Disable();
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
+	      MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
+	      MIOS32_IRQ_Enable();
+	    }
+
+	    // deactivate chip select
+	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	  }
+	}
+      } break;
+
       case AOUT_IF_INTDAC: {
 	// we have two channels
 	int chn;
@@ -1150,6 +1208,8 @@ s32 AOUT_Update(void)
 
       case AOUT_IF_74HC595:
       case AOUT_IF_TLV5630:
+      case AOUT_IF_MCP4922_1:
+      case AOUT_IF_MCP4922_2:
       case AOUT_IF_INTDAC:
 	// no digital outputs supported
 	break;
