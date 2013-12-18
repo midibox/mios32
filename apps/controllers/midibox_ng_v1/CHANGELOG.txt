@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.028
+~~~~~~~~~~~~~~~~~
+
+   o DOUT_MATRIX n=8 properly supported
+
+
 MIDIbox NG V1.027
 ~~~~~~~~~~~~~~~~~
 
