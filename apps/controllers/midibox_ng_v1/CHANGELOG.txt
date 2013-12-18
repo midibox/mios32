@@ -5,6 +5,8 @@ MIDIbox NG V1.028
 
    o DOUT_MATRIX n=8 properly supported
 
+   o now up to 16 DOUT_MATRIX and DIN_MATRIX can be configured
+
 
 MIDIbox NG V1.027
 ~~~~~~~~~~~~~~~~~
