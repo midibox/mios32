@@ -944,7 +944,7 @@ s32 MBNG_MATRIX_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
   u16 hw_id_ix = hw_id & 0xfff;
   if( !item->flags.led_matrix_pattern ) {
-    if( hw_id_ix && hw_id_ix < MBNG_PATCH_NUM_MATRIX_DOUT ) {
+    if( hw_id_ix && hw_id_ix <= MBNG_PATCH_NUM_MATRIX_DOUT ) {
       u8 matrix = hw_id_ix - 1;
 
       u8 dout_value;
