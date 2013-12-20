@@ -29,28 +29,22 @@
 #include <scs_lcd.h>
 #include "scs_config.h"
 
-#include <seq_bpm.h>
-#include <seq_midi_out.h>
-
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
 
-// quick&dirty to simplify re-use of C modules without changing header files
-extern "C" {
+#include <app_lcd.h>
+
+#include "terminal.h"
 #include "mbcv_sysex.h"
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
-
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
-
-#include "terminal.h"
-
 #include "uip_task.h"
 #include "osc_client.h"
-}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -91,6 +85,8 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
+static s32 APP_SelectScopeLCDs(void);
+static s32 APP_SelectMainLCD(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -122,6 +118,20 @@ extern "C" void APP_Init(void)
   for(pin=0; pin<8; ++pin)
     MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
 
+  // initialize OLED pins at J5
+  {
+    APP_SelectScopeLCDs();
+
+    APP_LCD_Init(0);
+
+    int lcd;
+    for(lcd=0; lcd<4; ++lcd) {
+      MIOS32_LCD_DeviceSet(lcd);
+      MIOS32_LCD_Clear();
+    }
+
+    APP_SelectMainLCD();
+  }
 
   // install SysEx callback
   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
@@ -163,7 +173,6 @@ extern "C" void APP_Init(void)
   TERMINAL_Init(0);
   MIDIMON_Init(0);
   MBCV_FILE_Init(0);
-  SEQ_MIDI_OUT_Init(0);
 
   // install timer function which is called each 100 uS
   MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
@@ -328,8 +337,12 @@ void APP_TASK_Period_1mS_LP(void)
   // call SCS handler
   SCS_Tick();
 
-  // CV Scopes
-  mbCvEnvironment.tickScopes();
+  {
+    // CV Scopes
+    APP_SelectScopeLCDs();
+    mbCvEnvironment.tickScopes();
+    APP_SelectMainLCD();
+  }
 
   // CV Bars (currently only for SSD1306)
   if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
@@ -454,11 +467,7 @@ static void APP_Periodic_100uS(void)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 )
-    SEQ_BPM_NotifyMIDIRx(midi_byte);
-
-  // TODO: better port filtering!
-  if( port < USB1 || port >= UART0 ) {
+  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 ) {
     if( midi_byte >= 0xf8 ) {
       mbCvEnvironment.midiReceiveRealTimeEvent(port, midi_byte);
     }
@@ -491,6 +500,42 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Switches to the scope LCDs
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_SelectScopeLCDs(void)
+{
+  // select the alternative pinning via J5A/J28
+  APP_LCD_AltPinningSet(1);
+
+  // select GLCD type and dimensions
+  mios32_lcd_parameters.lcd_type = MIOS32_LCD_TYPE_GLCD_SSD1306; // TODO: get this from a configuration file
+  mios32_lcd_parameters.num_x = 4;
+  mios32_lcd_parameters.num_y = 1;
+  mios32_lcd_parameters.width = 128;
+  mios32_lcd_parameters.height = 64;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Switches to the original LCD
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_SelectMainLCD(void)
+{
+  // ensure that first LCD is selected
+  MIOS32_LCD_DeviceSet(0);
+
+  // select the original pinning
+  APP_LCD_AltPinningSet(0);
+
+  // retrieve original LCD parameters
+  MIOS32_LCD_ParametersFetchFromBslInfoRange();
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // For performance Measurements
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_StopwatchInit(void)
@@ -518,3 +563,4 @@ s32 APP_StopwatchCapture(void)
 
   return 0; // no error
 }
+

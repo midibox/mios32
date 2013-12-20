@@ -31,6 +31,7 @@
 
 #define CV_SCOPE_NUM          4 // 4 scopes
 
+#define CV_EXTCLK_NUM         7 // 7 external clock outputs
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +64,47 @@ typedef union {
     };
 
 } cv_patch_t;
+
+
+// little helper
+// a container class which defines an array leads to more robust code when iterating over the array
+// will be transfered to a better location later
+template <class T, int N> class array
+{
+protected:
+    T element[N];
+
+public:
+    array() : size(N) {}
+
+    const int size;
+
+    inline T &operator[](int n)
+    {
+        if( n < 0 || n >= N ) {
+#if 0
+            DEBUG_MSG("trouble accessing element %d of array (max: %d)\n", n, N);
+#endif
+            return element[0];
+        }
+        return element[n];
+    }
+
+    inline T *first()
+    {
+        return &element[0];
+    }
+
+    inline T *last()
+    {
+        return &element[N-1];
+    }
+
+    inline T *next(T *prevElement)
+    {
+        return (++prevElement >= &element[N]) ? 0 : prevElement;
+    }
+};
 
 
 #endif /* _MBCV_STRUCTS_H */

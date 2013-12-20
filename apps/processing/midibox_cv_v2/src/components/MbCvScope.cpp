@@ -14,6 +14,7 @@
 
 #include "MbCvScope.h"
 #include <string.h>
+#include <glcd_font.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -167,6 +168,7 @@ void MbCvScope::tick(void)
             }
         }
 
+        MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
         MIOS32_LCD_CursorSet(0, 7);
         if( assignedFunction > 0 ) {
             MIOS32_LCD_PrintFormattedString("CV%d ", assignedFunction);

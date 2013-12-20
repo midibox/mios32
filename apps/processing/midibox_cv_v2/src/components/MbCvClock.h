@@ -16,6 +16,7 @@
 #define _MB_CV_CLOCK_H
 
 #include <mios32.h>
+#include "MbCvStructs.h"
 
 
 typedef enum {
@@ -60,9 +61,22 @@ public:
     bool eventContinue;
     bool eventStop;
 
+    // Start/Stop
+    bool isRunning;
+
     u8 updateSpeedFactor;
 
     u32 clkTickCtr;
+
+    // external clocks
+#if CV_EXTCLK_NUM > 8
+# error "Please adapt variable type of externalClocks"
+#endif
+    u8 externalClocks;
+    array<u8, CV_EXTCLK_NUM> externalClockDivider;
+    array<u8, CV_EXTCLK_NUM> externalClockPulseWidth;
+    array<u16, CV_EXTCLK_NUM> externalClockPulseWidthCounter;
+
 
 protected:
     float effectiveBpm;

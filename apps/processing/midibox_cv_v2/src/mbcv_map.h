@@ -62,6 +62,9 @@ extern s32 MBCV_MAP_ResetAllChannels(void);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 mbcv_map_gate_sr;
+extern u8 mbcv_map_din_sync_sr;
+
 #ifdef __cplusplus
 }
 #endif

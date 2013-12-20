@@ -24,14 +24,10 @@
 
 #include <file.h>
 
-#include <seq_bpm.h>
-
 #include <app.h>
 #include <MbCvEnvironment.h>
 #include <MbCvTables.h>
 
-// quick&dirty to simplify re-use of C modules without changing header files
-extern "C" {
 #include <uip.h>
 #include "uip_task.h"
 #include "osc_client.h"
@@ -40,14 +36,15 @@ extern "C" {
 #include <midi_port.h>
 #include <midi_router.h>
 
-#include "mbcv_map.h"
+// quick&dirty to simplify re-use of C modules without changing header files
+extern "C" {
+#include "cc_labels.h"
+}
 
+#include "mbcv_map.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_patch.h"
-
-#include "cc_labels.h"
-}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -849,7 +846,7 @@ static s32 displayHook(char *line1, char *line2)
 
     sprintf(line1, "CLK  DOUT MSD  ");
     sprintf(line2, "%s Off  %s",
-	    SEQ_BPM_IsRunning() ? "STOP" : "PLAY",
+	    env->mbCvClock.isRunning ? "STOP" : "PLAY",
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
   }
@@ -876,7 +873,7 @@ static s32 displayHook(char *line1, char *line2)
       else
 	sprintf(line1, "Patch: %s", mbcv_file_p_patch_name);
     }
-    sprintf(line2, "%s   <    >   MENU", SEQ_BPM_IsRunning() ? "STOP" : "PLAY");
+    sprintf(line2, "%s   <    >   MENU", env->mbCvClock.isRunning ? "STOP" : "PLAY");
 
     // request LCD update - this will lead to fast refresh rate in main screen
     if( fastRefresh )
@@ -1007,7 +1004,10 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       case SCS_PIN_SOFT1:
 	if( depressed )
 	  return 1;
-	//SEQ_PlayStopButton();
+	if( env->mbCvClock.isRunning )
+	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfc); // stop
+	else
+	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfa); // start
 	break;
 
       case SCS_PIN_SOFT2:
@@ -1048,7 +1048,10 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 
       switch( scsButton ) {
       case SCS_PIN_SOFT1: // Play/Stop
-	//SEQ_PlayStopButton();
+	if( env->mbCvClock.isRunning )
+	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfc); // stop
+	else
+	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfa); // start
 	return 1;
 
       case SCS_PIN_SOFT2: { // previous song
