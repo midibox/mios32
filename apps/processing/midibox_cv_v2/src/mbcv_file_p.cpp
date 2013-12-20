@@ -22,6 +22,7 @@
 
 #include <mios32.h>
 #include "tasks.h"
+#include "app.h"
 
 #include <string.h>
 #include <limits.h>
@@ -216,6 +217,7 @@ static u32 get_ip(char *brkt)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBCV_FILE_P_Read(char *filename)
 {
+  MbCvEnvironment* env = APP_GetEnv();
   s32 status = 0;
   mbcv_file_p_info_t *info = &mbcv_file_p_info;
   file_t file;
@@ -258,7 +260,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 
 	if( *parameter == 0 || *parameter == '#' ) {
 	  // ignore comments and empty lines
-	} else if( strcmp(parameter, "ROUTER") == 0 ) {
+	} else if( strcasecmp(parameter, "ROUTER") == 0 ) {
 	  s32 node;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  if( (node=get_dec(word)) < 1 || node > MIDI_ROUTER_NUM_NODES ) {
@@ -293,11 +295,73 @@ s32 MBCV_FILE_P_Read(char *filename)
 	    }
 	  }
 
-	} else if( strcmp(parameter, "AOUT_Type") == 0 ) {
+	} else if( strcasecmp(parameter, "EXTCLK_Divider") == 0 ) {
+	  s32 clk;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (clk=get_dec(word)) < 1 || clk > env->mbCvClock.externalClockDivider.size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid clock number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --clk;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    s32 value;
+	    if( (value=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid divider value for parameter '%s %d'\n", parameter, value);
+#endif
+	    } else {
+	      env->mbCvClock.externalClockDivider[clk] = value;
+	    }
+	  }
+	} else if( strcasecmp(parameter, "EXTCLK_PulseWidth") == 0 ) {
+	  s32 clk;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (clk=get_dec(word)) < 1 || clk > env->mbCvClock.externalClockPulseWidth.size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid clock number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --clk;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    s32 value;
+	    if( (value=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid pulsewidth value for parameter '%s %d'\n", parameter, value);
+#endif
+	    } else {
+	      env->mbCvClock.externalClockPulseWidth[clk] = value;
+	    }
+	  }
+	} else if( strcasecmp(parameter, "DOUT_GateSR") == 0 ) {
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  s32 value;
+	  if( (value=get_dec(word)) < 0 || value > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid SR number for parameter '%s %d'\n", parameter, value);
+#endif
+	  } else {
+	    mbcv_map_gate_sr = value;
+	  }
+	} else if( strcasecmp(parameter, "DOUT_DinSyncSR") == 0 ) {
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  s32 value;
+	  if( (value=get_dec(word)) < 0 || value > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid SR number for parameter '%s %d'\n", parameter, value);
+#endif
+	  } else {
+	    mbcv_map_din_sync_sr = value;
+	  }
+	} else if( strcasecmp(parameter, "AOUT_Type") == 0 ) {
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	  int aout_type;
 	  for(aout_type=0; aout_type<AOUT_NUM_IF; ++aout_type) {
-	    if( strcmp(word, MBCV_MAP_IfNameGet(aout_type)) == 0 )
+	    if( strcasecmp(word, MBCV_MAP_IfNameGet((aout_if_t)aout_type)) == 0 )
 	      break;
 	  }
 
@@ -306,11 +370,11 @@ s32 MBCV_FILE_P_Read(char *filename)
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid AOUT interface name for parameter '%s': %s\n", parameter, word);
 #endif
 	  } else {
-	    MBCV_MAP_IfSet(aout_type);
+	    MBCV_MAP_IfSet((aout_if_t)aout_type);
 	  }
 
 #if !defined(MIOS32_FAMILY_EMULATION)
-	} else if( strcmp(parameter, "ETH_LocalIp") == 0 ) {
+	} else if( strcasecmp(parameter, "ETH_LocalIp") == 0 ) {
 	  u32 value;
 	  if( !(value=get_ip(brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -319,7 +383,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  } else {
 	    UIP_TASK_IP_AddressSet(value);
 	  }
-	} else if( strcmp(parameter, "ETH_Netmask") == 0 ) {
+	} else if( strcasecmp(parameter, "ETH_Netmask") == 0 ) {
 	  u32 value;
 	  if( !(value=get_ip(brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -328,7 +392,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 	  } else {
 	    UIP_TASK_NetmaskSet(value);
 	  }
-	} else if( strcmp(parameter, "ETH_Gateway") == 0 ) {
+	} else if( strcasecmp(parameter, "ETH_Gateway") == 0 ) {
 	  u32 value;
 	  if( !(value=get_ip(brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -345,9 +409,9 @@ s32 MBCV_FILE_P_Read(char *filename)
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid value for parameter '%s'\n", parameter);
 #endif
-	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
+	  } else if( strcasecmp(parameter, "ETH_Dhcp") == 0 ) {
 	    UIP_TASK_DHCP_EnableSet((value >= 1) ? 1 : 0);
-	  } else if( strcmp(parameter, "OSC_RemoteIp") == 0 ) {
+	  } else if( strcasecmp(parameter, "OSC_RemoteIp") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
 	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
@@ -361,7 +425,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 		OSC_SERVER_RemoteIP_Set(con, ip);
 	      }
 	    }
-	  } else if( strcmp(parameter, "OSC_RemotePort") == 0 ) {
+	  } else if( strcasecmp(parameter, "OSC_RemotePort") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
 	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
@@ -373,7 +437,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 		OSC_SERVER_RemotePortSet(con, value);
 	      }
 	    }
-	  } else if( strcmp(parameter, "OSC_LocalPort") == 0 ) {
+	  } else if( strcasecmp(parameter, "OSC_LocalPort") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
 	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
@@ -385,7 +449,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 		OSC_SERVER_LocalPortSet(con, value);
 	      }
 	    }
-	  } else if( strcmp(parameter, "OSC_TransferMode") == 0 ) {
+	  } else if( strcasecmp(parameter, "OSC_TransferMode") == 0 ) {
 	    if( value > OSC_SERVER_NUM_CONNECTIONS ) {
 	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid connection number for parameter '%s'\n", parameter);
 	    } else {
@@ -444,6 +508,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 /////////////////////////////////////////////////////////////////////////////
 static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 {
+  MbCvEnvironment* env = APP_GetEnv();
   s32 status = 0;
   char line_buffer[128];
 
@@ -524,11 +589,32 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   }
 #endif
 
-  sprintf(line_buffer, "\n\n# Misc. Configuration\n");
+  sprintf(line_buffer, "\n\n# CV Configuration\n");
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "AOUT_Type;%s\n", (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()));
   FLUSH_BUFFER;
+  sprintf(line_buffer, "DOUT_GateSR;%d\n", mbcv_map_gate_sr);
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "DOUT_DinSyncSR;%d\n", mbcv_map_din_sync_sr);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "\n\n# External Clock Outputs (available at DOUT_DinSyncSR D1..D7)\n");
+  FLUSH_BUFFER;
+  {
+    u8 *externalClockDividerPtr = env->mbCvClock.externalClockDivider.first();
+    for(int clk=0; clk < env->mbCvClock.externalClockDivider.size; ++clk, ++externalClockDividerPtr) {
+      sprintf(line_buffer, "EXTCLK_Divider;%d;%d\n", clk+1, *externalClockDividerPtr);
+      FLUSH_BUFFER;
+    }
+  }
+  {
+    u8 *externalClockPulseWidthPtr = env->mbCvClock.externalClockPulseWidth.first();
+    for(int clk=0; clk < env->mbCvClock.externalClockPulseWidth.size; ++clk, ++externalClockPulseWidthPtr) {
+      sprintf(line_buffer, "EXTCLK_PulseWidth;%d;%d\n", clk+1, *externalClockPulseWidthPtr);
+      FLUSH_BUFFER;
+    }
+  }
 
   return status;
 }

@@ -24,14 +24,9 @@
 
 #include "mbcv_map.h"
 #include "mbcv_patch.h"
-
-
-// quick&dirty to simplify re-use of C modules without changing header files
-extern "C" {
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
-}
 
 
 /////////////////////////////////////////////////////////////////////////////

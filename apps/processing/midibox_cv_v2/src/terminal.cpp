@@ -18,7 +18,6 @@
 #include <mios32.h>
 #include <string.h>
 #include <file.h>
-#include <ff.h>
 
 #include <midi_port.h>
 #include <midi_router.h>
@@ -28,17 +27,20 @@
 
 
 #include "app.h"
+#include "tasks.h"
 #include "terminal.h"
 #include "mbcv_patch.h"
 #include "uip_terminal.h"
-#include "tasks.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
 
+extern "C" {
+#include <ff.h>
 #if !defined(MIOS32_FAMILY_EMULATION)
-#include <umm_malloc.h>
+# include <umm_malloc.h>
 #endif
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,6 +56,7 @@
 
 static char line_buffer[STRING_MAX];
 static u16 line_ix;
+static char autoload_cv2_file[9];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,6 +64,8 @@ static u16 line_ix;
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte);
+
+static s32 TERMINAL_BrowserUploadCallback(char *filename);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -77,6 +82,9 @@ s32 TERMINAL_Init(u32 mode)
   // clear line buffer
   line_buffer[0] = 0;
   line_ix = 0;
+
+  // invalidate autoload file
+  autoload_cv2_file[0] = 0;
 
   return 0; // no error
 }
@@ -155,6 +163,9 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
+    // for the auto-load function
+    FILE_BrowserUploadCallback_Init(TERMINAL_BrowserUploadCallback);
+
     MUTEX_MIDIOUT_TAKE;
     MUTEX_SDCARD_TAKE;
     FILE_BrowserHandler(port, line_buffer);
@@ -170,6 +181,48 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
   return 0; // no error
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! For the auto-load function
+/////////////////////////////////////////////////////////////////////////////
+static s32 TERMINAL_BrowserUploadCallback(char *filename)
+{
+  if( filename ) {
+    // invalidate autoload file
+    autoload_cv2_file[0] = 0;
+
+    // check for .CV2
+    if( filename[0] == '/' )
+      ++filename;
+    int len = strlen(filename);
+
+    if( len < 5 || len > 12 || 
+	(strcasecmp((char *)&filename[len-4], ".cv2") != 0) )
+      return 0; // no .CV2 file
+
+    int i;
+    for(i=0; i<len; ++i) {
+      if( filename[i] == '/' )
+	return 0; // not in root dir
+    }
+
+    strncpy(autoload_cv2_file, filename, len-4);
+    autoload_cv2_file[len-4] = 0;
+  } else {
+    if( autoload_cv2_file[0] ) {
+      DEBUG_MSG("AUTOLOAD '%s'\n", autoload_cv2_file);
+
+      s32 status = MBCV_PATCH_LoadGlobal(autoload_cv2_file);
+      if( status >= 0 ) {
+	DEBUG_MSG("Patch '%s' loaded from SD Card!", autoload_cv2_file);
+      } else {
+	DEBUG_MSG("ERROR: failed to load patch '%s' on SD Card (status %d)!", autoload_cv2_file, status);
+      }
+    }
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Parser for a complete line - also used by shell.c for telnet

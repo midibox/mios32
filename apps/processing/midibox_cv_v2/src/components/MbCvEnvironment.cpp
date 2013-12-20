@@ -63,11 +63,11 @@ MbCvEnvironment::MbCvEnvironment()
     // default content of copy buffer
     channelCopy(0, copyBuffer);
 
-    // scope assignments (starting from second GLCD!)
+    // scope assignments
     {
         MbCvScope *scope = mbCvScope.first();
         for(int i=0; i < mbCvScope.size; ++i, ++scope) {
-            scope->init(1 + i);
+            scope->init(i);
         }
 
         scopeUpdateCtr = 0;
@@ -130,7 +130,7 @@ bool MbCvEnvironment::tick(void)
 
     // Transfer values to scope
     // we do this as a second step, so that it will be possible to map values
-    if( MIOS32_LCD_TypeIsGLCD() >= 1 ) {
+    {
         MbCvScope *scope = mbCvScope.first();
         for(int i=0; i < mbCvScope.size; ++i, ++scope) {
             u8 cvNumber = scope->getAssignedFunction();
@@ -215,13 +215,11 @@ void MbCvEnvironment::tick_1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void MbCvEnvironment::tickScopes(void)
 {
-    if( MIOS32_LCD_TypeIsGLCD() >= 1 ) {
-        // with each round we update another display
-        if( ++scopeUpdateCtr >= mbCvScope.size )
-            scopeUpdateCtr = 0;
+    // with each round we update another display
+    if( ++scopeUpdateCtr >= mbCvScope.size )
+        scopeUpdateCtr = 0;
 
-        mbCvScope[scopeUpdateCtr].tick();
-    }
+    mbCvScope[scopeUpdateCtr].tick();
 }
 
 

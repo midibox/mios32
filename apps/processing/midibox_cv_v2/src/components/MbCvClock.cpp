@@ -42,6 +42,13 @@ MbCvClock::MbCvClock()
     sentClkDelay = 0;
     sentClkCtr = 0;
     clkReqCtr = 0;
+
+    for(int i=0; i<externalClockDivider.size; ++i)
+        externalClockDivider[i] = 4;
+    for(int i=0; i<externalClockPulseWidth.size; ++i)
+        externalClockPulseWidth[i] = 2; // mS
+    for(int i=0; i<externalClockPulseWidthCounter.size; ++i)
+        externalClockPulseWidthCounter[i] = 0;
 }
 
 
@@ -79,7 +86,7 @@ void MbCvClock::tick(void)
         break;
 
     default: // MBCV_CLOCK_MODE_AUTO
-        // slave mode so long incoming clock counter < 0xfff
+        // slave mode as long as incoming clock counter < 0xfff
         clockSlaveMode = incomingClkCtr < 0xfff;
         break;
     }
@@ -97,6 +104,7 @@ void MbCvClock::tick(void)
         // take over
         midiStartReq = false;
         eventStart = true;
+        isRunning = true;
 
         // reset clock counter
         clkTickCtr = 0;
@@ -107,6 +115,7 @@ void MbCvClock::tick(void)
         // take over
         midiStopReq = false;
         eventStop = true;
+        isRunning = false;
     }
 
     // handle MIDI continue event
@@ -114,6 +123,7 @@ void MbCvClock::tick(void)
         // take over
         midiContinueReq = false;
         eventContinue = true;
+        isRunning = true;
     }
 
     // handle MIDI Clock Event
@@ -134,8 +144,35 @@ void MbCvClock::tick(void)
         }
     }
 
-    if( eventClock )
+    if( eventClock ) {
         ++clkTickCtr;
+
+        u8 *externalClockDividerPtr = externalClockDivider.first();
+        for(int clk=0; clk < externalClockDivider.size; ++clk, ++externalClockDividerPtr) {
+            if( (clkTickCtr % *externalClockDividerPtr) == 0 ) {
+                externalClockPulseWidthCounter[clk] = externalClockPulseWidth[clk] * (updateSpeedFactor / 2);
+            }
+        }
+    }
+
+    // service external clocks
+    if( !isRunning ) {
+        externalClocks = 0;
+    } else {
+        u16 *externalClockPulseWidthCounterPtr = externalClockPulseWidthCounter.first();
+        u8 mask = 1;
+        for(int clk=0; clk < externalClockPulseWidthCounter.size; ++clk, ++externalClockPulseWidthCounterPtr, mask <<= 1) {
+            if( *externalClockPulseWidthCounterPtr > 0 ) {
+                *externalClockPulseWidthCounterPtr -= 1;
+
+                if( *externalClockPulseWidthCounterPtr ) {
+                    externalClocks |= mask;
+                } else {
+                    externalClocks &= ~mask;
+                }
+            }
+        }
+    }
 }
 
 

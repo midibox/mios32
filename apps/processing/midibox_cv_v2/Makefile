@@ -15,18 +15,18 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 THUMB_SOURCE    = src/tasks.c \
-		  src/mbcv_sysex.c \
-		  src/mbcv_file.c \
-		  src/mbcv_file_p.c \
-		  src/mbcv_file_b.c \
 		  src/cc_labels.c \
-                  src/terminal.c \
 		  src/components/CapChargeCurve.c
 
 THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/scs_config.cpp \
 		    src/mbcv_patch.cpp \
 		    src/mbcv_map.cpp \
+	 	    src/mbcv_file.cpp \
+	 	    src/mbcv_file_b.cpp \
+	 	    src/mbcv_file_p.cpp \
+	 	    src/mbcv_sysex.cpp \
+	  	    src/terminal.cpp \
 		    src/components/MbCvEnvironment.cpp \
 		    src/components/MbCv.cpp \
 		    src/components/MbCvPatch.cpp \
@@ -71,6 +71,7 @@ DEBUG     =	-g
 OPTIMIZE  =	-Os
 
 CFLAGS =	$(DEBUG) $(OPTIMIZE)
+CPPFLAGS =      -fpermissive
 
 
 ################################################################################
@@ -106,9 +107,6 @@ include $(MIOS32_PATH)/modules/random/random.mk
 
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk
-
-# generic sequencer modules
-include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
 # Notestack functions
 include $(MIOS32_PATH)/modules/notestack/notestack.mk
