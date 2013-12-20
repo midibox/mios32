@@ -14,6 +14,9 @@
 #ifndef _UIP_TERMINAL_H
 #define _UIP_TERMINAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -38,5 +41,8 @@ extern s32 UIP_TERMINAL_PrintNetwork(void *_output_function);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _UIP_TERMINAL_H */

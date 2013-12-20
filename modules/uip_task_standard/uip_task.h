@@ -18,6 +18,9 @@
 #include <FreeRTOS.h>
 #include <semphr.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -132,5 +135,8 @@ extern s32 UIP_TASK_EffectiveGatewayGet(void);
 
 extern xSemaphoreHandle xUIPSemaphore;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _UIP_TASK_H */
