@@ -92,6 +92,7 @@ typedef struct {
 
 extern s32 MIOS32_LCD_Init(u32 mode);
 extern s32 MIOS32_LCD_ParametersSet(mios32_lcd_parameters_t parameters);
+extern s32 MIOS32_LCD_ParametersFetchFromBslInfoRange(void);
 extern mios32_lcd_parameters_t *MIOS32_LCD_ParametersGet(void);
 extern const char* MIOS32_LCD_LcdTypeName(mios32_lcd_type_t lcd_type);
 extern s32 MIOS32_LCD_TypeIsGLCD(void);

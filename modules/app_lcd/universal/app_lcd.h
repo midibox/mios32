@@ -14,6 +14,10 @@
 #ifndef _APP_LCD_H
 #define _APP_LCD_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -45,9 +49,15 @@ extern s32 APP_LCD_TerminalHelp(void *_output_function);
 extern s32 APP_LCD_TerminalParseLine(char *input, void *_output_function);
 extern s32 APP_LCD_TerminalPrintConfig(void *_output_function);
 
+extern s32 APP_LCD_AltPinningSet(u8 alt_pinning);
+extern u8 APP_LCD_AltPinningGet(void);
+
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _APP_LCD_H */

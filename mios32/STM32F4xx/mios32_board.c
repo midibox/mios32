@@ -196,6 +196,15 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 
 #define J15_PIN_D7_IN   (J15_D7_PORT->IDR & J15_D7_PIN)
 
+// SERLCD via J5 instead of J15
+#define J5_SERLCD_DATA_PORT GPIOC // J5A:A1
+#define J5_SERLCD_DATA_PIN  GPIO_Pin_2
+#define J5_SERLCD_SCLK_PORT GPIOA // J5A:A2
+#define J5_SERLCD_SCLK_PIN  GPIO_Pin_1
+#define J5_PIN_SERLCD_DATAOUT(b) PIN_SET(J5_SERLCD_DATA_PORT, J5_SERLCD_DATA_PIN, b)
+#define J5_PIN_SERLCD_SCLK_0     { J5_SERLCD_SCLK_PORT->BSRRH = J5_SERLCD_SCLK_PIN; }
+#define J5_PIN_SERLCD_SCLK_1     { J5_SERLCD_SCLK_PORT->BSRRL = J5_SERLCD_SCLK_PIN; }
+
 #else
 #define J15_AVAILABLE 0
 #warning "No J15 (LCD) port defined for this MIOS32_BOARD"
@@ -1033,6 +1042,76 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
   J15_PIN_SERLCD_DATAOUT(0); 
 
   MIOS32_IRQ_Enable();
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function is used by LCD drivers under $MIOS32_PATH/modules/app_lcd
+//! to shift an 8bit data value to LCDs with serial interface\n
+//! The alternative port option J5A.A1/A2 is used instead of J15,
+//! so that CLCD and GLCDs can be accessed in parallel.\n
+//! (SCLK connected to J5A:A2, Data line connected to J5A:A3)
+//! \param[in] data the 8bit value
+//! \return < 0 if access to data port not supported by board
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J5_SerDataShift(u8 data)
+{
+#if J15_AVAILABLE == 0
+  return -1; // LCD port not available
+#else
+  J5_PIN_SERLCD_DATAOUT(data & 0x80); // D7
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x40); // D6
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x20); // D5
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x10); // D4
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x08); // D3
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x04); // D2
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x02); // D1
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_DATAOUT(data & 0x01); // D0
+  J5_PIN_SERLCD_SCLK_0; // setup delay
+  J5_PIN_SERLCD_SCLK_0;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
+  J5_PIN_SERLCD_SCLK_1;
 
   return 0; // no error
 #endif
