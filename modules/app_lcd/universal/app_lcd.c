@@ -57,6 +57,7 @@
 
 static unsigned long long display_available = 0;
 static u8 lcd_testmode = 0;
+static u8 lcd_alt_pinning = 0; // alternative LCD pinning (e.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28)
 static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_device, 0xff: all CS were activated, 0xfe: will force the update
 
 
@@ -168,66 +169,83 @@ static s32 APP_LCD_GLCD_CS_Set(u8 all)
 /////////////////////////////////////////////////////////////////////////////
 static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 {
-  int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
-  if( num_additional_lcds >= (MAX_LCDS-8) )
-    num_additional_lcds = (MAX_LCDS-8);
-
-  // Note: assume that CS lines are low-active!
-  if( all ) {
-    if( prev_glcd_selection != 0xff ) {
-      prev_glcd_selection = 0xff;
-      MIOS32_BOARD_J15_DataSet(value ? 0x00 : 0xff);
-
-      if( num_additional_lcds <= 4 ) {
-	int i;
-	for(i=0; i<num_additional_lcds; ++i)
-	  MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
-      } else {
-	int num_shifts = num_additional_lcds / 8;
-	if( num_additional_lcds % 8 )
-	  ++num_shifts;
-
-	// shift data
-	int i;
-	for(i=num_shifts-1; i>=0; --i) {
-	  MIOS32_BOARD_J28_SerDataShift(value ? 0x00 : 0xff);
-	}
-
-	// pulse RC (J28.WS)
-	MIOS32_BOARD_J28_PinSet(2, 0);
-	MIOS32_BOARD_J28_PinSet(2, 1);
+  // alternative pinning option for applications which want to access CLCD and SER LCDs
+  if( lcd_alt_pinning ) {
+    if( all ) {
+      MIOS32_BOARD_J28_PinSet(0, value ? 0 : 1);
+      MIOS32_BOARD_J28_PinSet(1, value ? 0 : 1);
+      MIOS32_BOARD_J28_PinSet(2, value ? 0 : 1);
+      MIOS32_BOARD_J28_PinSet(3, value ? 0 : 1);
+    } else {
+      if( mios32_lcd_device < 4 ) {
+	MIOS32_BOARD_J28_PinSet(0, (mios32_lcd_device == 0 && value) ? 0 : 1);
+	MIOS32_BOARD_J28_PinSet(1, (mios32_lcd_device == 1 && value) ? 0 : 1);
+	MIOS32_BOARD_J28_PinSet(2, (mios32_lcd_device == 2 && value) ? 0 : 1);
+	MIOS32_BOARD_J28_PinSet(3, (mios32_lcd_device == 3 && value) ? 0 : 1);
       }
     }
   } else {
-    if( prev_glcd_selection != mios32_lcd_device ) {
-      prev_glcd_selection = mios32_lcd_device;
-      u32 mask = value ? ~(1 << mios32_lcd_device) : 0xffffffff;
+    int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
+    if( num_additional_lcds >= (MAX_LCDS-8) )
+      num_additional_lcds = (MAX_LCDS-8);
 
-      MIOS32_BOARD_J15_DataSet(mask);
+    // Note: assume that CS lines are low-active!
+    if( all ) {
+      if( prev_glcd_selection != 0xff ) {
+	prev_glcd_selection = 0xff;
+	MIOS32_BOARD_J15_DataSet(value ? 0x00 : 0xff);
 
-      if( num_additional_lcds <= 4 ) {
-	int i;
-	for(i=0; i<num_additional_lcds; ++i)
-	  MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
-      } else {
-	int num_shifts = num_additional_lcds / 8;
-	if( num_additional_lcds % 8 )
-	  ++num_shifts;
+	if( num_additional_lcds <= 4 ) {
+	  int i;
+	  for(i=0; i<num_additional_lcds; ++i)
+	    MIOS32_BOARD_J28_PinSet(i, value ? 0 : 1);
+	} else {
+	  int num_shifts = num_additional_lcds / 8;
+	  if( num_additional_lcds % 8 )
+	    ++num_shifts;
 
-	int selected_lcd = mios32_lcd_device - 8;
-	int selected_lcd_sr = selected_lcd / 8;
-	u8 selected_lcd_mask = value ? ~(1 << (selected_lcd % 8)) : 0xff;
+	  // shift data
+	  int i;
+	  for(i=num_shifts-1; i>=0; --i) {
+	    MIOS32_BOARD_J28_SerDataShift(value ? 0x00 : 0xff);
+	  }
 
-	// shift data
-	int i;
-	for(i=num_shifts-1; i>=0; --i) {
-	  u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
-	  MIOS32_BOARD_J28_SerDataShift(data);
+	  // pulse RC (J28.WS)
+	  MIOS32_BOARD_J28_PinSet(2, 0);
+	  MIOS32_BOARD_J28_PinSet(2, 1);
 	}
+      }
+    } else {
+      if( prev_glcd_selection != mios32_lcd_device ) {
+	prev_glcd_selection = mios32_lcd_device;
+	u32 mask = value ? ~(1 << mios32_lcd_device) : 0xffffffff;
 
-	// pulse RC (J28.WS)
-	MIOS32_BOARD_J28_PinSet(2, 0);
-	MIOS32_BOARD_J28_PinSet(2, 1);
+	MIOS32_BOARD_J15_DataSet(mask);
+
+	if( num_additional_lcds <= 4 ) {
+	  int i;
+	  for(i=0; i<num_additional_lcds; ++i)
+	    MIOS32_BOARD_J28_PinSet(i, (mask >> (8+i)) & 1);
+	} else {
+	  int num_shifts = num_additional_lcds / 8;
+	  if( num_additional_lcds % 8 )
+	    ++num_shifts;
+
+	  int selected_lcd = mios32_lcd_device - 8;
+	  int selected_lcd_sr = selected_lcd / 8;
+	  u8 selected_lcd_mask = value ? ~(1 << (selected_lcd % 8)) : 0xff;
+
+	  // shift data
+	  int i;
+	  for(i=num_shifts-1; i>=0; --i) {
+	    u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
+	    MIOS32_BOARD_J28_SerDataShift(data);
+	  }
+
+	  // pulse RC (J28.WS)
+	  MIOS32_BOARD_J28_PinSet(2, 0);
+	  MIOS32_BOARD_J28_PinSet(2, 1);
+	}
       }
     }
   }
@@ -450,19 +468,43 @@ s32 APP_LCD_Init(u32 mode)
 
     // all OLEDs will be initialized at once by activating all CS lines!
     if( mios32_lcd_device == 0 ) {
-      // the OLED works at 3.3V, level shifting (and open drain mode) not required
-      if( MIOS32_BOARD_J15_PortInit(0) < 0 )
-	return -2; // failed to initialize J15
 
-      display_available |= 0xff;
-
-      APP_LCD_SERGLCD_CS_Init(); // will also enhance display_available depending on total number of LCDs
-
-      // wait 500 mS to ensure that the reset is released
-      {
+      // alternative pinning option for applications which want to access CLCD and SER LCDs
+      // J5A.A0: DC
+      // J5A.A1: SDA
+      // J5A.A2: SCLK
+      // J5A.A3: RST#
+      // J28.SDA:  CS of first display
+      // J28.SC:   CS of second display
+      // J28.WS:   CS of third display
+      // J28.MCLK: CS of fourth display
+      if( lcd_alt_pinning ) {
 	int i;
-	for(i=0; i<500; ++i)
-	  MIOS32_DELAY_Wait_uS(1000);
+	for(i=0; i<4; ++i)
+	  MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+	for(i=0; i<4; ++i)
+	  MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+
+	MIOS32_BOARD_J5_PinSet(3, 0); // reset
+	MIOS32_DELAY_Wait_uS(100);
+	MIOS32_BOARD_J5_PinSet(3, 1);
+
+	display_available |= 0x0f;
+      } else {
+	// the OLED works at 3.3V, level shifting (and open drain mode) not required
+	if( MIOS32_BOARD_J15_PortInit(0) < 0 )
+	  return -2; // failed to initialize J15
+
+	display_available |= 0xff;
+
+	APP_LCD_SERGLCD_CS_Init(); // will also enhance display_available depending on total number of LCDs
+
+	// wait 500 mS to ensure that the reset is released
+	{
+	  int i;
+	  for(i=0; i<500; ++i)
+	    MIOS32_DELAY_Wait_uS(1000);
+	}
       }
 
 
@@ -682,10 +724,19 @@ s32 APP_LCD_Data(u8 data)
   case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     // chip select and DC
     APP_LCD_SERGLCD_CS_Set(1, 0);
-    MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
-    // send data
-    MIOS32_BOARD_J15_SerDataShift(data);
+    // alternative pinning option for applications which want to access CLCD and SER LCDs
+    if( lcd_alt_pinning ) {
+      MIOS32_BOARD_J5_PinSet(0, 1); // RS pin used to control DC
+
+      // send data
+      MIOS32_BOARD_J5_SerDataShift(data);
+    } else {
+      MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
+
+      // send data
+      MIOS32_BOARD_J15_SerDataShift(data);
+    }
 
     // increment graphical cursor
     ++mios32_lcd_x;
@@ -790,9 +841,18 @@ s32 APP_LCD_Cmd(u8 cmd)
   case MIOS32_LCD_TYPE_GLCD_SSD1306_ROTATED: {
     // select all LCDs
     APP_LCD_SERGLCD_CS_Set(1, 1);
-    MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
 
-    MIOS32_BOARD_J15_SerDataShift(cmd);
+    // alternative pinning option for applications which want to access CLCD and SER LCDs
+    if( lcd_alt_pinning ) {
+      MIOS32_BOARD_J5_PinSet(0, 0); // RS pin used to control DC
+
+      // send data
+      MIOS32_BOARD_J5_SerDataShift(cmd);
+    } else {
+      MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
+
+      MIOS32_BOARD_J15_SerDataShift(cmd);
+    }
   } break;
 
   case MIOS32_LCD_TYPE_CLCD:
@@ -893,10 +953,20 @@ s32 APP_LCD_Clear(void)
 
       // select all LCDs
       APP_LCD_SERGLCD_CS_Set(1, 1);
-      MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
-      for(x=0; x<mios32_lcd_parameters.width; ++x)
-	MIOS32_BOARD_J15_SerDataShift(0x00);
+      // alternative pinning option for applications which want to access CLCD and SER LCDs
+      if( lcd_alt_pinning ) {
+	MIOS32_BOARD_J5_PinSet(0, 1); // RS pin used to control DC
+
+	// send data
+	for(x=0; x<mios32_lcd_parameters.width; ++x)
+	  MIOS32_BOARD_J5_SerDataShift(0x00);
+      } else {
+	MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
+
+	for(x=0; x<mios32_lcd_parameters.width; ++x)
+	  MIOS32_BOARD_J15_SerDataShift(0x00);
+      }
     }
 
     // set X=0, Y=0
@@ -1140,6 +1210,22 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Optional alternative pinning options
+// E.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_LCD_AltPinningSet(u8 alt_pinning)
+{
+  lcd_alt_pinning = alt_pinning;
+  return 0; // no error
+}
+
+u8 APP_LCD_AltPinningGet(void)
+{
+  return lcd_alt_pinning;
 }
 
 
