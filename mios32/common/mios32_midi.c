@@ -1699,6 +1699,17 @@ static s32 MIOS32_MIDI_SYSEX_Cmd_Query(mios32_midi_port_t port, mios32_midi_syse
     default: // MIOS32_MIDI_SYSEX_CMD_STATE_END
       switch( query_req ) {
         case 0x01: // operating system
+#if MIOS32_USB_MIDI_NUM_PORTS > 1
+	  // workaround for strange Windows USB MIDI bug:
+	  // after power-on we've to flood the IN pipe with messages to get reliable transfers
+	  if( port == USB0 && !MIOS32_USB_ForceSingleUSB() ) {
+	    int i;
+	    for(i=0; i<256; ++i) {
+	      MIOS32_MIDI_SendActiveSense(port);
+	      MIOS32_USB_MIDI_Periodic_mS();
+	    }
+	  }
+#endif
 	  MIOS32_MIDI_SYSEX_SendAckStr(port, "MIOS32");
 	  break;
         case 0x02: // Board
