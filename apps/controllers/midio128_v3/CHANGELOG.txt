@@ -1,6 +1,12 @@
 $Id$
 
 
+MIDIO128 V3.018
+~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+
 MIDIO128 V3.017
 ~~~~~~~~~~~~~~~
 
