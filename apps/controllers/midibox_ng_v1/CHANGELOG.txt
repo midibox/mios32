@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.029
+~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+
 MIDIbox NG V1.028
 ~~~~~~~~~~~~~~~~~
 

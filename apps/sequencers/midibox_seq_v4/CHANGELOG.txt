@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.081
+~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+
 MIDIboxSEQ V4.080
 ~~~~~~~~~~~~~~~~~
 
