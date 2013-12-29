@@ -1220,6 +1220,7 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 s32 APP_LCD_AltPinningSet(u8 alt_pinning)
 {
   lcd_alt_pinning = alt_pinning;
+  display_available = ~0; // reset display available state
   return 0; // no error
 }
 
