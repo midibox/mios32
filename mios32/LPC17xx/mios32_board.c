@@ -153,9 +153,16 @@ static const j28_pin_t j28_pin[J28_NUM_PINS] = {
 #define J15_PIN_E2(b)   MIOS32_SYS_LPC_PINSET(J15_E2_PORT, J15_E2_PIN, b)
 #define J15_PIN_RW(b)   MIOS32_SYS_LPC_PINSET(J15_RW_PORT, J15_RW_PIN, b)
 
+#if 1
 #define J15_PIN_SERLCD_DATAOUT(b) MIOS32_SYS_LPC_PINSET(J15_RW_PORT, J15_RW_PIN, b)
 #define J15_PIN_SERLCD_SCLK_0     { MIOS32_SYS_LPC_PINSET_0(J15_E1_PORT, J15_E1_PIN); MIOS32_SYS_LPC_PINSET_0(J15_E2_PORT, J15_E2_PIN); }
 #define J15_PIN_SERLCD_SCLK_1     { MIOS32_SYS_LPC_PINSET_1(J15_E1_PORT, J15_E1_PIN); MIOS32_SYS_LPC_PINSET_1(J15_E2_PORT, J15_E2_PIN); }
+#else
+// try SDA at E2
+#define J15_PIN_SERLCD_DATAOUT(b) MIOS32_SYS_LPC_PINSET(J15_E2_PORT, J15_E2_PIN, b)
+#define J15_PIN_SERLCD_SCLK_0     { MIOS32_SYS_LPC_PINSET_0(J15_E1_PORT, J15_E1_PIN); }
+#define J15_PIN_SERLCD_SCLK_1     { MIOS32_SYS_LPC_PINSET_1(J15_E1_PORT, J15_E1_PIN); }
+#endif
 
 #define J15_PIN_RCLK_0  MIOS32_SYS_LPC_PINSET_0(J15_RCLK_PORT, J15_RCLK_PIN)
 #define J15_PIN_RCLK_1  MIOS32_SYS_LPC_PINSET_1(J15_RCLK_PORT, J15_RCLK_PIN)
@@ -952,32 +959,56 @@ s32 MIOS32_BOARD_J15_DataSet(u8 data)
   return -1; // LCD port not available
 #else
   // shift in 8bit data
-  // whole function takes ca. 1.5 uS @ 72MHz
+  // whole function takes ca. 1 uS @ 120MHz
   // thats acceptable for a (C)LCD, which is normaly busy after each access for ca. 20..40 uS
 
   J15_PIN_SER(data & 0x80); // D7
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x40); // D6
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x20); // D5
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x10); // D4
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x08); // D3
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x04); // D2
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x02); // D1
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SER(data & 0x01); // D0
   J15_PIN_SCLK_0; // setup delay
+  J15_PIN_SCLK_0;
+  J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
   J15_PIN_SCLK_1;
 
