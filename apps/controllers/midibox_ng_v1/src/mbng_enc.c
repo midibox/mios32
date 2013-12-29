@@ -45,6 +45,7 @@ s32 MBNG_ENC_Init(u32 mode)
   for(i=1; i<MIOS32_ENC_NUM_MAX; ++i) { // start at 1 since the first encoder is allocated by SCS
     mios32_enc_config_t enc_config;
     enc_config = MIOS32_ENC_ConfigGet(i);
+    enc_config.cfg.type = NON_DETENTED;
     enc_config.cfg.sr = 0;
     enc_config.cfg.pos = 0;
     enc_config.cfg.speed = NORMAL;
