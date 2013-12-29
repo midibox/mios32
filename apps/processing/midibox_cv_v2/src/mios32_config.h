@@ -23,4 +23,18 @@
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
+// use 16 DOUT pages
+#define MIOS32_SRIO_NUM_DOUT_PAGES 16
+
+// disables the default SRIO scan routine in programming_models/traditional/main.c
+// allows to implement an own handler
+// -> see app.c, APP_SRIO_*
+#define MIOS32_DONT_SERVICE_SRIO_SCAN 1
+
+// increased number of SRs
+// (we are not using so many SRs... the intention is to enlarge the SRIO update cycle
+// so that an update takes place ca. each 250 uS)
+#define MIOS32_SRIO_NUM_SR 32
+
+
 #endif /* _MIOS32_CONFIG_H */

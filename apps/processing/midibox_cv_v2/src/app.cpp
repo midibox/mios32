@@ -39,6 +39,7 @@
 #include "mbcv_sysex.h"
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
+#include "mbcv_lre.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
@@ -162,6 +163,7 @@ extern "C" void APP_Init(void)
   MBCV_MAP_Init(0);
   MIDI_ROUTER_Init(0);
   MBCV_PATCH_Init(0);
+  MBCV_LRE_Init(0);
   UIP_TASK_Init(0);
 
   SCS_Init(0);
@@ -187,6 +189,15 @@ extern "C" void APP_Init(void)
   // start timer
   // TODO: increase  once performance has been evaluated
   MIOS32_TIMER_Init(2, 2000 / cv_se_speed_factor, CV_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
+
+#if MIOS32_DONT_SERVICE_SRIO_SCAN
+  //MIOS32_SRIO_ScanNumSet(4);
+
+  // standard SRIO scan has been disabled in programming_models/traditional/main.c via MIOS32_DONT_SERVICE_SRIO_SCAN in mios32_config.h
+  // start the scan here - and retrigger it whenever it's finished
+  APP_SRIO_ServicePrepare();
+  MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
+#endif
 }
 
 
@@ -257,6 +268,15 @@ extern "C" void APP_SRIO_ServicePrepare(void)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_SRIO_ServiceFinish(void)
 {
+#if MIOS32_DONT_SERVICE_SRIO_SCAN
+  // update encoder states
+  MIOS32_ENC_UpdateStates();
+
+  // standard SRIO scan has been disabled in programming_models/traditional/main.c via MIOS32_DONT_SERVICE_SRIO_SCAN in mios32_config.h
+  // start the scan here - and retrigger it whenever it's finished
+  APP_SRIO_ServicePrepare();
+  MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
+#endif
 }
 
 
@@ -277,8 +297,12 @@ extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
   // pass encoder event to SCS handler
-  if( encoder == SCS_ENC_MENU_ID )
+  if( encoder == SCS_ENC_MENU_ID ) // == 0 (assigned by SCS)
     SCS_ENC_MENU_NotifyChange(incrementer);
+  else {
+    // -> ENC Handler
+    MBNG_LRE_NotifyChange(encoder-1, incrementer);
+  }
 }
 
 

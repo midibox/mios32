@@ -22,6 +22,7 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/scs_config.cpp \
 		    src/mbcv_patch.cpp \
 		    src/mbcv_map.cpp \
+		    src/mbcv_lre.cpp \
 	 	    src/mbcv_file.cpp \
 	 	    src/mbcv_file_b.cpp \
 	 	    src/mbcv_file_p.cpp \
