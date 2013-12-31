@@ -36,6 +36,9 @@ public:
     // Destructor
     ~MbCv();
 
+    // the assigned CV channel number (only used for debugging)
+    u8 cvNum;
+
     // reference to clock generator
     MbCvClock *mbCvClockPtr;
 
@@ -52,9 +55,6 @@ public:
     void midiReceiveCC(u8 chn, u8 ccNumber, u8 value);
     void midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit);
     void midiReceiveAftertouch(u8 chn, u8 value);
-
-    bool setNRPN(u16 nrpnNumber, u16 value);
-    bool getNRPN(u16 nrpnNumber, u16 *value);
 
     // should be called whenver the patch has been changed
     void updatePatch(bool forceEngineInit);
@@ -88,6 +88,11 @@ public:
     // trigger handling
     void triggerNoteOn(MbCvVoice *v);
     void triggerNoteOff(MbCvVoice *v);
+
+    // NRPN parameter handling
+    bool setNRPN(u16 nrpnNumber, u16 value);
+    bool getNRPN(u16 nrpnNumber, u16 *value);
+    bool getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
 
 };
 

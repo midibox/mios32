@@ -54,8 +54,19 @@
 #define DEBUG_VERBOSE_LEVEL 2
 
 // measure performance with the stopwatch
+// 0: off
+// 1: CV processing only
+// 2: CV processing + mapping
 //#define STOPWATCH_PERFORMANCE_MEASURING 2
 #define STOPWATCH_PERFORMANCE_MEASURING 0
+
+// output execution times at J5B:A4..A7
+// 0: off
+// 1: on -> J5.A4: CV processing (low-active)
+//          J5.A5: CV processing + mapping (low-active)
+//          J5.A6: Scope output (low-active)
+
+#define J5_DEBUG_PINS 1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,8 +77,10 @@ static u8 hw_enabled;
 static u32 ms_counter;
 
 static u32 stopwatch_value;
+static u32 stopwatch_value_min;
 static u32 stopwatch_value_max;
 static u32 stopwatch_value_accumulated;
+static u32 stopwatch_value_accumulated_ctr;
 
 static u32 cv_se_speed_factor;
 
@@ -113,6 +126,17 @@ extern "C" void APP_Init(void)
 
   // init Stopwatch
   APP_StopwatchInit();
+
+#if J5_DEBUG_PINS
+  // initialize debug pins J5B:A4..A7
+  {
+    int i;
+    for(int i=4; i<7; ++i) {
+      MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+      MIOS32_BOARD_J5_PinSet(i, 1);
+    }
+  }
+#endif
 
   // initialize all J10 pins as inputs with internal Pull-Up
   int pin;
@@ -323,15 +347,28 @@ extern void CV_TIMER_SE_Update(void)
   if( !hw_enabled )
     return;
 
-#if STOPWATCH_PERFORMANCE_MEASURING >= 1
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(4, 0);
+    MIOS32_BOARD_J5_PinSet(5, 0);
+#endif
+
+#if STOPWATCH_PERFORMANCE_MEASURING == 1 || STOPWATCH_PERFORMANCE_MEASURING == 2
   APP_StopwatchReset();
 #endif
 
-  if( !mbCvEnvironment.tick() )
+  if( !mbCvEnvironment.tick() ) {
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(4, 1);
+    MIOS32_BOARD_J5_PinSet(5, 1);
+#endif
     return; // no update required
+  }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   APP_StopwatchCapture();
+#endif
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(4, 1);
 #endif
 
   // update AOUTs
@@ -339,6 +376,9 @@ extern void CV_TIMER_SE_Update(void)
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 2
   APP_StopwatchCapture();
+#endif
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(5, 1);
 #endif
 }
 
@@ -362,10 +402,16 @@ void APP_TASK_Period_1mS_LP(void)
   SCS_Tick();
 
   {
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(6, 0);
+#endif
     // CV Scopes
     APP_SelectScopeLCDs();
     mbCvEnvironment.tickScopes();
     APP_SelectMainLCD();
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(6, 1);
+#endif
   }
 
   // CV Bars (currently only for SSD1306)
@@ -391,14 +437,18 @@ void APP_TASK_Period_1mS_LP(void)
 
     MUTEX_MIDIOUT_TAKE;
     MIOS32_IRQ_Disable();
+    u32 min_value = stopwatch_value_min;
+    stopwatch_value_min = ~0;
     u32 max_value = stopwatch_value_max;
     stopwatch_value_max = 0;
     u32 acc_value = stopwatch_value_accumulated;
     stopwatch_value_accumulated = 0;
+    u32 acc_ctr = stopwatch_value_accumulated_ctr;
+    stopwatch_value_accumulated_ctr = 0;
     MIOS32_IRQ_Enable();
 #if DEBUG_VERBOSE_LEVEL >= 2
     if( acc_value || max_value )
-      DEBUG_MSG("%d uS (max: %d uS)\n", acc_value / (1000000 / (2000/cv_se_speed_factor)), max_value);
+      DEBUG_MSG("%d uS (min: %d uS, max: %d uS)\n", acc_value / acc_ctr, min_value, max_value);
 #endif
     MUTEX_MIDIOUT_GIVE;
   }
@@ -565,8 +615,10 @@ static s32 APP_SelectMainLCD(void)
 s32 APP_StopwatchInit(void)
 {
   stopwatch_value = 0;
+  stopwatch_value_min = ~0;
   stopwatch_value_max = 0;
   stopwatch_value_accumulated = 0;
+  stopwatch_value_accumulated_ctr = 0;
   return MIOS32_STOPWATCH_Init(1); // 1 uS resolution
 }
 
@@ -580,9 +632,12 @@ s32 APP_StopwatchCapture(void)
   u32 value = MIOS32_STOPWATCH_ValueGet();
   MIOS32_IRQ_Disable();
   stopwatch_value = value;
+  if( value < stopwatch_value_min )
+    stopwatch_value_min = value;
   if( value > stopwatch_value_max )
     stopwatch_value_max = value;
   stopwatch_value_accumulated += value;
+  ++stopwatch_value_accumulated_ctr;
   MIOS32_IRQ_Enable();
 
   return 0; // no error

@@ -399,100 +399,98 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
     // process received NRPN value
     if( handle_nrpn ) {
-        // decode address
-        u16 address = nrpnAddress[midi_package.chn];
-        u16 select = address >> 10;
+        u16 nrpnNumber = nrpnAddress[midi_package.chn];
         u16 value = nrpnValue[midi_package.chn];
 
-        // channel independent access
-        if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
-            mbCv[select].setNRPN(address, value);
+        if( !setNRPN(nrpnNumber, value) ) {
+            u16 select = nrpnNumber >> 10;
 
-        } else if( select == 0xf ) { // special commands (0x3c00..0x3fff)
-            // remember this port for delayed ack messages
-            lastNrpnMidiPort = port;
+            if( select == 0xf ) { // special commands (0x3c00..0x3fff)
+                // remember this port for delayed ack messages
+                lastNrpnMidiPort = port;
 
-            switch( address % CV_PATCH_SIZE ) {
-            case 0x000: { // Dump All: 0x3c00 <channels>
-                lastNrpnCvChannels = value; // for delayed ack messages
-                midiSendNRPNDump(port, value, 0);
-                midiSendGlobalNRPNDump(port);
-            } break;
+                switch( nrpnNumber % CV_PATCH_SIZE ) {
+                case 0x000: { // Dump All: 0x3c00 <channels>
+                    lastNrpnCvChannels = value; // for delayed ack messages
+                    midiSendNRPNDump(port, value, 0);
+                    midiSendGlobalNRPNDump(port);
+                } break;
 
-            case 0x001: { // Dump Seq Only: 0x3c00 <channels>
-                lastNrpnCvChannels = value; // for delayed ack messages
-                midiSendNRPNDump(port, value, 1);
-            } break;
+                case 0x001: { // Dump Seq Only: 0x3c00 <channels>
+                    lastNrpnCvChannels = value; // for delayed ack messages
+                    midiSendNRPNDump(port, value, 1);
+                } break;
 
-            case 0x008: channelCopy(value, copyBuffer);  break;
-            case 0x009: channelPaste(value, copyBuffer); midiSendNRPNDump(port, 1 << value, 0); break;
-            case 0x00a: channelClear(value); midiSendNRPNDump(port, 1 << value, 0); break;
+                case 0x008: channelCopy(value, copyBuffer);  break;
+                case 0x009: channelPaste(value, copyBuffer); midiSendNRPNDump(port, 1 << value, 0); break;
+                case 0x00a: channelClear(value); midiSendNRPNDump(port, 1 << value, 0); break;
 
-            case 0x010: {                                     // Play Off: 0x3c10 <channels>
-                MIOS32_IRQ_Disable();
-                int cv = 0;
-                for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
-                    if( value & (1 << cv) )
-                        s->noteAllOff(false);
-                MIOS32_IRQ_Enable();
-            } break;
+                case 0x010: {                                     // Play Off: 0x3c10 <channels>
+                    MIOS32_IRQ_Disable();
+                    int cv = 0;
+                    for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
+                        if( value & (1 << cv) )
+                            s->noteAllOff(false);
+                    MIOS32_IRQ_Enable();
+                } break;
 
-            case 0x011: {                                     // Play On: 0x3c11 <channels>
-                MIOS32_IRQ_Disable();
-                int cv = 0;
-                for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
-                    if( value & (1 << cv) ) {
-                        s->noteOn(0x3c, 0x7f, false);
-                        if( s->mbCvArp.arpEnabled ) {
-                            s->noteOn(0x3c+4, 0x7f, false);
-                            s->noteOn(0x3c+7, 0x7f, false);
+                case 0x011: {                                     // Play On: 0x3c11 <channels>
+                    MIOS32_IRQ_Disable();
+                    int cv = 0;
+                    for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv)
+                        if( value & (1 << cv) ) {
+                            s->noteOn(0x3c, 0x7f, false);
+                            if( s->mbCvArp.arpEnabled ) {
+                                s->noteOn(0x3c+4, 0x7f, false);
+                                s->noteOn(0x3c+7, 0x7f, false);
+                            }
                         }
-                    }
-                MIOS32_IRQ_Enable();
-            } break;
+                    MIOS32_IRQ_Enable();
+                } break;
 
-            case 0x018: {                                     // Tempo: 0x3c18 <tempo>
-                mbCvClock.bpmSet((float)value);
-            } break;
+                case 0x018: {                                     // Tempo: 0x3c18 <tempo>
+                    mbCvClock.bpmSet((float)value);
+                } break;
 
-            case 0x019: {                                     // TempoMode: 0x3c19 <tempoMode>
-                mbCvClock.clockModeSet((mbcv_clock_mode_t)value);                
-            } break;
+                case 0x019: {                                     // TempoMode: 0x3c19 <tempoMode>
+                    mbCvClock.clockModeSet((mbcv_clock_mode_t)value);                
+                } break;
 
-            case 0x01a: {                                     // Seq Start/Stop/Continue: 0x3c1a <1|0|2>
-                mios32_midi_port_t dummyPort = (mios32_midi_port_t)0xff;
+                case 0x01a: {                                     // Seq Start/Stop/Continue: 0x3c1a <1|0|2>
+                    mios32_midi_port_t dummyPort = (mios32_midi_port_t)0xff;
+                    
+                    if( value == 0 )
+                        mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfc); // stop
+                    else if( value == 1 )
+                        mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfa); // start
+                    else if( value == 2 )
+                        mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfb); // continue
+                } break;
 
-                if( value == 0 )
-                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfc); // stop
-                else if( value == 1 )
-                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfa); // start
-                else if( value == 2 )
-                    mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfb); // continue
-            } break;
+                case 0x020: {                                     // Patch load
+                    bankLoad(mbCvPatch.bankNum, value);
+                } break;
 
-            case 0x020: {                                     // Patch load
-                bankLoad(mbCvPatch.bankNum, value);
-            } break;
+                case 0x021: {                                     // Bank load
+                    bankLoad(value, mbCvPatch.patchNum);
+                } break;
 
-            case 0x021: {                                     // Bank load
-                bankLoad(value, mbCvPatch.patchNum);
-            } break;
+                case 0x022: {                                     // Patch and Bank load
+                    bankLoad(value >> 7, value & 0x7f);
+                } break;
 
-            case 0x022: {                                     // Patch and Bank load
-                bankLoad(value >> 7, value & 0x7f);
-            } break;
+                case 0x023: {                                     // Patch and Bank save
+                    bankSave(value >> 7, value & 0x7f);
+                } break;
 
-            case 0x023: {                                     // Patch and Bank save
-                bankSave(value >> 7, value & 0x7f);
-            } break;
+                case 0x024: {                                     // Synched Change
+                    mbCvPatch.synchedChange = value;
+                } break;
 
-            case 0x024: {                                     // Synched Change
-                mbCvPatch.synchedChange = value;
-            } break;
-
-            case 0x025: {                                     // Synch Change Step
-                mbCvPatch.synchedChangeStep = value;
-            } break;
+                case 0x025: {                                     // Synch Change Step
+                    mbCvPatch.synchedChangeStep = value;
+                } break;
+                }
             }
         }
         return;
@@ -724,4 +722,56 @@ bool MbCvEnvironment::sysexSetParameter(u8 cv, u16 addr, u8 data)
     return mbCv[cv].sysexSetParameter(addr, data);
 #endif
     return false;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// will set NRPN of a MbCv voice
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::setNRPN(u16 nrpnNumber, u16 value)
+{
+    // decode address
+    u16 select = nrpnNumber >> 10;
+
+    // channel access
+    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+        return mbCv[select].setNRPN(nrpnNumber, value);
+    }
+
+    return false; // parameter not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN value of MbCv Voice
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getNRPN(u16 nrpnNumber, u16 *value)
+{
+    // decode address
+    u16 select = nrpnNumber >> 10;
+
+    // channel access
+    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+        return mbCv[select].getNRPN(nrpnNumber, value);
+    }
+
+    return false; // parameter not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN Informations of MbCv Voice
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
+{
+    u16 select = nrpnNumber >> 10;
+
+    // channel access
+    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+        return mbCv[select].getNRPNInfo(nrpnNumber, info);
+    }
+
+    return false; // parameter not mapped
 }

@@ -25,8 +25,9 @@
 #include <aout.h>
 #include <app_lcd.h>
 
+#include <app.h>
+#include <MbCvEnvironment.h>
 
-#include "app.h"
 #include "tasks.h"
 #include "terminal.h"
 #include "mbcv_patch.h"
@@ -270,6 +271,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  save <name>:                      stores current config on SD Card");
       out("  load <name>:                      restores config from SD Card");
       out("  show:                             shows the current configuration file");
+      out("  nrpn:                             shows the current NRPN parameters");
       out("  msd <on|off>:                     enables Mass Storage Device driver");
       out("  reset:                            resets the MIDIbox (!)\n");
       out("  help:                             this page");
@@ -363,6 +365,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       }
     } else if( strcmp(parameter, "show") == 0 ) {
       MBCV_FILE_P_Debug();
+    } else if( strcmp(parameter, "nrpn") == 0 || strcmp(parameter, "nrpns") == 0 ) {
+      TERMINAL_ShowNrpns(out);
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "set") == 0 ) {
@@ -588,3 +592,36 @@ s32 TERMINAL_PrintSdCardInfo(void *_output_function)
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// NRPN list
+/////////////////////////////////////////////////////////////////////////////
+s32 TERMINAL_ShowNrpns(void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+  MbCvEnvironment* env = APP_GetEnv();
+
+  MUTEX_MIDIOUT_TAKE;
+
+  for(int nrpnNumber=0; nrpnNumber<16384; ++nrpnNumber) {
+    MbCvNrpnInfoT info;
+    if( env->getNRPNInfo(nrpnNumber, &info) ) {
+      int value = info.value;
+      int min = info.min;
+      int max = info.max;
+
+      if( info.is_bidir ) {
+	u16 range = max - min + 1;
+	min -= range / 2;
+	max -= range / 2;
+	value -= range / 2;
+      }
+      out("CV%d %s | %5d | 0x%04x | %4d | 0x%02x | %4d..%4d", info.cv+1, info.name, nrpnNumber, nrpnNumber, value, info.value, min, max);
+    }
+  }
+
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
