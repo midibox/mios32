@@ -112,6 +112,11 @@ public:
     bool sysexSetPatch(u8 cv, cv_patch_t *p, bool toBank, u8 bank, u8 patch); // returns false if CV not available
     bool sysexGetPatch(u8 cv, cv_patch_t *p, bool fromBank, u8 bank, u8 patch); // returns false if CV not available
     bool sysexSetParameter(u8 cv, u16 addr, u8 data); // returns false if CV not available
+
+    // NRPN parameter handling
+    bool setNRPN(u16 nrpnNumber, u16 value);
+    bool getNRPN(u16 nrpnNumber, u16 *value);
+    bool getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
     
     // SysEx parsers
     //MbCvSysEx mbCvSysEx;

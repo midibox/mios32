@@ -35,6 +35,7 @@ extern s32 TERMINAL_ParseLine(char *input, void *_output_function);
 extern s32 TERMINAL_PrintSystem(void *_output_function);
 extern s32 TERMINAL_PrintMemoryInfo(void *_output_function);
 extern s32 TERMINAL_PrintSdCardInfo(void *_output_function);
+extern s32 TERMINAL_ShowNrpns(void *_output_function);
 
 
 /////////////////////////////////////////////////////////////////////////////

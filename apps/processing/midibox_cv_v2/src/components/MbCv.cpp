@@ -14,6 +14,8 @@
 
 #include "MbCv.h"
 #include <app.h>
+#include <string.h>
+#include <mbcv_map.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -38,6 +40,8 @@ MbCv::~MbCv()
 /////////////////////////////////////////////////////////////////////////////
 void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
 {
+    cvNum = _cvNum;
+
     mbCvClockPtr = _mbCvClockPtr;
     mbCvVoice.init(_cvNum, &mbCvMidiVoice);
     mbCvMidiVoice.init();
@@ -316,364 +320,6 @@ void MbCv::midiReceiveAftertouch(u8 chn, u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// will set NRPN depending on first 10 bits
-// MSBs already decoded in MbCvEnvironment
-// returns false if parameter not mapped
-/////////////////////////////////////////////////////////////////////////////
-bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
-{
-    u16 section = nrpnNumber & 0x3c0;
-    u16 par = nrpnNumber & 0x7f;
-
-    if( section < 0x080 ) {        // Main: 0x000..0x07f
-        if( par < 0x10 ) {
-            mbCvMidiVoice.setPortEnabled(par, value);
-            return true;
-        }
-        switch( par ) {
-        case 0x10: mbCvMidiVoice.midivoiceChannel = value; return true;
-        case 0x11: mbCvVoice.voiceEventMode = (mbcv_midi_event_mode_t)value; return true;
-        case 0x12: mbCvMidiVoice.midivoiceSplitLower = value; return true;
-        case 0x13: mbCvMidiVoice.midivoiceSplitUpper = value; return true;
-        case 0x14: mbCvMidiVoice.midivoiceCCNumber = value; return true;
-
-        case 0x18: mbCvVoice.setAoutCurve(value); return true;
-        case 0x19: mbCvVoice.setAoutSlewRate(value); return true;
-        case 0x1a: mbCvVoice.voiceGateInverted = value; return true;
-
-        case 0x20: mbCvVoice.voiceLegato = value; return true;
-        case 0x21: mbCvVoice.voicePoly = value; return true;
-        case 0x22: mbCvVoice.voiceSusKey = value; return true;
-        case 0x23: mbCvVoice.setPortamentoMode(value); return true;
-
-        case 0x30: mbCvVoice.voicePitchrange = value; return true;
-        case 0x31: mbCvVoice.voiceKeytrack = (int)value - 0x80; return true;
-        case 0x32: mbCvVoice.voiceTransposeOctave = (int)value - 8; return true;
-        case 0x33: mbCvVoice.voiceTransposeSemitone = (int)value - 8; return true;
-        case 0x34: mbCvVoice.voiceFinetune = (int)value - 0x80; return true;
-        case 0x35: mbCvVoice.voicePortamentoRate = value; return true;
-
-        case 0x40: scopeSelect = value; APP_GetEnv()->updateScopeParameters(); return true;
-        case 0x41: scopeOversamplingFactor = value; APP_GetEnv()->updateScopeParameters(); return true;
-        case 0x42: scopeTriggerLevelPercent = value; APP_GetEnv()->updateScopeParameters(); return true;
-        }
-    } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
-
-        if( par >= 0x40 && par < (0x40+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            mbCvSeqBassline.seqBasslineKey[mbCvSeqBassline.seqPatternNumber][step] = value;
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            mbCvSeqBassline.seqBasslineArgs[mbCvSeqBassline.seqPatternNumber][step].ALL = value;
-            return true;
-        }
-
-        switch( par ) {
-        case 0x00: mbCvArp.arpEnabled = value; return true;
-        case 0x01: mbCvArp.arpDirSet(value); return true;
-        case 0x02: mbCvArp.arpHoldMode = value; return true;
-        case 0x03: mbCvArp.arpSortedNotes = value; return true;
-        case 0x04: mbCvArp.arpSyncMode = value; return true;
-        case 0x05: mbCvArp.arpOneshotMode = value; return true;
-        case 0x06: mbCvArp.arpConstantCycle = value; return true;
-        case 0x07: mbCvArp.arpEasyChordMode = value; return true;
-        case 0x10: mbCvArp.arpSpeed = value; return true;
-        case 0x11: mbCvArp.arpGatelength = value; return true;
-
-        case 0x20: mbCvSeqBassline.seqEnabled = value; return true;
-        case 0x21: mbCvSeqBassline.seqPatternNumber = value; return true;
-        case 0x22: mbCvSeqBassline.seqPatternLength = value; return true;
-        case 0x23: mbCvSeqBassline.seqResolution = value; return true;
-        case 0x24: mbCvSeqBassline.seqGateLength = value; return true;
-
-        case 0x28: mbCvSeqBassline.seqEnvMod = value; return true;
-        case 0x29: mbCvSeqBassline.seqAccent = value; return true;
-        }
-    } else if( section < 0x200 ) { // LFO1: 0x100..0x17f, LFO2: 0x180..0x1ff
-        u8 lfo = (section >= 0x180) ? 1 : 0;
-        MbCvLfo *l = &mbCvLfo[lfo];
-
-        switch( par ) {
-        case 0x00: l->lfoAmplitude = (int)value - 0x80; return true;
-        case 0x01: l->lfoRate = value; return true;
-        case 0x02: l->lfoDelay = value; return true;
-        case 0x03: l->lfoPhase = value; return true;
-        case 0x04: l->lfoWaveform = value; return true;
-
-        case 0x10: l->lfoModeClkSync = value; return true;
-        case 0x11: l->lfoModeKeySync = value; return true;
-        case 0x12: l->lfoModeOneshot = value; return true;
-        case 0x13: l->lfoModeFast = value; return true;
-
-        case 0x20: l->lfoDepthPitch = (int)value - 0x80; return true;
-        case 0x21: l->lfoDepthLfoAmplitude = (int)value - 0x80; return true;
-        case 0x22: l->lfoDepthLfoRate = (int)value - 0x80; return true;
-        case 0x23: l->lfoDepthEnv1Rate = (int)value - 0x80; return true;
-        case 0x24: l->lfoDepthEnv2Rate = (int)value - 0x80; return true;
-        }
-    } else if( section < 0x280 ) { // ENV1: 0x200..0x27f
-        MbCvEnv *e = &mbCvEnv1[0];
-
-        switch( par ) {
-        case 0x00: e->envAmplitude = (int)value - 0x80; return true;
-        case 0x01: e->envCurve = (int)value; return true;
-        case 0x02: e->envDelay = (int)value; return true;
-        case 0x03: e->envAttack = (int)value; return true;
-        case 0x04: e->envDecay = (int)value; return true;
-        case 0x05: e->envSustain = (int)value; return true;
-        case 0x06: e->envRelease = (int)value; return true;
-
-        case 0x10: e->envModeClkSync = (int)value; return true;
-        case 0x11: e->envModeKeySync = (int)value; return true;
-        case 0x12: e->envModeOneshot = (int)value; return true;
-        case 0x13: e->envModeFast = (int)value; return true;
-
-        case 0x20: e->envDepthPitch = (int)value - 0x80; return true;
-        case 0x21: e->envDepthLfo1Amplitude = (int)value - 0x80; return true;
-        case 0x22: e->envDepthLfo1Rate = (int)value - 0x80; return true;
-        case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
-        case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
-        }
-    } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
-        MbCvEnvMulti *e = &mbCvEnv2[0];
-
-        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            e->envLevel[step] = value;
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            // spare
-            return false;
-        }
-
-        switch( par ) {
-        case 0x00: e->envAmplitude = (int)value - 0x80; return true;
-        case 0x01: e->envCurve = (int)value; return true;
-        case 0x02: e->envOffset = (int)value - 0x80; return true;
-        case 0x03: e->envRate = (int)value; return true;
-
-        case 0x08: e->envLoopAttack = (int)value; return true;
-        case 0x09: e->envSustainStep = (int)value; return true;
-        case 0x0a: e->envLoopRelease = (int)value; return true;
-        case 0x0b: e->envLastStep = (int)value; return true;
-
-        case 0x10: e->envModeClkSync = (int)value; return true;
-        case 0x11: e->envModeKeySync = (int)value; return true;
-        case 0x12: e->envModeOneshot = (int)value; return true;
-        case 0x13: e->envModeFast = (int)value; return true;
-
-        case 0x20: e->envDepthPitch = (int)value - 0x80; return true;
-        case 0x21: e->envDepthLfo1Amplitude = (int)value - 0x80; return true;
-        case 0x22: e->envDepthLfo1Rate = (int)value - 0x80; return true;
-        case 0x23: e->envDepthLfo2Amplitude = (int)value - 0x80; return true;
-        case 0x24: e->envDepthLfo2Rate = (int)value - 0x80; return true;
-        }
-    } else if( section < 0x380 ) { // MOD1: 0x300..0x30f, ... MOD4: 0x330..0x33f
-        u8 mod = par >> 4;
-
-        if( mod >= MBCV_NUM_MOD )
-            return false; // just to ensure...
-
-        MbCvMod::ModPatchT *mp = (MbCvMod::ModPatchT *)&mbCvMod.modPatch[mod];
-        switch( par & 0x0f ) {
-        case 0x00: mp->depth = (int)value - 0x80; return true;
-        case 0x01: mp->src1 = value; return true;
-        case 0x02: mp->src1_chn = value; return true;
-        case 0x03: mp->src2 = value; return true;
-        case 0x04: mp->src2_chn = value; return true;
-        case 0x05: mp->op &= 0xc0; mp->op |= (value & 0x3f); return true;
-        case 0x06: mp->dst1 = value; return true;
-        case 0x07: mp->op &= ~(1 << 6); mp->op |= ((value&1) << 6); return true;
-        case 0x08: mp->dst2 = value; return true;
-        case 0x09: mp->op &= ~(1 << 7); mp->op |= ((value&1) << 7); return true;
-        }
-    }
-
-    return false; // parameter not mapped
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// returns NRPN value depending on first 10 bits
-// MSBs already decoded in MbCvEnvironment
-// returns false if parameter not mapped
-/////////////////////////////////////////////////////////////////////////////
-bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
-{
-    u16 section = nrpnNumber & 0x3c0;
-    u16 par = nrpnNumber & 0x7f;
-
-    if( section < 0x080 ) {        // Main: 0x000..0x07f
-        if( par < 0x10 ) {
-            *value = mbCvMidiVoice.getPortEnabled(par & 0x0f);
-            return true;
-        }
-        switch( par ) {
-        case 0x10: *value = mbCvMidiVoice.midivoiceChannel; return true;
-        case 0x11: *value = (u16)mbCvVoice.voiceEventMode; return true;
-        case 0x12: *value = mbCvMidiVoice.midivoiceSplitLower; return true;
-        case 0x13: *value = mbCvMidiVoice.midivoiceSplitUpper; return true;
-        case 0x14: *value = mbCvMidiVoice.midivoiceCCNumber; return true;
-
-        case 0x18: *value = mbCvVoice.getAoutCurve(); return true;
-        case 0x19: *value = mbCvVoice.getAoutSlewRate(); return true;
-        case 0x1a: *value = mbCvVoice.voiceGateInverted; return true;
-
-        case 0x20: *value = mbCvVoice.voiceLegato; return true;
-        case 0x21: *value = mbCvVoice.voicePoly; return true;
-        case 0x22: *value = mbCvVoice.voiceSusKey; return true;
-        case 0x23: *value = mbCvVoice.getPortamentoMode(); return true;
-
-        case 0x30: *value = mbCvVoice.voicePitchrange; return true;
-        case 0x31: *value = (int)mbCvVoice.voiceKeytrack + 0x80; return true;
-        case 0x32: *value = (int)mbCvVoice.voiceTransposeOctave + 8; return true;
-        case 0x33: *value = (int)mbCvVoice.voiceTransposeSemitone + 8; return true;
-        case 0x34: *value = (int)mbCvVoice.voiceFinetune + 0x80; return true;
-        case 0x35: *value = mbCvVoice.voicePortamentoRate; return true;
-
-        case 0x40: *value = scopeSelect; return true;
-        case 0x41: *value = scopeOversamplingFactor; return true;
-        case 0x42: *value = scopeTriggerLevelPercent; return true;
-        }
-    } else if( section < 0x100 ) { // ARP and SEQ:  0x080..0x0ff
-
-        if( par >= 0x40 && par < (0x40+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = mbCvSeqBassline.seqBasslineKey[mbCvSeqBassline.seqPatternNumber][step];
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_SEQ_BASSLINE_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = mbCvSeqBassline.seqBasslineArgs[mbCvSeqBassline.seqPatternNumber][step].ALL;
-            return true;
-        }
-
-        switch( par ) {
-        case 0x00: *value = mbCvArp.arpEnabled; return true;
-        case 0x01: *value = mbCvArp.arpDirGet(); return true;
-        case 0x02: *value = mbCvArp.arpHoldMode; return true;
-        case 0x03: *value = mbCvArp.arpSortedNotes; return true;
-        case 0x04: *value = mbCvArp.arpSyncMode; return true;
-        case 0x05: *value = mbCvArp.arpOneshotMode; return true;
-        case 0x06: *value = mbCvArp.arpConstantCycle; return true;
-        case 0x07: *value = mbCvArp.arpEasyChordMode; return true;
-        case 0x10: *value = mbCvArp.arpSpeed; return true;
-        case 0x11: *value = mbCvArp.arpGatelength; return true;
-
-        case 0x20: *value = mbCvSeqBassline.seqEnabled; return true;
-        case 0x21: *value = mbCvSeqBassline.seqPatternNumber; return true;
-        case 0x22: *value = mbCvSeqBassline.seqPatternLength; return true;
-        case 0x23: *value = mbCvSeqBassline.seqResolution; return true;
-        case 0x24: *value = mbCvSeqBassline.seqGateLength; return true;
-
-        case 0x28: *value = mbCvSeqBassline.seqEnvMod; return true;
-        case 0x29: *value = mbCvSeqBassline.seqAccent; return true;
-        }
-    } else if( section < 0x200 ) { // LFO1: 0x100..0x17f, LFO2: 0x180..0x1ff
-        u8 lfo = (section >= 0x180) ? 1 : 0;
-        MbCvLfo *l = &mbCvLfo[lfo];
-
-        switch( par ) {
-        case 0x00: *value = (int)l->lfoAmplitude + 0x80; return true;
-        case 0x01: *value = (int)l->lfoRate; return true;
-        case 0x02: *value = (int)l->lfoDelay; return true;
-        case 0x03: *value = (int)l->lfoPhase; return true;
-        case 0x04: *value = (int)l->lfoWaveform; return true;
-
-        case 0x10: *value = (int)l->lfoModeClkSync; return true;
-        case 0x11: *value = (int)l->lfoModeKeySync; return true;
-        case 0x12: *value = (int)l->lfoModeOneshot; return true;
-        case 0x13: *value = (int)l->lfoModeFast; return true;
-
-        case 0x20: *value = (int)l->lfoDepthPitch + 0x80; return true;
-        case 0x21: *value = (int)l->lfoDepthLfoAmplitude + 0x80; return true;
-        case 0x22: *value = (int)l->lfoDepthLfoRate + 0x80; return true;
-        case 0x23: *value = (int)l->lfoDepthEnv1Rate + 0x80; return true;
-        case 0x24: *value = (int)l->lfoDepthEnv2Rate + 0x80; return true;
-        }
-    } else if( section < 0x280 ) { // ENV1: 0x200..0x27f
-        MbCvEnv *e = &mbCvEnv1[0];
-
-        switch( par ) {
-        case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
-        case 0x01: *value = (int)e->envCurve; return true;
-        case 0x02: *value = (int)e->envDelay; return true;
-        case 0x03: *value = (int)e->envAttack; return true;
-        case 0x04: *value = (int)e->envDecay; return true;
-        case 0x05: *value = (int)e->envSustain; return true;
-        case 0x06: *value = (int)e->envRelease; return true;
-
-        case 0x10: *value = (int)e->envModeClkSync; return true;
-        case 0x11: *value = (int)e->envModeKeySync; return true;
-        case 0x12: *value = (int)e->envModeOneshot; return true;
-        case 0x13: *value = (int)e->envModeFast; return true;
-
-        case 0x20: *value = (int)e->envDepthPitch + 0x80; return true;
-        case 0x21: *value = (int)e->envDepthLfo1Amplitude + 0x80; return true;
-        case 0x22: *value = (int)e->envDepthLfo1Rate + 0x80; return true;
-        case 0x23: *value = (int)e->envDepthLfo2Amplitude + 0x80; return true;
-        case 0x24: *value = (int)e->envDepthLfo2Rate + 0x80; return true;
-        }
-    } else if( section < 0x300 ) { // ENV2: 0x280..0x2ff
-        MbCvEnvMulti *e = &mbCvEnv2[0];
-
-        if( par >= 0x40 && par < (0x40+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            u8 step = par & 0x1f;
-            *value = e->envLevel[step];
-            return true;
-        } else if( par >= 0x60 && par < (0x60+MBCV_ENV_MULTI_NUM_STEPS) ) {
-            // spare
-            return false;
-        }
-
-        switch( par ) {
-        case 0x00: *value = (int)e->envAmplitude + 0x80; return true;
-        case 0x01: *value = e->envCurve; return true;
-        case 0x02: *value = (int)e->envOffset + 0x80; return true;
-        case 0x03: *value = e->envRate; return true;
-
-        case 0x08: *value = e->envLoopAttack; return true;
-        case 0x09: *value = e->envSustainStep; return true;
-        case 0x0a: *value = e->envLoopRelease; return true;
-        case 0x0b: *value = e->envLastStep; return true;
-
-        case 0x10: *value = e->envModeClkSync; return true;
-        case 0x11: *value = e->envModeKeySync; return true;
-        case 0x12: *value = e->envModeOneshot; return true;
-        case 0x13: *value = e->envModeFast; return true;
-
-        case 0x20: *value = (int)e->envDepthPitch + 0x80; return true;
-        case 0x21: *value = (int)e->envDepthLfo1Amplitude + 0x80; return true;
-        case 0x22: *value = (int)e->envDepthLfo1Rate + 0x80; return true;
-        case 0x23: *value = (int)e->envDepthLfo2Amplitude + 0x80; return true;
-        case 0x24: *value = (int)e->envDepthLfo2Rate + 0x80; return true;
-        }
-    } else if( section < 0x380 ) { // MOD1: 0x300..0x31f, ... MOD4: 0x360..0x37f
-        u8 mod = par >> 4;
-
-        if( mod >= MBCV_NUM_MOD )
-            return false; // just to ensure...
-        
-        MbCvMod::ModPatchT *mp = (MbCvMod::ModPatchT *)&mbCvMod.modPatch[mod];
-        switch( par & 0x0f ) {
-        case 0x00: *value = mp->depth + 0x80; return true;
-        case 0x01: *value = mp->src1; return true;
-        case 0x02: *value = mp->src1_chn; return true;
-        case 0x03: *value = mp->src2; return true;
-        case 0x04: *value = mp->src2_chn; return true;
-        case 0x05: *value = mp->op & 0x3f; return true;
-        case 0x06: *value = mp->dst1; return true;
-        case 0x07: *value = (mp->op & (1 << 6)) ? 1 : 0; return true;
-        case 0x08: *value = mp->dst2; return true;
-        case 0x09: *value = (mp->op & (1 << 7)) ? 1 : 0; return true;
-        }
-    }
-
-    return false; // parameter not mapped
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Should be called whenver the patch has been changed
 /////////////////////////////////////////////////////////////////////////////
 void MbCv::updatePatch(bool forceEngineInit)
@@ -822,3 +468,738 @@ void MbCv::triggerNoteOff(MbCvVoice *v)
                 e->releaseReq = 1;
     }
 }
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// NRPNs
+/////////////////////////////////////////////////////////////////////////////
+
+#define CREATE_GROUP(name, str) \
+    static char name##String[] = str;
+
+#define CREATE_ACCESS_FUNCTIONS(group, name, str, readCode, writeCode) \
+    static char group##name##String[] = str; \
+    static void get##group##name(MbCv* cv, u32 arg, u16 *value) { readCode; }    \
+    static void set##group##name(MbCv* cv, u32 arg, u16 value) { writeCode; }
+
+typedef struct {
+    char *groupString;
+    char *nameString;
+    void (*getFunct)(MbCv *cv, u32 arg, u16 *value);
+    void (*setFunct)(MbCv *cv, u32 arg, u16 value);
+    u32 arg;
+    u16 min;
+    u16 max;
+    u8 is_bidir;
+} MbCvTableEntry_t;
+
+#define NRPN_TABLE_ITEM(group, name, arg, min, max, is_bidir) \
+    { group##String, group##name##String, get##group##name, set##group##name, arg, min, max, is_bidir }
+
+#define NRPN_TABLE_ITEM_EMPTY() \
+    { NULL, NULL, NULL, NULL, 0, 0, 0, 0 }
+
+#define NRPN_TABLE_ITEM_EMPTY8() \
+    NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), \
+    NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY()
+
+#define NRPN_TABLE_ITEM_EMPTY16() \
+    NRPN_TABLE_ITEM_EMPTY8(), \
+    NRPN_TABLE_ITEM_EMPTY8()
+
+CREATE_GROUP(MidiVoice, "Voice");
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Port,               "MIDI Port %d",    *value = cv->mbCvMidiVoice.getPortEnabled(arg),          cv->mbCvMidiVoice.setPortEnabled(arg, value));
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Channel,            "MIDI Channel",    *value = cv->mbCvMidiVoice.midivoiceChannel,             cv->mbCvMidiVoice.midivoiceChannel = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, EventMode,          "Event Mode",      *value = (u16)cv->mbCvVoice.voiceEventMode,              cv->mbCvVoice.voiceEventMode = (mbcv_midi_event_mode_t)value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, SplitLower,         "Split Lower",     *value = cv->mbCvMidiVoice.midivoiceSplitLower,          cv->mbCvMidiVoice.midivoiceSplitLower = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, SplitUpper,         "Split Upper",     *value = cv->mbCvMidiVoice.midivoiceSplitUpper,          cv->mbCvMidiVoice.midivoiceSplitUpper = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, CCNumber,           "CC Number",       *value = cv->mbCvMidiVoice.midivoiceCCNumber,            cv->mbCvMidiVoice.midivoiceCCNumber = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, AoutCurve,          "AOUT Curve",      *value = cv->mbCvVoice.getAoutCurve(),                   cv->mbCvVoice.setAoutCurve(value));
+CREATE_ACCESS_FUNCTIONS(MidiVoice, AoutSlewRate,       "AOUT Slew Rate",  *value = cv->mbCvVoice.getAoutSlewRate(),                cv->mbCvVoice.setAoutSlewRate(value));
+CREATE_ACCESS_FUNCTIONS(MidiVoice, GateInverted,       "Inv. Gate",       *value = cv->mbCvVoice.voiceGateInverted,                cv->mbCvVoice.voiceGateInverted = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Legato,             "Legato",          *value = cv->mbCvVoice.voiceLegato,                      cv->mbCvVoice.voiceLegato = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Poly,               "Poly",            *value = cv->mbCvVoice.voicePoly,                        cv->mbCvVoice.voicePoly = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, SusKey,             "SusKey",          *value = cv->mbCvVoice.voiceSusKey,                      cv->mbCvVoice.voiceSusKey = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, PortamentoMode,     "PortamentoMode",  *value = cv->mbCvVoice.getPortamentoMode(),              cv->mbCvVoice.setPortamentoMode(value));
+CREATE_ACCESS_FUNCTIONS(MidiVoice, PitchRange,         "Pitch Range",     *value = cv->mbCvVoice.voicePitchrange,                  cv->mbCvVoice.voicePitchrange = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Ketrack,            "Keytrack",        *value = (int)cv->mbCvVoice.voiceKeytrack + 0x80,        cv->mbCvVoice.voiceKeytrack = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, TransposeOctave,    "Transp. Octave",  *value = (int)cv->mbCvVoice.voiceTransposeOctave + 8,    cv->mbCvVoice.voiceTransposeOctave = (int)value - 8);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, TransposeSemitone,  "Transp. Semi.",   *value = (int)cv->mbCvVoice.voiceTransposeSemitone + 8,  cv->mbCvVoice.voiceTransposeSemitone = (int)value - 8);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, Finetune,           "Finetune",        *value = (int)cv->mbCvVoice.voiceFinetune + 0x80,        cv->mbCvVoice.voiceFinetune = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, PortamentoRate,     "PortamentoRate",  *value = cv->mbCvVoice.voicePortamentoRate,              cv->mbCvVoice.voicePortamentoRate = value);
+
+CREATE_GROUP(Scope, "Scope");
+CREATE_ACCESS_FUNCTIONS(Scope, Select,                 "Select",          *value = cv->scopeSelect,                                cv->scopeSelect = value; APP_GetEnv()->updateScopeParameters());
+CREATE_ACCESS_FUNCTIONS(Scope, OversamplingFactor,     "Oversampling",    *value = cv->scopeOversamplingFactor,                    cv->scopeOversamplingFactor = value; APP_GetEnv()->updateScopeParameters());
+CREATE_ACCESS_FUNCTIONS(Scope, TriggerLevelPercent,    "Trigger Level",   *value = cv->scopeTriggerLevelPercent,                   cv->scopeTriggerLevelPercent = value; APP_GetEnv()->updateScopeParameters());
+
+CREATE_GROUP(Arp, "Arp");
+CREATE_ACCESS_FUNCTIONS(Arp, Enabled,                  "Enable",          *value = cv->mbCvArp.arpEnabled,                         cv->mbCvArp.arpEnabled = value);
+CREATE_ACCESS_FUNCTIONS(Arp, Dir,                      "Direction",       *value = cv->mbCvArp.arpDirGet(),                        cv->mbCvArp.arpDirSet(value));
+CREATE_ACCESS_FUNCTIONS(Arp, HoldMode,                 "Hold",            *value = cv->mbCvArp.arpHoldMode,                        cv->mbCvArp.arpHoldMode = value);
+CREATE_ACCESS_FUNCTIONS(Arp, SortedNotes,              "Sort",            *value = cv->mbCvArp.arpSortedNotes,                     cv->mbCvArp.arpSortedNotes = value);
+CREATE_ACCESS_FUNCTIONS(Arp, SyncMode,                 "Sync",            *value = cv->mbCvArp.arpSyncMode,                        cv->mbCvArp.arpSyncMode = value);
+CREATE_ACCESS_FUNCTIONS(Arp, OneshotMode,              "Oneshot",         *value = cv->mbCvArp.arpOneshotMode,                     cv->mbCvArp.arpOneshotMode = value);
+CREATE_ACCESS_FUNCTIONS(Arp, ConstantCycle,            "Constant Cycle",  *value = cv->mbCvArp.arpConstantCycle,                   cv->mbCvArp.arpConstantCycle = value);
+CREATE_ACCESS_FUNCTIONS(Arp, EasyChordMode,            "Easy Chord",      *value = cv->mbCvArp.arpEasyChordMode,                   cv->mbCvArp.arpEasyChordMode = value);
+CREATE_ACCESS_FUNCTIONS(Arp, Speed,                    "Speed",           *value = cv->mbCvArp.arpSpeed,                           cv->mbCvArp.arpSpeed = value);
+CREATE_ACCESS_FUNCTIONS(Arp, Gatelength,               "Gatelength",      *value = cv->mbCvArp.arpGatelength,                      cv->mbCvArp.arpGatelength = value);
+
+CREATE_GROUP(Seq, "Seq");
+CREATE_ACCESS_FUNCTIONS(Seq, Enabled,          "Enable",          *value = cv->mbCvSeqBassline.seqEnabled,                 cv->mbCvSeqBassline.seqEnabled = value);
+CREATE_ACCESS_FUNCTIONS(Seq, PatternNumber,    "Pattern #",       *value = cv->mbCvSeqBassline.seqPatternNumber,           cv->mbCvSeqBassline.seqPatternNumber = value);
+CREATE_ACCESS_FUNCTIONS(Seq, PatternLength,    "Length",          *value = cv->mbCvSeqBassline.seqPatternLength,           cv->mbCvSeqBassline.seqPatternLength = value);
+CREATE_ACCESS_FUNCTIONS(Seq, Resolution,       "Resolution",      *value = cv->mbCvSeqBassline.seqResolution,              cv->mbCvSeqBassline.seqResolution = value);
+CREATE_ACCESS_FUNCTIONS(Seq, GateLength,       "Gatelength",      *value = cv->mbCvSeqBassline.seqGateLength,              cv->mbCvSeqBassline.seqGateLength = value);
+CREATE_ACCESS_FUNCTIONS(Seq, EnvMod,           "EnvMod",          *value = cv->mbCvSeqBassline.seqEnvMod,                  cv->mbCvSeqBassline.seqEnvMod = value);
+CREATE_ACCESS_FUNCTIONS(Seq, Accent,           "Accent",          *value = cv->mbCvSeqBassline.seqAccent,                  cv->mbCvSeqBassline.seqAccent = value);
+CREATE_ACCESS_FUNCTIONS(Seq, Key,              "Key #%2d",        *value = cv->mbCvSeqBassline.seqBasslineKey[cv->mbCvSeqBassline.seqPatternNumber][arg],      cv->mbCvSeqBassline.seqBasslineKey[cv->mbCvSeqBassline.seqPatternNumber][arg] = value);
+CREATE_ACCESS_FUNCTIONS(Seq, Args,             "Args",            *value = cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL, cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL = value);
+ 
+CREATE_GROUP(Lfo, "LFO%d");
+CREATE_ACCESS_FUNCTIONS(Lfo, Amplitude,                "Amplitude",       *value = (int)cv->mbCvLfo[arg].lfoAmplitude + 0x80,         cv->mbCvLfo[arg].lfoAmplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Lfo, Rate,                     "Rate",            *value = (int)cv->mbCvLfo[arg].lfoRate,                     cv->mbCvLfo[arg].lfoRate = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, Delay,                    "Delay",           *value = (int)cv->mbCvLfo[arg].lfoDelay,                    cv->mbCvLfo[arg].lfoDelay = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, Phase,                    "Phase",           *value = (int)cv->mbCvLfo[arg].lfoPhase,                    cv->mbCvLfo[arg].lfoPhase = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, Waveform,                 "Waveform",        *value = (int)cv->mbCvLfo[arg].lfoWaveform,                 cv->mbCvLfo[arg].lfoWaveform = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, ModeClkSync,              "ClkSync",         *value = (int)cv->mbCvLfo[arg].lfoModeClkSync,              cv->mbCvLfo[arg].lfoModeClkSync = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, ModeKeySync,              "KeySync",         *value = (int)cv->mbCvLfo[arg].lfoModeKeySync,              cv->mbCvLfo[arg].lfoModeKeySync = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, ModeOneshot,              "Oneshot",         *value = (int)cv->mbCvLfo[arg].lfoModeOneshot,              cv->mbCvLfo[arg].lfoModeOneshot = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, ModeFast,                 "Fast",            *value = (int)cv->mbCvLfo[arg].lfoModeFast,                 cv->mbCvLfo[arg].lfoModeFast = value);
+CREATE_ACCESS_FUNCTIONS(Lfo, DepthPitch,               "Depth CV",        *value = (int)cv->mbCvLfo[arg].lfoDepthPitch + 0x80,        cv->mbCvLfo[arg].lfoDepthPitch = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Lfo, DepthLfoAmplitude,        "Depth LFO Amp.",  *value = (int)cv->mbCvLfo[arg].lfoDepthLfoAmplitude + 0x80, cv->mbCvLfo[arg].lfoDepthLfoAmplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Lfo, DepthLfoRate,             "Depth LFO Rate",  *value = (int)cv->mbCvLfo[arg].lfoDepthLfoRate + 0x80,      cv->mbCvLfo[arg].lfoDepthLfoRate = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Lfo, DepthEnv1Rate,            "Depth ENV1 Rate", *value = (int)cv->mbCvLfo[arg].lfoDepthEnv1Rate + 0x80,     cv->mbCvLfo[arg].lfoDepthEnv1Rate = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Lfo, DepthEnv2Rate,            "Depth ENV2 Rate", *value = (int)cv->mbCvLfo[arg].lfoDepthEnv2Rate + 0x80,     cv->mbCvLfo[arg].lfoDepthEnv2Rate = (int)value - 0x80);
+
+CREATE_GROUP(Env1, "ENV1");
+CREATE_ACCESS_FUNCTIONS(Env1, Amplitude,               "Amplitude",       *value = (int)cv->mbCvEnv1[arg].envAmplitude + 0x80,          cv->mbCvEnv1[arg].envAmplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env1, Curve,                   "Curve",           *value = (int)cv->mbCvEnv1[arg].envCurve,                     cv->mbCvEnv1[arg].envCurve = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, Delay,                   "Delay",           *value = (int)cv->mbCvEnv1[arg].envDelay,                     cv->mbCvEnv1[arg].envDelay = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, Attack,                  "Attack",          *value = (int)cv->mbCvEnv1[arg].envAttack,                    cv->mbCvEnv1[arg].envAttack = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, Decay,                   "Decay",           *value = (int)cv->mbCvEnv1[arg].envDecay,                     cv->mbCvEnv1[arg].envDecay = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, Sustain,                 "Sustain",         *value = (int)cv->mbCvEnv1[arg].envSustain,                   cv->mbCvEnv1[arg].envSustain = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, Release,                 "Release",         *value = (int)cv->mbCvEnv1[arg].envRelease,                   cv->mbCvEnv1[arg].envRelease = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, ModeClkSync,             "ClkSync",         *value = (int)cv->mbCvEnv1[arg].envModeClkSync,               cv->mbCvEnv1[arg].envModeClkSync = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, ModeKeySync,             "KeySync",         *value = (int)cv->mbCvEnv1[arg].envModeKeySync,               cv->mbCvEnv1[arg].envModeKeySync = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, ModeOneshot,             "Oneshot",         *value = (int)cv->mbCvEnv1[arg].envModeOneshot,               cv->mbCvEnv1[arg].envModeOneshot = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, ModeFast,                "Fast",            *value = (int)cv->mbCvEnv1[arg].envModeFast,                  cv->mbCvEnv1[arg].envModeFast = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, DepthPitch,              "Depth CV",        *value = (int)cv->mbCvEnv1[arg].envDepthPitch + 0x80,         cv->mbCvEnv1[arg].envDepthPitch = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env1, DepthLfo1Amplitude,      "Depth LFO1 Amp.", *value = (int)cv->mbCvEnv1[arg].envDepthLfo1Amplitude + 0x80, cv->mbCvEnv1[arg].envDepthLfo1Amplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env1, DepthLfo1Rate,           "Depth LFO1 Rate", *value = (int)cv->mbCvEnv1[arg].envDepthLfo1Rate + 0x80,      cv->mbCvEnv1[arg].envDepthLfo1Rate = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env1, DepthLfo2Amplitude,      "Depth LFO2 Amp.", *value = (int)cv->mbCvEnv1[arg].envDepthLfo2Amplitude + 0x80, cv->mbCvEnv1[arg].envDepthLfo2Amplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env1, DepthLfo2Rate,           "Depth LFO2 Rate", *value = (int)cv->mbCvEnv1[arg].envDepthLfo2Rate + 0x80,      cv->mbCvEnv1[arg].envDepthLfo2Rate = (int)value - 0x80);
+
+CREATE_GROUP(Env2, "ENV2");
+CREATE_ACCESS_FUNCTIONS(Env2, Amplitude,               "Amplitude",       *value = (int)cv->mbCvEnv2[arg].envAmplitude + 0x80,          cv->mbCvEnv2[arg].envAmplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, Curve,                   "Curve",           *value = (int)cv->mbCvEnv2[arg].envCurve,                     cv->mbCvEnv2[arg].envCurve = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, Offset,                  "Offset",          *value = (int)cv->mbCvEnv2[arg].envOffset,                    cv->mbCvEnv2[arg].envOffset = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, Rate,                    "Rate",            *value = (int)cv->mbCvEnv2[arg].envRate,                      cv->mbCvEnv2[arg].envRate = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, LoopAttack,              "Loop Attack",     *value = (int)cv->mbCvEnv2[arg].envLoopAttack,                cv->mbCvEnv2[arg].envLoopAttack = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, SustainStep,             "Sustain Step",    *value = (int)cv->mbCvEnv2[arg].envSustainStep,               cv->mbCvEnv2[arg].envSustainStep = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, LoopRelease,             "Loop Release",    *value = (int)cv->mbCvEnv2[arg].envLoopRelease,               cv->mbCvEnv2[arg].envLoopRelease = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, LastStep,                "Last Step",       *value = (int)cv->mbCvEnv2[arg].envLastStep,                  cv->mbCvEnv2[arg].envLastStep = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, ModeClkSync,             "ClkSync",         *value = (int)cv->mbCvEnv2[arg].envModeClkSync,               cv->mbCvEnv2[arg].envModeClkSync = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, ModeKeySync,             "KeySync",         *value = (int)cv->mbCvEnv2[arg].envModeKeySync,               cv->mbCvEnv2[arg].envModeKeySync = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, ModeOneshot,             "Oneshot",         *value = (int)cv->mbCvEnv2[arg].envModeOneshot,               cv->mbCvEnv2[arg].envModeOneshot = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, ModeFast,                "Fast",            *value = (int)cv->mbCvEnv2[arg].envModeFast,                  cv->mbCvEnv2[arg].envModeFast = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, DepthPitch,              "Depth CV",        *value = (int)cv->mbCvEnv2[arg].envDepthPitch + 0x80,         cv->mbCvEnv2[arg].envDepthPitch = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, DepthLfo1Amplitude,      "Depth LFO1 Amp.", *value = (int)cv->mbCvEnv2[arg].envDepthLfo1Amplitude + 0x80, cv->mbCvEnv2[arg].envDepthLfo1Amplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, DepthLfo1Rate,           "Depth LFO1 Rate", *value = (int)cv->mbCvEnv2[arg].envDepthLfo1Rate + 0x80,      cv->mbCvEnv2[arg].envDepthLfo1Rate = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, DepthLfo2Amplitude,      "Depth LFO2 Amp.", *value = (int)cv->mbCvEnv2[arg].envDepthLfo2Amplitude + 0x80, cv->mbCvEnv2[arg].envDepthLfo2Amplitude = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, DepthLfo2Rate,           "Depth LFO2 Rate", *value = (int)cv->mbCvEnv2[arg].envDepthLfo2Rate + 0x80,      cv->mbCvEnv2[arg].envDepthLfo2Rate = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Env2, Level,                   "Level Step #%2d", *value = cv->mbCvEnv2[0].envLevel[arg],                       cv->mbCvEnv2[0].envLevel[arg] = value); // TODO: take ENV index into MSBs of arg?
+
+CREATE_GROUP(Mod, "Mod%d");
+CREATE_ACCESS_FUNCTIONS(Mod, Depth,                    "Depth",           *value = cv->mbCvMod.modPatch[arg].depth + 0x80,              cv->mbCvMod.modPatch[arg].depth = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Mod, Src1,                     "Source1",         *value = cv->mbCvMod.modPatch[arg].src1,                      cv->mbCvMod.modPatch[arg].src1 = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Src1Chn,                  "Source1 CV",      *value = cv->mbCvMod.modPatch[arg].src1_chn,                  cv->mbCvMod.modPatch[arg].src1_chn = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Src2,                     "Source2",         *value = cv->mbCvMod.modPatch[arg].src2,                      cv->mbCvMod.modPatch[arg].src2 = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Src2Chn,                  "Source2 CV",      *value = cv->mbCvMod.modPatch[arg].src2_chn,                  cv->mbCvMod.modPatch[arg].src2_chn = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Op,                       "Operator",        *value = cv->mbCvMod.modPatch[arg].op & 0x3f,                 cv->mbCvMod.modPatch[arg].op &= 0xc0; cv->mbCvMod.modPatch[arg].op |= (value & 0x3f));
+CREATE_ACCESS_FUNCTIONS(Mod, Dst1,                     "Destination1",    *value = cv->mbCvMod.modPatch[arg].dst1,                      cv->mbCvMod.modPatch[arg].dst1 = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Dst1Inv,                  "Dst1 Inverted",   *value = (cv->mbCvMod.modPatch[arg].op & (1 << 6)) ? 1 : 0,   cv->mbCvMod.modPatch[arg].op &= ~(1 << 6); cv->mbCvMod.modPatch[arg].op |= ((value&1) << 6));
+CREATE_ACCESS_FUNCTIONS(Mod, Dst2,                     "Destination2",    *value = cv->mbCvMod.modPatch[arg].dst2,                      cv->mbCvMod.modPatch[arg].dst2 = value);
+CREATE_ACCESS_FUNCTIONS(Mod, Dst2Inv,                  "Dst2 Inverted",   *value = (cv->mbCvMod.modPatch[arg].op & (1 << 7)) ? 1 : 0,   cv->mbCvMod.modPatch[arg].op &= ~(1 << 7); cv->mbCvMod.modPatch[arg].op |= ((value&1) << 7));
+
+
+#define MBCV_NRPN_TABLE_SIZE 0x380
+static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
+    // 0x000
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               2, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               3, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               4, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               5, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               6, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               7, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               8, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,               9, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              10, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              11, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              12, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              13, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              14, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Port,              15, 0, 1, 0),
+
+    // 0x010
+    NRPN_TABLE_ITEM(  MidiVoice, Channel,            0, 0, 16, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, EventMode,          0, 0, MBCV_MIDI_EVENT_MODE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, SplitLower,         0, 0, 127, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, SplitUpper,         0, 0, 127, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, CCNumber,           0, 0, 127, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x018
+    NRPN_TABLE_ITEM(  MidiVoice, AoutCurve,          0, 0, MBCV_MAP_NUM_CURVES-1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, AoutSlewRate,       0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, GateInverted,       0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x20
+    NRPN_TABLE_ITEM(  MidiVoice, Legato,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Poly,               0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, SusKey,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, PortamentoMode,     0, 0, 2, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x030
+    NRPN_TABLE_ITEM(  MidiVoice, PitchRange,         0, 0, 24, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, Ketrack,            0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  MidiVoice, TransposeOctave,    0, 0, 15, 1),
+    NRPN_TABLE_ITEM(  MidiVoice, TransposeSemitone,  0, 0, 15, 1),
+    NRPN_TABLE_ITEM(  MidiVoice, Finetune,           0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  MidiVoice, PortamentoRate,     0, 0, 255, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x040
+    NRPN_TABLE_ITEM(  Scope, Select,                 0, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Scope, OversamplingFactor,     0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Scope, TriggerLevelPercent,    0, 0, 100, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x050
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x060
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x070
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x080
+    NRPN_TABLE_ITEM(  Arp, Enabled,                  0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, Dir,                      0, 0, 6, 0),
+    NRPN_TABLE_ITEM(  Arp, HoldMode,                 0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, SortedNotes,              0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, SyncMode,                 0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, OneshotMode,              0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, ConstantCycle,            0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Arp, EasyChordMode,            0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x090
+    NRPN_TABLE_ITEM(  Arp, Speed,                    0, 0, 63, 0),
+    NRPN_TABLE_ITEM(  Arp, Gatelength,               0, 0, 63, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x0a0
+    NRPN_TABLE_ITEM(  Seq, Enabled,          0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Seq, PatternNumber,    0, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, PatternLength,    0, 0, 31, 0),
+    NRPN_TABLE_ITEM(  Seq, Resolution,       0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Seq, GateLength,       0, 0, 100, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x0a8
+    NRPN_TABLE_ITEM(  Seq, EnvMod,           0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Seq, Accent,           0, 0, 255, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x0b0
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x0c0
+    NRPN_TABLE_ITEM(  Seq, Key,              0, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              1, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              2, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              3, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              4, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              5, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              6, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              7, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              8, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,              9, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             10, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             11, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             12, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             13, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             14, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             15, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             16, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             17, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             18, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             19, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             20, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             21, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             22, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             23, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             24, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             25, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             26, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             27, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             28, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             29, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             30, 0, 127, 0),
+    NRPN_TABLE_ITEM(  Seq, Key,             31, 0, 127, 0),
+
+    // 0x0e0
+    NRPN_TABLE_ITEM(  Seq, Args,             0, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             1, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             2, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             3, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             4, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             5, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             6, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             7, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             8, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,             9, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            10, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            11, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            12, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            13, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            14, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            15, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            16, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            17, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            18, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            19, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            20, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            21, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            22, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            23, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            24, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            25, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            26, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            27, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            28, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            29, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            30, 0, 7, 0),
+    NRPN_TABLE_ITEM(  Seq, Args,            31, 0, 7, 0),
+
+    // 0x100
+    NRPN_TABLE_ITEM(  Lfo, Amplitude,                0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, Rate,                     0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Delay,                    0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Phase,                    0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Waveform,                 0, 0, 8, 0), // TODO: create enum for waveform
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x110
+    NRPN_TABLE_ITEM(  Lfo, ModeClkSync,              0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeKeySync,              0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeOneshot,              0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeFast,                 0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x120
+    NRPN_TABLE_ITEM(  Lfo, DepthPitch,               0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthLfoAmplitude,        0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthLfoRate,             0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthEnv1Rate,            0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthEnv2Rate,            0, 0, 255, 1),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x130
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x140
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x150
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x160
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x170
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x180
+    NRPN_TABLE_ITEM(  Lfo, Amplitude,                1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, Rate,                     1, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Delay,                    1, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Phase,                    1, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Lfo, Waveform,                 1, 0, 8, 0), // TODO: create enum for waveform
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x190
+    NRPN_TABLE_ITEM(  Lfo, ModeClkSync,              1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeKeySync,              1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeOneshot,              1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Lfo, ModeFast,                 1, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x1a0
+    NRPN_TABLE_ITEM(  Lfo, DepthPitch,               1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthLfoAmplitude,        1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthLfoRate,             1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthEnv1Rate,            1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Lfo, DepthEnv2Rate,            1, 0, 255, 1),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x1b0
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x1c0
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x1d0
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x1e0
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x1f0
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x200
+    NRPN_TABLE_ITEM(  Env1, Amplitude,               0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env1, Curve,                   0, 0, 3, 0), // TODO: create enum for curve
+    NRPN_TABLE_ITEM(  Env1, Delay,                   0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env1, Attack,                  0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env1, Decay,                   0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env1, Sustain,                 0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env1, Release,                 0, 0, 255, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x210
+    NRPN_TABLE_ITEM(  Env1, ModeClkSync,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env1, ModeKeySync,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env1, ModeOneshot,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env1, ModeFast,                0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x220
+    NRPN_TABLE_ITEM(  Env1, DepthPitch,              0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env1, DepthLfo1Amplitude,      0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env1, DepthLfo1Rate,           0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env1, DepthLfo2Amplitude,      0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env1, DepthLfo2Rate,           0, 0, 255, 1),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x230
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x240
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x250
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x260
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x270
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x280
+    NRPN_TABLE_ITEM(  Env2, Amplitude,               0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env2, Curve,                   0, 0, 3, 0), // TODO: create enum for curve
+    NRPN_TABLE_ITEM(  Env2, Offset,                  0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Rate,                    0, 0, 255, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x288
+    NRPN_TABLE_ITEM(  Env2, LoopAttack,              0, 0, 16, 0),
+    NRPN_TABLE_ITEM(  Env2, SustainStep,             0, 0, 16, 0),
+    NRPN_TABLE_ITEM(  Env2, LoopRelease,             0, 0, 16, 0),
+    NRPN_TABLE_ITEM(  Env2, LastStep,                0, 0, 16, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x290
+    NRPN_TABLE_ITEM(  Env2, ModeClkSync,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env2, ModeKeySync,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env2, ModeOneshot,             0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Env2, ModeFast,                0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x2a0
+    NRPN_TABLE_ITEM(  Env2, DepthPitch,              0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env2, DepthLfo1Amplitude,      0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env2, DepthLfo1Rate,           0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env2, DepthLfo2Amplitude,      0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Env2, DepthLfo2Rate,           0, 0, 255, 1),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY8(),
+
+    // 0x2b0
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x2c0
+    NRPN_TABLE_ITEM(  Env2, Level,                   0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   1, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   2, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   3, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   4, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   5, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   6, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   7, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   8, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                   9, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  10, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  11, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  12, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  13, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  14, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  15, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  16, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  17, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  18, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  19, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  20, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  21, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  22, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  23, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  24, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  25, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  26, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  27, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  28, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  29, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  30, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Env2, Level,                  31, 0, 255, 0),
+
+    // 0x2e0
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x2f0
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x300
+    NRPN_TABLE_ITEM(  Mod, Depth,                    0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Src1,                     0, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src1Chn,                  0, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2,                     0, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2Chn,                  0, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Op,                       0, 0, 14, 0), // TODO: create enum for operations
+    NRPN_TABLE_ITEM(  Mod, Dst1,                     0, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst1Inv,                  0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2,                     0, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2Inv,                  0, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x310
+    NRPN_TABLE_ITEM(  Mod, Depth,                    1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Src1,                     1, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src1Chn,                  1, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2,                     1, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2Chn,                  1, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Op,                       1, 0, 14, 0), // TODO: create enum for operations
+    NRPN_TABLE_ITEM(  Mod, Dst1,                     1, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst1Inv,                  1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2,                     1, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2Inv,                  1, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x320
+    NRPN_TABLE_ITEM(  Mod, Depth,                    2, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Src1,                     2, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src1Chn,                  2, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2,                     2, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2Chn,                  2, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Op,                       2, 0, 14, 0), // TODO: create enum for operations
+    NRPN_TABLE_ITEM(  Mod, Dst1,                     2, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst1Inv,                  2, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2,                     2, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2Inv,                  2, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x330
+    NRPN_TABLE_ITEM(  Mod, Depth,                    3, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Src1,                     3, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src1Chn,                  3, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2,                     3, 0, MBCV_NUM_MOD_SRC-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Src2Chn,                  3, 0, CV_SE_NUM-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Op,                       3, 0, 14, 0), // TODO: create enum for operations
+    NRPN_TABLE_ITEM(  Mod, Dst1,                     3, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst1Inv,                  3, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2,                     3, 0, MBCV_NUM_MOD_DST-1, 0),
+    NRPN_TABLE_ITEM(  Mod, Dst2Inv,                  3, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+
+    // 0x340
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x350
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x360
+    NRPN_TABLE_ITEM_EMPTY16(),
+    // 0x370
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
+// will set NRPN depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCv::setNRPN(u16 nrpnNumber, u16 value)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->setFunct != NULL ) {
+            t->setFunct(this, t->arg, value);
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN value depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->getFunct != NULL ) {
+            t->getFunct(this, t->arg, value);
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN informations depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCv::getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->getFunct != NULL ) {
+            t->getFunct(this, t->arg, &info->value);
+            info->cv = cvNum;
+            info->is_bidir = t->is_bidir;
+            info->min = t->min;
+            info->max = t->max;
+
+            {
+                char name[40];
+                char name1[21];
+                char name2[21];
+
+                sprintf(name1, t->groupString, t->arg+1);
+                sprintf(name2, t->nameString, t->arg+1);
+                sprintf(name, "%s %s", name1, name2);
+
+                // 20 chars max; pad with spaces
+                int len = strlen(name);
+                for(int pos=len; pos<20; ++pos)
+                    name[pos] = ' ';
+                name[20] = 0;
+                memcpy(info->name, name, 21);
+            }
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
