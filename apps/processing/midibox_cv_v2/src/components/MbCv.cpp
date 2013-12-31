@@ -476,16 +476,16 @@ void MbCv::triggerNoteOff(MbCvVoice *v)
 /////////////////////////////////////////////////////////////////////////////
 
 #define CREATE_GROUP(name, str) \
-    static char name##String[] = str;
+    static const char name##String[] = str;
 
 #define CREATE_ACCESS_FUNCTIONS(group, name, str, readCode, writeCode) \
-    static char group##name##String[] = str; \
+    static const char group##name##String[] = str; \
     static void get##group##name(MbCv* cv, u32 arg, u16 *value) { readCode; }    \
     static void set##group##name(MbCv* cv, u32 arg, u16 value) { writeCode; }
 
 typedef struct {
-    char *groupString;
-    char *nameString;
+    const char *groupString;
+    const char *nameString;
     void (*getFunct)(MbCv *cv, u32 arg, u16 *value);
     void (*setFunct)(MbCv *cv, u32 arg, u16 value);
     u32 arg;
