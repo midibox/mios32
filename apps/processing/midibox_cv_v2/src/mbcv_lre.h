@@ -22,7 +22,7 @@
 #define MBCV_LRE_NUM_ENC 32
 
 // maximum number of banks
-#define MBCV_LRE_NUM_BANKS 2
+#define MBCV_LRE_NUM_BANKS 4
 
 // maximum number of LEDring patterns
 #define MBCV_LRE_NUM_DOUT_PATTERNS 2
@@ -35,10 +35,10 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u16 value;
   u16 min;
   u16 max;
   u16 nrpn;
+  u8  pattern;
 } mbcv_lre_enc_cfg_t;
 
 
@@ -48,20 +48,23 @@ typedef struct {
 
 extern s32 MBCV_LRE_Init(u32 mode);
 
-extern s32 MBNG_LRE_NotifyChange(u32 enc, s32 incrementer);
+extern s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer);
 
-extern s32 MBNG_LRE_AutoSpeed(u32 enc, u32 range);
+extern s32 MBCV_LRE_AutoSpeed(u32 enc, u32 range);
 
-extern s32 MBNG_LRE_FastModeSet(u8 multiplier);
-extern s32 MBNG_LRE_FastModeGet(void);
+extern s32 MBCV_LRE_UpdateAllLedRings(void);
 
-extern s32 MBNG_LRE_BankSet(u8 bank);
-extern s32 MBNG_LRE_BankGet(void);
+extern s32 MBCV_LRE_FastModeSet(u8 multiplier);
+extern s32 MBCV_LRE_FastModeGet(void);
+
+extern s32 MBCV_LRE_BankSet(u8 bank);
+extern s32 MBCV_LRE_BankGet(void);
 
 extern s32 MBCV_LRE_PatternSet(u8 num, u8 pos, u16 pattern);
 extern u16 MBCV_LRE_PatternGet(u8 num, u8 pos);
 
 extern s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg);
+extern s32 MBCV_LRE_EncCfgSetFromDefault(u32 enc, u32 bank, u16 nrpnNumber);
 extern mbcv_lre_enc_cfg_t MBCV_LRE_EncCfgGet(u32 enc, u32 bank);
 
 

@@ -99,9 +99,6 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
-static s32 APP_SelectScopeLCDs(void);
-static s32 APP_SelectMainLCD(void);
-
 
 /////////////////////////////////////////////////////////////////////////////
 // returns pointer to MbCv objects
@@ -325,7 +322,7 @@ extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
     SCS_ENC_MENU_NotifyChange(incrementer);
   else {
     // -> ENC Handler
-    MBNG_LRE_NotifyChange(encoder-1, incrementer);
+    MBCV_LRE_NotifyChange(encoder-1, incrementer);
   }
 }
 
@@ -393,43 +390,23 @@ void APP_TASK_Period_1mS_LP(void)
   static u8 clear_lcd = 1;
   static u16 performance_print_ctr = 0;
 
+  MUTEX_LCD_TAKE;
+
   if( clear_lcd ) {
     clear_lcd = 0;
-    MIOS32_LCD_Clear();
+    MIOS32_LCD_Clear();    
   }
 
   // call SCS handler
   SCS_Tick();
 
-  {
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(6, 0);
-#endif
-    // CV Scopes
-    APP_SelectScopeLCDs();
-    mbCvEnvironment.tickScopes();
-    APP_SelectMainLCD();
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(6, 1);
-#endif
-  }
-
-  // CV Bars (currently only for SSD1306)
-  if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
-    MIOS32_LCD_DeviceSet(0);
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); // memo: 28 icons, 14 used, icon size: 8x32
-
-    u16 *outMeter = mbCvEnvironment.cvOutMeter.first();
-    for(int cv=0; cv<CV_SE_NUM; ++cv, ++outMeter) {
-      MIOS32_LCD_CursorSet(0 + 2*cv, 4);
-      MIOS32_LCD_PrintChar((*outMeter * 13) / 65535);
-    }
-
-    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
-  }
+  MUTEX_LCD_GIVE;
 
   // MIDI In/Out monitor
   MIDI_PORT_Period1mS();
+
+  // LED rings
+  MBCV_LRE_UpdateAllLedRings();
 
   // output and reset current stopwatch max value each second
   if( ++performance_print_ctr >= 1000 ) {
@@ -453,6 +430,45 @@ void APP_TASK_Period_1mS_LP(void)
     MUTEX_MIDIOUT_GIVE;
   }
 
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task handles the scope displays with very low priority
+/////////////////////////////////////////////////////////////////////////////
+void APP_TASK_Period_1mS_LP2(void)
+{
+  {
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(6, 0);
+#endif
+    // CV Scopes (note: mutex is taken inside function)
+    mbCvEnvironment.tickScopes();
+#if J5_DEBUG_PINS
+    MIOS32_BOARD_J5_PinSet(6, 1);
+#endif
+  }
+
+  // CV Bars (currently only for SSD1306)
+  {
+    MUTEX_LCD_TAKE;
+
+    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 ) {
+
+      MIOS32_LCD_DeviceSet(0);
+      MIOS32_LCD_FontInit((u8 *)GLCD_FONT_METER_ICONS_V); // memo: 28 icons, 14 used, icon size: 8x32
+
+      u16 *outMeter = mbCvEnvironment.cvOutMeter.first();
+      for(int cv=0; cv<CV_SE_NUM; ++cv, ++outMeter) {
+	MIOS32_LCD_CursorSet(0 + 2*cv, 4);
+	MIOS32_LCD_PrintChar((*outMeter * 13) / 65535);
+      }
+
+      MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
+    }
+
+    MUTEX_LCD_GIVE;
+  }
 }
 
 
@@ -576,7 +592,7 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 // Switches to the scope LCDs
 /////////////////////////////////////////////////////////////////////////////
-static s32 APP_SelectScopeLCDs(void)
+s32 APP_SelectScopeLCDs(void)
 {
   // select the alternative pinning via J5A/J28
   APP_LCD_AltPinningSet(1);
@@ -594,7 +610,7 @@ static s32 APP_SelectScopeLCDs(void)
 /////////////////////////////////////////////////////////////////////////////
 // Switches to the original LCD
 /////////////////////////////////////////////////////////////////////////////
-static s32 APP_SelectMainLCD(void)
+s32 APP_SelectMainLCD(void)
 {
   // ensure that first LCD is selected
   MIOS32_LCD_DeviceSet(0);

@@ -23,6 +23,10 @@
 
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
+// reserved memory for FreeRTOS pvPortMalloc function
+#define MIOS32_HEAP_SIZE 13*1024
+
+
 // use 16 DOUT pages
 #define MIOS32_SRIO_NUM_DOUT_PAGES 16
 
@@ -35,6 +39,14 @@
 // (we are not using so many SRs... the intention is to enlarge the SRIO update cycle
 // so that an update takes place ca. each 250 uS)
 #define MIOS32_SRIO_NUM_SR 32
+
+
+// for LPC17: simplify allocation of large arrays
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define AHB_SECTION __attribute__ ((section (".bss_ahb")))
+#else
+# define AHB_SECTION
+#endif
 
 
 #endif /* _MIOS32_CONFIG_H */

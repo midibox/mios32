@@ -61,11 +61,13 @@ typedef enum {
 
 #define PRIORITY_TASK_PERIOD_1mS ( tskIDLE_PRIORITY + 3 )
 #define PRIORITY_TASK_PERIOD_1mS_LP ( tskIDLE_PRIORITY + 2 )
+#define PRIORITY_TASK_PERIOD_1mS_LP2 ( tskIDLE_PRIORITY + 1 )
 #define PRIORITY_TASK_PERIOD_1mS_SD ( tskIDLE_PRIORITY + 2 )
 
 // local prototype of the task function
 static void TASK_Period_1mS(void *pvParameters);
 static void TASK_Period_1mS_LP(void *pvParameters);
+static void TASK_Period_1mS_LP2(void *pvParameters);
 static void TASK_Period_1mS_SD(void *pvParameters);
 
 
@@ -88,10 +90,12 @@ s32 TASKS_Init(u32 mode)
   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+  xLCDSemaphore = xSemaphoreCreateRecursiveMutex();
 
   // start tasks
   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+  xTaskCreate(TASK_Period_1mS_LP2, (signed portCHAR *)"1mS_LP2", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP2, NULL);
   xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
 
   return 0; // no error
@@ -189,6 +193,23 @@ static void TASK_Period_1mS_LP(void *pvParameters)
 
     // continue in application hook
     APP_TASK_Period_1mS_LP();
+  }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This task is called periodically each mS with very low priority
+/////////////////////////////////////////////////////////////////////////////
+static void TASK_Period_1mS_LP2(void *pvParameters)
+{
+  while( 1 ) {
+    // using vTaskDelay instead of vTaskDelayUntil, since a periodical execution
+    // isn't required, and this task could be invoked too often if it was blocked
+    // for a long time
+    vTaskDelay(1 / portTICK_RATE_MS);
+
+    // continue in application hook
+    APP_TASK_Period_1mS_LP2();
   }
 }
 
