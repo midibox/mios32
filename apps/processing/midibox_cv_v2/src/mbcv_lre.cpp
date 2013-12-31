@@ -17,6 +17,8 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <app.h>
+#include <scs.h>
 #include <MbCvEnvironment.h>
 
 #include "mbcv_lre.h"
@@ -90,12 +92,158 @@ static const u16 dout_matrix_pattern_preload[MBCV_LRE_NUM_DOUT_PATTERNS][MBCV_LR
 
 };
 
-
 // stored in RAM so that it can be redefined in the .NGC file
-static u16 dout_matrix_pattern[MBCV_LRE_NUM_DOUT_PATTERNS][MBCV_LRE_NUM_DOUT_PATTERN_POS];
+AHB_SECTION static u16 dout_matrix_pattern[MBCV_LRE_NUM_DOUT_PATTERNS][MBCV_LRE_NUM_DOUT_PATTERN_POS];
 
 
-static mbcv_lre_enc_cfg_t enc_cfg[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC];
+AHB_SECTION static mbcv_lre_enc_cfg_t enc_cfg[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC];
+
+static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
+  { // bank1
+    0*0x400 + 0x100, // CV1 LFO1 Amplitude
+    0*0x400 + 0x101, // CV1 LFO1 Rate
+    0*0x400 + 0x180, // CV1 LFO2 Amplitude
+    0*0x400 + 0x181, // CV1 LFO2 Rate
+    0*0x400 + 0x200, // CV1 ENV1 Amplitude
+    0*0x400 + 0x204, // CV1 ENV1 Decay
+    0*0x400 + 0x280, // CV1 ENV2 Amplitude
+    0*0x400 + 0x283, // CV1 ENV2 Rate
+
+    1*0x400 + 0x100, // CV2 LFO1 Amplitude
+    1*0x400 + 0x101, // CV2 LFO1 Rate
+    1*0x400 + 0x180, // CV2 LFO2 Amplitude
+    1*0x400 + 0x181, // CV2 LFO2 Rate
+    1*0x400 + 0x200, // CV2 ENV1 Amplitude
+    1*0x400 + 0x204, // CV2 ENV1 Decay
+    1*0x400 + 0x280, // CV2 ENV2 Amplitude
+    1*0x400 + 0x283, // CV2 ENV2 Rate
+
+    0*0x400 + 0x0c0, // CV1 SEQ Key
+    0*0x400 + 0x0c1, // CV1 SEQ Key
+    0*0x400 + 0x0c2, // CV1 SEQ Key
+    0*0x400 + 0x0c3, // CV1 SEQ Key
+    0*0x400 + 0x0c4, // CV1 SEQ Key
+    0*0x400 + 0x0c5, // CV1 SEQ Key
+    0*0x400 + 0x0c6, // CV1 SEQ Key
+    0*0x400 + 0x0c7, // CV1 SEQ Key
+    0*0x400 + 0x0c8, // CV1 SEQ Key
+    0*0x400 + 0x0c9, // CV1 SEQ Key
+    0*0x400 + 0x0ca, // CV1 SEQ Key
+    0*0x400 + 0x0cb, // CV1 SEQ Key
+    0*0x400 + 0x0cc, // CV1 SEQ Key
+    0*0x400 + 0x0cd, // CV1 SEQ Key
+    0*0x400 + 0x0ce, // CV1 SEQ Key
+    0*0x400 + 0x0cf, // CV1 SEQ Key
+  },
+  { // bank2
+    2*0x400 + 0x100, // CV3 LFO1 Amplitude
+    2*0x400 + 0x101, // CV3 LFO1 Rate
+    2*0x400 + 0x180, // CV3 LFO2 Amplitude
+    2*0x400 + 0x181, // CV3 LFO2 Rate
+    2*0x400 + 0x200, // CV3 ENV1 Amplitude
+    2*0x400 + 0x204, // CV3 ENV1 Decay
+    2*0x400 + 0x280, // CV3 ENV2 Amplitude
+    2*0x400 + 0x283, // CV3 ENV2 Rate
+
+    3*0x400 + 0x100, // CV4 LFO1 Amplitude
+    3*0x400 + 0x101, // CV4 LFO1 Rate
+    3*0x400 + 0x180, // CV4 LFO2 Amplitude
+    3*0x400 + 0x181, // CV4 LFO2 Rate
+    3*0x400 + 0x200, // CV4 ENV1 Amplitude
+    3*0x400 + 0x204, // CV4 ENV1 Decay
+    3*0x400 + 0x280, // CV4 ENV2 Amplitude
+    3*0x400 + 0x283, // CV4 ENV2 Rate
+
+    1*0x400 + 0x0c0, // CV2 SEQ Key
+    1*0x400 + 0x0c1, // CV2 SEQ Key
+    1*0x400 + 0x0c2, // CV2 SEQ Key
+    1*0x400 + 0x0c3, // CV2 SEQ Key
+    1*0x400 + 0x0c4, // CV2 SEQ Key
+    1*0x400 + 0x0c5, // CV2 SEQ Key
+    1*0x400 + 0x0c6, // CV2 SEQ Key
+    1*0x400 + 0x0c7, // CV2 SEQ Key
+    1*0x400 + 0x0c8, // CV2 SEQ Key
+    1*0x400 + 0x0c9, // CV2 SEQ Key
+    1*0x400 + 0x0ca, // CV2 SEQ Key
+    1*0x400 + 0x0cb, // CV2 SEQ Key
+    1*0x400 + 0x0cc, // CV2 SEQ Key
+    1*0x400 + 0x0cd, // CV2 SEQ Key
+    1*0x400 + 0x0ce, // CV2 SEQ Key
+    1*0x400 + 0x0cf, // CV2 SEQ Key
+  },
+  { // bank3
+    4*0x400 + 0x100, // CV5 LFO1 Amplitude
+    4*0x400 + 0x101, // CV5 LFO1 Rate
+    4*0x400 + 0x180, // CV5 LFO2 Amplitude
+    4*0x400 + 0x181, // CV5 LFO2 Rate
+    4*0x400 + 0x200, // CV5 ENV1 Amplitude
+    4*0x400 + 0x204, // CV5 ENV1 Decay
+    4*0x400 + 0x280, // CV5 ENV2 Amplitude
+    4*0x400 + 0x283, // CV5 ENV2 Rate
+
+    5*0x400 + 0x100, // CV6 LFO1 Amplitude
+    5*0x400 + 0x101, // CV6 LFO1 Rate
+    5*0x400 + 0x180, // CV6 LFO2 Amplitude
+    5*0x400 + 0x181, // CV6 LFO2 Rate
+    5*0x400 + 0x200, // CV6 ENV1 Amplitude
+    5*0x400 + 0x204, // CV6 ENV1 Decay
+    5*0x400 + 0x280, // CV6 ENV2 Amplitude
+    5*0x400 + 0x283, // CV6 ENV2 Rate
+
+    2*0x400 + 0x0c0, // CV3 SEQ Key
+    2*0x400 + 0x0c1, // CV3 SEQ Key
+    2*0x400 + 0x0c2, // CV3 SEQ Key
+    2*0x400 + 0x0c3, // CV3 SEQ Key
+    2*0x400 + 0x0c4, // CV3 SEQ Key
+    2*0x400 + 0x0c5, // CV3 SEQ Key
+    2*0x400 + 0x0c6, // CV3 SEQ Key
+    2*0x400 + 0x0c7, // CV3 SEQ Key
+    2*0x400 + 0x0c8, // CV3 SEQ Key
+    2*0x400 + 0x0c9, // CV3 SEQ Key
+    2*0x400 + 0x0ca, // CV3 SEQ Key
+    2*0x400 + 0x0cb, // CV3 SEQ Key
+    2*0x400 + 0x0cc, // CV3 SEQ Key
+    2*0x400 + 0x0cd, // CV3 SEQ Key
+    2*0x400 + 0x0ce, // CV3 SEQ Key
+    2*0x400 + 0x0cf, // CV3 SEQ Key
+  },
+  { // bank4
+    6*0x400 + 0x100, // CV7 LFO1 Amplitude
+    6*0x400 + 0x101, // CV7 LFO1 Rate
+    6*0x400 + 0x180, // CV7 LFO2 Amplitude
+    6*0x400 + 0x181, // CV7 LFO2 Rate
+    6*0x400 + 0x200, // CV7 ENV1 Amplitude
+    6*0x400 + 0x204, // CV7 ENV1 Decay
+    6*0x400 + 0x280, // CV7 ENV2 Amplitude
+    6*0x400 + 0x283, // CV7 ENV2 Rate
+
+    7*0x400 + 0x100, // CV8 LFO1 Amplitude
+    7*0x400 + 0x101, // CV8 LFO1 Rate
+    7*0x400 + 0x180, // CV8 LFO2 Amplitude
+    7*0x400 + 0x181, // CV8 LFO2 Rate
+    7*0x400 + 0x200, // CV8 ENV1 Amplitude
+    7*0x400 + 0x204, // CV8 ENV1 Decay
+    7*0x400 + 0x280, // CV8 ENV2 Amplitude
+    7*0x400 + 0x283, // CV8 ENV2 Rate
+
+    3*0x400 + 0x0c0, // CV4 SEQ Key
+    3*0x400 + 0x0c1, // CV4 SEQ Key
+    3*0x400 + 0x0c2, // CV4 SEQ Key
+    3*0x400 + 0x0c3, // CV4 SEQ Key
+    3*0x400 + 0x0c4, // CV4 SEQ Key
+    3*0x400 + 0x0c5, // CV4 SEQ Key
+    3*0x400 + 0x0c6, // CV4 SEQ Key
+    3*0x400 + 0x0c7, // CV4 SEQ Key
+    3*0x400 + 0x0c8, // CV4 SEQ Key
+    3*0x400 + 0x0c9, // CV4 SEQ Key
+    3*0x400 + 0x0ca, // CV4 SEQ Key
+    3*0x400 + 0x0cb, // CV4 SEQ Key
+    3*0x400 + 0x0cc, // CV4 SEQ Key
+    3*0x400 + 0x0cd, // CV4 SEQ Key
+    3*0x400 + 0x0ce, // CV4 SEQ Key
+    3*0x400 + 0x0cf, // CV4 SEQ Key
+  },
+};
 
 static u8 enc_bank;
 static u8 enc_speed_multiplier;
@@ -104,9 +252,6 @@ static u8 enc_speed_multiplier;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-
-static s32 MBNG_LRE_UpdateAllLedRings(void);
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -157,18 +302,14 @@ s32 MBCV_LRE_Init(u32 mode)
   // initial enc values
   for(int bank=0; bank<MBCV_LRE_NUM_BANKS; ++bank) {
     for(int enc=0; enc<MBCV_LRE_NUM_ENC; ++enc) {
-      mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[bank][enc];
-      e->value = 0;
-      e->min = 0;
-      e->max = 127;
-      e->nrpn = 0;
+      MBCV_LRE_EncCfgSetFromDefault(enc, bank, default_nrpn[bank][enc]);
     }
   }
 
   enc_speed_multiplier = 0; // disabled
   enc_bank = 0; // first bank
 
-  MBNG_LRE_UpdateAllLedRings();
+  MBCV_LRE_UpdateAllLedRings();
 
   return 0; // no error
 }
@@ -177,7 +318,7 @@ s32 MBCV_LRE_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // LEDring update
 /////////////////////////////////////////////////////////////////////////////
-static s32 MBNG_LRE_UpdateLedRingPattern(u32 enc, u16 sr_pattern)
+static s32 MBCV_LRE_UpdateLedRingPattern(u32 enc, u16 sr_pattern)
 {
   if( enc >= MBCV_LRE_NUM_ENC )
     return -1; // invalid encoder
@@ -208,36 +349,42 @@ static s32 MBNG_LRE_UpdateLedRingPattern(u32 enc, u16 sr_pattern)
   return 0; // no error
 }
 
-static s32 MBNG_LRE_UpdateLedRing(u32 enc)
+static s32 MBCV_LRE_UpdateLedRing(u32 enc)
 {
   if( enc >= MBCV_LRE_NUM_ENC )
     return -1; // invalid encoder
 
   mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[enc_bank][enc];
-  int range = (e->min <= e->max) ? (e->max - e->min + 1) : (e->min - e->max + 1);
-  int pos = (16 * e->value) / range;
 
-  // middle pos
+  MbCvEnvironment* env = APP_GetEnv();
+  u16 value;
+  if( !env->getNRPN(e->nrpn, &value) ) {
+    MBCV_LRE_UpdateLedRingPattern(enc, 0x0000);
+  } else {
+    int range = (e->min <= e->max) ? (e->max - e->min + 1) : (e->min - e->max + 1);
+    int pos = (16 * value) / range;
+
+    // middle pos
 #if MBCV_LRE_NUM_DOUT_PATTERN_POS != 17
 # error "The LEDring driver requires 17 ledring positions"
 #endif
-  if( e->value == (range / 2) ) {
-    pos = 8;
-  } else if( pos >= 8 ) {
-    ++pos;
-  }
+    if( value == (range / 2) ) {
+      pos = 8;
+    } else if( pos >= 8 ) {
+      ++pos;
+    }
 
-  // transfer to DOUT
-  int pattern = 0; // TODO: select depending on value type
-  MBNG_LRE_UpdateLedRingPattern(enc, dout_matrix_pattern[pattern][pos]);
+    // transfer to DOUT
+    MBCV_LRE_UpdateLedRingPattern(enc, dout_matrix_pattern[e->pattern][pos]);
+  }
 
   return 0; // no error
 }
 
-static s32 MBNG_LRE_UpdateAllLedRings(void)
+s32 MBCV_LRE_UpdateAllLedRings(void)
 {
   for(int enc=0; enc<MBCV_LRE_NUM_ENC; ++enc) {
-    MBNG_LRE_UpdateLedRing(enc);
+    MBCV_LRE_UpdateLedRing(enc);
   }
 
   return 0; // no error
@@ -247,13 +394,13 @@ static s32 MBNG_LRE_UpdateAllLedRings(void)
 /////////////////////////////////////////////////////////////////////////////
 // Enables/Disables fast mode with given multiplier
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LRE_FastModeSet(u8 multiplier)
+s32 MBCV_LRE_FastModeSet(u8 multiplier)
 {
   enc_speed_multiplier = multiplier;
   return 0;
 }
 
-s32 MBNG_LRE_FastModeGet(void)
+s32 MBCV_LRE_FastModeGet(void)
 {
   return enc_speed_multiplier;
 }
@@ -262,7 +409,7 @@ s32 MBNG_LRE_FastModeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // Sets/Gets the encoder bank
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LRE_BankSet(u8 bank)
+s32 MBCV_LRE_BankSet(u8 bank)
 {
   if( bank >= MBCV_LRE_NUM_BANKS )
     return -1; // invalid bank
@@ -272,7 +419,7 @@ s32 MBNG_LRE_BankSet(u8 bank)
   return 0;
 }
 
-s32 MBNG_LRE_BankGet(void)
+s32 MBCV_LRE_BankGet(void)
 {
   return enc_bank;
 }
@@ -318,7 +465,7 @@ s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg)
     return -2; // invalid bank
 
 #if 0
-  enc_cfg[bank][enc] = enc_cfg;
+  enc_cfg[bank][enc] = enc_cfg; // not allowed in C++
 #else
   memcpy(&enc_cfg[bank][enc], enc_cfg, sizeof(mbcv_lre_enc_cfg_t));
 #endif
@@ -326,13 +473,36 @@ s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg)
   return 0; // no error
 }
 
+s32 MBCV_LRE_EncCfgSetFromDefault(u32 enc, u32 bank, u16 nrpnNumber)
+{
+  if( enc >= MBCV_LRE_NUM_ENC )
+    return -1; // invalid encoder
+
+  if( bank >= MBCV_LRE_NUM_BANKS )
+    return -2; // invalid bank
+
+  MbCvEnvironment* env = APP_GetEnv();
+  MbCvNrpnInfoT info;
+  if( !env->getNRPNInfo(nrpnNumber, &info) )
+    return -3; // NRPN not available
+
+  mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[bank][enc];
+
+  e->nrpn = nrpnNumber;
+  e->min = info.min;
+  e->max = info.max;
+  e->pattern = info.is_bidir ? 1 : 0;
+
+  return 0; // no error
+}
+
 mbcv_lre_enc_cfg_t MBCV_LRE_EncCfgGet(u32 enc, u32 bank)
 {
   const mbcv_lre_enc_cfg_t dummy_cfg = {
-    0, // value
     0, // min
     127, // max
     0, // nrpn
+    0  // pattern
   };
 
   if( enc >= MBCV_LRE_NUM_ENC )
@@ -349,7 +519,7 @@ mbcv_lre_enc_cfg_t MBCV_LRE_EncCfgGet(u32 enc, u32 bank)
 // Sets the encoder speed depending on value range
 // should this be optional?
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LRE_AutoSpeed(u32 enc, u32 range)
+s32 MBCV_LRE_AutoSpeed(u32 enc, u32 range)
 {
   int enc_ix = enc + 1; // app.cpp decrements -1 from encoder due to SCS
 
@@ -398,7 +568,7 @@ s32 MBNG_LRE_AutoSpeed(u32 enc, u32 range)
 /////////////////////////////////////////////////////////////////////////////
 // Called from APP_ENC_NotifyChange on encoder updates
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_LRE_NotifyChange(u32 enc, s32 incrementer)
+s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
 {
 #if 0
   DEBUG_MSG("[MBCV_LRE] ENC#%d %d\n", enc, incrementer);
@@ -413,9 +583,16 @@ s32 MBNG_LRE_NotifyChange(u32 enc, s32 incrementer)
 
   mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[enc_bank][enc];
   int range = (e->min <= e->max) ? (e->max - e->min + 1) : (e->min - e->max + 1);
-  MBNG_LRE_AutoSpeed(enc, range);
+  MBCV_LRE_AutoSpeed(enc, range);
 
-  int value = e->value;
+  MbCvEnvironment* env = APP_GetEnv();
+  u16 nrpnValue;
+  if( !env->getNRPN(e->nrpn, &nrpnValue) ) {
+    MBCV_LRE_UpdateLedRing(enc);
+    return 0; // no valid NRPN value mapped
+  }
+
+  int value = nrpnValue;
   int new_value;
   if( e->min <= e->max ) {
     new_value = value + incrementer;
@@ -431,15 +608,27 @@ s32 MBNG_LRE_NotifyChange(u32 enc, s32 incrementer)
       new_value = e->min;
   }
 
-  if( e->value != new_value ) {
-    e->value = new_value;
+  if( value != new_value ) {
 #if 0
-    DEBUG_MSG("[MBCV_LRE] ENC#%d value %d\n", enc, e->value);
+    DEBUG_MSG("[MBCV_LRE] ENC#%d nrpn=0x%04x  value=%d\n", enc, e->nrpn, e->value);
 #endif
 
-    // TODO: forward to MbCvEnvironment
+    {
+      MbCvEnvironment* env = APP_GetEnv();
+      env->setNRPN(e->nrpn, new_value);
 
-    MBNG_LRE_UpdateLedRing(enc);
+      MbCvNrpnInfoT info;
+      if( env->getNRPNInfo(e->nrpn, &info) ) {
+	int lcdValue = info.value;
+
+	char buffer[21];
+	sprintf(buffer, "Value: %4d", lcdValue);
+	SCS_Msg(SCS_MSG_L, 1000, info.name, buffer);
+	
+      }
+    }
+
+    MBCV_LRE_UpdateLedRing(enc);
   }
 
   return 0; // no error

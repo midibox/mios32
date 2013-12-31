@@ -437,6 +437,9 @@ s32 SCS_ENC_MENU_NotifyChange(s32 incrementer)
   if( incrementer == 0 ) // nothing to do...
     return 0;
 
+  // stop current message
+  SCS_MsgStop();
+
   // deinstall callback if it was active
   scsDelayedActionCallback = 0;
 
@@ -665,6 +668,9 @@ s32 SCS_ENC_MENU_AutoSpeedSet(u16 maxValue)
 s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 {
   int softButton = -1;
+
+  if( !depressed ) // stop current message
+    SCS_MsgStop();
 
   // check for overruling
   if( scsButtonHook && scsButtonHook(pin, depressed) > 0 ) {

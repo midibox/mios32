@@ -52,12 +52,16 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
 extern void APP_TASK_Period_1mS_LP(void);
+extern void APP_TASK_Period_1mS_LP2(void);
 extern void APP_TASK_Period_1mS_SD(void);
 extern void APP_TASK_Period_1mS(void);
 
 extern s32 APP_StopwatchInit(void);
 extern s32 APP_StopwatchReset(void);
 extern s32 APP_StopwatchCapture(void);
+
+extern s32 APP_SelectScopeLCDs(void);
+extern s32 APP_SelectMainLCD(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,8 @@
 #include "MbCvScope.h"
 #include <string.h>
 #include <glcd_font.h>
+#include <tasks.h>
+#include <app.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -40,7 +42,7 @@ void MbCvScope::init(u8 _displayNum)
 
     oversamplingFactor = 8;
     updatePeriod = 5000;
-    triggerLevel = 0;
+    triggerLevel = 10;
     triggerOnRisingEdge = true;
     assignedFunction = 0;
     clear();
@@ -142,10 +144,6 @@ void MbCvScope::tick(void)
     if( displayUpdateReq || ongoingCapture ) {
         displayUpdateReq = false;
 
-        // change to scope display
-        s32 prevDevice = MIOS32_LCD_DeviceGet();
-        MIOS32_LCD_DeviceSet(displayNum);
-
         u16 displayHeight = 48;
         u16 displayWidth = 128;
 
@@ -153,45 +151,70 @@ void MbCvScope::tick(void)
         u8 tmpBuffer[MBCV_SCOPE_DISPLAY_BUFFER_SIZE];
         memcpy(tmpBuffer, displayBuffer, MBCV_SCOPE_DISPLAY_BUFFER_SIZE);
 
-        for(int y=0; y<displayHeight; y+=8) {
-            MIOS32_LCD_GCursorSet(0, y);
+        mios32_lcd_bitmap_t bitmap;
+        bitmap.height = 8;
+        bitmap.width = 128;
+        bitmap.line_offset = 0;
+        bitmap.colour_depth = 1;
+        u8 bitmapMemory[128];
+        bitmap.memory = (u8 *)&bitmapMemory[0];
 
+        for(int y=0; y<displayHeight; y+=8) {
             u8 *bufferPtr = tmpBuffer;
+            u8 *bitmapPtr = bitmap.memory;
             for(int x=0; x<displayWidth; ++x) {
                 u8 value = *(bufferPtr++);
 
                 if( value >= y && value <= (y+7) ) {
-                    MIOS32_LCD_Data(1 << (value % 8));
+                    *(bitmapPtr++) = 1 << (value % 8);
                 } else {
-                    MIOS32_LCD_Data(0x00);
+                    *(bitmapPtr++) = 0x00;
                 }
+            }
+
+            {
+                MUTEX_LCD_TAKE;
+                APP_SelectScopeLCDs();
+
+                MIOS32_LCD_DeviceSet(displayNum);
+                MIOS32_LCD_GCursorSet(0, y);
+                MIOS32_LCD_BitmapPrint(bitmap);
+
+                APP_SelectMainLCD();
+                MUTEX_LCD_GIVE;
             }
         }
 
-        MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
-        MIOS32_LCD_CursorSet(0, 7);
-        if( assignedFunction > 0 ) {
-            MIOS32_LCD_PrintFormattedString("CV%d ", assignedFunction);
-        } else {
-            MIOS32_LCD_PrintFormattedString("CV- ");
-        }
+        {
+            MUTEX_LCD_TAKE;
+            APP_SelectScopeLCDs();
 
-        if( capturedMinValue == MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE ) {
-            MIOS32_LCD_PrintFormattedString("Min:???%%");
-        } else {
-            u32 percent = ((capturedMinValue + 0x8000) * 100) / 65535;
-            MIOS32_LCD_PrintFormattedString("Min:%3d%%", percent);
-        }
+            MIOS32_LCD_DeviceSet(displayNum);
+            MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
+            MIOS32_LCD_CursorSet(0, 7);
+            if( assignedFunction > 0 ) {
+                MIOS32_LCD_PrintFormattedString("CV%d ", assignedFunction);
+            } else {
+                MIOS32_LCD_PrintFormattedString("CV- ");
+            }
 
-        if( capturedMaxValue == MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE ) {
-            MIOS32_LCD_PrintFormattedString(" Max:???%%");
-        } else {
-            u32 percent = ((capturedMaxValue + 0x8000) * 100) / 65535;
-            MIOS32_LCD_PrintFormattedString(" Max:%3d%%", percent);
-        }
+            if( capturedMinValue == MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE ) {
+                MIOS32_LCD_PrintFormattedString("Min:???%%");
+            } else {
+                u32 percent = ((capturedMinValue + 0x8000) * 100) / 65535;
+                MIOS32_LCD_PrintFormattedString("Min:%3d%%", percent);
+            }
 
-        // change back to original display
-        MIOS32_LCD_DeviceSet(prevDevice);
+            if( capturedMaxValue == MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE ) {
+                MIOS32_LCD_PrintFormattedString(" Max:???%%");
+            } else {
+                u32 percent = ((capturedMaxValue + 0x8000) * 100) / 65535;
+                MIOS32_LCD_PrintFormattedString(" Max:%3d%%", percent);
+            }
+
+            APP_SelectMainLCD();
+            MUTEX_LCD_GIVE;
+        }
     }
 }
 
