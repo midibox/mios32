@@ -17,6 +17,6 @@
 
 #define CAP_CHARGE_CURVE_STEPS 1024
 
-extern u16 capChargeCurve[CAP_CHARGE_CURVE_STEPS];
+extern const u16 capChargeCurve[CAP_CHARGE_CURVE_STEPS];
 
 #endif /* _CAP_CHARGE_CURVE_H */
