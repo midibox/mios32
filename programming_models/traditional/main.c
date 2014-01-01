@@ -389,6 +389,7 @@ void HardFault_Handler_c(unsigned int * hardfault_args)
   stacked_pc = ((unsigned long) hardfault_args[6]);
   stacked_psr = ((unsigned long) hardfault_args[7]);
   
+  MIOS32_MIDI_SendDebugMessage("Hard Fault PC = %08x\n", stacked_pc); // ensure that at least the PC will be sent
   MIOS32_MIDI_SendDebugMessage("==================\n");
   MIOS32_MIDI_SendDebugMessage("!!! HARD FAULT !!!\n");
   MIOS32_MIDI_SendDebugMessage("==================\n");
