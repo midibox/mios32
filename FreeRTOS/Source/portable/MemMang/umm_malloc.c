@@ -698,7 +698,8 @@ void *umm_info( void *ptr, int force ) {
       }
     } else {
       ++heapInfo.usedEntries;
-      heapInfo.usedBlocks += (UMM_NBLOCK(blockNo) & UMM_BLOCKNO_MASK )-blockNo;
+      unsigned usedBlocks = (UMM_NBLOCK(blockNo) & UMM_BLOCKNO_MASK )-blockNo;
+      heapInfo.usedBlocks += usedBlocks;
 
       DBG_LOG_FORCE( force, "|0x%08x|B %5d|NB %5d|PB %5d|Z %5d|\n",
                             &UMM_BLOCK(blockNo),
@@ -706,6 +707,8 @@ void *umm_info( void *ptr, int force ) {
                             UMM_NBLOCK(blockNo) & UMM_BLOCKNO_MASK,
                             UMM_PBLOCK(blockNo),
                             (UMM_NBLOCK(blockNo) & UMM_BLOCKNO_MASK )-blockNo );
+
+      MIOS32_MIDI_SendDebugHexDump((unsigned char *)&UMM_BLOCK(blockNo), usedBlocks * sizeof(umm_block));
     }
 
     blockNo = UMM_NBLOCK(blockNo) & UMM_BLOCKNO_MASK;
