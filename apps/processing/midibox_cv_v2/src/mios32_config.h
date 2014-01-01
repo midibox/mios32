@@ -24,6 +24,7 @@
 #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
 
 // reserved memory for FreeRTOS pvPortMalloc function
+#define MIOS32_MINIMAL_STACK_SIZE 1500
 #define MIOS32_HEAP_SIZE 13*1024
 
 

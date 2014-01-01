@@ -5,7 +5,7 @@
 #include <mios32.h>
 #include "CapChargeCurve.h"
 
-u16 capChargeCurve[CAP_CHARGE_CURVE_STEPS] = {
+const u16 capChargeCurve[CAP_CHARGE_CURVE_STEPS] = {
     91, // 0
     139, // 1
     201, // 2

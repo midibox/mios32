@@ -121,7 +121,7 @@ static u8 cached_bank;
 static u8 cached_patch;
 
 // TODO: only temporary used - make this global?
-static u16 patch_buffer[CV_PATCH_SIZE];
+AHB_SECTION static u16 patch_buffer[CV_PATCH_SIZE];
 
 
 /////////////////////////////////////////////////////////////////////////////
