@@ -1872,17 +1872,17 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
 
   // PUNCH_IN, PUNCH_OUT and Delete track data control
   if( !depressed ) {
-    if( ( fs_time_control > (seq_core_timestamp_ms - fs_time_delay) ) && ( fs_time_control != 0 ) )
+    if( ( MIOS32_TIMESTAMP_GetDelay(fs_time_control) > fs_time_delay ) && ( fs_time_control != 0 ) )
     {
       // that confirms the delete function
       fs_mode = 1; // delete
     } else {
       // start time in count
-      fs_time_control = seq_core_timestamp_ms;
+      fs_time_control = MIOS32_TIMESTAMP_Get();
     }
   } else {
     // if time pressed is less than fs_time_delay miliseconds, we got a possible delete function activation
-    if( fs_time_control > (seq_core_timestamp_ms - fs_time_delay) )
+    if( MIOS32_TIMESTAMP_GetDelay(fs_time_control) > fs_time_delay )
     {
       switch( fs_mode ) {
       case 1: { // delete
@@ -1893,7 +1893,7 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
         fs_mode = 0; // for the case that an invalid mode is selected
       }
 
-      fs_time_control = seq_core_timestamp_ms;
+      fs_time_control = MIOS32_TIMESTAMP_Get();
     }
   }
 

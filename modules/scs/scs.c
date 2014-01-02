@@ -62,7 +62,7 @@
 //! #define SCS_MENU_ITEM_TOGGLE_THRESHOLD 4
 //!
 //! // maximum width of a temporary message
-//! #define SCS_MSG_MAX_CHAR 16
+//! #define SCS_MSG_MAX_CHAR 20
 //!
 //! // Debounce counter reload value (in mS)
 //! // Allowed values 0..255 - 0 turns off debouncing
@@ -131,7 +131,8 @@ static u32 scsDelayedActionParameter;
 static u16 scsDelayedActionCtr;
 
 static char scsMsg[2][SCS_MSG_MAX_CHAR+10+1]; // + some "margin" + zero terminator
-static u16 scsMsgCtr;
+static u32 scsMsgTimestamp;
+static u16 scsMsgDelay;
 static scs_msg_type_t scsMsgType;
 
 static char scsActionString[SCS_MENU_ITEM_WIDTH+1];
@@ -226,7 +227,8 @@ s32 SCS_Init(u32 mode)
   scsEditOffset = 0;
   scsEditPageUpdateReq = 0;
 
-  scsMsgCtr = 0;
+  scsMsgTimestamp = 0;
+  scsMsgDelay = 0;
   scsDelayedActionCtr = 0;
 
   scsPinState = 0xffff;
@@ -716,33 +718,33 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
       displayCursorPos = 0;
 #endif
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
     } break;
     case SCS_MENU_STATE_INSIDE_PAGE: {
       scsMenuState = SCS_MENU_STATE_SELECT_PAGE;
       displayInitReq = 1;
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
 #if SCS_MENU_NO_SOFT_BUTTON_MODE
       displayCursorPos = 0;
 #endif
     } break;
     case SCS_MENU_STATE_EDIT_ITEM: {
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
     } break;
     case SCS_MENU_STATE_EDIT_STRING: {
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
       scsEditStringCallback = NULL; // disable edit string callback
     }
     case SCS_MENU_STATE_EDIT_IP: {
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
       scsEditIpCallback = NULL; // disable edit IP callback
     }
     case SCS_MENU_STATE_EDIT_BROWSER: {
       scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
-      scsMsgCtr = 0; // disable message
+      scsMsgDelay = 0; // disable message
       scsEditStringCallback = NULL; // disable edit string callback
       scsEditGetListCallback = NULL; // disable edit string callback
     }
@@ -1372,8 +1374,11 @@ s32 SCS_Tick(void)
   }
 
   // if message active: overrule the common text
-  if( scsMsgCtr ) {
-    --scsMsgCtr;
+  if( scsMsgDelay ) {
+    u32 timestampDelay = MIOS32_TIMESTAMP_GetDelay(scsMsgTimestamp);
+    if( timestampDelay > scsMsgDelay ) {
+      scsMsgDelay = 0;
+    }
 
     char *animation_l_ptr;
     char *animation_r_ptr;
@@ -1382,61 +1387,60 @@ s32 SCS_Tick(void)
     u8 disable_message = 0;
 
     switch( scsMsgType ) {
-      case SCS_MSG_ERROR_L:
-      case SCS_MSG_ERROR_R: {
-	animation_l_ptr = (char *)animation_l_arrows;
-	animation_r_ptr = (char *)animation_r_arrows;
-	if( scsMsgType == SCS_MSG_ERROR_R ) {
-	  msg_x = SCS_LCD_MAX_COLUMNS-1;
-	  right_aligned = 1;
-	} else {
-	  msg_x = 0;
-	  right_aligned = 0;
-	}
-      } break;
-
-      case SCS_MSG_DELAYED_ACTION_L:
-      case SCS_MSG_DELAYED_ACTION_R: {
-	animation_l_ptr = (char *)animation_l_brackets;
-	animation_r_ptr = (char *)animation_r_brackets;
-	if( scsMsgType == SCS_MSG_DELAYED_ACTION_R ) {
-	  msg_x = SCS_LCD_MAX_COLUMNS-1;
-	  right_aligned = 1;
-	} else {
-	  msg_x = 0;
-	  right_aligned = 0;
-	}
-
-	if( scsDelayedActionCallback == NULL ) {
-	  disable_message = 1; // button has been depressed before delay
-	} else {
-	  int seconds = (scsDelayedActionCtr / 1000) + 1;
-	  if( seconds == 1 )
-	    sprintf(scsMsg[0], "Hold 1 second ");
-	  else
-	    sprintf(scsMsg[0], "Hold %d seconds", seconds);
-	}
-      } break;
-
-      case SCS_MSG_R: {
-	animation_l_ptr = (char *)animation_l_stars;
-	animation_r_ptr = (char *)animation_r_stars;
+    case SCS_MSG_ERROR_L:
+    case SCS_MSG_ERROR_R: {
+      animation_l_ptr = (char *)animation_l_arrows;
+      animation_r_ptr = (char *)animation_r_arrows;
+      if( scsMsgType == SCS_MSG_ERROR_R ) {
 	msg_x = SCS_LCD_MAX_COLUMNS-1;
 	right_aligned = 1;
-      } break;
-
-      default: { // SCS_MSG_L
-	animation_l_ptr = (char *)animation_l_stars;
-	animation_r_ptr = (char *)animation_r_stars;
+      } else {
 	msg_x = 0;
 	right_aligned = 0;
-	//MIOS32_MIDI_SendDebugMessage("1");
-      } break;
+      }
+    } break;
 
+    case SCS_MSG_DELAYED_ACTION_L:
+    case SCS_MSG_DELAYED_ACTION_R: {
+      animation_l_ptr = (char *)animation_l_brackets;
+      animation_r_ptr = (char *)animation_r_brackets;
+      if( scsMsgType == SCS_MSG_DELAYED_ACTION_R ) {
+	msg_x = SCS_LCD_MAX_COLUMNS-1;
+	right_aligned = 1;
+      } else {
+	msg_x = 0;
+	right_aligned = 0;
+      }
+
+      if( scsDelayedActionCallback == NULL ) {
+	disable_message = 1; // button has been depressed before delay
+      } else {
+	int seconds = (scsDelayedActionCtr / 1000) + 1;
+	if( seconds == 1 )
+	  sprintf(scsMsg[0], "Hold 1 second ");
+	else
+	  sprintf(scsMsg[0], "Hold %d seconds", seconds);
+      }
+    } break;
+
+    case SCS_MSG_R: {
+      animation_l_ptr = (char *)animation_l_stars;
+      animation_r_ptr = (char *)animation_r_stars;
+      msg_x = SCS_LCD_MAX_COLUMNS-1;
+      right_aligned = 1;
+    } break;
+
+    default: { // SCS_MSG_L
+      animation_l_ptr = (char *)animation_l_stars;
+      animation_r_ptr = (char *)animation_r_stars;
+      msg_x = 0;
+      right_aligned = 0;
+      //MIOS32_MIDI_SendDebugMessage("1");
+    } break;
     }
 
     if( !disable_message ) {
-      int anum = (scsMsgCtr % 1000) / 250;
+      int anum = (timestampDelay % 1000) / 250;
 
       int len[2];
       len[0] = strlen((char *)scsMsg[0]);
@@ -1462,21 +1466,30 @@ s32 SCS_Tick(void)
 	  scsMsg[line][end_pos++] = ' ';
 	scsMsg[line][end_pos] = 0;
 
-#if 0
-	SCS_LCD_PrintFormattedString(" %c%c| %s |%c%c ",
-				     *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
-				     (char *)scsMsg[line], 
-				     *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
-#else
-	SCS_LCD_PrintFormattedString("%c%c %s %c%c ",
-				     *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
-				     (char *)scsMsg[line], 
-				     *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
-#endif
+	int msgLen = strlen(scsMsg[line]);
+	if( msgLen <= (scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 2*3) ) {
+	  SCS_LCD_PrintFormattedString("%c%c %s %c%c ",
+				       *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				       (char *)scsMsg[line], 
+				       *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+	} else if( msgLen <= (scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 2*2) ) {
+	  SCS_LCD_PrintFormattedString("%c%c%s%c%c ",
+				       *(animation_l_ptr + 2*anum + 0), *(animation_l_ptr + 2*anum + 1),
+				       (char *)scsMsg[line], 
+				       *(animation_r_ptr + 2*anum + 0), *(animation_r_ptr + 2*anum + 1));
+	} else if( msgLen <= (scsNumMenuItems*SCS_MENU_ITEM_WIDTH - 2*1) ) {
+	  SCS_LCD_PrintFormattedString("%c%s%c ",
+				       *(animation_l_ptr + 2*anum + 1),
+				       (char *)scsMsg[line], 
+				       *(animation_r_ptr + 2*anum + 0));
+	} else {
+	  SCS_LCD_PrintFormattedString("%s ",
+				       (char *)scsMsg[line]);
+	}
       }
     }
 
-    if( disable_message || scsMsgCtr == 0 ) {
+    if( disable_message || scsMsgDelay == 0 ) {
       // re-init and update display with next tick
       displayInitReq = 1;
     }
@@ -1626,7 +1639,8 @@ scs_menu_item_t *SCS_MenuPageGet(void)
 s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2)
 {
   scsMsgType = msgType;
-  scsMsgCtr = delay;
+  scsMsgDelay = delay;
+  scsMsgTimestamp = MIOS32_TIMESTAMP_Get();
   strncpy((char *)scsMsg[0], line1, SCS_MSG_MAX_CHAR);
   strncpy((char *)scsMsg[1], line2, SCS_MSG_MAX_CHAR);
 
@@ -1638,7 +1652,7 @@ s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2)
 /////////////////////////////////////////////////////////////////////////////
 s32 SCS_MsgStop(void)
 {
-  scsMsgCtr = 0;
+  scsMsgDelay = 0;
 
   return 0; // no error
 }

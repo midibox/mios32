@@ -74,19 +74,6 @@ static s32 resetTapTempo(void)
   return 0; // no error
 }
 
-// returns current timestamp
-static u32 tapTempoTimestamp(void)
-{
-#if 0
-  // Problem: LPC17 doesn't deliver a timestamp which is accurate enough... (only second resolution)
-  mios32_sys_time_t t = MIOS32_SYS_TimeGet();
-  return 1000*t.seconds + t.fraction_ms;
-#else
-  return seq_core_timestamp_ms;
-#endif
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
@@ -496,8 +483,8 @@ s32 SEQ_UI_BPM_Init(u32 mode)
 s32 SEQ_UI_BPM_TapTempo(void)
 {
   // determine current timestamp
-  u32 timestamp = tapTempoTimestamp();
-  u32 delay = timestamp - tap_tempo_last_timestamp;
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+  u32 delay = MIOS32_TIMESTAMP_GetDelay(tap_tempo_last_timestamp);
 
   // if delay < 100 (mS) we assume a bouncing button - ignore this tap!
   if( delay < 100 )

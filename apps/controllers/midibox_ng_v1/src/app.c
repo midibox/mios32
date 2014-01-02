@@ -83,7 +83,6 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 u8  hw_enabled;
 u8  debug_verbose_level;
-volatile u32 app_ms_counter;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -227,12 +226,12 @@ void APP_Background(void)
   SCS_DisplayUpdateInMainPage(0);
   MBNG_LCD_SpecialCharsReInit();
 
-  u32 last_app_ms_counter = app_ms_counter;
+  u32 last_timestamp = MIOS32_TIMESTAMP_Get();
   while( 1 ) {
     //vTaskDelay(1 / portTICK_RATE_MS);
     // Background task: use timestamp mechanism to generate delay
-    while( last_app_ms_counter == app_ms_counter );
-    last_app_ms_counter = app_ms_counter;
+    while( MIOS32_TIMESTAMP_Get() == last_timestamp );
+    last_timestamp = MIOS32_TIMESTAMP_Get();
 
     // toggle the state of all LEDs (allows to measure the execution speed with a scope)
     MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
@@ -433,7 +432,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, app_ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -571,9 +570,6 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Tick(void)
 {
-  // increment timestamp
-  ++app_ms_counter;
-
 //    // execute sequencer handler
 //    MUTEX_SDCARD_TAKE;
 //    SEQ_Handler();

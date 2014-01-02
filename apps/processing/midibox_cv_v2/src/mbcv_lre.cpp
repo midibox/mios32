@@ -247,6 +247,7 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
 
 static u8 enc_bank;
 static u8 enc_speed_multiplier;
+static u8 enc_config_mode;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -259,6 +260,7 @@ static u8 enc_speed_multiplier;
 s32 MBCV_LRE_Init(u32 mode)
 {
   enc_speed_multiplier = 0;
+  enc_config_mode = 0;
 
   for(int i=1; i<MIOS32_ENC_NUM_MAX; ++i) { // start at 1 since the first encoder is allocated by SCS
     mios32_enc_config_t enc_config;
@@ -407,6 +409,21 @@ s32 MBCV_LRE_FastModeGet(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Enables/Disables configuration mode
+/////////////////////////////////////////////////////////////////////////////
+s32 MBCV_LRE_ConfigModeSet(u8 configMode)
+{
+  enc_config_mode = configMode;
+  return 0;
+}
+
+s32 MBCV_LRE_ConfigModeGet(void)
+{
+  return enc_config_mode;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Sets/Gets the encoder bank
 /////////////////////////////////////////////////////////////////////////////
 s32 MBCV_LRE_BankSet(u8 bank)
@@ -464,11 +481,7 @@ s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg)
   if( bank >= MBCV_LRE_NUM_BANKS )
     return -2; // invalid bank
 
-#if 0
-  enc_cfg[bank][enc] = enc_cfg; // not allowed in C++
-#else
-  memcpy(&enc_cfg[bank][enc], enc_cfg, sizeof(mbcv_lre_enc_cfg_t));
-#endif
+  enc_cfg[bank][enc] = cfg;
 
   return 0; // no error
 }
@@ -570,6 +583,8 @@ s32 MBCV_LRE_AutoSpeed(u32 enc, u32 range)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
 {
+  MbCvEnvironment* env = APP_GetEnv();
+
 #if 0
   DEBUG_MSG("[MBCV_LRE] ENC#%d %d\n", enc, incrementer);
 #endif
@@ -581,55 +596,92 @@ s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
     incrementer *= (s32)enc_speed_multiplier;
   }
 
-  mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[enc_bank][enc];
-  int range = (e->min <= e->max) ? (e->max - e->min + 1) : (e->min - e->max + 1);
-  MBCV_LRE_AutoSpeed(enc, range);
+  if( enc_config_mode ) {
+    mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[enc_bank][enc];
 
-  MbCvEnvironment* env = APP_GetEnv();
-  u16 nrpnValue;
-  if( !env->getNRPN(e->nrpn, &nrpnValue) ) {
-    MBCV_LRE_UpdateLedRing(enc);
-    return 0; // no valid NRPN value mapped
-  }
+    int nrpnNumber = e->nrpn + incrementer;
+    if( nrpnNumber < 0 )
+      nrpnNumber = 0;
+    else if( nrpnNumber > 16383 )
+      nrpnNumber = 16383;
 
-  int value = nrpnValue;
-  int new_value;
-  if( e->min <= e->max ) {
-    new_value = value + incrementer;
-    if( new_value < e->min )
-      new_value = e->min;
-    else if( new_value > e->max )
-      new_value = e->max;
-  } else { // reversed range
-    new_value = value - incrementer;
-    if( new_value < e->max )
-      new_value = e->max;
-    else if( new_value > e->min )
-      new_value = e->min;
-  }
-
-  if( value != new_value ) {
-#if 0
-    DEBUG_MSG("[MBCV_LRE] ENC#%d nrpn=0x%04x  value=%d\n", enc, e->nrpn, e->value);
-#endif
-
-    {
-      MbCvEnvironment* env = APP_GetEnv();
-      env->setNRPN(e->nrpn, new_value);
-
-      MbCvNrpnInfoT info;
-      if( env->getNRPNInfo(e->nrpn, &info) ) {
-	int lcdValue = info.value;
-
-	char buffer[21];
-	sprintf(buffer, "Value: %4d", lcdValue);
-	SCS_Msg(SCS_MSG_L, 1000, info.name, buffer);
-	
+    if( incrementer < 0 ) {
+      while( 1 ) {
+	u16 nrpnValue;
+	if( env->getNRPN(nrpnNumber, &nrpnValue) ) {
+	  break;
+	} else {
+	  if( --nrpnNumber < 0 )
+	    return 0; // first value already selected
+	}
+      }
+    } else {
+      while( 1 ) {
+	u16 nrpnValue;
+	if( env->getNRPN(nrpnNumber, &nrpnValue) ) {
+	  break;
+	} else {
+	  if( ++nrpnNumber > 16383 )
+	    return 0; // last value already selected
+	}
       }
     }
+    e->nrpn = nrpnNumber;
 
-    MBCV_LRE_UpdateLedRing(enc);
+    MbCvNrpnInfoT info;
+    if( env->getNRPNInfo(e->nrpn, &info) ) {
+      SCS_Msg(SCS_MSG_L, 1000, info.nameString, info.valueString);
+    } else {
+      char buffer1[21];
+      char buffer2[21];
+      sprintf(buffer1, "NRPN #%5d", nrpnNumber);
+      sprintf(buffer2, "CVx Value: ----");
+      SCS_Msg(SCS_MSG_L, 1000, buffer1, buffer2);
+    }
+  } else {
+    mbcv_lre_enc_cfg_t *e = (mbcv_lre_enc_cfg_t *)&enc_cfg[enc_bank][enc];
+    int range = (e->min <= e->max) ? (e->max - e->min + 1) : (e->min - e->max + 1);
+    MBCV_LRE_AutoSpeed(enc, range);
+
+    MbCvEnvironment* env = APP_GetEnv();
+    u16 nrpnValue;
+    if( !env->getNRPN(e->nrpn, &nrpnValue) ) {
+      MBCV_LRE_UpdateLedRing(enc);
+      return 0; // no valid NRPN value mapped
+    }
+
+    int value = nrpnValue;
+    int new_value;
+    if( e->min <= e->max ) {
+      new_value = value + incrementer;
+      if( new_value < e->min )
+      new_value = e->min;
+      else if( new_value > e->max )
+	new_value = e->max;
+    } else { // reversed range
+      new_value = value - incrementer;
+      if( new_value < e->max )
+	new_value = e->max;
+      else if( new_value > e->min )
+	new_value = e->min;
+    }
+
+    if( value != new_value ) {
+#if 0
+      DEBUG_MSG("[MBCV_LRE] ENC#%d nrpn=0x%04x  value=%d\n", enc, e->nrpn, e->value);
+#endif
+
+      env->setNRPN(e->nrpn, new_value);
+      env->midiSendNRPNToActivePort(e->nrpn, new_value);
+      
+      MbCvNrpnInfoT info;
+      if( env->getNRPNInfo(e->nrpn, &info) ) {
+	SCS_Msg(SCS_MSG_L, 1000, info.nameString, info.valueString);
+      }
+    }
   }
+
+  MBCV_LRE_UpdateLedRing(enc);
 
   return 0; // no error
 }

@@ -45,6 +45,7 @@ extern "C" {
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_patch.h"
+#include "mbcv_lre.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -844,9 +845,10 @@ static s32 displayHook(char *line1, char *line2)
     char msdStr[5];
     TASK_MSD_FlagStrGet(msdStr);
 
-    sprintf(line1, "CLK  DOUT MSD  ");
-    sprintf(line2, "%s Off  %s",
-	    env->mbCvClock.isRunning ? "STOP" : "PLAY",
+    sprintf(line1, "      Enc Bank MSD  ");
+    sprintf(line2, "Panic %s  %2d  %s ",
+	    MBCV_LRE_ConfigModeGet() ? "On " : "Cfg",
+	    MBCV_LRE_BankGet()+1,
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
   }
@@ -997,27 +999,31 @@ static s32 encHook(s32 incrementer)
 static s32 buttonHook(u8 scsButton, u8 depressed)
 {
   if( extraPage ) {
-    if( scsButton == SCS_PIN_SOFT5 && depressed ) // selects/deselects extra page
+    if( scsButton == SCS_PIN_SOFT5 && depressed ) { // selects/deselects extra page
       extraPage = 0;
-    else {
+      SCS_MsgStop();
+    } else {
       switch( scsButton ) {
       case SCS_PIN_SOFT1:
-	if( depressed )
-	  return 1;
-	if( env->mbCvClock.isRunning )
-	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfc); // stop
-	else
-	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfa); // start
-	break;
-
-      case SCS_PIN_SOFT2:
 	if( depressed )
 	  return 1;
 	MBCV_MAP_ResetAllChannels();
 	SCS_Msg(SCS_MSG_L, 1000, "All Notes", "off!");
 	break;
 
-      case SCS_PIN_SOFT3: {
+      case SCS_PIN_SOFT2:
+	if( depressed )
+	  return 1;
+	MBCV_LRE_ConfigModeSet(MBCV_LRE_ConfigModeGet() ? 0 : 1);
+	break;
+
+      case SCS_PIN_SOFT3:
+	if( depressed )
+	  return 1;
+	MBCV_LRE_BankSet((MBCV_LRE_BankGet() + 1) % MBCV_LRE_NUM_BANKS);
+	break;
+
+      case SCS_PIN_SOFT4: {
 	u8 do_enable = TASK_MSD_EnableGet() ? 0 : 1;
 	if( depressed )
 	  SCS_UnInstallDelayedActionCallback(MSD_EnableReq);

@@ -43,6 +43,7 @@ MbCvEnvironment::MbCvEnvironment()
     }
     lastSentNrpnAddressMsb = 0xff;
     lastSentNrpnAddressLsb = 0xff;
+    activeNrpnReceivePort = USB0;
 
     // for delayed ack messages (only used if lastNrpnMidiPort != 0)
     lastNrpnMidiPort = DEFAULT;
@@ -554,6 +555,10 @@ void MbCvEnvironment::midiSendGlobalNRPNDump(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 void MbCvEnvironment::midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value)
 {
+    // set new active port
+    activeNrpnReceivePort = port;
+
+    // send
     if( (port & 0xf0) == OSC0 ) {
         OSC_CLIENT_SendNRPNEvent(port & 0xf, Chn1, nrpnNumber, value);
     } else {
@@ -577,6 +582,15 @@ void MbCvEnvironment::midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 
         MIOS32_MIDI_SendCC(port, Chn1, 0x06, nrpnValueMsb);
         MIOS32_MIDI_SendCC(port, Chn1, 0x26, nrpnValueLsb);                    
     }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// sends a NRPN value to last port at which NRPN has been received
+/////////////////////////////////////////////////////////////////////////////
+void MbCvEnvironment::midiSendNRPNToActivePort(u16 nrpnNumber, u16 value)
+{
+    midiSendNRPN(activeNrpnReceivePort, nrpnNumber, value);
 }
 
 

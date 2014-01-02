@@ -113,7 +113,7 @@ extern void KEYBOARD_SRIO_ServiceFinish(void);
 extern void KEYBOARD_Periodic_1mS(void);
 
 #if !KEYBOARD_DONT_USE_AIN
-extern void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value, u32 timestamp);
+extern void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value);
 #endif
 
 extern s32 KEYBOARD_TerminalHelp(void *_output_function);

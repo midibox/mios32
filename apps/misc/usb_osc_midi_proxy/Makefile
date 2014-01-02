@@ -17,8 +17,7 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    = app.c \
 		  presets.c \
 		  terminal.c \
-		  shell.c \
-		  midimon.c
+		  shell.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -62,6 +61,9 @@ include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 
 # EEPROM emulation
 include $(MIOS32_PATH)/modules/eeprom/eeprom.mk
+
+# MIDImon
+include $(MIOS32_PATH)/modules/midimon/midimon.mk
 
 # common make rules
 # Please keep this include statement at the end of this Makefile. Add new modules above.

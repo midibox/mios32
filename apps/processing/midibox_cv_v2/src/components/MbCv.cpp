@@ -555,7 +555,7 @@ CREATE_ACCESS_FUNCTIONS(Seq, GateLength,       "Gatelength",      *value = cv->m
 CREATE_ACCESS_FUNCTIONS(Seq, EnvMod,           "EnvMod",          *value = cv->mbCvSeqBassline.seqEnvMod,                  cv->mbCvSeqBassline.seqEnvMod = value);
 CREATE_ACCESS_FUNCTIONS(Seq, Accent,           "Accent",          *value = cv->mbCvSeqBassline.seqAccent,                  cv->mbCvSeqBassline.seqAccent = value);
 CREATE_ACCESS_FUNCTIONS(Seq, Key,              "Key #%2d",        *value = cv->mbCvSeqBassline.seqBasslineKey[cv->mbCvSeqBassline.seqPatternNumber][arg],      cv->mbCvSeqBassline.seqBasslineKey[cv->mbCvSeqBassline.seqPatternNumber][arg] = value);
-CREATE_ACCESS_FUNCTIONS(Seq, Args,             "Args",            *value = cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL, cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL = value);
+CREATE_ACCESS_FUNCTIONS(Seq, Args,             "Args #%2d",       *value = cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL, cv->mbCvSeqBassline.seqBasslineArgs[cv->mbCvSeqBassline.seqPatternNumber][arg].ALL = value);
  
 CREATE_GROUP(Lfo, "LFO%d");
 CREATE_ACCESS_FUNCTIONS(Lfo, Amplitude,                "Amplitude",       *value = (int)cv->mbCvLfo[arg].lfoAmplitude + 0x80,         cv->mbCvLfo[arg].lfoAmplitude = (int)value - 0x80);
@@ -1181,21 +1181,46 @@ bool MbCv::getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
             info->max = t->max;
 
             {
-                char name[40];
-                char name1[21];
-                char name2[21];
+                char nameString[40];
+                char nameString1[21];
 
-                sprintf(name1, t->groupString, t->arg+1);
-                sprintf(name2, t->nameString, t->arg+1);
-                sprintf(name, "%s %s", name1, name2);
+                sprintf(nameString1, t->groupString, t->arg+1);
+                sprintf(nameString, "CV%d %s", cvNum+1, nameString1);
 
                 // 20 chars max; pad with spaces
-                int len = strlen(name);
+                int len = strlen(nameString);
                 for(int pos=len; pos<20; ++pos)
-                    name[pos] = ' ';
-                name[20] = 0;
-                memcpy(info->name, name, 21);
+                    nameString[pos] = ' ';
+                nameString[20] = 0;
+                memcpy(info->nameString, nameString, 21);
             }
+
+            {
+                char valueString[40];
+                char nameString1[21];
+
+                sprintf(nameString1, t->nameString, t->arg+1);
+
+                if( info->is_bidir ) {
+                    int range = info->max - info->min + 1;
+                    sprintf(valueString, "%s:%4d", nameString1, (int)info->value - (range/2));
+                } else {
+                    if( info->min == 0 && info->max == 1 ) {
+                        sprintf(valueString, "%s: %s", nameString1, info->value ? "on " : "off");
+                    } else {
+                        sprintf(valueString, "%s:%4d", nameString1, info->value);
+                    }
+                }
+
+                // 20 chars max; pad with spaces
+                int len = strlen(valueString);
+                for(int pos=len; pos<20; ++pos)
+                    valueString[pos] = ' ';
+
+                valueString[20] = 0;
+                memcpy(info->valueString, valueString, 21);
+            }
+
             return true;
         }
     }

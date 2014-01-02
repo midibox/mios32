@@ -37,8 +37,6 @@
 static u8 led_trigger[NUM_LED_TRIGGERS];
 static u8 led_pwm_counter[NUM_LED_TRIGGERS];
 
-static u32 ms_counter;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -52,9 +50,6 @@ static void APP_Periodic_100uS(void);
 void APP_Init(void)
 {
   int i;
-
-  // clear mS counter
-  ms_counter = 0;
 
   // init terminal
   TERMINAL_Init(0);
@@ -159,7 +154,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 }
 
 
@@ -212,14 +207,6 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 static void APP_Periodic_100uS(void)
 {
-  static u8 pre_ctr = 0;
-
-  // increment the microsecond counter each 10th tick
-  if( ++pre_ctr >= 10 ) {
-    pre_ctr = 0;
-    ++ms_counter;
-  }
-
   // this is a very simple way to generate a nice PWM based flashing effect
   // for multiple LEDs from a single timer
 

@@ -57,6 +57,9 @@ extern s32 MBCV_LRE_UpdateAllLedRings(void);
 extern s32 MBCV_LRE_FastModeSet(u8 multiplier);
 extern s32 MBCV_LRE_FastModeGet(void);
 
+extern s32 MBCV_LRE_ConfigModeSet(u8 configMode);
+extern s32 MBCV_LRE_ConfigModeGet(void);
+
 extern s32 MBCV_LRE_BankSet(u8 bank);
 extern s32 MBCV_LRE_BankGet(void);
 

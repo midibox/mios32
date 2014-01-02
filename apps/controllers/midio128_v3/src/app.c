@@ -109,8 +109,6 @@ xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
 
 
-static u32 ms_counter;
-
 static volatile msd_state_t msd_state;
 
 
@@ -239,7 +237,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -490,9 +488,6 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-
-    // increment timestamp
-    ++ms_counter;
 
     // execute sequencer handler
     MUTEX_SDCARD_TAKE;

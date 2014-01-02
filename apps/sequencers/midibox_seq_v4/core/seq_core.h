@@ -260,8 +260,6 @@ extern u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u32 seq_core_timestamp_ms;
-
 extern seq_core_options_t seq_core_options;
 extern u8 seq_core_steps_per_measure;
 extern u8 seq_core_steps_per_pattern;

@@ -699,14 +699,16 @@ void KEYBOARD_Periodic_1mS(void)
 //!       int pin;
 //! 
 //!       for(pin=0; pin<6; ++pin) {
-//! 	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), app_ms_counter);
+//! 	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin));
 //!       }
 //!     }
 //! \endcode
 /////////////////////////////////////////////////////////////////////////////
 #if !KEYBOARD_DONT_USE_AIN
-void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value, u32 timestamp)
+void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+
   int kb;
   keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
   for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {

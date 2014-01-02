@@ -58,7 +58,8 @@ typedef enum {
 typedef struct {
     u8 cv;
     u8 is_bidir;
-    char name[21];
+    char nameString[21];
+    char valueString[21];
     u16 value;
     u16 min;
     u16 max;
