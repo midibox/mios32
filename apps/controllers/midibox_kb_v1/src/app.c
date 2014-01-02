@@ -56,7 +56,6 @@ xSemaphoreHandle xMIDIOUTSemaphore;
 /////////////////////////////////////////////////////////////////////////////
 //! global variables
 /////////////////////////////////////////////////////////////////////////////
-volatile u32 app_ms_counter;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,9 +75,6 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  // clear mS counter
-  app_ms_counter = 0;
-
   // create semaphores
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -171,7 +167,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, app_ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 }
 
 
@@ -237,7 +233,7 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   // -> keyboard
-  KEYBOARD_AIN_NotifyChange(pin, pin_value, app_ms_counter);
+  KEYBOARD_AIN_NotifyChange(pin, pin_value);
 #if 0
   MIOS32_MIDI_SendCC(DEFAULT, Chn1, 0x10 + pin, pin_value >> 5);
 #endif
@@ -263,9 +259,6 @@ static void TASK_Period_1mS(void *pvParameters)
     if( xLastExecutionTime < (xCurrentTickCount-5) )
       xLastExecutionTime = xCurrentTickCount;
 
-    // increment MS counter
-    ++app_ms_counter;
-
     // -> keyboard handler
     KEYBOARD_Periodic_1mS();
 
@@ -279,7 +272,7 @@ static void TASK_Period_1mS(void *pvParameters)
       int pin;
 
       for(pin=0; pin<6; ++pin) {
-	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), app_ms_counter);
+	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin));
       }
     }
   }

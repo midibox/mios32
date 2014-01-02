@@ -74,8 +74,6 @@
 /////////////////////////////////////////////////////////////////////////////
 static u8 hw_enabled;
 
-static u32 ms_counter;
-
 static u32 stopwatch_value;
 static u32 stopwatch_value_min;
 static u32 stopwatch_value_max;
@@ -93,7 +91,6 @@ MbCvEnvironment mbCvEnvironment;
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void);
 extern void CV_TIMER_SE_Update(void);
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
@@ -197,9 +194,6 @@ extern "C" void APP_Init(void)
   MIDIMON_Init(0);
   MBCV_FILE_Init(0);
 
-  // install timer function which is called each 100 uS
-  MIOS32_TIMER_Init(1, 100, APP_Periodic_100uS, MIOS32_IRQ_PRIO_MID);
-
   // initialize MbCvEnvironment
   cv_se_speed_factor = 10;
   mbCvEnvironment.updateSpeedFactorSet(cv_se_speed_factor);
@@ -253,7 +247,7 @@ extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_pack
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, ms_counter, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -388,13 +382,13 @@ extern void CV_TIMER_SE_Update(void)
 void APP_TASK_Period_1mS_LP(void)
 {
   static u8 clear_lcd = 1;
-  static u16 performance_print_ctr = 0;
+  static u32 performance_print_timestamp = 0;
 
   MUTEX_LCD_TAKE;
 
   if( clear_lcd ) {
     clear_lcd = 0;
-    MIOS32_LCD_Clear();    
+    MIOS32_LCD_Clear();
   }
 
   // call SCS handler
@@ -409,8 +403,8 @@ void APP_TASK_Period_1mS_LP(void)
   MBCV_LRE_UpdateAllLedRings();
 
   // output and reset current stopwatch max value each second
-  if( ++performance_print_ctr >= 1000 ) {
-    performance_print_ctr = 0;
+  if( MIOS32_TIMESTAMP_GetDelay(performance_print_timestamp) > 1000 ) {
+    performance_print_timestamp = MIOS32_TIMESTAMP_Get();
 
     MUTEX_MIDIOUT_TAKE;
     MIOS32_IRQ_Disable();
@@ -533,23 +527,6 @@ void APP_TASK_Period_1mS(void)
   }
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// This timer function is periodically called each 100 uS
-/////////////////////////////////////////////////////////////////////////////
-static void APP_Periodic_100uS(void)
-{
-  static u8 pre_ctr = 0;
-
-  // increment the microsecond counter each 10th tick
-  if( ++pre_ctr >= 10 ) {
-    pre_ctr = 0;
-    ++ms_counter;
-  }
-
-  // here we could do some additional high-prio jobs
-  // (e.g. PWM LEDs)
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Installed via MIOS32_MIDI_DirectRxCallback_Init

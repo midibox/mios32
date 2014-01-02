@@ -562,7 +562,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 					// if the buttons are not good quality they can send a 2x rapid signal os pressing in just one physical pressing
 					// the time we need is bassicly the human time to read the name of patterns requested
 			    // start time in count
-			    pc_time_control = seq_core_timestamp_ms + 200;
+	                                pc_time_control = MIOS32_TIMESTAMP_Get() + 200;
 					// vTaksDelay(200);
         } else {
 
@@ -576,7 +576,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 						// Check for remix state
 						if ( (selected_pattern[0].num == preview_num) &&  (selected_pattern[0].group == preview_bank) ) {
 						
-							//if ( pc_time_control >= seq_core_timestamp_ms )
+							//if ( pc_time_control >= MIOS32_TIMESTAMP_Get() )
 							//	return 0; // do nothing, just to be shure we are not handle acidental double clicks, it happens!					
 							
 							// if we got some remix bit setup, enter in remix mode
@@ -592,7 +592,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
           // Change Pattern
           if ( (selected_pattern[0].num == preview_num) &&  (selected_pattern[0].group == preview_bank) ) {
 
-  	        if ( pc_time_control >= seq_core_timestamp_ms )
+  	        if ( pc_time_control >= MIOS32_TIMESTAMP_Get() )
 	            return 0; // do nothing, just to be shure we are not handle acidental double clicks
 
 						if (ableton_api) {
@@ -708,7 +708,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       	    // if the buttons are not good quality they can send a 2x rapid signal os pressing in just one physical pressing
     	      // the time we need is bassicly the human time to read the name of patterns requested
   	        // start time in count
-	          pc_time_control = seq_core_timestamp_ms + 200;
+	          pc_time_control = MIOS32_TIMESTAMP_Get() + 200;
 
           }
 

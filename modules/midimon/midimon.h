@@ -35,7 +35,7 @@ extern "C" {
 extern s32 MIDIMON_Init(u32 mode);
 extern s32 MIDIMON_InitFromPresets(u8 _midimon_active, u8 _filter_active, u8 _tempo_active);
 
-extern s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message);
+extern s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u8 filter_sysex_message);
 
 extern s32 MIDIMON_Print(char *prefix_str, mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message);
 

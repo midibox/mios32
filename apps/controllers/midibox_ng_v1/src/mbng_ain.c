@@ -259,12 +259,12 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
       previous_ain_value[pin] = pin_value; // for next notification
 
       u32 timestamp = ain_timestamp[pin];
-      ain_timestamp[pin] = app_ms_counter;
+      ain_timestamp[pin] = MIOS32_TIMESTAMP_Get();
 
       if( !no_midi && item.custom_flags.AIN.ain_filter_delay_ms ) {
 	int diff = pin_value - prev_value;
 	if( diff < 0 ) diff = -diff;
-	if( !is_pin_value_min && diff > 32*16 && (app_ms_counter-timestamp) < item.custom_flags.AIN.ain_filter_delay_ms ) {
+	if( !is_pin_value_min && diff > 32*16 && MIOS32_TIMESTAMP_GetDelay(timestamp) < item.custom_flags.AIN.ain_filter_delay_ms ) {
 	  continue; // don't send
 	}
       }

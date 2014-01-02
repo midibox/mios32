@@ -93,6 +93,7 @@ public:
     void midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, bool seqOnly);
     void midiSendGlobalNRPNDump(mios32_midi_port_t port);
     void midiSendNRPN(mios32_midi_port_t port, u16 nrpnNumber, u16 value);
+    void midiSendNRPNToActivePort(u16 nrpnNumber, u16 value);
 
     // Copy/Paste/Clear operations
     void channelCopy(u8 channel, u16* buffer);
@@ -101,12 +102,6 @@ public:
 
     // also used for load/store operations
     u16 copyBuffer[CV_PATCH_SIZE];
-
-    // MIDI NRPN variables
-    u16 nrpnAddress[16];
-    u16 nrpnValue[16];
-    u8  lastSentNrpnAddressMsb;
-    u8  lastSentNrpnAddressLsb;
 
     // callbacks for MbCvSysEx
     bool sysexSetPatch(u8 cv, cv_patch_t *p, bool toBank, u8 bank, u8 patch); // returns false if CV not available
@@ -131,6 +126,13 @@ public:
     // global timestamp (incremented with each tick())
     u32 timestamp;
 
+protected:
+    // MIDI NRPN variables
+    u16 nrpnAddress[16];
+    u16 nrpnValue[16];
+    u8  lastSentNrpnAddressMsb;
+    u8  lastSentNrpnAddressLsb;
+    mios32_midi_port_t activeNrpnReceivePort;
 };
 
 #endif /* _MB_CV_ENVIRONMENT_H */

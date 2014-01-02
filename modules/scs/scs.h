@@ -144,7 +144,7 @@ extern "C" {
 
 // maximum width of a temporary message
 #ifndef SCS_MSG_MAX_CHAR
-#define SCS_MSG_MAX_CHAR 14
+#define SCS_MSG_MAX_CHAR 20
 #endif
 
 // Debounce counter reload value (in mS)

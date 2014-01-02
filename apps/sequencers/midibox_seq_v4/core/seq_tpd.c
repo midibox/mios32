@@ -263,9 +263,9 @@ static s32 SEQ_TPD_ScrollTextHandler(void)
   static u8 pixel_ctr = 0;
 
   // update each 50 mS
-  if( (seq_core_timestamp_ms-prev_timestamp) < 50 ) // should also work correctly on overruns...
+  if( MIOS32_TIMESTAMP_GetDelay(prev_timestamp) < 50 ) // should also work correctly on overruns...
     return 0;
-  prev_timestamp = seq_core_timestamp_ms;
+  prev_timestamp = MIOS32_TIMESTAMP_Get();
 
   const u8 *font = (const u8 *)&GLCD_FONT_NORMAL; // this is a 8x6 font -> almost 3 characters can be displayed
   mios32_lcd_bitmap_t font_bitmap;

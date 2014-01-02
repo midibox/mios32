@@ -687,7 +687,7 @@ s32 MIDIO_FILE_P_Read(char *filename)
 	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (values[i]=get_dec(word)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node);
+		DEBUG_MSG("[MIDIO_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node+1);
 #endif
 		break;
 	      }

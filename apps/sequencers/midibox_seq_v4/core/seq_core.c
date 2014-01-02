@@ -77,8 +77,6 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u32 seq_core_timestamp_ms;
-
 seq_core_options_t seq_core_options;
 u8 seq_core_steps_per_measure;
 u8 seq_core_steps_per_pattern;
@@ -136,7 +134,6 @@ s32 SEQ_CORE_Init(u32 mode)
 {
   int i;
 
-  seq_core_timestamp_ms = 0;
   seq_core_trk_muted = 0;
   seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
   seq_core_options.ALL = 0;
@@ -372,8 +369,6 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 s32 SEQ_CORE_Handler(void)
 {
   // handle requests
-
-  ++seq_core_timestamp_ms; // mS accurate timestamp
 
   u8 num_loops = 0;
   u8 again = 0;

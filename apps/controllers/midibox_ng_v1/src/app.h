@@ -55,6 +55,5 @@ extern void APP_Tick(void);
 
 extern u8  hw_enabled;
 extern u8  debug_verbose_level;
-extern volatile u32 app_ms_counter;
 
 #endif /* _APP_H */

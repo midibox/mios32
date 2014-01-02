@@ -3659,7 +3659,7 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
     int value = -1;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      MIDIMON_Print("MIDI_LEARN:", port, midi_package, app_ms_counter, 0);
+      MIDIMON_Print("MIDI_LEARN:", port, midi_package, MIOS32_TIMESTAMP_Get(), 0);
     }
 
     if( midi_learn_mode >= 2 && nrpn_address != 0xffff && midi_learn_nrpn_valid == 0x07 ) {

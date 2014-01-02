@@ -34,6 +34,7 @@
 #include "mbcv_file_p.h"
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
+#include "mbcv_lre.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -279,7 +280,7 @@ s32 MBCV_FILE_P_Read(char *filename)
 	      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	      if( (values[i]=get_dec(word)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-		DEBUG_MSG("[MBCV_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node);
+		DEBUG_MSG("[MBCV_FILE_P] ERROR invalid %s number for parameter '%s %d'\n", value_name[i], parameter, node+1);
 #endif
 		break;
 	      }
@@ -356,6 +357,52 @@ s32 MBCV_FILE_P_Read(char *filename)
 #endif
 	  } else {
 	    mbcv_map_din_sync_sr = value;
+	  }
+	} else if( strcasecmp(parameter, "ENC_Cfg") == 0 ) {
+	  s32 bank;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (bank=get_dec(word)) < 1 || bank > MBCV_LRE_NUM_BANKS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid bank number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --bank;
+
+	    s32 enc;
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    if( (enc=get_dec(word)) < 1 || enc > MBCV_LRE_NUM_ENC ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid encoder number for parameter '%s'\n", parameter);
+#endif
+	    } else {
+	      // user counts from 1...
+	      --enc;
+		
+	      // we have to read 3 additional values
+	      int values[3];
+	      const char value_name[4][10] = { "NRPN", "Min", "Max" };
+	      int i;
+	      for(i=0; i<3; ++i) {
+		char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+		if( (values[i]=get_dec(word)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[MBCV_FILE_P] ERROR invalid %s number for parameter '%s %d %d'\n", value_name[i], parameter, bank+1, enc+1);
+#endif
+		  break;
+		}
+	      }
+	    
+	      if( i == 3 ) {
+		// finally a valid line!
+		mbcv_lre_enc_cfg_t e;
+		e = MBCV_LRE_EncCfgGet(enc, bank);
+		e.nrpn = values[0];
+		e.min = values[1];
+		e.max = values[2];
+		MBCV_LRE_EncCfgSet(enc, bank, e);
+	      }
+	    }
 	  }
 	} else if( strcasecmp(parameter, "AOUT_Type") == 0 ) {
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -515,13 +562,13 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   {
-    sprintf(line_buffer, "\n\n#ROUTER;Node;SrcPort;Chn.;DstPort;Chn.\n");
+    sprintf(line_buffer, "\n\n# ROUTER <Node> <SrcPort> <Chn.> <DstPort> <Chn.>\n");
     FLUSH_BUFFER;
 
     int node;
     midi_router_node_entry_t *n = (midi_router_node_entry_t *)&midi_router_node[0];
     for(node=0; node<MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-      sprintf(line_buffer, "ROUTER;%d;0x%02X;%d;0x%02X;%d\n",
+      sprintf(line_buffer, "ROUTER %d 0x%02X %d 0x%02X %d\n",
 	      node+1,
 	      n->src_port,
 	      n->src_chn,
@@ -536,7 +583,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   {
     u32 value = UIP_TASK_IP_AddressGet();
-    sprintf(line_buffer, "ETH_LocalIp;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_LocalIp %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -546,7 +593,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_NetmaskGet();
-    sprintf(line_buffer, "ETH_Netmask;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Netmask %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -556,7 +603,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 
   {
     u32 value = UIP_TASK_GatewayGet();
-    sprintf(line_buffer, "ETH_Gateway;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "ETH_Gateway %d.%d.%d.%d\n",
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
 	    (value >>  8) & 0xff,
@@ -564,13 +611,13 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
     FLUSH_BUFFER;
   }
 
-  sprintf(line_buffer, "ETH_Dhcp;%d\n", UIP_TASK_DHCP_EnableGet());
+  sprintf(line_buffer, "ETH_Dhcp %d\n", UIP_TASK_DHCP_EnableGet());
   FLUSH_BUFFER;
 
   int con;
   for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
     u32 value = OSC_SERVER_RemoteIP_Get(con);
-    sprintf(line_buffer, "OSC_RemoteIp;%d;%d.%d.%d.%d\n",
+    sprintf(line_buffer, "OSC_RemoteIp %d;%d.%d.%d.%d\n",
 	    con,
 	    (value >> 24) & 0xff,
 	    (value >> 16) & 0xff,
@@ -578,13 +625,13 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 	    (value >>  0) & 0xff);
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_RemotePort;%d;%d\n", con, OSC_SERVER_RemotePortGet(con));
+    sprintf(line_buffer, "OSC_RemotePort %d %d\n", con, OSC_SERVER_RemotePortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_LocalPort;%d;%d\n", con, OSC_SERVER_LocalPortGet(con));
+    sprintf(line_buffer, "OSC_LocalPort %d %d\n", con, OSC_SERVER_LocalPortGet(con));
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "OSC_TransferMode;%d;%d\n", con, OSC_CLIENT_TransferModeGet(con));
+    sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
 #endif
@@ -592,11 +639,11 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# CV Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "AOUT_Type;%s\n", (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()));
+  sprintf(line_buffer, "AOUT_Type %s\n", (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()));
   FLUSH_BUFFER;
-  sprintf(line_buffer, "DOUT_GateSR;%d\n", mbcv_map_gate_sr);
+  sprintf(line_buffer, "DOUT_GateSR %d\n", mbcv_map_gate_sr);
   FLUSH_BUFFER;
-  sprintf(line_buffer, "DOUT_DinSyncSR;%d\n", mbcv_map_din_sync_sr);
+  sprintf(line_buffer, "DOUT_DinSyncSR %d\n", mbcv_map_din_sync_sr);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "\n\n# External Clock Outputs (available at DOUT_DinSyncSR D1..D7)\n");
@@ -604,15 +651,32 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   {
     u8 *externalClockDividerPtr = env->mbCvClock.externalClockDivider.first();
     for(int clk=0; clk < env->mbCvClock.externalClockDivider.size; ++clk, ++externalClockDividerPtr) {
-      sprintf(line_buffer, "EXTCLK_Divider;%d;%d\n", clk+1, *externalClockDividerPtr);
+      sprintf(line_buffer, "EXTCLK_Divider %d %d\n", clk+1, *externalClockDividerPtr);
       FLUSH_BUFFER;
     }
   }
   {
     u8 *externalClockPulseWidthPtr = env->mbCvClock.externalClockPulseWidth.first();
     for(int clk=0; clk < env->mbCvClock.externalClockPulseWidth.size; ++clk, ++externalClockPulseWidthPtr) {
-      sprintf(line_buffer, "EXTCLK_PulseWidth;%d;%d\n", clk+1, *externalClockPulseWidthPtr);
+      sprintf(line_buffer, "EXTCLK_PulseWidth %d %d\n", clk+1, *externalClockPulseWidthPtr);
       FLUSH_BUFFER;
+    }
+  }
+
+  sprintf(line_buffer, "\n\n# LRE Encoder Assignments\n");
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "\n\n# ENC_Cfg <bank> <enc> <nrpn> <min> <max>\n");
+  FLUSH_BUFFER;
+  {
+    int bank;
+    for(bank=0; bank<MBCV_LRE_NUM_BANKS; ++bank) {
+      int enc;
+      for(enc=0; enc<MBCV_LRE_NUM_ENC; ++enc) {
+	mbcv_lre_enc_cfg_t e;
+	e = MBCV_LRE_EncCfgGet(enc, bank);
+	sprintf(line_buffer, "ENC_Cfg %d %2d 0x%04x %d %d\n", bank+1, enc+1, e.nrpn, e.min, e.max);
+	FLUSH_BUFFER;
+      }
     }
   }
 

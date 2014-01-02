@@ -609,9 +609,9 @@ s32 TERMINAL_ShowNrpns(void *_output_function)
     if( env->getNRPNInfo(nrpnNumber, &info) ) {
       if( prev_cv != info.cv ) {
 	prev_cv = info.cv;
-	out("+--------------------------+-------+--------+------+------+------------+");
-	out("| CV  Parameter            | Number Dec/Hex | Val. |  Dec | Range      |");
-	out("+--------------------------+-------+--------+------+------+------------+");
+	out("+-------------------------------------------+-------+--------+------+------+------------+");
+	out("| Parameter                                 | Number Dec/Hex | Val. |  Dec | Range      |");
+	out("+-------------------------------------------+-------+--------+------+------+------------+");
       }
 
       int value = info.value;
@@ -624,10 +624,10 @@ s32 TERMINAL_ShowNrpns(void *_output_function)
 	max -= range / 2;
 	value -= range / 2;
       }
-      out("| CV%d %s | %5d | 0x%04x | 0x%02x | %4d | %4d..%4d |", info.cv+1, info.name, nrpnNumber, nrpnNumber, info.value, value, min, max);
+      out("| %s %s | %5d | 0x%04x | 0x%02x | %4d | %4d..%4d |", info.nameString, info.valueString, nrpnNumber, nrpnNumber, info.value, value, min, max);
     }
   }
-  out("+--------------------------+-------+--------+------+------+------------+");
+  out("+-------------------------------------------+-------+--------+------+------+------------+");
 
   MUTEX_MIDIOUT_GIVE;
 

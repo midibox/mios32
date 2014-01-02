@@ -164,12 +164,12 @@ s32 MIDIMON_TempoActiveGet(void)
 /////////////////////////////////////////////////////////////////////////////
 // MIDI Packet Receiver function
 /////////////////////////////////////////////////////////////////////////////
-s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u32 timestamp, u8 filter_sysex_message)
+s32 MIDIMON_Receive(mios32_midi_port_t port, mios32_midi_package_t package, u8 filter_sysex_message)
 {
   if( !midimon_active )
     return 0; // MIDImon mode not enabled
 
-  return MIDIMON_Print("", port, package, timestamp, filter_sysex_message);
+  return MIDIMON_Print("", port, package, MIOS32_TIMESTAMP_Get(), filter_sysex_message);
 }
 
 
