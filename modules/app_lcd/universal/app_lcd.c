@@ -804,7 +804,7 @@ s32 APP_LCD_Cmd(u8 cmd)
     APP_LCD_GLCD_CS_Set(0); // select display depending on current X position
 
     // wait until LCD unbusy, exit on error (timeout)
-    if( APP_LCD_PollUnbusy(2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(10000) < 0 ) {
       // disable display
       //display_available &= ~(1ULL << mios32_lcd_device);
       // TK: not here... only timeout on data accesses
@@ -859,7 +859,7 @@ s32 APP_LCD_Cmd(u8 cmd)
   case MIOS32_LCD_TYPE_CLCD_DOG:
   default: {
     // wait until LCD unbusy, exit on error (timeout)
-    if( APP_LCD_PollUnbusy(2500) < 0 ) {
+    if( APP_LCD_PollUnbusy(10000) < 0 ) {
       // disable display
       display_available &= ~(1ULL << mios32_lcd_device);
 #if DEBUG_VERBOSE_LEVEL >= 1
