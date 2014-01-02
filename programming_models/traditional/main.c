@@ -60,6 +60,9 @@ int main(void)
 #ifndef MIOS32_DONT_USE_DELAY
   MIOS32_DELAY_Init(0);
 #endif
+#ifndef MIOS32_DONT_USE_TIMESTAMP
+  MIOS32_TIMESTAMP_Init(0);
+#endif
 #ifndef MIOS32_DONT_USE_BOARD
   MIOS32_BOARD_Init(0);
 #endif
@@ -166,6 +169,10 @@ void SRIO_ServiceFinish(void)
 
 void vApplicationTickHook(void)
 {
+#if !defined(MIOS32_DONT_USE_TIMESTAMP)
+  MIOS32_TIMESTAMP_Inc();
+#endif
+
 #if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN)
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();

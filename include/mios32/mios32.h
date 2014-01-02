@@ -94,6 +94,7 @@ extern "C" {
 #include <mios32_board.h>
 #include <mios32_timer.h>
 #include <mios32_stopwatch.h>
+#include <mios32_timestamp.h>
 #include <mios32_delay.h>
 #include <mios32_sdcard.h>
 #include <mios32_enc28j60.h>

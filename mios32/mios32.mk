@@ -31,6 +31,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/mios32/common/mios32_mf.c \
 	$(MIOS32_PATH)/mios32/common/mios32_sdcard.c \
 	$(MIOS32_PATH)/mios32/common/mios32_enc28j60.c \
+	$(MIOS32_PATH)/mios32/common/mios32_timestamp.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_bsl.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_sys.c \
 	$(MIOS32_PATH)/mios32/$(FAMILY)/mios32_irq.c \
