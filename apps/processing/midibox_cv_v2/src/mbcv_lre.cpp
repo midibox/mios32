@@ -1,4 +1,4 @@
-// $Id: mbcv_map.cpp 1895 2013-12-20 21:45:42Z tk $
+// $Id$
 /*
  * MIDIbox CV V2 LEDRing/Encoder functions
  *
@@ -22,17 +22,13 @@
 #include <MbCvEnvironment.h>
 
 #include "mbcv_lre.h"
+#include "mbcv_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 mbcv_lre_ledring_select_inv; // set to 1 if ULN2803 installed
-u8 mbcv_lre_ledring_select_sr1[MBCV_LRE_NUM_ENC/16];
-u8 mbcv_lre_ledring_select_sr2[MBCV_LRE_NUM_ENC/16];
-u8 mbcv_lre_ledring_pattern_sr1[MBCV_LRE_NUM_ENC/16];
-u8 mbcv_lre_ledring_pattern_sr2[MBCV_LRE_NUM_ENC/16];
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -100,6 +96,10 @@ AHB_SECTION static mbcv_lre_enc_cfg_t enc_cfg[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_E
 
 static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
   { // bank1
+    0*0x400 + 0x032, // CV1 Transpose Octave
+    0*0x400 + 0x033, // CV1 Transpose Semitone
+    0*0x400 + 0x034, // CV1 Finetune
+    0*0x400 + 0x035, // CV1 Portamento Rate
     0*0x400 + 0x100, // CV1 LFO1 Amplitude
     0*0x400 + 0x101, // CV1 LFO1 Rate
     0*0x400 + 0x180, // CV1 LFO2 Amplitude
@@ -108,15 +108,10 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
     0*0x400 + 0x204, // CV1 ENV1 Decay
     0*0x400 + 0x280, // CV1 ENV2 Amplitude
     0*0x400 + 0x283, // CV1 ENV2 Rate
-
-    1*0x400 + 0x100, // CV2 LFO1 Amplitude
-    1*0x400 + 0x101, // CV2 LFO1 Rate
-    1*0x400 + 0x180, // CV2 LFO2 Amplitude
-    1*0x400 + 0x181, // CV2 LFO2 Rate
-    1*0x400 + 0x200, // CV2 ENV1 Amplitude
-    1*0x400 + 0x204, // CV2 ENV1 Decay
-    1*0x400 + 0x280, // CV2 ENV2 Amplitude
-    1*0x400 + 0x283, // CV2 ENV2 Rate
+    0*0x400 + 0x300, // CV1 MOD1 Depth
+    0*0x400 + 0x310, // CV1 MOD2 Depth
+    0*0x400 + 0x320, // CV1 MOD3 Depth
+    0*0x400 + 0x330, // CV1 MOD4 Depth
 
     0*0x400 + 0x0c0, // CV1 SEQ Key
     0*0x400 + 0x0c1, // CV1 SEQ Key
@@ -135,24 +130,24 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
     0*0x400 + 0x0ce, // CV1 SEQ Key
     0*0x400 + 0x0cf, // CV1 SEQ Key
   },
-  { // bank2
-    2*0x400 + 0x100, // CV3 LFO1 Amplitude
-    2*0x400 + 0x101, // CV3 LFO1 Rate
-    2*0x400 + 0x180, // CV3 LFO2 Amplitude
-    2*0x400 + 0x181, // CV3 LFO2 Rate
-    2*0x400 + 0x200, // CV3 ENV1 Amplitude
-    2*0x400 + 0x204, // CV3 ENV1 Decay
-    2*0x400 + 0x280, // CV3 ENV2 Amplitude
-    2*0x400 + 0x283, // CV3 ENV2 Rate
 
-    3*0x400 + 0x100, // CV4 LFO1 Amplitude
-    3*0x400 + 0x101, // CV4 LFO1 Rate
-    3*0x400 + 0x180, // CV4 LFO2 Amplitude
-    3*0x400 + 0x181, // CV4 LFO2 Rate
-    3*0x400 + 0x200, // CV4 ENV1 Amplitude
-    3*0x400 + 0x204, // CV4 ENV1 Decay
-    3*0x400 + 0x280, // CV4 ENV2 Amplitude
-    3*0x400 + 0x283, // CV4 ENV2 Rate
+  { // bank2
+    1*0x400 + 0x032, // CV2 Transpose Octave
+    1*0x400 + 0x033, // CV2 Transpose Semitone
+    1*0x400 + 0x034, // CV2 Finetune
+    1*0x400 + 0x035, // CV2 Portamento Rate
+    1*0x400 + 0x100, // CV2 LFO1 Amplitude
+    1*0x400 + 0x101, // CV2 LFO1 Rate
+    1*0x400 + 0x180, // CV2 LFO2 Amplitude
+    1*0x400 + 0x181, // CV2 LFO2 Rate
+    1*0x400 + 0x200, // CV2 ENV1 Amplitude
+    1*0x400 + 0x204, // CV2 ENV1 Decay
+    1*0x400 + 0x280, // CV2 ENV2 Amplitude
+    1*0x400 + 0x283, // CV2 ENV2 Rate
+    1*0x400 + 0x300, // CV2 MOD1 Depth
+    1*0x400 + 0x310, // CV2 MOD2 Depth
+    1*0x400 + 0x320, // CV2 MOD3 Depth
+    1*0x400 + 0x330, // CV2 MOD4 Depth
 
     1*0x400 + 0x0c0, // CV2 SEQ Key
     1*0x400 + 0x0c1, // CV2 SEQ Key
@@ -171,24 +166,24 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
     1*0x400 + 0x0ce, // CV2 SEQ Key
     1*0x400 + 0x0cf, // CV2 SEQ Key
   },
-  { // bank3
-    4*0x400 + 0x100, // CV5 LFO1 Amplitude
-    4*0x400 + 0x101, // CV5 LFO1 Rate
-    4*0x400 + 0x180, // CV5 LFO2 Amplitude
-    4*0x400 + 0x181, // CV5 LFO2 Rate
-    4*0x400 + 0x200, // CV5 ENV1 Amplitude
-    4*0x400 + 0x204, // CV5 ENV1 Decay
-    4*0x400 + 0x280, // CV5 ENV2 Amplitude
-    4*0x400 + 0x283, // CV5 ENV2 Rate
 
-    5*0x400 + 0x100, // CV6 LFO1 Amplitude
-    5*0x400 + 0x101, // CV6 LFO1 Rate
-    5*0x400 + 0x180, // CV6 LFO2 Amplitude
-    5*0x400 + 0x181, // CV6 LFO2 Rate
-    5*0x400 + 0x200, // CV6 ENV1 Amplitude
-    5*0x400 + 0x204, // CV6 ENV1 Decay
-    5*0x400 + 0x280, // CV6 ENV2 Amplitude
-    5*0x400 + 0x283, // CV6 ENV2 Rate
+  { // bank3
+    2*0x400 + 0x032, // CV3 Transpose Octave
+    2*0x400 + 0x033, // CV3 Transpose Semitone
+    2*0x400 + 0x034, // CV3 Finetune
+    2*0x400 + 0x035, // CV3 Portamento Rate
+    2*0x400 + 0x100, // CV3 LFO1 Amplitude
+    2*0x400 + 0x101, // CV3 LFO1 Rate
+    2*0x400 + 0x180, // CV3 LFO2 Amplitude
+    2*0x400 + 0x181, // CV3 LFO2 Rate
+    2*0x400 + 0x200, // CV3 ENV1 Amplitude
+    2*0x400 + 0x204, // CV3 ENV1 Decay
+    2*0x400 + 0x280, // CV3 ENV2 Amplitude
+    2*0x400 + 0x283, // CV3 ENV2 Rate
+    2*0x400 + 0x300, // CV3 MOD1 Depth
+    2*0x400 + 0x310, // CV3 MOD2 Depth
+    2*0x400 + 0x320, // CV3 MOD3 Depth
+    2*0x400 + 0x330, // CV3 MOD4 Depth
 
     2*0x400 + 0x0c0, // CV3 SEQ Key
     2*0x400 + 0x0c1, // CV3 SEQ Key
@@ -207,24 +202,24 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
     2*0x400 + 0x0ce, // CV3 SEQ Key
     2*0x400 + 0x0cf, // CV3 SEQ Key
   },
-  { // bank4
-    6*0x400 + 0x100, // CV7 LFO1 Amplitude
-    6*0x400 + 0x101, // CV7 LFO1 Rate
-    6*0x400 + 0x180, // CV7 LFO2 Amplitude
-    6*0x400 + 0x181, // CV7 LFO2 Rate
-    6*0x400 + 0x200, // CV7 ENV1 Amplitude
-    6*0x400 + 0x204, // CV7 ENV1 Decay
-    6*0x400 + 0x280, // CV7 ENV2 Amplitude
-    6*0x400 + 0x283, // CV7 ENV2 Rate
 
-    7*0x400 + 0x100, // CV8 LFO1 Amplitude
-    7*0x400 + 0x101, // CV8 LFO1 Rate
-    7*0x400 + 0x180, // CV8 LFO2 Amplitude
-    7*0x400 + 0x181, // CV8 LFO2 Rate
-    7*0x400 + 0x200, // CV8 ENV1 Amplitude
-    7*0x400 + 0x204, // CV8 ENV1 Decay
-    7*0x400 + 0x280, // CV8 ENV2 Amplitude
-    7*0x400 + 0x283, // CV8 ENV2 Rate
+  { // bank4
+    3*0x400 + 0x032, // CV4 Transpose Octave
+    3*0x400 + 0x033, // CV4 Transpose Semitone
+    3*0x400 + 0x034, // CV4 Finetune
+    3*0x400 + 0x035, // CV4 Portamento Rate
+    3*0x400 + 0x100, // CV4 LFO1 Amplitude
+    3*0x400 + 0x101, // CV4 LFO1 Rate
+    3*0x400 + 0x180, // CV4 LFO2 Amplitude
+    3*0x400 + 0x181, // CV4 LFO2 Rate
+    3*0x400 + 0x200, // CV4 ENV1 Amplitude
+    3*0x400 + 0x204, // CV4 ENV1 Decay
+    3*0x400 + 0x280, // CV4 ENV2 Amplitude
+    3*0x400 + 0x283, // CV4 ENV2 Rate
+    3*0x400 + 0x300, // CV4 MOD1 Depth
+    3*0x400 + 0x310, // CV4 MOD2 Depth
+    3*0x400 + 0x320, // CV4 MOD3 Depth
+    3*0x400 + 0x330, // CV4 MOD4 Depth
 
     3*0x400 + 0x0c0, // CV4 SEQ Key
     3*0x400 + 0x0c1, // CV4 SEQ Key
@@ -242,6 +237,150 @@ static const u16 default_nrpn[MBCV_LRE_NUM_BANKS][MBCV_LRE_NUM_ENC] = {
     3*0x400 + 0x0cd, // CV4 SEQ Key
     3*0x400 + 0x0ce, // CV4 SEQ Key
     3*0x400 + 0x0cf, // CV4 SEQ Key
+  },
+
+  { // bank5
+    4*0x400 + 0x032, // CV5 Transpose Octave
+    4*0x400 + 0x033, // CV5 Transpose Semitone
+    4*0x400 + 0x034, // CV5 Finetune
+    4*0x400 + 0x035, // CV5 Portamento Rate
+    4*0x400 + 0x100, // CV5 LFO1 Amplitude
+    4*0x400 + 0x101, // CV5 LFO1 Rate
+    4*0x400 + 0x180, // CV5 LFO2 Amplitude
+    4*0x400 + 0x181, // CV5 LFO2 Rate
+    4*0x400 + 0x200, // CV5 ENV1 Amplitude
+    4*0x400 + 0x204, // CV5 ENV1 Decay
+    4*0x400 + 0x280, // CV5 ENV2 Amplitude
+    4*0x400 + 0x283, // CV5 ENV2 Rate
+    4*0x400 + 0x300, // CV5 MOD1 Depth
+    4*0x400 + 0x310, // CV5 MOD2 Depth
+    4*0x400 + 0x320, // CV5 MOD3 Depth
+    4*0x400 + 0x330, // CV5 MOD4 Depth
+
+    4*0x400 + 0x0c0, // CV5 SEQ Key
+    4*0x400 + 0x0c1, // CV5 SEQ Key
+    4*0x400 + 0x0c2, // CV5 SEQ Key
+    4*0x400 + 0x0c3, // CV5 SEQ Key
+    4*0x400 + 0x0c4, // CV5 SEQ Key
+    4*0x400 + 0x0c5, // CV5 SEQ Key
+    4*0x400 + 0x0c6, // CV5 SEQ Key
+    4*0x400 + 0x0c7, // CV5 SEQ Key
+    4*0x400 + 0x0c8, // CV5 SEQ Key
+    4*0x400 + 0x0c9, // CV5 SEQ Key
+    4*0x400 + 0x0ca, // CV5 SEQ Key
+    4*0x400 + 0x0cb, // CV5 SEQ Key
+    4*0x400 + 0x0cc, // CV5 SEQ Key
+    4*0x400 + 0x0cd, // CV5 SEQ Key
+    4*0x400 + 0x0ce, // CV5 SEQ Key
+    4*0x400 + 0x0cf, // CV5 SEQ Key
+  },
+
+  { // bank6
+    5*0x400 + 0x032, // CV6 Transpose Octave
+    5*0x400 + 0x033, // CV6 Transpose Semitone
+    5*0x400 + 0x034, // CV6 Finetune
+    5*0x400 + 0x035, // CV6 Portamento Rate
+    5*0x400 + 0x100, // CV6 LFO1 Amplitude
+    5*0x400 + 0x101, // CV6 LFO1 Rate
+    5*0x400 + 0x180, // CV6 LFO2 Amplitude
+    5*0x400 + 0x181, // CV6 LFO2 Rate
+    5*0x400 + 0x200, // CV6 ENV1 Amplitude
+    5*0x400 + 0x204, // CV6 ENV1 Decay
+    5*0x400 + 0x280, // CV6 ENV2 Amplitude
+    5*0x400 + 0x283, // CV6 ENV2 Rate
+    5*0x400 + 0x300, // CV6 MOD1 Depth
+    5*0x400 + 0x310, // CV6 MOD2 Depth
+    5*0x400 + 0x320, // CV6 MOD3 Depth
+    5*0x400 + 0x330, // CV6 MOD4 Depth
+
+    5*0x400 + 0x0c0, // CV6 SEQ Key
+    5*0x400 + 0x0c1, // CV6 SEQ Key
+    5*0x400 + 0x0c2, // CV6 SEQ Key
+    5*0x400 + 0x0c3, // CV6 SEQ Key
+    5*0x400 + 0x0c4, // CV6 SEQ Key
+    5*0x400 + 0x0c5, // CV6 SEQ Key
+    5*0x400 + 0x0c6, // CV6 SEQ Key
+    5*0x400 + 0x0c7, // CV6 SEQ Key
+    5*0x400 + 0x0c8, // CV6 SEQ Key
+    5*0x400 + 0x0c9, // CV6 SEQ Key
+    5*0x400 + 0x0ca, // CV6 SEQ Key
+    5*0x400 + 0x0cb, // CV6 SEQ Key
+    5*0x400 + 0x0cc, // CV6 SEQ Key
+    5*0x400 + 0x0cd, // CV6 SEQ Key
+    5*0x400 + 0x0ce, // CV6 SEQ Key
+    5*0x400 + 0x0cf, // CV6 SEQ Key
+  },
+
+  { // bank7
+    6*0x400 + 0x032, // CV7 Transpose Octave
+    6*0x400 + 0x033, // CV7 Transpose Semitone
+    6*0x400 + 0x034, // CV7 Finetune
+    6*0x400 + 0x035, // CV7 Portamento Rate
+    6*0x400 + 0x100, // CV7 LFO1 Amplitude
+    6*0x400 + 0x101, // CV7 LFO1 Rate
+    6*0x400 + 0x180, // CV7 LFO2 Amplitude
+    6*0x400 + 0x181, // CV7 LFO2 Rate
+    6*0x400 + 0x200, // CV7 ENV1 Amplitude
+    6*0x400 + 0x204, // CV7 ENV1 Decay
+    6*0x400 + 0x280, // CV7 ENV2 Amplitude
+    6*0x400 + 0x283, // CV7 ENV2 Rate
+    6*0x400 + 0x300, // CV7 MOD1 Depth
+    6*0x400 + 0x310, // CV7 MOD2 Depth
+    6*0x400 + 0x320, // CV7 MOD3 Depth
+    6*0x400 + 0x330, // CV7 MOD4 Depth
+
+    6*0x400 + 0x0c0, // CV7 SEQ Key
+    6*0x400 + 0x0c1, // CV7 SEQ Key
+    6*0x400 + 0x0c2, // CV7 SEQ Key
+    6*0x400 + 0x0c3, // CV7 SEQ Key
+    6*0x400 + 0x0c4, // CV7 SEQ Key
+    6*0x400 + 0x0c5, // CV7 SEQ Key
+    6*0x400 + 0x0c6, // CV7 SEQ Key
+    6*0x400 + 0x0c7, // CV7 SEQ Key
+    6*0x400 + 0x0c8, // CV7 SEQ Key
+    6*0x400 + 0x0c9, // CV7 SEQ Key
+    6*0x400 + 0x0ca, // CV7 SEQ Key
+    6*0x400 + 0x0cb, // CV7 SEQ Key
+    6*0x400 + 0x0cc, // CV7 SEQ Key
+    6*0x400 + 0x0cd, // CV7 SEQ Key
+    6*0x400 + 0x0ce, // CV7 SEQ Key
+    6*0x400 + 0x0cf, // CV7 SEQ Key
+  },
+
+  { // bank8
+    7*0x400 + 0x032, // CV8 Transpose Octave
+    7*0x400 + 0x033, // CV8 Transpose Semitone
+    7*0x400 + 0x034, // CV8 Finetune
+    7*0x400 + 0x035, // CV8 Portamento Rate
+    7*0x400 + 0x100, // CV8 LFO1 Amplitude
+    7*0x400 + 0x101, // CV8 LFO1 Rate
+    7*0x400 + 0x180, // CV8 LFO2 Amplitude
+    7*0x400 + 0x181, // CV8 LFO2 Rate
+    7*0x400 + 0x200, // CV8 ENV1 Amplitude
+    7*0x400 + 0x204, // CV8 ENV1 Decay
+    7*0x400 + 0x280, // CV8 ENV2 Amplitude
+    7*0x400 + 0x283, // CV8 ENV2 Rate
+    7*0x400 + 0x300, // CV8 MOD1 Depth
+    7*0x400 + 0x310, // CV8 MOD2 Depth
+    7*0x400 + 0x320, // CV8 MOD3 Depth
+    7*0x400 + 0x330, // CV8 MOD4 Depth
+
+    7*0x400 + 0x0c0, // CV8 SEQ Key
+    7*0x400 + 0x0c1, // CV8 SEQ Key
+    7*0x400 + 0x0c2, // CV8 SEQ Key
+    7*0x400 + 0x0c3, // CV8 SEQ Key
+    7*0x400 + 0x0c4, // CV8 SEQ Key
+    7*0x400 + 0x0c5, // CV8 SEQ Key
+    7*0x400 + 0x0c6, // CV8 SEQ Key
+    7*0x400 + 0x0c7, // CV8 SEQ Key
+    7*0x400 + 0x0c8, // CV8 SEQ Key
+    7*0x400 + 0x0c9, // CV8 SEQ Key
+    7*0x400 + 0x0ca, // CV8 SEQ Key
+    7*0x400 + 0x0cb, // CV8 SEQ Key
+    7*0x400 + 0x0cc, // CV8 SEQ Key
+    7*0x400 + 0x0cd, // CV8 SEQ Key
+    7*0x400 + 0x0ce, // CV8 SEQ Key
+    7*0x400 + 0x0cf, // CV8 SEQ Key
   },
 };
 
@@ -261,42 +400,6 @@ s32 MBCV_LRE_Init(u32 mode)
 {
   enc_speed_multiplier = 0;
   enc_config_mode = 0;
-
-  for(int i=1; i<MIOS32_ENC_NUM_MAX; ++i) { // start at 1 since the first encoder is allocated by SCS
-    mios32_enc_config_t enc_config;
-    enc_config = MIOS32_ENC_ConfigGet(i);
-    enc_config.cfg.type = NON_DETENTED;
-    enc_config.cfg.sr = 0;
-    enc_config.cfg.pos = 0;
-    enc_config.cfg.speed = NORMAL;
-    enc_config.cfg.speed_par = 0;
-    MIOS32_ENC_ConfigSet(i, enc_config);
-  }
-
-  // TODO: make this configurable
-  for(int i=0; i<MBCV_LRE_NUM_ENC; ++i) {
-    int enc_ix = i + 1;
-    mios32_enc_config_t enc_config;
-    enc_config = MIOS32_ENC_ConfigGet(enc_ix);
-    enc_config.cfg.type = NON_DETENTED;
-    enc_config.cfg.sr = 3 + (i/4); // a DIO_MATRIX module with 2 DIN/2 DOUT is connected between core and LRE8x2
-    enc_config.cfg.pos = 2 * (i % 4);
-    MIOS32_ENC_ConfigSet(enc_ix, enc_config);
-  }
-
-  // TODO: make this configurable
-#if (MBCV_LRE_NUM_ENC/16) != 2
-# error "adapt here"
-#endif
-  mbcv_lre_ledring_select_inv = 1;
-  mbcv_lre_ledring_select_sr1[0] = 3;
-  mbcv_lre_ledring_select_sr2[0] = 4;
-  mbcv_lre_ledring_pattern_sr1[0] = 5;
-  mbcv_lre_ledring_pattern_sr2[0] = 6;
-  mbcv_lre_ledring_select_sr1[1] = 7;
-  mbcv_lre_ledring_select_sr2[1] = 8;
-  mbcv_lre_ledring_pattern_sr1[1] = 9;
-  mbcv_lre_ledring_pattern_sr2[1] = 10;
 
   // initial LED patterns
   memcpy((u16 *)dout_matrix_pattern, (u16 *)dout_matrix_pattern_preload, 2*MBCV_LRE_NUM_DOUT_PATTERNS*MBCV_LRE_NUM_DOUT_PATTERN_POS);
@@ -326,26 +429,30 @@ static s32 MBCV_LRE_UpdateLedRingPattern(u32 enc, u16 sr_pattern)
     return -1; // invalid encoder
 
   u16 ledring_cluster = enc / 16;
-#if MIOS32_SRIO_NUM_DOUT_PAGES != 16
-# error "The LEDring driver requires 16 DOUT pages"
-#endif
+  if( ledring_cluster >= MBCV_LRE_NUM )
+    return -2; // invalid LRE module
+
+  mbcv_hwcfg_lre_t *lre_cfg = (mbcv_hwcfg_lre_t *)&mbcv_hwcfg_lre[ledring_cluster];
+  if( !lre_cfg->enabled )
+    return -3; // LRE not enabled
+
   u16 ledring_select = enc % 16;
-  u16 sr_select = mbcv_lre_ledring_select_inv ? (1 << ledring_select) : ~(1 << ledring_select);
+  u16 sr_select = (lre_cfg->enabled == 2) ? (1 << ledring_select) : ~(1 << ledring_select);
 
-  if( mbcv_lre_ledring_select_sr1[ledring_cluster] ) {
-    MIOS32_DOUT_PageSRSet(ledring_select, mbcv_lre_ledring_select_sr1[ledring_cluster] - 1, sr_select);
+  if( lre_cfg->ledring_select_sr1 ) {
+    MIOS32_DOUT_PageSRSet(ledring_select, lre_cfg->ledring_select_sr1 - 1, sr_select);
   }
 
-  if( mbcv_lre_ledring_select_sr2[ledring_cluster] ) {
-    MIOS32_DOUT_PageSRSet(ledring_select, mbcv_lre_ledring_select_sr2[ledring_cluster] - 1, sr_select >> 8);
+  if( lre_cfg->ledring_select_sr2 ) {
+    MIOS32_DOUT_PageSRSet(ledring_select, lre_cfg->ledring_select_sr2 - 1, sr_select >> 8);
   }
 
-  if( mbcv_lre_ledring_pattern_sr1[ledring_cluster] ) {
-    MIOS32_DOUT_PageSRSet(ledring_select, mbcv_lre_ledring_pattern_sr1[ledring_cluster] - 1, sr_pattern);
+  if( lre_cfg->ledring_pattern_sr1 ) {
+    MIOS32_DOUT_PageSRSet(ledring_select, lre_cfg->ledring_pattern_sr1 - 1, sr_pattern);
   }
 
-  if( mbcv_lre_ledring_pattern_sr2[ledring_cluster] ) {
-    MIOS32_DOUT_PageSRSet(ledring_select, mbcv_lre_ledring_pattern_sr2[ledring_cluster] - 1, sr_pattern >> 8);
+  if( lre_cfg->ledring_pattern_sr2 ) {
+    MIOS32_DOUT_PageSRSet(ledring_select, lre_cfg->ledring_pattern_sr2 - 1, sr_pattern >> 8);
   }
 
   return 0; // no error
@@ -473,7 +580,7 @@ u16 MBCV_LRE_PatternGet(u8 num, u8 pos)
 /////////////////////////////////////////////////////////////////////////////
 // Set/Get Encoder Config
 /////////////////////////////////////////////////////////////////////////////
-s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg)
+s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, mbcv_lre_enc_cfg_t cfg)
 {
   if( enc >= MBCV_LRE_NUM_ENC )
     return -1; // invalid encoder
@@ -673,11 +780,11 @@ s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
 
       env->setNRPN(e->nrpn, new_value);
       env->midiSendNRPNToActivePort(e->nrpn, new_value);
+    }
       
-      MbCvNrpnInfoT info;
-      if( env->getNRPNInfo(e->nrpn, &info) ) {
-	SCS_Msg(SCS_MSG_L, 1000, info.nameString, info.valueString);
-      }
+    MbCvNrpnInfoT info;
+    if( env->getNRPNInfo(e->nrpn, &info) ) {
+      SCS_Msg(SCS_MSG_L, 1000, info.nameString, info.valueString);
     }
   }
 

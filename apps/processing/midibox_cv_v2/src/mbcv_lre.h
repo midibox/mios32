@@ -1,4 +1,4 @@
-// $Id: mbcv_map.h 1895 2013-12-20 21:45:42Z tk $
+// $Id$
 /*
  * Header file for MIDIbox CV V2 LEDRing/Encoder functions
  *
@@ -18,11 +18,14 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// maximum number of encoders (and LED rings)
-#define MBCV_LRE_NUM_ENC 32
+// number of LRE modules
+#define MBCV_LRE_NUM 2
 
-// maximum number of banks
-#define MBCV_LRE_NUM_BANKS 4
+// maximum number of encoders (and LED rings)
+#define MBCV_LRE_NUM_ENC (MBCV_LRE_NUM*16)
+
+// maximum number of banks (should match with number of CV channels...)
+#define MBCV_LRE_NUM_BANKS 8
 
 // maximum number of LEDring patterns
 #define MBCV_LRE_NUM_DOUT_PATTERNS 2
@@ -66,7 +69,7 @@ extern s32 MBCV_LRE_BankGet(void);
 extern s32 MBCV_LRE_PatternSet(u8 num, u8 pos, u16 pattern);
 extern u16 MBCV_LRE_PatternGet(u8 num, u8 pos);
 
-extern s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, const mbcv_lre_enc_cfg_t& cfg);
+extern s32 MBCV_LRE_EncCfgSet(u32 enc, u32 bank, mbcv_lre_enc_cfg_t cfg);
 extern s32 MBCV_LRE_EncCfgSetFromDefault(u32 enc, u32 bank, u16 nrpnNumber);
 extern mbcv_lre_enc_cfg_t MBCV_LRE_EncCfgGet(u32 enc, u32 bank);
 
@@ -75,10 +78,5 @@ extern mbcv_lre_enc_cfg_t MBCV_LRE_EncCfgGet(u32 enc, u32 bank);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern u8 mbcv_lre_ledring_select_inv;
-extern u8 mbcv_lre_ledring_select_sr1[MBCV_LRE_NUM_ENC/16];
-extern u8 mbcv_lre_ledring_select_sr2[MBCV_LRE_NUM_ENC/16];
-extern u8 mbcv_lre_ledring_pattern_sr1[MBCV_LRE_NUM_ENC/16];
-extern u8 mbcv_lre_ledring_pattern_sr2[MBCV_LRE_NUM_ENC/16];
 
 #endif /* _MBCV_LRE_H */

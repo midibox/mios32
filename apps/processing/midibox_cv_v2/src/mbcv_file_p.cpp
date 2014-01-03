@@ -338,26 +338,6 @@ s32 MBCV_FILE_P_Read(char *filename)
 	      env->mbCvClock.externalClockPulseWidth[clk] = value;
 	    }
 	  }
-	} else if( strcasecmp(parameter, "DOUT_GateSR") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  s32 value;
-	  if( (value=get_dec(word)) < 0 || value > MIOS32_SRIO_NUM_SR ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid SR number for parameter '%s %d'\n", parameter, value);
-#endif
-	  } else {
-	    mbcv_map_gate_sr = value;
-	  }
-	} else if( strcasecmp(parameter, "DOUT_DinSyncSR") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  s32 value;
-	  if( (value=get_dec(word)) < 0 || value > MIOS32_SRIO_NUM_SR ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid SR number for parameter '%s %d'\n", parameter, value);
-#endif
-	  } else {
-	    mbcv_map_din_sync_sr = value;
-	  }
 	} else if( strcasecmp(parameter, "ENC_Cfg") == 0 ) {
 	  s32 bank;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -403,21 +383,6 @@ s32 MBCV_FILE_P_Read(char *filename)
 		MBCV_LRE_EncCfgSet(enc, bank, e);
 	      }
 	    }
-	  }
-	} else if( strcasecmp(parameter, "AOUT_Type") == 0 ) {
-	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	  int aout_type;
-	  for(aout_type=0; aout_type<AOUT_NUM_IF; ++aout_type) {
-	    if( strcasecmp(word, MBCV_MAP_IfNameGet((aout_if_t)aout_type)) == 0 )
-	      break;
-	  }
-
-	  if( aout_type == AOUT_NUM_IF ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid AOUT interface name for parameter '%s': %s\n", parameter, word);
-#endif
-	  } else {
-	    MBCV_MAP_IfSet((aout_if_t)aout_type);
 	  }
 
 #if !defined(MIOS32_FAMILY_EMULATION)
@@ -639,13 +604,6 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# CV Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "AOUT_Type %s\n", (char *)MBCV_MAP_IfNameGet(MBCV_MAP_IfGet()));
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "DOUT_GateSR %d\n", mbcv_map_gate_sr);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "DOUT_DinSyncSR %d\n", mbcv_map_din_sync_sr);
-  FLUSH_BUFFER;
-
   sprintf(line_buffer, "\n\n# External Clock Outputs (available at DOUT_DinSyncSR D1..D7)\n");
   FLUSH_BUFFER;
   {
@@ -665,7 +623,7 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "\n\n# LRE Encoder Assignments\n");
   FLUSH_BUFFER;
-  sprintf(line_buffer, "\n\n# ENC_Cfg <bank> <enc> <nrpn> <min> <max>\n");
+  sprintf(line_buffer, "# ENC_Cfg <bank> <enc> <nrpn> <min> <max>\n");
   FLUSH_BUFFER;
   {
     int bank;

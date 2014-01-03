@@ -1622,6 +1622,34 @@ scs_menu_item_t *SCS_MenuPageGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Changes to the given page
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_ChangePage(scs_menu_item_t *page)
+{
+  if( rootTable == NULL )
+    return -1; // no root table installed
+
+  int pos;
+  for(pos=0; pos<rootTableNumItems; ++pos) {
+    // TODO: recursive search for subpages?
+    if( rootTable[pos].page == page ) {
+      currentMenuTableSelectedPagePos = pos;
+      displayPageOffset = 0; // optionally we got store the last offset somewhere?
+      scsMenuState = SCS_MENU_STATE_INSIDE_PAGE;
+#if SCS_MENU_NO_SOFT_BUTTON_MODE
+      displayCursorPos = 0;
+#endif
+      displayInitReq = 1;
+
+      return 0; // page found
+    }
+  }
+
+  return -1; // page not found
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Print temporary user messages (e.g. warnings, errors)
 //! expects mS delay and two lines, each up to 18 characters
 //!

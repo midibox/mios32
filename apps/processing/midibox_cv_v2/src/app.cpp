@@ -36,13 +36,16 @@
 #include <app_lcd.h>
 
 #include "terminal.h"
+#include "mbcv_hwcfg.h"
 #include "mbcv_sysex.h"
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
+#include "mbcv_button.h"
 #include "mbcv_lre.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
+#include "mbcv_file_hw.h"
 #include "uip_task.h"
 #include "osc_client.h"
 
@@ -72,8 +75,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // local variables
 /////////////////////////////////////////////////////////////////////////////
-static u8 hw_enabled;
-
 static u32 stopwatch_value;
 static u32 stopwatch_value_min;
 static u32 stopwatch_value_max;
@@ -114,9 +115,8 @@ extern "C" void APP_Init(void)
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
 
-  // hardware will be enabled once configuration has been loaded from SD Card
-  // (resp. no SD Card is available)
-  hw_enabled = 0;
+  // init hardware config
+  MBCV_HWCFG_Init(0);
 
   // init Stopwatch
   APP_StopwatchInit();
@@ -181,6 +181,7 @@ extern "C" void APP_Init(void)
   MBCV_MAP_Init(0);
   MIDI_ROUTER_Init(0);
   MBCV_PATCH_Init(0);
+  MBCV_BUTTON_Init(0);
   MBCV_LRE_Init(0);
   UIP_TASK_Init(0);
 
@@ -301,6 +302,8 @@ extern "C" void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
+  // -> MBCV Button handler
+  MBCV_BUTTON_Handler(pin, pin_value);
 }
 
 
@@ -335,8 +338,9 @@ extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 extern void CV_TIMER_SE_Update(void)
 {
-  if( !hw_enabled )
-    return;
+  // ignore as long as hardware config hasn't been read
+  if( !MBCV_FILE_HW_ConfigLocked() )
+    return -1;
 
 #if J5_DEBUG_PINS
     MIOS32_BOARD_J5_PinSet(4, 0);
@@ -480,8 +484,6 @@ void APP_TASK_Period_1mS_SD(void)
     MUTEX_SDCARD_TAKE;
     s32 status = FILE_CheckSDCard();
 
-    hw_enabled = 1; // enable hardware after first read...
-
     if( status == 1 ) {
       DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
       // load all file infos
@@ -496,9 +498,11 @@ void APP_TASK_Period_1mS_SD(void)
     } else if( status == 3 ) {
       if( !FILE_SDCardAvailable() ) {
 	DEBUG_MSG("SD Card not found\n");
+	MBCV_FILE_HW_LockConfig(); // lock configuration
 	MBCV_FILE_StatusMsgSet("No SD Card");
       } else if( !FILE_VolumeAvailable() ) {
 	DEBUG_MSG("ERROR: SD Card contains invalid FAT!\n");
+	MBCV_FILE_HW_LockConfig(); // lock configuration
 	MBCV_FILE_StatusMsgSet("No FAT");
       } else {
 	// create the default files if they don't exist on SD Card
@@ -521,10 +525,6 @@ void APP_TASK_Period_1mS(void)
 {
   // e.g. for synched pattern changes
   mbCvEnvironment.tick_1mS();
-
-  if( hw_enabled ) {
-    // nothing to do... yet
-  }
 }
 
 
