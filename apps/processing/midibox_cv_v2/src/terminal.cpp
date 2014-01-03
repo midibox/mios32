@@ -32,9 +32,11 @@
 #include "terminal.h"
 #include "mbcv_patch.h"
 #include "uip_terminal.h"
+#include "mbcv_hwcfg.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
+#include "mbcv_file_hw.h"
 
 extern "C" {
 #include <ff.h>
@@ -213,11 +215,17 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
     if( autoload_cv2_file[0] ) {
       DEBUG_MSG("AUTOLOAD '%s'\n", autoload_cv2_file);
 
-      s32 status = MBCV_PATCH_LoadGlobal(autoload_cv2_file);
-      if( status >= 0 ) {
-	DEBUG_MSG("Patch '%s' loaded from SD Card!", autoload_cv2_file);
+      if( strcasecmp(autoload_cv2_file, "MBCV_HW") == 0 ) {
+	MBCV_HWCFG_Init(0);
+	MBCV_FILE_HW_Init(0);
+	MBCV_FILE_HW_Load();
       } else {
-	DEBUG_MSG("ERROR: failed to load patch '%s' on SD Card (status %d)!", autoload_cv2_file, status);
+	s32 status = MBCV_PATCH_LoadGlobal(autoload_cv2_file);
+	if( status >= 0 ) {
+	  DEBUG_MSG("Patch '%s' loaded from SD Card!", autoload_cv2_file);
+	} else {
+	  DEBUG_MSG("ERROR: failed to load patch '%s' on SD Card (status %d)!", autoload_cv2_file, status);
+	}
       }
     }
   }

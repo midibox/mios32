@@ -1,26 +1,23 @@
 // $Id$
 /*
- * Header file for CC label array
+ * Header for file functions
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2013 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _CC_LABELS_H
-#define _CC_LABELS_H
+#ifndef _MBCV_FILE_HW_H
+#define _MBCV_FILE_HW_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
-
-#define CC_LABELS_NUM   128 // for CC0..127
-#define CC_LABELS_WIDTH  17 // 8 characters + \0 terminator
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -32,11 +29,21 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 CC_LABELS_Init(u32 mode);
-extern const char *CC_LABELS_Get(u8 cc);
+extern s32 MBCV_FILE_HW_Init(u32 mode);
+extern s32 MBCV_FILE_HW_Load(void);
+extern s32 MBCV_FILE_HW_Unload(void);
+
+extern s32 MBCV_FILE_HW_Valid(void);
+extern s32 MBCV_FILE_HW_ConfigLocked(void);
+
+extern s32 MBCV_FILE_HW_LockConfig(void);
+
+extern s32 MBCV_FILE_HW_Read(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _CC_LABELS_H */
+
+#endif /* _MBCV_FILE_HW_H */

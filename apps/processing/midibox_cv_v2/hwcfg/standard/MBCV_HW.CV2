@@ -1,0 +1,173 @@
+##################################################
+# Setup File for MIDIbox CV V2 Standard Frontpanel
+# $Id$
+##################################################
+
+
+##################################################
+# AOUT interface
+# Following interfaces are supported:
+#   o none
+#   o AOUT
+#   o AOUT_LC
+#   o AOUT_NG
+#   o MCP_Gx1
+#   o MCP_Gx2
+##################################################
+
+AOUT_IF AOUT_NG
+
+
+##################################################
+# Gate and Clock outputs
+##################################################
+
+# DOUT Shift Register number of the 8 CV gate outputs
+# (1..16, 0 disables the outputs)
+# - gate of CV1 will be available at output D7
+# - gate of CV2 will be available at output D6
+# - ...
+# - gate of CV8 will be available at output D0
+
+GATE_CV_DOUT_SR 1
+
+
+# shift register number of the clock and start/stop signal (DIN Sync)
+# (1..16, 0 disables the outputs)
+# - start/stop will be available at output D7
+# - clock1 will be available at output D6
+# - clock2 will be available at output D5
+# - ...
+# - clock7 will be available at output D0
+
+CLK_DOUT_SR 2
+
+
+##################################################
+# Optional LRE8x2 modules (encoders and LED rings)
+# Up to two modules can be chained, makes up to
+# 32 encoders and 32 LEDrings
+##################################################
+
+# enable first LRE module
+# 0: disabled
+# 1: enabled, and LEDring  select lines are not inverted
+# 2: enabled, and LEDring select lines are inverted (use this if a ULN2803 is mounted!)
+LRE1_ENABLED 2
+
+# first LRE8x2 module
+LRE1_LEDRING_SELECT_DOUT_SR1   3
+LRE1_LEDRING_SELECT_DOUT_SR2   4
+LRE1_LEDRING_PATTERN_DOUT_SR1  5
+LRE1_LEDRING_PATTERN_DOUT_SR2  6
+
+
+# enable second LRE module
+# 0: disabled
+# 1: enabled, and LEDring  select lines are not inverted
+# 2: enabled, and LEDring select lines are inverted (use this if a ULN2803 is mounted!)
+LRE2_ENABLED 2
+
+# second LRE8x2 module
+LRE2_LEDRING_SELECT_DOUT_SR1   7
+LRE2_LEDRING_SELECT_DOUT_SR2   8
+LRE2_LEDRING_PATTERN_DOUT_SR1  9
+LRE2_LEDRING_PATTERN_DOUT_SR2  10
+
+
+# encoder assignments
+# SR = 0: encoder disabled
+# SR = 1..16: DIN assignment
+# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3
+
+#           SR  Pin  Type 
+LRE1_ENC1    3    0  NON_DETENTED
+LRE1_ENC2    3    2  NON_DETENTED
+LRE1_ENC3    3    4  NON_DETENTED
+LRE1_ENC4    3    6  NON_DETENTED
+LRE1_ENC5    4    0  NON_DETENTED
+LRE1_ENC6    4    2  NON_DETENTED
+LRE1_ENC7    4    4  NON_DETENTED
+LRE1_ENC8    4    6  NON_DETENTED
+LRE1_ENC9    5    0  NON_DETENTED
+LRE1_ENC10   5    2  NON_DETENTED
+LRE1_ENC11   5    4  NON_DETENTED
+LRE1_ENC12   5    6  NON_DETENTED
+LRE1_ENC13   6    0  NON_DETENTED
+LRE1_ENC14   6    2  NON_DETENTED
+LRE1_ENC15   6    4  NON_DETENTED
+LRE1_ENC16   6    6  NON_DETENTED
+
+#           SR  Pin  Type 
+LRE2_ENC1    7    0  NON_DETENTED
+LRE2_ENC2    7    2  NON_DETENTED
+LRE2_ENC3    7    4  NON_DETENTED
+LRE2_ENC4    7    6  NON_DETENTED
+LRE2_ENC5    8    0  NON_DETENTED
+LRE2_ENC6    8    2  NON_DETENTED
+LRE2_ENC7    8    4  NON_DETENTED
+LRE2_ENC8    8    6  NON_DETENTED
+LRE2_ENC9    9    0  NON_DETENTED
+LRE2_ENC10   9    2  NON_DETENTED
+LRE2_ENC11   9    4  NON_DETENTED
+LRE2_ENC12   9    6  NON_DETENTED
+LRE2_ENC13  10    0  NON_DETENTED
+LRE2_ENC14  10    2  NON_DETENTED
+LRE2_ENC15  10    4  NON_DETENTED
+LRE2_ENC16  10    6  NON_DETENTED
+
+
+##################################################
+# Button assignments to DIN pins
+# SR = 0: Button disabled
+# SR = 1..16:  directly triggered from DIN pin
+##################################################
+
+# select CV channel
+#            SR  Pin
+BUTTON_CV1    0   0
+BUTTON_CV2    0   0
+BUTTON_CV3    0   0
+BUTTON_CV4    0   0
+BUTTON_CV5    0   0
+BUTTON_CV6    0   0
+BUTTON_CV7    0   0
+BUTTON_CV8    0   0
+
+# select (LRE) encoder bank
+#                 SR  Pin
+BUTTON_ENCBANK1    0   0
+BUTTON_ENCBANK2    0   0
+BUTTON_ENCBANK3    0   0
+BUTTON_ENCBANK4    0   0
+BUTTON_ENCBANK5    0   0
+BUTTON_ENCBANK6    0   0
+BUTTON_ENCBANK7    0   0
+BUTTON_ENCBANK8    0   0
+
+# These button functions combine both: CV channel and LRE ENC bank selected
+# Means: each CV channel has it's own encoder bank
+#                        SR  Pin
+BUTTON_CV_AND_ENCBANK1    1   0
+BUTTON_CV_AND_ENCBANK2    1   1
+BUTTON_CV_AND_ENCBANK3    1   2
+BUTTON_CV_AND_ENCBANK4    1   3
+BUTTON_CV_AND_ENCBANK5    1   4
+BUTTON_CV_AND_ENCBANK6    1   5
+BUTTON_CV_AND_ENCBANK7    1   6
+BUTTON_CV_AND_ENCBANK8    1   7
+
+#               SR  Pin
+BUTTON_LFO1      2   0
+BUTTON_LFO2      2   1
+BUTTON_ENV1      2   2
+BUTTON_ENV2      2   3
+
+#               SR  Pin
+BUTTON_SCOPE1    2   4
+BUTTON_SCOPE2    2   5
+BUTTON_SCOPE3    2   6
+BUTTON_SCOPE4    2   7
+
+
+# more button functions are available on request

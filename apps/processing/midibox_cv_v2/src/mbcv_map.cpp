@@ -23,13 +23,12 @@
 
 #include "mbcv_map.h"
 #include "mbcv_patch.h"
+#include "mbcv_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
-u8 mbcv_map_gate_sr;
-u8 mbcv_map_din_sync_sr;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -42,10 +41,6 @@ u8 mbcv_map_din_sync_sr;
 /////////////////////////////////////////////////////////////////////////////
 extern "C" s32 MBCV_MAP_Init(u32 mode)
 {
-  // can be changed in the .CV2 file
-  mbcv_map_gate_sr = 1;
-  mbcv_map_din_sync_sr = 2;
-
   // initialize AOUT driver
   AOUT_Init(0);
 
@@ -145,10 +140,10 @@ extern "C" s32 MBCV_MAP_Update(void)
 
   // following DOUT transfers should be atomic to ensure, that all pins are updated at the same scan cycle
   MIOS32_IRQ_Disable();
-  if( mbcv_map_gate_sr )
-    MIOS32_DOUT_SRSet(mbcv_map_gate_sr-1, gates);
-  if( mbcv_map_din_sync_sr )
-    MIOS32_DOUT_SRSet(mbcv_map_din_sync_sr-1, din_sync_value);
+  if( mbcv_hwcfg_dout.gate_sr )
+    MIOS32_DOUT_SRSet(mbcv_hwcfg_dout.gate_sr-1, gates);
+  if( mbcv_hwcfg_dout.clk_sr )
+    MIOS32_DOUT_SRSet(mbcv_hwcfg_dout.clk_sr-1, din_sync_value);
   MIOS32_IRQ_Enable();
 
   return 0; // no error

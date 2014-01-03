@@ -28,6 +28,7 @@
 #include "mbcv_file.h"
 #include "mbcv_file_b.h"
 #include "mbcv_file_p.h"
+#include "mbcv_file_hw.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -63,6 +64,7 @@ s32 MBCV_FILE_Init(u32 mode)
   status |= FILE_Init(0);
   status |= MBCV_FILE_B_Init(0);
   status |= MBCV_FILE_P_Init(0);
+  status |= MBCV_FILE_HW_Init(0);
 
   return status;
 }
@@ -76,7 +78,7 @@ s32 MBCV_FILE_LoadAllFiles(u8 including_hw)
   s32 status = 0;
 
   if( including_hw ) {
-    //status |= MBCV_FILE_HW_Load();
+    status |= MBCV_FILE_HW_Load();
   }
 
   status |= MBCV_FILE_B_LoadAllBanks();
@@ -94,6 +96,7 @@ s32 MBCV_FILE_UnloadAllFiles(void)
   s32 status = 0;
   status |= MBCV_FILE_B_UnloadAllBanks();
   status |= MBCV_FILE_P_Unload();
+  status |= MBCV_FILE_HW_Unload();
   return status;
 }
 

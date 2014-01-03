@@ -79,6 +79,7 @@ typedef union {
 } cv_patch_t;
 
 
+#ifdef __cplusplus
 // little helper
 // a container class which defines an array leads to more robust code when iterating over the array
 // will be transfered to a better location later
@@ -118,6 +119,7 @@ public:
         return (++prevElement >= &element[N]) ? 0 : prevElement;
     }
 };
+#endif /* __cplusplus */
 
 
 #endif /* _MBCV_STRUCTS_H */

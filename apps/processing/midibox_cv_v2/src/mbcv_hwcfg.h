@@ -1,18 +1,25 @@
 // $Id$
 /*
- * Header file for Local SCS Configuration
+ * Header file for HW configuration routines
  *
  * ==========================================================================
  *
- *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2013 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _SCS_CONFIG_H
-#define _SCS_CONFIG_H
+#ifndef _MBCV_HWCFG_H
+#define _MBCV_HWCFG_H
+
+#include <MbCvStructs.h>
+#include "mbcv_lre.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -23,21 +30,50 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+  u8 cv[CV_SE_NUM];
+  u8 enc_bank[MBCV_LRE_NUM_BANKS];
+  u8 cv_and_enc_bank[CV_SE_NUM];
+
+  u8 lfo1;
+  u8 lfo2;
+  u8 env1;
+  u8 env2;
+
+  u8 scope[CV_SCOPE_NUM];
+} mbcv_hwcfg_button_t;
+
+typedef struct {
+  u8 gate_sr;
+  u8 clk_sr;
+} mbcv_hwcfg_dout_t;
+
+typedef struct {
+  u8 enabled;
+  u8 ledring_select_sr1;
+  u8 ledring_select_sr2;
+  u8 ledring_pattern_sr1;
+  u8 ledring_pattern_sr2;
+} mbcv_hwcfg_lre_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SCS_CONFIG_Init(u32 mode);
-
-extern s32 SCS_CONFIG_CvSet(u8 cv);
-extern s32 SCS_CONFIG_LfoSet(u8 lfo);
-extern s32 SCS_CONFIG_EnvSet(u8 env);
-extern s32 SCS_CONFIG_ScopeSet(u8 scope);
+extern s32 MBCV_HWCFG_Init(u32 mode);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SCS_CONFIG_H */
+extern mbcv_hwcfg_button_t mbcv_hwcfg_button;
+extern mbcv_hwcfg_dout_t mbcv_hwcfg_dout;
+extern mbcv_hwcfg_lre_t mbcv_hwcfg_lre[MBCV_LRE_NUM];
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _MBCV_HWCFG_H */

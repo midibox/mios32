@@ -1,18 +1,18 @@
 // $Id$
 /*
- * Header file for Local SCS Configuration
+ * Header file for MIDIbox CV V2 button functions
  *
  * ==========================================================================
  *
- *  Copyright (C) 2011 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) 2013 Thorsten Klose (tk@midibox.org)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _SCS_CONFIG_H
-#define _SCS_CONFIG_H
+#ifndef _MBCV_BUTTON_H
+#define _MBCV_BUTTON_H
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,16 +28,14 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SCS_CONFIG_Init(u32 mode);
+extern s32 MBCV_BUTTON_Init(u32 mode);
 
-extern s32 SCS_CONFIG_CvSet(u8 cv);
-extern s32 SCS_CONFIG_LfoSet(u8 lfo);
-extern s32 SCS_CONFIG_EnvSet(u8 env);
-extern s32 SCS_CONFIG_ScopeSet(u8 scope);
+extern s32 MBCV_BUTTON_Handler(u32 pin, u8 depressed);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-#endif /* _SCS_CONFIG_H */
+
+#endif /* _MBCV_BUTTON_H */

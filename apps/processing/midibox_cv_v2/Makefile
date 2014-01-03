@@ -15,7 +15,7 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 THUMB_SOURCE    = src/tasks.c \
-		  src/cc_labels.c \
+		  src/mbcv_hwcfg.c \
 		  src/components/CapChargeCurve.c
 
 THUMB_CPP_SOURCE  = src/app.cpp \
@@ -23,7 +23,9 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/mbcv_patch.cpp \
 		    src/mbcv_map.cpp \
 		    src/mbcv_lre.cpp \
+		    src/mbcv_button.cpp \
 	 	    src/mbcv_file.cpp \
+	 	    src/mbcv_file_hw.cpp \
 	 	    src/mbcv_file_b.cpp \
 	 	    src/mbcv_file_p.cpp \
 	 	    src/mbcv_sysex.cpp \
