@@ -164,7 +164,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   case SEQ_UI_ENCODER_GP8:
     if( !networkAvailable ) {
+#if defined(MIOS32_FAMILY_LPC17xx)
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Ethernet cable not", "connected!");
+#else
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MBHP_ETH not", "connected!");
+#endif
     } else {
       SEQ_UI_ETH_StoreNCfg();
       // for my own comfort: select config item when enter button is pressed
@@ -208,7 +212,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( ui_selected_item ) {
   case ITEM_DHCP:
     if( !networkAvailable ) {
+#if defined(MIOS32_FAMILY_LPC17xx)
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Ethernet cable not", "connected!");
+#else
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MBHP_ETH not", "connected!");
+#endif
     } else {
       u8 prevDhcpOn = dhcpOn;
       dhcpOn = incrementer >= 0;
@@ -234,9 +242,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_NETWORK_2:
   case ITEM_NETWORK_3:
   case ITEM_NETWORK_4: {
-    if( !networkAvailable )
+    if( !networkAvailable ) {
+#if defined(MIOS32_FAMILY_LPC17xx)
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Ethernet cable not", "connected!");
+#else
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MBHP_ETH not", "connected!");
-    else {
+#endif
+    } else {
       if( dhcpOn ) {
 	if( dhcpValid )
 	  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "DHCP enabled!", "Auto-Config!");
