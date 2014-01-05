@@ -296,6 +296,17 @@ s32 MBCV_FILE_P_Read(char *filename)
 	    }
 	  }
 
+	} else if( strcasecmp(parameter, "CV_UpdateRateFactor") == 0 ) {
+	  s32 factor;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (factor=get_dec(word)) < 1 || factor > APP_CV_UPDATE_RATE_FACTOR_MAX ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR '%s' should be between 1..%d\n", parameter, APP_CV_UPDATE_RATE_FACTOR_MAX);
+#endif
+	  } else {
+	    APP_CvUpdateRateFactorSet(factor);
+	  }
+
 	} else if( strcasecmp(parameter, "EXTCLK_Divider") == 0 ) {
 	  s32 clk;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -602,6 +613,11 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
 #endif
 
   sprintf(line_buffer, "\n\n# CV Configuration\n");
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "\n# CV Update Rate (500 Hz * factor)\n");
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "CV_UpdateRateFactor %d\n", APP_CvUpdateRateFactorGet());
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "\n\n# External Clock Outputs (available at DOUT_DinSyncSR D1..D7)\n");

@@ -19,6 +19,8 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
+#define APP_CV_UPDATE_RATE_FACTOR_MAX 20
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -62,6 +64,10 @@ extern s32 APP_StopwatchCapture(void);
 
 extern s32 APP_SelectScopeLCDs(void);
 extern s32 APP_SelectMainLCD(void);
+
+extern s32 APP_CvUpdateRateFactorSet(u8 factor);
+extern s32 APP_CvUpdateRateFactorGet(void);
+extern s32 APP_CvUpdateOverloadStatusGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
