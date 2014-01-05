@@ -446,6 +446,7 @@ s32 MIOS32_UART_MIDI_PackageReceive(u8 uart_port, mios32_midi_package_t *package
 	    *package = midix->package;
 	    package_complete = 1; // -> forward to caller
 	    midix->sysex_ctr = 0x00; // reset and prepare for next packet
+	    midix->timeout_ctr = 0; // reset timeout counter
 	}
       } else { // Common MIDI message or 0xf1 >= status >= 0xf7
 	if( !midix->wait_bytes ) {
