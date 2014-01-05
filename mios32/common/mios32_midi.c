@@ -1135,8 +1135,30 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	if( callback_package != NULL )
 	  callback_package(port, package);
       } else {
-	u8 filter_sysex = 0;
+	// service SysEx timeout counter
+	if( package.evnt0 == 0xf0 || // for package.type == 0xf
+	    (package.type >= 4 && package.type <= 7) ) {
+	  // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
+	  if( !sysex_timeout_ctr_flags.ALL ) {
+	    switch( port & 0xf0 ) {
+	    case USB0://..15
+	      sysex_timeout_ctr = 0;
+	      sysex_timeout_ctr_flags.usb_receives = (1 << (port & 0xf));
+	      break;
+	    case UART0://..15
+	      // already done in MIOS32_UART_MIDI_PackageReceive()
+	      break;
+	    case IIC0://..15
+	      sysex_timeout_ctr = 0;
+	      sysex_timeout_ctr_flags.iic_receives = (1 << (port & 0xf));
+	      break;
+	      // no timeout protection for remaining interfaces (yet)
+	    }
+	  }
+	}
 
+
+	u8 filter_sysex = 0;
 	switch( package.type ) {
   	  case 0x0: // reserved, ignore
 	  case 0x1: // cable events, ignore
@@ -1155,26 +1177,6 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 	      if( callback_package != NULL )
 		callback_package(port, package); // -> realtime event is forwarded as event
 	      break;
-	    }
-
-	    if( package.evnt0 == 0xf0 ) {
-	      // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
-	      if( !sysex_timeout_ctr_flags.ALL ) {
-		switch( port & 0xf0 ) {
-		  case USB0://..15
-		    sysex_timeout_ctr = 0;
-		    sysex_timeout_ctr_flags.usb_receives = (1 << (port & 0xf));
-		    break;
-		  case UART0://..15
-		    // already done in MIOS32_UART_MIDI_PackageReceive()
-		    break;
-		  case IIC0://..15
-		    sysex_timeout_ctr = 0;
-		    sysex_timeout_ctr_flags.iic_receives = (1 << (port & 0xf));
-		    break;
-		    // no timeout protection for remaining interfaces (yet)
-		}
-	      }
 	    }
 
 	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
