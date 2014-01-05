@@ -272,6 +272,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       MIDIMON_TerminalHelp(_output_function);
       MIDI_ROUTER_TerminalHelp(_output_function);
       out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
+      out("  set update_rate <1..%d>:          sets update rate of sound engine (factor*500 Hz), current: %d\n", APP_CV_UPDATE_RATE_FACTOR_MAX, APP_CvUpdateRateFactorGet());
       AOUT_TerminalHelp(_output_function);
 #ifdef MIOS32_LCD_universal
       APP_LCD_TerminalHelp(_output_function);
@@ -408,6 +409,18 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 		out("DOUT Pin %d (SR#%d.D%d) set to %d", pin, (pin/8)+1, 7-(pin%8), value);
 	      }
 	    }
+	  }
+	} else if( strcmp(parameter, "update_rate") == 0 ) {
+	  s32 factor = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    factor = get_dec(parameter);
+	  }
+
+	  if( (factor < 1 || factor > APP_CV_UPDATE_RATE_FACTOR_MAX) ) {
+	    out("Update Rate should be between 1..%d!", APP_CV_UPDATE_RATE_FACTOR_MAX);
+	  } else {
+	    APP_CvUpdateRateFactorSet(factor);
+	    out("Update Rate set to %d Hz (factor %d)", 500*APP_CvUpdateRateFactorGet(), APP_CvUpdateRateFactorGet());
 	  }
 	} else {
 	  out("Unknown set parameter: '%s'!", parameter);

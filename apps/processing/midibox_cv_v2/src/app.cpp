@@ -81,7 +81,11 @@ static u32 stopwatch_value_max;
 static u32 stopwatch_value_accumulated;
 static u32 stopwatch_value_accumulated_ctr;
 
-static u32 cv_se_speed_factor;
+static u8  cv_se_speed_factor;
+static u8  cv_se_overloaded;
+static u32 cv_se_overload_check_ctr = 0;
+static u32 cv_se_last_mios32_timestamp = 0;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // C++ objects
@@ -195,16 +199,11 @@ extern "C" void APP_Init(void)
   MIDIMON_Init(0);
   MBCV_FILE_Init(0);
 
-  // initialize MbCvEnvironment
-  cv_se_speed_factor = 10;
-  mbCvEnvironment.updateSpeedFactorSet(cv_se_speed_factor);
-
   // initialize tasks
   TASKS_Init(0);
 
-  // start timer
-  // TODO: increase  once performance has been evaluated
-  MIOS32_TIMER_Init(2, 2000 / cv_se_speed_factor, CV_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
+  // initialize MbCvEnvironment
+  APP_CvUpdateRateFactorSet(5);
 
 #if MIOS32_DONT_SERVICE_SRIO_SCAN
   //MIOS32_SRIO_ScanNumSet(4);
@@ -339,12 +338,29 @@ extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 extern void CV_TIMER_SE_Update(void)
 {
   // ignore as long as hardware config hasn't been read
-  if( !MBCV_FILE_HW_ConfigLocked() )
-    return -1;
+  if( !MBCV_FILE_HW_ConfigLocked() ) {
+    cv_se_last_mios32_timestamp = MIOS32_TIMESTAMP_Get();
+    return;
+  }
+
+  // check MIOS32 timestamp each second
+  if( ++cv_se_overload_check_ctr >= (cv_se_speed_factor*500) ) {
+    u32 timestamp = MIOS32_TIMESTAMP_Get();
+    u32 delay = timestamp - cv_se_last_mios32_timestamp;
+    cv_se_overload_check_ctr = 0;
+    cv_se_last_mios32_timestamp = timestamp;
+
+    // actually 1000, allow some margin
+    cv_se_overloaded = (delay < 950 );
+  }
+
+  // don't process CV if engine overloaded
+  if( cv_se_overloaded )
+    return;
 
 #if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(4, 0);
-    MIOS32_BOARD_J5_PinSet(5, 0);
+  MIOS32_BOARD_J5_PinSet(4, 0);
+  MIOS32_BOARD_J5_PinSet(5, 0);
 #endif
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1 || STOPWATCH_PERFORMANCE_MEASURING == 2
@@ -599,6 +615,46 @@ s32 APP_SelectMainLCD(void)
   MIOS32_LCD_ParametersFetchFromBslInfoRange();
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Speed Factor (engine will be updated at factor * 500 Hz)
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_CvUpdateRateFactorSet(u8 factor)
+{
+  if( factor < 1 || factor > APP_CV_UPDATE_RATE_FACTOR_MAX )
+    return -1; // invalid factor
+
+  MIOS32_IRQ_Disable();
+
+  cv_se_speed_factor = factor;
+  mbCvEnvironment.updateSpeedFactorSet(cv_se_speed_factor);
+
+  // start timer
+  MIOS32_TIMER_Init(2, 2000 / cv_se_speed_factor, CV_TIMER_SE_Update, MIOS32_IRQ_PRIO_MID);
+
+  // clear overload indicators
+  cv_se_overloaded = 0;
+  cv_se_overload_check_ctr = 0;
+  cv_se_last_mios32_timestamp = MIOS32_TIMESTAMP_Get();
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+s32 APP_CvUpdateRateFactorGet(void)
+{
+  return cv_se_speed_factor;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns 1 if engine overloaded
+/////////////////////////////////////////////////////////////////////////////
+s32 APP_CvUpdateOverloadStatusGet(void)
+{
+  return cv_se_overloaded;
 }
 
 

@@ -80,6 +80,16 @@ static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d",
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 static void stringCurve(u32 ix, u16 value, char *label)  { sprintf(label, value ? "Exp. " : "Lin. "); }
 
+static void stringCvUpdateRate(u32 ix, u16 value, char *label) {
+  u32 updateRate = (value+1) * 500; // Hz
+  if( value < 10000 ) {
+    sprintf(label, "%d.%dk", updateRate / 1000, (updateRate % 1000) / 100);
+  } else {
+    sprintf(label, "%3dk", updateRate / 1000);
+  }
+}
+
+
 static void stringNote(u32 ix, u16 value, char *label)
 {
   const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
@@ -693,6 +703,9 @@ static void cvCaliModeSet(u32 ix, u16 value) { MBCV_MAP_CaliModeSet(selectedCv, 
 static u16  aoutIfGet(u32 ix)              { return MBCV_MAP_IfGet(); }
 static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet((aout_if_t)value); }
 
+static u16  cvUpdateRateGet(u32 ix)            { return APP_CvUpdateRateFactorGet() - 1; }
+static void cvUpdateRateSet(u32 ix, u16 value) { APP_CvUpdateRateFactorSet(value+1); }
+
 static u16  cvScopeGet(u32 ix)            { return env->mbCv[selectedCv].scopeSelect; }
 static void cvScopeSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeSelect = value; env->updateScopeParameters(); }
 
@@ -894,6 +907,7 @@ const scs_menu_item_t pageAOUT[] = {
   SCS_ITEM(" Cali", 0, MBCV_MAP_NUM_CALI_MODES-1, cvCaliModeGet, cvCaliModeSet, selectNOP, stringCvCaliMode, NULL),
   SCS_ITEM(" Modu", 0, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
   SCS_ITEM("le   ", 1, AOUT_NUM_IF-1, aoutIfGet, aoutIfSet, selectNOP, stringAoutIf, NULL),
+  SCS_ITEM("UpdR",  0, APP_CV_UPDATE_RATE_FACTOR_MAX-1, cvUpdateRateGet, cvUpdateRateSet, selectNOP, stringCvUpdateRate, NULL),
 };
 
 const scs_menu_item_t pageScpe[] = {
@@ -974,6 +988,12 @@ static s32 displayHook(char *line1, char *line2)
 	    MBCV_LRE_BankGet()+1,
 	    TASK_MSD_EnableGet() ? msdStr : "----");
     return 1;
+  }
+
+  // overlay on overload
+  if( APP_CvUpdateOverloadStatusGet() ) {
+    if( (MIOS32_TIMESTAMP_Get() % 100) > 50 )
+      sprintf(line1, "[-! CV  OVERLOAD !-]");
   }
 
   // overlay in MSD mode (user should disable soon since this sucks performance)
