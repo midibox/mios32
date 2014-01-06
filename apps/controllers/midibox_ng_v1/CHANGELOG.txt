@@ -5,6 +5,14 @@ MIDIbox NG V1.029
 
    o added USB MIDI workaround for Windows
 
+   o if a EVENT_SENDER is part of a radio group, and got a new value, it will only
+     send the MIDI event if the new value is matching with the specified range.
+     Usage example: cfg/templates/pg300.ngc
+
+   o if EVENT_RECEIVER forwarded to EVENT_AIN, EVENT_AINSER or EVENT_BUTTON,
+     send also MIDI event.
+     Usage example: cfg/templates/pg300.ngc
+
 
 MIDIbox NG V1.028
 ~~~~~~~~~~~~~~~~~
