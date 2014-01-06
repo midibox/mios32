@@ -16,7 +16,7 @@ LCD "%C@(1:1:1)PG-300 Ready"
 AINSER n=  1   enabled=1  muxed=1  cs=0  resolution=7bit
 
 
-# Envelope assigned to the first 7 faders
+# Envelope assigned to the first 8 faders
 EVENT_AINSER id=  1   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1a ^val 0xf7" lcd_pos=1:1:2 label="ENV T1 Attack:   %3d"
 EVENT_AINSER id=  2   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1b ^val 0xf7" lcd_pos=1:1:2 label="ENV L1 Attack:   %3d"
 EVENT_AINSER id=  3   type=SysEx  stream="0xf0 0x41 0x36 0x00 0x23 0x20 0x01 0x1c ^val 0xf7" lcd_pos=1:1:2 label="ENV T2 Break:    %3d"
