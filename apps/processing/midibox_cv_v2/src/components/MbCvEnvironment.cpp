@@ -33,9 +33,6 @@
 /////////////////////////////////////////////////////////////////////////////
 MbCvEnvironment::MbCvEnvironment()
 {
-    // initialize global timestamp
-    timestamp = 0;
-
     // initialize NRPN address/values
     for(int i=0; i<16; ++i) {
         nrpnAddress[i] = 0;
@@ -64,7 +61,7 @@ MbCvEnvironment::MbCvEnvironment()
     // default content of copy buffer
     channelCopy(0, copyBuffer);
 
-    // scope assignments
+    // scopes
     {
         MbCvScope *scope = mbCvScope.first();
         for(int i=0; i < mbCvScope.size; ++i, ++scope) {
@@ -73,7 +70,6 @@ MbCvEnvironment::MbCvEnvironment()
 
         scopeUpdateCtr = 0;
     }
-    updateScopeParameters();
 }
 
 
@@ -101,9 +97,6 @@ void MbCvEnvironment::updateSpeedFactorSet(u8 _updateSpeedFactor)
 bool MbCvEnvironment::tick(void)
 {
     bool updateRequired = false;
-
-    // global timestamp
-    ++timestamp;
 
     // Tempo Clock
     mbCvClock.tick();
@@ -134,12 +127,12 @@ bool MbCvEnvironment::tick(void)
     {
         MbCvScope *scope = mbCvScope.first();
         for(int i=0; i < mbCvScope.size; ++i, ++scope) {
-            u8 cvNumber = scope->getAssignedFunction();
+            u8 cvNumber = scope->getSource();
             if( cvNumber > 0 && cvNumber <= cvOut.size ) {
-                s16 out = cvOut[cvNumber-1] - 0x8000;
-                scope->addValue(timestamp, out);
+                u8 cv = cvNumber-1;
+                scope->addValue(cvOut[cv] - 0x8000, mbCv[cv].mbCvVoice.voiceGateActive, mbCvClock.clkTickCtr);
             } else {
-                scope->addValue(timestamp, 0);
+                scope->addValue(0, 0, 0);
             }
         }
     }
@@ -221,39 +214,6 @@ void MbCvEnvironment::tickScopes(void)
         scopeUpdateCtr = 0;
 
     mbCvScope[scopeUpdateCtr].tick();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Should be called whenever the scope mapping has been changed
-/////////////////////////////////////////////////////////////////////////////
-void MbCvEnvironment::updateScopeParameters(void)
-{
-    u32 scopeAssigned = 0;
-
-    {
-        MbCvScope *scope = mbCvScope.first();
-        for(int i=0; i < mbCvScope.size; ++i, ++scope) {
-            scope->setAssignedFunction(0);
-        }
-    }
-
-    MbCv *s = mbCv.first();
-    for(int cv=0; cv < cvOut.size; ++cv, ++s) {
-        if( s->scopeSelect > 0 ) {
-            u8 scopeNumber = s->scopeSelect - 1;
-            if( scopeNumber < mbCvScope.size ) {
-                if( !(scopeAssigned & (1 << scopeNumber)) ) {
-                    scopeAssigned |= (1 << scopeNumber);
-
-                    MbCvScope *scope = &mbCvScope[scopeNumber];
-                    scope->setAssignedFunction(cv+1);
-                    scope->setOversamplingFactor(s->scopeOversamplingFactor);
-                    scope->setTriggerLevelPercent(s->scopeTriggerLevelPercent);
-                }
-            }
-        }
-    }
 }
 
 

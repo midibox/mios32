@@ -349,6 +349,69 @@ s32 MBCV_FILE_P_Read(char *filename)
 	      env->mbCvClock.externalClockPulseWidth[clk] = value;
 	    }
 	  }
+	} else if( strcasecmp(parameter, "SCOPE_Source") == 0 ) {
+	  s32 scope;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (scope=get_dec(word)) < 1 || scope > env->mbCvScope.size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid scope number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --scope;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    s32 value;
+	    if( (value=get_dec(word)) < 0 || value >= MBCV_SCOPE_NUM_SOURCES ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid source value for parameter '%s %d'\n", parameter, value);
+#endif
+	    } else {
+	      env->mbCvScope[scope].setSource(value);
+	    }
+	  }
+	} else if( strcasecmp(parameter, "SCOPE_Trigger") == 0 ) {
+	  s32 scope;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (scope=get_dec(word)) < 1 || scope > env->mbCvScope.size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid scope number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --scope;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    s32 value;
+	    if( (value=get_dec(word)) < 0 || value >= MBCV_SCOPE_NUM_TRIGGERS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid trigger value for parameter '%s %d'\n", parameter, value);
+#endif
+	    } else {
+	      env->mbCvScope[scope].setTrigger(value);
+	    }
+	  }
+	} else if( strcasecmp(parameter, "SCOPE_OversamplingFactor") == 0 ) {
+	  s32 scope;
+	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	  if( (scope=get_dec(word)) < 1 || scope > env->mbCvScope.size ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_P] ERROR invalid scope number for parameter '%s'\n", parameter);
+#endif
+	  } else {
+	    // user counts from 1...
+	    --scope;
+
+	    char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+	    s32 value;
+	    if( (value=get_dec(word)) < 0 || value >= 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_P] ERROR invalid oversampling value for parameter '%s %d'\n", parameter, value);
+#endif
+	    } else {
+	      env->mbCvScope[scope].setOversamplingFactor(value);
+	    }
+	  }
 	} else if( strcasecmp(parameter, "ENC_Cfg") == 0 ) {
 	  s32 bank;
 	  char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
@@ -633,6 +696,20 @@ static s32 MBCV_FILE_P_Write_Hlp(u8 write_to_file)
     u8 *externalClockPulseWidthPtr = env->mbCvClock.externalClockPulseWidth.first();
     for(int clk=0; clk < env->mbCvClock.externalClockPulseWidth.size; ++clk, ++externalClockPulseWidthPtr) {
       sprintf(line_buffer, "EXTCLK_PulseWidth %d %d\n", clk+1, *externalClockPulseWidthPtr);
+      FLUSH_BUFFER;
+    }
+  }
+
+  sprintf(line_buffer, "\n\n# Scopes\n");
+  FLUSH_BUFFER;
+  {
+    MbCvScope *scopePtr = env->mbCvScope.first();
+    for(int scope=0; scope < env->mbCvScope.size; ++scope, ++scopePtr) {
+      sprintf(line_buffer, "SCOPE_Source %d %d\n", scope+1, scopePtr->getSource());
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "SCOPE_Trigger %d %d\n", scope+1, scopePtr->getTrigger());
+      FLUSH_BUFFER;
+      sprintf(line_buffer, "SCOPE_OversamplingFactor %d %d\n", scope+1, scopePtr->getOversamplingFactor());
       FLUSH_BUFFER;
     }
   }

@@ -66,9 +66,6 @@ public:
     // Should be called each mS from a low-prio thread to update scope displays
     void tickScopes(void);
 
-    // Should be called whenever the scope mapping has been changed
-    void updateScopeParameters(void);
-
     // speed factor compared to MBCVV2
     u8 updateSpeedFactor;
 
@@ -122,9 +119,6 @@ public:
     // last port and CV channels used for NRPN communication
     mios32_midi_port_t lastNrpnMidiPort;
     u16 lastNrpnCvChannels;
-
-    // global timestamp (incremented with each tick())
-    u32 timestamp;
 
 protected:
     // MIDI NRPN variables

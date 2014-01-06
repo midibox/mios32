@@ -41,10 +41,9 @@ void MbCvScope::init(u8 _displayNum)
     displayNum = _displayNum;
 
     oversamplingFactor = 8;
-    updatePeriod = 5000;
-    triggerLevel = 10;
-    triggerOnRisingEdge = true;
-    assignedFunction = 0;
+    updatePeriod = 3000; // 3 seconds
+    setTrigger(10); // P10%
+    setSource(_displayNum + 1); // CV1..4
     clear();
 }
 
@@ -57,6 +56,8 @@ void MbCvScope::clear(void)
     displayBufferHead = 0;
     lastUpdateTimestamp = 0;
     lastValue = 0;
+    lastGate = 0;
+    lastClkTickCtr = 0;
     displayUpdateReq = true;
 
     oversamplingCounter = 0;
@@ -73,7 +74,7 @@ void MbCvScope::clear(void)
 /////////////////////////////////////////////////////////////////////////////
 // Adds new value to the display
 /////////////////////////////////////////////////////////////////////////////
-void MbCvScope::addValue(u32 timestamp, s16 value)
+void MbCvScope::addValue(s16 value, u8 gate, u32 clkTickCtr)
 {
     bool ongoingCapture = displayBufferHead < MBCV_SCOPE_DISPLAY_BUFFER_SIZE;
 
@@ -86,12 +87,36 @@ void MbCvScope::addValue(u32 timestamp, s16 value)
 
     if( !ongoingCapture ) {
         bool reset = false;
+        u32 timestamp = MIOS32_TIMESTAMP_Get();
 
         if( (timestamp - lastUpdateTimestamp) >= updatePeriod ) { // timeout
             reset = true;
-        } else if( ( triggerOnRisingEdge && (lastValue < triggerLevel) && (value >= triggerLevel)) ||
-                   (!triggerOnRisingEdge && (lastValue > triggerLevel) && (value <= triggerLevel)) ) {
-            reset = true;
+        } else {
+            if( trigger <= 100 ) {
+                s16 triggerLevel = (((s32)trigger - 50) * 65535) / 100;
+                reset = (lastValue < triggerLevel) && (value >= triggerLevel);
+            } else if( trigger <= 201 ) {
+                s16 triggerLevel = (((s32)trigger - 50-101) * 65535) / 100;
+                reset = (lastValue > triggerLevel) && (value <= triggerLevel);
+            } else if( trigger == 202 ) { // PGate
+                reset = !lastGate && gate;
+            } else if( trigger == 203 ) { // NGate
+                reset = lastGate && !gate;
+            } else if( trigger == 204 ) { // 64th
+                reset = lastClkTickCtr != clkTickCtr && (clkTickCtr % (6*1)) == 0;
+            } else if( trigger == 205 ) { // 32th
+                reset = lastClkTickCtr != clkTickCtr && (clkTickCtr % (6*2)) == 0;
+            } else if( trigger == 206 ) { // 16th
+                reset = lastClkTickCtr != clkTickCtr && (clkTickCtr % (6*4)) == 0;
+            } else if( trigger == 207 ) { // 8th
+                reset = lastClkTickCtr != clkTickCtr && (clkTickCtr % (6*8)) == 0;
+            } else if( trigger <= 215 ) { // 208..215 = 1beat..8beat
+                u32 beats = trigger - 208 + 1;
+                u32 ticks = 4*6*4*beats;
+                reset = lastClkTickCtr != clkTickCtr && (clkTickCtr % ticks) == 0;
+            } else {
+                // no reset
+            }
         }
 
         if( reset ) {
@@ -105,6 +130,8 @@ void MbCvScope::addValue(u32 timestamp, s16 value)
     }
 
     lastValue = value;
+    lastGate = gate;
+    lastClkTickCtr = clkTickCtr;
 
     if( ongoingCapture ) {
         oversamplingValue += (s32)value;
@@ -192,10 +219,10 @@ void MbCvScope::tick(void)
             MIOS32_LCD_DeviceSet(displayNum);
             MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);    
             MIOS32_LCD_CursorSet(0, 7);
-            if( assignedFunction > 0 ) {
-                MIOS32_LCD_PrintFormattedString("CV%d ", assignedFunction);
+            if( source > 0 ) {
+                MIOS32_LCD_PrintFormattedString("CV%d ", source);
             } else {
-                MIOS32_LCD_PrintFormattedString("CV- ");
+                MIOS32_LCD_PrintFormattedString("--- ");
             }
 
             if( capturedMinValue == MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE ) {
@@ -228,6 +255,8 @@ void MbCvScope::setOversamplingFactor(u8 factor)
         oversamplingFactor = 1;
     else
         oversamplingFactor = factor;
+
+    clear();
 }
 
 u8 MbCvScope::getOversamplingFactor(void)
@@ -249,39 +278,33 @@ u32 MbCvScope::getUpdatePeriod(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// control trigger level
+// control trigger
 /////////////////////////////////////////////////////////////////////////////
-void MbCvScope::setTriggerLevel(s16 level)
+void MbCvScope::setTrigger(u8 _trigger)
 {
-    triggerLevel = level;
+    if( _trigger < MBCV_SCOPE_NUM_TRIGGERS )
+        trigger = _trigger;
 }
 
-s16 MbCvScope::getTriggerLevel(void)
+u8 MbCvScope::getTrigger(void)
 {
-    return triggerLevel;
-}
-
-void MbCvScope::setTriggerLevelPercent(u8 levelPercent)
-{
-    triggerLevel = (((s32)levelPercent - 50) * 65535) / 100;
-}
-
-u8 MbCvScope::getTriggerLevelPercent(void)
-{
-    return ((triggerLevel * 100) / 65535) + 50;
+    return trigger;
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// Function Assignment
+// Source Assignment
 /////////////////////////////////////////////////////////////////////////////
-void MbCvScope::setAssignedFunction(u8 function)
+void MbCvScope::setSource(u8 _source)
 {
-    assignedFunction = function;
+    if( source < MBCV_SCOPE_NUM_SOURCES ) {
+        clear();
+        source = _source;
+    }
 }
 
-u8 MbCvScope::getAssignedFunction(void)
+u8 MbCvScope::getSource(void)
 {
-    return assignedFunction;
+    return source;
 }
 
 
