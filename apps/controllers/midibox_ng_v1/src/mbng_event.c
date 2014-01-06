@@ -3280,6 +3280,16 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
 	if( MBNG_EVENT_ItemReceive(&fwd_item, item->fwd_value, 0, 1) == 2 )
 	  break; // stop has been requested
       }
+
+      // special: if EVENT_RECEIVER forwarded to EVENT_AIN, EVENT_AINSER or EVENT_BUTTON, send also MIDI event
+      u16 id_type = item->id & 0xf000;
+      u16 fwd_type = fwd_item.id & 0xf000;
+      if( id_type == MBNG_EVENT_CONTROLLER_RECEIVER &&
+	  (fwd_type == MBNG_EVENT_CONTROLLER_AIN ||
+	   fwd_type == MBNG_EVENT_CONTROLLER_AINSER ||
+	   fwd_type == MBNG_EVENT_CONTROLLER_BUTTON) ) {
+	MBNG_EVENT_ItemSend(&fwd_item);
+      }
     }
   } while( continue_ix );
 
@@ -3311,6 +3321,10 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
       MBNG_EVENT_ItemCopy2User(pool_item, &fwd_item);
       fwd_item.value = item->value; // forward the value of the sender
 
+      // value in range?
+      // (currently only used to filter MIDI output of an EVENT_SENDER)
+      u8 value_in_range = (fwd_item.value >= fwd_item.min) && (fwd_item.value <= fwd_item.max);
+
       // sender/receiver will map the value
       u16 fwd_id_type = fwd_item.id & 0xf000;
       if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER || fwd_id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
@@ -3318,7 +3332,7 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 	int map_len = MBNG_EVENT_MapGet(fwd_item.map, &map_values);
 	if( map_len > 0 ) {
 	  fwd_item.value = map_values[(fwd_item.value < map_len) ? fwd_item.value : (map_len-1)];
-	}	
+	}
       }
 
       // take over value of item in pool item
@@ -3337,7 +3351,7 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
 	MBNG_DIN_NotifyReceivedValue(&fwd_item);
       else if( fwd_id_type == MBNG_EVENT_CONTROLLER_LED )
 	MBNG_DOUT_NotifyReceivedValue(&fwd_item);
-      else if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER ) // or send MIDI value?
+      else if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER && value_in_range ) // or send MIDI value?
 	MBNG_EVENT_ItemSend(&fwd_item);
 
       // and trigger forwarding
