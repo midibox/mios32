@@ -47,10 +47,6 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
     mbCvMidiVoice.init();
     mbCvMod.init(_cvNum);
 
-    scopeSelect = _cvNum + 1;
-    scopeOversamplingFactor = 8;
-    scopeTriggerLevelPercent = 50;
-
     updatePatch(true);
 }
 
@@ -529,11 +525,6 @@ CREATE_ACCESS_FUNCTIONS(MidiVoice, TransposeSemitone,  "Transp. Semi.",   *value
 CREATE_ACCESS_FUNCTIONS(MidiVoice, Finetune,           "Finetune",        *value = (int)cv->mbCvVoice.voiceFinetune + 0x80,        cv->mbCvVoice.voiceFinetune = (int)value - 0x80);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, PortamentoRate,     "PortamentoRate",  *value = cv->mbCvVoice.voicePortamentoRate,              cv->mbCvVoice.voicePortamentoRate = value);
 
-CREATE_GROUP(Scope, "Scope");
-CREATE_ACCESS_FUNCTIONS(Scope, Select,                 "Select",          *value = cv->scopeSelect,                                cv->scopeSelect = value; APP_GetEnv()->updateScopeParameters());
-CREATE_ACCESS_FUNCTIONS(Scope, OversamplingFactor,     "Oversampling",    *value = cv->scopeOversamplingFactor,                    cv->scopeOversamplingFactor = value; APP_GetEnv()->updateScopeParameters());
-CREATE_ACCESS_FUNCTIONS(Scope, TriggerLevelPercent,    "Trigger Level",   *value = cv->scopeTriggerLevelPercent,                   cv->scopeTriggerLevelPercent = value; APP_GetEnv()->updateScopeParameters());
-
 CREATE_GROUP(Arp, "Arp");
 CREATE_ACCESS_FUNCTIONS(Arp, Enabled,                  "Enable",          *value = cv->mbCvArp.arpEnabled,                         cv->mbCvArp.arpEnabled = value);
 CREATE_ACCESS_FUNCTIONS(Arp, Dir,                      "Direction",       *value = cv->mbCvArp.arpDirGet(),                        cv->mbCvArp.arpDirSet(value));
@@ -687,16 +678,7 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM_EMPTY8(),
 
     // 0x040
-    NRPN_TABLE_ITEM(  Scope, Select,                 0, 0, CV_SE_NUM-1, 0),
-    NRPN_TABLE_ITEM(  Scope, OversamplingFactor,     0, 0, 255, 0),
-    NRPN_TABLE_ITEM(  Scope, TriggerLevelPercent,    0, 0, 100, 0),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY8(),
-
+    NRPN_TABLE_ITEM_EMPTY16(),
     // 0x050
     NRPN_TABLE_ITEM_EMPTY16(),
     // 0x060

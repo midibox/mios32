@@ -56,6 +56,7 @@ static u8 selectedEnv2; // currently only 1, just to be prepared...
 static u8 selectedRouterNode;
 static u8 selectedIpPar;
 static u8 selectedOscPort;
+static u8 selectedScope;
 static u8 monPageOffset;
 
 // we need a reference to this environment very often
@@ -70,7 +71,6 @@ static void stringDec(u32 ix, u16 value, char *label)    { sprintf(label, "%3d  
 static void stringDecP1(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", value+1); }
 //static void stringDecPM(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 64); }
 static void stringDecPM128(u32 ix, u16 value, char *label)  { sprintf(label, "%3d  ", (int)value - 128); }
-static void stringDecPercent(u32 ix, u16 value, char *label)  { sprintf(label, "%3d%% ", value); }
 //static void stringDec03(u32 ix, u16 value, char *label)  { sprintf(label, "%03d  ", value); }
 static void stringDec0Dis(u32 ix, u16 value, char *label){ sprintf(label, value ? "%3d  " : "---  ", value); }
 static void stringDec4(u32 ix, u16 value, char *label)   { sprintf(label, "%4d ", value); }
@@ -88,7 +88,6 @@ static void stringCvUpdateRate(u32 ix, u16 value, char *label) {
     sprintf(label, "%3dk", updateRate / 1000);
   }
 }
-
 
 static void stringNote(u32 ix, u16 value, char *label)
 {
@@ -108,12 +107,41 @@ static void stringNote(u32 ix, u16 value, char *label)
   }
 }
 
-static void stringScope(u32 ix, u16 value, char *label)
+static void stringScopeSource(u32 ix, u16 value, char *label)
 {
-  if( value == 0 ) {
-    sprintf(label, "CV- ");
-  } else {
+  if( value >= 1 && value <= CV_SE_NUM ) {
     sprintf(label, "CV%d ", value);
+  } else {
+    sprintf(label, "--- ");
+  }
+}
+
+static void stringScopeTrigger(u32 ix, u16 value, char *label)
+{
+  if( value <= 100 ) {
+    sprintf(label, "P%3d%% ", value);
+  } else if( value <= 201 ) {
+    sprintf(label, "N%3d%% ", value-101);
+  } else if( value <= 201+14 ) {
+    const char *triggerString[14] = {
+      "PGate",
+      "NGate",
+      "64th",
+      "32th",
+      "16th",
+      "8th",
+      "1beat",
+      "2beat",
+      "3beat",
+      "4beat",
+      "5beat",
+      "6beat",
+      "7beat",
+      "8beat"
+    };
+    sprintf(label, triggerString[value-202]);
+  } else {
+    sprintf(label, "??? ");
   }
 }
 
@@ -706,14 +734,17 @@ static void aoutIfSet(u32 ix, u16 value)   { MBCV_MAP_IfSet((aout_if_t)value); }
 static u16  cvUpdateRateGet(u32 ix)            { return APP_CvUpdateRateFactorGet() - 1; }
 static void cvUpdateRateSet(u32 ix, u16 value) { APP_CvUpdateRateFactorSet(value+1); }
 
-static u16  cvScopeGet(u32 ix)            { return env->mbCv[selectedCv].scopeSelect; }
-static void cvScopeSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeSelect = value; env->updateScopeParameters(); }
+static u16  scopeGet(u32 ix)            { return selectedScope; }
+static void scopeSet(u32 ix, u16 value) { selectedScope = value; }
 
-static u16  cvScopeOversamplingGet(u32 ix)            { return env->mbCv[selectedCv].scopeOversamplingFactor; }
-static void cvScopeOversamplingSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeOversamplingFactor = value; env->updateScopeParameters(); }
+static u16  scopeSourceGet(u32 ix)            { return env->mbCvScope[selectedScope].getSource(); }
+static void scopeSourceSet(u32 ix, u16 value) { env->mbCvScope[selectedScope].setSource(value); }
 
-static u16  cvScopeTriggerLevelGet(u32 ix)            { return env->mbCv[selectedCv].scopeTriggerLevelPercent; }
-static void cvScopeTriggerLevelSet(u32 ix, u16 value) { env->mbCv[selectedCv].scopeTriggerLevelPercent = value; env->updateScopeParameters(); }
+static u16  scopeOversamplingGet(u32 ix)            { return env->mbCvScope[selectedScope].getOversamplingFactor(); }
+static void scopeOversamplingSet(u32 ix, u16 value) { env->mbCvScope[selectedScope].setOversamplingFactor(value); }
+
+static u16  scopeTriggerGet(u32 ix)            { return env->mbCvScope[selectedScope].getTrigger(); }
+static void scopeTriggerSet(u32 ix, u16 value) { env->mbCvScope[selectedScope].setTrigger(value); }
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -911,10 +942,10 @@ const scs_menu_item_t pageAOUT[] = {
 };
 
 const scs_menu_item_t pageScpe[] = {
-  SCS_ITEM(" CV ", 0, CV_SE_NUM-1,    cvGet,                  cvSet,                  selectNOP, stringDecP1, NULL),
-  SCS_ITEM("Scpe", 0, CV_SCOPE_NUM,   cvScopeGet,             cvScopeSet,             selectNOP, stringScope, NULL),
-  SCS_ITEM("OSmp", 0, 255,            cvScopeOversamplingGet, cvScopeOversamplingSet, selectNOP, stringDec, NULL),
-  SCS_ITEM("TLvl", 0, 100,            cvScopeTriggerLevelGet, cvScopeTriggerLevelSet, selectNOP, stringDecPercent, NULL),
+  SCS_ITEM("Scpe",  0, CV_SCOPE_NUM-1,            scopeGet,             scopeSet,             selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Asgn",  0, MBCV_SCOPE_NUM_SOURCES-1,  scopeSourceGet,       scopeSourceSet,       selectNOP, stringScopeSource, NULL),
+  SCS_ITEM("OSmp",  0, 255,                       scopeOversamplingGet, scopeOversamplingSet, selectNOP, stringDec, NULL),
+  SCS_ITEM("Trg.",  0, MBCV_SCOPE_NUM_TRIGGERS-1, scopeTriggerGet,      scopeTriggerSet,      selectNOP, stringScopeTrigger, NULL),
 };
 
 const scs_menu_item_t pageROUT[] = {
@@ -1287,8 +1318,7 @@ s32 SCS_CONFIG_EnvSet(u8 env)
 
 s32 SCS_CONFIG_ScopeSet(u8 scope)
 {
-  //selectedScope = scope;
-  selectedCv = scope; // TODO... currently CVs are mapped to scopes, and not vice versa
+  selectedScope = scope;
   SCS_ChangePage((scs_menu_item_t *)pageScpe);
   return 0; // no error
 }

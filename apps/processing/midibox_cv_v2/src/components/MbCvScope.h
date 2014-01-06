@@ -22,6 +22,12 @@
 #define MBCV_SCOPE_DISPLAY_MIN_RESET_VALUE    32767
 #define MBCV_SCOPE_DISPLAY_MAX_RESET_VALUE   -32768
 
+// --- and CV1..8
+#define MBCV_SCOPE_NUM_SOURCES (1+CV_SE_NUM)
+
+// 0..100% rising edge, 0..100% falling edge, PGate, NGate, 64th, 32th, 16th, 8th, 1beat..8beat
+#define MBCV_SCOPE_NUM_TRIGGERS (101+101+14)
+
 class MbCvScope
 {
 public:
@@ -38,10 +44,18 @@ public:
     void clear(void);
 
     // Adds new value to the display
-    void addValue(u32 timestamp, s16 value);
+    void addValue(s16 value, u8 gate, u32 clkTickCtr);
 
     // Prints the display content on screen (should be called from a low-prio task!)    
     void tick(void);
+
+    // Source Channel
+    void setSource(u8 source);
+    u8   getSource(void);
+
+    // control trigger level (and other functions)
+    void setTrigger(u8 trigger);
+    u8   getTrigger(void);
 
     // control oversampling
     void setOversamplingFactor(u8 factor);
@@ -50,16 +64,6 @@ public:
     // control update period
     void setUpdatePeriod(u32 period);
     u32  getUpdatePeriod(void);
-
-    // control trigger level
-    void setTriggerLevel(s16 level);
-    s16  getTriggerLevel(void);
-    void setTriggerLevelPercent(u8 levelPercent);
-    u8   getTriggerLevelPercent(void);
-
-    // control function assignment
-    void setAssignedFunction(u8 function);
-    u8   getAssignedFunction(void);
 
 protected:
     // display number
@@ -80,15 +84,16 @@ protected:
     u8 oversamplingCounter;
 
     // trigger
-    bool triggerOnRisingEdge;
     bool displayUpdateReq;
-    s16 triggerLevel;
+    u8 trigger;
     s16 lastValue;
+    u8 lastGate;
+    u32 lastClkTickCtr;
     u32 lastUpdateTimestamp;
     u32 updatePeriod;
 
-    // function assignment (currently only CV channels)
-    u8 assignedFunction;
+    // source assignment (currently only CV channels)
+    u8 source;
 
     // statistics
     s16 minValue;
