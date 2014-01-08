@@ -54,9 +54,11 @@ s32 MIOS32_TIMESTAMP_Init(u32 mode)
 //!
 //! \return number of SRs
 /////////////////////////////////////////////////////////////////////////////
-u8 MIOS32_TIMESTAMP_Inc(void)
+s32 MIOS32_TIMESTAMP_Inc(void)
 {
   ++timestamp;
+
+  return 0; // no error
 }
 
 

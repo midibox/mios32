@@ -115,6 +115,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
+static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -232,9 +233,6 @@ void APP_Background(void)
     // Background task: use timestamp mechanism to generate delay
     while( MIOS32_TIMESTAMP_Get() == last_timestamp );
     last_timestamp = MIOS32_TIMESTAMP_Get();
-
-    // toggle the state of all LEDs (allows to measure the execution speed with a scope)
-    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
 
     // call SCS handler
     MUTEX_LCD_TAKE;
@@ -390,6 +388,52 @@ void APP_Background(void)
       MUTEX_SDCARD_GIVE;
     }
   }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This hook is called each mS from the main task which also handles DIN, ENC
+//! and AIN events. You could add more jobs here, but they shouldn't consume
+//! more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
+//! Alternatively you could create a dedicated task for application specific
+//! jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
+/////////////////////////////////////////////////////////////////////////////
+void APP_Tick(void)
+{
+  // toggle the status LED (this is a sign of life)
+  MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
+
+//    // execute sequencer handler
+//    MUTEX_SDCARD_TAKE;
+//    SEQ_Handler();
+//    MUTEX_SDCARD_GIVE;
+
+//  // send timestamped MIDI events
+//  MUTEX_MIDIOUT_TAKE;
+//  SEQ_MIDI_OUT_Handler();
+//  MUTEX_MIDIOUT_GIVE;
+
+  // Scan Matrix button handler
+  MBNG_MATRIX_ButtonHandler();
+
+  // update CV outputs
+  MBNG_CV_Update();
+
+  // update MAX72xx chain
+  MBNG_MATRIX_MAX72xx_Update();
+
+  // scan AINSER pins
+  AINSER_Handler(APP_AINSER_NotifyChange);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the MIDI task which checks for incoming
+// MIDI events. You could add more MIDI related jobs here, but they shouldn't
+// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
+/////////////////////////////////////////////////////////////////////////////
+void APP_MIDI_Tick(void)
+{
 }
 
 
@@ -561,36 +605,6 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
   if( hw_enabled ) {
     MBNG_AINSER_NotifyChange(module, pin, pin_value, 0); // no_midi==0
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! This function is periodically called from TASK_Hooks in main.c
-//! it has been enabled with MIOS32_USE_APP_TICK in app.h
-/////////////////////////////////////////////////////////////////////////////
-void APP_Tick(void)
-{
-//    // execute sequencer handler
-//    MUTEX_SDCARD_TAKE;
-//    SEQ_Handler();
-//    MUTEX_SDCARD_GIVE;
-
-//  // send timestamped MIDI events
-//  MUTEX_MIDIOUT_TAKE;
-//  SEQ_MIDI_OUT_Handler();
-//  MUTEX_MIDIOUT_GIVE;
-
-  // Scan Matrix button handler
-  MBNG_MATRIX_ButtonHandler();
-
-  // update CV outputs
-  MBNG_CV_Update();
-
-  // update MAX72xx chain
-  MBNG_MATRIX_MAX72xx_Update();
-
-  // scan AINSER pins
-  AINSER_Handler(APP_AINSER_NotifyChange);
 }
 
 

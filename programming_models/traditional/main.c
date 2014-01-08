@@ -49,6 +49,19 @@ static void TASK_MIDI_Hooks(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Dummies for APP_Tick and APP_MIDI_Tick (if not used in app.c)
+/////////////////////////////////////////////////////////////////////////////
+
+__attribute__ ((weak)) void APP_Tick(void)
+{
+}
+
+__attribute__ ((weak)) void APP_MIDI_Tick(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Main function
 /////////////////////////////////////////////////////////////////////////////
 int main(void)
@@ -218,6 +231,10 @@ static void TASK_MIDI_Hooks(void *pvParameters)
 
     // check for incoming MIDI packages and call hook
     MIOS32_MIDI_Receive_Handler(APP_MIDI_NotifyPackage);
+
+    // optional application specific hook
+    // helps to save memory (re-use the TASK_Hooks for other purposes...)
+    APP_MIDI_Tick();
   }
 }
 #endif
@@ -262,11 +279,9 @@ static void TASK_Hooks(void *pvParameters)
     MIOS32_COM_Receive_Handler();
 #endif
 
-#if defined(MIOS32_USE_APP_TICK)
     // optional APP_Tick() hook
     // helps to save memory (re-use the TASK_Hooks for other purposes...)
     APP_Tick();
-#endif
   }
 }
 

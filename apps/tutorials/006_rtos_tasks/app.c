@@ -62,6 +62,28 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the main task which also handles DIN, ENC
+// and AIN events. You could add more jobs here, but they shouldn't consume
+// more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
+// Alternatively you could create a dedicated task for application specific
+// jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
+/////////////////////////////////////////////////////////////////////////////
+void APP_Tick(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the MIDI task which checks for incoming
+// MIDI events. You could add more MIDI related jobs here, but they shouldn't
+// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
+/////////////////////////////////////////////////////////////////////////////
+void APP_MIDI_Tick(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -135,7 +157,7 @@ static void TASK_J5_Scan(void *pvParameters)
     vTaskDelayUntil(&xLastExecutionTime, 1 / portTICK_RATE_MS);
 
     // toggle Status LED to as a sign of live
-    MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
+    MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
 
     // check each J5 pin for changes
     int pin;
