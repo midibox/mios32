@@ -30,7 +30,7 @@
 
 extern s32 MIOS32_TIMESTAMP_Init(u32 mode);
 
-extern u8  MIOS32_TIMESTAMP_Inc(void);
+extern s32 MIOS32_TIMESTAMP_Inc(void);
 extern s32 MIOS32_TIMESTAMP_Get(void);
 extern s32 MIOS32_TIMESTAMP_GetDelay(u32 captured_timestamp);
 

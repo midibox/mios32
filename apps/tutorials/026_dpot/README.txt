@@ -64,9 +64,9 @@ The 4 potentiometers channels will be initialized with distinct values:
 	3: 0x80
 	4: 0xC0
 
-During each cycle of the infinite loop located in APP_Background(), the digital
-potentiometer values will be committed to the hardware.  Then, each potentiometer 
-value will be incremented.  The increment will be commited to the hardware on the 
+During each cycle of the APP_Tick(), the digital potentiometer values will
+be committed to the hardware.  Then, each potentiometer value will be 
+incremented.  The increment will be commited to the hardware on the 
 next cycle.  If a supply voltage is provided across the A and B terminals of the 
 potentiometers, a "saw-tooth" waveform will be present at the wiper terminal.
 

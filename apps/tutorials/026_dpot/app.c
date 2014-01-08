@@ -59,26 +59,44 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the main task which also handles DIN, ENC
+// and AIN events. You could add more jobs here, but they shouldn't consume
+// more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
+// Alternatively you could create a dedicated task for application specific
+// jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
+/////////////////////////////////////////////////////////////////////////////
+void APP_Tick(void)
+{
     int pot;
 
-    // endless loop
-    while ( 1 )
+    // toggle the status LED (this is a sign of life)
+    MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
+
+    // Update potentiometer hardware
+    DPOT_Update();
+
+    // increment all the digital pots
+    for (pot = 0; pot < DPOT_NUM_POTS; pot++)
     {
-        // toggle the state of all LEDs (allows to measure the execution speed with a scope)
-        MIOS32_BOARD_LED_Set(0xFFFFFFFF, ~MIOS32_BOARD_LED_Get());
-
-        // Update potentiometer hardware
-        DPOT_Update();
-
-        // increment all the digital pots
-        for (pot = 0; pot < DPOT_NUM_POTS; pot++)
-        {
-            if (auto_increment & (0x00000001 << pot))
-            {
-                DPOT_Set_Value(pot, DPOT_Get_Value(pot) + 1);
-            }
-        }
+      if (auto_increment & (0x00000001 << pot))
+      {
+	DPOT_Set_Value(pot, DPOT_Get_Value(pot) + 1);
+      }
     }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the MIDI task which checks for incoming
+// MIDI events. You could add more MIDI related jobs here, but they shouldn't
+// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
+/////////////////////////////////////////////////////////////////////////////
+void APP_MIDI_Tick(void)
+{
 }
 
 

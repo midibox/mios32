@@ -39,6 +39,28 @@ void APP_Background(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the main task which also handles DIN, ENC
+// and AIN events. You could add more jobs here, but they shouldn't consume
+// more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
+// Alternatively you could create a dedicated task for application specific
+// jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
+/////////////////////////////////////////////////////////////////////////////
+void APP_Tick(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the MIDI task which checks for incoming
+// MIDI events. You could add more MIDI related jobs here, but they shouldn't
+// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
+/////////////////////////////////////////////////////////////////////////////
+void APP_MIDI_Tick(void)
+{
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -46,14 +68,14 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // 1) the LED should be turned on whenever a Note On Event with velocity > 0
   // has been received
   if( midi_package.type == NoteOn && midi_package.velocity > 0 )
-    MIOS32_BOARD_LED_Set(1, 1);
+    MIOS32_BOARD_LED_Set(0x0001, 1);
 
   // 2) the LED should be turned off whenever a Note Off Event or a Note On
   // event with velocity == 0 has been received (the MIDI spec says, that velocity 0
   // should be handled like Note Off)
   else if( (midi_package.type == NoteOff) ||
 	   (midi_package.type == NoteOn && midi_package.velocity == 0) )
-    MIOS32_BOARD_LED_Set(1, 0);
+    MIOS32_BOARD_LED_Set(0x0001, 0);
 }
 
 
