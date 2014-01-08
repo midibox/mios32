@@ -169,8 +169,9 @@ void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Tick(void)
 {
-  // toggle the status LED (this is a sign of life)
-  MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
+  // PWM modulate the status LED (this is a sign of life)
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+  MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
 }
 
 

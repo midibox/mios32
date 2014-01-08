@@ -137,18 +137,31 @@ void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void)
 {
-  // init LCD
-  MIOS32_LCD_Clear();
-  MIOS32_LCD_CursorSet(0, 0);
-  MIOS32_LCD_PrintString("see README.txt   ");
-  MIOS32_LCD_CursorSet(0, 1);
-  MIOS32_LCD_PrintString("for details     ");
+}
 
-  // endless loop
-  while( 1 ) {
-    // toggle the state of all LEDs (allows to measure the execution speed with a scope)
-    MIOS32_BOARD_LED_Set(0xffffffff, ~MIOS32_BOARD_LED_Get());
-  }
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the main task which also handles DIN, ENC
+// and AIN events. You could add more jobs here, but they shouldn't consume
+// more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
+// Alternatively you could create a dedicated task for application specific
+// jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
+/////////////////////////////////////////////////////////////////////////////
+void APP_Tick(void)
+{
+  // PWM modulate the status LED (this is a sign of life)
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+  MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called each mS from the MIDI task which checks for incoming
+// MIDI events. You could add more MIDI related jobs here, but they shouldn't
+// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
+/////////////////////////////////////////////////////////////////////////////
+void APP_MIDI_Tick(void)
+{
 }
 
 
