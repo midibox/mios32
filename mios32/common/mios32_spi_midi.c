@@ -357,7 +357,7 @@ static s32 MIOS32_SPI_MIDI_InitScanBuffer(u32 *buffer)
     *buffer++ = 0;
   }
 
-  return 0; // no error
+  return 0xffffffff; // no error
 }
 #endif
 
