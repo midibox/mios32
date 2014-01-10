@@ -97,7 +97,17 @@ typedef enum {
   OSC4 = 0x44,
   OSC5 = 0x45,
   OSC6 = 0x46,
-  OSC7 = 0x47
+  OSC7 = 0x47,
+
+  SPI0 = 0x50,
+  SPI1 = 0x51,
+  SPI2 = 0x52,
+  SPI3 = 0x53,
+  SPI4 = 0x54,
+  SPI5 = 0x55,
+  SPI6 = 0x56,
+  SPI7 = 0x57
+
 } mios32_midi_port_t;
 
 
@@ -233,6 +243,7 @@ extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
 extern s32 MIOS32_MIDI_SendDebugString(char *str);
 extern s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len);
 
+extern s32 MIOS32_MIDI_ReceivePackage(mios32_midi_port_t port, mios32_midi_package_t package, void *_callback_package);
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event);
 
 extern s32 MIOS32_MIDI_Periodic_mS(void);

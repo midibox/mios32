@@ -62,5 +62,10 @@
 // don't poll receive status (OUT only)
 #define MIOS32_IIC_MIDI0_ENABLED    1
 
+// how many SPI MIDI ports are available?
+// if 0: interface disabled (default)
+// other allowed values: 1..8
+#define MIOS32_SPI_MIDI_NUM_PORTS 4
+
 
 #endif /* _MIOS32_CONFIG_H */

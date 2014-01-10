@@ -192,6 +192,12 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (OSC), 8 events bundled in a datagram\n", tested_port);
 	break;
 
+      case 8:
+	tested_port = SPI0;
+	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (SPI0)\n", tested_port);
+	break;
+
+
       default:
 	MIOS32_MIDI_SendDebugMessage("This note isn't mapped to a test function.\n", tested_port);
 	return;

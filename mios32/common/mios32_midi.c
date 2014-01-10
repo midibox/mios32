@@ -117,12 +117,13 @@ typedef union {
 
 typedef union {
   struct {
-    unsigned ALL:32;
+    unsigned long long ALL;
   };
 
   struct {
-    unsigned usb_receives:16;
-    unsigned iic_receives:16;
+    unsigned long long usb_receives:16;
+    unsigned long long iic_receives:16;
+    unsigned long long spi_receives:16;
   };
 } sysex_timeout_ctr_flags_t;
 
@@ -221,6 +222,11 @@ s32 MIOS32_MIDI_Init(u32 mode)
     ret |= (1 << 2);
 #endif
 
+#if !defined(MIOS32_DONT_USE_SPI) && !defined(MIOS32_DONT_USE_SPI_MIDI)
+  if( MIOS32_SPI_MIDI_Init(0) < 0 )
+    ret |= (1 << 3);
+#endif
+
   last_sysex_port = DEFAULT;
   sysex_state.ALL = 0;
 
@@ -243,7 +249,7 @@ s32 MIOS32_MIDI_Init(u32 mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function checks the availability of a MIDI port
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \return 1: port available
 //! \return 0: port not available
 /////////////////////////////////////////////////////////////////////////////
@@ -273,6 +279,13 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
     case IIC0://..15
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
       return MIOS32_IIC_MIDI_CheckAvailable(port & 0xf);
+#else
+      return 0; // IIC_MIDI has been disabled
+#endif
+
+    case SPI0://..15
+#if !defined(MIOS32_DONT_USE_SPI) && !defined(MIOS32_DONT_USE_SPI_MIDI)
+      return MIOS32_SPI_MIDI_CheckAvailable(port & 0xf);
 #else
       return 0; // IIC_MIDI has been disabled
 #endif
@@ -318,6 +331,10 @@ s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable)
 #else
       return -1; // IIC_MIDI has been disabled
 #endif
+
+    case SPI0://..15
+      return -1; // not required for SPI
+
   }
 
   return -1; // invalid port
@@ -327,7 +344,7 @@ s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable)
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the running status optimisation enable/disable flag
 //! for the given MIDI OUT port.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \return -1 if port not available or if it doesn't support running status
 //! \return 0 if optimisation disabled
 //! \return 1 if optimisation enabled
@@ -357,6 +374,9 @@ s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port)
 #else
       return -1; // IIC_MIDI has been disabled
 #endif
+
+    case SPI0://..15
+      return -1; // not required for SPI
   }
 
   return -1; // invalid port
@@ -366,7 +386,7 @@ s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port)
 /////////////////////////////////////////////////////////////////////////////
 //! This function resets the current running status, so that it will be sent
 //! again with the next MIDI Out package.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \return -1 if port not available or if it doesn't support running status
 //! \return 0 if optimisation disabled
 //! \return 1 if optimisation enabled
@@ -396,6 +416,9 @@ s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port)
 #else
       return -1; // IIC_MIDI has been disabled
 #endif
+
+    case SPI0://..15
+      return -1; // not required for SPI
   }
 
   return -1; // invalid port
@@ -411,7 +434,7 @@ s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port)
 //! Before the package is forwarded, an optional Tx Callback function will be called
 //! which allows to filter/monitor/route the package, or extend the MIDI transmitter
 //! by custom MIDI Output ports (e.g. for internal busses, OSC, AOUT, etc.)
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] package MIDI package
 //! \return -1 if port not available
 //! \return -2 buffer is full
@@ -460,6 +483,13 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
       return -1; // IIC_MIDI has been disabled
 #endif
       
+    case SPI0://..15
+#if !defined(MIOS32_DONT_USE_SPI) && !defined(MIOS32_DONT_USE_SPI_MIDI)
+      return MIOS32_SPI_MIDI_PackageSend_NonBlocking(package);
+#else
+      return -1; // SPI_MIDI has been disabled
+#endif
+      
     default:
       // invalid port
       return -1;
@@ -472,7 +502,7 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 //! This is a low level function - use the remaining MIOS32_MIDI_Send* functions
 //! to send specific MIDI events
 //! (blocking function)
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] package MIDI package
 //! \return -1 if port not available
 //! \return 0 on success
@@ -517,6 +547,13 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
       return -1; // IIC_MIDI has been disabled
 #endif
       
+    case SPI0://..15
+#if !defined(MIOS32_DONT_USE_SPI) && !defined(MIOS32_DONT_USE_SPI_MIDI)
+      return MIOS32_SPI_MIDI_PackageSend(package);
+#else
+      return -1; // SPI_MIDI has been disabled
+#endif
+      
     default:
       // invalid port
       return -1;
@@ -535,7 +572,7 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 //!    o MIOS32_MIDI_ChannelAftertouch(port, chn, val)
 //!    o MIOS32_MIDI_PitchBend(port, chn, val)
 //!
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] evnt0 first MIDI byte
 //! \param[in] evnt1 second MIDI byte
 //! \param[in] evnt2 third MIDI byte
@@ -595,7 +632,7 @@ s32 MIOS32_MIDI_SendPitchBend(mios32_midi_port_t port, mios32_midi_chn_t chn, u1
 //!    o MIOS32_MIDI_SendActiveSense()
 //!    o MIOS32_MIDI_SendReset()
 //!
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] type the event type
 //! \param[in] evnt0 first MIDI byte
 //! \param[in] evnt1 second MIDI byte
@@ -653,7 +690,7 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 //! Sends a SysEx Stream
 //!
 //! This function is provided for a more comfortable use model
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] stream pointer to SysEx stream
 //! \param[in] count number of bytes
 //! \return -1 if port not available
@@ -1009,7 +1046,169 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Checks for incoming MIDI messages amd calls callback_package function
+//! Processes a received package.
+//!
+//! Used by MIOS32_MIDI_Receive_Handler, but could also be called from an
+//! application, e.g. for passing messages from "virtual ports" which are
+//! not handled by MIOS32_MIDI_Receive_Handler
+//!
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
+//! \param[in] package MIDI package
+//! \param[in] _callback_package typically APP_MIDI_NotifyPackage
+//! \return -1 if port not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_MIDI_ReceivePackage(mios32_midi_port_t port, mios32_midi_package_t package, void *_callback_package)
+{
+  void (*callback_package)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_package;
+
+  // remove cable number from package (MIOS32_MIDI passes it's own port number)
+  package.cable = 0;
+
+  // branch depending on package type
+  if( package.type >= 0x8 && package.type < 0xf ) {
+    if( callback_package != NULL )
+      callback_package(port, package);
+  } else {
+    // service SysEx timeout counter
+    if( package.evnt0 == 0xf0 || // for package.type == 0xf
+	(package.type >= 4 && package.type <= 7) ) {
+      // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
+      if( !sysex_timeout_ctr_flags.ALL ) {
+	switch( port & 0xf0 ) {
+	case USB0://..15
+	  sysex_timeout_ctr = 0;
+	  sysex_timeout_ctr_flags.usb_receives = (1 << (port & 0xf));
+	  break;
+	case UART0://..15
+	  // already done in MIOS32_UART_MIDI_PackageReceive()
+	  break;
+	case IIC0://..15
+	  sysex_timeout_ctr = 0;
+	  sysex_timeout_ctr_flags.iic_receives = (1 << (port & 0xf));
+	  break;
+	case SPI0://..15
+	  sysex_timeout_ctr = 0;
+	  sysex_timeout_ctr_flags.spi_receives = (1 << (port & 0xf));
+	  break;
+	  // no timeout protection for remaining interfaces (yet)
+	}
+      }
+    }
+
+    u8 filter_sysex = 0;
+    switch( package.type ) {
+    case 0x0: // reserved, ignore
+    case 0x1: // cable events, ignore
+      break;
+
+    case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc. 
+    case 0x3: // Three-byte System Common messages like SPP, etc. 
+      if( callback_package != NULL )
+	callback_package(port, package); // -> forwarded as event
+      break;
+
+    case 0x4: // SysEx starts or continues (3 bytes)
+    case 0xf: // Single byte is interpreted as SysEx as well (I noticed that portmidi sometimes sends single bytes!)
+
+      if( package.evnt0 >= 0xf8 ) { // relevant for package type 0xf
+	if( callback_package != NULL )
+	  callback_package(port, package); // -> realtime event is forwarded as event
+	break;
+      }
+
+      MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
+      if( package.type != 0x0f ) {
+	MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
+	MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
+      }
+
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
+      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	if( sysex_callback_func != NULL ) {
+	  filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
+	  if( package.type != 0x0f ) {
+	    filter_sysex |= sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
+	    filter_sysex |= sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
+	  }
+	}
+
+	if( callback_package != NULL && !filter_sysex )
+	  callback_package(port, package);
+      }
+#endif
+      break;
+
+    case 0x5:   // Single-byte System Common Message or SysEx ends with following single byte. 
+      if( package.evnt0 >= 0xf8 ) {
+	if( callback_package != NULL )
+	  callback_package(port, package); // -> forwarded as event
+	break;
+      }
+      // no >= 0xf8 event: continue!
+
+    case 0x6:   // SysEx ends with following two bytes.
+    case 0x7: { // SysEx ends with following three bytes.
+      u8 num_bytes = package.type - 0x5 + 1;
+      u8 current_byte = 0;
+
+      if( num_bytes >= 1 ) {
+	current_byte = package.evnt0;
+	MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
+
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
+	if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	  if( sysex_callback_func != NULL )
+	    filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	}
+#endif
+      }
+
+      if( num_bytes >= 2 ) {
+	current_byte = package.evnt1;
+	MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
+
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
+	if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	  if( sysex_callback_func != NULL )
+	    filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	}
+#endif
+      }
+
+      if( num_bytes >= 3 ) {
+	current_byte = package.evnt2;
+	MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
+
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
+	if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	  if( sysex_callback_func != NULL )
+	    filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
+	}
+#endif
+      }
+
+      // reset timeout protection if required
+      if( current_byte == 0xf7 )
+	sysex_timeout_ctr_flags.ALL = 0;
+
+#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
+      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
+	// forward as package if not filtered
+	if( callback_package != NULL && !filter_sysex )
+	  callback_package(port, package);
+      }	  
+#endif  
+    } break;
+    }	      
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Checks for incoming MIDI messages and calls callback_package function
 //! with following parameters:
 //! \code
 //!    callback_package(mios32_midi_port_t port, mios32_midi_package_t midi_package)
@@ -1025,275 +1224,147 @@ s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
 {
-  u8 port;
-  mios32_midi_package_t package;
-
-  void (*callback_package)(mios32_midi_port_t port, mios32_midi_package_t midi_package) = _callback_package;
-
-  u8 intf = 0; // interface to be checked
-  u8 total_packages_forwarded = 0; // number of forwards - stop after 10 forwards to yield some CPU time for other tasks
-  u8 packages_forwarded = 0;
-  u8 again = 1;
-  do {
-    // Round Robin
-    // TODO: maybe a list based approach would be better
-    // it would allow to add/remove interfaces dynamically
-    // this would also allow to give certain ports a higher priority (to add them multiple times to the list)
-    // it would also improve this spagetthi code ;)
-    s32 status = -1;
-    switch( intf++ ) {
+  // handle all USB MIDI packages
 #if !defined(MIOS32_DONT_USE_USB) && !defined(MIOS32_DONT_USE_USB_MIDI)
-      case 0: status = MIOS32_USB_MIDI_PackageReceive(&package); port = USB0 + package.cable; break;
-#else
-      case 0: status = -1; break;
+  {
+    s32 status;
+    mios32_midi_package_t package;
+    while( (status=MIOS32_USB_MIDI_PackageReceive(&package)) >= 0 ) {
+      MIOS32_MIDI_ReceivePackage(USB0 + package.cable, package, _callback_package);
+    }
+  }
 #endif
+
+  // handle all IIC and UART based MIDI packages (round robin, max 10 packages because of possible timeouts)
+  {
+    typedef struct {
+      mios32_midi_port_t port;
+      s32 (*receive_func)(u8 if_port, mios32_midi_package_t *package);
+    } midi_intf_table_t;
+
+    const midi_intf_table_t midi_intf_table[] = {
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART0_ASSIGNMENT == 1
-      case 1: status = MIOS32_UART_MIDI_PackageReceive(0, &package); port = UART0; break;
-#else
-      case 1: status = -1; break;
+      { UART0, MIOS32_UART_MIDI_PackageReceive },
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART1_ASSIGNMENT == 1
-      case 2: status = MIOS32_UART_MIDI_PackageReceive(1, &package); port = UART1; break;
-#else
-      case 2: status = -1; break;
+      { UART1, MIOS32_UART_MIDI_PackageReceive },
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART2_ASSIGNMENT == 1
-      case 3: status = MIOS32_UART_MIDI_PackageReceive(2, &package); port = UART2; break;
-#else
-      case 3: status = -1; break;
+      { UART2, MIOS32_UART_MIDI_PackageReceive },
 #endif
 #if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART3_ASSIGNMENT == 1
-      case 4: status = MIOS32_UART_MIDI_PackageReceive(3, &package); port = UART3; break;
-#else
-      case 4: status = -1; break;
+      { UART3, MIOS32_UART_MIDI_PackageReceive },
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 5: status = MIOS32_IIC_MIDI_PackageReceive(0, &package); port = IIC0; break;
-#else
-      case 5: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 1
+      { IIC0, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 6: status = MIOS32_IIC_MIDI_PackageReceive(1, &package); port = IIC1; break;
-#else
-      case 6: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 2
+      { IIC1, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 7: status = MIOS32_IIC_MIDI_PackageReceive(2, &package); port = IIC2; break;
-#else
-      case 7: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 3
+      { IIC2, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 8: status = MIOS32_IIC_MIDI_PackageReceive(3, &package); port = IIC3; break;
-#else
-      case 8: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 4
+      { IIC3, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 9: status = MIOS32_IIC_MIDI_PackageReceive(4, &package); port = IIC4; break;
-#else
-      case 9: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 5
+      { IIC4, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 10: status = MIOS32_IIC_MIDI_PackageReceive(5, &package); port = IIC5; break;
-#else
-      case 10: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 6
+      { IIC5, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 11: status = MIOS32_IIC_MIDI_PackageReceive(6, &package); port = IIC6; break;
-#else
-      case 11: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 7
+      { IIC6, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
-      case 12: status = MIOS32_IIC_MIDI_PackageReceive(7, &package); port = IIC7; break;
-#else
-      case 12: status = -1; break;
+#if MIOS32_IIC_MIDI_NUM >= 8
+      { IIC7, MIOS32_IIC_MIDI_PackageReceive },
 #endif
-      default:
-	// allow 10 forwards maximum to yield some CPU time for other tasks
-	if( packages_forwarded && total_packages_forwarded < 10 ) {
-	  intf = 0; // restart with USB
-	  packages_forwarded = 0; // for checking, if packages still have been forwarded in next round
-	} else {
-	  again = 0; // no more interfaces to be processed
-	}
-	status = -1; // empty round - no message
-    }
+#endif
+      { 0, NULL } // end of table
+    };
 
-    // timeout detected by interface?
-    if( status == -10 ) {
-      MIOS32_MIDI_TimeOut(port);
-      again = 0;
-    } else if( status >= 0 ) { // message received?
-      // notify that a package has been forwarded
-      ++packages_forwarded;
-      ++total_packages_forwarded;
+    if( midi_intf_table[0].port != 0 ) {
+      int packages_forwarded = 0;
+      int packages_forwarded_this_round = 0;
+      int intf = 0;
+      do {
+	mios32_midi_package_t package;
 
-      // remove cable number from package (MIOS32_MIDI passes it's own port number)
-      package.cable = 0;
+	// last table entry?
+	if( !midi_intf_table[intf].port ) {
+	  if( !packages_forwarded_this_round )
+	    break; // no new package
 
-      // branch depending on package type
-      if( package.type >= 0x8 && package.type < 0xf ) {
-	if( callback_package != NULL )
-	  callback_package(port, package);
-      } else {
-	// service SysEx timeout counter
-	if( package.evnt0 == 0xf0 || // for package.type == 0xf
-	    (package.type >= 4 && package.type <= 7) ) {
-	  // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
-	  if( !sysex_timeout_ctr_flags.ALL ) {
-	    switch( port & 0xf0 ) {
-	    case USB0://..15
-	      sysex_timeout_ctr = 0;
-	      sysex_timeout_ctr_flags.usb_receives = (1 << (port & 0xf));
-	      break;
-	    case UART0://..15
-	      // already done in MIOS32_UART_MIDI_PackageReceive()
-	      break;
-	    case IIC0://..15
-	      sysex_timeout_ctr = 0;
-	      sysex_timeout_ctr_flags.iic_receives = (1 << (port & 0xf));
-	      break;
-	      // no timeout protection for remaining interfaces (yet)
-	    }
-	  }
+	  intf = 0; // at least one package: restart
+	  packages_forwarded_this_round = 0;
 	}
 
+	// execute receive function
+	mios32_midi_port_t port = midi_intf_table[intf].port;
+	s32 status = midi_intf_table[intf].receive_func(port & 0x0f, &package);
 
-	u8 filter_sysex = 0;
-	switch( package.type ) {
-  	  case 0x0: // reserved, ignore
-	  case 0x1: // cable events, ignore
-	    break;
+	if( status == -10 ) { // receive timeout?
+	  MIOS32_MIDI_TimeOut(port);
+	} else if( status >= 0 ) { // message received?
+	  ++packages_forwarded;
+	  ++packages_forwarded_this_round;
+	  
+	  // handle received package
+	  MIOS32_MIDI_ReceivePackage(port, package, _callback_package);
+	}
 
-	  case 0x2: // Two-byte System Common messages like MTC, SongSelect, etc. 
-	  case 0x3: // Three-byte System Common messages like SPP, etc. 
-	    if( callback_package != NULL )
-	      callback_package(port, package); // -> forwarded as event
-	    break;
+	++intf;
+      } while( packages_forwarded < 10 );
+    }
+  }
 
-	  case 0x4: // SysEx starts or continues (3 bytes)
-	  case 0xf: // Single byte is interpreted as SysEx as well (I noticed that portmidi sometimes sends single bytes!)
-
-	    if( package.evnt0 >= 0xf8 ) { // relevant for package type 0xf
-	      if( callback_package != NULL )
-		callback_package(port, package); // -> realtime event is forwarded as event
-	      break;
-	    }
-
-	    MIOS32_MIDI_SYSEX_Parser(port, package.evnt0); // -> forward to MIOS32 SysEx Parser
-	    if( package.type != 0x0f ) {
-	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt1); // -> forward to MIOS32 SysEx Parser
-	      MIOS32_MIDI_SYSEX_Parser(port, package.evnt2); // -> forward to MIOS32 SysEx Parser
-	    }
-
-#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	    if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
-	      if( sysex_callback_func != NULL ) {
-		filter_sysex |= sysex_callback_func(port, package.evnt0); // -> forwarded as SysEx
-		if( package.type != 0x0f ) {
-		  filter_sysex |= sysex_callback_func(port, package.evnt1); // -> forwarded as SysEx
-		  filter_sysex |= sysex_callback_func(port, package.evnt2); // -> forwarded as SysEx
-		}
-	      }
-
-	      if( callback_package != NULL && !filter_sysex )
-		callback_package(port, package);
-	    }
+  // handle all SPI MIDI packages
+#if !defined(MIOS32_DONT_USE_SPI) && !defined(MIOS32_DONT_USE_SPI_MIDI)
+  {
+    s32 status;
+    mios32_midi_package_t package;
+    while( (status=MIOS32_SPI_MIDI_PackageReceive(&package)) >= 0 ) {
+      MIOS32_MIDI_ReceivePackage(SPI0 + package.cable, package, _callback_package);
+    }
+  }
 #endif
-	    break;
+  
 
-	  case 0x5:   // Single-byte System Common Message or SysEx ends with following single byte. 
-	    if( package.evnt0 >= 0xf8 ) {
-	      if( callback_package != NULL )
-		callback_package(port, package); // -> forwarded as event
-	      break;
-	    }
-	    // no >= 0xf8 event: continue!
+  // SysEx timeout detected by this handler?
+  if( sysex_timeout_ctr_flags.ALL && sysex_timeout_ctr > 1000 ) {
+    u8 timeout_port = 0;
 
-	  case 0x6:   // SysEx ends with following two bytes.
-	  case 0x7: { // SysEx ends with following three bytes.
-	    u8 num_bytes = package.type - 0x5 + 1;
-	    u8 current_byte = 0;
-
-	    if( num_bytes >= 1 ) {
-	      current_byte = package.evnt0;
-	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-
-#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
-		if( sysex_callback_func != NULL )
-		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
-	      }
-#endif
-	    }
-
-	    if( num_bytes >= 2 ) {
-	      current_byte = package.evnt1;
-	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-
-#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
-		if( sysex_callback_func != NULL )
-		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
-	      }
-#endif
-	    }
-
-	    if( num_bytes >= 3 ) {
-	      current_byte = package.evnt2;
-	      MIOS32_MIDI_SYSEX_Parser(port, current_byte); // -> forward to MIOS32 SysEx Parser
-
-#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	      if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
-		if( sysex_callback_func != NULL )
-		  filter_sysex |= sysex_callback_func(port, current_byte); // -> forwarded as SysEx
-	      }
-#endif
-	    }
-
-	    // reset timeout protection if required
-	    if( current_byte == 0xf7 )
-	      sysex_timeout_ctr_flags.ALL = 0;
-
-#if !MIOS32_MIDI_BSL_ENHANCEMENTS // to save some memory
-	    if( !sysex_state.general.MY_SYSEX ) { // don't forward to application if we receive a MIOS32 command
-	      // forward as package if not filtered
-	      if( callback_package != NULL && !filter_sysex )
-		callback_package(port, package);
-	    }	  
-#endif  
-	  } break;
-	}	  
-      }
+    // determine port
+    if( sysex_timeout_ctr_flags.usb_receives ) {
+      int i; // i'm missing a prio instruction in C!
+      for(i=0; i<16; ++i)
+	if( sysex_timeout_ctr_flags.usb_receives & (1 << i) )
+	  break;
+      if( i >= 16 ) // failsafe
+	i = 0;
+      timeout_port = USB0 + i;
+    } else if( sysex_timeout_ctr_flags.iic_receives ) {
+      int i; // i'm missing a prio instruction in C!
+      for(i=0; i<16; ++i)
+	if( sysex_timeout_ctr_flags.iic_receives & (1 << i) )
+	  break;
+      if( i >= 16 ) // failsafe
+	i = 0;
+      timeout_port = IIC0 + i;
+    } else if( sysex_timeout_ctr_flags.spi_receives ) {
+      int i; // i'm missing a prio instruction in C!
+      for(i=0; i<16; ++i)
+	if( sysex_timeout_ctr_flags.spi_receives & (1 << i) )
+	  break;
+      if( i >= 16 ) // failsafe
+	i = 0;
+      timeout_port = SPI0 + i;
     }
 
-    // timeout detected by this handler?
-    if( sysex_timeout_ctr_flags.ALL && sysex_timeout_ctr > 1000 ) {
-      u8 timeout_port = 0;
-
-      // determine port
-      if( sysex_timeout_ctr_flags.usb_receives ) {
-	int i; // i'm missing a prio instruction in C!
-	for(i=0; i<16; ++i)
-	  if( sysex_timeout_ctr_flags.usb_receives & (1 << i) )
-	    break;
-	if( i >= 16 ) // failsafe
-	  i = 0;
-	timeout_port = USB0 + i;
-      } else if( sysex_timeout_ctr_flags.iic_receives ) {
-	int i; // i'm missing a prio instruction in C!
-	for(i=0; i<16; ++i)
-	  if( sysex_timeout_ctr_flags.iic_receives & (1 << i) )
-	    break;
-	if( i >= 16 ) // failsafe
-	  i = 0;
-	timeout_port = IIC0 + i;
-      }
-
-      MIOS32_MIDI_TimeOut(timeout_port);
-      sysex_timeout_ctr_flags.ALL = 0;
-      again = 0;
-    }
-  } while( again );
+    MIOS32_MIDI_TimeOut(timeout_port);
+    sysex_timeout_ctr_flags.ALL = 0;
+  }
 
   return 0;
 }
@@ -1322,6 +1393,10 @@ s32 MIOS32_MIDI_Periodic_mS(void)
 
 #ifndef MIOS32_DONT_USE_IIC_MIDI
   status |= MIOS32_IIC_MIDI_Periodic_mS();
+#endif
+
+#ifndef MIOS32_DONT_USE_SPI_MIDI
+  status |= MIOS32_SPI_MIDI_Periodic_mS();
 #endif
 
   // increment timeout counter for incoming packages
@@ -1410,7 +1485,7 @@ s32 MIOS32_MIDI_DirectRxCallback_Init(s32 (*callback_rx)(mios32_midi_port_t port
 //! MIDI bytes to the Rx Callback routine.
 //!
 //! It shouldn't be used by applications.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] midi_byte received MIDI byte
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1427,7 +1502,7 @@ s32 MIOS32_MIDI_SendByteToRxCallback(mios32_midi_port_t port, u8 midi_byte)
 //! MIDI packages to the Rx Callback routine (byte by byte)
 //!
 //! It shouldn't be used by applications.
-//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (DEFAULT, USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \param[in] midi_package received MIDI package
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1451,7 +1526,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEFAULT_PORT <port>".<BR>
 //! It's set to USB0 as long as not overruled in mios32_config.h
-//! \param[in] port MIDI port (USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_DefaultPortSet(mios32_midi_port_t port)
@@ -1479,7 +1554,7 @@ mios32_midi_port_t MIOS32_MIDI_DefaultPortGet(void)
 //! The preset which will be used after application reset can be set in
 //! mios32_config.h via "#define MIOS32_MIDI_DEBUG_PORT <port>".<BR>
 //! It's set to USB0 as long as not overruled in mios32_config.h
-//! \param[in] port MIDI port (USB0..USB7, UART0..UART3, IIC0..IIC7)
+//! \param[in] port MIDI port (USB0..USB7, UART0..UART3, IIC0..IIC7, SPI0..SPI7)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_MIDI_DebugPortSet(mios32_midi_port_t port)
