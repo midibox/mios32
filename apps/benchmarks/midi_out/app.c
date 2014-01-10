@@ -193,7 +193,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 	break;
 
       case 8:
-	tested_port = SPI0;
+	tested_port = SPIM0;
 	MIOS32_MIDI_SendDebugMessage("Testing Port 0x%02x (SPI0)\n", tested_port);
 	break;
 

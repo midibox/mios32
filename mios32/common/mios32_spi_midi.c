@@ -25,6 +25,17 @@
 // this module can be optionally disabled in a local mios32_config.h file (included from mios32.h)
 #if !defined(MIOS32_DONT_USE_SPI_MIDI)
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Local definitions
+/////////////////////////////////////////////////////////////////////////////
+
+#if !defined(MIOS32_SPI_MIDI_MUTEX_TAKE)
+#define MIOS32_SPI_MIDI_MUTEX_TAKE {}
+#define MIOS32_SPI_MIDI_MUTEX_GIVE {}
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
@@ -79,11 +90,6 @@ s32 MIOS32_SPI_MIDI_Init(u32 mode)
 
   // deactivate CS output
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
-
-  // init SPI
-  status |= MIOS32_SPI_TransferModeInit(MIOS32_SPI_MIDI_SPI,
-					MIOS32_SPI_MODE_CLK1_PHASE1,
-					MIOS32_SPI_MIDI_SPI_PRESCALER);
 
   // starting with first half of the double buffer
   tx_upstream_buffer_select = 0;
@@ -160,6 +166,14 @@ s32 MIOS32_SPI_MIDI_Periodic_mS(void)
 
   MIOS32_IRQ_Enable();
 
+  // take over access over SPI port
+  MIOS32_SPI_MIDI_MUTEX_TAKE;
+
+  // init SPI
+  MIOS32_SPI_TransferModeInit(MIOS32_SPI_MIDI_SPI,
+			      MIOS32_SPI_MODE_CLK1_PHASE1,
+			      MIOS32_SPI_MIDI_SPI_PRESCALER);
+
   // activate CS output
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
@@ -182,6 +196,9 @@ static void MIOS32_SPI_MIDI_DMA_Callback(void)
 {
   // deactivate CS output
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+
+  // release access over SPI port
+  MIOS32_SPI_MIDI_MUTEX_GIVE;
 
   // transfer RX values into ringbuffer (if possible)
   if( rx_ringbuffer_size < MIOS32_SPI_MIDI_RX_RINGBUFFER_SIZE ) {
