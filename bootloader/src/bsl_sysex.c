@@ -163,7 +163,8 @@ static u32 sysex_receive_ctr;
 // local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 sysex_buffer[BSL_SYSEX_BUFFER_SIZE];
+// ensure that the buffer is located at a word boundary (required for LPC17 flash programming routines)
+static u8 sysex_buffer[BSL_SYSEX_BUFFER_SIZE] __attribute__ ((aligned (4)));
 
 static u8 halt_state;
 
