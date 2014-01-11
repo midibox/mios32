@@ -356,6 +356,26 @@ static s32 parseValue(u32 line, char *command, char *value_str)
   return get_dec(value_str);
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Checks if line is empty (space, tab, # allowed
+//! \returns 1 if line is empty
+//! \returns 0 if line is not empty
+/////////////////////////////////////////////////////////////////////////////
+s32 lineIsEmpty(char *line)
+{
+  while( *line ) {
+    if( *line == '#' )
+      return 1; // line is empty (allow comment)
+
+    if( *line != ' ' && *line != '\t' )
+      return 0; // line is not empty
+
+    ++line;
+  }
+
+  return 1; // line is empty
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses an IF condition
@@ -1245,6 +1265,13 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	return -1;
       }
 
+      if( !lineIsEmpty(brkt) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: no program code allowed in the same line as ENDIF!\n", line);
+#endif
+	return -1;
+      }
+
       if( *nesting_level == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
@@ -1259,6 +1286,12 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       if( !if_state ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not supported from terminal command line!\n", line, parameter);
+#endif
+	return -1;
+      }
+      if( !lineIsEmpty(brkt) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: no program code allowed in the same line as ELSE!\n", line);
 #endif
 	return -1;
       }
