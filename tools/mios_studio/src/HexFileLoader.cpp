@@ -57,6 +57,18 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
         return false;
     }
 
+    // read complete file (it turned out, that this is much faster than using inFileStream->readNextLine())
+    size_t fileSize = inFileStream->getTotalLength();
+    MemoryBlock readBufferBlock(fileSize);
+    char *readBuffer = static_cast<char*>(readBufferBlock.getData());
+    if( inFileStream->read(readBuffer, fileSize) != fileSize ) {
+        statusMessage = T("Failed to read complete file!");
+        deleteAndZero(inFileStream);
+        return false;
+    }
+    deleteAndZero(inFileStream);
+
+    size_t filePosition = 0;
     uint32 lineNumber = 0;
     bool endRead = false;
     uint32 addressExtension = 0;
@@ -65,13 +77,31 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
     std::vector<uint8> record;
     std::map<uint32, uint32> addressBlocks;
 
-    while( !inFileStream->isExhausted() ) {
-        String lineBuffer = inFileStream->readNextLine();
+    while( filePosition < fileSize ) {
+        char *startBuffer = (char *)&readBuffer[filePosition];
+        char *endBuffer = startBuffer;
+        size_t pos = 0;
+        while( ++filePosition < fileSize ) {
+            if( *endBuffer == '\n' ) {
+                break;
+            }
+
+            if( *endBuffer == '\r' ) {
+                if( endBuffer[1] == '\n' ) {
+                    ++filePosition;
+                }
+                break;
+            }
+            ++endBuffer;
+            ++pos;
+        }
+        String lineBuffer(startBuffer, pos);
         ++lineNumber;
 
         if( !endRead && lineBuffer.length() >= 11 && (lineBuffer.length() % 2) && lineBuffer[0] == ':' ) {
             record.clear();
-            for(int i=1; i<lineBuffer.length(); i+=2)
+
+            for(int i=1; i<lineBuffer.length() ; i+=2)
                 record.push_back(lineBuffer.substring(i, i+2).getHexValue32());
 
 #if 0
@@ -87,7 +117,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
             if( record.size() != (numberBytes+5) ) {
                 statusMessage = String::formatted(T("Wrong number of bytes in line %u"), lineNumber);
-                deleteAndZero(inFileStream);
                 return false;
             }
 
@@ -97,7 +126,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
             if( checksum != 0 ) {
                 statusMessage = String::formatted(T("Wrong checksum in line %u"), lineNumber);
-                deleteAndZero(inFileStream);
                 return false;
             }
 
@@ -107,7 +135,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
 
                     if( dumpMap.count(address32) > 0 ) {
                         statusMessage = String::formatted(T("in line %u: address 0x%08x already allocated!"), lineNumber, address32);
-                        deleteAndZero(inFileStream);
                         return false;
                     }
 
@@ -123,7 +150,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
             } else if( recordType == 0x02 ) {
                 if( record.size() != (5+2) ) {
                     statusMessage = String::formatted(T("in line %u: for an INHX32 record (0x02) expecting 2 address bytes!"), lineNumber);
-                    deleteAndZero(inFileStream);
                     return false;
                 }
 
@@ -131,7 +157,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
             } else if( recordType == 0x04 ) {
                 if( record.size() != (5+2) ) {
                     statusMessage = String::formatted(T("in line %u: for an INHX32 record (0x04) expecting 2 address bytes!"), lineNumber);
-                    deleteAndZero(inFileStream);
                     return false;
                 }
 
@@ -139,7 +164,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
             } else {
                 // just ignore - e.g. GNU generates record type 0x05
                 //printf("Unsupported record type 0x%02x in line %u\n", recordType, lineNumber);
-                //deleteAndZero(inFileStream);
                 //return false;
             }
         }
@@ -202,8 +226,6 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
                   << String::formatted(T(" contains %u bytes (%u blocks)."),
                                        totalBytes,
                                        hexDumpAddressBlocks.size());
-
-    deleteAndZero(inFileStream);
 
     return true;
 }
