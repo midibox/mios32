@@ -506,6 +506,9 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level)
   int row    = pin / row_size;
   int column = pin % row_size;
 
+  if( m->flags.mirrored_row )
+    column = (column & 0xf8) | (7 - (column & 7)); //Only swap lower 8 of column, as per spec
+
   u8 sr;
   switch( color ) {
   case 1:  sr = (column >= 8) ? m->sr_dout_g2 : m->sr_dout_g1; break;
@@ -521,7 +524,7 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level)
 # error "Please adapt this code according to the different NUM_MATRIX_DIM_LEVELS"
 #endif
   if( sr && m->num_rows ) {
-    u32 pin_offset = 8*(sr-1) + column;
+    u32 pin_offset = 8*(sr-1) + (column & 7);
     int i;
     for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
       int dout_value = level ? (i <= 2*level) : 0;
