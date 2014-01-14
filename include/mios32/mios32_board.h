@@ -57,6 +57,10 @@ extern s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value);
 extern s32 MIOS32_BOARD_J10_Get(void);
 extern s32 MIOS32_BOARD_J10_PinGet(u8 pin);
 
+extern s32 MIOS32_BOARD_J10A_Get(void);
+extern s32 MIOS32_BOARD_J10A_Set(u8 value);
+extern s32 MIOS32_BOARD_J10B_Get(void);
+extern s32 MIOS32_BOARD_J10B_Set(u8 value);
 
 extern s32 MIOS32_BOARD_J28_PinInit(u8 pin, mios32_board_pin_mode_t mode);
 extern s32 MIOS32_BOARD_J28_Set(u16 value);

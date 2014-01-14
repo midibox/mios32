@@ -57,7 +57,7 @@
 
 static unsigned long long display_available = 0;
 static u8 lcd_testmode = 0;
-static u8 lcd_alt_pinning = 0; // alternative LCD pinning (e.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28)
+static u8 lcd_alt_pinning = 0; // alternative LCD pinning (e.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28 (STM32F4: J5/J10B))
 static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_device, 0xff: all CS were activated, 0xfe: will force the update
 
 
@@ -72,12 +72,17 @@ static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_
 static s32 APP_LCD_GLCD_CS_Init(void)
 {
   // configure CS pins
-  // STM32: the 4 CS pins are available at J5C
-  // LPC17: the 4 CS pins are available at J28
+  // STM32F10x: the 4 CS pins are available at J5C
+  // LPC17xx:   the 8 CS pins are available at J28
+  // STM32F4xx: the 4 CS pins are available at J10B
 #if defined(MIOS32_FAMILY_STM32F10x)
   int cs;
   for(cs=0; cs<4; ++cs)
     MIOS32_BOARD_J5_PinInit(cs + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  int cs;
+  for(cs=0; cs<8; ++cs)
+    MIOS32_BOARD_J10_PinInit(cs + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
 #elif defined(MIOS32_FAMILY_LPC17xx)
   int cs;
   for(cs=0; cs<4; ++cs)
@@ -97,6 +102,33 @@ static s32 APP_LCD_SERGLCD_CS_Init(void)
   int i;
   int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
 
+#if defined(MIOS32_FAMILY_STM32F10x)
+  if( num_lcds > 12 ) {
+    // access via serial SR
+    for(i=0; i<4; ++i) {
+      MIOS32_BOARD_J5_PinInit(i + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    }
+    display_available |= (1 << num_lcds)-1;
+  } else {
+    for(i=0; i<(num_lcds-8); ++i) {
+      MIOS32_BOARD_J5_PinInit(i + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+      display_available |= (1 << (8+i));
+    }
+  }
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  if( num_lcds > 12 ) {
+    // access via serial SR
+    for(i=0; i<4; ++i) {
+      MIOS32_BOARD_J10_PinInit(i + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+    }
+    display_available |= (1 << num_lcds)-1;
+  } else {
+    for(i=0; i<(num_lcds-8); ++i) {
+      MIOS32_BOARD_J10_PinInit(i + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+      display_available |= (1 << (8+i));
+    }
+  }
+#elif defined(MIOS32_FAMILY_LPC17xx)
   if( num_lcds > 12 ) {
     // access via serial SR
     for(i=0; i<4; ++i) {
@@ -109,6 +141,9 @@ static s32 APP_LCD_SERGLCD_CS_Init(void)
       display_available |= (1 << (8+i));
     }
   }
+#else
+# warning "SERGLCD CS pins not adapted for this MIOS32_FAMILY"
+#endif
 
   return 0; // no error
 }
@@ -129,8 +164,9 @@ static s32 APP_LCD_GLCD_CS_Set(u8 all)
 #endif
 
   int cs;
-  // STM32: the 4 CS pins are available at J5C
-  // LPC17: the 4 CS pins are available at J28
+  // STM32F10x: the 4 CS pins are available at J5C
+  // LPC17xx:   the 8 CS pins are available at J28
+  // STM32F4xx: the 4 CS pins are available at J10B
 #if defined(MIOS32_FAMILY_STM32F10x)
   if( all ) {
     // set all chip select lines
@@ -142,6 +178,18 @@ static s32 APP_LCD_GLCD_CS_Set(u8 all)
 
     for(cs=0; cs<4; ++cs)
       MIOS32_BOARD_J5_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
+  }
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  if( all ) {
+    // set all chip select lines
+    for(cs=0; cs<8; ++cs)
+      MIOS32_BOARD_J10_PinSet(cs+8, level_active);
+  } else {
+    // set only one chip select line depending on X pos   
+    u8 sel_cs = mios32_lcd_x / segment_width;
+
+    for(cs=0; cs<8; ++cs)
+      MIOS32_BOARD_J10_PinSet(cs+8, (cs == sel_cs) ? level_active : level_nonactive);
   }
 #elif defined(MIOS32_FAMILY_LPC17xx)
   if( all ) {
@@ -171,6 +219,35 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 {
   // alternative pinning option for applications which want to access CLCD and SER LCDs
   if( lcd_alt_pinning ) {
+#if defined(MIOS32_FAMILY_STM32F10x)
+    if( all ) {
+      MIOS32_BOARD_J5_PinSet(8, value ? 0 : 1);
+      MIOS32_BOARD_J5_PinSet(9, value ? 0 : 1);
+      MIOS32_BOARD_J5_PinSet(10, value ? 0 : 1);
+      MIOS32_BOARD_J5_PinSet(11, value ? 0 : 1);
+    } else {
+      if( mios32_lcd_device < 4 ) {
+	MIOS32_BOARD_J5_PinSet(8, (mios32_lcd_device == 0 && value) ? 0 : 1);
+	MIOS32_BOARD_J5_PinSet(9, (mios32_lcd_device == 1 && value) ? 0 : 1);
+	MIOS32_BOARD_J5_PinSet(10, (mios32_lcd_device == 2 && value) ? 0 : 1);
+	MIOS32_BOARD_J5_PinSet(11, (mios32_lcd_device == 3 && value) ? 0 : 1);
+      }
+    }
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+    if( all ) {
+      MIOS32_BOARD_J10_PinSet(8, value ? 0 : 1);
+      MIOS32_BOARD_J10_PinSet(9, value ? 0 : 1);
+      MIOS32_BOARD_J10_PinSet(10, value ? 0 : 1);
+      MIOS32_BOARD_J10_PinSet(11, value ? 0 : 1);
+    } else {
+      if( mios32_lcd_device < 4 ) {
+	MIOS32_BOARD_J10_PinSet(8, (mios32_lcd_device == 0 && value) ? 0 : 1);
+	MIOS32_BOARD_J10_PinSet(9, (mios32_lcd_device == 1 && value) ? 0 : 1);
+	MIOS32_BOARD_J10_PinSet(10, (mios32_lcd_device == 2 && value) ? 0 : 1);
+	MIOS32_BOARD_J10_PinSet(11, (mios32_lcd_device == 3 && value) ? 0 : 1);
+      }
+    }
+#elif defined(MIOS32_FAMILY_LPC17xx)
     if( all ) {
       MIOS32_BOARD_J28_PinSet(0, value ? 0 : 1);
       MIOS32_BOARD_J28_PinSet(1, value ? 0 : 1);
@@ -184,7 +261,15 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 	MIOS32_BOARD_J28_PinSet(3, (mios32_lcd_device == 3 && value) ? 0 : 1);
       }
     }
+#else
+# warning "SERGLCD CS pins not adapted for this MIOS32_FAMILY"
+#endif
   } else {
+
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+# warning "TODO"
+#endif
+
     int num_additional_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y - 8;
     if( num_additional_lcds >= (MAX_LCDS-8) )
       num_additional_lcds = (MAX_LCDS-8);
@@ -280,6 +365,10 @@ static s32 APP_LCD_E_Set(u8 value)
     int selected_lcd = mios32_lcd_device - 2;
     int selected_lcd_sr = selected_lcd / 8;
     u8 selected_lcd_mask = value ? (1 << (selected_lcd % 8)) : 0;
+
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+# warning "TODO"
+#endif
 
     // shift data
     int i;
@@ -485,6 +574,10 @@ s32 APP_LCD_Init(u32 mode)
 	for(i=0; i<4; ++i)
 	  MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
 
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+# warning "TODO"
+#endif
+
 	MIOS32_BOARD_J5_PinSet(3, 0); // reset
 	MIOS32_DELAY_Wait_uS(100);
 	MIOS32_BOARD_J5_PinSet(3, 1);
@@ -566,6 +659,10 @@ s32 APP_LCD_Init(u32 mode)
       if( MIOS32_BOARD_J15_PortInit(1) < 0 )
 	return -2; // failed to initialize J15
     }
+#endif
+
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_STM32F4xx)
+# warning "TODO"
 #endif
 
     // init extension port J28?
@@ -1215,7 +1312,7 @@ s32 APP_LCD_BitmapPrint(mios32_lcd_bitmap_t bitmap)
 
 /////////////////////////////////////////////////////////////////////////////
 // Optional alternative pinning options
-// E.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28
+// E.g. for MIDIbox CV which accesses a CLCD at J15, and SSD1306 displays at J5/J28 (STM32F4: J5/J10B)
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_LCD_AltPinningSet(u8 alt_pinning)
 {

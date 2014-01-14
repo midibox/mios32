@@ -671,6 +671,57 @@ s32 MIOS32_BOARD_J10_PinGet(u8 pin)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J10A (J10[7:0])
+//! \return 8 bits which are forwarded from J10A
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10A_Get(void)
+{
+  return MIOS32_BOARD_J10_Get();
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J10A (J10[7:0]) at once
+//! \param[in] value 8 bits which are forwarded to J10A
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10A_Set(u8 value)
+{
+  return MIOS32_BOARD_J10_Set(value);
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J10B (J10[15:8])
+//! \return 8 bits which are forwarded from J10B
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10B_Get(void)
+{
+#if J10_NUM_PINS <= 8
+  return -1; // not supported
+#else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J10B (J10[15:8]) at once
+//! \param[in] value 8 bits which are forwarded to J10B
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10B_Set(u8 value)
+{
+#if J10_NUM_PINS <= 8
+  return -1; // not supported
+#else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+#endif
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
