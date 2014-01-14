@@ -93,7 +93,7 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
       if( m->led_emu_id_offset && (m->sr_dout_r1 || m->flags.max72xx_enabled) && hw_id_ix >= m->led_emu_id_offset ) {
 
 	u8 row_size = m->sr_dout_r2 ? 16 : 8; // we assume that the same condition is valid for dout_g2 and dout_b2
-	if( hw_id_ix < (m->num_rows * (m->led_emu_id_offset + row_size)) ) {
+	if( hw_id_ix < (m->led_emu_id_offset + (m->num_rows * row_size)) ) {
 	  emulated = 1;
 	  u16 tmp_hw_id = item->hw_id;
 	  item->hw_id = MBNG_EVENT_CONTROLLER_LED_MATRIX + matrix + 1;
