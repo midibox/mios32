@@ -555,7 +555,7 @@ s32 MIOS32_BOARD_J5_PinGet(u8 pin)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes a J10 pin
-//! \param[in] pin the pin number (0..7)
+//! \param[in] pin the pin number (0..15)
 //! \param[in] mode the pin mode
 //!   <UL>
 //!     <LI>MIOS32_BOARD_PIN_MODE_IGNORE: configuration shouldn't be touched
@@ -597,7 +597,7 @@ s32 MIOS32_BOARD_J10_PinInit(u8 pin, mios32_board_pin_mode_t mode)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sets all pins of J10 at once
-//! \param[in] value 8 bits which are forwarded to J10
+//! \param[in] value 16 bits which are forwarded to J10
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J10_Set(u16 value)
@@ -625,7 +625,7 @@ s32 MIOS32_BOARD_J10_Set(u16 value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function sets a single pin of J10
-//! \param[in] pin the pin number (0..7)
+//! \param[in] pin the pin number (0..15)
 //! \param[in] value the pin value (0 or 1)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -649,7 +649,7 @@ s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the state of all pins of J10
-//! \return 8 bits which are forwarded from J10
+//! \return 16 bits which are forwarded from J10
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_J10_Get(void)
 {
@@ -675,7 +675,7 @@ s32 MIOS32_BOARD_J10_Get(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function returns the state of a single pin of J10
-//! \param[in] pin the pin number (0..7)
+//! \param[in] pin the pin number (0..15)
 //! \return < 0 if pin not available
 //! \return >= 0: input state of pin
 /////////////////////////////////////////////////////////////////////////////
@@ -693,6 +693,109 @@ s32 MIOS32_BOARD_J10_PinGet(u8 pin)
   return PIN_GET(j10_pin[pin].port, j10_pin[pin].pin_mask);
 #endif
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J10A (J10[7:0])
+//! \return 8 bits which are forwarded from J10A
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10A_Get(void)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  // J10[7:0]   -> GPIOE[15:8]
+
+  return ((GPIOE->IDR & 0xff00) >>  8);
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J10A (J10[7:0]) at once
+//! \param[in] value 8 bits which are forwarded to J10A
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10A_Set(u8 value)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  int pin;
+  u32 mask = 1;
+  j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[0];
+  for(pin=0; pin<8; ++pin, ++j10_pin_ptr, mask <<= 1) {
+    if( j10_enable_mask & mask )
+      PIN_SET(j10_pin_ptr->port, j10_pin_ptr->pin_mask, value & mask);
+  }
+
+  return 0; // no error
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the state of all pins of J10B (J10[15:8])
+//! \return 8 bits which are forwarded from J10B
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10B_Get(void)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  // J10[7:0]   -> GPIOE[15:8]
+
+  return
+    ((((GPIOC->IDR & 0xe000) >>  5) |
+      ((GPIOE->IDR & 0x00f8) <<  8)) & j10_enable_mask) >> 8;
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function sets all pins of J10B (J10[15:8]) at once
+//! \param[in] value 8 bits which are forwarded to J10B
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_BOARD_J10B_Set(u8 value)
+{
+#if J10_NUM_PINS == 0
+  return -1; // MIOS32_BOARD_J10 not supported
+#else
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+  u16 aligned_value = value << 8;
+  int pin;
+  u32 mask = 1;
+  j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[8];
+  for(pin=8; pin<J10_NUM_PINS; ++pin, ++j10_pin_ptr, mask <<= 1) {
+    if( j10_enable_mask & mask )
+      PIN_SET(j10_pin_ptr->port, j10_pin_ptr->pin_mask, aligned_value & mask);
+  }
+
+  return 0; // no error
+# else
+# warning "Not prepared for this MIOS32_BOARD"
+  return -2; // board not supported
+# endif
+#endif
+}
+
 
 
 
@@ -1256,6 +1359,7 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
 
   // poll busy flag, timeout after 10 mS
   // each loop takes ca. 4 uS @ 72MHz, this has to be considered when defining the time_out value
+  u32 repeat_ctr = 0;
   for(poll_ctr=time_out; poll_ctr>0; --poll_ctr) {
     MIOS32_BOARD_J15_E_Set(lcd, 1);
 
@@ -1265,8 +1369,10 @@ s32 MIOS32_BOARD_J15_PollUnbusy(u8 lcd, u32 time_out)
 
     u32 busy = MIOS32_BOARD_J15_GetD7In();
     MIOS32_BOARD_J15_E_Set(lcd, 0);
-    if( !busy )
+    if( !busy && ++repeat_ctr >= 2)
       break;
+    // TODO: not understood yet: I've a particular LCD which sporadically flags unbusy
+    //       during the first poll, but busy on following polls until it's really unbusy
   }
 
   // disable pull-up
