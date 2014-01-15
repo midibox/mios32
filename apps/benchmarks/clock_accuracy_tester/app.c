@@ -131,6 +131,16 @@ void APP_Background(void)
 				   c_d_tick.delay_min / 1000, c_d_tick.delay_min % 1000,
 				   avg / 1000, avg % 1000,
 				   c_d_tick.delay_max / 1000, c_d_tick.delay_max % 1000);
+
+      MIOS32_LCD_Clear();
+      MIOS32_LCD_CursorSet(0, 0);
+      MIOS32_LCD_PrintFormattedString("  BPM    Min    Avg    Max     ");
+      MIOS32_LCD_CursorSet(0, 1);
+      MIOS32_LCD_PrintFormattedString("%3d.%03d %2d.%03d %2d.%03d %2d.%03d",
+				      bpm / 1000, bpm % 1000,
+				      c_d_tick.delay_min / 1000, c_d_tick.delay_min % 1000,
+				      avg / 1000, avg % 1000,
+				      c_d_tick.delay_max / 1000, c_d_tick.delay_max % 1000);
     }
   }
 }
@@ -293,8 +303,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // check for MIDI clock
   if( midi_byte == 0xf8 ) {
-    mios32_sys_time_t t = MIOS32_SYS_TimeGet();
-    u32 timestamp = 1000*t.seconds + t.fraction_ms;
+    u32 timestamp = MIOS32_TIMESTAMP_Get();
 
     DelayUpdate(&d_tick, timestamp);
 
@@ -316,8 +325,7 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 
   // check for MIDI start or continue
   if( midi_byte == 0xfa || midi_byte == 0xfb ) {
-    mios32_sys_time_t t = MIOS32_SYS_TimeGet();
-    u32 timestamp = 1000*t.seconds + t.fraction_ms;
+    u32 timestamp = MIOS32_TIMESTAMP_Get();
 
     timestamp_midi_start = timestamp;
 
