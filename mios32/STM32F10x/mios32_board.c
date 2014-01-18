@@ -756,25 +756,6 @@ s32 MIOS32_BOARD_J28_PinGet(u8 pin)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Shifts a serial data through J28.SDA (data) and J28.SC (clock)
-//! The RC line (either J28.MCLK or J28.WS) has to be pulsed externally!
-//! \param[in] pin the pin number (0..7)
-//! \param[in] data the 8bit value
-//! \return < 0 if access to data port not supported by board
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_BOARD_J28_SerDataShift(u8 data)
-{
-#if J28_NUM_PINS == 0
-  return -1; // MIOS32_BOARD_J28 not supported
-#else
-# error "Not prepared for STM32"
-  return -1;
-#endif
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
 //! Initializes the J15 port
 //! \param[in] mode 
 //! <UL>

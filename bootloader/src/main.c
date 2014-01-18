@@ -101,7 +101,7 @@ static const srio_pin_t srio_mosi_pin[SRIO_NUM_MOSI_PINS] = {
 };
 
 
-#elif defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#elif defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #define SRIO_RESET_SUPPORTED 1
 
 #define SRIO_GPIO_MODE  GPIO_Mode_OUT

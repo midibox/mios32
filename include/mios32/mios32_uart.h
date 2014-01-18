@@ -25,7 +25,11 @@
 
 // number of UART interfaces (0..3)
 #ifndef MIOS32_UART_NUM
-#define MIOS32_UART_NUM 2
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# define MIOS32_UART_NUM 4
+#else
+# define MIOS32_UART_NUM 2
+#endif
 #endif
 
 // Tx buffer size (1..256)

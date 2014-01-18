@@ -47,5 +47,17 @@ make > $RELEASE_DIR/MBHP_CORE_LPC17/log.txt
 cp project.hex $RELEASE_DIR/MBHP_CORE_LPC17
 
 ###############################################################################
+echo "Building for MBHP_CORE_STM32F4"
+
+make cleanall
+export MIOS32_FAMILY=STM32F4xx
+export MIOS32_PROCESSOR=STM32F407VG
+export MIOS32_BOARD=MBHP_CORE_STM32F4
+export MIOS32_LCD=universal
+mkdir -p $RELEASE_DIR/MBHP_CORE_STM32F4
+make > $RELEASE_DIR/MBHP_CORE_STM32F4/log.txt
+cp project.hex $RELEASE_DIR/MBHP_CORE_STM32F4
+
+###############################################################################
 make cleanall
 echo "Done!"

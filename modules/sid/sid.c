@@ -287,6 +287,7 @@ s32 SID_AvailableSet(u8 available)
 {
   sid_available = available;
 
+#if SID_USE_MBNET
   MIOS32_IRQ_Disable();
   if( sid_available && mbnet_tx_state == MBNET_TX_STATE_NOP ) {
     // start MBNet transfers once SIDs have been found
@@ -303,6 +304,7 @@ s32 SID_AvailableSet(u8 available)
     MBNET_InstallTxHandler(NULL);
   }
   MIOS32_IRQ_Enable();
+#endif
 
   return 0; // no error
 }

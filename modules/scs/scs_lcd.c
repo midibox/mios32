@@ -255,14 +255,7 @@ s32 SCS_LCD_Update(u8 force)
 {
   int next_x = -1;
   int next_y = -1;
-  int remote_first_x[SCS_LCD_MAX_LINES];
-  int remote_last_x[SCS_LCD_MAX_LINES];
   int x, y;
-
-  for(y=0; y<2; ++y) {
-    remote_first_x[y] = -1;
-    remote_last_x[y] = -1;
-  }
 
 #ifdef MUTEX_LCD_TAKE
   MUTEX_LCD_TAKE;
@@ -273,10 +266,6 @@ s32 SCS_LCD_Update(u8 force)
     for(x=0; x<SCS_MENU_ITEM_WIDTH*SCS_NumMenuItemsGet(); ++x) {
 
       if( force || !(*ptr & 0x80) ) {
-	if( remote_first_x[y] == -1 )
-	  remote_first_x[y] = x;
-	remote_last_x[y] = x;
-
 	if( x != next_x || y != next_y ) {
 	  u16 phys_x = x + lcd_offset_x;
 	  u16 phys_y = y + lcd_offset_y;
@@ -302,18 +291,6 @@ s32 SCS_LCD_Update(u8 force)
 
 #ifdef MUTEX_LCD_GIVE
   MUTEX_LCD_GIVE;
-#endif
-
-#if 0
-  // forward display changes to remote client
-  if( seq_ui_remote_mode == SCS_UI_REMOTE_MODE_SERVER || seq_ui_remote_active_mode == SCS_UI_REMOTE_MODE_SERVER ) {
-    for(y=0; y<SCS_LCD_MAX_LINES; ++y)
-      if( remote_first_x[y] >= 0 )
-	SCS_MIDI_SYSEX_REMOTE_Server_SendLCD(remote_first_x[y],
-					     y,
-					     (u8 *)&lcd_buffer[y][remote_first_x[y]],
-					     remote_last_x[y]-remote_first_x[y]+1);
-  }
 #endif
 
   return 0; // no error
@@ -353,12 +330,6 @@ s32 SCS_LCD_InitSpecialChars(scs_lcd_charset_t charset, u8 force)
 
 #ifdef MUTEX_LCD_GIVE
     MUTEX_LCD_GIVE;
-#endif
-
-#if 0
-    // forward charset change to remote client
-    if( seq_ui_remote_mode == SCS_UI_REMOTE_MODE_SERVER )
-      SCS_MIDI_SYSEX_REMOTE_Server_SendCharset(charset);
 #endif
   }
 

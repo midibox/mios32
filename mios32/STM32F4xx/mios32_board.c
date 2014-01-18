@@ -36,7 +36,7 @@
 
 
 #if !defined(MIOS32_BOARD_J15_LED_NUM)
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #  define MIOS32_BOARD_J15_LED_NUM 4
 # else
 #  warning "Please define number of available LEDs (take only 1 by default)"
@@ -47,7 +47,7 @@
 // J5 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 
 typedef struct {
   GPIO_TypeDef *port;
@@ -79,7 +79,7 @@ static const j5_pin_t j5_pin[J5_NUM_PINS] = {
 // J10 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 
 // note: adaptions also have to be done in MIOS32_BOARD_J10_Get,
 // since this function access the ports directly
@@ -121,7 +121,7 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 // J28 pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 # define J28_NUM_PINS 0
 // not supported by this board
 #else
@@ -134,7 +134,7 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
 // J15 (LCD) pin mapping
 /////////////////////////////////////////////////////////////////////////////
 
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 
 #define J15_AVAILABLE 1
 
@@ -298,7 +298,7 @@ static s32 MIOS32_BOARD_PinInitHlp(GPIO_TypeDef *port, u16 pin_mask, mios32_boar
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Init(u32 leds)
 {
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #if MIOS32_BOARD_J15_LED_NUM >= 1
 
   // 4 LEDs are available
@@ -345,7 +345,7 @@ s32 MIOS32_BOARD_LED_Init(u32 leds)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_BOARD_LED_Set(u32 leds, u32 value)
 {
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #if MIOS32_BOARD_J15_LED_NUM >= 1
   if( leds & 1 ) { // LED4 (Green)
     if( value & 1 )
@@ -397,7 +397,7 @@ u32 MIOS32_BOARD_LED_Get(void)
 {
   u32 values = 0;
 
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #if MIOS32_BOARD_J15_LED_NUM >= 1
   if( GPIOD->ODR & GPIO_Pin_12 ) // LED4 (Green)
     values |= (1 << 0);
@@ -605,7 +605,7 @@ s32 MIOS32_BOARD_J10_Set(u16 value)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   int pin;
   u32 mask = 1;
   j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[0];
@@ -656,7 +656,7 @@ s32 MIOS32_BOARD_J10_Get(void)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   // J10[7:0]   -> GPIOE[15:8]
   // J10[10:8]  -> GPIOC[15:13]
   // J10[15:11] -> GPIOE[7:3]
@@ -704,7 +704,7 @@ s32 MIOS32_BOARD_J10A_Get(void)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   // J10[7:0]   -> GPIOE[15:8]
 
   return ((GPIOE->IDR & 0xff00) >>  8);
@@ -726,7 +726,7 @@ s32 MIOS32_BOARD_J10A_Set(u8 value)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   int pin;
   u32 mask = 1;
   j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[0];
@@ -754,7 +754,7 @@ s32 MIOS32_BOARD_J10B_Get(void)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   // J10[7:0]   -> GPIOE[15:8]
 
   return
@@ -778,7 +778,7 @@ s32 MIOS32_BOARD_J10B_Set(u8 value)
 #if J10_NUM_PINS == 0
   return -1; // MIOS32_BOARD_J10 not supported
 #else
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   u16 aligned_value = value << 8;
   int pin;
   u32 mask = 1;
@@ -888,25 +888,6 @@ s32 MIOS32_BOARD_J28_PinGet(u8 pin)
   return -1;
 #endif
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! Shifts a serial data through J28.SDA (data) and J28.SC (clock)
-//! The RC line (either J28.MCLK or J28.WS) has to be pulsed externally!
-//! \param[in] pin the pin number (0..7)
-//! \param[in] data the 8bit value
-//! \return < 0 if access to data port not supported by board
-/////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_BOARD_J28_SerDataShift(u8 data)
-{
-#if J28_NUM_PINS == 0
-  return -1; // MIOS32_BOARD_J28 not supported
-#else
-# error "Not prepared for STM32"
-  return -1;
-#endif
-}
-
 
 
 /////////////////////////////////////////////////////////////////////////////
