@@ -58,13 +58,30 @@ bool HexFileLoader::loadFile(const File &inFile, String &statusMessage)
     }
 
     // read complete file (it turned out, that this is much faster than using inFileStream->readNextLine())
+    // note: it seems that Windows can't read more than 100k bytes at once... are we still in the 20th century?!?
     size_t fileSize = inFileStream->getTotalLength();
     MemoryBlock readBufferBlock(fileSize);
     char *readBuffer = static_cast<char*>(readBufferBlock.getData());
-    if( inFileStream->read(readBuffer, fileSize) != fileSize ) {
-        statusMessage = T("Failed to read complete file!");
-        deleteAndZero(inFileStream);
-        return false;
+    {
+        size_t readBytes = 0;
+        size_t readOffset = 0;
+        while( 1 ) {
+            size_t bytesToRead = fileSize - readOffset;
+            size_t chunkSize = (bytesToRead >= 50000) ? 50000 : bytesToRead;
+
+            if( !chunkSize )
+                break;
+
+            readBytes = inFileStream->read(&readBuffer[readOffset], chunkSize);
+            if( readBytes != chunkSize ) {
+                char buffer[100];
+                sprintf(buffer, "Failed to read file (only %d of %d bytes read)\n", readOffset, fileSize);
+                statusMessage = String(buffer);
+                deleteAndZero(inFileStream);
+                return false;
+            }
+            readOffset += readBytes;
+        }
     }
     deleteAndZero(inFileStream);
 
