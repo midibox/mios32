@@ -3379,11 +3379,11 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
 
   // take over in pool item
   s16 prev_value = 0;
-  s16 prev_secondary_value = 0;
+  //s16 prev_secondary_value = 0;
   if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     prev_value = pool_item->value;
-    prev_secondary_value = pool_item->secondary_value;
+    //prev_secondary_value = pool_item->secondary_value;
     pool_item->value = item->value;
     if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
       pool_item->secondary_value = item->secondary_value;

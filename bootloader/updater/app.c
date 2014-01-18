@@ -29,7 +29,7 @@
 # else
 #  include "bsl_image_MBHP_CORE_STM32.inc"
 #endif
-#elif defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#elif defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 # include "bsl_image_STM32F4DISCOVERY.inc"
 #elif defined(MIOS32_BOARD_LPCXPRESSO) || defined(MIOS32_BOARD_MBHP_CORE_LPC17)
 #if defined(MIOS32_PROCESSOR_LPC1769)

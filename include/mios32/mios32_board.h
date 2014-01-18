@@ -67,7 +67,6 @@ extern s32 MIOS32_BOARD_J28_Set(u16 value);
 extern s32 MIOS32_BOARD_J28_PinSet(u8 pin, u8 value);
 extern s32 MIOS32_BOARD_J28_Get(void);
 extern s32 MIOS32_BOARD_J28_PinGet(u8 pin);
-extern s32 MIOS32_BOARD_J28_SerDataShift(u8 data);
 
 extern s32 MIOS32_BOARD_J15_PortInit(u32 mode);
 extern s32 MIOS32_BOARD_J15_DataSet(u8 data);

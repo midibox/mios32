@@ -80,7 +80,7 @@
 
 
 
-#ifdef MIOS32_BOARD_STM32F4DISCOVERY
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 // I2C configuration
 // Thanks to http://www.mind-dump.net/configuring-the-stm32f4-discovery-for-audio for this info!
 
@@ -185,7 +185,7 @@ s32 MIOS32_I2S_Init(u32 mode)
   GPIO_PinAFConfig(MIOS32_I2S_MCLK_PORT, MIOS32_I2S_MCLK_PINSRC, GPIO_AF_SPI3);
 #endif
 
-#ifdef MIOS32_BOARD_STM32F4DISCOVERY
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   // configure I2C pins to access the CS43L22 configuration registers
   // Thanks to http://www.mind-dump.net/configuring-the-stm32f4-discovery-for-audio for this info!
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -256,7 +256,7 @@ s32 MIOS32_I2S_Init(u32 mode)
   // Configure and enable DMA interrupt
   MIOS32_IRQ_Install(DMA1_Stream5_IRQn, MIOS32_IRQ_I2S_DMA_PRIORITY);
 
-#ifdef MIOS32_BOARD_STM32F4DISCOVERY
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   // configure I2C
   // Thanks to http://www.mind-dump.net/configuring-the-stm32f4-discovery-for-audio for this info!
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
@@ -350,7 +350,7 @@ void DMA1_Stream5_IRQHandler(void)
 
 
 
-#ifdef MIOS32_BOARD_STM32F4DISCOVERY
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 // I2C configuration
 // Thanks to http://www.mind-dump.net/configuring-the-stm32f4-discovery-for-audio for this code!
 static void codec_init()

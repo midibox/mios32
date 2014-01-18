@@ -23,7 +23,7 @@
 // doesn't have access to a JTAG interface or COM port + MBHP_LTC module
 // to recover the BSL
 #ifndef MIOS32_DONT_INCLUDE_BSL
-# if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+# if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #  include "mios32_bsl_STM32F4DISCOVERY.inc"
 # else
 #  warning "This MIOS32_PROCESSOR isn't prepared in mios32_bsl.c - selecting bootloader of STM32F4DISCOVERY"
