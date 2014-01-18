@@ -53,6 +53,22 @@
 # define MIOS32_SYS_LPC_PINGET(port, pin) (*((volatile u32 *)(LPC_GPIO0_BASE+port*0x20+0x14)) & (1 << pin))
 #endif
 
+#if defined(MIOS32_FAMILY_STM32F10x)
+//! STM32F1 specific help macros for pin access
+# define MIOS32_SYS_STM_PINSET(port, pin_mask, v) { if( v ) port->BSRR = pin_mask; else port->BRR = pin_mask; }
+# define MIOS32_SYS_STM_PINSET_1(port, pin_mask)  { port->BSRR = pin_mask; }
+# define MIOS32_SYS_STM_PINSET_0(port, pin_mask)  { port->BRR = pin_mask; }
+# define MIOS32_SYS_STM_PINGET(port, pin_mask)    ((port->IDR & (pin_mask)) ? 1 : 0)
+#endif
+
+#if defined(MIOS32_FAMILY_STM32F4xx)
+//! STM32F4 specific help macros for pin access
+# define MIOS32_SYS_STM_PINSET(port, pin_mask, v) { if( v ) port->BSRRL = pin_mask; else port->BSRRH = pin_mask; }
+# define MIOS32_SYS_STM_PINSET_1(port, pin_mask)  { port->BSRRL = pin_mask; }
+# define MIOS32_SYS_STM_PINSET_0(port, pin_mask)  { port->BSRRH = pin_mask; }
+# define MIOS32_SYS_STM_PINGET(port, pin_mask)    ((port->IDR & (pin_mask)) ? 1 : 0)
+#endif
+
 // STM32 only:
 // The DBGMCU_CR register allows to suspend peripherals when CPU is in halt
 // state to simplify debugging (e.g. no timer interrupt is triggered each

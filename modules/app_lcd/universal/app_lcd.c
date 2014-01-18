@@ -78,13 +78,51 @@ static u8 prev_glcd_selection = 0xfe; // 0..MAX_LCDS-1: the previous mios32_lcd_
 #endif
 
 // pin initialisation
-inline static s32 APP_LCD_ExtPort_Init(u8 pin, mios32_board_pin_mode_t mode) {
+inline static s32 APP_LCD_ExtPort_Init(void) {
 #if defined(MIOS32_FAMILY_STM32F10x)
-  return MIOS32_BOARD_J5_PinInit(pin + 8, mode);
+  int pin;
+  for(pin=0; pin<APP_LCD_NUM_EXT_PINS; ++pin) {
+    MIOS32_BOARD_J5_PinInit(pin + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-  return MIOS32_BOARD_J10_PinInit(pin + 8, mode);
+  int pin;
+  for(pin=0; pin<APP_LCD_NUM_EXT_PINS; ++pin) {
+    MIOS32_BOARD_J10_PinInit(pin + 8, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
 #elif defined(MIOS32_FAMILY_LPC17xx)
-  return MIOS32_BOARD_J28_PinInit(pin, mode);
+  int pin;
+  for(pin=0; pin<APP_LCD_NUM_EXT_PINS; ++pin) {
+    MIOS32_BOARD_J28_PinInit(pin, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
+#else
+# warning "APP_LCD_ExtPort_Init not adapted for this MIOS32_FAMILY"
+  return -1;
+#endif
+}
+
+// pin initialisation for alternative port
+inline static s32 APP_LCD_ExtPort_AltInit(void) {
+#if defined(MIOS32_FAMILY_STM32F10x)
+  int pin;
+  for(pin=0; pin<4; ++pin) {
+    MIOS32_BOARD_J5_PinInit(pin, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  int pin;
+  for(pin=0; pin<4; ++pin) {
+    MIOS32_BOARD_J10_PinInit(pin + 12, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  int pin;
+  for(pin=0; pin<4; ++pin) {
+    MIOS32_BOARD_J5_PinInit(pin, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
+  }
+  return 0; // no error
 #else
 # warning "APP_LCD_ExtPort_Init not adapted for this MIOS32_FAMILY"
   return -1;
@@ -105,30 +143,76 @@ inline static s32 APP_LCD_ExtPort_PinSet(u8 pin, u8 value) {
 #endif
 }
 
+// set alternative pin directly
+inline static s32 APP_LCD_ExtPort_AltPinCsSet(u8 pin, u8 value) {
+#if defined(MIOS32_FAMILY_STM32F10x)
+  return MIOS32_BOARD_J5_PinSet(pin + 0, value); // J5A.A0..A3
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+  return MIOS32_BOARD_J10_PinSet(pin + 12, value); // J10B.D12..D15
+#elif defined(MIOS32_FAMILY_LPC17xx)
+  return MIOS32_BOARD_J5_PinSet(pin + 0, value); // J5A.A0..A3
+#else
+# warning "APP_LCD_ExtPort_PinSet not adapted for this MIOS32_FAMILY"
+  return -1;
+#endif
+}
+
 // serial data shift
-inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data) {
+inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
 #if defined(MIOS32_FAMILY_STM32F10x)
   int i;
-  for(i=0; i<8; ++i, data >>= 1) {
-    APP_LCD_ExtPort_PinSet(0, data & 1); // J5C:A8 = ser
-    APP_LCD_ExtPort_PinSet(1, 0); // J5C.A9 = 0 (Clk)
-    APP_LCD_ExtPort_PinSet(1, 1); // J5C.A9 = 1 (Clk)
+  if( lsb_first ) {
+    for(i=0; i<8; ++i, data >>= 1) {
+      APP_LCD_ExtPort_PinSet(0, data & 1); // J5C:A8 = ser
+      APP_LCD_ExtPort_PinSet(1, 0); // J5C.A9 = 0 (Clk)
+      APP_LCD_ExtPort_PinSet(1, 1); // J5C.A9 = 1 (Clk)
+    }
+  } else {
+    for(i=0; i<8; ++i, data <<= 1) {
+      APP_LCD_ExtPort_PinSet(0, data & 0x80); // J5C:A8 = ser
+      APP_LCD_ExtPort_PinSet(1, 0); // J5C.A9 = 0 (Clk)
+      APP_LCD_ExtPort_PinSet(1, 1); // J5C.A9 = 1 (Clk)
+    }
   }
   return 0; // no error
 #elif defined(MIOS32_FAMILY_STM32F4xx)
   int i;
-  for(i=0; i<8; ++i, data >>= 1) {
-    APP_LCD_ExtPort_PinSet(0, data & 1); // J10B.D11 = ser
-    APP_LCD_ExtPort_PinSet(1, 0); // J10B.A12 = 0 (Clk)
-    APP_LCD_ExtPort_PinSet(1, 1); // J10B.A12 = 1 (Clk)
+  if( lsb_first ) {
+    for(i=0; i<8; ++i, data >>= 1) {
+      MIOS32_SYS_STM_PINSET(GPIOC, GPIO_Pin_13, data & 1); // J10B.D8 = ser
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // J10B.D9 = 0 (Clk)
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // J10B.D9 = 1 (Clk)
+    }
+  } else {
+    for(i=0; i<8; ++i, data <<= 1) {
+      MIOS32_SYS_STM_PINSET(GPIOC, GPIO_Pin_13, data & 0x80); // J10B.D8 = ser
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // J10B.D9 = 0 (Clk)
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // J10B.D9 = 1 (Clk)
+    }
   }
   return 0; // no error
 #elif defined(MIOS32_FAMILY_LPC17xx)
   int i;
-  for(i=0; i<8; ++i, data >>= 1) {
-    APP_LCD_ExtPort_PinSet(0, data & 1); // J28.SDA = ser
-    APP_LCD_ExtPort_PinSet(1, 0); // J28.SC = 0 (Clk)
-    APP_LCD_ExtPort_PinSet(1, 1); // J28.SC = 1 (Clk)
+  if( lsb_first ) {
+    for(i=0; i<8; ++i, data >>= 1) {
+      MIOS32_SYS_LPC_PINSET(2, 13, data & 1); // J28.SDA = ser
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // J28.SC = 0 (Clk)
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
+      MIOS32_SYS_LPC_PINSET_1(2, 11); // J28.SC = 1 (Clk)
+    }
+  } else {
+    for(i=0; i<8; ++i, data <<= 1) {
+      MIOS32_SYS_LPC_PINSET(2, 13, data & 0x80); // J28.SDA = ser
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // J28.SC = 0 (Clk)
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
+      MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
+      MIOS32_SYS_LPC_PINSET_1(2, 11); // J28.SC = 1 (Clk)
+    }
   }
   return 0; // no error
 #else
@@ -141,39 +225,22 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data) {
 inline static s32 APP_LCD_ExtPort_UpdateSRs(void) {
 #if defined(MIOS32_FAMILY_STM32F10x)
   APP_LCD_ExtPort_PinSet(2, 0); // J5C.A10
-  APP_LCD_ExtPort_PinSet(3, 0); // J5C.A11
   APP_LCD_ExtPort_PinSet(2, 1); // J5C.A10
-  APP_LCD_ExtPort_PinSet(3, 1); // J5C.A11
   return 0; // no error
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-  APP_LCD_ExtPort_PinSet(2, 0); // J10B.A10
-  APP_LCD_ExtPort_PinSet(2, 1); // J10B.A10
+  APP_LCD_ExtPort_PinSet(2, 0); // J10B.D10
+  APP_LCD_ExtPort_PinSet(2, 1); // J10B.D10
   return 0; // no error
 #elif defined(MIOS32_FAMILY_LPC17xx)
   APP_LCD_ExtPort_PinSet(2, 0); // J28.WS
-  APP_LCD_ExtPort_PinSet(3, 0); // J28.MCLK
   APP_LCD_ExtPort_PinSet(2, 1); // J28.WS
-  APP_LCD_ExtPort_PinSet(3, 1); // J28.MCLK
   return 0; // no error
 #else
-# warning "APP_LCD_ExtPort_SerDataShift not adapted for this MIOS32_FAMILY"
+# warning "APP_LCD_ExtPort_UpdateSRs not adapted for this MIOS32_FAMILY"
   return -1;
 #endif
 }
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Initializes the CS pins for GLCDs with parallel port
-/////////////////////////////////////////////////////////////////////////////
-static s32 APP_LCD_ExtPort_InitAll(void)
-{
-  int cs;
-  for(cs=0; cs<APP_LCD_NUM_EXT_PINS; ++cs) {
-    APP_LCD_ExtPort_Init(cs, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-  }
-
-  return 0; // no error
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // Initializes the CS pins for GLCDs with serial port
@@ -186,7 +253,7 @@ static s32 APP_LCD_SERGLCD_CS_Init(void)
   int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
 
   if( num_lcds > 8 ) {
-    APP_LCD_ExtPort_InitAll();
+    APP_LCD_ExtPort_Init();
   }
 
   display_available |= (1 << num_lcds)-1;
@@ -240,12 +307,12 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
     int cs;
     if( all ) {
       // set all chip select lines
-      for(cs=0; cs<APP_LCD_NUM_EXT_PINS; ++cs)
-	APP_LCD_ExtPort_PinSet(cs, level_active);
+      for(cs=0; cs<4; ++cs)
+	APP_LCD_ExtPort_AltPinCsSet(cs, level_active);
     } else {
       // set only CS of GLCD which is selected with mios32_lcd_device
-      for(cs=0; cs<APP_LCD_NUM_EXT_PINS; ++cs)
-	APP_LCD_ExtPort_PinSet(cs, (cs == mios32_lcd_device) ? level_active : level_nonactive);
+      for(cs=0; cs<4; ++cs)
+	APP_LCD_ExtPort_AltPinCsSet(cs, (cs == mios32_lcd_device) ? level_active : level_nonactive);
     }
   } else {
 
@@ -271,7 +338,7 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 	  // shift data
 	  int i;
 	  for(i=num_shifts-1; i>=0; --i) {
-	    APP_LCD_ExtPort_SerDataShift(value ? 0x00 : 0xff);
+	    APP_LCD_ExtPort_SerDataShift(value ? 0x00 : 0xff, 1);
 	  }
 
 	  // update serial shift registers
@@ -302,7 +369,7 @@ static s32 APP_LCD_SERGLCD_CS_Set(u8 value, u8 all)
 	  int i;
 	  for(i=num_shifts-1; i>=0; --i) {
 	    u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0xff;
-	    APP_LCD_ExtPort_SerDataShift(data);
+	    APP_LCD_ExtPort_SerDataShift(data, 1);
 	  }
 
 	  // update serial shift registers
@@ -347,7 +414,7 @@ static s32 APP_LCD_E_Set(u8 value)
     int i;
     for(i=num_shifts-1; i>=0; --i) {
       u8 data = (i == selected_lcd_sr) ? selected_lcd_mask : 0;
-      APP_LCD_ExtPort_SerDataShift(data);
+      APP_LCD_ExtPort_SerDataShift(data, 1);
     }
 
     // update serial shift registers
@@ -454,7 +521,7 @@ s32 APP_LCD_Init(u32 mode)
 #endif
 
       // initialize CS pins
-      APP_LCD_ExtPort_InitAll();
+      APP_LCD_ExtPort_Init();
 
       // "Display On" command
       APP_LCD_Cmd(0x3e + 1);
@@ -478,7 +545,7 @@ s32 APP_LCD_Init(u32 mode)
 #endif
 
       // initialize CS pins
-      APP_LCD_ExtPort_InitAll();
+      APP_LCD_ExtPort_Init();
 
       // Reset command
       APP_LCD_Cmd(0xe2);
@@ -534,23 +601,21 @@ s32 APP_LCD_Init(u32 mode)
     if( mios32_lcd_device == 0 ) {
 
       // alternative pinning option for applications which want to access CLCD and SER LCDs
-      // J5A.A0: DC
-      // J5A.A1: SDA
-      // J5A.A2: SCLK
-      // J5A.A3: RST#
-      // ExtPort.0  CS of first display
-      // ExtPort.1  CS of second display
-      // ExtPort.2  CS of third display
-      // ExtPort.3  CS of fourth display
+      // ExtPort.0: SDA
+      // ExtPort.1: SCLK
+      // ExtPort.2: DC
+      // ExtPort.3: RST#
+      // J5A.A0/J10B.D12: CS of first display
+      // J5A.A1/J10B.D13: CS of second display
+      // J5A.A2/J10B.D14: CS of third display
+      // J5A.A3/J10B.D15: CS of fourth display
       if( lcd_alt_pinning ) {
-	int i;
-	for(i=0; i<4; ++i)
-	  MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-	APP_LCD_ExtPort_InitAll();
+	APP_LCD_ExtPort_Init();
+	APP_LCD_ExtPort_AltInit();
 
-	MIOS32_BOARD_J5_PinSet(3, 0); // reset
+	APP_LCD_ExtPort_PinSet(3, 0); // reset
 	MIOS32_DELAY_Wait_uS(100);
-	MIOS32_BOARD_J5_PinSet(3, 1);
+	APP_LCD_ExtPort_PinSet(3, 1);
 
 	display_available |= 0x0f;
       } else {
@@ -634,7 +699,7 @@ s32 APP_LCD_Init(u32 mode)
     // init extension port?
     int num_lcds = mios32_lcd_parameters.num_x * mios32_lcd_parameters.num_y;
     if( num_lcds >= 2 ) {
-      APP_LCD_ExtPort_InitAll();
+      APP_LCD_ExtPort_Init();
     }
 
     // initialize LCD
@@ -780,10 +845,10 @@ s32 APP_LCD_Data(u8 data)
 
     // alternative pinning option for applications which want to access CLCD and SER LCDs
     if( lcd_alt_pinning ) {
-      MIOS32_BOARD_J5_PinSet(0, 1); // RS pin used to control DC
+      APP_LCD_ExtPort_PinSet(2, 1); // DC
 
       // send data
-      MIOS32_BOARD_J5_SerDataShift(data);
+      APP_LCD_ExtPort_SerDataShift(data, 0);
     } else {
       MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
@@ -897,10 +962,10 @@ s32 APP_LCD_Cmd(u8 cmd)
 
     // alternative pinning option for applications which want to access CLCD and SER LCDs
     if( lcd_alt_pinning ) {
-      MIOS32_BOARD_J5_PinSet(0, 0); // RS pin used to control DC
+      APP_LCD_ExtPort_PinSet(2, 0); // DC
 
       // send data
-      MIOS32_BOARD_J5_SerDataShift(cmd);
+      APP_LCD_ExtPort_SerDataShift(cmd, 0);
     } else {
       MIOS32_BOARD_J15_RS_Set(0); // RS pin used to control DC
 
@@ -1009,11 +1074,11 @@ s32 APP_LCD_Clear(void)
 
       // alternative pinning option for applications which want to access CLCD and SER LCDs
       if( lcd_alt_pinning ) {
-	MIOS32_BOARD_J5_PinSet(0, 1); // RS pin used to control DC
+	APP_LCD_ExtPort_PinSet(2, 1); // DC
 
 	// send data
 	for(x=0; x<mios32_lcd_parameters.width; ++x)
-	  MIOS32_BOARD_J5_SerDataShift(0x00);
+	  APP_LCD_ExtPort_SerDataShift(0x00, 0);
       } else {
 	MIOS32_BOARD_J15_RS_Set(1); // RS pin used to control DC
 
