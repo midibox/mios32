@@ -954,63 +954,20 @@ s32 MIOS32_BOARD_J15_DataSet(u8 data)
 #if J15_AVAILABLE == 0
   return -1; // LCD port not available
 #else
-  // shift in 8bit data
-  // whole function takes ca. 1 uS @ 168MHz
-  // thats acceptable for a (C)LCD, which is normaly busy after each access for ca. 20..40 uS
-
-  J15_PIN_SER(data & 0x80); // D7
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x40); // D6
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x20); // D5
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x10); // D4
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x08); // D3
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x04); // D2
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x02); // D1
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SER(data & 0x01); // D0
-  J15_PIN_SCLK_0; // setup delay
-  J15_PIN_SCLK_0;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
-  J15_PIN_SCLK_1;
+  int i;
+  for(i=0; i<8; ++i, data <<= 1) {
+    J15_PIN_SER(data & 0x80);
+    J15_PIN_SCLK_0; // setup delay
+    J15_PIN_SCLK_0; // stretch...
+    J15_PIN_SCLK_0; // stretch...
+    J15_PIN_SCLK_0; // stretch...
+    J15_PIN_SCLK_0; // stretch...
+    J15_PIN_SCLK_1;
+    J15_PIN_SCLK_1;
+    J15_PIN_SCLK_1;
+  }
 
   // transfer to output register
-  J15_PIN_RCLK_1;
-  J15_PIN_RCLK_1;
-  J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
   J15_PIN_RCLK_1;
@@ -1035,56 +992,18 @@ s32 MIOS32_BOARD_J15_SerDataShift(u8 data)
 #else
   MIOS32_IRQ_Disable();
 
-  J15_PIN_SERLCD_DATAOUT(data & 0x80); // D7
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x40); // D6
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x20); // D5
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x10); // D4
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x08); // D3
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x04); // D2
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x02); // D1
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_DATAOUT(data & 0x01); // D0
-  J15_PIN_SERLCD_SCLK_0; // setup delay
-  J15_PIN_SERLCD_SCLK_0;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
-  J15_PIN_SERLCD_SCLK_1;
+  int i;
+  for(i=0; i<8; ++i, data <<= 1) {
+    J15_PIN_SERLCD_DATAOUT(data & 0x80);
+    J15_PIN_SERLCD_SCLK_0; // setup delay
+    J15_PIN_SERLCD_SCLK_0; // stretch...
+    J15_PIN_SERLCD_SCLK_0; // stretch...
+    J15_PIN_SERLCD_SCLK_0; // stretch...
+    J15_PIN_SERLCD_SCLK_0; // stretch...
+    J15_PIN_SERLCD_SCLK_1;
+    J15_PIN_SERLCD_SCLK_1;
+    J15_PIN_SERLCD_SCLK_1;
+  }
 
   // set SERLCD_DATAOUT (=J15.RW) to an active level
   // RW is unfortunately also connected to OE# of the 74HC595, which drives the CS lines.

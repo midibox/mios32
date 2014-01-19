@@ -192,8 +192,25 @@ extern "C" void APP_Init(void)
   SCS_Init(0);
   SCS_CONFIG_Init(0);
 
-  if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_GLCD_SSD1306 )
+  if( MIOS32_LCD_TypeIsGLCD() && mios32_lcd_parameters.height >= 64 ) {
     SCS_LCD_OffsetYSet(6);
+    mbCvEnvironment.mbCvScope[0].setShowOnMainScreen(true);
+
+    // print warning message on alt screen, that it isn't used anymore!
+    APP_SelectScopeLCDs();
+    MIOS32_LCD_DeviceSet(0);
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_SMALL);
+    MIOS32_LCD_CursorSet(0, 0);
+    MIOS32_LCD_PrintFormattedString("Display not used!");
+    MIOS32_LCD_CursorSet(0, 1);
+    MIOS32_LCD_PrintFormattedString("Content visible on main screen!");
+    MIOS32_LCD_CursorSet(0, 2);
+    MIOS32_LCD_PrintFormattedString("Try another CS line");
+    MIOS32_LCD_CursorSet(0, 3);
+    MIOS32_LCD_PrintFormattedString("to display other scopes!");
+    MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
+    APP_SelectMainLCD();
+  }
 
   TERMINAL_Init(0);
   MIDIMON_Init(0);
@@ -483,6 +500,7 @@ void APP_TASK_Period_1mS_LP2(void)
 #endif
   }
 
+#if 0
   // CV Bars (currently only for SSD1306)
   {
     MUTEX_LCD_TAKE;
@@ -503,6 +521,7 @@ void APP_TASK_Period_1mS_LP2(void)
 
     MUTEX_LCD_GIVE;
   }
+#endif
 }
 
 

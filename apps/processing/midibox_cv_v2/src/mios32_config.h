@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxCV V2.000"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIboxCV"

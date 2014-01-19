@@ -65,9 +65,16 @@ public:
     void setUpdatePeriod(u32 period);
     u32  getUpdatePeriod(void);
 
+    // display mapping
+    void setShowOnMainScreen(bool showOnMainScreen);
+    bool getShowOnMainScreen(void);
+
 protected:
     // display number
     u8 displayNum;
+
+    // shows on main screen or alt screen?
+    bool showOnMainScreen;
 
     // the display buffer
     u8 displayBuffer[MBCV_SCOPE_DISPLAY_BUFFER_SIZE];
