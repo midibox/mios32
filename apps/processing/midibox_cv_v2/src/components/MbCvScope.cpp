@@ -23,6 +23,9 @@
 /////////////////////////////////////////////////////////////////////////////
 MbCvScope::MbCvScope()
 {
+    // changed from APP_Init()
+    // never re-initialized
+    showOnMainScreen = false;
 }
 
 
@@ -201,18 +204,22 @@ void MbCvScope::tick(void)
 
             {
                 MUTEX_LCD_TAKE;
-                APP_SelectScopeLCDs();
+                if( showOnMainScreen )
+                    APP_SelectMainLCD();
+                else
+                    APP_SelectScopeLCDs();
 
                 MIOS32_LCD_DeviceSet(displayNum);
                 MIOS32_LCD_GCursorSet(0, y);
                 MIOS32_LCD_BitmapPrint(bitmap);
 
-                APP_SelectMainLCD();
+                if( !showOnMainScreen )
+                    APP_SelectMainLCD();
                 MUTEX_LCD_GIVE;
             }
         }
 
-        {
+        if( !showOnMainScreen ) {
             MUTEX_LCD_TAKE;
             APP_SelectScopeLCDs();
 
@@ -306,6 +313,20 @@ u8 MbCvScope::getSource(void)
 {
     return source;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Display Mapping
+/////////////////////////////////////////////////////////////////////////////
+void MbCvScope::setShowOnMainScreen(bool _showOnMainScreen)
+{
+    showOnMainScreen = _showOnMainScreen;
+}
+
+bool MbCvScope::getShowOnMainScreen(void)
+{
+    return showOnMainScreen;
+}
+
 
 
 

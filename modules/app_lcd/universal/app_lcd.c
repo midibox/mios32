@@ -163,15 +163,21 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
   int i;
   if( lsb_first ) {
     for(i=0; i<8; ++i, data >>= 1) {
-      APP_LCD_ExtPort_PinSet(0, data & 1); // J5C:A8 = ser
-      APP_LCD_ExtPort_PinSet(1, 0); // J5C.A9 = 0 (Clk)
-      APP_LCD_ExtPort_PinSet(1, 1); // J5C.A9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET(GPIOC, GPIO_Pin_4, data & 1); // J5C.A8 = ser
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // J5C.A9 = 0 (Clk)
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_5); // J5C.A9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_5); // stretch
     }
   } else {
     for(i=0; i<8; ++i, data <<= 1) {
-      APP_LCD_ExtPort_PinSet(0, data & 0x80); // J5C:A8 = ser
-      APP_LCD_ExtPort_PinSet(1, 0); // J5C.A9 = 0 (Clk)
-      APP_LCD_ExtPort_PinSet(1, 1); // J5C.A9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET(GPIOC, GPIO_Pin_4, data & 0x80); // J5C.A8 = ser
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // J5C.A9 = 0 (Clk)
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_5); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_5); // J5C.A9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_5); // stretch
     }
   }
   return 0; // no error
@@ -183,7 +189,11 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // J10B.D9 = 0 (Clk)
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
       MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // J10B.D9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // stretch
     }
   } else {
     for(i=0; i<8; ++i, data <<= 1) {
@@ -191,7 +201,11 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // J10B.D9 = 0 (Clk)
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
       MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_0(GPIOC, GPIO_Pin_14); // stretch
       MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // J10B.D9 = 1 (Clk)
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // stretch
+      MIOS32_SYS_STM_PINSET_1(GPIOC, GPIO_Pin_14); // stretch
     }
   }
   return 0; // no error
@@ -204,6 +218,7 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
       MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
       MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
       MIOS32_SYS_LPC_PINSET_1(2, 11); // J28.SC = 1 (Clk)
+      MIOS32_SYS_LPC_PINSET_1(2, 11); // stretch
     }
   } else {
     for(i=0; i<8; ++i, data <<= 1) {
@@ -212,6 +227,7 @@ inline static s32 APP_LCD_ExtPort_SerDataShift(u8 data, u8 lsb_first) {
       MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
       MIOS32_SYS_LPC_PINSET_0(2, 11); // stretch
       MIOS32_SYS_LPC_PINSET_1(2, 11); // J28.SC = 1 (Clk)
+      MIOS32_SYS_LPC_PINSET_1(2, 11); // stretch
     }
   }
   return 0; // no error
