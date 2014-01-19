@@ -464,6 +464,15 @@ s32 MIOS32_SPI_IO_Init(u8 spi, mios32_spi_pin_driver_t spi_pin_driver)
 	GPIO_Init(MIOS32_SPI0_RCLK1_PORT, &GPIO_InitStructure);
 	GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI0_RCLK2_PIN;
 	GPIO_Init(MIOS32_SPI0_RCLK2_PORT, &GPIO_InitStructure);
+
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
+	// set RE3=1 to ensure that the on-board MEMs is disabled
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_Init(GPIOE, &GPIO_InitStructure);	
+	MIOS32_SYS_STM_PINSET_1(GPIOE, GPIO_Pin_3);
+#else
+# warning "Please doublecheck if RE3 has to be set to 1 to disable MEMs"
+#endif
     
 	// DIN is input with pull-up
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
@@ -754,83 +763,44 @@ s32 MIOS32_SPI_TransferModeInit(u8 spi, mios32_spi_mode_t spi_mode, mios32_spi_p
 s32 MIOS32_SPI_RC_PinSet(u8 spi, u8 rc_pin, u8 pin_value)
 {
   switch( spi ) {
-    case 0:
+  case 0:
 #ifdef MIOS32_DONT_USE_SPI0
-      return -1; // disabled SPI port
+    return -1; // disabled SPI port
 #else
-      switch( rc_pin ) {
-        case 0:
-	  if( pin_value )
-	    MIOS32_SPI0_RCLK1_PORT->BSRRL = MIOS32_SPI0_RCLK1_PIN;
-	  else
-	    MIOS32_SPI0_RCLK1_PORT->BSRRH  = MIOS32_SPI0_RCLK1_PIN;
-	  break;
-
-        case 1:
-	  if( pin_value )
-	    MIOS32_SPI0_RCLK2_PORT->BSRRL = MIOS32_SPI0_RCLK2_PIN;
-	  else
-	    MIOS32_SPI0_RCLK2_PORT->BSRRH  = MIOS32_SPI0_RCLK2_PIN;
-	  break;
-
-        default:
-	  return -3; // unsupported RC pin
-      }
-      break;
+    switch( rc_pin ) {
+    case 0: MIOS32_SYS_STM_PINSET(MIOS32_SPI0_RCLK1_PORT, MIOS32_SPI0_RCLK1_PIN, pin_value); break;
+    case 1: MIOS32_SYS_STM_PINSET(MIOS32_SPI0_RCLK2_PORT, MIOS32_SPI0_RCLK2_PIN, pin_value); break;
+    default: return -3; // unsupported RC pin
+    }
+    break;
 #endif
 
-    case 1:
+  case 1:
 #ifdef MIOS32_DONT_USE_SPI1
-      return -1; // disabled SPI port
+    return -1; // disabled SPI port
 #else
-      switch( rc_pin ) {
-        case 0:
-	  if( pin_value )
-	    MIOS32_SPI1_RCLK1_PORT->BSRRL = MIOS32_SPI1_RCLK1_PIN;
-	  else
-	    MIOS32_SPI1_RCLK1_PORT->BSRRH  = MIOS32_SPI1_RCLK1_PIN;
-	  break;
-
-        case 1:
-	  if( pin_value )
-	    MIOS32_SPI1_RCLK2_PORT->BSRRL = MIOS32_SPI1_RCLK2_PIN;
-	  else
-	    MIOS32_SPI1_RCLK2_PORT->BSRRH  = MIOS32_SPI1_RCLK2_PIN;
-	  break;
-
-        default:
-	  return -3; // unsupported RC pin
-      }
-      break;
+    switch( rc_pin ) {
+    case 0: MIOS32_SYS_STM_PINSET(MIOS32_SPI1_RCLK1_PORT, MIOS32_SPI1_RCLK1_PIN, pin_value); break;
+    case 1: MIOS32_SYS_STM_PINSET(MIOS32_SPI1_RCLK2_PORT, MIOS32_SPI1_RCLK2_PIN, pin_value); break;
+    default: return -3; // unsupported RC pin
+    }
+    break;
 #endif
 
-    case 2:
+  case 2:
 #ifdef MIOS32_DONT_USE_SPI2
-      return -1; // disabled SPI port
+    return -1; // disabled SPI port
 #else
-      switch( rc_pin ) {
-        case 0:
-	  if( pin_value )
-	    MIOS32_SPI2_RCLK1_PORT->BSRRL = MIOS32_SPI2_RCLK1_PIN;
-	  else
-	    MIOS32_SPI2_RCLK1_PORT->BSRRH  = MIOS32_SPI2_RCLK1_PIN;
-	  break;
-
-        case 1:
-	  if( pin_value )
-	    MIOS32_SPI2_RCLK2_PORT->BSRRL = MIOS32_SPI2_RCLK2_PIN;
-	  else
-	    MIOS32_SPI2_RCLK2_PORT->BSRRH  = MIOS32_SPI2_RCLK2_PIN;
-	  break;
-
-        default:
-	  return -3; // unsupported RC pin
-      }
-      break;
+    switch( rc_pin ) {
+    case 0: MIOS32_SYS_STM_PINSET(MIOS32_SPI2_RCLK1_PORT, MIOS32_SPI2_RCLK1_PIN, pin_value); break;
+    case 1: MIOS32_SYS_STM_PINSET(MIOS32_SPI2_RCLK2_PORT, MIOS32_SPI2_RCLK2_PIN, pin_value); break;
+    default: return -3; // unsupported RC pin
+    }
+    break;
 #endif
 
-    default:
-      return -2; // unsupported SPI port
+  default:
+    return -2; // unsupported SPI port
   }
 
   return 0; // no error

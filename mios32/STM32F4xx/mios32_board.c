@@ -97,7 +97,7 @@ static const j10_pin_t j10_pin[J10_NUM_PINS] = {
   { GPIOC, GPIO_Pin_13 },
   { GPIOC, GPIO_Pin_14 },
   { GPIOC, GPIO_Pin_15 },
-  { GPIOE, GPIO_Pin_3 },
+  { GPIOE, GPIO_Pin_2 }, // PE3 is set to 1 by the MIOS32_SPI driver to ensure that the MEMs chip of the DISCOVERY board doesn't drive the SPI lines
   { GPIOE, GPIO_Pin_4 },
   { GPIOE, GPIO_Pin_5 },
   { GPIOE, GPIO_Pin_6 },
@@ -636,7 +636,8 @@ s32 MIOS32_BOARD_J10_Get(void)
   return
     (((GPIOE->IDR & 0xff00) >>  8) |
      ((GPIOC->IDR & 0xe000) >>  5) |
-     ((GPIOE->IDR & 0x00f8) <<  8)) & j10_enable_mask;
+     ((GPIOE->IDR & 0x0004) <<  9) |
+     ((GPIOE->IDR & 0x00f0) <<  8)) & j10_enable_mask;
 # else
 # warning "Not prepared for this MIOS32_BOARD"
   return -2; // board not supported
@@ -731,7 +732,8 @@ s32 MIOS32_BOARD_J10B_Get(void)
 
   return
     ((((GPIOC->IDR & 0xe000) >>  5) |
-      ((GPIOE->IDR & 0x00f8) <<  8)) & j10_enable_mask) >> 8;
+      ((GPIOE->IDR & 0x0004) <<  9) |
+      ((GPIOE->IDR & 0x00f0) <<  8)) & j10_enable_mask) >> 8;
 # else
 # warning "Not prepared for this MIOS32_BOARD"
   return -2; // board not supported

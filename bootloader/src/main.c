@@ -427,54 +427,43 @@ static s32 ResetSRIOChains(void)
 
   // init GPIO driver modes
   for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1 by default
-#else
-    srio_sclk_pin[i].port->BSRRL = srio_sclk_pin[i].pin_mask; // SCLK=1 by default
-#endif
+    MIOS32_SYS_STM_PINSET_1(srio_sclk_pin[i].port, srio_sclk_pin[i].pin_mask); // SCLK=1 by default
     GPIO_InitStructure.GPIO_Pin = srio_sclk_pin[i].pin_mask;
     GPIO_Init(srio_sclk_pin[i].port, &GPIO_InitStructure);
   }
 
   for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1 by default
-#else
-    srio_rclk_pin[i].port->BSRRL = srio_rclk_pin[i].pin_mask; // RCLK=1 by default
-#endif
+    MIOS32_SYS_STM_PINSET_1(srio_rclk_pin[i].port, srio_rclk_pin[i].pin_mask); // RCLK=1 by default
     GPIO_InitStructure.GPIO_Pin = srio_rclk_pin[i].pin_mask;
     GPIO_Init(srio_rclk_pin[i].port, &GPIO_InitStructure);
   }
 
   for(i=0; i<SRIO_NUM_MOSI_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    srio_mosi_pin[i].port->BRR = srio_mosi_pin[i].pin_mask; // MOSI=0 by default
-#else
-    srio_mosi_pin[i].port->BSRRH = srio_mosi_pin[i].pin_mask; // MOSI=0 by default
-#endif
+    MIOS32_SYS_STM_PINSET_0(srio_mosi_pin[i].port, srio_mosi_pin[i].pin_mask); // MOSI=0 by default
     GPIO_InitStructure.GPIO_Pin = srio_mosi_pin[i].pin_mask;
     GPIO_Init(srio_mosi_pin[i].port, &GPIO_InitStructure);
   }
+
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
+	// set RE3=1 to ensure that the on-board MEMs is disabled
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+	GPIO_Init(GPIOE, &GPIO_InitStructure);	
+	MIOS32_SYS_STM_PINSET_1(GPIOE, GPIO_Pin_3);
+#else
+# warning "Please doublecheck if RE3 has to be set to 1 to disable MEMs"
+#endif
 
   // send 128 clocks to all SPI ports
   int cycle;
   for(cycle=0; cycle<128; ++cycle) {
     for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-      srio_sclk_pin[i].port->BRR = srio_sclk_pin[i].pin_mask; // SCLK=0
-#else
-      srio_sclk_pin[i].port->BSRRH = srio_sclk_pin[i].pin_mask; // SCLK=0
-#endif
+      MIOS32_SYS_STM_PINSET_0(srio_sclk_pin[i].port, srio_sclk_pin[i].pin_mask); // SCLK=0
     }
 
     MIOS32_DELAY_Wait_uS(1);
 
     for(i=0; i<SRIO_NUM_SCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-      srio_sclk_pin[i].port->BSRR = srio_sclk_pin[i].pin_mask; // SCLK=1
-#else
-      srio_sclk_pin[i].port->BSRRL = srio_sclk_pin[i].pin_mask; // SCLK=1
-#endif
+      MIOS32_SYS_STM_PINSET_1(srio_sclk_pin[i].port, srio_sclk_pin[i].pin_mask); // SCLK=1
     }
 
     MIOS32_DELAY_Wait_uS(1);
@@ -482,21 +471,13 @@ static s32 ResetSRIOChains(void)
 
   // latch values
   for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    srio_rclk_pin[i].port->BRR = srio_rclk_pin[i].pin_mask; // RCLK=0
-#else
-    srio_rclk_pin[i].port->BSRRH = srio_rclk_pin[i].pin_mask; // RCLK=0
-#endif
+    MIOS32_SYS_STM_PINSET_0(srio_rclk_pin[i].port, srio_rclk_pin[i].pin_mask); // RCLK=0
   }
 
   MIOS32_DELAY_Wait_uS(1);
 
   for(i=0; i<SRIO_NUM_RCLK_PINS; ++i) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    srio_rclk_pin[i].port->BSRR = srio_rclk_pin[i].pin_mask; // RCLK=1
-#else
-    srio_rclk_pin[i].port->BSRRL = srio_rclk_pin[i].pin_mask; // RCLK=1
-#endif
+    MIOS32_SYS_STM_PINSET_1(srio_rclk_pin[i].port, srio_rclk_pin[i].pin_mask); // RCLK=1
   }
 
   MIOS32_DELAY_Wait_uS(1);

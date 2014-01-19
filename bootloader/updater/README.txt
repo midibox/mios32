@@ -1,8 +1,8 @@
 $Id$
 
-Bootloader Update V1.010
+Bootloader Update V1.015
 ===============================================================================
-Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
+Copyright (C) 2014 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
 All other rights reserved.
 ===============================================================================
@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4
 
 ===============================================================================
 
@@ -48,7 +48,7 @@ to the MIOS Terminal, which can be opened in MIOS Studio
 If the bootloader is up-to-date, you will get following messages:
 
 | ====================
-| Bootloader V1.010
+| Bootloader V1.015
 | ====================
 | 
 | Checking Bootloader...
@@ -62,7 +62,7 @@ If the bootloader is up-to-date, you will get following messages:
 If the bootloader has to be updated, you will probably get following messages:
 
 | ====================
-| Bootloader V1.010
+| Bootloader V1.015
 | ====================
 | 
 | Checking Bootloader...
