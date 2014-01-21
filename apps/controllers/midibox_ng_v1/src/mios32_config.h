@@ -69,7 +69,12 @@
 //   mask 0x0f00 will enable all J5C channels
 //   mask 0x0fff will enable all J5A/B/C channels
 // (all channels are disabled by default)
+#if defined(MIOS32_FAMILY_STM32F10x) || defined(MIOS32_FAMILY_LPC17xx)
+// reduced to 6 pins due to conflict with MIDI OUT3/IN3
 #define MIOS32_AIN_CHANNEL_MASK 0x003f
+#else
+#define MIOS32_AIN_CHANNEL_MASK 0x00ff
+#endif
 
 // define the deadband (min. difference to report a change to the application hook)
 // typically set to (2^(12-desired_resolution)-1)

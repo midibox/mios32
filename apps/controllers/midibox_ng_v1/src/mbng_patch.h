@@ -26,7 +26,15 @@
 #define MBNG_PATCH_NUM_DIN        1024
 #define MBNG_PATCH_NUM_DOUT       1024
 #define MBNG_PATCH_NUM_ENC         128
+
+#if MIOS32_AIN_CHANNEL_MASK == 0x3f
 #define MBNG_PATCH_NUM_AIN           6
+#elif MIOS32_AIN_CHANNEL_MASK == 0xff
+#define MBNG_PATCH_NUM_AIN           8
+#else
+# error "please adapt for this unsupported MIOS32_AIN_CHANNEL_MASK"
+#endif
+
 #define MBNG_PATCH_NUM_AINSER_MODULES AINSER_NUM_MODULES
 #define MBNG_PATCH_NUM_MF_MODULES    4
 #define MBNG_PATCH_NUM_CV_CHANNELS   AOUT_NUM_CHANNELS
