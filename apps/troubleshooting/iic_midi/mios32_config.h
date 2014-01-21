@@ -15,6 +15,9 @@
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
 
 
+// IIC port J4A (=0) or J4B (=1)?
+#define MIOS32_IIC_MIDI_PORT 0
+
 // enable 4 interfaces
 #define MIOS32_IIC_MIDI_NUM 4
 
