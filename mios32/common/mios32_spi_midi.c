@@ -91,6 +91,9 @@ s32 MIOS32_SPI_MIDI_Init(u32 mode)
   // deactivate CS output
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
+  // ensure that fast pin drivers are activated
+  MIOS32_SPI_IO_Init(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_PIN_DRIVER_STRONG);
+
   // starting with first half of the double buffer
   tx_upstream_buffer_select = 0;
 
