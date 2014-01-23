@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 or similar
    o up to 16 motorfaders
    o one (for up to 8 faders) or two (for up to 16 faders) MBHP_MF modules
 

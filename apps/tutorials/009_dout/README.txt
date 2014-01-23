@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 or similar
    o up to 4 DOUTX4 modules
    o up to 128 LEDs
 

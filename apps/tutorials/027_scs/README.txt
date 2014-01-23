@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_LPC17 (MBHP_CORE_STM32 *)
+   o MBHP_CORE_LPC17 (MBHP_CORE_STM32 *) or MBHP_CORE_STM32F4
    o a "standard control surface"
      Schematic: http://www.ucapps.de/mbhp_scs.html
 
