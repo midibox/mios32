@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 or similar
    o a character or graphical LCD
 
 ===============================================================================
@@ -80,7 +80,7 @@ Example:
   - TASK_LCD2() has to wait until the variable has been set back to 0
 
 But since TASK_LCD2() is running at high priority, and accordingly blocks
-all lower priority tasks, TASK_LCD1() won't be continued so long TASK_LCD2()
+all lower priority tasks, TASK_LCD1() won't be continued as long as TASK_LCD2()
 is waiting!
 
 ---

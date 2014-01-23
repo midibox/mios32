@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 or similar
      (STM32: DAC voltages are output at pin RA4 (J16:RC1) and RA5 (J16:SC)
 
 Optional hardware:
@@ -157,7 +157,7 @@ Even if no AOUT module is connected, you can evaluate the notestack handling
 by opening the MIOS Terminal. Whenever a Note is received, the new content
 of the Notestack will be send to the terminal as plain text messages.
 
-The Board LED should turn on so long a key is pressed on your keyboard.
+The Board LED should turn on as long as a key is pressed on your keyboard.
 It should turn off once no key is played anymore.
 
 

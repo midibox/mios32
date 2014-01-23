@@ -13,8 +13,9 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
-   o a I2S compatible audio DAC (like TDA1543 or PCM1725U)
+   o MBHP_CORE_STM32 and a I2S compatible audio DAC (like TDA1543 or PCM1725U)
+   o MBHP_CORE_LPC17 and a I2S compatible audio DAC (like TDA1543 or PCM1725U)
+   o MBHP_CORE_STM32F4 (has an on-board DAC)
 
 Optional:
    o a 2x16 LCD

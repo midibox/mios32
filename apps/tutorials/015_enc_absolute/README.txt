@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4 or similar
    o at least one MBHP_DINX4 module
    o 1..64 rotary encoders
 
@@ -94,7 +94,7 @@ the following way in APP_Init()
     enc_config.cfg.speed_par = 2;
 -------------------------------------------------------------------------------
 
-You will still be able to change the virtual position precisely so long
+You will still be able to change the virtual position precisely as long as
 the encoder is moved slowly. Once it is turned faster, the incrementer
 value increases (usually by 2..5), so that it should be possible to
 send values over the complete range with a single turn (without removing 

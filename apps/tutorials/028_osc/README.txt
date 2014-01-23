@@ -13,9 +13,9 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_LPC17 (MBHP_CORE_STM32 *)
+   o MBHP_CORE_LPC17 (MBHP_CORE_STM32 or MBHP_CORE_STM32F4 *)
 
-(*) MBHP_CORE_STM32 requires an ENC28J60 based MBHP_ETH module in addition
+(*) MBHP_CORE_STM32(F4) requires an ENC28J60 based MBHP_ETH module in addition
 
 ===============================================================================
 
