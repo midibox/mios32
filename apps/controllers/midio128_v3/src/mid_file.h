@@ -41,6 +41,7 @@ extern s32 MID_FILE_eof(void);
 extern s32 MID_FILE_seek(u32 pos);
 
 extern s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package);
+extern s32 MID_FILE_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 
 extern s32 MID_FILE_SetRecordMode(u8 enable);
 

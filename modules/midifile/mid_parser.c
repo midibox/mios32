@@ -236,7 +236,9 @@ s32 MID_PARSER_Read(void)
 
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("[MID_PARSER] Number of Tracks: %u (expected: %u)\n\r", midi_tracks_num, num_tracks);
-#endif    
+#else
+  if( num_tracks ); // avoid warning (unused variable...)
+#endif
 
   file_valid = 1;
 
@@ -315,6 +317,13 @@ s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks)
 	// TODO: use optimized packages for SysEx!
 	mios32_midi_package_t midi_package;
 	midi_package.type = 0xf; // single bytes will be transmitted
+
+	// initial 0xf0
+	midi_package.evnt0 = 0xf0;
+	if( mid_parser_playevent_callback != NULL )
+	  mid_parser_playevent_callback(track, midi_package, mt->tick);
+
+	// remaining bytes
 	int i;
 	for(i=0; i<length; ++i) {
 	  u8 evnt0;

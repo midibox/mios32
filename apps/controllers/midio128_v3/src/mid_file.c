@@ -73,6 +73,10 @@ static mios32_midi_package_t record_last_event;
 static u32 record_trk_header_filepos;
 static u32 record_trk_size;
 
+static u32 record_sysex_delta_tick;
+static u8 record_sysex_buffer_pos;
+#define SYSEX_BUFFER_SIZE 64
+static u8 record_sysex_buffer[SYSEX_BUFFER_SIZE];
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -308,11 +312,70 @@ static s32 MID_FILE_WriteVarLen(u32 value)
 }
 
 
+static s32 MID_FILE_WriteSysEx(u8 *buffer, u32 len)
+{
+  s32 status = 0;
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+  DEBUG_MSG("[MID_FILE:%u] SysEx (%d bytes)\n", SEQ_BPM_TickGet(), len);
+  MIOS32_MIDI_SendDebugHexDump(buffer, len);
+#endif
+
+  if( len < 1 ) // just to ensure...
+    return -1;
+
+  // delta tick
+  record_trk_size += MID_FILE_WriteVarLen(record_sysex_delta_tick);
+  record_sysex_delta_tick = 0;
+
+  // on new SysEx stream: F0 <length> <bytes to be transmitted after F0>
+  // on continued SysEx stream: F7 <length> <all bytes to be transmitted>
+  int pos = 0;
+  if( buffer[0] == 0xf0 ) {
+    status |= FILE_WriteByte(0xf0);
+    ++record_trk_size;
+    ++pos;
+    record_trk_size += MID_FILE_WriteVarLen(len - 1);
+  } else {
+    status |= FILE_WriteByte(0xf7);
+    ++record_trk_size;
+    record_trk_size += MID_FILE_WriteVarLen(len);
+  }
+
+  while( pos < len ) {
+    status |= FILE_WriteByte(buffer[pos++]);
+    ++record_trk_size;
+  }
+
+  return (status < 0) ? status : len;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Flush SysEx buffer
+/////////////////////////////////////////////////////////////////////////////
+static s32 MID_FILE_FlushSysEx(void)
+{
+  s32 status = 0;
+
+  if( record_sysex_buffer_pos ) {
+    MUTEX_SDCARD_TAKE;
+    status |= MID_FILE_WriteSysEx(record_sysex_buffer, record_sysex_buffer_pos);
+    record_sysex_buffer_pos = 0;
+    MUTEX_SDCARD_GIVE;
+  }
+  
+  return status;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // called from when a MIDI event is received
 /////////////////////////////////////////////////////////////////////////////
 s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package)
 {
+  s32 status = 0;
+
   // ignore if recording mode not enabled
   if( !MID_FILE_RecordingEnabled() )
     return 0;
@@ -364,6 +427,9 @@ s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package)
   }
 
   if( num_bytes ) {
+    // remaining data in SysEx buffer?
+    status |= MID_FILE_FlushSysEx();
+
     int delta = seq_tick - record_last_tick;
     if( delta < 0 )
       delta = 0;
@@ -378,7 +444,82 @@ s32 MID_FILE_Receive(mios32_midi_port_t port, mios32_midi_package_t package)
     record_last_event = package;
   }
 
-  return 0; // no error
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// called when a SysEx byte is received
+/////////////////////////////////////////////////////////////////////////////
+s32 MID_FILE_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
+{
+  s32 status = 0;
+
+  // ignore if recording mode not enabled
+  if( !MID_FILE_RecordingEnabled() )
+    return 0;
+
+  // port enabled?
+  if( port == DEFAULT ) {
+    if( !seq_rec_enable_din )
+      return 0;
+  } else {
+    // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+    if( port < USB0 || port > OSC3 )
+      return 0;
+    u16 port_ix = ((port-USB0) >> 2) | (port & 0x03);
+    u16 port_mask = (1 << port_ix);
+    if( !(seq_rec_enabled_ports & port_mask) )
+      return 0;
+  }
+
+  // ignore realtime events (like MIDI clock)
+  if( midi_in >= 0xf8 )
+    return 0;
+
+  u32 seq_tick = SEQ_BPM_TickGet();
+
+  // start of SysEx stream?
+  if( midi_in == 0xf0 ) {
+    // flush remaining data in buffer if available.
+    status |= MID_FILE_FlushSysEx();
+
+    // start new stream
+    record_sysex_buffer[0] = 0xf0;
+    record_sysex_buffer_pos = 1;
+
+    // determine tick
+    int delta = seq_tick - record_last_tick;
+    if( delta < 0 )
+      delta = 0;
+
+    record_sysex_delta_tick = delta;
+
+    record_last_tick = seq_tick;
+    record_last_port = port;
+    {
+      mios32_midi_package_t package;
+      package.ALL = 0;
+      package.type = 0xf;
+      package.evnt0 = 0xf0;
+      record_last_event = package;
+    }
+  } else {
+    // end of buffer already reached? -> flush it
+    if( record_sysex_buffer_pos == SYSEX_BUFFER_SIZE ) {
+      status |= MID_FILE_FlushSysEx();
+    }
+
+    // store new byte
+    record_sysex_buffer[record_sysex_buffer_pos++] = midi_in;
+
+    // if this was 0xf7 (end of stream)? Flush SysEx buffer
+    if( midi_in == 0xf7 ) {
+      status |= MID_FILE_FlushSysEx();
+    }
+  }
+
+  return status;
 }
 
 
@@ -402,6 +543,7 @@ s32 MID_FILE_SetRecordMode(u8 enable)
     record_last_tick = 0;
     record_last_port = 0;
     record_last_event.ALL = 0;
+    record_sysex_buffer_pos = 0;
 
     // determine filename
     u32 rec_num = 0;
@@ -447,6 +589,9 @@ s32 MID_FILE_SetRecordMode(u8 enable)
     }
 
   } else {
+    // if ongoing SysEx: store remaining bytes
+    status |= MID_FILE_FlushSysEx();
+
     // stop recording
     status |= FILE_WriteClose();
 
