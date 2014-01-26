@@ -600,6 +600,12 @@ static s32 SEQ_PlayEvent(u8 track, mios32_midi_package_t midi_package, u32 tick)
   if( ffwd_silent_mode )
     return 0;
 
+  // In order to support an unlimited SysEx stream length, we pass them as single bytes directly w/o the sequencer!
+  if( midi_package.type == 0xf ) {
+    Hook_MIDI_SendPackage(DEFAULT, midi_package);
+    return 0;
+  }
+
   seq_midi_out_event_type_t event_type = SEQ_MIDI_OUT_OnEvent;
   if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) )
     event_type = SEQ_MIDI_OUT_OffEvent;

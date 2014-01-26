@@ -1,6 +1,12 @@
 $Id$
 
 
+MIDIO128 V3.019
+~~~~~~~~~~~~~~~
+
+   o added SysEx support for MIDI file player and recorder
+
+
 MIDIO128 V3.018
 ~~~~~~~~~~~~~~~
 

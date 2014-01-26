@@ -265,6 +265,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
+  // -> MIDI file recorder
+  MID_FILE_ReceiveSysEx(port, midi_in);
+
   // -> MIDIO
   MIDIO_SYSEX_Parser(port, midi_in);
 
