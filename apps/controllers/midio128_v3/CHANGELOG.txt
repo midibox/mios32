@@ -6,6 +6,9 @@ MIDIO128 V3.019
 
    o added SysEx support for MIDI file player and recorder
 
+   o MIDI file recorder now sets "end of track" marker at the end of a 4/4 bar
+     to comply with the MIDI file spec, and to allow proper looping
+
 
 MIDIO128 V3.018
 ~~~~~~~~~~~~~~~

@@ -592,6 +592,22 @@ s32 MID_FILE_SetRecordMode(u8 enable)
     // if ongoing SysEx: store remaining bytes
     status |= MID_FILE_FlushSysEx();
 
+    // set end of track marker at the end of the bar (to allow proper looping)
+    {
+      u32 ticks_per_bar = 4 * SEQ_BPM_PPQN_Get();
+      u32 delta_bar = ticks_per_bar - (record_last_tick % ticks_per_bar);
+      u32 seq_tick = record_last_tick + delta_bar;
+
+      int delta = seq_tick - record_last_tick;
+      if( delta < 0 )
+	delta = 0;
+
+      record_trk_size += MID_FILE_WriteVarLen(delta);
+      record_trk_size += MID_FILE_WriteWord(0xff, 1); // meta event
+      record_trk_size += MID_FILE_WriteWord(0x2f, 1); // End of Track
+      record_trk_size += MID_FILE_WriteWord(0x00, 1);
+    }
+
     // stop recording
     status |= FILE_WriteClose();
 
