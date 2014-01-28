@@ -1,4 +1,4 @@
-# $Id: release.sh 1606 2012-12-16 15:29:35Z tk $
+# $Id: release.sh 1951 2014-01-28 22:40:29Z tk $
 
 if [[ "$1" == "" ]]; then
   echo "SYNTAX: release.sh <release-directory>"
@@ -17,21 +17,19 @@ echo "Creating $RELEASE_DIR"
 
 mkdir $RELEASE_DIR
 cp README.txt $RELEASE_DIR
-cp CHANGELOG.txt $RELEASE_DIR
-cp -r cfg $RELEASE_DIR
-find $RELEASE_DIR/cfg -type d | grep .svn$ | xargs rm -rf
+#cp CHANGELOG.txt $RELEASE_DIR
 
-################################################################################
-#echo "Building for MBHP_CORE_STM32"
+###############################################################################
+echo "Building for MBHP_CORE_STM32"
 
 make cleanall
 export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F103RE
 export MIOS32_BOARD=MBHP_CORE_STM32
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_STM32
-make > $RELEASE_DIR/MBHP_CORE_STM32/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_STM32
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 echo "Building for MBHP_CORE_LPC17"
@@ -41,9 +39,9 @@ export MIOS32_FAMILY=LPC17xx
 export MIOS32_PROCESSOR=LPC1769
 export MIOS32_BOARD=MBHP_CORE_LPC17
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_LPC17
-make > $RELEASE_DIR/MBHP_CORE_LPC17/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_LPC17
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 echo "Building for MBHP_CORE_STM32F4"
@@ -51,11 +49,11 @@ echo "Building for MBHP_CORE_STM32F4"
 make cleanall
 export MIOS32_FAMILY=STM32F4xx
 export MIOS32_PROCESSOR=STM32F407VG
-export MIOS32_BOARD=STM32F4DISCOVERY
+export MIOS32_BOARD=MBHP_CORE_STM32F4
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_STM32F4
-make > $RELEASE_DIR/MBHP_CORE_STM32F4/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_STM32F4
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 make cleanall
