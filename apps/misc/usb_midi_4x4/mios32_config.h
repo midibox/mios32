@@ -11,8 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "USB MIDI 4x4"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2011 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "USB MIDI 4x4 V1.009"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 // Following settings allow to customize the USB device descriptor
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
