@@ -9,6 +9,8 @@ MIDIO128 V3.019
    o MIDI file recorder now sets "end of track" marker at the end of a 4/4 bar
      to comply with the MIDI file spec, and to allow proper looping
 
+   o support for MBHP_CORE_STM32F4
+
 
 MIDIO128 V3.018
 ~~~~~~~~~~~~~~~
