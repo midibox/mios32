@@ -30,9 +30,9 @@ export MIOS32_FAMILY=STM32F10x
 export MIOS32_PROCESSOR=STM32F103RE
 export MIOS32_BOARD=MBHP_CORE_STM32
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_STM32
-make > $RELEASE_DIR/MBHP_CORE_STM32/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_STM32
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 echo "Building for MBHP_CORE_LPC17"
@@ -42,9 +42,9 @@ export MIOS32_FAMILY=LPC17xx
 export MIOS32_PROCESSOR=LPC1769
 export MIOS32_BOARD=MBHP_CORE_LPC17
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_LPC17
-make > $RELEASE_DIR/MBHP_CORE_LPC17/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_LPC17
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 echo "Building for MBHP_CORE_STM32F4"
@@ -54,9 +54,9 @@ export MIOS32_FAMILY=STM32F4xx
 export MIOS32_PROCESSOR=STM32F407VG
 export MIOS32_BOARD=MBHP_CORE_STM32F4
 export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_STM32F4
-make > $RELEASE_DIR/MBHP_CORE_STM32F4/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_STM32F4
+mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+make > $RELEASE_DIR/$MIOS32_BOARD/log.txt
+cp project.hex $RELEASE_DIR/$MIOS32_BOARD
 
 ###############################################################################
 make cleanall

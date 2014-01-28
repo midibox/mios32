@@ -33,10 +33,10 @@
 
 // same number of levels as for "common DOUTs" (see mbng_dout.c)
 // however, the actual number of levels depends on the number of scanned rows:
-// 4  rows: reduced to 8 dim levels
-// 8  rows: reduced to 4 dim levels
-// 16 rows: reduced to 2 dim levels
-#define NUM_MATRIX_DIM_LEVELS 16
+// 4  rows: reduced to 8 dim levels if MIOS32_SRIO_NUM_DOUT_PAGES == 32
+// 8  rows: reduced to 4 dim levels if MIOS32_SRIO_NUM_DOUT_PAGES == 32
+// 16 rows: reduced to 2 dim levels if MIOS32_SRIO_NUM_DOUT_PAGES == 32
+#define NUM_MATRIX_DIM_LEVELS (MIOS32_SRIO_NUM_DOUT_PAGES/2)
 // but the level is always selected in the 0..15 range to avoid unnecessary calculations at the user side
 
 
@@ -49,7 +49,7 @@
 # error "not prepared for != 16 rows - many variable types have to be adapted!"
 #endif
 
-#if MIOS32_SRIO_NUM_DOUT_PAGES != 32
+#if MIOS32_SRIO_NUM_DOUT_PAGES != 32 && MIOS32_SRIO_NUM_DOUT_PAGES != 64
 # error "not prepared for != 32 pages - many variable types have to be adapted!"
 #endif
 
@@ -338,13 +338,17 @@ s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix)
     }
 
     if( m->sr_dout_sel1 ) {
-      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel1-1, dout_value);
-      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel1-1, dout_value);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=16) {
+	MIOS32_DOUT_PageSRSet(row+page_offset, m->sr_dout_sel1-1, dout_value);
+      }
     }
 
     if( m->sr_dout_sel2 ) {
-      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel2-1, dout_value >> 8);
-      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel2-1, dout_value >> 8);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=16) {
+	MIOS32_DOUT_PageSRSet(row+page_offset, m->sr_dout_sel2-1, dout_value >> 8);
+      }
     }
   }
 
@@ -393,13 +397,17 @@ s32 MBNG_MATRIX_ButtonMatrixChanged(u8 matrix)
     }
 
     if( m->sr_dout_sel1 ) {
-      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel1-1, dout_value);
-      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel1-1, dout_value);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=16) {
+	MIOS32_DOUT_PageSRSet(row+page_offset, m->sr_dout_sel1-1, dout_value);
+      }
     }
 
     if( m->sr_dout_sel2 ) {
-      MIOS32_DOUT_PageSRSet(row+ 0, m->sr_dout_sel2-1, dout_value >> 8);
-      MIOS32_DOUT_PageSRSet(row+16, m->sr_dout_sel2-1, dout_value >> 8);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=16) {
+	MIOS32_DOUT_PageSRSet(row+page_offset, m->sr_dout_sel2-1, dout_value >> 8);
+      }
     }
   }
 
@@ -516,10 +524,6 @@ s32 MBNG_MATRIX_DOUT_PinSet(u8 matrix, u8 color, u16 pin, u8 level)
   default: sr = (column >= 8) ? m->sr_dout_r2 : m->sr_dout_r1; break;
   }
 
-#if MIOS32_SRIO_NUM_DOUT_PAGES != 32
-# error "Please adapt this code according to the different MIOS32_SRIO_NUM_DOUT_PAGES"
-#endif
-
 #if NUM_MATRIX_DIM_LEVELS != (MIOS32_SRIO_NUM_DOUT_PAGES/2)
 # error "Please adapt this code according to the different NUM_MATRIX_DIM_LEVELS"
 #endif
@@ -600,17 +604,17 @@ static s32 Hlp_DOUT_PatternTransfer(u8 matrix, u8 color, u16 row, u16 matrix_pat
   if( m->num_rows ) {
     if( sr1 ) {
       u8 sr_offset = sr1-1;
-      int i;
-      for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
-	MIOS32_DOUT_PageSRSet(row + i, sr_offset, (level && (i <= 2*level)) ? sr1_value : 0);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=m->num_rows) {
+	MIOS32_DOUT_PageSRSet(row + page_offset, sr_offset, (level && (page_offset <= 2*level)) ? sr1_value : 0);
       }
     }
 
     if( sr2 ) {
       u8 sr_offset = sr2-1;
-      int i;
-      for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; i+=m->num_rows) {
-	MIOS32_DOUT_PageSRSet(row + i, sr_offset, (level && (i <= 2*level)) ? sr2_value : 0);
+      int page_offset;
+      for(page_offset=0; page_offset<MIOS32_SRIO_NUM_DOUT_PAGES; page_offset+=m->num_rows) {
+	MIOS32_DOUT_PageSRSet(row + page_offset, sr_offset, (level && (page_offset <= 2*level)) ? sr2_value : 0);
       }
     }
   }
