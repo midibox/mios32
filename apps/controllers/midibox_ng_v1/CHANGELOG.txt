@@ -13,6 +13,8 @@ MIDIbox NG V1.029
      send also MIDI event.
      Usage example: cfg/templates/pg300.ngc
 
+   o support for MBHP_CORE_STM32F4 module
+
 
 MIDIbox NG V1.028
 ~~~~~~~~~~~~~~~~~
