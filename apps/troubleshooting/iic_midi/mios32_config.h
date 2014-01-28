@@ -11,8 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "IIC_MIDI Test"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "IIC_MIDI Test V1.001"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 
 // IIC port J4A (=0) or J4B (=1)?
