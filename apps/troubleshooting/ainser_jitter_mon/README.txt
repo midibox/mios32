@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32 or MBHP_CORE_LPC17 or MBHP_CORE_STM32F4
    o one or two MBHP_AINSER64 module
    o up to 2 * 64 10k pots (alternatively 4.7k or 1k)
 
