@@ -13,7 +13,7 @@ Required tools:
 ===============================================================================
 
 Required hardware:
-   o MBHP_CORE_STM32 or MBHP_CORE_LPC17
+   o MBHP_CORE_STM32F4 or MBHP_CORE_LPC17
    o up to 4 MBHP_DINX4 modules
    o up to 4 MBHP_OUTX4 modules
    o a SD Card to store the customized setup (and to load MIDI files)
