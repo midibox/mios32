@@ -46,6 +46,16 @@
 # ifndef EEPROM_IIC_CS
 #  define EEPROM_IIC_CS     0
 # endif
+
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+# if defined(MIOS32_PROCESSOR_STM32F407VG)
+#  define PAGE_SIZE ((uint16_t)0x800)  /* Page size = 1KByte */
+#  ifndef EEPROM_START_ADDRESS
+#   define EEPROM_START_ADDRESS    ((uint32_t)0x080FF000)  // 2*2k at top of flash memory
+#  endif
+# else
+#  error "Processor not prepared for STM32 EEPROM emulation"
+# endif
 #else
 # error "This MIOS32_FAMILY not prepared for EEPROM (emulation)"
 #endif
