@@ -103,12 +103,19 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 
 
-#define MBNG_EVENT_POOL_MAX_SIZE (24*1024)
+#if defined(MIOS32_FAMILY_STM32F4xx)
+# define MBNG_EVENT_POOL_MAX_SIZE (64*1024)
+#else
+# define MBNG_EVENT_POOL_MAX_SIZE (24*1024)
+#endif
 
 #ifndef AHB_SECTION
 #define AHB_SECTION
 #endif
 
+#if MBNG_EVENT_POOL_MAX_SIZE > (64*1024)
+# error "More than 64k Event Pool is not supported yet!"
+#endif
 static u8 AHB_SECTION event_pool[MBNG_EVENT_POOL_MAX_SIZE];
 static u16 event_pool_size;
 static u16 event_pool_maps_begin;
