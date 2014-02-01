@@ -180,30 +180,30 @@ typedef struct {
 #define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
 
 #define MIOS32_SPI2_SCLK_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_SCLK_SET(b) { MIOS32_SPI2_SCLK_PORT->BSRR = (b) ? MIOS32_SPI2_SCLK_PIN : (MIOS32_SPI2_SCLK_PIN << 16); }
+#define MIOS32_SPI2_SCLK_SET(b) MIOS32_SYS_STM_PINSET(MIOS32_SPI2_SCLK_PORT, MIOS32_SPI2_SCLK_PIN, b);
 #define MIOS32_SPI2_MOSI_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_MOSI_SET(b) { MIOS32_SPI2_MOSI_PORT->BSRR = (b) ? MIOS32_SPI2_MOSI_PIN : (MIOS32_SPI2_MOSI_PIN << 16); }
+#define MIOS32_SPI2_MOSI_SET(b) MIOS32_SYS_STM_PINSET(MIOS32_SPI2_MOSI_PORT, MIOS32_SPI2_MOSI_PIN, b);
 
 #elif defined(MIOS32_FAMILY_STM32F4xx)
 #define MIOS32_SPI2_HIGH_VOLTAGE 5
 
 #define MIOS32_SPI2_SCLK_PORT  GPIOB
-#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_6
+#define MIOS32_SPI2_SCLK_PIN   GPIO_Pin_3
 #define MIOS32_SPI2_MOSI_PORT  GPIOB
 #define MIOS32_SPI2_MOSI_PIN   GPIO_Pin_5
 
-#define MIOS32_SPI2_SCLK_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_SCLK_SET(b) { if( b ) MIOS32_SPI2_SCLK_PORT->BSRRL = MIOS32_SPI2_SCLK_PIN; else MIOS32_SPI2_SCLK_PORT->BSRRH = MIOS32_SPI2_SCLK_PIN; }
-#define MIOS32_SPI2_MOSI_INIT   { } // already configured as GPIO
-#define MIOS32_SPI2_MOSI_SET(b) { if( b ) MIOS32_SPI2_MOSI_PORT->BSRRL = MIOS32_SPI2_MOSI_PIN; else MIOS32_SPI2_MOSI_PORT->BSRRH = MIOS32_SPI2_MOSI_PIN; }
+#define MIOS32_SPI2_SCLK_INIT   { GPIO_InitTypeDef GPIO_InitStructure; GPIO_StructInit(&GPIO_InitStructure); GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT; GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_SCLK_PIN; GPIO_Init(MIOS32_SPI2_SCLK_PORT, &GPIO_InitStructure); }
+#define MIOS32_SPI2_SCLK_SET(b) MIOS32_SYS_STM_PINSET(MIOS32_SPI2_SCLK_PORT, MIOS32_SPI2_SCLK_PIN, b);
+#define MIOS32_SPI2_MOSI_INIT   { GPIO_InitTypeDef GPIO_InitStructure; GPIO_StructInit(&GPIO_InitStructure); GPIO_InitStructure.GPIO_OType = GPIO_OType_PP; GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT; GPIO_InitStructure.GPIO_Pin  = MIOS32_SPI2_MOSI_PIN; GPIO_Init(MIOS32_SPI2_MOSI_PORT, &GPIO_InitStructure); }
+#define MIOS32_SPI2_MOSI_SET(b) MIOS32_SYS_STM_PINSET(MIOS32_SPI2_MOSI_PORT, MIOS32_SPI2_MOSI_PIN, b);
 
 #elif defined(MIOS32_FAMILY_LPC17xx)
 #define MIOS32_SPI2_HIGH_VOLTAGE 5
 
 #define MIOS32_SPI2_SCLK_INIT    { MIOS32_SYS_LPC_PINSEL(0, 15, 0); MIOS32_SYS_LPC_PINDIR(0, 15, 1); }
-#define MIOS32_SPI2_SCLK_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 15, v); }
+#define MIOS32_SPI2_SCLK_SET(v)  MIOS32_SYS_LPC_PINSET(0, 15, v)
 #define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 0); MIOS32_SYS_LPC_PINDIR(0, 18, 1); }
-#define MIOS32_SPI2_MOSI_SET(v)  { MIOS32_SYS_LPC_PINSET(0, 18, v); }
+#define MIOS32_SPI2_MOSI_SET(v)  MIOS32_SYS_LPC_PINSET(0, 18, v)
 #else
 # error "Please adapt MIOS32_SPI settings!"
 #endif
@@ -362,7 +362,7 @@ s32 AOUT_IF_Init(u32 mode)
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
       // init SPI
-      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
       
     } break;
 
@@ -376,7 +376,7 @@ s32 AOUT_IF_Init(u32 mode)
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
       // init SPI
-      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
     } break;
 
     case AOUT_IF_TLV5630: {
@@ -386,7 +386,7 @@ s32 AOUT_IF_Init(u32 mode)
 	++aout_num_devices;
 
       // init SPI
-      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_4);
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
 
       // initialize CTRL0
       // DO=1 (DOUT Enable), R=3 (internal reference, 2V)
@@ -413,7 +413,7 @@ s32 AOUT_IF_Init(u32 mode)
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
       // init SPI
-      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4);
+      status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
       
     } break;
 
