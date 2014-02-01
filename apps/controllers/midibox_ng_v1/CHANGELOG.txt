@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.030
+~~~~~~~~~~~~~~~~~
+
+   o increased event pool size to 64k for MBHP_CORE_STM32F4
+
+
 MIDIbox NG V1.029
 ~~~~~~~~~~~~~~~~~
 
