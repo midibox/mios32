@@ -1895,3 +1895,5 @@ TK: any other mixer map CC handling requests before I start to implement this as
 fcebreros: remote control on dedicated MIDI port without the need for a remote key
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
 ----------------------------------------------------------
+FFW: add Extra CC On/Off toggle button to LFO page
+----------------------------------------------------------
