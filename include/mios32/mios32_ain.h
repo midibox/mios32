@@ -37,6 +37,18 @@
 #endif
 
 
+//! Normally the ADC channels are converted each mS from the programming
+//! model (main.c) - optionally this can be skipped with
+//! #define MIOS32_DONT_SERVICE_AIN 1 in mios32_config.h
+//! 
+//! In this case, the MIOS32_AIN_StartConversions() function has to be called
+//! periodically from the application (e.g. from a timer), and conversion values
+//! can be retrieved with MIOS32_AIN_PinGet()
+#ifndef MIOS32_DONT_SERVICE_AIN
+#define MIOS32_DONT_SERVICE_AIN 0
+#endif
+
+
 // define the desired oversampling rate (1..16)
 #ifndef MIOS32_AIN_OVERSAMPLING_RATE
 #define MIOS32_AIN_OVERSAMPLING_RATE  1
@@ -121,6 +133,8 @@ extern s32 MIOS32_AIN_DeadbandGet(void);
 extern s32 MIOS32_AIN_DeadbandSet(u16 deadband);
 
 extern s32 MIOS32_AIN_Handler(void *callback);
+
+extern s32 MIOS32_AIN_StartConversions(void);
 
 
 /////////////////////////////////////////////////////////////////////////////

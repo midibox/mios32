@@ -8,7 +8,8 @@
 #
 
 
-my $tau = 100.0;
+my $tau = 100.0; # exp1
+#my $tau = 500.0; # exp2
 my $steps = 1024;
 my $y_max = 65535.0;
 my $x_offset = 15.0;

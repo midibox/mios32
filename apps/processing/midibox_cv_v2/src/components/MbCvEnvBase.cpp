@@ -52,7 +52,8 @@ void MbCvEnvBase::init(void)
     envModeFast = 0;
 
     envAmplitude = 64;
-    envCurve = 0;
+    envCurvePos = 0;
+    envCurveNeg = 0;
 
     envDepthPitch = 0;
     envDepthLfo1Amplitude = 0;
@@ -105,10 +106,21 @@ bool MbCvEnvBase::step(const u16& startValue, const u16& targetValue, const u16&
 
     // Waveshape depending on envCurve
     u16 curveValue = envCtr; // MBCV_ENV_CURVE_LINEAR and other unimplemented
-    if( envCurve == MBCV_ENV_CURVE_EXP ) {
-        curveValue = capChargeCurve[curveValue / (65536 / CAP_CHARGE_CURVE_STEPS)];
+    u8 curve = curveInverted ? envCurveNeg : envCurvePos;
+    switch( curve ) {
+    case MBCV_ENV_CURVE_EXP1:
+        curveValue = capChargeCurve1[curveValue / (65536 / CAP_CHARGE_CURVE_STEPS)];
+        break;
+    case MBCV_ENV_CURVE_EXP1_INV:
+        curveValue = 65535 - capChargeCurve1[(65535 - curveValue) / (65536 / CAP_CHARGE_CURVE_STEPS)];
+        break;
+    case MBCV_ENV_CURVE_EXP2:
+        curveValue = capChargeCurve2[curveValue / (65536 / CAP_CHARGE_CURVE_STEPS)];
+        break;
+    case MBCV_ENV_CURVE_EXP2_INV:
+        curveValue = 65535 - capChargeCurve2[(65535 - curveValue) / (65536 / CAP_CHARGE_CURVE_STEPS)];
+        break;
     }
-    // TODO: MBCV_ENV_CURVE_CUSTOM*
 
     // scale over range
     if( curveInverted ) {

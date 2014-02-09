@@ -43,7 +43,8 @@ void MbCvMidiVoice::init(void)
     midivoiceSplitLower = 0x00;
     midivoiceSplitUpper = 0x7f;
     midivoiceTranspose = 0x40;
-    midivoicePitchbender = 0;
+    midivoiceModWheel = 0;
+    midivoicePitchBender = 0;
     midivoiceLastVoice = 0;
     midivoiceCCNumber = 16;
     midivoiceAftertouch = 0;

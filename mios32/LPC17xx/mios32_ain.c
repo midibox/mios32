@@ -374,6 +374,24 @@ s32 MIOS32_AIN_Handler(void *_callback)
 #endif
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Starts an ADC conversion (use this if the MIOS32_AIN_Handler call has been
+//! disabled via #define MIOS32_DONT_SERVICE_AIN 1 in mios32_config.h
+//! 
+//! In this case, the MIOS32_AIN_StartConversions() function has to be called
+//! periodically from the application (e.g. from a timer), and conversion values
+//! can be retrieved with MIOS32_AIN_PinGet()
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_AIN_StartConversions(void)
+{
+#if !MIOS32_AIN_CHANNEL_MASK
+  return -1; // no analog input selected
+#else
+  // conversions always running...
+  return 0; // no error
+#endif
+}
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -55,7 +55,8 @@ public:
     u8 midivoiceSplitUpper;
     s8 midivoiceTranspose;
     u8 midivoiceLastVoice;
-    s16 midivoicePitchbender;
+    u8 midivoiceModWheel;
+    s16 midivoicePitchBender;
     u8 midivoiceAftertouch;
     u8 midivoiceCCNumber;
     u8 midivoiceCCValue;

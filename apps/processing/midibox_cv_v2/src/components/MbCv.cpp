@@ -46,6 +46,7 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
     mbCvVoice.init(_cvNum, &mbCvMidiVoice);
     mbCvMidiVoice.init();
     mbCvMod.init(_cvNum);
+    lastExternalGateValue = 0;
 
     updatePatch(true);
 }
@@ -56,6 +57,22 @@ void MbCv::init(u8 _cvNum, MbCvClock *_mbCvClockPtr)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCv::tick(const u8 &updateSpeedFactor)
 {
+    // external trigger
+    {
+        u16 ainValue = MIOS32_AIN_PinGet(cvNum); // 12bit
+        u16 threshold = mbCvVoice.voiceExternalGateThreshold << 4; // 8bit -> 12bit
+        if( threshold ) {
+            if( lastExternalGateValue < threshold && ainValue >= threshold ) {
+                mbCvVoice.gateOn();
+                triggerNoteOn(&mbCvVoice);
+            } else if( lastExternalGateValue >= threshold && ainValue < threshold ) {
+                mbCvVoice.gateOff(mbCvVoice.voicePlayedNote);
+                triggerNoteOff(&mbCvVoice);
+            }
+        }
+        lastExternalGateValue = ainValue;
+    }
+
     // clock
     if( mbCvClockPtr->eventStart ) {
         mbCvSeqBassline.seqRestartReq = true;
@@ -84,8 +101,6 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             if( l->tick(updateSpeedFactor) ) {
                 // trigger[MBCV_TRG_L1P+lfo];
             }
-
-            mbCvMod.modSrc[MBCV_MOD_SRC_LFO1 + lfo] = l->lfoOut;
         }
     }
 
@@ -102,8 +117,6 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             if( e->tick(updateSpeedFactor) ) {
                 // trigger[MBCV_TRG_E1S];
             }
-
-            mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] = e->envOut;
         }
     }
 
@@ -119,74 +132,75 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
             if( e->tick(updateSpeedFactor) ) {
                 // trigger[MBCV_TRG_E2S];
             }
-
-            mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] = e->envOut;
         }
     }
 
     // Modulation Matrix
     {
-        // since this isn't done anywhere else:
-        // convert linear frequency of voice1 to 15bit signed value (only positive direction)
-        mbCvMod.modSrc[MBCV_MOD_SRC_KEY] = mbCvVoice.voiceLinearFrq >> 1;
-
         // do ModMatrix calculations
         mbCvMod.tick();
 
         // additional direct modulation paths
-        { // Pitch
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_PITCH];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthPitch) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthPitch) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthPitch) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthPitch) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_PITCH] = mod;
-        }
+        {
+            s32 lfo1Value = (s32)mbCvLfo[0].lfoOut;
+            s32 lfo2Value = (s32)mbCvLfo[1].lfoOut;
+            s32 env1Value = (s32)mbCvEnv1[0].envOut;
+            s32 env2Value = (s32)mbCvEnv2[0].envOut;
 
-        { // LFO1 Amp
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_A];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthLfoAmplitude) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo1Amplitude) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo1Amplitude) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_LFO1_A] = mod;
-        }
+            { // Pitch
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_CV];
+                mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthPitch) / 128;
+                mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthPitch) / 128;
+                mod += (env1Value * (s32)mbCvEnv1[0].envDepthPitch) / 128;
+                mod += (env1Value * (s32)mbCvEnv2[0].envDepthPitch) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_CV] = mod;
+            }
 
-        { // LFO2 Amp
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_A];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthLfoAmplitude) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo2Amplitude) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo2Amplitude) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_LFO2_A] = mod;
-        }
+            { // LFO1 Amp
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_A];
+                mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthLfoAmplitude) / 128;
+                mod += (env1Value * (s32)mbCvEnv1[0].envDepthLfo1Amplitude) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthLfo1Amplitude) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_LFO1_A] = mod;
+            }
 
-        { // LFO1 Rate
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_R];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthLfoRate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo1Rate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo1Rate) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_LFO1_R] = mod;
-        }
+            { // LFO2 Amp
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_A];
+                mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthLfoAmplitude) / 128;
+                mod += (env1Value * (s32)mbCvEnv1[0].envDepthLfo2Amplitude) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthLfo2Amplitude) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_LFO2_A] = mod;
+            }
 
-        { // LFO2 Rate
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_R];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthLfoRate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV1] * (s32)mbCvEnv1[0].envDepthLfo2Rate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_ENV2] * (s32)mbCvEnv2[0].envDepthLfo2Rate) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_LFO2_R] = mod;
-        }
+            { // LFO1 Rate
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO1_R];
+                mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthLfoRate) / 128;
+                mod += (env1Value * (s32)mbCvEnv1[0].envDepthLfo1Rate) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthLfo1Rate) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_LFO1_R] = mod;
+            }
 
-        { // ENV1 Rate
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV1_R];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv1Rate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv1Rate) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_ENV1_R] = mod;
-        }
+            { // LFO2 Rate
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_LFO2_R];
+                mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthLfoRate) / 128;
+                mod += (env1Value * (s32)mbCvEnv1[0].envDepthLfo2Rate) / 128;
+                mod += (env2Value * (s32)mbCvEnv2[0].envDepthLfo2Rate) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_LFO2_R] = mod;
+            }
 
-        { // ENV2 Rate
-            s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV2_R];
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO1] * (s32)mbCvLfo[0].lfoDepthEnv2Rate) / 128;
-            mod += ((s32)mbCvMod.modSrc[MBCV_MOD_SRC_LFO2] * (s32)mbCvLfo[1].lfoDepthEnv2Rate) / 128;
-            mbCvMod.modDst[MBCV_MOD_DST_ENV2_R] = mod;
+            { // ENV1 Rate
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV1_R];
+                mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthEnv1Rate) / 128;
+                mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthEnv1Rate) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_ENV1_R] = mod;
+            }
+
+            { // ENV2 Rate
+                s32 mod = mbCvMod.modDst[MBCV_MOD_DST_ENV2_R];
+                mod += (lfo1Value * (s32)mbCvLfo[0].lfoDepthEnv2Rate) / 128;
+                mod += (lfo2Value * (s32)mbCvLfo[1].lfoDepthEnv2Rate) / 128;
+                mbCvMod.modDst[MBCV_MOD_DST_ENV2_R] = mod;
+            }
         }
     }
 
@@ -194,16 +208,12 @@ bool MbCv::tick(const u8 &updateSpeedFactor)
         // Voice handling
         MbCvVoice *v = &mbCvVoice; // allows to use multiple voices later
 
-        v->voicePitchModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_PITCH);
+        v->voicePitchModulation = mbCvMod.takeDstValue(MBCV_MOD_DST_CV);
 
         if( mbCvArp.arpEnabled ) {
             mbCvArp.tick(v, this);
-            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ENVMOD] = mbCvSeqBassline.seqEnvMod << 7; // just pass current value
-            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ACCENT] = mbCvSeqBassline.seqAccent << 7; // just pass current value (not effective value)
         } else {
             mbCvSeqBassline.tick(v, this);
-            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ENVMOD] = mbCvSeqBassline.seqEnvMod << 7;
-            mbCvMod.modSrc[MBCV_MOD_SRC_SEQ_ACCENT] = mbCvSeqBassline.seqAccentEffective << 7; // effective value is only != 0 when accent flag is set
         }
 
         if( v->gate(updateSpeedFactor) )
@@ -265,7 +275,6 @@ void MbCv::midiReceiveNote(u8 chn, u8 note, u8 velocity)
 
     // set note on/off
     if( velocity ) {
-        mbCvMod.modSrc[MBCV_MOD_SRC_VEL] = velocity << 8;
         noteOn(note, velocity, false);
     } else
         noteOff(note, false);
@@ -282,7 +291,7 @@ void MbCv::midiReceiveCC(u8 chn, u8 ccNumber, u8 value)
     // take over CC (valid CCs will be checked by MIDI voice)
     if( mbCvMidiVoice.isAssigned(chn) ) {
         if( ccNumber == 1 )
-            mbCvMod.modSrc[MBCV_MOD_SRC_MDW] = value << 8;
+            mbCvMidiVoice.midivoiceModWheel = value;
 
         mbCvMidiVoice.setCC(ccNumber, value);
     }
@@ -296,9 +305,7 @@ void MbCv::midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit)
 {
     if( mbCvMidiVoice.isAssigned(chn) ) {
         s16 pitchbendValueSigned = (s16)pitchbendValue14bit - 8192;
-        mbCvMidiVoice.midivoicePitchbender = pitchbendValueSigned;
-
-        mbCvMod.modSrc[MBCV_MOD_SRC_PBN] = 2*pitchbendValueSigned;
+        mbCvMidiVoice.midivoicePitchBender = pitchbendValueSigned;
     }
 }
 
@@ -309,8 +316,7 @@ void MbCv::midiReceivePitchBend(u8 chn, u16 pitchbendValue14bit)
 void MbCv::midiReceiveAftertouch(u8 chn, u8 value)
 {
     if( mbCvMidiVoice.isAssigned(chn) ) {
-        mbCvMidiVoice.midivoiceAftertouch = value << 8;
-        mbCvMod.modSrc[MBCV_MOD_SRC_ATH] = value;
+        mbCvMidiVoice.midivoiceAftertouch = value;
     }
 }
 
@@ -518,6 +524,8 @@ CREATE_ACCESS_FUNCTIONS(MidiVoice, Legato,             "Legato",          *value
 CREATE_ACCESS_FUNCTIONS(MidiVoice, Poly,               "Poly",            *value = cv->mbCvVoice.voicePoly,                        cv->mbCvVoice.voicePoly = value);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, SusKey,             "SusKey",          *value = cv->mbCvVoice.voiceSusKey,                      cv->mbCvVoice.voiceSusKey = value);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, PortamentoMode,     "PortamentoMode",  *value = cv->mbCvVoice.getPortamentoMode(),              cv->mbCvVoice.setPortamentoMode(value));
+CREATE_ACCESS_FUNCTIONS(MidiVoice, ForceToScale,       "ForceToScale",    *value = cv->mbCvVoice.voiceForceToScale,                cv->mbCvVoice.voiceForceToScale = value);
+CREATE_ACCESS_FUNCTIONS(MidiVoice, ExtGateThrs,        "ExtGateThrs",     *value = cv->mbCvVoice.voiceExternalGateThreshold,    cv->mbCvVoice.voiceExternalGateThreshold = value);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, PitchRange,         "Pitch Range",     *value = cv->mbCvVoice.voicePitchrange,                  cv->mbCvVoice.voicePitchrange = value);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, Ketrack,            "Keytrack",        *value = (int)cv->mbCvVoice.voiceKeytrack + 0x80,        cv->mbCvVoice.voiceKeytrack = (int)value - 0x80);
 CREATE_ACCESS_FUNCTIONS(MidiVoice, TransposeOctave,    "Transp. Octave",  *value = (int)cv->mbCvVoice.voiceTransposeOctave + 8,    cv->mbCvVoice.voiceTransposeOctave = (int)value - 8);
@@ -566,7 +574,8 @@ CREATE_ACCESS_FUNCTIONS(Lfo, DepthEnv2Rate,            "Depth ENV2 Rate", *value
 
 CREATE_GROUP(Env1, "ENV1");
 CREATE_ACCESS_FUNCTIONS(Env1, Amplitude,               "Amplitude",       *value = (int)cv->mbCvEnv1[arg].envAmplitude + 0x80,          cv->mbCvEnv1[arg].envAmplitude = (int)value - 0x80);
-CREATE_ACCESS_FUNCTIONS(Env1, Curve,                   "Curve",           *value = (int)cv->mbCvEnv1[arg].envCurve,                     cv->mbCvEnv1[arg].envCurve = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, CurvePos,                "CurvePos",        *value = (int)cv->mbCvEnv1[arg].envCurvePos,                  cv->mbCvEnv1[arg].envCurvePos = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env1, CurveNeg,                "CurveNeg",        *value = (int)cv->mbCvEnv1[arg].envCurveNeg,                  cv->mbCvEnv1[arg].envCurveNeg = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env1, Delay,                   "Delay",           *value = (int)cv->mbCvEnv1[arg].envDelay,                     cv->mbCvEnv1[arg].envDelay = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env1, Attack,                  "Attack",          *value = (int)cv->mbCvEnv1[arg].envAttack,                    cv->mbCvEnv1[arg].envAttack = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env1, Decay,                   "Decay",           *value = (int)cv->mbCvEnv1[arg].envDecay,                     cv->mbCvEnv1[arg].envDecay = (int)value);
@@ -584,7 +593,8 @@ CREATE_ACCESS_FUNCTIONS(Env1, DepthLfo2Rate,           "Depth LFO2 Rate", *value
 
 CREATE_GROUP(Env2, "ENV2");
 CREATE_ACCESS_FUNCTIONS(Env2, Amplitude,               "Amplitude",       *value = (int)cv->mbCvEnv2[arg].envAmplitude + 0x80,          cv->mbCvEnv2[arg].envAmplitude = (int)value - 0x80);
-CREATE_ACCESS_FUNCTIONS(Env2, Curve,                   "Curve",           *value = (int)cv->mbCvEnv2[arg].envCurve,                     cv->mbCvEnv2[arg].envCurve = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, CurvePos,                "CurvePos",        *value = (int)cv->mbCvEnv2[arg].envCurvePos,                  cv->mbCvEnv2[arg].envCurvePos = (int)value);
+CREATE_ACCESS_FUNCTIONS(Env2, CurveNeg,                "CurveNeg",        *value = (int)cv->mbCvEnv2[arg].envCurveNeg,                  cv->mbCvEnv2[arg].envCurveNeg = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, Offset,                  "Offset",          *value = (int)cv->mbCvEnv2[arg].envOffset,                    cv->mbCvEnv2[arg].envOffset = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, Rate,                    "Rate",            *value = (int)cv->mbCvEnv2[arg].envRate,                      cv->mbCvEnv2[arg].envRate = (int)value);
 CREATE_ACCESS_FUNCTIONS(Env2, LoopAttack,              "Loop Attack",     *value = (int)cv->mbCvEnv2[arg].envLoopAttack,                cv->mbCvEnv2[arg].envLoopAttack = (int)value);
@@ -604,6 +614,7 @@ CREATE_ACCESS_FUNCTIONS(Env2, Level,                   "Level Step #%2d", *value
 
 CREATE_GROUP(Mod, "Mod%d");
 CREATE_ACCESS_FUNCTIONS(Mod, Depth,                    "Depth",           *value = cv->mbCvMod.modPatch[arg].depth + 0x80,              cv->mbCvMod.modPatch[arg].depth = (int)value - 0x80);
+CREATE_ACCESS_FUNCTIONS(Mod, Offset,                   "Offset",          *value = cv->mbCvMod.modPatch[arg].offset + 0x80,             cv->mbCvMod.modPatch[arg].offset = (int)value - 0x80);
 CREATE_ACCESS_FUNCTIONS(Mod, Src1,                     "Source1",         *value = cv->mbCvMod.modPatch[arg].src1,                      cv->mbCvMod.modPatch[arg].src1 = value);
 CREATE_ACCESS_FUNCTIONS(Mod, Src1Chn,                  "Source1 CV",      *value = cv->mbCvMod.modPatch[arg].src1_chn,                  cv->mbCvMod.modPatch[arg].src1_chn = value);
 CREATE_ACCESS_FUNCTIONS(Mod, Src2,                     "Source2",         *value = cv->mbCvMod.modPatch[arg].src2,                      cv->mbCvMod.modPatch[arg].src2 = value);
@@ -660,8 +671,8 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM(  MidiVoice, Poly,               0, 0, 1, 0),
     NRPN_TABLE_ITEM(  MidiVoice, SusKey,             0, 0, 1, 0),
     NRPN_TABLE_ITEM(  MidiVoice, PortamentoMode,     0, 0, 2, 0),
-    NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM(  MidiVoice, ForceToScale,       0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  MidiVoice, ExtGateThrs,        0, 0, 255, 0),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY8(),
@@ -896,13 +907,13 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
 
     // 0x200
     NRPN_TABLE_ITEM(  Env1, Amplitude,               0, 0, 255, 1),
-    NRPN_TABLE_ITEM(  Env1, Curve,                   0, 0, 3, 0), // TODO: create enum for curve
+    NRPN_TABLE_ITEM(  Env1, CurvePos,                0, 0, MBCV_ENV_NUM_CURVES-1, 0),
+    NRPN_TABLE_ITEM(  Env1, CurveNeg,                0, 0, MBCV_ENV_NUM_CURVES-1, 0),
     NRPN_TABLE_ITEM(  Env1, Delay,                   0, 0, 255, 0),
     NRPN_TABLE_ITEM(  Env1, Attack,                  0, 0, 255, 0),
     NRPN_TABLE_ITEM(  Env1, Decay,                   0, 0, 255, 0),
     NRPN_TABLE_ITEM(  Env1, Sustain,                 0, 0, 255, 0),
     NRPN_TABLE_ITEM(  Env1, Release,                 0, 0, 255, 0),
-    NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY8(),
 
     // 0x210
@@ -940,10 +951,10 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
 
     // 0x280
     NRPN_TABLE_ITEM(  Env2, Amplitude,               0, 0, 255, 1),
-    NRPN_TABLE_ITEM(  Env2, Curve,                   0, 0, 3, 0), // TODO: create enum for curve
+    NRPN_TABLE_ITEM(  Env2, CurvePos,                0, 0, MBCV_ENV_NUM_CURVES-1, 0),
+    NRPN_TABLE_ITEM(  Env2, CurveNeg,                0, 0, MBCV_ENV_NUM_CURVES-1, 0),
     NRPN_TABLE_ITEM(  Env2, Offset,                  0, 0, 255, 0),
     NRPN_TABLE_ITEM(  Env2, Rate,                    0, 0, 255, 0),
-    NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
@@ -1024,6 +1035,7 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
 
     // 0x300
     NRPN_TABLE_ITEM(  Mod, Depth,                    0, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Offset,                   0, 0, 255, 1),
     NRPN_TABLE_ITEM(  Mod, Src1,                     0, 0, MBCV_NUM_MOD_SRC-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src1Chn,                  0, 0, CV_SE_NUM-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src2,                     0, 0, MBCV_NUM_MOD_SRC-1, 0),
@@ -1038,10 +1050,10 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
 
     // 0x310
     NRPN_TABLE_ITEM(  Mod, Depth,                    1, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Offset,                   1, 0, 255, 1),
     NRPN_TABLE_ITEM(  Mod, Src1,                     1, 0, MBCV_NUM_MOD_SRC-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src1Chn,                  1, 0, CV_SE_NUM-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src2,                     1, 0, MBCV_NUM_MOD_SRC-1, 0),
@@ -1056,10 +1068,10 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
 
     // 0x320
     NRPN_TABLE_ITEM(  Mod, Depth,                    2, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Offset,                   2, 0, 255, 1),
     NRPN_TABLE_ITEM(  Mod, Src1,                     2, 0, MBCV_NUM_MOD_SRC-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src1Chn,                  2, 0, CV_SE_NUM-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src2,                     2, 0, MBCV_NUM_MOD_SRC-1, 0),
@@ -1074,10 +1086,10 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
-    NRPN_TABLE_ITEM_EMPTY(),
 
     // 0x330
     NRPN_TABLE_ITEM(  Mod, Depth,                    3, 0, 255, 1),
+    NRPN_TABLE_ITEM(  Mod, Offset,                   3, 0, 255, 1),
     NRPN_TABLE_ITEM(  Mod, Src1,                     3, 0, MBCV_NUM_MOD_SRC-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src1Chn,                  3, 0, CV_SE_NUM-1, 0),
     NRPN_TABLE_ITEM(  Mod, Src2,                     3, 0, MBCV_NUM_MOD_SRC-1, 0),
@@ -1087,7 +1099,6 @@ static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
     NRPN_TABLE_ITEM(  Mod, Dst1Inv,                  3, 0, 1, 0),
     NRPN_TABLE_ITEM(  Mod, Dst2,                     3, 0, MBCV_NUM_MOD_DST-1, 0),
     NRPN_TABLE_ITEM(  Mod, Dst2Inv,                  3, 0, 1, 0),
-    NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),
     NRPN_TABLE_ITEM_EMPTY(),

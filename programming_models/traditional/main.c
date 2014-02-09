@@ -269,7 +269,7 @@ static void TASK_Hooks(void *pvParameters)
 # endif
 #endif
 
-#if !defined(MIOS32_DONT_USE_AIN)
+#if !defined(MIOS32_DONT_USE_AIN) && !defined(MIOS32_DONT_SERVICE_AIN)
     // check for AIN pin changes, call APP_AIN_NotifyChange on each pin change
     MIOS32_AIN_Handler(APP_AIN_NotifyChange);
 #endif

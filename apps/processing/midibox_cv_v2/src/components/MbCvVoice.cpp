@@ -13,6 +13,7 @@
  */
 
 #include <string.h>
+#include "app.h"
 #include "MbCvVoice.h"
 #include "MbCvMidiVoice.h"
 #include "MbCvTables.h"
@@ -70,6 +71,8 @@ void MbCvVoice::init(void)
     voiceFinetune = 0;
     voicePitchrange = 2;
     voicePortamentoRate = 0;
+    voiceForceToScale = false;
+    voiceExternalGateThreshold = 0;
 
     voicePitchModulation = 0;
 
@@ -218,7 +221,7 @@ void MbCvVoice::pitch(const u8 &updateSpeedFactor)
     // increase/decrease target frequency by pitchrange
     // depending on pitchbender and finetune value
     if( voicePitchrange ) {
-        int delta = midiVoicePtr->midivoicePitchbender; // 14bit
+        int delta = midiVoicePtr->midivoicePitchBender; // 14bit
         delta += (int)voiceFinetune*64; // 8bit -> 14bit
 
         if( delta ) {
@@ -523,4 +526,3 @@ u16 MbCvVoice::transpose(u16 value)
 
     return out;
 }
-
