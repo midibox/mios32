@@ -46,6 +46,13 @@ public:
     // up to 32 gates should be sufficient for future extensions? (currently we only use 8!)
     u32 cvGates;
 
+    // Knobs
+    array<u8, CV_KNOB_NUM> knobValue;
+
+    // Scale
+    u16 scaleKeyMask;
+    u8 scaleKeyMap[12];
+
     // sound patch
     MbCvPatch mbCvPatch;
 
@@ -110,6 +117,21 @@ public:
     bool getNRPN(u16 nrpnNumber, u16 *value);
     bool getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
     
+    // global NRPNs
+    bool setGlobalNRPN(u16 nrpnNumber, u16 value);
+    bool getGlobalNRPN(u16 nrpnNumber, u16 *value);
+    bool getGlobalNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
+
+    // set/get knob values
+    u8   getKnobValue(u8 knob);
+    void setKnobValue(u8 knob, u8 value);
+
+    // set/get scale keys
+    u8   getScaleKey(u8 key);
+    void setScaleKey(u8 key, u8 enable);
+    void updateScaleKeyMap(void); // done automatically by setScaleKey
+    u8   scaleValue(u8 value); // scales a 7bit value based on the scale key map
+
     // SysEx parsers
     //MbCvSysEx mbCvSysEx;
 

@@ -33,6 +33,8 @@
 
 #define CV_EXTCLK_NUM         7 // 7 external clock outputs
 
+#define CV_KNOB_NUM           8 // 8 knobs
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

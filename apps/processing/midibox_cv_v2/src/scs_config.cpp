@@ -469,6 +469,9 @@ static void cvPlayModeSet(u32 ix, u16 value)
 static u16  cvInvGateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceGateInverted; }
 static void cvInvGateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceGateInverted = value; }
 
+static u16  cvExtGateThrsGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceExternalGateThreshold; }
+static void cvExtGateThrsSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceExternalGateThreshold = value; }
+
 static u16  cvSplitLowerGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower; }
 static void cvSplitLowerSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceSplitLower = value; }
 
@@ -495,6 +498,9 @@ static void cvPortamentoModeSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvV
 
 static u16  cvSusKeyGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceSusKey; }
 static void cvSusKeySet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceSusKey = value; }
+
+static u16  cvForceToScaleGet(u32 ix)            { return env->mbCv[selectedCv].mbCvVoice.voiceForceToScale; }
+static void cvForceToScaleSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvVoice.voiceForceToScale = value; }
 
 static u16  cvCCGet(u32 ix)            { return env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber; }
 static void cvCCSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvMidiVoice.midivoiceCCNumber = value; }
@@ -625,8 +631,11 @@ static void env1SustainSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[s
 static u16  env1ReleaseGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envRelease; }
 static void env1ReleaseSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envRelease = value; }
 
-static u16  env1CurveGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurve; }
-static void env1CurveSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurve = value; }
+static u16  env1CurvePosGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurvePos; }
+static void env1CurvePosSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurvePos = value; }
+
+static u16  env1CurveNegGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurveNeg; }
+static void env1CurveNegSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envCurveNeg = value; }
 
 static u16  env1ClkSyncGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envModeClkSync; }
 static void env1ClkSyncSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv1[selectedEnv1].envModeClkSync = value; }
@@ -669,8 +678,11 @@ static void env2OffsetSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[se
 static u16  env2RateGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envRate; }
 static void env2RateSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envRate = value; }
 
-static u16  env2CurveGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurve; }
-static void env2CurveSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurve = value; }
+static u16  env2CurvePosGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurvePos; }
+static void env2CurvePosSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurvePos = value; }
+
+static u16  env2CurveNegGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurveNeg; }
+static void env2CurveNegSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envCurveNeg = value; }
 
 static u16  env2LastStepGet(u32 ix)            { return env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envLastStep; }
 static void env2LastStepSet(u32 ix, u16 value) { env->mbCv[selectedCv].mbCvEnv2[selectedEnv2].envLastStep = value; }
@@ -806,6 +818,7 @@ const scs_menu_item_t pageCV[] = {
   SCS_ITEM("Mode ", 0, MBCV_MIDI_EVENT_MODE_NUM-1,    cvEventGet,     cvEventSet,     selectNOP, stringCvMode, NULL),
   SCS_ITEM("Play ", 0, 2,     cvPlayModeGet, cvPlayModeSet, selectNOP, stringCvPlayMode, NULL),
   SCS_ITEM("InvG ", 0, 1,     cvInvGateGet,  cvInvGateSet,  selectNOP, stringOnOff, NULL),
+  SCS_ITEM("ExtG ", 0, 255,   cvExtGateThrsGet,cvExtGateThrsSet,  selectNOP, stringDec, NULL),
   SCS_ITEM("SplL ", 0, 127,   cvSplitLowerGet,cvSplitLowerSet,selectNOP, stringNote, NULL),
   SCS_ITEM("SplU ", 0, 127,   cvSplitUpperGet,cvSplitUpperSet,selectNOP, stringNote, NULL),
   SCS_ITEM("PRng ", 0, 24,    cvPitchRangeGet,cvPitchRangeSet,selectNOP, stringDec, NULL),
@@ -815,6 +828,7 @@ const scs_menu_item_t pageCV[] = {
   SCS_ITEM("Port ", 0, 255,   cvPortamentoGet,cvPortamentoSet,selectNOP, stringDec, NULL),
   SCS_ITEM("PMod ", 0, 2,     cvPortamentoModeGet,cvPortamentoModeSet,selectNOP, stringCvPortamentoMode, NULL),
   SCS_ITEM("SusK ", 0, 1,     cvSusKeyGet,    cvSusKeySet,    selectNOP, stringOnOff, NULL),
+  SCS_ITEM("FtS  ", 0, 1,     cvForceToScaleGet, cvForceToScaleSet,    selectNOP, stringOnOff, NULL),
   SCS_ITEM(" CC  ", 0, 127,   cvCCGet,        cvCCSet,       selectNOP,stringDec, NULL),
   SCS_ITEM("USB1 ", 0, 1,           cvPortGet,      cvPortSet,      selectNOP, stringOnOff, NULL),
 #if MIOS32_USB_MIDI_NUM_PORTS >= 2
@@ -882,7 +896,8 @@ const scs_menu_item_t pageENV1[] = {
   SCS_ITEM("Dec. ", 0, 255,         env1DecayGet,    env1DecaySet,    selectNOP, stringDec, NULL),
   SCS_ITEM("Sus. ", 0, 255,         env1SustainGet,  env1SustainSet,  selectNOP, stringDec, NULL),
   SCS_ITEM("Rel. ", 0, 255,         env1ReleaseGet,  env1ReleaseSet,  selectNOP, stringDec, NULL),
-  SCS_ITEM("Curv ", 0,   1,         env1CurveGet,    env1CurveSet,    selectNOP, stringCurve, NULL),
+  SCS_ITEM("Cur+ ", 0, MBCV_ENV_NUM_CURVES-1, env1CurvePosGet, env1CurvePosSet, selectNOP, stringCurve, NULL),
+  SCS_ITEM("Cur- ", 0, MBCV_ENV_NUM_CURVES-1, env1CurveNegGet, env1CurveNegSet, selectNOP, stringCurve, NULL),
   SCS_ITEM("ClkS ", 0,   1,         env1ClkSyncGet,  env1ClkSyncSet,  selectNOP, stringOnOff, NULL),
   SCS_ITEM("KeyS ", 0,   1,         env1KeySyncGet,  env1KeySyncSet,  selectNOP, stringOnOff, NULL),
   SCS_ITEM("Fast ", 0,   1,         env1ModeFastGet, env1ModeFastSet, selectNOP, stringOnOff, NULL),
@@ -899,7 +914,8 @@ const scs_menu_item_t pageENV2[] = {
   SCS_ITEM("Ampl ", 0, 255,         env2AmplitudeGet,   env2AmplitudeSet,selectNOP, stringDecPM128, NULL),
   SCS_ITEM("Offs ", 0, 255,         env2OffsetGet,      env2OffsetSet,   selectNOP, stringDecPM128, NULL),
   SCS_ITEM("Rate ", 0, 255,         env2RateGet,        env2RateSet,     selectNOP, stringDec, NULL),
-  SCS_ITEM("Curv ", 0,   1,         env2CurveGet,       env2CurveSet,    selectNOP, stringCurve, NULL),
+  SCS_ITEM("Cur+ ", 0, MBCV_ENV_NUM_CURVES-1, env2CurvePosGet, env2CurvePosSet, selectNOP, stringCurve, NULL),
+  SCS_ITEM("Cur- ", 0, MBCV_ENV_NUM_CURVES-1, env2CurveNegGet, env2CurveNegSet, selectNOP, stringCurve, NULL),
   SCS_ITEM("Stps ", 0,  15,         env2LastStepGet,    env2LastStepSet, selectNOP, stringDecP1, NULL),
   SCS_ITEM("LpAt ", 0,  16,         env2LoopAttackGet,  env2LoopAttackSet,    selectNOP, stringDec, NULL),
   SCS_ITEM("SusS ", 0,  16,         env2SustainStepGet, env2SustainStepSet,    selectNOP, stringDec, NULL),

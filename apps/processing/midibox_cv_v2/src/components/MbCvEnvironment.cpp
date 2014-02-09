@@ -52,6 +52,13 @@ MbCvEnvironment::MbCvEnvironment()
         s->init(cv, &mbCvClock);
     }
 
+    for(int knob=0; knob<CV_KNOB_NUM; ++knob) {
+        knobValue[knob] = 0;
+    }
+
+    scaleKeyMask = 0xfff; // all 12 keys enabled
+    updateScaleKeyMap();
+
     // sets the default speed factor
     updateSpeedFactorSet(2);
 
@@ -160,11 +167,15 @@ bool MbCvEnvironment::tick(void)
                 case MBCV_MIDI_EVENT_MODE_AFTERTOUCH: *out = v->transpose(mv->midivoiceAftertouch << 9); break;
                 case MBCV_MIDI_EVENT_MODE_CC: *out = v->transpose(mv->midivoiceCCValue << 9); break;
                 case MBCV_MIDI_EVENT_MODE_NRPN: *out = v->transpose(mv->midivoiceNRPNValue << 2); break;
-                case MBCV_MIDI_EVENT_MODE_PITCHBENDER: *out = v->transpose((mv->midivoicePitchbender + 8192) << 2); break;
+                case MBCV_MIDI_EVENT_MODE_PITCHBENDER: *out = v->transpose((mv->midivoicePitchBender + 8192) << 2); break;
                 case MBCV_MIDI_EVENT_MODE_CONST_MIN: *out = v->transpose(0x0000); break;
                 case MBCV_MIDI_EVENT_MODE_CONST_MID: *out = v->transpose(0x8000); break;
                 case MBCV_MIDI_EVENT_MODE_CONST_MAX: *out = v->transpose(0xffff); break;
                 }
+            }
+
+            if( v->voiceForceToScale ) {
+                *out = scaleValue(*out / 512) * 512;
             }
 
             if( *out > *outMeter ) {
@@ -419,7 +430,7 @@ void MbCvEnvironment::midiReceive(mios32_midi_port_t port, mios32_midi_package_t
 
                 case 0x01a: {                                     // Seq Start/Stop/Continue: 0x3c1a <1|0|2>
                     mios32_midi_port_t dummyPort = (mios32_midi_port_t)0xff;
-                    
+
                     if( value == 0 )
                         mbCvClock.midiReceiveRealTimeEvent(dummyPort, 0xfc); // stop
                     else if( value == 1 )
@@ -482,8 +493,7 @@ void MbCvEnvironment::midiSendNRPNDump(mios32_midi_port_t port, u16 cvChannels, 
     int cv = 0;
     for(MbCv *s = mbCv.first(); s != NULL ; s=mbCv.next(s), ++cv) {
         if( cvChannels & (1 << cv) ) {
-            u16 par;
-            for(par=parBegin; par<=parEnd; ++par) {
+            for(u16 par=parBegin; par<=parEnd; ++par) {
                 u16 value;
                 if( s->getNRPN(par, &value) ) {
                     u16 nrpnNumber = (cv << 10) | par;
@@ -508,6 +518,14 @@ void MbCvEnvironment::midiSendGlobalNRPNDump(mios32_midi_port_t port)
     //midiSendNRPN(port, 0x3c22, ((u16)mbCvPatch.bankNum << 7) | mbCvPatch.patchNum);
     midiSendNRPN(port, 0x3c24, mbCvPatch.synchedChange);
     midiSendNRPN(port, 0x3c25, mbCvPatch.synchedChangeStep);
+
+    for(u16 par=0; par<=0x3ff; ++par) {
+        u16 value;
+        if( getGlobalNRPN(par, &value) ) {
+            u16 nrpnNumber = 0x3c00 | par;
+            midiSendNRPN(port, nrpnNumber, value);
+        }
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -708,8 +726,9 @@ bool MbCvEnvironment::setNRPN(u16 nrpnNumber, u16 value)
     // decode address
     u16 select = nrpnNumber >> 10;
 
-    // channel access
-    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+    if( select == 0xf ) { // global channel
+        return setGlobalNRPN(nrpnNumber, value);
+    } else if( select < CV_SE_NUM ) { // direct channel selection
         return mbCv[select].setNRPN(nrpnNumber, value);
     }
 
@@ -726,7 +745,9 @@ bool MbCvEnvironment::getNRPN(u16 nrpnNumber, u16 *value)
     u16 select = nrpnNumber >> 10;
 
     // channel access
-    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+    if( select == 0xf ) {
+        return getGlobalNRPN(nrpnNumber, value);
+    } else if( select < CV_SE_NUM ) { // direct channel selection
         return mbCv[select].getNRPN(nrpnNumber, value);
     }
 
@@ -743,9 +764,339 @@ bool MbCvEnvironment::getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
     u16 select = nrpnNumber >> 10;
 
     // channel access
-    if( select >= 0 && select < CV_SE_NUM ) { // direct channel selection
+    if( select == 0xf ) {
+        return getGlobalNRPNInfo(nrpnNumber, info);
+    } else if( select < CV_SE_NUM ) { // direct channel selection
         return mbCv[select].getNRPNInfo(nrpnNumber, info);
     }
 
     return false; // parameter not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// NRPNs
+/////////////////////////////////////////////////////////////////////////////
+
+#define CREATE_GROUP(name, str) \
+    static const char name##String[] = str;
+
+#define CREATE_ACCESS_FUNCTIONS(group, name, str, readCode, writeCode) \
+    static const char group##name##String[] = str; \
+    static void get##group##name(MbCvEnvironment* env, u32 arg, u16 *value) { readCode; }    \
+    static void set##group##name(MbCvEnvironment* env, u32 arg, u16 value) { writeCode; }
+
+typedef struct {
+    const char *groupString;
+    const char *nameString;
+    void (*getFunct)(MbCvEnvironment *env, u32 arg, u16 *value);
+    void (*setFunct)(MbCvEnvironment *env, u32 arg, u16 value);
+    u32 arg;
+    u16 min;
+    u16 max;
+    u8 is_bidir;
+} MbCvTableEntry_t;
+
+#define NRPN_TABLE_ITEM(group, name, arg, min, max, is_bidir) \
+    { group##String, group##name##String, get##group##name, set##group##name, arg, min, max, is_bidir }
+
+#define NRPN_TABLE_ITEM_EMPTY() \
+    { NULL, NULL, NULL, NULL, 0, 0, 0, 0 }
+
+#define NRPN_TABLE_ITEM_EMPTY8() \
+    NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), \
+    NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY(), NRPN_TABLE_ITEM_EMPTY()
+
+#define NRPN_TABLE_ITEM_EMPTY16() \
+    NRPN_TABLE_ITEM_EMPTY8(), \
+    NRPN_TABLE_ITEM_EMPTY8()
+
+CREATE_GROUP(Knobs, "Knobs");
+CREATE_ACCESS_FUNCTIONS(Knobs,     Knob,               "Knob %d",         *value = env->knobValue[arg],    env->knobValue[arg] = value);
+
+CREATE_GROUP(Scale, "Scale");
+CREATE_ACCESS_FUNCTIONS(Scale,     Key,                "Key %d",          *value = env->getScaleKey(arg), env->setScaleKey(arg, value));
+
+
+#define MBCV_NRPN_TABLE_SIZE 0x400
+static const MbCvTableEntry_t mbCvNrpnTable[MBCV_NRPN_TABLE_SIZE] = {
+    // 0x000 - not handled tabled based yet!
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x100
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               0, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               1, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               2, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               3, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               4, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               5, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               6, 0, 255, 0),
+    NRPN_TABLE_ITEM(  Knobs,     Knob,               7, 0, 255, 0),
+    NRPN_TABLE_ITEM_EMPTY8(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x200
+    NRPN_TABLE_ITEM(  Scale,     Key,                0, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                1, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                2, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                3, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                4, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                5, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                6, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                7, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                8, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,                9, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,               10, 0, 1, 0),
+    NRPN_TABLE_ITEM(  Scale,     Key,               11, 0, 1, 0),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+
+    // 0x300
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+    NRPN_TABLE_ITEM_EMPTY16(),
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
+// will set NRPN depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::setGlobalNRPN(u16 nrpnNumber, u16 value)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->setFunct != NULL ) {
+            t->setFunct(this, t->arg, value);
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN value depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getGlobalNRPN(u16 nrpnNumber, u16 *value)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->getFunct != NULL ) {
+            t->getFunct(this, t->arg, value);
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns NRPN informations depending on first 10 bits
+// MSBs already decoded in MbCvEnvironment
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getGlobalNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
+{
+    u32 par = nrpnNumber & 0x3ff;
+    if( par < MBCV_NRPN_TABLE_SIZE ) {
+        MbCvTableEntry_t *t = (MbCvTableEntry_t *)&mbCvNrpnTable[par];
+        if( t->getFunct != NULL ) {
+            t->getFunct(this, t->arg, &info->value);
+            info->cv = 0;
+            info->is_bidir = t->is_bidir;
+            info->min = t->min;
+            info->max = t->max;
+
+            {
+                char nameString[40];
+                char nameString1[21];
+
+                sprintf(nameString1, t->groupString, t->arg+1);
+                sprintf(nameString, "Glb %s", nameString1);
+
+                // 20 chars max; pad with spaces
+                int len = strlen(nameString);
+                for(int pos=len; pos<20; ++pos)
+                    nameString[pos] = ' ';
+                nameString[20] = 0;
+                memcpy(info->nameString, nameString, 21);
+            }
+
+            {
+                char valueString[40];
+                char nameString1[21];
+
+                sprintf(nameString1, t->nameString, t->arg+1);
+
+                if( info->is_bidir ) {
+                    int range = info->max - info->min + 1;
+                    sprintf(valueString, "%s:%4d", nameString1, (int)info->value - (range/2));
+                } else {
+                    if( info->min == 0 && info->max == 1 ) {
+                        sprintf(valueString, "%s: %s", nameString1, info->value ? "on " : "off");
+                    } else {
+                        sprintf(valueString, "%s:%4d", nameString1, info->value);
+                    }
+                }
+
+                // 20 chars max; pad with spaces
+                int len = strlen(valueString);
+                for(int pos=len; pos<20; ++pos)
+                    valueString[pos] = ' ';
+
+                valueString[20] = 0;
+                memcpy(info->valueString, valueString, 21);
+            }
+
+            return true;
+        }
+    }
+
+    return false; // parameter not mapped
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// set/get knob values
+/////////////////////////////////////////////////////////////////////////////
+u8 MbCvEnvironment::getKnobValue(u8 knob)
+{
+    return (knob < CV_KNOB_NUM) ? knobValue[knob] : 0;
+}
+
+void MbCvEnvironment::setKnobValue(u8 knob, u8 value)
+{
+    if( knob < CV_KNOB_NUM )
+        knobValue[knob] = value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// set/get scale keys
+/////////////////////////////////////////////////////////////////////////////
+u8 MbCvEnvironment::getScaleKey(u8 key)
+{
+    return (scaleKeyMask & (1 << key)) ? 1 : 0;
+}
+
+void MbCvEnvironment::setScaleKey(u8 key, u8 enable)
+{
+    if( key < 12 ) {
+        if( enable ) {
+            scaleKeyMask |= (1 << key);
+        } else {
+            scaleKeyMask &= ~(1 << key);
+        }
+    }
+
+    updateScaleKeyMap();
+}
+
+void MbCvEnvironment::updateScaleKeyMap(void)
+{
+    // re-calculate scale key map
+    s8 firstValidKey = -1;
+    s8 currentKey = -1;
+    for(int i=0; i<12; ++i) {
+        if( scaleKeyMask & (1 << i) ) {
+            if( firstValidKey < 0 )
+                firstValidKey = i;
+            currentKey = i;
+            scaleKeyMap[i] = i;
+        } else {
+            scaleKeyMap[i] = currentKey;
+        }
+    }
+
+    if( currentKey == -1 ) { // no valid key -> map to 0..11
+        for(int i=0; i<12; ++i)
+            scaleKeyMap[i] = i;
+    } else { // map back first entries to first valid key
+        for(int i=0; i<firstValidKey; ++i)
+            scaleKeyMap[i] = currentKey | 0x80;
+    }
+}
+
+// scales a 7bit value based on the scale key map
+u8 MbCvEnvironment::scaleValue(u8 value)
+{
+    u8 octave = value / 12;
+    u8 key = value % 12;
+
+    u8 scaleKey = scaleKeyMap[key];
+
+    if( scaleKey & 0x80 ) {
+        if( octave >= 1 )
+            return 12*(octave-1) + (scaleKey & 0x7f);
+        else
+            return 12*octave;
+    } else {
+        return 12*octave + scaleKey;
+    }
 }

@@ -97,6 +97,8 @@ public:
     u16 voiceLinearFrq;
     u8  voiceRetriggerDelay;
     u8  voiceSetDelayCtr;
+    bool voiceForceToScale;
+    u8  voiceExternalGateThreshold;
 
     u8  voiceAssignedInstrument;
 
@@ -115,6 +117,7 @@ public:
     u16 transpose(u16 value);
 
 protected:
+
 };
 
 #endif /* _MB_CV_VOICE_H */

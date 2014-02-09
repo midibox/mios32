@@ -305,7 +305,7 @@ s32 MIOS32_AIN_Init(u32 mode)
   MIOS32_IRQ_Install(DMA2_Stream0_IRQn, MIOS32_IRQ_AIN_DMA_PRIORITY);
 
   // finally start initial conversion
-  ADC_SoftwareStartConv(ADC1);
+  MIOS32_AIN_StartConversions();
 
   return 0;
 #endif
@@ -440,8 +440,28 @@ s32 MIOS32_AIN_Handler(void *_callback)
     return 0; // scan skipped - no error
 
   // start next scan
-  ADC_SoftwareStartConv(ADC1);
+  MIOS32_AIN_StartConversions();
 
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Starts an ADC conversion (use this if the MIOS32_AIN_Handler call has been
+//! disabled via #define MIOS32_DONT_SERVICE_AIN 1 in mios32_config.h
+//! 
+//! In this case, the MIOS32_AIN_StartConversions() function has to be called
+//! periodically from the application (e.g. from a timer), and conversion values
+//! can be retrieved with MIOS32_AIN_PinGet()
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_AIN_StartConversions(void)
+{
+#if !MIOS32_AIN_CHANNEL_MASK
+  return -1; // no analog input selected
+#else
+  ADC_SoftwareStartConv(ADC1);
   return 0; // no error
 #endif
 }
@@ -575,8 +595,9 @@ void DMA2_Stream0_IRQHandler(void)
 #endif
 
   // request next conversion as long as oversampling/mux counter haven't reached the end
-  if( mux_ctr || oversampling_ctr )
-    ADC_SoftwareStartConv(ADC1);
+  if( mux_ctr || oversampling_ctr ) {
+    MIOS32_AIN_StartConversions();
+  }
 }
 #endif
 

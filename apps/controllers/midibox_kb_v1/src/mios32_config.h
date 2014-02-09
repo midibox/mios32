@@ -11,8 +11,8 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.012"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIboxKB V1.013"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 // Following settings allow to customize the USB device descriptor
 #define MIOS32_USB_VENDOR_STR   "midibox.org" // you will see this in the USB device description
@@ -28,7 +28,9 @@
 
 // EEPROM emulation
 // SIZE == 4096 halfwords -> 8192 bytes
-#ifdef MIOS32_BOARD_MBHP_CORE_LPC17
+#if defined(MIOS32_BOARD_MBHP_CORE_LPC17)
+# define EEPROM_EMULATED_SIZE 4096
+#elif defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 # define EEPROM_EMULATED_SIZE 4096
 #else
 # error "Application requires external EEPROM - not prepared for this board"

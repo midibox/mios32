@@ -47,12 +47,12 @@ public:
 
     typedef enum {
         MBCV_ENV_CURVE_LINEAR = 0,
-        MBCV_ENV_CURVE_EXP,
-        MBCV_ENV_CURVE_CUSTOM1,
-        MBCV_ENV_CURVE_CUSTOM2,
-        MBCV_ENV_CURVE_CUSTOM3,
-        MBCV_ENV_CURVE_CUSTOM4,
+        MBCV_ENV_CURVE_EXP1,
+        MBCV_ENV_CURVE_EXP1_INV,
+        MBCV_ENV_CURVE_EXP2,
+        MBCV_ENV_CURVE_EXP2_INV
     } EnvCurveT;
+#define MBCV_ENV_NUM_CURVES 5
 
     // input parameters
     bool envModeClkSync;
@@ -61,7 +61,8 @@ public:
     bool envModeFast;
 
     s8 envAmplitude;
-    u8 envCurve;
+    u8 envCurvePos;
+    u8 envCurveNeg;
 
     s8 envDepthPitch;
     s8 envDepthLfo1Amplitude;

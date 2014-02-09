@@ -63,14 +63,6 @@
 //#define STOPWATCH_PERFORMANCE_MEASURING 2
 #define STOPWATCH_PERFORMANCE_MEASURING 0
 
-// output execution times at J5B:A4..A7
-// 0: off
-// 1: on -> J5.A4: CV processing (low-active)
-//          J5.A5: CV processing + mapping (low-active)
-//          J5.A6: Scope output (low-active)
-
-#define J5_DEBUG_PINS 1
-
 
 /////////////////////////////////////////////////////////////////////////////
 // local variables
@@ -125,23 +117,12 @@ extern "C" void APP_Init(void)
   // init Stopwatch
   APP_StopwatchInit();
 
-#if J5_DEBUG_PINS
-  // initialize debug pins J5B:A4..A7
-  {
-    int i;
-    for(int i=4; i<7; ++i) {
-      MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_OUTPUT_PP);
-      MIOS32_BOARD_J5_PinSet(i, 1);
-    }
-  }
-#endif
-
   // initialize all J10 pins as inputs with internal Pull-Up
   int pin;
   for(pin=0; pin<8; ++pin)
     MIOS32_BOARD_J10_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
 
-  // initialize OLED pins at J5
+  // initialize OLED pins at Alternative LCD port (LPC17: J5/J28, STM32F4: J10B)
   {
     APP_SelectScopeLCDs();
 
@@ -395,38 +376,26 @@ extern void CV_TIMER_SE_Update(void)
   if( cv_se_overloaded )
     return;
 
-#if J5_DEBUG_PINS
-  MIOS32_BOARD_J5_PinSet(4, 0);
-  MIOS32_BOARD_J5_PinSet(5, 0);
-#endif
-
 #if STOPWATCH_PERFORMANCE_MEASURING == 1 || STOPWATCH_PERFORMANCE_MEASURING == 2
   APP_StopwatchReset();
 #endif
 
   if( !mbCvEnvironment.tick() ) {
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(4, 1);
-    MIOS32_BOARD_J5_PinSet(5, 1);
-#endif
     return; // no update required
   }
 
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
   APP_StopwatchCapture();
 #endif
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(4, 1);
-#endif
 
   // update AOUTs
   MBCV_MAP_Update();
 
+  // start ADC conversions
+  MIOS32_AIN_StartConversions();
+
 #if STOPWATCH_PERFORMANCE_MEASURING == 2
   APP_StopwatchCapture();
-#endif
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(5, 1);
 #endif
 }
 
@@ -490,14 +459,8 @@ void APP_TASK_Period_1mS_LP(void)
 void APP_TASK_Period_1mS_LP2(void)
 {
   {
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(6, 0);
-#endif
     // CV Scopes (note: mutex is taken inside function)
     mbCvEnvironment.tickScopes();
-#if J5_DEBUG_PINS
-    MIOS32_BOARD_J5_PinSet(6, 1);
-#endif
   }
 
 #if 0

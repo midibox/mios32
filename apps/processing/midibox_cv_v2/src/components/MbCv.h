@@ -75,6 +75,9 @@ public:
     // modulation matrix
     MbCvMod mbCvMod;
 
+    // last external gate sample
+    u16 lastExternalGateValue;
+
     // note handling
     void noteOn(u8 note, u8 velocity, bool bypassNotestack);
     void noteOff(u8 note, bool bypassNotestack);
