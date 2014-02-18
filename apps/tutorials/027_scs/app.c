@@ -114,11 +114,9 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
-#ifdef MIOS32_FAMILY_LPC17xx
   // pass current pin state of J10
-  // only available for LPC17xx, all others (like STM32) default to SRIO
+  // not available for STM32F1xx, which uses the SRIO instead
   SCS_AllPinsSet(0xff00 | MIOS32_BOARD_J10_Get());
-#endif
 
   // update encoders/buttons of SCS
   SCS_EncButtonUpdate_Tick();
