@@ -2783,9 +2783,9 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.up, seq_ui_button_state.UP);
 
   SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk_muted == 0xffff);
-  SEQ_LED_PinSet(seq_hwcfg_led.mute_all_tracks, seq_core_trk[visible_track].layer_muted == 0xffff);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute_track_layers, seq_core_trk[visible_track].layer_muted == 0xffff);
   SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk_muted == 0x0000);
-  SEQ_LED_PinSet(seq_hwcfg_led.unmute_all_tracks, seq_core_trk[visible_track].layer_muted == 0x0000);
+  SEQ_LED_PinSet(seq_hwcfg_led.unmute_track_layers, seq_core_trk[visible_track].layer_muted == 0x0000);
   // only consume CPU time if LEDs really assigned...
   if( seq_hwcfg_led.mute_all_tracks_and_layers || seq_hwcfg_led.unmute_all_tracks_and_layers ) {
     u16 all_layers_muted_mask = 0;
