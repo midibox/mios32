@@ -44,9 +44,6 @@
 //! In this case, the MIOS32_AIN_StartConversions() function has to be called
 //! periodically from the application (e.g. from a timer), and conversion values
 //! can be retrieved with MIOS32_AIN_PinGet()
-#ifndef MIOS32_DONT_SERVICE_AIN
-#define MIOS32_DONT_SERVICE_AIN 0
-#endif
 
 
 // define the desired oversampling rate (1..16)
