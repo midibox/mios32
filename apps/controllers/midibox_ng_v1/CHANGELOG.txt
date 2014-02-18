@@ -530,3 +530,8 @@ MIDIbox NG V1.000
 ~~~~~~~~~~~~~~~~~
 
    o initial version
+
+
+
+Wishlist:
+- ain_sensor should support a threshold, so that an AIN input can be used for button functions
