@@ -212,18 +212,18 @@ s32 MIOS32_SYS_Reset(void)
   MIOS32_LCD_PrintString("Bootloader Mode "); // 16 chars
 #endif
 
-  // wait until all MIDI OUT buffers are empty (TODO)
-
   // disable all interrupts
   MIOS32_IRQ_Disable();
 
   // turn off all board LEDs
   MIOS32_BOARD_LED_Set(0xffffffff, 0x00000000);
 
-  // send all-0 to DOUT chain (TODO)
-
-  // send all-0 to MF control chain (if enabled) (TODO)
-
+  // wait for 50 mS to ensure that all ongoing operations (e.g. DMA driver SPI transfers) are finished
+  {
+    int i;
+    for(i=0; i<50; ++i)
+      MIOS32_DELAY_Wait_uS(1000);
+  }
 
   // reset some peripherals (unfortunately there is no system reset available)
   LPC_GPDMA->DMACConfig = 0; // disable DMA
