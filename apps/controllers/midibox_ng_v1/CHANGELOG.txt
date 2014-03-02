@@ -533,5 +533,21 @@ MIDIbox NG V1.000
 
 
 
-Wishlist:
+--------------------------------------------------------------------------------
+
+Wishlist
+~~~~~~~~
+
 - ain_sensor should support a threshold, so that an AIN input can be used for button functions
+
+----------
+
+http://midibox.org/forums/topic/18619-use-encoder-to-set-a-buttons-event-value
+
+- "silent set value" (don't send MIDI event when value is changed)
+
+----------
+
+http://midibox.org/forums/topic/18610-question-feature-suggestion-for-ng
+
+Another suggestion is adding a midi clock feature. That would allow the NG to become the central control and clock unit in a setup.  Meta events might play pause and stop the clock, set the tempo etc. Thats relevant for my setup as I want to control many things with a FCB1010 foot controller. If I could make it send a note, cc or anything to start and stop the clock, that would be amazing.
