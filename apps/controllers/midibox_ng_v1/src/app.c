@@ -45,6 +45,7 @@
 #include "mbng_matrix.h"
 #include "mbng_mf.h"
 #include "mbng_cv.h"
+#include "mbng_seq.h"
 
 // include source of the SCS
 #include <scs.h>
@@ -194,8 +195,7 @@ void APP_Init(void)
   TERMINAL_Init(0);
   MIDIMON_Init(0);
   MBNG_FILE_Init(0);
-  SEQ_BPM_Init(0);
-  SEQ_BPM_Set(120.0);
+  MBNG_SEQ_Init(0);
   SEQ_MIDI_OUT_Init(0);
 
   MBNG_PATCH_Init(0);
@@ -434,6 +434,7 @@ void APP_Tick(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_Tick(void)
 {
+  MBNG_SEQ_Handler();
 }
 
 

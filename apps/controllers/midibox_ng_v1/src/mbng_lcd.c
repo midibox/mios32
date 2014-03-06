@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <glcd_font.h>
+#include <seq_bpm.h>
 
 #include "app.h"
 #include "mbng_lcd.h"
@@ -589,6 +590,16 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, char *out_buffer, u32 max_b
 	  case 'S': { // Snapshot
 	    *format_type = 'd';
 	    MBNG_LCD_PRINT_FORMATTED_STRING(format, MBNG_FILE_S_SnapshotGet());
+	  } break;
+
+	  case 't': { // Play/Stop
+	    *format_type = 's';
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, SEQ_BPM_IsRunning() ? "Play" : "Stop");
+	  } break;
+
+	  case 'T': { // BPM
+	    *format_type = 'd';
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, (int)SEQ_BPM_Get());
 	  } break;
 
 	  case 'i': { // ID

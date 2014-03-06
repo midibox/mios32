@@ -1,9 +1,32 @@
 $Id$
 
+
 MIDIbox NG V1.030
 ~~~~~~~~~~~~~~~~~
 
    o increased event pool size to 64k for MBHP_CORE_STM32F4
+
+   o added ain_mode=Switch for AIN and AINSER events.
+     Can be used if buttons are connected to analog inputs. The event will send the
+     min value if a 30% threshold is reached, and the max value if a 70% threshold
+     is reached.
+     Schematic:  Ground |----o Button o-----> analog input + 10k Pull-Up resistor to 3.3V (AIN) resp. 5V (AINSER)
+
+   o .ngr: added "change" command. It works similar to the "set" command, but
+     only changes the value, and doesn't generate a MIDI event.
+
+   o .ngr: added "set_min" and "set_max" command which allows to modify the
+     min/max range of a EVENT
+
+   o added new meta events to control the internal MIDI clock generator:
+     MClkPlay, MClkStop, MClkPlayStop, MClkPause, MClkDecTempo, MClkIncTempo, MClkSetTempo.
+     Example can be found under cfg/test/midiclk.ngc
+
+   o added new string formatting items:
+     %t to display MIDI clock state (Play/Stop)
+     %T to display tempo (BPM)
+
+   o added new MClk menu page to SCS to control the tempo w/o dedicated controllers
 
 
 MIDIbox NG V1.029
@@ -538,16 +561,4 @@ MIDIbox NG V1.000
 Wishlist
 ~~~~~~~~
 
-- ain_sensor should support a threshold, so that an AIN input can be used for button functions
-
-----------
-
-http://midibox.org/forums/topic/18619-use-encoder-to-set-a-buttons-event-value
-
-- "silent set value" (don't send MIDI event when value is changed)
-
-----------
-
-http://midibox.org/forums/topic/18610-question-feature-suggestion-for-ng
-
-Another suggestion is adding a midi clock feature. That would allow the NG to become the central control and clock unit in a setup.  Meta events might play pause and stop the clock, set the tempo etc. Thats relevant for my setup as I want to control many things with a FCB1010 foot controller. If I could make it send a note, cc or anything to start and stop the clock, that would be amazing.
+<no entry>
