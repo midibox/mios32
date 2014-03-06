@@ -318,6 +318,10 @@ s32 MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
 	if( bpm_tick ) {
 #if MIDI_ROUTER_COMBINED_WITH_SEQ
 	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+#else
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendPackage(port, p);
+	  MUTEX_MIDIOUT_GIVE;
 #endif
 	} else {
 	  MUTEX_MIDIOUT_TAKE;

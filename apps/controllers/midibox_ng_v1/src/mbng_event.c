@@ -21,6 +21,7 @@
 #include <scs.h>
 #include <ainser.h>
 #include <midimon.h>
+#include <seq_bpm.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -35,6 +36,7 @@
 #include "mbng_mf.h"
 #include "mbng_cv.h"
 #include "mbng_kb.h"
+#include "mbng_seq.h"
 #include "mbng_patch.h"
 #include "mbng_file_s.h"
 #include "mbng_file_r.h"
@@ -1378,8 +1380,6 @@ s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
 }
 
 
-
-
 /////////////////////////////////////////////////////////////////////////////
 //! \retval 0 if no matching condition
 //! \retval 1 if matching condition (or no condition)
@@ -2190,6 +2190,7 @@ const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_AIN_MODE_SNAP:                  return "Snap";
   case MBNG_EVENT_AIN_MODE_RELATIVE:              return "Relative";
   case MBNG_EVENT_AIN_MODE_PARALLAX:              return "Parallax";
+  case MBNG_EVENT_AIN_MODE_SWITCH:              return "Switch";
   }
   return "Undefined";
 }
@@ -2200,6 +2201,7 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
   if( strcasecmp(ain_mode, "Snap") == 0 )         return MBNG_EVENT_AIN_MODE_SNAP;
   if( strcasecmp(ain_mode, "Relative") == 0 )     return MBNG_EVENT_AIN_MODE_RELATIVE;
   if( strcasecmp(ain_mode, "Parallax") == 0 )     return MBNG_EVENT_AIN_MODE_PARALLAX;
+  if( strcasecmp(ain_mode, "Switch") == 0 )       return MBNG_EVENT_AIN_MODE_SWITCH;
 
   return MBNG_EVENT_AIN_MODE_UNDEFINED;
 }
@@ -2445,6 +2447,14 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_RUN_SECTION:         return "RunSection";
   case MBNG_EVENT_META_TYPE_RUN_STOP:            return "RunStop";
 
+  case MBNG_EVENT_META_TYPE_MCLK_PLAY:           return "MClkPlay";
+  case MBNG_EVENT_META_TYPE_MCLK_STOP:           return "MClkStop";
+  case MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP:       return "MClkPlayStop";
+  case MBNG_EVENT_META_TYPE_MCLK_PAUSE:          return "MClkPause";
+  case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO:      return "MClkSetTempo";
+  case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return "MClkDecTempo";
+  case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return "MClkIncTempo";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -2497,6 +2507,14 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "RunSection") == 0 )    return MBNG_EVENT_META_TYPE_RUN_SECTION;
   if( strcasecmp(meta_type, "RunStop") == 0 )       return MBNG_EVENT_META_TYPE_RUN_STOP;
 
+  if( strcasecmp(meta_type, "MClkPlay") == 0 )      return MBNG_EVENT_META_TYPE_MCLK_PLAY;
+  if( strcasecmp(meta_type, "MClkStop") == 0 )      return MBNG_EVENT_META_TYPE_MCLK_STOP;
+  if( strcasecmp(meta_type, "MClkPlayStop") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP;
+  if( strcasecmp(meta_type, "MClkPause") == 0 )     return MBNG_EVENT_META_TYPE_MCLK_PAUSE;
+  if( strcasecmp(meta_type, "MClkSetTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO;
+  if( strcasecmp(meta_type, "MClkDecTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO;
+  if( strcasecmp(meta_type, "MClkIncTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO;
+
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
   if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
@@ -2548,6 +2566,14 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_RUN_SECTION:         return 1;
   case MBNG_EVENT_META_TYPE_RUN_STOP:            return 0;
+
+  case MBNG_EVENT_META_TYPE_MCLK_PLAY:           return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_STOP:           return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP:       return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_PAUSE:          return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO:      return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return 0;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -2874,6 +2900,40 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
     case MBNG_EVENT_META_TYPE_RUN_STOP: {
       MBNG_FILE_R_RunStop();
     } break;
+
+
+    case MBNG_EVENT_META_TYPE_MCLK_PLAY: {
+      MBNG_SEQ_PlayButton();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_STOP: {
+      MBNG_SEQ_StopButton();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP: {
+      MBNG_SEQ_PlayStopButton();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_PAUSE: {
+      MBNG_SEQ_PauseButton();
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO: {
+      SEQ_BPM_Set((float)item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO: {
+      u16 tempo = (u16)SEQ_BPM_Get();
+      tempo = (tempo > item->min) ? (tempo - 1) : item->min;
+      SEQ_BPM_Set((float)tempo);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO: {
+      u16 tempo = (u16)SEQ_BPM_Get();
+      tempo = (tempo < item->max) ? (tempo + 1) : item->max;
+      SEQ_BPM_Set((float)tempo);
+    } break;
+
 
     case MBNG_EVENT_META_TYPE_SCS_ENC: {
       SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));

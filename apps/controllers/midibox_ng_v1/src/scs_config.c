@@ -44,6 +44,7 @@
 #include "mbng_lcd.h"
 #include "mbng_enc.h"
 #include "mbng_din.h"
+#include "mbng_seq.h"
 
 
 
@@ -175,6 +176,20 @@ static void stringIp(u32 ix, u16 value, char *label)
   label[SCS_MENU_ITEM_WIDTH] = 0;
 }
 
+static void stringPlay(u32 ix, u16 value, char *label)
+{
+  sprintf(label, SEQ_BPM_IsRunning() ? " ** " : "    ");
+}
+
+static void stringStop(u32 ix, u16 value, char *label)
+{
+  sprintf(label, SEQ_BPM_IsRunning() ? "    " : " ** ");
+}
+
+static void stringPause(u32 ix, u16 value, char *label)
+{
+  sprintf(label, MBNG_SEQ_PauseEnabled() ? " ** " : "    ");
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -320,6 +335,24 @@ static u16 selectIpEnter(u32 ix, u16 value)
   return value;
 }
 
+static u16  selectPlay(u32 ix, u16 value)
+{
+  MBNG_SEQ_PlayButton();
+  return 0;
+}
+
+static u16  selectStop(u32 ix, u16 value)
+{
+  MBNG_SEQ_StopButton();
+  return 0;
+}
+
+static u16  selectPause(u32 ix, u16 value)
+{
+  MBNG_SEQ_PauseButton();
+  return 0;
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Parameter Access Functions
@@ -378,6 +411,9 @@ static void selIpParSet(u32 ix, u16 value)
 {
   selectedIpPar = value;
 }
+
+static u16  mclkBpmGet(u32 ix)                { return (u16)SEQ_BPM_Get(); }
+static void mclkBpmSet(u32 ix, u16 value)     { SEQ_BPM_Set((float)value); }
 
 
 static void MSD_EnableReq(u32 enable)
@@ -447,6 +483,13 @@ const scs_menu_item_t pageMON[] = {
   SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
 };
 
+const scs_menu_item_t pageMClk[] = {
+  SCS_ITEM("BPM ",  1, 400,                         mclkBpmGet,  mclkBpmSet,  selectNOP,     stringDec, NULL),
+  SCS_ITEM("Play",  0, 0,                           dummyGet,    dummySet,    selectPlay,    stringPlay, NULL),
+  SCS_ITEM("Stop",  0, 0,                           dummyGet,    dummySet,    selectStop,    stringStop, NULL),
+  SCS_ITEM("Pause", 0, 0,                           dummyGet,    dummySet,    selectPause,   stringPause, NULL),
+};
+
 const scs_menu_item_t pageLearn[] = {
   // dummy - will be overlayed in displayHook
   SCS_ITEM("     ", 0, 0,           dummyGet,        dummySet,        selectNOP,      stringEmpty, NULL),
@@ -461,6 +504,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("Mon. ", pageMON),
+  SCS_PAGE("MClk ", pageMClk),
   SCS_PAGE("Learn", pageLearn),
   SCS_PAGE(" Disk", pageDsk),
 };
@@ -675,7 +719,13 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 # error "Please adapt for new number of buttons"
 #endif
 
-    if( scsButton >= SCS_PIN_SOFT1 && scsButton <= SCS_PIN_SOFT9 ) {
+    if( scsButton >= (SCS_PIN_SOFT1+SCS_NumMenuItemsGet()) ) {
+      // shift button
+      int button_ix = MBNG_PATCH_SCS_BUTTONS-1;
+
+      if( mbng_patch_scs.button_emu_id[button_ix] )
+	MBNG_DIN_NotifyToggle(mbng_patch_scs.button_emu_id[button_ix]-1, depressed ? 1 : 0);
+    } else if( scsButton >= SCS_PIN_SOFT1 && scsButton <= SCS_PIN_SOFT9 ) {
       int button_ix = scsButton - SCS_PIN_SOFT1;
 
       if( mbng_patch_scs.button_emu_id[button_ix] )
@@ -695,7 +745,7 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
       case SCS_PIN_SOFT1:
 	if( depressed )
 	  return 1;
-	//SEQ_PlayStopButton();
+	MBNG_SEQ_PlayStopButton();
 	break;
 
       case SCS_PIN_SOFT2:

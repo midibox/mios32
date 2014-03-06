@@ -175,6 +175,36 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s
       return -1; // value already sent    
   } break;
 
+  case MBNG_EVENT_AIN_MODE_SWITCH: {
+    if( value == item->value )
+      return -1; // value already sent
+
+    if( !item->flags.value_from_midi ) {
+      u16 min, max;
+      if( item->min <= item->max ) {
+	min = item->min;
+	max = item->max;
+      } else {
+	min = item->max;
+	max = item->min;
+      }
+
+      u32 range = max - min + 1;
+
+      // hysteresis:
+      u32 threshold_low  = (range * 30) / 100;
+      u32 threshold_high = (range * 70) / 100;
+
+      if( prev_value >= threshold_low && value < threshold_low ) {
+	value = min; // take over
+      } else if( prev_value < threshold_high && value >= threshold_high ) {
+	value = max; // take over
+      } else {
+	return -2; // don't send
+      }
+    }
+  } break;
+
   default: // MBNG_EVENT_AIN_MODE_DIRECT:
     if( value == item->value )
       return -1; // value already sent    
