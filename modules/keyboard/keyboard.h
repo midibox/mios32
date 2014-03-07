@@ -77,6 +77,7 @@ typedef struct {
   u8  scan_velocity:1;
   u8  scan_optimized:1;
   u8  scan_release_velocity:1;
+  u8  make_debounced:1;
 
   u16 delay_fastest;
   u16 delay_fastest_black_keys;

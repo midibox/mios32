@@ -2122,6 +2122,7 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
   int din_sr2 = 0;
   int din_inverted = 0;
   int break_inverted = 0;
+  int make_debounced = 0;
   int din_key_offset = 32;
   int scan_velocity = 1;
   int scan_optimized = 0;
@@ -2200,6 +2201,15 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "break_inverted") == 0 ) {
       if( (break_inverted=get_dec(value_str)) < 0 || break_inverted > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "make_debounced") == 0 ) {
+      if( (make_debounced=get_dec(value_str)) < 0 || make_debounced > 1 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
 #endif
@@ -2287,6 +2297,7 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
     kc->din_sr2 = din_sr2;
     kc->din_inverted = din_inverted;
     kc->break_inverted = break_inverted;
+    kc->make_debounced = make_debounced;
     kc->din_key_offset = din_key_offset;
     kc->scan_velocity = scan_velocity;
     kc->scan_optimized = scan_optimized;
@@ -4250,6 +4261,10 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      kc->din_inverted,
 	      kc->break_inverted,
 	      kc->din_key_offset);
+      FLUSH_BUFFER;
+
+      sprintf(line_buffer, "               make_debounced=%d \\\n",
+	      kc->make_debounced);
       FLUSH_BUFFER;
 
       sprintf(line_buffer, "               scan_velocity=%d  scan_optimized=%d  note_offset=%d \\\n",
