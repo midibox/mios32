@@ -7,7 +7,11 @@ Based on scripts from Raisonance
 MEMORY
 {
   RAM (xrw) :     ORIGIN = 0x20000000, LENGTH = 192K
-  FLASH (rx) :    ORIGIN = 0x08000000, LENGTH = 1024K
+  FLASH_SECTOR0(rx) : ORIGIN = 0x08000000, LENGTH = 16K /* Bootloader */
+  FLASH_SECTOR1(rx) : ORIGIN = 0x08004000, LENGTH = 16K /* Vectors */
+  FLASH_SECTOR2(rx) : ORIGIN = 0x08008000, LENGTH = 16K /* EEPROM Emulation Page 0 (only used by $MIOS32_PATH/modules/eeprom/STM32F4xx/eeprom.c) */
+  FLASH_SECTOR3(rx) : ORIGIN = 0x0800c000, LENGTH = 16K /* EEPROM Emulation Page 1 (only used by $MIOS32_PATH/modules/eeprom/STM32F4xx/eeprom.c) */
+  FLASH(rx)         : ORIGIN = 0x08010000, LENGTH = 960K
   FLASHB1 (rx) :  ORIGIN = 0x00000000, LENGTH = 0
   EXTMEMB0 (rx) : ORIGIN = 0x00000000, LENGTH = 0
   EXTMEMB1 (rx) : ORIGIN = 0x00000000, LENGTH = 0
@@ -122,7 +126,7 @@ SECTIONS
 	. = ALIGN(4);
         KEEP(*(.mios32_bsl))
 	. = ALIGN(4);
-    } >FLASH
+    } >FLASH_SECTOR0
  
     /* for Cortex devices, the beginning of the startup code is stored in the .isr_vector section, which goes to FLASH */
     .isr_vector :
@@ -131,7 +135,7 @@ SECTIONS
 	. = ALIGN(4);
         KEEP(*(.isr_vector))            /* Startup code */
 	. = ALIGN(4);
-    } >FLASH
+    } >FLASH_SECTOR1
 
     /* used in MIOS32_SYS to set the start vector */
     PROVIDE ( mios32_sys_isr_vector = _mios32_sys_isr_vector );

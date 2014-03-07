@@ -19,7 +19,9 @@
 //!
 //! Usage:
 //! <UL>
-//!   <LI>EEPROM_Init(u32 mode) should be called after startup to connect to the IIC EEPROM
+//!   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
+//!   Pages will be formatted if this hasn't been done before.<BR>
+//!   Formatting can be enforced with EEPROM_Init(1)
 //!   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
 //!       Returns <0 if address hasn't been programmed yet (it's up to the
 //!       application, how to handle this, e.g. value could be zeroed)\n
@@ -59,15 +61,14 @@
 #endif
 
 //! Connects to the (on-board) EEPROM
-//! \param[in] mode not used yet, only mode 0 is supported!
+//! \param[in] mode 0: normal initialisation, 1: enforce formatting
 //! \return < 0 on error
 s32 EEPROM_Init(u32 mode)
 {
   s32 status;
 
-  // currently only mode 0 supported
-  if( mode != 0 )
-    return -1; // unsupported mode
+  if( mode != 0 && mode != 1 )
+    return -1; // currently only mode 0 and 1 are supported
 
   // initialize IIC interface
   if( (status=MIOS32_IIC_Init(0)) < 0 ) {
@@ -119,6 +120,16 @@ s32 EEPROM_Init(u32 mode)
     DEBUG_MSG("[EEPROM_Init] failed to access device!\n");
 #endif
     return -3; // error during access
+  }
+
+  // enforce formatting?
+  if( mode == 1 ) {
+    s32 status = 0;
+    int addr;
+    for(addr=0; addr<EEPROM_EMULATED_SIZE; ++addr)
+      status |= EEPROM_Write(addr, 0x00);
+
+    return status;
   }
 
   return 0; // no error

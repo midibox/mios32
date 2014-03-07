@@ -49,10 +49,13 @@
 
 #elif defined(MIOS32_FAMILY_STM32F4xx)
 # if defined(MIOS32_PROCESSOR_STM32F407VG)
-#  define PAGE_SIZE ((uint16_t)0x800)  /* Page size = 1KByte */
-#  ifndef EEPROM_START_ADDRESS
-#   define EEPROM_START_ADDRESS    ((uint32_t)0x080FF000)  // 2*2k at top of flash memory
+#  define PAGE_SIZE ((uint16_t)0x4000)  /* Page size = 16KByte */
+#  ifdef EEPROM_START_ADDRESS
+#   error "EEPROM_START_ADDRESS can't be changed for STM32F4 devices!"
 #  endif
+#   define EEPROM_START_ADDRESS    ((uint32_t)0x08008000)  // the linker script reserves 0x08008000..0x0800ffff for two EEPROM pages
+#   define EEPROM_PAGE0_SECTOR     FLASH_Sector_2
+#   define EEPROM_PAGE1_SECTOR     FLASH_Sector_3
 # else
 #  error "Processor not prepared for STM32 EEPROM emulation"
 # endif

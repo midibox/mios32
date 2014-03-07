@@ -37,8 +37,9 @@
 //!
 //! Usage:
 //! <UL>
-//!   <LI>EEPROM_Init(u32 mode) should be called after startup to check for valid flash pages.
-//!   Pages will be formatted if this hasn't been done before.
+//!   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
+//!   Pages will be formatted if this hasn't been done before.<BR>
+//!   Formatting can be enforced with EEPROM_Init(1)
 //!   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
 //!       Returns <0 if address hasn't been programmed yet (it's up to the
 //!       application, how to handle this, e.g. value could be zeroed)
@@ -124,7 +125,7 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data);
 /**
   * @brief  Restore the pages to a known good state in case of page's status
   *   corruption after a power loss.
-  * @param  mode currently only mode 0 supported
+  * @param  mode 0: normal initialisation, 1: enforce formatting
   * @retval - < 0: error during writing flash
   *         - 0: on success
   */
@@ -142,6 +143,22 @@ s32 EEPROM_Init(u32 mode)
 
   /* Unlock the Flash Program Erase controller */
   FLASH_Unlock();
+
+  // enfore format?
+  if( mode == 1 ) {
+    /* Erase both Page0 and Page1 and set Page0 as valid page */
+    FlashStatus = EE_Format();
+    /* If erase/program operation was failed, a Flash error code is returned */
+    if (FlashStatus != FLASH_COMPLETE)
+    {
+      return -2; // FlashStatus;
+    }
+
+    /* Lock the Flash Program Erase controller */
+    FLASH_Lock();
+
+    return 0; // no error
+  }
 
   /* Get Page0 status */
   PageStatus0 = (*(__IO uint16_t*)PAGE0_BASE_ADDRESS);
