@@ -7,6 +7,9 @@ MIDIbox KB V1.013
      or "All" is used. It's ensured that messages are only sent once if multiple
      router nodes forward to the same destination port.
 
+   o added "make_debounced" parameter: Note Off will be played when the
+     Break contact has been released, and not when the Make contact has been released.
+
    o support for MBHP_CORE_STM32F4
 
 
