@@ -128,6 +128,7 @@ s32 KEYBOARD_Init(u32 mode)
       kc->scan_optimized = 0;
       kc->break_inverted = 0;
       kc->scan_release_velocity = 0;
+      kc->make_debounced = 0;
 
       if( kb == 0 ) {
 	kc->num_rows = 8;
@@ -430,7 +431,6 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   int pin_make  = row_make*MATRIX_NUM_ROWS + ((column % 8) + 8);  // make  pin on DIN 2
   // determine key number based on row/column
   int key = row*6 + (column % 8); // (6 keys are connected to each DIN)
-
 #else
   // check if key is assigned to an "break contact"
   // and determine reference to break and make pin (valid when make pin active)
@@ -449,7 +449,6 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   }
   // determine key number based on row/column
   int key = ((column >= 8) ? kc->din_key_offset : 0) + 8*((kc->scan_velocity) ? row/2 : row) + (column % 8);
-
 #endif
 
   // ensure valid range
@@ -459,7 +458,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   // determine note number (here we could insert an octave shift)
   int note_number = key + kc->note_offset;
 
-//DEBUG_MSG("key:%d %c note:%d break:%d pin_make:%d pin_break:%d\n", key, depressed ? 'o' : '*', note_number, break_contact, pin_make, pin_break);
+#if 0
+  DEBUG_MSG("key:%d %c note:%d break:%d pin_make:%d pin_break:%d\n", key, depressed ? 'o' : '*', note_number, break_contact, pin_make, pin_break);
+#endif
 
   // break pin inverted?
   if( break_contact && kc->scan_velocity && kc->break_inverted )
@@ -507,25 +508,26 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
   // debounce processing
   if( kc->scan_velocity ) {
     if ( !kc->scan_release_velocity ) {
-    // break contacts don't send MIDI notes if release velocity is not enabled, but they are used for delay measurements,
-    // and they release the Note On/Off debouncing mechanism
+      // break contacts don't send MIDI notes if release velocity is not enabled, but they are used for delay measurements,
+      // and they release the Note On/Off debouncing mechanism
       if( break_contact ) {
 	if( depressed ) {
-#if FANTOM_XR_VARIANT
-	  // for this variant we have to play Note Off when Break is released, because make is bouncing
-	  MIOS32_IRQ_Disable();
-	  *ts_break_ptr = 0;
-          MIOS32_IRQ_Enable();
+	  if( kc->make_debounced ) {
+	    // for debouncing we have to play Note Off when Break is released, because make is bouncing
+	    MIOS32_IRQ_Disable();
+	    *ts_break_ptr = 0;
+	    MIOS32_IRQ_Enable();
 
-	  if( kc->verbose_level >= 2 )
-	    DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
+	    if( kc->verbose_level >= 2 )
+	      DEBUG_MSG("DEPRESSED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 
-# ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
-	  KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
-# else
-	  KEYBOARD_MIDI_SendNote(kb, note_number, 0x00, 1);
-# endif
+#ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
+	    KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
+#else
+	    KEYBOARD_MIDI_SendNote(kb, note_number, 0x00, 1);
 #endif
+	  }
+
 	  MIOS32_IRQ_Disable();
 	  *ts_make_ptr = 0;
 	  *ts_break_ptr = 0;
@@ -533,19 +535,18 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	}
 	return;
       }
-    }
-    // debouncing with release velocity processing
-    else {
+    } else {
+      // debouncing with release velocity processing
       //  Return, if break contact released and no ts_make or break contact pressed and ts_make still valid or
       //             make contact released and ts_break still valid or make contact pressed and no ts_break
       if( (break_contact && ((depressed && !(*ts_make_ptr)) || (!depressed && *ts_make_ptr)))   ||
-         (!break_contact && ((depressed && *ts_break_ptr) || (!depressed && !(*ts_break_ptr))))  ) {
+	  (!break_contact && ((depressed && *ts_break_ptr) || (!depressed && !(*ts_break_ptr))))  ) {
 	if( kc->verbose_level >= 2 )
 	  DEBUG_MSG("Skipped: %s contact %s %s (currrent ts=%d; ts_br=%d, ts_mk=%d)\n",
-			break_contact ? "Break" : "Make",
-	  		depressed ? "released without" : "pressed with remaining",
-			break_contact ? "ts_make" : "ts_break",
-			timestamp, *ts_break_ptr, *ts_make_ptr);
+		    break_contact ? "Break" : "Make",
+		    depressed ? "released without" : "pressed with remaining",
+		    break_contact ? "ts_make" : "ts_break",
+		    timestamp, *ts_break_ptr, *ts_make_ptr);
 	return;
       }
     }
@@ -580,8 +581,8 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 
 	if( kc->verbose_level >= 2 )
 	  DEBUG_MSG("RELEASED note=%s, delay=%d, velocity=%d (from a %s key)\n",
-			KEYBOARD_GetNoteName(note_number, note_str), delay, velocity,
-			black_key ? "black" : "white");
+		    KEYBOARD_GetNoteName(note_number, note_str), delay, velocity,
+		    black_key ? "black" : "white");
 
 #ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
 	KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
@@ -592,30 +593,28 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	  KEYBOARD_MIDI_SendNote(kb, note_number, velocity, 1);
 #endif
       }
-    }
-    // no release velocity processing
-    else {
+    } else {
+      // no release velocity processing
       if( !kc->scan_velocity || !(*ts_make_ptr) ) {
-#if !FANTOM_XR_VARIANT
-	// (in FANTOM_XR variant the note off is played with depressed break)
-	MIOS32_IRQ_Disable();
-	*ts_break_ptr = 0;
-	MIOS32_IRQ_Enable();
+	if( !kc->make_debounced ) {
+	  // (if debouncing mode is activated, the note off is played with depressed break)
+	  MIOS32_IRQ_Disable();
+	  *ts_break_ptr = 0;
+	  MIOS32_IRQ_Enable();
 
-	if( kc->verbose_level >= 2 )
-	  DEBUG_MSG("RELEASED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
+	  if( kc->verbose_level >= 2 )
+	    DEBUG_MSG("RELEASED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 
-# ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
-	KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
-# else
-	KEYBOARD_MIDI_SendNote(kb, note_number, 0x00, 0);
-# endif
+#ifdef KEYBOARD_NOTIFY_TOGGLE_HOOK
+	  KEYBOARD_NOTIFY_TOGGLE_HOOK(kb, note_number, 0x00);
+#else
+	  KEYBOARD_MIDI_SendNote(kb, note_number, 0x00, 0);
 #endif
+	}
       }
     }
-  }
-  // pressed key ?
-  else {
+  } else {
+    // pressed key ?
     if( !kc->scan_velocity ||
         // or make contact reached (1->0) (not bouncing yet) and break contact remains pressed (0) ?
 	(!break_contact && *ts_break_ptr &&
@@ -634,10 +633,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 
 	if( kc->verbose_level >= 2 )
 	  DEBUG_MSG("PRESSED note=%s, delay=%d, velocity=%d (played from a %s key)\n",
-		  KEYBOARD_GetNoteName(note_number, note_str), delay, velocity,
-	          black_key ? "black" : "white");
-      }
-      else {
+		    KEYBOARD_GetNoteName(note_number, note_str), delay, velocity,
+		    black_key ? "black" : "white");
+      } else {
 	if( kc->verbose_level >= 2 )
 	  DEBUG_MSG("PRESSED note=%s, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), velocity);
       }
@@ -998,6 +996,7 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> din_key_offset <0-127>:    selects the key offset between DIN1 and DIN2");
   out("  set kb <1|2> din_inverted <on|off>:     DINs inverted?");
   out("  set kb <1|2> break_inverted <on|off>:   Only break contacts inverted?");
+  out("  set kb <1|2> make_debounced <on|off>:   Make contacts will be debounced");
   out("  set kb <1|2> delay_fastest <0-65535>:   fastest delay for velocity calculation");
   out("  set kb <1|2> delay_fastest_black_keys <0-65535>: optional fastest delay for black keys");
   out("  set kb <1|2> delay_fastest_release <0-65535>: opt. fastest release delay for velocity calculation");
@@ -1338,6 +1337,23 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "make_debounced") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off (alternatively 1 or 0)");
+	    return 1; // command taken
+	  }
+
+	  int on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off' (alternatively 1 or 0)!");
+	  } else {
+	    kc->make_debounced = on_off;
+
+	    out("Keyboard #%d: Make contact debouncing %s", kb+1, kc->make_debounced ? "on" : "off");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+	  }
+	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "delay_fastest") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the fastest delay for velocity calculation!");
@@ -1673,6 +1689,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   out("kb %d din_key_offset %d", kb+1, kc->din_key_offset);
   out("kb %d din_inverted %s", kb+1, kc->din_inverted ? "on" : "off");
   out("kb %d break_inverted %s", kb+1, kc->break_inverted ? "on" : "off");
+  out("kb %d make_debounced %s", kb+1, kc->make_debounced ? "on" : "off");
   out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
   out("kb %d delay_fastest_black_keys %d", kb+1, kc->delay_fastest_black_keys);
   out("kb %d delay_fastest_release %d", kb+1, kc->delay_fastest_release);

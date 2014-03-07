@@ -143,6 +143,7 @@ s32 PRESETS_Init(u32 mode)
       kc->scan_velocity         = (misc & (1 << 2)) ? 1 : 0;
       kc->scan_optimized        = (misc & (1 << 3)) ? 1 : 0;
       kc->scan_release_velocity = (misc & (1 << 4)) ? 1 : 0;
+      kc->make_debounced        = (misc & (1 << 5)) ? 1 : 0;
 
       kc->delay_fastest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
       kc->delay_slowest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
@@ -300,7 +301,8 @@ s32 PRESETS_StoreAll(void)
 	(kc->break_inverted        << 1) |
 	(kc->scan_velocity         << 2) |
 	(kc->scan_optimized        << 3) |
-        (kc->scan_release_velocity << 4);
+        (kc->scan_release_velocity << 4) |
+        (kc->make_debounced        << 5);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_MISC + offset, misc);
 
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset, kc->delay_fastest);
