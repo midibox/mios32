@@ -101,9 +101,58 @@ s32 MBNG_AIN_HandleCalibration(u16 pin_value, u16 min, u16 max, u16 ain_max, u8 
 //! This function handles the various AIN modes
 //! Note: it's also used by the AINSER module, therefore public
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s16 min, s16 max)
+s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_value)
 {
   mbng_event_ain_mode_t ain_mode = item->custom_flags.AIN.ain_mode; // also valid for AINSER
+
+  // handle switch mode
+  if( ain_mode == MBNG_EVENT_AIN_MODE_SWITCH ) {
+    // hysteresis:
+    u32 threshold_low  = (0x1000 * 30) / 100;
+    u32 threshold_high = (0x1000 * 70) / 100;
+
+    if( prev_pin_value >= threshold_low && pin_value < threshold_low ) {
+      pin_value = 0x000;
+      prev_pin_value = 0xfff;
+    } else if( prev_pin_value < threshold_high && pin_value >= threshold_high ) {
+      pin_value = 0xfff;
+      prev_pin_value = 0x000;
+    } else {
+      return -2; // don't send
+    }
+  }
+
+  // scale 12bit value between min/max with fixed point artithmetic
+  int value = pin_value;
+  s16 min = item->min;
+  s16 max = item->max;
+  u8 *map_values;
+  int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+  if( map_len > 0 ) {
+    min = 0;
+    max = map_len-1;
+  }
+
+  if( min <= max ) {
+    value = min + (((256*value)/4096) * (max-min+1) / 256);
+  } else {
+    value = min - (((256*value)/4096) * (min-max+1) / 256);
+  }
+
+  if( map_len > 0 ) {
+    value = map_values[value];
+  }
+
+  int prev_value;
+  if( min <= max ) {
+    prev_value = min + (((256*prev_pin_value)/4096) * (max-min+1) / 256);
+  } else {
+    prev_value = min - (((256*prev_pin_value)/4096) * (min-max+1) / 256);
+  }
+
+  if( map_len > 0 ) {
+    prev_value = map_values[prev_value];
+  }
 
   switch( ain_mode ) {
   case MBNG_EVENT_AIN_MODE_SNAP: {
@@ -175,36 +224,7 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 value, u16 prev_value, s
       return -1; // value already sent    
   } break;
 
-  case MBNG_EVENT_AIN_MODE_SWITCH: {
-    if( value == item->value )
-      return -1; // value already sent
-
-    if( !item->flags.value_from_midi ) {
-      u16 min, max;
-      if( item->min <= item->max ) {
-	min = item->min;
-	max = item->max;
-      } else {
-	min = item->max;
-	max = item->min;
-      }
-
-      u32 range = max - min + 1;
-
-      // hysteresis:
-      u32 threshold_low  = (range * 30) / 100;
-      u32 threshold_high = (range * 70) / 100;
-
-      if( prev_value >= threshold_low && value < threshold_low ) {
-	value = min; // take over
-      } else if( prev_value < threshold_high && value >= threshold_high ) {
-	value = max; // take over
-      } else {
-	return -2; // don't send
-      }
-    }
-  } break;
-
+  case MBNG_EVENT_AIN_MODE_SWITCH: // no additional handling required (hysteresis was handled at the begin of this function)
   default: // MBNG_EVENT_AIN_MODE_DIRECT:
     if( value == item->value )
       return -1; // value already sent    
@@ -261,58 +281,25 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
       MBNG_EVENT_ItemPrint(&item, 0);
     }
 
+
     u16 prev_item_value = item.value;
-
-    // scale 12bit value between min/max with fixed point artithmetic
-    int value = pin_value;
-    s16 min = item.min;
-    s16 max = item.max;
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-    if( map_len > 0 ) {
-      min = 0;
-      max = map_len-1;
-    }
-
-    if( min <= max ) {
-      value = min + (((256*value)/4096) * (max-min+1) / 256);
-    } else {
-      value = min - (((256*value)/4096) * (min-max+1) / 256);
-    }
-
-    if( map_len > 0 ) {
-      value = map_values[value];
-    }
-
     if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
-      int prev_value = previous_ain_value[pin];
+      int prev_pin_value = previous_ain_value[pin];
       previous_ain_value[pin] = pin_value; // for next notification
 
       u32 timestamp = ain_timestamp[pin];
       ain_timestamp[pin] = MIOS32_TIMESTAMP_Get();
 
       if( !no_midi && item.custom_flags.AIN.ain_filter_delay_ms ) {
-	int diff = pin_value - prev_value;
+	int diff = pin_value - prev_pin_value;
 	if( diff < 0 ) diff = -diff;
 	if( !is_pin_value_min && diff > 32*16 && MIOS32_TIMESTAMP_GetDelay(timestamp) < item.custom_flags.AIN.ain_filter_delay_ms ) {
 	  continue; // don't send
 	}
       }
 
-      if( min <= max ) {
-	prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
-      } else {
-	prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
-      }
-
-      if( map_len > 0 ) {
-	prev_value = map_values[prev_value];
-      }
-
-      if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
+      if( MBNG_AIN_HandleAinMode(&item, pin_value, prev_pin_value) < 0 )
 	continue; // don't send
-    } else {
-      item.value = value;
     }
 
     if( no_midi ) {

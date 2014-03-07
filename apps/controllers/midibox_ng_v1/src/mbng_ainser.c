@@ -99,39 +99,8 @@ s32 MBNG_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value, u8 no_midi)
       MBNG_EVENT_ItemPrint(&item, 0);
     }
 
-    // scale 12bit value between min/max with fixed point artithmetic
-    int value = pin_value;
-    s16 min = item.min;
-    s16 max = item.max;
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-    if( map_len > 0 ) {
-      min = 0;
-      max = map_len-1;
-    }
-
-    if( min <= max ) {
-      value = min + (((256*value)/4096) * (max-min+1) / 256);
-    } else {
-      value = min - (((256*value)/4096) * (min-max+1) / 256);
-    }
-
-    if( map_len > 0 ) {
-      value = map_values[value];
-    }
-
-    int prev_value = AINSER_PreviousPinValueGet();
-    if( min <= max ) {
-      prev_value = min + (((256*prev_value)/4096) * (max-min+1) / 256);
-    } else {
-      prev_value = min - (((256*prev_value)/4096) * (min-max+1) / 256);
-    }
-
-    if( map_len > 0 ) {
-      prev_value = map_values[prev_value];
-    }
-
-    if( MBNG_AIN_HandleAinMode(&item, value, prev_value, min, max) < 0 )
+    u16 prev_pin_value = AINSER_PreviousPinValueGet();
+    if( MBNG_AIN_HandleAinMode(&item, pin_value, prev_pin_value) < 0 )
       continue; // don't send
 
     if( no_midi ) {
