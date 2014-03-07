@@ -27,14 +27,8 @@
 
 
 // EEPROM emulation
-// SIZE == 4096 halfwords -> 8192 bytes
-#if defined(MIOS32_BOARD_MBHP_CORE_LPC17)
-# define EEPROM_EMULATED_SIZE 4096
-#elif defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
-# define EEPROM_EMULATED_SIZE 4096
-#else
-# error "Application requires external EEPROM - not prepared for this board"
-#endif
+// SIZE == 2048 halfwords -> 4096 bytes
+#define EEPROM_EMULATED_SIZE 2048
 
 // magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
 #define EEPROM_MAGIC_NUMBER 0x47114226

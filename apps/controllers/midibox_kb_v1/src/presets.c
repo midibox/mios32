@@ -52,19 +52,27 @@ s32 PRESETS_Init(u32 mode)
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] EEPROM initialisation failed with status %d!\n", status);
 #endif
-    return status;
   }
 
   // check for magic number in EEPROM - if not available, initialize the structure
   u32 magic = PRESETS_Read32(PRESETS_ADDR_MAGIC01);
-  if( magic != EEPROM_MAGIC_NUMBER &&
-      magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 &&
-      magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2 ) {
+  if( status < 0 ||
+      (magic != EEPROM_MAGIC_NUMBER &&
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 &&
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] magic number not found (was 0x%08x) - initialize EEPROM!\n", magic);
 #endif
 
     // clear EEPROM
+    if( (status=EEPROM_Init(1)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[PRESETS] EEPROM clear failed with status %d!\n", status);
+#endif
+      return status;
+    }
+
+    // write all-0
     int addr;
     for(addr=0; addr<PRESETS_EEPROM_SIZE; ++addr)
       status |= PRESETS_Write16(addr, 0x00);

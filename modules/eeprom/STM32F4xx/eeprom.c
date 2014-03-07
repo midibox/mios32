@@ -2,7 +2,7 @@
 /**
   ******************************************************************************
   * @file    EEPROM_Emulation/src/eeprom.c 
-  * @author  originally MCD Application Team, adapted to MIOS32 API by Thorsten Klose
+  * @author  originally MCD Application Team, adapted to MIOS32 API and STM32F4 by Thorsten Klose
   * @version based on V3.1.0
   * @brief   This file provides all the EEPROM emulation firmware functions.
   ******************************************************************************
@@ -19,6 +19,7 @@
   *   - if value already exist in EEPROM, it won't be programmed again
   *   - added EEPROM_SendDebugMessage()
   *   - added the usage infos below
+  *   - migrated to STM32F4
   *
   ******************************************************************************
   * @copy
@@ -37,8 +38,9 @@
 //!
 //! Usage:
 //! <UL>
-//!   <LI>EEPROM_Init(u32 mode) should be called after startup to check for valid flash pages.
-//!   Pages will be formatted if this hasn't been done before.
+//!   <LI>EEPROM_Init(0) should be called after startup to check for valid flash pages.
+//!   Pages will be formatted if this hasn't been done before.<BR>
+//!   Formatting can be enforced with EEPROM_Init(1)
 //!   <LI>EEPROM_Read(u16 address) reads a 16bit value from EEPROM<BR>
 //!       Returns <0 if address hasn't been programmed yet (it's up to the
 //!       application, how to handle this, e.g. value could be zeroed)
@@ -53,12 +55,10 @@
 //! #define EEPROM_EMULATED_SIZE 128  // -> 128 half words = 256 bytes
 //! \endcode
 //!
-//! Note: each address allocates 4 bytes in flash. The emulation can handle with
-//! two pages (STM32F103RB: 2*1k, STM32F103RE: 2*2k), and the number of addresses
-//! shouldn't exceed (page size - 4).
+//! Note: each 16bit address allocates 4 bytes in flash. The emulation can handle with
+//! two pages (STM32F4xx: 2*16k), and the number of addresses shouldn't exceed (page size - 4).
 //!
-//! Accordingly, the maximum EEPROM_EMULATED_SIZE for STM32F103RB is 255, and for
-//! STM32F103RE 511.<BR>
+//! Accordingly, the maximum EEPROM_EMULATED_SIZE for STM32F4xx is 4095.<BR>
 //! Than lower the specified size, than faster EEPROM_Write() will work, especially
 //! once pages have to be switched.
 //!
@@ -124,13 +124,12 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data);
 /**
   * @brief  Restore the pages to a known good state in case of page's status
   *   corruption after a power loss.
-  * @param  mode currently only mode 0 supported
+  * @param  mode 0: normal initialisation, 1: enforce formatting
   * @retval - < 0: error during writing flash
   *         - 0: on success
   */
 s32 EEPROM_Init(u32 mode)
 {
-#if 0
   uint16_t PageStatus0 = 6, PageStatus1 = 6;
   uint16_t VarIdx = 0;
   uint16_t EepromStatus = 0;
@@ -138,11 +137,27 @@ s32 EEPROM_Init(u32 mode)
   int16_t x = -1;
   uint16_t  FlashStatus;
 
-  if( mode > 0 )
-    return -1; // currently only mode 0 supported
+  if( mode != 0 && mode != 1 )
+    return -1; // currently only mode 0 and 1 are supported
 
   /* Unlock the Flash Program Erase controller */
   FLASH_Unlock();
+
+  // enfore format?
+  if( mode == 1 ) {
+    /* Erase both Page0 and Page1 and set Page0 as valid page */
+    FlashStatus = EE_Format();
+    /* If erase/program operation was failed, a Flash error code is returned */
+    if (FlashStatus != FLASH_COMPLETE)
+    {
+      return -2; // FlashStatus;
+    }
+
+    /* Lock the Flash Program Erase controller */
+    FLASH_Lock();
+
+    return 0; // no error
+  }
 
   /* Get Page0 status */
   PageStatus0 = (*(__IO uint16_t*)PAGE0_BASE_ADDRESS);
@@ -155,8 +170,11 @@ s32 EEPROM_Init(u32 mode)
     case ERASED:
       if (PageStatus1 == VALID_PAGE) /* Page0 erased, Page1 valid */
       {
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+	
         /* Erase Page0 */
-        FlashStatus = FLASH_ErasePage(PAGE0_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE0_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -165,8 +183,11 @@ s32 EEPROM_Init(u32 mode)
       }
       else if (PageStatus1 == RECEIVE_DATA) /* Page0 erased, Page1 receive */
       {
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+
         /* Erase Page0 */
-        FlashStatus = FLASH_ErasePage(PAGE0_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE0_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -219,6 +240,10 @@ s32 EEPROM_Init(u32 mode)
             }
           }
         }
+
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+
         /* Mark Page0 as valid */
         FlashStatus = FLASH_ProgramHalfWord(PAGE0_BASE_ADDRESS, VALID_PAGE);
         /* If program operation was failed, a Flash error code is returned */
@@ -227,7 +252,7 @@ s32 EEPROM_Init(u32 mode)
 	  return -2; // FlashStatus;
         }
         /* Erase Page1 */
-        FlashStatus = FLASH_ErasePage(PAGE1_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE1_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -236,8 +261,11 @@ s32 EEPROM_Init(u32 mode)
       }
       else if (PageStatus1 == ERASED) /* Page0 receive, Page1 erased */
       {
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+
         /* Erase Page1 */
-        FlashStatus = FLASH_ErasePage(PAGE1_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE1_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -276,8 +304,11 @@ s32 EEPROM_Init(u32 mode)
       }
       else if (PageStatus1 == ERASED) /* Page0 valid, Page1 erased */
       {
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+	
         /* Erase Page1 */
-        FlashStatus = FLASH_ErasePage(PAGE1_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE1_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -310,6 +341,10 @@ s32 EEPROM_Init(u32 mode)
             }
           }
         }
+
+	// clear error flags, otherwise next flash access could break with fail
+	FLASH_ClearFlag(0xffffffff);
+
         /* Mark Page1 as valid */
         FlashStatus = FLASH_ProgramHalfWord(PAGE1_BASE_ADDRESS, VALID_PAGE);
         /* If program operation was failed, a Flash error code is returned */
@@ -318,7 +353,7 @@ s32 EEPROM_Init(u32 mode)
 	  return -2; // FlashStatus;
         }
         /* Erase Page0 */
-        FlashStatus = FLASH_ErasePage(PAGE0_BASE_ADDRESS);
+	FlashStatus = FLASH_EraseSector(EEPROM_PAGE0_SECTOR, VoltageRange_3);
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -340,7 +375,6 @@ s32 EEPROM_Init(u32 mode)
 
   /* Lock the Flash Program Erase controller */
   FLASH_Lock();
-#endif
 
   return 0; // no error
 }
@@ -356,7 +390,6 @@ s32 EEPROM_Init(u32 mode)
   */
 s32 EEPROM_Read(u16 VirtAddress)
 {
-#if 0
   uint16_t ValidPage = PAGE0;
   uint16_t AddressValue = 0x5555;
   s32 ReadStatus = -1;
@@ -406,9 +439,6 @@ s32 EEPROM_Read(u16 VirtAddress)
     return ReadStatus;
 
   return Data; // return value of variable
-#else
-  return 0;
-#endif
 }
 
 /**
@@ -423,7 +453,6 @@ s32 EEPROM_Read(u16 VirtAddress)
   */
 s32 EEPROM_Write(u16 VirtAddress, u16 Data)
 {
-#if 0
   uint16_t Status = 0;
   s32 ReadStatus = 0;
 
@@ -453,7 +482,6 @@ s32 EEPROM_Write(u16 VirtAddress, u16 Data)
     case PAGE_FULL: return -1;
     case NO_VALID_PAGE: return -2;
   }
-#endif
 
   return -3; // flash write error
 }
@@ -466,11 +494,13 @@ s32 EEPROM_Write(u16 VirtAddress, u16 Data)
   */
 static FLASH_Status EE_Format(void)
 {
-#if 0
   FLASH_Status FlashStatus = FLASH_COMPLETE;
 
+  // clear error flags, otherwise next flash access could break with fail
+  FLASH_ClearFlag(0xffffffff);
+
   /* Erase Page0 */
-  FlashStatus = FLASH_ErasePage(PAGE0_BASE_ADDRESS);
+  FlashStatus = FLASH_EraseSector(EEPROM_PAGE0_SECTOR, VoltageRange_3);
 
   /* If erase operation was failed, a Flash error code is returned */
   if (FlashStatus != FLASH_COMPLETE)
@@ -488,13 +518,10 @@ static FLASH_Status EE_Format(void)
   }
 
   /* Erase Page1 */
-  FlashStatus = FLASH_ErasePage(PAGE1_BASE_ADDRESS);
+  FlashStatus = FLASH_EraseSector(EEPROM_PAGE1_SECTOR, VoltageRange_3);
 
   /* Return Page1 erase operation status */
   return FlashStatus;
-#else
-  return 0;
-#endif
 }
 
 /**
@@ -508,7 +535,6 @@ static FLASH_Status EE_Format(void)
   */
 static uint16_t EE_FindValidPage(uint8_t Operation)
 {
-#if 0
   uint16_t PageStatus0 = 6, PageStatus1 = 6;
 
   /* Get Page0 actual status */
@@ -567,7 +593,6 @@ static uint16_t EE_FindValidPage(uint8_t Operation)
     default:
       return PAGE0;             /* Page0 valid */
   }
-#endif
 }
 
 /**
@@ -582,7 +607,6 @@ static uint16_t EE_FindValidPage(uint8_t Operation)
   */
 static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Data)
 {
-#if 0
   FLASH_Status FlashStatus = FLASH_COMPLETE;
   uint16_t ValidPage = PAGE0;
   uint32_t Address = 0x08010000, PageEndAddress = 0x080107FF;
@@ -608,6 +632,9 @@ static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Da
     /* Verify if Address and Address+2 contents are 0xFFFFFFFF */
     if ((*(__IO uint32_t*)Address) == 0xFFFFFFFF)
     {
+      // clear error flags, otherwise next flash access could break with fail
+      FLASH_ClearFlag(0xffffffff);
+
       /* Set variable data */
       FlashStatus = FLASH_ProgramHalfWord(Address, Data);
       /* If program operation was failed, a Flash error code is returned */
@@ -629,7 +656,6 @@ static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Da
 
   /* Return PAGE_FULL in case the valid page is full */
   return PAGE_FULL;
-#endif
 }
 
 /**
@@ -645,9 +671,10 @@ static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Da
   */
 static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
 {
-#if 0
   FLASH_Status FlashStatus = FLASH_COMPLETE;
-  uint32_t NewPageAddress = 0x080103FF, OldPageAddress = 0x08010000;
+  uint32_t NewPageAddress = 0x080103FF;
+  uint32_t OldPageSector = FLASH_Sector_2;
+  
   uint16_t ValidPage = PAGE0, VarIdx = 0;
   uint16_t EepromStatus = 0;
   s32 ReadStatus = 0;
@@ -660,8 +687,8 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
     /* New page address where variable will be moved to */
     NewPageAddress = PAGE0_BASE_ADDRESS;
 
-    /* Old page address where variable will be taken from */
-    OldPageAddress = PAGE1_BASE_ADDRESS;
+    /* Old page sector where variable will be taken from */
+    OldPageSector = EEPROM_PAGE1_SECTOR;
   }
   else if (ValidPage == PAGE0)  /* Page0 valid */
   {
@@ -669,7 +696,7 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
     NewPageAddress = PAGE1_BASE_ADDRESS;
 
     /* Old page address where variable will be taken from */
-    OldPageAddress = PAGE0_BASE_ADDRESS;
+    OldPageSector = EEPROM_PAGE0_SECTOR;
   }
   else
   {
@@ -713,8 +740,11 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
     }
   }
 
+  // clear error flags, otherwise next flash access could break with fail
+  FLASH_ClearFlag(0xffffffff);
+
   /* Erase the old Page: Set old Page status to ERASED status */
-  FlashStatus = FLASH_ErasePage(OldPageAddress);
+  FlashStatus = FLASH_EraseSector(OldPageSector, VoltageRange_3);
   /* If erase operation was failed, a Flash error code is returned */
   if (FlashStatus != FLASH_COMPLETE)
   {
@@ -731,7 +761,6 @@ static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data)
 
   /* Return last operation flash status */
   return FlashStatus;
-#endif
 }
 
 
