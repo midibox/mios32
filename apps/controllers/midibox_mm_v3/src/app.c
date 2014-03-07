@@ -70,9 +70,6 @@ mm_flags_t mm_flags;
 xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
 
-// ms accurate counter
-static u32 counter_ms;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -121,9 +118,6 @@ midi_router_node_entry_t midi_router_cfg[MIDI_ROUTER_NUM_NODES] = {
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  // clear mS counter
-  counter_ms = 0;
-
   // create semaphores
   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
@@ -213,7 +207,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
   // (the SysEx stream would interfere with monitor messages)
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
-  MIDIMON_Receive(port, midi_package, counter_ms, filter_sysex_message);
+  MIDIMON_Receive(port, midi_package, filter_sysex_message);
 
   if( port == MIOS32_MIDI_DefaultPortGet() ) {
     // forward MIDI event to MIDI handler
@@ -349,9 +343,6 @@ static void TASK_Period_1mS(void *pvParameters)
 
     // toggle Status LED to as a sign of live
     MIOS32_BOARD_LED_Set(1, ~MIOS32_BOARD_LED_Get());
-
-    // increment "global" ms counter
-    ++counter_ms;
 
     // handles the update requests for VPOT LEDrings
     MM_VPOT_LEDRing_CheckUpdates();
