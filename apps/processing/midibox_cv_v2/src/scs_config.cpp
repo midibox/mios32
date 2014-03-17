@@ -382,10 +382,10 @@ static void selectLOAD_Callback(char *newString)
 static u8 getListLOAD_Callback(u8 offset, char *line)
 {
   MUTEX_SDCARD_TAKE;
-  s32 status = FILE_GetFiles("/", "MIO", line, 2, offset);
+  s32 status = FILE_GetFiles("/", "CV2", line, 2, offset);
   MUTEX_SDCARD_GIVE;
   if( status < 1 ) {
-    sprintf(line, "<no .MIO files>");
+    sprintf(line, "<no .CV2 files>");
     status = 0;
   }
   return status;
