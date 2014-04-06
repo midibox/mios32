@@ -82,6 +82,9 @@ u8 ui_controller_mode;
 mios32_midi_port_t ui_controller_port;
 u8 ui_controller_chn;
 
+u16 ui_track_activity_state;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -151,6 +154,8 @@ s32 SEQ_UI_Init(u32 mode)
     SEQ_UI_Bookmark_Store(i);
   }
 
+  ui_track_activity_state = 0;
+
   return 0; // no error
 }
 
@@ -198,7 +203,7 @@ static s32 SEQ_UI_Button_Bar(s32 depressed, u32 bar)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
+s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
 {
   static u16 seq_pressed = 0x0000;
 
@@ -327,8 +332,8 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
   SEQ_UI_PAGES_Set(SEQ_UI_PAGE_TEMPO);
 
   // determine current timestamp
-  u32 timestamp = seq_core_timestamp_ms;
-  u32 delay = timestamp - tap_tempo_last_timestamp;
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+  u32 delay = MIOS32_TIMESTAMP_GetDelay(tap_tempo_last_timestamp);
 
   // if delay < 100 (mS) we assume a bouncing button - ignore this tap!
   if( delay < 100 )
@@ -356,8 +361,9 @@ static s32 SEQ_UI_Button_TapTempo(s32 depressed)
     // determine BPM
     int tap;
     int accumulated_delay = 0;
-    for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap)
+    for(tap=0; tap<TAP_DELAY_STORAGE_SIZE; ++tap) {
       accumulated_delay += tap_tempo_delay[tap];
+    }
     u32 bpm = 60000000 / (accumulated_delay / TAP_DELAY_STORAGE_SIZE);
 
     // set BPM
@@ -453,7 +459,12 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
   if( depressed ) return -1; // ignore when button depressed
+#if 0
   return SEQ_UI_UTIL_Clear();
+#else
+  // changed in V4L 1.082: press CLEAR and GP button to clear individual track
+  return 0;
+#endif
 }
 
 
@@ -1159,6 +1170,36 @@ s32 SEQ_UI_LED_Handler_Periodic()
     return -1;
   }
   
+  // VU meters (used in MUTE menu, could also be available as LED matrix...)
+  static u8 vu_meter_prediv = 0; // predivider for VU meters
+
+  if( ++vu_meter_prediv >= 16 ) { // NOTE: in distance to V4 (without L) increased from 4 to 16 for proper track activity state
+    vu_meter_prediv = 0;
+
+
+    portENTER_CRITICAL();
+
+    ui_track_activity_state = 0x0000;
+    u8 track;
+    seq_core_trk_t *t = &seq_core_trk[0];
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++track) {
+      if( t->vu_meter ) {
+	// Special V4L handling: convert VU meter into track activity indiciators
+	t->vu_meter = 0;
+
+	// first three tracks of a SEQ are combined for note/velocity/length
+	if( (track % 8) == 0 ) {
+	  ui_track_activity_state |= (7 << track);
+	} else {
+	  ui_track_activity_state |= (1 << track);
+	}
+      }
+    }
+
+    portEXIT_CRITICAL();
+  }
+
+
   // GP LEDs are updated when ui_page_gp_leds has changed
   static u16 prev_ui_page_gp_leds = 0x0000;
   u16 ui_page_gp_leds = SEQ_UI_PAGES_GP_LED_Handler();
