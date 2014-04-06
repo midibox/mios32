@@ -194,6 +194,8 @@ extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
 
+extern s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes for functions implemented in seq_ui_*.c
@@ -243,5 +245,7 @@ extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 extern u8 ui_controller_mode;
 extern mios32_midi_port_t ui_controller_port;
 extern u8 ui_controller_chn;
+
+extern u16 ui_track_activity_state;
 
 #endif /* _SEQ_UI_H */

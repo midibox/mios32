@@ -1,6 +1,30 @@
 $Id$
 
 
+MIDIboxSEQ V4L.082
+~~~~~~~~~~~~~~~~~~
+
+   o CLEAR button now allows to clear individual tracks with the GP buttons:
+     - CLEAR+GP1: clear note triggers (values are kept but not played)
+     - CLEAR+GP2: reset velocity values to 64
+     - CLEAR+GP3: reset note length values to half step
+     - CLEAR+GP4: clear Pitchbend
+     - CLEAR+GP5: clear all CCs
+     - CLEAR+GP6: clear Seq1 + track configuration (*) (like before)
+     - CLEAR+GP7: like GP6, could be used for other purposes in future
+     - CLEAR+GP8: like GP6, could be used for other purposes in future
+
+     Same for GP9..16 for Seq2
+
+     (*) track configuration won't be changed if 'PasteClrAll' set to 0 in MBSEQ_GC.V4 file
+
+
+MIDIboxSEQ V4L.081
+~~~~~~~~~~~~~~~~~~
+
+   o added USB MIDI workaround for Windows
+
+
 MIDIboxSEQ V4L.079
 ~~~~~~~~~~~~~~~~~~
 

@@ -526,8 +526,11 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	    pb_last_value[track] = value;
 	  }
 
-	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
-	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	  if(
+#ifndef MBSEQV4L
+	     (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+#endif
+	     (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
 	    p->type     = PitchBend;
 	    p->cable    = track;
 	    p->event    = PitchBend;
@@ -767,7 +770,17 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	      for(i=0; i<4; ++i)
 		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
 	    } else {
-	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
+	      // Live Record mode: write into the next 4*resolution steps (till end of track)
+	      int i;
+	      u16 num_p_steps = SEQ_PAR_NumStepsGet(track);
+	      int num_steps = 4;
+	      if( tcc->clkdiv.value <= 0x03 )
+		num_steps = 16;
+	      else if( tcc->clkdiv.value <= 0x07 )
+		num_steps = 8;
+	      for(i=0; i<num_steps && (step+i) < num_p_steps; ++i) {
+		SEQ_PAR_Set(track, step+i, par_layer, instrument, layer_event.midi_package.evnt2); // MSB
+	      }
 	      return par_layer;
 	    }
 	  }
