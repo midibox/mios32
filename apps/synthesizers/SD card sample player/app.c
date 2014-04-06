@@ -66,7 +66,7 @@ static void TASK_BANKSWITCH_SCAN(void *pvParameters);
 // All filenames are supported in 8.3 format
 
 u8 lee_hw=0; // set to enable scanning of Lee's temporary bank switch on J10
-u8 midichannel=1;	// MIDI channel to respond to
+u8 midichannel=0;	// MIDI channel to respond to
 
 static  u8 voice_no=0;	// used to count number of voices to play
 static  u8 voice_samples[POLYPHONY];	// Store which sample numbers are playing in which voice
@@ -344,7 +344,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 {
   u8 samp_no;
 
-  if( midi_package.chn == (midichannel-1) && (midi_package.type == NoteOn || midi_package.type == NoteOff) )	// Only interested in note on/off on chn1
+  if( midi_package.chn == midichannel && (midi_package.type == NoteOn || midi_package.type == NoteOff) )	// Only interested in note on/off on chn1
   {
 	if( midi_package.event == NoteOn && midi_package.velocity > 0 )
 	{
@@ -380,7 +380,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 		}
 	}
   }
-  else if (midi_package.chn==(midichannel-1) && midi_package.type==ProgramChange)
+  else if (midi_package.chn==midichannel && midi_package.type==ProgramChange)
     {
 		sample_bank_no=midi_package.evnt1;	// Set new bank
 		DEBUG_MSG("MIDI Program Change received - Changing bank to %d",sample_bank_no);
@@ -389,7 +389,7 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 		Open_Bank(sample_bank_no);	// Load relevant bank
 		sdcard_access_allowed=1;
 	}
-  else if (midi_package.chn==(midichannel-1) && midi_package.type==CC && midi_package.evnt1==7) // Volume message
+  else if (midi_package.chn==midichannel && midi_package.type==CC && midi_package.evnt1==7) // Volume message
   {
    midi_volume=midi_package.evnt2;  // Set new global midi volume
    //DEBUG_MSG("Midi volume set to %d\n", midi_volume);
