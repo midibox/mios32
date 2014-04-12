@@ -1899,3 +1899,17 @@ FFW: add Extra CC On/Off toggle button to LFO page
 ----------------------------------------------------------
 Phillwilson: store seq_live_options on SD Card
 ----------------------------------------------------------
+
+
+Wishlist for MIDIbox SEQ V4 Plus
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+V4 Plus will require a STM32F4 core which offers much more memory.
+Accordingly, resource hungry features could be implemented.
+
+Here a list:
+
+- USB host mode to connect USB keyboards and controllers
+  http://midibox.org/forums/topic/18731-controlling-op-1-with-seqv4/
+- Expression Layer:
+  http://midibox.org/forums/topic/18732-fr-expression-layer/
