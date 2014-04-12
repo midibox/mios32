@@ -5,8 +5,8 @@ MIDIboxSEQ V4L.082
 ~~~~~~~~~~~~~~~~~~
 
    o CLEAR button now allows to clear individual tracks with the GP buttons:
-     - CLEAR+SEQ1: clear entire Seq1
-     - CLEAR+SEQ2: clear entire Seq2
+     - CLEAR+SEQ1: clear entire Seq1 + configuration (*)
+     - CLEAR+SEQ2: clear entire Seq2 + configuration (*)
      - CLEAR+GP1: clear note triggers (values are kept but not played)
      - CLEAR+GP2: reset velocity values to 64
      - CLEAR+GP3: reset note length values to half step
