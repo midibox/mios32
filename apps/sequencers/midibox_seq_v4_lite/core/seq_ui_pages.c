@@ -505,10 +505,10 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 
   // clear button pressed: clear track
   if( seq_ui_button_state.CLEAR ) {
-    u8 track_offset = (button >= 8) ? 8 : 0;
-    SEQ_UI_Button_Seq(1, 0, 1); // depress Seq1, no clear!
-    SEQ_UI_Button_Seq(1, 1, 1); // depress Seq2, no clear!
-    SEQ_UI_Button_Seq(0, track_offset ? 1 : 0, 1); // no clear!
+    u8 seq = (button >= 8) ? 1 : 0;
+    u8 track_offset = seq ? 8 : 0;
+    ui_selected_tracks = seq ? 0xff00 : 0x00ff;
+    seq_record_state.ARMED_TRACKS = seq ? 0xff00 : 0x00ff;
 
     u8 seq_button = button % 8;
     switch( seq_button ) {

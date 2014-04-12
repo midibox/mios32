@@ -203,7 +203,7 @@ static s32 SEQ_UI_Button_Bar(s32 depressed, u32 bar)
   return 0; // no error
 }
 
-s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq, u8 no_clear)
+s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
 {
   static u16 seq_pressed = 0x0000;
 
@@ -228,7 +228,7 @@ s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq, u8 no_clear)
   }
 
   // if clear button is pressed: clear entire sequence
-  if( !no_clear && !depressed && seq_ui_button_state.CLEAR ) {
+  if( !depressed && seq_ui_button_state.CLEAR ) {
     SEQ_UI_UTIL_Clear();
   }
 
@@ -722,9 +722,9 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Bar(pin_value, 3);
 
   if( pin == seq_hwcfg_button.seq1 )
-    return SEQ_UI_Button_Seq(pin_value, 0, 0);
+    return SEQ_UI_Button_Seq(pin_value, 0);
   if( pin == seq_hwcfg_button.seq2 )
-    return SEQ_UI_Button_Seq(pin_value, 1, 0);
+    return SEQ_UI_Button_Seq(pin_value, 1);
 
   if( pin == seq_hwcfg_button.load )
     return SEQ_UI_Button_Load(pin_value);
@@ -837,14 +837,14 @@ s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
     case 0x2d: // A-2
       return SEQ_UI_Button_GP(depressed, 5);
     case 0x2e: // A#2
-      return SEQ_UI_Button_Seq(depressed, 0, 0);
+      return SEQ_UI_Button_Seq(depressed, 0);
     case 0x2f: // B-2
       return SEQ_UI_Button_GP(depressed, 6);
 
     case 0x30: // C-3
       return SEQ_UI_Button_GP(depressed, 7);
     case 0x31: // C#3
-      return SEQ_UI_Button_Seq(depressed, 1, 0);
+      return SEQ_UI_Button_Seq(depressed, 1);
     case 0x32: // D-3
       return SEQ_UI_Button_GP(depressed, 8);
     case 0x33: // D#3
