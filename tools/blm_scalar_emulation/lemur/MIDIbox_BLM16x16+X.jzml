@@ -1,7 +1,7 @@
 <JZML>
-<PROJECT version="3020" width="1024" height="724" osc_target="-1" midi_target="-1" kbmouse_target="-1"/>
+<PROJECT version="4110" width="1024" height="724" osc_target="-1" midi_target="-1" kbmouse_target="-1" skin="Classic"/>
 <WINDOW class="JAZZINTERFACE" text="Default" x="0" y="0" width="1024" height="724" state="1" group="0" font="tahoma,11,0" >
-<WINDOW class="Pads" text="BLM" x="249" y="48" width="708" height="608" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="0" kbmouse_target="-2" capture="1" color="7884288,944013" column="16" label="0" multicolor="1" multilabel="0" row="16">
+<WINDOW class="Pads" text="BLM" x="249" y="48" width="708" height="608" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" capture="1" color="7884288,944013" column="16" label="0" multicolor="1" multilabel="0" row="16">
 <PARAM name="x=" value="0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000" send="17" osc_target="-2" osc_trigger="1" osc_message="/BLM/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attack=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM/attack" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="decay=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM/decay" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -73,9 +73,13 @@ else
 	ledRed[ix] = on;
 
 
-decl state = ledGreen[ix];
-if( ledRed[ix] )
-	state |= 2;
+decl state = 0;
+if( ledGreen[ix] ) {
+	state = state | 1;
+}
+if( ledRed[ix] ) {
+	state = state | 2;
+}
 
 decl colors = getattribute(BLM, 'colors');
 if( state == 1 ) {
@@ -107,7 +111,7 @@ for(col=0; col<16; ++col)
 <VARIABLE name="friction=0.9" send="0" osc_target="0" osc_trigger="1" osc_message="/Fader/friction" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="speed=1" send="0" osc_target="0" osc_trigger="1" osc_message="/Fader/speed" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Pads" text="BLM_ExtraColumn" x="198" y="48" width="43" height="608" id="3" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="0" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="16">
+<WINDOW class="Pads" text="BLM_ExtraColumn" x="198" y="48" width="43" height="608" id="3" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="16">
 <PARAM name="x=" value="0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000" send="17" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumn/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attack=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumn/attack" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="decay=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumn/decay" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -177,10 +181,13 @@ if( colourIx == 0 )
 else
 	ledRed[ix] = on;
 
-
-decl state = ledGreen[ix];
-if( ledRed[ix] )
-	state |= 2;
+decl state = 0;
+if( ledGreen[ix] ) {
+	state = state | 1;
+}
+if( ledRed[ix] ) {
+	state = state | 2;
+}
 
 decl colors = getattribute(BLM_ExtraColumn, 'colors');
 if( state == 1 ) {
@@ -203,7 +210,7 @@ for(row=0; row<16; ++row) {
 }
 " trigger_script="" trigger_type="4" trigger="1" osc_message="/BLM_ExtraColumn/init" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Pads" text="BLM_ExtraRow" x="249" y="664" width="708" height="38" id="4" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="0" kbmouse_target="-2" capture="1" color="7884288,944013" column="16" label="0" multicolor="1" multilabel="0" row="1">
+<WINDOW class="Pads" text="BLM_ExtraRow" x="249" y="664" width="708" height="38" id="4" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" capture="1" color="7884288,944013" column="16" label="0" multicolor="1" multilabel="0" row="1">
 <PARAM name="x=" value="0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000" send="17" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraRow/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attack=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraRow/attack" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="decay=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraRow/decay" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -273,9 +280,13 @@ else
 	ledRed[ix] = on;
 
 
-decl state = ledGreen[ix];
-if( ledRed[ix] )
-	state |= 2;
+decl state = 0;
+if( ledGreen[ix] ) {
+	state = state | 1;
+}
+if( ledRed[ix] ) {
+	state = state | 2;
+}
 
 decl colors = getattribute(BLM_ExtraRow, 'colors');
 if( state == 1 ) {
@@ -298,7 +309,7 @@ for(col=0; col<16; ++col) {
 }
 " trigger_script="" trigger_type="4" trigger="1" osc_message="/BLM_ExtraRow/init" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
-<WINDOW class="Pads" text="BLM_Shift" x="198" y="664" width="43" height="38" id="5" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="0" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="1">
+<WINDOW class="Pads" text="BLM_Shift" x="198" y="664" width="43" height="38" id="5" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="1">
 <PARAM name="x=" value="0.000000" send="17" osc_target="-2" osc_trigger="1" osc_message="/BLM_Shift/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attack=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_Shift/attack" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="decay=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_Shift/decay" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -367,10 +378,13 @@ if( colourIx == 0 )
 else
 	ledRed[ix] = on;
 
-
-decl state = ledGreen[ix];
-if( ledRed[ix] )
-	state |= 2;
+decl state = 0;
+if( ledGreen[ix] ) {
+	state = state | 1;
+}
+if( ledRed[ix] ) {
+	state = state | 2;
+}
 
 decl colors = getattribute(BLM_Shift, 'colors');
 if( state == 1 ) {
@@ -464,7 +478,7 @@ x = 0;
 <WINDOW class="Text" text="Text7" x="60" y="88" width="79" height="36" id="18" state="229" group="3" font="tahoma,14,0" send="1" osc_target="-2" midi_target="-2" kbmouse_target="-2" color="5144439" content="Stop">
 <VARIABLE name="light=0" send="0" osc_target="0" osc_trigger="1" osc_message="/Text7/light" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 </WINDOW>
-<WINDOW class="Pads" text="BLM_ExtraColumnShift" x="147" y="48" width="43" height="608" id="19" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="0" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="16">
+<WINDOW class="Pads" text="BLM_ExtraColumnShift" x="147" y="48" width="43" height="608" id="19" state="1" group="3" font="tahoma,10,0" send="1" osc_target="-2" midi_target="-1" kbmouse_target="-2" capture="1" color="7884288,944013" column="1" label="0" multicolor="1" multilabel="0" row="16">
 <PARAM name="x=" value="0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000" send="17" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumnShift/x" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" osc_scale="0.000000,1.000000" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="attack=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumnShift/attack" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="decay=0" send="0" osc_target="-2" osc_trigger="1" osc_message="/BLM_ExtraColumnShift/decay" midi_target="-2" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-2" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
@@ -535,9 +549,13 @@ else
 	ledRed[ix] = on;
 
 
-decl state = ledGreen[ix];
-if( ledRed[ix] )
-	state |= 2;
+decl state = 0;
+if( ledGreen[ix] ) {
+	state = state | 1;
+}
+if( ledRed[ix] ) {
+	state = state | 2;
+}
 
 decl colors = getattribute(BLM_ExtraColumnShift, 'colors');
 if( state == 1 ) {
@@ -561,7 +579,7 @@ for(row=0; row<16; ++row) {
 " trigger_script="" trigger_type="4" trigger="1" osc_message="/BLM_ExtraColumnShift/init" midi_message="0x90,0x90,0,0" midi_target="-1" flag="1"/>
 </WINDOW>
 </WINDOW>
-<VARIABLE name="timerCounter=" value="6.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
+<VARIABLE name="timerCounter=" value="16.000000" send="1" osc_target="0" osc_trigger="1" osc_message="/timerCounter" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <VARIABLE name="midiDataReceived=" value="0" send="1" osc_target="0" osc_trigger="1" osc_message="/midiDataReceived" midi_target="-1" midi_trigger="1" midi_message="0x90,0x90,0,0" midi_scale="0,16383" kbmouse_target="-1" kbmouse_trigger="1" kbmouse_message="0,0,0" kbmouse_scale="0,1,0,1"/>
 <SCRIPT name="arraytohex(array)" script="// from http://liine.net/forum/viewtopic.php?f=25&t=729&start=10
 
@@ -603,7 +621,7 @@ decl cc = MIDI_ARGS[0];
 
 decl pattern = MIDI_ARGS[1];
 if( cc & 0x01 )
-	pattern |= (1 << 7);
+	pattern = pattern | (1 << 7);
 
 decl ccCommand = cc & 0xfe;
 
