@@ -506,11 +506,12 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
   // clear button pressed: clear track
   if( seq_ui_button_state.CLEAR ) {
     u8 track_offset = (button >= 8) ? 8 : 0;
-    SEQ_UI_Button_Seq(1, 0); // depress Seq1
-    SEQ_UI_Button_Seq(1, 1); // depress Seq2
-    SEQ_UI_Button_Seq(0, track_offset ? 1 : 0);
+    SEQ_UI_Button_Seq(1, 0, 1); // depress Seq1, no clear!
+    SEQ_UI_Button_Seq(1, 1, 1); // depress Seq2, no clear!
+    SEQ_UI_Button_Seq(0, track_offset ? 1 : 0, 1); // no clear!
 
-    switch( button % 8 ) {
+    u8 seq_button = button % 8;
+    switch( seq_button ) {
     case 0: { // clear note triggers (values are kept but not played)
       u8 track = track_offset;
       int num_t_steps = SEQ_TRG_NumStepsGet(track);
@@ -555,29 +556,28 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
       }
     } break;
 
-    case 3: { // clear Pitchbend
-      u8 track = track_offset + 3;
-      int par_layer = 0;
-      {
-	int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
-	int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
-	u8 init_value = 64;
+    default: {
+      u8 track = track_offset + seq_button;
 
-	int step;
-	int instrument;
-	for(instrument=0; instrument<num_p_instruments; ++instrument)
-	  for(step=0; step<num_p_steps; ++step)
-	    SEQ_PAR_Set(track, step, par_layer, instrument, init_value);
+      if( seq_button == 3 ) { // special treatmend for pitchbend
+	int par_layer = 0;
+	{
+	  int num_p_instruments = SEQ_PAR_NumInstrumentsGet(track);
+	  int num_p_steps  = SEQ_PAR_NumStepsGet(track);;
+	  u8 init_value = 64;
+
+	  int step;
+	  int instrument;
+	  for(instrument=0; instrument<num_p_instruments; ++instrument)
+	    for(step=0; step<num_p_steps; ++step)
+	      SEQ_PAR_Set(track, step, par_layer, instrument, init_value);
+	}
+	// send pitchbend 0 for proper reset of MIDI device
+	SEQ_LAYER_DirectSendEvent(track, par_layer);
       }
-      // send pitchbend 0 for proper reset of MIDI device
-      SEQ_LAYER_DirectSendEvent(track, par_layer);
-    } break;
 
-    case 4: { // clear CCs
-      int i;
-      for(i=3; i<8; ++i) {
-	u8 track = track_offset + i;
-
+      // clear CCs
+      {
 	int num_p_layers = SEQ_PAR_NumLayersGet(track);
 	int par_layer;
 	for(par_layer=(track == 3) ? 1 : 0; par_layer<num_p_layers; ++par_layer) { // don't touch pitchbender
@@ -595,10 +595,7 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 	  SEQ_CC_Set(track, SEQ_CC_LAY_CONST_B1+par_layer, 0x80);
 	}
       }
-    } break;
-
-    default: // clear Seq + track configuration
-      SEQ_UI_UTIL_Clear();
+    }
     }
 
     return 0;

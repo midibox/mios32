@@ -196,45 +196,51 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   } else if( midi_package.event == PitchBend ) {
     track += 3; // G1T4 resp. G3T4
   } else if( midi_package.event == CC ) {
-    track += 3; // starting at G1T4 resp. G3T4
+    const u8 track_layer_cc_table[19][2] = {
+      { 4, 0 },
+      { 5, 0 },
+      { 6, 0 },
+      { 7, 0 },
+      { 7, 1 }, { 7, 2 }, { 7, 3 },
+      { 6, 1 }, { 6, 2 }, { 6, 3 },
+      { 5, 1 }, { 5, 2 }, { 5, 3 },
+      { 4, 1 }, { 4, 2 }, { 4, 3 },
+      { 3, 1 }, { 3, 2 }, { 3, 3 },
+    };
+
     // search for same (or free) CC entry
-    seq_cc_trk_t *tcc = &seq_cc_trk[track];
+    // new track/layer search algorithm since V4L.082
+    u8 seq_track_offset = track; // depends on sequence
+    int par_layer = 0;
+    int i;
     u8 free_layer_found = 0;
-    for(;(track&7) != 0 && !free_layer_found; ++track, ++tcc) {
+    for(i=0; i<19 && !free_layer_found; ++i) {
+      track = seq_track_offset + track_layer_cc_table[i][0];
+      par_layer = track_layer_cc_table[i][1];
+      seq_cc_trk_t *tcc = &seq_cc_trk[track];
+      u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16 + par_layer];
+      u8 *layer_cc_ptr = (u8 *)&tcc->lay_const[1*16 + par_layer];
 
-      u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
-      u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
-      u8 *layer_cc_ptr = (u8 *)&tcc->lay_const[1*16];
-      int par_layer;
-      for(par_layer=0; par_layer<num_p_layers && !free_layer_found; ++par_layer, ++layer_type_ptr, ++layer_cc_ptr) {
-	if( *layer_type_ptr == SEQ_PAR_Type_CC &&
-	    (*layer_cc_ptr >= 0x80 || *layer_cc_ptr == midi_package.cc_number) ) {
+      if( *layer_type_ptr == SEQ_PAR_Type_CC &&
+	  (*layer_cc_ptr >= 0x80 || *layer_cc_ptr == midi_package.cc_number) &&
+	  (seq_record_state.ARMED_TRACKS & (1 << track)) ) {
 
-	  // exit if track not armed
-	  // Note: the current handling doesn't allow to select the track in which a CC will be recorded via ARM flag
-	  if( !(seq_record_state.ARMED_TRACKS & (1 << track)) )
-	    return 0;
+	if( *layer_cc_ptr >= 0x80 ) {
+	  *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
 
-	  if( *layer_cc_ptr >= 0x80 ) {
-	    *layer_cc_ptr = midi_package.cc_number; // assing CC number to free track
-
-	    // initialize whole layer with invalid value 0xc0 (indicates: not recorded)
-	    int num_p_steps = SEQ_PAR_NumStepsGet(track);
-	    int instrument = 0;
-	    int step;
-	    for(step=0; step<num_p_steps; ++step)
-	      SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
+	  // initialize whole layer with invalid value 0xc0 (indicates: not recorded)
+	  int num_p_steps = SEQ_PAR_NumStepsGet(track);
+	  int instrument = 0;
+	  int step;
+	  for(step=0; step<num_p_steps; ++step)
+	    SEQ_PAR_Set(track, step, par_layer, instrument, 0xc0);
 #if DEBUG_VERBOSE_LEVEL >= 2
-	    DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
+	  DEBUG_MSG("[SEQ_RECORD_Receive] free CC layer found for CC#%d in track #%d.%c\n", midi_package.cc_number, track+1, 'A'+par_layer);
 #endif
-	  }
-
-	  free_layer_found = 1;
-	  break;
 	}
+
+	free_layer_found = 1;
       }
-      if( free_layer_found )
-	break;
     }
 
     if( !free_layer_found ) {
