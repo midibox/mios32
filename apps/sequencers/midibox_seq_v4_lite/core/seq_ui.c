@@ -203,7 +203,7 @@ static s32 SEQ_UI_Button_Bar(s32 depressed, u32 bar)
   return 0; // no error
 }
 
-s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
+s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq, u8 no_clear)
 {
   static u16 seq_pressed = 0x0000;
 
@@ -225,6 +225,11 @@ s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq)
   } else {
     if( (seq_record_state.ARMED_TRACKS & 0xff00) )
       seq_record_state.ARMED_TRACKS = 0x00ff;
+  }
+
+  // if clear button is pressed: clear entire sequence
+  if( !no_clear && !depressed && seq_ui_button_state.CLEAR ) {
+    SEQ_UI_UTIL_Clear();
   }
 
   return 0; // no error
@@ -717,9 +722,9 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Bar(pin_value, 3);
 
   if( pin == seq_hwcfg_button.seq1 )
-    return SEQ_UI_Button_Seq(pin_value, 0);
+    return SEQ_UI_Button_Seq(pin_value, 0, 0);
   if( pin == seq_hwcfg_button.seq2 )
-    return SEQ_UI_Button_Seq(pin_value, 1);
+    return SEQ_UI_Button_Seq(pin_value, 1, 0);
 
   if( pin == seq_hwcfg_button.load )
     return SEQ_UI_Button_Load(pin_value);
@@ -832,14 +837,14 @@ s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
     case 0x2d: // A-2
       return SEQ_UI_Button_GP(depressed, 5);
     case 0x2e: // A#2
-      return SEQ_UI_Button_Seq(depressed, 0);
+      return SEQ_UI_Button_Seq(depressed, 0, 0);
     case 0x2f: // B-2
       return SEQ_UI_Button_GP(depressed, 6);
 
     case 0x30: // C-3
       return SEQ_UI_Button_GP(depressed, 7);
     case 0x31: // C#3
-      return SEQ_UI_Button_Seq(depressed, 1);
+      return SEQ_UI_Button_Seq(depressed, 1, 0);
     case 0x32: // D-3
       return SEQ_UI_Button_GP(depressed, 8);
     case 0x33: // D#3
@@ -1183,13 +1188,23 @@ s32 SEQ_UI_LED_Handler_Periodic()
     u8 track;
     seq_core_trk_t *t = &seq_core_trk[0];
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++track) {
+      // first three tracks of a SEQ are combined for note/velocity/length
+      u8 seq_track = track % 8;
+      if( seq_track == 0 ) {
+	if( t->state.SUSTAINED || t->state.STRETCHED_GL || SEQ_TRG_GateGet(track, t->step, 0) ) {
+	  ui_track_activity_state |= (7 << track);
+	}
+      }
+
       if( t->vu_meter ) {
 	// Special V4L handling: convert VU meter into track activity indiciators
 	t->vu_meter = 0;
 
-	// first three tracks of a SEQ are combined for note/velocity/length
-	if( (track % 8) == 0 ) {
-	  ui_track_activity_state |= (7 << track);
+	if( seq_track <= 2 ) {
+	  if( seq_track == 0 ) {
+	    // temporary flicker via XOR
+	    ui_track_activity_state ^= (7 << track);
+	  }
 	} else {
 	  ui_track_activity_state |= (1 << track);
 	}

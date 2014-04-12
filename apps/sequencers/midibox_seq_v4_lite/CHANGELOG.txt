@@ -5,18 +5,51 @@ MIDIboxSEQ V4L.082
 ~~~~~~~~~~~~~~~~~~
 
    o CLEAR button now allows to clear individual tracks with the GP buttons:
+     - CLEAR+SEQ1: clear entire Seq1
+     - CLEAR+SEQ2: clear entire Seq2
      - CLEAR+GP1: clear note triggers (values are kept but not played)
      - CLEAR+GP2: reset velocity values to 64
      - CLEAR+GP3: reset note length values to half step
-     - CLEAR+GP4: clear Pitchbend
-     - CLEAR+GP5: clear all CCs
-     - CLEAR+GP6: clear Seq1 + track configuration (*) (like before)
-     - CLEAR+GP7: like GP6, could be used for other purposes in future
-     - CLEAR+GP8: like GP6, could be used for other purposes in future
-
+     - CLEAR+GP4: clear Track 4 (Pitchbend + last CC lines)
+     - CLEAR+GP5: clear CCs of Track 5
+     - CLEAR+GP6: clear CCs of Track 6
+     - CLEAR+GP7: clear CCs of Track 7
+     - CLEAR+GP8: clear CCs of Track 8
      Same for GP9..16 for Seq2
 
      (*) track configuration won't be changed if 'PasteClrAll' set to 0 in MBSEQ_GC.V4 file
+
+   o changed the track and layer assignment algorithm for CCs in recording mode:
+     Previously new CC lines were recorded into Track 4, Layer B upwards.
+
+     Now they are assigned the following way:
+     - 1st CC line is recorded into Track 5, Layer A
+     - 2nd CC line is recorded into Track 6, Layer A
+     - 3rd CC line is recorded into Track 7, Layer A
+     - 4th CC line is recorded into Track 8, Layer A
+     - 5th CC line is recorded into Track 8, Layer B
+     - 6th CC line is recorded into Track 8, Layer C
+     - 7th CC line is recorded into Track 8, Layer D
+     - 8th CC line is recorded into Track 7, Layer B
+     - 9th CC line is recorded into Track 7, Layer C
+     - 10th CC line is recorded into Track 7, Layer D
+     - 11th CC line is recorded into Track 6, Layer B
+     - 12th CC line is recorded into Track 6, Layer C
+     - 13th CC line is recorded into Track 6, Layer D
+     - 14th CC line is recorded into Track 5, Layer B
+     - 15th CC line is recorded into Track 5, Layer C
+     - 16th CC line is recorded into Track 5, Layer D
+     - 17th CC line is recorded into Track 4, Layer B
+     - 18th CC line is recorded into Track 4, Layer C
+     - 19th CC line is recorded into Track 4, Layer D
+     Same for Track 12..16 for Seq2
+
+     Advantage: if only a few CC lines are recorded, we've dedicated tracks
+     for PitchBend and CCs (Track 4-8, Layer A) which can be individually muted
+     and cleared.
+     Additional CCs populate the remaining layers from Track 8 backwards, so that
+     PitchBend remains an individual track if not more than 17 CC lines are recorded.
+
 
 
 MIDIboxSEQ V4L.081
