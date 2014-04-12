@@ -194,7 +194,7 @@ extern s32 SEQ_UI_Var8_Inc(u8 *value, u16 min, u16 max, s32 incrementer);
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
 
-extern s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq, u8 no_clear);
+extern s32 SEQ_UI_Button_Seq(s32 depressed, u32 seq);
 
 
 /////////////////////////////////////////////////////////////////////////////
