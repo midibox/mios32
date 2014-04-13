@@ -366,28 +366,28 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
 
 	  // TODO: implement prefetching until end of step!
 
-	  if( s->pattern_g1 < 0x80 ) {
+	  if( s->pattern_g1 < 0x80 && (force_immediate_change || s->pattern_g1 != seq_pattern[0].pattern) ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g1;
 	    p.bank = s->bank_g1;
 	    SEQ_PATTERN_Change(0, p, force_immediate_change);
 	  }
 
-	  if( s->pattern_g2 < 0x80 ) {
+	  if( s->pattern_g2 < 0x80 && (force_immediate_change || s->pattern_g2 != seq_pattern[1].pattern) ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g2;
 	    p.bank = s->bank_g2;
 	    SEQ_PATTERN_Change(1, p, force_immediate_change);
 	  }
 
-	  if( s->pattern_g3 < 0x80 ) {
+	  if( s->pattern_g3 < 0x80 && (force_immediate_change || s->pattern_g3 != seq_pattern[2].pattern) ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g3;
 	    p.bank = s->bank_g3;
 	    SEQ_PATTERN_Change(2, p, force_immediate_change);
 	  }
 
-	  if( s->pattern_g4 < 0x80 ) {
+	  if( s->pattern_g4 < 0x80 && (force_immediate_change || s->pattern_g4 != seq_pattern[3].pattern) ) {
 	    p.ALL = 0;
 	    p.pattern = s->pattern_g4;
 	    p.bank = s->bank_g4;
