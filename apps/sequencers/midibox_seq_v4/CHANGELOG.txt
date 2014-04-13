@@ -11,6 +11,8 @@ MIDIboxSEQ V4.081
 
    o added USB MIDI workaround for Windows
 
+   o fixed synchronisation issue in Song mode
+
 
 MIDIboxSEQ V4.080
 ~~~~~~~~~~~~~~~~~
