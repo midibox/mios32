@@ -45,6 +45,10 @@
 #define STOPWATCH_PERFORMANCE_MEASURING 0
 
 
+// debug messages on pattern req/load for time measurements
+#define CHECK_PATTERN_REQ_LOAD_TIMINGS 0
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
@@ -150,10 +154,17 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
     if( seq_core_options.SYNCHED_PATTERN_CHANGE && !SEQ_SONG_ActiveGet() ) {
       // done in SEQ_CORE_Tick() when last step reached
     } else {
+#if CHECK_PATTERN_REQ_LOAD_TIMINGS
+      DEBUG_MSG("[%d] Req G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+pattern.group, pattern.num+1);
+#endif
       // pregenerate bpm ticks
       // (won't be generated again if there is already an ongoing request)
       MUTEX_MIDIOUT_TAKE;
-      if( SEQ_CORE_AddForwardDelay(50) >= 0 ) { // mS
+      s32 delay_ticks = SEQ_CORE_AddForwardDelay(50);
+      if( delay_ticks >= 0 ) {
+#if CHECK_PATTERN_REQ_LOAD_TIMINGS
+	DEBUG_MSG("[%d] Forward Delay %d", SEQ_BPM_TickGet(), delay_ticks);
+#endif
 	// resume low-prio pattern handler
 	SEQ_TASK_PatternResume();
       }
@@ -177,11 +188,10 @@ s32 SEQ_PATTERN_Handler(void)
   MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 
+  portENTER_CRITICAL();
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
     if( seq_pattern_req[group].REQ ) {
-      portENTER_CRITICAL();
       seq_pattern_req[group].REQ = 0;
-      portEXIT_CRITICAL();
 
       if( seq_core_options.PATTERN_MIXER_MAP_COUPLING ) {
 	u8 mixer_num = 0;
@@ -209,7 +219,13 @@ s32 SEQ_PATTERN_Handler(void)
 	}
       }
 
+#if CHECK_PATTERN_REQ_LOAD_TIMINGS
+      DEBUG_MSG("[%d] Load begin G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
+#endif
       SEQ_PATTERN_Load(group, seq_pattern_req[group]);
+#if CHECK_PATTERN_REQ_LOAD_TIMINGS
+      DEBUG_MSG("[%d] Load end G%d %c%d", SEQ_BPM_TickGet(), group+1, 'A'+seq_pattern_req[group].group, seq_pattern_req[group].num+1);
+#endif
 
       // restart *all* patterns?
       if( seq_core_options.RATOPC ) {
@@ -219,6 +235,7 @@ s32 SEQ_PATTERN_Handler(void)
       }
     }
   }
+  portEXIT_CRITICAL();
 
 #if LED_PERFORMANCE_MEASURING
   MIOS32_BOARD_LED_Set(0xffffffff, 0);
