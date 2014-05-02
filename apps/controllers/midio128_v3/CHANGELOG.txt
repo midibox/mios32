@@ -237,3 +237,11 @@ MIDIO128 V3.000
 ~~~~~~~~~~~~~~~
 
    o initial version
+
+
+
+Wishlist
+~~~~~~~~
+
+support for AINSER8 module: http://midibox.org/forums/topic/17813-ainser-problem/#entry163612
+
