@@ -2057,9 +2057,10 @@ s32 SEQ_CORE_AddForwardDelay(u16 delay_ms)
     return -1; // ongoing request
 
   // calculate how many BPM ticks have to be forwarded
-  bpm_tick_prefetch_req = SEQ_BPM_TickGet() + SEQ_BPM_TicksFor_mS(delay_ms);
+  u32 delay_ticks = SEQ_BPM_TicksFor_mS(delay_ms);
+  bpm_tick_prefetch_req = SEQ_BPM_TickGet() + delay_ticks;
 
-  return 0; // no error
+  return delay_ticks; // no error
 }
 
 
