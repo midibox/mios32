@@ -39,6 +39,7 @@
 #include "mbcv_map.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
+#include "mbcv_file_b.h"
 #include "mbcv_patch.h"
 #include "mbcv_lre.h"
 
@@ -58,6 +59,9 @@ static u8 selectedIpPar;
 static u8 selectedOscPort;
 static u8 selectedScope;
 static u8 monPageOffset;
+
+static u8 saveBank;
+static u8 savePatch;
 
 // we need a reference to this environment very often
 static MbCvEnvironment* env;
@@ -79,6 +83,7 @@ static void stringDec5(u32 ix, u16 value, char *label)   { sprintf(label, "%5d",
 //static void stringHex2O80(u32 ix, u16 value, char *label) { sprintf(label, " %02X  ", value | 0x80); }
 static void stringOnOff(u32 ix, u16 value, char *label)  { sprintf(label, " [%c] ", value ? 'x' : ' '); }
 static void stringCurve(u32 ix, u16 value, char *label)  { sprintf(label, value ? "Exp. " : "Lin. "); }
+static void stringBank(u32 ix, u16 value, char *label)  { sprintf(label, "  %c ", 'A'+value); }
 
 static void stringCvUpdateRate(u32 ix, u16 value, char *label) {
   u32 updateRate = (value+1) * 500; // Hz
@@ -344,42 +349,45 @@ static void stringIp(u32 ix, u16 value, char *label)
 /////////////////////////////////////////////////////////////////////////////
 static u16  selectNOP(u32 ix, u16 value)    { return value; }
 
-static void selectSAVE_Callback(char *newString)
+static void selectSaveGlobals_Callback(char *newString)
 {
   s32 status;
 
   if( (status=MBCV_PATCH_StoreGlobal(newString)) < 0 ) {
     char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
+    sprintf(buffer, "Globals %s", newString);
     SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to store", buffer);
   } else {
     char buffer[100];
-    sprintf(buffer, "Patch %s", newString);
+    sprintf(buffer, "Globals %s", newString);
     SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
   }
 }
-static u16  selectSAVE(u32 ix, u16 value)
+
+static u16  selectSaveGlobals(u32 ix, u16 value)
 {
-  return SCS_InstallEditStringCallback(selectSAVE_Callback, "SAVE", mbcv_file_p_patch_name, MBCV_FILE_P_FILENAME_LEN);
+  char buffer[10];
+  sprintf(buffer, "%-8s", mbcv_file_p_patch_name);
+  return SCS_InstallEditStringCallback(selectSaveGlobals_Callback, "SAVE", buffer, MBCV_FILE_P_FILENAME_LEN);
 }
 
-static void selectLOAD_Callback(char *newString)
+static void selectLoadGlobals_Callback(char *newString)
 {
   s32 status;
 
   if( newString[0] != 0 ) {
     if( (status=MBCV_PATCH_LoadGlobal(newString)) < 0 ) {
       char buffer[100];
-      sprintf(buffer, "Patch %s", newString);
+      sprintf(buffer, "Globals %s", newString);
       SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
     } else {
       char buffer[100];
-      sprintf(buffer, "Patch %s", newString);
+      sprintf(buffer, "Globals %s", newString);
       SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
     }
   }
 }
-static u8 getListLOAD_Callback(u8 offset, char *line)
+static u8 getListGlobals_Callback(u8 offset, char *line)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = FILE_GetFiles("/", "CV2", line, 2, offset);
@@ -390,9 +398,38 @@ static u8 getListLOAD_Callback(u8 offset, char *line)
   }
   return status;
 }
-static u16  selectLOAD(u32 ix, u16 value)
+static u16  selectLoadGlobals(u32 ix, u16 value)
 {
-  return SCS_InstallEditBrowserCallback(selectLOAD_Callback, getListLOAD_Callback, "LOAD", 9, 2);
+  return SCS_InstallEditBrowserCallback(selectLoadGlobals_Callback, getListGlobals_Callback, "LOAD", 9, 2);
+}
+
+static u16  selectSavePatch(u32 ix, u16 value)
+{
+  s32 status = env->bankSave(saveBank, savePatch);
+  char buffer[100];
+
+  sprintf(buffer, "Patch %c%03d", 'A'+saveBank, savePatch+1);
+  if( status >= 0 )
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "stored!");
+  else
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, buffer, "store FAILED!");
+
+  return 0; // no error
+}
+
+static u16  selectLoadPatch(u32 ix, u16 value)
+{
+  s32 status = env->bankLoad(saveBank, savePatch);
+  char buffer[100];
+
+  sprintf(buffer, "Patch %c%03d", 'A'+saveBank, savePatch+1);
+
+  if( status >= 0 )
+    SCS_Msg(SCS_MSG_L, 1000, buffer, "loaded!");
+  else
+    SCS_Msg(SCS_MSG_ERROR_L, 1000, buffer, "load FAILED!");
+
+  return 0; // no error
 }
 
 static void selectRemoteIp_Callback(u32 newIp)
@@ -801,12 +838,25 @@ static void selIpParSet(u32 ix, u16 value)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// MSD
+/////////////////////////////////////////////////////////////////////////////
 
 static void MSD_EnableReq(u32 enable)
 {
   TASK_MSD_EnableSet(enable);
   SCS_Msg(SCS_MSG_L, 1000, "Mass Storage", (char *)(enable ? "enabled!" : "disabled!"));
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Disk
+/////////////////////////////////////////////////////////////////////////////
+
+static u16  saveBankGet(u32 ix)             { return saveBank; }
+static void saveBankSet(u32 ix, u16 value)  { saveBank = value; }
+
+static u16  savePatchGet(u32 ix)             { return savePatch; }
+static void savePatchSet(u32 ix, u16 value)  { savePatch = value; }
 
 /////////////////////////////////////////////////////////////////////////////
 // Menu Structure
@@ -972,9 +1022,22 @@ const scs_menu_item_t pageROUT[] = {
   SCS_ITEM("Chn.", 0, 17,                       routerDstChnGet, routerDstChnSet,selectNOP, stringRouterChn, NULL),
 };
 
-const scs_menu_item_t pageDsk[] = {
-  SCS_ITEM("Load ", 0, 0,           dummyGet,        dummySet,        selectLOAD, stringEmpty, NULL),
-  SCS_ITEM("Save ", 0, 0,           dummyGet,        dummySet,        selectSAVE, stringEmpty, NULL),
+const scs_menu_item_t pageDiskPatch[] = { // Note: page items are displayed in displayHook!
+  SCS_ITEM("Bank",  0, MBCV_FILE_B_NUM_BANKS-1, saveBankGet,  saveBankSet,selectNOP,  stringBank, NULL),
+  SCS_ITEM("Ptch",  0, 127,                     savePatchGet, savePatchSet,selectNOP, stringDecP1, NULL),
+  SCS_ITEM("Load ", 0, 0,           dummyGet,        dummySet,        selectLoadPatch, stringEmpty, NULL),
+  SCS_ITEM("Save ", 0, 0,           dummyGet,        dummySet,        selectSavePatch, stringEmpty, NULL),
+};
+
+const scs_menu_item_t pageDiskGlobals[] = { // Note: page items are displayed in displayHook!
+  SCS_ITEM("Load ", 0, 0,           dummyGet,        dummySet,        selectLoadGlobals, stringEmpty, NULL),
+  SCS_ITEM("Save ", 0, 0,           dummyGet,        dummySet,        selectSaveGlobals, stringEmpty, NULL),
+};
+
+const scs_menu_page_t subpageDisk[] = {
+  SCS_PAGE("Patch", pageDiskPatch),
+  SCS_PAGE(" Glob", pageDiskGlobals),
+  SCS_PAGE("als",   pageDiskGlobals),
 };
 
 const scs_menu_item_t pageOSC[] = {
@@ -1012,7 +1075,7 @@ const scs_menu_page_t rootMode0[] = {
   SCS_PAGE("OSC  ", pageOSC),
   SCS_PAGE("Netw ", pageNetw),
   SCS_PAGE("Mon. ", pageMON),
-  SCS_PAGE("Disk ", pageDsk),
+  SCS_SUBPAGE("Disk ", subpageDisk),
 };
 
 
@@ -1063,7 +1126,7 @@ static s32 displayHook(char *line1, char *line2)
       if( MBCV_FILE_StatusMsgGet() )
 	sprintf(line1, MBCV_FILE_StatusMsgGet());
       else
-	sprintf(line1, "Patch: %-8s  [%d]", mbcv_file_p_patch_name, selectedCv+1);
+	sprintf(line1, "%-8s %c%03d  [CV%d]", mbcv_file_p_patch_name, 'A'+env->mbCvPatch.bankNum, env->mbCvPatch.patchNum+1, selectedCv+1);
     }
     sprintf(line2, "%s   <    >   MENU", env->mbCvClock.isRunning ? "STOP" : "PLAY");
 
@@ -1079,18 +1142,39 @@ static s32 displayHook(char *line1, char *line2)
       if( MBCV_FILE_StatusMsgGet() )
 	sprintf(line1, MBCV_FILE_StatusMsgGet());
       else
-	sprintf(line1, "Patch: %s", mbcv_file_p_patch_name);
+	sprintf(line1, "%-8s %c%03d", mbcv_file_p_patch_name, 'A'+env->mbCvPatch.bankNum, env->mbCvPatch.patchNum+1);
     }
+
+    // TK: currently I don't know a better location to ensure that the save bank/patch is equal to the selected patch
+    saveBank = env->mbCvPatch.bankNum;
+    savePatch = env->mbCvPatch.patchNum;
+
     return 1;
   }
 
-  if( SCS_MenuPageGet() == pageDsk ) {
+  if( SCS_MenuPageGet() == pageDiskPatch ) {
     // Disk page: we want to show the patch at upper line, and menu items at lower line
     if( line1[0] == 0 ) { // no MSD overlay?
       if( MBCV_FILE_StatusMsgGet() )
 	sprintf(line1, MBCV_FILE_StatusMsgGet());
       else
-	sprintf(line1, "Patch: %s", mbcv_file_p_patch_name);
+	sprintf(line1, "Current Patch: %c%03d", 'A'+env->mbCvPatch.bankNum, env->mbCvPatch.patchNum+1);
+    }
+    if( SCS_ShowSelectedItem(1) >= 1 ) {
+      sprintf(line2, "   %c  %03d  Load Save", 'A'+saveBank, savePatch+1);
+    } else {
+      sprintf(line2, "   %c       Load Save", 'A'+saveBank);
+    }
+    return 1;
+  }
+
+  if( SCS_MenuPageGet() == pageDiskGlobals ) {
+    // Disk page: we want to show the patch at upper line, and menu items at lower line
+    if( line1[0] == 0 ) { // no MSD overlay?
+      if( MBCV_FILE_StatusMsgGet() )
+	sprintf(line1, MBCV_FILE_StatusMsgGet());
+      else
+	sprintf(line1, "Current: %s", mbcv_file_p_patch_name);
     }
     sprintf(line2, "Load Save");
     return 1;
@@ -1177,6 +1261,26 @@ static s32 encHook(s32 incrementer)
     monPageOffset = newOffset;
   }
 
+  // main page
+  else if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE ) {
+    s32 value = 128*env->mbCvPatch.bankNum + env->mbCvPatch.patchNum + incrementer;
+
+    if( value <= 0 )
+      value = 0;
+    else if( value >= 128*MBCV_FILE_B_NUM_BANKS )
+      value = 128*MBCV_FILE_B_NUM_BANKS - 1;
+
+    u8 bank = value / 128;
+    u8 patch = value % 128;
+    s32 status = env->bankLoad(bank, value);
+
+    if( status < 0 ) {
+      char buffer[100];
+      sprintf(buffer, "Patch %c%03d", 'A'+bank, patch+1);
+      SCS_Msg(SCS_MSG_ERROR_L, 1000, "Failed to load", buffer);
+    }
+  }
+
   return 0;
 }
 
@@ -1250,17 +1354,13 @@ static s32 buttonHook(u8 scsButton, u8 depressed)
 	  env->mbCvClock.midiReceiveRealTimeEvent(DEFAULT, 0xfa); // start
 	return 1;
 
-      case SCS_PIN_SOFT2: { // previous song
-	MUTEX_SDCARD_TAKE;
-	//SEQ_PlayFileReq(-1, 1);
-	MUTEX_SDCARD_GIVE;
+      case SCS_PIN_SOFT2: { // previous patch
+	encHook(-1);
 	return 1;
       }
 
-      case SCS_PIN_SOFT3: { // next song
-	MUTEX_SDCARD_TAKE;
-	//SEQ_PlayFileReq(1, 1);
-	MUTEX_SDCARD_GIVE;
+      case SCS_PIN_SOFT3: { // next patch
+	encHook(1);
 	return 1;
       }
       }

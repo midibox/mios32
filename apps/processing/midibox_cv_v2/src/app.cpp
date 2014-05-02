@@ -506,6 +506,9 @@ void APP_TASK_Period_1mS_SD(void)
       DEBUG_MSG("SD Card connected: %s\n", FILE_VolumeLabel());
       // load all file infos
       MBCV_FILE_LoadAllFiles(1); // including HW info
+
+      // load A001
+      mbCvEnvironment.bankLoad(0, 0);
     } else if( status == 2 ) {
       DEBUG_MSG("SD Card disconnected\n");
       // invalidate all file infos

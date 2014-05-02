@@ -234,7 +234,7 @@ void MbCvEnvironment::tickScopes(void)
 s32 MbCvEnvironment::bankSave(u8 bank, u8 patch)
 {
 #if 1
-    DEBUG_MSG("[CV_BANK_PatchSave] write patch %c%03d\n", 'A'+bank, patch);
+    DEBUG_MSG("[CV_BANK_PatchSave] write patch %c%03d\n", 'A'+bank, patch+1);
 #endif
 
     // change to new bank/patch
@@ -242,14 +242,14 @@ s32 MbCvEnvironment::bankSave(u8 bank, u8 patch)
     mbCvPatch.patchNum = patch;
 
     // file operation
-    MBCV_PATCH_Store(bank, patch);
+    s32 status = MBCV_PATCH_Store(bank, patch);
 
     // send confirmation (e.g. to Lemur)
     if( lastNrpnMidiPort ) {
         midiSendGlobalNRPNDump(lastNrpnMidiPort);
     }
 
-    return -2; // not supported yet
+    return status;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -264,7 +264,7 @@ s32 MbCvEnvironment::bankLoad(u8 bank, u8 patch, bool forceImmediateChange)
         return -3; // invalid patch
 
 #if 1
-    DEBUG_MSG("[CV_BANK_PatchRead] read patch %c%03d\n", 'A'+bank, patch);
+    DEBUG_MSG("[CV_BANK_PatchRead] read patch %c%03d\n", 'A'+bank, patch+1);
 #endif
 
     if( mbCvPatch.synchedChange && !forceImmediateChange ) {

@@ -247,6 +247,8 @@ extern scs_menu_item_t *SCS_MenuPageGet(void);
 
 extern s32 SCS_ChangePage(scs_menu_item_t *page);
 
+extern s32 SCS_ShowSelectedItem(u8 itemNum);
+
 extern s32 SCS_Msg(scs_msg_type_t msgType, u16 delay, char *line1, char *line2);
 extern s32 SCS_MsgStop(void);
 

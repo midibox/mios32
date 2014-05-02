@@ -882,7 +882,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
       } break;
 
       case 2: { // >
-	if( scsEditPos < scsEditStringMaxChars )
+	if( (scsEditPos+1) < scsEditStringMaxChars )
 	  ++scsEditPos;
 
 	// flicker menu item for 200 mS
@@ -891,7 +891,7 @@ s32 SCS_DIN_NotifyToggle(u8 pin, u8 depressed)
 
       case 3: { // Del
 	int i;
-	for(i=scsEditPos; i<scsEditStringMaxChars; ++i)
+	for(i=scsEditPos; i<scsEditStringMaxChars && scsEditString[i] != 0; ++i)
 	  scsEditString[i] = scsEditString[i+1];
 	scsEditString[scsEditStringMaxChars] = ' ';
 
@@ -1354,6 +1354,7 @@ s32 SCS_Tick(void)
 	  SCS_LCD_PrintStringCentered("<", SCS_MENU_ITEM_WIDTH);
 	if( scsNumMenuItems >= 3 )
 	  SCS_LCD_PrintStringCentered(">", SCS_MENU_ITEM_WIDTH);
+	SCS_LCD_PrintSpaces(SCS_LCD_COLUMNS_PER_DEVICE-3*SCS_MENU_ITEM_WIDTH);
       }
     } break;
 
@@ -1647,6 +1648,22 @@ s32 SCS_ChangePage(scs_menu_item_t *page)
 
   return -1; // page not found
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Can be used for flashing the item in display if the standard routine is not
+//! used, but overlayed by via a displayHook
+//!
+//! \return 1 if itemNum matches with the selected item, and item should be
+//! displayed, otherwise 0
+/////////////////////////////////////////////////////////////////////////////
+s32 SCS_ShowSelectedItem(u8 itemNum)
+{
+  return ((scsMenuState != SCS_MENU_STATE_EDIT_ITEM) ||
+	  (itemNum != currentMenuTableSelectedItemPos) ||
+	  displayCursorOn) ? 1 : 0;
+}
+
 
 
 /////////////////////////////////////////////////////////////////////////////
