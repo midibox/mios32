@@ -33,6 +33,13 @@
 static notestack_t cv_notestack[MBNG_PATCH_NUM_CV_CHANNELS];
 static notestack_item_t cv_notestack_items[MBNG_PATCH_NUM_CV_CHANNELS][NOTESTACK_SIZE];
 
+// original CV values
+static u16 cv_value[MBNG_PATCH_NUM_CV_CHANNELS];
+
+// transpose values
+static s8 cv_transpose_octave[MBNG_PATCH_NUM_CV_CHANNELS];
+static s8 cv_transpose_semitones[MBNG_PATCH_NUM_CV_CHANNELS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function initializes the AIN handler
@@ -62,6 +69,119 @@ s32 MBNG_CV_Update(void)
   AOUT_Update();
 
   return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a CV pin value, considers semi/octave transpose
+/////////////////////////////////////////////////////////////////////////////
+static s32 MBNG_CV_PinSet(u8 cv, u16 value)
+{
+  if( cv >= MBNG_PATCH_NUM_CV_CHANNELS )
+    return -1;
+
+  // store original value
+  cv_value[cv] = value;
+
+  // transposed value
+  int transposedValue = value + 512*12*cv_transpose_octave[cv] + 512*cv_transpose_semitones[cv];
+
+  // saturate
+  if( transposedValue < 0 ) transposedValue = 0;
+  else if( transposedValue > 0xffff ) transposedValue = 0xffff;
+
+  // transfer to AOUT
+  AOUT_PinSet(cv, transposedValue);
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! set pitch range
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_PitchRangeSet(u8 cv, u8 value)
+{
+  return AOUT_PinPitchRangeSet(cv, value);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return pitch range
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_PitchRangeGet(u8 cv)
+{
+  return AOUT_PinPitchRangeGet(cv);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! set pitchbend
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_PitchSet(u8 cv, s16 value)
+{
+  return AOUT_PinPitchSet(cv, value);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return pitchbend
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_PitchGet(u8 cv)
+{
+  return AOUT_PinPitchGet(cv);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! set octave transpose
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_TransposeOctaveSet(u8 cv, s8 value)
+{
+  if( cv >= MBNG_PATCH_NUM_CV_CHANNELS )
+    return -1;
+
+  cv_transpose_octave[cv] = value;
+  
+  // refresh output
+  MBNG_CV_PinSet(cv, cv_value[cv]);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return octave transpose
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_TransposeOctaveGet(u8 cv)
+{
+  if( cv >= MBNG_PATCH_NUM_CV_CHANNELS )
+    return 0;
+
+  return cv_transpose_octave[cv];
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! set semitones transpose
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_TransposeSemitonesSet(u8 cv, s8 value)
+{
+  if( cv >= MBNG_PATCH_NUM_CV_CHANNELS )
+    return -1;
+
+  cv_transpose_semitones[cv] = value;
+
+  // refresh output
+  MBNG_CV_PinSet(cv, cv_value[cv]);
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return semitones transpose
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_CV_TransposeSemitonesGet(u8 cv)
+{
+  if( cv >= MBNG_PATCH_NUM_CV_CHANNELS )
+    return 0;
+
+  return cv_transpose_semitones[cv];
 }
 
 
@@ -153,7 +273,7 @@ s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
       AOUT_ConfigChannelHzVSet(cv_ix, item->custom_flags.CV.cv_hz_v);
 
       // set CV value
-      AOUT_PinSet(cv_ix, value16);
+      MBNG_CV_PinSet(cv_ix, value16);
 
       // gate inverted?
       if( item->custom_flags.CV.cv_gate_inverted ) {
@@ -191,7 +311,12 @@ s32 MBNG_CV_ResetAllChannels(void)
 
     AOUT_PinSet(cv, 0x0000);
     AOUT_PinPitchSet(cv, 0x0000);
+    AOUT_PinPitchRangeSet(cv, 2);
     AOUT_DigitalPinSet(cv, 0);
+
+    cv_value[cv] = 0;
+    cv_transpose_octave[cv] = 0;
+    cv_transpose_semitones[cv] = 0;
   }
 
   return 0; // no error

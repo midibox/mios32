@@ -28,6 +28,16 @@ MIDIbox NG V1.030
 
    o added new MClk menu page to SCS to control the tempo w/o dedicated controllers
 
+   o fixed AOUT_NG module communication issue if AINSER was used in addition
+
+   o added new meta events:
+       - CvPitchBend14Bit:<cv-channel>
+       - CvPitchBend7Bit:<cv-channel>
+       - CvPitchRange:<cv-channel>
+       - CvTransposeOctave:<cv-channel>
+       - CvTransposeSemitones:<cv-channel>
+     see cfg/test/cvtransp.ngc for usage examples
+
 
 MIDIbox NG V1.029
 ~~~~~~~~~~~~~~~~~
