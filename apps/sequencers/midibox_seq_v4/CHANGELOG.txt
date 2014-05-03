@@ -6,16 +6,20 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.082
+~~~~~~~~~~~~~~~~~
+
+   o Options in LIVE page are now stored in session specific MBSEQ_C.V4 file
+
+   o initial release for MBHP_CORE_STM32F4
+
+
 MIDIboxSEQ V4.081
 ~~~~~~~~~~~~~~~~~
 
    o added USB MIDI workaround for Windows
 
    o fixed synchronisation issue in Song mode
-
-   o Options in LIVE page are now stored in session specific MBSEQ_C.V4 file
-
-   o initial release for MBHP_CORE_STM32F4
 
 
 MIDIboxSEQ V4.080
