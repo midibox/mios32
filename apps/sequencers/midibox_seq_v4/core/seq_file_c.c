@@ -40,6 +40,7 @@
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
+#include "seq_live.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -128,7 +129,7 @@ s32 SEQ_FILE_C_Valid(void)
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses a decimal or hex value
 // returns >= 0 if value is valid
-// returns -1 if value is invalid
+// returns -256 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
@@ -139,7 +140,7 @@ static s32 get_dec(char *word)
   long l = strtol(word, &next, 0);
 
   if( word == next )
-    return -1;
+    return -256; // modification for SEQ_FILE_C: return -256 if value invalid, since we read signed bytes
 
   return l; // value is valid
 }
@@ -194,7 +195,7 @@ s32 SEQ_FILE_C_Read(char *session)
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
 
-	  if( value < 0 ) {
+	  if( value < -255 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_C] ERROR invalid value for parameter '%s'\n", parameter);
 #endif
@@ -308,6 +309,14 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_core_glb_loop_offset = value-1;
 	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
 	    seq_core_glb_loop_steps = value-1;
+	  } else if( strcmp(parameter, "LiveOctTranspose") == 0 ) {
+	    seq_live_options.OCT_TRANSPOSE = value;
+	  } else if( strcmp(parameter, "LiveVelocity") == 0 ) {
+	    seq_live_options.VELOCITY = value;
+	  } else if( strcmp(parameter, "LiveForceToScale") == 0 ) {
+	    seq_live_options.FORCE_SCALE = value;
+	  } else if( strcmp(parameter, "LiveFx") == 0 ) {
+	    seq_live_options.FX = value;
 	  } else if( strcmp(parameter, "MIDI_OUT_ExtCtrlPort") == 0 ) {
 	    seq_midi_in_ext_ctrl_out_port = (mios32_midi_port_t)value;
 	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
@@ -649,6 +658,18 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LoopSteps %d\n", (int)seq_core_glb_loop_steps+1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveOctTranspose %d\n", seq_live_options.OCT_TRANSPOSE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveVelocity %d\n", seq_live_options.VELOCITY);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveForceToScale %d\n", seq_live_options.FORCE_SCALE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveFx %d\n", seq_live_options.FX);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());

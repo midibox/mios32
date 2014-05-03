@@ -133,7 +133,7 @@ s32 SEQ_FILE_BM_Valid(u8 global)
 /////////////////////////////////////////////////////////////////////////////
 // help function which parses a decimal or hex value
 // returns >= 0 if value is valid
-// returns -1 if value is invalid
+// returns -256 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
 static s32 get_dec(char *word)
 {
