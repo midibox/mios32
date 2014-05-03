@@ -2455,6 +2455,12 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return "MClkDecTempo";
   case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return "MClkIncTempo";
 
+  case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT:     return "CvPitchBend14Bit";
+  case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT:      return "CvPitchBend7Bit";
+  case MBNG_EVENT_META_TYPE_CV_PITCHRANGE:          return "CvPitchRange";
+  case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE:    return "CvTransposeOctave";
+  case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: return "CvTransposeSemitones";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -2515,6 +2521,12 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "MClkDecTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO;
   if( strcasecmp(meta_type, "MClkIncTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO;
 
+  if( strcasecmp(meta_type, "CvPitchBend14Bit") == 0 )     return MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT;
+  if( strcasecmp(meta_type, "CvPitchBend7Bit") == 0 )      return MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT;
+  if( strcasecmp(meta_type, "CvPitchRange") == 0 )         return MBNG_EVENT_META_TYPE_CV_PITCHRANGE;
+  if( strcasecmp(meta_type, "CvTransposeOctave") == 0 )    return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE;
+  if( strcasecmp(meta_type, "CvTransposeSemitones") == 0 ) return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES;
+
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
   if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
@@ -2574,6 +2586,12 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO:      return 0;
   case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return 0;
   case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return 0;
+
+  case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT:     return 1;
+  case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT:      return 1;
+  case MBNG_EVENT_META_TYPE_CV_PITCHRANGE:          return 1;
+  case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE:    return 1;
+  case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: return 1;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -2932,6 +2950,28 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       u16 tempo = (u16)SEQ_BPM_Get();
       tempo = (tempo < item->max) ? (tempo + 1) : item->max;
       SEQ_BPM_Set((float)tempo);
+    } break;
+
+
+
+    case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT: {
+      MBNG_CV_PitchSet(meta_value - 1, (int)item->value - 8192);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT: {
+      MBNG_CV_PitchSet(meta_value - 1, 128 * ((int)item->value - 64));
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CV_PITCHRANGE: {
+      MBNG_CV_PitchRangeSet(meta_value - 1, item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE: {
+      MBNG_CV_TransposeOctaveSet(meta_value - 1, (int)item->value - 64);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: {
+      MBNG_CV_TransposeSemitonesSet(meta_value - 1, (int)item->value - 64);
     } break;
 
 

@@ -361,7 +361,7 @@ s32 AOUT_IF_Init(u32 mode)
       // ensure that CS is deactivated
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
-      // init SPI
+      // init SPI (NOTE: keep this aligned with re-init in AOUT_Update!)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
       
     } break;
@@ -375,7 +375,7 @@ s32 AOUT_IF_Init(u32 mode)
       // set RCLK=0
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 
-      // init SPI
+      // init SPI (NOTE: keep this aligned with re-init in AOUT_Update!)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
     } break;
 
@@ -385,7 +385,7 @@ s32 AOUT_IF_Init(u32 mode)
       if( aout_config.num_channels % 8 )
 	++aout_num_devices;
 
-      // init SPI
+      // init SPI (NOTE: keep this aligned with re-init in AOUT_Update!)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
 
       // initialize CTRL0
@@ -412,7 +412,7 @@ s32 AOUT_IF_Init(u32 mode)
       // ensure that CS is deactivated
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
-      // init SPI
+      // init SPI (NOTE: keep this aligned with re-init in AOUT_Update!)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
       
     } break;
@@ -1019,6 +1019,11 @@ s32 AOUT_Update(void)
 	return -2; // no interface selected
 
       case AOUT_IF_MAX525: {
+
+	// init SPI again
+	// we will do this here, so that other handlers (e.g. AINSER) could use SPI in different modes
+	status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
+
 	// each device has 4 channels
 	int chn;
 	for(chn=0; chn<4; ++chn) {
@@ -1051,6 +1056,11 @@ s32 AOUT_Update(void)
       } break;
 
       case AOUT_IF_74HC595: {
+
+	// init SPI again
+	// we will do this here, so that other handlers (e.g. AINSER) could use SPI in different modes
+	status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
+
 	// the complete chain has to be updated!
 
 	// loop through devices (value of last device has to be shifted first)
@@ -1084,6 +1094,11 @@ s32 AOUT_Update(void)
       } break;
 
       case AOUT_IF_TLV5630: {
+
+	// init SPI again
+	// we will do this here, so that other handlers (e.g. AINSER) could use SPI in different modes
+	status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
+
 	// each device has 8 channels
 	int chn;
 	for(chn=0; chn<8; ++chn) {
@@ -1119,6 +1134,10 @@ s32 AOUT_Update(void)
 
       case AOUT_IF_MCP4922_1:
       case AOUT_IF_MCP4922_2: {
+	// init SPI again
+	// we will do this here, so that other handlers (e.g. AINSER) could use SPI in different modes
+	status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
+
 	// only 1 device can be connected to a CS line, and only 2 channels available
 	int chn;
 	for(chn=0; chn<2; ++chn) {
