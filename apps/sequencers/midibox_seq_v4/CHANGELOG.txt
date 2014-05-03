@@ -1903,8 +1903,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
 ----------------------------------------------------------
 FFW: add Extra CC On/Off toggle button to LFO page
 ----------------------------------------------------------
-Phillwilson: store seq_live_options on SD Card
-----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
