@@ -26,6 +26,7 @@ cp hwcfg/standard_v4l/MBSEQ_HW.V4L $RELEASE_DIR/hwcfg/standard_v4l
 #echo "Building for MBHP_CORE_STM32"
 #
 #make cleanall
+#/bin/rm -rf midibox_seq # binaries of the midibox_seq_v4 directory (issue in Makefile script)
 #export MIOS32_FAMILY=STM32F10x
 #export MIOS32_PROCESSOR=STM32F103RE
 #export MIOS32_BOARD=MBHP_CORE_STM32
@@ -38,6 +39,7 @@ cp hwcfg/standard_v4l/MBSEQ_HW.V4L $RELEASE_DIR/hwcfg/standard_v4l
 echo "Building for MBHP_CORE_LPC17"
 
 make cleanall
+/bin/rm -rf midibox_seq # binaries of the midibox_seq_v4 directory (issue in Makefile script)
 export MIOS32_FAMILY=LPC17xx
 export MIOS32_PROCESSOR=LPC1769
 export MIOS32_BOARD=MBHP_CORE_LPC17
