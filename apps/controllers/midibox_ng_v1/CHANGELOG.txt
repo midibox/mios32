@@ -38,6 +38,8 @@ MIDIbox NG V1.030
        - CvTransposeSemitones:<cv-channel>
      see cfg/test/cvtransp.ngc for usage examples
 
+   o BUTTON toggle function can now also handle with inverted and reduced value ranges
+
 
 MIDIbox NG V1.029
 ~~~~~~~~~~~~~~~~~
