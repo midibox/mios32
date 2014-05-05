@@ -89,9 +89,15 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 	  map_ix = 0;
 	item.value = map_values[map_ix];
       } else {
-	int range = (item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1);
-	int toggle_state = (item.min <= item.max) ? ((item.value - item.min) >= (range/2)) : ((item.value - item.max) >= (range/2));
-	item.value = toggle_state ? item.min : item.max;
+	if( item.min <= item.max ) {
+	  int range = item.max - item.min + 1;
+	  int toggle_state = (item.value < item.min) ? 0 : ((item.value - item.min) >= (range/2));
+	  item.value = toggle_state ? item.min : item.max;
+	} else { // inverted range
+	  int range = item.min - item.max + 1;
+	  int toggle_state = (item.value < item.max) ? 0 : ((item.value - item.max) >= (range/2));
+	  item.value = toggle_state ? item.max : item.min;
+	}
       }
     } else {
       u8 *map_values;
