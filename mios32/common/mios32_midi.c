@@ -892,7 +892,7 @@ s32 MIOS32_MIDI_SendDebugStringFooter(mios32_midi_port_t port)
 //!
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendDebugString(char *str)
+s32 MIOS32_MIDI_SendDebugString(const char *str)
 {
 #ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
   // for bootloader to save memory
@@ -936,7 +936,7 @@ s32 MIOS32_MIDI_SendDebugString(char *str)
 //! \param ... additional arguments
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
+s32 MIOS32_MIDI_SendDebugMessage(const char *format, ...)
 {
 #ifdef MIOS32_MIDI_DISABLE_DEBUG_MESSAGE
   // for bootloader to save memory
@@ -985,7 +985,7 @@ s32 MIOS32_MIDI_SendDebugMessage(char *format, ...)
 //! \param[in] len number of bytes which should be sent
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len)
+s32 MIOS32_MIDI_SendDebugHexDump(const u8 *src, u32 len)
 {
   s32 status = 0;
 

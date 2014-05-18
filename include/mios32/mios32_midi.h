@@ -239,9 +239,9 @@ extern s32 MIOS32_MIDI_SendDebugStringHeader(mios32_midi_port_t port, char comma
 extern s32 MIOS32_MIDI_SendDebugStringBody(mios32_midi_port_t port, char *str_from_second_byte, u32 len);
 extern s32 MIOS32_MIDI_SendDebugStringFooter(mios32_midi_port_t port);
 
-extern s32 MIOS32_MIDI_SendDebugMessage(char *format, ...);
-extern s32 MIOS32_MIDI_SendDebugString(char *str);
-extern s32 MIOS32_MIDI_SendDebugHexDump(u8 *src, u32 len);
+extern s32 MIOS32_MIDI_SendDebugMessage(const char *format, ...);
+extern s32 MIOS32_MIDI_SendDebugString(const char *str);
+extern s32 MIOS32_MIDI_SendDebugHexDump(const u8 *src, u32 len);
 
 extern s32 MIOS32_MIDI_ReceivePackage(mios32_midi_port_t port, mios32_midi_package_t package, void *_callback_package);
 extern s32 MIOS32_MIDI_Receive_Handler(void *callback_event);

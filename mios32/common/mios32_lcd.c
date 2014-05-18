@@ -309,7 +309,7 @@ s32 MIOS32_LCD_CursorMapSet(u8 map_table[])
 //! \param[in] str pointer to string
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_PrintString(char *str)
+s32 MIOS32_LCD_PrintString(const char *str)
 {
   s32 status = 0;
 
@@ -325,7 +325,7 @@ s32 MIOS32_LCD_PrintString(char *str)
 //! \param ... additional arguments
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_LCD_PrintFormattedString(char *format, ...)
+s32 MIOS32_LCD_PrintFormattedString(const char *format, ...)
 {
   char buffer[64]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;
