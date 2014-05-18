@@ -994,7 +994,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(const u8 *src, u32 len)
     return 0;
 
   // send hex dump line by line
-  u8 *src_begin = src;
+  const u8 *src_begin = src;
   u8 *src_end;
   for(src_end=(u8 *)((size_t)src + len - 1); src < src_end;) {
     char str[80];
@@ -1007,7 +1007,7 @@ s32 MIOS32_MIDI_SendDebugHexDump(const u8 *src, u32 len)
     str_ptr += 9;
 
     // add up to 16 bytes
-    u8 *src_chars = src; // for later
+    const u8 *src_chars = src; // for later
     for(i=0; i<16; ++i) {
       sprintf((char *)str_ptr, (src <= src_end) ? " %02X" : "   ", *src);
       str_ptr += 3;
