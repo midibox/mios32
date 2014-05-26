@@ -1916,6 +1916,9 @@ FFW: add Extra CC On/Off toggle button to LFO page
 Send MTC Timecode
 http://midibox.org/forums/topic/18798-midi-time-code
 ----------------------------------------------------------
+Allow to define order of sent CC events in Mixer map
+http://midibox.org/forums/topic/18122-bugsquestion-mixermap-patterns
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
