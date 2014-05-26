@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.083
+~~~~~~~~~~~~~~~~~
+
+   o fixed potential hang-up during pattern change which was introduced with V4.081
+
+
 MIDIboxSEQ V4.082
 ~~~~~~~~~~~~~~~~~
 
