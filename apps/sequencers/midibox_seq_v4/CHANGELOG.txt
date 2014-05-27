@@ -1919,6 +1919,9 @@ http://midibox.org/forums/topic/18798-midi-time-code
 Allow to define order of sent CC events in Mixer map
 http://midibox.org/forums/topic/18122-bugsquestion-mixermap-patterns
 ----------------------------------------------------------
+Allow to send receive LCD messages via SysEx
+http://midibox.org/forums/topic/18813-seq-v4-firmware-question
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus

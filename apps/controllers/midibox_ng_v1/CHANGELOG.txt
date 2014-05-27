@@ -573,4 +573,4 @@ MIDIbox NG V1.000
 Wishlist
 ~~~~~~~~
 
-<no entry>
+automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
