@@ -1922,6 +1922,9 @@ http://midibox.org/forums/topic/18122-bugsquestion-mixermap-patterns
 Allow to send receive LCD messages via SysEx
 http://midibox.org/forums/topic/18813-seq-v4-firmware-question
 ----------------------------------------------------------
+Record Toggle On/Off Button
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164422
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
