@@ -1931,6 +1931,9 @@ http://midibox.org/forums/topic/18825-seq-cc-implementation-modify-currently-sel
 Live page: don't apply FTS on drum tracks
 http://midibox.org/forums/topic/18827-live-input-from-different-channels-for-different-tracks
 ----------------------------------------------------------
+Add "expert" option to show Force-To-Scale modes in EDIT page:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164490
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
