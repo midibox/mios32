@@ -1925,6 +1925,9 @@ http://midibox.org/forums/topic/18813-seq-v4-firmware-question
 Record Toggle On/Off Button
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164422
 ----------------------------------------------------------
+Send NRPN to current selected track
+http://midibox.org/forums/topic/18825-seq-cc-implementation-modify-currently-selected-tracks/
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
