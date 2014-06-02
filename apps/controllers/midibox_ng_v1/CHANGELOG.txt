@@ -6,6 +6,8 @@ MIDIbox NG V1.031
    o MIDI clock input ports now disabled by default to avoid feedback loops
      in various setups
 
+   o improved "ain_filter_delay_ms" implementation to support sensors (experimental stage)
+
 
 MIDIbox NG V1.030
 ~~~~~~~~~~~~~~~~~

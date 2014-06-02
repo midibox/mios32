@@ -36,6 +36,7 @@ extern s32 MBNG_AIN_HandleCalibration(u16 pin_value, u16 min, u16 max, u16 ain_m
 extern s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_value);
 
 extern s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi);
+extern s32 MBNG_AIN_Periodic(void);
 extern s32 MBNG_AIN_NotifyReceivedValue(mbng_event_item_t *item);
 
 /////////////////////////////////////////////////////////////////////////////
