@@ -1934,6 +1934,9 @@ http://midibox.org/forums/topic/18827-live-input-from-different-channels-for-dif
 Add "expert" option to show Force-To-Scale modes in EDIT page:
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164490
 ----------------------------------------------------------
+Add "expert" option to use Force-To-Scale for BLM only if enabled in MODE page
+http://midibox.org/forums/topic/18830-blm-documentation-and-a-couple-of-questions/?p=164518
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
