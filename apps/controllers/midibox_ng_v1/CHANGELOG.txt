@@ -1,5 +1,12 @@
 $Id$
 
+MIDIbox NG V1.031
+~~~~~~~~~~~~~~~~~
+
+   o MIDI clock input ports now disabled by default to avoid feedback loops
+     in various setups
+
+
 MIDIbox NG V1.030
 ~~~~~~~~~~~~~~~~~
 

@@ -22,6 +22,7 @@
 #include <keyboard.h>
 #include <ainser.h>
 #include <aout.h>
+#include <midi_router.h>
 
 #include "mbng_patch.h"
 #include "mbng_dout.h"
@@ -82,6 +83,9 @@ s32 MBNG_PATCH_Init(u32 mode)
   SCS_LCD_OffsetXSet(0);
   SCS_LCD_OffsetYSet(0);
   SCS_NumMenuItemsSet(4); // for 2x20 LCD
+
+  // MIDI router: disable all MIDI IN clocks by default to avoid feedback loops
+  midi_router_mclk_in = 0;
 
   {
     int matrix;
