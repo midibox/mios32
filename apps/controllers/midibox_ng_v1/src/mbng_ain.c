@@ -28,7 +28,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 previous_ain_value[MBNG_PATCH_NUM_AIN];
-static u32 ain_timestamp[MBNG_PATCH_NUM_AIN];
+static u32 ain_timeout[MBNG_PATCH_NUM_AIN];
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function initializes the AIN handler
@@ -41,7 +41,7 @@ s32 MBNG_AIN_Init(u32 mode)
   int i;
   for(i=0; i<MBNG_PATCH_NUM_AIN; ++i) {
     previous_ain_value[i] = 0;
-    ain_timestamp[i] = 0;
+    ain_timeout[i] = 0;
   }
 
   return 0; // no error
@@ -287,14 +287,19 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
       int prev_pin_value = previous_ain_value[pin];
       previous_ain_value[pin] = pin_value; // for next notification
 
-      u32 timestamp = ain_timestamp[pin];
-      ain_timestamp[pin] = MIOS32_TIMESTAMP_Get();
-
       if( !no_midi && item.custom_flags.AIN.ain_filter_delay_ms ) {
-	int diff = pin_value - prev_pin_value;
-	if( diff < 0 ) diff = -diff;
-	if( !is_pin_value_min && diff > 32*16 && MIOS32_TIMESTAMP_GetDelay(timestamp) < item.custom_flags.AIN.ain_filter_delay_ms ) {
-	  continue; // don't send
+	if( is_pin_value_min ) {
+	  ain_timeout[pin] = 0;
+	} else {
+	  u32 timestamp = MIOS32_TIMESTAMP_Get();
+	  u32 timeout = ain_timeout[pin];
+
+	  if( !timeout || timestamp < timeout ) {
+	    ain_timeout[pin] = timestamp + item.custom_flags.AIN.ain_filter_delay_ms;
+	    continue; // don't send
+	  } else {
+	    ain_timeout[pin] = 0;
+	  }
 	}
       }
 
@@ -305,17 +310,29 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
     if( no_midi ) {
       MBNG_EVENT_ItemCopyValueToPool(&item);
     } else {
-      if( item.flags.type == MBNG_EVENT_TYPE_NOTE_ON ) {
-	// only send once when min threshold is reached
-	if( (prev_item_value && !is_pin_value_min) || (!prev_item_value && is_pin_value_min) ) {
-	  continue; // don't send
-	}
-      }
-
       if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 	break; // stop has been requested
     }
   } while( continue_ix );
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Handle timed AIN events (sensor mode)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_AIN_Periodic(void)
+{
+  u32 pin;
+  u32 *timeout_ptr = (u32 *)&ain_timeout[0];
+  u32 timestamp = MIOS32_TIMESTAMP_Get();
+
+  for(pin=0; pin<MBNG_PATCH_NUM_AIN; ++pin, ++timeout_ptr) {
+    if( *timeout_ptr && timestamp >= *timeout_ptr ) {
+      MBNG_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin), 0); // no_midi==0
+    }
+  }
 
   return 0; // no error
 }

@@ -290,7 +290,7 @@ static s32 get_bin(char *word, int numBits, u8 reverse)
     ++bit;
   }
 
-  if( bit != numBits )
+  if( reverse && bit != numBits ) // accept for unreversed presentation (reason: AIN enable_mask has 6 bit for MBHP_CORE_LPC17, but 8bit for MBHP_CORE_STM32F4 - avoid unnecessary incompatibility in .NGC file)
     return -1; // invalid number of bits
 
   return value;

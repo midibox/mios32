@@ -413,17 +413,22 @@ void APP_Tick(void)
 //  SEQ_MIDI_OUT_Handler();
 //  MUTEX_MIDIOUT_GIVE;
 
-  // Scan Matrix button handler
-  MBNG_MATRIX_ButtonHandler();
+  if( hw_enabled ) {
+    // Scan Matrix button handler
+    MBNG_MATRIX_ButtonHandler();
 
-  // update CV outputs
-  MBNG_CV_Update();
+    // update CV outputs
+    MBNG_CV_Update();
 
-  // update MAX72xx chain
-  MBNG_MATRIX_MAX72xx_Update();
+    // update MAX72xx chain
+    MBNG_MATRIX_MAX72xx_Update();
 
-  // scan AINSER pins
-  AINSER_Handler(APP_AINSER_NotifyChange);
+    // handle timed AIN events (sensor mode)
+    MBNG_AIN_Periodic();
+
+    // scan AINSER pins
+    AINSER_Handler(APP_AINSER_NotifyChange);
+  }
 }
 
 
