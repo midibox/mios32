@@ -269,14 +269,17 @@ s32 MIOS32_ENC_UpdateStates(void)
 
 	  // branch depending on speed mode
 	  switch( enc_config_ptr->cfg.speed ) {
-	  case FAST:
-	    if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+	  case FAST: {
+	    // this mask leads to an improved "feeling": we've only 4 speed stages anymore, which especially means that the faster increments won't start so early
+	    // see also http://midibox.org/forums/topic/18820-optimizing-encoder-behavior-in-mbsid-firmware/?p=164539
+	    u32 speed = enc_state_ptr->accelerator & 0xc0;
+	    if( (acc=(speed >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	      acc = 1;
 	    int new_incrementer = enc_state_ptr->incrementer - acc;
 	    if( new_incrementer < -70 ) // avoid overrun
 	      new_incrementer = -70;
 	    enc_state_ptr->incrementer = new_incrementer;
-	    break;
+	  } break;
 
 	  case SLOW:
 	    predivider = enc_state_ptr->predivider - (enc_config_ptr->cfg.speed_par+1);
@@ -318,14 +321,17 @@ s32 MIOS32_ENC_UpdateStates(void)
 
 	  // branch depending on speed mode
 	  switch( enc_config_ptr->cfg.speed ) {
-	  case FAST:
-	    if( (acc=(enc_state_ptr->accelerator >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
+	  case FAST: {
+	    // this mask leads to an improved "feeling": we've only 4 speed stages anymore, which especially means that the faster increments won't start so early
+	    // see also http://midibox.org/forums/topic/18820-optimizing-encoder-behavior-in-mbsid-firmware/?p=164539
+	    u32 speed = enc_state_ptr->accelerator & 0xc0;
+	    if( (acc=(speed >> (7-enc_config_ptr->cfg.speed_par))) == 0 )
 	      acc = 1;
 	    int new_incrementer = enc_state_ptr->incrementer + acc;
 	    if( new_incrementer > 70 ) // avoid overrun
 	      new_incrementer = 70;
 	    enc_state_ptr->incrementer = new_incrementer;
-	    break;
+	  } break;
 
 	  case SLOW:
 	    predivider = enc_state_ptr->predivider + (enc_config_ptr->cfg.speed_par+1);
