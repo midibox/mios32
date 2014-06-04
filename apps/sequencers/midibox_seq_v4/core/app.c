@@ -523,8 +523,8 @@ void SEQ_TASK_Period1S(void)
 
   // BLM timeout counter
   MIOS32_IRQ_Disable();
-  if( blm_timeout_ctr )
-    --blm_timeout_ctr;
+  if( seq_blm_timeout_ctr )
+    --seq_blm_timeout_ctr;
   MIOS32_IRQ_Enable();
 
   // check if SD Card connected

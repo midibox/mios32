@@ -32,6 +32,13 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  u8 ALL;
+  struct {
+    u8 ALWAYS_USE_FTS:1;  // Force-to-Scale always used independent from the Track Mode selection
+  };
+} seq_blm_options_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -57,6 +64,7 @@ extern s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t m
 /////////////////////////////////////////////////////////////////////////////
 
 extern mios32_midi_port_t seq_blm_port;
-extern u8 blm_timeout_ctr;
+extern u8 seq_blm_timeout_ctr;
+extern seq_blm_options_t seq_blm_options;
 
 #endif /* _SEQ_MIDI_BLM_H */

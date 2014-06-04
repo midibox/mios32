@@ -639,7 +639,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
 	MUTEX_MIDIOUT_TAKE;
-	blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
+	seq_blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 	SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	MUTEX_MIDIOUT_GIVE;
 	store_file_required = 1;
@@ -1076,7 +1076,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
       }
 
-      SEQ_LCD_PrintString(blm_timeout_ctr ? " (found)  " : "          ");
+      SEQ_LCD_PrintString(seq_blm_timeout_ctr ? " (found)  " : "          ");
 
       // free for new parameters
       SEQ_LCD_PrintSpaces(12);

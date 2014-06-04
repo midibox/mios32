@@ -6,6 +6,19 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.084
+~~~~~~~~~~~~~~~~~
+
+   o If Force-to-Scale is enabled, the edit screen shows the forced keys at the lower line.
+     The original value is still displayed at the left upper line.
+
+   o Live Page: FTS (Force-To-Scale) not applied on drum tracks anymore
+
+   o Options Page: added new option which enforces Force-To-Scale for
+     BLM16x16+X Grid Edit mode
+
+
+
 MIDIboxSEQ V4.083
 ~~~~~~~~~~~~~~~~~
 
@@ -1927,15 +1940,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164422
 ----------------------------------------------------------
 Send NRPN to current selected track
 http://midibox.org/forums/topic/18825-seq-cc-implementation-modify-currently-selected-tracks/
-----------------------------------------------------------
-Live page: don't apply FTS on drum tracks
-http://midibox.org/forums/topic/18827-live-input-from-different-channels-for-different-tracks
-----------------------------------------------------------
-Add "expert" option to show Force-To-Scale modes in EDIT page:
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164490
-----------------------------------------------------------
-Add "expert" option to use Force-To-Scale for BLM only if enabled in MODE page
-http://midibox.org/forums/topic/18830-blm-documentation-and-a-couple-of-questions/?p=164518
 ----------------------------------------------------------
 
 

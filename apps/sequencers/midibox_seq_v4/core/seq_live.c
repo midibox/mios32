@@ -110,8 +110,8 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       live_note_played[note_ix32] |= note_mask;
 
       int effective_note;
-#if KEYBOARD_DRUM_MAPPING
       u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+#if KEYBOARD_DRUM_MAPPING
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	effective_note = (int)p.note % 24;
 	effective_note %= SEQ_TRG_NumInstrumentsGet(track);
@@ -142,14 +142,17 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       // conflict if same keyboard is assigned to transposer
 
       // adding FX?
+      u8 apply_force_to_scale = event_mode != SEQ_EVENT_MODE_Drum;
       if( seq_live_options.FX ) {
 	SEQ_HUMANIZE_Event(track, t->step, &e);
 	SEQ_LFO_Event(track, &e);
 
-	if( seq_live_options.FORCE_SCALE
+	if( apply_force_to_scale &&
+	    (seq_live_options.FORCE_SCALE
 #ifdef MBSEQV4L
 	    || tcc->mode.FORCE_SCALE
 #endif
+	     )
 	    ) {
 	  u8 scale, root_selection, root;
 	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
@@ -158,10 +161,12 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	SEQ_CORE_Limit(t, tcc, &e); // should be the last Fx in the chain!
 
       } else {
-	if( seq_live_options.FORCE_SCALE
+	if( apply_force_to_scale &&
+	    (seq_live_options.FORCE_SCALE
 #ifdef MBSEQV4L
 	    || tcc->mode.FORCE_SCALE
 #endif
+	     )
 	    ) {
 	  u8 scale, root_selection, root;
 	  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
