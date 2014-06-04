@@ -133,9 +133,11 @@ typedef union {
 mios32_midi_port_t seq_blm_port;
 
 // will be decremented each second by SEQ_TASK_Period1S()
-u8 blm_timeout_ctr;
+u8 seq_blm_timeout_ctr;
 // timeout after 15 seconds
 #define BLM_TIMEOUT_RELOAD_VALUE 15
+
+seq_blm_options_t seq_blm_options;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -212,6 +214,10 @@ static u8 blm_shift_active;
 s32 SEQ_BLM_Init(u32 mode)
 {
   seq_blm_port = 0; // disabled
+
+  seq_blm_options.ALL = 0;
+  seq_blm_options.ALWAYS_USE_FTS = 1; // enabled by default for best "first impression" :)
+
   blm_mode = BLM_MODE_TRACKS; // for compatibility with 4x16 BLM, will be changed to BLM_MODE_GRID on first connection
   blm_connection = BLM_CONNECTION_IDLE;
   blm_num_columns = 16;
@@ -374,7 +380,7 @@ static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t c
       // send acknowledge
       SEQ_BLM_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
       // and reload timeout counter
-      blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+      seq_blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
       break;
   }
 
@@ -403,7 +409,7 @@ static s32 SEQ_BLM_SYSEX_Cmd_Ping(mios32_midi_port_t port, sysex_cmd_state_t cmd
 	SEQ_BLM_SYSEX_SendAck(port, MIOS32_MIDI_SYSEX_ACK, 0x00);
 
       // and reload timeout counter
-      blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+      seq_blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
 
       break;
   }
@@ -563,7 +569,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 	}
       }
     } else {
-      u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : seq_cc_trk[visible_track].mode.FORCE_SCALE;
       u8 scale, root_selection, root;
       SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
       root = 0; // force root to C
@@ -714,7 +720,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	}
       }
     } else {
-      u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : seq_cc_trk[visible_track].mode.FORCE_SCALE;
       u8 scale, root_selection, root;
       SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
       root = 0; // force root to C
@@ -1413,7 +1419,7 @@ s32 SEQ_BLM_LED_Update(void)
   ///////////////////////////////////////////////////////////////////////////
   // Don't send MIDI events on timeout
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_timeout_ctr )
+  if( !seq_blm_timeout_ctr )
     return -1;
 
 
@@ -1638,7 +1644,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	// send acknowledge
 	MIOS32_MIDI_SendCC(port, Chn16, 0x7f, 0x7f);
 	// and reload timeout counter
-	blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+	seq_blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
       } break;
 
       case 0x0f: { // Ping
@@ -1646,14 +1652,14 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	MIOS32_MIDI_SendCC(port, Chn16, 0x7f, 0x7f);
 
 	// reload timeout counter
-	blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
+	seq_blm_timeout_ctr = BLM_TIMEOUT_RELOAD_VALUE;
       } break;
       }
     }
   }
 
   // ignore any event on timeout
-  if( !blm_timeout_ctr )
+  if( !seq_blm_timeout_ctr )
     return -1;
 
   // for easier parsing: convert Note Off -> Note On with velocity 0

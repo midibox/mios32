@@ -347,9 +347,11 @@ s32 SEQ_FILE_GC_Read(void)
 	    MUTEX_MIDIOUT_TAKE;
 	    SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	    MUTEX_MIDIOUT_GIVE;
-	    blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
+	    seq_blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 
 #if !defined(MIOS32_FAMILY_EMULATION)
+	  } else if( strcmp(parameter, "BLM_SCALAR_AlwaysUseFts") == 0 ) {
+	    seq_blm_options.ALWAYS_USE_FTS = value;
 	  } else if( strcmp(parameter, "ETH_Dhcp") == 0 ) {
 	    UIP_TASK_DHCP_EnableSet((value >= 1) ? 1 : 0);
 	  } else if( strcmp(parameter, "OSC_RemoteIp") == 0 ) {
@@ -518,6 +520,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "BLM_SCALAR_AlwaysUseFts %d\n", (u8)seq_blm_options.ALWAYS_USE_FTS);
   FLUSH_BUFFER;
 
 #if !defined(MIOS32_FAMILY_EMULATION)

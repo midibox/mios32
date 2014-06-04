@@ -31,6 +31,7 @@
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
 #include "seq_tpd.h"
+#include "seq_blm.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -48,8 +49,9 @@
 #define ITEM_INIT_CC         8
 #define ITEM_LIVE_LAYER_MUTE 9
 #define ITEM_TPD_MODE        10
+#define ITEM_BLM_ALWAYS_USE_FTS 11
 
-#define NUM_OF_ITEMS         11
+#define NUM_OF_ITEMS         12
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -107,6 +109,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Track Position Display (TPD) Mode",
     ""
+  },
+
+  {//<-------------------------------------->
+    "The BLM16x16+X should always use",
+    "Force-To-Scale in Grid Edit Mode: " // yes/no
   },
 };
 
@@ -267,6 +274,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_BLM_ALWAYS_USE_FTS: {
+      if( incrementer )
+	seq_blm_options.ALWAYS_USE_FTS = incrementer > 0 ? 1 : 0;
+      else
+	seq_blm_options.ALWAYS_USE_FTS ^= 1;
+      store_file_required = 1;
+      return 1;
     } break;
 
   }
@@ -475,6 +491,17 @@ static s32 LCD_Handler(u8 high_prio)
 	mode = 0;
 
       SEQ_LCD_PrintStringPadded((char *)tpd_mode_str[mode], 40);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_BLM_ALWAYS_USE_FTS: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40-len);
+    } else {
+      SEQ_LCD_PrintStringPadded(seq_blm_options.ALWAYS_USE_FTS ? "yes" : "no", 40-len);
     }
   } break;
 
