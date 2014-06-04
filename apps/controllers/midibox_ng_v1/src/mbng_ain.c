@@ -282,7 +282,7 @@ s32 MBNG_AIN_NotifyChange(u32 pin, u32 pin_value, u8 no_midi)
     }
 
 
-    u16 prev_item_value = item.value;
+    //u16 prev_item_value = item.value;
     if( pin >= 0 || pin < MBNG_PATCH_NUM_AIN ) {
       int prev_pin_value = previous_ain_value[pin];
       previous_ain_value[pin] = pin_value; // for next notification

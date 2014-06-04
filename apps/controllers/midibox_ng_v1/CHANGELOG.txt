@@ -8,6 +8,11 @@ MIDIbox NG V1.031
 
    o improved "ain_filter_delay_ms" implementation to support sensors (experimental stage)
 
+   o Covered new use case which allows to transform velocity values of incoming notes.
+     See cfg/test/conev_6.ngc
+     EVENT_RECEIVER and EVENT_SENDER have to be specified with "key=any", so that any
+     key will be received and sent
+
 
 MIDIbox NG V1.030
 ~~~~~~~~~~~~~~~~~

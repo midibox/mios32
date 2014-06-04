@@ -15,4 +15,4 @@ MAP1    0   2   4   6   8  10  12  14  16  18  20  22  24  26  28  30 \
       120 120 121 121 122 122 123 123 124 124 125 125 126 126 127 127
 
 EVENT_RECEIVER id= 1 ports=1111111100000000 type=NoteOn key=any fwd_id=SENDER:1
-EVENT_SENDER   id= 1 ports=1111111100000000 type=NoteOn range=map1
+EVENT_SENDER   id= 1 ports=1111111100000000 type=NoteOn key=any range=map1

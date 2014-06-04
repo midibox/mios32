@@ -1461,7 +1461,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     case MBNG_EVENT_TYPE_POLY_PRESSURE: {
       if( item->stream_size >= 2 ) {
 	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
-	if( item->stream[1] < 128 ) {
+	if( item->flags.use_any_key_or_cc ) {
 	  DEBUG_MSG("  - key=%d", item->stream[1]);
 	} else {
 	  DEBUG_MSG("  - key=any");
@@ -1473,7 +1473,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     case MBNG_EVENT_TYPE_CC: {
       if( item->stream_size >= 2 ) {
 	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
-	if( item->stream[1] < 128 ) {
+	if( item->flags.use_any_key_or_cc ) {
 	  DEBUG_MSG("  - cc=%d", item->stream[1]);
 	} else {
 	  DEBUG_MSG("  - cc=any");
@@ -3378,7 +3378,7 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
       ++num_forwarded;
 
       // notify item (will also store value in pool item)
-      if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
+      if( fwd_item.flags.use_key_or_cc || fwd_item.flags.use_any_key_or_cc ) // only change secondary value if key_or_cc option selected, or if fwd item allows to change the key value
 	fwd_item.secondary_value = item->secondary_value;
       if( item->fwd_value == 0xffff ) { // no forward value
 	if( MBNG_EVENT_ItemReceive(&fwd_item, item->value, 0, 1) == 2 )
@@ -3887,16 +3887,14 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
       mbng_event_type_t event_type = ((mbng_event_flags_t)pool_item->flags).type;
       if( event_type <= MBNG_EVENT_TYPE_CC ) {
 	u8 *stream = &pool_item->data_begin;
-	if( stream[1] >= 128 || stream[1] == evnt1 ) { // || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
+	if( pool_item->flags.use_any_key_or_cc || stream[1] == evnt1 ) { // || pool_item->secondary_value >= 128 || evnt1 == pool_item->secondary_value ) {
 	  mbng_event_item_t item;
 	  MBNG_EVENT_ItemCopy2User(pool_item, &item);
 	  if( item.flags.use_key_or_cc ) {
-	    if( item.secondary_value < 128 ) // if != any
-	      item.secondary_value = midi_package.value;
+	    item.secondary_value = midi_package.value;
 	    MBNG_EVENT_ItemReceive(&item, midi_package.evnt1, 1, 1);
 	  } else {
-	    if( item.secondary_value < 128 ) // if != any
-	      item.secondary_value = midi_package.evnt1;
+	    item.secondary_value = midi_package.evnt1;
 	    MBNG_EVENT_ItemReceive(&item, midi_package.value, 1, 1);
 	  }
 	} else {
