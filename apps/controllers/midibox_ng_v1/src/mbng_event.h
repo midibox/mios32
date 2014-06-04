@@ -232,12 +232,13 @@ typedef union {
     u32 update_lcd:1;
     u32 value_from_midi:1;
     u32 use_key_or_cc:1;
+    u32 use_any_key_or_cc:1;
     u32 active:1;
     u32 write_locked:1;
     u32 no_dump:1;
     u32 dimmed:1;
-    u32 colour:2;
     u32 radio_group:6;
+    u32 colour:2;
   };
 
 } mbng_event_flags_t;

@@ -730,6 +730,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	// no extra check if event_type already defined...
 	stream[1] = value;
 	item.secondary_value = stream[1];
+	item.flags.use_any_key_or_cc = (value >= 128) ? 1 : 0;
       }
 
     } else if( strcasecmp(parameter, "use_key_number") == 0 || strcasecmp(parameter, "use_cc_number") == 0 ) {
@@ -764,6 +765,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	// no extra check if event_type already defined...
 	stream[1] = value;
 	item.secondary_value = stream[1];
+	item.flags.use_any_key_or_cc = (value >= 128) ? 1 : 0;
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3654,10 +3656,10 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       case MBNG_EVENT_TYPE_NOTE_ON:
       case MBNG_EVENT_TYPE_POLY_PRESSURE: {
 	if( item.stream_size >= 2 ) {
-	  if( item.stream[1] < 128 ) {
-	    sprintf(line_buffer, " chn=%2d key=%3d", (item.stream[0] & 0xf)+1, item.stream[1]);
-	  } else {
+	  if( item.flags.use_any_key_or_cc ) {
 	    sprintf(line_buffer, " chn=%2d key=any", (item.stream[0] & 0xf)+1);
+	  } else {
+	    sprintf(line_buffer, " chn=%2d key=%3d", (item.stream[0] & 0xf)+1, item.stream[1]);
 	  }
 	  FLUSH_BUFFER;
 
@@ -3670,10 +3672,10 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       case MBNG_EVENT_TYPE_CC: {
 	if( item.stream_size >= 2 ) {
-	  if( item.stream[1] < 128 ) {
-	    sprintf(line_buffer, " chn=%2d cc=%3d ", (item.stream[0] & 0xf)+1, item.stream[1]);
-	  } else {
+	  if( item.flags.use_any_key_or_cc ) {
 	    sprintf(line_buffer, " chn=%2d cc=any ", (item.stream[0] & 0xf)+1);
+	  } else {
+	    sprintf(line_buffer, " chn=%2d cc=%3d ", (item.stream[0] & 0xf)+1, item.stream[1]);
 	  }
 	  FLUSH_BUFFER;
 
