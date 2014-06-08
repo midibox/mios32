@@ -10,7 +10,7 @@ MIDIboxSEQ V4.084
 ~~~~~~~~~~~~~~~~~
 
    o If Force-to-Scale is enabled, the edit screen shows the forced keys at the lower line.
-     The original value is still displayed at the left upper line.
+     The original value is still displayed at the upper right line.
 
    o Live Page: FTS (Force-To-Scale) not applied on drum tracks anymore
 
