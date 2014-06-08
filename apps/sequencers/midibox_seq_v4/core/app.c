@@ -689,6 +689,9 @@ void SEQ_TASK_Period1S(void)
     // store config (e.g. to store current song/mixermap/pattern numbers
     SEQ_FILE_C_Write(seq_file_session_name);
 
+    // store global config
+    SEQ_FILE_GC_Write();
+
     // store mixer map
     SEQ_MIXER_Save(SEQ_MIXER_NumGet());
 
