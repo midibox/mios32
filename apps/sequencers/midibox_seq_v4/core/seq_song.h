@@ -111,7 +111,7 @@ extern s32 SEQ_SONG_LoopCtrGet(void);
 extern s32 SEQ_SONG_LoopCtrMaxGet(void);
 
 extern s32 SEQ_SONG_Reset(u32 bpm_start);
-extern s32 SEQ_SONG_FetchPos(u8 force_immediate_change);
+extern s32 SEQ_SONG_FetchPos(u8 force_immediate_change, u8 dont_dump_mixer_map);
 
 extern s32 SEQ_SONG_NextPos(void);
 extern s32 SEQ_SONG_PrevPos(void);
