@@ -218,7 +218,7 @@ s32 SEQ_SONG_PosSet(u32 pos)
 {
   song_finished = 0;
   song_pos = pos % SEQ_SONG_NUM_STEPS;
-  return SEQ_SONG_FetchPos(0);
+  return SEQ_SONG_FetchPos(0, 0);
 }
 
 
@@ -252,7 +252,7 @@ s32 SEQ_SONG_Reset(u32 bpm_start)
 
   // if not in phrase mode: fetch new entries
   if( song_active ) {
-    if( SEQ_SONG_FetchPos(1) < 0 ) { // returns -1 if recursion counter reached max position
+    if( SEQ_SONG_FetchPos(1, 1) < 0 ) { // returns -1 if recursion counter reached max position
       // reset song positions and loop counters again
       song_pos = 0;
       song_loop_ctr = 0;
@@ -268,7 +268,7 @@ s32 SEQ_SONG_Reset(u32 bpm_start)
 // fetches the pos entries of a song
 // returns -1 if recursion counter reached max position
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
+s32 SEQ_SONG_FetchPos(u8 force_immediate_change, u8 dont_dump_mixer_map)
 {
   int recursion_ctr = 0;
 
@@ -319,7 +319,8 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change)
       case SEQ_SONG_ACTION_SelMixerMap:
 	SEQ_MIXER_Load(s->action_value);
 	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, s->action_value, 0);
-	SEQ_MIXER_SendAll();
+	if( !dont_dump_mixer_map )
+	  SEQ_MIXER_SendAll();
 	++song_pos;
 	again = 1;
 	break;
@@ -415,7 +416,7 @@ s32 SEQ_SONG_NextPos(void)
   else {
     ++song_pos;
 
-    SEQ_SONG_FetchPos(0);
+    SEQ_SONG_FetchPos(0, 0);
 
 #ifndef MBSEQV4L
     // correct the song position if follow mode is active
@@ -458,7 +459,7 @@ s32 SEQ_SONG_PrevPos(void)
     } else if( !song_loop_ctr )
       reinit_loop_ctr = 0; // don't re-init loop counter if we reached the very first song step
 
-    SEQ_SONG_FetchPos(0);
+    SEQ_SONG_FetchPos(0, 0);
 
     if( reinit_loop_ctr )
       song_loop_ctr = song_loop_ctr_max;
@@ -483,7 +484,7 @@ s32 SEQ_SONG_Fwd(void)
       // increment if possible
       if( song_pos < SEQ_SONG_NUM_STEPS ) {
 	++song_pos;
-	SEQ_SONG_FetchPos(0);
+	SEQ_SONG_FetchPos(0, 0);
 	ui_song_edit_pos = song_pos;
 
 	// update display immediately

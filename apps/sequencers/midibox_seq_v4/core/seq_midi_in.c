@@ -956,7 +956,7 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
 	if( value <= 15 ) {
 	  u8 song_pos = value << 3;
 	  SEQ_SONG_PosSet(song_pos);
-	  SEQ_SONG_FetchPos(0);
+	  SEQ_SONG_FetchPos(0, 0);
 	  ui_song_edit_pos = song_pos;
 	}
       } break;
@@ -1055,7 +1055,7 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlPC(u8 value)
     if( value <= 15 ) {
       u8 song_pos = value << 3;
       SEQ_SONG_PosSet(song_pos);
-      SEQ_SONG_FetchPos(0);
+      SEQ_SONG_FetchPos(0, 0);
       ui_song_edit_pos = song_pos;
     }
     break;

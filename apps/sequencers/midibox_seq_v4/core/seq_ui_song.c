@@ -466,7 +466,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	// in phrase mode and no song pos selected: fetch patterns immediately if SynchChange not set
 	if( !SEQ_SONG_ActiveGet() ) {
 	  u8 force_immediate_change = seq_core_options.SYNCHED_PATTERN_CHANGE ? 0 : 1;
-	  SEQ_SONG_FetchPos(force_immediate_change);
+	  SEQ_SONG_FetchPos(force_immediate_change, 0);
 	  SEQ_CORE_ManualSynchToMeasure(0xffff); // ensure that the new selection is in sync
 	}
 	return 1; // value has been changed
@@ -483,7 +483,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
 	  // in phrase mode and no song pos selected: fetch patterns immediately
 	  if( !SEQ_SONG_ActiveGet() )
-	    SEQ_SONG_FetchPos(0);
+	    SEQ_SONG_FetchPos(0, 0);
 	  return 1; // value has been changed
 	}
       } else {
@@ -494,7 +494,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
 	  // in phrase mode and no song pos selected: fetch patterns immediately
 	  if( !SEQ_SONG_ActiveGet() )
-	    SEQ_SONG_FetchPos(0);
+	    SEQ_SONG_FetchPos(0, 0);
 	  return 1; // value has been changed
 	}
       }
@@ -523,7 +523,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	SEQ_SONG_StepEntrySet(ui_song_edit_pos, s);
 	// in phrase mode and no song pos selected: fetch patterns immediately
 	if( !SEQ_SONG_ActiveGet() )
-	  SEQ_SONG_FetchPos(0);
+	  SEQ_SONG_FetchPos(0, 0);
 	return 1; // value has been changed
       }
       return 0; // no change
@@ -663,7 +663,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
       // set song position and fetch patterns
       SEQ_SONG_PosSet(ui_song_edit_pos);
-      SEQ_SONG_FetchPos(0);
+      SEQ_SONG_FetchPos(0, 0);
       ui_song_edit_pos = SEQ_SONG_PosGet();
       return 1;
   
@@ -686,7 +686,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() && s.action != SEQ_SONG_ACTION_JmpSong )
-	      SEQ_SONG_FetchPos(0);
+	      SEQ_SONG_FetchPos(0, 0);
 	    return 1; // value has been changed
 	      
 	  case SEQ_SONG_ACTION_Tempo:
@@ -695,7 +695,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos(0);
+	      SEQ_SONG_FetchPos(0, 0);
 	    return 1; // value has been changed
 	      
 	  case SEQ_SONG_ACTION_Mutes:
@@ -713,7 +713,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
   
 	    // in phrase mode and no song pos selected: fetch patterns immediately
 	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos(1);
+	      SEQ_SONG_FetchPos(1, 0);
 	    return 1; // value has been changed
   
 	  case SEQ_SONG_ACTION_GuideTrack:
@@ -726,7 +726,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      
 	    // in phrase mode: change guide track immediately
 	    if( !SEQ_SONG_ActiveGet() )
-	      SEQ_SONG_FetchPos(1);
+	      SEQ_SONG_FetchPos(1, 0);
 	    return 1; // value has been changed
 
 	  default:
