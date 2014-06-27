@@ -264,6 +264,33 @@ s32 SEQ_SONG_Reset(u32 bpm_start)
 }
 
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Help function for pattern switching
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_SONG_FetchHlp_PatternChange(u8 group, u8 pattern, u8 bank, u8 force_immediate_change)
+{
+  if( pattern < 0x80 ) {
+    if( force_immediate_change || pattern != seq_pattern[group].pattern ) {
+      seq_pattern_t p;
+      p.ALL = 0;
+      p.pattern = pattern;
+      p.bank = bank;
+      SEQ_PATTERN_Change(group, p, force_immediate_change);
+    } else {
+      // pattern not reloaded... we have to consider the RATOPC flag which is normally done in SEQ_PATTERN_Handler()
+      if( seq_core_options.RATOPC ) {
+	MIOS32_IRQ_Disable(); // must be atomic
+	seq_core_state.reset_trkpos_req |= (0xf << (4*group));
+	MIOS32_IRQ_Enable();
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // fetches the pos entries of a song
 // returns -1 if recursion counter reached max position
@@ -363,37 +390,12 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change, u8 dont_dump_mixer_map)
 	  song_loop_ctr = 0;
 	  song_loop_ctr_max = s->action - SEQ_SONG_ACTION_Loop1;
 
-	  seq_pattern_t p;
-
 	  // TODO: implement prefetching until end of step!
-
-	  if( s->pattern_g1 < 0x80 && (force_immediate_change || s->pattern_g1 != seq_pattern[0].pattern) ) {
-	    p.ALL = 0;
-	    p.pattern = s->pattern_g1;
-	    p.bank = s->bank_g1;
-	    SEQ_PATTERN_Change(0, p, force_immediate_change);
-	  }
-
-	  if( s->pattern_g2 < 0x80 && (force_immediate_change || s->pattern_g2 != seq_pattern[1].pattern) ) {
-	    p.ALL = 0;
-	    p.pattern = s->pattern_g2;
-	    p.bank = s->bank_g2;
-	    SEQ_PATTERN_Change(1, p, force_immediate_change);
-	  }
-
-	  if( s->pattern_g3 < 0x80 && (force_immediate_change || s->pattern_g3 != seq_pattern[2].pattern) ) {
-	    p.ALL = 0;
-	    p.pattern = s->pattern_g3;
-	    p.bank = s->bank_g3;
-	    SEQ_PATTERN_Change(2, p, force_immediate_change);
-	  }
-
-	  if( s->pattern_g4 < 0x80 && (force_immediate_change || s->pattern_g4 != seq_pattern[3].pattern) ) {
-	    p.ALL = 0;
-	    p.pattern = s->pattern_g4;
-	    p.bank = s->bank_g4;
-	    SEQ_PATTERN_Change(3, p, force_immediate_change);
-	  }
+	  
+	  SEQ_SONG_FetchHlp_PatternChange(0, s->pattern_g1, s->bank_g1, force_immediate_change);
+	  SEQ_SONG_FetchHlp_PatternChange(1, s->pattern_g2, s->bank_g2, force_immediate_change);
+	  SEQ_SONG_FetchHlp_PatternChange(2, s->pattern_g3, s->bank_g3, force_immediate_change);
+	  SEQ_SONG_FetchHlp_PatternChange(3, s->pattern_g4, s->bank_g4, force_immediate_change);
 	}
     }
 
