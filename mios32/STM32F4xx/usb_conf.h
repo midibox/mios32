@@ -55,6 +55,8 @@
  #define USB_OTG_FS_CORE
 #endif
 
+
+
 /*******************************************************************************
 *                      FIFO Size Configuration in Device mode
 *  
@@ -98,16 +100,19 @@
  #define TX1_FIFO_FS_SIZE                         128
  #define TX2_FIFO_FS_SIZE                          0
  #define TX3_FIFO_FS_SIZE                          0
+ #define TXH_NP_FS_FIFOSIZ                         96
+ #define TXH_P_FS_FIFOSIZ                          96
 
  //#define USB_OTG_FS_LOW_PWR_MGMT_SUPPORT
  //#define USB_OTG_FS_SOF_OUTPUT_ENABLED
 #endif
 
+
 /****************** USB OTG MODE CONFIGURATION ********************************/
 
-//#define USE_HOST_MODE
+#define USE_HOST_MODE
 #define USE_DEVICE_MODE
-//#define USE_OTG_MODE
+#define USE_OTG_MODE
 
 
 #ifndef USB_OTG_FS_CORE

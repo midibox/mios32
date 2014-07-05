@@ -5,7 +5,7 @@
 DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v1.1.0
 
 # enhance include path
-C_INCLUDE +=	-I $(MIOS32_PATH)/mios32/$(FAMILY) -I $(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/inc -I $(DRIVER_LIB)/STM32_USB_Device_Library/Core/inc -I $(DRIVER_LIB)/STM32_USB_OTG_Driver/inc -I $(DRIVER_LIB)/CMSIS/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include
+C_INCLUDE +=	-I $(MIOS32_PATH)/mios32/$(FAMILY) -I $(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/inc -I $(DRIVER_LIB)/STM32_USB_Device_Library/Core/inc -I $(DRIVER_LIB)/STM32_USB_HOST_Library/Core/inc -I $(DRIVER_LIB)/STM32_USB_OTG_Driver/inc -I $(DRIVER_LIB)/CMSIS/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include
 
 CFLAGS += -DUSE_STDPERIPH_DRIVER
 
@@ -46,13 +46,17 @@ THUMB_SOURCE += \
 	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_core.c \
 	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_ioreq.c \
 	$(DRIVER_LIB)/STM32_USB_Device_Library/Core/src/usbd_req.c \
+	$(DRIVER_LIB)/STM32_USB_HOST_Library/Core/src/usbh_core.c \
+	$(DRIVER_LIB)/STM32_USB_HOST_Library/Core/src/usbh_hcs.c \
+	$(DRIVER_LIB)/STM32_USB_HOST_Library/Core/src/usbh_ioreq.c \
+	$(DRIVER_LIB)/STM32_USB_HOST_Library/Core/src/usbh_stdreq.c \
 	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_core.c \
 	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd.c \
-	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd_int.c
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_dcd_int.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd_int.c \
+	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_otg.c
 
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_hcd_int.c \
-#	$(DRIVER_LIB)/STM32_USB_OTG_Driver/src/usb_otg.c
 
 
 THUMB_AS_SOURCE += 

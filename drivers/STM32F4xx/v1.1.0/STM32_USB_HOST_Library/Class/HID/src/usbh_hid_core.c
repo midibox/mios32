@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    usbh_hid_core.c
   * @author  MCD Application Team
-  * @version V2.0.0
-  * @date    22-July-2011
+  * @version V2.1.0
+  * @date    19-March-2012
   * @brief   This file is the HID Layer Handlers for USB Host HID class.
   *
   * @verbatim
@@ -22,14 +22,20 @@
   ******************************************************************************
   * @attention
   *
-  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
-  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
-  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
-  * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
-  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
-  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS. 
+  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
   *
-  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  * You may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at:
+  *
+  *        http://www.st.com/software_license_agreement_liberty_v2
+  *
+  * Unless required by applicable law or agreed to in writing, software 
+  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  *
   ******************************************************************************
   */
 
@@ -110,7 +116,7 @@ __ALIGN_BEGIN USB_Setup_TypeDef          HID_Setup __ALIGN_END ;
 #endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
 __ALIGN_BEGIN USBH_HIDDesc_TypeDef       HID_Desc __ALIGN_END ; 
 
-__IO uint8_t flag = 0;
+__IO uint8_t start_toggle = 0;
 /**
 * @}
 */ 
@@ -204,6 +210,12 @@ static USBH_Status USBH_HID_InterfaceInit ( USB_OTG_CORE_HANDLE *pdev,
     HID_Machine.length    = pphost->device_prop.Ep_Desc[0][0].wMaxPacketSize;
     HID_Machine.poll      = pphost->device_prop.Ep_Desc[0][0].bInterval ;
     
+    if (HID_Machine.poll  < HID_MIN_POLL) 
+    {
+       HID_Machine.poll = HID_MIN_POLL;
+    }
+
+    
     /* Check fo available number of endpoints */
     /* Find the number of EPs in the Interface Descriptor */      
     /* Choose the lower number in order not to overrun the buffer allocated */
@@ -248,12 +260,12 @@ static USBH_Status USBH_HID_InterfaceInit ( USB_OTG_CORE_HANDLE *pdev,
       
     }   
     
-     flag =0;
+     start_toggle =0;
      status = USBH_OK; 
   }
   else
   {
-    pphost->usr_cb->USBH_USR_DeviceNotSupported();   
+    pphost->usr_cb->DeviceNotSupported();   
   }
   
   return status;
@@ -288,7 +300,7 @@ void USBH_HID_InterfaceDeInit ( USB_OTG_CORE_HANDLE *pdev,
     HID_Machine.hc_num_out = 0;     /* Reset the Channel as Free */  
   }
  
-  flag = 0;
+  start_toggle = 0;
 }
 
 /**
@@ -378,7 +390,7 @@ static USBH_Status USBH_HID_ClassRequest(USB_OTG_CORE_HANDLE *pdev ,
 static USBH_Status USBH_HID_Handle(USB_OTG_CORE_HANDLE *pdev , 
                                    void   *phost)
 {
-    USBH_HOST *pphost = phost;
+  USBH_HOST *pphost = phost;
   USBH_Status status = USBH_OK;
   
   switch (HID_Machine.state)
@@ -386,19 +398,24 @@ static USBH_Status USBH_HID_Handle(USB_OTG_CORE_HANDLE *pdev ,
     
   case HID_IDLE:
     HID_Machine.cb->Init();
-    HID_Machine.state = HID_GET_DATA;
-    break;  
+    HID_Machine.state = HID_SYNC;
+    
+  case HID_SYNC:
+
+    /* Sync with start of Even Frame */
+    if(USB_OTG_IsEvenFrame(pdev) == TRUE)
+    {
+      HID_Machine.state = HID_GET_DATA;  
+    }
+    break;
     
   case HID_GET_DATA:
-    
-    /* Sync with start of Even Frame */
-    while(USB_OTG_IsEvenFrame(pdev) == FALSE);
-    
+
     USBH_InterruptReceiveData(pdev, 
                               HID_Machine.buff,
                               HID_Machine.length,
                               HID_Machine.hc_num_in);
-    flag = 1;
+    start_toggle = 1;
     
     HID_Machine.state = HID_POLL;
     HID_Machine.timer = HCD_GetCurrentFrame(pdev);
@@ -411,9 +428,9 @@ static USBH_Status USBH_HID_Handle(USB_OTG_CORE_HANDLE *pdev ,
     }
     else if(HCD_GetURB_State(pdev , HID_Machine.hc_num_in) == URB_DONE)
     {
-      if(flag == 1) /* handle data once */
+      if(start_toggle == 1) /* handle data once */
       {
-        flag = 0;
+        start_toggle = 0;
         HID_Machine.cb->Decode(HID_Machine.buff);
       }
     }
@@ -637,4 +654,4 @@ static void  USBH_ParseHIDDesc (USBH_HIDDesc_TypeDef *desc, uint8_t *buf)
 * @}
 */
 
-/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

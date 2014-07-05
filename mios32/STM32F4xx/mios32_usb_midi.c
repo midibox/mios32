@@ -31,8 +31,41 @@
 
 // imported from mios32_usb.c
 extern USB_OTG_CORE_HANDLE  USB_OTG_dev;
-extern uint32_t USB_Rx_Buffer[MIOS32_USB_MIDI_DATA_OUT_SIZE/4];
-static uint32_t USB_Tx_Buffer[MIOS32_USB_MIDI_DATA_IN_SIZE/4];
+extern uint32_t USB_rx_buffer[MIOS32_USB_MIDI_DATA_OUT_SIZE/4];
+static uint32_t USB_tx_buffer[MIOS32_USB_MIDI_DATA_IN_SIZE/4];
+
+#ifndef MIOS32_DONT_USE_USB_HOST
+#include <usbh_core.h>
+#include <usbh_conf.h>
+#include <usbh_ioreq.h>
+#include <usbh_stdreq.h>
+#include <usbh_hcs.h>
+
+extern USBH_HOST USB_Host;
+
+// check USB_rx_buffer size
+#if MIOS32_USB_MIDI_DATA_OUT_SIZE != USBH_MSC_MPS_SIZE
+# error "MIOS32_USB_MIDI_DATA_OUT_SIZE and USBH_MSC_MPS_SIZE must be equal!"
+#endif
+#if MIOS32_USB_MIDI_DATA_IN_SIZE != USBH_MSC_MPS_SIZE
+# error "MIOS32_USB_MIDI_DATA_IN_SIZE and USBH_MSC_MPS_SIZE must be equal!"
+#endif
+
+static u8  USBH_hc_num_in;
+static u8  USBH_hc_num_out;
+static u8  USBH_BulkOutEp;
+static u8  USBH_BulkInEp;
+static u8  USBH_BulkInEpSize;
+static u16 USBH_BulkOutEpSize;
+
+typedef enum {
+  USBH_MIDI_IDLE,
+  USBH_MIDI_RX,
+  USBH_MIDI_TX,
+} USBH_MIDI_transfer_state_t;
+
+static USBH_MIDI_transfer_state_t USBH_MIDI_transfer_state;
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -98,6 +131,10 @@ s32 MIOS32_USB_MIDI_ChangeConnectionState(u8 connected)
   if( connected ) {
     transfer_possible = 1;
     tx_buffer_busy = 0; // buffer not busy anymore
+
+#ifndef MIOS32_DONT_USE_USB_HOST
+    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+#endif
   } else {
     // cable disconnected: disable transfers
     transfer_possible = 0;
@@ -243,19 +280,28 @@ s32 MIOS32_USB_MIDI_PackageReceive(mios32_midi_package_t *package)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_USB_MIDI_Periodic_mS(void)
 {
-  // check for received packages
-  MIOS32_USB_MIDI_RxBufferHandler();
+  if( USB_OTG_IsHostMode(&USB_OTG_dev) ) {
+#ifndef MIOS32_DONT_USE_USB_HOST
+    // process the USB host events
+    USBH_Process(&USB_OTG_dev, &USB_Host);
+#endif
+  } else {
+    // check for received packages
+    MIOS32_USB_MIDI_RxBufferHandler();
 
-  // check for packages which should be transmitted
-  MIOS32_USB_MIDI_TxBufferHandler();
+    // check for packages which should be transmitted
+    MIOS32_USB_MIDI_TxBufferHandler();
+  }
 
   return 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler sends the new packages through the IN pipe if the buffer 
-// is not empty
+//! USB Device Mode
+//!
+//! This handler sends the new packages through the IN pipe if the buffer 
+//! is not empty
 /////////////////////////////////////////////////////////////////////////////
 static void MIOS32_USB_MIDI_TxBufferHandler(void)
 {
@@ -274,48 +320,13 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
   if( !tx_buffer_busy && tx_buffer_size && transfer_possible ) {
     s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
 
-#if 0
-    // this method doesn't work with the new STM USB driver anymore... :-/
-
-    u32 ep_num = MIOS32_USB_MIDI_DATA_IN_EP & 0x7f;
-
-    // Set transfer size
-    USB_OTG_DEPXFRSIZ_TypeDef deptsiz;
-    deptsiz.d32 = 0;
-    deptsiz.b.xfersize = count * 4;
-    deptsiz.b.pktcnt = 1;
-    USB_OTG_WRITE_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPTSIZ, deptsiz.d32);
-
-    // Enable the Tx FIFO Empty Interrupt for this EP
-    uint32_t fifoemptymsk = 1 << ep_num;
-    USB_OTG_MODIFY_REG32(&USB_OTG_dev.regs.DREGS->DIEPEMPMSK, 0, fifoemptymsk);
-
-    /* EP enable, IN data in FIFO */
-    USB_OTG_DEPCTL_TypeDef depctl;
-    depctl.d32 = USB_OTG_READ_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPCTL);
-    depctl.b.cnak = 1;
-    depctl.b.epena = 1;
-    USB_OTG_WRITE_REG32(&USB_OTG_dev.regs.INEP_REGS[ep_num]->DIEPCTL, depctl.d32); 
-#endif
-
     // notify that new package is sent
     tx_buffer_busy = 1;
 
     // send to IN pipe
     tx_buffer_size -= count;
 
-#if 0
-    // this method doesn't work with the new STM USB driver anymore... :-/
-
-    // copy into EP FIFO
-    __IO uint32_t *fifo = (uint32_t *)&USB_OTG_dev.regs.DFIFO[ep_num];
-    do {
-      USB_OTG_WRITE_REG32(fifo, tx_buffer[tx_buffer_tail]);
-      if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
-	tx_buffer_tail = 0;
-    } while( --count );
-#else
-    u32 *buf_addr = (u32 *)USB_Tx_Buffer;
+    u32 *buf_addr = (u32 *)USB_tx_buffer;
     int i;
     for(i=0; i<count; ++i) {
       *(buf_addr++) = tx_buffer[tx_buffer_tail];
@@ -323,11 +334,7 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 	tx_buffer_tail = 0;
     }
 
-    DCD_EP_Tx(&USB_OTG_dev,
-	      MIOS32_USB_MIDI_DATA_IN_EP,
-	      (uint8_t*)&USB_Tx_Buffer,
-	      count*4);
-#endif
+    DCD_EP_Tx(&USB_OTG_dev, MIOS32_USB_MIDI_DATA_IN_EP, (uint8_t*)&USB_tx_buffer, count*4);
   }
 
   MIOS32_IRQ_Enable();
@@ -335,7 +342,9 @@ static void MIOS32_USB_MIDI_TxBufferHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This handler receives new packages if the Tx buffer is not full
+//! USB Device Mode
+//!
+//! This handler receives new packages if the Tx buffer is not full
 /////////////////////////////////////////////////////////////////////////////
 static void MIOS32_USB_MIDI_RxBufferHandler(void)
 {
@@ -355,7 +364,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
   if( rx_buffer_new_data && (count=ep->xfer_count>>2) ) {
     // check if buffer is free
     if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
-      u32 *buf_addr = (u32 *)USB_Rx_Buffer;
+      u32 *buf_addr = (u32 *)USB_rx_buffer;
 
       // copy received packages into receive buffer
       // this operation should be atomic
@@ -378,7 +387,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
       // configuration for next transfer
       DCD_EP_PrepareRx(&USB_OTG_dev,
 		       MIOS32_USB_MIDI_DATA_OUT_EP,
-		       (uint8_t*)(USB_Rx_Buffer),
+		       (uint8_t*)(USB_rx_buffer),
 		       MIOS32_USB_MIDI_DATA_OUT_SIZE);
     }
   }
@@ -388,7 +397,7 @@ static void MIOS32_USB_MIDI_RxBufferHandler(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
-//! Called by STM32 USB driver to check for IN streams
+//! Called by STM32 USB Device driver to check for IN streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 //! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
@@ -402,7 +411,7 @@ void MIOS32_USB_MIDI_EP1_IN_Callback(u8 bEP, u8 bEPStatus)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Called by STM32 USB driver to check for OUT streams
+//! Called by STM32 USB Device driver to check for OUT streams
 //! \note Applications shouldn't call this function directly, instead please use \ref MIOS32_MIDI layer functions
 //! \note also: bEP, bEPStatus only relevant for LPC17xx port
 /////////////////////////////////////////////////////////////////////////////
@@ -412,6 +421,233 @@ void MIOS32_USB_MIDI_EP2_OUT_Callback(u8 bEP, u8 bEPStatus)
   rx_buffer_new_data = 1;
   MIOS32_USB_MIDI_RxBufferHandler();
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// USB Host Audio Class Callbacks
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+#ifndef MIOS32_DONT_USE_USB_HOST
+/**
+ * @brief  USBH_MIDI_InterfaceInit
+ *         Interface initialization for MSC class.
+ * @param  pdev: Selected device
+ * @param  hdev: Selected device property
+ * @retval  USBH_Status :Response for USB MIDI driver intialization
+ */
+static USBH_Status USBH_InterfaceInit(USB_OTG_CORE_HANDLE *pdev, void *phost)
+{
+  USBH_HOST *pphost = phost;
+
+  MIOS32_USB_MIDI_ChangeConnectionState(0);
+
+  int i;
+  for(i=0; i<pphost->device_prop.Cfg_Desc.bNumInterfaces && i < USBH_MAX_NUM_INTERFACES; ++i) {
+    //MIOS32_MIDI_DebugPortSet(UART0);
+    //MIOS32_MIDI_SendDebugMessage("InterfaceInit %d %d %d", i, pphost->device_prop.Itf_Desc[i].bInterfaceClass, pphost->device_prop.Itf_Desc[i].bInterfaceSubClass);
+
+    if( (pphost->device_prop.Itf_Desc[i].bInterfaceClass == 1) &&
+	(pphost->device_prop.Itf_Desc[i].bInterfaceSubClass == 3) ) {
+
+      if( pphost->device_prop.Ep_Desc[i][0].bEndpointAddress & 0x80 ) {
+	USBH_BulkInEp = (pphost->device_prop.Ep_Desc[i][0].bEndpointAddress);
+	USBH_BulkInEpSize  = pphost->device_prop.Ep_Desc[i][0].wMaxPacketSize;
+      } else {
+	USBH_BulkOutEp = (pphost->device_prop.Ep_Desc[i][0].bEndpointAddress);
+	USBH_BulkOutEpSize  = pphost->device_prop.Ep_Desc[i] [0].wMaxPacketSize;
+      }
+
+      if( pphost->device_prop.Ep_Desc[i][1].bEndpointAddress & 0x80 ) {
+	USBH_BulkInEp = (pphost->device_prop.Ep_Desc[i][1].bEndpointAddress);
+	USBH_BulkInEpSize  = pphost->device_prop.Ep_Desc[i][1].wMaxPacketSize;
+      } else {
+	USBH_BulkOutEp = (pphost->device_prop.Ep_Desc[i][1].bEndpointAddress);
+	USBH_BulkOutEpSize  = pphost->device_prop.Ep_Desc[i][1].wMaxPacketSize;
+      }
+
+      USBH_hc_num_out = USBH_Alloc_Channel(pdev, USBH_BulkOutEp);
+      USBH_hc_num_in = USBH_Alloc_Channel(pdev, USBH_BulkInEp);
+
+      /* Open the new channels */
+      USBH_Open_Channel(pdev,
+			USBH_hc_num_out,
+			pphost->device_prop.address,
+			pphost->device_prop.speed,
+			EP_TYPE_BULK,
+			USBH_BulkOutEpSize);
+
+      USBH_Open_Channel(pdev,
+			USBH_hc_num_in,
+			pphost->device_prop.address,
+			pphost->device_prop.speed,
+			EP_TYPE_BULK,
+			USBH_BulkInEpSize);
+
+      MIOS32_USB_MIDI_ChangeConnectionState(1);
+      break;
+    }
+  }
+
+  if( MIOS32_USB_MIDI_CheckAvailable(0) ) {
+    pphost->usr_cb->DeviceNotSupported();
+  }
+	
+  return USBH_OK;
+
+}
+
+
+/**
+ * @brief  USBH_InterfaceDeInit
+ *         De-Initialize interface by freeing host channels allocated to interface
+ * @param  pdev: Selected device
+ * @param  hdev: Selected device property
+ * @retval None
+ */
+static void USBH_InterfaceDeInit(USB_OTG_CORE_HANDLE *pdev, void *phost)
+{
+  if( USBH_hc_num_out ) {
+    USB_OTG_HC_Halt(pdev, USBH_hc_num_out);
+    USBH_Free_Channel  (pdev, USBH_hc_num_out);
+    USBH_hc_num_out = 0;     /* Reset the Channel as Free */
+  }
+
+  if( USBH_hc_num_in ) {
+    USB_OTG_HC_Halt(pdev, USBH_hc_num_in);
+    USBH_Free_Channel  (pdev, USBH_hc_num_in);
+    USBH_hc_num_in = 0;     /* Reset the Channel as Free */
+  }
+}
+
+/**
+ * @brief  USBH_ClassRequest
+ *         This function will only initialize the MSC state machine
+ * @param  pdev: Selected device
+ * @param  hdev: Selected device property
+ * @retval  USBH_Status :Response for USB Set Protocol request
+ */
+static USBH_Status USBH_ClassRequest(USB_OTG_CORE_HANDLE *pdev, void *phost)
+{
+  USBH_Status status = USBH_OK;
+  return status;
+}
+
+/**
+ * @brief  USBH_Handle
+ *         MSC state machine handler
+ * @param  pdev: Selected device
+ * @param  hdev: Selected device property
+ * @retval USBH_Status
+ */
+static USBH_Status USBH_Handle(USB_OTG_CORE_HANDLE *pdev, void *phost)
+{
+  if( transfer_possible ) {
+    USBH_HOST *pphost = phost;
+
+    if( HCD_IsDeviceConnected(pdev) ) {
+      if( USBH_MIDI_transfer_state == USBH_MIDI_TX ) {
+	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_in);
+
+	if( URB_State == URB_IDLE || URB_State == URB_DONE ) {
+	  USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	} else if( URB_State == URB_STALL ) {
+	  // Issue Clear Feature on IN endpoint
+	  if( USBH_ClrFeature(pdev, pphost, USBH_BulkInEp, USBH_hc_num_in) == USBH_OK ) {
+	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	  }
+	}
+      }
+
+      if( USBH_MIDI_transfer_state == USBH_MIDI_RX ) {
+	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_in);
+
+	if( URB_State == URB_IDLE ) {
+	  USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	} else if( URB_State == URB_DONE ) {
+	  // data received from receive
+	  u32 count = HCD_GetXferCnt(pdev, USBH_hc_num_in) / 4;
+
+	  // push data into FIFO
+	  if( !count ) {
+	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	  } else if( count < (MIOS32_USB_MIDI_RX_BUFFER_SIZE-rx_buffer_size) ) {
+	    u32 *buf_addr = (u32 *)USB_rx_buffer;
+
+	    // copy received packages into receive buffer
+	    // this operation should be atomic
+	    MIOS32_IRQ_Disable();
+	    do {
+	      mios32_midi_package_t package;
+	      package.ALL = *buf_addr++;
+
+	      if( MIOS32_MIDI_SendPackageToRxCallback(USB0 + package.cable, package) == 0 ) {
+		rx_buffer[rx_buffer_head] = package.ALL;
+
+		if( ++rx_buffer_head >= MIOS32_USB_MIDI_RX_BUFFER_SIZE )
+		  rx_buffer_head = 0;
+		++rx_buffer_size;
+	      }
+	    } while( --count > 0 );
+	    MIOS32_IRQ_Enable();
+
+	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	  }
+	} else if( URB_State == URB_STALL ) {
+	  // Issue Clear Feature on IN endpoint
+	  if( USBH_ClrFeature(pdev, pphost, USBH_BulkInEp, USBH_hc_num_in) == USBH_OK ) {
+	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	  }
+	}
+      }
+
+      // send data to device?
+      if( USBH_MIDI_transfer_state == USBH_MIDI_IDLE ) {
+	if( tx_buffer_size && transfer_possible ) {
+	  // atomic operation to avoid conflict with other interrupts
+	  MIOS32_IRQ_Disable();
+
+	  s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
+
+	  // send to IN pipe
+	  tx_buffer_size -= count;
+
+	  u32 *buf_addr = (u32 *)USB_tx_buffer;
+	  int i;
+	  for(i=0; i<count; ++i) {
+	    *(buf_addr++) = tx_buffer[tx_buffer_tail];
+	    if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
+	      tx_buffer_tail = 0;
+	  }
+
+	  
+	  USBH_BulkSendData(&USB_OTG_dev, (u8 *)USB_tx_buffer, count*4, USBH_hc_num_out);
+
+	  USBH_MIDI_transfer_state = USBH_MIDI_TX;
+
+	  MIOS32_IRQ_Enable();
+	} else {
+	  // request data from device
+	  USBH_BulkReceiveData(&USB_OTG_dev, (u8 *)USB_rx_buffer, MIOS32_USB_MIDI_DATA_OUT_SIZE, USBH_hc_num_in);
+	  USBH_MIDI_transfer_state = USBH_MIDI_RX;
+	}
+      }
+    }
+  }
+
+  return USBH_OK;
+}
+
+
+const USBH_Class_cb_TypeDef MIOS32_MIDI_USBH_Callbacks = {
+  USBH_InterfaceInit,
+  USBH_InterfaceDeInit,
+  USBH_ClassRequest,
+  USBH_Handle
+};
+
+#endif /* MIOS32_DONT_USE_USB_HOST */
 
 //! \}
 

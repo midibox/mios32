@@ -2,21 +2,27 @@
   ******************************************************************************
   * @file    usbh_core.c 
   * @author  MCD Application Team
-  * @version V2.0.0
-  * @date    22-July-2011
+  * @version V2.1.0
+  * @date    19-March-2012
   * @brief   This file implements the functions for the core state machine process
   *          the enumeration and the control transfer process
   ******************************************************************************
   * @attention
   *
-  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
-  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
-  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
-  * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
-  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
-  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
   *
-  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  * You may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at:
+  *
+  *        http://www.st.com/software_license_agreement_liberty_v2
+  *
+  * Unless required by applicable law or agreed to in writing, software 
+  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  *
   ******************************************************************************
   */ 
 /* Includes ------------------------------------------------------------------*/
@@ -26,6 +32,7 @@
 #include "usbh_hcs.h"
 #include "usbh_stdreq.h"
 #include "usbh_core.h"
+#include "usb_hcd_int.h"
 
 
 /** @addtogroup USBH_LIB
@@ -45,18 +52,18 @@
 /** @defgroup USBH_CORE_Private_TypesDefinitions
   * @{
   */ 
-void USBH_Disconnect (void *pdev); 
-void USBH_Connect (void *pdev); 
+uint8_t USBH_Disconnected (USB_OTG_CORE_HANDLE *pdev); 
+uint8_t USBH_Connected (USB_OTG_CORE_HANDLE *pdev); 
+uint8_t USBH_SOF (USB_OTG_CORE_HANDLE *pdev); 
 
-USB_OTG_hPort_TypeDef  USBH_DeviceConnStatus_cb = 
+USBH_HCD_INT_cb_TypeDef USBH_HCD_INT_cb = 
 {
-  USBH_Disconnect,
-  USBH_Connect,
-  0,
-  0,
-  0,
-  0
+  USBH_SOF,
+  USBH_Connected, 
+  USBH_Disconnected,    
 };
+
+USBH_HCD_INT_cb_TypeDef  *USBH_HCD_INT_fops = &USBH_HCD_INT_cb;
 /**
   * @}
   */ 
@@ -103,35 +110,42 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost);
 
 
 /**
-  * @brief  USBH_Connect
+  * @brief  USBH_Connected
   *         USB Connect callback function from the Interrupt. 
   * @param  selected device
-  * @retval none
-  */
-void USBH_Connect (void *pdev)
+  * @retval Status
+*/
+uint8_t USBH_Connected (USB_OTG_CORE_HANDLE *pdev)
 {
-  USB_OTG_CORE_HANDLE *ppdev = pdev;
-  ppdev->host.port_cb->ConnStatus = 1;
-  ppdev->host.port_cb->ConnHandled = 0; 
+  pdev->host.ConnSts = 1;
+  return 0;
 }
 
 /**
-  * @brief  USBH_Disconnect
-  *         USB Disconnect callback function from the Interrupt. 
-  * @param  selected device
-  * @retval none
-  */
+* @brief  USBH_Disconnected
+*         USB Disconnect callback function from the Interrupt. 
+* @param  selected device
+* @retval Status
+*/
 
-void USBH_Disconnect (void *pdev)
+uint8_t USBH_Disconnected (USB_OTG_CORE_HANDLE *pdev)
 {
-  
-  USB_OTG_CORE_HANDLE *ppdev = pdev;
-    
-  /* Make device Not connected flag true */
-  ppdev->host.port_cb->DisconnStatus = 1; 
-  ppdev->host.port_cb->DisconnHandled = 0;
+  pdev->host.ConnSts = 0;
+  return 0;  
 }
 
+/**
+  * @brief  USBH_SOF
+  *         USB SOF callback function from the Interrupt. 
+  * @param  selected device
+  * @retval Status
+  */
+
+uint8_t USBH_SOF (USB_OTG_CORE_HANDLE *pdev)
+{
+  /* This callback could be used to implement a scheduler process */
+  return 0;  
+}
 /**
   * @brief  USBH_Init
   *         Host hardware and stack initializations 
@@ -159,11 +173,6 @@ void USBH_Init(USB_OTG_CORE_HANDLE *pdev,
   /*Register class and user callbacks */
   phost->class_cb = class_cb;
   phost->usr_cb = usr_cb;  
-  pdev->host.port_cb = &USBH_DeviceConnStatus_cb;
-  
-  pdev->host.port_cb->ConnStatus = 0;   
-  pdev->host.port_cb->DisconnStatus = 0; 
-  
     
   /* Start the USB OTG core */     
    HCD_Init(pdev , coreID);
@@ -210,33 +219,32 @@ USBH_Status USBH_DeInit(USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 void USBH_Process(USB_OTG_CORE_HANDLE *pdev , USBH_HOST *phost)
 {
   volatile USBH_Status status = USBH_FAIL;
+  
+  
+  /* check for Host port events */
+  if ((HCD_IsDeviceConnected(pdev) == 0)&& (phost->gState != HOST_IDLE)) 
+  {
+    if(phost->gState != HOST_DEV_DISCONNECTED) 
+    {
+      phost->gState = HOST_DEV_DISCONNECTED;
+    }
+  }
     
   switch (phost->gState)
   {
-  case HOST_ISSUE_CORE_RESET :
-     
-    if ( HCD_ResetPort(pdev) == 0)
-    {
-      phost->gState = HOST_IDLE;
-    }
-    break;
-    
+  
   case HOST_IDLE :
     
     if (HCD_IsDeviceConnected(pdev))  
     {
-      /* Wait for USB Connect Interrupt void USBH_ISR_Connected(void) */     
-      USBH_DeAllocate_AllChannel(pdev);
       phost->gState = HOST_DEV_ATTACHED;
+      USB_OTG_BSP_mDelay(100);
     }
     break;
    
   case HOST_DEV_ATTACHED :
     
     phost->usr_cb->DeviceAttached();
-    pdev->host.port_cb->DisconnStatus = 0; 
-    pdev->host.port_cb->ConnHandled = 1;  
-
     phost->Control.hc_num_out = USBH_Alloc_Channel(pdev, 0x00);
     phost->Control.hc_num_in = USBH_Alloc_Channel(pdev, 0x80);  
   
@@ -333,24 +341,24 @@ void USBH_Process(USB_OTG_CORE_HANDLE *pdev , USBH_HOST *phost)
     phost->class_cb->DeInit(pdev, &phost->device_prop);
     break;
     
-  default :
-    break;
-  }
-  
-  /* check device disconnection event */
-   if (!(HCD_IsDeviceConnected(pdev)) && 
-       (pdev->host.port_cb->DisconnHandled == 0))
-  { 
+  case HOST_DEV_DISCONNECTED :
+    
     /* Manage User disconnect operations*/
     phost->usr_cb->DeviceDisconnected();
-    
-    pdev->host.port_cb->DisconnHandled = 1; /* Handle to avoid the Re-entry*/
     
     /* Re-Initilaize Host for new Enumeration */
     USBH_DeInit(pdev, phost);
     phost->usr_cb->DeInit();
-    phost->class_cb->DeInit(pdev, &phost->device_prop);
-  }   
+    phost->class_cb->DeInit(pdev, &phost->device_prop); 
+    USBH_DeAllocate_AllChannel(pdev);  
+    phost->gState = HOST_IDLE;
+    
+    break;
+    
+  default :
+    break;
+  }
+
 }
 
 
@@ -434,6 +442,7 @@ static USBH_Status USBH_HandleEnum(USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     /* set address */
     if ( USBH_SetAddress(pdev, phost, USBH_DEVICE_ADDRESS) == USBH_OK)
     {
+      USB_OTG_BSP_mDelay(2);
       phost->device_prop.address = USBH_DEVICE_ADDRESS;
       
       /* user callback for device address assigned */
@@ -685,13 +694,16 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     
   case CTRL_DATA_OUT:
     /* Start DATA out transfer (only one DATA packet)*/
-    
-    pdev->host.hc[phost->Control.hc_num_out].toggle_out ^= 1; 
-    
+    pdev->host.hc[phost->Control.hc_num_out].toggle_out = 1; 
+        
     USBH_CtlSendData (pdev,
                       phost->Control.buff, 
                       phost->Control.length , 
                       phost->Control.hc_num_out);
+    
+
+
+
     
     phost->Control.state = CTRL_DATA_OUT_WAIT;
     break;
@@ -709,6 +721,7 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     { 
       /* In stall case, return to previous machine state*/
       phost->gState =   phost->gStateBkp;
+      phost->Control.state = CTRL_STALLED;  
     } 
     else if  (URB_Status == URB_NOTREADY)
     { 
@@ -741,6 +754,7 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     if  ( URB_Status == URB_DONE)
     { /* Control transfers completed, Exit the State Machine */
       phost->gState =   phost->gStateBkp;
+      phost->Control.state = CTRL_COMPLETE;
     }
     
     else if (URB_Status == URB_ERROR)
@@ -777,7 +791,8 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
     URB_Status = HCD_GetURB_State(pdev , phost->Control.hc_num_out);  
     if  (URB_Status == URB_DONE)
     { 
-      phost->gState =   phost->gStateBkp;    
+      phost->gState =   phost->gStateBkp; 
+      phost->Control.state = CTRL_COMPLETE; 
     }
     else if  (URB_Status == URB_NOTREADY)
     { 
@@ -835,7 +850,7 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 * @}
 */ 
 
-/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
 
 
