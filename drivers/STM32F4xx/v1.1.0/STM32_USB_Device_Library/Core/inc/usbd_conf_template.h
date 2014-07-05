@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file    usbd_msc_core.h
+  * @file    usbd_conf_template.h
   * @author  MCD Application Team
   * @version V1.1.0
   * @date    19-March-2012
-  * @brief   header for the usbd_msc_core.c file
+  * @brief   usb device configuration template file
   ******************************************************************************
   * @attention
   *
@@ -23,55 +23,60 @@
   * limitations under the License.
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef _USB_MSC_CORE_H_
-#define _USB_MSC_CORE_H_
+#ifndef __USBD_CONF__H__
+#define __USBD_CONF__H__
 
-#include  "usbd_ioreq.h"
+/* Includes ------------------------------------------------------------------*/
+#include "usb_conf.h"
 
-/** @addtogroup USBD_MSC_BOT
-  * @{
-  */
-  
-/** @defgroup USBD_MSC
-  * @brief This file is the Header file for USBD_msc.c
+/** @defgroup USB_CONF_Exported_Defines
   * @{
   */ 
+#define USE_USB_OTG_HS  
 
-
-/** @defgroup USBD_BOT_Exported_Defines
-  * @{
-  */ 
-
-
-#define BOT_GET_MAX_LUN              0xFE
-#define BOT_RESET                    0xFF
-#define USB_MSC_CONFIG_DESC_SIZ      32
-
-#define MSC_EPIN_SIZE                MSC_MAX_PACKET 
-#define MSC_EPOUT_SIZE               MSC_MAX_PACKET 
+#define USBD_CFG_MAX_NUM           1
+#define USB_MAX_STR_DESC_SIZ       64 
+#define USBD_EP0_MAX_PACKET_SIZE   64
 
 /**
   * @}
   */ 
 
-/** @defgroup USB_CORE_Exported_Types
+
+/** @defgroup USB_CONF_Exported_Types
   * @{
   */ 
-
-extern USBD_Class_cb_TypeDef  USBD_MSC_cb;
 /**
   * @}
   */ 
 
+
+/** @defgroup USB_CONF_Exported_Macros
+  * @{
+  */ 
 /**
   * @}
   */ 
-#endif  // _USB_MSC_CORE_H_
+
+/** @defgroup USB_CONF_Exported_Variables
+  * @{
+  */ 
 /**
   * @}
   */ 
-  
+
+/** @defgroup USB_CONF_Exported_FunctionsPrototype
+  * @{
+  */ 
+/**
+  * @}
+  */ 
+
+
+#endif //__USBD_CONF__H__
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+

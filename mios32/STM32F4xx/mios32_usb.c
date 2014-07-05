@@ -32,7 +32,11 @@
 #include <usbd_desc.h>
 #include <usbd_req.h>
 #include <usbd_conf.h>
+#include <usbh_core.h>
+#include <usbh_conf.h>
+#include <usb_otg.h>
 #include <usb_dcd_int.h>
+#include <usb_hcd_int.h>
 #include <usb_regs.h>
 
 #include <string.h>
@@ -51,16 +55,18 @@
 #define CS_INTERFACE	0x24	// Class-specific type: Interface
 #define CS_ENDPOINT	0x25	// Class-specific type: Endpoint
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 
 // also used in mios32_usb_midi.c
 __ALIGN_BEGIN USB_OTG_CORE_HANDLE  USB_OTG_dev __ALIGN_END;
-uint32_t USB_Rx_Buffer[MIOS32_USB_MIDI_DATA_OUT_SIZE/4];
+uint32_t USB_rx_buffer[MIOS32_USB_MIDI_DATA_OUT_SIZE/4];
 
-
+#ifndef MIOS32_DONT_USE_USB_HOST
+__ALIGN_BEGIN USBH_HOST USB_Host __ALIGN_END;
+extern const USBH_Class_cb_TypeDef MIOS32_MIDI_USBH_Callbacks; // implemented in mios32_usb_midi.c
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
@@ -929,7 +935,7 @@ static const USBD_DEVICE USR_desc =
 
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
-// User hooks for different device states
+// User Device hooks for different device states
 /////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1016,7 +1022,7 @@ static void USBD_USR_DeviceResumed(void)
 }
 
 
-static const USBD_Usr_cb_TypeDef USR_cb =
+static const USBD_Usr_cb_TypeDef USBD_USR_Callbacks =
 {
   USBD_USR_Init,
   USBD_USR_DeviceReset,
@@ -1027,6 +1033,250 @@ static const USBD_Usr_cb_TypeDef USR_cb =
   USBD_USR_DeviceDisconnected,
 };
 
+
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+// User Host hooks for different device states
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+#ifndef MIOS32_DONT_USE_USB_HOST
+
+/**
+ * @brief  USBH_USR_Init
+ *         Displays the message on LCD for host lib initialization
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_Init(void)
+{
+}
+
+/**
+ * @brief  USBH_USR_DeviceAttached
+ *         Displays the message on LCD on device attached
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_DeviceAttached(void)
+{  
+}
+
+/**
+ * @brief  USBH_USR_UnrecoveredError
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_UnrecoveredError (void)
+{
+}
+
+/**
+ * @brief  USBH_DisconnectEvent
+ *         Device disconnect event
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_DeviceDisconnected (void)
+{
+  MIOS32_USB_MIDI_ChangeConnectionState(0);
+}
+
+/**
+ * @brief  USBH_USR_ResetUSBDevice
+ *         Reset USB Device
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_ResetDevice(void)
+{
+}
+
+
+/**
+ * @brief  USBH_USR_DeviceSpeedDetected
+ *         Displays the message on LCD for device speed
+ * @param  Devicespeed : Device Speed
+ * @retval None
+ */
+static void USBH_USR_DeviceSpeedDetected(uint8_t DeviceSpeed)
+{
+}
+
+/**
+ * @brief  USBH_USR_Device_DescAvailable
+ *         Displays the message on LCD for device descriptor
+ * @param  DeviceDesc : device descriptor
+ * @retval None
+ */
+static void USBH_USR_Device_DescAvailable(void *DeviceDesc)
+{
+}
+
+/**
+ * @brief  USBH_USR_DeviceAddressAssigned
+ *         USB device is successfully assigned the Address
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_DeviceAddressAssigned(void)
+{
+}
+
+
+/**
+ * @brief  USBH_USR_Conf_Desc
+ *         Displays the message on LCD for configuration descriptor
+ * @param  ConfDesc : Configuration descriptor
+ * @retval None
+ */
+static void USBH_USR_Configuration_DescAvailable(USBH_CfgDesc_TypeDef * cfgDesc,
+						 USBH_InterfaceDesc_TypeDef *itfDesc,
+						 USBH_EpDesc_TypeDef *epDesc)
+{
+}
+
+/**
+ * @brief  USBH_USR_Manufacturer_String
+ *         Displays the message on LCD for Manufacturer String
+ * @param  ManufacturerString : Manufacturer String of Device
+ * @retval None
+ */
+static void USBH_USR_Manufacturer_String(void *ManufacturerString)
+{
+#ifdef MIOS32_MIDI_USBH_DEBUG
+  // Debug Output via UART0
+  mios32_midi_port_t prev_port = MIOS32_MIDI_DebugPortGet();
+  MIOS32_MIDI_DebugPortSet(UART0);
+  MIOS32_MIDI_SendDebugMessage("[USBH_USR] Manufacturer: %s", ManufacturerString);
+  MIOS32_MIDI_DebugPortSet(prev_port);
+#endif
+}
+
+/**
+ * @brief  USBH_USR_Product_String
+ *         Displays the message on LCD for Product String
+ * @param  ProductString : Product String of Device
+ * @retval None
+ */
+static void USBH_USR_Product_String(void *ProductString)
+{
+#ifdef MIOS32_MIDI_USBH_DEBUG
+  // Debug Output via UART0
+  mios32_midi_port_t prev_port = MIOS32_MIDI_DebugPortGet();
+  MIOS32_MIDI_DebugPortSet(UART0);
+  MIOS32_MIDI_SendDebugMessage("[USBH_USR] Product: %s", ProductString);
+  MIOS32_MIDI_DebugPortSet(prev_port);
+#endif
+}
+
+/**
+ * @brief  USBH_USR_SerialNum_String
+ *         Displays the message on LCD for SerialNum_String
+ * @param  SerialNumString : SerialNum_String of device
+ * @retval None
+ */
+static void USBH_USR_SerialNum_String(void *SerialNumString)
+{
+#ifdef MIOS32_MIDI_USBH_DEBUG
+  // Debug Output via UART0
+  mios32_midi_port_t prev_port = MIOS32_MIDI_DebugPortGet();
+  MIOS32_MIDI_DebugPortSet(UART0);
+  MIOS32_MIDI_SendDebugMessage("[USBH_USR] Serial Number: %s", SerialNumString);
+  MIOS32_MIDI_DebugPortSet(prev_port);
+#endif
+} 
+
+/**
+ * @brief  EnumerationDone
+ *         User response request is displayed to ask for
+ *         application jump to class
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_EnumerationDone(void)
+{
+} 
+
+/**
+ * @brief  USBH_USR_DeviceNotSupported
+ *         Device is not supported
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_DeviceNotSupported(void)
+{
+}  
+
+
+/**
+ * @brief  USBH_USR_UserInput
+ *         User Action for application state entry
+ * @param  None
+ * @retval USBH_USR_Status : User response for key button
+ */
+static USBH_USR_Status USBH_USR_UserInput(void)
+{
+  return USBH_USR_RESP_OK;
+}
+
+/**
+ * @brief  USBH_USR_OverCurrentDetected
+ *         Device Overcurrent detection event
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_OverCurrentDetected (void)
+{
+}
+
+/**
+* @brief  USBH_USR_MSC_Application 
+*         Demo application for mass storage
+* @param  None
+* @retval Staus
+*/
+static int USBH_USR_Application(void)
+{
+  return (0);
+}
+
+/**
+ * @brief  USBH_USR_DeInit
+ *         Deinit User state and associated variables
+ * @param  None
+ * @retval None
+ */
+static void USBH_USR_DeInit(void)
+{
+}
+
+
+static const USBH_Usr_cb_TypeDef USBH_USR_Callbacks =
+{
+  USBH_USR_Init,
+  USBH_USR_DeInit,
+  USBH_USR_DeviceAttached,
+  USBH_USR_ResetDevice,
+  USBH_USR_DeviceDisconnected,
+  USBH_USR_OverCurrentDetected,
+  USBH_USR_DeviceSpeedDetected,
+  USBH_USR_Device_DescAvailable,
+  USBH_USR_DeviceAddressAssigned,
+  USBH_USR_Configuration_DescAvailable,
+  USBH_USR_Manufacturer_String,
+  USBH_USR_Product_String,
+  USBH_USR_SerialNum_String,
+  USBH_USR_EnumerationDone,
+  USBH_USR_UserInput,
+  USBH_USR_Application,
+  USBH_USR_DeviceNotSupported,
+  USBH_USR_UnrecoveredError
+};
+
+
+#endif /* MIOS32_DONT_USE_USB_HOST */
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1062,15 +1312,13 @@ void USB_OTG_BSP_Init(USB_OTG_CORE_HANDLE *pdev)
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource11,GPIO_AF_OTG1_FS) ;
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource12,GPIO_AF_OTG1_FS) ;
 
-#if 0
-  /* this for ID line debug */
+  /* ID pin has to be an input for Host/Device switching during runtime */
   GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_10;
-  GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
   GPIO_Init(GPIOA, &GPIO_InitStructure);
   GPIO_PinAFConfig(GPIOA,GPIO_PinSource10,GPIO_AF_OTG1_FS) ;
-#endif
 
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
   RCC_AHB2PeriphClockCmd(RCC_AHB2Periph_OTG_FS, ENABLE) ;
@@ -1096,7 +1344,13 @@ void USB_OTG_BSP_EnableInterrupt(USB_OTG_CORE_HANDLE *pdev)
   */
 void OTG_FS_IRQHandler(void)
 {
-  USBD_OTG_ISR_Handler (&USB_OTG_dev);
+  if( USB_OTG_IsHostMode(&USB_OTG_dev) ) {
+    USBH_OTG_ISR_Handler(&USB_OTG_dev);
+  } else {
+    USBD_OTG_ISR_Handler(&USB_OTG_dev);
+  }
+
+  STM32_USBO_OTG_ISR_Handler(&USB_OTG_dev);
 }
 
 /**
@@ -1120,6 +1374,69 @@ void USB_OTG_BSP_uDelay (const uint32_t usec)
 void USB_OTG_BSP_mDelay (const uint32_t msec)
 {
   USB_OTG_BSP_uDelay(msec * 1000);
+}
+
+
+/**
+  * @brief  USB_OTG_BSP_ConfigVBUS
+  *         Configures the IO for the Vbus and OverCurrent
+  * @param  None
+  * @retval None
+  */
+void  USB_OTG_BSP_ConfigVBUS(USB_OTG_CORE_HANDLE *pdev)
+{
+#ifndef MIOS32_DONT_USE_USB_HOST
+  GPIO_InitTypeDef GPIO_InitStructure; 
+  
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);  
+  
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+  /* By Default, DISABLE is needed on output of the Power Switch */
+  GPIO_SetBits(GPIOC, GPIO_Pin_0);
+  
+  USB_OTG_BSP_mDelay(200);   /* Delay is need for stabilising the Vbus Low in Reset Condition, when Vbus=1 and Reset-button is pressed by user */
+#endif
+}
+
+/**
+  * @brief  BSP_Drive_VBUS
+  *         Drives the Vbus signal through IO
+  * @param  state : VBUS states
+  * @retval None
+  */
+
+void USB_OTG_BSP_DriveVBUS(USB_OTG_CORE_HANDLE *pdev, uint8_t state)
+{
+#ifndef MIOS32_DONT_USE_USB_HOST
+  /*
+  On-chip 5 V VBUS generation is not supported. For this reason, a charge pump 
+  or, if 5 V are available on the application board, a basic power switch, must 
+  be added externally to drive the 5 V VBUS line. The external charge pump can 
+  be driven by any GPIO output. When the application decides to power on VBUS 
+  using the chosen GPIO, it must also set the port power bit in the host port 
+  control and status register (PPWR bit in OTG_FS_HPRT).
+  
+  Bit 12 PPWR: Port power
+  The application uses this field to control power to this port, and the core 
+  clears this bit on an overcurrent condition.
+  */
+  if (0 == state)
+  { 
+    /* DISABLE is needed on output of the Power Switch */
+    GPIO_SetBits(GPIOC, GPIO_Pin_0);
+  }
+  else
+  {
+    /*ENABLE the Power Switch by driving the Enable LOW */
+    GPIO_ResetBits(GPIOC, GPIO_Pin_0);
+  }
+#endif
 }
 
 
@@ -1147,7 +1464,7 @@ static uint8_t  MIOS32_USB_CLASS_Init (void  *pdev,
   // configuration for next transfer
   DCD_EP_PrepareRx(&USB_OTG_dev,
 		   MIOS32_USB_MIDI_DATA_OUT_EP,
-		   (uint8_t*)(USB_Rx_Buffer),
+		   (uint8_t*)(USB_rx_buffer),
 		   MIOS32_USB_MIDI_DATA_OUT_SIZE);
 #endif
 
@@ -1273,6 +1590,7 @@ static const USBD_Class_cb_TypeDef MIOS32_USB_CLASS_cb =
 
 
 
+
 /////////////////////////////////////////////////////////////////////////////
 //! Initializes USB interface
 //! \param[in] mode
@@ -1291,11 +1609,22 @@ s32 MIOS32_USB_Init(u32 mode)
   // currently only mode 0..2 supported
   if( mode >= 3 )
     return -1; // unsupported mode
-  
+
+  u8 usb_is_initialized = MIOS32_USB_IsInitialized();
+
+#ifndef MIOS32_DONT_USE_USB_HOST  
+  /* Init Host Library */
+  USBH_Init(&USB_OTG_dev, 
+            USB_OTG_FS_CORE_ID,
+            &USB_Host,
+            (USBH_Class_cb_TypeDef *)&MIOS32_MIDI_USBH_Callbacks, 
+            (USBH_Usr_cb_TypeDef *)&USBH_USR_Callbacks);
+#endif
+
   // change connection state to disconnected
   USBD_USR_DeviceDisconnected();
 
-  if( mode == 0 && MIOS32_USB_IsInitialized() ) {
+  if( mode == 0 && usb_is_initialized ) {
     // if mode == 0: no reconnection, important for BSL!
 
 #if 0
@@ -1304,7 +1633,7 @@ s32 MIOS32_USB_Init(u32 mode)
 	      USB_OTG_FS_CORE_ID,
 	      (USBD_DEVICE *)&USR_desc,
 	      (USBD_Class_cb_TypeDef *)&MIOS32_USB_CLASS_cb,
-	      (USBD_Usr_cb_TypeDef *)&USR_cb);
+	      (USBD_Usr_cb_TypeDef *)&USBD_USR_Callbacks);
 #else
 
     // don't run complete driver init sequence to ensure that the connection doesn't get lost!
@@ -1314,7 +1643,7 @@ s32 MIOS32_USB_Init(u32 mode)
 
     // USBD_Init sets these pointer in the handle
     USB_OTG_dev.dev.class_cb = (USBD_Class_cb_TypeDef *)&MIOS32_USB_CLASS_cb;
-    USB_OTG_dev.dev.usr_cb = (USBD_Usr_cb_TypeDef *)&USR_cb;
+    USB_OTG_dev.dev.usr_cb = (USBD_Usr_cb_TypeDef *)&USBD_USR_Callbacks;
     USB_OTG_dev.dev.usr_device = (USBD_DEVICE *)&USR_desc;
 
     // some additional handle init stuff which doesn't hurt
@@ -1341,7 +1670,7 @@ s32 MIOS32_USB_Init(u32 mode)
 	      USB_OTG_FS_CORE_ID,
 	      (USBD_DEVICE *)&USR_desc,
 	      (USBD_Class_cb_TypeDef *)&MIOS32_USB_CLASS_cb,
-	      (USBD_Usr_cb_TypeDef *)&USR_cb);
+	      (USBD_Usr_cb_TypeDef *)&USBD_USR_Callbacks);
 
     // disconnect device
     DCD_DevDisconnect(&USB_OTG_dev);
@@ -1352,6 +1681,16 @@ s32 MIOS32_USB_Init(u32 mode)
     // connect device
     DCD_DevConnect(&USB_OTG_dev);
   }
+
+#ifndef MIOS32_DONT_USE_USB_HOST
+  // switch to host or device mode depending on the ID pin
+  if( MIOS32_SYS_STM_PINGET(GPIOA, GPIO_Pin_10) ) {
+    USB_OTG_SetCurrentMode(&USB_OTG_dev, DEVICE_MODE);
+  } else {
+    USB_OTG_DriveVbus(&USB_OTG_dev, 1);
+    USB_OTG_SetCurrentMode(&USB_OTG_dev, HOST_MODE);
+  }
+#endif
 
   return 0; // no error
 }
