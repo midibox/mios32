@@ -1344,6 +1344,7 @@ void USB_OTG_BSP_EnableInterrupt(USB_OTG_CORE_HANDLE *pdev)
   */
 void OTG_FS_IRQHandler(void)
 {
+#ifndef MIOS32_DONT_USE_USB_HOST
   if( USB_OTG_IsHostMode(&USB_OTG_dev) ) {
     USBH_OTG_ISR_Handler(&USB_OTG_dev);
   } else {
@@ -1351,6 +1352,9 @@ void OTG_FS_IRQHandler(void)
   }
 
   STM32_USBO_OTG_ISR_Handler(&USB_OTG_dev);
+#else
+  USBD_OTG_ISR_Handler(&USB_OTG_dev);
+#endif
 }
 
 /**

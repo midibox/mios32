@@ -29,6 +29,10 @@
 #include "usbh_ioreq.h"
 #include "usbh_stdreq.h"
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
 /** @addtogroup USBH_LIB
 * @{
 */
@@ -599,6 +603,8 @@ USBH_DescHeader_t  *USBH_GetNextDesc (uint8_t   *pbuf, uint16_t  *ptr)
 /**
 * @}
 */ 
+
+#endif
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

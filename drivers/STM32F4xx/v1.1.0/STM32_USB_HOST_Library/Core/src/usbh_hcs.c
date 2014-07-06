@@ -28,6 +28,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbh_hcs.h"
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
 /** @addtogroup USBH_LIB
   * @{
   */
@@ -253,6 +257,8 @@ static uint16_t USBH_GetFreeChannel (USB_OTG_CORE_HANDLE *pdev)
 /**
 * @}
 */ 
+
+#endif /* USB_HOST_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

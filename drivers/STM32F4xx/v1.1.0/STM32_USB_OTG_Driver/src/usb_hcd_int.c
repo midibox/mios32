@@ -30,6 +30,10 @@
 #include "usb_defines.h"
 #include "usb_hcd_int.h"
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
 #if defined   (__CC_ARM) /*!< ARM Compiler */
 #pragma O0
 #elif defined (__GNUC__) /*!< GNU Compiler */
@@ -853,6 +857,8 @@ static uint32_t USB_OTG_USBH_handle_IncompletePeriodicXfer_ISR (USB_OTG_CORE_HAN
 /**
 * @}
 */
+
+#endif /* USB_HOST_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
