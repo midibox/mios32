@@ -56,6 +56,7 @@ static u8  USBH_hc_num_out;
 static u8  USBH_BulkOutEp;
 static u8  USBH_BulkInEp;
 static u8  USBH_BulkInEpSize;
+static u8  USBH_tx_count;
 static u16 USBH_BulkOutEpSize;
 
 typedef enum {
@@ -547,27 +548,34 @@ static USBH_Status USBH_Handle(USB_OTG_CORE_HANDLE *pdev, void *phost)
     USBH_HOST *pphost = phost;
 
     if( HCD_IsDeviceConnected(pdev) ) {
-      if( USBH_MIDI_transfer_state == USBH_MIDI_TX ) {
-	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_in);
 
-	if( URB_State == URB_IDLE || URB_State == URB_DONE ) {
+      u8 force_rx_req = 0;
+
+      if( USBH_MIDI_transfer_state == USBH_MIDI_TX ) {
+	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_out);
+
+        if( URB_State == URB_IDLE ) {
+	  // wait...
+	} else if( URB_State == URB_DONE ) {
 	  USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
 	} else if( URB_State == URB_STALL ) {
-	  // Issue Clear Feature on IN endpoint
-	  if( USBH_ClrFeature(pdev, pphost, USBH_BulkInEp, USBH_hc_num_in) == USBH_OK ) {
+	  // Issue Clear Feature on OUT endpoint
+	  if( USBH_ClrFeature(pdev, pphost, USBH_BulkOutEp, USBH_hc_num_out) == USBH_OK ) {
 	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
 	  }
-	}
-      }
-
-      if( USBH_MIDI_transfer_state == USBH_MIDI_RX ) {
-	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_in);
-
-	if( URB_State == URB_IDLE ) {
+	} else if( URB_State == URB_NOTREADY ) {
+	  // send again
+	  USBH_BulkSendData(&USB_OTG_dev, (u8 *)USB_tx_buffer, USBH_tx_count, USBH_hc_num_out);
+	} else if( URB_State == URB_ERROR ) {
 	  USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
-	} else if( URB_State == URB_DONE ) {
+	}
+      } else if( USBH_MIDI_transfer_state == USBH_MIDI_RX ) {
+	URB_STATE URB_State = HCD_GetURB_State(pdev, USBH_hc_num_in);
+        if( URB_State == URB_IDLE || URB_State == URB_DONE ) {
 	  // data received from receive
-	  u32 count = HCD_GetXferCnt(pdev, USBH_hc_num_in) / 4;
+	  //u32 count = HCD_GetXferCnt(pdev, USBH_hc_num_in) / 4;
+	  // Note: HCD_GetXferCnt returns a counter which isn't zeroed immediately on a USBH_BulkReceiveData() call
+	  u32 count = USB_OTG_dev.host.hc[USBH_hc_num_in].xfer_count / 4;
 
 	  // push data into FIFO
 	  if( !count ) {
@@ -593,22 +601,25 @@ static USBH_Status USBH_Handle(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	    MIOS32_IRQ_Enable();
 
 	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
+	    force_rx_req = 1;
 	  }
 	} else if( URB_State == URB_STALL ) {
 	  // Issue Clear Feature on IN endpoint
 	  if( USBH_ClrFeature(pdev, pphost, USBH_BulkInEp, USBH_hc_num_in) == USBH_OK ) {
 	    USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
 	  }
+	} else if( URB_State == URB_ERROR || URB_State == URB_NOTREADY ) {
+	  USBH_MIDI_transfer_state = USBH_MIDI_IDLE;
 	}
       }
 
-      // send data to device?
+
       if( USBH_MIDI_transfer_state == USBH_MIDI_IDLE ) {
-	if( tx_buffer_size && transfer_possible ) {
+	if( !force_rx_req && tx_buffer_size && transfer_possible ) {
 	  // atomic operation to avoid conflict with other interrupts
 	  MIOS32_IRQ_Disable();
 
-	  s16 count = (tx_buffer_size > (MIOS32_USB_MIDI_DATA_IN_SIZE/4)) ? (MIOS32_USB_MIDI_DATA_IN_SIZE/4) : tx_buffer_size;
+	  s16 count = (tx_buffer_size > (USBH_BulkOutEpSize/4)) ? (USBH_BulkOutEpSize/4) : tx_buffer_size;
 
 	  // send to IN pipe
 	  tx_buffer_size -= count;
@@ -620,16 +631,16 @@ static USBH_Status USBH_Handle(USB_OTG_CORE_HANDLE *pdev, void *phost)
 	    if( ++tx_buffer_tail >= MIOS32_USB_MIDI_TX_BUFFER_SIZE )
 	      tx_buffer_tail = 0;
 	  }
-
 	  
-	  USBH_BulkSendData(&USB_OTG_dev, (u8 *)USB_tx_buffer, count*4, USBH_hc_num_out);
+	  USBH_tx_count = count * 4;
+	  USBH_BulkSendData(&USB_OTG_dev, (u8 *)USB_tx_buffer, USBH_tx_count, USBH_hc_num_out);
 
 	  USBH_MIDI_transfer_state = USBH_MIDI_TX;
 
 	  MIOS32_IRQ_Enable();
 	} else {
 	  // request data from device
-	  USBH_BulkReceiveData(&USB_OTG_dev, (u8 *)USB_rx_buffer, MIOS32_USB_MIDI_DATA_OUT_SIZE, USBH_hc_num_in);
+	  USBH_BulkReceiveData(&USB_OTG_dev, (u8 *)USB_rx_buffer, USBH_BulkInEpSize, USBH_hc_num_in);
 	  USBH_MIDI_transfer_state = USBH_MIDI_RX;
 	}
       }
