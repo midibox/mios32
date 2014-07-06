@@ -31,6 +31,10 @@
 #include "usb_conf.h"
 #include "usb_bsp.h"
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
 
 /** @addtogroup USB_OTG_DRIVER
   * @{
@@ -258,5 +262,7 @@ uint32_t HCD_SubmitRequest (USB_OTG_CORE_HANDLE *pdev , uint8_t hc_num)
 /**
 * @}
 */
+
+#endif /* USB_HOST_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

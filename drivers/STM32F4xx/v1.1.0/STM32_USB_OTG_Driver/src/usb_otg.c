@@ -31,6 +31,10 @@
 #include "usb_core.h"
 #include "usb_otg.h"
 
+// TK: added to allow compile with OTG disabled
+#include <usb_conf.h>
+#ifdef USE_OTG_MODE
+
 /** @addtogroup USB_OTG_DRIVER
   * @{
   */
@@ -414,5 +418,7 @@ uint32_t USB_OTG_GetCurrentState (USB_OTG_CORE_HANDLE *pdev)
 /**
 * @}
 */
+
+#endif /* USB_OTG_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

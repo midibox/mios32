@@ -28,6 +28,10 @@
 
 #include "usbh_ioreq.h"
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
 /** @addtogroup USBH_LIB
   * @{
   */
@@ -467,6 +471,8 @@ USBH_Status USBH_IsocSendData( USB_OTG_CORE_HANDLE *pdev,
 /**
 * @}
 */ 
+
+#endif /* USB_HOST_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

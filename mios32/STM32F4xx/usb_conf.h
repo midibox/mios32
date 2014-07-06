@@ -26,6 +26,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
 #include "usbd_conf.h"
+#include <mios32.h>
 
 
 /** @addtogroup USB_OTG_DRIVER
@@ -110,9 +111,11 @@
 
 /****************** USB OTG MODE CONFIGURATION ********************************/
 
-#define USE_HOST_MODE
 #define USE_DEVICE_MODE
+#ifndef MIOS32_DONT_USE_USB_HOST
+#define USE_HOST_MODE
 #define USE_OTG_MODE
+#endif
 
 
 #ifndef USB_OTG_FS_CORE

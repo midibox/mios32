@@ -35,6 +35,11 @@
 #include "usb_hcd_int.h"
 
 
+// TK: added to allow compile with host disabled
+#include <usb_conf.h>
+#ifdef USE_HOST_MODE
+
+
 /** @addtogroup USBH_LIB
   * @{
   */
@@ -849,6 +854,8 @@ USBH_Status USBH_HandleControl (USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 /**
 * @}
 */ 
+
+#endif /* USE_HOST_MODE */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 
