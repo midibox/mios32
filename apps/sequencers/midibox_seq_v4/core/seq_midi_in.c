@@ -905,13 +905,17 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
     nrpn_lsb = value;
     break;
 
-  case 0x63: // NRPN MSB (selects track)
+  case 0x63: // NRPN MSB (selects track, if >= SEQ_CORE_NUM_TRACKS, take the currently visible track)
     nrpn_msb = value;
     break;
 
   case 0x06: // NRPN Value MSB (sets parameter)
-    if( nrpn_msb < SEQ_CORE_NUM_TRACKS && seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] )
-      SEQ_CC_MIDI_Set(nrpn_msb, nrpn_lsb, value);
+    if( nrpn_msb < SEQ_CORE_NUM_TRACKS && seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] ) {
+      u8 track = nrpn_msb;
+      if( track >= SEQ_CORE_NUM_TRACKS )
+	track = SEQ_UI_VisibleTrackGet();
+      SEQ_CC_MIDI_Set(track, nrpn_lsb, value);
+    }
     break;
   }
 

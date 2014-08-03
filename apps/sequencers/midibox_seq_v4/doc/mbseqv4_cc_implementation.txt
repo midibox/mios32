@@ -23,8 +23,8 @@ CC Implementation of MIDIbox SEQ V4
 
    o CC#99 (0x63 - NRPN MSB)
      Selects the Track which should be modified via NRPN
-     Allowed values: 0..15 for Track 1-16
-     All others ignored
+     Allowed values: 0..15 for Track 1-16, 127 to modify the current selected track
+     All others reserved for future enhancements
 
    o CC#6 (0x06 - NRPN Value, LSB)
      Sets a Sequencer Parameter depending on the preselected track and parameter number

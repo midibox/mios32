@@ -36,6 +36,9 @@
 u8 AHB_SECTION seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 char seq_mixer_map_name[21];
 
+// flags for CC1..CC4: if cleared, CC will be sent after PC, if set CC will be sent before PC
+u8 seq_mixer_cc1234_before_pc;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -51,6 +54,9 @@ s32 SEQ_MIXER_Init(u32 mode)
 {
   // select first map
   mixer_map = 0;
+
+  // CCs after PC
+  seq_mixer_cc1234_before_pc = 0;
 
   // clear mixer page
   SEQ_MIXER_Clear();
@@ -167,8 +173,24 @@ s32 SEQ_MIXER_SendAllByChannel(u8 chn)
   s32 status = 0;
 	
   MUTEX_MIDIOUT_TAKE;
-  for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
+
+  // CCs before PC?
+  for(par=0; par<4; ++par) {
+    if( seq_mixer_cc1234_before_pc & (1 << par) ) {
+      status |= SEQ_MIXER_Send(chn, SEQ_MIXER_PAR_CC1 + par);
+    }
+  }
+
+  for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_MODWHEEL; ++par)
     status |= SEQ_MIXER_Send(chn, par);
+
+  // CCs after PC?
+  for(par=0; par<4; ++par) {
+    if( !(seq_mixer_cc1234_before_pc & (1 << par)) ) {
+      status |= SEQ_MIXER_Send(chn, SEQ_MIXER_PAR_CC1 + par);
+    }
+  }
+
   MUTEX_MIDIOUT_GIVE;
 	
   return status;
@@ -180,13 +202,11 @@ s32 SEQ_MIXER_SendAllByChannel(u8 chn)
 s32 SEQ_MIXER_SendAll(void)
 {
   u8 chn;
-  seq_mixer_par_t par;
   s32 status = 0;
 
   MUTEX_MIDIOUT_TAKE;
   for(chn=0; chn<SEQ_MIXER_NUM_CHANNELS; ++chn)
-    for(par=SEQ_MIXER_PAR_PRG; par<=SEQ_MIXER_PAR_CC4; ++par)
-      status |= SEQ_MIXER_Send(chn, par);
+    SEQ_MIXER_SendAllByChannel(chn);
   MUTEX_MIDIOUT_GIVE;
 
   return status;

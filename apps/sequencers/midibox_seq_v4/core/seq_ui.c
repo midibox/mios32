@@ -761,8 +761,13 @@ static s32 SEQ_UI_Button_Record(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  // change to record page
-  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+  if( !seq_record_state.ENABLED ) {
+    // change to record page
+    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+  } else {
+    // change to edit page
+    SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
+  }
 
   return 0; // no error
 }

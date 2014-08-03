@@ -241,6 +241,8 @@ extern s32 SEQ_CC_Get(u8 track, u8 cc);
 
 extern s32 SEQ_CC_LinkUpdate(u8 track);
 
+extern s32 SEQ_CC_TrackHasVelocityParLayer(u8 track);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

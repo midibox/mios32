@@ -404,3 +404,17 @@ s32 SEQ_CC_LinkUpdate(u8 track)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Relevant for Drum mode: returns 1 if the track has a parameter layer
+// assigned to velocity, otherwise 0 (in this case, the drum instruments
+// can only switch between normal and accented velocity)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CC_TrackHasVelocityParLayer(u8 track)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  return (tcc->link_par_layer_velocity >= 0) ? 1 : 0;
+}
+

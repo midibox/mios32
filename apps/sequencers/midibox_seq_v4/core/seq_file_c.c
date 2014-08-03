@@ -245,6 +245,8 @@ s32 SEQ_FILE_C_Read(char *session)
 	  } else if( strcmp(parameter, "LastMixerMap") == 0 ) {
 	    if( value )
 	      SEQ_MIXER_NumSet(value-1);
+	  } else if( strcmp(parameter, "MixerCC1234BeforePC") == 0 ) {
+	    seq_mixer_cc1234_before_pc = value;
 	  } else if( strcmp(parameter, "LastPattern") == 0 ) {
 	    int group = value;
 
@@ -616,6 +618,9 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LastMixerMap %d\n", SEQ_MIXER_NumGet()+1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MixerCC1234BeforePC %d\n", seq_mixer_cc1234_before_pc);
   FLUSH_BUFFER;
 
   int group;

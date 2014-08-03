@@ -385,6 +385,26 @@ s32 SEQ_SONG_FetchPos(u8 force_immediate_change, u8 dont_dump_mixer_map)
 	again = 1;
       } break;
 
+      case SEQ_SONG_ACTION_UnmuteAll: {
+	// access to seq_core_trk[] must be atomic!
+	portENTER_CRITICAL();
+
+	seq_core_trk_muted = 0x0000;
+
+	{
+	  seq_core_trk_t *t = &seq_core_trk[0];
+	  u8 track;
+	  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t) {
+	    t->layer_muted = 0x0000;
+	  }
+	}
+
+	portEXIT_CRITICAL();
+
+	++song_pos;
+	again = 1;
+      } break;
+
       default:
 	if( s->action >= SEQ_SONG_ACTION_Loop1 && s->action <= SEQ_SONG_ACTION_Loop16 ) {
 	  song_loop_ctr = 0;
@@ -454,6 +474,7 @@ s32 SEQ_SONG_PrevPos(void)
 	     (s->action == SEQ_SONG_ACTION_SelMixerMap ||
 	      s->action == SEQ_SONG_ACTION_Tempo ||
 	      s->action == SEQ_SONG_ACTION_Mutes ||
+	      s->action == SEQ_SONG_ACTION_UnmuteAll ||
 	      s->action == SEQ_SONG_ACTION_GuideTrack ) ) {
 	--song_pos;
 	--s;

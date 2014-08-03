@@ -151,6 +151,10 @@ static s32 LED_Handler(u16 *gp_leds)
 	  *gp_leds = ((s.pattern_g4&0xf) << 12) | ((s.pattern_g3&0xf) << 8) | ((s.pattern_g2&0xf) << 4) | (s.pattern_g1&0xf);
 	} break;
 
+        case SEQ_SONG_ACTION_UnmuteAll: {
+	  *gp_leds = 0x0000;
+	} break;
+
         case SEQ_SONG_ACTION_GuideTrack: {
 	  u8 val = (u8)s.action_value;
 	  *gp_leds = (val && val <= 16) ? (1 << (val-1)) : 0x0000;
@@ -541,6 +545,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // no change
     }
 
+    case SEQ_SONG_ACTION_UnmuteAll: {
+      return 0; // no change
+    }
+
     default:
       if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
 	return 0; // no change
@@ -729,6 +737,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	      SEQ_SONG_FetchPos(1, 0);
 	    return 1; // value has been changed
 
+	  case SEQ_SONG_ACTION_UnmuteAll:
+	    return 0; // no change
+	      
 	  default:
 	    if( s.action >= SEQ_SONG_ACTION_Loop1 && s.action <= SEQ_SONG_ACTION_Loop16 ) {
 	      u8 val_bank;
@@ -1007,6 +1018,10 @@ static s32 LCD_Handler(u8 high_prio)
         SEQ_LCD_PrintSpaces(9);
         break;
   
+      case SEQ_SONG_ACTION_UnmuteAll:
+        SEQ_LCD_PrintString("Unmute All Tracks&Layers");
+        break;
+  
       default:
         if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
   	SEQ_LCD_PrintSpaces(24);
@@ -1068,6 +1083,10 @@ static s32 LCD_Handler(u8 high_prio)
   
         case SEQ_SONG_ACTION_Mutes:
 	  SEQ_LCD_PrintString("Mutes");
+	  break;
+  
+        case SEQ_SONG_ACTION_UnmuteAll:
+	  SEQ_LCD_PrintString("Unmte");
 	  break;
   
         case SEQ_SONG_ACTION_GuideTrack:
@@ -1176,6 +1195,10 @@ static s32 LCD_Handler(u8 high_prio)
 	    SEQ_LCD_PrintString("----");
         }
         SEQ_LCD_PrintSpaces(11);
+        break;
+
+      case SEQ_SONG_ACTION_UnmuteAll:
+        SEQ_LCD_PrintSpaces(20);
         break;
 
       default:
