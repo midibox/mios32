@@ -69,6 +69,7 @@ static u8 rnd_acc_a = 127; // only for non-drum layers
 
 static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset);
 static s32 AccentGenerator(u8 track, u16 steps);
+static s32 ReGenAccent(u8 track, u8 prev_rnd_acc_n, u8 prev_rnd_acc_a);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -196,10 +197,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   } break;
 
   case ITEM_DRUM_VEL_N: {
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
       return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_instrument, 0, 127, incrementer);
     } else {
-      return SEQ_UI_Var8_Inc(&rnd_acc_n, 0, 127, incrementer);
+      u8 prev_rnd_acc_n = rnd_acc_n;
+      if( SEQ_UI_Var8_Inc(&rnd_acc_n, 1, rnd_acc_a-1, incrementer) >= 1 ) {
+	// re-generate accent
+	ReGenAccent(visible_track, prev_rnd_acc_n, rnd_acc_a);
+      }
+      return 1;
     }
   } break;
 
@@ -214,10 +220,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   } break;
 
   case ITEM_DRUM_VEL_A: {
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
       return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + ui_selected_instrument, 0, 127, incrementer);
     } else {
-      return SEQ_UI_Var8_Inc(&rnd_acc_a, 0, 127, incrementer);
+      u8 prev_rnd_acc_a = rnd_acc_a;
+      if( SEQ_UI_Var8_Inc(&rnd_acc_a, rnd_acc_n+1, 127, incrementer) >= 1 ) {
+	// re-generate accent
+	ReGenAccent(visible_track, rnd_acc_n, prev_rnd_acc_a);
+      }
+      return 1;
     }
   } break;
 
@@ -634,6 +645,34 @@ static s32 AccentGenerator(u8 track, u16 steps)
 			    SEQ_TRG_AccentGet(track, step, instrument));
 	}
       }
+    }
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Call this function whenever the velocity value has been changed
+/////////////////////////////////////////////////////////////////////////////
+static s32 ReGenAccent(u8 track, u8 prev_rnd_acc_n, u8 prev_rnd_acc_a)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];    
+  if( tcc->link_par_layer_velocity < 0 )
+    return 0; // no need to re-generate
+
+  u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+  u16 num_steps = SEQ_TRG_NumStepsGet(track);
+  u8 instrument = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+
+  {
+    u16 step;
+    for(step=0; step<num_steps; ++step) {
+      // was step accented?
+      u8 vel = SEQ_PAR_Get(track, step, tcc->link_par_layer_velocity, instrument);
+      u8 accent = (vel >= prev_rnd_acc_a) && (vel != prev_rnd_acc_n);
+
+      SEQ_PAR_Set(track, step, tcc->link_par_layer_velocity, instrument,
+		  accent ? rnd_acc_a : rnd_acc_n);
     }
   }
 

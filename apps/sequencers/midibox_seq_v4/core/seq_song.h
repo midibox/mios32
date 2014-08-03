@@ -26,7 +26,7 @@
 #define SEQ_SONG_NUM_STEPS 128
 
 // number of action types (must match with seq_song_action_t)
-#define SEQ_SONG_NUM_ACTIONS 23
+#define SEQ_SONG_NUM_ACTIONS 24
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,6 +57,7 @@ typedef enum {
   SEQ_SONG_ACTION_Tempo,
   SEQ_SONG_ACTION_Mutes,
   SEQ_SONG_ACTION_GuideTrack,
+  SEQ_SONG_ACTION_UnmuteAll,
 } seq_song_action_t;
 
 typedef union {

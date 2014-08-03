@@ -9,6 +9,9 @@ Wishlist for future features
 MIDIboxSEQ V4.084
 ~~~~~~~~~~~~~~~~~
 
+   o the STM32F4 variant of the firmware supports USB Host mode!
+     See also http://midibox.org/forums/topic/18906-usb-host-support-for-mbhp-core-stm32f4/
+
    o If Force-to-Scale is enabled, the edit screen shows the forced keys at the lower line.
      The original value is still displayed at the upper right line.
 
@@ -17,6 +20,18 @@ MIDIboxSEQ V4.084
    o Options Page: added new option which enforces Force-To-Scale for
      BLM16x16+X Grid Edit mode
 
+   o Euclid Generator Page: velocities are re-generated automatically whenever
+     VelN or VelA value is changed
+
+   o the optional RECORD button now toggles between RECORD and EDIT page (previously it
+     only switched to the RECORD page)
+
+   o Song page: new action "Unmute all" will unmute all tracks and parameter layers
+
+   o Mixer: in the UTIL->Options page it's now possible to define if CC1, CC2, CC3, CC4
+     should be sent after or before the Program Change event.
+
+   o NRPN MSB=127 allows to modify parameters of the currently selected track
 
 
 MIDIboxSEQ V4.083
@@ -1914,13 +1929,6 @@ Alex:  I'm wondering if being able to control AOUT tracks with the LRE8x2 (MBNG)
 I have my ssm2044 boards hooked up to the AOUT_NG, and would like to use encoders to control cutoff and resonance through NRPN messages.
 
 ----------------------------------------------------------
-Rio: little request in that mixermap section: I don't know, if you like the feature, that the 
-user can decide whether any of these additional CCs  (1-4) could send before all the standard 
-Mixer CCs (like Prog.Change) will send out, so that e.g. Bank.Change Commandos (CC 0 and/or CC 32) 
-can be supported by that mixermap (so that it will send out ahead of Prog.Change).
-
-TK: any other mixer map CC handling requests before I start to implement this as an option?
-----------------------------------------------------------
 fcebreros: remote control on dedicated MIDI port without the need for a remote key
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
 ----------------------------------------------------------
@@ -1929,20 +1937,8 @@ FFW: add Extra CC On/Off toggle button to LFO page
 Send MTC Timecode
 http://midibox.org/forums/topic/18798-midi-time-code
 ----------------------------------------------------------
-Allow to define order of sent CC events in Mixer map
-http://midibox.org/forums/topic/18122-bugsquestion-mixermap-patterns
-----------------------------------------------------------
 Allow to send receive LCD messages via SysEx
 http://midibox.org/forums/topic/18813-seq-v4-firmware-question
-----------------------------------------------------------
-Record Toggle On/Off Button
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=164422
-----------------------------------------------------------
-Send NRPN to current selected track
-http://midibox.org/forums/topic/18825-seq-cc-implementation-modify-currently-selected-tracks/
-----------------------------------------------------------
-Add Unmute All (and Mute all) action to song mode
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=165152
 ----------------------------------------------------------
 
 
@@ -1954,7 +1950,5 @@ Accordingly, resource hungry features could be implemented.
 
 Here a list:
 
-- USB host mode to connect USB keyboards and controllers
-  http://midibox.org/forums/topic/18731-controlling-op-1-with-seqv4/
 - Expression Layer:
   http://midibox.org/forums/topic/18732-fr-expression-layer/

@@ -30,6 +30,7 @@
 #include "seq_cc.h"
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
+#include "seq_mixer.h"
 #include "seq_tpd.h"
 #include "seq_blm.h"
 
@@ -50,8 +51,9 @@
 #define ITEM_LIVE_LAYER_MUTE 9
 #define ITEM_TPD_MODE        10
 #define ITEM_BLM_ALWAYS_USE_FTS 11
+#define ITEM_MIXER_CC1234    12
 
-#define NUM_OF_ITEMS         12
+#define NUM_OF_ITEMS         13
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -114,6 +116,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "The BLM16x16+X should always use",
     "Force-To-Scale in Grid Edit Mode: " // yes/no
+  },
+
+  {//<-------------------------------------->
+    "Mixer CCs which should be sent after PC",
+    ""
   },
 };
 
@@ -283,6 +290,21 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_blm_options.ALWAYS_USE_FTS ^= 1;
       store_file_required = 1;
       return 1;
+    } break;
+
+    case ITEM_MIXER_CC1234: {
+      u8 pos = (encoder-8) / 2;
+      u8 value = (seq_mixer_cc1234_before_pc & (1 << pos)) ? 0 : 1; // note: we've to invert yes/no!
+      if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) >= 0 ) {
+	if( !value ) // note: we've to invert yes/no
+	  seq_mixer_cc1234_before_pc |= (1 << pos);
+	else
+	  seq_mixer_cc1234_before_pc &= ~(1 << pos);
+
+	store_file_required = 1;
+	return 1;
+      }
+      return 0;
     } break;
 
   }
@@ -474,7 +496,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintString(str);
 
     if( ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(22);
+      SEQ_LCD_PrintSpaces(40);
     } else {
       const char *tpd_mode_str[SEQ_TPD_NUM_MODES] = {
        //<-------------------------------------->
@@ -502,6 +524,21 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(40-len);
     } else {
       SEQ_LCD_PrintStringPadded(seq_blm_options.ALWAYS_USE_FTS ? "yes" : "no", 40-len);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_MIXER_CC1234: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      SEQ_LCD_PrintFormattedString(" CC1:%s   CC2:%s   CC3:%s   CC4:%s  ",
+				   (seq_mixer_cc1234_before_pc & 0x1) ? " no" : "yes",
+				   (seq_mixer_cc1234_before_pc & 0x2) ? " no" : "yes",
+				   (seq_mixer_cc1234_before_pc & 0x4) ? " no" : "yes",
+				   (seq_mixer_cc1234_before_pc & 0x8) ? " no" : "yes");
     }
   } break;
 

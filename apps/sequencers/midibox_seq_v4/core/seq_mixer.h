@@ -84,4 +84,7 @@ extern s32 SEQ_MIXER_Save(u8 map);
 extern u8 seq_mixer_value[SEQ_MIXER_NUM_CHANNELS][SEQ_MIXER_NUM_PARAMETERS];
 extern char seq_mixer_map_name[21];
 
+// flags for CC1..CC4: if cleared, CC will be sent after PC, if set CC will be sent before PC
+extern u8 seq_mixer_cc1234_before_pc;
+
 #endif /* _SEQ_MIXER_H */
