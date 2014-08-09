@@ -12,7 +12,7 @@
 
 // The boot message which is on a SysEx query (LCD not enabled, therefore not print on startup)
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIOS32 Bootloader"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2012 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(c) 2014 T. Klose"
 
 // disable code modules
 //#define MIOS32_DONT_USE_SYS
