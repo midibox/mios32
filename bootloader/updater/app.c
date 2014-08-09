@@ -842,10 +842,20 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else if( strcmp(parameter, "store") == 0 ) {
-      if( UpdateBSL() >= 0 )
+      
+      int retry;
+      s32 status = -1;
+      for(retry=0; status < 0 && retry<5; ++retry) {
+	if( (status = UpdateBSL()) < 0 ) {
+	  out("Failed to store new settings - retry #%d", retry+1);
+	}
+      }
+
+      if( status >= 0 )
 	out("New settings stored.");
       else
 	out("Failed to store new settings!");
+
       LCD_Update();
     } else if( strcmp(parameter, "restore") == 0 ) {
       RetrieveBootInfos();
