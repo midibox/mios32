@@ -7,7 +7,7 @@ DRIVER_LIB =	$(MIOS32_PATH)/drivers/$(FAMILY)/v1.1.0
 # enhance include path
 C_INCLUDE +=	-I $(MIOS32_PATH)/mios32/$(FAMILY) -I $(DRIVER_LIB)/STM32F4xx_StdPeriph_Driver/inc -I $(DRIVER_LIB)/STM32_USB_Device_Library/Core/inc -I $(DRIVER_LIB)/STM32_USB_HOST_Library/Core/inc -I $(DRIVER_LIB)/STM32_USB_OTG_Driver/inc -I $(DRIVER_LIB)/CMSIS/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include -I $(DRIVER_LIB)/CMSIS/ST/STM32F4xx/Include
 
-CFLAGS += -DUSE_STDPERIPH_DRIVER
+CFLAGS += -DUSE_STDPERIPH_DRIVER -DUSB_SUPPORT_USER_STRING_DESC
 
 
 # add modules to thumb sources

@@ -140,9 +140,9 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_DeviceDescriptor[MIOS32_USB_SIZ_DEVICE_
   (u8)((MIOS32_USB_PRODUCT_ID) >> 8),	// Product ID (MSB)
   (u8)((MIOS32_USB_VERSION_ID) & 0xff),	// Product version ID (LSB)
   (u8)((MIOS32_USB_VERSION_ID) >> 8),  	// Product version ID (MSB)
-  0x01,				// Manufacturer string index
-  0x02,				// Product string index
-  0x03,				// Serial number string index
+  USBD_IDX_MFC_STR,		// Manufacturer string index
+  USBD_IDX_PRODUCT_STR,		// Product string index
+  USBD_IDX_SERIAL_STR,		// Serial number string index
   0x01 				// Number of configurations
 };
 
@@ -173,7 +173,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_
   (MIOS32_USB_SIZ_CONFIG_DESC) >> 8,    // Config + End Points length (LSB)
   MIOS32_USB_NUM_INTERFACES,    // Number of interfaces
   0x01,				// Configuration Value
-  0x00,				// Configuration string
+  USBD_IDX_CONFIG_STR,		// Configuration string
   0x80,				// Attributes (b7 - buspwr, b6 - selfpwr, b5 - rwu)
   0x32,				// Power requirement (div 2 ma)
 
@@ -193,7 +193,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_
   0x01,				// Interface class  (AUDIO)
   0x01,				// Interface sub class  (AUDIO_CONTROL)
   0x00,				// Interface sub sub class
-  0x02,				// Interface descriptor string index
+  USBD_IDX_PRODUCT_STR,		// Interface descriptor string index
 
   // MIDI Adapter Class-specific AC Interface Descriptor
   9,				// Descriptor length
@@ -216,7 +216,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor[MIOS32_USB_SIZ_CONFIG_
   0x01,				// Interface class  (AUDIO)
   0x03,				// Interface sub class  (MIDISTREAMING)
   0x00,				// Interface sub sub class
-  0x02,				// Interface descriptor string index
+  USBD_IDX_PRODUCT_STR,		// Interface descriptor string index
 
   // Class-specific MS Interface Descriptor
   7,				// Descriptor length
@@ -658,7 +658,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_S
   (MIOS32_USB_SIZ_CONFIG_DESC_SINGLE_USB) >> 8,    // Config + End Points length (LSB)
   MIOS32_USB_NUM_INTERFACES,    // Number of interfaces
   0x01,				// Configuration Value
-  0x00,				// Configuration string
+  USBD_IDX_PRODUCT_STR,		// Configuration string
   0x80,				// Attributes (b7 - buspwr, b6 - selfpwr, b5 - rwu)
   0x32,				// Power requirement (div 2 ma)
 
@@ -676,7 +676,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_S
   0x01,				// Interface class  (AUDIO)
   0x01,				// Interface sub class  (AUDIO_CONTROL)
   0x00,				// Interface sub sub class
-  0x02,				// Interface descriptor string index
+  USBD_IDX_PRODUCT_STR,		// Interface descriptor string index
 
   // MIDI Adapter Class-specific AC Interface Descriptor
   9,				// Descriptor length
@@ -699,7 +699,7 @@ static const __ALIGN_BEGIN u8 MIOS32_USB_ConfigDescriptor_SingleUSB[MIOS32_USB_S
   0x01,				// Interface class  (AUDIO)
   0x03,				// Interface sub class  (MIDISTREAMING)
   0x00,				// Interface sub sub class
-  0x02,				// Interface descriptor string index
+  USBD_IDX_PRODUCT_STR,		// Interface descriptor string index
 
   // Class-specific MS Interface Descriptor
   7,				// Descriptor length
@@ -829,7 +829,7 @@ static uint8_t *  USBD_USR_LangIDStrDescriptor( uint8_t speed , uint16_t *length
 static uint8_t *  USBD_USR_ProductStrDescriptor( uint8_t speed , uint16_t *length)
 {
   const u8 product_str[] = MIOS32_USB_PRODUCT_STR;
-  int i, len;
+  int len;
 
   // buffer[0] and [1] initialized below
   // check for user defined product string
@@ -846,14 +846,7 @@ static uint8_t *  USBD_USR_ProductStrDescriptor( uint8_t speed , uint16_t *lengt
     product_str_ptr = product_str_user;
 #endif
 
-  for(i=0, len=2; product_str_ptr[i] != '\0' && len<USB_MAX_STR_DESC_SIZ; ++i) {
-    USBD_StrDesc[len++] = product_str_ptr[i];
-    USBD_StrDesc[len++] = 0;
-  }
-
- 
-  USBD_StrDesc[0] = len; // Descriptor Length
-  USBD_StrDesc[1] = DSCR_STRING; // Descriptor Type
+  USBD_GetString ((uint8_t*)product_str_ptr, USBD_StrDesc, length);
 
   return USBD_StrDesc;
 }
@@ -1576,6 +1569,12 @@ static uint8_t  *MIOS32_USB_CLASS_GetCfgDesc (uint8_t speed, uint16_t *length)
 }
 
 
+static uint8_t *MIOS32_USB_CLASS_GetUsrStrDesc(uint8_t speed, uint8_t index, uint16_t *length)
+{
+  return USBD_USR_ProductStrDescriptor(speed, length);
+}
+
+
 /* CDC interface class callbacks structure */
 static const USBD_Class_cb_TypeDef MIOS32_USB_CLASS_cb = 
 {
@@ -1590,6 +1589,7 @@ static const USBD_Class_cb_TypeDef MIOS32_USB_CLASS_cb =
   NULL,
   NULL,     
   MIOS32_USB_CLASS_GetCfgDesc,
+  MIOS32_USB_CLASS_GetUsrStrDesc,
 };
 
 
