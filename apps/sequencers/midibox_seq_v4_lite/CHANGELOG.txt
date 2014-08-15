@@ -1,5 +1,14 @@
 $Id$
 
+MIDIboxSEQ V4L.085
+~~~~~~~~~~~~~~~~~~
+
+   o new parameter LiveKeepChannel in MBSEQ_C.V4 file to change the MIDI forwarding function
+     so that the MIDI channel won't be changed according to the selected sequence, but will
+     be kept.
+
+   o clock divider (configured while pressing the Tempo button) handled correctly for PitchBend and CC tracks
+
 
 MIDIboxSEQ V4L.082
 ~~~~~~~~~~~~~~~~~~

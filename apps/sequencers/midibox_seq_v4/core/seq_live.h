@@ -30,6 +30,7 @@ typedef union {
     u8 VELOCITY;
     u8 FORCE_SCALE:1;
     u8 FX:1;
+    u8 KEEP_CHANNEL:1;
   };
 } seq_live_options_t;
 

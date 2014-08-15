@@ -148,3 +148,9 @@ include $(MIOS32_PATH)/modules/uip_task_standard/uip_task_standard.mk
 # common make rules
 # Please keep this include statement at the end of this Makefile. Add new modules above.
 include $(MIOS32_PATH)/include/makefile/common.mk
+
+
+# ensure that midibox_seq_v4 directory (contains .o files for build) will be removed as well!
+clean:
+	rm -rf project_build
+	rm -rf midibox_seq_v4

@@ -414,7 +414,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   u8 should_be_recorded =
     seq_record_state.ENABLED &&
     ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
-     midi_package.chn == (seq_midi_in_rec_channel-1));
+     (seq_midi_in_rec_channel == 17 || midi_package.chn == (seq_midi_in_rec_channel-1)));
 
   // simplify Note On/Off handling
   if( midi_package.event == NoteOff ) {
@@ -429,7 +429,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     // filter MIDI port (if 0: no filter, listen to all ports)
     if( (!seq_midi_in_port[bus] || port == seq_midi_in_port[bus]) &&
-	midi_package.chn == (seq_midi_in_channel[bus]-1) ) {
+	(seq_midi_in_channel[bus] == 17 || midi_package.chn == (seq_midi_in_channel[bus]-1)) ) {
 
       switch( midi_package.event ) {
       case NoteOff:
@@ -570,7 +570,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // External Control
   if( !(status & 2) &&
       ((seq_midi_in_ext_ctrl_port == 0xff || port == seq_midi_in_ext_ctrl_port) &&
-       midi_package.chn == (seq_midi_in_ext_ctrl_channel-1)) ) {
+       (seq_midi_in_ext_ctrl_channel == 17 || midi_package.chn == (seq_midi_in_ext_ctrl_channel-1))) ) {
 
     switch( midi_package.event ) {
       case CC: 
@@ -591,7 +591,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // Section Changer
   if( !(status & 2) &&
       (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
-       midi_package.chn == (seq_midi_in_sect_channel-1)) ) {
+       (seq_midi_in_sect_channel == 17 || midi_package.chn == (seq_midi_in_sect_channel-1))) ) {
     u8 forward_event = 1;
 
     switch( midi_package.event ) {
@@ -621,7 +621,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // Patch Changer (currently assigned to channel+1)
   if( !(status & 2) &&
       (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
-       midi_package.chn == (seq_midi_in_sect_channel)) ) {
+       (seq_midi_in_sect_channel == 17 || midi_package.chn == (seq_midi_in_sect_channel))) ) {
     u8 forward_event = 1;
 
     switch( midi_package.event ) {
