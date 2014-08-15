@@ -79,7 +79,17 @@
 
 static char line_buffer[STRING_MAX];
 static u16 line_ix;
-static u8 uploading_hwcfg_file;
+
+typedef enum {
+  UPLOADING_FILE_NONE,
+  UPLOADING_FILE_HW,
+  UPLOADING_FILE_C,
+  UPLOADING_FILE_GC,
+  UPLOADING_FILE_G,
+  UPLOADING_FILE_BM,
+} uploading_file_t;
+
+static uploading_file_t uploading_file;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -105,8 +115,8 @@ s32 SEQ_TERMINAL_Init(u32 mode)
   line_buffer[0] = 0;
   line_ix = 0;
 
-  // for HWCFG autoload
-  uploading_hwcfg_file = 0;
+  // for file autoload
+  uploading_file = 0;
 
   return 0; // no error
 }
@@ -208,13 +218,49 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
 {
   if( filename ) {
     // check for MBSEQ_HW.V4
-    uploading_hwcfg_file = strcasecmp(filename, "/mbseq_hw.v4") == 0;
+    uploading_file = UPLOADING_FILE_NONE;
+    if( strcasecmp(filename, "/mbseq_hw.v4") == 0 )
+      uploading_file = UPLOADING_FILE_HW;
+    else if( strcasestr(filename, "/mbseq_c.v4") != NULL )
+      uploading_file = UPLOADING_FILE_C;
+    else if( strcasecmp(filename, "/mbseq_gc.v4") == 0 )
+      uploading_file = UPLOADING_FILE_GC;
+    else if( strcasestr(filename, "/mbseq_g.v4") != NULL )
+      uploading_file = UPLOADING_FILE_G;
+    else if( strcasestr(filename, "/mbseq_bm.v4") != NULL )
+      uploading_file = UPLOADING_FILE_BM;
   } else {
-    if( uploading_hwcfg_file ) {
+    switch( uploading_file ) {
+
+    case UPLOADING_FILE_HW: {
       DEBUG_MSG("AUTOLOAD '/MBSEQ_HW.V4'\n");
       SEQ_HWCFG_Init(0);
       SEQ_FILE_HW_Init(0);
       SEQ_FILE_HW_Load();      
+    } break;
+
+    case UPLOADING_FILE_C: {
+      DEBUG_MSG("AUTOLOAD 'MBSEQ_C.V4'\n");
+      SEQ_FILE_C_Load(seq_file_session_name);
+    } break;
+
+    case UPLOADING_FILE_GC: {
+      DEBUG_MSG("AUTOLOAD '/MBSEQ_GC.V4'\n");
+      SEQ_FILE_GC_Load();
+    } break;
+
+    case UPLOADING_FILE_G: {
+      DEBUG_MSG("AUTOLOAD 'MBSEQ_G.V4'\n");
+      SEQ_FILE_G_Load(seq_file_session_name);
+    } break;
+
+    case UPLOADING_FILE_BM: {
+      DEBUG_MSG("AUTOLOAD 'MBSEQ_BM.V4'\n");
+      SEQ_FILE_BM_Load(seq_file_session_name, 1); // global
+      SEQ_FILE_BM_Load(seq_file_session_name, 0); // session
+    } break;
+
+
     }
   }
 

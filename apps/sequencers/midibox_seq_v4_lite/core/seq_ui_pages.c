@@ -908,14 +908,15 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     ui_selected_tempo_preset = button;
     seq_ui_pages_tempo_presets_t *preset = (seq_ui_pages_tempo_presets_t *)&seq_ui_pages_tempo_presets[ui_selected_tempo_preset];
     u8 track;
-    for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8) {
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
       if( ui_selected_tracks & (1 << track) ) {
 	seq_cc_trk_t *tcc = &seq_cc_trk[track];
-	if( tcc->event_mode != SEQ_EVENT_MODE_CC ) {
-	  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-	  tcc->clkdiv.value = (tcc->event_mode == SEQ_EVENT_MODE_CC) ? (((preset->clkdiv+1) / 4)-1) : preset->clkdiv;
-	  tcc->clkdiv.TRIPLETS = preset->triplets;
+	if( (track % 8) < 3 ) {
+	  tcc->clkdiv.value = preset->clkdiv;
+	} else {
+	  tcc->clkdiv.value = ((preset->clkdiv+1) / 4) - 1;
 	}
+	  tcc->clkdiv.TRIPLETS = preset->triplets;
       }
     }
 

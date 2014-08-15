@@ -64,6 +64,7 @@ s32 SEQ_LIVE_Init(u32 mode)
   seq_live_options.VELOCITY = 100;
   seq_live_options.FORCE_SCALE = 0;
   seq_live_options.FX = 1;
+  seq_live_options.KEEP_CHANNEL = 0;
 
   return 0; // no error
 }
@@ -75,7 +76,7 @@ s32 SEQ_LIVE_Init(u32 mode)
 s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 {
   mios32_midi_port_t port = seq_cc_trk[track].midi_port;
-  u8 chn = seq_cc_trk[track].midi_chn;
+  u8 chn = seq_live_options.KEEP_CHANNEL ? p.chn : seq_cc_trk[track].midi_chn;
 
   // temporary mute matching events from the sequencer
   SEQ_CORE_NotifyIncomingMIDIEvent(track, p);

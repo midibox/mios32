@@ -317,6 +317,8 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_live_options.VELOCITY = value;
 	  } else if( strcmp(parameter, "LiveForceToScale") == 0 ) {
 	    seq_live_options.FORCE_SCALE = value;
+	  } else if( strcmp(parameter, "LiveKeepChannel") == 0 ) {
+	    seq_live_options.KEEP_CHANNEL = value;
 	  } else if( strcmp(parameter, "LiveFx") == 0 ) {
 	    seq_live_options.FX = value;
 	  } else if( strcmp(parameter, "MIDI_OUT_ExtCtrlPort") == 0 ) {
@@ -675,6 +677,9 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LiveFx %d\n", seq_live_options.FX);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LiveKeepChannel %d\n", seq_live_options.KEEP_CHANNEL);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
