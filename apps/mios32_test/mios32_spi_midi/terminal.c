@@ -38,6 +38,7 @@ static u16 line_ix;
 
 static char kissbox_line_buffer[KISSBOX_STRING_MAX];
 static u16 kissbox_line_ix;
+static mios32_midi_port_t kissbox_debug_port;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -61,6 +62,7 @@ s32 TERMINAL_Init(u32 mode)
 
   kissbox_line_buffer[0] = 0;
   kissbox_line_ix = 0;
+  kissbox_debug_port = DEFAULT;
 
   return 0; // no error
 }
@@ -117,6 +119,9 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       if( brkt == NULL ) {
 	out("SYNTAX: kissbox <message>");
       } else {
+	// store MIDI port so that we know which port should get the debug message
+	kissbox_debug_port = MIOS32_MIDI_DebugPortGet();
+
 	TERMINAL_KissboxSendMsg(brkt);
       }
     } else if( strcmp(parameter, "system") == 0 ) {
@@ -201,8 +206,15 @@ s32 TERMINAL_KissboxReceiveMsgPackage(mios32_midi_package_t p)
     for(i=0; i<3; ++i) {
       // end of message string or max string size reached
       if( !buffer[i] || kissbox_line_ix >= (KISSBOX_STRING_MAX-1) ) {
+	// temporary change debug port (will be restored at the end of this function)
+	mios32_midi_port_t prev_debug_port = MIOS32_MIDI_DebugPortGet();
+	MIOS32_MIDI_DebugPortSet(kissbox_debug_port);
+	
 	// -> send to MIOS terminal
 	MIOS32_MIDI_SendDebugString(kissbox_line_buffer);
+
+	// restore original debug port
+	MIOS32_MIDI_DebugPortSet(prev_debug_port);
 
 	// reset line buffer
 	kissbox_line_buffer[0] = 0;
