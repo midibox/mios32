@@ -38,9 +38,9 @@
 #endif
 
 // Which transfer rate should be used?
-// MIOS32_SPI_PRESCALER_8 typically results into ca. 10 MBit/s
+// MIOS32_SPI_PRESCALER_16 typically results into ca. 5 MBit/s
 #ifndef MIOS32_SPI_MIDI_SPI_PRESCALER
-#define MIOS32_SPI_MIDI_SPI_PRESCALER MIOS32_SPI_PRESCALER_8
+#define MIOS32_SPI_MIDI_SPI_PRESCALER MIOS32_SPI_PRESCALER_16
 #endif
 
 // DMA buffer size
