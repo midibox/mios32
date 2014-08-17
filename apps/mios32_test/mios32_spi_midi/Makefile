@@ -14,7 +14,8 @@ LCD       =     $(MIOS32_LCD)
 # Source Files, include paths and libraries
 ################################################################################
 
-THUMB_SOURCE    = app.c
+THUMB_SOURCE    = app.c \
+		  terminal.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =

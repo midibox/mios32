@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include "app.h"
+#include "terminal.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -26,6 +27,9 @@ void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // init terminal
+  TERMINAL_Init(0);
 }
 
 
@@ -72,6 +76,10 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   case SPIM0: {
     MIOS32_MIDI_SendDebugMessage("SPIM%d: %08x", port & 0x0f, midi_package.ALL);
     MIOS32_MIDI_SendPackage(USB0 + (port & 0x0f), midi_package);
+
+    // -> kissbox messages are sent to terminal as well
+    if( midi_package.type == 1 )
+      TERMINAL_KissboxReceiveMsgPackage(midi_package);
   } break;
 
   default:
