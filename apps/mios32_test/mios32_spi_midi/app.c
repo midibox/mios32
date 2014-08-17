@@ -75,11 +75,14 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   switch( port & 0xf0 ) {
   case SPIM0: {
     MIOS32_MIDI_SendDebugMessage("SPIM%d: %08x", port & 0x0f, midi_package.ALL);
-    MIOS32_MIDI_SendPackage(USB0 + (port & 0x0f), midi_package);
 
-    // -> kissbox messages are sent to terminal as well
-    if( midi_package.type == 1 )
+    if( midi_package.type == 1 ) {
+      // -> kissbox messages are sent to terminal
       TERMINAL_KissboxReceiveMsgPackage(midi_package);
+    } else {
+      // -> all other messages are forwarded to the USB port
+      MIOS32_MIDI_SendPackage(USB0 + (port & 0x0f), midi_package);
+    }
   } break;
 
   default:
