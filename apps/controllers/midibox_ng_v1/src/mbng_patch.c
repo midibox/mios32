@@ -68,6 +68,11 @@ static const mbng_patch_cfg_t mbng_patch_cfg_default = {
   .sysex_chn = 0,
 };
 
+#if MBNG_PATCH_NUM_DIO > 0
+mbng_patch_dio_cfg_t mbng_patch_dio_cfg[MBNG_PATCH_NUM_DIO];
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! This function initializes the patch structure
 /////////////////////////////////////////////////////////////////////////////
@@ -191,6 +196,17 @@ s32 MBNG_PATCH_Init(u32 mode)
 
     KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
   }
+
+#if MBNG_PATCH_NUM_DIO > 0
+  {
+    int dio;
+
+    for(dio=0; dio<MBNG_PATCH_NUM_DIO; ++dio) {
+      mbng_patch_dio_cfg[dio].mode = MBNG_PATCH_DIO_CFG_MODE_Off;
+      mbng_patch_dio_cfg[dio].emu_sr = 0;
+    }
+  }
+#endif
 
   return 0; // no error
 }

@@ -22,6 +22,12 @@
 #if !defined(MIOS32_DONT_USE_SRIO)
 
 
+// special callback which will be called for DIN pin emulation
+// currently only used by MIDIbox NG, could change to a more generic method
+#ifdef MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE
+extern void MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE(void);
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
@@ -43,6 +49,16 @@ volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR];
 // change notification flags
 volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
+// the current DOUT page
+#if MIOS32_SRIO_NUM_DOUT_PAGES > 1
+u8 mios32_srio_dout_page_ctr;
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local variables
+/////////////////////////////////////////////////////////////////////////////
+
 // actual scanned SRs (MIOS32_SRIO_NUM_SR by default, but can be changed to lower value during runtime)
 static u8 num_sr;
 
@@ -50,10 +66,6 @@ static u8 num_sr;
 static u8 debounce_time;
 static u8 debounce_ctr;
 
-// the current DOUT page
-#if MIOS32_SRIO_NUM_DOUT_PAGES > 1
-static u8 dout_page_ctr;
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -112,7 +124,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
   
 #if MIOS32_SRIO_NUM_DOUT_PAGES > 1
   // start with first page
-  dout_page_ctr = 0;
+  mios32_srio_dout_page_ctr = 0;
 #endif
 
   // initial state of RCLK
@@ -177,7 +189,7 @@ s32 MIOS32_SRIO_DoutPageGet(void)
 #if MIOS32_SRIO_NUM_DOUT_PAGES < 2
   return 0;
 #else
-  return dout_page_ctr;
+  return mios32_srio_dout_page_ctr;
 #endif
 }
 
@@ -290,8 +302,8 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 
 #if MIOS32_SRIO_NUM_DOUT_PAGES >= 2
   // select next DOUT page
-  if( ++dout_page_ctr >= MIOS32_SRIO_NUM_DOUT_PAGES )
-    dout_page_ctr = 0;
+  if( ++mios32_srio_dout_page_ctr >= MIOS32_SRIO_NUM_DOUT_PAGES )
+    mios32_srio_dout_page_ctr = 0;
 #endif
 
   // start DMA transfer
@@ -299,7 +311,7 @@ s32 MIOS32_SRIO_ScanStart(void *_notify_hook)
 #if MIOS32_SRIO_NUM_DOUT_PAGES < 2
 			   (u8 *)&mios32_srio_dout[0][0], (u8 *)&mios32_srio_din_buffer[0],
 #else
-			   (u8 *)&mios32_srio_dout[dout_page_ctr][0], (u8 *)&mios32_srio_din_buffer[0],
+			   (u8 *)&mios32_srio_dout[mios32_srio_dout_page_ctr][0], (u8 *)&mios32_srio_din_buffer[0],
 #endif
 			   num_sr,
 			   MIOS32_SRIO_DMA_Callback);
@@ -327,6 +339,12 @@ static void MIOS32_SRIO_DMA_Callback(void)
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 #ifdef MIOS32_SRIO_SPI_RC_PIN2
   MIOS32_SPI_RC_PinSet(MIOS32_SRIO_SPI, MIOS32_SRIO_SPI_RC_PIN2, 1); // spi, rc_pin, pin_value
+#endif
+
+  // special callback which will be called for DIN pin emulation
+  // currently only used by MIDIbox NG, could change to a more generic method
+#ifdef MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE
+  MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE();
 #endif
 
   // copy/or buffered DIN values/changed flags

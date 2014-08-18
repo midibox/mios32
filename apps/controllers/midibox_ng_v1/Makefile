@@ -20,6 +20,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_event.c \
 		  src/mbng_din.c \
 		  src/mbng_dout.c \
+		  src/mbng_dio.c \
 		  src/mbng_enc.c \
 		  src/mbng_ain.c \
 		  src/mbng_ainser.c \

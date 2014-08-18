@@ -32,6 +32,9 @@
 // -> see app.c, APP_SRIO_*
 #define MIOS32_DONT_SERVICE_SRIO_SCAN 1
 
+// special callback which will be called for DIN pin emulation
+#define MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE APP_SRIO_ServiceFinishBeforeDINCompare
+
 // enable 4 MIDI ports (note: MIDI3 only used if AIN ports disabled)
 #if defined(MIOS32_FAMILY_STM32F10x)
 // enable third UART

@@ -38,6 +38,7 @@
 #include "mbng_lcd.h"
 #include "mbng_din.h"
 #include "mbng_dout.h"
+#include "mbng_dio.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
 #include "mbng_ainser.h"
@@ -84,7 +85,6 @@ typedef enum {
 /////////////////////////////////////////////////////////////////////////////
 u8  hw_enabled;
 u8  debug_verbose_level;
-
 
 /////////////////////////////////////////////////////////////////////////////
 //! local variables
@@ -522,13 +522,6 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServicePrepare(void)
 {
-  // pass current pin state of J10
-  // only available for LPC17xx, all others (like STM32) default to SRIO
-  SCS_AllPinsSet(0xff00 | MIOS32_BOARD_J10_Get());
-
-  // update encoders/buttons of SCS
-  SCS_EncButtonUpdate_Tick();
-
   // Matrix handler
   //MBNG_MATRIX_PrepareCol();
   // obsolete with MIOS32_SRIO based pages
@@ -540,9 +533,64 @@ void APP_SRIO_ServicePrepare(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! This hook is called after the shift register chain has been scanned
+//! and before the DIN registers will be compared
+//! (hook enabled via #define MIOS32_SRIO_CALLBACK_BEFORE_DIN_COMPARE in mios32_config.h)
+/////////////////////////////////////////////////////////////////////////////
+void APP_SRIO_ServiceFinishBeforeDINCompare(void)
+{
+#if MBNG_PATCH_NUM_DIO > 0
+  if( hw_enabled ) {
+    u8 num_sr = MIOS32_SRIO_ScanNumGet();
+
+    int port;
+    for(port=0; port<MBNG_PATCH_NUM_DIO; ++port) {
+      u8 sr;
+      if( (sr=mbng_patch_dio_cfg[port].emu_sr) > 0 && sr <= num_sr ) {
+	switch( mbng_patch_dio_cfg[port].mode ) {
+	case MBNG_PATCH_DIO_CFG_MODE_DIN: {
+	  // copy port value to specified DIN buffer
+	  u8 value = MBNG_DIO_PortGet(port);
+	  mios32_srio_din_buffer[sr-1] = value;
+	} break;
+
+	case MBNG_PATCH_DIO_CFG_MODE_DOUT: {
+	  // copy specified DOUT to port
+#if MIOS32_SRIO_NUM_DOUT_PAGES < 2
+	  u8 value = mios32_dout_reverse_tab[mios32_srio_dout[0][num_sr-sr]];
+#else
+	  u8 value = mios32_dout_reverse_tab[mios32_srio_dout[mios32_srio_dout_page_ctr][num_sr-sr]];
+#endif
+	  MBNG_DIO_PortSet(port, value);
+	} break;
+	}
+      }
+    }
+  }
+#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 void APP_SRIO_ServiceFinish(void)
 {
+  u8 skip_scs = 0;
+#if MBNG_PATCH_NUM_DIO > 0
+  {
+    u8 sr;
+    skip_scs = mbng_patch_dio_cfg[0].mode != MBNG_PATCH_DIO_CFG_MODE_Off && (sr=mbng_patch_dio_cfg[0].emu_sr) > 0 && sr <= MIOS32_SRIO_NUM_SR;
+  }
+#endif
+
+  if( !skip_scs ) {
+    // pass current pin state of J10
+    // only available for LPC17xx, all others (like STM32) default to SRIO
+    SCS_AllPinsSet(0xff00 | MIOS32_BOARD_J10_Get());
+
+    // update encoders/buttons of SCS
+    SCS_EncButtonUpdate_Tick();
+  }
+
   // Matrix handler
   MBNG_MATRIX_GetRow();
 
