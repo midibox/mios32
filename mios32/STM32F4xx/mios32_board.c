@@ -755,7 +755,7 @@ s32 MIOS32_BOARD_J10B_Set(u8 value)
 # if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
   u16 aligned_value = value << 8;
   int pin;
-  u32 mask = 1;
+  u32 mask = 1 << 8;
   j10_pin_t *j10_pin_ptr = (j10_pin_t *)&j10_pin[8];
   for(pin=8; pin<J10_NUM_PINS; ++pin, ++j10_pin_ptr, mask <<= 1) {
     if( j10_enable_mask & mask )

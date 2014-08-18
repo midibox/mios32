@@ -97,5 +97,9 @@ extern volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
 extern volatile u8 mios32_srio_din_buffer[MIOS32_SRIO_NUM_SR]; // only required for emulation
 extern volatile u8 mios32_srio_din_changed[MIOS32_SRIO_NUM_SR];
 
+// the current DOUT page
+#if MIOS32_SRIO_NUM_DOUT_PAGES > 1
+extern u8 mios32_srio_dout_page_ctr;
+#endif
 
 #endif /* _MIOS32_SRIO_H */
