@@ -1,6 +1,6 @@
 $Id$
 
-Bootloader Update V1.015
+Bootloader Update V1.016
 ===============================================================================
 Copyright (C) 2014 Thorsten Klose (tk@midibox.org)
 Licensed for personal non-commercial use only.
@@ -48,7 +48,7 @@ to the MIOS Terminal, which can be opened in MIOS Studio
 If the bootloader is up-to-date, you will get following messages:
 
 | ====================
-| Bootloader V1.015
+| Bootloader V1.016
 | ====================
 | 
 | Checking Bootloader...
@@ -62,7 +62,7 @@ If the bootloader is up-to-date, you will get following messages:
 If the bootloader has to be updated, you will probably get following messages:
 
 | ====================
-| Bootloader V1.015
+| Bootloader V1.016
 | ====================
 | 
 | Checking Bootloader...
