@@ -14,7 +14,7 @@ MIDIbox NG V1.031
    o Covered new use case which allows to transform velocity values of incoming notes.
      See cfg/test/conev_6.ngc
      EVENT_RECEIVER and EVENT_SENDER have to be specified with "key=any", so that any
-     key will be received and sent
+     key will be received and sent.
 
    o support for DIN/DOUT emulation on digital IO ports J10A/J10B (LPC17: J10/J28)
      See examples in cfg/test/diocfg_1.ngc and cfg/test/diocfg_2.ngc
