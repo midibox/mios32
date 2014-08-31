@@ -277,6 +277,34 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 		bm->mutes |= (1 << i);
 	    bm->enable.MUTES = parameter_enabled;
 	  }
+	} else if( strcmp(parameter, "Page") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  seq_ui_bookmark_t *bm = &seq_ui_bookmarks[current_bookmark];
+
+#ifdef MBSEQV4L
+	  seq_ui_page_t page = SEQ_UI_PAGE_NONE;
+#else
+	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
+	  if( page == SEQ_UI_PAGE_NONE ) {
+	    s32 value = get_dec(word);
+	    if( value <= 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_BM] ERROR invalid value '%s' for parameter '%s' in Slot %d\n", word, parameter, current_bookmark);
+#endif
+	    } else {
+	      page = SEQ_UI_PAGES_OldBmIndexSearch(value);
+	    }
+	  }
+#endif
+
+	  if( page == SEQ_UI_PAGE_NONE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_BM] ERROR invalid value '%s' for parameter '%s' in Slot %d\n", word, parameter, current_bookmark);
+#endif
+	  } else {
+	    bm->page = page;
+	    bm->enable.PAGE = parameter_enabled;
+	  }
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -284,11 +312,8 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 
 	  if( value < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_BM] ERROR invalid value for parameter '%s' in Slot %d\n", parameter, current_bookmark);
+	    DEBUG_MSG("[SEQ_FILE_BM] ERROR invalid value '%s', for parameter '%s' in Slot %d\n", word, parameter, current_bookmark);
 #endif
-	  } else if( strcmp(parameter, "Page") == 0 ) {
-	    bm->page = value;
-	    bm->enable.PAGE = parameter_enabled;
 	  } else if( strcmp(parameter, "Group") == 0 ) {
 	    bm->group = value - 1;
 	    bm->enable.GROUP = parameter_enabled;
@@ -383,7 +408,11 @@ static s32 SEQ_FILE_BM_Write_Hlp(u8 write_to_file, u8 global)
     sprintf(line_buffer, "####################\n");
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "%cPage %d\n", bm->enable.PAGE ? '+' : '-', bm->page);
+#ifdef MBSEQV4L
+    sprintf(line_buffer, "%cPage %s\n", bm->enable.PAGE ? '+' : '-', bm->page);
+#else
+    sprintf(line_buffer, "%cPage %s\n", bm->enable.PAGE ? '+' : '-', SEQ_UI_PAGES_CfgNameGet(bm->page));
+#endif
     FLUSH_BUFFER;
     sprintf(line_buffer, "%cGroup %d\n", bm->enable.GROUP ? '+' : '-', bm->group+1);
     FLUSH_BUFFER;

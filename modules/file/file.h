@@ -127,7 +127,7 @@ extern s32 FILE_GetFiles(char *path, char *ext_filter, char *file_list, u8 num_o
 extern s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_filename);
 extern s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, char *prev_filename);
 
-extern s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port);
+extern s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port, u32 ms_delay_between_dumps);
 
 extern s32 FILE_PrintSDCardInfos(void);
 

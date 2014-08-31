@@ -848,7 +848,7 @@ static s32 SEQ_UI_MENU_UpdatePageList(void)
     int i;
 
     char *list_item = (char *)&ui_global_dir_list[MENU_LIST_ENTRY_WIDTH*item];
-    strcpy(list_item, SEQ_UI_PageNameGet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + item + menu_view_offset));
+    strcpy(list_item, SEQ_UI_PAGES_PageNameGet(SEQ_UI_FIRST_MENU_SELECTION_PAGE + item + menu_view_offset));
     for(i=strlen(list_item)-1; i>=0; --i)
       if( list_item[i] == ' ' )
 	list_item[i] = 0;

@@ -43,6 +43,12 @@
 
 #include "file.h"
 
+#ifndef MIOS32_FAMILY_EMULATION
+# include <FreeRTOS.h>
+# include <portmacro.h>
+# include <task.h>
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via DEBUG_MSG (defined in mios32_config.h)
@@ -1194,9 +1200,10 @@ s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, char *pr
 /////////////////////////////////////////////////////////////////////////////
 //! This function sends a .syx file to given MIDI out port
 /////////////////////////////////////////////////////////////////////////////
-s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port)
+s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port, u32 ms_delay_between_dumps)
 {
   s32 status = 0;
+  u32 num_dumps = 0;
   file_t file;
 
   if( !volume_available ) {
@@ -1239,6 +1246,15 @@ s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port)
 #if DEBUG_VERBOSE_LEVEL >= 2
       MIOS32_MIDI_SendDebugHexDump(tmp_buffer, len);
 #endif
+      ++num_dumps;
+#ifndef MIOS32_FAMILY_EMULATION
+      if( ms_delay_between_dumps > 0 && num_dumps > 1 ) {
+	// insert delay between the Syx dumps
+	vTaskDelay(ms_delay_between_dumps);
+	taskYIELD();
+      }
+#endif
+
       MIOS32_MIDI_SendSysEx(port, tmp_buffer, len);
       num_bytes += len;
 

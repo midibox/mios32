@@ -36,6 +36,7 @@
 #include "seq_hwcfg.h"
 
 #include "seq_ui.h"
+#include "seq_ui_pages.h"
 #include "seq_midi_port.h"
 
 
@@ -189,34 +190,6 @@ static s32 get_dec(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// help function which returns the MIDI OUT port
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-/////////////////////////////////////////////////////////////////////////////
-static s32 get_port_out(char *word)
-{
-  if( word == NULL )
-    return -1;
-
-  mios32_midi_port_t port = 0xff;
-  int port_ix;
-  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
-    // terminate port name at first space
-    char port_name[10];
-    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
-    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
-    
-    if( strcmp(word, port_name) == 0 ) {
-      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-      break;
-    }
-  }
-
-  return (port != 0xff) ? port : get_dec(word);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // reads the hardware config file content
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -267,9 +240,40 @@ s32 SEQ_FILE_HW_Read(void)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	// MENU_SHORTCUT
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcasecmp(parameter, "MENU_SHORTCUT") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 pos = get_dec(word);
+	  if( pos < 1 || pos > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: invalid value '%s'!", word);
+#endif
+	    continue;
+	  }
+
+	  word = strtok_r(NULL, separators, &brkt);
+	  if( word == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: expecting page name for GP%d!", pos);
+#endif
+	    continue;
+	  }
+
+	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
+	  if( page == SEQ_UI_PAGE_NONE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: page name '%s' defined for GP%d doesn't exist!", word, pos);
+#endif
+	    continue;
+	  }
+	  
+	  SEQ_UI_PAGES_MenuShortcutPageSet(pos-1, page);
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	// BUTTON_BEH
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "BUTTON_BEH_", 11) == 0 ) {
+	} else if( strncasecmp(parameter, "BUTTON_BEH_", 11) == 0 ) {
 	  parameter += 11;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -281,37 +285,37 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  if( strcmp(parameter, "FAST2") == 0 ) {
+	  if( strcasecmp(parameter, "FAST2") == 0 ) {
 	    seq_hwcfg_button_beh.fast2 = flag;
-	  } else if( strcmp(parameter, "FAST") == 0 ) {
+	  } else if( strcasecmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_button_beh.fast = flag;
-	  } else if( strcmp(parameter, "ALL") == 0 ) {
+	  } else if( strcasecmp(parameter, "ALL") == 0 ) {
 	    seq_hwcfg_button_beh.all = flag;
-	  } else if( strcmp(parameter, "SOLO") == 0 ) {
+	  } else if( strcasecmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_button_beh.solo = flag;
-	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
+	  } else if( strcasecmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_button_beh.metronome = flag;
-	  } else if( strcmp(parameter, "SCRUB") == 0 ) {
+	  } else if( strcasecmp(parameter, "SCRUB") == 0 ) {
 	    seq_hwcfg_button_beh.scrub = flag;
-	  } else if( strcmp(parameter, "LOOP") == 0 ) {
+	  } else if( strcasecmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_button_beh.loop = flag;
-	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	  } else if( strcasecmp(parameter, "FOLLOW") == 0 ) {
 	    seq_hwcfg_button_beh.follow = flag;
-	  } else if( strcmp(parameter, "MENU") == 0 ) {
+	  } else if( strcasecmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button_beh.menu = flag;
-	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	  } else if( strcasecmp(parameter, "BOOKMARK") == 0 ) {
 	    seq_hwcfg_button_beh.bookmark = flag;
-	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
+	  } else if( strcasecmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_button_beh.step_view = flag;
-	  } else if( strcmp(parameter, "TRG_LAYER") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRG_LAYER") == 0 ) {
 	    seq_hwcfg_button_beh.trg_layer = flag;
-	  } else if( strcmp(parameter, "PAR_LAYER") == 0 ) {
+	  } else if( strcasecmp(parameter, "PAR_LAYER") == 0 ) {
 	    seq_hwcfg_button_beh.par_layer = flag;
-	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_button_beh.track_sel = flag;
-	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	  } else if( strcasecmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_button_beh.tempo_preset = flag;
-	  } else if( strcmp(parameter, "ALL_WITH_TRIGGERS") == 0 ) {
+	  } else if( strcasecmp(parameter, "ALL_WITH_TRIGGERS") == 0 ) {
 	    seq_hwcfg_button_beh.all_with_triggers = flag;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -323,7 +327,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BUTTON_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "BUTTON_", 7) == 0 ) {
+	} else if( strncasecmp(parameter, "BUTTON_", 7) == 0 ) {
 	  parameter += 7;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -374,134 +378,134 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] Button %s: SR %d Pin %d (DIN: 0x%02x)", line_buffer, sr, pin, din_value);
 #endif
 
-	  if( strcmp(parameter, "DOWN") == 0 ) {
+	  if( strcasecmp(parameter, "DOWN") == 0 ) {
 	    seq_hwcfg_button.down = din_value;
-	  } else if( strcmp(parameter, "UP") == 0 ) {
+	  } else if( strcasecmp(parameter, "UP") == 0 ) {
 	    seq_hwcfg_button.up = din_value;
-	  } else if( strcmp(parameter, "LEFT") == 0 ) {
+	  } else if( strcasecmp(parameter, "LEFT") == 0 ) {
 	    seq_hwcfg_button.left = din_value;
-	  } else if( strcmp(parameter, "RIGHT") == 0 ) {
+	  } else if( strcasecmp(parameter, "RIGHT") == 0 ) {
 	    seq_hwcfg_button.right = din_value;
-	  } else if( strcmp(parameter, "SCRUB") == 0 ) {
+	  } else if( strcasecmp(parameter, "SCRUB") == 0 ) {
 	    seq_hwcfg_button.scrub = din_value;
-	  } else if( strcmp(parameter, "LOOP") == 0 ) {
+	  } else if( strcasecmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_button.loop = din_value;
-	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	  } else if( strcasecmp(parameter, "FOLLOW") == 0 ) {
 	    seq_hwcfg_button.follow = din_value;
-	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
+	  } else if( strcasecmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_button.metronome = din_value;
-	  } else if( strcmp(parameter, "RECORD") == 0 ) {
+	  } else if( strcasecmp(parameter, "RECORD") == 0 ) {
 	    seq_hwcfg_button.record = din_value;
-	  } else if( strcmp(parameter, "LIVE") == 0 ) {
+	  } else if( strcasecmp(parameter, "LIVE") == 0 ) {
 	    seq_hwcfg_button.live = din_value;
-	  } else if( strcmp(parameter, "STOP") == 0 ) {
+	  } else if( strcasecmp(parameter, "STOP") == 0 ) {
 	    seq_hwcfg_button.stop = din_value;
-	  } else if( strcmp(parameter, "PAUSE") == 0 ) {
+	  } else if( strcasecmp(parameter, "PAUSE") == 0 ) {
 	    seq_hwcfg_button.pause = din_value;
-	  } else if( strcmp(parameter, "PLAY") == 0 ) {
+	  } else if( strcasecmp(parameter, "PLAY") == 0 ) {
 	    seq_hwcfg_button.play = din_value;
-	  } else if( strcmp(parameter, "REW") == 0 ) {
+	  } else if( strcasecmp(parameter, "REW") == 0 ) {
 	    seq_hwcfg_button.rew = din_value;
-	  } else if( strcmp(parameter, "FWD") == 0 ) {
+	  } else if( strcasecmp(parameter, "FWD") == 0 ) {
 	    seq_hwcfg_button.fwd = din_value;
-	  } else if( strcmp(parameter, "MENU") == 0 ) {
+	  } else if( strcasecmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button.menu = din_value;
-	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	  } else if( strcasecmp(parameter, "BOOKMARK") == 0 ) {
 	    seq_hwcfg_button.bookmark = din_value;
-	  } else if( strcmp(parameter, "SELECT") == 0 ) {
+	  } else if( strcasecmp(parameter, "SELECT") == 0 ) {
 	    seq_hwcfg_button.select = din_value;
-	  } else if( strcmp(parameter, "EXIT") == 0 ) {
+	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	    seq_hwcfg_button.exit = din_value;
-	  } else if( strncmp(parameter, "TRACK", 5) == 0 && // TRACK[1234]
+	  } else if( strncasecmp(parameter, "TRACK", 5) == 0 && // TRACK[1234]
 		     (hlp=parameter[5]-'1') >= 0 && hlp < 4 ) {
 	    seq_hwcfg_button.track[hlp] = din_value;
-	  } else if( strncmp(parameter, "PAR_LAYER_", 10) == 0 && // PAR_LAYER_[ABC]
+	  } else if( strncasecmp(parameter, "PAR_LAYER_", 10) == 0 && // PAR_LAYER_[ABC]
 		     (hlp=parameter[10]-'A') >= 0 && hlp < 3 ) {
 	    seq_hwcfg_button.par_layer[hlp] = din_value;
-	  } else if( strcmp(parameter, "EDIT") == 0 ) {
+	  } else if( strcasecmp(parameter, "EDIT") == 0 ) {
 	    seq_hwcfg_button.edit = din_value;
-	  } else if( strcmp(parameter, "MUTE") == 0 ) {
+	  } else if( strcasecmp(parameter, "MUTE") == 0 ) {
 	    seq_hwcfg_button.mute = din_value;
-	  } else if( strcmp(parameter, "PATTERN") == 0 ) {
+	  } else if( strcasecmp(parameter, "PATTERN") == 0 ) {
 	    seq_hwcfg_button.pattern = din_value;
-	  } else if( strcmp(parameter, "SONG") == 0 ) {
+	  } else if( strcasecmp(parameter, "SONG") == 0 ) {
 	    seq_hwcfg_button.song = din_value;
-	  } else if( strcmp(parameter, "SOLO") == 0 ) {
+	  } else if( strcasecmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_button.solo = din_value;
-	  } else if( strcmp(parameter, "FAST2") == 0 ) {
+	  } else if( strcasecmp(parameter, "FAST2") == 0 ) {
 	    seq_hwcfg_button.fast2 = din_value;
-	  } else if( strcmp(parameter, "FAST") == 0 ) {
+	  } else if( strcasecmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_button.fast = din_value;
-	  } else if( strcmp(parameter, "ALL") == 0 ) {
+	  } else if( strcasecmp(parameter, "ALL") == 0 ) {
 	    seq_hwcfg_button.all = din_value;
-	  } else if( strncmp(parameter, "GP", 2) == 0 && // GP%d
+	  } else if( strncasecmp(parameter, "GP", 2) == 0 && // GP%d
 		     (hlp=atoi(parameter+2)) >= 1 && hlp <= 16 ) {
 	    seq_hwcfg_button.gp[hlp-1] = din_value;
-	  } else if( strncmp(parameter, "GROUP", 5) == 0 && // GROUP[1234]
+	  } else if( strncasecmp(parameter, "GROUP", 5) == 0 && // GROUP[1234]
 		     (hlp=parameter[5]-'1') >= 0 && hlp < 4 ) {
 	    seq_hwcfg_button.group[hlp] = din_value;
-	  } else if( strncmp(parameter, "TRG_LAYER_", 10) == 0 && // TRG_LAYER_[ABC]
+	  } else if( strncasecmp(parameter, "TRG_LAYER_", 10) == 0 && // TRG_LAYER_[ABC]
 		     (hlp=parameter[10]-'A') >= 0 && hlp < 3 ) {
 	    seq_hwcfg_button.trg_layer[hlp] = din_value;
-	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
+	  } else if( strcasecmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_button.step_view = din_value;
-	  } else if( strcmp(parameter, "TRG_LAYER_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRG_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_button.trg_layer_sel = din_value;
-	  } else if( strcmp(parameter, "PAR_LAYER_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "PAR_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_button.par_layer_sel = din_value;
-	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_button.track_sel = din_value;
-	  } else if( strcmp(parameter, "TAP_TEMPO") == 0 ) {
+	  } else if( strcasecmp(parameter, "TAP_TEMPO") == 0 ) {
 	    seq_hwcfg_button.tap_tempo = din_value;
-	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	  } else if( strcasecmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_button.tempo_preset = din_value;
-	  } else if( strcmp(parameter, "EXT_RESTART") == 0 ) {
+	  } else if( strcasecmp(parameter, "EXT_RESTART") == 0 ) {
 	    seq_hwcfg_button.ext_restart = din_value;
-	  } else if( strcmp(parameter, "UTILITY") == 0 ) {
+	  } else if( strcasecmp(parameter, "UTILITY") == 0 ) {
 	    seq_hwcfg_button.utility = din_value;
-	  } else if( strcmp(parameter, "COPY") == 0 ) {
+	  } else if( strcasecmp(parameter, "COPY") == 0 ) {
 	    seq_hwcfg_button.copy = din_value;
-	  } else if( strcmp(parameter, "PASTE") == 0 ) {
+	  } else if( strcasecmp(parameter, "PASTE") == 0 ) {
 	    seq_hwcfg_button.paste = din_value;
-	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
+	  } else if( strcasecmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_button.clear = din_value;
-	  } else if( strcmp(parameter, "UNDO") == 0 ) {
+	  } else if( strcasecmp(parameter, "UNDO") == 0 ) {
 	    seq_hwcfg_button.undo = din_value;
-	  } else if( strcmp(parameter, "MIXER") == 0 ) {
+	  } else if( strcasecmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_button.mixer = din_value;
-	  } else if( strcmp(parameter, "SAVE") == 0 ) {
+	  } else if( strcasecmp(parameter, "SAVE") == 0 ) {
 	    seq_hwcfg_button.save = din_value;
-	  } else if( strcmp(parameter, "SAVE_ALL") == 0 ) {
+	  } else if( strcasecmp(parameter, "SAVE_ALL") == 0 ) {
 	    seq_hwcfg_button.save_all = din_value;
-	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_MODE") == 0 ) {
 	    seq_hwcfg_button.track_mode = din_value;
-	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_GROOVE") == 0 ) {
 	    seq_hwcfg_button.track_groove = din_value;
-	  } else if( strcmp(parameter, "TRACK_LENGTH") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_LENGTH") == 0 ) {
 	    seq_hwcfg_button.track_length = din_value;
-	  } else if( strcmp(parameter, "TRACK_DIRECTION") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_DIRECTION") == 0 ) {
 	    seq_hwcfg_button.track_direction = din_value;
-	  } else if( strcmp(parameter, "MORPH") == 0 || strcmp(parameter, "TRACK_MORPH") == 0 ) {
+	  } else if( strcasecmp(parameter, "MORPH") == 0 || strcasecmp(parameter, "TRACK_MORPH") == 0 ) {
 	    seq_hwcfg_button.track_morph = din_value;
-	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRANSPOSE") == 0 || strcasecmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_button.track_transpose = din_value;
-	  } else if( strcmp(parameter, "FOOTSWITCH") == 0 ) {
+	  } else if( strcasecmp(parameter, "FOOTSWITCH") == 0 ) {
 	    seq_hwcfg_button.footswitch = din_value;
-          } else if( strcmp(parameter, "PATTERN_RMX") == 0 ) {
+          } else if( strcasecmp(parameter, "PATTERN_RMX") == 0 ) {
             seq_hwcfg_button.pattern_remix = din_value;
-          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
             seq_hwcfg_button.mute_all_tracks = din_value;
-          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
             seq_hwcfg_button.mute_track_layers = din_value;
-          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
             seq_hwcfg_button.mute_all_tracks_and_layers = din_value;
-          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
             seq_hwcfg_button.unmute_all_tracks = din_value;
-          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
             seq_hwcfg_button.unmute_track_layers = din_value;
-          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
             seq_hwcfg_button.unmute_all_tracks_and_layers = din_value;
-	  } else if( strncmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
+	  } else if( strncasecmp(parameter, "DIRECT_BOOKMARK", 15) == 0 ) {
 	    parameter += 15;
 
 	    s32 bookmark = get_dec(parameter);
@@ -512,7 +516,7 @@ s32 SEQ_FILE_HW_Read(void)
 	      continue;
 	    }
 	    seq_hwcfg_button.direct_bookmark[bookmark-1] = din_value;
-	  } else if( strncmp(parameter, "DIRECT_TRACK", 12) == 0 ) {
+	  } else if( strncasecmp(parameter, "DIRECT_TRACK", 12) == 0 ) {
 	    parameter += 12;
 
 	    s32 track = get_dec(parameter);
@@ -532,7 +536,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// LED_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "LED_", 4) == 0 ) {
+	} else if( strncasecmp(parameter, "LED_", 4) == 0 ) {
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -583,123 +587,123 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] LED %s: SR %d Pin %d (DOUT: 0x%02x)", parameter, sr, pin, dout_value);
 #endif
 
-	  if( strncmp(parameter, "TRACK", 5) == 0 && // TRACK[1234]
+	  if( strncasecmp(parameter, "TRACK", 5) == 0 && // TRACK[1234]
 		     (hlp=parameter[5]-'1') >= 0 && hlp < 4 ) {
 	    seq_hwcfg_led.track[hlp] = dout_value;
-	  } else if( strncmp(parameter, "PAR_LAYER_", 10) == 0 && // PAR_LAYER_[ABC]
+	  } else if( strncasecmp(parameter, "PAR_LAYER_", 10) == 0 && // PAR_LAYER_[ABC]
 		     (hlp=parameter[10]-'A') >= 0 && hlp < 3 ) {
 	    seq_hwcfg_led.par_layer[hlp] = dout_value;
-	  } else if( strcmp(parameter, "BEAT") == 0 ) {
+	  } else if( strcasecmp(parameter, "BEAT") == 0 ) {
 	    seq_hwcfg_led.beat = dout_value;
-	  } else if( strcmp(parameter, "MIDI_IN_COMBINED") == 0 ) {
+	  } else if( strcasecmp(parameter, "MIDI_IN_COMBINED") == 0 ) {
 	    seq_hwcfg_led.midi_in_combined = dout_value;
-	  } else if( strcmp(parameter, "MIDI_OUT_COMBINED") == 0 ) {
+	  } else if( strcasecmp(parameter, "MIDI_OUT_COMBINED") == 0 ) {
 	    seq_hwcfg_led.midi_out_combined = dout_value;
-	  } else if( strcmp(parameter, "EDIT") == 0 ) {
+	  } else if( strcasecmp(parameter, "EDIT") == 0 ) {
 	    seq_hwcfg_led.edit = dout_value;
-	  } else if( strcmp(parameter, "MUTE") == 0 ) {
+	  } else if( strcasecmp(parameter, "MUTE") == 0 ) {
 	    seq_hwcfg_led.mute = dout_value;
-	  } else if( strcmp(parameter, "PATTERN") == 0 ) {
+	  } else if( strcasecmp(parameter, "PATTERN") == 0 ) {
 	    seq_hwcfg_led.pattern = dout_value;
-	  } else if( strcmp(parameter, "SONG") == 0 ) {
+	  } else if( strcasecmp(parameter, "SONG") == 0 ) {
 	    seq_hwcfg_led.song = dout_value;
-	  } else if( strcmp(parameter, "SOLO") == 0 ) {
+	  } else if( strcasecmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_led.solo = dout_value;
-	  } else if( strcmp(parameter, "FAST2") == 0 ) {
+	  } else if( strcasecmp(parameter, "FAST2") == 0 ) {
 	    seq_hwcfg_led.fast2 = dout_value;
-	  } else if( strcmp(parameter, "FAST") == 0 ) {
+	  } else if( strcasecmp(parameter, "FAST") == 0 ) {
 	    seq_hwcfg_led.fast = dout_value;
-	  } else if( strcmp(parameter, "ALL") == 0 ) {
+	  } else if( strcasecmp(parameter, "ALL") == 0 ) {
 	    seq_hwcfg_led.all = dout_value;
-	  } else if( strncmp(parameter, "GROUP", 5) == 0 && // GROUP[1234]
+	  } else if( strncasecmp(parameter, "GROUP", 5) == 0 && // GROUP[1234]
 		     (hlp=parameter[5]-'1') >= 0 && hlp < 4 ) {
 	    seq_hwcfg_led.group[hlp] = dout_value;
-	  } else if( strncmp(parameter, "TRG_LAYER_", 10) == 0 && // TRG_LAYER_[ABC]
+	  } else if( strncasecmp(parameter, "TRG_LAYER_", 10) == 0 && // TRG_LAYER_[ABC]
 		     (hlp=parameter[10]-'A') >= 0 && hlp < 3 ) {
 	    seq_hwcfg_led.trg_layer[hlp] = dout_value;
-	  } else if( strcmp(parameter, "PLAY") == 0 ) {
+	  } else if( strcasecmp(parameter, "PLAY") == 0 ) {
 	    seq_hwcfg_led.play = dout_value;
-	  } else if( strcmp(parameter, "STOP") == 0 ) {
+	  } else if( strcasecmp(parameter, "STOP") == 0 ) {
 	    seq_hwcfg_led.stop = dout_value;
-	  } else if( strcmp(parameter, "PAUSE") == 0 ) {
+	  } else if( strcasecmp(parameter, "PAUSE") == 0 ) {
 	    seq_hwcfg_led.pause = dout_value;
-	  } else if( strcmp(parameter, "REW") == 0 ) {
+	  } else if( strcasecmp(parameter, "REW") == 0 ) {
 	    seq_hwcfg_led.rew = dout_value;
-	  } else if( strcmp(parameter, "FWD") == 0 ) {
+	  } else if( strcasecmp(parameter, "FWD") == 0 ) {
 	    seq_hwcfg_led.fwd = dout_value;
-	  } else if( strcmp(parameter, "EXIT") == 0 ) {
+	  } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	    seq_hwcfg_led.exit = dout_value;
-	  } else if( strcmp(parameter, "SELECT") == 0 ) {
+	  } else if( strcasecmp(parameter, "SELECT") == 0 ) {
 	    seq_hwcfg_led.select = dout_value;
-	  } else if( strcmp(parameter, "MENU") == 0 ) {
+	  } else if( strcasecmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_led.menu = dout_value;
-	  } else if( strcmp(parameter, "BOOKMARK") == 0 ) {
+	  } else if( strcasecmp(parameter, "BOOKMARK") == 0 ) {
 	    seq_hwcfg_led.bookmark = dout_value;
-	  } else if( strcmp(parameter, "SCRUB") == 0 ) {
+	  } else if( strcasecmp(parameter, "SCRUB") == 0 ) {
 	    seq_hwcfg_led.scrub = dout_value;
-	  } else if( strcmp(parameter, "LOOP") == 0 ) {
+	  } else if( strcasecmp(parameter, "LOOP") == 0 ) {
 	    seq_hwcfg_led.loop = dout_value;
-	  } else if( strcmp(parameter, "FOLLOW") == 0 ) {
+	  } else if( strcasecmp(parameter, "FOLLOW") == 0 ) {
 	    seq_hwcfg_led.follow = dout_value;
-	  } else if( strcmp(parameter, "METRONOME") == 0 ) {
+	  } else if( strcasecmp(parameter, "METRONOME") == 0 ) {
 	    seq_hwcfg_led.metronome = dout_value;
-	  } else if( strcmp(parameter, "RECORD") == 0 ) {
+	  } else if( strcasecmp(parameter, "RECORD") == 0 ) {
 	    seq_hwcfg_led.record = dout_value;
-	  } else if( strcmp(parameter, "LIVE") == 0 ) {
+	  } else if( strcasecmp(parameter, "LIVE") == 0 ) {
 	    seq_hwcfg_led.live = dout_value;
-	  } else if( strcmp(parameter, "UTILITY") == 0 ) {
+	  } else if( strcasecmp(parameter, "UTILITY") == 0 ) {
 	    seq_hwcfg_led.utility = dout_value;
-	  } else if( strcmp(parameter, "COPY") == 0 ) {
+	  } else if( strcasecmp(parameter, "COPY") == 0 ) {
 	    seq_hwcfg_led.copy = dout_value;
-	  } else if( strcmp(parameter, "PASTE") == 0 ) {
+	  } else if( strcasecmp(parameter, "PASTE") == 0 ) {
 	    seq_hwcfg_led.paste = dout_value;
-	  } else if( strcmp(parameter, "CLEAR") == 0 ) {
+	  } else if( strcasecmp(parameter, "CLEAR") == 0 ) {
 	    seq_hwcfg_led.clear = dout_value;
-	  } else if( strcmp(parameter, "UNDO") == 0 ) {
+	  } else if( strcasecmp(parameter, "UNDO") == 0 ) {
 	    seq_hwcfg_led.undo = dout_value;
-	  } else if( strcmp(parameter, "STEP_VIEW") == 0 ) {
+	  } else if( strcasecmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_led.step_view = dout_value;
-	  } else if( strcmp(parameter, "TRG_LAYER_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRG_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_led.trg_layer_sel = dout_value;
-	  } else if( strcmp(parameter, "PAR_LAYER_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "PAR_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_led.par_layer_sel = dout_value;
-	  } else if( strcmp(parameter, "TRACK_SEL") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_led.track_sel = dout_value;
-	  } else if( strcmp(parameter, "TAP_TEMPO") == 0 ) {
+	  } else if( strcasecmp(parameter, "TAP_TEMPO") == 0 ) {
 	    seq_hwcfg_led.tap_tempo = dout_value;
-	  } else if( strcmp(parameter, "TEMPO_PRESET") == 0 ) {
+	  } else if( strcasecmp(parameter, "TEMPO_PRESET") == 0 ) {
 	    seq_hwcfg_led.tempo_preset = dout_value;
-	  } else if( strcmp(parameter, "EXT_RESTART") == 0 ) {
+	  } else if( strcasecmp(parameter, "EXT_RESTART") == 0 ) {
 	    seq_hwcfg_led.ext_restart = dout_value;
-	  } else if( strcmp(parameter, "DOWN") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOWN") == 0 ) {
 	    seq_hwcfg_led.down = dout_value;
-	  } else if( strcmp(parameter, "UP") == 0 ) {
+	  } else if( strcasecmp(parameter, "UP") == 0 ) {
 	    seq_hwcfg_led.up = dout_value;
-	  } else if( strcmp(parameter, "MIXER") == 0 ) {
+	  } else if( strcasecmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_led.mixer = dout_value;
-	  } else if( strcmp(parameter, "TRACK_MODE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_MODE") == 0 ) {
 	    seq_hwcfg_led.track_mode = dout_value;
-	  } else if( strcmp(parameter, "TRACK_GROOVE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_GROOVE") == 0 ) {
 	    seq_hwcfg_led.track_groove = dout_value;
-	  } else if( strcmp(parameter, "TRACK_LENGTH") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_LENGTH") == 0 ) {
 	    seq_hwcfg_led.track_length = dout_value;
-	  } else if( strcmp(parameter, "TRACK_DIRECTION") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRACK_DIRECTION") == 0 ) {
 	    seq_hwcfg_led.track_direction = dout_value;
-	  } else if( strcmp(parameter, "MORPH") == 0 || strcmp(parameter, "TRACK_MORPH") == 0 ) {
+	  } else if( strcasecmp(parameter, "MORPH") == 0 || strcasecmp(parameter, "TRACK_MORPH") == 0 ) {
 	    seq_hwcfg_led.track_morph = dout_value;
-	  } else if( strcmp(parameter, "TRANSPOSE") == 0 || strcmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
+	  } else if( strcasecmp(parameter, "TRANSPOSE") == 0 || strcasecmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_led.track_transpose = dout_value;
-          } else if( strcmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
             seq_hwcfg_led.mute_all_tracks = dout_value;
-          } else if( strcmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
             seq_hwcfg_led.mute_track_layers = dout_value;
-          } else if( strcmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
             seq_hwcfg_led.mute_all_tracks_and_layers = dout_value;
-          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_ALL_TRACKS") == 0 ) {
             seq_hwcfg_led.unmute_all_tracks = dout_value;
-          } else if( strcmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_TRACK_LAYERS") == 0 ) {
             seq_hwcfg_led.unmute_track_layers = dout_value;
-          } else if( strcmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
+          } else if( strcasecmp(parameter, "UNMUTE_ALL_TRACKS_AND_LAYERS") == 0 ) {
             seq_hwcfg_led.unmute_all_tracks_and_layers = dout_value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -711,7 +715,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// ENC_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "ENC_", 4) == 0 ) {
+	} else if( strncasecmp(parameter, "ENC_", 4) == 0 ) {
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -723,19 +727,19 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  if( strcmp(parameter, "DATAWHEEL_FAST_SPEED") == 0 ) {
+	  if( strcasecmp(parameter, "DATAWHEEL_FAST_SPEED") == 0 ) {
 	    seq_hwcfg_enc.datawheel_fast_speed = sr;
 	    continue;
 	  }
-	  if( strcmp(parameter, "BPM_FAST_SPEED") == 0 ) {
+	  if( strcasecmp(parameter, "BPM_FAST_SPEED") == 0 ) {
 	    seq_hwcfg_enc.bpm_fast_speed = sr;
 	    continue;
 	  }
-	  if( strcmp(parameter, "GP_FAST_SPEED") == 0 ) {
+	  if( strcasecmp(parameter, "GP_FAST_SPEED") == 0 ) {
 	    seq_hwcfg_enc.gp_fast_speed = sr;
 	    continue;
 	  }
-	  if( strcmp(parameter, "AUTO_FAST") == 0 ) {
+	  if( strcasecmp(parameter, "AUTO_FAST") == 0 ) {
 	    seq_hwcfg_enc.auto_fast = sr;
 	    continue;
 	  }
@@ -756,13 +760,13 @@ s32 SEQ_FILE_HW_Read(void)
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: missing encoder type!", parameter);
 #endif
 	    continue;
-	  } else if( strcmp(word, "NON_DETENTED") == 0 ) {
+	  } else if( strcasecmp(word, "NON_DETENTED") == 0 ) {
 	    enc_type = NON_DETENTED;
-	  } else if( strcmp(word, "DETENTED1") == 0 ) {
+	  } else if( strcasecmp(word, "DETENTED1") == 0 ) {
 	    enc_type = DETENTED1;
-	  } else if( strcmp(word, "DETENTED2") == 0 ) {
+	  } else if( strcasecmp(word, "DETENTED2") == 0 ) {
 	    enc_type = DETENTED2;
-	  } else if( strcmp(word, "DETENTED3") == 0 ) {
+	  } else if( strcasecmp(word, "DETENTED3") == 0 ) {
 	    enc_type = DETENTED3;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -777,11 +781,11 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  mios32_enc_config_t enc_config = { .cfg.type=enc_type, .cfg.speed=NORMAL, .cfg.speed_par=0, .cfg.sr=sr, .cfg.pos=pin };
 
-	  if( strcmp(parameter, "DATAWHEEL") == 0 ) {
+	  if( strcasecmp(parameter, "DATAWHEEL") == 0 ) {
 	    MIOS32_ENC_ConfigSet(0, enc_config);
-	  } else if( strcmp(parameter, "BPM") == 0 ) {
+	  } else if( strcasecmp(parameter, "BPM") == 0 ) {
 	    MIOS32_ENC_ConfigSet(17, enc_config);
-	  } else if( strncmp(parameter, "GP", 2) == 0 ) {
+	  } else if( strncasecmp(parameter, "GP", 2) == 0 ) {
 	    parameter += 2;
 
 	    int gp = atoi(parameter);
@@ -803,7 +807,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// TRACKS_DOUT_[LR]_SR
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
+	} else if( strcasecmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcasecmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_dec(word);
 	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
@@ -812,7 +816,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	    continue;
 	  }
-	  if( strcmp(parameter, "TRACKS_DOUT_L_SR") == 0 ) {
+	  if( strcasecmp(parameter, "TRACKS_DOUT_L_SR") == 0 ) {
 	    seq_hwcfg_led.tracks_dout_l_sr = sr;
 	  } else {
 	    seq_hwcfg_led.tracks_dout_r_sr = sr;
@@ -821,7 +825,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// SRIO_NUM_SR
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "SRIO_NUM_SR") == 0 ) {
+	} else if( strcasecmp(parameter, "SRIO_NUM_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 num_sr = get_dec(word);
 	  if( num_sr < 1 || num_sr > MIOS32_SRIO_NUM_SR ) {
@@ -845,7 +849,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// GP_DOUT_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "GP_DOUT_", 8) == 0 ) {
+	} else if( strncasecmp(parameter, "GP_DOUT_", 8) == 0 ) {
 	  parameter += 8;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -861,13 +865,13 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] GP_DOUT_%s: SR %d", parameter, sr);
 #endif
 
-	  if( strcmp(parameter, "L_SR") == 0 ) {
+	  if( strcasecmp(parameter, "L_SR") == 0 ) {
 	    seq_hwcfg_led.gp_dout_l_sr = sr;
-	  } else if( strcmp(parameter, "R_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "R_SR") == 0 ) {
 	    seq_hwcfg_led.gp_dout_r_sr = sr;
-	  } else if( strcmp(parameter, "L2_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "L2_SR") == 0 ) {
 	    seq_hwcfg_led.gp_dout_l2_sr = sr;
-	  } else if( strcmp(parameter, "R2_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "R2_SR") == 0 ) {
 	    seq_hwcfg_led.gp_dout_r2_sr = sr;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -879,7 +883,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BLM_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "BLM_", 4) == 0 ) {
+	} else if( strncasecmp(parameter, "BLM_", 4) == 0 ) {
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -895,49 +899,49 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] BLM_%s: %d", parameter, value);
 #endif
 
-	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_blm.enabled = value;
-	  } else if( strcmp(parameter, "DOUT_L1_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_L1_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_l1_sr = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_R1_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_R1_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_r1_sr = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_CATHODES_SR1") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_CATHODES_SR1") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_cathodes_sr1 = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_CATHODES_SR2") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_CATHODES_SR2") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_cathodes_sr2 = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.cathodes_inv_mask = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_DUOCOLOUR") == 0 ) {
 	    seq_hwcfg_blm.dout_duocolour = value;
-	  } else if( strcmp(parameter, "DOUT_L2_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_L2_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_l2_sr = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_R2_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_R2_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.dout_r2_sr = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "BUTTONS_ENABLED") == 0 ) {
+	  } else if( strcasecmp(parameter, "BUTTONS_ENABLED") == 0 ) {
 	    seq_hwcfg_blm.buttons_enabled = value;
-	  } else if( strcmp(parameter, "BUTTONS_NO_UI") == 0 ) {
+	  } else if( strcasecmp(parameter, "BUTTONS_NO_UI") == 0 ) {
 	    seq_hwcfg_blm.buttons_no_ui = value;
-	  } else if( strcmp(parameter, "GP_ALWAYS_SELECT_MENU_PAGE") == 0 ) {
+	  } else if( strcasecmp(parameter, "GP_ALWAYS_SELECT_MENU_PAGE") == 0 ) {
 	    seq_hwcfg_blm.gp_always_select_menu_page = value;
-	  } else if( strcmp(parameter, "DIN_L_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DIN_L_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.din_l_sr = value;
 	    BLM_ConfigSet(config);
-	  } else if( strcmp(parameter, "DIN_R_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DIN_R_SR") == 0 ) {
 	    blm_config_t config = BLM_ConfigGet();
 	    config.din_r_sr = value;
 	    BLM_ConfigSet(config);
@@ -952,7 +956,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BLM8X8_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "BLM8X8_", 7) == 0 ) {
+	} else if( strncasecmp(parameter, "BLM8X8_", 7) == 0 ) {
 	  parameter += 7;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -968,23 +972,23 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] BLM8X8_%s: %d", parameter, value);
 #endif
 
-	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_blm8x8.enabled = value;
-	  } else if( strcmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.rowsel_dout_sr = value;
 	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.rowsel_inv_mask = value;
 	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_LED_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_LED_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.led_first_dout_sr = value;
 	    BLM_X_ConfigSet(config);
-	  } else if( strcmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
+	  } else if( strcasecmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
 	    seq_hwcfg_blm8x8.dout_gp_mapping = value;
-	  } else if( strcmp(parameter, "DIN_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "DIN_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.btn_first_din_sr = value;
 	    BLM_X_ConfigSet(config);
@@ -997,7 +1001,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BPM_DIGITS_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "BPM_DIGITS_", 11) == 0 ) {
+	} else if( strncasecmp(parameter, "BPM_DIGITS_", 11) == 0 ) {
 	  parameter += 11;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -1013,14 +1017,14 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] BPM_DIGITS_%s: %d", parameter, value);
 #endif
 
-	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_bpm_digits.enabled = value;
-	  } else if( strcmp(parameter, "SEGMENTS_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "SEGMENTS_SR") == 0 ) {
 	    seq_hwcfg_bpm_digits.segments_sr = value;
-	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
-		     strcmp(parameter, "COMMON2_PIN") == 0 ||
-		     strcmp(parameter, "COMMON3_PIN") == 0 ||
-		     strcmp(parameter, "COMMON4_PIN") == 0 ) {
+	  } else if( strcasecmp(parameter, "COMMON1_PIN") == 0 ||
+		     strcasecmp(parameter, "COMMON2_PIN") == 0 ||
+		     strcasecmp(parameter, "COMMON3_PIN") == 0 ||
+		     strcasecmp(parameter, "COMMON4_PIN") == 0 ) {
 	    
 	    word = strtok_r(NULL, separators, &brkt);
 	    s32 pin = get_dec(word);
@@ -1032,13 +1036,13 @@ s32 SEQ_FILE_HW_Read(void)
 	    }
 	    u8 dout_value = ((value-1)<<3) | pin;
 
-	    if( strcmp(parameter, "COMMON1_PIN") == 0 ) {
+	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common1_pin = dout_value;
-	    } else if( strcmp(parameter, "COMMON2_PIN") == 0 ) {
+	    } else if( strcasecmp(parameter, "COMMON2_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common2_pin = dout_value;
-	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	    } else if( strcasecmp(parameter, "COMMON3_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common3_pin = dout_value;
-	    } else if( strcmp(parameter, "COMMON4_PIN") == 0 ) {
+	    } else if( strcasecmp(parameter, "COMMON4_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common4_pin = dout_value;
 	    }
 	  } else {
@@ -1050,7 +1054,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// STEP_DIGITS_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "STEP_DIGITS_", 12) == 0 ) {
+	} else if( strncasecmp(parameter, "STEP_DIGITS_", 12) == 0 ) {
 	  parameter += 12;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -1066,13 +1070,13 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] STEP_DIGITS_%s: %d", parameter, value);
 #endif
 
-	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_step_digits.enabled = value;
-	  } else if( strcmp(parameter, "SEGMENTS_SR") == 0 ) {
+	  } else if( strcasecmp(parameter, "SEGMENTS_SR") == 0 ) {
 	    seq_hwcfg_step_digits.segments_sr = value;
-	  } else if( strcmp(parameter, "COMMON1_PIN") == 0 ||
-		     strcmp(parameter, "COMMON2_PIN") == 0 ||
-		     strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	  } else if( strcasecmp(parameter, "COMMON1_PIN") == 0 ||
+		     strcasecmp(parameter, "COMMON2_PIN") == 0 ||
+		     strcasecmp(parameter, "COMMON3_PIN") == 0 ) {
 	    
 	    word = strtok_r(NULL, separators, &brkt);
 	    s32 pin = get_dec(word);
@@ -1084,11 +1088,11 @@ s32 SEQ_FILE_HW_Read(void)
 	    }
 	    u8 dout_value = ((value-1)<<3) | pin;
 
-	    if( strcmp(parameter, "COMMON1_PIN") == 0 ) {
+	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_step_digits.common1_pin = dout_value;
-	    } else if( strcmp(parameter, "COMMON2_PIN") == 0 ) {
+	    } else if( strcasecmp(parameter, "COMMON2_PIN") == 0 ) {
 	      seq_hwcfg_step_digits.common2_pin = dout_value;
-	    } else if( strcmp(parameter, "COMMON3_PIN") == 0 ) {
+	    } else if( strcasecmp(parameter, "COMMON3_PIN") == 0 ) {
 	      seq_hwcfg_step_digits.common3_pin = dout_value;
 	    }
 	  } else {
@@ -1099,7 +1103,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// TPD_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncmp(parameter, "TPD_", 4) == 0 ) {
+	} else if( strncasecmp(parameter, "TPD_", 4) == 0 ) {
 	  parameter += 4;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -1115,19 +1119,19 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] TPD_%s: %d", parameter, value);
 #endif
 
-	  if( strcmp(parameter, "ENABLED") == 0 ) {
+	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_tpd.enabled = value;
-	  } else if( strcmp(parameter, "COLUMNS_SR") == 0 || strcmp(parameter, "COLUMNS_SR_L") == 0 ) {
+	  } else if( strcasecmp(parameter, "COLUMNS_SR") == 0 || strcasecmp(parameter, "COLUMNS_SR_L") == 0 ) {
 	    seq_hwcfg_tpd.columns_sr[0] = value;
-	  } else if( strcmp(parameter, "COLUMNS_SR_R") == 0 ) {
+	  } else if( strcasecmp(parameter, "COLUMNS_SR_R") == 0 ) {
 	    seq_hwcfg_tpd.columns_sr[1] = value;
-	  } else if( strcmp(parameter, "ROWS_SR") == 0 || strcmp(parameter, "ROWS_SR_GREEN_L") == 0 ) {
+	  } else if( strcasecmp(parameter, "ROWS_SR") == 0 || strcasecmp(parameter, "ROWS_SR_GREEN_L") == 0 ) {
 	    seq_hwcfg_tpd.rows_sr_green[0] = value;
-	  } else if( strcmp(parameter, "ROWS_SR_GREEN_R") == 0 ) {
+	  } else if( strcasecmp(parameter, "ROWS_SR_GREEN_R") == 0 ) {
 	    seq_hwcfg_tpd.rows_sr_green[1] = value;
-	  } else if( strcmp(parameter, "ROWS_SR_RED_L") == 0 ) {
+	  } else if( strcasecmp(parameter, "ROWS_SR_RED_L") == 0 ) {
 	    seq_hwcfg_tpd.rows_sr_red[0] = value;
-	  } else if( strcmp(parameter, "ROWS_SR_RED_R") == 0 ) {
+	  } else if( strcasecmp(parameter, "ROWS_SR_RED_R") == 0 ) {
 	    seq_hwcfg_tpd.rows_sr_red[1] = value;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1138,7 +1142,7 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// misc
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "MIDI_REMOTE_KEY") == 0 ) {
+	} else if( strcasecmp(parameter, "MIDI_REMOTE_KEY") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 key = get_dec(word);
 	  if( key < 0 || key >= 128 ) {
@@ -1150,7 +1154,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_midi_remote.key = key;
 
-	} else if( strcmp(parameter, "MIDI_REMOTE_CC") == 0 ) {
+	} else if( strcasecmp(parameter, "MIDI_REMOTE_CC") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 cc = get_dec(word);
 	  if( cc < 0 || cc >= 128 ) {
@@ -1162,7 +1166,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_midi_remote.cc = cc;
 
-	} else if( strcmp(parameter, "TRACK_CC_MODE") == 0 ) {
+	} else if( strcasecmp(parameter, "TRACK_CC_MODE") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 mode = get_dec(word);
 	  if( mode < 0 || mode > 2 ) {
@@ -1174,9 +1178,9 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_track_cc.mode = mode;
 
-	} else if( strcmp(parameter, "TRACK_CC_PORT") == 0 ) {
+	} else if( strcasecmp(parameter, "TRACK_CC_PORT") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_port_out(word);
+	  s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1187,7 +1191,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_track_cc.port = port;
 
-	} else if( strcmp(parameter, "TRACK_CC_CHANNEL") == 0 ) {
+	} else if( strcasecmp(parameter, "TRACK_CC_CHANNEL") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 chn = get_dec(word);
 	  if( chn < 1 || chn > 16 ) {
@@ -1199,7 +1203,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_track_cc.chn = chn-1; // counting from 1 for user, from 0 for app
 
-	} else if( strcmp(parameter, "TRACK_CC_NUMBER") == 0 ) {
+	} else if( strcasecmp(parameter, "TRACK_CC_NUMBER") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 cc = get_dec(word);
 	  if( cc < 0 || cc >= 128 ) {
@@ -1211,9 +1215,9 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  seq_hwcfg_track_cc.cc = cc;
 
-	} else if( strcmp(parameter, "RS_OPTIMISATION") == 0 ) {
+	} else if( strcasecmp(parameter, "RS_OPTIMISATION") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_port_out(word);
+	  s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1239,7 +1243,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	  }
 
-	} else if( strcmp(parameter, "DEBOUNCE_DELAY") == 0 ) {
+	} else if( strcasecmp(parameter, "DEBOUNCE_DELAY") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 delay = get_dec(word);
 	  if( delay < 0 || delay >= 128 ) {
@@ -1257,7 +1261,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  config.debounce_delay = delay;
 	  BLM_X_ConfigSet(config);
 
-	} else if( strcmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
+	} else if( strcasecmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
 
@@ -1279,7 +1283,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  AOUT_ConfigSet(config);
 	  AOUT_IF_Init(0);
 
-	} else if( strncmp(parameter, "DOUT_GATE_SR", 12) == 0 && // DOUT_GATE_SR%d
+	} else if( strncasecmp(parameter, "DOUT_GATE_SR", 12) == 0 && // DOUT_GATE_SR%d
 		     (hlp=atoi(parameter+12)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -1293,7 +1297,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	    seq_hwcfg_dout_gate_sr[hlp-1] = sr;
 
-	} else if( strcmp(parameter, "J5_ENABLED") == 0 ) {
+	} else if( strcasecmp(parameter, "J5_ENABLED") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 j5_enabled = get_dec(word);
 	  if( j5_enabled < 0 || j5_enabled > 2 ) {
@@ -1331,7 +1335,7 @@ s32 SEQ_FILE_HW_Read(void)
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
 
-	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
+	} else if( strcasecmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
 
@@ -1346,7 +1350,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  SEQ_CV_ClkPulseWidthSet(pulsewidth);
 
-	} else if( strcmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
+	} else if( strcasecmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 trg_enabled = get_dec(word);

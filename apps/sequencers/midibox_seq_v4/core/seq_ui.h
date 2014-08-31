@@ -14,12 +14,7 @@
 #ifndef _SEQ_UI_H
 #define _SEQ_UI_H
 
-/////////////////////////////////////////////////////////////////////////////
-// Menu Page definitions
-/////////////////////////////////////////////////////////////////////////////
-
-#include "seq_ui_pages.inc"
-
+#include "seq_ui_pages.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -250,7 +245,6 @@ extern s32 SEQ_UI_LCD_Handler(void);
 extern s32 SEQ_UI_MENU_Handler_Periodic();
 
 extern s32 SEQ_UI_PageSet(seq_ui_page_t page);
-extern char *SEQ_UI_PageNameGet(seq_ui_page_t page);
 
 extern s32 SEQ_UI_InstallInitCallback(void *callback);
 extern s32 SEQ_UI_InstallButtonCallback(void *callback);
@@ -288,6 +282,59 @@ extern s32 SEQ_UI_KeyPad_LCD_Msg(void);
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes for functions implemented in seq_ui_*.c
 /////////////////////////////////////////////////////////////////////////////
+
+extern s32 SEQ_UI_TODO_Init(u32 mode);
+extern s32 SEQ_UI_MENU_Init(u32 mode);
+extern s32 SEQ_UI_PMUTE_Init(u32 mode);
+extern s32 SEQ_UI_FX_Init(u32 mode);
+extern s32 SEQ_UI_STEPSEL_Init(u32 mode);
+extern s32 SEQ_UI_TRGSEL_Init(u32 mode);
+extern s32 SEQ_UI_PARSEL_Init(u32 mode);
+extern s32 SEQ_UI_TRACKSEL_Init(u32 mode);
+extern s32 SEQ_UI_BPM_PRESETS_Init(u32 mode);
+extern s32 SEQ_UI_EDIT_Init(u32 mode);
+extern s32 SEQ_UI_MUTE_Init(u32 mode);
+extern s32 SEQ_UI_PATTERN_Init(u32 mode);
+extern s32 SEQ_UI_SONG_Init(u32 mode);
+extern s32 SEQ_UI_MIXER_Init(u32 mode);
+extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
+extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
+extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
+extern s32 SEQ_UI_TRKDIV_Init(u32 mode);
+extern s32 SEQ_UI_TRKLEN_Init(u32 mode);
+extern s32 SEQ_UI_TRKTRAN_Init(u32 mode);
+extern s32 SEQ_UI_TRKGRV_Init(u32 mode);
+extern s32 SEQ_UI_TRGASG_Init(u32 mode);
+extern s32 SEQ_UI_TRKMORPH_Init(u32 mode);
+extern s32 SEQ_UI_TRKRND_Init(u32 mode);
+extern s32 SEQ_UI_TRKREC_Init(u32 mode);
+extern s32 SEQ_UI_MANUAL_Init(u32 mode);
+extern s32 SEQ_UI_GROOVE_Init(u32 mode);
+extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
+extern s32 SEQ_UI_FX_HUMANIZE_Init(u32 mode);
+extern s32 SEQ_UI_FX_LIMIT_Init(u32 mode);
+extern s32 SEQ_UI_FX_DUPL_Init(u32 mode);
+extern s32 SEQ_UI_FX_LFO_Init(u32 mode);
+extern s32 SEQ_UI_FX_LOOP_Init(u32 mode);
+extern s32 SEQ_UI_FX_SCALE_Init(u32 mode);
+extern s32 SEQ_UI_UTIL_Init(u32 mode);
+extern s32 SEQ_UI_BPM_Init(u32 mode);
+extern s32 SEQ_UI_OPT_Init(u32 mode);
+extern s32 SEQ_UI_SAVE_Init(u32 mode);
+extern s32 SEQ_UI_METRONOME_Init(u32 mode);
+extern s32 SEQ_UI_MIDI_Init(u32 mode);
+extern s32 SEQ_UI_MIDPLY_Init(u32 mode);
+extern s32 SEQ_UI_MIDIMON_Init(u32 mode);
+extern s32 SEQ_UI_SYSEX_Init(u32 mode);
+extern s32 SEQ_UI_CV_Init(u32 mode);
+extern s32 SEQ_UI_DISK_Init(u32 mode);
+extern s32 SEQ_UI_ETH_Init(u32 mode);
+extern s32 SEQ_UI_BOOKMARKS_Init(u32 mode);
+extern s32 SEQ_UI_INFO_Init(u32 mode);
+extern s32 SEQ_UI_TRKLIVE_Init(u32 mode);
+extern s32 SEQ_UI_PATTERN_RMX_Init(u32 mode);
+extern s32 SEQ_UI_TRKEUCLID_Init(u32 mode);
+
 
 extern s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds);
 extern s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed);

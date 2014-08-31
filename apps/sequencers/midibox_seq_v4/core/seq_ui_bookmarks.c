@@ -109,6 +109,8 @@ s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed)
     return 1;
   }
 
+#if 0
+  // doesn't make much sense here
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -119,6 +121,7 @@ s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed)
     case SEQ_UI_BUTTON_Down:
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
   }
+#endif
 
   return -1; // invalid or unsupported button
 }
@@ -144,7 +147,7 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintString("            Global Bookmarks                        Session Bookmarks           ");
 
   SEQ_LCD_CursorSet(0, 1);
-  int i, j;
+  int i;
   for(i=0; i<SEQ_UI_BOOKMARKS_NUM; ++i) {
     if( i >= 16 )
       break; // just to ensure...
@@ -152,16 +155,8 @@ static s32 LCD_Handler(u8 high_prio)
 
     if( ui_cursor_flash && (i == last_bookmark) )
       SEQ_LCD_PrintSpaces(5);
-    else {
-      for(j=0; j<5; ++j)
-	if( bm->name[j] == 0 )
-	  break;
-	else
-	  SEQ_LCD_PrintChar(bm->name[j]);
-
-      while( j++ < 5 )
-	SEQ_LCD_PrintChar(' ');
-    }
+    else
+      SEQ_LCD_PrintStringPadded(bm->name, 5);
   }
 
   return 0; // no error

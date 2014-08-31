@@ -65,6 +65,83 @@ RS_OPTIMISATION OUT4 1
 
 
 ##################################################
+# Menu Shortcuts allow a quick selection of menu pages.
+# Will be displayed when the "MENU" button is pressed
+# Syntax: MENU_SHORTCUT <gp-button-number> <page-name>
+#
+# <gp-button-number> in the range of 1..16
+# <page-name>: one of these names:
+#
+#   - MENU         (Page Menu)
+#   - FXSEL        (Fx Selection)
+#   - STEPSEL      (Step Selection)
+#   - TRGSEL       (Trigger Selection)
+#   - PARSEL       (Param. Selection)
+#   - TRACKSEL     (Track Selection)
+#   - BPM_PRESETS  (BPM Presets)
+#   - EDIT         (Edit)
+#   - MUTE         (Mute Tracks)
+#   - MUTE_PORTS   (Mute Ports)
+#   - PATTERNS     (Patterns)
+#   - SONG         (Song)
+#   - MIXER        (Mixer)
+#   - EVENTS       (Track Events)
+#   - MODE         (Track Mode)
+#   - DIRECTION    (Track Direction)
+#   - DIVIDER      (Track ClockDivider)
+#   - LENGTH       (Track Length)
+#   - TRANSPOSE    (Track Transpose)
+#   - GROOVE       (Track Groove)
+#   - TRG_ASSIGN   (Track Triggers)
+#   - MORPH        (Track Morphing)
+#   - RANDOM       (Random Generator)
+#   - EUCLID       (Track Euclid Generator)
+#   - RECORD       (Record)
+#   - MANUAL       (Manual Trigger)
+#   - FX_ECHO      (Track Fx: Echo)
+#   - FX_HUMANIZER (Track Fx: Humanize)
+#   - FX_LIMIT     (Track Fx: Limit)
+#   - FX_LFO       (Track Fx: LFO)
+#   - FX_DUPLICATE (Track Fx: Duplicate)
+#   - FX_LOOP      (Global Fx: Loop)
+#   - FX_SCALE     (Global Fx: Scale)
+#   - UTIL         (Utilities)
+#   - BPM          (BPM Selection)
+#   - OPTIONS      (Options)
+#   - SAVE         (Save Pattern)
+#   - METRONOME    (Metronome)
+#   - MIDI         (MIDI Configuration)
+#   - MIDIMON      (MIDI Monitor)
+#   - SYSEX        (SysEx)
+#   - CVCFG        (CV Configuration)
+#   - DISK         (Disk (SD Card))
+#   - ETH_OSC      (Ethernet & OSC)
+#   - LIVE         (Live Play)
+#   - REMIX        (Pattern Remix)
+#   - BOOKMARKS    (Bookmarks)
+#   - ABOUT        (About this MIDIbox)
+#
+##################################################
+
+MENU_SHORTCUT  1 MIXER
+MENU_SHORTCUT  2 EVENTS
+MENU_SHORTCUT  3 MODE
+MENU_SHORTCUT  4 DIRECTION
+MENU_SHORTCUT  5 DIVIDER
+MENU_SHORTCUT  6 LENGTH
+MENU_SHORTCUT  7 TRANSPOSE
+MENU_SHORTCUT  8 GROOVE
+MENU_SHORTCUT  9 TRG_ASSIGN
+MENU_SHORTCUT 10 FXSEL
+MENU_SHORTCUT 11 MANUAL
+MENU_SHORTCUT 12 MORPH
+MENU_SHORTCUT 13 BPM
+MENU_SHORTCUT 14 SAVE
+MENU_SHORTCUT 15 MIDI
+MENU_SHORTCUT 16 SYSEX
+
+
+##################################################
 # Shift Register Setup
 ##################################################
 

@@ -6,6 +6,26 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.085
+~~~~~~~~~~~~~~~~~
+
+   o it's now possible to customize the MENU short cut page in MBSEQ_HW.V4
+     with the new MENU_SHORTCUT parameter.
+     See the templates under hwcfg/*/MBSEQ_HW.V4 for further informations.
+
+   o the bookmark configuration files (MBSEQ_BM.V4) are using the same
+     page names like MENU_SHORTCUT instead of numbers.
+     The old number scheme will be automatically converted to the new names.
+
+   o improved keypad (SMS-like) entry of names
+
+   o SysEx device page allows to specify a delay between SysEx messages which is
+     used when a .syx file contains multiple dumps
+
+   o each SysEx device page has now a dedicated port/delay configuration which
+     is stored/restored from the /SYSEX/<device>/DEVCFG.V4 file
+
+
 MIDIboxSEQ V4.084
 ~~~~~~~~~~~~~~~~~
 
@@ -1773,17 +1793,12 @@ Wishlist for future features
 
   o SysEx librarian, recording and dumping function for external Synths or 
     other MIDI gear
-  o support for MBHP_ETH module for sending OSC packets without the need 
-    for a computer based proxy server
   o finish the remote access function, which allows to control multiple
     instances of MBSEQ (either running on MBHP_CORE_STM32 module or in
     simulation) from a single CS (partly working, can be enabled in the
     OPT menu, but not very user friendly yet)
-  o implement BPM LED digit display (as known from V3)
-  o implement Tap Tempo function (as known from V3)
   o allow to switch between different sections of a track (A/B/C/D function
     like known from MB808)
-  o ALL button should work in mute screen
   o "Preloading steps" as proposed by Gridracer:
      Layer A is already active-> I press it again-> LED goes off or starts 
      blinking. I change the note numbers of the steps without setting them, 
@@ -1791,12 +1806,6 @@ Wishlist for future features
      Now I can set the new steps which will now play the intended
      notes right from the beginning.
   o SysEx dump for patterns/songs
-  o implementation of a new 16x16 BLM (cascadable to even more buttons/LEDs)
-  o now where infos are sent to MIOS terminal, we could also provide a
-    console input to control MBSEQ from a terminal (this would even allow
-    to create sequences from a computer)
-
-
 
 
 Additional input from vcfool:

@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <string.h>
 
 #include <osc_client.h>
 
@@ -377,6 +378,133 @@ s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port)
     }
   }
   return 0; // port not available
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a decimal or hex value
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec(const char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  return l; // value is valid
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the mios32_port_t if the name matches with a MBSEQ MIDI Port (either name or value such as 0x10 for USB1)
+// Returns -1 if no matching port has been found
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_InPortFromNameGet(const char* name)
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_IN_PORTS; ++port_ix) {
+    // terminate port name at first space
+    const char *port_name = in_ports[port_ix].name;
+    const char *search_name = name;
+    while( *port_name != 0 && *port_name == *search_name ) {
+      ++port_name, ++search_name;
+      if( *search_name == 0 && (*port_name == ' ' || *port_name == 0) )
+	return in_ports[port_ix].port;
+    }
+  }
+  s32 value = get_dec(name);
+  if( value >= 0 && value <= 0xff )
+    return value;
+  return -1; // port not found
+}
+
+s32 SEQ_MIDI_PORT_OutPortFromNameGet(const char* name)
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_OUT_PORTS; ++port_ix) {
+    // terminate port name at first space
+    const char *port_name = out_ports[port_ix].name;
+    const char *search_name = name;
+    while( *port_name != 0 && *port_name == *search_name ) {
+      ++port_name, ++search_name;
+      if( *search_name == 0 && (*port_name == ' ' || *port_name == 0) )
+	return out_ports[port_ix].port;
+    }
+  }
+  s32 value = get_dec(name);
+  if( value >= 0 && value <= 0xff )
+    return value;
+  return -1; // port not found
+}
+
+s32 SEQ_MIDI_PORT_ClkPortFromNameGet(const char* name)
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_CLK_PORTS; ++port_ix) {
+    // terminate port name at first space
+    const char *port_name = clk_ports[port_ix].name;
+    const char *search_name = name;
+    while( *port_name != 0 && *port_name == *search_name ) {
+      ++port_name, ++search_name;
+      if( *search_name == 0 && (*port_name == ' ' || *port_name == 0) )
+	return clk_ports[port_ix].port;
+    }
+  }
+  s32 value = get_dec(name);
+  if( value >= 0 && value <= 0xff )
+    return value;
+  return -1; // port not found
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the MIDI port name as a string
+// Returns a hexadecimal value if no "official" port
+// str_buffer must be at least char [5] (4 characters + terminator)
+/////////////////////////////////////////////////////////////////////////////
+char *SEQ_MIDI_PORT_InPortToName(mios32_midi_port_t port, char str_buffer[5])
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_IN_PORTS; ++port_ix) {
+    if( in_ports[port_ix].port == port ) {
+      strncpy(str_buffer, in_ports[port_ix].name, 5);
+      return str_buffer;
+    }
+  }
+  sprintf(str_buffer, "0x%02x", port);
+  return str_buffer;
+}
+
+char *SEQ_MIDI_PORT_OutPortToName(mios32_midi_port_t port, char str_buffer[5])
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_OUT_PORTS; ++port_ix) {
+    if( out_ports[port_ix].port == port ) {
+      strncpy(str_buffer, out_ports[port_ix].name, 5);
+      return str_buffer;
+    }
+  }
+  sprintf(str_buffer, "0x%02x", port);
+  return str_buffer;
+}
+
+char *SEQ_MIDI_PORT_ClkPortToName(mios32_midi_port_t port, char str_buffer[5])
+{
+  int port_ix;
+  for(port_ix=0; port_ix<NUM_CLK_PORTS; ++port_ix) {
+    if( clk_ports[port_ix].port == port ) {
+      strncpy(str_buffer, clk_ports[port_ix].name, 5);
+      return str_buffer;
+    }
+  }
+  sprintf(str_buffer, "0x%02x", port);
+  return str_buffer;
 }
 
 

@@ -56,13 +56,17 @@
 static s32 dir_num_items; // contains FILE error status if < 0
 static u8 dir_view_offset = 0; // only changed once after startup
 static mios32_midi_port_t sysex_port = DEFAULT; // only changed once after startup
+static u16 sysex_delay_between_dumps = 100; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
+static u8 store_file_required;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_UI_SYSEX_UpdateDirList(void);
+static s32 SEQ_UI_SYSEX_StoreConfig(void);
+static s32 SEQ_UI_SYSEX_RestoreConfig(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -90,15 +94,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   // any encoder changes the dir view
   if( !dir_name[0] ) {
-    if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) )
+    if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, &ui_selected_item, &dir_view_offset) ) {
       SEQ_UI_SYSEX_UpdateDirList();
+    }
   } else {
     switch( encoder ) {
-      case SEQ_UI_ENCODER_GP15: {
+      case SEQ_UI_ENCODER_GP13: {
 	// select MIDI port
 	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(sysex_port);
 	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	  sysex_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP15: {
+	// select delay
+	if( SEQ_UI_Var16_Inc(&sysex_delay_between_dumps, 0, 999, incrementer) >= 0 ) {
+	  store_file_required = 1;
 	  return 1; // value changed
 	}
 	return 0; // no change
@@ -107,6 +123,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP16:
 	// EXIT only via button
 	if( incrementer == 0 ) {
+	  if( store_file_required )
+	    SEQ_UI_SYSEX_StoreConfig();
+
 	  // Exit
 	  dir_name[0] = 0;
 	  ui_selected_item = 0;
@@ -116,7 +135,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
 
       default:
-	if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-1, &ui_selected_item, &dir_view_offset) )
+	if( SEQ_UI_SelectListItem(incrementer, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-2, &ui_selected_item, &dir_view_offset) )
 	  SEQ_UI_SYSEX_UpdateDirList();
     }
   }
@@ -163,10 +182,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       ui_selected_item = 0;
       dir_view_offset = 0;
       SEQ_UI_SYSEX_UpdateDirList();
+      SEQ_UI_SYSEX_RestoreConfig();
     } else {
       switch( button ) {
-        case SEQ_UI_BUTTON_GP15:
+        case SEQ_UI_BUTTON_GP13:
 	  // increment MIDI port
+	  return Encoder_Handler(button, 1);
+
+        case SEQ_UI_BUTTON_GP14:
+	  // decrement delay
+	  return Encoder_Handler(button, -1);
+
+        case SEQ_UI_BUTTON_GP15:
+	  // increment delay
 	  return Encoder_Handler(button, 1);
 
         case SEQ_UI_BUTTON_GP16:
@@ -191,7 +219,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	    SEQ_UI_Msg((ui_selected_item < 4) ? SEQ_UI_MSG_USER : SEQ_UI_MSG_USER_R, 10000, "Sending:", syx_file);
 	    MUTEX_SDCARD_TAKE;
 	    MUTEX_MIDIOUT_TAKE;
-	    s32 status = FILE_SendSyxDump(path, sysex_port);
+	    s32 status = FILE_SendSyxDump(path, sysex_port, sysex_delay_between_dumps);
 	    MUTEX_MIDIOUT_GIVE;
 	    MUTEX_SDCARD_GIVE;
 	    if( status < 0 )
@@ -266,7 +294,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( dir_name[0] != 0 ) {
       SEQ_LCD_PrintString("Select .SYX file with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
-      SEQ_LCD_PrintFormattedString("%d files found under /SYSEX/%s", dir_num_items, dir_name);
+      SEQ_LCD_PrintFormattedString("/SYSEX/%-8s       Port  Delay       ", dir_name);
     } else {
       SEQ_LCD_PrintString("Select MIDI Device with GP Button:");
       SEQ_LCD_CursorSet(40, 0);
@@ -281,13 +309,31 @@ static s32 LCD_Handler(u8 high_prio)
   if( !dir_name[0] ) {
     SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS, ui_selected_item, dir_view_offset);
   } else {
-    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-1, ui_selected_item, dir_view_offset);
+    SEQ_LCD_PrintList((char *)ui_global_dir_list, LIST_ENTRY_WIDTH, dir_num_items, NUM_LIST_DISPLAYED_ITEMS-2, ui_selected_item, dir_view_offset);
     SEQ_LCD_PrintChar(' ');
-    SEQ_LCD_PrintString((char *)SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(sysex_port)));
-    SEQ_LCD_PrintString(" EXIT");
+    SEQ_LCD_PrintChar(' ');
+    char str_buffer[5];
+    SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutPortToName(sysex_port, str_buffer));
+    SEQ_LCD_PrintFormattedString("  %3d mS", sysex_delay_between_dumps);
+    SEQ_LCD_PrintString("  EXIT");
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local exit function
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  s32 status = 0;
+
+  if( store_file_required ) {
+    SEQ_UI_SYSEX_StoreConfig();
+  }
+
+  return status;
 }
 
 
@@ -301,6 +347,9 @@ s32 SEQ_UI_SYSEX_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
+
+  store_file_required = 0;
 
   // load charset (if this hasn't been done yet)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
@@ -333,7 +382,7 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
   } else {
     char path[25];
     sprintf(path, "/SYSEX/%s", dir_name);
-    dir_num_items = FILE_GetFiles(path, "SYX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-1, dir_view_offset);
+    dir_num_items = FILE_GetFiles(path, "SYX", (char *)&ui_global_dir_list[0], NUM_LIST_DISPLAYED_ITEMS-2, dir_view_offset);
   }
   MUTEX_SDCARD_GIVE;
 
@@ -351,4 +400,154 @@ static s32 SEQ_UI_SYSEX_UpdateDirList(void)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Store configuration in /SYSEX/<device>/DEVCFG.V4 file
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_SYSEX_StoreConfig(void)
+{
+  s32 status = 0;
+
+  if( !dir_name[0] ) {
+    // not in device dir
+    return -1;
+  }
+
+  char filepath[MAX_PATH];
+  sprintf(filepath, "/SYSEX/%s/DEVCFG.V4", dir_name);
+
+  MUTEX_SDCARD_TAKE;
+
+  if( (status=FILE_WriteOpen(filepath, 1)) < 0 ) {
+    FILE_WriteClose(); // important to free memory given by malloc
+    DEBUG_MSG("[SEQ_UI_SYSEX] Failed to open %s file, status: %d\n", filepath, status);
+    SEQ_UI_SDCardErrMsg(2000, status);
+  } else {
+    char line_buffer[128];
+
+#define FLUSH_BUFFER { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
+
+    char str_buffer[5];
+    sprintf(line_buffer, "DevicePort %s\n", SEQ_MIDI_PORT_OutPortToName(sysex_port, str_buffer));
+    FLUSH_BUFFER;
+
+    sprintf(line_buffer, "DelayBetweenDumps %d\n", sysex_delay_between_dumps);
+    FLUSH_BUFFER;
+
+    // close file
+    status |= FILE_WriteClose();
+
+    if( status < 0 ) {
+      DEBUG_MSG("[SEQ_UI_SYSEX] Errors while writing into %s file\n", filepath);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Errors while writing into", filepath);
+    }
+  }
+
+  MUTEX_SDCARD_GIVE;
+
+  store_file_required = 0;
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which parses a decimal or hex value
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  return l; // value is valid
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Restore configuration from /SYSEX/<device>/DEVCFG.V4 file
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_SYSEX_RestoreConfig(void)
+{
+  s32 status = 0;
+
+  if( !dir_name[0] ) {
+    // not in device dir
+    return -1;
+  }
+
+  file_t file;
+  char filepath[MAX_PATH];
+  sprintf(filepath, "/SYSEX/%s/DEVCFG.V4", dir_name);
+
+  MUTEX_SDCARD_TAKE;
+
+  if( (status=FILE_ReadOpen(&file, filepath)) < 0 ) {
+    // no error if file doesn't exist...
+    if( FILE_FileExists(filepath) >= 1 ) {
+      DEBUG_MSG("[SEQ_UI_SYSEX] Failed to open %s file, status: %d\n", filepath, status);
+      SEQ_UI_SDCardErrMsg(2000, status);
+    }
+    // take default values
+    sysex_port = DEFAULT;
+    sysex_delay_between_dumps = 100;
+  } else {
+    char line_buffer[128];
+    do {
+      status=FILE_ReadLine((u8 *)line_buffer, 128);
+
+      // sscanf consumes too much memory, therefore we parse directly
+      char *separators = " \t";
+      char *brkt;
+      char *parameter;
+
+      if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
+
+	if( *parameter == '#' ) {
+	  // ignore comments
+	} else {
+	  char *word = strtok_r(NULL, separators, &brkt);
+
+	  if( strcasecmp(parameter, "DevicePort") == 0 ) {
+	    s32 value = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	    if( value < 0 ) {
+	      DEBUG_MSG("[SEQ_UI_SYSEX] ERROR: invalid parameter value: %s %s\n", parameter, word);
+	    } else {
+	      sysex_port = value;
+	    }
+	  } else if( strcasecmp(parameter, "DelayBetweenDumps") == 0 ) {
+	    s32 value = get_dec(word);
+	    if( value < 0 || value > 65535 ) {
+	      DEBUG_MSG("[SEQ_UI_SYSEX] ERROR: invalid parameter value: %s %s\n", parameter, word);
+	    } else {
+	      sysex_delay_between_dumps = value;
+	    }
+	  } else {
+	    DEBUG_MSG("[SEQ_UI_SYSEX] ERROR: unknown parameter: %s\n", parameter);
+	  }
+	}
+      }
+
+    } while( status >= 1 );
+
+    // close file
+    status |= FILE_ReadClose(&file);
+
+    if( status < 0 ) {
+      DEBUG_MSG("[SEQ_UI_SYSEX] Errors while reading from %s file\n", filepath);
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Errors while reading from", filepath);
+    }
+  }
+
+  MUTEX_SDCARD_GIVE;
+
+  return status;
 }
