@@ -352,7 +352,7 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 /////////////////////////////////////////////////////////////////////////////
 // prints a string
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintString(char *str)
+s32 SEQ_LCD_PrintString(const char *str)
 {
   while( *str != '\0' ) {
     if( lcd_cursor_x >= LCD_MAX_COLUMNS )
@@ -368,7 +368,7 @@ s32 SEQ_LCD_PrintString(char *str)
 /////////////////////////////////////////////////////////////////////////////
 // prints a formatted string
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_PrintFormattedString(char *format, ...)
+s32 SEQ_LCD_PrintFormattedString(const char *format, ...)
 {
   char buffer[LCD_MAX_COLUMNS]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;

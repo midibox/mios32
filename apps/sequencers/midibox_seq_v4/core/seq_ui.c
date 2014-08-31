@@ -15,9 +15,6 @@
 // Include files
 /////////////////////////////////////////////////////////////////////////////
 
-// with this switch, seq_ui.h/seq_ui_pages.inc will create local variables
-#define SEQ_UI_PAGES_INC_LOCAL_VARS 1
-
 #include <mios32.h>
 #include <string.h>
 #include <blm.h>
@@ -357,15 +354,6 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns name of menu page (18 characters)
-/////////////////////////////////////////////////////////////////////////////
-char *SEQ_UI_PageNameGet(seq_ui_page_t page)
-{
-  return (char *)ui_menu_pages[page].name;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Local help functions for copy/paste/clear/undo operations
 /////////////////////////////////////////////////////////////////////////////
 static void SEQ_UI_Msg_Track(char *line2)
@@ -414,7 +402,7 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
   // in MENU page: overrule GP buttons as long as MENU button is pressed/active
   if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( depressed ) return -1;
-    SEQ_UI_PageSet(ui_shortcut_menu_pages[gp]);
+    SEQ_UI_PageSet(SEQ_UI_PAGES_MenuShortcutPageGet(gp));
   } else {
     if( depressed )
       ui_selected_gp_buttons &= ~(1 << gp);
@@ -2439,8 +2427,7 @@ s32 SEQ_UI_LCD_Handler(void)
     ui_selected_item = 0;
 
     // call init function of current page
-    if( ui_menu_pages[ui_page].init_callback != NULL )
-      ui_menu_pages[ui_page].init_callback(0); // mode
+    SEQ_UI_PAGES_CallInit(ui_page);
 
     // request display update
     seq_ui_display_update_req = 1;
@@ -2502,7 +2489,11 @@ s32 SEQ_UI_LCD_Handler(void)
     SEQ_LCD_PrintString("Menu Shortcuts:");
     SEQ_LCD_PrintSpaces(25 + 40);
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintString(UI_SHORTCUT_STR); // defined in seq_ui_pages.inc
+
+    int i;
+    for(i=0; i<16; ++i) {
+      SEQ_LCD_PrintString(SEQ_UI_PAGES_MenuShortcutNameGet(i));
+    }
   } else {
     // perform high priority LCD update request
     if( ui_lcd_callback != NULL )
@@ -2810,7 +2801,7 @@ s32 SEQ_UI_LED_Handler(void)
       int i;
       u16 new_ui_gp_leds = 0x0000;
       for(i=0; i<16; ++i)
-	if( ui_page == ui_shortcut_menu_pages[i] )
+	if( ui_page == SEQ_UI_PAGES_MenuShortcutPageGet(i) )
 	  new_ui_gp_leds |= (1 << i);
       ui_gp_leds = new_ui_gp_leds;
     }
@@ -3530,11 +3521,14 @@ static const char ui_keypad_charsets_lower[10][6] = {
 };
 
 static u8 ui_keypad_select_charset_lower;
+static s8 ui_keypad_last_key;
 
 s32 SEQ_UI_KeyPad_Init(void)
 {
   ui_keypad_select_charset_lower = 0;
+  ui_keypad_last_key = -1;
   ui_edit_name_cursor = 0;
+
   return 0; // no error
 }
 
@@ -3545,6 +3539,7 @@ static s32 SEQ_UI_KeyPad_IncCursor(u32 len)
     ui_edit_name_cursor = len - 1;
 
   ui_keypad_select_charset_lower = 1;
+  ui_keypad_last_key = -1;
 
   ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
 
@@ -3557,6 +3552,13 @@ s32 SEQ_UI_KeyPad_Handler(seq_ui_encoder_t encoder, s32 incrementer, char *edit_
   char *edit_char = (char *)&edit_str[ui_edit_name_cursor];
 
   if( encoder <= SEQ_UI_ENCODER_GP10 ) {
+
+    if( ui_keypad_last_key != -1 && ui_keypad_last_key != encoder ) {
+      SEQ_UI_KeyPad_IncCursor(len);
+      edit_char = (char *)&edit_str[ui_edit_name_cursor];
+    }
+    ui_keypad_last_key = encoder;
+
     char *charset = ui_keypad_select_charset_lower
       ? (char *)&ui_keypad_charsets_lower[encoder]
       : (char *)&ui_keypad_charsets_upper[encoder];

@@ -59,6 +59,14 @@ extern s32 SEQ_MIDI_PORT_InCheckAvailable(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutCheckAvailable(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_ClkCheckAvailable(mios32_midi_port_t port);
 
+extern s32 SEQ_MIDI_PORT_InPortFromNameGet(const char* name);
+extern s32 SEQ_MIDI_PORT_OutPortFromNameGet(const char* name);
+extern s32 SEQ_MIDI_PORT_ClkPortFromNameGet(const char* name);
+
+extern char *SEQ_MIDI_PORT_InPortToName(mios32_midi_port_t port, char str_buffer[5]);
+extern char *SEQ_MIDI_PORT_OutPortToName(mios32_midi_port_t port, char str_buffer[5]);
+extern char *SEQ_MIDI_PORT_ClkPortToName(mios32_midi_port_t port, char str_buffer[5]);
+
 extern s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute);
 

@@ -50,8 +50,8 @@ extern s32 SEQ_LCD_CursorSet(u16 column, u16 line);
 extern s32 SEQ_LCD_Update(u8 force);
 
 extern s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset);
-extern s32 SEQ_LCD_PrintString(char *str);
-extern s32 SEQ_LCD_PrintFormattedString(char *format, ...);
+extern s32 SEQ_LCD_PrintString(const char *str);
+extern s32 SEQ_LCD_PrintFormattedString(const char *format, ...);
 
 extern s32 SEQ_LCD_PrintSpaces(int num);
 extern s32 SEQ_LCD_PrintStringPadded(char *str, u32 width);

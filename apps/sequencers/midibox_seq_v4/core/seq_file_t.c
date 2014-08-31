@@ -140,6 +140,10 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	  if( strcmp(parameter, "Name") == 0 ) {
 	    // parsing for string...
 	    word = brkt;
+	  } else if( strcmp(parameter, "MIDI_Port") == 0 || strcmp(parameter, "FxMIDI_Port") == 0 ) {
+	    // parsing for MIDI port
+	    word = strtok_r(NULL, separators, &brkt);
+	    value = SEQ_MIDI_PORT_OutPortFromNameGet(word);
 	  } else {
 	    word = strtok_r(NULL, separators, &brkt);
 	    value = get_dec(word);
@@ -514,19 +518,16 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
 	  tcc->mode.SUSTAIN ? "on" : "off");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_Port 0x%02x (%s%c)\n",
-	  tcc->midi_port,
-	  SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(tcc->midi_port)),
-	  SEQ_MIDI_PORT_OutCheckAvailable(tcc->midi_port) ? ' ' : '*');
+  char tmp_buffer[5];
+  sprintf(line_buffer, "MIDI_Port %s\n",
+	  SEQ_MIDI_PORT_OutPortToName(tcc->midi_port, tmp_buffer));
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_Channel %d (#%d)\n", tcc->midi_chn, (int)tcc->midi_chn + 1);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "FxMIDI_Port 0x%02x (%s%c)\n",
-	  tcc->fx_midi_port,
-	  SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(tcc->fx_midi_port)),
-	  SEQ_MIDI_PORT_OutCheckAvailable(tcc->fx_midi_port) ? ' ' : '*');
+  sprintf(line_buffer, "FxMIDI_Port %s\n",
+	  SEQ_MIDI_PORT_OutPortToName(tcc->fx_midi_port, tmp_buffer));
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "FxMIDI_Channel %d (#%d)\n", tcc->fx_midi_chn, (int)tcc->fx_midi_chn + 1);
