@@ -111,6 +111,7 @@ static s32 (*ui_encoder_callback)(seq_ui_encoder_t encoder, s32 incrementer);
 static s32 (*ui_led_callback)(u16 *gp_leds);
 static s32 (*ui_lcd_callback)(u8 high_prio);
 static s32 (*ui_exit_callback)(void);
+static s32 (*ui_midi_in_callback)(mios32_midi_port_t port, mios32_midi_package_t p);
 static s32 (*ui_delayed_action_callback)(u32 parameter);
 static u32 ui_delayed_action_parameter;
 
@@ -282,7 +283,6 @@ s32 SEQ_UI_InstallExitCallback(void *callback)
   return 0; // no error
 }
 
-
 s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter)
 {
   // must be atomic
@@ -307,6 +307,21 @@ s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback)
 }
 
 
+s32 SEQ_UI_InstallMIDIINCallback(void *callback)
+{
+  ui_midi_in_callback = callback;
+  return 0; // no error
+}
+
+s32 SEQ_UI_NotifyMIDIINCallback(mios32_midi_port_t port, mios32_midi_package_t p)
+{
+  if( ui_midi_in_callback != NULL )
+    return ui_midi_in_callback(port, p);
+
+  return -1; // no callback install
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Change the menu page
 /////////////////////////////////////////////////////////////////////////////
@@ -326,6 +341,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     ui_led_callback = NULL;
     ui_lcd_callback = NULL;
     ui_exit_callback = NULL;
+    ui_midi_in_callback = NULL;
     ui_delayed_action_callback = NULL;
     portEXIT_CRITICAL();
 
@@ -3419,6 +3435,29 @@ s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status)
   char str[21];
   sprintf(str, "E%3d (FatFs: D%3d)", -status, file_dfs_errno < 1000 ? file_dfs_errno : 999);
   return SEQ_UI_Msg(SEQ_UI_MSG_SDCARD, delay, "!! SD Card Error !!!", str);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints a temporary message when MIDI learn has been activated/deactivated
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_MIDILearnMessage(seq_ui_msg_type_t msg_type, u8 on_off)
+{
+  if( on_off ) {
+    char tmp[20];
+    if( seq_midi_in_rec_channel == 0 ) {
+      sprintf(tmp, "disable (config in REC page!)");
+    } else if( seq_midi_in_rec_channel > 16 ) {
+      sprintf(tmp, "Port: %s  Chn All", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port)));
+    } else {
+      sprintf(tmp, "Port: %s  Chn #%2d", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port)), seq_midi_in_rec_channel);
+    }
+    SEQ_UI_Msg(msg_type, 1000, "MIDI Learn active:", tmp);
+  } else {
+    SEQ_UI_Msg(msg_type, 1000, "MIDI Learn", "deactivated");
+  }
+
+  return 0; // no error
 }
 
 

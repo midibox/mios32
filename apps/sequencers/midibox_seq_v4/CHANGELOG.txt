@@ -6,6 +6,17 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.086
+~~~~~~~~~~~~~~~~~
+
+   o MIDI Learn for Drum notes in Track Event configuration page:
+     on a drum track, press & hold button GP12 to set the drum note
+     depending on the configured recording port & channel (which has to be
+     configured in the RECORD page)
+
+   o Track Event configuration page: VelN/VelA not displayed if they are
+     not relevant for the selected configuration.
+
 MIDIboxSEQ V4.085
 ~~~~~~~~~~~~~~~~~
 

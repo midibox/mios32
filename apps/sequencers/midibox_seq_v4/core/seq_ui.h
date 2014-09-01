@@ -252,8 +252,12 @@ extern s32 SEQ_UI_InstallEncoderCallback(void *callback);
 extern s32 SEQ_UI_InstallLEDCallback(void *callback);
 extern s32 SEQ_UI_InstallLCDCallback(void *callback);
 extern s32 SEQ_UI_InstallExitCallback(void *callback);
+
 extern s32 SEQ_UI_InstallDelayedActionCallback(void *callback, u16 delay_mS, u32 parameter);
 extern s32 SEQ_UI_UnInstallDelayedActionCallback(void *callback);
+
+extern s32 SEQ_UI_InstallMIDIINCallback(void *callback);
+extern s32 SEQ_UI_NotifyMIDIINCallback(mios32_midi_port_t port, mios32_midi_package_t p);
 
 extern s32 SEQ_UI_LCD_Update(void);
 
@@ -368,6 +372,7 @@ extern u8 SEQ_UI_UTIL_CopyPasteEndGet(void);
 extern s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *line2);
 extern s32 SEQ_UI_MsgStop(void);
 extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
+extern s32 SEQ_UI_MIDILearnMessage(seq_ui_msg_type_t msg_type, u8 on_off);
 
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);

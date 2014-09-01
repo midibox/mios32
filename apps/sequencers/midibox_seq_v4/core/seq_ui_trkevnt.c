@@ -29,6 +29,7 @@
 #include "seq_midi_port.h"
 #include "seq_label.h"
 #include "seq_cc_labels.h"
+#include "seq_midi_in.h"
 
 #include "file.h"
 #include "seq_file.h"
@@ -151,6 +152,15 @@ static char dir_name[12]; // directory name of device (first char is 0 if no dev
 
 static seq_file_t_import_flags_t import_flags;
 
+
+/////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+  MIDI_LEARN_MODE_OFF = 0,
+  MIDI_LEARN_MODE_DRUM_NOTE,
+} midi_learn_mode_t;
+
+static midi_learn_mode_t midi_learn_mode = MIDI_LEARN_MODE_OFF;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -540,6 +550,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	    case SEQ_UI_ENCODER_GP12:
 	      ui_selected_item = ITEM_DRUM_NOTE;
+
+	      // GP12 button activates MIDI learn mode
+	      if( incrementer == 0 ) {
+		midi_learn_mode = MIDI_LEARN_MODE_DRUM_NOTE;
+		SEQ_UI_MIDILearnMessage(SEQ_UI_MSG_USER, 1);
+	      }
+
 	      break;
 
 	    case SEQ_UI_ENCODER_GP13:
@@ -706,9 +723,30 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  }
 	  return 0;
 	} break;
-	case ITEM_DRUM_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, 0, 127, incrementer);
-	case ITEM_DRUM_VEL_N:    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_instrument, 0, 127, incrementer);
-	case ITEM_DRUM_VEL_A:    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + ui_selected_instrument, 0, 127, incrementer);
+
+	case ITEM_DRUM_NOTE: {
+	  return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, 0, 127, incrementer);
+	} break;
+
+	case ITEM_DRUM_VEL_N: {
+	  if( !SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelN can't be changed:", "No accent layer in this config!");
+	  } else if( SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelN can't be changed: Track", "has already a velocity layer!");
+	  } else {
+	    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_B1 + ui_selected_instrument, 0, 127, incrementer);
+	  }
+	} break;
+
+	case ITEM_DRUM_VEL_A: {
+	  if( !SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelA can't be changed:", "No accent layer in this config!");
+	  } else if( SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelA can't be changed: Track", "has already a velocity layer!");
+	  } else {
+	    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + ui_selected_instrument, 0, 127, incrementer);
+	  }
+	} break;
 	}
       } else {
 	switch( ui_selected_item ) {
@@ -838,7 +876,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	return 1; // value has been changed
       }
 
-      if( depressed ) return 0; // ignore when button depressed
+      if( depressed ) {
+	if( button == SEQ_UI_BUTTON_GP12 ) {
+	  if( midi_learn_mode != MIDI_LEARN_MODE_OFF ) {
+	    midi_learn_mode = MIDI_LEARN_MODE_OFF;
+	    SEQ_UI_MIDILearnMessage(SEQ_UI_MSG_USER, 0);
+	  }
+	}
+
+	return 0; // ignore when button depressed
+      }
 
       if( button <= SEQ_UI_BUTTON_GP15 )
 	return Encoder_Handler((seq_ui_encoder_t)button, 0);
@@ -1220,7 +1267,11 @@ static s32 LCD_Handler(u8 high_prio)
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	SEQ_LCD_PrintString("LayA ");
 	SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
-	SEQ_LCD_PrintString(" Drum Note VelN VelA PRE-    ");
+	if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	  SEQ_LCD_PrintString(" Drum Note VelN VelA PRE-    ");
+	} else {
+	  SEQ_LCD_PrintString(" Drum Note           PRE-    ");
+	}
       } else {
 	SEQ_LCD_PrintString("Layer  controls                         ");
       }
@@ -1339,14 +1390,22 @@ static s32 LCD_Handler(u8 high_prio)
 	if( ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_instrument));
+	  if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	    SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_instrument));
+	  } else {
+	    SEQ_LCD_PrintString(" --- ");
+	  }
 	}
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_DRUM_VEL_A && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_C1 + ui_selected_instrument));
+	  if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	    SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_C1 + ui_selected_instrument));
+	  } else {
+	    SEQ_LCD_PrintString(" --- ");
+	  }
 	}
 
 	SEQ_LCD_PrintString("SETS INIT");
@@ -1411,6 +1470,20 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// MIDI IN
+/////////////////////////////////////////////////////////////////////////////
+s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
+{
+  if( midi_learn_mode == MIDI_LEARN_MODE_DRUM_NOTE ) {
+    SEQ_UI_CC_Set(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, p.note);
+    seq_ui_display_update_req = 1;
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_TRKEVNT_Init(u32 mode)
@@ -1420,6 +1493,10 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallMIDIINCallback(MIDI_IN_Handler);
+
+  // disable MIDI learn mode by default
+  midi_learn_mode = MIDI_LEARN_MODE_OFF;
 
   // load charset (if this hasn't been done yet)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
