@@ -741,8 +741,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	case ITEM_DRUM_VEL_A: {
 	  if( !SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
 	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelA can't be changed:", "No accent layer in this config!");
-	  } else if( SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
-	    SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "VelA can't be changed: Track", "has already a velocity layer!");
 	  } else {
 	    return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_C1 + ui_selected_instrument, 0, 127, incrementer);
 	  }
@@ -1269,6 +1267,8 @@ static s32 LCD_Handler(u8 high_prio)
 	SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
 	if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
 	  SEQ_LCD_PrintString(" Drum Note VelN VelA PRE-    ");
+	} else if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
+	  SEQ_LCD_PrintString(" Drum Note      VelA PRE-    ");
 	} else {
 	  SEQ_LCD_PrintString(" Drum Note           PRE-    ");
 	}
@@ -1401,7 +1401,7 @@ static s32 LCD_Handler(u8 high_prio)
 	if( ui_selected_item == ITEM_DRUM_VEL_A && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
+	  if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
 	    SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_C1 + ui_selected_instrument));
 	  } else {
 	    SEQ_LCD_PrintString(" --- ");
