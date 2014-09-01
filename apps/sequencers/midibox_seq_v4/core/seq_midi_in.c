@@ -411,10 +411,10 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   s32 status = 0;
 
   // check if we should record this event
-  u8 should_be_recorded =
-    seq_record_state.ENABLED &&
+  u8 is_record_port = 
     ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
      (seq_midi_in_rec_channel == 17 || midi_package.chn == (seq_midi_in_rec_channel-1)));
+  u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
 
   // simplify Note On/Off handling
   if( midi_package.event == NoteOff ) {
@@ -563,8 +563,13 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 
   // record function
-  if( !(status & 2) && should_be_recorded ) {
-    SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
+  if( !(status & 2) && is_record_port ) {
+    if( should_be_recorded ) {
+      SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
+    } else {
+      // inform UI MIDI callback
+      SEQ_UI_NotifyMIDIINCallback(port, midi_package);
+    }
   }
 
   // External Control

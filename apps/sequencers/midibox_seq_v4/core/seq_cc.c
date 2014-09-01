@@ -418,3 +418,13 @@ s32 SEQ_CC_TrackHasVelocityParLayer(u8 track)
   return (tcc->link_par_layer_velocity >= 0) ? 1 : 0;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Relevant for Drum mode: returns 1 if the track has a trigger layer
+// assigned to accent
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CC_TrackHasAccentTrgLayer(u8 track)
+{
+  return seq_cc_trk[track].trg_assignments.accent ? 1 : 0;
+}
+
+
