@@ -1475,8 +1475,10 @@ static s32 LCD_Handler(u8 high_prio)
 s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 {
   if( midi_learn_mode == MIDI_LEARN_MODE_DRUM_NOTE ) {
-    SEQ_UI_CC_Set(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, p.note);
-    seq_ui_display_update_req = 1;
+    if( p.type == NoteOn && p.velocity > 0 ) {
+      SEQ_UI_CC_Set(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, p.note);
+      seq_ui_display_update_req = 1;
+    }
   }
 
   return 0;
