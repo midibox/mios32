@@ -312,6 +312,89 @@ static s32 parseValue(u32 line, char *command, char *value_str)
   if( value_str == NULL || value_str[0] == 0 )
     return -1000000000;
 
+  if( value_str[0] == '[' ) {
+    // math operation
+    int len = strlen(value_str);
+    if( value_str[len-1] != ']' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid syntax for math operation:", line);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: '%s' should end with ']' in '%s' command!", line, value_str, command);
+#endif
+      return -1000000000;
+    }
+
+    // remove [ and ]
+    value_str[len-1] = 0;
+    ++value_str;
+    len -= 2;
+
+    // separate operands
+    char *lOperand = value_str;
+    char *rOperand = value_str;
+    char operator = '?';
+    {
+      int i;
+      for(i=0; i<len; ++i, ++rOperand) {
+	if( *rOperand == '+' ||
+	    *rOperand == '-' ||
+	    *rOperand == '*' ||
+	    *rOperand == '/' ||
+	    *rOperand == '%' ||
+	    *rOperand == '&' ||
+	    *rOperand == '|' ) {
+	  operator = *rOperand;
+	  *rOperand = 0;
+	  ++rOperand;
+	  break;
+	}
+      }
+
+      if( operator == '?' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: no operator in math operation '%s'!", line, value_str);
+#endif
+	return -1000000000;
+      }
+    }
+
+    //DEBUG_MSG("Calc: %s %c %s\n", lOperand, operator, rOperand);
+
+    // get left side value (recursively)
+    s32 lValue = parseValue(line, command, lOperand);
+    if( lValue <= -1000000000 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid left side operand '%s' in '%s' command!", line, lOperand, command);
+#endif
+      return -1000000000;
+    }
+
+    // get right side value (recursively)
+    s32 rValue = parseValue(line, command, rOperand);
+    if( rValue <= -1000000000 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid right side operand '%s' in '%s' command!", line, rOperand, command);
+#endif
+      return -1000000000;
+    }
+
+    switch( operator ) {
+    case '+': return lValue + rValue;
+    case '-': return lValue - rValue;
+    case '*': return lValue * rValue;
+    case '/': return lValue / rValue;
+    case '%': return lValue % rValue;
+    case '&': return lValue & rValue;
+    case '|': return lValue | rValue;
+      // note inversion (a ^ b) currently not supported, since ^ is used to indicate a variable
+    }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: unsupported operator in math operation '%s'!", line, value_str);
+#endif
+    return -1000000000;
+  }
+
+
   if( value_str[0] == '^' ) {
     if( strcasecmp((char *)&value_str[1], "SECTION") == 0 ) {
       return vars.section;
@@ -331,7 +414,8 @@ static s32 parseValue(u32 line, char *command, char *value_str)
       return mbng_patch_cfg.sysex_chn;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid or unsupported variable '%s' in '%s' command!", line, value_str, command);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid or unsupported variable:", line);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: '%s' in '%s' command!", line, value_str, command);
 #endif
       return -1000000000;
     }
@@ -1452,7 +1536,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 #endif
       }
     } else {
-#if DEBUG_VERBOSE_LEVEL >= 2
+#if DEBUG_VERBOSE_LEVEL >= 4
       // no real error, can for example happen in .csv file
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR no space or semicolon separator in following line: %s", line, line_buffer);
 #endif

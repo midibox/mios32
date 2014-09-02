@@ -1,5 +1,23 @@
 $Id$
 
+MIDIbox NG V1.032
+~~~~~~~~~~~~~~~~~
+
+   o support for mathematical operations in .NGR script.
+     They have to be surrounded with square-brackets ([...])
+     No spaces are allowed within the brackets (yet!)
+     Syntax: [<left-operand><operator><right-operand>]
+     Example:
+        - set LED:2000 [LED:2000+1]
+          will increment the value stored in LED:2000
+        - set LED:2000 [LED:2000-1]
+          will decrement the value stored in LED:2000
+
+     More examples in cfg/tests/runscr5.ngc
+
+     Support operators: + - * / % & |
+
+
 MIDIbox NG V1.031
 ~~~~~~~~~~~~~~~~~
 
