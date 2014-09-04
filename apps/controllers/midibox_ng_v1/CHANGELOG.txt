@@ -5,17 +5,33 @@ MIDIbox NG V1.032
 
    o support for mathematical operations in .NGR script.
      They have to be surrounded with square-brackets ([...])
-     No spaces are allowed within the brackets (yet!)
      Syntax: [<left-operand><operator><right-operand>]
      Example:
-        - set LED:2000 [LED:2000+1]
+        - set LED:2000 [LED:2000 + 1]
           will increment the value stored in LED:2000
-        - set LED:2000 [LED:2000-1]
+        - set LED:2000 [LED:2000 - 1]
           will decrement the value stored in LED:2000
+
+     Note that nested operations are supported as well, such as:
+        - send CC USB1 1 [LED:2000 + [LED:2001 + [LED:2002 + LED:2003]]]
 
      More examples in cfg/tests/runscr5.ngc
 
-     Support operators: + - * / % & |
+     Support operators: + - * / % & | ^
+
+
+   o number of scanned SRIOs now configurable in .NGC file
+     with 'SrioNum <value'
+
+     By default 32 DIN and DOUT shift registers are scanned, which
+     result into an update rate of ca. 420 uS on a STM32F4 based core.
+
+     With (for example) 'SrioNum 8' only up to 8 DIN and 8 DOUT SRs will
+     be scanned anymore, but the update rate is reduced to ca. 110..120 uS
+     (a little bit more than a quarter due to SR handling overhead)
+     
+
+    o corrected DebounceCtr parameter (value was not passed to MIOS32)
 
 
 MIDIbox NG V1.031

@@ -1,12 +1,9 @@
-// $Id$
-//! \defgroup MBNG_FILE_R
-//! Config File access functions
-//! 
-//! NOTE: before accessing the SD Card, the upper level function should
-//! synchronize with the SD Card semaphore!
-//!   MUTEX_SDCARD_TAKE; // to take the semaphore
-//!   MUTEX_SDCARD_GIVE; // to release the semaphore
-//! \{
+// $Id$ //! \defgroup
+// MBNG_FILE_R //! Config File access functions //! //! NOTE: before
+// accessing the SD Card, the upper level function should //! 
+// synchronize with the SD Card semaphore!  //!  MUTEX_SDCARD_TAKE; //
+// to take the semaphore //!  MUTEX_SDCARD_GIVE; // to release the
+// semaphore //! \{
 /* ==========================================================================
  *
  *  Copyright (C) 2012 Thorsten Klose (tk@midibox.org)
@@ -220,8 +217,99 @@ s32 MBNG_FILE_R_VarValueGet()
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! This is a local implementation of strtok_r (original one taken from newlib-1.20-0)
+//! It ignores delim inside squared brackets [ ... ]
+/////////////////////////////////////////////////////////////////////////////
+static char *ngr_strtok_r(register char *s, register const char *delim, char **lasts)
+{
+  register char *spanp;
+  register int c, sc;
+  char *tok;
+  int tk_nested_squarebrackets_ctr = 0;
+
+  if (s == NULL && (s = *lasts) == NULL)
+    return (NULL);
+
+  /*
+   * Skip (span) leading delimiters (s += strspn(s, delim), sort of).
+   */
+cont:
+  c = *s++;
+  for (spanp = (char *)delim; (sc = *spanp++) != 0;) {
+    if (c == sc)
+      goto cont;
+  }
+
+  if (c == 0) {		/* no non-delimiter characters */
+    *lasts = NULL;
+    return (NULL);
+  }
+  tok = s - 1;
+
+  /*
+   * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
+   * Note that delim must have one NUL; we stop if we see that, too.
+   */
+
+  if( c == '[' )
+    ++tk_nested_squarebrackets_ctr;
+
+  for (;;) {
+    c = *s++;
+
+    if( c == '[' ) {
+      ++tk_nested_squarebrackets_ctr;
+    } else if( c == ']' && tk_nested_squarebrackets_ctr > 0 ) {
+      --tk_nested_squarebrackets_ctr;
+    } else if( c == 0 || tk_nested_squarebrackets_ctr == 0 ) {
+      spanp = (char *)delim;
+      do {
+	if ((sc = *spanp++) == c) {
+	  if (c == 0)
+	    s = NULL;
+	  else
+	    s[-1] = 0;
+	  *lasts = s;
+	  return (tok);
+	}
+      } while (sc != 0);
+    }
+  }
+  /* NOTREACHED */
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which removes whitespaces at the begin and end of a string
+/////////////////////////////////////////////////////////////////////////////
+static char *trim(char *word)
+{
+  if( word == NULL )
+    return NULL;
+
+  // remove at string begin
+  while( *word != 0 && (*word == ' ' || *word == '\t') )
+    ++word;
+
+  if( *word == 0 )
+    return word;
+
+  // inc until we reach the end of string
+  char *word_end = word;
+  while( *word_end != 0 ) ++word_end;
+
+  // remove at string end
+  --word_end;
+  while( *word_end == ' ' || *word_end == '\t' )
+    --word_end;
+
+  word_end[1] = 0;
+
+  return word;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! help function which removes the quotes of an argument (e.g. .csv file format)
-//! can be cascaded with strtok_r
+//! can be cascaded with ngr_strtok_r
 /////////////////////////////////////////////////////////////////////////////
 static char *remove_quotes(char *word)
 {
@@ -283,7 +371,7 @@ static mbng_file_r_item_id_t parseId(char *parameter)
   }
 
   char *value_str;
-  if( !(value_str = strtok_r(parameter, separator_colon, &brkt)) ||
+  if( !(value_str = ngr_strtok_r(parameter, separator_colon, &brkt)) ||
       (id.id=MBNG_EVENT_ItemIdFromControllerStrGet(value_str)) == MBNG_EVENT_CONTROLLER_DISABLED ) {
     return id;
   }
@@ -341,7 +429,8 @@ static s32 parseValue(u32 line, char *command, char *value_str)
 	    *rOperand == '/' ||
 	    *rOperand == '%' ||
 	    *rOperand == '&' ||
-	    *rOperand == '|' ) {
+	    *rOperand == '|' ||
+	    *rOperand == '^' ) {
 	  operator = *rOperand;
 	  *rOperand = 0;
 	  ++rOperand;
@@ -360,7 +449,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     //DEBUG_MSG("Calc: %s %c %s\n", lOperand, operator, rOperand);
 
     // get left side value (recursively)
-    s32 lValue = parseValue(line, command, lOperand);
+    s32 lValue = parseValue(line, command, trim(lOperand));
     if( lValue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid left side operand '%s' in '%s' command!", line, lOperand, command);
@@ -369,7 +458,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     }
 
     // get right side value (recursively)
-    s32 rValue = parseValue(line, command, rOperand);
+    s32 rValue = parseValue(line, command, trim(rOperand));
     if( rValue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid right side operand '%s' in '%s' command!", line, rOperand, command);
@@ -385,7 +474,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     case '%': return lValue % rValue;
     case '&': return lValue & rValue;
     case '|': return lValue | rValue;
-      // note inversion (a ^ b) currently not supported, since ^ is used to indicate a variable
+    case '^': return lValue ^ rValue;
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -471,21 +560,21 @@ s32 parseCondition(u32 line, char *command, char **brkt)
 {
   char *lvalue_str, *condition_str, *rvalue_str;
 
-  if( !(lvalue_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(lvalue_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing left value of expression in '%s' command!", line, command);
 #endif
     return -1;
   }
 
-  if( !(condition_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(condition_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing condition of expression in '%s' command!", line, command);
 #endif
     return -2;
   }
 
-  if( !(rvalue_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(rvalue_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing right value of expression in '%s' command!", line, command);
 #endif
@@ -541,7 +630,7 @@ s32 parseCondition(u32 line, char *command, char **brkt)
 s32 parseSend(u32 line, char *command, char **brkt)
 {
   char *event_str;
-  if( !(event_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(event_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing event type in '%s' command!", line, command);
 #endif
@@ -558,7 +647,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
 
 
   char *port_str;
-  if( !(port_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(port_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing MIDI port in '%s' command!", line, command);
 #endif
@@ -614,7 +703,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
     char *brkt_local = *brkt;
     u8 *stream_pos = (u8 *)&stream[0];
     // check for STREAM_MAX_SIZE-2, since a meta entry allocates up to 3 bytes
-    while( stream_size < (STREAM_MAX_SIZE-2) && (stream_str = strtok_r(NULL, separators, &brkt_local)) ) {
+    while( stream_size < (STREAM_MAX_SIZE-2) && (stream_str = ngr_strtok_r(NULL, separators, &brkt_local)) ) {
       if( *stream_str == '^' ) {
 	mbng_event_sysex_var_t sysex_var = MBNG_EVENT_ItemSysExVarFromStrGet((char *)&stream_str[1]);
 	if( sysex_var == MBNG_EVENT_SYSEX_VAR_UNDEFINED ) {
@@ -665,7 +754,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   int i;
   for(i=0; i<num_values; ++i) {
     char *value_str;
-    if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+    if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value for '%s' event in '%s' command!", line, event_str, command);
 #endif
@@ -733,7 +822,7 @@ s32 parseExecMeta(u32 line, char *command, char **brkt)
   item.stream_size = 0;
 
   char *meta_str;
-  if( !(meta_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(meta_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing meta type in '%s' command!", line, command);
 #endif
@@ -744,7 +833,7 @@ s32 parseExecMeta(u32 line, char *command, char **brkt)
   char *brkt_local;
 
   mbng_event_meta_type_t meta_type;
-  if( !(values_str = strtok_r(meta_str, separator_colon, &brkt_local)) ||
+  if( !(values_str = ngr_strtok_r(meta_str, separator_colon, &brkt_local)) ||
       (meta_type = MBNG_EVENT_ItemMetaTypeFromStrGet(meta_str)) == MBNG_EVENT_META_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unknown or invalid meta type in '%s' command!\n", line, command);
@@ -765,7 +854,7 @@ s32 parseExecMeta(u32 line, char *command, char **brkt)
   int i;
   for(i=0; i<num_bytes; ++i) {
     int value = 0;
-    if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+    if( !(values_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
 	(value=get_dec(values_str)) < 0 || value > 255 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: expecting %d values for meta type %s\n", line, num_bytes, MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
@@ -784,7 +873,7 @@ s32 parseExecMeta(u32 line, char *command, char **brkt)
 
   // parse optional value
   s32 value = vars.value;
-  if( (values_str = strtok_r(NULL, separators, brkt)) ) {
+  if( (values_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 
     if( (value=get_dec(values_str)) < -16384 || value > 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -816,7 +905,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
   u8 is_var = (*brkt)[0] == '^';
 
   if( is_var ) {
-    if( !(dst_str = strtok_r(NULL, separators, brkt)) || strlen(dst_str) < 2 ) {
+    if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) || strlen(dst_str) < 2 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing variable in '%s ^<var>' command!\n", line, command);
 #endif
@@ -824,7 +913,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
     }
 
   } else {
-    if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+    if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -840,8 +929,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
     }
   }
 
-
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
@@ -937,7 +1025,7 @@ s32 parseSetRgb(u32 line, char *command, char **brkt)
   char *value_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
 
-  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -952,7 +1040,7 @@ s32 parseSetRgb(u32 line, char *command, char **brkt)
     return -1;
   }
 
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
@@ -966,11 +1054,11 @@ s32 parseSetRgb(u32 line, char *command, char **brkt)
 
   {
     char *brkt_local;
-    if( !(value_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+    if( !(value_str = ngr_strtok_r(value_str, separator_colon, &brkt_local)) ||
 	(r=get_dec(value_str)) < 0 ||
-	!(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	!(value_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
 	(g=get_dec(value_str)) < 0 ||
-	!(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	!(value_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
 	(b=get_dec(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid rgb format in '%s %s' command!\n", line, command, dst_str);
@@ -1047,7 +1135,7 @@ s32 parseSetLock(u32 line, char *command, char **brkt)
   char *value_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
 
-  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -1062,7 +1150,7 @@ s32 parseSetLock(u32 line, char *command, char **brkt)
     return -1;
   }
 
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
@@ -1117,7 +1205,7 @@ s32 parseTrigger(u32 line, char *command, char **brkt)
   char *dst_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
 
-  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -1171,7 +1259,7 @@ s32 parseSetActive(u32 line, char *command, char **brkt)
   char *value_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
 
-  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -1186,7 +1274,7 @@ s32 parseSetActive(u32 line, char *command, char **brkt)
     return -1;
   }
 
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
@@ -1243,7 +1331,7 @@ s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max)
   char *value_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
 
-  if( !(dst_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
 #endif
@@ -1258,7 +1346,7 @@ s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max)
     return -1;
   }
 
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
@@ -1319,7 +1407,7 @@ s32 parseDelay(u32 line, char *command, char **brkt)
 {
   char *value_str;
   s32 value;
-  if( !(value_str = strtok_r(NULL, separators, brkt)) ) {
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s' command!\n", line, command);
 #endif
@@ -1353,7 +1441,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
   char *brkt;
   char *parameter;
 
-  if( (parameter = remove_quotes(strtok_r(line_buffer, separators, &brkt))) ) {
+  if( (parameter = remove_quotes(ngr_strtok_r(line_buffer, separators, &brkt))) ) {
 
     if( *parameter == 0 || *parameter == '#' ) {
       // ignore comments and empty lines
@@ -1479,7 +1567,8 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
     }
 
     if( !if_state || *nesting_level == 0 || if_state[*nesting_level-1] == 1 ) {
-      if( strcasecmp(parameter, "LCD") == 0 ) {
+      if( strcasecmp(parameter,
+ "LCD") == 0 ) {
 	char *str = brkt;
 	if( !(str=remove_quotes(str)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1

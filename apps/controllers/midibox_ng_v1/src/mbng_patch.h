@@ -153,7 +153,6 @@ typedef struct {
 } mbng_patch_scs_t;
 
 typedef struct {
-  u8 debounce_ctr;
   u8 global_chn;
   u8 all_notes_off_chn;
   u8 convert_note_off_to_on0;
