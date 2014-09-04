@@ -14,8 +14,8 @@ endif
 # '1' button
 if ^section == 1
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+1]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 1]
 
     # indicate a valid number
     set LED:2001 1
@@ -26,8 +26,8 @@ endif
 # '2' button
 if ^section == 2
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+2]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 2]
 
     # indicate a valid number
     set LED:2001 1
@@ -38,8 +38,8 @@ endif
 # '3' button
 if ^section == 3
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+3]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 3]
 
     # indicate a valid number
     set LED:2001 1
@@ -50,8 +50,8 @@ endif
 # '4' button
 if ^section == 4
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+4]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 4]
 
     # indicate a valid number
     set LED:2001 1
@@ -62,8 +62,8 @@ endif
 # '5' button
 if ^section == 5
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+5]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 5]
 
     # indicate a valid number
     set LED:2001 1
@@ -74,8 +74,8 @@ endif
 # '6' button
 if ^section == 6
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+6]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 6]
 
     # indicate a valid number
     set LED:2001 1
@@ -86,8 +86,8 @@ endif
 # '7' button
 if ^section == 7
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+7]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 7]
 
     # indicate a valid number
     set LED:2001 1
@@ -98,8 +98,8 @@ endif
 # '8' button
 if ^section == 8
   if LED:2000 <= 11
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+8]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 8]
 
     # indicate a valid number
     set LED:2001 1
@@ -110,8 +110,8 @@ endif
 # '9' button
 if ^section == 9
   if LED:2000 <= 11
-    set LED:2000 [LED:2000*10]
-    set LED:2000 [LED:2000+9]
+    set LED:2000 [LED:2000 * 10]
+    set LED:2000 [LED:2000 + 9]
 
     # indicate a valid number
     set LED:2001 1
@@ -122,7 +122,7 @@ endif
 # '0' button
 if ^section == 10
   if LED:2000 <= 12
-    set LED:2000 [LED:2000*10]
+    set LED:2000 [LED:2000 * 10]
 
     # indicate a valid number
     set LED:2001 1

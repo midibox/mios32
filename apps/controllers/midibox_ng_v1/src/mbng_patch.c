@@ -57,7 +57,6 @@ static const mbng_patch_scs_t mbng_patch_scs_default = {
 
 mbng_patch_cfg_t mbng_patch_cfg;
 static const mbng_patch_cfg_t mbng_patch_cfg_default = {
-  .debounce_ctr = 20,
   .global_chn = 0,
   .all_notes_off_chn = 0,
   .convert_note_off_to_on0 = 1,
@@ -80,6 +79,9 @@ s32 MBNG_PATCH_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  MIOS32_SRIO_DebounceSet(20);
+  MIOS32_SRIO_ScanNumSet(MIOS32_SRIO_NUM_SR);
 
   mbng_patch_cfg = mbng_patch_cfg_default;
   mbng_patch_scs = mbng_patch_scs_default;

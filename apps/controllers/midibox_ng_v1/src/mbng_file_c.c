@@ -3443,7 +3443,11 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
     } else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
       int value = parseSimpleValue(line, parameter, &brkt, 0, 255);
       if( value >= 0 )
-	mbng_patch_cfg.debounce_ctr = value;
+	MIOS32_SRIO_DebounceSet(value);
+    } else if( strcasecmp(parameter, "SrioNum") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 1, MIOS32_SRIO_NUM_SR);
+      if( value >= 0 )
+	MIOS32_SRIO_ScanNumSet(value);
     } else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
       int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
       if( value >= 0 )
@@ -4618,7 +4622,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "DebounceCtr %d\n", mbng_patch_cfg.debounce_ctr);
+  sprintf(line_buffer, "DebounceCtr %d\n", MIOS32_SRIO_DebounceGet());
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SrioNum %d\n", MIOS32_SRIO_ScanNumGet());
   FLUSH_BUFFER;
   sprintf(line_buffer, "GlobalChannel %d\n", mbng_patch_cfg.global_chn);
   FLUSH_BUFFER;
