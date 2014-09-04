@@ -32,7 +32,3 @@ EVENT_LED    id=5  hw_id=5  type=CC chn=1 cc=20 range=0:127
 EVENT_LED    id=6  hw_id=6  type=CC chn=1 cc=21 range=0:127
 EVENT_LED    id=7  hw_id=7  type=CC chn=1 cc=22 range=0:127
 EVENT_LED    id=8  hw_id=8  type=CC chn=1 cc=23 range=0:127
-
-
-# debounce the buttons at 20 mS
-DebounceCtr 20

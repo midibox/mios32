@@ -7,9 +7,6 @@
 
 RESET_HW
 
-# debounce buttons
-DebounceCtr 20
-
 # start script with ^section == 1..10 for digit button 1, 2, 3, 4, ..., 9, 0
 EVENT_BUTTON id=1  type=Meta  meta=RunSection:1   button_mode=OnOnly
 EVENT_BUTTON id=2  type=Meta  meta=RunSection:2   button_mode=OnOnly

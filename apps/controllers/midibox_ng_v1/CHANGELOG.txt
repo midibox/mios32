@@ -21,17 +21,19 @@ MIDIbox NG V1.032
 
 
    o number of scanned SRIOs now configurable in .NGC file
-     with 'SrioNum <value'
+     with 'SRIO sr_num=<1..32>'
 
      By default 32 DIN and DOUT shift registers are scanned, which
      result into an update rate of ca. 420 uS on a STM32F4 based core.
 
-     With (for example) 'SrioNum 8' only up to 8 DIN and 8 DOUT SRs will
+     With (for example) 'sr_num=8' only up to 8 DIN and 8 DOUT SRs will
      be scanned anymore, but the update rate is reduced to ca. 110..120 uS
      (a little bit more than a quarter due to SR handling overhead)
      
 
     o corrected DebounceCtr parameter (value was not passed to MIOS32)
+      Now also part of the SRIO configuration, use:
+      SRIO debounce_cycles=<1..255>
 
 
 MIDIbox NG V1.031

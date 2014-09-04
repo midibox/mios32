@@ -31,7 +31,3 @@ EVENT_BUTTON id=13 hw_id=13 type=CC chn=1 cc=28 range=0:127
 EVENT_BUTTON id=14 hw_id=14 type=CC chn=1 cc=29 range=0:127
 EVENT_BUTTON id=15 hw_id=15 type=CC chn=1 cc=30 range=0:127
 EVENT_BUTTON id=16 hw_id=16 type=CC chn=1 cc=31 range=0:127
-
-
-# debounce the buttons at 20 mS
-DebounceCtr 20

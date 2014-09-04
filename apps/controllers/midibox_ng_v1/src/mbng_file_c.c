@@ -3088,6 +3088,55 @@ typedef struct {
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses SRIO definitions
+// returns >= 0 if command is valid
+// returns <0 if command is invalid
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_C_Read - this will blow up the stack usage too much!
+s32 parseSrio(u32 line, char *cmd, char *brkt)
+{
+  // parse the parameters
+
+  char *parameter;
+  char *value_str;
+  while( parseExtendedParameter(line, cmd, &parameter, &value_str, &brkt) >= 0 ) { 
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    if( strcasecmp(parameter, "num_sr") == 0 ) {
+      int value = get_dec(value_str);
+      if( value < 1 || value > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid SR value for %s ... %s=%s (1..%d)\n", line, cmd, parameter, value_str, MIOS32_SRIO_NUM_SR);
+#endif
+	return -1; // invalid parameter
+      }
+      MIOS32_SRIO_ScanNumSet(value);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "debounce_cycles") == 0 ) {
+      int value = get_dec(value_str);
+      if( value < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid debounce value for %s ... %s=%s (1..255)\n", line, cmd, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+      MIOS32_SRIO_DebounceSet(value);
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: unsupported parameter in %s ... %s=%s\n", line, cmd, parameter, value_str);
+#endif
+      // just continue to keep files compatible
+    }
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! help function which parses ROUTER definitions
 //! \returns >= 0 if command is valid
 //! \returns <0 if command is invalid
@@ -3440,14 +3489,13 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
     } else if( strcasecmp(parameter, "OSC") == 0 ) {
       parseOsc(line, parameter, brkt);
 
-    } else if( strcasecmp(parameter, "DebounceCtr") == 0 ) {
+    } else if( strcasecmp(parameter, "SRIO") == 0 ) {
+      parseSrio(line, parameter, brkt);
+    } else if( strcasecmp(parameter, "DebounceCtr") == 0 ) { // due to legacy reasons - replaced by SRIO debounce_cycles=<number>
       int value = parseSimpleValue(line, parameter, &brkt, 0, 255);
       if( value >= 0 )
 	MIOS32_SRIO_DebounceSet(value);
-    } else if( strcasecmp(parameter, "SrioNum") == 0 ) {
-      int value = parseSimpleValue(line, parameter, &brkt, 1, MIOS32_SRIO_NUM_SR);
-      if( value >= 0 )
-	MIOS32_SRIO_ScanNumSet(value);
+
     } else if( strcasecmp(parameter, "GlobalChannel") == 0 ) {
       int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
       if( value >= 0 )
@@ -4619,12 +4667,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   }
 #endif
 
-  sprintf(line_buffer, "\n\n# Misc. Configuration\n");
+  sprintf(line_buffer, "\n\n# SRIO Configuration\n");
+  FLUSH_BUFFER;
+  sprintf(line_buffer, "SRIO  num_sr=%d  debounce_cycles=%d\n", MIOS32_SRIO_ScanNumGet(), MIOS32_SRIO_DebounceGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "DebounceCtr %d\n", MIOS32_SRIO_DebounceGet());
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "SrioNum %d\n", MIOS32_SRIO_ScanNumGet());
+  sprintf(line_buffer, "\n\n# Misc. Configuration\n");
   FLUSH_BUFFER;
   sprintf(line_buffer, "GlobalChannel %d\n", mbng_patch_cfg.global_chn);
   FLUSH_BUFFER;
