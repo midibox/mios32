@@ -70,6 +70,16 @@ static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 
 /////////////////////////////////////////////////////////////////////////////
+
+typedef enum {
+  MIDI_LEARN_MODE_OFF = 0,
+  MIDI_LEARN_MODE_ON,
+} midi_learn_mode_t;
+
+static midi_learn_mode_t midi_learn_mode = MIDI_LEARN_MODE_OFF;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
@@ -505,6 +515,10 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 #else
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
+
+    // enable/disable MIDI Learn mode
+    midi_learn_mode = depressed ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
+
     if( depressed ) return 0; // ignore when button depressed
 
     if( show_edit_config_page )
@@ -1133,8 +1147,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 
       if( !show_drum_triggers ) {
-	SEQ_LCD_PrintChar((visible_step == step_region_end) ? '<' 
-			  : ((visible_step == (step_region_begin-1)) ? '>' : ' '));
+	char lbr = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? '}' : '<';
+	char rbr = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? '{' : '>';
+
+	SEQ_LCD_PrintChar((visible_step == step_region_end) ? lbr 
+			  : ((visible_step == (step_region_begin-1)) ? rbr : ' '));
       }
       
     }
@@ -1155,6 +1172,34 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// MIDI IN
+/////////////////////////////////////////////////////////////////////////////
+static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
+{
+  if( midi_learn_mode == MIDI_LEARN_MODE_ON ) {
+    // quick & dirty for evaluation purposes
+    seq_record_options_t prev_seq_record_options = seq_record_options;
+
+    seq_record_options.ALL = 0;
+    seq_record_options.STEP_RECORD = 1;
+    seq_record_options.FWD_MIDI = prev_seq_record_options.FWD_MIDI;
+
+    seq_record_state.ENABLED = 1;
+    seq_record_step = ui_selected_step;
+
+    SEQ_RECORD_Receive(p, SEQ_UI_VisibleTrackGet());
+
+    seq_record_options.ALL = prev_seq_record_options.ALL;
+    seq_record_state.ENABLED = 0;
+
+    seq_ui_display_update_req = 1;
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_EDIT_Init(u32 mode)
@@ -1164,6 +1209,10 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallMIDIINCallback(MIDI_IN_Handler);
+
+  // disable MIDI learn mode by default
+  midi_learn_mode = MIDI_LEARN_MODE_OFF;
 
   show_edit_config_page = 0;
   edit_passive_mode = 0;
