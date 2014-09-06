@@ -743,11 +743,20 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	      // Live Record mode: write into the next 4*resolution steps (till end of track)
 	      int i;
 	      u16 num_p_steps = SEQ_PAR_NumStepsGet(track);
+#ifndef MBSEQV4L
+	      int num_steps = 1;
+#else
 	      int num_steps = 4;
-	      if( tcc->clkdiv.value <= 0x03 )
-		num_steps = 16;
-	      else if( tcc->clkdiv.value <= 0x07 )
-		num_steps = 8;
+#endif
+
+	      if( !seq_record_options.STEP_RECORD ) {
+		num_steps = 4;
+		if( tcc->clkdiv.value <= 0x03 )
+		  num_steps = 16;
+		else if( tcc->clkdiv.value <= 0x07 )
+		  num_steps = 8;
+	      }
+
 	      for(i=0; i<num_steps && (step+i) < num_p_steps; ++i) {
 		SEQ_PAR_Set(track, step+i, par_layer, instrument, layer_event.midi_package.value);
 	      }

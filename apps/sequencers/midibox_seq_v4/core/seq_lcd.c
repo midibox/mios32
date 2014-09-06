@@ -672,7 +672,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    if( seq_cc_trk[track].mode.FORCE_SCALE ) {
+    if( seq_cc_trk[track].mode.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord ) {
       u8 scale, root_selection, root;
       SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
       SEQ_SCALE_Note(&layer_event.midi_package, scale, root);

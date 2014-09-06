@@ -304,8 +304,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
 	// update undo buffer
 	SEQ_UI_UTIL_UndoUpdate(visible_track);
-	// clear steps
-	CLEAR_Track(visible_track);
+
+	// clear steps of all selected tracks
+	u8 track;
+	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	  if( ui_selected_tracks & (1 << track) )
+	    CLEAR_Track(track);
+	}
+
 	// print message
 	in_menu_msg = MSG_CLEAR;
       }

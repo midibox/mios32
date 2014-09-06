@@ -42,6 +42,8 @@ typedef union {
 extern s32 SEQ_LIVE_Init(u32 mode);
 
 extern s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p);
+extern s32 SEQ_LIVE_AllNotesOff(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
