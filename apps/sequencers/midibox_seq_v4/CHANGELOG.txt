@@ -16,8 +16,14 @@ MIDIboxSEQ V4.086
 
    o Edit page: press&hold a GP button to record directly into the selected step
 
+   o Edit page: config page which was previously visible by pressing the SELECT
+     button now displayed by pressing&holding EDIT button.
+     SELECT button now toggles between MIDI learn mode
+
    o Track Event configuration page: VelN/VelA not displayed if they are
      not relevant for the selected configuration.
+
+   o Clear function will clear all selected tracks
 
 
 MIDIboxSEQ V4.085
@@ -1968,6 +1974,26 @@ http://midibox.org/forums/topic/18999-wishlist-save-pattern-page-improvements/?p
 ----------------------------------------------------------
 Drum selection improvement: press GP12 button, play note from external keyboard:
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=166027
+----------------------------------------------------------
+MIDI Remote Control function:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=166123
+Here's an idea to extend this:  It's really great to be able to quickly set CC values with a midi controller potentiometer.  It's so quick and easy to get the value to where you want it - much faster than an encoder.  It would be great if you could set all the parameter layers this way.  If the SEQ provided external CC controller numbers that were assigned to "adjust parameter layer 1", "...2", "...3" ...16 for the currently held step, then you could use an external midi controller to easily adjust all parameter layers for the currently held step without having to wade through the menus.
+ 
+For example, you could set up a Korg nanokontrol (has 8 faders and 8 potentiometer knobs) so that each fader and knob controlled one parameter layer - so one fader would control velocity, one length, probability, etc...  Depending on how you initialized your track.  Hold a step, move some faders/knobs on the nanokontrol to quickly adjust parameter layers.
+ 
+Some users might not want external faders/knobs to be able to change values in note or chord parameter layers, so maybe an option could be provided to enable/disable external control of chord and note layers via CC
+ 
+...and to extend the idea even further:  The SEQ could also provide external control CCs for the trigger layers, so the trigger layers could also be quickly enabled and disabled from an external controller when a step button is held.
+ 
+You could even activate the LED indicators on the nanokontrol or other midi controllers with LED button indicators by sending MIDI values >0 (anything >= 1 works on most, 127 is required on some controllers, some controllers with multicolor leds require specific values to light certain colors - sending a 1 would be a good default for the "on" state) out from the SEQ on the CC #s for the trigger layers that are active, and sending 0's out to the CCs that are inactive.  This would light the LEDs on a lot of commercial controllers without any further programming on the SEQ.  So the LEDs would toggle on and off to indicate the state of the corresponding trigger layer.
+ 
+For the nanokontrol2, you have to use the korg software to set the LED control to external.  Then, sending a 0 on the right channel to the MIDI CC assigned to a button will turn the LED on that button off, sending a 1 will turn it on.
+ 
+With USB Host working on the STM32f4 core and this feature implemented, a nanokontrol would be a really cheap way to extend the functionality of the SEQ - I can imagine a lot of other uses for a nanokontrol in other modes on the SEQ as well.  Lots of buttons and faders on a nanokontrol for ~$60.
+ 
+Here's the Nanokontrol's midi implementation/ parameter guide - http://i.korg.com/up...09631760000.pdf
+ 
+This could also work on a keyboard with CC-assignable knobs and faders, or any other MIDI controller with assignable controls, of course.
 ----------------------------------------------------------
 
 

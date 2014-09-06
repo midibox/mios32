@@ -469,10 +469,15 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   MUTEX_MIDIOUT_TAKE;
 
   if( send_note_off ) {
-    if( SEQ_BPM_IsRunning() )
+    if( SEQ_BPM_IsRunning() ) {
       SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, 0, seq_record_played_notes);
-    else
+    } else {
       SEQ_MIDI_OUT_FlushQueue();
+    }
+
+    // also for the live function
+    if( seq_record_options.FWD_MIDI )
+      SEQ_LIVE_AllNotesOff();
   }
 
   if( rec_event ) {
@@ -543,8 +548,8 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       }
 
       if( step_record_mode && seq_record_options.FWD_MIDI ) {
-	if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
-	  // Drum mode: play only the single note
+	if( tcc->event_mode == SEQ_EVENT_MODE_Drum || midi_package.type != NoteOn ) {
+	  // Drum mode or no note: play only the single event
 	  SEQ_LIVE_PlayEvent(track, midi_package);
 	} else {
 	  seq_layer_evnt_t layer_events[16];

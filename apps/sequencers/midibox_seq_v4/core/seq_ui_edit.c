@@ -52,8 +52,6 @@ seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 // Local Variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 show_edit_config_page;
-
 static u16 selected_steps = 0xffff; // will only be initialized once after startup
 
 static u8 datawheel_mode = 0; // will only be initialized once after startup
@@ -96,7 +94,7 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   
-  if( show_edit_config_page ) {
+  if( seq_ui_button_state.EDIT_PRESSED ) {
     switch( seq_ui_edit_view ) {
     case SEQ_UI_EDIT_VIEW_STEPS: *gp_leds = (1 << 0); break;
     case SEQ_UI_EDIT_VIEW_TRG: *gp_leds = (1 << 1); break;
@@ -106,7 +104,7 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
     }
   } else {
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS && midi_learn_mode == MIDI_LEARN_MODE_OFF ) {
       *gp_leds = ui_cursor_flash ? 0x0000 : selected_steps;
     } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       *gp_leds = selected_steps;
@@ -236,7 +234,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder <= SEQ_UI_ENCODER_GP16 || encoder == SEQ_UI_ENCODER_Datawheel ) {
 #endif
 
-    if( show_edit_config_page ) {
+    if( seq_ui_button_state.EDIT_PRESSED ) {
       switch( encoder ) {
       case SEQ_UI_ENCODER_GP1: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS; break;
       case SEQ_UI_ENCODER_GP2: seq_ui_edit_view = SEQ_UI_EDIT_VIEW_TRG; break;
@@ -266,7 +264,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	break;
       }
 
-      show_edit_config_page = 0; // switch back to view
+      seq_ui_button_state.EDIT_PRESSED = 0; // switch back to view
       return 1; // value changed
     }
 
@@ -521,14 +519,22 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 
     if( depressed ) return 0; // ignore when button depressed
 
-    if( show_edit_config_page )
+    if( seq_ui_button_state.EDIT_PRESSED )
       return Encoder_Handler(button, 0);
 
+#if 0
+    // conflicts with new MIDI learn
     if( (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
 	seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       selected_steps ^= (1 << button);
       return 1; // value changed
     }
+#else
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
+      selected_steps ^= (1 << button);
+      return 1; // value changed
+    }
+#endif
 
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
@@ -627,7 +633,9 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
   } else {
     switch( button ) {
       case SEQ_UI_BUTTON_Select:
-	show_edit_config_page = depressed ? 0 : 1;
+	// toggle MIDI learn
+	if( !depressed )
+	  midi_learn_mode = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
 	return 1; // value always changed
 
       case SEQ_UI_BUTTON_Right: {
@@ -724,7 +732,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //        Select the steps which should be  controlled by the ALL function:        
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
-  if( !edit_mode && show_edit_config_page ) {
+  if( !edit_mode && seq_ui_button_state.EDIT_PRESSED ) {
     const char datawheel_mode_str[DATAWHEEL_MODE_NUM][11] = {
       " Cursor   ",
       " StepView ",
@@ -779,7 +787,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintFormattedString("%3d  ", ui_selected_step+1);
+    SEQ_LCD_PrintFormattedString((midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
@@ -845,7 +853,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintFormattedString("%3d  ", ui_selected_step+1);
+    SEQ_LCD_PrintFormattedString((midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
     for(i=0; i<num_t_layers; ++i)
       SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) ? '*' : 'o');
     for(i=0; i<num_p_layers; ++i)
@@ -1177,6 +1185,8 @@ static s32 LCD_Handler(u8 high_prio)
 static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 {
   if( midi_learn_mode == MIDI_LEARN_MODE_ON ) {
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+
     // quick & dirty for evaluation purposes
     seq_record_options_t prev_seq_record_options = seq_record_options;
 
@@ -1187,7 +1197,35 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     seq_record_state.ENABLED = 1;
     seq_record_step = ui_selected_step;
 
-    SEQ_RECORD_Receive(p, SEQ_UI_VisibleTrackGet());
+    SEQ_RECORD_Receive(p, visible_track);
+
+    if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+      // copy matching par layers into remaining steps
+      u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+
+      seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+      seq_par_layer_type_t rec_layer_type = tcc->lay_const[ui_selected_par_layer];
+
+      {
+	u8 p_layer;
+	for(p_layer=0; p_layer<num_p_layers; ++p_layer) {
+	  seq_par_layer_type_t layer_type = tcc->lay_const[p_layer];
+
+	  if( layer_type == rec_layer_type ||
+	      ((rec_layer_type == SEQ_PAR_Type_Note || rec_layer_type == SEQ_PAR_Type_Chord) && (layer_type == SEQ_PAR_Type_Velocity || layer_type == SEQ_PAR_Type_Length)) ) {
+	    u8 value = SEQ_PAR_Get(visible_track, seq_record_step, p_layer, ui_selected_instrument);
+
+	    u16 step;
+	    for(step=0; step<num_steps; ++step) {
+	      if( step != seq_record_step && (selected_steps & (1 << (step % 16))) ) {
+		SEQ_PAR_Set(visible_track, step, p_layer, ui_selected_instrument, value);
+	      }
+	    }
+	  }
+	}
+      }
+    }
 
     seq_record_options.ALL = prev_seq_record_options.ALL;
     seq_record_state.ENABLED = 0;
@@ -1214,7 +1252,6 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   // disable MIDI learn mode by default
   midi_learn_mode = MIDI_LEARN_MODE_OFF;
 
-  show_edit_config_page = 0;
   edit_passive_mode = 0;
 
   if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL )
@@ -1365,7 +1402,7 @@ static s32 PassiveEditTakeOver(void)
     int current_value = SEQ_PAR_Get(edit_passive_track, edit_passive_step, edit_passive_par_layer, edit_passive_instrument);
     int incrementer = (int)edit_passive_value - current_value;
 
-    show_edit_config_page = 0; // just to avoid any overlay...
+    seq_ui_button_state.EDIT_PRESSED = 0; // just to avoid any overlay...
     edit_passive_mode = 0; // to avoid recursion in encoder handler
     Encoder_Handler(edit_passive_step % 16, incrementer);
   } else {

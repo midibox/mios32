@@ -206,3 +206,33 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Plays OFF events for all notes which haven't been released yet
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LIVE_AllNotesOff(void)
+{
+  u8 note;
+  for(note=0; note<128; ++note) {
+    u32 note_ix32 = note / 32;
+    u32 note_mask = (1 << (note % 32));
+
+    if( live_note_played[note_ix32] & note_mask ) {
+      // send velocity off
+      MUTEX_MIDIOUT_TAKE;
+      SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
+      MIOS32_MIDI_SendNoteOn(live_keyboard_port[note],
+			     live_keyboard_chn[note],
+			     live_keyboard_note[note],
+			     0x00);
+      SEQ_MIDI_PORT_FilterOscPacketsSet(0);
+      MUTEX_MIDIOUT_GIVE;
+    }
+
+    live_note_played[note_ix32] &= ~note_mask;
+  }
+
+  return 0; // no error
+}
+
