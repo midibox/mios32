@@ -725,7 +725,7 @@ static s32 CLEAR_Track(u8 track)
 {
   // clear only layer?
   if( seq_ui_button_state.SELECT_PRESSED ) {
-    u8 event_mode = SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_MIDI_EVENT_MODE);
+    u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       int num_trg_layers = SEQ_TRG_NumLayersGet(track);
       int num_trg_steps = SEQ_TRG_NumStepsGet(track);

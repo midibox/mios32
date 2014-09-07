@@ -104,7 +104,7 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
     }
   } else {
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS && midi_learn_mode == MIDI_LEARN_MODE_OFF ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS && midi_learn_mode == MIDI_LEARN_MODE_OFF && !seq_record_state.ENABLED ) {
       *gp_leds = ui_cursor_flash ? 0x0000 : selected_steps;
     } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       *gp_leds = selected_steps;
@@ -787,7 +787,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintFormattedString((midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
+    SEQ_LCD_PrintFormattedString((seq_record_state.ENABLED || midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_AccentGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
     SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_GlideGet(visible_track, ui_selected_step, ui_selected_instrument) ? '*' : 'o');
@@ -853,7 +853,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
-    SEQ_LCD_PrintFormattedString((midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
+    SEQ_LCD_PrintFormattedString((seq_record_state.ENABLED || midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
     for(i=0; i<num_t_layers; ++i)
       SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) ? '*' : 'o');
     for(i=0; i<num_p_layers; ++i)
@@ -1155,8 +1155,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 
       if( !show_drum_triggers ) {
-	char lbr = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? '}' : '<';
-	char rbr = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? '{' : '>';
+	u8 midi_learn = seq_record_state.ENABLED || midi_learn_mode == MIDI_LEARN_MODE_ON;
+	char lbr = midi_learn ? '}' : '<';
+	char rbr = midi_learn ? '{' : '>';
 
 	SEQ_LCD_PrintChar((visible_step == step_region_end) ? lbr 
 			  : ((visible_step == (step_region_begin-1)) ? rbr : ' '));

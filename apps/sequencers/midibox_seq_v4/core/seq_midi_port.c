@@ -82,7 +82,7 @@ static const seq_midi_port_entry_t in_ports[NUM_IN_PORTS] = {
 };
 
 // has to be kept in synch with SEQ_MIDI_PORT_OutIxGet() !!!
-#define NUM_OUT_PORTS 22
+#define NUM_OUT_PORTS (18+MIOS32_IIC_MIDI_NUM)
 static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // port ID  Name
   { DEFAULT, "Def." },
@@ -94,10 +94,30 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   { UART1,   "OUT2" },
   { UART2,   "OUT3" },
   { UART3,   "OUT4" },
+#if MIOS32_IIC_MIDI_NUM >= 1
   { IIC0,    "IIC1" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 2
   { IIC1,    "IIC2" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 3
   { IIC2,    "IIC3" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 4
   { IIC3,    "IIC4" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 1
+  { IIC4,    "IIC5" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 2
+  { IIC5,    "IIC6" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 3
+  { IIC6,    "IIC7" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 4
+  { IIC7,    "IIC8" },
+#endif
   { OSC0,    "OSC1" },
   { OSC1,    "OSC2" },
   { OSC2,    "OSC3" },
@@ -110,7 +130,7 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
   // MEMO: SEQ_MIDI_PORT_OutMuteGet() has to be changed whenever ports are added/removed!
 };
 
-#define NUM_CLK_PORTS 16
+#define NUM_CLK_PORTS (12+MIOS32_IIC_MIDI_NUM)
 static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   // port ID  Name
   { USB0,    "USB1" },
@@ -121,10 +141,30 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   { UART1,   "MID2" },
   { UART2,   "MID3" },
   { UART3,   "MID4" },
+#if MIOS32_IIC_MIDI_NUM >= 1
   { IIC0,    "IIC1" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 2
   { IIC1,    "IIC2" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 3
   { IIC2,    "IIC3" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 4
   { IIC3,    "IIC4" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 1
+  { IIC4,    "IIC5" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 2
+  { IIC5,    "IIC6" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 3
+  { IIC6,    "IIC7" },
+#endif
+#if MIOS32_IIC_MIDI_NUM >= 4
+  { IIC7,    "IIC8" },
+#endif
   { OSC0,    "OSC1" },
   { OSC1,    "OSC2" },
   { OSC2,    "OSC3" },
