@@ -332,7 +332,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  // determine duration in mS (for step recording function)
 	  u16 duration_ms = MIOS32_TIMESTAMP_Get() - seq_record_note_timestamp_ms[midi_package.note];
 	  // map to BPM
-	  int duration = (int)((float)duration_ms / ((1000.0*60.0) / SEQ_BPM_Get() / (float)SEQ_BPM_PPQN_Get()));
+	  int duration = (int)((float)duration_ms / ((1000.0*60.0) / SEQ_BPM_EffectiveGet() / (float)SEQ_BPM_PPQN_Get()));
 #if DEBUG_VERBOSE_LEVEL >= 3
 	  DEBUG_MSG("[SEQ_RECORD_Receive] duration of note 0x%02x was %d mS (%d ticks)\n",
 		    midi_package.note, duration_ms, duration);

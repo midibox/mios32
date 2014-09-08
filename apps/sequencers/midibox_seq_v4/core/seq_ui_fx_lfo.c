@@ -29,7 +29,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       14
+#define NUM_OF_ITEMS       15
 #define ITEM_GXTY          0
 #define ITEM_WAVEFORM      1
 #define ITEM_AMPLITUDE     2
@@ -41,9 +41,10 @@
 #define ITEM_ENABLE_VELOCITY 8
 #define ITEM_ENABLE_LENGTH 9
 #define ITEM_ENABLE_CC     10
-#define ITEM_CC            11
-#define ITEM_CC_OFFSET     12
-#define ITEM_CC_PPQN       13
+#define ITEM_DISABLE_EXTRA_CC 11
+#define ITEM_CC            12
+#define ITEM_CC_OFFSET     13
+#define ITEM_CC_PPQN       14
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,8 +74,9 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_ENABLE_VELOCITY: *gp_leds = 0x0200; break;
     case ITEM_ENABLE_LENGTH: *gp_leds = 0x0400; break;
     case ITEM_ENABLE_CC: *gp_leds = 0x0800; break;
-    case ITEM_CC: *gp_leds = 0x2000; break;
-    case ITEM_CC_OFFSET: *gp_leds = 0x2000; break;
+    case ITEM_CC: *gp_leds = 0x1000; break;
+    case ITEM_DISABLE_EXTRA_CC: *gp_leds = 0x2000; break;
+    case ITEM_CC_OFFSET: *gp_leds = 0x4000; break;
     case ITEM_CC_PPQN: *gp_leds = 0x8000; break;
   }
 
@@ -149,9 +151,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP13:
-      return -1; // not mapped
-
-    case SEQ_UI_ENCODER_GP14:
       // CC number selection now has to be confirmed with GP button
       if( ui_selected_item != ITEM_CC ) {
 	edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
@@ -173,6 +172,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       break;
 
+    case SEQ_UI_ENCODER_GP14:
+      ui_selected_item = ITEM_DISABLE_EXTRA_CC;
+      break;
+
     case SEQ_UI_ENCODER_GP15:
       ui_selected_item = ITEM_CC_OFFSET;
       break;
@@ -190,11 +193,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_PHASE:         return SEQ_UI_CC_Inc(SEQ_CC_LFO_PHASE, 0, 99, incrementer);
     case ITEM_STEPS:         return SEQ_UI_CC_Inc(SEQ_CC_LFO_STEPS, 0, 255, incrementer);
     case ITEM_STEPS_RST:     return SEQ_UI_CC_Inc(SEQ_CC_LFO_STEPS_RST, 0, 255, incrementer);
+
     case ITEM_ENABLE_ONE_SHOT:
     case ITEM_ENABLE_NOTE:
     case ITEM_ENABLE_VELOCITY:
     case ITEM_ENABLE_LENGTH:
-
     case ITEM_ENABLE_CC: {
       u8 flag = ui_selected_item - ITEM_ENABLE_ONE_SHOT;
       u8 mask = 1 << flag;
@@ -202,6 +205,18 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( incrementer == 0 ) // toggle
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, value ^ mask);
       else if( incrementer > 0 )
+	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, mask);
+      else
+	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, 0);
+    } break;
+
+    case ITEM_DISABLE_EXTRA_CC: {
+      u8 flag = 5;
+      u8 mask = 1 << flag;
+      u8 value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS);
+      if( incrementer == 0 ) // toggle
+	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, value ^ mask);
+      else if( incrementer < 0 )
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, mask);
       else
 	SEQ_UI_CC_SetFlags(SEQ_CC_LFO_ENABLE_FLAGS, mask, 0);
@@ -289,7 +304,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Wave Amp. Phs. Steps Rst OneShot   Note Vel. Len.  CC   ExtraCC# Offs. PPQN
-  // GxTy Sine   64   0%   16   16  on        off  off  off  off        001   64  384
+  // GxTy Sine   64   0%   16   16  on        off  off  off  off   001 on   64   384
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -394,25 +409,32 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(5);
+  SEQ_LCD_PrintSpaces(2);
   if( ui_selected_item == ITEM_CC && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+    SEQ_LCD_PrintSpaces(4);
   } else {
     u8 current_value = SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC);
     u8 edit_value = (ui_selected_item == ITEM_CC) ? edit_cc_number : current_value;
 
     if( edit_value )
-      SEQ_LCD_PrintFormattedString(" %03d", edit_value);
+      SEQ_LCD_PrintFormattedString("%03d", edit_value);
     else
-      SEQ_LCD_PrintString(" ---");
+      SEQ_LCD_PrintString("---");
     SEQ_LCD_PrintChar((current_value != edit_value) ? '!' : ' ');
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_CC_OFFSET && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+  if( ui_selected_item == ITEM_DISABLE_EXTRA_CC && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString(" %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC_OFFSET));
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_LFO_ENABLE_FLAGS) & (1 << 5)) ? "off" : " on");
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_CC_OFFSET && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(6);
+  } else {
+    SEQ_LCD_PrintFormattedString("  %3d ", SEQ_CC_Get(visible_track, SEQ_CC_LFO_CC_OFFSET));
   }
 
   ///////////////////////////////////////////////////////////////////////////

@@ -337,8 +337,10 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    if( flags.CFG ) tcc->par_assignment_drum[0] = value;
 	  } else if( strcmp(parameter, "DrumParAsgnB") == 0 ) {
 	    if( flags.CFG ) tcc->par_assignment_drum[1] = value;
+	  } else if( strcmp(parameter, "EchoDisabled") == 0 ) {
+	    if( flags.CFG ) { if( value == 0 ) { tcc->echo_repeats &= ~0x40; } else { tcc->echo_repeats |= 0x40; } }
 	  } else if( strcmp(parameter, "EchoRepeats") == 0 ) {
-	    if( flags.CFG ) tcc->echo_repeats = value;
+	    if( flags.CFG ) { tcc->echo_repeats = (tcc->echo_repeats & 0xc0) | (value & 0x3f); }
 	  } else if( strcmp(parameter, "EchoDelay") == 0 ) {
 	    if( flags.CFG ) tcc->echo_delay = value;
 	  } else if( strcmp(parameter, "EchoVelocity") == 0 ) {
@@ -660,7 +662,10 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
 
-  sprintf(line_buffer, "EchoRepeats %d\n", tcc->echo_repeats);
+  sprintf(line_buffer, "EchoDisabled %d\n", (tcc->echo_repeats & 0x40) ? 1 : 0);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "EchoRepeats %d\n", tcc->echo_repeats & 0x3f);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "EchoDelay %d (%s)\n", tcc->echo_delay, SEQ_CORE_Echo_GetDelayModeName(tcc->echo_delay));

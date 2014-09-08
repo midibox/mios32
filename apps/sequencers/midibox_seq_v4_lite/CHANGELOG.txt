@@ -1,5 +1,12 @@
 $Id$
 
+MIDIboxSEQ V4L.086
+~~~~~~~~~~~~~~~~~~
+
+   o Step Recording: note length measurements now also working correctly when
+     the sequencer is clocked in slave mode.
+
+
 MIDIboxSEQ V4L.085
 ~~~~~~~~~~~~~~~~~~
 

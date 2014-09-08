@@ -18,12 +18,24 @@ MIDIboxSEQ V4.086
 
    o Edit page: config page which was previously visible by pressing the SELECT
      button now displayed by pressing&holding EDIT button.
-     SELECT button now toggles between MIDI learn mode
+     SELECT button now toggles step recording mode
+
+   o Edit page: added shortcut to Recording Config (EDIT+GP11/GP12)
+
+   o Record page now allows to toggle the FTS and FX flag for MIDI Forwarding
+     (same flags can be configured in LIVE page)
+
+   o Step Recording: note length measurements now also working correctly when
+     the sequencer is clocked in slave mode.
 
    o Track Event configuration page: VelN/VelA not displayed if they are
      not relevant for the selected configuration.
 
    o Clear function will clear all selected tracks
+
+   o LFO page: Extra CC can now be disabled/enable with a separate switch
+
+   o Echo page: echo can now be enabled/disabled without touching the repeat value
 
 
 MIDIboxSEQ V4.085
@@ -1960,8 +1972,6 @@ I have my ssm2044 boards hooked up to the AOUT_NG, and would like to use encoder
 ----------------------------------------------------------
 fcebreros: remote control on dedicated MIDI port without the need for a remote key
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=160164
-----------------------------------------------------------
-FFW: add Extra CC On/Off toggle button to LFO page
 ----------------------------------------------------------
 Send MTC Timecode
 http://midibox.org/forums/topic/18798-midi-time-code

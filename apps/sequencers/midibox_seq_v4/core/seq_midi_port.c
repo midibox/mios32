@@ -106,16 +106,16 @@ static const seq_midi_port_entry_t out_ports[NUM_OUT_PORTS] = {
 #if MIOS32_IIC_MIDI_NUM >= 4
   { IIC3,    "IIC4" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 1
+#if MIOS32_IIC_MIDI_NUM >= 5
   { IIC4,    "IIC5" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 2
+#if MIOS32_IIC_MIDI_NUM >= 6
   { IIC5,    "IIC6" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 3
+#if MIOS32_IIC_MIDI_NUM >= 7
   { IIC6,    "IIC7" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 4
+#if MIOS32_IIC_MIDI_NUM >= 8
   { IIC7,    "IIC8" },
 #endif
   { OSC0,    "OSC1" },
@@ -153,16 +153,16 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
 #if MIOS32_IIC_MIDI_NUM >= 4
   { IIC3,    "IIC4" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 1
+#if MIOS32_IIC_MIDI_NUM >= 5
   { IIC4,    "IIC5" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 2
+#if MIOS32_IIC_MIDI_NUM >= 6
   { IIC5,    "IIC6" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 3
+#if MIOS32_IIC_MIDI_NUM >= 7
   { IIC6,    "IIC7" },
 #endif
-#if MIOS32_IIC_MIDI_NUM >= 4
+#if MIOS32_IIC_MIDI_NUM >= 8
   { IIC7,    "IIC8" },
 #endif
   { OSC0,    "OSC1" },

@@ -93,6 +93,7 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    bit 2: Velocity Assignment on/off
         |           |         |    bit 3: Length Assignment on/off
         |           |         |    bit 4: CC Assignment on/off
+        |           |         |    bit 5: Extra CC Assignment off/on (inverted!)
 --------+-----------+---------+------------------------------------------------
 0x16/ 22|   0 - 127 |       0 | LFO Extra CC Number
 --------+-----------+---------+------------------------------------------------
@@ -284,6 +285,7 @@ NRPN LSB|   Range   | Default | Description
 0x4f/ 79|           |         | 
 --------+-----------+---------+------------------------------------------------
 0x50/ 80|   0 - 15  |       0 | Echo Repeats (0..15)
+        |       64  |         | Flag #6 will disable echo (but keep the repeats)
 --------+-----------+---------+------------------------------------------------
 0x51/ 81|   0 - 15  |       0 | Echo Delay:
         |           |         |     0: 64T
