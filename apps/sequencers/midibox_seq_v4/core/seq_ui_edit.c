@@ -253,6 +253,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return 0;
       }
 
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12:
+	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+	break;
+
       case SEQ_UI_ENCODER_GP13:
       case SEQ_UI_ENCODER_GP14:
 	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKRND);
@@ -709,8 +714,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   // layout edit config
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // Step Trg  Layer 303                Step Datawheel:           Random    Euclid   
-  // View View View View               Select Scroll             Generator Generator 
+  // Step Trg  Layer 303                Step Datawheel:  Record   Random    Euclid   
+  // View View View View               Select Scroll     Config  Generator Generator 
 
   // layout trigger view
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
@@ -742,11 +747,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     };
 
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("Step Trg  Layer 303                Step Datawheel:           Random    Euclid   ");
+    SEQ_LCD_PrintString("Step Trg  Layer 303                Step Datawheel:  Record   Random    Euclid   ");
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString("View View View View               Select");
     SEQ_LCD_PrintString((char *)datawheel_mode_str[datawheel_mode]);
-    SEQ_LCD_PrintString("          Generator Generator ");
+    SEQ_LCD_PrintString("  Config  Generator Generator ");
     return 0; // no error
   }
 
@@ -893,11 +898,17 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     } else {
       SEQ_LCD_PrintString("PASSIVE EDITING");
     }
-  } else if( seq_record_state.ENABLED || edit_mode == SEQ_UI_EDIT_MODE_RECORD ) {
+  } else if( seq_record_state.ENABLED || edit_mode == SEQ_UI_EDIT_MODE_RECORD || midi_learn_mode == MIDI_LEARN_MODE_ON ) {
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(15);
     } else {
-      SEQ_LCD_PrintString("RECORDING      ");
+      if( midi_learn_mode == MIDI_LEARN_MODE_ON ) {
+	SEQ_LCD_PrintString("EDIT RECORDING ");
+      } else if( seq_record_options.STEP_RECORD ) {
+	SEQ_LCD_PrintString("STEP RECORDING ");
+      } else {
+	SEQ_LCD_PrintString("LIVE RECORDING ");
+      }
     }
   } else {
     switch( edit_mode ) {
@@ -1239,6 +1250,15 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Exit
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  midi_learn_mode = MIDI_LEARN_MODE_OFF;
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_EDIT_Init(u32 mode)
@@ -1249,6 +1269,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(SEQ_UI_EDIT_LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallMIDIINCallback(MIDI_IN_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   // disable MIDI learn mode by default
   midi_learn_mode = MIDI_LEARN_MODE_OFF;

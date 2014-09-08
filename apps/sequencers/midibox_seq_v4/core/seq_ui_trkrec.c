@@ -26,15 +26,17 @@
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 #include "seq_record.h"
+#include "seq_live.h"
 #include "seq_file.h"
 #include "seq_file_c.h"
+#include "seq_file_gc.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS      10
+#define NUM_OF_ITEMS      12
 #define ITEM_GXTY          0
 #define ITEM_STEP_MODE     1
 #define ITEM_POLY_MODE     2
@@ -44,7 +46,9 @@
 #define ITEM_REC_PORT      6
 #define ITEM_REC_CHN       7
 #define ITEM_FWD_MIDI      8
-#define ITEM_QUANTIZE      9
+#define ITEM_FORCE_SCALE   9
+#define ITEM_FX           10
+#define ITEM_QUANTIZE     11
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,7 +85,9 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_REC_PORT: *gp_leds = 0x0100; break;
     case ITEM_REC_CHN: *gp_leds = 0x0200; break;
     case ITEM_FWD_MIDI: *gp_leds = 0x0c00; break;
-    case ITEM_QUANTIZE: *gp_leds = 0x3000; break;
+    case ITEM_FORCE_SCALE: *gp_leds = 0x1000; break;
+    case ITEM_FX: *gp_leds = 0x2000; break;
+    case ITEM_QUANTIZE: *gp_leds = 0xc000; break;
   }
 
   return 0; // no error
@@ -143,13 +149,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = ITEM_FORCE_SCALE;
+      break;
+
     case SEQ_UI_ENCODER_GP14:
-      ui_selected_item = ITEM_QUANTIZE;
+      ui_selected_item = ITEM_FX;
       break;
 
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      return 0; // not mapped yet
+      ui_selected_item = ITEM_QUANTIZE;
+      break;
   }
 
   // for GP encoders and Datawheel
@@ -173,10 +183,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    seq_record_options.STEPS_PER_KEY = 0;
 	    seq_record_options.STEP_RECORD = 0; // Step->Live Record Mode
 	  }
+
+	  store_file_required = 1;
+
 	} else
 	  return 0; // no change
-      } else
+      } else {
 	seq_record_options.STEP_RECORD ^= 1;
+	store_file_required = 1;
+      }
       return 1;
 
     case ITEM_POLY_MODE:
@@ -184,6 +199,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.POLY_RECORD = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.POLY_RECORD ^= 1;
+
+      store_file_required = 1;
 
         // print warning if poly mode not possible
 	if( seq_record_options.POLY_RECORD ) {
@@ -200,6 +217,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.AUTO_START = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.AUTO_START ^= 1;
+      store_file_required = 1;
       return 1;
 
     case ITEM_RECORD_STEP: {
@@ -274,10 +292,28 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.FWD_MIDI = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.FWD_MIDI ^= 1;
+      store_file_required = 1;
+      return 1;
+
+    case ITEM_FORCE_SCALE:
+      if( incrementer )
+	seq_live_options.FORCE_SCALE = incrementer > 0 ? 1 : 0;
+      else
+	seq_live_options.FORCE_SCALE ^= 1;
+      store_file_required = 1;
+      return 1;
+
+    case ITEM_FX:
+      if( incrementer )
+	seq_live_options.FX = incrementer > 0 ? 1 : 0;
+      else
+	seq_live_options.FX ^= 1;
+      store_file_required = 1;
       return 1;
 
     case ITEM_QUANTIZE:
       if( SEQ_UI_Var8_Inc(&seq_record_quantize, 0, 99, incrementer) >= 0 ) {
+	store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -351,12 +387,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi Quantize            
-  // G1T1 Live   Poly    on     16           IN1  # 1      on       20%
+  // Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi FTS   Fx   Quantize 
+  // G1T1 Live   Poly    on     16           IN1  # 1      on     on   on      20%   
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi Quantize            ");
+  SEQ_LCD_PrintString("Trk. Record Mode  AStart  Step  TglGate Port Chn.  Fwd.Midi FTS   Fx   Quantize ");
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -438,7 +474,23 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(seq_record_options.FWD_MIDI ? " on" : "off");
   }
-  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintSpaces(4);
+
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_FORCE_SCALE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString(seq_live_options.FORCE_SCALE ? " on" : "off");
+  }
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_FX && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString(seq_live_options.FX ? " on" : "off");
+  }
+  SEQ_LCD_PrintSpaces(5);
 
   ///////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_QUANTIZE && ui_cursor_flash ) {
@@ -446,7 +498,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d%%", seq_record_quantize);
   }
-  SEQ_LCD_PrintSpaces(14);
+  SEQ_LCD_PrintSpaces(3);
 
   return 0; // no error
 }
@@ -463,6 +515,8 @@ static s32 EXIT_Handler(void)
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
   }

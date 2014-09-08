@@ -181,6 +181,9 @@ s32 SEQ_LFO_FastCC_Event(u8 track, u32 bpm_tick, mios32_midi_package_t *p, u8 ig
   if( !tcc->lfo_cc )
     return 0; // CC disabled
 
+  if( tcc->lfo_enable_flags.EXTRA_CC_OFF )
+    return 0; // Extra CC disabled
+
   if( tcc->lfo_cc_ppqn < 8 ) { // not 384 ppqn
     if( tcc->lfo_cc_ppqn == 0 ) { // 1 ppqn
       if( (bpm_tick % 384) != 0 )

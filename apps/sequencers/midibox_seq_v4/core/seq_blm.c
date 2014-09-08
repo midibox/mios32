@@ -1839,7 +1839,8 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	  case 0x03: {
 	    // tmp. for the show ;-)
 	    u8 visible_track = SEQ_UI_VisibleTrackGet();
-	    if( SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) ) {
+	    u8 echo_repeats = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS);
+	    if( (echo_repeats & 0x3f) && !(echo_repeats & 0x40) ) {
 	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_REPEATS, 0);
 	      SEQ_CC_Set(visible_track, SEQ_CC_ECHO_FB_NOTE, 24);
 	    } else {

@@ -213,26 +213,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( !seq_midi_in_options[selected_bus].MODE_PLAY )
 	return -1;
 
-      u8 tmp = seq_live_options.FORCE_SCALE;
-      if( SEQ_UI_Var8_Inc(&tmp, 0, 1, incrementer) >= 0 ) {
-	seq_live_options.FORCE_SCALE = tmp;
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
+      if( incrementer )
+	seq_live_options.FORCE_SCALE = incrementer > 0 ? 1 : 0;
+      else
+	seq_live_options.FORCE_SCALE ^= 1;
+      return 1;
     }
 
     case ITEM_LIVE_FX: {
       if( !seq_midi_in_options[selected_bus].MODE_PLAY )
 	return -1;
 
-      u8 tmp = seq_live_options.FX;
-      if( SEQ_UI_Var8_Inc(&tmp, 0, 1, incrementer) >= 0 ) {
-	seq_live_options.FX = tmp;
-	store_file_required = 1;
-	return 1; // value changed
-      }
-      return 0; // no change
+      if( incrementer )
+	seq_live_options.FX = incrementer > 0 ? 1 : 0;
+      else
+	seq_live_options.FX ^= 1;
+      return 1;
     }
 
     case ITEM_IN_BUS: {

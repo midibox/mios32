@@ -60,6 +60,7 @@ typedef union {
     u8 VELOCITY:1;
     u8 LENGTH:1;
     u8 CC:1;
+    u8 EXTRA_CC_OFF:1;
   };
 } seq_lfo_enable_flags_t;
 

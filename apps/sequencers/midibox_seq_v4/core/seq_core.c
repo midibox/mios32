@@ -1302,7 +1302,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		    if( tcc->echo_repeats && gatelength )
+		    if( (tcc->echo_repeats & 0x3f) && !(tcc->echo_repeats & 0x40) && gatelength )
 		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
 		}
@@ -1850,8 +1850,11 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
   SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
 
   u32 echo_offset = fb_ticks;
+  u8 echo_repeats = tcc->echo_repeats;
+  if( echo_repeats & 0x40 ) // disable flag
+    echo_repeats = 0;
   int i;
-  for(i=0; i<tcc->echo_repeats; ++i) {
+  for(i=0; i<echo_repeats; ++i) {
     if( i ) { // no feedback of velocity or echo ticks on first step
       if( tcc->echo_fb_velocity != 20 ) { // 20 == 100% -> no change
 	fb_velocity = (fb_velocity * 5*tcc->echo_fb_velocity) / 100;

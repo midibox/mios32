@@ -25,15 +25,16 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
+#define NUM_OF_ITEMS       9
 #define ITEM_GXTY          0
-#define ITEM_REPEATS       1
-#define ITEM_DELAY         2
-#define ITEM_VELOCITY      3
-#define ITEM_FB_VELOCITY   4
-#define ITEM_FB_NOTE       5
-#define ITEM_FB_GATELENGTH 6
-#define ITEM_FB_TICKS      7
+#define ITEM_ENABLE        1
+#define ITEM_REPEATS       2
+#define ITEM_DELAY         3
+#define ITEM_VELOCITY      4
+#define ITEM_FB_VELOCITY   5
+#define ITEM_FB_NOTE       6
+#define ITEM_FB_GATELENGTH 7
+#define ITEM_FB_TICKS      8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,8 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_GXTY: *gp_leds = 0x0003; break;
+    case ITEM_GXTY: *gp_leds = 0x0001; break;
+    case ITEM_ENABLE: *gp_leds = 0x0002; break;
     case ITEM_REPEATS: *gp_leds = 0x000c; break;
     case ITEM_DELAY: *gp_leds = 0x0030; break;
     case ITEM_VELOCITY: *gp_leds = 0x00c0; break;
@@ -72,8 +74,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
-    case SEQ_UI_ENCODER_GP2:
       ui_selected_item = ITEM_GXTY;
+      break;
+
+    case SEQ_UI_ENCODER_GP2:
+      ui_selected_item = ITEM_ENABLE;
       break;
 
     case SEQ_UI_ENCODER_GP3:
@@ -115,7 +120,28 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
   case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-  case ITEM_REPEATS:       return SEQ_UI_CC_Inc(SEQ_CC_ECHO_REPEATS, 0, 15, incrementer);
+
+  case ITEM_ENABLE: {
+    u8 value = (SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) & 0x40) ? 0 : 1; // inverted
+
+    if( incrementer )
+      value = incrementer > 0 ? 1 : 0;
+    else
+      value ^= 1;
+    
+    SEQ_UI_CC_SetFlags(SEQ_CC_ECHO_REPEATS, 0x40, value ? 0x00 : 0x40);
+    return 1; // value changed
+  } break;
+
+  case ITEM_REPEATS: {
+    u8 value = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) & 0x3f;
+    if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 1 ) {
+      SEQ_UI_CC_SetFlags(SEQ_CC_ECHO_REPEATS, 0x3f, value);
+      return 1; // value changed
+    }
+    return 0; // no change
+  } break;
+
   case ITEM_DELAY: {
     // for compatibility with older patches pre Beta30
     u8 value = SEQ_CC_Get(visible_track, SEQ_CC_ECHO_DELAY);
@@ -199,14 +225,14 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.        Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  
-  // GxTy           3       1/16      75%        120%       + 0     100%       100%
+  // Trk.  Echo  Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  
+  // GxTy   off     3       1/16      75%        120%       + 0     100%       100%
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk.        Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  ");
+  SEQ_LCD_PrintString("Trk.  Echo  Repeats   Delay   Vel.Level  FB Velocity  Note   Gatelen.    Ticks  ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -216,14 +242,21 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   }
-  SEQ_LCD_PrintSpaces(10);
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_ENABLE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) & 0x40) ? "off" : "on ");
+  }
+  SEQ_LCD_PrintSpaces(4);
 
+  ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_REPEATS && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(2);
   } else {
-    SEQ_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS));
+    SEQ_LCD_PrintFormattedString("%2d", SEQ_CC_Get(visible_track, SEQ_CC_ECHO_REPEATS) & 0x3f);
   }
   SEQ_LCD_PrintSpaces(7);
 
