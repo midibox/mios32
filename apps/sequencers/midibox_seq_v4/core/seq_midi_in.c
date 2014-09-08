@@ -567,8 +567,10 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     if( should_be_recorded ) {
       SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
     } else {
+#ifndef MBSEQV4L
       // inform UI MIDI callback
       SEQ_UI_NotifyMIDIINCallback(port, midi_package);
+#endif
     }
   }
 
