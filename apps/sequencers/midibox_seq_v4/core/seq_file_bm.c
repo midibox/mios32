@@ -278,12 +278,11 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 	    bm->enable.MUTES = parameter_enabled;
 	  }
 	} else if( strcmp(parameter, "Page") == 0 ) {
+#ifndef MBSEQV4L
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  seq_ui_bookmark_t *bm = &seq_ui_bookmarks[current_bookmark];
 
-#ifdef MBSEQV4L
 	  seq_ui_page_t page = SEQ_UI_PAGE_NONE;
-#else
 	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
 	  if( page == SEQ_UI_PAGE_NONE ) {
 	    s32 value = get_dec(word);
@@ -295,7 +294,6 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 	      page = SEQ_UI_PAGES_OldBmIndexSearch(value);
 	    }
 	  }
-#endif
 
 	  if( page == SEQ_UI_PAGE_NONE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -305,6 +303,7 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 	    bm->page = page;
 	    bm->enable.PAGE = parameter_enabled;
 	  }
+#endif
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
