@@ -337,14 +337,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 0}, {580, 188}}</string>
+								<string>{{0, 0}, {580, 176}}</string>
 								<key>RubberWindowFrame</key>
 								<string>65 661 788 504 0 0 2560 1418 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
 							<key>Proportion</key>
-							<string>188pt</string>
+							<string>176pt</string>
 						</dict>
 						<dict>
 							<key>ContentConfiguration</key>
@@ -357,14 +357,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 193}, {580, 270}}</string>
+								<string>{{0, 181}, {580, 282}}</string>
 								<key>RubberWindowFrame</key>
 								<string>65 661 788 504 0 0 2560 1418 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
 							<key>Proportion</key>
-							<string>270pt</string>
+							<string>282pt</string>
 						</dict>
 					</array>
 					<key>Proportion</key>
@@ -383,9 +383,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>5248398119C3917F00270624</string>
+				<string>526D7CC219C396FA007DA054</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>5248398219C3917F00270624</string>
+				<string>526D7CC319C396FA007DA054</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -523,10 +523,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>5248399019C391AE00270624</string>
-		<string>5248399119C391AE00270624</string>
-		<string>1C78EAAD065D492600B07095</string>
-		<string>1CD10A99069EF8BA00B06720</string>
 		<string>5297BEF119C38E810081BC5C</string>
 		<string>/Users/TK/svn/mios32/trunk/tools/blm_scalar_emulation/juce/Builds/MacOSX/BLM.xcodeproj</string>
 	</array>
@@ -608,7 +604,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>5297BEF119C38E810081BC5C</string>
-				<string>5248398319C3917F00270624</string>
+				<string>526D7CC419C396FA007DA054</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
