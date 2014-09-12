@@ -768,10 +768,10 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
     String str;
 
     for(int i=0; i<oscArgs.numPathParts; ++i)
-        str += T("/") + String(oscArgs.pathPart[i]);
+        str += String("/") + String(oscArgs.pathPart[i]);
 
     for(int i=0; i < oscArgs.numArgs; ++i) {
-        str += T(" ") + String::formatted(T("%c"), oscArgs.argType[i]);
+        str += String(" ") + String::formatted("%c", oscArgs.argType[i]);
 
         switch( oscArgs.argType[i] ) {
         case 'i': // int32
@@ -779,7 +779,7 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
             break;
 
         case 'f': // float32
-            str += String::formatted(T("%g"), getFloat(oscArgs.argPtr[i]));
+            str += String::formatted("%g", getFloat(oscArgs.argPtr[i]));
             break;
 
         case 's': // string
@@ -790,7 +790,7 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
         case 'b': { // blob
             unsigned len = getBlobLength(oscArgs.argPtr[i]);
             unsigned char *data = getBlobData(oscArgs.argPtr[i]);
-            str += String(len) + T(":0x") + String::toHexString(data, len);
+            str += String(len) + String(":0x") + String::toHexString(data, len);
         } break;
 
         case 'h': // int64
@@ -799,23 +799,23 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
 
         case 't': { // timetag
             OscTimetagT timetag = getTimetag(oscArgs.argPtr[i]);
-            str += String::formatted(T("%d.%d"), timetag.seconds, timetag.fraction);
+            str += String::formatted("%d.%d", timetag.seconds, timetag.fraction);
         } break;
 
         case 'd': // float64 (double)
-            str += String::formatted(T("%g"), getDouble(oscArgs.argPtr[i]));
+            str += String::formatted("%g", getDouble(oscArgs.argPtr[i]));
             break;
 
         case 'c': // ASCII character
-            str += String::formatted(T("%c"), getChar(oscArgs.argPtr[i]));
+            str += String::formatted("%c", getChar(oscArgs.argPtr[i]));
             break;
 
         case 'r': // 32 bit RGBA color
-            str += String::formatted(T("0x%08x"), getWord(oscArgs.argPtr[i]));
+            str += String::formatted("0x%08x", getWord(oscArgs.argPtr[i]));
             break;
 
         case 'm': // MIDI message
-            str += String::formatted(T("0x%08x"), getMIDI(oscArgs.argPtr[i]));
+            str += String::formatted("0x%08x", getMIDI(oscArgs.argPtr[i]));
             break;
 
         case 'T': // TRUE
@@ -827,7 +827,7 @@ String OscHelper::element2String(const OscArgsT& oscArgs)
             break;
 
         default:
-            str += T("(unknown)");
+            str += String("(unknown)");
         }
     }
 
@@ -863,10 +863,10 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 {
     StringArray words;
 
-    statusMessage = T("ERROR: internal error!");
+    statusMessage = String("ERROR: internal error!");
 
     // replace CRs by spaces
-    String oscString(_oscString.replaceCharacters(T("\n"), T(" ")));
+    String oscString(_oscString.replaceCharacters("\n", " "));
 
     // split string into words
     int wordBegin = 0;
@@ -908,15 +908,15 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
     for(int i=0; i<words.size(); ++i) {
         String word = words[i];
-        String arg = String::formatted(T("%c"), word[0]);
+        String arg = String::formatted("%c", word[0]);
 
         switch( word[0] ) {
         case '@': {
             if( gotTimetag ) {
-                statusMessage = T("ERROR: more than one timetag!");
+                statusMessage = String("ERROR: more than one timetag!");
                 return Array<uint8>();
             } else if( i != 0 ) {
-                statusMessage = T("ERROR: timetag expected as first argument!");
+                statusMessage = String("ERROR: timetag expected as first argument!");
                 return Array<uint8>();
             } else {
                 unsigned seconds;
@@ -926,7 +926,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #else
 				if( sscanf((const char*)word.toUTF8().getAddress(), "@%u.%u", &seconds, &fraction) != 2 ) {
 #endif
-                    statusMessage = T("syntax: <seconds>.<fraction>");
+                    statusMessage = String("syntax: <seconds>.<fraction>");
                     return Array<uint8>();
                 } else {
                     timetag.seconds = seconds;
@@ -949,7 +949,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 'i': // int32
             if( word.length() == 1 ) {
-                statusMessage = T("please add integer value");
+                statusMessage = String("please add integer value");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -959,7 +959,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 'f': // float32
             if( word.length() == 1 ) {
-                statusMessage = T("please add float value");
+                statusMessage = String("please add float value");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -970,7 +970,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
         case 's': // string
         case 'S': // alternate string
             if( word.length() == 1 ) {
-                statusMessage = T("please add string");
+                statusMessage = String("please add string");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -986,10 +986,10 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #else
             if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%d:%x", &len, &value) != 2 ) {
 #endif
-                statusMessage = T("please enter blob length and hex value (syntax: <len>:<data>)");
+                statusMessage = String("please enter blob length and hex value (syntax: <len>:<data>)");
                 return Array<uint8>();
             } else if( len != 4 ) {
-                statusMessage = T(":-/ only 4 byte blobs supported yet! :-/");
+                statusMessage = String(":-/ only 4 byte blobs supported yet! :-/");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -1001,7 +1001,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 'h': // int64
             if( word.length() == 1 ) {
-                statusMessage = T("please enter large integer value");
+                statusMessage = String("please enter large integer value");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -1011,7 +1011,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 't': // timetag
             if( word.length() == 1 ) {
-                statusMessage = T("please enter timetag value");
+                statusMessage = String("please enter timetag value");
                 return Array<uint8>();
             } else {
                 unsigned seconds;
@@ -1021,7 +1021,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #else
                 if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%u.%u", &seconds, &fraction) != 2 ) {
 #endif
-                    statusMessage = T("syntax: <seconds>.<fraction>");
+                    statusMessage = String("syntax: <seconds>.<fraction>");
                     return Array<uint8>();
                 } else {
                     oscArgsString += arg;
@@ -1034,7 +1034,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 'd': // float64 (double)
             if( word.length() == 1 ) {
-                statusMessage = T("please enter double precission float value");
+                statusMessage = String("please enter double precission float value");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -1044,10 +1044,10 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 
         case 'c': // ASCII character
             if( word.length() == 1 ) {
-                statusMessage = T("please enter character");
+                statusMessage = String("please enter character");
                 return Array<uint8>();
             } else if( word.length() > 2 ) {
-                statusMessage = String(T("ERROR: expecting only a single character for '") + arg + T("' argument!"));
+                statusMessage = String("ERROR: expecting only a single character for '") + arg + String("' argument!");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -1058,7 +1058,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
         case 'r': // 32 bit RGBA color
         case 'm': { // MIDI message
             if( word.length() == 1 ) {
-                statusMessage = T("please enter hex value");
+                statusMessage = String("please enter hex value");
                 return Array<uint8>();
             } else {
                 unsigned value;
@@ -1067,7 +1067,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
 #else
                 if( sscanf((const char*)word.substring(1).toUTF8().getAddress(), "%x", &value) != 1 ) {
 #endif
-                    statusMessage = String(T("ERROR: expecting hex value for '") + arg + T("' argument!"));
+                    statusMessage = String("ERROR: expecting hex value for '") + arg + String("' argument!");
                     return Array<uint8>();
                 } else {
                     oscArgsString += arg;
@@ -1084,7 +1084,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
         case ']': // end of array
 
             if( word.length() > 1 ) {
-                statusMessage = String(T("ERROR: unexpected value after '") + arg + T("' argument!"));
+                statusMessage = String("ERROR: unexpected value after '") + arg + String("' argument!");
                 return Array<uint8>();
             } else {
                 oscArgsString += arg;
@@ -1092,7 +1092,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
             break;
 
         default:
-            statusMessage = String(T("ERROR: unknown argument type '") + arg + T("'!"));
+            statusMessage = String("ERROR: unknown argument type '") + arg + String("'!");
             return Array<uint8>();
         }
     }
@@ -1113,7 +1113,7 @@ Array<uint8> OscHelper::string2Packet(const String& _oscString, String& statusMe
     tmp.addArray(createTimetag(timetag));
     tmp.addArray(oscElements);
 
-    statusMessage = String(T("valid OSC packet with ") + String(numElements) + T(" element"));
-    if( numElements > 1 ) statusMessage += T("s");
+    statusMessage = String("valid OSC packet with ") + String(numElements) + String(" element");
+    if( numElements > 1 ) statusMessage += String("s");
     return tmp;
 }
