@@ -13,7 +13,7 @@
 
 // 16x16 + extra row/column
 #define MAX_ROWS (16+1)
-#define MAX_COLS (16+1)
+#define MAX_COLS (16+2)
 
 // forward declaration
 class MainComponent;
@@ -101,6 +101,11 @@ private:
     int buttonExtraColumnY;
     int buttonExtraColumnWidth;
     int buttonExtraColumnHeight;
+
+    int buttonExtraShiftColumnX;
+    int buttonExtraShiftColumnY;
+    int buttonExtraShiftColumnWidth;
+    int buttonExtraShiftColumnHeight;
 
     int buttonExtraRowX;
     int buttonExtraRowY;

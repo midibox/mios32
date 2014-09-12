@@ -7,6 +7,33 @@
 			sepNavVisRange = "{0, 739}";
 		};
 	};
+	526898E219C3B827008CE53C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = CB783D196705B218C25E9F72 /* BlmClass.cpp */;
+		name = "BlmClass.cpp: 639";
+		rLen = 0;
+		rLoc = 20321;
+		rType = 0;
+		vrLen = 300;
+		vrLoc = 3377;
+	};
+	526898E319C3B827008CE53C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = F1FB78F882B53DB818F3C80D /* juce_Desktop.cpp */;
+		rLen = 0;
+		rLoc = 43;
+		rType = 1;
+	};
+	526898E419C3B827008CE53C /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = F1FB78F882B53DB818F3C80D /* juce_Desktop.cpp */;
+		name = "juce_Desktop.cpp: 44";
+		rLen = 0;
+		rLoc = 1618;
+		rType = 0;
+		vrLen = 277;
+		vrLoc = 1463;
+	};
 	526C162119C38F4C005BC475 /* vBasicOps.h */ = {
 		isa = PBXFileReference;
 		lastKnownFileType = sourcecode.c.h;
@@ -23,16 +50,6 @@
 		rType = 0;
 		vrLen = 512;
 		vrLoc = 1058;
-	};
-	526C164819C39051005BC475 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = 526C162119C38F4C005BC475 /* vBasicOps.h */;
-		name = "vBasicOps.h: 153";
-		rLen = 0;
-		rLoc = 7897;
-		rType = 0;
-		vrLen = 492;
-		vrLoc = 7782;
 	};
 	5297BED219C38E7D0081BC5C /* BLM */ = {
 		isa = PBXExecutable;
@@ -80,16 +97,6 @@
 		isa = PBXCodeSenseManager;
 		indexTemplatePath = "";
 	};
-	52A2B1E019C390D8007D8619 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = F1FB78F882B53DB818F3C80D /* juce_Desktop.cpp */;
-		name = "juce_Desktop.cpp: 44";
-		rLen = 0;
-		rLoc = 1618;
-		rType = 0;
-		vrLen = 367;
-		vrLoc = 1401;
-	};
 	52A2B1F019C390ED007D8619 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = E3680E69F19877488262D7D4 /* OscHelper.h */;
@@ -100,8 +107,18 @@
 		vrLen = 631;
 		vrLoc = 5038;
 	};
+	52DB990A19C39BE9008A9683 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 526C162119C38F4C005BC475 /* vBasicOps.h */;
+		name = "vBasicOps.h: 153";
+		rLen = 0;
+		rLoc = 7897;
+		rType = 0;
+		vrLen = 203;
+		vrLoc = 7847;
+	};
 	60BAEF1935B38D663F3DCC2D /* Project object */ = {
-		activeBuildConfigurationName = Release;
+		activeBuildConfigurationName = Debug;
 		activeExecutable = 5297BED219C38E7D0081BC5C /* BLM */;
 		activeTarget = CF1B624CF2236D4681C2457E /* BLM */;
 		codeSenseManager = 5297BEF419C38E810081BC5C /* Code sense */;
@@ -131,14 +148,16 @@
 					PBXFileDataSource_Target_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 432248566;
-			PBXWorkspaceStateSaveDate = 432248566;
+			PBXPerProjectTemplateStateSaveDate = 432249873;
+			PBXWorkspaceStateSaveDate = 432249873;
 		};
 		perUserProjectItems = {
+			526898E219C3B827008CE53C /* PBXTextBookmark */ = 526898E219C3B827008CE53C /* PBXTextBookmark */;
+			526898E319C3B827008CE53C /* PBXTextBookmark */ = 526898E319C3B827008CE53C /* PBXTextBookmark */;
+			526898E419C3B827008CE53C /* PBXTextBookmark */ = 526898E419C3B827008CE53C /* PBXTextBookmark */;
 			526C162319C38F4D005BC475 /* PBXTextBookmark */ = 526C162319C38F4D005BC475 /* PBXTextBookmark */;
-			526C164819C39051005BC475 /* PBXTextBookmark */ = 526C164819C39051005BC475 /* PBXTextBookmark */;
-			52A2B1E019C390D8007D8619 /* PBXTextBookmark */ = 52A2B1E019C390D8007D8619 /* PBXTextBookmark */;
 			52A2B1F019C390ED007D8619 /* PBXTextBookmark */ = 52A2B1F019C390ED007D8619 /* PBXTextBookmark */;
+			52DB990A19C39BE9008A9683 /* PBXTextBookmark */ = 52DB990A19C39BE9008A9683 /* PBXTextBookmark */;
 		};
 		sourceControlManager = 5297BEF319C38E810081BC5C /* Source Control */;
 		userBuildSettings = {
@@ -160,9 +179,9 @@
 	};
 	CB783D196705B218C25E9F72 /* BlmClass.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {967, 8073}}";
-			sepNavSelRange = "{328, 0}";
-			sepNavVisRange = "{213, 339}";
+			sepNavIntBoundsRect = "{{0, 0}, {967, 8619}}";
+			sepNavSelRange = "{20816, 0}";
+			sepNavVisRange = "{4777, 739}";
 		};
 	};
 	CF1B624CF2236D4681C2457E /* BLM */ = {
@@ -180,9 +199,9 @@
 	};
 	F1FB78F882B53DB818F3C80D /* juce_Desktop.cpp */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {698, 5980}}";
+			sepNavIntBoundsRect = "{{0, 0}, {572, 5889}}";
 			sepNavSelRange = "{1618, 0}";
-			sepNavVisRange = "{1401, 367}";
+			sepNavVisRange = "{1463, 277}";
 		};
 	};
 	FA70AB8AA5D5597A3D2E375E /* MainComponent.cpp */ = {
