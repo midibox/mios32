@@ -4,6 +4,8 @@
               jucerVersion="3.0.0" companyName="midibox.org">
   <MAINGROUP id="uzUx0Y" name="BLM">
     <GROUP id="{2F6DB0E8-771E-CC89-24BF-14447C4261BA}" name="Source">
+      <FILE id="hUQgAB" name="ExtCtrl.cpp" compile="1" resource="0" file="Source/ExtCtrl.cpp"/>
+      <FILE id="Tgu1KB" name="ExtCtrl.h" compile="0" resource="0" file="Source/ExtCtrl.h"/>
       <GROUP id="{D6DDACD4-128C-1726-AE03-200C5F201CFD}" name="bitmaps">
         <FILE id="ViPCTS" name="Leds.png" compile="0" resource="1" file="Source/bitmaps/Leds.png"/>
       </GROUP>

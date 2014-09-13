@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
+// $Id$
 
 
 #include "MainComponent.h"
@@ -9,15 +9,33 @@
 
 //==============================================================================
 MainComponent::MainComponent ()
-    : blmClass(0)
-    , udpSocket(NULL)
-    , midiInput(0)
-    , midiOutput(0)
-    , label(0)
-    , label2(0)
+    : udpSocket(NULL)
     , oscPort(0)
     , initialMidiScanCounter(1) // start step-wise MIDI port scan
+    , extCtrlWindow(NULL)
 {
+    addAndMakeVisible(layoutSelection = new ComboBox ("Layout"));
+    layoutSelection->setEditableText(false);
+    layoutSelection->setJustificationType(Justification::centredLeft);
+    layoutSelection->setTextWhenNothingSelected(String::empty);
+    layoutSelection->setTextWhenNoChoicesAvailable("(no choices)");
+    layoutSelection->addItem(TRANS("16x16+X"), 1);
+    layoutSelection->addItem(TRANS("16x8+X"), 2);
+    layoutSelection->setSelectedId(1, false);
+    layoutSelection->addListener(this);
+
+    addAndMakeVisible(layoutLabel = new Label("", "Layout: "));
+    layoutLabel->attachToComponent(layoutSelection, true);
+
+    addAndMakeVisible(controllerButton = new TextButton("Controller Button"));
+    controllerButton->setButtonText("Ext. Controller");
+    controllerButton->setEnabled(true);
+    controllerButton->addListener(this);
+
+    extCtrlWindow = new ExtCtrlWindow(this);
+    extCtrlWindow->setVisible(false);
+
+
     addAndMakeVisible (blmClass = new BlmClass (this, 16, 16));
     blmClass->setName ("blmClass");
 
@@ -29,11 +47,11 @@ MainComponent::MainComponent ()
     midiInput->addItem(TRANS("<< device scan running >>"), -1);
     midiInput->addListener(this);
 
-    addAndMakeVisible(label = new Label("", "MIDI IN: "));
+    addAndMakeVisible(midiInLabel = new Label("", "MIDI IN: "));
 #if JUCE_IOS
-    label->setColour(Label::textColourId, Colours::white);
+    midiInLabel->setColour(Label::textColourId, Colours::white);
 #endif
-    label->attachToComponent(midiInput, true);
+    midiInLabel->attachToComponent(midiInput, true);
 
     addAndMakeVisible (midiOutput = new ComboBox ("MIDI Output"));
     midiOutput->setEditableText(false);
@@ -43,11 +61,11 @@ MainComponent::MainComponent ()
     midiOutput->addItem(TRANS("<< device scan running >>"), -1);
     midiOutput->addListener(this);
 
-    addAndMakeVisible(label = new Label("", "MIDI OUT: "));
+    addAndMakeVisible(midiOutLabel = new Label("", "MIDI OUT: "));
 #if JUCE_IOS
-    label->setColour(Label::textColourId, Colours::white);
+    midiOutLabel->setColour(Label::textColourId, Colours::white);
 #endif
-    label->attachToComponent(midiOutput, true);
+    midiOutLabel->attachToComponent(midiOutput, true);
 
 
     addAndMakeVisible(remoteHostLabel = new Label("Remote Host:", "Remote Host:"));
@@ -63,7 +81,7 @@ MainComponent::MainComponent ()
     remoteHostLine->setScrollbarsShown(false);
     remoteHostLine->setCaretVisible(true);
     remoteHostLine->setPopupMenuEnabled(true);
-    remoteHostLine->setTextToShowWhenEmpty("(hostname)", Colours::grey);
+    remoteHostLine->setTextToShowWhenEmpty("< Hostname or IP >", Colours::grey);
 
     addAndMakeVisible(portNumberWriteLabel = new Label("Port:", "Remote Port:"));
 #if JUCE_IOS
@@ -98,17 +116,26 @@ MainComponent::MainComponent ()
     portNumberReadLine->setInputRestrictions(1000000, "0123456789");
 
     addAndMakeVisible(connectButton = new TextButton("Connect Button"));
-    connectButton->setButtonText("Connect");
+    connectButton->setButtonText("Connect OSC");
     connectButton->addListener(this);
 
     addAndMakeVisible(disconnectButton = new TextButton("Disconnect Button"));
-    disconnectButton->setButtonText("Disconnect");
+    disconnectButton->setButtonText("Disconnect OSC");
     disconnectButton->setEnabled(false);
     disconnectButton->addListener(this);
 
     // restore settings
     PropertiesFile *propertiesFile = BlmProperties::getInstance()->getCommonSettings(true);
     if( propertiesFile ) {
+        String layout = propertiesFile->getValue("layout", "16x16+X");
+        for(int i=0; i<layoutSelection->getNumItems(); ++i) {
+            if( layoutSelection->getItemText(i) == layout ) {
+                layoutSelection->setSelectedItemIndex(i, false);
+                break;
+            }
+        }
+        blmClass->setBLMLayout(layoutSelection->getItemText(layoutSelection->getSelectedItemIndex()));
+
         remoteHostLine->setText(propertiesFile->getValue("oscRemoteHost", String::empty));
         portNumberWriteLine->setText(propertiesFile->getValue("oscPortWrite", "10001"));
         portNumberReadLine->setText(propertiesFile->getValue("oscPortRead", "10000"));
@@ -116,17 +143,40 @@ MainComponent::MainComponent ()
 
     Timer::startTimer(1);
 
-    setSize(10 + blmClass->getWidth(), 2*(5 + 24) + blmClass->getHeight());
+    setSize(10 + blmClass->getWidth(), 4*(5 + 24) + blmClass->getHeight());
 }
 
 MainComponent::~MainComponent()
 {
-    deleteAndZero(udpSocket);
+    extCtrlWindow->extCtrl->sendAllLedsOff();
+
+    if( udpSocket != NULL )
+        deleteAndZero(udpSocket);
     deleteAndZero(blmClass);
     deleteAndZero(midiInput);
+    deleteAndZero(midiInLabel);
     deleteAndZero(midiOutput);
-    deleteAndZero(label);
-    deleteAndZero(label2);
+    deleteAndZero(midiOutLabel);
+    deleteAndZero(remoteHostLabel);
+    deleteAndZero(remoteHostLine);
+    deleteAndZero(portNumberWriteLabel);
+    deleteAndZero(portNumberWriteLine);
+    deleteAndZero(portNumberReadLabel);
+    deleteAndZero(portNumberReadLine);
+    deleteAndZero(connectButton);
+    deleteAndZero(disconnectButton);
+    deleteAndZero(controllerButton);
+    deleteAndZero(extCtrlWindow);
+
+    // try: avoid crash under Windows by disabling all MIDI INs/OUTs
+    {
+        const StringArray allMidiIns(MidiInput::getDevices());
+        for (int i = allMidiIns.size(); --i >= 0;)
+            audioDeviceManager.setMidiInputEnabled(allMidiIns[i], false);
+
+        audioDeviceManager.setDefaultMidiOutput(String::empty);
+    }
+
 	deleteAllChildren();
 }
 
@@ -150,22 +200,28 @@ void MainComponent::paint (Graphics& g)
 
 void MainComponent::resized()
 {
-    int middle = getWidth() / 2;
-    midiInput->setBounds(5+80, 5, middle-10-80, 24);
-    midiOutput->setBounds(middle+5+80, 5, middle-10-80, 24);
+    layoutSelection->setBounds(5+80, 5, 200, 24);
+    controllerButton->setBounds(5+80+200+20, 5, 100, 24);
 
-    int buttonY = 5+24+10;
-    int buttonWidth = 90;
+    int middle = getWidth() / 2;
+    midiInput->setBounds(5+80, 5+24+10, middle-10-80, 24);
+    midiOutput->setBounds(middle+5+80, 5+24+10, middle-10-80, 24);
+
+    int buttonY = 5+2*(24+10);
+    int buttonWidth = 100;
     int ipLineWidth = 125;
-    int buttonX = getWidth() - 2*buttonWidth - 10-4;
+    int extCtrlOffset = 16;
+
     remoteHostLabel->setBounds(10, buttonY, 75, 24);
     remoteHostLine->setBounds(10+75+4, buttonY, ipLineWidth, 24);
     portNumberWriteLabel->setBounds(10+75+4+ipLineWidth+10, buttonY, 75, 24);
     portNumberWriteLine->setBounds(10+75+4+ipLineWidth+10+75+4, buttonY, 50, 24);
     portNumberReadLabel->setBounds(10+75+4+ipLineWidth+10+75+4+50+4, buttonY, 75, 24);
     portNumberReadLine->setBounds(10+75+4+ipLineWidth+10+75+4+50+4+75+4, buttonY, 50, 24);
-    connectButton->setBounds(buttonX, buttonY, buttonWidth, 24);
-    disconnectButton->setBounds(buttonX + buttonWidth + 10, buttonY, buttonWidth, 24);
+
+    int buttonX = portNumberReadLine->getX() + portNumberReadLine->getWidth() + 20;
+    connectButton->setBounds(   buttonX + 0*(buttonWidth + 10), buttonY, buttonWidth, 24);
+    disconnectButton->setBounds(buttonX + 1*(buttonWidth + 10), buttonY, buttonWidth, 24);
 
     blmClass->setTopLeftPosition(5, buttonY+5+24+10);
 }
@@ -174,21 +230,28 @@ void MainComponent::resized()
 //==============================================================================
 void MainComponent::comboBoxChanged (ComboBox* comboBoxThatHasChanged)
 {
-    if (comboBoxThatHasChanged == midiInput)
-    {
+    if( comboBoxThatHasChanged == midiInput ) {
 		setMidiInput(midiInput->getText());
         blmClass->sendBLMLayout();
         PropertiesFile *propertiesFile = BlmProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue("midiIn", midiInput->getText());
-    }
-    else if (comboBoxThatHasChanged == midiOutput)
-    {
+    } else if( comboBoxThatHasChanged == midiOutput ) {
 		setMidiOutput(midiOutput->getText());
         blmClass->sendBLMLayout();
         PropertiesFile *propertiesFile = BlmProperties::getInstance()->getCommonSettings(true);
         if( propertiesFile )
             propertiesFile->setValue("midiOut", midiOutput->getText());
+    } else if( comboBoxThatHasChanged == layoutSelection ) {
+        String layout(layoutSelection->getItemText(layoutSelection->getSelectedItemIndex()));
+
+        blmClass->setBLMLayout(layout);
+        blmClass->sendBLMLayout();
+        setSize(10 + blmClass->getWidth(), 4*(5 + 24) + blmClass->getHeight());
+
+        PropertiesFile *propertiesFile = BlmProperties::getInstance()->getCommonSettings(true);
+        if( propertiesFile )
+            propertiesFile->setValue("layout", layout);
     }
 }
 
@@ -224,6 +287,8 @@ void MainComponent::buttonClicked(Button* buttonThatWasClicked)
         if( udpSocket )
             udpSocket->disconnect();
         deleteAndZero(udpSocket);
+    } else if( buttonThatWasClicked == controllerButton ) {
+        extCtrlWindow->setVisible(true);
     }
 }
 
@@ -356,11 +421,14 @@ void MainComponent::timerCallback()
         switch( initialMidiScanCounter ) {
         case 1:
             scanMidiInDevices();
+            extCtrlWindow->extCtrl->scanMidiInDevices();
             ++initialMidiScanCounter;
             break;
 
         case 2:
             scanMidiOutDevices();
+            extCtrlWindow->extCtrl->scanMidiOutDevices();
+            extCtrlWindow->extCtrl->sendAllLedsOff();
             ++initialMidiScanCounter;
             break;
 

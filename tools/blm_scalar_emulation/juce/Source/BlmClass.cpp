@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
+// $Id$
 // BLM.cpp
 //
 //
@@ -23,7 +23,7 @@ BlmClass::BlmClass(MainComponent *_mainComponent, int cols,int rows)
     , lastMidiNote(-1)
     , prevShiftState(false)
 {
-	for(int x=0;x<MAX_COLS;x++){
+	for(int x=0;x<MAX_COLS;x++) {
 		for(int y=0;y<MAX_ROWS;y++){
 			addAndMakeVisible (buttons[x][y] = new BlmButton (String::empty));
 			buttons[x][y]->setColour (BlmButton::buttonColourId, Colours::azure);
@@ -41,17 +41,6 @@ BlmClass::BlmClass(MainComponent *_mainComponent, int cols,int rows)
         addAndMakeVisible(rowLabelsRed[y] = new Label("", ""));
         rowLabelsRed[y]->setColour(Label::textColourId, Colours::red);
         rowLabelsRed[y]->setJustificationType(Justification::centredRight);
-
-        switch( y ) {
-        case  0: rowLabelsRed[y]->setText("Start", false); break;
-        case  1: rowLabelsRed[y]->setText("Stop", false); break;
-        case 11: rowLabelsRed[y]->setText("303", false); break;
-        case 12: rowLabelsRed[y]->setText("Keyboard", false); break;
-        case 13: rowLabelsRed[y]->setText("Patterns", false); break;
-        case 14: rowLabelsRed[y]->setText("Tracks", false); break;
-        case 15: rowLabelsRed[y]->setText("Grid", false); break;
-        case 16: rowLabelsRed[y]->setText("Shift", false); rowLabelsGreen[y]->setText(String::empty, false); break;
-        }
     }
 
 	mainComponent->audioDeviceManager.addMidiInputCallback(String::empty, this);
@@ -65,7 +54,7 @@ BlmClass::BlmClass(MainComponent *_mainComponent, int cols,int rows)
     this->addKeyListener(this);
 
     // define final dimensions and set size
-	setBlmDimensions(cols, rows); 
+    setBLMLayout("16x16+X");
 }
 
 
@@ -86,48 +75,6 @@ BlmClass::~BlmClass()
 }
 
 
-//==============================================================================
-void BlmClass::setBlmDimensions(int col,int row)
-{
-    blmColumns=col;
-    blmRows=row;
-
-    // set global layout variables
-#if JUCE_IOS
-    rowLabelsWidth = 35;
-#else
-    rowLabelsWidth = 100;
-#endif
-
-    buttonArray16x16X = rowLabelsWidth + 2*1.25 * ledSize;
-    buttonArray16x16Y = 0;
-    buttonArray16x16Width = blmColumns * ledSize;
-    buttonArray16x16Height = blmRows * ledSize;
-
-    buttonExtraShiftColumnX = rowLabelsWidth + 0*1.25 * ledSize;
-    buttonExtraShiftColumnY = 0;
-    buttonExtraShiftColumnWidth = 1 * ledSize;
-    buttonExtraShiftColumnHeight = buttonArray16x16Height;
-
-    buttonExtraColumnX = rowLabelsWidth + 1*1.25 * ledSize;
-    buttonExtraColumnY = 0;
-    buttonExtraColumnWidth = 1 * ledSize;
-    buttonExtraColumnHeight = buttonArray16x16Height;
-
-    buttonExtraRowX = rowLabelsWidth + 2*1.25 * ledSize;
-    buttonExtraRowY = buttonArray16x16Y + buttonArray16x16Height + 0.25 * ledSize;
-    buttonExtraRowWidth = buttonArray16x16Width;
-    buttonExtraRowHeight = 1 * ledSize;
-
-    buttonShiftX = buttonExtraColumnX ;
-    buttonShiftY = buttonExtraColumnY + buttonExtraColumnHeight + 0.25 * ledSize;
-    buttonShiftWidth = 1 * ledSize;
-    buttonShiftHeight = 1 * ledSize;
-
-    setSize(blmColumns*ledSize, blmRows*ledSize);
-}
-
-
 void BlmClass::resized()
 {
     for(int y=0; y<MAX_ROWS; y++) {
@@ -135,13 +82,20 @@ void BlmClass::resized()
         if( y == blmRows )
             yOffset = buttonShiftY;
         int greenWidth = 25;
-        rowLabelsGreen[y]->setBounds(rowLabelsWidth-greenWidth, yOffset, greenWidth, ledSize);
-        rowLabelsRed[y]->setBounds(0, yOffset, rowLabelsWidth-greenWidth, ledSize);
+
+        if( y < (blmRows+1) ) {
+            rowLabelsGreen[y]->setVisible(true);
+            rowLabelsGreen[y]->setBounds(rowLabelsWidth-greenWidth, yOffset, greenWidth, ledSize);
+            rowLabelsRed[y]->setVisible(true);
+            rowLabelsRed[y]->setBounds(0, yOffset, rowLabelsWidth-greenWidth, ledSize);
+        } else {
+            rowLabelsGreen[y]->setVisible(false);
+            rowLabelsRed[y]->setVisible(false);
+        }
     }
 
 	for(int x=0; x<MAX_COLS; x++) {
 		for(int y=0; y<MAX_ROWS; y++) {
-
             int xOffset = -1;
             int yOffset = -1;
 
@@ -149,19 +103,19 @@ void BlmClass::resized()
                 // 16x16 matrix
                 xOffset = buttonArray16x16X + x*ledSize + 2;
                 yOffset = buttonArray16x16Y + y*ledSize + 2;
-            } else if( x == blmRows && y == blmColumns ) {
+            } else if( x == MAX_COLS_EXTRA_OFFSET && y == MAX_ROWS_EXTRA_OFFSET ) {
                 // shift button
                 xOffset = buttonShiftX;
                 yOffset = buttonShiftY;
-            } else if( x == blmRows && y < blmColumns ) {
+            } else if( x == MAX_COLS_EXTRA_OFFSET && y < blmRows ) {
                 // extra column
                 xOffset = buttonExtraColumnX;
                 yOffset = buttonExtraColumnY + y*ledSize + 2;
-            } else if( x == (blmRows+1) && y < blmColumns ) {
+            } else if( x == (MAX_COLS_EXTRA_OFFSET+1) && y < blmRows ) {
                 // extra shift column
                 xOffset = buttonExtraShiftColumnX;
                 yOffset = buttonExtraShiftColumnY + y*ledSize + 2;
-            } else if( x < blmColumns && y == blmRows ) {
+            } else if( x < blmColumns && y == MAX_ROWS_EXTRA_OFFSET ) {
                 // extra row
                 xOffset = buttonExtraRowX + x*ledSize + 2;
                 yOffset = buttonExtraRowY + 2;
@@ -179,9 +133,6 @@ void BlmClass::resized()
         }
     }
 
-    // send layout to MBSEQ
-	sendBLMLayout();
-
     // set frame size of this component
     setSize(buttonArray16x16X + buttonArray16x16Width + 2, buttonExtraRowY + buttonExtraRowHeight + 2);
 }
@@ -195,22 +146,22 @@ bool BlmClass::searchButtonIndex(const int& x, const int& y, int& buttonX, int& 
         buttonY = (y-buttonArray16x16Y) / ledSize;
         midiNote = buttonX;
         midiChannel = buttonY;
-        printf("X=%d Y=%d\n", buttonX, buttonY);
+        //printf("X=%d Y=%d\n", buttonX, buttonY);
         return true;
     }
 
     if( x >= buttonExtraShiftColumnX && x < (buttonExtraShiftColumnX+buttonExtraShiftColumnWidth) &&
         y >= buttonExtraShiftColumnY && y < (buttonExtraShiftColumnY+buttonExtraShiftColumnHeight) ) {
-        buttonX = blmColumns + ((x-buttonExtraShiftColumnX) / ledSize);
+        buttonX = MAX_COLS_EXTRA_OFFSET + ((x-buttonExtraShiftColumnX) / ledSize);
         buttonY = (y-buttonExtraShiftColumnY) / ledSize;
-        midiNote = 0x40 | 0x80; // Event + Shift
+        midiNote = 0x50; // Event + Shift
         midiChannel = buttonY;
         return true;
     }
 
     if( x >= buttonExtraColumnX && x < (buttonExtraColumnX+buttonExtraColumnWidth) &&
         y >= buttonExtraColumnY && y < (buttonExtraColumnY+buttonExtraColumnHeight) ) {
-        buttonX = blmColumns + ((x-buttonExtraColumnX) / ledSize);
+        buttonX = MAX_COLS_EXTRA_OFFSET + ((x-buttonExtraColumnX) / ledSize);
         buttonY = (y-buttonExtraColumnY) / ledSize;
         midiNote = 0x40;
         midiChannel = buttonY;
@@ -220,7 +171,7 @@ bool BlmClass::searchButtonIndex(const int& x, const int& y, int& buttonX, int& 
     if( x >= buttonExtraRowX && x < (buttonExtraRowX+buttonExtraRowWidth) &&
         y >= buttonExtraRowY && y < (buttonExtraRowY+buttonExtraRowHeight) ) {
         buttonX = (x-buttonExtraRowX) / ledSize;
-        buttonY = blmRows + ((y-buttonExtraRowY) / ledSize);
+        buttonY = MAX_ROWS_EXTRA_OFFSET + ((y-buttonExtraRowY) / ledSize);
         midiNote = 0x60 + buttonX;
         midiChannel = 0x0;
         return true;
@@ -228,8 +179,8 @@ bool BlmClass::searchButtonIndex(const int& x, const int& y, int& buttonX, int& 
 
     if( x >= buttonShiftX && x < (buttonShiftX+buttonShiftWidth) &&
         y >= buttonShiftY && y < (buttonShiftY+buttonShiftHeight) ) {
-        buttonX = blmColumns + (x-buttonShiftX) / ledSize;
-        buttonY = blmRows + ((y-buttonShiftY) / ledSize);
+        buttonX = MAX_COLS_EXTRA_OFFSET;
+        buttonY = MAX_ROWS_EXTRA_OFFSET;
         midiNote = 0x60;
         midiChannel = 0xf;
         return true;
@@ -241,44 +192,28 @@ bool BlmClass::searchButtonIndex(const int& x, const int& y, int& buttonX, int& 
 //==============================================================================
 void BlmClass::setButtonState(int col, int row, int state)
 {
-#if 0
-	Colour LED_State;
-	switch (state) {
-	case 1: LED_State= Colours::green; break;
-	case 2: LED_State= Colours::red; break;
-	case 3: LED_State= Colours::yellow; break;
-	default: LED_State= Colours::blue; break;
-	}
-	buttons[col][row]->setColour(BlmButton::buttonOnColourId,LED_State);
-#else
 	buttons[col][row]->setButtonState(state);
-#endif
 
     if( !state )
         buttons[col][row]->setToggleState(false, false);
     else
         buttons[col][row]->setToggleState(true, false);
+
+    if( col < MAX_COLS_EXTRA_OFFSET && row < MAX_ROWS_EXTRA_OFFSET ) {
+        mainComponent->extCtrlWindow->extCtrl->sendGridLed(col, row, state);
+    } else if( col == MAX_COLS_EXTRA_OFFSET && row < MAX_ROWS_EXTRA_OFFSET ) {
+        mainComponent->extCtrlWindow->extCtrl->sendExtraColumnLed(0, row, state);
+    } else if( col == (MAX_COLS_EXTRA_OFFSET+1) && row < MAX_ROWS_EXTRA_OFFSET ) {
+        mainComponent->extCtrlWindow->extCtrl->sendExtraColumnLed(1, row, state);
+    } else if( col < MAX_COLS_EXTRA_OFFSET && row == MAX_ROWS_EXTRA_OFFSET ) {
+        mainComponent->extCtrlWindow->extCtrl->sendExtraRowLed(col, 0, state);
+    }
+
 }
 
 int BlmClass::getButtonState(int col, int row)
 {
-#if 0
-	// Use the current colour property to determine the button state.
-	int LED_State;
-	Colour current=buttons[col][row]->findColour(BlmButton::buttonOnColourId);
-	if (current==Colours::green) 
-		LED_State=1;
-	else if (current==Colours::red)
-		LED_State=2; 
-	else if (current==Colours::yellow)
-		LED_State=3; 
-	else
-		LED_State=0;
-	
-	return LED_State;
-#else
     return buttons[col][row]->getButtonState();
-#endif
 }
 
 void BlmClass::setLed(const int& col, const int& row, const int& colourIx, const int& enabled)
@@ -344,26 +279,26 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
     case 0x8: // Note Off
         evnt2 = 0; // handle like Note On with velocity 0
     case 0x9: {
-        int LED_State;
+        int ledState;
         if( evnt2 == 0 )
-            LED_State = 0;
+            ledState = 0;
         else if( evnt2 < 0x40 )
-            LED_State = 1;
+            ledState = 1;
         else if( evnt2 < 0x60 )
-            LED_State = 2;
+            ledState = 2;
         else
-            LED_State = 3;
+            ledState = 3;
 
-        if( evnt1 < blmColumns) {
+        if( evnt1 < blmColumns ) {
             int row = chn;
             int column = evnt1;
-            setButtonState(column,row,LED_State);
+            setButtonState(column, row, ledState);
         } else if( evnt1 == 0x40 ) {
-            setButtonState(blmColumns, chn, LED_State);
+            setButtonState(MAX_COLS_EXTRA_OFFSET, chn, ledState);
         } else if( chn == 0 && evnt1 >= 0x60 && evnt1 <= 0x6f ) {
-            setButtonState(evnt1-0x60, blmRows, LED_State);
+            setButtonState(evnt1-0x60, MAX_ROWS_EXTRA_OFFSET, ledState);
         } else if( chn == 15 && evnt1 == 0x60 ) {
-            setButtonState(blmColumns, blmRows, LED_State);
+            setButtonState(MAX_COLS_EXTRA_OFFSET, MAX_ROWS_EXTRA_OFFSET, ledState);
         }
 
         midiDataReceived = true;
@@ -392,34 +327,34 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
         case 0x2a: setLedPattern8_V(chn, 8, 1, pattern); break;
 
         // extra column green
-        case 0x40: if( chn == 0 ) setLedPattern8_V(blmColumns, 0, 0, pattern); break;
-        case 0x42: if( chn == 0 ) setLedPattern8_V(blmColumns, 8, 0, pattern); break;
+        case 0x40: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET, 0, 0, pattern); break;
+        case 0x42: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET, 8, 0, pattern); break;
 
         // extra column red
-        case 0x48: if( chn == 0 ) setLedPattern8_V(blmColumns, 0, 1, pattern); break;
-        case 0x4a: if( chn == 0 ) setLedPattern8_V(blmColumns, 8, 1, pattern); break;
+        case 0x48: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET, 0, 1, pattern); break;
+        case 0x4a: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET, 8, 1, pattern); break;
 
         // extra shift column green
-        case 0x50: if( chn == 0 ) setLedPattern8_V(blmColumns+1, 0, 0, pattern); break;
-        case 0x52: if( chn == 0 ) setLedPattern8_V(blmColumns+1, 8, 0, pattern); break;
+        case 0x50: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET+1, 0, 0, pattern); break;
+        case 0x52: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET+1, 8, 0, pattern); break;
 
         // extra shift column red
-        case 0x58: if( chn == 0 ) setLedPattern8_V(blmColumns+1, 0, 1, pattern); break;
-        case 0x5a: if( chn == 0 ) setLedPattern8_V(blmColumns+1, 8, 1, pattern); break;
+        case 0x58: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET+1, 0, 1, pattern); break;
+        case 0x5a: if( chn == 0 ) setLedPattern8_V(MAX_COLS_EXTRA_OFFSET+1, 8, 1, pattern); break;
 
         // extra row green & shift
         case 0x60:
-            if( chn == 0 ) setLedPattern8_H(0, blmRows, 0, pattern);
-            else if( chn == 15 ) setLed(blmColumns, blmRows, 0, pattern & 1);
+            if( chn == 0 ) setLedPattern8_H(0, MAX_ROWS_EXTRA_OFFSET, 0, pattern);
+            else if( chn == 15 ) setLed(MAX_COLS_EXTRA_OFFSET, MAX_ROWS_EXTRA_OFFSET, 0, pattern & 1);
             break;
-        case 0x62: if( chn == 0 ) setLedPattern8_H(8, blmRows, 0, pattern); break;
+        case 0x62: if( chn == 0 ) setLedPattern8_H(8, MAX_ROWS_EXTRA_OFFSET, 0, pattern); break;
 
         // extra row red & shift
         case 0x68:
-            if( chn == 0 ) setLedPattern8_H(0, blmRows, 1, pattern);
-            else if( chn == 15 ) setLed(blmColumns, blmRows, 1, pattern & 1);
+            if( chn == 0 ) setLedPattern8_H(0, MAX_ROWS_EXTRA_OFFSET, 1, pattern);
+            else if( chn == 15 ) setLed(MAX_COLS_EXTRA_OFFSET, MAX_ROWS_EXTRA_OFFSET, 1, pattern & 1);
             break;
-        case 0x6a: if( chn == 0 ) setLedPattern8_H(8, blmRows, 1, pattern); break;
+        case 0x6a: if( chn == 0 ) setLedPattern8_H(8, MAX_ROWS_EXTRA_OFFSET, 1, pattern); break;
         }
 
         midiDataReceived = true;
@@ -448,6 +383,74 @@ void BlmClass::BLMIncomingMidiMessage(const MidiMessage &message, uint8 RunningS
     }
 }
 
+
+void BlmClass::setBLMLayout(const String& layout)
+{
+    if( layout == "16x8+X" ) {
+        blmColumns=16;
+        blmRows=8;
+    } else {
+        // 16x16+X
+        blmColumns=16;
+        blmRows=16;
+    }
+
+    // set global layout variables
+#if JUCE_IOS
+    rowLabelsWidth = 35;
+#else
+    rowLabelsWidth = 100;
+#endif
+
+    const char *row8Labels[9] = {
+        "Start", "Stop", "", "", "Keyboard", "Patterns", "Tracks", "Grid",
+        "Shift"
+    };
+
+    const char *row16Labels[17] = {
+        "Start", "Stop", "", "", "", "", "", "",
+        "", "", "", "303", "Keyboard", "Patterns", "Tracks", "Grid",
+        "Shift"
+    };
+
+    const char **rowLabels = (blmRows <= 8) ? row8Labels : row16Labels;
+
+    for(int i=0; i<=blmRows; ++i) {
+        rowLabelsRed[i]->setText(rowLabels[i], false);
+        if( i < blmRows ) {
+            rowLabelsGreen[i]->setText(String(i+1), false);
+        } else {
+            rowLabelsGreen[i]->setText("", false);
+        }
+    }
+
+    buttonArray16x16X = rowLabelsWidth + 2*1.25 * ledSize;
+    buttonArray16x16Y = 0;
+    buttonArray16x16Width = blmColumns * ledSize;
+    buttonArray16x16Height = blmRows * ledSize;
+
+    buttonExtraShiftColumnX = rowLabelsWidth + 0*1.25 * ledSize;
+    buttonExtraShiftColumnY = 0;
+    buttonExtraShiftColumnWidth = 1 * ledSize;
+    buttonExtraShiftColumnHeight = buttonArray16x16Height;
+
+    buttonExtraColumnX = rowLabelsWidth + 1*1.25 * ledSize;
+    buttonExtraColumnY = 0;
+    buttonExtraColumnWidth = 1 * ledSize;
+    buttonExtraColumnHeight = buttonArray16x16Height;
+
+    buttonExtraRowX = rowLabelsWidth + 2*1.25 * ledSize;
+    buttonExtraRowY = buttonArray16x16Y + buttonArray16x16Height + 0.25 * ledSize;
+    buttonExtraRowWidth = buttonArray16x16Width;
+    buttonExtraRowHeight = 1 * ledSize;
+
+    buttonShiftX = buttonExtraColumnX ;
+    buttonShiftY = buttonExtraColumnY + buttonExtraColumnHeight + 0.25 * ledSize;
+    buttonShiftWidth = 1 * ledSize;
+    buttonShiftHeight = 1 * ledSize;
+
+    setSize(blmColumns*ledSize, blmRows*ledSize);
+}
 
 void BlmClass::sendBLMLayout(void)
 {
@@ -487,16 +490,16 @@ void BlmClass::sendAck(void)
 }
 
 
-void BlmClass::sendCCEvent(int chn,int cc, int value)
+void BlmClass::sendCCEvent(int chn, int cc, int value)
 {
-	MidiMessage message(0xb0|chn,cc,value);
+	MidiMessage message(0xb0|chn, cc, value);
     mainComponent->sendMidiMessage(message);
 }
 
 
-void BlmClass::sendNoteEvent(int chn,int key, int velocity)
+void BlmClass::sendNoteEvent(int chn, int key, int velocity)
 {
-	MidiMessage message(0x90|chn,key,velocity);
+	MidiMessage message(0x90|chn, key, velocity);
     mainComponent->sendMidiMessage(message);
 }
 
@@ -550,13 +553,7 @@ void BlmClass::mouseDown(const MouseEvent &e)
         lastMidiNote = midiNote & 0x7f;
 		lastButtonX=x;
 		lastButtonY=y;
-        if( midiNote & 0x80 ) {
-            sendNoteEvent(0xf, 0x60, 0x7f); // Shift pressed
-        }
 		sendNoteEvent(midiChannel, midiNote & 0x7f, 0x7f);
-        if( midiNote & 0x80 ) {
-            sendNoteEvent(0xf, 0x60, 0x00); // Shift depressed
-        }
 	}
 }
 void BlmClass::mouseUp(const MouseEvent &e)
