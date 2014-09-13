@@ -9,6 +9,13 @@ Wishlist for future features
 MIDIboxSEQ V4.086
 ~~~~~~~~~~~~~~~~~
 
+   o various improvements for external BLMs with different dimensions
+     (previously only BLM16x16+X was properly supported)
+
+
+MIDIboxSEQ V4.086
+~~~~~~~~~~~~~~~~~
+
    o MIDI Learn for Drum notes in Track Event configuration page:
      on a drum track, press & hold button GP12 to set the drum note
      depending on the configured recording port & channel (which has to be
