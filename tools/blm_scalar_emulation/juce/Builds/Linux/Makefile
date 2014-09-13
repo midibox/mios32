@@ -43,6 +43,7 @@ ifeq ($(CONFIG),Release)
 endif
 
 OBJECTS := \
+  $(OBJDIR)/ExtCtrl_64e4228d.o \
   $(OBJDIR)/MainComponent_a6ffb4a5.o \
   $(OBJDIR)/MidiClass_11edb4b8.o \
   $(OBJDIR)/OscHelper_dc2a366e.o \
@@ -83,6 +84,11 @@ clean:
 strip:
 	@echo Stripping BLM
 	-@strip --strip-unneeded $(OUTDIR)/$(TARGET)
+
+$(OBJDIR)/ExtCtrl_64e4228d.o: ../../Source/ExtCtrl.cpp
+	-@mkdir -p $(OBJDIR)
+	@echo "Compiling ExtCtrl.cpp"
+	@$(CXX) $(CXXFLAGS) -o "$@" -c "$<"
 
 $(OBJDIR)/MainComponent_a6ffb4a5.o: ../../Source/MainComponent.cpp
 	-@mkdir -p $(OBJDIR)

@@ -301,6 +301,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Source\ExtCtrl.cpp">
+      <Filter>BLM\Source</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\Source\MainComponent.cpp">
       <Filter>BLM\Source</Filter>
     </ClCompile>
@@ -1485,6 +1488,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Source\ExtCtrl.h">
+      <Filter>BLM\Source</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\MainComponent.h">
       <Filter>BLM\Source</Filter>
     </ClInclude>

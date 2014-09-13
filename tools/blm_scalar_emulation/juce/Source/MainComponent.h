@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
+// $Id$
 /*
   ==============================================================================
 
@@ -29,6 +29,7 @@
 #include "BlmClass.h"
 #include "UdpSocket.h"
 #include "OscHelper.h"
+#include "ExtCtrl.h"
 
 #pragma warning( disable : 4018 )
 #pragma warning( disable : 4244 )
@@ -120,6 +121,9 @@ public:
 
 	AudioDeviceManager audioDeviceManager;
 
+    BlmClass* blmClass;
+    ExtCtrlWindow *extCtrlWindow;
+
 
 
     //==============================================================================
@@ -130,11 +134,12 @@ private:
     //[/UserVariables]
 
     //==============================================================================
-    BlmClass* blmClass;
+    ComboBox* layoutSelection;
     ComboBox* midiInput;
     ComboBox* midiOutput;
-    Label* label;
-    Label* label2;
+    Label* layoutLabel;
+    Label* midiInLabel;
+    Label* midiOutLabel;
 
     Label* remoteHostLabel;
     TextEditor* remoteHostLine;
@@ -144,6 +149,7 @@ private:
     TextEditor* portNumberWriteLine;
     Button* connectButton;
     Button* disconnectButton;
+    Button* controllerButton;
 
     unsigned oscPort;
 

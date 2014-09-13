@@ -1,5 +1,5 @@
 /* -*- mode:C++; tab-width:4; c-basic-offset:4; indent-tabs-mode:nil -*- */
-// $Id: UploadHandler.cpp 928 2010-02-20 23:38:06Z tk $
+// $Id$
 //
 // BLM.h - blm_scalar_emulation 
 //
@@ -13,7 +13,10 @@
 
 // 16x16 + extra row/column
 #define MAX_ROWS (16+1)
+#define MAX_ROWS_EXTRA_OFFSET 16
+
 #define MAX_COLS (16+2)
+#define MAX_COLS_EXTRA_OFFSET 16
 
 // forward declaration
 class MainComponent;
@@ -56,7 +59,9 @@ public:
     void setLedPattern8_H(const int& colOffset, const int& row, const int& colourIx, const unsigned char& pattern);
     void setLedPattern8_V(const int& col, const int& rowOffset, const int& colourIx, const unsigned char& pattern);
 
-	void sendBLMLayout(void);
+	void setBLMLayout(const String& layout);
+
+	void sendBLMLayout();
 	void sendAck(void);
 	void sendCCEvent(int chn,int cc, int value);
 	void sendNoteEvent(int chn,int key, int velocity);
