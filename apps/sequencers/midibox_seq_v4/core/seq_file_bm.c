@@ -282,7 +282,6 @@ s32 SEQ_FILE_BM_Read(char *session, u8 global)
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  seq_ui_bookmark_t *bm = &seq_ui_bookmarks[current_bookmark];
 
-	  seq_ui_page_t page = SEQ_UI_PAGE_NONE;
 	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
 	  if( page == SEQ_UI_PAGE_NONE ) {
 	    s32 value = get_dec(word);
