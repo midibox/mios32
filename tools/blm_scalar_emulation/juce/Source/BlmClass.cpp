@@ -256,7 +256,14 @@ void BlmClass::setLedPattern8_V(const int& col, const int& rowOffset, const int&
 //==============================================================================
 void BlmClass::handleIncomingMidiMessage(MidiInput *source, const MidiMessage &message)
 {
+#ifdef JUCE_LINUX
+    // TK: not understood why the queue doesn't work reliable under Linux...
+    // Under MacOS the queue is mantadory, otherwise GUI can hang-up if too many MIDI events are received
+    if (message.getRawData()[0]<0xf8)
+        BLMIncomingMidiMessage(message, runningStatus);
+#else
 	midiQueue.push(message);
+#endif
 }
 
 
