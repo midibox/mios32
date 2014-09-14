@@ -256,14 +256,8 @@ void BlmClass::setLedPattern8_V(const int& col, const int& rowOffset, const int&
 //==============================================================================
 void BlmClass::handleIncomingMidiMessage(MidiInput *source, const MidiMessage &message)
 {
-#ifdef JUCE_LINUX
-    // TK: not understood why the queue doesn't work reliable under Linux...
-    // Under MacOS the queue is mantadory, otherwise GUI can hang-up if too many MIDI events are received
-    if (message.getRawData()[0]<0xf8)
-        BLMIncomingMidiMessage(message, runningStatus);
-#else
-	midiQueue.push(message);
-#endif
+    const ScopedLock sl(midiInQueueLock); // lock will be released at end of function
+	midiInQueue.push(message);
 }
 
 
@@ -519,13 +513,15 @@ void BlmClass::timerCallback(int timerId)
 {
     if( timerId == TIMER_CHECK_MIDI ) {
         // parse incoming MIDI events
-        while( !midiQueue.empty() ) {
-            MidiMessage &message = midiQueue.front();
-            midiQueue.pop();
+        while( !midiInQueue.empty() ) {
+            const ScopedLock sl(midiInQueueLock); // lock will be released at end of this scope
+            MidiMessage &message = midiInQueue.front();
 
             // propagate incoming event to MIDI components
             if (message.getRawData()[0]<0xf8)
                 BLMIncomingMidiMessage(message, runningStatus);
+
+            midiInQueue.pop();
         }
     } else if( timerId == TIMER_SEND_PING ) {
         if( midiDataReceived )

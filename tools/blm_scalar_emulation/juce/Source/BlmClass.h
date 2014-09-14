@@ -80,7 +80,8 @@ public:
 protected:
 	// TK: the Juce specific "MidiBuffer" sporatically throws an assertion when overloaded
     // therefore I'm using a std::queue instead
-    std::queue<MidiMessage> midiQueue;
+    std::queue<MidiMessage> midiInQueue;
+    CriticalSection midiInQueueLock;
     uint8 runningStatus;
 
 private:
