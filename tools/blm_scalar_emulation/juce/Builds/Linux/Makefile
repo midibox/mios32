@@ -2,7 +2,7 @@
 # Don't edit this file! Your changes will be overwritten when you re-save the Introjucer project!
 
 ifndef CONFIG
-  CONFIG=Debug
+  CONFIG=Release
 endif
 
 ifeq ($(TARGET_ARCH),)
