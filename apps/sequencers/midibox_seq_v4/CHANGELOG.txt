@@ -2012,6 +2012,8 @@ Here's the Nanokontrol's midi implementation/ parameter guide - http://i.korg.co
  
 This could also work on a keyboard with CC-assignable knobs and faders, or any other MIDI controller with assignable controls, of course.
 ----------------------------------------------------------
+Provide trigger layer function for Random Velocity and CC
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
