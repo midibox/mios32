@@ -2014,6 +2014,17 @@ This could also work on a keyboard with CC-assignable knobs and faders, or any o
 ----------------------------------------------------------
 Provide trigger layer function for Random Velocity and CC
 ----------------------------------------------------------
+ALL button improvements: http://midibox.org/forums/topic/19037-pressing-and-holding-all-doesnt-let-you-change-the-step-selection-mask-anymore/?p=166281
+----------------------------------------------------------
+BLM enhancements:
+http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270
+----------------------------------------------------------
+Mixer page ideas:
+http://midibox.org/forums/topic/19041-proposal-mixer-maps-three-ideas/?p=166285
+----------------------------------------------------------
+Synched mute improvements
+http://midibox.org/forums/topic/19040-proposal-mute-page-enabledisable-syncing-to-measure-with-fast-button/#entry166284
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
