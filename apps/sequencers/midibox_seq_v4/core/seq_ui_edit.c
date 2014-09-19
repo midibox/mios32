@@ -519,6 +519,15 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
   if( button <= SEQ_UI_BUTTON_GP16 ) {
 #endif
 
+    if( !seq_ui_button_state.EDIT_PRESSED &&
+	((seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
+	 seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL) ) {
+      if( depressed ) return 0; // ignore when button depressed
+
+      selected_steps ^= (1 << button);
+      return 1; // value changed
+    }
+
     // enable/disable MIDI Learn mode
     midi_learn_mode = depressed ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
 
@@ -526,20 +535,6 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 
     if( seq_ui_button_state.EDIT_PRESSED )
       return Encoder_Handler(button, 0);
-
-#if 0
-    // conflicts with new MIDI learn
-    if( (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
-	seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
-      selected_steps ^= (1 << button);
-      return 1; // value changed
-    }
-#else
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
-      selected_steps ^= (1 << button);
-      return 1; // value changed
-    }
-#endif
 
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
