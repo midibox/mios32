@@ -404,13 +404,13 @@ void BlmClass::setBLMLayout(const String& layout)
 #endif
 
     const char *row8Labels[9] = {
-        "Start", "Stop", "", "", "Keyboard", "Patterns", "Tracks", "Grid",
+        "Start", "Stop", "UpperTrk", "Keyboard", "Patterns", "Tracks", "Grid", "Alt",
         "Shift"
     };
 
     const char *row16Labels[17] = {
         "Start", "Stop", "", "", "", "", "", "",
-        "", "", "", "303", "Keyboard", "Patterns", "Tracks", "Grid",
+        "", "", "303", "Keyboard", "Patterns", "Tracks", "Grid", "Alt",
         "Shift"
     };
 
