@@ -2024,6 +2024,12 @@ http://midibox.org/forums/topic/19041-proposal-mixer-maps-three-ideas/?p=166285
 ----------------------------------------------------------
 Synched mute improvements
 http://midibox.org/forums/topic/19040-proposal-mute-page-enabledisable-syncing-to-measure-with-fast-button/#entry166284
+----------------------------------------------------------
+http://midibox.org/forums/topic/19046-recording-live-on-other-note-layers-besides-a/#entry166312
+using live recording, I recorded bass and snare drum on a Note track layer A, and then chose layer E (i.e. the next available note layer) to record open & closed hihat. However, the hihat notes were recorded on layer A as well.
+ 
+Is it possible to choose some other layer than A for live recording? It didn't make any difference whether recording mode was set to Poly or Mono on the REC page.
+----------------------------------------------------------
 
 
 
