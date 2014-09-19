@@ -12,6 +12,9 @@ MIDIboxSEQ V4.086
    o various improvements for external BLMs with different dimensions
      (previously only BLM16x16+X was properly supported)
 
+   o corrected behaviour of ALL button in EDIT page (GP buttons change
+     selection pattern with GP buttons)
+
 
 MIDIboxSEQ V4.086
 ~~~~~~~~~~~~~~~~~
@@ -2013,8 +2016,6 @@ Here's the Nanokontrol's midi implementation/ parameter guide - http://i.korg.co
 This could also work on a keyboard with CC-assignable knobs and faders, or any other MIDI controller with assignable controls, of course.
 ----------------------------------------------------------
 Provide trigger layer function for Random Velocity and CC
-----------------------------------------------------------
-ALL button improvements: http://midibox.org/forums/topic/19037-pressing-and-holding-all-doesnt-let-you-change-the-step-selection-mask-anymore/?p=166281
 ----------------------------------------------------------
 BLM enhancements:
 http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270

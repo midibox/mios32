@@ -93,11 +93,13 @@ typedef enum {
   BLM_SELECTION_NONE,
   BLM_SELECTION_START,
   BLM_SELECTION_STOP,
+  BLM_SELECTION_ALT,
+  BLM_SELECTION_UPPER_TRACKS,
   BLM_SELECTION_GRID,
   BLM_SELECTION_TRACKS,
   BLM_SELECTION_PATTERNS,
   BLM_SELECTION_KEYBOARD,
-  BLM_SELECTION_303,
+  BLM_SELECTION_303
 } blm_selection_t;
 
 
@@ -218,17 +220,19 @@ static u8 blm_num_rows;
 static u8 blm_num_colours;
 static u8 blm_force_update;
 static u8 blm_shift_active;
+static u8 blm_alt_active;
+static u8 blm_root_key;
 
 
 static const blm_selection_t mode_selections_8rows[16] = {
   BLM_SELECTION_START,
   BLM_SELECTION_STOP,
-  BLM_SELECTION_NONE,
-  BLM_SELECTION_NONE,
+  BLM_SELECTION_UPPER_TRACKS,
   BLM_SELECTION_KEYBOARD,
   BLM_SELECTION_PATTERNS,
   BLM_SELECTION_TRACKS,
   BLM_SELECTION_GRID,
+  BLM_SELECTION_ALT,
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
@@ -250,12 +254,12 @@ static const blm_selection_t mode_selections_16rows[16] = {
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
-  BLM_SELECTION_NONE,
   BLM_SELECTION_303,
   BLM_SELECTION_KEYBOARD,
   BLM_SELECTION_PATTERNS,
   BLM_SELECTION_TRACKS,
-  BLM_SELECTION_GRID
+  BLM_SELECTION_GRID,
+  BLM_SELECTION_ALT
 };
 
 
@@ -276,6 +280,8 @@ s32 SEQ_BLM_Init(u32 mode)
   blm_num_colours = 2;
   blm_force_update = 0;
   blm_shift_active = 0;
+  blm_alt_active = 0;
+  blm_root_key = 0x30;
 
   sysex_device_id = 0; // only device 0 supported yet
 
@@ -409,9 +415,15 @@ static s32 SEQ_BLM_SYSEX_Cmd_Layout(mios32_midi_port_t port, sysex_cmd_state_t c
 	  blm_num_columns = SEQ_BLM_NUM_COLUMNS;
       } else if( !sysex_state.blm.ROWS_RECEIVED ) {
 	sysex_state.blm.ROWS_RECEIVED = 1;
+	u8 prev_blm_num_rows = blm_num_rows;
 	blm_num_rows = midi_in;
 	if( blm_num_rows >= SEQ_BLM_NUM_ROWS ) // limit to provided number of tracks
 	  blm_num_rows = SEQ_BLM_NUM_ROWS;
+
+	// change default root note on layout changes
+	if( prev_blm_num_rows != blm_num_rows ) {
+	  blm_root_key = (blm_num_rows <= 8) ? 0x3c : 0x30;
+	}
       } else if( !sysex_state.blm.COLOURS_RECEIVED ) {
 	sysex_state.blm.COLOURS_RECEIVED = 1;
 	blm_num_colours = midi_in;
@@ -645,11 +657,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
       for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i, ++step) {
 	u16 pattern = 0;
 	if( SEQ_TRG_GateGet(visible_track, step, 0) ) {
-	  int note;
-	  if( use_scale )
-	    note = (blm_num_rows <= 8) ? 0x3c : 0x30; // C-3/C-2
-	  else
-	    note = (blm_num_rows <= 8) ? 0x3c : (0x3c-8); // C-3/E-2 ..
+	  int note = blm_root_key;
 
 	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
 	  u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
@@ -709,17 +717,28 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
   ///////////////////////////////////////////////////////////////////////////
   // extra LEDs
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_shift_active ) {
-    blm_leds_extracolumn_green = ui_selected_tracks;
-    blm_leds_extracolumn_red = seq_core_trk_muted;
+  if( blm_shift_active || blm_alt_active == 1 ) {
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
+    if( blm_alt_active == 3 ) {
+      u8 octave = blm_root_key / 12;
+      blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
+      blm_leds_extracolumn_red = blm_leds_extracolumn_green;
+    } else {
+      blm_leds_extracolumn_green = ui_selected_tracks;
+      blm_leds_extracolumn_red = seq_core_trk_muted;
 
-    if( blm_num_rows <= 8 ) {
-      if( !(ui_selected_tracks & 0x00ff) ) {
-	blm_leds_extracolumn_green >>= 8;
-	blm_leds_extracolumn_red >>= 8;
+      if( blm_num_rows <= 8 ) {
+	if( ui_selected_group >= 2 ) {
+	  blm_leds_extracolumn_green >>= 8;
+	  blm_leds_extracolumn_red >>= 8;
+	}
+	blm_leds_extracolumn_green &= 0xff;
+	blm_leds_extracolumn_red &= 0xff;
       }
-      blm_leds_extracolumn_green &= 0xff;
-      blm_leds_extracolumn_red &= 0xff;
     }
 
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
@@ -737,11 +756,6 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
       blm_leds_extrarow_red = 3 << (2*played_step_view);
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
-  } else {
-    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
-    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
-    blm_leds_extrarow_green = 0x0000;
-    blm_leds_extrarow_red = 0x0000;
   }
 
   return 0; // no error
@@ -808,7 +822,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
       u8 note_next;
       if( use_scale ) {
 	// determine matching note range in scale
-	note_start = (blm_num_rows <= 8) ? 0x3c : 0x30; // C-3/C-2
+	note_start = blm_root_key;
 	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	int i;
 	for(i=0; i<(blm_num_rows-1-button_row); ++i) {
@@ -816,7 +830,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	  note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	}
       } else {
-	note_start = (blm_num_rows <= 8) ? (0x3c + 7-button_row) : (0x3c-8 + 15-button_row); // C-3/E-2 ..
+	note_start = (blm_num_rows <= 8) ? (blm_root_key + 7-button_row) : (blm_root_key + 15-button_row); // C-3/E-2 ..
 	note_next = note_start;
       }
 
@@ -928,18 +942,29 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
   ///////////////////////////////////////////////////////////////////////////
   // extra LEDs
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_shift_active ) {
+  if( blm_shift_active || blm_alt_active == 1 ) {
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
     u8 visible_track = SEQ_UI_VisibleTrackGet();
-    blm_leds_extracolumn_green = ui_selected_tracks;
-    blm_leds_extracolumn_red = seq_core_trk_muted;
 
-    if( blm_num_rows <= 8 ) {
-      if( !(ui_selected_tracks & 0x00ff) ) {
-	blm_leds_extracolumn_green >>= 8;
-	blm_leds_extracolumn_red >>= 8;
+    if( blm_alt_active == 3 ) {
+      blm_leds_extracolumn_green = 1 << ui_selected_trg_layer;
+      blm_leds_extracolumn_red = blm_leds_extracolumn_green;
+    } else {
+      blm_leds_extracolumn_green = ui_selected_tracks;
+      blm_leds_extracolumn_red = seq_core_trk_muted;
+
+      if( blm_num_rows <= 8 ) {
+	if( ui_selected_group >= 2 ) {
+	  blm_leds_extracolumn_green >>= 8;
+	  blm_leds_extracolumn_red >>= 8;
+	}
+	blm_leds_extracolumn_green &= 0xff;
+	blm_leds_extracolumn_red &= 0xff;
       }
-      blm_leds_extracolumn_green &= 0xff;
-      blm_leds_extracolumn_red &= 0xff;
     }
 
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
@@ -957,11 +982,6 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
       blm_leds_extrarow_red = 3 << (2*played_step_view);
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
-  } else {
-    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
-    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
-    blm_leds_extrarow_green = 0x0000;
-    blm_leds_extrarow_red = 0x0000;
   }
 
   return 0; // no error
@@ -985,6 +1005,7 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
   ///////////////////////////////////////////////////////////////////////////
   // green LEDs: display selected pattern
   // red LEDs: active if pattern is played
+  // if alt function active: only print active pattern
   ///////////////////////////////////////////////////////////////////////////
   for(i=0; i<SEQ_BLM_NUM_ROWS; ++i) {
     u8 group = i / SEQ_CORE_NUM_TRACKS_PER_GROUP;
@@ -992,7 +1013,10 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
     int x = pnum & 0xf;
     int y = (pnum >> 4) & 0x3;
 
-    blm_leds_green[i] = ((i&3) == y) ? (1 << x) : 0x0000;
+    if( blm_alt_active )
+      blm_leds_green[i] = 0x0000;
+    else
+      blm_leds_green[i] = ((i&3) == y) ? (1 << x) : 0x0000;
 
     pnum = seq_pattern[group].pattern;
     x = pnum & 0xf;
@@ -1013,13 +1037,18 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
   ///////////////////////////////////////////////////////////////////////////
   // extra LEDs
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_shift_active ) {
+  if( blm_shift_active || blm_alt_active == 1 ) {
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
     u8 visible_track = SEQ_UI_VisibleTrackGet();
     blm_leds_extracolumn_green = ui_selected_tracks;
     blm_leds_extracolumn_red = seq_core_trk_muted;
 
     if( blm_num_rows <= 8 ) {
-      if( !(ui_selected_tracks & 0x00ff) ) {
+      if( ui_selected_group >= 2 ) {
 	blm_leds_extracolumn_green >>= 8;
 	blm_leds_extracolumn_red >>= 8;
       }
@@ -1042,11 +1071,6 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
       blm_leds_extrarow_red = 3 << (2*played_step_view);
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
-  } else {
-    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
-    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
-    blm_leds_extrarow_green = 0x0000;
-    blm_leds_extrarow_red = 0x0000;
   }
 
   return 0; // no error
@@ -1057,19 +1081,52 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
   if( button_column >= 16 )
     return 0; // only key 0..15 supported
 
-  {
-    seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
-    new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
-    SEQ_PATTERN_Change(ui_selected_group, new_pattern, 0);
-  }
+  // if ALT selected: store pattern
+  u8 force_immediate_change = 0;
+  if( blm_alt_active ) {
+    force_immediate_change = 1;
+
+    {
+      seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
+      new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+      
+      s32 status;
+      if( (status=SEQ_PATTERN_Save(ui_selected_group, new_pattern)) < 0 ) {
+	SEQ_UI_SDCardErrMsg(2000, status);
+      } else {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Pattern saved", "on SD Card!");
+      }
+      // change pattern number directly
+      new_pattern.REQ = 0;
+      seq_pattern[ui_selected_group] = seq_pattern_req[ui_selected_group] = new_pattern;
+    }
 
 #ifdef MBSEQV4L
-  {
-    seq_pattern_t new_pattern = seq_pattern[ui_selected_group+1];
-    new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
-    SEQ_PATTERN_Change(ui_selected_group+1, new_pattern, 0);
-  }
+    {
+      seq_pattern_t new_pattern = seq_pattern[ui_selected_group+1];
+      new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+      SEQ_PATTERN_Save(ui_selected_group+1, new_pattern);
+      // change pattern number directly
+      new_pattern.REQ = 0;
+      seq_pattern[ui_selected_group+1] = seq_pattern_req[ui_selected_group+1] = new_pattern;
+    }
 #endif
+  } else {
+    // change to pattern
+    {
+      seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
+      new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+      SEQ_PATTERN_Change(ui_selected_group, new_pattern, force_immediate_change);
+    }
+
+#ifdef MBSEQV4L
+    {
+      seq_pattern_t new_pattern = seq_pattern[ui_selected_group+1];
+      new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
+      SEQ_PATTERN_Change(ui_selected_group+1, new_pattern, force_immediate_change);
+    }
+#endif
+  }
 
   return 0; // no error
 }
@@ -1167,17 +1224,28 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
   ///////////////////////////////////////////////////////////////////////////
   // extra LEDs
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_shift_active ) {
-    blm_leds_extracolumn_green = ui_selected_tracks;
-    blm_leds_extracolumn_red = seq_core_trk_muted;
+  if( blm_shift_active || blm_alt_active == 1 ) {
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
+    if( blm_alt_active == 3 ) {
+      u8 octave = blm_root_key / 12;
+      blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
+      blm_leds_extracolumn_red = blm_leds_extracolumn_green;
+    } else {
+      blm_leds_extracolumn_green = ui_selected_tracks;
+      blm_leds_extracolumn_red = seq_core_trk_muted;
 
-    if( blm_num_rows <= 8 ) {
-      if( !(ui_selected_tracks & 0x00ff) ) {
-	blm_leds_extracolumn_green >>= 8;
-	blm_leds_extracolumn_red >>= 8;
+      if( blm_num_rows <= 8 ) {
+	if( ui_selected_group >= 2 ) {
+	  blm_leds_extracolumn_green >>= 8;
+	  blm_leds_extracolumn_red >>= 8;
+	}
+	blm_leds_extracolumn_green &= 0xff;
+	blm_leds_extracolumn_red &= 0xff;
       }
-      blm_leds_extracolumn_green &= 0xff;
-      blm_leds_extracolumn_red &= 0xff;
     }
 
     u8 transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
@@ -1185,11 +1253,6 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
       blm_leds_extrarow_green = 1 << (transposer_note - 0x3c);
     else
       blm_leds_extrarow_green = 0x0000;
-    blm_leds_extrarow_red = 0x0000;
-  } else {
-    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
-    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
-    blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   }
 
@@ -1229,8 +1292,8 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
       play_note = 1;
     }
   } else {
-    u8 note_start;
-    u8 note_next;
+    int note_start;
+    int note_next;
 
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       // each instrument assigned to a button
@@ -1250,7 +1313,11 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 
       if( use_scale ) {
 	// determine matching note range in scale
-	note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode      
+	note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+	note_start += (blm_root_key - 0x3c);
+	if( note_start < 0 ) note_start = 0;
+	else if( note_start > 127 ) note_start = 127;
+
 	note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
 	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	int i;
@@ -1259,7 +1326,7 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 	  note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	}
       } else {
-	note_start = 0x3c-8 + 15-button_column; // E-2 ..
+	note_start = (blm_num_rows <= 8) ? (blm_root_key + 7-button_row) : (blm_root_key + 15-button_row); // C-3/E-2 ..
 	note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
 	note_next = note_start;
       }
@@ -1436,12 +1503,17 @@ static s32 SEQ_BLM_LED_Update303Mode(void)
   ///////////////////////////////////////////////////////////////////////////
   // extra LEDs
   ///////////////////////////////////////////////////////////////////////////
-  if( !blm_shift_active ) {
+  if( blm_shift_active || blm_alt_active == 1 ) {
+    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
+    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
+    blm_leds_extrarow_green = 0x0000;
+    blm_leds_extrarow_red = 0x0000;
+  } else {
     blm_leds_extracolumn_green = ui_selected_tracks;
     blm_leds_extracolumn_red = seq_core_trk_muted;
 
     if( blm_num_rows <= 8 ) {
-      if( !(ui_selected_tracks & 0x00ff) ) {
+      if( ui_selected_group >= 2 ) {
 	blm_leds_extracolumn_green >>= 8;
 	blm_leds_extracolumn_red >>= 8;
       }
@@ -1464,11 +1536,6 @@ static s32 SEQ_BLM_LED_Update303Mode(void)
       blm_leds_extrarow_red = 3 << (2*played_step_view);
     else
       blm_leds_extrarow_red = 15 << (4*played_step_view);
-  } else {
-    blm_leds_extracolumn_green = blm_leds_extracolumn_shift_green;
-    blm_leds_extracolumn_red = blm_leds_extracolumn_shift_red;
-    blm_leds_extrarow_green = 0x0000;
-    blm_leds_extrarow_red = 0x0000;
   }
 
   return 0; // no error
@@ -1556,9 +1623,14 @@ s32 SEQ_BLM_LED_Update(void)
   blm_leds_extracolumn_shift_green = 0x0000;
   // TODO: dirty - actually we should differ between mode_selections_8rows/16rows
   if( blm_num_rows <= 8 ) {
-    blm_leds_extracolumn_shift_red = (1 << (7-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x80 : 0x00) | (1 << (6-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x01 : 0x02);
+
+    if( ui_selected_group >= 2 )
+      blm_leds_extracolumn_shift_red |= 0x04;
+    else
+      blm_leds_extracolumn_shift_green |= 0x04;
   } else {
-    blm_leds_extracolumn_shift_red = (1 << (15-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x8000 : 0x0000) | (1 << (14-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
   }
 
   switch( blm_mode ) {
@@ -1918,7 +1990,27 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
     } else if( midi_package.note == 0x40 || midi_package.note == 0x50 ) {
 
-      u8 local_shift_active = midi_package.note == 0x50;
+      u8 came_from_extra_shift_row = midi_package.note == 0x50;
+
+      // Overlay alt functions for various modes
+      if( blm_alt_active == 3 && !came_from_extra_shift_row ) {
+	switch( blm_mode ) {
+	case BLM_MODE_GRID:
+	case BLM_MODE_KEYBOARD: {
+	  u8 octave = blm_num_rows - 1 - midi_package.chn;
+	  blm_root_key = octave*12;
+	  blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+	}
+	case BLM_MODE_TRACKS: {
+	  u8 visible_track = SEQ_UI_VisibleTrackGet();
+	  u8 trg_layer = midi_package.chn;
+	  if( trg_layer < SEQ_TRG_NumLayersGet(visible_track) )
+	    ui_selected_trg_layer = trg_layer;
+	  return 1; // MIDI event has been taken
+	}
+      }
+      }
 
       if( midi_package.velocity > 0 ) {
 	// disable all keyboard notes (important when switching between modes or tracks!)
@@ -1926,7 +2018,7 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       }
 
       // Extra Column
-      if( !blm_shift_active && !local_shift_active ) {
+      if( !blm_shift_active && !came_from_extra_shift_row ) {
 	if( midi_package.velocity > 0 ) {
 	  u8 new_track = midi_package.chn;
 
@@ -1968,7 +2060,6 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	}
 	return 1; // MIDI event has been taken
       } else {
-
 	if( midi_package.velocity > 0 ) {
 	  blm_selection_t selection = (blm_num_rows <= 8) ? mode_selections_8rows[midi_package.chn] : mode_selections_16rows[midi_package.chn];
 	  switch( selection ) {
@@ -1991,6 +2082,18 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	      SEQ_MIDPLY_Reset();
 	    }
 	    return 1; // MIDI event has been taken
+
+	  case BLM_SELECTION_UPPER_TRACKS: {
+	    u16 selected_tracks = ui_selected_tracks;
+	    ui_selected_group ^= 2;
+	    if( ui_selected_group >= 2 ) {
+	      ui_selected_tracks = selected_tracks << 8;
+	    } else {
+	      ui_selected_tracks = selected_tracks >> 8;
+	    }
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
+	  }
 
 	  case BLM_SELECTION_GRID:
 	    blm_mode = BLM_MODE_GRID;
@@ -2016,6 +2119,12 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	    blm_mode = BLM_MODE_303;
 	    blm_force_update = 1;	
 	    return 1; // MIDI event has been taken
+
+	  case BLM_SELECTION_ALT:
+	    // set to 3 if ALT pressed from extra shift row of a virtual BLM (not available in original BLM16x16+X hardware)
+	    blm_alt_active = blm_alt_active ? 0 : (came_from_extra_shift_row ? 3 : 1);
+	    blm_force_update = 1;	
+	    return 1; // MIDI event has been taken
 	  }
 	}
       }
@@ -2023,7 +2132,10 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       // extra row
       u8 button = midi_package.note - 0x60;
 
-      if( !blm_shift_active ) {
+      if( blm_shift_active || blm_alt_active ) {
+	// no function yet
+	return 1; // MIDI event has been taken
+      } else {
 	if( blm_mode == BLM_MODE_KEYBOARD ) {
 	  // forward to loopback port
 	  mios32_midi_package_t p;
@@ -2045,13 +2157,11 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	  }
 	}
 	return 1; // MIDI event has been taken
-      } else {
-	// no function yet
-	return 1; // MIDI event has been taken
       }
     } else if( midi_package.chn == Chn16 && midi_package.note == 0x60 ) {
       // shift button
       blm_shift_active = (midi_package.velocity > 0) ? 1 : 0;
+      blm_alt_active = 0;
       blm_force_update = 1;	
       return 1; // MIDI event has been taken
     }
