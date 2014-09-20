@@ -724,8 +724,17 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
     blm_leds_extrarow_red = 0x0000;
   } else {
     if( blm_alt_active == 3 ) {
-      u8 octave = blm_root_key / 12;
-      blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
+	if( num_instruments <= blm_num_rows ) {
+	  blm_leds_extracolumn_green = 0xffff;
+	} else {
+	  blm_leds_extracolumn_green = (ui_selected_instrument < blm_num_rows) ? 0x0f : 0xf0;
+	}
+      } else {
+	u8 octave = blm_root_key / 12;
+	blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
+      }
       blm_leds_extracolumn_red = blm_leds_extracolumn_green;
     } else {
       blm_leds_extracolumn_green = ui_selected_tracks;
@@ -1995,7 +2004,26 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       // Overlay alt functions for various modes
       if( blm_alt_active == 3 && !came_from_extra_shift_row ) {
 	switch( blm_mode ) {
-	case BLM_MODE_GRID:
+	case BLM_MODE_GRID: {
+	  u8 visible_track = SEQ_UI_VisibleTrackGet();
+	  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+	  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
+	    if( num_instruments > blm_num_rows ) {
+	      if( midi_package.chn >= 4 ) {
+		ui_selected_instrument |= 8;
+	      } else {
+		ui_selected_instrument &= ~8;
+	      }
+	    }
+	  } else {
+	    u8 octave = blm_num_rows - 1 - midi_package.chn;
+	    blm_root_key = octave*12;
+	  }
+	  blm_force_update = 1;	
+	  return 1; // MIDI event has been taken
+	}
+
 	case BLM_MODE_KEYBOARD: {
 	  u8 octave = blm_num_rows - 1 - midi_package.chn;
 	  blm_root_key = octave*12;
@@ -2060,73 +2088,90 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	}
 	return 1; // MIDI event has been taken
       } else {
-	if( midi_package.velocity > 0 ) {
 	  blm_selection_t selection = (blm_num_rows <= 8) ? mode_selections_8rows[midi_package.chn] : mode_selections_16rows[midi_package.chn];
 	  switch( selection ) {
 	  case BLM_SELECTION_START:
-	    // if in auto mode and BPM generator is clocked in slave mode:
-	    // change to master mode
-	    SEQ_BPM_CheckAutoMaster();
-	    // always restart sequencer
-	    SEQ_BPM_Start();
+	    if( midi_package.velocity > 0 ) {
+	      // if in auto mode and BPM generator is clocked in slave mode:
+	      // change to master mode
+	      SEQ_BPM_CheckAutoMaster();
+	      // always restart sequencer
+	      SEQ_BPM_Start();
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_STOP:
-	    // if sequencer running: stop it
-	    // if sequencer already stopped: reset song position
-	    if( SEQ_BPM_IsRunning() )
-	      SEQ_BPM_Stop();
-	    else {
-	      SEQ_SONG_Reset(0);
-	      SEQ_CORE_Reset(0);
-	      SEQ_MIDPLY_Reset();
+	    if( midi_package.velocity > 0 ) {
+	      // if sequencer running: stop it
+	      // if sequencer already stopped: reset song position
+	      if( SEQ_BPM_IsRunning() )
+		SEQ_BPM_Stop();
+	      else {
+		SEQ_SONG_Reset(0);
+		SEQ_CORE_Reset(0);
+		SEQ_MIDPLY_Reset();
+	      }
 	    }
 	    return 1; // MIDI event has been taken
 
-	  case BLM_SELECTION_UPPER_TRACKS: {
-	    u16 selected_tracks = ui_selected_tracks;
-	    ui_selected_group ^= 2;
-	    if( ui_selected_group >= 2 ) {
-	      ui_selected_tracks = selected_tracks << 8;
-	    } else {
-	      ui_selected_tracks = selected_tracks >> 8;
+	  case BLM_SELECTION_UPPER_TRACKS:
+	    if( midi_package.velocity > 0 ) {
+	      u16 selected_tracks = ui_selected_tracks;
+	      ui_selected_group ^= 2;
+	      if( ui_selected_group >= 2 ) {
+		ui_selected_tracks = selected_tracks << 8;
+	      } else {
+		ui_selected_tracks = selected_tracks >> 8;
+	      }
+	      blm_force_update = 1;	
 	    }
-	    blm_force_update = 1;	
 	    return 1; // MIDI event has been taken
-	  }
 
 	  case BLM_SELECTION_GRID:
-	    blm_mode = BLM_MODE_GRID;
-	    blm_force_update = 1;	
+	    if( midi_package.velocity > 0 ) {
+	      blm_mode = BLM_MODE_GRID;
+	      blm_force_update = 1;	
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_TRACKS:
-	    blm_mode = BLM_MODE_TRACKS;
-	    blm_force_update = 1;	
+	    if( midi_package.velocity > 0 ) {
+	      blm_mode = BLM_MODE_TRACKS;
+	      blm_force_update = 1;	
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_PATTERNS:
-	    blm_mode = BLM_MODE_PATTERNS;
-	    blm_force_update = 1;	
+	    if( midi_package.velocity > 0 ) {
+	      blm_mode = BLM_MODE_PATTERNS;
+	      blm_force_update = 1;	
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_KEYBOARD:
-	    blm_mode = BLM_MODE_KEYBOARD;
-	    blm_force_update = 1;	
+	    if( midi_package.velocity > 0 ) {
+	      blm_mode = BLM_MODE_KEYBOARD;
+	      blm_force_update = 1;	
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_303:
-	    blm_mode = BLM_MODE_303;
-	    blm_force_update = 1;	
+	    if( midi_package.velocity > 0 ) {
+	      blm_mode = BLM_MODE_303;
+	      blm_force_update = 1;	
+	    }
 	    return 1; // MIDI event has been taken
 
 	  case BLM_SELECTION_ALT:
-	    // set to 3 if ALT pressed from extra shift row of a virtual BLM (not available in original BLM16x16+X hardware)
-	    blm_alt_active = blm_alt_active ? 0 : (came_from_extra_shift_row ? 3 : 1);
+	    if( midi_package.velocity > 0 ) {
+	      // set to 3 if ALT pressed from extra shift row of a virtual BLM (not available in original BLM16x16+X hardware)
+	      blm_alt_active = came_from_extra_shift_row ? 3 : 1;
+	    } else {
+	      blm_alt_active = 0;
+	    }
 	    blm_force_update = 1;	
 	    return 1; // MIDI event has been taken
 	  }
-	}
       }
     } else if( midi_package.chn == Chn1 && midi_package.note >= 0x60 && midi_package.note <= 0x6f ) {
       // extra row
