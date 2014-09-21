@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 
+#include <keyboard.h>
 #include "app.h"
 #include "mbng_kb.h"
 #include "mbng_event.h"
@@ -35,6 +36,28 @@ s32 MBNG_KB_Init(u32 mode)
 {
   if( mode != 0 )
     return -1; // only mode 0 supported
+
+  {
+    KEYBOARD_Init(0);
+
+    // disable keyboard SR assignments by default
+    int kb;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[0];
+    for(kb=0; kb<KEYBOARD_NUM; ++kb, ++kc) {
+      kc->num_rows = 0;
+      kc->dout_sr1 = 0;
+      kc->dout_sr2 = 0;
+      kc->din_sr1 = 0;
+      kc->din_sr2 = 0;
+
+      // due to slower scan rate:
+      kc->delay_fastest = 5;
+      kc->delay_fastest_black_keys = 0; // if 0, we take delay_fastest, otherwise we take the dedicated value for the black keys
+      kc->delay_slowest = 100;
+    }
+
+    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+  }
 
   return 0; // no error
 }
@@ -151,6 +174,21 @@ s32 MBNG_KB_NotifyReceivedValue(mbng_event_item_t *item)
   }
 
   // nothing else to do...
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sets the "break_is_make" switch
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_KB_BreakIsMakeSet(u8 kb, u8 value)
+{
+  if( kb >= KEYBOARD_NUM )
+    return -1; // invalid keyboard
+
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
+  kc->break_is_make = value ? 1 : 0;
 
   return 0; // no error
 }

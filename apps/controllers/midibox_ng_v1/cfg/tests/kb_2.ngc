@@ -2,6 +2,10 @@ RESET_HW
 
 LCD "%CKeyboard Mapped"
 
+# reduce number of SRs for faster scan
+# with 2 SRs the scan takes ca. 500 uS instead of 2.5 mS
+SRIO num_sr=2
+
 # keyboard configuration
 KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
                din_inverted=0  break_inverted=0  din_key_offset=32 \

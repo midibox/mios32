@@ -129,6 +129,7 @@ s32 KEYBOARD_Init(u32 mode)
       kc->break_inverted = 0;
       kc->scan_release_velocity = 0;
       kc->make_debounced = 0;
+      kc->break_is_make = 0;
 
       if( kb == 0 ) {
 	kc->num_rows = 8;
@@ -533,7 +534,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	  *ts_break_ptr = 0;
           MIOS32_IRQ_Enable();
 	}
-	return;
+
+	if( !kc->break_is_make )
+	  return;
       }
     } else {
       // debouncing with release velocity processing
@@ -547,7 +550,9 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 		    depressed ? "released without" : "pressed with remaining",
 		    break_contact ? "ts_make" : "ts_break",
 		    timestamp, *ts_break_ptr, *ts_make_ptr);
-	return;
+
+	if( !kc->break_is_make )
+	  return;
       }
     }
   } else {
@@ -615,9 +620,11 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
     }
   } else {
     // pressed key ?
+    u8 note_trigger_contact = kc->break_is_make ? break_contact : !break_contact;
+
     if( !kc->scan_velocity ||
         // or make contact reached (1->0) (not bouncing yet) and break contact remains pressed (0) ?
-	(!break_contact && *ts_break_ptr &&
+	(note_trigger_contact && *ts_break_ptr &&
 	 !(din_value_changed[kb][row_break] & key16_mask) && !(din_value[kb][row_break] & key16_mask)) ) {
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
       MIOS32_IRQ_Disable();
@@ -626,7 +633,10 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
       *ts_make_ptr = 0;
       MIOS32_IRQ_Enable();
 
-      if( kc->scan_velocity ) {
+      if( kc->break_is_make ) {
+	if( kc->verbose_level >= 2 )
+	  DEBUG_MSG("PRESSED note=%s, velocity=%d\n", KEYBOARD_GetNoteName(note_number, note_str), velocity);
+      } else if( kc->scan_velocity ) {
 	u16 delay_fastest = ( black_key && kc->delay_fastest_black_keys ) ? kc->delay_fastest_black_keys : kc->delay_fastest;
 	u16 delay_slowest = kc->delay_slowest;
 	velocity = KEYBOARD_GetVelocity(delay, delay_slowest, delay_fastest);
@@ -997,6 +1007,7 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> din_inverted <on|off>:     DINs inverted?");
   out("  set kb <1|2> break_inverted <on|off>:   Only break contacts inverted?");
   out("  set kb <1|2> make_debounced <on|off>:   Make contacts will be debounced");
+  out("  set kb <1|2> break_is_make <on|off>:    Break contact will act like Make and trigger a note");
   out("  set kb <1|2> delay_fastest <0-65535>:   fastest delay for velocity calculation");
   out("  set kb <1|2> delay_fastest_black_keys <0-65535>: optional fastest delay for black keys");
   out("  set kb <1|2> delay_fastest_release <0-65535>: opt. fastest release delay for velocity calculation");
@@ -1354,6 +1365,23 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
 	  }
 	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "break_is_make") == 0 ) {
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
+	    out("Please specify on or off (alternatively 1 or 0)");
+	    return 1; // command taken
+	  }
+
+	  int on_off = get_on_off(parameter);
+
+	  if( on_off < 0 ) {
+	    out("Expecting 'on' or 'off' (alternatively 1 or 0)!");
+	  } else {
+	    kc->break_is_make = on_off;
+
+	    out("Keyboard #%d: Break Is Make function %s", kb+1, kc->break_is_make ? "on" : "off");
+	    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+	  }
+	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "delay_fastest") == 0 ) {
 	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
 	    out("Please specify the fastest delay for velocity calculation!");
@@ -1690,6 +1718,7 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
   out("kb %d din_inverted %s", kb+1, kc->din_inverted ? "on" : "off");
   out("kb %d break_inverted %s", kb+1, kc->break_inverted ? "on" : "off");
   out("kb %d make_debounced %s", kb+1, kc->make_debounced ? "on" : "off");
+  out("kb %d break_is_make %s", kb+1, kc->break_is_make ? "on" : "off");
   out("kb %d delay_fastest %d", kb+1, kc->delay_fastest);
   out("kb %d delay_fastest_black_keys %d", kb+1, kc->delay_fastest_black_keys);
   out("kb %d delay_fastest_release %d", kb+1, kc->delay_fastest_release);

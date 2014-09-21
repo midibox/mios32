@@ -1,7 +1,5 @@
 RESET_HW
 
-LCD "%CKeyboard Test"
-
 # reduce number of SRs for faster scan
 # with 2 SRs the scan takes ca. 500 uS instead of 2.5 mS
 SRIO num_sr=2
@@ -30,3 +28,16 @@ AINSER pinrange=2:18:4065
 
 EVENT_AINSER id=1  type=PitchBend  chn= 1        range=0:16383 lcd_pos=1:1:2  label="PitchBender: %5d%B"
 EVENT_AINSER id=2  type=CC         chn= 1 cc= 1  range=0:127   lcd_pos=1:1:2  label="ModWheel:      %3d%B"
+
+
+
+# The "break is make" option is controlled from a SCS soft button
+
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+EVENT_BUTTON id=2000  type=Meta  meta=KbBreakIsMake:1  button_mode=Toggle  lcd_pos=1:15:1  label="BiM:%b"

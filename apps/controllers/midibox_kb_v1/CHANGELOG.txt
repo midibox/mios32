@@ -1,5 +1,12 @@
 $Id$
 
+MIDIbox KB V1.014
+~~~~~~~~~~~~~~~~~
+
+   o added "break_is_make" option which allows to trigger a note when the break
+     contact is activated (nice for playing organ style)
+
+
 MIDIbox KB V1.013
 ~~~~~~~~~~~~~~~~~
 
