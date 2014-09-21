@@ -34,6 +34,8 @@ extern s32 MBNG_KB_Init(u32 mode);
 extern s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity);
 extern s32 MBNG_KB_NotifyReceivedValue(mbng_event_item_t *item);
 
+extern s32 MBNG_KB_BreakIsMakeSet(u8 kb, u8 value);
+
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
 /////////////////////////////////////////////////////////////////////////////

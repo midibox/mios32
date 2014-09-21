@@ -2461,6 +2461,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE:    return "CvTransposeOctave";
   case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: return "CvTransposeSemitones";
 
+  case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE:    return "KbBreakIsMake";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -2527,6 +2529,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "CvTransposeOctave") == 0 )    return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE;
   if( strcasecmp(meta_type, "CvTransposeSemitones") == 0 ) return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES;
 
+  if( strcasecmp(meta_type, "KbBreakIsMake") == 0 ) return MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE;
+
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
   if( strcasecmp(meta_type, "ScsSoft1") == 0 )      return MBNG_EVENT_META_TYPE_SCS_SOFT1;
@@ -2592,6 +2596,8 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_CV_PITCHRANGE:          return 1;
   case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE:    return 1;
   case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: return 1;
+
+  case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE:    return 1;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -2974,6 +2980,9 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       MBNG_CV_TransposeSemitonesSet(meta_value - 1, (int)item->value - 64);
     } break;
 
+    case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE: {
+      MBNG_KB_BreakIsMakeSet(meta_value-1, item->value);
+    } break;
 
     case MBNG_EVENT_META_TYPE_SCS_ENC: {
       SCS_ENC_MENU_NotifyChange((s32)(item->value - 64));

@@ -21,7 +21,7 @@ MIDIbox NG V1.032
 
 
    o number of scanned SRIOs now configurable in .NGC file
-     with 'SRIO sr_num=<1..32>'
+     with 'SRIO num_sr=<1..32>'
 
      By default 32 DIN and DOUT shift registers are scanned, which
      result into an update rate of ca. 420 uS on a STM32F4 based core.
@@ -34,6 +34,14 @@ MIDIbox NG V1.032
     o corrected DebounceCtr parameter (value was not passed to MIOS32)
       Now also part of the SRIO configuration, use:
       SRIO debounce_cycles=<1..255>
+
+    o added new meta event "KbBreakIsMake:<keyboard-number>" which will
+      already trigger a note event when the break contact is activated
+      (nice for playing organ style).
+      Trigger it from a toggle button function as shown in cfg/test/kb_5.ngc
+      Can be optionally disabled from the terminal as well with following
+      command: "set kb <keyboard-number> break_is_make <on|off>"
+      (e.g. "set kb 1 break_is_make on")
 
 
 MIDIbox NG V1.031
