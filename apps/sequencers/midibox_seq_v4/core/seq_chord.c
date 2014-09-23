@@ -111,9 +111,8 @@ char *SEQ_CHORD_NameGet(u8 chord_ix)
 /////////////////////////////////////////////////////////////////////////////
 // This function returns the transpose value of a chord with the given
 // key number (0-3)
-// selected scale
 // IN: key number (0-3)
-//     chord number (bit 3:0) and octave transpose value (6:4)
+//     chord number (bit 4:0) and octave transpose value (7:5)
 // returns note number if >= 0
 // returns < 0 if no note defined for the given key
 /////////////////////////////////////////////////////////////////////////////
