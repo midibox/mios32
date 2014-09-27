@@ -8,7 +8,6 @@
 //  Ported to C++ by Phil Taylor 27/01/10
 //  Copyright 2008-2010
 //
-#include "includes.h"
 
 #include "CLCDView.h"
 // include default character set from separate file
@@ -71,7 +70,7 @@ CLcdView::~CLcdView(void)
 //////////////////////////////////////////////////
 int CLcdView::lcdCmd(unsigned char cmd)
 {
-	if (isValidComponent())
+	if (isEnabled())
 	{
 		if (cmd==0x01) {
 			lcdClear();
@@ -105,7 +104,7 @@ int CLcdView::lcdData(unsigned char data)
 {
 	// Check that the component is valid to make sure that it has been
 	// initialized
-	if (isValidComponent())
+	if (isEnabled())
 	{
 		lcdPrintChar(data);
 		return 0;
