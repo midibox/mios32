@@ -81,7 +81,7 @@ extern "C" s32 APP_LCD_Data(u8 data)
     if( !(display_available & (1 << mios32_lcd_device)) )
         return -1;
 
-	if( !cLcdView[mios32_lcd_device]->isValidComponent() ) {
+	if( !cLcdView[mios32_lcd_device]->isEnabled() ) {
 		// display hasn't been created yet - disable it
 		display_available &= ~(1 << mios32_lcd_device);
 		return -1; // display not available (anymore)    
@@ -103,7 +103,7 @@ extern "C" s32 APP_LCD_Cmd(u8 cmd)
     if( !(display_available & (1 << mios32_lcd_device)) )
         return -1;
 
-	if( !cLcdView[mios32_lcd_device]->isValidComponent() ) {
+	if( !cLcdView[mios32_lcd_device]->isEnabled() ) {
 		// display hasn't been created yet - disable it
 		display_available &= ~(1 << mios32_lcd_device);
 		return -1; // display not available (anymore)    
@@ -236,10 +236,10 @@ CLcdView *APP_LCD_GetComponentPtr(u8 device)
 
 CLcdView *APP_LCD_GetComponentPtr(u8 device, unsigned originx, unsigned originy)
 {
-	if( !cLcdView[device]->isValidComponent()) // create display
+	if( !cLcdView[device]->isEnabled()) // create display
         cLcdView[device] = new CLcdView(originx, originy);
 
-	if(cLcdView[device]->isValidComponent() && !(display_available & (1 << device)) ) {
+	if(cLcdView[device]->isEnabled() && !(display_available & (1 << device)) ) {
         // initialize display
         u8 mios32_lcd_device_saved = mios32_lcd_device;
         mios32_lcd_device = device;

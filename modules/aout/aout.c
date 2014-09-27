@@ -204,6 +204,8 @@ typedef struct {
 #define MIOS32_SPI2_SCLK_SET(v)  MIOS32_SYS_LPC_PINSET(0, 15, v)
 #define MIOS32_SPI2_MOSI_INIT    { MIOS32_SYS_LPC_PINSEL(0, 18, 0); MIOS32_SYS_LPC_PINDIR(0, 18, 1); }
 #define MIOS32_SPI2_MOSI_SET(v)  MIOS32_SYS_LPC_PINSET(0, 18, v)
+#elif defined(MIOS32_FAMILY_EMULATION)
+#define MIOS32_SPI2_HIGH_VOLTAGE 5
 #else
 # error "Please adapt MIOS32_SPI settings!"
 #endif

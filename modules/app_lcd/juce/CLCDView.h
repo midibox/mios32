@@ -9,9 +9,7 @@
 #ifndef _CLCDVIEW_H
 #define _CLCDVIEW_H
 
-// expecting juce installation at the same directory level like mios32
-#include "../../../../../juce/juce_amalgamated.h"
-
+#include <JuceHeader.h>
 
 // increase if required in your mios32_config.h file
 #ifndef LCD_MAX_COLUMNS

@@ -76,8 +76,10 @@ s32 MIOS32_LCD_Init(u32 mode)
   // the driver is able to modify the default cursor mapping
   // usage example: "dog" LCDs
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // initial delay - some LCDs need this!
   MIOS32_DELAY_Wait_uS(50000);
+#endif
 
   // call application specific init function
   if( (ret=APP_LCD_Init(mode)) < 0 )
