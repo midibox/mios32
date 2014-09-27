@@ -21,7 +21,9 @@
 
 #include <aout.h>
 #include <sid.h>
+#if !defined(MIOS32_FAMILY_EMULATION)
 #include <mbnet.h>
+#endif
 
 #include "app.h"
 #include "MbSidEnvironment.h"
@@ -45,7 +47,9 @@ s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 s32 NOTIFY_MIDI_SysEx(mios32_midi_port_t port, u8 midi_in);
 s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
+#if !defined(MIOS32_FAMILY_EMULATION)
 extern "C" void MBNET_TASK_Service(u8 master_id, mbnet_tos_req_t tos, u16 control, mbnet_msg_t req_msg, u8 dlc);
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -93,9 +97,11 @@ extern "C" void APP_Init(void)
   // init Stopwatch
   APP_StopwatchInit();
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // init MBNet
   MBNET_Init(0);
   MBNET_NodeIDSet(0x10);
+#endif
 
   // initialize MbSidEnvironment
   sid_se_speed_factor = 2;
@@ -210,6 +216,7 @@ extern "C" void SID_TASK_Period1mS(void)
 {
   MUTEX_MIDIOUT_TAKE;
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   if( !MBNET_ScanFinished() ) {
     MBNET_Handler(MBNET_TASK_Service);
 
@@ -256,6 +263,8 @@ extern "C" void SID_TASK_Period1mS(void)
       DEBUG_MSG("MBNet Scan has been finished - available SIDs: 0x%02x\n", sid_available);
     }
   }
+#endif
+
   MUTEX_MIDIOUT_GIVE;
 }
 
@@ -398,6 +407,7 @@ s32 APP_StopwatchCapture(void)
 }
 
 
+#if !defined(MIOS32_FAMILY_EMULATION)
 // Application specific ETOS, READ, WRITE and PING requests are forwarded to
 // this callback function
 // In any case, the function has to send an acknowledge message back
@@ -441,3 +451,4 @@ extern "C" void MBNET_TASK_Service(u8 master_id, mbnet_tos_req_t tos, u16 contro
       MBNET_SendAck(master_id, MBNET_ACK_ERROR, ack_msg, 0); // master_id, tos, msg, dlc
   }
 }
+#endif
