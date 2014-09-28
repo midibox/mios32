@@ -17,12 +17,12 @@ ifeq ($(CONFIG),Debug)
   LIBDIR := build
   OBJDIR := build/intermediate/Debug
   OUTDIR := build
-  CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
+  CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../Source -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
   CFLAGS += $(CPPFLAGS) $(TARGET_ARCH) -g -ggdb -fPIC -O0
   CXXFLAGS += $(CFLAGS) 
   LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -shared -L/usr/X11R6/lib/ -lGL -lX11 -lXext -lXinerama -lasound -ldl -lfreetype -lpthread -lrt 
   LDDEPS :=
-  RESFLAGS :=  -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
+  RESFLAGS :=  -D "LINUX=1" -D "DEBUG=1" -D "_DEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../Source -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
   TARGET := MIDIboxSID
   BLDCMD = $(CXX) -o $(OUTDIR)/$(TARGET) $(OBJECTS) $(LDFLAGS) $(RESOURCES) $(TARGET_ARCH)
 endif
@@ -32,12 +32,12 @@ ifeq ($(CONFIG),Release)
   LIBDIR := build
   OBJDIR := build/intermediate/Release
   OUTDIR := build
-  CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "NDEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
+  CPPFLAGS := $(DEPFLAGS) -D "LINUX=1" -D "NDEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../Source -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
   CFLAGS += $(CPPFLAGS) $(TARGET_ARCH) -fPIC -Os
   CXXFLAGS += $(CFLAGS) 
   LDFLAGS += -L$(BINDIR) -L$(LIBDIR) -shared -L/usr/X11R6/lib/ -lGL -lX11 -lXext -lXinerama -lasound -ldl -lfreetype -lpthread -lrt 
   LDDEPS :=
-  RESFLAGS :=  -D "LINUX=1" -D "NDEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
+  RESFLAGS :=  -D "LINUX=1" -D "NDEBUG=1" -D "JUCER_LINUX_MAKE_7346DA2A=1" -I /usr/include -I /usr/include/freetype2 -I ../../JuceLibraryCode -I ../../Source -I ../../../../../../include/mios32 -I ../../../../../../modules/random -I ../../../../../../modules/notestack -I ../../../../../../modules/aout -I ../../../../../../modules/sid -I ../../../../../../modules/app_lcd/juce
   TARGET := MIDIboxSID
   BLDCMD = $(CXX) -o $(OUTDIR)/$(TARGET) $(OBJECTS) $(LDFLAGS) $(RESOURCES) $(TARGET_ARCH)
 endif
