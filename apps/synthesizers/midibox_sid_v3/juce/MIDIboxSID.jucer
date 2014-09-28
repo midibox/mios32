@@ -277,17 +277,17 @@
     <VS2010 targetFolder="Builds/VisualStudio2010" libraryType="1" juceFolder="../../../../tools/juce/modules">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="1" optimisation="1" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+                       isDebug="1" optimisation="1" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
-                       isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+                       isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
       </CONFIGURATIONS>
     </VS2010>
     <LINUX_MAKE targetFolder="Builds/Linux" juceFolder="../../../../tools/juce/modules">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" libraryPath="/usr/X11R6/lib/" isDebug="1" optimisation="1"
-                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
         <CONFIGURATION name="Release" libraryPath="/usr/X11R6/lib/" isDebug="0" optimisation="2"
-                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+                       targetName="MIDIboxSID" headerPath="../../Source&#10;../../../core&#10;../../../core/components&#10;../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
       </CONFIGURATIONS>
     </LINUX_MAKE>
   </EXPORTFORMATS>
