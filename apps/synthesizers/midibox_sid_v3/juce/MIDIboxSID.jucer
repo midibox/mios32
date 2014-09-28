@@ -274,5 +274,13 @@
                        isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
       </CONFIGURATIONS>
     </XCODE_MAC>
+    <VS2010 targetFolder="Builds/VisualStudio2010" libraryType="1" juceFolder="../../../../tools/juce/modules">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="1" optimisation="1" targetName="MIDIboxSID" headerPath="../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="32-bit"
+                       isDebug="0" optimisation="2" targetName="MIDIboxSID" headerPath="../../../../../../include/mios32&#10;../../../../../../modules/random&#10;../../../../../../modules/notestack&#10;../../../../../../modules/aout&#10;../../../../../../modules/sid&#10;../../../../../../modules/app_lcd/juce&#10;"/>
+      </CONFIGURATIONS>
+    </VS2010>
   </EXPORTFORMATS>
 </JUCERPROJECT>
