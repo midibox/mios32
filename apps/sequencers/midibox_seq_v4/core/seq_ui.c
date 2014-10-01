@@ -1873,39 +1873,23 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
 {
   // static variables (only used here, therefore local)
   static u32 fs_time_control = 0; // timestamp of last operation
-  static u8  fs_mode = 0; // mode
 
   // this is used as a constant value
-  u32 fs_time_delay = 1000; // mS - should this be configurable?
+  u32 fs_time_delay = 500; // mS - should this be configurable?
 
-
-  // PUNCH_IN, PUNCH_OUT and Delete track data control
-  if( !depressed ) {
-    if( ( MIOS32_TIMESTAMP_GetDelay(fs_time_control) > fs_time_delay ) && ( fs_time_control != 0 ) )
+  // Clear track check
+  if( depressed ) {
+		// if footswitch time passed between pressed and depressed is less than fs_time_delay miliseconds, clear track.
+    if( ( MIOS32_TIMESTAMP_GetDelay(fs_time_control) < fs_time_delay ) && ( fs_time_control != 0 ) )
     {
-      // that confirms the delete function
-      fs_mode = 1; // delete
-    } else {
-      // start time in count
-      fs_time_control = MIOS32_TIMESTAMP_Get();
+			SEQ_UI_Button_Clear_Track(0);
     }
   } else {
-    // if time pressed is less than fs_time_delay miliseconds, we got a possible delete function activation
-    if( MIOS32_TIMESTAMP_GetDelay(fs_time_control) > fs_time_delay )
-    {
-      switch( fs_mode ) {
-      case 1: { // delete
-        SEQ_UI_Button_Clear_Track(0);
-        fs_mode = 0; // back to normal mode, later we would increment the value
-      } break;
-      default:
-        fs_mode = 0; // for the case that an invalid mode is selected
-      }
-
-      fs_time_control = MIOS32_TIMESTAMP_Get();
-    }
+		// store pressed timestamp
+		fs_time_control = MIOS32_TIMESTAMP_Get();
   }
 
+	// PUNCH_IN, PUNCH_OUT
   if( depressed ) {
     // disable recording
     seq_record_state.ENABLED = 0;
