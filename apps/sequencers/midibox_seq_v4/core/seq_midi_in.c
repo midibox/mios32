@@ -926,6 +926,63 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
     break;
   }
 
+	// MYMOD START
+  switch( cc ) {
+			
+			// case 
+			// free to assign 
+			// CC 104: selected track length with range division (8, 16, 32, 64) for 127 (31,75)
+			// CC 106: Track Select
+			
+		// selected track length
+		case 104:
+			// selected track length settings
+			
+			// 4 values: 8, 16, 32, 64
+			value = value/32;
+			switch (value) {
+				case 0:
+					value =8;
+					break;
+					
+				case 1:
+					value =16;
+					break;
+					
+				case 2:
+					value =32;
+					break;
+					
+				case 3:
+					value =64;
+					break;
+					
+				default:
+					value = 8;
+					break;
+			}
+			
+			u8 visible_track = SEQ_UI_VisibleTrackGet();
+			seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];					
+			
+			// since CCs can be modified from other tasks at different priority we should do this operation atomic
+			portENTER_CRITICAL();
+			// ensure that step position pointer matches with the new track length
+			tcc->length = value-1;
+			seq_core_trk[visible_track].step %= ((u16)value);
+			portEXIT_CRITICAL();
+			break;
+			
+		// track select
+		case 106:
+			// track select settings
+			value = value - 1;
+			ui_selected_tracks = (1 << value);
+			ui_selected_group = value / 4;
+			break;
+			
+	}
+	// MYMOD END	
 
   // search for matching CCs
   int i;
