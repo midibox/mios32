@@ -2031,7 +2031,9 @@ using live recording, I recorded bass and snare drum on a Note track layer A, an
  
 Is it possible to choose some other layer than A for live recording? It didn't make any difference whether recording mode was set to Poly or Mono on the REC page.
 ----------------------------------------------------------
-
+Store datawheel behaviour in EDIT page
+http://midibox.org/forums/topic/19090-track-select-as-default-for-jog-wheel/?p=166564
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
