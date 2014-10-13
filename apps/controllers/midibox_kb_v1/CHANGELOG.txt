@@ -128,3 +128,4 @@ Next steps:
   - 4 additional pots/faders connected to J5A.A2, J5A.A3, J5B.A4 and J5B.A5
   - MIDI channel, MIDI Port destinations and CC numbers can be configured in MIOS Terminal
   - settings are stored in on-board EEPROM of LPCXPRESSO module
+
