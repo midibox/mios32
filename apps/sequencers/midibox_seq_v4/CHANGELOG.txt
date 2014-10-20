@@ -2034,6 +2034,8 @@ Is it possible to choose some other layer than A for live recording? It didn't m
 Store datawheel behaviour in EDIT page
 http://midibox.org/forums/topic/19090-track-select-as-default-for-jog-wheel/?p=166564
 ----------------------------------------------------------
+Assign Program Change to Track: http://midibox.org/forums/topic/18012-mixer-map-currently-selected-jumps/?p=166751
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
