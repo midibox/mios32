@@ -1687,8 +1687,8 @@ s32 MIOS32_USB_Init(u32 mode)
   }
 
 #ifndef MIOS32_DONT_USE_USB_HOST
-  // switch to host or device mode depending on the ID pin
-  if( MIOS32_SYS_STM_PINGET(GPIOA, GPIO_Pin_10) ) {
+  // switch to host or device mode depending on the ID pin (Bootloader allows to overrule this pin)
+  if( MIOS32_USB_ForceDeviceMode() || MIOS32_SYS_STM_PINGET(GPIOA, GPIO_Pin_10) ) {
     USB_OTG_SetCurrentMode(&USB_OTG_dev, DEVICE_MODE);
   } else {
     USB_OTG_DriveVbus(&USB_OTG_dev, 1);
@@ -1726,6 +1726,19 @@ s32 MIOS32_USB_ForceSingleUSB(void)
     return *single_usb;
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! \returns != 0 if device mode is enforced in the bootloader config section
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_USB_ForceDeviceMode(void)
+{
+#ifdef MIOS32_DONT_USE_USB_HOST
+  return 1;
+#else
+  return 0; // TODO: add BSL option like SINGLE_USB
+#endif
 }
 
 //! \}
