@@ -66,6 +66,7 @@
 extern s32 MIOS32_USB_Init(u32 mode);
 extern s32 MIOS32_USB_IsInitialized(void);
 extern s32 MIOS32_USB_ForceSingleUSB(void);
+extern s32 MIOS32_USB_ForceDeviceMode(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
