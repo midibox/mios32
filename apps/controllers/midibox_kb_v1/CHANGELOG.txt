@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox KB V1.015
+~~~~~~~~~~~~~~~~~
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
+
 MIDIbox KB V1.014
 ~~~~~~~~~~~~~~~~~
 

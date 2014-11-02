@@ -1283,6 +1283,32 @@ s32 SEQ_FILE_HW_Read(void)
 	  AOUT_ConfigSet(config);
 	  AOUT_IF_Init(0);
 
+	} else if( strncasecmp(parameter, "CV_GATE_SR", 10) == 0 && // CV_GATE_SR%d
+		     (hlp=atoi(parameter+10)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_CV_GATES ) {
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_cv_gate_sr[hlp-1] = sr;
+
+	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_clk_sr = sr;
+
 	} else if( strncasecmp(parameter, "DOUT_GATE_SR", 12) == 0 && // DOUT_GATE_SR%d
 		     (hlp=atoi(parameter+12)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
 
@@ -1319,14 +1345,25 @@ s32 SEQ_FILE_HW_Read(void)
 	    MIOS32_BOARD_J5_PinSet(i, 0);
 	  }
 
-	  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
-
 #if defined(MIOS32_FAMILY_STM32F10x)
+	  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
 	  for(i=8; i<12; ++i) {
 	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
 	    MIOS32_BOARD_J5_PinSet(i, 0);
 	  }
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+	  // pin J5.A6 and J5.A7 used as gates
+	  for(i=6; i<8; ++i) {
+	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	    MIOS32_BOARD_J5_PinSet(i, 0);
+	  }
+	  // and J10B for additional outputs
+	  for(i=8; i<16; ++i) {
+	    MIOS32_BOARD_J10_PinInit(i, pin_mode);
+	    MIOS32_BOARD_J10_PinSet(i, 0);
+	  }
 #elif defined(MIOS32_FAMILY_LPC17xx)
+	  // and pin J28 for additional outputs
 	  for(i=0; i<4; ++i) {
 	    MIOS32_BOARD_J28_PinInit(i, pin_mode);
 	    MIOS32_BOARD_J28_PinSet(i, 0);

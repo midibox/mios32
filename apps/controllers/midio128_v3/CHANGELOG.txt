@@ -1,5 +1,10 @@
 $Id$
 
+MIDIO128 V3.020
+~~~~~~~~~~~~~~~
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
 
 MIDIO128 V3.019
 ~~~~~~~~~~~~~~~
