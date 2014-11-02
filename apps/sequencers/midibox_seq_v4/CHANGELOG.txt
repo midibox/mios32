@@ -6,6 +6,16 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.087
+~~~~~~~~~~~~~~~~~
+
+   o added CV_GATE_SR1 and CLK_SR to MBSEQ_HW.V4 config
+     This is the prefered option to add CV gates and DIN clock/start signals to your MIDIbox SEQ in future.
+     See also updated http://www.ucapps.de/midibox_seq_manual_hw.html
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
+
 MIDIboxSEQ V4.086
 ~~~~~~~~~~~~~~~~~
 

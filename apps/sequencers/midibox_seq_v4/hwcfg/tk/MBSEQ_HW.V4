@@ -240,7 +240,7 @@ BLM8X8_DOUT_CATHODES_INV_MASK 0x00
 
 # to which shift register are the LED anode lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
-BLM8X8_DOUT_LED_SR	2
+BLM8X8_DOUT_LED_SR      2
 
 # 0: no mapping of 8x8 LEDs
 # 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
@@ -331,6 +331,18 @@ TPD_ROWS_SR_RED_R 0
 
 # AOUT interface now selected in CV Configuration Menu and stored in MBSEQ_CV.V4 file
 # please scroll through the menu to find this page!
+
+# the 8 CV gates can be assigned to a shift register (0=off, 1-16: number of shift register):
+# - 1st CV Gate available at DOUT SR output D7
+# - 2nd CV Gate available at DOUT SR output D6
+# - 3rd CV Gate available at DOUT SR output D5
+# - ...
+# - 8th CV Gate available at DOUT SR output D0
+CV_GATE_SR1   0
+
+# and DIN Clock Outputs can be assigned to a shift register as well (0=off, 1-16: number of shift register):
+# D7..D5 will output a clock signal and D3..D0 a start/stop signal
+CLK_SR        0
 
 # additional gate triggers are available on common digital output pins of the
 # DOUT shift register chain - they are assigned to AOUT channel #16 (Note C-1, C#1, D-1, ...)

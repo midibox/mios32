@@ -480,6 +480,8 @@ seq_hwcfg_track_cc_t seq_hwcfg_track_cc = {
 
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
+u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
+u8 seq_hwcfg_clk_sr = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -527,6 +529,8 @@ s32 SEQ_HWCFG_Init(u32 mode)
   // disable gate SRs
   for(i=0; i<SEQ_HWCFG_NUM_SR_DOUT_GATES; ++i)
     seq_hwcfg_dout_gate_sr[i] = 0;
+  for(i=0; i<SEQ_HWCFG_NUM_SR_CV_GATES; ++i)
+    seq_hwcfg_cv_gate_sr[i] = 0;
 
   // initial debounce delay for BLM_X
   blm_x_config_t config = BLM_X_ConfigGet();

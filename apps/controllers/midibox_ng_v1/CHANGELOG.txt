@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.033
+~~~~~~~~~~~~~~~~~
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
+
+
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~
 
@@ -39,7 +45,7 @@ MIDIbox NG V1.032
       already trigger a note event when the break contact is activated
       (nice for playing organ style).
       Trigger it from a toggle button function as shown in cfg/test/kb_5.ngc
-      Can be optionally disabled from the terminal as well with following
+      Can be optionally set from the terminal as well with following
       command: "set kb <keyboard-number> break_is_make <on|off>"
       (e.g. "set kb 1 break_is_make on")
 
