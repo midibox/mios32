@@ -1737,7 +1737,12 @@ s32 MIOS32_USB_ForceDeviceMode(void)
 #ifdef MIOS32_DONT_USE_USB_HOST
   return 1;
 #else
-  return 0; // TODO: add BSL option like SINGLE_USB
+  u8 *enforce_usb_device_confirm = (u8 *)MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE_CONFIRM;
+  u8 *enforce_usb_device = (u8 *)MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE;
+  if( *enforce_usb_device_confirm == 0x42 && *enforce_usb_device < 0x80 )
+    return *enforce_usb_device;
+
+  return 0;
 #endif
 }
 
