@@ -141,6 +141,7 @@ static u8 BSL_fastboot;
 static char BSL_usb_dev_name[MIOS32_SYS_USB_DEV_NAME_LEN];
 static u8 BSL_device_id;
 static u8 BSL_single_usb;
+static u8 BSL_enforce_usb_device;
 #endif
 
 
@@ -278,6 +279,8 @@ s32 UpdateBSL(void)
 	data_value = 0x42 | (BSL_fastboot << 8);
       } else if( addr >= MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM && (addr < (MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM+2)) ) {
 	data_value = 0x42 | (BSL_single_usb << 8);
+      } else if( addr >= MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE && (addr < (MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE+2)) ) {
+	data_value = 0x42 | (BSL_enforce_usb_device << 8);
       } else if( addr >= MIOS32_SYS_ADDR_USB_DEV_NAME && (addr < MIOS32_SYS_ADDR_USB_DEV_NAME+MIOS32_SYS_USB_DEV_NAME_LEN) ) {
 	u8 offset = addr-MIOS32_SYS_ADDR_USB_DEV_NAME;
 	data_value = BSL_usb_dev_name[offset+0] | ((u16)BSL_usb_dev_name[offset+1] << 8);
@@ -333,6 +336,9 @@ s32 UpdateBSL(void)
 
       ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_SINGLE_USB_CONFIRM] = 0x42;
       ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_SINGLE_USB] = BSL_single_usb;
+
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE] = 0x42;
+      ram_buffer_byte_ptr[0xff & MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE] = BSL_enforce_usb_device;
 
       for(j=0; j<MIOS32_SYS_USB_DEV_NAME_LEN; ++j)
 	ram_buffer_byte_ptr[(0xff & MIOS32_SYS_ADDR_USB_DEV_NAME) + j] = BSL_usb_dev_name[j];
@@ -404,6 +410,12 @@ static s32 RetrieveBootInfos(void)
   u8 *single_usb = (u8 *)MIOS32_SYS_ADDR_SINGLE_USB;
   if( *single_usb_confirm == 0x42 && *single_usb < 0x80 )
     BSL_single_usb = *single_usb;
+
+  BSL_enforce_usb_device = 0x00;
+  u8 *enforce_usb_device_confirm = (u8 *)MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE_CONFIRM;
+  u8 *enforce_usb_device = (u8 *)MIOS32_SYS_ADDR_ENFORCE_USB_DEVICE;
+  if( *enforce_usb_device_confirm == 0x42 && *enforce_usb_device < 0x80 )
+    BSL_enforce_usb_device = *enforce_usb_device;
 
   BSL_device_id = 0x00;
   u8 *device_id_confirm = (u8 *)MIOS32_SYS_ADDR_DEVICE_ID_CONFIRM;
@@ -809,6 +821,7 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("Following commands are available:");
       out("  set fastboot <1 or 0>:   if 1, the initial bootloader wait phase will be skipped (current: %d)\n", BSL_fastboot);
       out("  set single_usb <1 or 0>: if 1, USB will only be initialized for a single port (current: %d)\n", BSL_single_usb);
+      out("  set enforce_usb_device <1 or 0>: if 1, USB device mode will be enforced (current: %d)\n", BSL_enforce_usb_device);
       out("  set device_id <value>:   sets MIOS32 Device ID to given value (current: %d resp. 0x%02x)\n",
 	  BSL_device_id, BSL_device_id);
       out("  set usb_name <name>:     sets USB device name (current: '%s')\n", BSL_usb_dev_name);
@@ -890,6 +903,24 @@ static s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	      out("Forcing of a single USB port enabled after 'store'!");
 	    else
 	      out("Forcing of a single USB port disabled after 'store'!");
+	  }
+	} else if( strcmp(parameter, "enforce_usb_device") == 0 ) {
+	  s32 value = -1;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) )
+	    value = get_dec(parameter);
+
+	  if( value < 0 || value > 1 ) {
+	    out("Expecting enforce_usb_device 0 or 1!");
+	  } else {
+	    BSL_enforce_usb_device = value;
+	    if( BSL_enforce_usb_device ) {
+	      out("USB Device mode will be enforced after 'store'!");
+	      out("USB Host mode won't be enabled anymore regardless of the USB cable type!");
+	    } else {
+	      out("USB Device mode won't be enforced after 'store'!");
+	      out("USB Host mode will be selected with a A-type cable, and USB Device mode with a B-type cable!");
+	      out("(USB Host mode not supported by all core modules, see www.uCApps.de documentation!)");
+	    }
 	  }
 	} else if( strcmp(parameter, "id") == 0 || strcmp(parameter, "device_id") == 0 ) {
 	  s32 value = -1;
