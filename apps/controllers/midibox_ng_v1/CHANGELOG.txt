@@ -643,3 +643,7 @@ Wishlist
 ~~~~~~~~
 
 automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
+
+--------------------------------------------------------------------------------
+
+trigger MIDI event during forwarding: http://midibox.org/forums/topic/19130-configuration-of-toggle-switch-for-ainser
