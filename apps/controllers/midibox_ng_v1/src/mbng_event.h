@@ -404,7 +404,7 @@ extern s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u
 extern s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock);
 extern s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active);
-extern s32 MBNG_EVENT_ItemNoDump(mbng_event_item_t *item, u8 no_dump);
+extern s32 MBNG_EVENT_ItemSetNoDump(mbng_event_item_t *item, u8 no_dump);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_LCMeters_Init(void);
