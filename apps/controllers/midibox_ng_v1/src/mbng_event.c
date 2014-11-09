@@ -1366,6 +1366,22 @@ s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! activates/deactivates dump flag of an event
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSetNoDump(mbng_event_item_t *item, u8 no_dump)
+{
+  // take over in pool item
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->flags.no_dump = no_dump;
+    item->flags.no_dump = no_dump;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! locks/unlocks an event for write operations (when items have received a new value)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
@@ -2190,7 +2206,8 @@ const char *MBNG_EVENT_ItemAinModeStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_AIN_MODE_SNAP:                  return "Snap";
   case MBNG_EVENT_AIN_MODE_RELATIVE:              return "Relative";
   case MBNG_EVENT_AIN_MODE_PARALLAX:              return "Parallax";
-  case MBNG_EVENT_AIN_MODE_SWITCH:              return "Switch";
+  case MBNG_EVENT_AIN_MODE_SWITCH:                return "Switch";
+  case MBNG_EVENT_AIN_MODE_TOGGLE:                return "Toggle";
   }
   return "Undefined";
 }
@@ -2202,6 +2219,7 @@ mbng_event_ain_mode_t MBNG_EVENT_ItemAinModeFromStrGet(char *ain_mode)
   if( strcasecmp(ain_mode, "Relative") == 0 )     return MBNG_EVENT_AIN_MODE_RELATIVE;
   if( strcasecmp(ain_mode, "Parallax") == 0 )     return MBNG_EVENT_AIN_MODE_PARALLAX;
   if( strcasecmp(ain_mode, "Switch") == 0 )       return MBNG_EVENT_AIN_MODE_SWITCH;
+  if( strcasecmp(ain_mode, "Toggle") == 0 )       return MBNG_EVENT_AIN_MODE_TOGGLE;
 
   return MBNG_EVENT_AIN_MODE_UNDEFINED;
 }

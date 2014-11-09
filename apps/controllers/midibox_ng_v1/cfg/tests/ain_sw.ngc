@@ -1,0 +1,19 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)AIN Switch Test"
+
+
+# AIN hardware
+AIN enable_mask=111111
+
+
+# EVENTs
+EVENT_AIN    id=  1  type=CC     chn= 1 cc= 16   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  2  type=CC     chn= 1 cc= 17   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  3  type=CC     chn= 1 cc= 18   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  4  type=CC     chn= 1 cc= 19   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  5  type=CC     chn= 1 cc= 20   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  6  type=CC     chn= 1 cc= 21   range=  0:127 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"

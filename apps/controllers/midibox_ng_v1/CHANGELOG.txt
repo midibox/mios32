@@ -1,11 +1,5 @@
 $Id$
 
-MIDIbox NG V1.033
-~~~~~~~~~~~~~~~~~
-
-   o STM32F4: support for bootloader "enforce_usb_device" flag
-
-
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~
 
@@ -48,6 +42,16 @@ MIDIbox NG V1.032
       Can be optionally set from the terminal as well with following
       command: "set kb <keyboard-number> break_is_make <on|off>"
       (e.g. "set kb 1 break_is_make on")
+
+   o added ain_mode=Toggle for AIN and AINSER events.
+     Similar to ain_mode=Switch it can be used if buttons are connected to analog inputs.
+     The event will toggle between the min and max value.
+
+   o .NGR: added "set_no_dump" command. It allows to change the "no_dump" flag
+     which specifies if an EVENT_xxx should be sent during a DumpSnapshot.
+     This feature can be used to handle different snapshot setups.
+
+   o STM32F4: support for bootloader "enforce_usb_device" flag
 
 
 MIDIbox NG V1.031
@@ -645,5 +649,3 @@ Wishlist
 automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
 
 --------------------------------------------------------------------------------
-
-trigger MIDI event during forwarding: http://midibox.org/forums/topic/19130-configuration-of-toggle-switch-for-ainser
