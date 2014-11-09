@@ -106,7 +106,8 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
   mbng_event_ain_mode_t ain_mode = item->custom_flags.AIN.ain_mode; // also valid for AINSER
 
   // handle switch mode
-  if( ain_mode == MBNG_EVENT_AIN_MODE_SWITCH ) {
+  if( ain_mode == MBNG_EVENT_AIN_MODE_SWITCH ||
+      ain_mode == MBNG_EVENT_AIN_MODE_TOGGLE ) {
     // hysteresis:
     u32 threshold_low  = (0x1000 * 30) / 100;
     u32 threshold_high = (0x1000 * 70) / 100;
@@ -119,6 +120,13 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
       prev_pin_value = 0x000;
     } else {
       return -2; // don't send
+    }
+
+    // toggle mode:
+    if( ain_mode == MBNG_EVENT_AIN_MODE_TOGGLE ) {
+      u8 inverted = item->min > item->max;
+      if( (!inverted && (pin_value == 0x000)) || (inverted && (pin_value == 0xfff)) )
+	return -2; // don't send
     }
   }
 
@@ -222,6 +230,19 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
 
     if( value == item->value )
       return -1; // value already sent    
+  } break;
+
+  case MBNG_EVENT_AIN_MODE_TOGGLE: {
+    u8 inverted = item->min > item->max;
+    if( !inverted ) {
+      value = (item->value >= max) ? min : max;
+    } else {
+      value = (item->value >= min) ? max : min;
+    }
+
+    item->value = value; // taken over
+
+    return 0; // value taken over
   } break;
 
   case MBNG_EVENT_AIN_MODE_SWITCH: // no additional handling required (hysteresis was handled at the begin of this function)
