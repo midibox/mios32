@@ -9,6 +9,15 @@ Wishlist for future features
 MIDIboxSEQ V4.087
 ~~~~~~~~~~~~~~~~~
 
+   o new page: "Track Instrument"
+     Can be selected with MENU->EVNT->Trk Inst (GP #8) or from the main page (after Track Event item)
+     Allows to configure the MIDI port, channel and instrument name.
+
+   o the new Track Instrument page also allows to select Program Change and Bank (Low/High byte)
+     If activated, these parameters will be sent when the sequencer is started and on pattern changes.
+     Please note: a program and bank change can stall your synth so that the first note could be delayed!
+     Use this function only when the device can handle patch changes quickly!
+
    o added CV_GATE_SR1 and CLK_SR to MBSEQ_HW.V4 config
      This is the prefered option to add CV gates and DIN clock/start signals to your MIDIbox SEQ in future.
      See also updated http://www.ucapps.de/midibox_seq_manual_hw.html

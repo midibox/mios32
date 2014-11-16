@@ -47,6 +47,9 @@ extern s32 SEQ_LAYER_Init(u32 mode);
 
 extern s32 SEQ_LAYER_ResetLatchedValues(void);
 
+extern s32 SEQ_LAYER_ResetTrackPCBankLatchedValues(void);
+extern s32 SEQ_LAYER_SendPCBankValues(u8 track, u8 force, u8 send_now);
+
 extern const char *SEQ_LAYER_GetEvntModeName(seq_event_mode_t event_mode);
 
 extern s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_layer_evnt_t *layer_event);

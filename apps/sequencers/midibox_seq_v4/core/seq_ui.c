@@ -510,7 +510,7 @@ s32 SEQ_UI_Button_Stop(s32 depressed)
     SEQ_MIDPLY_Reset();
   }
 
-	seq_play_timer.seconds = 0;
+  seq_play_timer.seconds = 0;
 	
   return 0; // no error
 }
@@ -565,6 +565,13 @@ s32 SEQ_UI_Button_Play(s32 depressed)
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_OffOnNextMeasure;
     // TK: note - in difference to master mode pressing PLAY twice won't reset the sequencer!
   } else {
+    // send program change & bank selects
+    MUTEX_MIDIOUT_TAKE;
+    u8 track;
+    for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
+      SEQ_LAYER_SendPCBankValues(track, 0, 1);
+    MUTEX_MIDIOUT_GIVE;
+
 #if 0
     // if sequencer running: restart it
     // if sequencer stopped: continue at last song position
