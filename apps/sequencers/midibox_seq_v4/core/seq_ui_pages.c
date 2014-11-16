@@ -67,6 +67,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "SONG",         "Song ", "Song              ", 20, (void *)&SEQ_UI_SONG_Init },
   { "MIXER",        "Mix  ", "Mixer             ", 21, (void *)&SEQ_UI_MIXER_Init },
   { "EVENTS",       "Evnt ", "Track Events      ", 22, (void *)&SEQ_UI_TRKEVNT_Init },
+  { "INSTRUMENT",   "Inst ", "Track Instrument  ",  0, (void *)&SEQ_UI_TRKINST_Init },
   { "MODE",         "Mode ", "Track Mode        ", 23, (void *)&SEQ_UI_TRKMODE_Init },
   { "DIRECTION",    "Dir. ", "Track Direction   ", 24, (void *)&SEQ_UI_TRKDIR_Init },
   { "DIVIDER",      "Div. ", "Track ClockDivider", 25, (void *)&SEQ_UI_TRKDIV_Init },

@@ -46,7 +46,7 @@
 #define ITEM_EVENT_MODE     1
 #define ITEM_MIDI_PORT      2
 #define ITEM_MIDI_CHANNEL   3
-#define ITEM_EDIT_NAME      4
+#define ITEM_TRKINST        4
 #define ITEM_LAYER_SELECT   5
 #define ITEM_LAYER_CONTROL  6
 #define ITEM_LAYER_PAR      7
@@ -57,7 +57,7 @@
 //#define ITEM_EVENT_MODE     1
 //#define ITEM_MIDI_PORT      2
 //#define ITEM_MIDI_CHANNEL   3
-//#define ITEM_EDIT_NAME      4
+//#define ITEM_TRKINST        4
 #define ITEM_LAYER_A_SELECT 5
 #define ITEM_LAYER_B_SELECT 6
 #define ITEM_DRUM_SELECT    7
@@ -75,11 +75,10 @@
 
 // Preset dialog screens
 #define PR_DIALOG_NONE          0
-#define PR_DIALOG_EDIT_LABEL    1
-#define PR_DIALOG_PRESETS       2
-#define PR_DIALOG_EXPORT_FNAME  3
-#define PR_DIALOG_EXPORT_FEXISTS 4
-#define PR_DIALOG_IMPORT        5
+#define PR_DIALOG_PRESETS       1
+#define PR_DIALOG_EXPORT_FNAME  2
+#define PR_DIALOG_EXPORT_FEXISTS 3
+#define PR_DIALOG_IMPORT        4
 
 #define NUM_LIST_DISPLAYED_ITEMS 4
 #define LIST_ENTRY_WIDTH 9
@@ -168,10 +167,6 @@ static midi_learn_mode_t midi_learn_mode = MIDI_LEARN_MODE_OFF;
 static s32 LED_Handler(u16 *gp_leds)
 {
   switch( pr_dialog ) {
-    case PR_DIALOG_EDIT_LABEL:
-      // no LED functions yet
-      break;
-
     case PR_DIALOG_PRESETS:
       *gp_leds = (3 << (2*ui_selected_item));
       break;
@@ -218,7 +213,7 @@ static s32 LED_Handler(u16 *gp_leds)
 	  case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
 	  case ITEM_MIDI_PORT: *gp_leds = 0x0020; break;
 	  case ITEM_MIDI_CHANNEL: *gp_leds = 0x0040; break;
-	  case ITEM_EDIT_NAME: *gp_leds = 0x0080; break;
+	  case ITEM_TRKINST: *gp_leds = 0x0080; break;
 	  case ITEM_LAYER_A_SELECT: *gp_leds = 0x0100; break;
 	  case ITEM_LAYER_B_SELECT: *gp_leds = 0x0200; break;
 	  case ITEM_DRUM_SELECT: *gp_leds = 0x0400; break;
@@ -232,7 +227,7 @@ static s32 LED_Handler(u16 *gp_leds)
 	  case ITEM_EVENT_MODE: *gp_leds = 0x001e; break;
 	  case ITEM_MIDI_PORT: *gp_leds = 0x0020; break;
 	  case ITEM_MIDI_CHANNEL: *gp_leds = 0x0040; break;
-	  case ITEM_EDIT_NAME: *gp_leds = 0x0080; break;
+	  case ITEM_TRKINST: *gp_leds = 0x0080; break;
 	  case ITEM_LAYER_SELECT: *gp_leds = 0x0100; break;
 	  case ITEM_LAYER_CONTROL: *gp_leds = 0x0200; break;
 	  case ITEM_LAYER_PAR: *gp_leds = 0x1c00; break;
@@ -257,69 +252,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   switch( pr_dialog ) {
-    ///////////////////////////////////////////////////////////////////////////
-    case PR_DIALOG_EDIT_LABEL:
-      if( encoder <= SEQ_UI_ENCODER_GP16 ) {
-	switch( encoder ) {
-	  case SEQ_UI_ENCODER_GP15: { // select preset
-	    int pos;
-
-	    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_drum, 0, SEQ_LABEL_NumPresetsDrum()-1, incrementer) ) {
-		SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument]);
-		for(pos=4, ui_edit_name_cursor=pos; pos>=0; --pos)
-		  if( seq_core_trk[visible_track].name[5*ui_selected_instrument + pos] == ' ' )
-		    ui_edit_name_cursor = pos;
-		  else
-		    break;
-		return 1;
-	      }
-	      return 0;
-	    } else {
-	      if( ui_edit_name_cursor < 5 ) { // select category preset
-		if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_category, 0, SEQ_LABEL_NumPresetsCategory()-1, incrementer) ) {
-		  SEQ_LABEL_CopyPresetCategory(ui_edit_preset_num_category, (char *)&seq_core_trk[visible_track].name[0]);
-		  for(pos=4, ui_edit_name_cursor=pos; pos>=0; --pos)
-		    if( seq_core_trk[visible_track].name[pos] == ' ' )
-		      ui_edit_name_cursor = pos;
-		    else
-		      break;
-		  return 1;
-		}
-		return 0;
-	      } else { // select label preset
-		if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_label, 0, SEQ_LABEL_NumPresets()-1, incrementer) ) {
-		  SEQ_LABEL_CopyPreset(ui_edit_preset_num_label, (char *)&seq_core_trk[visible_track].name[5]);
-		  for(pos=19, ui_edit_name_cursor=pos; pos>=5; --pos)
-		    if( seq_core_trk[visible_track].name[pos] == ' ' )
-		      ui_edit_name_cursor = pos;
-		    else
-		      break;
-		  return 1;
-		}
-		return 0;
-	      }
-	    }
-	  } break;
-
-	  case SEQ_UI_ENCODER_GP16: // exit keypad editor
-	    // EXIT only via button
-	    if( incrementer == 0 ) {
-	      ui_selected_item = 0;
-	      pr_dialog = PR_DIALOG_NONE;
-	    }
-	    return 1;
-	}
-
-	if( event_mode == SEQ_EVENT_MODE_Drum )
-	  return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&seq_core_trk[visible_track].name[ui_selected_instrument*5], 5);
-	else
-	  return SEQ_UI_KeyPad_Handler(encoder, incrementer, (char *)&seq_core_trk[visible_track].name, 20);
-      }
-
-      return -1; // encoder not mapped
-
-
     ///////////////////////////////////////////////////////////////////////////
     case PR_DIALOG_PRESETS:
       switch( encoder ) {
@@ -668,8 +600,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  break;
 
         case SEQ_UI_ENCODER_GP8:
-	  ui_selected_item = ITEM_EDIT_NAME;
-	  break;
+	  // enter track instrument page if button has been pressed
+	  if( incrementer == 0 )
+	    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKINST);
+	  return 1;
       }
 
       // for GP encoders and Datawheel
@@ -692,15 +626,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	} break;
 
         case ITEM_MIDI_CHANNEL: return SEQ_UI_CC_Inc(SEQ_CC_MIDI_CHANNEL, 0, 15, incrementer);
-
-        case ITEM_EDIT_NAME:
-	  // switch to keypad editor if button has been pressed
-	  if( incrementer == 0 ) {
-	    ui_selected_item = 0;
-	    pr_dialog = PR_DIALOG_EDIT_LABEL;
-	    SEQ_UI_KeyPad_Init();
-	  }
-	  return 1;
       }
 
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -782,15 +707,6 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
   switch( pr_dialog ) {
     ///////////////////////////////////////////////////////////////////////////
-    case PR_DIALOG_EDIT_LABEL:
-      if( depressed ) return 0; // ignore when button depressed
-
-      if( button <= SEQ_UI_BUTTON_GP16 )
-	return Encoder_Handler(button, 0); // re-use encoder handler
-
-      break;
-
-
     case PR_DIALOG_PRESETS:
       if( depressed ) return 0; // ignore when button depressed
 
@@ -954,11 +870,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type Steps/ParL/TrgL Port Chn. EditLayer  controls                         
-  // G1T1 Note  256   4     8  IIC2  12  Name  D    Prob                PRESETS  INIT
+  // Trk. Type Steps/ParL/TrgL Port Chn. Trk.Layer  controls                         
+  // G1T1 Note  256   4     8  IIC2  12  Inst  D    Prob                PRESETS  INIT
 
-  // Trk. Type Steps/ParL/TrgL Port Chn. EditLayer  controls                         
-  // G1T1 Note  256   4     8  IIC2  12  Name  D    CC #001 (ModWheel)  PRESETS  INIT
+  // Trk. Type Steps/ParL/TrgL Port Chn. Trk.Layer  controls                         
+  // G1T1 Note  256   4     8  IIC2  12  Inst  D    CC #001 (ModWheel)  PRESETS  INIT
 
   // Track Type "Note", Chord" and "CC":
   // Note: Parameter Layer A/B/C statically assigned to Note Number/Velocity/Length
@@ -984,11 +900,11 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Type StepsP/T  Drums Port Chn. EditLayA LayB  Drum Note VelN VelA PRE-    
-  // G1T1 Drum  (64/2*64) 16   USB1  10  NamePrb. ----   BD   C-1  100  127 SETS INIT
+  // Trk. Type StepsP/T  Drums Port Chn. Trk.LayA LayB  Drum Note VelN VelA PRE-    
+  // G1T1 Drum  (64/2*64) 16   USB1  10  InstPrb. ----   BD   C-1  100  127 SETS INIT
 
-  // Trk. Type StepsP/T  Drums Port Chn. EditLayA LayB  Drum Note VelN VelA PRE-         
-  // G1T1 Drum  (2*64/256) 8   USB1  12  NameVel. Len.   SD   D-1  ---  --- SETS INIT
+  // Trk. Type StepsP/T  Drums Port Chn. Trk.LayA LayB  Drum Note VelN VelA PRE-         
+  // G1T1 Drum  (2*64/256) 8   USB1  12  InstVel. Len.   SD   D-1  ---  --- SETS INIT
 
 
   // Track Type "Drums":
@@ -1012,21 +928,6 @@ static s32 LCD_Handler(u8 high_prio)
   //    - 8 Parameter Layer with 128 steps and 2*8 Trigger Layers A-P with 128 steps taken for Gate and Accent
   //    - 2*8 Parameter Layer with 64 steps and 8 Trigger Layers A-P with 256 steps taken for Gate
 
-
-
-  // "Edit Name" layout:
-  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-  // <--------------------------------------><-------------------------------------->
-  // Please enter Track Category for G1T1    <xxxxx-xxxxxxxxxxxxxxx>                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset DONE
-
-  // "Edit Drum Name" layout:
-  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
-  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
-  // <--------------------------------------><-------------------------------------->
-  // Please enter Drum Label for G1T1- 1:C-1 <xxxxx>                                 
-  // .,!1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8WXYZ9 -_ 0  Char <>  Del Ins Preset DONE
 
 
   // Preset dialogs:
@@ -1060,63 +961,6 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   switch( pr_dialog ) {
-    ///////////////////////////////////////////////////////////////////////////
-    case PR_DIALOG_EDIT_LABEL: {
-      int i;
-
-      SEQ_LCD_CursorSet(0, 0);
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	SEQ_LCD_PrintString("Please enter Drum Label for ");
-	SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-	SEQ_LCD_PrintFormattedString("-%2d:", ui_selected_instrument + 1);
-	SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
-	SEQ_LCD_PrintSpaces(1);
-
-	SEQ_LCD_PrintChar('<');
-	for(i=0; i<5; ++i)
-	  SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[5*ui_selected_instrument + i]);
-	SEQ_LCD_PrintChar('>');
-	SEQ_LCD_PrintSpaces(33);
-
-	// insert flashing cursor
-	if( ui_cursor_flash ) {
-	  if( ui_edit_name_cursor >= 5 ) // correct cursor position if it is outside the 5 char label space
-	    ui_edit_name_cursor = 0;
-	  SEQ_LCD_CursorSet(41 + ui_edit_name_cursor, 0);
-	  SEQ_LCD_PrintChar('*');
-	}
-      } else {
-	if( ui_edit_name_cursor < 5 ) {
-	  SEQ_LCD_PrintString("Please enter Track Category for ");
-	  SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-	  SEQ_LCD_PrintSpaces(4);
-	} else {
-	  SEQ_LCD_PrintString("Please enter Track Label for ");
-	  SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
-	  SEQ_LCD_PrintSpaces(7);
-	}
-	SEQ_LCD_PrintChar('<');
-	for(i=0; i<5; ++i)
-	  SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[i]);
-	SEQ_LCD_PrintChar('-');
-	for(i=5; i<20; ++i)
-	  SEQ_LCD_PrintChar(seq_core_trk[visible_track].name[i]);
-	SEQ_LCD_PrintChar('>');
-	SEQ_LCD_PrintSpaces(17);
-      }
-
-
-      // insert flashing cursor
-      if( ui_cursor_flash ) {
-	SEQ_LCD_CursorSet(40 + ((ui_edit_name_cursor < 5) ? 1 : 2) + ui_edit_name_cursor, 0);
-	SEQ_LCD_PrintChar('*');
-      }
-
-      SEQ_UI_KeyPad_LCD_Msg();
-      SEQ_LCD_PrintString("Preset DONE");
-    } break;
-
-
     ///////////////////////////////////////////////////////////////////////////
     case PR_DIALOG_PRESETS: {
       SEQ_LCD_CursorSet(0, 0);
@@ -1254,10 +1098,10 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString((event_mode == SEQ_EVENT_MODE_Drum) ? "StepsP/T  Drums " : "Steps/ParL/TrgL ");
       SEQ_LCD_PrintString("Port Chn. ");
 
-      if( ui_selected_item == ITEM_EDIT_NAME && ui_cursor_flash ) {
+      if( ui_selected_item == ITEM_TRKINST && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	SEQ_LCD_PrintFormattedString("Edit");
+	SEQ_LCD_PrintFormattedString("Trk.");
       }
 
       if( selected_layer_config != GetLayerConfig(visible_track) ) {
@@ -1331,10 +1175,10 @@ static s32 LCD_Handler(u8 high_prio)
       }
 
       ///////////////////////////////////////////////////////////////////////////
-      if( ui_selected_item == ITEM_EDIT_NAME && ui_cursor_flash ) {
+      if( ui_selected_item == ITEM_TRKINST && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	SEQ_LCD_PrintFormattedString("Name");
+	SEQ_LCD_PrintFormattedString("Inst");
       }
 
       ///////////////////////////////////////////////////////////////////////////
@@ -1506,13 +1350,13 @@ s32 SEQ_UI_TRKEVNT_Init(u32 mode)
   selected_layer_config_track = SEQ_UI_VisibleTrackGet();
   selected_layer_config = GetLayerConfig(selected_layer_config_track);
 
+  dir_name[0] = 0;
+  pr_dialog = 0;
+
   // initialize edit label vars (name is modified directly, not via ui_edit_name!)
   ui_edit_name_cursor = 0;
   ui_edit_preset_num_category = 0;
   ui_edit_preset_num_label = 0;
-
-  dir_name[0] = 0;
-  pr_dialog = 0;
 
   import_flags.ALL = 0xff;
 

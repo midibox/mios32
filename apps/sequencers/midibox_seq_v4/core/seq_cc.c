@@ -105,6 +105,9 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 
       case SEQ_CC_MIDI_CHANNEL: tcc->midi_chn = value; break;
       case SEQ_CC_MIDI_PORT: tcc->midi_port = value; break;
+      case SEQ_CC_MIDI_PC: tcc->midi_pc = value; break;
+      case SEQ_CC_MIDI_BANK_L: tcc->midi_bank_l = value; break;
+      case SEQ_CC_MIDI_BANK_H: tcc->midi_bank_h = value; break;
 
       case SEQ_CC_FX_MIDI_MODE: tcc->fx_midi_mode.ALL = value; break;
       case SEQ_CC_FX_MIDI_PORT: tcc->fx_midi_port = value; break;
@@ -287,6 +290,9 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_MIDI_EVENT_MODE: return tcc->event_mode;
     case SEQ_CC_MIDI_CHANNEL: return tcc->midi_chn;
     case SEQ_CC_MIDI_PORT: return tcc->midi_port;
+    case SEQ_CC_MIDI_PC: return tcc->midi_pc;
+    case SEQ_CC_MIDI_BANK_L: return tcc->midi_bank_l;
+    case SEQ_CC_MIDI_BANK_H: return tcc->midi_bank_h;
     case SEQ_CC_FX_MIDI_MODE: return tcc->fx_midi_mode.ALL;
     case SEQ_CC_FX_MIDI_PORT: return tcc->fx_midi_port;
     case SEQ_CC_FX_MIDI_CHANNEL: return tcc->fx_midi_chn;

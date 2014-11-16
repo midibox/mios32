@@ -88,7 +88,11 @@
 #define SEQ_CC_LFO_CC_OFFSET       0x37
 #define SEQ_CC_LFO_CC_PPQN         0x38
 
-// reserved: 0x39..0x3f
+// reserved: 0x39..0x3c
+
+#define SEQ_CC_MIDI_BANK_L      0x3d
+#define SEQ_CC_MIDI_BANK_H      0x3e
+#define SEQ_CC_MIDI_PC	        0x3f
 
 #define SEQ_CC_MODE		0x40
 #define SEQ_CC_MODE_FLAGS	0x41
@@ -166,6 +170,9 @@ typedef struct {
   seq_core_trkmode_flags_t mode; // track mode and flags
   seq_event_mode_t event_mode:4;  // event mode
   seq_core_busasg_t busasg;     // T&A bus port (0..3)
+  u8       midi_pc; // PC change
+  u8       midi_bank_l; // Bank Low change
+  u8       midi_bank_h; // Bank High change
   mios32_midi_port_t midi_port; // MIDI port
   mios32_midi_chn_t midi_chn:4; // MIDI channel
   mios32_midi_chn_t fx_midi_chn:4; // Fx MIDI channel

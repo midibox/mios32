@@ -302,6 +302,7 @@ extern s32 SEQ_UI_PATTERN_Init(u32 mode);
 extern s32 SEQ_UI_SONG_Init(u32 mode);
 extern s32 SEQ_UI_MIXER_Init(u32 mode);
 extern s32 SEQ_UI_TRKEVNT_Init(u32 mode);
+extern s32 SEQ_UI_TRKINST_Init(u32 mode);
 extern s32 SEQ_UI_TRKMODE_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIR_Init(u32 mode);
 extern s32 SEQ_UI_TRKDIV_Init(u32 mode);

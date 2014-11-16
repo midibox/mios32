@@ -121,6 +121,10 @@ static u8 pb_last_value[SEQ_CORE_NUM_TRACKS];
 static u8 pc_last_value[SEQ_CORE_NUM_TRACKS];
 static u8 cc_last_value[SEQ_CORE_NUM_TRACKS][16];
 
+static u8 track_pc_last_value[SEQ_CORE_NUM_TRACKS];
+static u8 track_bank_h_last_value[SEQ_CORE_NUM_TRACKS];
+static u8 track_bank_l_last_value[SEQ_CORE_NUM_TRACKS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -133,6 +137,7 @@ s32 SEQ_LAYER_Init(u32 mode)
   SEQ_CC_Init(0);
 
   SEQ_LAYER_ResetLatchedValues();
+  SEQ_LAYER_ResetTrackPCBankLatchedValues();
 
   // copy preset into all tracks
   u8 track;
@@ -170,6 +175,57 @@ s32 SEQ_LAYER_ResetLatchedValues(void)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function clears the latched track based program/bank change values
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_ResetTrackPCBankLatchedValues(void)
+{
+  u8 track;
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    // invalid value - value will be send in any case
+    track_pc_last_value[track] = 0xff;
+    track_bank_h_last_value[track] = 0xff;
+    track_bank_l_last_value[track] = 0xff;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function sends the track based program/bank change values
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_SendPCBankValues(u8 track, u8 force, u8 send_now)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  mios32_midi_port_t port = tcc->midi_port;
+  mios32_midi_chn_t chn = tcc->midi_chn;
+
+  {
+    if( force || (tcc->midi_bank_l && track_bank_l_last_value[track] != (tcc->midi_bank_l-1)) )
+      track_bank_l_last_value[track] = tcc->midi_bank_l;
+    if( send_now && tcc->midi_bank_l )
+      MIOS32_MIDI_SendCC(port, chn, 0x20, tcc->midi_bank_l - 1);
+  }
+
+  {
+    if( force || (tcc->midi_bank_h && track_bank_h_last_value[track] != (tcc->midi_bank_h-1)) )
+      track_bank_h_last_value[track] = tcc->midi_bank_h - 1;
+    if( send_now && tcc->midi_bank_h )
+      MIOS32_MIDI_SendCC(port, chn, 0x00, tcc->midi_bank_h - 1);
+  }
+
+  {
+    if( force || (tcc->midi_pc && track_pc_last_value[track] != (tcc->midi_pc-1)) )
+      track_pc_last_value[track] = tcc->midi_pc - 1;
+    if( send_now && tcc->midi_pc )
+      MIOS32_MIDI_SendProgramChange(port, chn, tcc->midi_pc - 1);
+  }
+
+  return 0;
 }
 
 
