@@ -20,6 +20,8 @@
 #include "midio_matrix.h"
 #include "midio_patch.h"
 
+#include "mid_file.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // local defines
@@ -228,6 +230,9 @@ static s32 MIDIO_MATRIX_NotifyToggle(u8 matrix, u32 pin, u32 pin_value)
       MIOS32_MIDI_SendPackage(port, p);
     }
   }
+
+  // send MIDI message to MIDI file recorder
+  MID_FILE_Receive(DEFAULT, p);
 
   return 0; // no error
 }
