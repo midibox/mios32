@@ -82,7 +82,7 @@ typedef struct { // should be dividable by u16
   mbng_event_syxdump_pos_t syxdump_pos; // 32bit
   mbng_event_custom_flags_t custom_flags; // 16bit
   extra_par_available_t extra_par_available; // 16bit
-  u16 enabled_ports;
+  u32 enabled_ports;
   u16 value;
   sysex_runtime_var_t sysex_runtime_var;    // several runtime flags
   u8 len; // for the whole item. positioned here, so that u16 entries are halfword aligned
@@ -714,7 +714,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->pool_address = 0xffff; // invalid address
   item->flags.ALL = 0;
   item->custom_flags.ALL = 0;
-  item->enabled_ports = 0x1011; // OSC1, UART1 and USB1
+  item->enabled_ports = 0x01011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
   item->fwd_value = 0xffff;
   item->hw_id  = id;
@@ -1557,12 +1557,12 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
 
     {
-      char ports_bin[17];
+      char ports_bin[21];
       int bit;
-      for(bit=0; bit<16; ++bit) {
+      for(bit=0; bit<20; ++bit) {
 	ports_bin[bit] = (item->enabled_ports & (1 << bit)) ? '1' : '0';
       }
-      ports_bin[16] = 0;
+      ports_bin[20] = 0;
 
       DEBUG_MSG("  - ports=%s", ports_bin);
     }
@@ -3104,11 +3104,11 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
     // send MIDI package over enabled ports
     int i;
-    u16 mask = 1;
-    for(i=0; i<16; ++i, mask <<= 1) {
+    u32 mask = 1;
+    for(i=0; i<20; ++i, mask <<= 1) {
       if( item->enabled_ports & mask ) {
-	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, SPIM0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0x1c) << 2) + (i&3);
 	MUTEX_MIDIOUT_TAKE;
 	MIOS32_MIDI_SendPackage(port, p);
 	MUTEX_MIDIOUT_GIVE;
@@ -3135,11 +3135,11 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 
     // send optimized NRPNs over enabled ports
     int i;
-    u16 mask = 1;
-    for(i=0; i<16; ++i, mask <<= 1) {
+    u32 mask = 1;
+    for(i=0; i<20; ++i, mask <<= 1) {
       if( item->enabled_ports & mask ) {
-	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, SPIM0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0x1c) << 2) + (i&3);
 
 	MUTEX_MIDIOUT_TAKE;
 	MBNG_EVENT_SendOptimizedNRPN(port, chn, nrpn_address, nrpn_value, msb_only);
@@ -3152,11 +3152,11 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
   } else if( event_type == MBNG_EVENT_TYPE_SYSEX ) {
     // send SysEx over enabled ports
     int i;
-    u16 mask = 1;
-    for(i=0; i<16; ++i, mask <<= 1) {
+    u32 mask = 1;
+    for(i=0; i<20; ++i, mask <<= 1) {
       if( item->enabled_ports & mask ) {
-	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-	mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
+	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3, SPIM0/1/2/3
+	mios32_midi_port_t port = USB0 + ((i&0x1c) << 2) + (i&3);
 	MUTEX_MIDIOUT_TAKE;
 	MBNG_EVENT_SendSysExStream(port, item);
 	MUTEX_MIDIOUT_GIVE;
@@ -3706,8 +3706,8 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 {
   // create port mask, and check if this is a supported port (USB0..3, UART0..3, IIC0..3, OSC0..3)
   u8 subport_mask = (1 << (port&3));
-  u8 port_class = ((port-0x10) & 0x30)>>2;
-  u16 port_mask = subport_mask << port_class;
+  u8 port_class = ((port-0x10) & 0x70)>>2;
+  u32 port_mask = subport_mask << port_class;
   if( !port_mask )
     return -1; // not supported
 
@@ -4001,8 +4001,8 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 {
   // create port mask, and check if this is a supported port (USB0..3, UART0..3, IIC0..3, OSC0..3)
   u8 subport_mask = (1 << (port&3));
-  u8 port_class = ((port-0x10) & 0x30)>>2;
-  u16 port_mask = subport_mask << port_class;
+  u8 port_class = ((port-0x10) & 0x70)>>2;
+  u32 port_mask = subport_mask << port_class;
   if( !port_mask )
     return -1; // not supported
 

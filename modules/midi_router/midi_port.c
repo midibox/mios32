@@ -75,6 +75,18 @@ static const midi_port_entry_t in_ports[MIDI_PORT_NUM_IN_PORTS] = {
 #if MIDI_PORT_NUM_IN_PORTS_OSC >= 4
   { OSC3,    "OSC4" },
 #endif
+#if MIDI_PORT_NUM_IN_PORTS_SPIM >= 1
+  { SPIM0,    "SPI1" },
+#endif
+#if MIDI_PORT_NUM_IN_PORTS_SPIM >= 2
+  { SPIM1,    "SPI2" },
+#endif
+#if MIDI_PORT_NUM_IN_PORTS_SPIM >= 3
+  { SPIM2,    "SPI3" },
+#endif
+#if MIDI_PORT_NUM_IN_PORTS_SPIM >= 4
+  { SPIM3,    "SPI4" },
+#endif
 };
 
 // has to be kept in synch with MIDI_PORT_OutIxGet() !!!
@@ -117,6 +129,18 @@ static const midi_port_entry_t out_ports[MIDI_PORT_NUM_OUT_PORTS] = {
 #if MIDI_PORT_NUM_OUT_PORTS_OSC >= 4
   { OSC3,    "OSC4" },
 #endif
+#if MIDI_PORT_NUM_OUT_PORTS_SPIM >= 1
+  { SPIM0,   "SPI1" },
+#endif
+#if MIDI_PORT_NUM_OUT_PORTS_SPIM >= 2
+  { SPIM1,   "SPI2" },
+#endif
+#if MIDI_PORT_NUM_OUT_PORTS_SPIM >= 3
+  { SPIM2,   "SPI3" },
+#endif
+#if MIDI_PORT_NUM_OUT_PORTS_SPIM >= 4
+  { SPIM3,   "SPI4" },
+#endif
 };
 
 // has to be kept in synch with MIDI_PORT_ClkIxGet() !!!
@@ -157,6 +181,18 @@ static const midi_port_entry_t clk_ports[MIDI_PORT_NUM_CLK_PORTS] = {
 #endif
 #if MIDI_PORT_NUM_CLK_PORTS_OSC >= 4
   { OSC3,    "OSC4" },
+#endif
+#if MIDI_PORT_NUM_CLK_PORTS_SPIM >= 1
+  { SPIM0,   "SPI1" },
+#endif
+#if MIDI_PORT_NUM_CLK_PORTS_SPIM >= 2
+  { SPIM1,   "SPI2" },
+#endif
+#if MIDI_PORT_NUM_CLK_PORTS_SPIM >= 3
+  { SPIM2,   "SPI3" },
+#endif
+#if MIDI_PORT_NUM_CLK_PORTS_SPIM >= 4
+  { SPIM3,   "SPI4" },
 #endif
 };
 

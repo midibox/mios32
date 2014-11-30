@@ -1,5 +1,13 @@
 $Id$
 
+MIDIbox NG V1.033
+~~~~~~~~~~~~~~~~~
+
+   o added basic support for SPI_MIDI
+     Currently it's necessary to enable this option in the mios32_config.h file:
+     set the MIOS32_SPI_MIDI_NUM_PORTS define to 4
+
+
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~
 

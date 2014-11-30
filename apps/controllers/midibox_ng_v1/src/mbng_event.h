@@ -338,8 +338,8 @@ typedef struct {
   u16 id;
   u16 hw_id;
   mbng_event_cond_t cond;
+  u32 enabled_ports;
   u16 pool_address;
-  u16 enabled_ports;
   mbng_event_flags_t flags;
   mbng_event_custom_flags_t custom_flags;
   u16 fwd_id;
