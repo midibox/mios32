@@ -5,6 +5,8 @@ MIDIO128 V3.020
 
    o STM32F4: support for bootloader "enforce_usb_device" flag
 
+   o MIDI File Recorder now also working for matrix inputs
+
 
 MIDIO128 V3.019
 ~~~~~~~~~~~~~~~
