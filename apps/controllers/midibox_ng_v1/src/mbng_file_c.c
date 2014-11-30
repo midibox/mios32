@@ -1297,7 +1297,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "ports") == 0 ) {
       int value;
-      if( (value=get_bin(value_str, 16, 0)) < 0 || value > 0xffff ) {
+      if( (value=get_bin(value_str, 20, 0)) < 0 || value > 0xfffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid port mask in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
@@ -3519,7 +3519,7 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
     } else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
       s32 enabled_ports = 0;
       int bit;
-      for(bit=0; bit<16; ++bit) {
+      for(bit=0; bit<20; ++bit) {
 	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	int enable = get_dec(word);
 	if( enable < 0 )
@@ -3533,28 +3533,32 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
       } else {
-	MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB0, (enabled_ports & 0x00001) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB1, (enabled_ports & 0x00002) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB2, (enabled_ports & 0x00004) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(USB3, (enabled_ports & 0x00008) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART0, (enabled_ports & 0x00010) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART1, (enabled_ports & 0x00020) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART2, (enabled_ports & 0x00040) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(UART3, (enabled_ports & 0x00080) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC0, (enabled_ports & 0x00100) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC1, (enabled_ports & 0x00200) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC2, (enabled_ports & 0x00400) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(IIC3, (enabled_ports & 0x00800) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC0, (enabled_ports & 0x01000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC1, (enabled_ports & 0x02000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC2, (enabled_ports & 0x04000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(OSC3, (enabled_ports & 0x08000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(SPIM0, (enabled_ports & 0x10000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(SPIM1, (enabled_ports & 0x20000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(SPIM2, (enabled_ports & 0x40000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockOutSet(SPIM3, (enabled_ports & 0x80000) ? 1 : 0);
       }	  
 
     } else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 ) {
       s32 enabled_ports = 0;
       int bit;
-      for(bit=0; bit<16; ++bit) {
+      for(bit=0; bit<20; ++bit) {
 	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
 	int enable = get_dec(word);
 	if( enable < 0 )
@@ -3568,22 +3572,26 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
       } else {
-	MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x0001) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(USB1, (enabled_ports & 0x0002) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(USB2, (enabled_ports & 0x0004) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(USB3, (enabled_ports & 0x0008) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(UART0, (enabled_ports & 0x0010) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(UART1, (enabled_ports & 0x0020) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(UART2, (enabled_ports & 0x0040) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(UART3, (enabled_ports & 0x0080) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(IIC0, (enabled_ports & 0x0100) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(IIC1, (enabled_ports & 0x0200) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(IIC2, (enabled_ports & 0x0400) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(IIC3, (enabled_ports & 0x0800) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(OSC0, (enabled_ports & 0x1000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x2000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x4000) ? 1 : 0);
-	MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x8000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB0, (enabled_ports & 0x00001) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB1, (enabled_ports & 0x00002) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB2, (enabled_ports & 0x00004) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(USB3, (enabled_ports & 0x00008) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART0, (enabled_ports & 0x00010) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART1, (enabled_ports & 0x00020) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART2, (enabled_ports & 0x00040) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(UART3, (enabled_ports & 0x00080) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC0, (enabled_ports & 0x00100) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC1, (enabled_ports & 0x00200) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC2, (enabled_ports & 0x00400) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(IIC3, (enabled_ports & 0x00800) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC0, (enabled_ports & 0x01000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC1, (enabled_ports & 0x02000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC2, (enabled_ports & 0x04000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(OSC3, (enabled_ports & 0x08000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(SPIM0, (enabled_ports & 0x10000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(SPIM1, (enabled_ports & 0x20000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(SPIM2, (enabled_ports & 0x40000) ? 1 : 0);
+	MIDI_ROUTER_MIDIClockInSet(SPIM3, (enabled_ports & 0x80000) ? 1 : 0);
       }
 
     } else {
@@ -3925,12 +3933,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       }
 
       {
-	char ports_bin[17];
+	char ports_bin[21];
 	int bit;
-	for(bit=0; bit<16; ++bit) {
+	for(bit=0; bit<20; ++bit) {
 	  ports_bin[bit] = (item.enabled_ports & (1 << bit)) ? '1' : '0';
 	}
-	ports_bin[16] = 0;
+	ports_bin[20] = 0;
 
 	sprintf(line_buffer, "  offset=%3d  ports=%s", item.offset, ports_bin);
 	FLUSH_BUFFER;

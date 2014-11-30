@@ -193,6 +193,8 @@ s32 MIDIMON_Print(char *prefix_str, mios32_midi_port_t port, mios32_midi_package
     case USB0:  sprintf(pre_str, "[%sUSB%c]", prefix_str, port_ix_name); break;
     case UART0: sprintf(pre_str, "[%sIN%c ]", prefix_str, port_ix_name); break;
     case IIC0:  sprintf(pre_str, "[%sIIC%c]", prefix_str, port_ix_name); break;
+    case OSC0:  sprintf(pre_str, "[%sOSC%c]", prefix_str, port_ix_name); break;
+    case SPIM0: sprintf(pre_str, "[%sSPI%c]", prefix_str, port_ix_name); break;
     default:    sprintf(pre_str, "[%sP.%02X ]", prefix_str, port);
   }
 

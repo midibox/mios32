@@ -31,8 +31,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if !defined(MIOS32_SPI_MIDI_MUTEX_TAKE)
+#define MIOS32_SPI_MIDI_USE_MUTEX 0
 #define MIOS32_SPI_MIDI_MUTEX_TAKE {}
 #define MIOS32_SPI_MIDI_MUTEX_GIVE {}
+#else
+#define MIOS32_SPI_MIDI_USE_MUTEX 1
 #endif
 
 
@@ -61,7 +64,7 @@ static u8 rx_ringbuffer_head;
 static u8 rx_ringbuffer_size;
 
 // indicates ongoing scan
-static u8 transfer_done;
+static volatile u8 transfer_done;
 #endif
 
 
@@ -186,6 +189,13 @@ s32 MIOS32_SPI_MIDI_Periodic_mS(void)
 			   4*MIOS32_SPI_MIDI_SCAN_BUFFER_SIZE,
 			   MIOS32_SPI_MIDI_DMA_Callback);
 
+#if MIOS32_SPI_MIDI_USE_MUTEX
+  // workaround - search for a better way to release mutex from ISR
+  // it's currently not possible to release it from MIOS32_SPI_MIDI_DMA_Callback()
+  while( !transfer_done );
+  MIOS32_SPI_MIDI_MUTEX_GIVE;
+#endif
+
   return 0; // no error
 #endif
 }
@@ -201,7 +211,8 @@ static void MIOS32_SPI_MIDI_DMA_Callback(void)
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
   // release access over SPI port
-  MIOS32_SPI_MIDI_MUTEX_GIVE;
+  //MIOS32_SPI_MIDI_MUTEX_GIVE;
+  // doesn't work - see MIOS32_SPI_MIDI_USE_MUTEX workaround in MIOS32_SPI_MIDI_Periodic_mS
 
   // transfer RX values into ringbuffer (if possible)
   if( rx_ringbuffer_size < MIOS32_SPI_MIDI_RX_RINGBUFFER_SIZE ) {

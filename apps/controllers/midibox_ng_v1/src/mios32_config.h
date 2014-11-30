@@ -152,6 +152,17 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #define KEYBOARD_DONT_USE_AIN 1
 
 
+// how many SPI MIDI ports are available?
+// if 0: interface disabled (default)
+// if 4: SPI MIDI enabled - it has to be connected to J16, chip select at J16:RC2
+//       Replaces (Ethernet) OSC ports
+#define MIOS32_SPI_MIDI_NUM_PORTS 0
+
+#if MIOS32_SPI_MIDI_NUM_PORTS > 0
+// disable ENC28J60 driver since it clashes with J16:RC2
+# define MIOS32_ENC28J60_SPI -1
+#endif
+
 // map MIDI mutex to UIP task
 // located in app.c to access MIDI IN/OUT mutex from external
 extern void APP_MUTEX_MIDIOUT_Take(void);
@@ -170,5 +181,7 @@ extern void APP_J16SemaphoreGive(void);
 #define MIOS32_SDCARD_MUTEX_GIVE   { APP_J16SemaphoreGive(); }
 #define MIOS32_ENC28J60_MUTEX_TAKE { APP_J16SemaphoreTake(); }
 #define MIOS32_ENC28J60_MUTEX_GIVE { APP_J16SemaphoreGive(); }
+#define MIOS32_SPI_MIDI_MUTEX_TAKE { APP_J16SemaphoreTake(); }
+#define MIOS32_SPI_MIDI_MUTEX_GIVE { APP_J16SemaphoreGive(); }
 
 #endif /* _MIOS32_CONFIG_H */

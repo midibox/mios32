@@ -124,7 +124,7 @@ s32 MIDI_ROUTER_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
     if( n->src_chn && n->dst_chn && (n->src_port == port) ) {
 
       // forwarding OSC to OSC will very likely result into a stack overflow (or feedback loop) -> avoid this!
-      if( ((port ^ n->dst_port) & 0xf0) == OSC0 )
+      if( ((port & 0xf0) == OSC0) && ((n->dst_port & 0xf0) == OSC0) )
 	continue;
 
       if( midi_package.event >= NoteOff && midi_package.event <= PitchBend ) {
