@@ -71,6 +71,8 @@
 
 extern s32 MIOS32_SPI_MIDI_Init(u32 mode);
 
+extern s32 MIOS32_SPI_MIDI_Enabled(void);
+
 extern s32 MIOS32_SPI_MIDI_CheckAvailable(u8 spi_midi_port);
 
 extern s32 MIOS32_SPI_MIDI_Periodic_mS(void);

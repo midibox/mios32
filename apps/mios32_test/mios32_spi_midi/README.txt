@@ -18,6 +18,7 @@ Required hardware:
 
 ===============================================================================
 
-<Application Description>
+This feature requires an update to MIOS32 bootloader v1.018
+In the bootloader update app, enter "set spi_midi 1" to enable the SPI MIDI device at J16 (RC2 chip select line).
 
 ===============================================================================

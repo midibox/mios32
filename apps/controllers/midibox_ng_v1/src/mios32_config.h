@@ -152,16 +152,12 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #define KEYBOARD_DONT_USE_AIN 1
 
 
-// how many SPI MIDI ports are available?
-// if 0: interface disabled (default)
-// if 4: SPI MIDI enabled - it has to be connected to J16, chip select at J16:RC2
-//       Replaces (Ethernet) OSC ports
-#define MIOS32_SPI_MIDI_NUM_PORTS 0
-
-#if MIOS32_SPI_MIDI_NUM_PORTS > 0
-// disable ENC28J60 driver since it clashes with J16:RC2
-# define MIOS32_ENC28J60_SPI -1
-#endif
+// enable 4 SPI MIDI ports
+// Note: SPI MIDI port has to be explicitely enabled by the user
+// He has to enter "set spi_midi 1" in the bootloader update application
+// Without this measure, the ENC28J60 based Ethernet Extension will be accessed via J16:RC2
+// With "spi_midi" enable, the ENC28J60 driver will be disabled and OSC won't be available on board != LPC17 (which has an inbuilt ETH port)
+#define MIOS32_SPI_MIDI_NUM_PORTS 4
 
 // map MIDI mutex to UIP task
 // located in app.c to access MIDI IN/OUT mutex from external
