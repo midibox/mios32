@@ -91,6 +91,9 @@ s32 MIOS32_SPI_MIDI_Init(u32 mode)
   if( mode != 0 )
     return -1; // currently only mode 0 supported
 
+  if( !MIOS32_SPI_MIDI_Enabled() )
+    return -3; // SPI MIDI device hasn't been enabled in MIOS32 bootloader
+
   // deactivate CS output
   MIOS32_SPI_RC_PinSet(MIOS32_SPI_MIDI_SPI, MIOS32_SPI_MIDI_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
@@ -117,6 +120,23 @@ s32 MIOS32_SPI_MIDI_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! \returns != 0 if SPI MIDI has been enabled in MIOS32 bootloader
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_SPI_MIDI_Enabled(void)
+{
+#if MIOS32_SPI_MIDI_NUM_PORTS == 0
+  return 0; // SPI MIDI interface not explicitely enabled in mios32_config.h
+#else
+  u8 *spi_midi_confirm = (u8 *)MIOS32_SYS_ADDR_SPI_MIDI_CONFIRM;
+  u8 *spi_midi = (u8 *)MIOS32_SYS_ADDR_SPI_MIDI;
+  if( *spi_midi_confirm == 0x42 && *spi_midi < 0x80 )
+    return *spi_midi;
+
+  return 0;
+#endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function checks the availability of a SPI MIDI port as configured
 //! with MIOS32_SPI_MIDI_NUM_PORTS
 //!
@@ -130,7 +150,7 @@ s32 MIOS32_SPI_MIDI_CheckAvailable(u8 spi_midi_port)
 #if MIOS32_SPI_MIDI_NUM_PORTS == 0
   return 0; // SPI MIDI interface not explicitely enabled in mios32_config.h
 #else
-  return (spi_midi_port < MIOS32_SPI_MIDI_NUM_PORTS) ? 1 : 0;
+  return (spi_midi_port < MIOS32_SPI_MIDI_NUM_PORTS) ? MIOS32_SPI_MIDI_Enabled() : 0;
 #endif
 }
 
@@ -150,6 +170,9 @@ s32 MIOS32_SPI_MIDI_Periodic_mS(void)
 #if MIOS32_SPI_MIDI_NUM_PORTS == 0
   return 0; // SPI MIDI not activated (no error)
 #else
+  if( !MIOS32_SPI_MIDI_Enabled() )
+    return -3; // SPI MIDI device hasn't been enabled in MIOS32 bootloader
+
   if( !transfer_done )
     return -2; // previous transfer not finished yet
 
@@ -267,6 +290,9 @@ s32 MIOS32_SPI_MIDI_PackageSend_NonBlocking(mios32_midi_package_t package)
 #if MIOS32_SPI_MIDI_NUM_PORTS == 0
   return -1; // SPI MIDI not activated
 #else
+  if( !MIOS32_SPI_MIDI_Enabled() )
+    return -3; // SPI MIDI device hasn't been enabled in MIOS32 bootloader
+
   // buffer full?
   if( tx_buffer_head >= MIOS32_SPI_MIDI_SCAN_BUFFER_SIZE ) {
     // flush buffer if possible
@@ -304,6 +330,9 @@ s32 MIOS32_SPI_MIDI_PackageSend(mios32_midi_package_t package)
 #if MIOS32_SPI_MIDI_NUM_PORTS == 0
   return -1; // SPI MIDI not activated
 #else
+  if( !MIOS32_SPI_MIDI_Enabled() )
+    return -3; // SPI MIDI device hasn't been enabled in MIOS32 bootloader
+
   static u16 timeout_ctr = 0;
   // this function could hang up if SPI receive buffer not empty and data
   // should be sent.
@@ -341,6 +370,9 @@ s32 MIOS32_SPI_MIDI_PackageReceive(mios32_midi_package_t *package)
 #if MIOS32_SPI_MIDI_NUM_PORTS == 0
   return -1; // SPI MIDI not activated
 #else
+  if( !MIOS32_SPI_MIDI_Enabled() )
+    return -3; // SPI MIDI device hasn't been enabled in MIOS32 bootloader
+
   // package received?
   if( !rx_ringbuffer_size )
     return -1;

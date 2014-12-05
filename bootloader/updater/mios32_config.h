@@ -11,7 +11,7 @@
 #define _MIOS32_CONFIG_H
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "Bootloader 1.017" // 16 chars!
+#define MIOS32_LCD_BOOT_MSG_LINE1 "Bootloader 1.018" // 16 chars!
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 

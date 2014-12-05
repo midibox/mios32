@@ -121,6 +121,12 @@ s32 MIOS32_ENC28J60_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return -3; // ENC28J60 overruled by SPI MIDI
+#endif
+
   // set default mac address
   // if all-0, 
   u8 default_mac_addr[6] = {
@@ -146,6 +152,11 @@ s32 MIOS32_ENC28J60_PowerOn(void)
 {
   s32 status;
 
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return -3; // ENC28J60 overruled by SPI MIDI
+#endif
   
   // deactivate chip select
   CSN_1;
@@ -331,6 +342,12 @@ s32 MIOS32_ENC28J60_PowerOff(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC28J60_CheckAvailable(u8 was_available)
 {
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return 0; // ENC28J60 overruled by SPI MIDI
+#endif
+
   s32 status = 0;
   MIOS32_ENC28J60_MUTEX_TAKE;
   if( (status=MIOS32_SPI_TransferModeInit(MIOS32_ENC28J60_SPI, MIOS32_SPI_MODE_CLK0_PHASE0, MIOS32_SPI_PRESCALER_4)) < 0 ) 
@@ -368,6 +385,12 @@ error:
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_ENC28J60_LinkAvailable(void)
 {
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return 0; // ENC28J60 overruled by SPI MIDI
+#endif
+
   s32 status = MIOS32_ENC28J60_ReadPHYReg(PHSTAT1);
 
   if( status < 0 )
@@ -405,6 +428,12 @@ s32 MIOS32_ENC28J60_RevIDGet(void)
 s32 MIOS32_ENC28J60_MAC_AddrSet(u8 new_mac_addr[6])
 {
   s32 status;
+
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return -3; // ENC28J60 overruled by SPI MIDI
+#endif
 
   // re-init SPI port for fast frequency access (ca. 18 MBit/s)
   // this is required for the case that the SPI port is shared with other devices
@@ -488,6 +517,12 @@ u8 *MIOS32_ENC28J60_MAC_AddrGet(void)
 s32 MIOS32_ENC28J60_PackageSend(u8 *buffer, u16 len, u8 *buffer2, u16 len2)
 {
   s32 status = 0;
+
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return -3; // ENC28J60 overruled by SPI MIDI
+#endif
 
   MIOS32_ENC28J60_MUTEX_TAKE;
 
@@ -579,6 +614,12 @@ s32 MIOS32_ENC28J60_PackageReceive(u8 *buffer, u16 buffer_size)
   s32 status = 0;
   s32 package_count;
   u16 packet_len = 0;
+
+  // disable ENC28J60 device if conflict with SPI MIDI
+#if !defined(MIOS32_DONT_USE_SPI_MIDI) && (MIOS32_SPI_MIDI_NUM_PORTS > 0) && (MIOS32_SPI_MIDI_SPI == MIOS32_ENC28J60_SPI) && (MIOS32_SPI_MIDI_SPI_RC_PIN == MIOS32_ENC28J60_SPI_RC_PIN)
+  if( MIOS32_SPI_MIDI_Enabled() ) // TODO: think about better device control concept!
+    return -3; // ENC28J60 overruled by SPI MIDI
+#endif
 
   MIOS32_ENC28J60_MUTEX_TAKE;
 
