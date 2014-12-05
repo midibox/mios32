@@ -4,8 +4,9 @@ MIDIbox NG V1.033
 ~~~~~~~~~~~~~~~~~
 
    o added basic support for SPI_MIDI
-     Currently it's necessary to enable this option in the mios32_config.h file:
-     set the MIOS32_SPI_MIDI_NUM_PORTS define to 4
+     This feature requires an update to MIOS32 bootloader v1.018
+     In the bootloader update app, enter "set spi_midi 1" to enable the SPI MIDI device at J16 (RC2 chip select line).
+     This will also disable the OSC ports via MBHP_ETH module, which is normally connected to this port.
 
 
 MIDIbox NG V1.032
