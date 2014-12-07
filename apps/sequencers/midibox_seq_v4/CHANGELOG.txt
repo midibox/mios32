@@ -22,6 +22,12 @@ MIDIboxSEQ V4.087
      This is the prefered option to add CV gates and DIN clock/start signals to your MIDIbox SEQ in future.
      See also updated http://www.ucapps.de/midibox_seq_manual_hw.html
 
+   o 8 individual DIN Sync clock outputs with individual divider and pulsewidth values are
+     provided now. A clock output can optionally be turned to a Start/Stop output.
+     The outputs are available at the configured CLK_SR DOUT shift register pin D7..D0
+     (D7=first output, D6=second output, etc...)
+     The clock parameters can be configured in the CV configuration page.
+
    o STM32F4: support for bootloader "enforce_usb_device" flag
 
 

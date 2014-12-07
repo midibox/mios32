@@ -282,9 +282,6 @@ extern u8 seq_core_bpm_preset_num;
 extern float seq_core_bpm_preset_tempo[SEQ_CORE_NUM_BPM_PRESETS];
 extern float seq_core_bpm_preset_ramp[SEQ_CORE_NUM_BPM_PRESETS];
 
-extern u16 seq_core_bpm_din_sync_div;
-extern u8 seq_core_din_sync_pulse_ctr;
-
 extern mios32_midi_port_t seq_core_metronome_port;
 extern u8 seq_core_metronome_chn;
 extern u8 seq_core_metronome_note_m;

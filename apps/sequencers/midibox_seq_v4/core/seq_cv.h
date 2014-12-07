@@ -36,6 +36,8 @@
 // size of notestack(s)
 #define SEQ_CV_NOTESTACK_SIZE 10
 
+// number of clock outputs
+#define SEQ_CV_NUM_CLKOUT 8
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -66,11 +68,13 @@ extern s32 SEQ_CV_SlewRateGet(u8 cv);
 extern s32 SEQ_CV_PitchRangeSet(u8 cv, u8 range);
 extern u8 SEQ_CV_PitchRangeGet(u8 cv);
 
-extern s32 SEQ_CV_ClkPulseWidthSet(u8 width);
-extern u8 SEQ_CV_ClkPulseWidthGet(void);
+extern s32 SEQ_CV_ClkPulseWidthSet(u8 clkout, u8 width);
+extern u8 SEQ_CV_ClkPulseWidthGet(u8 clkout);
 
-extern s32 SEQ_CV_ClkDividerSet(u16 div);
-extern u16 SEQ_CV_ClkDividerGet(void);
+extern s32 SEQ_CV_ClkDividerSet(u8 clkout, u16 div);
+extern u16 SEQ_CV_ClkDividerGet(u8 clkout);
+
+extern s32 SEQ_CV_Clk_Trigger(u8 clkout);
 
 extern s32 SEQ_CV_GateInversionSet(u8 gate, u8 inverted);
 extern u8 SEQ_CV_GateInversionGet(u8 gate);
@@ -87,6 +91,9 @@ extern s32 SEQ_CV_ResetAllChannels(void);
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
+
+u16 seq_cv_clkout_divider[SEQ_CV_NUM_CLKOUT];
+u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
 
 
 #endif /* _SEQ_CV_H */

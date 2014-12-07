@@ -336,9 +336,28 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	    SEQ_CV_GateInversionAllSet(value);
 	  } else if( strcmp(parameter, "CV_ClkPulsewidth") == 0 ) {
-	    SEQ_CV_ClkPulseWidthSet(value);
+	    SEQ_CV_ClkPulseWidthSet(0, value); // Legacy Value - replaced by CV_ExtClk
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
-	    SEQ_CV_ClkDividerSet(value);
+	    SEQ_CV_ClkDividerSet(0, value); // Legacy Value - replaced by CV_ExtClk
+	  } else if( strcmp(parameter, "CV_ExtClk") == 0 ) {
+	    u32 clkout = value;
+	    if( clkout >= SEQ_CV_NUM_CLKOUT ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong clock output %u for parameter '%s'\n", value);
+	    } else {
+	      word = strtok_r(NULL, separators, &brkt);
+	      u32 divider = get_dec(word);
+	      if( divider >= 65536 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong divider value %u for parameter '%s', clock output %u\n", divider, clkout);
+	      } else {
+		word = strtok_r(NULL, separators, &brkt);
+		u32 pulsewidth = get_dec(word);
+		if( pulsewidth >= 256 ) // saturate
+		  pulsewidth = 255;
+
+		SEQ_CV_ClkDividerSet(clkout, divider);
+		SEQ_CV_ClkPulseWidthSet(clkout, pulsewidth);
+	      }
+	    }
 	  } else if( strcmp(parameter, "TpdMode") == 0 ) {
 	    SEQ_TPD_ModeSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
@@ -501,20 +520,25 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "CV_AOUT_Type %d\n", (u8)SEQ_CV_IfGet());
   FLUSH_BUFFER;
 
-  int cv;
-  for(cv=0; cv<SEQ_CV_NUM; ++cv) {
-    sprintf(line_buffer, "CV_PinMode %d %d %d %d\n", cv, SEQ_CV_CurveGet(cv), (int)SEQ_CV_SlewRateGet(cv), (int)SEQ_CV_PitchRangeGet(cv));
-    FLUSH_BUFFER;
+  {
+    int cv;
+    for(cv=0; cv<SEQ_CV_NUM; ++cv) {
+      sprintf(line_buffer, "CV_PinMode %d %d %d %d\n", cv, SEQ_CV_CurveGet(cv), (int)SEQ_CV_SlewRateGet(cv), (int)SEQ_CV_PitchRangeGet(cv));
+      FLUSH_BUFFER;
+    }
   }
 
   sprintf(line_buffer, "CV_GateInv 0x%02x\n", (u8)SEQ_CV_GateInversionAllGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "CV_ClkPulsewidth %d\n", SEQ_CV_ClkPulseWidthGet());
-  FLUSH_BUFFER;
+  {
+    int clkout;
 
-  sprintf(line_buffer, "CV_ClkDivider %d\n", SEQ_CV_ClkDividerGet());
-  FLUSH_BUFFER;
+    for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout) {
+      sprintf(line_buffer, "CV_ExtClk %d %d %d\n", clkout, SEQ_CV_ClkDividerGet(clkout), SEQ_CV_ClkPulseWidthGet(clkout));
+      FLUSH_BUFFER;
+    }
+  }
 
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;
