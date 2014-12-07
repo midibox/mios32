@@ -34,6 +34,13 @@
 // mirror J5.A0 at P0.4 (J18, CAN port) since the original IO doesn't work on his LPCXPRESSO anymore
 #define MIRROR_J5_A0_AT_J18 1
 
+/////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+u16 seq_cv_clkout_divider[SEQ_CV_NUM_CLKOUT];
+u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -42,8 +49,7 @@
 static u8 gates;
 static u8 gate_inversion_mask;
 
-static u8 sync_clk_pulsewidth;
-static u16 sync_clk_divider;
+static u8 seq_cv_clkout_pulse_ctr[SEQ_CV_NUM_CLKOUT];
 
 // each channel has an own notestack
 static notestack_t cv_notestack[SEQ_CV_NUM];
@@ -97,9 +103,16 @@ s32 SEQ_CV_Init(u32 mode)
   // initialize AOUT driver
   AOUT_Init(0);
 
-  // initial pulsewidth and divider for DIN clock
-  sync_clk_pulsewidth = 1;
-  sync_clk_divider = 16; // 24 ppqn
+  // initial pulsewidth and divider for clock outputs
+  {
+      int clkout;
+
+      for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout) {
+	seq_cv_clkout_pulsewidth[clkout] = 1;
+	seq_cv_clkout_divider[clkout] = 16; // 24 ppqn
+	seq_cv_clkout_pulse_ctr[clkout] = 0;
+      }
+  }
 
   // reset all channels
   SEQ_CV_ResetAllChannels();
@@ -304,30 +317,49 @@ u8 SEQ_CV_PitchRangeGet(u8 cv)
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set DIN Clock Pulsewidth
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CV_ClkPulseWidthSet(u8 width)
+s32 SEQ_CV_ClkPulseWidthSet(u8 clkout, u8 width)
 {
-  sync_clk_pulsewidth = width;
+  if( clkout >= SEQ_CV_NUM_CLKOUT )
+    return -1; // invalid clkout
+
+  seq_cv_clkout_pulsewidth[clkout] = width;
   return 0; // no error
 }
 
-u8 SEQ_CV_ClkPulseWidthGet(void)
+u8 SEQ_CV_ClkPulseWidthGet(u8 clkout)
 {
-  return sync_clk_pulsewidth;
+  return seq_cv_clkout_pulsewidth[clkout];
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set DIN Clock Divider
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CV_ClkDividerSet(u16 div)
+s32 SEQ_CV_ClkDividerSet(u8 clkout, u16 div)
 {
-  sync_clk_divider = div;
+  if( clkout >= SEQ_CV_NUM_CLKOUT )
+    return -1; // invalid clkout
+
+  seq_cv_clkout_divider[clkout] = div;
   return 0; // no error
 }
 
-u16 SEQ_CV_ClkDividerGet(void)
+u16 SEQ_CV_ClkDividerGet(u8 clkout)
 {
-  return sync_clk_divider;
+  return seq_cv_clkout_divider[clkout];
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Trigger a clock line
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_Clk_Trigger(u8 clkout)
+{
+  if( clkout >= SEQ_CV_NUM_CLKOUT )
+    return -1; // invalid clkout
+
+  seq_cv_clkout_pulse_ctr[clkout] = seq_cv_clkout_pulsewidth[clkout] + 1;
+  return 0; // no error
 }
 
 
@@ -339,14 +371,32 @@ s32 SEQ_CV_Update(void)
   static u8 last_gates = 0xff; // to force an update
   static u8 last_start_stop = 0xff; // to force an update
 
-  u8 clk_sr_value = 0;
-
-  // Start/Stop at J5C.A9
   u8 start_stop = SEQ_BPM_IsRunning();
 
-  if( start_stop )
-    clk_sr_value |= 0xf0; // DOUT_SR.D3..D0
+  // Clock outputs
+  // Note: a clock output acts as start/stop if clock divider set to 0
+  u8 clk_sr_value = 0;
+  {
+    int clkout;
+    u16 *clk_divider = (u16 *)&seq_cv_clkout_divider[0];
+    u8 *pulse_ctr = (u8 *)&seq_cv_clkout_pulse_ctr[0];
+    for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout, ++clk_divider, ++pulse_ctr) {
+      if( !*clk_divider && start_stop ) {
+	clk_sr_value |= (1 << clkout);
+      }
 
+      if( *pulse_ctr ) {
+	*pulse_ctr -= 1;
+	clk_sr_value |= (1 << clkout);
+      }
+    }
+  }
+
+  // Update Clock SR
+  if( seq_hwcfg_clk_sr )
+    MIOS32_DOUT_SRSet(seq_hwcfg_clk_sr-1, clk_sr_value);
+
+  // Additional IO: Start/Stop at J5C.A9
   if( start_stop != last_start_stop ) {
     last_start_stop = start_stop;
 
@@ -362,37 +412,15 @@ s32 SEQ_CV_Update(void)
   }
 
   // DIN Sync Pulse at J5C.A8
-  if( seq_core_din_sync_pulse_ctr > 1 ) {
-    clk_sr_value |= 0x0f; // D7..D4
-
 #if defined(MIOS32_FAMILY_STM32F10x)
-    MIOS32_BOARD_J5_PinSet(8, 1);
+  MIOS32_BOARD_J5_PinSet(8, (clk_sr_value & 1));
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-    MIOS32_BOARD_J10_PinSet(8, 1);
+  MIOS32_BOARD_J10_PinSet(8, (clk_sr_value & 1));
 #elif defined(MIOS32_FAMILY_LPC17xx)
-    MIOS32_BOARD_J28_PinSet(0, 1);
+  MIOS32_BOARD_J28_PinSet(0, (clk_sr_value & 1));
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
-    --seq_core_din_sync_pulse_ctr;
-  } else if( seq_core_din_sync_pulse_ctr == 1 ) {
-#if defined(MIOS32_FAMILY_STM32F10x)
-    MIOS32_BOARD_J5_PinSet(8, 0);
-#elif defined(MIOS32_FAMILY_STM32F4xx)
-    MIOS32_BOARD_J10_PinSet(8, 0);
-#elif defined(MIOS32_FAMILY_LPC17xx)
-    MIOS32_BOARD_J28_PinSet(0, 0);
-#else
-# warning "please adapt for this MIOS32_FAMILY"
-#endif
-
-    seq_core_din_sync_pulse_ctr = 0;
-  }
-
-  // Clock SR
-  if( seq_hwcfg_clk_sr )
-    MIOS32_DOUT_SRSet(seq_hwcfg_clk_sr-1, clk_sr_value);
-
 
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0

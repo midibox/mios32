@@ -32,16 +32,17 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       9
+#define NUM_OF_ITEMS       10
 #define ITEM_CV            0
 #define ITEM_CURVE         1
 #define ITEM_SLEWRATE      2
 #define ITEM_PITCHRANGE    3
 #define ITEM_GATE          4
 #define ITEM_CALIBRATION   5
-#define ITEM_SYNC_PPQN     6
-#define ITEM_SYNC_WIDTH    7
-#define ITEM_MODULE        8
+#define ITEM_CLK_SEL       6
+#define ITEM_CLK_PPQN      7
+#define ITEM_CLK_WIDTH     8
+#define ITEM_MODULE        9
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -49,11 +50,11 @@
 
 static u8 store_file_required;
 static u8 selected_cv;
-
+static u8 selected_clkout;
 
 const u16 din_sync_div_presets[] =
-  // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn
-  { 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1 };
+  // 1    2    3    4   6   8  12  16  24  32  48  96  192  384 ppqn, StartStop(=0)
+  { 384, 192, 128, 96, 64, 48, 32, 24, 16, 12,  8,  4,   2,  1, 0 };
 
 
 
@@ -72,8 +73,9 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_PITCHRANGE:  *gp_leds = 0x0010; break;
     case ITEM_GATE:        *gp_leds = 0x0020; break;
     case ITEM_CALIBRATION: *gp_leds = 0x00c0; break;
-    case ITEM_SYNC_PPQN:   *gp_leds = 0x0300; break;
-    case ITEM_SYNC_WIDTH:  *gp_leds = 0x1c00; break;
+    case ITEM_CLK_SEL:     *gp_leds = 0x0100; break;
+    case ITEM_CLK_PPQN:    *gp_leds = 0x0600; break;
+    case ITEM_CLK_WIDTH:   *gp_leds = 0x0800; break;
     case ITEM_MODULE:      *gp_leds = 0xc000; break;
   }
 
@@ -119,16 +121,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP9:
+      ui_selected_item = ITEM_CLK_SEL;
+      break;
+
     case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_SYNC_PPQN;
-      break;
-
     case SEQ_UI_ENCODER_GP11:
-    case SEQ_UI_ENCODER_GP12:
-    case SEQ_UI_ENCODER_GP13:
-      ui_selected_item = ITEM_SYNC_WIDTH;
+      ui_selected_item = ITEM_CLK_PPQN;
       break;
 
+    case SEQ_UI_ENCODER_GP12:
+      ui_selected_item = ITEM_CLK_WIDTH;
+      break;
+
+    case SEQ_UI_ENCODER_GP13:
     case SEQ_UI_ENCODER_GP14:
       return -1; // not mapped
 
@@ -197,10 +202,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0;
     }
 
-    case ITEM_SYNC_PPQN: {
+    case ITEM_CLK_SEL:
+      if( SEQ_UI_Var8_Inc(&selected_clkout, 0, SEQ_CV_NUM_CLKOUT-1, incrementer) >= 0 ) {
+	return 1;
+      }
+      return 0;
+
+    case ITEM_CLK_PPQN: {
       int i;
       u8 din_sync_div_ix = 0;
-      u16 div = SEQ_CV_ClkDividerGet();
+      u16 div = SEQ_CV_ClkDividerGet(selected_clkout);
 
       for(i=0; i<sizeof(din_sync_div_presets)/sizeof(u16); ++i)
 	if( div == din_sync_div_presets[i] ) {
@@ -209,17 +220,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	}
 
       if( SEQ_UI_Var8_Inc(&din_sync_div_ix, 0, (sizeof(din_sync_div_presets)/sizeof(u16))-1, incrementer) ) {
-	SEQ_CV_ClkDividerSet(din_sync_div_presets[din_sync_div_ix]);
+	SEQ_CV_ClkDividerSet(selected_clkout, din_sync_div_presets[din_sync_div_ix]);
 	store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
     } break;
 
-    case ITEM_SYNC_WIDTH: {
-      u8 width = SEQ_CV_ClkPulseWidthGet();
+    case ITEM_CLK_WIDTH: {
+      u8 width = SEQ_CV_ClkPulseWidthGet(selected_clkout);
       if( SEQ_UI_Var8_Inc(&width, 1, 255, incrementer) >= 0 ) {
-	SEQ_CV_ClkPulseWidthSet(width);
+	SEQ_CV_ClkPulseWidthSet(selected_clkout, width);
 	store_file_required = 1;
 	return 1;
       }
@@ -305,13 +316,13 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  CV  Curve SlewRate PRng  Gate  Calibr.     DIN Sync Output              Module 
-  //   1  V/Oct    0 mS    2   Pos.    off   PPQN:  24 Width:   1 mS          AOUT_NG
+  //  CV  Curve SlewRate PRng  Gate  Calibr.  Clk   Rate    Width             Module 
+  //   1  V/Oct    0 mS    2   Pos.    off     1   24 PPQN   1 mS             AOUT_NG
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" CV  Curve SlewRate PRng  Gate  Calibr.     DIN Sync Output              Module ");
+  SEQ_LCD_PrintString(" CV  Curve SlewRate PRng  Gate  Calibr.  Clk   Rate    Width             Module ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -359,23 +370,33 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("PPQN: ");
-  if( ui_selected_item == ITEM_SYNC_PPQN && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_CLK_SEL && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d ", 384 / SEQ_CV_ClkDividerGet());
+    SEQ_LCD_PrintFormattedString("%3d ", selected_clkout + 1);
+  }
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_CLK_PPQN && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(9);
+  } else {
+    u16 divider = SEQ_CV_ClkDividerGet(selected_clkout);
+    if( !divider ) {
+      SEQ_LCD_PrintFormattedString("StartStop", 384 / divider);
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d PPQN ", 384 / divider);
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString(" Width: ");
-  if( ui_selected_item == ITEM_SYNC_WIDTH && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+  if( ui_selected_item == ITEM_CLK_WIDTH && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d", SEQ_CV_ClkPulseWidthGet());
+    SEQ_LCD_PrintFormattedString("%3d mS", SEQ_CV_ClkPulseWidthGet(selected_clkout));
   }
-  SEQ_LCD_PrintString(" mS");
 
-  SEQ_LCD_PrintSpaces(9);
+  SEQ_LCD_PrintSpaces(12);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MODULE && ui_cursor_flash ) {

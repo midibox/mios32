@@ -1385,7 +1385,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  SEQ_CV_ClkPulseWidthSet(pulsewidth);
+	  SEQ_CV_ClkPulseWidthSet(0, pulsewidth);
 
 	} else if( strcasecmp(parameter, "DOUT_1MS_TRIGGER") == 0 ) {
 

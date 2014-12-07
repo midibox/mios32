@@ -733,7 +733,7 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
 
   // DIN Sync Event (0xf9 sent over port 0xff)
   if( port == 0xff && package.evnt0 == 0xf9 ) {
-    seq_core_din_sync_pulse_ctr = 2 + SEQ_CV_ClkPulseWidthGet(); // to generate a pulse with configurable length (+1 for 1->0 transition, +1 to compensate jitter)
+    SEQ_CV_Clk_Trigger(package.evnt1); // second byte contains clock number (see also 0xf9 generation in seq_core)
     return 1; // filter package
   }
 

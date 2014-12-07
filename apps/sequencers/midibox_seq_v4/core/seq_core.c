@@ -713,12 +713,22 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
     // trigger DIN Sync clock with a special event (0xf9 normaly used for "MIDI tick")
     // SEQ_MIDI_PORT_NotifyMIDITx filters it before it will be forwarded to physical ports
-    if( (bpm_tick % SEQ_CV_ClkDividerGet()) == 0 ) {
+
+    {
+      int clkout;
+
       mios32_midi_package_t p;
       p.ALL = 0;
       p.type = 0x5; // Single-byte system common message
       p.evnt0 = 0xf9;
-      SEQ_MIDI_OUT_Send(0xff, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+
+      u16 *clk_divider = (u16 *)&seq_cv_clkout_divider[0];
+      for(clkout=0; clkout<SEQ_CV_NUM_CLKOUT; ++clkout, ++clk_divider) {
+	if( *clk_divider && (bpm_tick % *clk_divider) == 0 ) {
+	  p.evnt1 = clkout; // Transfers the Clock Output
+	  SEQ_MIDI_OUT_Send(0xff, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+	}
+      }
     }
 
     // send metronome tick on each beat if enabled
