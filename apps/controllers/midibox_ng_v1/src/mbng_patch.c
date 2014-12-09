@@ -25,6 +25,7 @@
 
 #include "mbng_patch.h"
 #include "mbng_dout.h"
+#include "mbng_matrix.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
@@ -81,6 +82,7 @@ s32 MBNG_PATCH_Init(u32 mode)
 
   MIOS32_SRIO_DebounceSet(20);
   MIOS32_SRIO_ScanNumSet(MIOS32_SRIO_NUM_SR);
+  MBNG_MATRIX_SRIO_ParametersChanged();
 
   mbng_patch_cfg = mbng_patch_cfg_default;
   mbng_patch_scs = mbng_patch_scs_default;

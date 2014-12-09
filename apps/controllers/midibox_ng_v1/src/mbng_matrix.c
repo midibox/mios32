@@ -415,6 +415,28 @@ s32 MBNG_MATRIX_ButtonMatrixChanged(u8 matrix)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Call this function if SRIO configuration has been changed (to update page selections)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_MATRIX_SRIO_ParametersChanged(void)
+{
+  {
+    int matrix;
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DOUT; ++matrix) {
+      MBNG_MATRIX_LedMatrixChanged(matrix);
+    }
+  }
+
+  {
+    int matrix;
+    for(matrix=0; matrix<MBNG_PATCH_NUM_MATRIX_DIN; ++matrix) {
+      MBNG_MATRIX_ButtonMatrixChanged(matrix);
+    }
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! Set/Get pattern
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_MATRIX_PatternSet(u8 num, u8 pos, u16 pattern)

@@ -12,7 +12,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.032"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.033"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2014 T.Klose"
 
 // define a unique VID/PID for this application
