@@ -8,6 +8,8 @@ MIDIbox NG V1.033
      In the bootloader update app, enter "set spi_midi 1" to enable the SPI MIDI device at J16 (RC2 chip select line).
      This will also disable the OSC ports via MBHP_ETH module, which is normally connected to this port.
 
+   o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
+
 
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~

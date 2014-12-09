@@ -35,6 +35,7 @@ extern s32 MBNG_MATRIX_Init(u32 mode);
 
 extern s32 MBNG_MATRIX_LedMatrixChanged(u8 matrix);
 extern s32 MBNG_MATRIX_ButtonMatrixChanged(u8 matrix);
+extern s32 MBNG_MATRIX_SRIO_ParametersChanged(void);
 
 extern s32 MBNG_MATRIX_PatternSet(u8 num, u8 pos, u16 pattern);
 extern u16 MBNG_MATRIX_PatternGet(u8 num, u8 pos);

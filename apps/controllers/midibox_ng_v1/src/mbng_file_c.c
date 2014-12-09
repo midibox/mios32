@@ -3111,6 +3111,7 @@ s32 parseSrio(u32 line, char *cmd, char *brkt)
 	return -1; // invalid parameter
       }
       MIOS32_SRIO_ScanNumSet(value);
+      MBNG_MATRIX_SRIO_ParametersChanged();
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "debounce_cycles") == 0 ) {
