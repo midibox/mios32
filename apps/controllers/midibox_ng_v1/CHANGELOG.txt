@@ -10,6 +10,8 @@ MIDIbox NG V1.033
 
    o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
 
+   o .NGR file: added "load <setup>" command which allows to switch to another setup (.NGC, .NGS, .NGR, ... files)
+
 
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~
