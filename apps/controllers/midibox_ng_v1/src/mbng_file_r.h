@@ -43,7 +43,7 @@ extern s32 MBNG_FILE_R_VarSectionGet();
 extern s32 MBNG_FILE_R_VarValueSet(u8 value);
 extern s32 MBNG_FILE_R_VarValueGet();
 
-extern s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level);
+extern s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, char *load_filename);
 
 extern s32 MBNG_FILE_R_Read(char *filename, u8 cont_script);
 extern s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_done);

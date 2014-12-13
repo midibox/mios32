@@ -297,7 +297,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
       out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
-      out("  run [<section>] [<value>]:        executes the .NGR script with the optional section number and value");
+      out("  run [<section>] [<value>]:        executes the .NGR script with the optional section and value");
       out("  ngr_value:                        value used for 'run' (without parameter) and 'ngr' (is: %d)", ngr_value);
       out("  ngr_section:                      section used for 'run' (without parameter) and 'ngr' (is: %d)", ngr_section);
       out("  ngr <command>:                    directly executes a NGR command");
@@ -434,10 +434,20 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       if( brkt == NULL ) {
 	out("Please specify command!");
       } else {
+	char load_filename[9];
+	load_filename[0] = 0;
+
 	MBNG_FILE_R_VarSectionSet(ngr_section);
 	MBNG_FILE_R_VarValueSet(ngr_value);
-	MBNG_FILE_R_Parser(0, brkt, NULL, NULL);
+	MBNG_FILE_R_Parser(0, brkt, NULL, NULL, load_filename);
 	out("Executed command with ^section==%d ^value==%d", ngr_section, ngr_value);
+
+	if( load_filename[0] ) {
+	  s32 status = MBNG_PATCH_Load(parameter);
+	  if( status < 0 ) {
+	    out("ERROR: failed to load patch '%s' on SD Card (status %d)!", parameter, status);
+	  }
+	}
       }
     } else if( strcasecmp(parameter, "ngc") == 0 ) {
       if( brkt == NULL ) {

@@ -1502,10 +1502,55 @@ s32 parseDelay(u32 line, char *command, char **brkt)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! help function which parses a LOAD command
+//! returns > 0 if a valid filename has been specified
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename)
+{
+  char *filename;
+  if( !(filename = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing filename after '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  int i;
+  for(i=0; i<8; ++i) {
+    if( filename[i] == '.' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: remove file extension after '.' in '%s' command !\n", line, command);
+#endif
+      return -2;
+    }
+    if( filename[i] == 0 )
+      break;
+  }
+
+  if( i >= 8 && filename[i] != 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: too long filename specified in '%s' command !\n", line, command);
+#endif
+    return -3;
+  }
+
+  // take over filename
+  strncpy(load_filename, filename, 8);
+
+#if DEBUG_VERBOSE_LEVEL >= 2
+  DEBUG_MSG("[MBNG_FILE_R:%d] LOAD %s\n", line, load_filename);
+#endif
+
+  return 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Parses a .NGR command line
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level)
+s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, char *load_filename)
 {
   s32 status = 0;
 
@@ -1691,6 +1736,10 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
 	s32 delay = parseDelay(line, parameter, &brkt);
 	mbng_file_r_delay_ctr = (delay >= 0 ) ? delay : 0;
+      } else if( strcasecmp(parameter, "LOAD") == 0 ) {
+	if( parseLoad(line, parameter, &brkt, load_filename) > 0 ) {
+	  return 1;
+	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	// changed error to warning, since people are sometimes confused about these messages
@@ -1718,6 +1767,8 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
 {
   s32 status = 0;
   mbng_file_r_info_t *info = &mbng_file_r_info;
+
+  char load_filename[9];
 
   if( !info->valid ) {
     // store current file name in global variable for UI
@@ -1790,7 +1841,10 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
 	line_buffer_len = 0; // for next round we start at 0 again
       }
 
-      exit = MBNG_FILE_R_Parser(line, line_buffer, if_state, &nesting_level);
+      load_filename[0] = 0; // invalidate filename
+
+      // parse line
+      exit = MBNG_FILE_R_Parser(line, line_buffer, if_state, &nesting_level, load_filename);
     }
 
   } while( !exit && !mbng_file_r_delay_ctr && status >= 1 );
@@ -1802,7 +1856,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
   if( !mbng_file_r_delay_ctr ) {
     if( exit >= 2 ) {
       DEBUG_MSG("[MBNG_FILE_R:%d] stopped script execution due to previous error!\n", line);
-    } else if( nesting_level > 0 ) {
+    } else if( !load_filename[0] && nesting_level > 0 ) {
       DEBUG_MSG("[MBNG_FILE_R:%d] WARNING: missing ENDIF command!\n", line);
     }
   }
@@ -1820,6 +1874,16 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
 
   // file is valid! :)
   info->valid = 1;
+
+  if( load_filename[0] ) {
+    s32 status = MBNG_PATCH_Load(load_filename);
+
+    if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R] ERROR while loading patch %s\n", load_filename);
+#endif
+    }
+  }
 
   return 0; // no error
 }
