@@ -128,7 +128,6 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 store_file_required;
 static u8 local_selected_item = 0; // stays stable when menu is exit
 
 
@@ -175,12 +174,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	u8 value = seq_core_steps_per_measure >> 4;
 	if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 0 ) {
 	  seq_core_steps_per_measure = (value << 4) + 15;
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
       } else {
 	if( SEQ_UI_Var8_Inc(&seq_core_steps_per_measure, 0, 255, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
       }
@@ -192,12 +191,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	u8 value = seq_core_steps_per_pattern >> 4;
 	if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 0 ) {
 	  seq_core_steps_per_pattern = (value << 4) + 15;
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
       } else {
 	if( SEQ_UI_Var8_Inc(&seq_core_steps_per_pattern, 0, 255, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
       }
@@ -208,7 +207,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_PATTERN_MIXER_MAP_COUPLING:
@@ -216,7 +215,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.PATTERN_MIXER_MAP_COUPLING = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.PATTERN_MIXER_MAP_COUPLING ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_PASTE_CLR_ALL:
@@ -224,7 +223,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.PASTE_CLR_ALL ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_RATOPC:
@@ -232,7 +231,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.RATOPC = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.RATOPC ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_SYNC_MUTE: {
@@ -240,7 +239,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_MUTE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_MUTE ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
     } break;
 
@@ -249,7 +248,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_UNMUTE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_UNMUTE ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
     } break;
 
@@ -257,7 +256,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = seq_core_options.INIT_CC;
       if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
 	seq_core_options.INIT_CC = value;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -267,7 +266,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = seq_core_options.LIVE_LAYER_MUTE_STEPS;
       if( SEQ_UI_Var8_Inc(&value, 0, 7, incrementer) >= 0 ) {
 	seq_core_options.LIVE_LAYER_MUTE_STEPS = value;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -277,7 +276,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = SEQ_TPD_ModeGet();
       if( SEQ_UI_Var8_Inc(&value, 0, SEQ_TPD_NUM_MODES-1, incrementer) >= 0 ) {
 	SEQ_TPD_ModeSet(value);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -288,7 +287,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_blm_options.ALWAYS_USE_FTS = incrementer > 0 ? 1 : 0;
       else
 	seq_blm_options.ALWAYS_USE_FTS ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
     } break;
 
@@ -301,7 +300,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	else
 	  seq_mixer_cc1234_before_pc &= ~(1 << pos);
 
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -570,7 +569,7 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config files
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -582,7 +581,7 @@ static s32 EXIT_Handler(void)
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -600,8 +599,6 @@ s32 SEQ_UI_OPT_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

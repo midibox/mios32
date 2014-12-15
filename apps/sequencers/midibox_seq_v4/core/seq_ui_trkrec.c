@@ -54,7 +54,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-static u8 store_file_required;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -184,13 +183,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    seq_record_options.STEP_RECORD = 0; // Step->Live Record Mode
 	  }
 
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 
 	} else
 	  return 0; // no change
       } else {
 	seq_record_options.STEP_RECORD ^= 1;
-	store_file_required = 1;
+	ui_store_file_required = 1;
       }
       return 1;
 
@@ -200,7 +199,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       else
 	seq_record_options.POLY_RECORD ^= 1;
 
-      store_file_required = 1;
+      ui_store_file_required = 1;
 
         // print warning if poly mode not possible
 	if( seq_record_options.POLY_RECORD ) {
@@ -217,7 +216,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.AUTO_START = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.AUTO_START ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_RECORD_STEP: {
@@ -272,7 +271,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_rec_port = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	SEQ_RECORD_AllNotesOff(); // reset note markers
 	return 1; // value changed
       }
@@ -281,7 +280,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_REC_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_rec_channel, 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	SEQ_RECORD_AllNotesOff(); // reset note markers
 	return 1; // value changed
       }
@@ -292,7 +291,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_record_options.FWD_MIDI = incrementer > 0 ? 1 : 0;
       else
 	seq_record_options.FWD_MIDI ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_FORCE_SCALE:
@@ -300,7 +299,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_live_options.FORCE_SCALE = incrementer > 0 ? 1 : 0;
       else
 	seq_live_options.FORCE_SCALE ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_FX:
@@ -308,12 +307,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_live_options.FX = incrementer > 0 ? 1 : 0;
       else
 	seq_live_options.FX ^= 1;
-      store_file_required = 1;
+      ui_store_file_required = 1;
       return 1;
 
     case ITEM_QUANTIZE:
       if( SEQ_UI_Var8_Inc(&seq_record_quantize, 0, 99, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -511,7 +510,7 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -519,6 +518,8 @@ static s32 EXIT_Handler(void)
     if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
+
+    ui_store_file_required = 0;
   }
 
   // disable recording
@@ -539,8 +540,6 @@ s32 SEQ_UI_TRKREC_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   // enable recording
   seq_record_state.ENABLED = 1;

@@ -81,8 +81,6 @@ static u8 undo_map;
 
 static char edit_mixer_map_name[20];
 
-static u8 store_file_required;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -238,7 +236,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    incrementer = seq_core_options.MIXER_LIVE_SEND ? -1 : 1;
 	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
 	    seq_core_options.MIXER_LIVE_SEND = value;
-	    store_file_required = 1;
+	    ui_store_file_required = 1;
 	    return 1;
 	  }
 	  return 0;
@@ -624,7 +622,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 static s32 CheckStoreFile(void)
 {
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     s32 status;
@@ -632,7 +630,7 @@ static s32 CheckStoreFile(void)
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return 0; // no error

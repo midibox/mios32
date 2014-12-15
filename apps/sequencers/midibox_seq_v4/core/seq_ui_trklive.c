@@ -51,7 +51,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-static u8 store_file_required;
 static u16 gp_button_pressed;
 
 static u8 selected_bus = 0;
@@ -192,7 +191,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 tmp = seq_live_options.OCT_TRANSPOSE + 5;
       if( SEQ_UI_Var8_Inc(&tmp, 0, 10, incrementer) >= 0 ) {
 	seq_live_options.OCT_TRANSPOSE = (s8)tmp - 5;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -203,7 +202,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return -1;
 
       if( SEQ_UI_Var8_Inc(&seq_live_options.VELOCITY, 1, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -242,7 +241,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port[selected_bus]);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1-4, incrementer) >= 0 ) { // don't allow selection of Bus1..Bus4
 	seq_midi_in_port[selected_bus] = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -250,21 +249,21 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_IN_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_IN_LOWER:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_lower[selected_bus], 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_IN_UPPER:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_upper[selected_bus], 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -273,7 +272,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 fwd = seq_midi_in_options[selected_bus].MODE_PLAY;
       if( SEQ_UI_Var8_Inc(&fwd, 0, 1, incrementer) >= 0 ) {
 	seq_midi_in_options[selected_bus].MODE_PLAY = fwd;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -514,7 +513,7 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config files
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -525,6 +524,8 @@ static s32 EXIT_Handler(void)
     if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
+
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -542,7 +543,6 @@ s32 SEQ_UI_TRKLIVE_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
-  store_file_required = 0;
   gp_button_pressed = 0x0000;
 
   return 0; // no error
