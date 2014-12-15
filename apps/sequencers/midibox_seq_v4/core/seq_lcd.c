@@ -738,7 +738,8 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
       SEQ_LCD_PrintString("----");
     } else {
-      u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;
+      //u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;
+      u8 value = SEQ_PAR_Get(track, step, par_layer, instrument); // works better in drum view
       if( value >= 0x80 ) {
 	SEQ_LCD_PrintFormattedString("####"); // currently used for CC in live recording mode: unrecorded value
       } else {

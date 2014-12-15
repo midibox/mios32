@@ -26,6 +26,7 @@
 #include "seq_mixer.h"
 #include "seq_file.h"
 #include "seq_file_m.h"
+#include "seq_file_gc.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 
@@ -80,11 +81,14 @@ static u8 undo_map;
 
 static char edit_mixer_map_name[20];
 
+static u8 store_file_required;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed);
+static s32 CheckStoreFile(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -209,7 +213,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  // send to external
 	  SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP, SEQ_MIXER_NumGet(), 0);
 	  // dump all values
-	  SEQ_MIXER_SendAll();
+	  {
+	    MUTEX_MIDIOUT_TAKE;
+	    SEQ_MIXER_SendAll();
+	    MUTEX_MIDIOUT_GIVE;
+	  }
 	  // print message
 	  in_menu_msg = MSG_DUMP & 0x7f;
 	  ui_hold_msg_ctr = 1000;
@@ -222,6 +230,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  show_mixer_util_page = MIXER_UTIL_PAGE_OFF;
 	  mixer_par = SEQ_MIXER_PAR_CC1_NUM + (encoder-8);
 	  return 1; // always changed
+
+        case SEQ_UI_ENCODER_GP13: // change MIXER_LIVE_SEND
+        case SEQ_UI_ENCODER_GP14: {
+	  u8 value = seq_core_options.MIXER_LIVE_SEND;
+	  if( !incrementer )
+	    incrementer = seq_core_options.MIXER_LIVE_SEND ? -1 : 1;
+	  if( SEQ_UI_Var8_Inc(&value, 0, 1, incrementer) ) {
+	    seq_core_options.MIXER_LIVE_SEND = value;
+	    store_file_required = 1;
+	    return 1;
+	  }
+	  return 0;
+	} break;
 
         case SEQ_UI_ENCODER_GP16: // Mixermap name
 	  // Unnamed -> empty string
@@ -331,9 +352,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( chn == ui_selected_item || seq_ui_button_state.CHANGE_ALL_STEPS ) {
 	if( forced_value >= 0 ) {
 	  SEQ_MIXER_Set(chn, mixer_par, forced_value);
-	  MUTEX_MIDIOUT_TAKE;
-	  SEQ_MIXER_Send(chn, mixer_par);
-	  MUTEX_MIDIOUT_GIVE;
+	  if( seq_core_options.MIXER_LIVE_SEND ) {
+	    MUTEX_MIDIOUT_TAKE;
+	    SEQ_MIXER_Send(chn, mixer_par);
+	    MUTEX_MIDIOUT_GIVE;
+	  }
 	} else {
 	  u8 value = SEQ_MIXER_Get(chn, mixer_par);
 	  if( mixer_par == SEQ_MIXER_PAR_PORT )
@@ -342,9 +365,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    if( mixer_par == SEQ_MIXER_PAR_PORT )
 	      value = SEQ_MIDI_PORT_OutPortGet(value);
 	    SEQ_MIXER_Set(chn, mixer_par, value);
-	    MUTEX_MIDIOUT_TAKE;
-	    SEQ_MIXER_Send(chn, mixer_par);
-	    MUTEX_MIDIOUT_GIVE;
+	    if( seq_core_options.MIXER_LIVE_SEND ) {
+	      MUTEX_MIDIOUT_TAKE;
+	      SEQ_MIXER_Send(chn, mixer_par);
+	      MUTEX_MIDIOUT_GIVE;
+	    }
 	    value_changed |= 1;
 	  }
 	}
@@ -395,6 +420,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     } else {
       if( depressed ) return 0; // ignore when button depressed
       ui_selected_item = button;
+
+      // dump channel
+      {
+	MUTEX_MIDIOUT_TAKE;
+	SEQ_MIXER_SendAllByChannel(ui_selected_item);
+	MUTEX_MIDIOUT_GIVE;
+      }
+
       return 1; // value always changed
     }
   }
@@ -443,6 +476,10 @@ static s32 LCD_Handler(u8 high_prio)
 {
   if( high_prio )
     return 0; // there are no high-priority updates
+
+  if( !seq_ui_button_state.SELECT_PRESSED )
+    CheckStoreFile(); // for MIXER_LIVE_SEND: stored on SD Card when SELECT has been depressed
+
 
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -530,8 +567,8 @@ static s32 LCD_Handler(u8 high_prio)
     // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
     // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
     // <--------------------------------------><-------------------------------------->
-    // Map#   Mixer Utility Functions          CC Assignments                     Edit 
-    // 128  Copy Paste Clr      Load Save Dump  CC1  CC2  CC3  CC4                Name 
+    // Map#   Mixer Utility Functions          CC Assignments      LiveSend       Edit 
+    // 128  Copy Paste Clr      Load Save Dump  CC1  CC2  CC3  CC4    on          Name 
     SEQ_LCD_CursorSet(0, 0);
     SEQ_LCD_PrintFormattedString("Map#   Mixer Utility Functions  ");
     if( (in_menu_msg & 0x80) || ((in_menu_msg & 0x7f) && ui_hold_msg_ctr) ) {
@@ -540,11 +577,13 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(8);
     }
 
-    SEQ_LCD_PrintFormattedString("CC Assignments                     Edit ");
+    SEQ_LCD_PrintString("CC Assignments      LiveSend       Edit ");
 
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintFormattedString("%3d  Copy Paste Clr      Load Save Dump ", SEQ_MIXER_NumGet()+1);
-    SEQ_LCD_PrintFormattedString(" CC1  CC2  CC3  CC4                Name ");
+    SEQ_LCD_PrintString(" CC1  CC2  CC3  CC4   ");
+    SEQ_LCD_PrintString(seq_core_options.MIXER_LIVE_SEND ? " on" : "off");
+    SEQ_LCD_PrintString("          Name ");
   } break;
 
   case MIXER_UTIL_PAGE_NAME: {
@@ -581,6 +620,36 @@ static s32 LCD_Handler(u8 high_prio)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Stores config file if required
+/////////////////////////////////////////////////////////////////////////////
+static s32 CheckStoreFile(void)
+{
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    s32 status;
+    if( (status=SEQ_FILE_GC_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    store_file_required = 0;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Exit
+/////////////////////////////////////////////////////////////////////////////
+static s32 EXIT_Handler(void)
+{
+  CheckStoreFile();
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_MIXER_Init(u32 mode)
@@ -590,6 +659,7 @@ s32 SEQ_UI_MIXER_Init(u32 mode)
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
+  SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   in_menu_msg = MSG_DEFAULT;
   ui_hold_msg_ctr = 0;

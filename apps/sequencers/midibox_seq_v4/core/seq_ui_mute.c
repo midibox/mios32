@@ -189,9 +189,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	if( seq_ui_button_state.MUTE_PRESSED )
 	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
 	else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
-	  if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE ) {
+	  if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE && !seq_ui_button_state.FAST_ENCODERS ) { // Fast button will disable synched mute
 	    muted = (u16 *)&seq_core_trk_synched_mute;
-	  } else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE ) {
+	  } else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE && !seq_ui_button_state.FAST_ENCODERS ) { // Fast button will disable synched unmute
 	    muted = (u16 *)&seq_core_trk_synched_unmute;
 	  }
 	} else {
@@ -254,13 +254,13 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	  seq_core_trk[visible_track].layer_muted = latched_mute;
 	} else {
 	  u16 new_mutes = latched_mute & ~seq_core_trk_muted;
-	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_MUTE )
+	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_MUTE && !seq_ui_button_state.FAST_ENCODERS ) // Fast button will disable synched mute
 	    seq_core_trk_synched_mute |= new_mutes;
 	  else
 	    seq_core_trk_muted |= new_mutes;
 
 	  u16 new_unmutes = ~latched_mute & seq_core_trk_muted;
-	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_UNMUTE )
+	  if( SEQ_BPM_IsRunning() && seq_core_options.SYNCHED_UNMUTE && !seq_ui_button_state.FAST_ENCODERS ) // Fast button will disable synched unmute
 	    seq_core_trk_synched_unmute |= new_unmutes;
 	  else
 	    seq_core_trk_muted &= ~new_unmutes;

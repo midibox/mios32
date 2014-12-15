@@ -28,6 +28,20 @@ MIDIboxSEQ V4.087
      (D7=first output, D6=second output, etc...)
      The clock parameters can be configured in the CV configuration page.
 
+   o Mixer page: channel events can be dumped by pressing the corresponding GP button.
+     This also allows to prepare different mixer setups, sending to the same channel, triggered
+     by a GP button
+
+   o Mixer page: press SELECT to activate/deactivate "live sending" mode (values are sent
+     while moving an encoder)
+
+   o Mute page: the synchronized mute/unmute option can be temporary overruled by activating
+     the FAST button function
+
+   o improved step recording display for drum tracks
+
+   o Selected Datawheel mode in edit page now stored/restored to/from SD Card
+
    o STM32F4: support for bootloader "enforce_usb_device" flag
 
 
@@ -2044,22 +2058,6 @@ Provide trigger layer function for Random Velocity and CC
 ----------------------------------------------------------
 BLM enhancements:
 http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270
-----------------------------------------------------------
-Mixer page ideas:
-http://midibox.org/forums/topic/19041-proposal-mixer-maps-three-ideas/?p=166285
-----------------------------------------------------------
-Synched mute improvements
-http://midibox.org/forums/topic/19040-proposal-mute-page-enabledisable-syncing-to-measure-with-fast-button/#entry166284
-----------------------------------------------------------
-http://midibox.org/forums/topic/19046-recording-live-on-other-note-layers-besides-a/#entry166312
-using live recording, I recorded bass and snare drum on a Note track layer A, and then chose layer E (i.e. the next available note layer) to record open & closed hihat. However, the hihat notes were recorded on layer A as well.
- 
-Is it possible to choose some other layer than A for live recording? It didn't make any difference whether recording mode was set to Poly or Mono on the REC page.
-----------------------------------------------------------
-Store datawheel behaviour in EDIT page
-http://midibox.org/forums/topic/19090-track-select-as-default-for-jog-wheel/?p=166564
-----------------------------------------------------------
-Assign Program Change to Track: http://midibox.org/forums/topic/18012-mixer-map-currently-selected-jumps/?p=166751
 ----------------------------------------------------------
 
 
