@@ -48,7 +48,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 store_file_required;
 static u8 selected_cv;
 static u8 selected_clkout;
 
@@ -156,7 +155,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     u8 curve = SEQ_CV_CurveGet(selected_cv);
       if( SEQ_UI_Var8_Inc(&curve, 0, SEQ_CV_NUM_CURVES-1, incrementer) >= 0 ) {
 	SEQ_CV_CurveSet(selected_cv, curve);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -166,7 +165,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 rate = SEQ_CV_SlewRateGet(selected_cv);
       if( SEQ_UI_Var8_Inc(&rate, 0, 255, incrementer) >= 0 ) {
 	SEQ_CV_SlewRateSet(selected_cv, rate);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -176,7 +175,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 range = SEQ_CV_PitchRangeGet(selected_cv);
       if( SEQ_UI_Var8_Inc(&range, 0, 127, incrementer) >= 0 ) {
 	SEQ_CV_PitchRangeSet(selected_cv, range);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -186,7 +185,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 inv = SEQ_CV_GateInversionGet(selected_cv);
       if( SEQ_UI_Var8_Inc(&inv, 0, 1, incrementer) >= 0 ) {
 	SEQ_CV_GateInversionSet(selected_cv, inv);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -196,7 +195,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 mode = SEQ_CV_CaliModeGet();
       if( SEQ_UI_Var8_Inc(&mode, 0, SEQ_CV_NUM_CALI_MODES-1, incrementer) >= 0 ) {
 	SEQ_CV_CaliModeSet(selected_cv, mode);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -221,7 +220,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       if( SEQ_UI_Var8_Inc(&din_sync_div_ix, 0, (sizeof(din_sync_div_presets)/sizeof(u16))-1, incrementer) ) {
 	SEQ_CV_ClkDividerSet(selected_clkout, din_sync_div_presets[din_sync_div_ix]);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -231,7 +230,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 width = SEQ_CV_ClkPulseWidthGet(selected_clkout);
       if( SEQ_UI_Var8_Inc(&width, 1, 255, incrementer) >= 0 ) {
 	SEQ_CV_ClkPulseWidthSet(selected_clkout, width);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -241,7 +240,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 if_type = SEQ_CV_IfGet();
       if( SEQ_UI_Var8_Inc(&if_type, 0, SEQ_CV_NUM_IF-1, incrementer) >= 0 ) {
 	SEQ_CV_IfSet(if_type);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -420,14 +419,14 @@ static s32 EXIT_Handler(void)
   // ensure that calibration mode disabled
   SEQ_CV_CaliModeSet(selected_cv, AOUT_CALI_MODE_OFF);
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -445,8 +444,6 @@ s32 SEQ_UI_CV_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

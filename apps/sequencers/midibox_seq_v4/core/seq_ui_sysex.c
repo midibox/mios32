@@ -58,7 +58,7 @@ static u8 dir_view_offset = 0; // only changed once after startup
 static mios32_midi_port_t sysex_port = DEFAULT; // only changed once after startup
 static u16 sysex_delay_between_dumps = 100; // only changed once after startup
 static char dir_name[12]; // directory name of device (first char is 0 if no device selected)
-static u8 store_file_required;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -104,7 +104,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(sysex_port);
 	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	  sysex_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1; // value changed
 	}
 	return 0; // no change
@@ -114,7 +114,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP15: {
 	// select delay
 	if( SEQ_UI_Var16_Inc(&sysex_delay_between_dumps, 0, 999, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1; // value changed
 	}
 	return 0; // no change
@@ -123,7 +123,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP16:
 	// EXIT only via button
 	if( incrementer == 0 ) {
-	  if( store_file_required )
+	  if( ui_store_file_required )
 	    SEQ_UI_SYSEX_StoreConfig();
 
 	  // Exit
@@ -329,7 +329,7 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     SEQ_UI_SYSEX_StoreConfig();
   }
 
@@ -348,8 +348,6 @@ s32 SEQ_UI_SYSEX_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   // load charset (if this hasn't been done yet)
   SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_Menu);
@@ -447,7 +445,7 @@ static s32 SEQ_UI_SYSEX_StoreConfig(void)
 
   MUTEX_SDCARD_GIVE;
 
-  store_file_required = 0;
+  ui_store_file_required = 0;
 
   return status;
 }

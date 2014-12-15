@@ -90,6 +90,8 @@ u8 ui_seq_pause;
 
 u8 ui_song_edit_pos;
 
+u8 ui_store_file_required;
+
 u8 seq_ui_backup_req;
 u8 seq_ui_format_req;
 u8 seq_ui_saveall_req;
@@ -332,6 +334,9 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
     // call page exit callback
     if( ui_exit_callback != NULL )
       ui_exit_callback();
+
+    // disable store file which was maybe used in page (usually serviced by exit callback)
+    ui_store_file_required = 0;
 
     // disable hooks of previous page and request re-initialisation
     portENTER_CRITICAL();

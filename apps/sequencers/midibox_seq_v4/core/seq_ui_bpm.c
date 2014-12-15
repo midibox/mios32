@@ -49,7 +49,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 store_file_required;
 static u8 selected_mclk_port = USB0;
 
 
@@ -181,7 +180,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = SEQ_BPM_ModeGet();
       if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) ) {
 	SEQ_BPM_ModeSet(value);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -197,7 +196,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	// set new BPM
       	seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = (float)value/10.0;
 	SEQ_CORE_BPM_Update(seq_core_bpm_preset_tempo[seq_core_bpm_preset_num], seq_core_bpm_preset_ramp[seq_core_bpm_preset_num]);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -207,7 +206,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u16 value = (u16)seq_core_bpm_preset_ramp[seq_core_bpm_preset_num];
       if( SEQ_UI_Var16_Inc(&value, 0, 99, incrementer) ) {
 	seq_core_bpm_preset_ramp[seq_core_bpm_preset_num] = (float)value;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value has been changed
       } else
 	return 0; // value hasn't been changed
@@ -229,7 +228,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 enable = status;
       if( SEQ_UI_Var8_Inc(&enable, 0, 1, incrementer) >= 0 ) {
 	SEQ_MIDI_ROUTER_MIDIClockInSet(selected_mclk_port, enable);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -242,7 +241,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 enable = status;
       if( SEQ_UI_Var8_Inc(&enable, 0, 1, incrementer) >= 0 ) {
 	SEQ_MIDI_ROUTER_MIDIClockOutSet(selected_mclk_port, enable);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -441,14 +440,14 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -466,8 +465,6 @@ s32 SEQ_UI_BPM_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   // reset tap tempo function
   resetTapTempo();

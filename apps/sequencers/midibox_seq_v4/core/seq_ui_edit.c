@@ -58,7 +58,6 @@ static u8 edit_passive_step;       // to store the step of the edit value
 static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 
-static u8 store_file_required;
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -242,7 +241,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  incrementer = (encoder == SEQ_UI_ENCODER_GP9) ? -1 : 1;
 
 	if( SEQ_UI_Var8_Inc(&seq_ui_edit_datawheel_mode, 0, SEQ_UI_EDIT_DATAWHEEL_MODE_NUM-1, incrementer) >= 1 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	} else
 	  return 0;
@@ -1258,7 +1257,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 /////////////////////////////////////////////////////////////////////////////
 static s32 CheckStoreFile(void)
 {
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     s32 status;
@@ -1266,7 +1265,7 @@ static s32 CheckStoreFile(void)
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return 0; // no error

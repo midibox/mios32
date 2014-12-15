@@ -48,7 +48,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static u8 edit_step;
-static u8 store_file_required;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -168,7 +167,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = (u8)seq_groove_templates[groove_template].add_step_delay[edit_step] + 128;
       if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
 	seq_groove_templates[groove_template].add_step_delay[edit_step] = (s8)(value - 128);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -180,7 +179,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = (u8)seq_groove_templates[groove_template].add_step_length[edit_step] + 128;
       if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
 	seq_groove_templates[groove_template].add_step_length[edit_step] = (s8)(value - 128);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -192,7 +191,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = (u8)seq_groove_templates[groove_template].add_step_velocity[edit_step] + 128;
       if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
 	seq_groove_templates[groove_template].add_step_velocity[edit_step] = (s8)(value - 128);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -204,7 +203,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 value = (u8)seq_groove_templates[groove_template].num_steps;
       if( SEQ_UI_Var8_Inc(&value, 1, 16, incrementer) > 0 ) {
 	seq_groove_templates[groove_template].num_steps = value;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -417,14 +416,14 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_G_Write(seq_file_session_name)) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -442,8 +441,6 @@ s32 SEQ_UI_TRKGRV_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

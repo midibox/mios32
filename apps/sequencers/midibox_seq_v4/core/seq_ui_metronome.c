@@ -43,8 +43,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-u8 store_file_required;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -121,7 +119,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_core_metronome_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	seq_core_metronome_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -129,21 +127,21 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_CHANNEL:
       if( SEQ_UI_Var8_Inc(&seq_core_metronome_chn, 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_NOTE_M:
       if( SEQ_UI_Var8_Inc(&seq_core_metronome_note_m, 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_NOTE_B:
       if( SEQ_UI_Var8_Inc(&seq_core_metronome_note_b, 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -281,12 +279,14 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
+
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -304,8 +304,6 @@ s32 SEQ_UI_METRONOME_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

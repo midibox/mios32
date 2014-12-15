@@ -88,7 +88,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 store_file_required;
 static u8 selected_subpage = SUBPAGE_TRANSPOSE;
 static u8 selected_router_node = 0;
 static u8 selected_bus = 0;
@@ -400,7 +399,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port[selected_bus]);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1-4, incrementer) >= 0 ) { // don't allow selection of Bus1..Bus4
 	seq_midi_in_port[selected_bus] = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -408,21 +407,21 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_IN_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_IN_LOWER:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_lower[selected_bus], 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_IN_UPPER:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_upper[selected_bus], 0, 127, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -431,7 +430,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 fwd = seq_midi_in_options[selected_bus].MODE_PLAY;
       if( SEQ_UI_Var8_Inc(&fwd, 0, 1, incrementer) >= 0 ) {
 	seq_midi_in_options[selected_bus].MODE_PLAY = fwd;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -452,7 +451,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_sect_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_sect_port = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -460,7 +459,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_S_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_sect_channel, 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -470,7 +469,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 oct = seq_midi_in_sect_note[0] / 12;
       if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
 	seq_midi_in_sect_note[0] = 12*oct;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -480,7 +479,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 oct = seq_midi_in_sect_note[1] / 12;
       if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
 	seq_midi_in_sect_note[1] = 12*oct;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -490,7 +489,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 oct = seq_midi_in_sect_note[2] / 12;
       if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
 	seq_midi_in_sect_note[2] = 12*oct;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -500,7 +499,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 oct = seq_midi_in_sect_note[3] / 12;
       if( SEQ_UI_Var8_Inc(&oct, 0, 11, incrementer) >= 0 ) {
 	seq_midi_in_sect_note[3] = 12*oct;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -510,7 +509,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_midi_in_sect_fwd_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_sect_fwd_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -530,7 +529,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_R_NODE:
       if( SEQ_UI_Var8_Inc(&selected_router_node, 0, SEQ_MIDI_ROUTER_NUM_NODES-1, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -539,7 +538,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_InIxGet(n->src_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
 	n->src_port = SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -547,7 +546,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_R_SRC_CHN:
       if( SEQ_UI_Var8_Inc(&n->src_chn, 0, 17, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -556,7 +555,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(n->dst_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	n->dst_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -564,7 +563,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_R_DST_CHN:
       if( SEQ_UI_Var8_Inc(&n->dst_chn, 0, 19, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -574,7 +573,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(MIOS32_MIDI_DefaultPortGet());
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	MIOS32_MIDI_DefaultPortSet(SEQ_MIDI_PORT_OutPortGet(port_ix));
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -585,7 +584,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = (seq_midi_in_ext_ctrl_port == 0xff) ? numPorts : SEQ_MIDI_PORT_InIxGet(seq_midi_in_ext_ctrl_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, numPorts, incrementer) >= 0 ) {
 	seq_midi_in_ext_ctrl_port = (port_ix == numPorts) ? 0xff : SEQ_MIDI_PORT_InPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -595,7 +594,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_midi_in_ext_ctrl_out_port);
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
 	seq_midi_in_ext_ctrl_out_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -603,14 +602,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_EXT_CHN:
       if( SEQ_UI_Var8_Inc(&seq_midi_in_ext_ctrl_channel, 0, 16, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
 
     case ITEM_EXT_CTRL:
       if( SEQ_UI_Var8_Inc(&selected_ext_ctrl, 0, SEQ_MIDI_IN_EXT_CTRL_NUM-1, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -618,17 +617,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_EXT_VALUE:
       if( selected_ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED ) {
 	if( SEQ_UI_Var8_Inc(&seq_midi_in_ext_ctrl_asg[selected_ext_ctrl], 0, 1, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1; // value changed
 	}
       } else if( selected_ext_ctrl == SEQ_MIDI_IN_EXT_CTRL_PC_MODE ) {
 	if( SEQ_UI_Var8_Inc(&seq_midi_in_ext_ctrl_asg[selected_ext_ctrl], 0, SEQ_MIDI_IN_EXT_CTRL_PC_MODE_NUM-1, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1; // value changed
 	}
       } else if( selected_ext_ctrl <= SEQ_MIDI_IN_EXT_CTRL_NUM ) {
 	if( SEQ_UI_Var8_Inc(&seq_midi_in_ext_ctrl_asg[selected_ext_ctrl], 0, 128, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1; // value changed
 	}
       }
@@ -642,7 +641,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
 	SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
 	MUTEX_MIDIOUT_GIVE;
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1; // value changed
       }
       return 0; // no change
@@ -1098,7 +1097,7 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config files
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
@@ -1109,6 +1108,8 @@ static s32 EXIT_Handler(void)
     if( (status=SEQ_FILE_GC_Write()) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
+
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -1126,8 +1127,6 @@ s32 SEQ_UI_MIDI_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }

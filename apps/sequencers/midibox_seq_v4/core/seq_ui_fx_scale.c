@@ -43,8 +43,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 store_file_required;
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -107,7 +105,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( ui_selected_item ) {
     case ITEM_SCALE_CTRL:
       if( SEQ_UI_Var8_Inc(&seq_core_global_scale_ctrl, 0, 4, incrementer) >= 0 ) {
-	store_file_required = 1;
+	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
@@ -115,14 +113,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_SCALE_ROOT:
       if( seq_core_global_scale_ctrl == 0 ) {
 	if( SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
 	return 0;
       } else {
 	u8 group = seq_core_global_scale_ctrl-1;
 	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
 	return 0;
@@ -132,14 +130,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       u8 scale_max = SEQ_SCALE_NumGet()-1;
       if( seq_core_global_scale_ctrl == 0 ) {
 	if( SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer) >= 0 ) {
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
 	return 0;
       } else {
 	u8 group = seq_core_global_scale_ctrl-1;
 	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale, 0, scale_max, incrementer) >= 0 ) { // Keyb, C..H
-	  store_file_required = 1;
+	  ui_store_file_required = 1;
 	  return 1;
 	}
 	return 0;
@@ -277,14 +275,14 @@ static s32 EXIT_Handler(void)
 {
   s32 status = 0;
 
-  if( store_file_required ) {
+  if( ui_store_file_required ) {
     // write config file
     MUTEX_SDCARD_TAKE;
     if( (status=SEQ_FILE_C_Write(seq_file_session_name)) < 0 )
       SEQ_UI_SDCardErrMsg(2000, status);
     MUTEX_SDCARD_GIVE;
 
-    store_file_required = 0;
+    ui_store_file_required = 0;
   }
 
   return status;
@@ -302,8 +300,6 @@ s32 SEQ_UI_FX_SCALE_Init(u32 mode)
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
-
-  store_file_required = 0;
 
   return 0; // no error
 }
