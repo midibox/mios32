@@ -380,6 +380,14 @@ J5_ENABLED 1
 # SR = 0: LED disabled
 # SR = 1..23:  directly forwarded to DOUT pin
 # SR = M1..M8: forwarded to a 8x8 LED matrix
+#
+# Please note: due to historical reasons, pin 0-7
+# are mirrored!
+# Pin 0 = DOUT Pin D7
+# Pin 1 = DOUT Pin D6
+# Pin 2 = DOUT Pin D5
+# ...
+# Pin 7 = DOUT Pin D0
 ##################################################
 
 #           SR  Pin
