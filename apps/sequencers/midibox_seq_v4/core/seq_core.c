@@ -1007,8 +1007,20 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	}
 
 	// store last glide notes before they will be cleared
-	u32 last_glide_notes[4];
-	memcpy(last_glide_notes, t->glide_notes, 4*4);
+	//memcpy(last_glide_notes, t->glide_notes, 4*4);
+	// this will be a bit faster (memcpy copies bytes, by copying words we save some time)
+	u32 prev_glide_notes[4];
+	u32 next_glide_notes[4];
+	{
+	  u32 *src_ptr = (u32 *)&t->glide_notes[0];
+	  u32 *dst_ptr = (u32 *)&prev_glide_notes[0];
+	  u32 *next_ptr = (u32 *)&next_glide_notes[0];
+	  int i;
+	  for(i=0; i<4; ++i) {
+	    *dst_ptr++ = *src_ptr++;
+	    *next_ptr++ = 0;
+	  }
+	}
 
         seq_layer_evnt_t layer_events[16];
         s32 number_of_events = 0;
@@ -1051,8 +1063,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
             }
 
 	    // if glided note already played: omit new note event by setting velocity to 0
-	    if( t->state.STRETCHED_GL && (last_glide_notes[p->note / 32] & (1 << (p->note % 32))) ) {
-	      p->velocity = 0;
+	    if( t->state.STRETCHED_GL ) {
+	      u32 ix = p->note / 32;
+	      u32 mask = (1 << (p->note % 32));
+	      if( prev_glide_notes[ix] & mask ) {
+		next_glide_notes[ix] |= mask;
+		p->velocity = 0;
+	      }
 	    }
   
             // skip if velocity has been cleared by transpose or glide function
@@ -1136,19 +1153,40 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	  // should Note Off events be played before new events are queued?
 	  if( gen_off_events ) {
-	    int i;
-
 	    u32 rescheduled_tick = bpm_tick + prev_bpm_tick_delay + gen_off_events;
 	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
 	      rescheduled_tick -= 1;
+
 	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, rescheduled_tick,
-				    seq_record_state.ENABLED ? seq_record_played_notes : NULL);
+				    seq_record_state.ENABLED ? seq_record_played_notes : (t->state.STRETCHED_GL ? next_glide_notes : NULL));
 
 	    // clear state flag and note storage
 	    t->state.SUSTAINED = 0;
-	    t->state.STRETCHED_GL = 0;
-	    for(i=0; i<4; ++i)
-	      t->glide_notes[i] = 0;
+
+	    if( seq_record_state.ENABLED || !t->state.STRETCHED_GL ) {
+	      t->state.STRETCHED_GL = 0;
+
+	      u32 *dst_ptr = (u32 *)&t->glide_notes[0];
+	      int i;
+	      for(i=0; i<4; ++i) {
+		*dst_ptr++ = 0;
+	      }
+	    } else if( t->state.STRETCHED_GL ) {
+	      // improved glide handling for polyphonic steps
+	      u8 any_glide = 0;
+	      u32 *src_ptr = (u32 *)&next_glide_notes[0];
+	      u32 *dst_ptr = (u32 *)&t->glide_notes[0];
+	      int i;
+	      for(i=0; i<4; ++i) {
+		if( *src_ptr )
+		  any_glide |= 1;
+
+		*dst_ptr++ = *src_ptr++;
+	      }
+
+	      if( !any_glide )
+		t->state.STRETCHED_GL = 0;
+	    }
 	  }
 
 
@@ -1176,6 +1214,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  (seq_record_played_notes[p->note>>5] & (1 << (p->note&0x1f))) )
 		continue;
 
+	      // skip in glide mode if note stretched
+	      if( t->state.STRETCHED_GL &&
+		  (next_glide_notes[p->note>>5] & (1 << (p->note&0x1f))) )
+		continue;
+
 	      // sustained/glided note: play note at timestamp, and queue off event at 0xffffffff (so that it can be re-scheduled)		
 	      if( gen_sustained_events ) {
 		// for visualisation in mute menu
@@ -1194,7 +1237,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // glide: if same note already played, play the new one a tick later for 
 		  // proper handling of "fingered portamento" function on some synths
-		  if( last_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
+		  if( prev_glide_notes[p->note / 32] & (1 << (p->note % 32)) )
 		    scheduled_tick += 1;
 
 		  // Note On (the Note Off will be prepared as well in SEQ_CORE_ScheduleEvent)
