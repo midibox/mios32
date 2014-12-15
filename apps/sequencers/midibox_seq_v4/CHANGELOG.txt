@@ -2031,9 +2031,6 @@ http://midibox.org/forums/topic/18813-seq-v4-firmware-question
 SAVE page, name entry: usability wise, it would be useful if pressing the <> button (GP#12) toggled cursor position between the first character of the category and the first character of the name.
 http://midibox.org/forums/topic/18999-wishlist-save-pattern-page-improvements/?p=165964
 ----------------------------------------------------------
-Drum selection improvement: press GP12 button, play note from external keyboard:
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=166027
-----------------------------------------------------------
 MIDI Remote Control function:
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=166123
 Here's an idea to extend this:  It's really great to be able to quickly set CC values with a midi controller potentiometer.  It's so quick and easy to get the value to where you want it - much faster than an encoder.  It would be great if you could set all the parameter layers this way.  If the SEQ provided external CC controller numbers that were assigned to "adjust parameter layer 1", "...2", "...3" ...16 for the currently held step, then you could use an external midi controller to easily adjust all parameter layers for the currently held step without having to wade through the menus.
@@ -2059,6 +2056,7 @@ Provide trigger layer function for Random Velocity and CC
 BLM enhancements:
 http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270
 ----------------------------------------------------------
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
