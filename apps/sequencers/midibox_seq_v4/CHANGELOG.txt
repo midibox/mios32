@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.088
+~~~~~~~~~~~~~~~~~
+
+   o improved glide function for polyphonic steps
+
+
 MIDIboxSEQ V4.087
 ~~~~~~~~~~~~~~~~~
 
