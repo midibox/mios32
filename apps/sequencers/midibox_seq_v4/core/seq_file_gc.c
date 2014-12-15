@@ -292,6 +292,10 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_record_quantize = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
+	  } else if( strcmp(parameter, "DatawheelMode") == 0 ) {
+	    seq_ui_edit_datawheel_mode = value;
+	  } else if( strcmp(parameter, "MixerLiveSend") == 0 ) {
+	    seq_core_options.MIXER_LIVE_SEND = value;
 	  } else if( strcmp(parameter, "InitCC") == 0 ) {
 	    seq_core_options.INIT_CC = value;
 	  } else if( strcmp(parameter, "LiveLayerMuteSteps") == 0 ) {
@@ -494,6 +498,12 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "DatawheelMode %d\n", seq_ui_edit_datawheel_mode);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MixerLiveSend %d\n", seq_core_options.MIXER_LIVE_SEND);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "InitCC %d\n", seq_core_options.INIT_CC);

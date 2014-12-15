@@ -16,8 +16,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include "tasks.h"
+
 #include "seq_lcd.h"
 #include "seq_ui.h"
+
+#include "seq_file_gc.h"
 
 #include "seq_core.h"
 #include "seq_cc.h"
@@ -34,18 +38,7 @@
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
 seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Global Defines
-/////////////////////////////////////////////////////////////////////////////
-#define DATAWHEEL_MODE_SCROLL_CURSOR   0
-#define DATAWHEEL_MODE_SCROLL_VIEW     1
-#define DATAWHEEL_MODE_CHANGE_VALUE    2
-#define DATAWHEEL_MODE_CHANGE_PARLAYER 3
-#define DATAWHEEL_MODE_CHANGE_TRGLAYER 4
-
-#define DATAWHEEL_MODE_NUM             5
+seq_ui_edit_datawheel_mode_t seq_ui_edit_datawheel_mode = SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_CURSOR;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,8 +46,6 @@ seq_ui_edit_view_t seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;
 /////////////////////////////////////////////////////////////////////////////
 
 static u16 selected_steps = 0xffff; // will only be initialized once after startup
-
-static u8 datawheel_mode = 0; // will only be initialized once after startup
 
 // activated by pressing EDIT button: encoder value will be taken over by releasing EDIT button
 // mode 0: function not active (EDIT button released)
@@ -66,6 +57,8 @@ static u8 edit_passive_track;      // to store the track of the edit value
 static u8 edit_passive_step;       // to store the step of the edit value
 static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
+
+static u8 store_file_required;
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -81,6 +74,7 @@ static midi_learn_mode_t midi_learn_mode = MIDI_LEARN_MODE_OFF;
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
+static s32 CheckStoreFile(void);
 static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 incrementer, s32 forced_value, u8 change_gate, u8 dont_change_gate);
 static s32 PassiveEditEnter(void);
 static s32 PassiveEditValid(void);
@@ -176,15 +170,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   if( encoder == SEQ_UI_ENCODER_Datawheel ) {
     u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
-    switch( datawheel_mode ) {
-    case DATAWHEEL_MODE_SCROLL_CURSOR:
+    switch( seq_ui_edit_datawheel_mode ) {
+    case SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_CURSOR:
       if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 ) {
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1;
       } else
 	return 0;
 
-    case DATAWHEEL_MODE_SCROLL_VIEW:
+    case SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_VIEW:
       if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
 	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
 	  // select step within view
@@ -195,10 +189,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 0;
       }
 
-    case DATAWHEEL_MODE_CHANGE_VALUE:
+    case SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_VALUE:
       break; // drop... continue below with common encoder value change routine
 
-    case DATAWHEEL_MODE_CHANGE_PARLAYER: {
+    case SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_PARLAYER: {
       u8 num_layers = SEQ_PAR_NumLayersGet(visible_track);
 
       if( SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, num_layers-1, incrementer) >= 1 )
@@ -207,7 +201,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 0;
     } break;
 
-    case DATAWHEEL_MODE_CHANGE_TRGLAYER: {
+    case SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_TRGLAYER: {
       u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
 
       if( event_mode == SEQ_EVENT_MODE_Drum ) {
@@ -247,9 +241,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	if( incrementer == 0 ) // button
 	  incrementer = (encoder == SEQ_UI_ENCODER_GP9) ? -1 : 1;
 
-	if( SEQ_UI_Var8_Inc(&datawheel_mode, 0, DATAWHEEL_MODE_NUM-1, incrementer) >= 1 )
+	if( SEQ_UI_Var8_Inc(&seq_ui_edit_datawheel_mode, 0, SEQ_UI_EDIT_DATAWHEEL_MODE_NUM-1, incrementer) >= 1 ) {
+	  store_file_required = 1;
 	  return 1;
-	else
+	} else
 	  return 0;
       }
 
@@ -694,6 +689,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   if( high_prio )
     return 0; // there are no high-priority updates
 
+  if( !edit_mode && !seq_ui_button_state.EDIT_PRESSED )
+    CheckStoreFile(); // for Datawheel mode: stored on SD Card when edit has been depressed
+
 
   // layout common track:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
@@ -733,7 +731,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
   if( !edit_mode && seq_ui_button_state.EDIT_PRESSED ) {
-    const char datawheel_mode_str[DATAWHEEL_MODE_NUM][11] = {
+    const char seq_ui_edit_datawheel_mode_str[SEQ_UI_EDIT_DATAWHEEL_MODE_NUM][11] = {
       " Cursor   ",
       " StepView ",
       " Value    ",
@@ -745,7 +743,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LCD_PrintString("Step Trg  Layer 303                Step Datawheel:  Record   Random    Euclid   ");
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString("View View View View               Select");
-    SEQ_LCD_PrintString((char *)datawheel_mode_str[datawheel_mode]);
+    SEQ_LCD_PrintString((char *)seq_ui_edit_datawheel_mode_str[seq_ui_edit_datawheel_mode]);
     SEQ_LCD_PrintString("  Config  Generator Generator ");
     return 0; // no error
   }
@@ -1061,7 +1059,19 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // Second Line
   ///////////////////////////////////////////////////////////////////////////
 
-  u8 show_drum_triggers = (event_mode == SEQ_EVENT_MODE_Drum && (edit_mode || !ui_hold_msg_ctr));
+  u8 show_drum_triggers = event_mode == SEQ_EVENT_MODE_Drum;
+  if( show_drum_triggers && !(edit_mode || !ui_hold_msg_ctr) ) {
+    if( ui_hold_msg_ctr ) {
+      // e.g. during recording: show drum triggers for layers which can't be recorded
+      show_drum_triggers =
+	layer_type != SEQ_PAR_Type_Note &&
+	layer_type != SEQ_PAR_Type_Chord &&
+	layer_type != SEQ_PAR_Type_Velocity &&
+	layer_type != SEQ_PAR_Type_CC &&
+	layer_type != SEQ_PAR_Type_PitchBend &&
+	layer_type != SEQ_PAR_Type_ProgramChange;
+    }
+  }
 
   // extra handling for gatelength (shows vertical bars)
   if( !show_drum_triggers && layer_type == SEQ_PAR_Type_Length ) {
@@ -1154,13 +1164,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	SEQ_LCD_PrintChar(' ');
 	SEQ_LCD_PrintChar(gate_accent);
 	SEQ_LCD_PrintChar(' ');
-	SEQ_LCD_PrintChar(' ');
       } else {
 	int print_edit_value = (visible_step == edit_passive_step && PassiveEditValid()) ? edit_passive_value : -1;
 	SEQ_LCD_PrintLayerEvent(visible_track, visible_step, ui_selected_par_layer, ui_selected_instrument, 1, print_edit_value);
       }
 
-      if( !show_drum_triggers ) {
+      {
 	u8 midi_learn = seq_record_state.ENABLED || midi_learn_mode == MIDI_LEARN_MODE_ON;
 	char lbr = midi_learn ? '}' : '<';
 	char rbr = midi_learn ? '{' : '>';
@@ -1245,11 +1254,34 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Stores config file if required
+/////////////////////////////////////////////////////////////////////////////
+static s32 CheckStoreFile(void)
+{
+  if( store_file_required ) {
+    // write config file
+    MUTEX_SDCARD_TAKE;
+    s32 status;
+    if( (status=SEQ_FILE_GC_Write()) < 0 )
+      SEQ_UI_SDCardErrMsg(2000, status);
+    MUTEX_SDCARD_GIVE;
+
+    store_file_required = 0;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Exit
 /////////////////////////////////////////////////////////////////////////////
 static s32 EXIT_Handler(void)
 {
   midi_learn_mode = MIDI_LEARN_MODE_OFF;
+
+  CheckStoreFile();
+
   return 0;
 }
 

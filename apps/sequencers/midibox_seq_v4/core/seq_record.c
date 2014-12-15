@@ -594,9 +594,12 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   // temporary print edit screen
   // MBSEQV4L: only if a note ON event has been played
 #ifdef MBSEQV4L
-  if( midi_package.event == NoteOn )
+  if( rec_event && midi_package.event == NoteOn ) {
+#else
+  if( rec_event ) {
 #endif
     SEQ_RECORD_PrintEditScreen();
+  }
 
   return 0; // no error
 }

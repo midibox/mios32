@@ -138,7 +138,6 @@ typedef enum {
   SEQ_UI_EDIT_MODE_MANUAL
 } seq_ui_edit_mode_t;
 
-
 typedef enum {
   SEQ_UI_MSG_USER,
   SEQ_UI_MSG_USER_R,
@@ -162,6 +161,15 @@ typedef enum {
   SEQ_UI_EDIT_VIEW_303 = 3,
   SEQ_UI_EDIT_VIEW_STEPSEL = 8,
 } seq_ui_edit_view_t;
+
+typedef enum {
+  SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_CURSOR = 0,
+  SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_VIEW,
+  SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_VALUE,
+  SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_PARLAYER,
+  SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_TRGLAYER
+} seq_ui_edit_datawheel_mode_t;
+#define SEQ_UI_EDIT_DATAWHEEL_MODE_NUM 5
 
 typedef union {
   u8 ALL;
@@ -432,6 +440,7 @@ extern u8 seq_ui_saveall_req;
 extern char ui_global_dir_list[80];
 
 extern seq_ui_edit_view_t seq_ui_edit_view;
+extern seq_ui_edit_datawheel_mode_t seq_ui_edit_datawheel_mode;
 
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
