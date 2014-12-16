@@ -58,6 +58,8 @@ static u8 edit_passive_step;       // to store the step of the edit value
 static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 
+static u8 ui_hold_msg_ctr_drum_edit; // 1 if a drum parameter is edited
+
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1063,6 +1065,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     if( ui_hold_msg_ctr ) {
       // e.g. during recording: show drum triggers for layers which can't be recorded
       show_drum_triggers =
+	!ui_hold_msg_ctr_drum_edit &&
 	layer_type != SEQ_PAR_Type_Note &&
 	layer_type != SEQ_PAR_Type_Chord &&
 	layer_type != SEQ_PAR_Type_Velocity &&
@@ -1245,6 +1248,8 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     seq_record_options.ALL = prev_seq_record_options.ALL;
     seq_record_state.ENABLED = 0;
 
+    ui_hold_msg_ctr_drum_edit = 0;
+
     seq_ui_display_update_req = 1;
   }
 
@@ -1300,6 +1305,8 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   // disable MIDI learn mode by default
   midi_learn_mode = MIDI_LEARN_MODE_OFF;
 
+  ui_hold_msg_ctr_drum_edit = 0;
+
   edit_passive_mode = 0;
 
   if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL )
@@ -1343,6 +1350,9 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
     ui_hold_msg_ctr = 1000; // show value for 1 second
+    ui_hold_msg_ctr_drum_edit = 1;
+  } else {
+    ui_hold_msg_ctr_drum_edit = 0;
   }
 
   s32 old_value = SEQ_PAR_Get(track, par_step, ui_selected_par_layer, ui_selected_instrument);
