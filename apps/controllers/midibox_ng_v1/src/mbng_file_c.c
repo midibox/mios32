@@ -876,19 +876,73 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
       item.stream[item.stream_size++] = meta_type;
 
-      u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
-      int i;
-      for(i=0; i<num_bytes; ++i) {
-	int value = 0;
-	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
-	    (value=get_dec(values_str)) < 0 || value > 255 ) {
+      if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
+	// parse <id-type>:<id-value>:<min>:<max> (6 bytes)
+
+	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting %d values for meta type in EVENT_%s ... %s=%s\n", line, num_bytes, event, parameter, value_str);
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting 4 values for meta type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
 #endif
 	  return -1;
 	}
 
-	item.stream[item.stream_size++] = value;
+	mbng_event_item_id_t remote_id = MBNG_EVENT_ItemIdFromControllerStrGet(values_str);
+	if( remote_id == MBNG_EVENT_CONTROLLER_DISABLED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid controller '%s' for meta type in EVENT_%s ... %s=%s\n", line, values_str, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+	
+	s16 min = 0;
+	s16 max = 0;
+	int i;
+	for(i=0; i<3; ++i) {
+	  if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting 4 values for meta type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	    return -1;
+	  }
+
+	  int value = get_dec(values_str);
+	  if( value < -32768 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing or invalid value for meta type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	    return -1;
+	  }
+
+	  if( i == 0 ) {
+	    remote_id |= (value & 0xfff);
+	  } else if( i == 1 ) {
+	    min = (s16)value;
+	  } else if( i == 2 ) {
+	    max = (s16)value;
+	  }	  
+	}
+
+	item.stream[item.stream_size++] = (remote_id >> 0);
+	item.stream[item.stream_size++] = (remote_id >> 8);
+	item.stream[item.stream_size++] = (min >> 0);
+	item.stream[item.stream_size++] = (min >> 8);
+	item.stream[item.stream_size++] = (max >> 0);
+	item.stream[item.stream_size++] = (max >> 8);
+      } else {
+	u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+	int i;
+	for(i=0; i<num_bytes; ++i) {
+	  int value = 0;
+	  if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	      (value=get_dec(values_str)) < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting %d values for meta type in EVENT_%s ... %s=%s\n", line, num_bytes, event, parameter, value_str);
+#endif
+	    return -1;
+	  }
+
+	  item.stream[item.stream_size++] = value;
+	}
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3896,15 +3950,31 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	int i;
 	for(i=0; i<item.stream_size; ++i) {
 	  mbng_event_meta_type_t meta_type = item.stream[i];
-	  sprintf(line_buffer, " meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
-	  FLUSH_BUFFER;
 
-	  u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
-	  int j;
-	  for(j=0; j<num_bytes; ++j) {
-	    u8 meta_value = item.stream[++i];
-	    sprintf(line_buffer, ":%d", (int)meta_value);
+	  if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
+	    sprintf(line_buffer, " \\\n  meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
 	    FLUSH_BUFFER;
+
+	    i += 1; // instead of ++i in each stream[] read to avoid "warning: operation on 'i' may be undefined [-Wsequence-point]"
+	    mbng_event_item_id_t remote_id = item.stream[i] | ((u16)item.stream[i+1] << 8);
+	    i += 2;
+	    s16 min = item.stream[i+0] | ((u16)item.stream[i+1] << 8);
+	    i += 2;
+	    s16 max = item.stream[i+0] | ((u16)item.stream[i+1] << 8);
+	    i += 1;
+	    sprintf(line_buffer, ":%s:%d:%d:%d", MBNG_EVENT_ItemControllerStrGet(remote_id), remote_id & 0xfff, (int)min, (int)max);
+	    FLUSH_BUFFER;
+	  } else {
+	    sprintf(line_buffer, " meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
+	    FLUSH_BUFFER;
+
+	    u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
+	    int j;
+	    for(j=0; j<num_bytes; ++j) {
+	      u8 meta_value = item.stream[++i];
+	      sprintf(line_buffer, ":%d", (int)meta_value);
+	      FLUSH_BUFFER;
+	    }
 	  }
 	}
       } break;
