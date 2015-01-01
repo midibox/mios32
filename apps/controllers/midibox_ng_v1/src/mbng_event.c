@@ -2456,6 +2456,8 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
 
+  case MBNG_EVENT_META_TYPE_SEND_EVENT:          return "SendEvent";
+
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
 
   case MBNG_EVENT_META_TYPE_RESET_METERS:        return "ResetMeters";
@@ -2524,6 +2526,8 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
 
+  if( strcasecmp(meta_type, "SendEvent") == 0 )     return MBNG_EVENT_META_TYPE_SEND_EVENT;
+
   if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
 
   if( strcasecmp(meta_type, "ResetMeters") == 0 )   return MBNG_EVENT_META_TYPE_RESET_METERS;
@@ -2591,6 +2595,8 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_ENC_FAST:            return 0;
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return 0;
+
+  case MBNG_EVENT_META_TYPE_SEND_EVENT:          return 6;
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return 0;
 
@@ -2788,7 +2794,7 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
   for(i=0; i<item->stream_size; i++) {
     mbng_event_meta_type_t meta_type = item->stream[i+0];
     u8 num_bytes = MBNG_EVENT_ItemMetaNumBytesGet(meta_type);
-    u8 meta_value = item->stream[i+1]; // optional
+    u8 *meta_values = (u8 *)&item->stream[i+1];
     i += num_bytes;
 
     switch( meta_type ) {
@@ -2825,32 +2831,32 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
 
     case MBNG_EVENT_META_TYPE_SET_BANK_OF_HW_ID: {
       if( item->value ) {
-	MBNG_EVENT_HwIdBankSet(meta_value, item->value);
+	MBNG_EVENT_HwIdBankSet(meta_values[0], item->value);
       }
-      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+      item->value = MBNG_EVENT_HwIdBankGet(meta_values[0]); // take over the new bank value (allows to forward it to other components)
     } break;
 
     case MBNG_EVENT_META_TYPE_DEC_BANK_OF_HW_ID: {
-      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      int bank = MBNG_EVENT_HwIdBankGet(meta_values[0]);
       if( bank > 1 )
-	MBNG_EVENT_HwIdBankSet(meta_value, bank - 1);
-      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+	MBNG_EVENT_HwIdBankSet(meta_values[0], bank - 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_values[0]); // take over the new bank value (allows to forward it to other components)
     } break;
 
     case MBNG_EVENT_META_TYPE_INC_BANK_OF_HW_ID: {
-      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      int bank = MBNG_EVENT_HwIdBankGet(meta_values[0]);
       if( bank < MBNG_EVENT_NumBanksGet() )
-	MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
-      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+	MBNG_EVENT_HwIdBankSet(meta_values[0], bank + 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_values[0]); // take over the new bank value (allows to forward it to other components)
     } break;
 
     case MBNG_EVENT_META_TYPE_CYCLE_BANK_OF_HW_ID: {
-      int bank = MBNG_EVENT_HwIdBankGet(meta_value);
+      int bank = MBNG_EVENT_HwIdBankGet(meta_values[0]);
       if( bank < MBNG_EVENT_NumBanksGet() )
-	MBNG_EVENT_HwIdBankSet(meta_value, bank + 1);
+	MBNG_EVENT_HwIdBankSet(meta_values[0], bank + 1);
       else
-	MBNG_EVENT_HwIdBankSet(meta_value, 1);
-      item->value = MBNG_EVENT_HwIdBankGet(meta_value); // take over the new bank value (allows to forward it to other components)
+	MBNG_EVENT_HwIdBankSet(meta_values[0], 1);
+      item->value = MBNG_EVENT_HwIdBankGet(meta_values[0]); // take over the new bank value (allows to forward it to other components)
     } break;
 
 
@@ -2921,6 +2927,43 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       MBNG_EVENT_MidiLearnModeSet(item->value);
     } break;
 
+    case MBNG_EVENT_META_TYPE_SEND_EVENT: {
+      mbng_event_item_id_t remote_id = meta_values[0] | ((u16)meta_values[1] << 8);
+      s16 remote_min = meta_values[2] | ((u16)meta_values[3] << 8);
+      s16 remote_max = meta_values[4] | ((u16)meta_values[5] << 8);
+
+      //DEBUG_MSG("Remote ID=%s:%d min=%d max=%d\n", MBNG_EVENT_ItemControllerStrGet(remote_id), remote_id & 0xfff, (int)remote_min, (int)remote_max);
+
+      // determine controller position between 0..16383 (scale up to 14bit)
+      int scaled_value;
+      if( item->min > item->max ) {
+	int range_minus_one = item->min - item->max;
+	scaled_value = 16383 - ((16383 * (item->value - item->max)) / range_minus_one);
+      } else {
+	int range_minus_one = item->max - item->min;
+	scaled_value = (16383 * (item->value - item->min)) / range_minus_one;
+      }
+
+      // search for items with matching ID
+      mbng_event_item_t remote_item;
+      u32 continue_ix = 0;
+      while( MBNG_EVENT_ItemSearchById(remote_id, &remote_item, &continue_ix) >= 0 ) {
+
+	// scale value between min/max
+	// TODO: handle mapped values properly
+	if( remote_min > remote_max ) { // reverse?
+	  int remote_range = remote_min - remote_max + 1;
+	  remote_item.value = remote_min - ((scaled_value * remote_range) / 16384);
+	} else {
+	  int remote_range = remote_max - remote_min + 1;
+	  remote_item.value = ((scaled_value * remote_range) / 16384) + remote_min;
+	}
+
+	if( MBNG_EVENT_NotifySendValue(&remote_item) == 2 )
+	  break; // stop has been requested
+      }
+    } break;
+
     case MBNG_EVENT_META_TYPE_UPDATE_LCD: {
       MBNG_EVENT_Refresh();
     } break;
@@ -2936,7 +2979,7 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
     } break;
 
     case MBNG_EVENT_META_TYPE_RUN_SECTION: {
-      MBNG_FILE_R_ReadRequest(NULL, meta_value, item->value, 0);
+      MBNG_FILE_R_ReadRequest(NULL, meta_values[0], item->value, 0);
     } break;
 
     case MBNG_EVENT_META_TYPE_RUN_STOP: {
@@ -2979,27 +3022,27 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
 
 
     case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT: {
-      MBNG_CV_PitchSet(meta_value - 1, (int)item->value - 8192);
+      MBNG_CV_PitchSet(meta_values[0] - 1, (int)item->value - 8192);
     } break;
 
     case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT: {
-      MBNG_CV_PitchSet(meta_value - 1, 128 * ((int)item->value - 64));
+      MBNG_CV_PitchSet(meta_values[0] - 1, 128 * ((int)item->value - 64));
     } break;
 
     case MBNG_EVENT_META_TYPE_CV_PITCHRANGE: {
-      MBNG_CV_PitchRangeSet(meta_value - 1, item->value);
+      MBNG_CV_PitchRangeSet(meta_values[0] - 1, item->value);
     } break;
 
     case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE: {
-      MBNG_CV_TransposeOctaveSet(meta_value - 1, (int)item->value - 64);
+      MBNG_CV_TransposeOctaveSet(meta_values[0] - 1, (int)item->value - 64);
     } break;
 
     case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: {
-      MBNG_CV_TransposeSemitonesSet(meta_value - 1, (int)item->value - 64);
+      MBNG_CV_TransposeSemitonesSet(meta_values[0] - 1, (int)item->value - 64);
     } break;
 
     case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE: {
-      MBNG_KB_BreakIsMakeSet(meta_value-1, item->value);
+      MBNG_KB_BreakIsMakeSet(meta_values[0]-1, item->value);
     } break;
 
     case MBNG_EVENT_META_TYPE_SCS_ENC: {

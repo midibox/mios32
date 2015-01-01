@@ -12,6 +12,11 @@ MIDIbox NG V1.033
 
    o .NGR file: added "load <setup>" command which allows to switch to another setup (.NGC, .NGS, .NGR, ... files)
 
+   o implemented new meta command "SendEvent" which allows to remote control one or more events from a single event
+     within a given value range and direction.
+     See cfg/test/metalrn.ngc for a usage example
+     
+
 
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~
