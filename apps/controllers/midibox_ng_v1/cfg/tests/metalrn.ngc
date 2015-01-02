@@ -14,14 +14,20 @@ SCS soft1_button_emu_id=2000 \
 
 
 # Controlled from SCS buttons at J10 in main page
-EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
-EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
-EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
-EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+
+# Learn events for ENC1 and 2
+EVENT_BUTTON id=2000  type=Meta   meta=LearnEvent:ENC:1
+EVENT_BUTTON id=2001  type=Meta   meta=LearnEvent:ENC:2
+
+# MIDI learn (allows to assign an incoming CC to an encoder)
+EVENT_BUTTON id=2002  type=Meta   meta=MidiLearn  range=0:1
+
+# unused
+#EVENT_BUTTON id=2003  type=Meta
+
 EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
 
-# the SCS encoder at J10 just increments/decrements the bank
-# redundant function - could be changed in future
+# the SCS encoder at J10 increments/decrements the bank
 EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4
 
 # This is a dummy LED without assigned hardware (hw_id=2000 not used anywhere else) and without MIDI event.

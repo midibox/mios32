@@ -15,6 +15,9 @@ MIDIbox NG V1.033
    o implemented new meta command "SendEvent" which allows to remote control one or more events from a single event
      within a given value range and direction.
      See cfg/test/metalrn.ngc for a usage example
+
+   o implemented new meta command "LearnEvent" which allows to learn SendEvent based controller assignments during runtime.
+     See cfg/test/metalrn.ngc for a usage example
      
 
 

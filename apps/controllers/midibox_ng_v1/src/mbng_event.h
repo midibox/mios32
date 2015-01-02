@@ -182,6 +182,7 @@ typedef enum {
 
   MBNG_EVENT_META_TYPE_MIDI_LEARN,
 
+  MBNG_EVENT_META_TYPE_LEARN_EVENT,
   MBNG_EVENT_META_TYPE_SEND_EVENT,
 
   MBNG_EVENT_META_TYPE_UPDATE_LCD,
@@ -416,6 +417,10 @@ extern s32 MBNG_EVENT_MidiLearnModeGet(void);
 extern s32 MBNG_EVENT_MidiLearnStatusMsg(char *line1, char *line2);
 extern s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id);
 
+extern s32 MBNG_EVENT_EventLearnIdSet(mbng_event_item_id_t id);
+extern mbng_event_item_id_t MBNG_EVENT_EventLearnIdGet(void);
+extern s32 MBNG_EVENT_EventLearnStatusMsg(char *line1, char *line2);
+extern s32 MBNG_EVENT_EventLearnIt(mbng_event_item_t *item, u16 prev_value);
 
 extern s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all);
 extern s32 MBNG_EVENT_ItemSearchByIdAndPrint(mbng_event_item_id_t id);

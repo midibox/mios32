@@ -159,6 +159,14 @@ static mios32_midi_port_t    midi_learn_nrpn_port;
 static u16                   midi_learn_nrpn_address;
 static u16                   midi_learn_nrpn_value;
 
+static mbng_event_item_id_t  event_learn_id;
+static mbng_event_item_id_t  event_learn_remote_id;
+static s16                   event_learn_last_value;
+static s16                   event_learn_min;
+static s16                   event_learn_max;
+static u8                    event_learn_dir_up;
+
+
 // hardcoded "Logic Control Meters"
 // receive on USB1..USB4 and OUT1..OUT4
 #define LC_METERS_NUM_PORTS 8
@@ -1846,7 +1854,7 @@ static s32 MBNG_EVENT_LCMeters_Tick(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Enable/Get Learn Mode Status
+//! Enable/Get MIDI Learn Mode Status
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_MidiLearnModeSet(u8 mode)
 {
@@ -2027,10 +2035,10 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
     s32 status;
     if( (status=MBNG_EVENT_ItemModify(&item)) < 0 ) {
       if( status == -1 ) {
-	DEBUG_MSG("[MBNG_FILE_C] FATAL: unexpected malfunction of firmware while adding id=%s:%d!\n",
+	DEBUG_MSG("[MIDI_LEARN] FATAL: unexpected malfunction of firmware while modifying id=%s:%d!\n",
 		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
       } else {
-	DEBUG_MSG("[MBNG_FILE_C] ERROR: couldn't add id=%s:%d: out of memory!\n",
+	DEBUG_MSG("[MIDI_LEARN] ERROR: couldn't modify id=%s:%d: out of memory!\n",
 		  MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff);
       }
       MBNG_EVENT_MidiLearnModeSet(0); // disable learn mode
@@ -2042,6 +2050,191 @@ s32 MBNG_EVENT_MidiLearnIt(mbng_event_item_id_t hw_id)
   }
 
   MBNG_EVENT_MidiLearnModeSet(0); // disable learn mode
+
+  return 0; // no error
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Enable/Get Event Learn Mode Status
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_EventLearnIdSet(mbng_event_item_id_t id)
+{
+  event_learn_id = id;
+  event_learn_remote_id = 0;
+  event_learn_min = 0x8000;
+  event_learn_max = 0x8000;
+  event_learn_last_value = 0x8000;
+  event_learn_dir_up = 1;
+
+  return 0; // no error
+}
+
+mbng_event_item_id_t MBNG_EVENT_EventLearnIdGet(void)
+{
+  return event_learn_id;
+}
+
+s32 MBNG_EVENT_EventLearnStatusMsg(char *line1, char *line2)
+{
+  if( !event_learn_remote_id ) {
+    if( !line1[0] ) {
+      sprintf(line1, "Please move a       ");
+    }
+    sprintf(line2, "Controller...       ");
+  } else {
+    if( !line1[0] ) {
+      sprintf(line1, "%s:%-5d     %5d%c", 
+	      MBNG_EVENT_ItemControllerStrGet(event_learn_remote_id), event_learn_remote_id & 0xfff,
+	      (event_learn_last_value == 0x8000) ? 0 : event_learn_last_value,
+	      event_learn_dir_up ? '>' : '<');
+    }
+
+    sprintf(line2, "Min:%5d Max:%5d %c",
+	    (event_learn_min == 0x8000) ? 0 : event_learn_min,
+	    (event_learn_max == 0x8000) ? 127 : event_learn_max,
+	    event_learn_dir_up ? '>' : '<');
+  }
+
+  return 0; // no error
+}
+
+s32 MBNG_EVENT_EventLearnIt(mbng_event_item_t *item, u16 prev_value)
+{
+  if( !event_learn_id )
+    return 0; // nothing to learn...
+
+  if( item->id == event_learn_id )
+    return 0; // not possible (to avoid recursions)
+
+  if( item->flags.type == MBNG_EVENT_TYPE_META ) // Meta buttons can't be learnt
+    return 0; // Meta functions can't be learnt
+
+  // new controller?
+  u8 reinit_stream = 0;
+  u8 update_required = 0;
+  if( item->id != event_learn_remote_id ) {
+    update_required = 1;
+
+    // initial controller: delete stream
+    if( !event_learn_remote_id )
+      reinit_stream = 1;
+
+    event_learn_remote_id = item->id;
+    event_learn_min = prev_value;
+    event_learn_max = prev_value;
+  }
+
+  if( item->value < event_learn_min ) {
+    event_learn_min = item->value;
+    update_required = 1;
+  }
+
+  if( item->value > event_learn_max ) {
+    event_learn_max = item->value;
+    update_required = 1;
+  }
+
+  if( event_learn_last_value != 0x8000 ) {
+    u8 new_dir = item->value >= event_learn_last_value;
+    if( new_dir != event_learn_dir_up ) {
+      event_learn_dir_up = new_dir;
+      update_required = 1;
+    }
+  }
+  event_learn_last_value = item->value;
+
+  if( update_required ) {
+    // search for ID
+    mbng_event_item_t meta_item;
+    u32 continue_ix = 0;
+    if( MBNG_EVENT_ItemSearchById(event_learn_id, &meta_item, &continue_ix) < 0 ) {
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[EVENT_LEARN] ERROR: meta item id=%s:%d doesn't exist.\n", MBNG_EVENT_ItemControllerStrGet(event_learn_id), event_learn_id & 0xfff);
+      }
+      return 0; // id doesn't exist -> no learn
+    }
+
+    if( reinit_stream ) {
+      meta_item.stream_size = 0;
+    }
+
+    // min/max range depends on direction
+    u16 min = event_learn_dir_up ? event_learn_min : event_learn_max;
+    u16 max = event_learn_dir_up ? event_learn_max : event_learn_min;
+
+    // search for controller in existing stream
+    // if found: only modify value
+    if( meta_item.stream_size ) {
+      int i;
+      for(i=0; i<meta_item.stream_size; i+=7) {
+	mbng_event_item_id_t remote_id = meta_item.stream[i+1] | ((u16)meta_item.stream[i+2] << 8);
+	if( remote_id == event_learn_remote_id ) {
+	  if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	    DEBUG_MSG("[EVENT_LEARN] Updated Min/Max value of %s:%d (min=%d, max=%d)!",
+		      MBNG_EVENT_ItemControllerStrGet(event_learn_remote_id), event_learn_remote_id & 0xfff,
+		      event_learn_min, event_learn_max);
+	  }
+
+	  meta_item.stream[i+3] = min >> 0;
+	  meta_item.stream[i+4] = min >> 8;
+	  meta_item.stream[i+5] = max >> 0;
+	  meta_item.stream[i+6] = max >> 8;
+	  return 0;
+	}
+      }
+    }
+
+    // new controller assignment
+    // copy item stream into tmp. stream
+    u8 stream[255]; // max stream size...
+    if( meta_item.stream_size >= (255-7) ) {
+      if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+	DEBUG_MSG("[EVENT_LEARN] ERROR: meta stream full - no additional controller can be assigned!");
+      }
+      return 0;
+    }
+
+    if( meta_item.stream_size )
+      memcpy(stream, meta_item.stream, meta_item.stream_size);
+
+    // add new controller event
+    int offset = meta_item.stream_size;
+    stream[offset+0] = MBNG_EVENT_META_TYPE_SEND_EVENT;
+    stream[offset+1] = event_learn_remote_id >> 0;
+    stream[offset+2] = event_learn_remote_id >> 8;
+    stream[offset+3] = min >> 0;
+    stream[offset+4] = min >> 8;
+    stream[offset+5] = max >> 0;
+    stream[offset+6] = max >> 8;
+
+    // link to new stream
+    meta_item.stream = (u8 *)&stream[0];
+    meta_item.stream_size += 7;
+
+    // just to ensure...
+    meta_item.flags.type = MBNG_EVENT_TYPE_META;
+
+    // modify in pool
+    s32 status;
+    if( (status=MBNG_EVENT_ItemModify(&meta_item)) < 0 ) {
+      if( status == -1 ) {
+	DEBUG_MSG("[EVENT_LEARN] FATAL: unexpected malfunction of firmware while modifying id=%s:%d!\n",
+		  MBNG_EVENT_ItemControllerStrGet(event_learn_id), event_learn_id & 0xfff);
+      } else {
+	DEBUG_MSG("[EVENT_LEARN] ERROR: couldn't modify id=%s:%d: out of memory!\n",
+		  MBNG_EVENT_ItemControllerStrGet(event_learn_id), event_learn_id & 0xfff);
+      }
+      return -3; // out of memory...
+    }
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      DEBUG_MSG("[EVENT_LEARN] Added new Controller %s:%d (min=%d, max=%d)!",
+		MBNG_EVENT_ItemControllerStrGet(event_learn_remote_id), event_learn_remote_id & 0xfff,
+		event_learn_min, event_learn_max);
+    }
+  }
 
   return 0; // no error
 }
@@ -2456,6 +2649,7 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return "MidiLearn";
 
+  case MBNG_EVENT_META_TYPE_LEARN_EVENT:         return "LearnEvent";
   case MBNG_EVENT_META_TYPE_SEND_EVENT:          return "SendEvent";
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return "UpdateLcd";
@@ -2526,6 +2720,7 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
 
   if( strcasecmp(meta_type, "MidiLearn") == 0 )     return MBNG_EVENT_META_TYPE_MIDI_LEARN;
 
+  if( strcasecmp(meta_type, "LearnEvent") == 0 )    return MBNG_EVENT_META_TYPE_LEARN_EVENT;
   if( strcasecmp(meta_type, "SendEvent") == 0 )     return MBNG_EVENT_META_TYPE_SEND_EVENT;
 
   if( strcasecmp(meta_type, "UpdateLcd") == 0 )     return MBNG_EVENT_META_TYPE_UPDATE_LCD;
@@ -2596,6 +2791,7 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_MIDI_LEARN:          return 0;
 
+  case MBNG_EVENT_META_TYPE_LEARN_EVENT:         return 2;
   case MBNG_EVENT_META_TYPE_SEND_EVENT:          return 6;
 
   case MBNG_EVENT_META_TYPE_UPDATE_LCD:          return 0;
@@ -2927,7 +3123,16 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       MBNG_EVENT_MidiLearnModeSet(item->value);
     } break;
 
+    case MBNG_EVENT_META_TYPE_LEARN_EVENT: {
+      mbng_event_item_id_t remote_id = meta_values[0] | ((u16)meta_values[1] << 8);
+      MBNG_EVENT_EventLearnIdSet(item->value ? remote_id : 0);
+    } break;
+
     case MBNG_EVENT_META_TYPE_SEND_EVENT: {
+      if( MBNG_EVENT_EventLearnIdGet() ) { // not in learn mode
+	break;
+      }
+
       mbng_event_item_id_t remote_id = meta_values[0] | ((u16)meta_values[1] << 8);
       s16 remote_min = meta_values[2] | ((u16)meta_values[3] << 8);
       s16 remote_max = meta_values[4] | ((u16)meta_values[5] << 8);
@@ -3598,6 +3803,9 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
       }
     }
   }
+
+  // Event Learn
+  MBNG_EVENT_EventLearnIt(item, prev_value);
 
   // send MIDI event
   MBNG_EVENT_ItemSend(item);

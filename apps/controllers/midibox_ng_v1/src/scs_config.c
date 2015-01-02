@@ -557,6 +557,9 @@ static s32 displayHook(char *line1, char *line2)
     if( MBNG_EVENT_MidiLearnModeGet() ) {
       MBNG_EVENT_MidiLearnStatusMsg(line1, line2);
       SCS_DisplayUpdateRequest(); // fast updates
+    } else if( MBNG_EVENT_EventLearnIdGet() ) {
+      MBNG_EVENT_EventLearnStatusMsg(line1, line2);
+      SCS_DisplayUpdateRequest(); // fast updates
     }
 
     return 1;
