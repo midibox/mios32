@@ -669,4 +669,6 @@ Wishlist
 
 automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
 
+AOUT mapping: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=167869
+
 --------------------------------------------------------------------------------
