@@ -239,10 +239,10 @@ void APP_Background(void)
     MIOS32_LCD_FontInit((u8 *)GLCD_FONT_NORMAL);
     SCS_Tick();
 
-    SCS_DisplayUpdateInMainPage(MBNG_EVENT_MidiLearnModeGet() ? 1 : 0);
+    SCS_DisplayUpdateInMainPage((MBNG_EVENT_MidiLearnModeGet() || MBNG_EVENT_EventLearnIdGet()) ? 1 : 0);
 
     // LCD output in mainpage
-    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() ) {
+    if( SCS_MenuStateGet() == SCS_MENU_STATE_MAINPAGE && !MBNG_EVENT_MidiLearnModeGet() && !MBNG_EVENT_EventLearnIdGet() ) {
       u8 force = isInMainPage == 0;
       if( force ) { // page change
 	MBNG_LCD_SpecialCharsReInit();
@@ -259,7 +259,7 @@ void APP_Background(void)
 
       isInMainPage = 1; // static reminder
     } else {
-      if( isInMainPage && MBNG_EVENT_MidiLearnModeGet() ) {
+      if( isInMainPage && (MBNG_EVENT_MidiLearnModeGet() || MBNG_EVENT_EventLearnIdGet()) ) {
 	SCS_LCD_Update(1); // force display update when learn mode is entered in mainpage
       }
 

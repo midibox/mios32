@@ -876,7 +876,37 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
       item.stream[item.stream_size++] = meta_type;
 
-      if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
+      if( meta_type == MBNG_EVENT_META_TYPE_LEARN_EVENT ) {
+	// parse <id-type>:<id-value>(2 bytes)
+
+	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: expecting 2 values for meta type in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+
+	mbng_event_item_id_t remote_id = MBNG_EVENT_ItemIdFromControllerStrGet(values_str);
+	if( remote_id == MBNG_EVENT_CONTROLLER_DISABLED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid controller '%s' for meta type in EVENT_%s ... %s=%s\n", line, values_str, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+
+	int id_lower = 0;
+	if( !(value_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	    (id_lower=get_dec(value_str)) < 1 || id_lower > 0xfff ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid id in LearnEvent EVENT_%s ... %s=%s (expect 1..%d)\n", line, event, parameter, value_str, 0xfff);
+#endif
+	  return -1;
+	}
+	remote_id |= id_lower;
+
+	item.stream[item.stream_size++] = (remote_id >> 0);
+	item.stream[item.stream_size++] = (remote_id >> 8);
+      } else if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
 	// parse <id-type>:<id-value>:<min>:<max> (6 bytes)
 
 	if( !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ) {
@@ -3951,7 +3981,16 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	for(i=0; i<item.stream_size; ++i) {
 	  mbng_event_meta_type_t meta_type = item.stream[i];
 
-	  if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
+	  if( meta_type == MBNG_EVENT_META_TYPE_LEARN_EVENT ) {
+	    sprintf(line_buffer, " meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
+	    FLUSH_BUFFER;
+
+	    i += 1; // instead of ++i in each stream[] read to avoid "warning: operation on 'i' may be undefined [-Wsequence-point]"
+	    mbng_event_item_id_t remote_id = item.stream[i] | ((u16)item.stream[i+1] << 8);
+	    i += 1;
+	    sprintf(line_buffer, ":%s:%d", MBNG_EVENT_ItemControllerStrGet(remote_id), remote_id & 0xfff);
+	    FLUSH_BUFFER;
+	  } else if( meta_type == MBNG_EVENT_META_TYPE_SEND_EVENT ) {
 	    sprintf(line_buffer, " \\\n  meta=%s", MBNG_EVENT_ItemMetaTypeStrGet(meta_type));
 	    FLUSH_BUFFER;
 
