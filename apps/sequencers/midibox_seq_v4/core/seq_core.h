@@ -269,6 +269,7 @@ extern u16 seq_core_trk_muted;
 extern u16 seq_core_trk_synched_mute;
 extern u16 seq_core_trk_synched_unmute;
 extern seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
+extern u16 seq_core_trk_soloed;
 
 extern u8 seq_core_step_update_req;
 

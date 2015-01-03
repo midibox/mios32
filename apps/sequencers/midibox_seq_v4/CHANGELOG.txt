@@ -11,6 +11,22 @@ MIDIboxSEQ V4.088
 
    o improved glide function for polyphonic steps
 
+   o BLM16x16+X support for Mute and Solo
+     The new functions are available at Extra Row Button #3 and #4
+     (if a BLM16x8+X is connected, they replace Start/Stop at Extra Row Button #1 and #2)
+
+     If Mute active: the extra column buttons mute/unmute tracks
+     If Solo active: the extra column buttons solo/unsolo tracks
+
+     LED Colour coding:
+     - LED off: Track won't play (due to Mute or Solo)
+     - LED green: Solo not active and track not muted
+     - LED yellow: Track soloed
+
+     Special Key combinations:
+     - ALT+Mute clears all mutes
+     - ALT+Solo clears all solos
+
 
 MIDIboxSEQ V4.087
 ~~~~~~~~~~~~~~~~~
