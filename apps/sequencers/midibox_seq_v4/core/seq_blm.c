@@ -1591,9 +1591,29 @@ s32 SEQ_BLM_LED_Update(void)
   // can be overwritten by SEQ_BLM_LED_Update* functions
   {
     if( blm_mute_solo_active ) { // Mute or Solo Tracks
+#if 0
+      // LED Colour coding:
+      // - LED off: Track won't play (due to Mute or Solo)
+      // - LED green: Solo not active and track not muted
+      // - LED yellow: Track soloed
       u16 unmuted_or_solo = (seq_core_trk_soloed ? 0x0000 : (seq_core_trk_muted ^ 0xffff)) | seq_core_trk_soloed;
       blm_leds_extracolumn_green = 0xffff & unmuted_or_solo;
       blm_leds_extracolumn_red = seq_core_trk_soloed & unmuted_or_solo;
+#else
+      // LED Colour coding (compliant with LED handling in MUTE page)
+      // - LED off: Track neither muted nor soloed
+      // - LED green: Track muted
+      // - LED yellow: Track soloed
+      // - LED red: Track muted and soloed - solo has higher priority, therefore track will be played
+      if( seq_core_trk_soloed ) {
+	u16 muted_and_solo = seq_core_trk_muted & seq_core_trk_soloed;
+	blm_leds_extracolumn_green = (seq_core_trk_muted | seq_core_trk_soloed) & (muted_and_solo ^ 0xffff);
+	blm_leds_extracolumn_red = seq_core_trk_soloed | muted_and_solo;
+      } else {
+	blm_leds_extracolumn_green = seq_core_trk_muted;
+	blm_leds_extracolumn_red = 0x0000;
+      }
+#endif
     } else {
       blm_leds_extracolumn_green = ui_selected_tracks;
       blm_leds_extracolumn_red = seq_core_trk_muted;
