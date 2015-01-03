@@ -19,9 +19,10 @@ MIDIboxSEQ V4.088
      If Solo active: the extra column buttons solo/unsolo tracks
 
      LED Colour coding:
-     - LED off: Track won't play (due to Mute or Solo)
-     - LED green: Solo not active and track not muted
+     - LED off: Track neither muted nor soloed
+     - LED green: Track muted
      - LED yellow: Track soloed
+     - LED red: Track muted and soloed - solo has higher priority, therefore track will be played
 
      Special Key combinations:
      - ALT+Mute clears all mutes
