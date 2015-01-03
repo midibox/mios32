@@ -1274,11 +1274,16 @@ static s32 SEQ_UI_Button_Solo(s32 depressed)
   if( seq_hwcfg_button_beh.solo ) {
     // toggle mode
     if( depressed ) return -1; // ignore when button depressed
-    seq_ui_button_state.SOLO ^= 1;
+    seq_ui_button_state.SOLO ^= 1;    
   } else {
     // set mode
     seq_ui_button_state.SOLO = depressed ? 0 : 1;
   }
+
+  // seq_core_trk_soloed currently only used for the BLM16x16+X
+  // which overrules the legacy SOLO function
+  if( !seq_ui_button_state.SOLO )
+    seq_core_trk_soloed = 0;
 
   return 0; // no error
 }

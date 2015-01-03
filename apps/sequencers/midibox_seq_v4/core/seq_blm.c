@@ -93,6 +93,8 @@ typedef enum {
   BLM_SELECTION_NONE,
   BLM_SELECTION_START,
   BLM_SELECTION_STOP,
+  BLM_SELECTION_MUTE,
+  BLM_SELECTION_SOLO,
   BLM_SELECTION_ALT,
   BLM_SELECTION_UPPER_TRACKS,
   BLM_SELECTION_GRID,
@@ -220,13 +222,14 @@ static u8 blm_num_rows;
 static u8 blm_num_colours;
 static u8 blm_force_update;
 static u8 blm_shift_active;
+static u8 blm_mute_solo_active; // 0=off, 1=mute, 2=solo
 static u8 blm_alt_active;
 static u8 blm_root_key;
 
 
 static const blm_selection_t mode_selections_8rows[16] = {
-  BLM_SELECTION_START,
-  BLM_SELECTION_STOP,
+  BLM_SELECTION_MUTE,
+  BLM_SELECTION_SOLO,
   BLM_SELECTION_UPPER_TRACKS,
   BLM_SELECTION_KEYBOARD,
   BLM_SELECTION_PATTERNS,
@@ -246,8 +249,8 @@ static const blm_selection_t mode_selections_8rows[16] = {
 static const blm_selection_t mode_selections_16rows[16] = {
   BLM_SELECTION_START,
   BLM_SELECTION_STOP,
-  BLM_SELECTION_NONE,
-  BLM_SELECTION_NONE,
+  BLM_SELECTION_MUTE,
+  BLM_SELECTION_SOLO,
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
   BLM_SELECTION_NONE,
@@ -280,6 +283,7 @@ s32 SEQ_BLM_Init(u32 mode)
   blm_num_colours = 2;
   blm_force_update = 0;
   blm_shift_active = 0;
+  blm_mute_solo_active = 0;
   blm_alt_active = 0;
   blm_root_key = 0x30;
 
@@ -736,18 +740,6 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 	blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
       }
       blm_leds_extracolumn_red = blm_leds_extracolumn_green;
-    } else {
-      blm_leds_extracolumn_green = ui_selected_tracks;
-      blm_leds_extracolumn_red = seq_core_trk_muted;
-
-      if( blm_num_rows <= 8 ) {
-	if( ui_selected_group >= 2 ) {
-	  blm_leds_extracolumn_green >>= 8;
-	  blm_leds_extracolumn_red >>= 8;
-	}
-	blm_leds_extracolumn_green &= 0xff;
-	blm_leds_extracolumn_red &= 0xff;
-      }
     }
 
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
@@ -962,18 +954,6 @@ static s32 SEQ_BLM_LED_UpdateTrackMode(void)
     if( blm_alt_active == 3 ) {
       blm_leds_extracolumn_green = 1 << ui_selected_trg_layer;
       blm_leds_extracolumn_red = blm_leds_extracolumn_green;
-    } else {
-      blm_leds_extracolumn_green = ui_selected_tracks;
-      blm_leds_extracolumn_red = seq_core_trk_muted;
-
-      if( blm_num_rows <= 8 ) {
-	if( ui_selected_group >= 2 ) {
-	  blm_leds_extracolumn_green >>= 8;
-	  blm_leds_extracolumn_red >>= 8;
-	}
-	blm_leds_extracolumn_green &= 0xff;
-	blm_leds_extracolumn_red &= 0xff;
-      }
     }
 
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
@@ -1053,18 +1033,6 @@ static s32 SEQ_BLM_LED_UpdatePatternMode(void)
     blm_leds_extrarow_red = 0x0000;
   } else {
     u8 visible_track = SEQ_UI_VisibleTrackGet();
-    blm_leds_extracolumn_green = ui_selected_tracks;
-    blm_leds_extracolumn_red = seq_core_trk_muted;
-
-    if( blm_num_rows <= 8 ) {
-      if( ui_selected_group >= 2 ) {
-	blm_leds_extracolumn_green >>= 8;
-	blm_leds_extracolumn_red >>= 8;
-      }
-      blm_leds_extracolumn_green &= 0xff;
-      blm_leds_extracolumn_red &= 0xff;
-    }
-
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
     if( num_steps > 128 )
       blm_leds_extrarow_green = 1 << ui_selected_step_view;
@@ -1243,18 +1211,6 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
       u8 octave = blm_root_key / 12;
       blm_leds_extracolumn_green = (blm_num_rows <= 8) ? (1 << (7-octave)) : (1 << (15-octave));
       blm_leds_extracolumn_red = blm_leds_extracolumn_green;
-    } else {
-      blm_leds_extracolumn_green = ui_selected_tracks;
-      blm_leds_extracolumn_red = seq_core_trk_muted;
-
-      if( blm_num_rows <= 8 ) {
-	if( ui_selected_group >= 2 ) {
-	  blm_leds_extracolumn_green >>= 8;
-	  blm_leds_extracolumn_red >>= 8;
-	}
-	blm_leds_extracolumn_green &= 0xff;
-	blm_leds_extracolumn_red &= 0xff;
-      }
     }
 
     u8 transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
@@ -1518,18 +1474,6 @@ static s32 SEQ_BLM_LED_Update303Mode(void)
     blm_leds_extrarow_green = 0x0000;
     blm_leds_extrarow_red = 0x0000;
   } else {
-    blm_leds_extracolumn_green = ui_selected_tracks;
-    blm_leds_extracolumn_red = seq_core_trk_muted;
-
-    if( blm_num_rows <= 8 ) {
-      if( ui_selected_group >= 2 ) {
-	blm_leds_extracolumn_green >>= 8;
-	blm_leds_extracolumn_red >>= 8;
-      }
-      blm_leds_extracolumn_green &= 0xff;
-      blm_leds_extracolumn_red &= 0xff;
-    }
-
     int num_steps = SEQ_TRG_NumStepsGet(visible_track);
     if( num_steps > 128 )
       blm_leds_extrarow_green = 1 << ui_selected_step_view;
@@ -1629,17 +1573,40 @@ s32 SEQ_BLM_LED_Update(void)
   blm_led_row_offset = 0;
 
   // (always present)
-  blm_leds_extracolumn_shift_green = 0x0000;
-  // TODO: dirty - actually we should differ between mode_selections_8rows/16rows
-  if( blm_num_rows <= 8 ) {
-    blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x80 : 0x00) | (1 << (6-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x01 : 0x02);
+  {
+    blm_leds_extracolumn_shift_green = 0x0000;
+    // TODO: dirty - actually we should differ between mode_selections_8rows/16rows
+    if( blm_num_rows <= 8 ) {
+      blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x80 : 0x00) | (1 << (6-blm_mode)) | (blm_mute_solo_active & 3);
 
-    if( ui_selected_group >= 2 )
-      blm_leds_extracolumn_shift_red |= 0x04;
-    else
-      blm_leds_extracolumn_shift_green |= 0x04;
-  } else {
-    blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x8000 : 0x0000) | (1 << (14-blm_mode)) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+      if( ui_selected_group >= 2 )
+	blm_leds_extracolumn_shift_red |= 0x04;
+      else
+	blm_leds_extracolumn_shift_green |= 0x04;
+    } else {
+      blm_leds_extracolumn_shift_red = (blm_alt_active ? 0x8000 : 0x0000) | (1 << (14-blm_mode)) | ((blm_mute_solo_active & 3) << 2) | (SEQ_BPM_IsRunning() ? 0x0001 : 0x0002);
+    }
+  }
+
+  // can be overwritten by SEQ_BLM_LED_Update* functions
+  {
+    if( blm_mute_solo_active ) { // Mute or Solo Tracks
+      u16 unmuted_or_solo = (seq_core_trk_soloed ? 0x0000 : (seq_core_trk_muted ^ 0xffff)) | seq_core_trk_soloed;
+      blm_leds_extracolumn_green = 0xffff & unmuted_or_solo;
+      blm_leds_extracolumn_red = seq_core_trk_soloed & unmuted_or_solo;
+    } else {
+      blm_leds_extracolumn_green = ui_selected_tracks;
+      blm_leds_extracolumn_red = seq_core_trk_muted;
+    }
+
+    if( blm_num_rows <= 8 ) {
+      if( ui_selected_group >= 2 ) {
+	blm_leds_extracolumn_green >>= 8;
+	blm_leds_extracolumn_red >>= 8;
+      }
+      blm_leds_extracolumn_green &= 0xff;
+      blm_leds_extracolumn_red &= 0xff;
+    }
   }
 
   switch( blm_mode ) {
@@ -2056,10 +2023,13 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 
 	  u16 track_mask = 1 << new_track;
 
-#ifdef MBSEQV4L
-	  if( ui_selected_tracks & track_mask ) // track already selected: mute it
+	  if( blm_mute_solo_active == 1 ) { // Mute Tracks
 	    seq_core_trk_muted ^= track_mask;
-	  else { // track not selected yet: select it now
+	  } else if( blm_mute_solo_active == 2 ) { // Solo Tracks
+	    seq_core_trk_soloed ^= track_mask;
+	    seq_ui_button_state.SOLO = seq_core_trk_soloed ? 1 : 0;
+	  } else {
+#ifdef MBSEQV4L
 	    ui_selected_tracks = (new_track >= 8) ? 0xff00 : 0x00ff;
 	    blm_force_update = 1;	
 
@@ -2072,19 +2042,15 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 	      if( (seq_record_state.ARMED_TRACKS & 0xff00) )
 		seq_record_state.ARMED_TRACKS = 0x00ff;
 	    }
-	  }
 #else
-	  if( ui_selected_tracks & track_mask ) // track already selected: mute it
-	    seq_core_trk_muted ^= track_mask;
-	  else { // track not selected yet: select it now
 	    ui_selected_tracks = track_mask;
 	    ui_selected_group = (new_track / 4);
 	    blm_force_update = 1;	
 
 	    // set/clear encoder fast function if required
 	    SEQ_UI_InitEncSpeed(1); // auto config
-	  }
 #endif
+	  }
 	}
 	return 1; // MIDI event has been taken
       } else {
@@ -2110,6 +2076,31 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
 		SEQ_SONG_Reset(0);
 		SEQ_CORE_Reset(0);
 		SEQ_MIDPLY_Reset();
+	      }
+	    }
+	    return 1; // MIDI event has been taken
+
+	  case BLM_SELECTION_MUTE:
+	    if( midi_package.velocity > 0 ) {
+	      if( blm_alt_active ) {
+		seq_core_trk_muted = 0;
+	      } else {
+		// if mute already active: clear mute mode
+		// otherwise select mute mode
+		blm_mute_solo_active = (blm_mute_solo_active == 1) ? 0 : 1;
+	      }
+	    }
+	    return 1; // MIDI event has been taken
+
+	  case BLM_SELECTION_SOLO:
+	    if( midi_package.velocity > 0 ) {
+	      if( blm_alt_active ) {
+		seq_core_trk_soloed = 0;
+		seq_ui_button_state.SOLO = 0;
+	      } else {
+		// if solo already active: clear solo mode
+		// otherwise select solo mode
+		blm_mute_solo_active = (blm_mute_solo_active == 2) ? 0 : 2;
 	      }
 	    }
 	    return 1; // MIDI event has been taken

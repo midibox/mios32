@@ -85,6 +85,7 @@ u16 seq_core_trk_muted;
 u16 seq_core_trk_synched_mute;
 u16 seq_core_trk_synched_unmute;
 seq_core_slaveclk_mute_t seq_core_slaveclk_mute;
+u16 seq_core_trk_soloed;
 
 u8 seq_core_step_update_req;
 
@@ -136,6 +137,7 @@ s32 SEQ_CORE_Init(u32 mode)
 
   seq_core_trk_muted = 0;
   seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
+  seq_core_trk_soloed = 0;
   seq_core_options.ALL = 0;
   if( mode == 0 ) {
     seq_core_options.INIT_CC = 64;
@@ -960,8 +962,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	// mute for non-loopback tracks activated
 	// MIDI player in exclusive mode
 	// Record Mode, new step and FWD_MIDI off
-        if( (seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
-	    (seq_core_trk_muted & (1 << track)) || // Track Mute function
+	u8 track_soloed = seq_core_trk_soloed && (seq_core_trk_soloed & (1 << track));
+        if( (!seq_core_trk_soloed && seq_ui_button_state.SOLO && !SEQ_UI_IsSelectedTrack(track)) ||
+	    (seq_core_trk_soloed && !track_soloed) ||
+	    (!track_soloed && (seq_core_trk_muted & (1 << track))) || // Track Mute function
 	    seq_core_slaveclk_mute || // Slave Clock Mute Function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
