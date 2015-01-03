@@ -367,7 +367,7 @@ void BUTTON_NotifyToggle(u8 row, u8 column, u8 depressed)
       u16 timestamp_break = din_activated_timestamp[pin_break];
       u16 timestamp_make = din_activated_timestamp[pin_make];
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
-      s16 delay = timestamp_make - timestamp_break;
+      u16 delay = timestamp_make - timestamp_break;
 
       int velocity = 127;
       if( delay > keyboard_delay_fastest ) {

@@ -86,7 +86,7 @@ extern s32 KEYBOARD_NOTIFY_TOGGLE_HOOK(u8 kb, u8 note_number, u8 velocity);
 static s32 KEYBOARD_MIDI_SendCtrl(u8 kb, u8 ctrl_number, u8 value);
 #endif
 static char *KEYBOARD_GetNoteName(u8 note, char str[4]);
-static int KEYBOARD_GetVelocity(s16 delay, u16 delay_slowest, u16 delay_fastest);
+static int KEYBOARD_GetVelocity(u16 delay, u16 delay_slowest, u16 delay_fastest);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -575,7 +575,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	  DEBUG_MSG("RELEASED note=%s\n", KEYBOARD_GetNoteName(note_number, note_str));
 	// and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
         MIOS32_IRQ_Disable();
-	s16 delay = *ts_break_ptr - *ts_make_ptr;
+	u16 delay = *ts_break_ptr - *ts_make_ptr;
 	*ts_make_ptr = 0;
 	*ts_break_ptr = 0;
         MIOS32_IRQ_Enable();
@@ -628,7 +628,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	 !(din_value_changed[kb][row_break] & key16_mask) && !(din_value[kb][row_break] & key16_mask)) ) {
       // and the delta delay (IMPORTANT: delay variable needs same resolution like timestamps to handle overrun correctly!)
       MIOS32_IRQ_Disable();
-      s16 delay = *ts_make_ptr - *ts_break_ptr;
+      u16 delay = *ts_make_ptr - *ts_break_ptr;
       *ts_break_ptr = 0;
       *ts_make_ptr = 0;
       MIOS32_IRQ_Enable();
@@ -799,7 +799,7 @@ void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 // Help function to get MIDI velocity from measured delay
 /////////////////////////////////////////////////////////////////////////////
-static int KEYBOARD_GetVelocity(s16 delay, u16 delay_slowest, u16 delay_fastest)
+static int KEYBOARD_GetVelocity(u16 delay, u16 delay_slowest, u16 delay_fastest)
 {
   int velocity = 127;
 
