@@ -27,12 +27,14 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS           5
-#define ITEM_GXTY              0
-#define ITEM_HUMANIZE_OCTAVE   1
-#define ITEM_HUMANIZE_NOTE     2
-#define ITEM_HUMANIZE_VELOCITY 3
-#define ITEM_HUMANIZE_LENGTH   4
+#define NUM_OF_ITEMS                7
+#define ITEM_GXTY                   0
+#define ITEM_HUMANIZE_PROBABILITY   1
+#define ITEM_HUMANIZE_SKIP          2
+#define ITEM_HUMANIZE_OCTAVE        3
+#define ITEM_HUMANIZE_NOTE          4
+#define ITEM_HUMANIZE_VELOCITY      5
+#define ITEM_HUMANIZE_LENGTH        6
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,10 +47,12 @@ static s32 LED_Handler(u16 *gp_leds)
 
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_HUMANIZE_OCTAVE: *gp_leds = 0x000e; break;
-    case ITEM_HUMANIZE_NOTE: *gp_leds = 0x0010; break;
-    case ITEM_HUMANIZE_VELOCITY: *gp_leds = 0x0020; break;
-    case ITEM_HUMANIZE_LENGTH: *gp_leds = 0x00c0; break;
+    case ITEM_HUMANIZE_PROBABILITY: *gp_leds = 0x0002; break;
+    case ITEM_HUMANIZE_SKIP: *gp_leds = 0x0008; break;
+    case ITEM_HUMANIZE_OCTAVE: *gp_leds = 0x0010; break;
+    case ITEM_HUMANIZE_NOTE: *gp_leds = 0x0020; break;
+    case ITEM_HUMANIZE_VELOCITY: *gp_leds = 0x0040; break;
+    case ITEM_HUMANIZE_LENGTH: *gp_leds = 0x0080; break;
   }
 
   return 0; // no error
@@ -70,12 +74,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP2:
-      return -1; // not mapped
+      ui_selected_item = ITEM_HUMANIZE_PROBABILITY;
+      break;
+
     case SEQ_UI_ENCODER_GP3:
       return -1; // not mapped
     
     case SEQ_UI_ENCODER_GP4:
-      return -1; // not mapped
+      ui_selected_item = ITEM_HUMANIZE_SKIP;
+      break;
 
     case SEQ_UI_ENCODER_GP5:
       ui_selected_item = ITEM_HUMANIZE_OCTAVE;
@@ -105,13 +112,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
 
   // for GP encoders and Datawheel
-  switch( ui_selected_item ) {
-    case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_HUMANIZE_OCTAVE:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_OCT, 0, 127, incrementer);
-    case ITEM_HUMANIZE_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_NOTE, 0, 127, incrementer);
-    case ITEM_HUMANIZE_VELOCITY: return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_VEL, 0, 127, incrementer);
-    case ITEM_HUMANIZE_LENGTH:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_LEN, 0, 127, incrementer);
-  }
+  if ( seq_ui_button_state.SELECT_PRESSED ){//adjust probability settings
+		  switch( ui_selected_item ) {
+			case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
+			case ITEM_HUMANIZE_PROBABILITY:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_SKIP:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_SKIP_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_OCTAVE:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_OCT_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_NOTE_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_VELOCITY: return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_VEL_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_LENGTH:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_LEN_PROBABILITY, 0, 31, incrementer);
+	  }
+	  } else {//adjust humanizer ranges
+		  switch( ui_selected_item ) {
+			case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
+			case ITEM_HUMANIZE_PROBABILITY:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_SKIP:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_SKIP_PROBABILITY, 0, 31, incrementer);
+			case ITEM_HUMANIZE_OCTAVE:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_OCT, 0, 7, incrementer);
+			case ITEM_HUMANIZE_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_NOTE, 0, 15, incrementer);
+			case ITEM_HUMANIZE_VELOCITY: return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_VEL, 0, 127, incrementer);
+			case ITEM_HUMANIZE_LENGTH:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_LEN, 0, 127, incrementer);
+		  }
+		}
 
   return -1; // invalid or unsupported encoder
 }
@@ -137,7 +158,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     // re-use encoder handler - only select UI item, don't increment
     return Encoder_Handler((int)button, 0);
   }
-  
+
   switch( button ) {
     case SEQ_UI_BUTTON_Select:
     case SEQ_UI_BUTTON_Right:
@@ -180,7 +201,9 @@ static s32 LCD_Handler(u8 high_prio)
   // Trk.  Intensity     Note Vel/CC Length  
   // G1T1      0          off   off   off    
 
-
+    // we want to show vertical bars
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
+    
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -198,37 +221,58 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   }
-  SEQ_LCD_PrintSpaces(18);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_HUMANIZE_PROBABILITY && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_PROBABILITY) >> 2);
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_PROBABILITY));
+  }
+  SEQ_LCD_PrintSpaces(7);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_HUMANIZE_SKIP && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(4);
+  } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_SKIP_PROBABILITY) >> 2);
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_SKIP_PROBABILITY));
+  }
+  SEQ_LCD_PrintSpaces(1);
+
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_OCTAVE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+    SEQ_LCD_PrintSpaces(4);
   } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_OCT_PROBABILITY) >> 2);
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_OCT));
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_NOTE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+    SEQ_LCD_PrintSpaces(4);
   } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_NOTE_PROBABILITY) >> 2);
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_NOTE));
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_VELOCITY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+    SEQ_LCD_PrintSpaces(4);
   } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_VEL_PROBABILITY) >> 2);
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_VEL));
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_LENGTH && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(3);
+    SEQ_LCD_PrintSpaces(4);
   } else {
+    SEQ_LCD_PrintVBar(SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_LEN_PROBABILITY) >> 2);
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_LEN));
   }
   SEQ_LCD_PrintSpaces(0);
