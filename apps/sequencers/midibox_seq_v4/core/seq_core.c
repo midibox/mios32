@@ -30,6 +30,7 @@
 #include "seq_scale.h"
 #include "seq_groove.h"
 #include "seq_humanize.h"
+#include "seq_humanize2.h"
 #include "seq_morph.h"
 #include "seq_lfo.h"
 #include "seq_midi_port.h"
@@ -196,6 +197,7 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset humanizer module
   SEQ_HUMANIZE_Init(0);
+  SEQ_HUMANIZE2_Init(0);
 
   // reset LFO module
   SEQ_LFO_Init(0);
@@ -1116,6 +1118,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      // apply Pre-FX before force-to-scale
 	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
 		SEQ_HUMANIZE_Event(track, t->step, e);
+		SEQ_HUMANIZE2_Event(track, t->step, e);
 		SEQ_LFO_Event(track, e);
 	      }
 

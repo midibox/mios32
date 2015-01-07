@@ -28,6 +28,8 @@ MIDIboxSEQ V4.088
      - ALT+Mute clears all mutes
      - ALT+Solo clears all solos
 
+   o added Humanizer2 Fx from Borfo
+
 
 MIDIboxSEQ V4.087
 ~~~~~~~~~~~~~~~~~

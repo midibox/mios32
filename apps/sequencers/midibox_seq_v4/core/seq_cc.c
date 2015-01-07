@@ -62,6 +62,13 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->fx_midi_port = DEFAULT;
     tcc->fx_midi_num_chn = 0; // off!
 
+    // initialize humanize probabilities to full
+    tcc->humanize2_skip_probability = 0;
+    tcc->humanize2_note_probability = 31;
+    tcc->humanize2_oct_probability = 31;
+    tcc->humanize2_vel_probability = 31;
+    tcc->humanize2_len_probability = 31;
+
     // set combined mode for first 3 tracks of a sequence
     // set all other tracks to CC
     if( (track >= 0 && track <= 2) || (track >= 8 && track <= 10) ) {
@@ -186,6 +193,18 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_LFO_CC: tcc->lfo_cc = value; break;
       case SEQ_CC_LFO_CC_OFFSET: tcc->lfo_cc_offset = value; break;
       case SEQ_CC_LFO_CC_PPQN: tcc->lfo_cc_ppqn = value; break;
+
+      case SEQ_CC_HUMANIZE2_PROBABILITY: tcc->humanize2_probability = value; break;
+      case SEQ_CC_HUMANIZE2_NOTE: tcc->humanize2_note = value; break;
+      case SEQ_CC_HUMANIZE2_OCT: tcc->humanize2_oct = value; break;
+      case SEQ_CC_HUMANIZE2_LEN: tcc->humanize2_len = value; break;
+      case SEQ_CC_HUMANIZE2_VEL: tcc->humanize2_vel = value; break;
+
+      case SEQ_CC_HUMANIZE2_SKIP_PROBABILITY: tcc->humanize2_skip_probability = value; break;
+      case SEQ_CC_HUMANIZE2_NOTE_PROBABILITY: tcc->humanize2_note_probability = value; break;
+      case SEQ_CC_HUMANIZE2_OCT_PROBABILITY: tcc->humanize2_oct_probability = value; break;
+      case SEQ_CC_HUMANIZE2_LEN_PROBABILITY: tcc->humanize2_len_probability = value; break;
+      case SEQ_CC_HUMANIZE2_VEL_PROBABILITY: tcc->humanize2_vel_probability = value; break;
   
       default:
 	portEXIT_CRITICAL();
@@ -357,6 +376,18 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_LFO_CC: return tcc->lfo_cc;
     case SEQ_CC_LFO_CC_OFFSET: return tcc->lfo_cc_offset;
     case SEQ_CC_LFO_CC_PPQN: return tcc->lfo_cc_ppqn;
+
+    case SEQ_CC_HUMANIZE2_PROBABILITY: return tcc->humanize2_probability;
+    case SEQ_CC_HUMANIZE2_NOTE: return tcc->humanize2_note;
+    case SEQ_CC_HUMANIZE2_OCT: return tcc->humanize2_oct;
+    case SEQ_CC_HUMANIZE2_VEL: return tcc->humanize2_vel;
+    case SEQ_CC_HUMANIZE2_LEN: return tcc->humanize2_len;
+
+    case SEQ_CC_HUMANIZE2_SKIP_PROBABILITY: return tcc->humanize2_skip_probability;
+    case SEQ_CC_HUMANIZE2_NOTE_PROBABILITY: return tcc->humanize2_note_probability;
+    case SEQ_CC_HUMANIZE2_OCT_PROBABILITY: return tcc->humanize2_oct_probability;
+    case SEQ_CC_HUMANIZE2_VEL_PROBABILITY: return tcc->humanize2_vel_probability;
+    case SEQ_CC_HUMANIZE2_LEN_PROBABILITY: return tcc->humanize2_len_probability;
   }
 
   return -2; // invalid CC

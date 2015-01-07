@@ -29,7 +29,7 @@
 
 #define NUM_OF_ITEMS           5
 #define ITEM_GXTY              0
-#define ITEM_HUMANIZE_VALUE    1
+#define ITEM_HUMANIZE_OCTAVE   1
 #define ITEM_HUMANIZE_NOTE     2
 #define ITEM_HUMANIZE_VELOCITY 3
 #define ITEM_HUMANIZE_LENGTH   4
@@ -45,7 +45,7 @@ static s32 LED_Handler(u16 *gp_leds)
 
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_HUMANIZE_VALUE: *gp_leds = 0x000e; break;
+    case ITEM_HUMANIZE_OCTAVE: *gp_leds = 0x000e; break;
     case ITEM_HUMANIZE_NOTE: *gp_leds = 0x0010; break;
     case ITEM_HUMANIZE_VELOCITY: *gp_leds = 0x0020; break;
     case ITEM_HUMANIZE_LENGTH: *gp_leds = 0x00c0; break;
@@ -64,28 +64,31 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
       ui_selected_item = ITEM_GXTY;
       break;
 
     case SEQ_UI_ENCODER_GP2:
+      return -1; // not mapped
     case SEQ_UI_ENCODER_GP3:
+      return -1; // not mapped
+    
     case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_HUMANIZE_VALUE;
-      break;
+      return -1; // not mapped
 
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_HUMANIZE_NOTE;
+      ui_selected_item = ITEM_HUMANIZE_OCTAVE;
       break;
 
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_HUMANIZE_VELOCITY;
+      ui_selected_item = ITEM_HUMANIZE_NOTE;
       break;
 
     case SEQ_UI_ENCODER_GP7:
+      ui_selected_item = ITEM_HUMANIZE_VELOCITY;
+      break;
+      
     case SEQ_UI_ENCODER_GP8:
       ui_selected_item = ITEM_HUMANIZE_LENGTH;
       break;
@@ -104,25 +107,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
     case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_HUMANIZE_VALUE:    return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE_VALUE, 0, 127, incrementer);
-
-    case ITEM_HUMANIZE_NOTE: {
-      if( !incrementer ) // toggle flag
-	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1<<0)) ? -1 : 1;
-      return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x01, (incrementer >= 0) ? (1<<0) : 0x00);
-    }
-
-    case ITEM_HUMANIZE_VELOCITY: {
-      if( !incrementer ) // toggle flag
-	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1<<1)) ? -1 : 1;
-      return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x02, (incrementer >= 0) ? (1<<1) : 0x00);
-    }
-
-    case ITEM_HUMANIZE_LENGTH: {
-      if( !incrementer ) // toggle flag
-	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1<<2)) ? -1 : 1;
-      return SEQ_UI_CC_SetFlags(SEQ_CC_HUMANIZE_MODE, 0x04, (incrementer >= 0) ? (1<<2) : 0x00);
-    }
+    case ITEM_HUMANIZE_OCTAVE:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_OCT, 0, 127, incrementer);
+    case ITEM_HUMANIZE_NOTE:     return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_NOTE, 0, 127, incrementer);
+    case ITEM_HUMANIZE_VELOCITY: return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_VEL, 0, 127, incrementer);
+    case ITEM_HUMANIZE_LENGTH:   return SEQ_UI_CC_Inc(SEQ_CC_HUMANIZE2_LEN, 0, 127, incrementer);
   }
 
   return -1; // invalid or unsupported encoder
@@ -198,7 +186,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk.  Intensity     Note Vel/CC Length  ");
+  SEQ_LCD_PrintString("Trk. Prob       Skip Octv Note VelCC Len");
   SEQ_LCD_PrintSpaces(40);
 
 
@@ -210,40 +198,40 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(18);
 
   ///////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_HUMANIZE_VALUE && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_HUMANIZE_OCTAVE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_VALUE));
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_OCT));
   }
-  SEQ_LCD_PrintSpaces(10);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_NOTE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1 << 0)) ? "on " : "off");
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_NOTE));
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_VELOCITY && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1 << 1)) ? "on " : "off");
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_VEL));
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HUMANIZE_LENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(3);
   } else {
-    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE_MODE) & (1 << 2)) ? "on " : "off");
+    SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_HUMANIZE2_LEN));
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(0);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintSpaces(40);
@@ -255,7 +243,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_FX_HUMANIZE_Init(u32 mode)
+s32 SEQ_UI_FX_HUMANIZE2_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
