@@ -159,6 +159,21 @@
 
 // free: 0x7c..0x7f
 
+
+// For future V4 Plus (currently not stored in bank files on SD Card)
+#define SEQ_CC_HUMANIZE2_NOTE	                0x80
+#define SEQ_CC_HUMANIZE2_VEL	                0x81
+#define SEQ_CC_HUMANIZE2_LEN	                0x82
+#define SEQ_CC_HUMANIZE2_OCT	                0x83
+#define SEQ_CC_HUMANIZE2_PROBABILITY	        0x84
+#define SEQ_CC_HUMANIZE2_SKIP_PROBABILITY	0x85
+#define SEQ_CC_HUMANIZE2_OCT_PROBABILITY	0x86
+#define SEQ_CC_HUMANIZE2_NOTE_PROBABILITY	0x87
+#define SEQ_CC_HUMANIZE2_VEL_PROBABILITY	0x88
+#define SEQ_CC_HUMANIZE2_LEN_PROBABILITY	0x89
+
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -222,6 +237,18 @@ typedef struct {
 
   u8       limit_lower;       // for note value limits
   u8       limit_upper;       // for note value limits
+
+  u8       humanize2_note:4;    // humanize note range
+  u8       humanize2_oct:3;    // humanize octave range
+  u8       humanize2_vel;    // humanize velocity range
+  u8       humanize2_len;    // humanize length range
+  u8       humanize2_probability:5;    // overal humanize probability
+
+  u8       humanize2_skip_probability:5;    // humanize note probability
+  u8       humanize2_note_probability:5;    // humanize note probability
+  u8       humanize2_oct_probability:5;    // humanize octave probability
+  u8       humanize2_vel_probability:5;    // humanize velocity probability
+  u8       humanize2_len_probability:5;    // humanize length probability
 
   // temporary variables which will be updated on CC writes
   s8 link_par_layer_note;        // parameter layer which stores the first note value (-1 if not assigned)

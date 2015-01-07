@@ -44,6 +44,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_fx.c \
 		core/seq_ui_fx_echo.c \
 		core/seq_ui_fx_humanize.c \
+		core/seq_ui_fx_humanize2.c \
 		core/seq_ui_fx_limit.c \
 		core/seq_ui_fx_lfo.c \
 		core/seq_ui_fx_dupl.c \
@@ -84,6 +85,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_groove.c \
 		core/seq_morph.c \
 		core/seq_humanize.c \
+		core/seq_humanize2.c \
 		core/seq_lfo.c \
 		core/seq_chord.c \
 		core/seq_pattern.c \
