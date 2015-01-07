@@ -49,18 +49,10 @@ s32 SEQ_HUMANIZE2_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   humoct = tcc->humanize2_oct;
   humskip = tcc->humanize2_skip_probability;
   
-  // check if random value trigger set
-  if( SEQ_TRG_RandomValueGet(track, step, 0) ) {//RK - I broke this.
-//    mode = 0x01; // Note Only
-//    intensity = 4*24; // +/- 1 octave
-  } else {
+  if( !humvel && !humlen && !humnote && !humoct && !humskip )
+    return 0; // nothing to do
 
-    if( !humvel && !humlen && !humnote && !humoct && !humskip )
-      return 0; // nothing to do
-
-  }
-
-  if( ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_note_probability * humprob ) && humnote ) { // Note Event
+  if( humnote && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_note_probability * humprob ) ) { // Note Event
     u8 note_intensity = humnote * 2;
     s16 value = e->midi_package.note + ((note_intensity/2) - (s16)SEQ_RANDOM_Gen_Range(0, note_intensity));
 
@@ -70,7 +62,7 @@ s32 SEQ_HUMANIZE2_Event(u8 track, u8 step, seq_layer_evnt_t *e)
     e->midi_package.note = value;
   }
 
-  if( ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_oct_probability * humprob ) && humoct ) { // Octave Event
+  if( humoct && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_oct_probability * humprob ) ) { // Octave Event
     u8 oct_intensity = humoct * 2;
     s16 value = e->midi_package.note + (((oct_intensity/2) - (s16)SEQ_RANDOM_Gen_Range(0, oct_intensity))*12);
 
@@ -80,7 +72,7 @@ s32 SEQ_HUMANIZE2_Event(u8 track, u8 step, seq_layer_evnt_t *e)
     e->midi_package.note = value;
   }
 
-  if( ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_vel_probability * humprob ) && humvel ) { // Velocity
+  if( humvel && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_vel_probability * humprob ) ) { // Velocity
 	s16 randnum = SEQ_RANDOM_Gen_Range( 0 , humvel * 2) - humvel;
 	s16 value = randnum + e->midi_package.velocity;
 
@@ -95,7 +87,7 @@ s32 SEQ_HUMANIZE2_Event(u8 track, u8 step, seq_layer_evnt_t *e)
     e->midi_package.velocity = value;
   }
 
-  if( ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_len_probability * humprob ) && e->len < 96 && humlen ) { // Gatelength (only if no glide)
+  if( humlen && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->humanize2_len_probability * humprob ) && e->len < 96 ) { // Gatelength (only if no glide)
     s16 value = e->len + ((humlen/2) - (s16)SEQ_RANDOM_Gen_Range(0, humlen));
     if( value < 1 )
       value = 1;
