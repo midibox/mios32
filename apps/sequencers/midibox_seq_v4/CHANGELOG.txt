@@ -2080,6 +2080,9 @@ Provide trigger layer function for Random Velocity and CC
 ----------------------------------------------------------
 BLM enhancements:
 http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion-thread/?p=166270
+
+- round step buttons along the top light in dim yellow to indicate which steps in the currently visible measure have notes set? and
+- when ALT is held (to switch octaves), round track buttons on the right side light to indicate which octaves have notes set?
 ----------------------------------------------------------
 
 
