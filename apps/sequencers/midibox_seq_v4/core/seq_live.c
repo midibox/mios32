@@ -26,7 +26,7 @@
 #include "seq_lfo.h"
 #include "seq_scale.h"
 #include "seq_humanize.h"
-#include "seq_humanize2.h"
+#include "seq_robotize.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 
@@ -147,7 +147,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       u8 apply_force_to_scale = event_mode != SEQ_EVENT_MODE_Drum;
       if( seq_live_options.FX ) {
 	SEQ_HUMANIZE_Event(track, t->step, &e);
-	SEQ_HUMANIZE2_Event(track, t->step, &e);
+	SEQ_ROBOTIZE_Event(track, t->step, &e);
 	SEQ_LFO_Event(track, &e);
 
 	if( apply_force_to_scale &&

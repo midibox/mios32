@@ -30,7 +30,7 @@
 #include "seq_scale.h"
 #include "seq_groove.h"
 #include "seq_humanize.h"
-#include "seq_humanize2.h"
+#include "seq_robotize.h"
 #include "seq_morph.h"
 #include "seq_lfo.h"
 #include "seq_midi_port.h"
@@ -197,7 +197,10 @@ s32 SEQ_CORE_Init(u32 mode)
 
   // reset humanizer module
   SEQ_HUMANIZE_Init(0);
-  SEQ_HUMANIZE2_Init(0);
+
+
+  // reset robotizer module
+  SEQ_ROBOTIZE_Init(0);
 
   // reset LFO module
   SEQ_LFO_Init(0);
@@ -780,6 +783,9 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     int track;
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++t, ++tcc, ++track) {
 
+      seq_robotize_flags_t robotize_flags;
+      robotize_flags.ALL = 0;
+
       // round 0: loopback port Bus1, round 1: remaining ports
       u8 loopback_port = (tcc->midi_port & 0xf0) == 0xf0;
       if( (!round && !loopback_port) || (round && loopback_port) )
@@ -1115,23 +1121,30 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
 #endif
 
+
+
 	      // apply Pre-FX before force-to-scale
 	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		SEQ_HUMANIZE_Event(track, t->step, e);
-		SEQ_HUMANIZE2_Event(track, t->step, e);
-		SEQ_LFO_Event(track, e);
+			SEQ_HUMANIZE_Event(track, t->step, e);
+			
+			robotize_flags = SEQ_ROBOTIZE_Event(track, t->step, e);
+
+			if( !robotize_flags.NOFX ) {
+			  SEQ_LFO_Event(track, e);
+			}
 	      }
+
 
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
-		u8 scale, root_selection, root;
-		SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-		SEQ_SCALE_Note(p, scale, root);
+			u8 scale, root_selection, root;
+			SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+			SEQ_SCALE_Note(p, scale, root);
 	      }
 
 	      // apply Pre-FX after force-to-scale
 	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
+			SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
 	      }
 
 	      // force velocity to 0x7f (drum mode: selectable value) if accent flag set
@@ -1251,7 +1264,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0);
 
 		  // apply Post-FX
-		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX ) {
 		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
 		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
 		  }
@@ -1362,8 +1375,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  }
 
 		  // apply Post-FX
-		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-		    if( (tcc->echo_repeats & 0x3f) && !(tcc->echo_repeats & 0x40) && gatelength )
+		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX) {
+		    if( ( (tcc->echo_repeats & 0x3f) && !(tcc->echo_repeats & 0x40) && gatelength ) )
 		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
 		  }
 		}

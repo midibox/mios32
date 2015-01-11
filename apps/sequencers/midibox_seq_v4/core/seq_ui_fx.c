@@ -31,7 +31,7 @@
 static const seq_ui_page_t shortcut_menu_pages[16] = {
   SEQ_UI_PAGE_FX_ECHO,     // GP1
   SEQ_UI_PAGE_FX_HUMANIZE, // GP2
-  SEQ_UI_PAGE_FX_HUMANIZE2, // GP3
+  SEQ_UI_PAGE_FX_ROBOTIZE, // GP3
   SEQ_UI_PAGE_FX_LIMIT,    // GP4
   SEQ_UI_PAGE_FX_LFO,      // GP5
   SEQ_UI_PAGE_FX_DUPL,     // GP6
@@ -130,8 +130,8 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintSpaces(20);
 
   SEQ_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintString("Echo Hum. Hum2 Limit LFO Dupl.");
-  SEQ_LCD_PrintSpaces(15);
+  SEQ_LCD_PrintString("Echo Hum. Robo Limit LFO Dupl.");
+  SEQ_LCD_PrintSpaces(10);
   SEQ_LCD_PrintString("Loop Scale");
   SEQ_LCD_PrintSpaces(30);
 

@@ -46,6 +46,23 @@ s32 SEQ_CC_Init(u32 mode)
     // clear all CCs
     memset((u8 *)tcc, 0, sizeof(seq_cc_trk_t));
 
+    // initialize robotize probabilities to full
+    tcc->robotize_skip_probability = 0;
+    tcc->robotize_note_probability = 31;
+    tcc->robotize_oct_probability = 31;
+    tcc->robotize_vel_probability = 31;
+    tcc->robotize_len_probability = 31;
+
+	// special robotize probabilities to zero
+    tcc->robotize_sustain_probability = 0;
+    tcc->robotize_nofx_probability = 0;
+    tcc->robotize_echo_probability = 0;
+    tcc->robotize_duplicate_probability = 0;
+    
+    // initialize robotize mask to all steps selected
+    tcc->robotize_mask1 = 0xFF;
+    tcc->robotize_mask2 = 0xFF;
+
 #ifndef MBSEQV4L
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;
@@ -62,12 +79,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->fx_midi_port = DEFAULT;
     tcc->fx_midi_num_chn = 0; // off!
 
-    // initialize humanize probabilities to full
-    tcc->humanize2_skip_probability = 0;
-    tcc->humanize2_note_probability = 31;
-    tcc->humanize2_oct_probability = 31;
-    tcc->humanize2_vel_probability = 31;
-    tcc->humanize2_len_probability = 31;
+
 
     // set combined mode for first 3 tracks of a sequence
     // set all other tracks to CC
@@ -194,18 +206,27 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_LFO_CC_OFFSET: tcc->lfo_cc_offset = value; break;
       case SEQ_CC_LFO_CC_PPQN: tcc->lfo_cc_ppqn = value; break;
 
-      case SEQ_CC_HUMANIZE2_PROBABILITY: tcc->humanize2_probability = value; break;
-      case SEQ_CC_HUMANIZE2_NOTE: tcc->humanize2_note = value; break;
-      case SEQ_CC_HUMANIZE2_OCT: tcc->humanize2_oct = value; break;
-      case SEQ_CC_HUMANIZE2_LEN: tcc->humanize2_len = value; break;
-      case SEQ_CC_HUMANIZE2_VEL: tcc->humanize2_vel = value; break;
+      case SEQ_CC_ROBOTIZE_PROBABILITY: tcc->robotize_probability = value; break;
+      case SEQ_CC_ROBOTIZE_NOTE: tcc->robotize_note = value; break;
+      case SEQ_CC_ROBOTIZE_OCT: tcc->robotize_oct = value; break;
+      case SEQ_CC_ROBOTIZE_LEN: tcc->robotize_len = value; break;
+      case SEQ_CC_ROBOTIZE_VEL: tcc->robotize_vel = value; break;
 
-      case SEQ_CC_HUMANIZE2_SKIP_PROBABILITY: tcc->humanize2_skip_probability = value; break;
-      case SEQ_CC_HUMANIZE2_NOTE_PROBABILITY: tcc->humanize2_note_probability = value; break;
-      case SEQ_CC_HUMANIZE2_OCT_PROBABILITY: tcc->humanize2_oct_probability = value; break;
-      case SEQ_CC_HUMANIZE2_LEN_PROBABILITY: tcc->humanize2_len_probability = value; break;
-      case SEQ_CC_HUMANIZE2_VEL_PROBABILITY: tcc->humanize2_vel_probability = value; break;
+      case SEQ_CC_ROBOTIZE_SKIP_PROBABILITY: tcc->robotize_skip_probability = value; break;
+      case SEQ_CC_ROBOTIZE_NOTE_PROBABILITY: tcc->robotize_note_probability = value; break;
+      case SEQ_CC_ROBOTIZE_OCT_PROBABILITY: tcc->robotize_oct_probability = value; break;
+      case SEQ_CC_ROBOTIZE_LEN_PROBABILITY: tcc->robotize_len_probability = value; break;
+      case SEQ_CC_ROBOTIZE_VEL_PROBABILITY: tcc->robotize_vel_probability = value; break;
+      case SEQ_CC_ROBOTIZE_SUSTAIN_PROBABILITY: tcc->robotize_sustain_probability = value; break;
+      case SEQ_CC_ROBOTIZE_NOFX_PROBABILITY: tcc->robotize_nofx_probability = value; break;
+      case SEQ_CC_ROBOTIZE_ECHO_PROBABILITY: tcc->robotize_echo_probability = value; break;
+      case SEQ_CC_ROBOTIZE_DUPLICATE_PROBABILITY: tcc->robotize_duplicate_probability = value; break;
   
+
+      case SEQ_CC_ROBOTIZE_ACTIVE: tcc->robotize_active = value; break;
+      case SEQ_CC_ROBOTIZE_MASK1: tcc->robotize_mask1 = value; break;
+      case SEQ_CC_ROBOTIZE_MASK2: tcc->robotize_mask2 = value; break;
+
       default:
 	portEXIT_CRITICAL();
         return -2; // invalid CC
@@ -377,17 +398,25 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_LFO_CC_OFFSET: return tcc->lfo_cc_offset;
     case SEQ_CC_LFO_CC_PPQN: return tcc->lfo_cc_ppqn;
 
-    case SEQ_CC_HUMANIZE2_PROBABILITY: return tcc->humanize2_probability;
-    case SEQ_CC_HUMANIZE2_NOTE: return tcc->humanize2_note;
-    case SEQ_CC_HUMANIZE2_OCT: return tcc->humanize2_oct;
-    case SEQ_CC_HUMANIZE2_VEL: return tcc->humanize2_vel;
-    case SEQ_CC_HUMANIZE2_LEN: return tcc->humanize2_len;
+    case SEQ_CC_ROBOTIZE_PROBABILITY: return tcc->robotize_probability;
+    case SEQ_CC_ROBOTIZE_NOTE: return tcc->robotize_note;
+    case SEQ_CC_ROBOTIZE_OCT: return tcc->robotize_oct;
+    case SEQ_CC_ROBOTIZE_VEL: return tcc->robotize_vel;
+    case SEQ_CC_ROBOTIZE_LEN: return tcc->robotize_len;
 
-    case SEQ_CC_HUMANIZE2_SKIP_PROBABILITY: return tcc->humanize2_skip_probability;
-    case SEQ_CC_HUMANIZE2_NOTE_PROBABILITY: return tcc->humanize2_note_probability;
-    case SEQ_CC_HUMANIZE2_OCT_PROBABILITY: return tcc->humanize2_oct_probability;
-    case SEQ_CC_HUMANIZE2_VEL_PROBABILITY: return tcc->humanize2_vel_probability;
-    case SEQ_CC_HUMANIZE2_LEN_PROBABILITY: return tcc->humanize2_len_probability;
+    case SEQ_CC_ROBOTIZE_SKIP_PROBABILITY: return tcc->robotize_skip_probability;
+    case SEQ_CC_ROBOTIZE_NOTE_PROBABILITY: return tcc->robotize_note_probability;
+    case SEQ_CC_ROBOTIZE_OCT_PROBABILITY: return tcc->robotize_oct_probability;
+    case SEQ_CC_ROBOTIZE_VEL_PROBABILITY: return tcc->robotize_vel_probability;
+    case SEQ_CC_ROBOTIZE_LEN_PROBABILITY: return tcc->robotize_len_probability;
+    case SEQ_CC_ROBOTIZE_SUSTAIN_PROBABILITY: return tcc->robotize_sustain_probability;
+    case SEQ_CC_ROBOTIZE_NOFX_PROBABILITY: return tcc->robotize_nofx_probability;
+    case SEQ_CC_ROBOTIZE_ECHO_PROBABILITY: return tcc->robotize_echo_probability;
+    case SEQ_CC_ROBOTIZE_DUPLICATE_PROBABILITY: return tcc->robotize_duplicate_probability;
+
+    case SEQ_CC_ROBOTIZE_ACTIVE: return tcc->robotize_active;
+    case SEQ_CC_ROBOTIZE_MASK1: return tcc->robotize_mask1;
+    case SEQ_CC_ROBOTIZE_MASK2: return tcc->robotize_mask2;
   }
 
   return -2; // invalid CC
