@@ -190,6 +190,7 @@ const char* MIOS32_LCD_LcdTypeName(mios32_lcd_type_t lcd_type)
   switch( lcd_type ) {
   case MIOS32_LCD_TYPE_CLCD: return "CLCD";
   case MIOS32_LCD_TYPE_CLCD_DOG: return "CLCD_DOG";
+  case MIOS32_LCD_TYPE_CLCD_PP: return "CLCD_PP";
   
   case MIOS32_LCD_TYPE_GLCD_CUSTOM: return "GLCD_CUSTOM";
   case MIOS32_LCD_TYPE_GLCD_KS0108: return "GLCD_KS0108";
