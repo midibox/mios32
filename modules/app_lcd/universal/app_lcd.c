@@ -694,6 +694,7 @@ s32 APP_LCD_Init(u32 mode)
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
+  case MIOS32_LCD_TYPE_CLCD_PP:
   default: {
 #if defined(MIOS32_FAMILY_LPC17xx)
     // pins always in push-pull mode
@@ -702,7 +703,8 @@ s32 APP_LCD_Init(u32 mode)
 #else
     // 0: J15 pins are configured in Push Pull Mode (3.3V)
     // 1: J15 pins are configured in Open Drain mode (perfect for 3.3V->5V levelshifting)
-    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ) {
+    if( mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_DOG ||
+	mios32_lcd_parameters.lcd_type == MIOS32_LCD_TYPE_CLCD_PP ) {
       // DOG CLCD works at 3.3V, level shifting (and open drain mode) not required
       if( MIOS32_BOARD_J15_PortInit(0) < 0 )
 	return -2; // failed to initialize J15
@@ -886,6 +888,7 @@ s32 APP_LCD_Data(u8 data)
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
+  case MIOS32_LCD_TYPE_CLCD_PP:
   default: {
     // wait until LCD unbusy, exit on error (timeout)
     if( APP_LCD_PollUnbusy(2500) < 0 ) {
@@ -991,6 +994,7 @@ s32 APP_LCD_Cmd(u8 cmd)
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
+  case MIOS32_LCD_TYPE_CLCD_PP:
   default: {
     // wait until LCD unbusy, exit on error (timeout)
     if( APP_LCD_PollUnbusy(10000) < 0 ) {
@@ -1111,6 +1115,7 @@ s32 APP_LCD_Clear(void)
 
   case MIOS32_LCD_TYPE_CLCD:
   case MIOS32_LCD_TYPE_CLCD_DOG:
+  case MIOS32_LCD_TYPE_CLCD_PP:
   default:
     // -> send clear command
     return APP_LCD_Cmd(0x01);

@@ -55,6 +55,7 @@ typedef enum {
   // character LCDs
   MIOS32_LCD_TYPE_CLCD     = 0x00,
   MIOS32_LCD_TYPE_CLCD_DOG = 0x01,
+  MIOS32_LCD_TYPE_CLCD_PP  = 0x02,
 
   // graphical LCDs (bit #7 set)
   MIOS32_LCD_TYPE_GLCD_CUSTOM       = 0x80, // for app_lcd drivers so that MIOS32_LCD_TypeIsGLCD() returns 1
