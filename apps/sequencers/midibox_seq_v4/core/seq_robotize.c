@@ -35,6 +35,28 @@ s32 SEQ_ROBOTIZE_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// checks robotizing probabilities - overall probability is multiplied with individual probability
+// returns true if the item should be robotized, or false otherwise 
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_ROBOTIZE_Check_Probabilities(u8 prob1, u8 prob2, u32 randoms[], u8 *big_randoms_used)
+{
+	u8 returnbit = 0;
+	if( prob1 && prob2 ) { //robotize event is possible
+ 	  u8 randindex = (*big_randoms_used) / 3;
+	  if ((u8)( (*big_randoms_used) % 3 ) == 0){
+		  randoms[randindex] = SEQ_RANDOM_Gen(0); // get fresh random number if needed
+	  }
+	  
+	  u16 testvar = ( prob1 + 1) * ( prob2 + 1); // multiply the two probabilities together to get 10 bit probability number
+	  u16 big_random = ( (randoms[randindex]) >> ( ( (*big_randoms_used) % 3 ) * 10 ) ) & ( ( 1 << 10 ) - 1 ) ; // extract a new big random number from the longer 32 bit random number
+	  *big_randoms_used += 1; // increment counter
+	  if ( big_random <= testvar ) returnbit = 1; // we're a go for robotizing!
+	}
+	return returnbit;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // modifies a MIDI event depending on selected robotize parameters
 /////////////////////////////////////////////////////////////////////////////
 seq_robotize_flags_t SEQ_ROBOTIZE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
@@ -42,12 +64,12 @@ seq_robotize_flags_t SEQ_ROBOTIZE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
   seq_robotize_flags_t returnflags;
   returnflags.ALL = 0;//NOFX, +Echo, +Sustain and +duplicate flags
   
-  s16 testvar;
+  
   
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   //exit if there's no chance of robotizing anything
-  if( ! tcc->robotize_active || tcc->robotize_probability == 0 || ( !tcc->robotize_vel && !tcc->robotize_len && !tcc->robotize_note && !tcc->robotize_oct && !tcc->robotize_skip_probability && !tcc->robotize_sustain_probability && !tcc->robotize_nofx_probability && !tcc->robotize_echo_probability && !tcc->robotize_duplicate_probability ) )
+  if( ! tcc->robotize_active || tcc->robotize_probability == 0 ) // other checks - not necessary in most cases || ( !tcc->robotize_vel && !tcc->robotize_len && !tcc->robotize_note && !tcc->robotize_oct && !tcc->robotize_skip_probability && !tcc->robotize_sustain_probability && !tcc->robotize_nofx_probability && !tcc->robotize_echo_probability && !tcc->robotize_duplicate_probability ) )
     return returnflags; // nothing to do
 		
   //check robotize mask - does the current step % 16 point to an active step in the robotize mask?
@@ -60,91 +82,107 @@ seq_robotize_flags_t SEQ_ROBOTIZE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
 		return returnflags; // nothing to do, step not active in mask
 	}
 
-  // NOTE ROBOTIZATION - jump semitones
-  testvar = tcc->robotize_note_probability * tcc->robotize_probability;
-  if( tcc->robotize_note && testvar > 0 && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= testvar ) ) { // Note Event
-    u8 note_intensity = tcc->robotize_note * 2;
-    s16 value = e->midi_package.note + ((note_intensity/2) - (s16)SEQ_RANDOM_Gen_Range(0, note_intensity));
-
-    // ensure that note is in the 0..127 range
-    value = SEQ_CORE_TrimNote(value, 0, 127);
-
-    e->midi_package.note = value;
-  }
 
 
-  // OCTAVE ROBOTIZATION - jump octaves, cumulative with note jumps
-  testvar = tcc->robotize_oct_probability * tcc->robotize_probability;
-  if( tcc->robotize_oct  && testvar > 0 && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= testvar ) ) { // Octave Event
-    u8 oct_intensity = tcc->robotize_oct * 2;
-    s16 value = e->midi_package.note + (((oct_intensity/2) - (s16)SEQ_RANDOM_Gen_Range(0, oct_intensity))*12);
+//initialize random number array, counter, and range variables
+u32 randoms[3] = {0} ; //array of 32 bit random numbers.  Only fills if and as needed, to minimize calls to seq_random_gen.  Use array rather than overwriting the same var, so that the old rands are kept in case we want to reuse them in future improvements to the robotizer
+u8 big_randoms_used = 0; //keeps track of how many 10 bit random numbers we've pulled so far
+u8 range = 0; //range - reused in several of the robotizers
 
-    // ensure that note is in the 0..127 range
-    value = SEQ_CORE_TrimNote(value, 0, 127);
+/*
+if ( tcc->robotize_X && tcc->robotize_X_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_X_probability, randoms, &big_randoms_used) ) {
+//ROBOTIZING CODE GOES HERE
+}
 
-    e->midi_package.note = value;
-  }
+//debug with
+MIOS32_MIDI_SendDebugMessage("random: %d ", randoms[0]);
+*/
 
+	//NOTE ROBOTIZER - shift by semitones
+	if ( tcc->robotize_note && tcc->robotize_note_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_note_probability, randoms, &big_randoms_used) ) {
+		range = tcc->robotize_note * 2;
+		s16 value = e->midi_package.note + ((range/2) - (s16)SEQ_RANDOM_Gen_Range(0, range));
 
-  // VELOCITY ROBOTIZATION
-  testvar = tcc->robotize_vel_probability * tcc->robotize_probability;
-  if( tcc->robotize_vel && testvar > 0 && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= testvar )  ) { // Velocity
-	s16 randnum = SEQ_RANDOM_Gen_Range( 0 , tcc->robotize_vel * 2) - tcc->robotize_vel;
-	s16 value = randnum + e->midi_package.velocity;
+		// ensure that note is in the 0..127 range
+		value = SEQ_CORE_TrimNote(value, 0, 127);
 
-	//weight randnum if out of range in a superconvoluted way because I'm terrible at math.
-	if (value > 127) {value = e->midi_package.velocity + (((127-e->midi_package.velocity)/127)*randnum);}
-	if (value < 0) {value = e->midi_package.velocity + ((e->midi_package.velocity/127)*randnum);}
+		e->midi_package.note = value;
+	}
+		
 
-    if( value < 0 )
-      value = 0;
-    else if( value > 127 )
-      value = 127;
-    e->midi_package.velocity = value;
-  }
+	//OCTAVE ROBOTIZER - shift by octaves - cumulative with notes
+	if ( tcc->robotize_oct && tcc->robotize_oct_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_oct_probability, randoms, &big_randoms_used) ) {
+		range = tcc->robotize_oct * 2;
+		s16 value = e->midi_package.note + (((range/2) - (s16)SEQ_RANDOM_Gen_Range(0, range))*12);
 
+		// ensure that note is in the 0..127 range
+		value = SEQ_CORE_TrimNote(value, 0, 127);
 
-  // GATELENGTH ROBOTIZATION
-  testvar = tcc->robotize_len_probability * tcc->robotize_probability;
-  if( tcc->robotize_len  && testvar > 0 && ( (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= testvar ) ) { // Gatelength (only if no glide)
-    s16 value = e->len + ((tcc->robotize_len/2) - (s16)SEQ_RANDOM_Gen_Range(0, tcc->robotize_len));
-    if( value < 1 )
-      value = 1;
-    else if( value > 95 )
-      value = 95;
-    e->len = value;
-  }
+		e->midi_package.note = value;
+	}
 
 
-  // NOTE SKIPPING ROBOTIZATION - plays with zero velocity if skipped
-  if( tcc->robotize_skip_probability && (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->robotize_skip_probability * tcc->robotize_probability ) { // Skip note
-	//play with zero velocity
-    e->midi_package.velocity = 0;
-  }
+	//VELOCITY ROBOTIZER - change note velocity
+	if ( tcc->robotize_vel && tcc->robotize_vel_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_vel_probability, randoms, &big_randoms_used) ) {
+		s16 randnum = SEQ_RANDOM_Gen_Range( 0 , tcc->robotize_vel * 2) - tcc->robotize_vel;
+		s16 value = randnum + e->midi_package.velocity;
 
-  // SUSTAIN ROBOTIZATION - adds sustain to note
-  if( tcc->robotize_sustain_probability && (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->robotize_sustain_probability * tcc->robotize_probability ) { // Skip note
-	//set sustain flag
-    returnflags.SUSTAIN = 1;
-  }
+		//weight randnum if out of range in a superconvoluted way because I'm terrible at math.
+		if (value > 127) {value = e->midi_package.velocity + (((127-e->midi_package.velocity)/127)*randnum);}
+		if (value < 0) {value = e->midi_package.velocity + ((e->midi_package.velocity/127)*randnum);}
 
-  // NOFX ROBOTIZATION - cancels any subsequent FX that are set on the note (eg: will play this note without echo even if echo is on)
-  if( tcc->robotize_nofx_probability && (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->robotize_nofx_probability * tcc->robotize_probability ) { // Skip note
-	//set NOFX flag
-    returnflags.NOFX = 1;
-  }
+		if( value < 0 )
+		  value = 0;
+		else if( value > 127 )
+		  value = 127;
+		e->midi_package.velocity = value;
+	}
 
-  // +ECHO ROBOTIZATION - Adds echo to just this note, using the current echo settings (even if echo FX is off)
-  if( tcc->robotize_echo_probability && (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->robotize_echo_probability * tcc->robotize_probability ) { // Skip note
-	//set +ECHO flag
-    returnflags.ECHO = 1;
-  }
 
-  // +DUPLICATION ROBOTIZATION - Adds duplication to just this note, using the current FX Duplication settings (even if duplication FX is off)
-  if( tcc->robotize_duplicate_probability && (s16)SEQ_RANDOM_Gen_Range(0, 31 * 31) <= tcc->robotize_duplicate_probability * tcc->robotize_probability ) { // Skip note
-	//set +DUPLICATE flag
-    returnflags.DUPLICATE = 1;
-  }
+	//GATELENGTH ROBOTIZER - change note duration
+	if ( tcc->robotize_len && tcc->robotize_len_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_len_probability, randoms, &big_randoms_used) ) {
+		s16 value = e->len + ((tcc->robotize_len/2) - (s16)SEQ_RANDOM_Gen_Range(0, tcc->robotize_len));
+		if( value < 1 )
+		  value = 1;
+		else if( value > 95 )
+		  value = 95;
+		e->len = value;
+	}
+
+
+	// NOTE SKIP ROBOTIZER
+	if ( tcc->robotize_skip_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_skip_probability, randoms, &big_randoms_used) ) {
+		e->midi_package.velocity = 0;// play with zero velocity
+	}
+
+
+	// SUSTAIN ROBOTIZER
+	if ( tcc->robotize_sustain_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_sustain_probability, randoms, &big_randoms_used) ) {
+		//set sustain flag
+		returnflags.SUSTAIN = 1;
+	}
+
+
+	// NOFX ROBOTIZER
+	if ( tcc->robotize_nofx_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_nofx_probability, randoms, &big_randoms_used) ) {
+		//set NOFX flag
+		returnflags.NOFX = 1;
+	}
+
+
+	// +ECHO ROBOTIZER
+	if ( tcc->robotize_echo_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_echo_probability, randoms, &big_randoms_used) ) {
+		//set +ECHO flag
+		returnflags.ECHO = 1;
+	}
+
+
+	// +DUPLICATE ROBOTIZER
+	if ( tcc->robotize_duplicate_probability && SEQ_ROBOTIZE_Check_Probabilities( tcc->robotize_probability, tcc->robotize_duplicate_probability, randoms, &big_randoms_used) ) {
+		//set +DUPLICATE flag
+		returnflags.DUPLICATE = 1;
+	}
+
 
   return returnflags;
 }
