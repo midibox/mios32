@@ -223,7 +223,7 @@ typedef enum {
 
 extern s32 SEQ_CORE_Init(u32 mode);
 
-extern s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo);
+extern s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo, seq_robotize_flags_t robotize_flags);
 
 extern s32 SEQ_CORE_Reset(u32 bpm_start);
 extern s32 SEQ_CORE_PlayOffEvents(void);
@@ -239,7 +239,7 @@ extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
 
 extern s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 extern s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
-extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t );
+extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags);
 
 extern s32 SEQ_CORE_ResetTrkPosAll(void);
 extern s32 SEQ_CORE_SetTrkPos(u8 track, u8 value, u8 scale_value);
