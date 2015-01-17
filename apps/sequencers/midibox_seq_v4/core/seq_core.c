@@ -266,12 +266,13 @@ s32 SEQ_CORE_Init(u32 mode)
 // This function schedules a MIDI event by considering the "normal" and "Fx"
 // MIDI port
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo)
+s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo, seq_robotize_flags_t robotize_flags )
 {
   s32 status = 0;
   mios32_midi_port_t fx_midi_port = tcc->fx_midi_port ? tcc->fx_midi_port : tcc->midi_port;
 
-  if( !tcc->fx_midi_num_chn ) {
+  //check that there are more than 0 additional channels, that it's not just one channel and FX starting on current channel, check disable flag, check for robotizer
+  if( ! ( tcc->fx_midi_num_chn & 0x3f ) || ( ( tcc->fx_midi_num_chn & 0x3f ) == 1 && tcc->fx_midi_chn == midi_package.chn  ) || ( ( tcc->fx_midi_num_chn & 0x40 ) && ! robotize_flags.DUPLICATE ) ) {
     status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
 
     if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
@@ -285,7 +286,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
       case SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho: {
 	// forward to next channel
 	if( (tcc->fx_midi_mode.beh == SEQ_CORE_FX_MIDI_MODE_BEH_AlternateSynchedEcho && !is_echo) ||
-	  ++t->fx_midi_ctr > tcc->fx_midi_num_chn )
+	  ++t->fx_midi_ctr > ( tcc->fx_midi_num_chn & 0x3f ) )
 	  t->fx_midi_ctr = 0;
 
 	mios32_midi_port_t midi_port;
@@ -293,7 +294,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	  midi_port = tcc->midi_port;
 	} else {
 	  midi_port = fx_midi_port;
-	  midi_package.chn = (tcc->fx_midi_chn + (t->fx_midi_ctr-1)) % 16;
+	  midi_package.chn = (( tcc->fx_midi_num_chn & 0x3f ) + (t->fx_midi_ctr-1)) % 16;
 	}
 
 	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
@@ -306,13 +307,13 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	
       case SEQ_CORE_FX_MIDI_MODE_BEH_Random: {
 	// select random channel
-	int ix = SEQ_RANDOM_Gen_Range(0, tcc->fx_midi_num_chn);
+	int ix = SEQ_RANDOM_Gen_Range(0, ( tcc->fx_midi_num_chn & 0x3f ));
 	mios32_midi_port_t midi_port;
 	if( ix == 0 ) {
 	  midi_port = tcc->midi_port;
 	} else {
 	  midi_port = fx_midi_port;
-	  midi_package.chn = (tcc->fx_midi_chn + ix-1) % 16;
+	  midi_package.chn = (( tcc->fx_midi_num_chn & 0x3f ) + ix-1) % 16;
 	}
 
 	status |= SEQ_MIDI_OUT_Send(midi_port, midi_package, event_type, timestamp, len);
@@ -331,7 +332,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 
 	// all other channels
 	int ix;
-	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	for(ix=0; ix < ( tcc->fx_midi_num_chn & 0x3f ); ++ix) {
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
 	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
@@ -342,7 +343,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	  midi_package.chn = tcc->midi_chn % 16;
 	  status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 
-	  for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	  for(ix=0; ix< ( tcc->fx_midi_num_chn & 0x3f ); ++ix) {
 	    midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
 	    status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
 	  }
@@ -358,7 +359,7 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
       if( tcc->fx_midi_mode.fwd_non_notes ) {
 	// all other channels
 	int ix;
-	for(ix=0; ix<tcc->fx_midi_num_chn; ++ix) {
+	for(ix=0; ix < ( tcc->fx_midi_num_chn & 0x3f ); ++ix) {
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
 	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
@@ -805,7 +806,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  if( loopback_port )
 	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else
-	    SEQ_CORE_ScheduleEvent(t, tcc, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0, 0);
+	    SEQ_CORE_ScheduleEvent(t, tcc, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0, 0, robotize_flags);
 	}
       }
 
@@ -1227,7 +1228,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( loopback_port )
 		SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1); // forward to MIDI IN handler immediately
 	      else
-		SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0, 0);
+		SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0, 0, robotize_flags);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      // skip in record mode if the same note is already played
@@ -1262,7 +1263,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		    scheduled_tick += 1;
 
 		  // Note On (the Note Off will be prepared as well in SEQ_CORE_ScheduleEvent)
-		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0);
+		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0, robotize_flags);
 
 		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX ) {
@@ -1328,7 +1329,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       	      
 		      int i;
 		      for(i=triggers-1; i>=0; --i)
-			SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0);
+			SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags );
 		    } else {
 		      // force gatelength depending on number of triggers
 		      if( triggers < 6 ) {
@@ -1353,14 +1354,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      if( roll_mode & 0x40 ) { // upwards
 			int i;
 			for(i=triggers-1; i>=0; --i) {
-			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength ,0);
+			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength ,0, robotize_flags );
 			  u16 velocity = roll_attenuation * p_multi.velocity;
 			  p_multi.velocity = velocity >> 8;
 			}
 		      } else { // downwards
 			int i;
 			for(i=0; i<triggers; ++i) {
-			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0);
+			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags );
 			  if( roll_mode ) {
 			    u16 velocity = roll_attenuation * p_multi.velocity;
 			    p_multi.velocity = velocity >> 8;
@@ -1373,7 +1374,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      gatelength = 1;
 		    else // scale length (0..95) over next clock counter to consider the selected clock divider
 		      gatelength = (gatelength * t->step_length) / 96;
-		    SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength, 0);
+		    SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength, 0, robotize_flags );
 		  }
 
 		  // apply Post-FX
@@ -1977,7 +1978,7 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
       SEQ_SCALE_Note(&p, scale, root);
     }
 
-    SEQ_CORE_ScheduleEvent(t, tcc, p, event_type, bpm_tick + echo_offset, gatelength, 1);
+    SEQ_CORE_ScheduleEvent(t, tcc, p, event_type, bpm_tick + echo_offset, gatelength, 1, robotize_flags );
   }
 
   return 0; // no error
