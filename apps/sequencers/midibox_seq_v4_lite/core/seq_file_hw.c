@@ -256,6 +256,7 @@ s32 SEQ_FILE_HW_Read(void)
       char *separators = " \t";
       char *brkt;
       char *parameter;
+      int hlp;
 
       if( (parameter = strtok_r(line_buffer, separators, &brkt)) ) {
 
@@ -988,6 +989,46 @@ s32 SEQ_FILE_HW_Read(void)
 	  AOUT_ConfigSet(config);
 	  AOUT_IF_Init(0);
 
+	} else if( strncasecmp(parameter, "CV_GATE_SR", 10) == 0 && // CV_GATE_SR%d
+		     (hlp=atoi(parameter+10)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_CV_GATES ) {
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_cv_gate_sr[hlp-1] = sr;
+
+	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_clk_sr = sr;
+
+	} else if( strncasecmp(parameter, "DOUT_GATE_SR", 12) == 0 && // DOUT_GATE_SR%d
+		     (hlp=atoi(parameter+12)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
+
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
+#endif
+	    continue;
+	  }
+
+	    seq_hwcfg_dout_gate_sr[hlp-1] = sr;
+
 	} else if( strcmp(parameter, "J5_ENABLED") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 j5_enabled = get_dec(word);
@@ -1019,8 +1060,8 @@ s32 SEQ_FILE_HW_Read(void)
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
 
-	} else if( strcmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
-	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4L now!
+	} else if( strcasecmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
+	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
 	  // can be removed once most users switched to beta28 and later!
 
 	  char *word = strtok_r(NULL, separators, &brkt);
@@ -1032,7 +1073,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  SEQ_CV_ClkPulseWidthSet(pulsewidth);
+	  SEQ_CV_ClkPulseWidthSet(0, pulsewidth);
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////

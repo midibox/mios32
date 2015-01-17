@@ -394,7 +394,9 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
   // forward to UI button handler
   SEQ_UI_Button_Handler(pin, pin_value);
 
+#ifndef MBSEQV4L
   SEQ_LCD_LOGO_ScreenSaver_Disable();
+#endif
 #endif
 }
 

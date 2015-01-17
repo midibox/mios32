@@ -42,6 +42,7 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_groove.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_morph.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_humanize.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_robotize.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_lfo.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_chord.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_pattern.c \
