@@ -1067,12 +1067,14 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
       seq_pattern_t new_pattern = seq_pattern[ui_selected_group];
       new_pattern.pattern = ((button_row&0x3) << 4) | button_column;
       
+#ifndef MBSEQV4L
       s32 status;
       if( (status=SEQ_PATTERN_Save(ui_selected_group, new_pattern)) < 0 ) {
 	SEQ_UI_SDCardErrMsg(2000, status);
       } else {
 	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Pattern saved", "on SD Card!");
       }
+#endif
       // change pattern number directly
       new_pattern.REQ = 0;
       seq_pattern[ui_selected_group] = seq_pattern_req[ui_selected_group] = new_pattern;

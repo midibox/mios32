@@ -293,8 +293,10 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_record_quantize = value;
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
+#ifndef MBSEQV4L
 	  } else if( strcmp(parameter, "DatawheelMode") == 0 ) {
 	    seq_ui_edit_datawheel_mode = value;
+#endif
 	  } else if( strcmp(parameter, "MixerLiveSend") == 0 ) {
 	    seq_core_options.MIXER_LIVE_SEND = value;
 	  } else if( strcmp(parameter, "InitCC") == 0 ) {
@@ -311,8 +313,10 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_midi_sysex_remote_port = value;
 	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
 	    seq_midi_sysex_remote_id = (value > 128) ? 0 : value;
+#ifndef MBSEQV4L
 	  } else if( strcmp(parameter, "ScreenSaverDelay") == 0 ) {
 	    seq_lcd_logo_screensaver_delay = (value > 255) ? 255 : value;
+#endif
 	  } else if( strcmp(parameter, "CV_AOUT_Type") == 0 ) {
 	    SEQ_CV_IfSet(value);
 	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
@@ -503,8 +507,10 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
   FLUSH_BUFFER;
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "DatawheelMode %d\n", seq_ui_edit_datawheel_mode);
   FLUSH_BUFFER;
+#endif
 
   sprintf(line_buffer, "MixerLiveSend %d\n", seq_core_options.MIXER_LIVE_SEND);
   FLUSH_BUFFER;
@@ -618,8 +624,10 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   }
 #endif
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "ScreenSaverDelay %d\n", seq_lcd_logo_screensaver_delay);
   FLUSH_BUFFER;
+#endif
 
   return status;
 }
