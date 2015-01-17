@@ -96,6 +96,7 @@ if ( tcc->robotize_X && tcc->robotize_X_probability && SEQ_ROBOTIZE_Check_Probab
 
 //debug with
 MIOS32_MIDI_SendDebugMessage("random: %d ", randoms[0]);
+* MIOS32_MIDI_SendDebugString("string")
 */
 
 	//NOTE ROBOTIZER - shift by semitones

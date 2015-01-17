@@ -168,7 +168,8 @@ typedef union {
     u8 HOLD:1;         // hold mode for transposer/arpeggiator
     u8 RESTART:1;      // track restart on key press
     u8 FORCE_SCALE:1;  // note values are forced to scale
-    u8 SUSTAIN:1;      // events are sustained
+    u8 SUSTAIN:1;      // events are sustained because SUSTAIN is set as active on the track
+    u8 ROBOSUSTAIN:1;      // events are temporarily sustained by the robotizer
   };
 } seq_core_trkmode_flags_t;
 
