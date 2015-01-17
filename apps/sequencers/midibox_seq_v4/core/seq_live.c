@@ -143,12 +143,16 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       //SEQ_CORE_Transpose(t, tcc, &e.midi_package);
       // conflict if same keyboard is assigned to transposer
 
+	  //initialize robotize flags
+      seq_robotize_flags_t robotize_flags;
+      robotize_flags.ALL = 0;
+
       // adding FX?
       u8 apply_force_to_scale = event_mode != SEQ_EVENT_MODE_Drum;
       if( seq_live_options.FX ) {
 	SEQ_HUMANIZE_Event(track, t->step, &e);
-	SEQ_ROBOTIZE_Event(track, t->step, &e);
-	SEQ_LFO_Event(track, &e);
+	robotize_flags = SEQ_ROBOTIZE_Event(track, t->step, &e);
+	if ( !robotize_flags.NOFX ) SEQ_LFO_Event(track, &e);
 
 	if( apply_force_to_scale &&
 	    (seq_live_options.FORCE_SCALE
@@ -190,7 +194,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       // adding echo?
       if( seq_live_options.FX ) {
 	if( SEQ_BPM_IsRunning() )
-	  SEQ_CORE_Echo(t, tcc, e.midi_package, SEQ_BPM_TickGet(), e.len);
+	  if ( !robotize_flags.NOFX ) SEQ_CORE_Echo(t, tcc, e.midi_package, SEQ_BPM_TickGet(), e.len, robotize_flags);
       }
 
     }

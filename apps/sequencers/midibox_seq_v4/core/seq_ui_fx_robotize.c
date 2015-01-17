@@ -126,8 +126,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
       
     case SEQ_UI_ENCODER_GP11:
-      //ui_selected_item = ITEM_ROBOTIZE_ECHO;
-      return -1;
+      ui_selected_item = ITEM_ROBOTIZE_ECHO;
       break;
       
     case SEQ_UI_ENCODER_GP12:
@@ -316,7 +315,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   SEQ_LCD_PrintString("Trk. Robot Prob Skip Octv Note VelCC Len");
 //  SEQ_LCD_PrintString("Sust NoFX +Echo +Dup                    ");
-    SEQ_LCD_PrintString("Sust NoFX                               ");
+    SEQ_LCD_PrintString("Sust NoFX +Echo                         ");
   
   
   ///////////////////////////////////////////////////////////////////////////
@@ -434,8 +433,6 @@ static s32 LCD_Handler(u8 high_prio)
   }
   SEQ_LCD_PrintSpaces(2);
 
-/* UNDER DEVELOPMENT
- * 
   ///////////////////////////////////////////////////////////////////////////
 
   if( ui_selected_item == ITEM_ROBOTIZE_ECHO && ui_cursor_flash ) {
@@ -446,6 +443,8 @@ static s32 LCD_Handler(u8 high_prio)
   }
   SEQ_LCD_PrintSpaces(1);
 
+/* UNDER DEVELOPMENT
+ * 
   ///////////////////////////////////////////////////////////////////////////
 
   if( ui_selected_item == ITEM_ROBOTIZE_DUPLICATE && ui_cursor_flash ) {
@@ -459,7 +458,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
 
 */
-  SEQ_LCD_PrintSpaces(11);
+  SEQ_LCD_PrintSpaces(6);
 
 
 
