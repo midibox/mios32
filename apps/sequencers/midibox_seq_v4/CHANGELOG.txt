@@ -2097,3 +2097,6 @@ Here a list:
 
 - Expression Layer:
   http://midibox.org/forums/topic/18732-fr-expression-layer/
+
+- Audio metronome function
+http://midibox.org/forums/topic/19300-metronome-audio-out-on-stm32f4discovery/
