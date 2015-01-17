@@ -2428,6 +2428,7 @@ s32 SEQ_UI_LCD_Handler(void)
 {
   static u8 boot_animation_wait_ctr = 0;
   static u8 boot_animation_lcd_pos = 0;
+  static u8 screen_saver_was_active = 0;
 
   // special handling in remote client mode
   if( seq_midi_sysex_remote_active_mode == SEQ_MIDI_SYSEX_REMOTE_MODE_CLIENT )
@@ -2450,7 +2451,7 @@ s32 SEQ_UI_LCD_Handler(void)
     seq_ui_display_update_req = 1;
   }
 
-  // print boot screen as long as hardware config hasn't been read
+  // print boot screen as long as hardware config hasn't been read or screensaver is active
   if( !SEQ_FILE_HW_ConfigLocked() ) {
     if( boot_animation_lcd_pos < (40-3) ) {
       if( ++boot_animation_wait_ctr >= 75 ) {
@@ -2465,7 +2466,7 @@ s32 SEQ_UI_LCD_Handler(void)
 	}
 	
 	// logo is print on second LCD
-	SEQ_LCD_LOGO_Print(boot_animation_lcd_pos++);
+	SEQ_LCD_LOGO_Print(40, boot_animation_lcd_pos++);
       }
     }
   } else if( seq_ui_backup_req || seq_ui_format_req ) {
@@ -2499,6 +2500,9 @@ s32 SEQ_UI_LCD_Handler(void)
       SEQ_LCD_PrintFormattedString("] %3d%%", file_copy_percentage);
     }
 
+  } else if( SEQ_LCD_LOGO_ScreenSaver_IsActive() ) {
+    screen_saver_was_active = 1;
+    SEQ_LCD_LOGO_ScreenSaver_Print();
   } else if( seq_ui_button_state.MENU_PRESSED && !seq_ui_button_state.MENU_FIRST_PAGE_SELECTED ) {
     SEQ_LCD_CursorSet(0, 0);
     //                   <-------------------------------------->
@@ -2512,6 +2516,12 @@ s32 SEQ_UI_LCD_Handler(void)
       SEQ_LCD_PrintString(SEQ_UI_PAGES_MenuShortcutNameGet(i));
     }
   } else {
+    // re-init special chars
+    if( screen_saver_was_active ) {
+      screen_saver_was_active = 0;
+      SEQ_LCD_ReInitSpecialChars();
+    }
+
     // perform high priority LCD update request
     if( ui_lcd_callback != NULL )
       ui_lcd_callback(1); // high_prio

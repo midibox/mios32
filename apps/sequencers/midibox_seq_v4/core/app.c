@@ -33,6 +33,7 @@
 
 #include "app.h"
 #include "seq_lcd.h"
+#include "seq_lcd_logo.h"
 
 #include "seq_hwcfg.h"
 
@@ -360,6 +361,10 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
   DEBUG_MSG("Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
 #endif
 
+#ifndef MBSEQV4L
+  SEQ_LCD_LOGO_ScreenSaver_Disable();
+#endif
+
   // forward to UI button handler
   SEQ_UI_Button_Handler(pin, pin_value);
 }
@@ -388,6 +393,8 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 
   // forward to UI button handler
   SEQ_UI_Button_Handler(pin, pin_value);
+
+  SEQ_LCD_LOGO_ScreenSaver_Disable();
 #endif
 }
 
@@ -401,6 +408,10 @@ void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("BLM8x8 Pin %3d (M%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
+#endif
+
+#ifndef MBSEQV4L
+  SEQ_LCD_LOGO_ScreenSaver_Disable();
 #endif
 
   // forward to UI button handler
@@ -417,6 +428,10 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
 #if DEBUG_VERBOSE_LEVEL >= 1
   DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
+#endif
+
+#ifndef MBSEQV4L
+  SEQ_LCD_LOGO_ScreenSaver_Disable();
 #endif
 
   // forward to UI encoder handler
@@ -725,6 +740,10 @@ void SEQ_TASK_Period1S(void)
     SEQ_MIXER_Load(SEQ_MIXER_NumGet());
     SEQ_SONG_Load(SEQ_SONG_NumGet());
   }
+
+#ifndef MBSEQV4L
+  SEQ_LCD_LOGO_ScreenSaver_Period1S();
+#endif
 }
 
 

@@ -28,7 +28,11 @@ MIDIboxSEQ V4.088
      - ALT+Mute clears all mutes
      - ALT+Solo clears all solos
 
-   o added Humanizer2 Fx from Borfo
+   o added Robotizer Fx from Borfo
+
+      o added LCD Screensaver.
+        It will be active after 30 minutes by default.
+        The time can be changed in the UTIL->OPT menu page.
 
 
 MIDIboxSEQ V4.087
