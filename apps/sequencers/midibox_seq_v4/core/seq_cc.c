@@ -63,6 +63,7 @@ s32 SEQ_CC_Init(u32 mode)
     tcc->robotize_mask1 = 0xFF;
     tcc->robotize_mask2 = 0xFF;
 
+
 #ifndef MBSEQV4L
     // set parameters which are not changed by SEQ_LAYER_CopyPreset() function
     tcc->midi_chn = track % 16;

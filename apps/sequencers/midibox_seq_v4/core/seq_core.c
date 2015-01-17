@@ -810,7 +810,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !t->state.STRETCHED_GL ) {
+      if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL ) {
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
@@ -1133,7 +1133,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 			  SEQ_LFO_Event(track, e);
 			}
 	      }
-
+			
+		  tcc->mode.ROBOSUSTAIN = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
 
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
@@ -1159,7 +1160,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( t->state.SUSTAINED )
 		gen_off_events = 1;
 
-	      if( tcc->mode.SUSTAIN || e->len >= 96 )
+	      if( tcc->mode.SUSTAIN || tcc->mode.ROBOSUSTAIN || e->len >= 96 )
 		gen_sustained_events = 1;
 	      else {
 		// generate common On event with given length
@@ -1272,7 +1273,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
-		if( !tcc->mode.SUSTAIN ) {
+		if( !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN ) {
 		  t->state.STRETCHED_GL = 1;
 		  // store glide note number in 128 bit array for later checks
 		  t->glide_notes[p->note / 32] |= (1 << (p->note % 32));
