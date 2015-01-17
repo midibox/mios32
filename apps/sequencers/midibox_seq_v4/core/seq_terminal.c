@@ -43,6 +43,7 @@
 #include "seq_mixer.h"
 #include "seq_hwcfg.h"
 #include "seq_tpd.h"
+#include "seq_lcd_logo.h"
 
 #include "file.h"
 #include "seq_file.h"
@@ -783,6 +784,13 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	}
 	MUTEX_SDCARD_GIVE;
       }
+    } else if( strcmp(parameter, "screen_saver") == 0 ) {
+      SEQ_LCD_LOGO_ScreenSaver_Enable();
+      if( seq_lcd_logo_screensaver_delay ) {
+	out("Screen Saver activated.");
+      } else {
+	out("Screen Saver has been disabled in UTIL->OPT - please set delay to >= 1 minute!");
+      }
     } else if( strcmp(parameter, "reset") == 0 ) {
       MIOS32_SYS_Reset();
     } else {
@@ -841,6 +849,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  delete <name>:  deletes a session");
   out("  session:        prints the current session name");
   out("  sessions:       prints all available sessions");
+  out("  screen_saver:   enables the screen saver immediately");
   out("  reset:          resets the MIDIbox SEQ (!)");
   out("  help:           this page");
 

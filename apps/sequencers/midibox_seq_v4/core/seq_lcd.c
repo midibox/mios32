@@ -145,6 +145,8 @@ static u8 lcd_buffer[LCD_MAX_LINES][LCD_MAX_COLUMNS];
 static u16 lcd_cursor_x;
 static u16 lcd_cursor_y;
 
+static seq_lcd_charset_t seq_lcd_current_charset = SEQ_LCD_CHARSET_None;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Display Initialisation
@@ -304,11 +306,10 @@ s32 SEQ_LCD_Update(u8 force)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
 {
-  static seq_lcd_charset_t current_charset = SEQ_LCD_CHARSET_None;
   s32 status = 0;
 
-  if( charset != current_charset ) {
-    current_charset = charset;
+  if( charset != seq_lcd_current_charset ) {
+    seq_lcd_current_charset = charset;
 
     MUTEX_LCD_TAKE;
     int dev;
@@ -346,6 +347,19 @@ s32 SEQ_LCD_InitSpecialChars(seq_lcd_charset_t charset)
   }
 
   return status; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// re-initialise character set
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_ReInitSpecialChars(void)
+{
+  seq_lcd_charset_t charset = seq_lcd_current_charset;
+  
+  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_None);
+  SEQ_LCD_InitSpecialChars(charset);
+
+  return 0; // no error
 }
 
 

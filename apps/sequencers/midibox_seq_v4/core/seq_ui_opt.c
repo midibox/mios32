@@ -33,6 +33,7 @@
 #include "seq_mixer.h"
 #include "seq_tpd.h"
 #include "seq_blm.h"
+#include "seq_lcd_logo.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,8 +53,9 @@
 #define ITEM_TPD_MODE        10
 #define ITEM_BLM_ALWAYS_USE_FTS 11
 #define ITEM_MIXER_CC1234    12
+#define ITEM_SCREEN_SAVER    13
 
-#define NUM_OF_ITEMS         13
+#define NUM_OF_ITEMS         14
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -120,6 +122,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Mixer CCs which should be sent after PC",
+    ""
+  },
+
+  {//<-------------------------------------->
+    "Screen Saver:",
     ""
   },
 };
@@ -304,6 +311,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_SCREEN_SAVER: {
+      if( incrementer ) {
+	int delay = (int)seq_lcd_logo_screensaver_delay + incrementer;
+	if( delay > 255 )
+	  delay = 255;
+	else if( delay < 0 )
+	  delay = 0;
+
+	seq_lcd_logo_screensaver_delay = delay;
+	ui_store_file_required = 1;
+      }
+      return 1;
     } break;
 
   }
@@ -538,6 +559,35 @@ static s32 LCD_Handler(u8 high_prio)
 				   (seq_mixer_cc1234_before_pc & 0x2) ? " no" : "yes",
 				   (seq_mixer_cc1234_before_pc & 0x4) ? " no" : "yes",
 				   (seq_mixer_cc1234_before_pc & 0x8) ? " no" : "yes");
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_SCREEN_SAVER: {
+    if( !seq_lcd_logo_screensaver_delay ) {
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(3);
+      } else {
+	SEQ_LCD_PrintString("off");
+      }
+      SEQ_LCD_PrintSpaces(40-3);
+    } else {
+      int delay_len;
+      if( seq_lcd_logo_screensaver_delay < 10 )
+	delay_len = 1;
+      else if( seq_lcd_logo_screensaver_delay < 100 )
+	delay_len = 2;
+      else
+	delay_len = 3;
+
+      SEQ_LCD_PrintString("after ");
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(delay_len);
+      } else {
+	SEQ_LCD_PrintFormattedString("%d", seq_lcd_logo_screensaver_delay);
+      }
+      SEQ_LCD_PrintString(" minutes");
+      SEQ_LCD_PrintSpaces(40-6-delay_len-8);
     }
   } break;
 

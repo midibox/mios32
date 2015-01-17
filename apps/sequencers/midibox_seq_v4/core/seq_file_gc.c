@@ -47,6 +47,7 @@
 #include "seq_cv.h"
 #include "seq_blm.h"
 #include "seq_tpd.h"
+#include "seq_lcd_logo.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
@@ -310,6 +311,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_midi_sysex_remote_port = value;
 	  } else if( strcmp(parameter, "RemoteID") == 0 ) {
 	    seq_midi_sysex_remote_id = (value > 128) ? 0 : value;
+	  } else if( strcmp(parameter, "ScreenSaverDelay") == 0 ) {
+	    seq_lcd_logo_screensaver_delay = (value > 255) ? 255 : value;
 	  } else if( strcmp(parameter, "CV_AOUT_Type") == 0 ) {
 	    SEQ_CV_IfSet(value);
 	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
@@ -613,8 +616,10 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     sprintf(line_buffer, "OSC_TransferMode %d %d\n", con, OSC_CLIENT_TransferModeGet(con));
     FLUSH_BUFFER;
   }
-
 #endif
+
+  sprintf(line_buffer, "ScreenSaverDelay %d\n", seq_lcd_logo_screensaver_delay);
+  FLUSH_BUFFER;
 
   return status;
 }

@@ -24,6 +24,12 @@
 #include "seq_lcd_logo.h"
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Global variables
+/////////////////////////////////////////////////////////////////////////////
+
+u8 seq_lcd_logo_screensaver_delay = 30; // in minutes
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
@@ -42,6 +48,10 @@ static const u8 logo[LOGO_X * (LOGO_Y/LCD_CHAR_Y)] = {
 #include "seq_lcd_logo.inc"
 };
 
+static u16 screen_saver_ctr;
+static u8 screen_saver_pos_ctr;
+static u8 screen_saver_wait_ctr;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Init logo functions
@@ -59,7 +69,7 @@ s32 SEQ_LCD_LOGO_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 // Copy part of logo into special characters
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LCD_LOGO_Copy(u8 logo_x_offset, u8 first_special_char)
+static s32 SEQ_LCD_LOGO_Copy(u8 device, u8 logo_x_offset, u8 first_special_char)
 {
   int lcd_char, lcd_x, lcd_y;
   int logo_x, logo_line_offset;
@@ -84,13 +94,13 @@ static s32 SEQ_LCD_LOGO_Copy(u8 logo_x_offset, u8 first_special_char)
   MUTEX_LCD_TAKE;
 
 #if LCD_NUM_DEVICES < 2
-  MIOS32_LCD_DeviceSet(1);
+  MIOS32_LCD_DeviceSet(device);
   MIOS32_LCD_SpecialCharsInit(buffer);
 #elif LCD_NUM_DEVICES == 4
   // print logo on two leftmost LCDs
   int lcd;
   for(lcd=2; lcd<LCD_NUM_DEVICES; ++lcd) {
-    MIOS32_LCD_DeviceSet(lcd);
+    MIOS32_LCD_DeviceSet(2*device + lcd);
     MIOS32_LCD_SpecialCharsInit(buffer);
   }
 #else
@@ -105,9 +115,9 @@ static s32 SEQ_LCD_LOGO_Copy(u8 logo_x_offset, u8 first_special_char)
 /////////////////////////////////////////////////////////////////////////////
 // Prints part of the logo with special characters
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LCD_LOGO_Print(u8 lcd_pos)
+s32 SEQ_LCD_LOGO_Print(u8 logo_offset, u8 lcd_pos)
 {
-  u8 logo_offset = 40;
+  u8 device = logo_offset >= 40;
   int i;
 
   // clear leftmost characters
@@ -126,7 +136,7 @@ s32 SEQ_LCD_LOGO_Print(u8 lcd_pos)
   int first_special_char = lcd_pos % 4;
 
   // generate new characters
-  SEQ_LCD_LOGO_Copy(lcd_pos * LCD_CHAR_X, first_special_char);
+  SEQ_LCD_LOGO_Copy(device, lcd_pos * LCD_CHAR_X, first_special_char);
 
   // print special characters
   SEQ_LCD_CursorSet(logo_offset + lcd_pos, 0);
@@ -134,13 +144,106 @@ s32 SEQ_LCD_LOGO_Print(u8 lcd_pos)
   for(i=0; i<4; ++i)
     SEQ_LCD_PrintChar((first_special_char + i) % 4);
 
+  if( lcd_pos < (40-4) ) {
+    SEQ_LCD_PrintChar(' ');
+  }
+
   SEQ_LCD_CursorSet(logo_offset + lcd_pos, 1);
 
   for(i=0; i<4; ++i)
     SEQ_LCD_PrintChar(4 + ((first_special_char + i) % 4));
+
+  if( lcd_pos < (40-4) ) {
+    SEQ_LCD_PrintChar(' ');
+  }
 
   // update immediately
   SEQ_UI_LCD_Update();
 
   return 0; // no error
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// This function will be called each second to handle the screen saver
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_LOGO_ScreenSaver_Period1S(void)
+{
+  // operation should be atomic
+  MIOS32_IRQ_Disable();
+
+  if( screen_saver_ctr < (60*(u16)seq_lcd_logo_screensaver_delay) ) {
+    if( ++screen_saver_ctr >= (60*(u16)seq_lcd_logo_screensaver_delay) ) {
+      SEQ_LCD_LOGO_ScreenSaver_Enable();
+    }
+  }
+
+  MIOS32_IRQ_Enable();
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function enables the screen saver
+// (can be done with the "screen_saver" command in terminal)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_LOGO_ScreenSaver_Enable(void)
+{
+  screen_saver_pos_ctr = 0;
+  screen_saver_wait_ctr = 254;
+  screen_saver_ctr = 60*(u16)seq_lcd_logo_screensaver_delay;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This function will be called whenever a control element (button, encoder)
+// has been moved
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_LOGO_ScreenSaver_Disable(void)
+{
+  screen_saver_ctr = 0;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns screen saver state
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_LOGO_ScreenSaver_IsActive(void)
+{
+  return seq_lcd_logo_screensaver_delay && (screen_saver_ctr >= (60*(u16)seq_lcd_logo_screensaver_delay));
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints Screen Saver screen
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_LOGO_ScreenSaver_Print(void)
+{
+  if( ++screen_saver_wait_ctr < 75 )
+    return 0; // no action
+
+  if( screen_saver_wait_ctr == 255 ) { // Screen Saver start
+    SEQ_LCD_Clear();
+  }
+
+  screen_saver_wait_ctr = 0;
+
+  if( screen_saver_pos_ctr & 0x80 ) { // Backward
+    int new_pos_ctr = screen_saver_pos_ctr & 0x7f;
+    if( --new_pos_ctr < 0 )
+      screen_saver_pos_ctr = 0x00; // switch to forward
+    else
+      screen_saver_pos_ctr = new_pos_ctr | 0x80;
+  } else { // Forward
+    if( ++screen_saver_pos_ctr >= (40-4) )
+      screen_saver_pos_ctr = 0x80 + 40-4; // switch to backward
+  }
+
+  int pos = screen_saver_pos_ctr & 0x7f;
+  SEQ_LCD_LOGO_Print(0, 36 - pos);
+  SEQ_LCD_LOGO_Print(40, pos);
+
+  return 0; // no error
+}
+
