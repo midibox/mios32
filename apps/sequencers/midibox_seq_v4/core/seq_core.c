@@ -1267,7 +1267,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX ) {
 		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
-		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength);
+
+		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength, robotize_flags);
 		  }
 		}
 
@@ -1377,8 +1378,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // apply Post-FX
 		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX) {
-		    if( ( (tcc->echo_repeats & 0x3f) && !(tcc->echo_repeats & 0x40) && gatelength ) )
-		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength);
+		    if( ( (tcc->echo_repeats & 0x3f) && ( !(tcc->echo_repeats & 0x40) || robotize_flags.ECHO ) && gatelength ) )
+		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength, robotize_flags);
 		  }
 		}
 	      }
@@ -1886,7 +1887,7 @@ u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value)
 /////////////////////////////////////////////////////////////////////////////
 // Echo Fx
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength)
+s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags)
 {
   // thanks to MIDI queuing mechanism, this is a no-brainer :)
 
@@ -1926,8 +1927,17 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
 
   u32 echo_offset = fb_ticks;
   u8 echo_repeats = tcc->echo_repeats;
-  if( echo_repeats & 0x40 ) // disable flag
+
+  if( robotize_flags.ECHO ) {
+	// remove 0x40 flag indicating that echo is active (it's reversed, so 1 indicates echo is set to off)
+	// have to strip this flag out or the MSB flag makes a huge # of echo_repeats.
+	echo_repeats = echo_repeats & 0x0F;
+  }
+	
+  if( echo_repeats & 0x40 && !robotize_flags.ECHO) // disable flag
     echo_repeats = 0;
+    
+    
   int i;
   for(i=0; i<echo_repeats; ++i) {
     if( i ) { // no feedback of velocity or echo ticks on first step
