@@ -3879,7 +3879,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 
       if( item.fwd_id ) {
 	if( item.fwd_value != 0xffff ) {
-	  sprintf(line_buffer, "  fwd_id=%s:%-3d:%d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff, item.fwd_value);
+	  sprintf(line_buffer, "  fwd_id=%s:%d:%d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff, item.fwd_value);
 	} else {
 	  sprintf(line_buffer, "  fwd_id=%s:%-3d", MBNG_EVENT_ItemControllerStrGet(item.fwd_id), item.fwd_id & 0xfff);
 	}

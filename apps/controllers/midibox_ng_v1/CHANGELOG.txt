@@ -18,7 +18,10 @@ MIDIbox NG V1.033
 
    o implemented new meta command "LearnEvent" which allows to learn SendEvent based controller assignments during runtime.
      See cfg/test/metalrn.ngc for a usage example
-     
+
+   o bugfix for DELAY_MS
+
+   o bugfix for fwd_id to a non-existing ID with specific value
 
 
 MIDIbox NG V1.032
