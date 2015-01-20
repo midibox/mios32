@@ -3437,6 +3437,7 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
   mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
   mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
   u8 tmp_map = item->map;
+  u8 tmp_condition = item->cond.condition;
   u16 tmp_pool_address = item->pool_address;
 
   item->id = send_id;
@@ -3444,15 +3445,17 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
   item->fwd_id = 0;
   item->flags.fwd_to_lcd = 0;
   item->map = 0; // we assume that the value has already been mapped
+  item->cond.condition = 0; // disable conditions
   item->pool_address = 0xffff;
 
-  MBNG_EVENT_ItemReceive(item, item->value, 0, 0); // forwarding not enabled
+  MBNG_EVENT_ItemReceive(item, (item->fwd_value != 0xffff) ? item->fwd_value : item->value, 0, 0); // forwarding not enabled
 
   item->id = tmp_id;
   item->hw_id = tmp_hw_id;
   item->fwd_id = tmp_fwd_id;
   item->flags.ALL = flags.ALL;
   item->map = tmp_map;
+  item->cond.condition = tmp_condition;
   item->pool_address = tmp_pool_address;
 
   return 0; // no error
@@ -3516,7 +3519,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     int sender_ix = item->id & 0xfff;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Sender)\n", sender_ix, item->value);
+      DEBUG_MSG("MBNG_EVENT_ItemReceive(SENDER:%d, %d)\n", sender_ix, item->value);
     }
 
     // map?
@@ -3534,7 +3537,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     int receiver_ix = item->id & 0xfff;
 
     if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
-      DEBUG_MSG("MBNG_EVENT_ItemReceive(%d, %d) (Receiver)\n", receiver_ix, item->value);
+      DEBUG_MSG("MBNG_EVENT_ItemReceive(RECEIVER:%d, %d)\n", receiver_ix, item->value);
     }
 
     // map?

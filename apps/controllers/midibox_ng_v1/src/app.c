@@ -264,10 +264,10 @@ void APP_Background(void)
       }
 
       isInMainPage = 0; // static reminder
-    }
 
-    // handles .NGR file execution
-    MBNG_FILE_R_CheckRequest();
+      // handles .NGR file execution
+      MBNG_FILE_R_CheckRequest();
+    }
 
     MUTEX_LCD_GIVE;
 
