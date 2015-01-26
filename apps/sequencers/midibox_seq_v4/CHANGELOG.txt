@@ -2087,6 +2087,8 @@ http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion
 
 - round step buttons along the top light in dim yellow to indicate which steps in the currently visible measure have notes set? and
 - when ALT is held (to switch octaves), round track buttons on the right side light to indicate which octaves have notes set?
+- copy/paste using the top row of step view buttons: ALT+step button copies that measure, keep holding ALT and press another step button to paste the copied steps into the second step view.  Keep holding ALT and press a third, 4th, 5th, etc. step button to paste the copied steps into additional step views.  Release ALT without pressing a second step button to cancel out without pasting.
+- bugfix for drum track switching
 ----------------------------------------------------------
 
 
