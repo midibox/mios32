@@ -30,9 +30,11 @@ MIDIboxSEQ V4.088
 
    o added Robotizer Fx from Borfo
 
-      o added LCD Screensaver.
-        It will be active after 30 minutes by default.
-        The time can be changed in the UTIL->OPT menu page.
+   o added LCD Screensaver.
+     It will be active after 30 minutes by default.
+     The time can be changed in the UTIL->OPT menu page.
+
+   o added DETENTED4/DETENTED5 option for rotary encoders in MBSEQ_HW.V4 file
 
 
 MIDIboxSEQ V4.087
