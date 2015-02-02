@@ -768,6 +768,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    enc_type = DETENTED2;
 	  } else if( strcasecmp(word, "DETENTED3") == 0 ) {
 	    enc_type = DETENTED3;
+	  } else if( strcasecmp(word, "DETENTED4") == 0 ) {
+	    enc_type = DETENTED4;
+	  } else if( strcasecmp(word, "DETENTED5") == 0 ) {
+	    enc_type = DETENTED5;
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in ENC_%s definition: invalid type '%s'!", parameter, word);
