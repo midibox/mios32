@@ -2092,6 +2092,10 @@ http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion
 - copy/paste using the top row of step view buttons: ALT+step button copies that measure, keep holding ALT and press another step button to paste the copied steps into the second step view.  Keep holding ALT and press a third, 4th, 5th, etc. step button to paste the copied steps into additional step views.  Release ALT without pressing a second step button to cancel out without pasting.
 - bugfix for drum track switching
 ----------------------------------------------------------
+Glide Record issue: http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=168878
+just wanted to report an issue with the glide notes (MIDIboxSEQ V4.088 revision 2135) :
+When I record a sequence live, everything is fine until i exit the Rec. page, then the glide notes recorded do not send noteOff anymore...
+----------------------------------------------------------
 
 
 
