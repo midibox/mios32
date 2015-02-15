@@ -670,12 +670,14 @@ MIDIbox NG V1.000
 Wishlist
 ~~~~~~~~
 
+--------------------------------------------------------------------------------
 automatic .NGC backup: http://midibox.org/forums/topic/18819-enable-midi-in4-and-midi-routing
-
+--------------------------------------------------------------------------------
 AOUT mapping: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=167869
-
+--------------------------------------------------------------------------------
 Allow to directly select SCS pages with meta events: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=168793
-
+--------------------------------------------------------------------------------
 Add "delete" option to SCS disk page
-
+--------------------------------------------------------------------------------
+KEYBOARD: allow individual delay settings for all keys
 --------------------------------------------------------------------------------
