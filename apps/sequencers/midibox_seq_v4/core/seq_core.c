@@ -1080,7 +1080,9 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      u32 ix = p->note / 32;
 	      u32 mask = (1 << (p->note % 32));
 	      if( prev_glide_notes[ix] & mask ) {
-		next_glide_notes[ix] |= mask;
+		if( e->len >= 96 ) {
+		  next_glide_notes[ix] |= mask;
+		}
 		p->velocity = 0;
 	      }
 	    }
@@ -1135,7 +1137,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 			}
 	      }
 			
-		  tcc->mode.ROBOSUSTAIN = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
+	      tcc->mode.ROBOSUSTAIN = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
 
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
@@ -1184,7 +1186,6 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	    // clear state flag and note storage
 	    t->state.SUSTAINED = 0;
-
 	    if( seq_record_state.ENABLED || !t->state.STRETCHED_GL ) {
 	      t->state.STRETCHED_GL = 0;
 
