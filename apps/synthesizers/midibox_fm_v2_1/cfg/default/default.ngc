@@ -1,0 +1,377 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)READY."
+
+
+# EVENTs
+EVENT_BUTTON id=  1  fwd_id=LED:1    type=NoteOn chn= 1 key= 36  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  2  fwd_id=LED:2    type=NoteOn chn= 1 key= 37  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  3  fwd_id=LED:3    type=NoteOn chn= 1 key= 38  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  4  fwd_id=LED:4    type=NoteOn chn= 1 key= 39  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  5  fwd_id=LED:5    type=NoteOn chn= 1 key= 40  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  6  fwd_id=LED:6    type=NoteOn chn= 1 key= 41  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  7  fwd_id=LED:7    type=NoteOn chn= 1 key= 42  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  8  fwd_id=LED:8    type=NoteOn chn= 1 key= 43  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id=  9  fwd_id=LED:9    type=NoteOn chn= 1 key= 44  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 10  fwd_id=LED:10   type=NoteOn chn= 1 key= 45  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 11  fwd_id=LED:11   type=NoteOn chn= 1 key= 46  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 12  fwd_id=LED:12   type=NoteOn chn= 1 key= 47  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 13  fwd_id=LED:13   type=NoteOn chn= 1 key= 48  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 14  fwd_id=LED:14   type=NoteOn chn= 1 key= 49  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 15  fwd_id=LED:15   type=NoteOn chn= 1 key= 50  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 16  fwd_id=LED:16   type=NoteOn chn= 1 key= 51  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 17  fwd_id=LED:17   type=NoteOn chn= 1 key= 52  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 18  fwd_id=LED:18   type=NoteOn chn= 1 key= 53  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 19  fwd_id=LED:19   type=NoteOn chn= 1 key= 54  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 20  fwd_id=LED:20   type=NoteOn chn= 1 key= 55  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 21  fwd_id=LED:21   type=NoteOn chn= 1 key= 56  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 22  fwd_id=LED:22   type=NoteOn chn= 1 key= 57  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 23  fwd_id=LED:23   type=NoteOn chn= 1 key= 58  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 24  fwd_id=LED:24   type=NoteOn chn= 1 key= 59  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 25  fwd_id=LED:25   type=NoteOn chn= 1 key= 60  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 26  fwd_id=LED:26   type=NoteOn chn= 1 key= 61  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 27  fwd_id=LED:27   type=NoteOn chn= 1 key= 62  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 28  fwd_id=LED:28   type=NoteOn chn= 1 key= 63  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 29  fwd_id=LED:29   type=NoteOn chn= 1 key= 64  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 30  fwd_id=LED:30   type=NoteOn chn= 1 key= 65  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 31  fwd_id=LED:31   type=NoteOn chn= 1 key= 66  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 32  fwd_id=LED:32   type=NoteOn chn= 1 key= 67  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 33  fwd_id=LED:33   type=NoteOn chn= 1 key= 68  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 34  fwd_id=LED:34   type=NoteOn chn= 1 key= 69  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 35  fwd_id=LED:35   type=NoteOn chn= 1 key= 70  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 36  fwd_id=LED:36   type=NoteOn chn= 1 key= 71  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 37  fwd_id=LED:37   type=NoteOn chn= 1 key= 72  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 38  fwd_id=LED:38   type=NoteOn chn= 1 key= 73  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 39  fwd_id=LED:39   type=NoteOn chn= 1 key= 74  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 40  fwd_id=LED:40   type=NoteOn chn= 1 key= 75  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 41  fwd_id=LED:41   type=NoteOn chn= 1 key= 76  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 42  fwd_id=LED:42   type=NoteOn chn= 1 key= 77  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 43  fwd_id=LED:43   type=NoteOn chn= 1 key= 78  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 44  fwd_id=LED:44   type=NoteOn chn= 1 key= 79  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 45  fwd_id=LED:45   type=NoteOn chn= 1 key= 80  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 46  fwd_id=LED:46   type=NoteOn chn= 1 key= 81  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 47  fwd_id=LED:47   type=NoteOn chn= 1 key= 82  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 48  fwd_id=LED:48   type=NoteOn chn= 1 key= 83  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 49  fwd_id=LED:49   type=NoteOn chn= 1 key= 84  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 50  fwd_id=LED:50   type=NoteOn chn= 1 key= 85  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 51  fwd_id=LED:51   type=NoteOn chn= 1 key= 86  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 52  fwd_id=LED:52   type=NoteOn chn= 1 key= 87  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 53  fwd_id=LED:53   type=NoteOn chn= 1 key= 88  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 54  fwd_id=LED:54   type=NoteOn chn= 1 key= 89  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 55  fwd_id=LED:55   type=NoteOn chn= 1 key= 90  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 56  fwd_id=LED:56   type=NoteOn chn= 1 key= 91  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 57  fwd_id=LED:57   type=NoteOn chn= 1 key= 92  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 58  fwd_id=LED:58   type=NoteOn chn= 1 key= 93  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 59  fwd_id=LED:59   type=NoteOn chn= 1 key= 94  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 60  fwd_id=LED:60   type=NoteOn chn= 1 key= 95  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 61  fwd_id=LED:61   type=NoteOn chn= 1 key= 96  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 62  fwd_id=LED:62   type=NoteOn chn= 1 key= 97  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 63  fwd_id=LED:63   type=NoteOn chn= 1 key= 98  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_BUTTON id= 64  fwd_id=LED:64   type=NoteOn chn= 1 key= 99  range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_btn"
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1    type=CC     chn= 1 cc= 16   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2    type=CC     chn= 1 cc= 17   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3    type=CC     chn= 1 cc= 18   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4    type=CC     chn= 1 cc= 19   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  5  fwd_id=LED_MATRIX:5    type=CC     chn= 1 cc= 20   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  6  fwd_id=LED_MATRIX:6    type=CC     chn= 1 cc= 21   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  7  fwd_id=LED_MATRIX:7    type=CC     chn= 1 cc= 22   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  8  fwd_id=LED_MATRIX:8    type=CC     chn= 1 cc= 23   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id=  9  fwd_id=LED_MATRIX:9    type=CC     chn= 1 cc= 24   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 10  fwd_id=LED_MATRIX:10   type=CC     chn= 1 cc= 25   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 11  fwd_id=LED_MATRIX:11   type=CC     chn= 1 cc= 26   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 12  fwd_id=LED_MATRIX:12   type=CC     chn= 1 cc= 27   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 13  fwd_id=LED_MATRIX:13   type=CC     chn= 1 cc= 28   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 14  fwd_id=LED_MATRIX:14   type=CC     chn= 1 cc= 29   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 15  fwd_id=LED_MATRIX:15   type=CC     chn= 1 cc= 30   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 16  fwd_id=LED_MATRIX:16   type=CC     chn= 1 cc= 31   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 17  fwd_id=LED_MATRIX:17   type=CC     chn= 1 cc= 32   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 18  fwd_id=LED_MATRIX:18   type=CC     chn= 1 cc= 33   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 19  fwd_id=LED_MATRIX:19   type=CC     chn= 1 cc= 34   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 20  fwd_id=LED_MATRIX:20   type=CC     chn= 1 cc= 35   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 21  fwd_id=LED_MATRIX:21   type=CC     chn= 1 cc= 36   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 22  fwd_id=LED_MATRIX:22   type=CC     chn= 1 cc= 37   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 23  fwd_id=LED_MATRIX:23   type=CC     chn= 1 cc= 38   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 24  fwd_id=LED_MATRIX:24   type=CC     chn= 1 cc= 39   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 25  fwd_id=LED_MATRIX:25   type=CC     chn= 1 cc= 40   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 26  fwd_id=LED_MATRIX:26   type=CC     chn= 1 cc= 41   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 27  fwd_id=LED_MATRIX:27   type=CC     chn= 1 cc= 42   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 28  fwd_id=LED_MATRIX:28   type=CC     chn= 1 cc= 43   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 29  fwd_id=LED_MATRIX:29   type=CC     chn= 1 cc= 44   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 30  fwd_id=LED_MATRIX:30   type=CC     chn= 1 cc= 45   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 31  fwd_id=LED_MATRIX:31   type=CC     chn= 1 cc= 46   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 32  fwd_id=LED_MATRIX:32   type=CC     chn= 1 cc= 47   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 33  fwd_id=LED_MATRIX:33   type=CC     chn= 1 cc= 48   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 34  fwd_id=LED_MATRIX:34   type=CC     chn= 1 cc= 49   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 35  fwd_id=LED_MATRIX:35   type=CC     chn= 1 cc= 50   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 36  fwd_id=LED_MATRIX:36   type=CC     chn= 1 cc= 51   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 37  fwd_id=LED_MATRIX:37   type=CC     chn= 1 cc= 52   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 38  fwd_id=LED_MATRIX:38   type=CC     chn= 1 cc= 53   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 39  fwd_id=LED_MATRIX:39   type=CC     chn= 1 cc= 54   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 40  fwd_id=LED_MATRIX:40   type=CC     chn= 1 cc= 55   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 41  fwd_id=LED_MATRIX:41   type=CC     chn= 1 cc= 56   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 42  fwd_id=LED_MATRIX:42   type=CC     chn= 1 cc= 57   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 43  fwd_id=LED_MATRIX:43   type=CC     chn= 1 cc= 58   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 44  fwd_id=LED_MATRIX:44   type=CC     chn= 1 cc= 59   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 45  fwd_id=LED_MATRIX:45   type=CC     chn= 1 cc= 60   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 46  fwd_id=LED_MATRIX:46   type=CC     chn= 1 cc= 61   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 47  fwd_id=LED_MATRIX:47   type=CC     chn= 1 cc= 62   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 48  fwd_id=LED_MATRIX:48   type=CC     chn= 1 cc= 63   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 49  fwd_id=LED_MATRIX:49   type=CC     chn= 1 cc= 64   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 50  fwd_id=LED_MATRIX:50   type=CC     chn= 1 cc= 65   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 51  fwd_id=LED_MATRIX:51   type=CC     chn= 1 cc= 66   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 52  fwd_id=LED_MATRIX:52   type=CC     chn= 1 cc= 67   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 53  fwd_id=LED_MATRIX:53   type=CC     chn= 1 cc= 68   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 54  fwd_id=LED_MATRIX:54   type=CC     chn= 1 cc= 69   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 55  fwd_id=LED_MATRIX:55   type=CC     chn= 1 cc= 70   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 56  fwd_id=LED_MATRIX:56   type=CC     chn= 1 cc= 71   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 57  fwd_id=LED_MATRIX:57   type=CC     chn= 1 cc= 72   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 58  fwd_id=LED_MATRIX:58   type=CC     chn= 1 cc= 73   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 59  fwd_id=LED_MATRIX:59   type=CC     chn= 1 cc= 74   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 60  fwd_id=LED_MATRIX:60   type=CC     chn= 1 cc= 75   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 61  fwd_id=LED_MATRIX:61   type=CC     chn= 1 cc= 76   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 62  fwd_id=LED_MATRIX:62   type=CC     chn= 1 cc= 77   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 63  fwd_id=LED_MATRIX:63   type=CC     chn= 1 cc= 78   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_ENC    id= 64  fwd_id=LED_MATRIX:64   type=CC     chn= 1 cc= 79   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_enc"
+EVENT_AINSER id=  1  type=CC     chn= 2 cc= 16   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  type=CC     chn= 2 cc= 17   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  type=CC     chn= 2 cc= 18   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  type=CC     chn= 2 cc= 19   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  5  type=CC     chn= 2 cc= 20   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  6  type=CC     chn= 2 cc= 21   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  7  type=CC     chn= 2 cc= 22   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  8  type=CC     chn= 2 cc= 23   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  9  type=CC     chn= 2 cc= 24   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 10  type=CC     chn= 2 cc= 25   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 11  type=CC     chn= 2 cc= 26   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 12  type=CC     chn= 2 cc= 27   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 13  type=CC     chn= 2 cc= 28   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 14  type=CC     chn= 2 cc= 29   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 15  type=CC     chn= 2 cc= 30   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 16  type=CC     chn= 2 cc= 31   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 17  type=CC     chn= 2 cc= 32   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 18  type=CC     chn= 2 cc= 33   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 19  type=CC     chn= 2 cc= 34   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 20  type=CC     chn= 2 cc= 35   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 21  type=CC     chn= 2 cc= 36   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 22  type=CC     chn= 2 cc= 37   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 23  type=CC     chn= 2 cc= 38   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 24  type=CC     chn= 2 cc= 39   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 25  type=CC     chn= 2 cc= 40   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 26  type=CC     chn= 2 cc= 41   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 27  type=CC     chn= 2 cc= 42   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 28  type=CC     chn= 2 cc= 43   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 29  type=CC     chn= 2 cc= 44   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 30  type=CC     chn= 2 cc= 45   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 31  type=CC     chn= 2 cc= 46   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 32  type=CC     chn= 2 cc= 47   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 33  type=CC     chn= 2 cc= 48   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 34  type=CC     chn= 2 cc= 49   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 35  type=CC     chn= 2 cc= 50   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 36  type=CC     chn= 2 cc= 51   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 37  type=CC     chn= 2 cc= 52   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 38  type=CC     chn= 2 cc= 53   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 39  type=CC     chn= 2 cc= 54   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 40  type=CC     chn= 2 cc= 55   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 41  type=CC     chn= 2 cc= 56   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 42  type=CC     chn= 2 cc= 57   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 43  type=CC     chn= 2 cc= 58   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 44  type=CC     chn= 2 cc= 59   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 45  type=CC     chn= 2 cc= 60   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 46  type=CC     chn= 2 cc= 61   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 47  type=CC     chn= 2 cc= 62   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 48  type=CC     chn= 2 cc= 63   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 49  type=CC     chn= 2 cc= 64   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 50  type=CC     chn= 2 cc= 65   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 51  type=CC     chn= 2 cc= 66   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 52  type=CC     chn= 2 cc= 67   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 53  type=CC     chn= 2 cc= 68   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 54  type=CC     chn= 2 cc= 69   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 55  type=CC     chn= 2 cc= 70   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 56  type=CC     chn= 2 cc= 71   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 57  type=CC     chn= 2 cc= 72   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 58  type=CC     chn= 2 cc= 73   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 59  type=CC     chn= 2 cc= 74   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 60  type=CC     chn= 2 cc= 75   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 61  type=CC     chn= 2 cc= 76   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 62  type=CC     chn= 2 cc= 77   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 63  type=CC     chn= 2 cc= 78   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 64  type=CC     chn= 2 cc= 79   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AIN    id=  1  type=CC     chn= 3 cc= 16   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  2  type=CC     chn= 3 cc= 17   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  3  type=CC     chn= 3 cc= 18   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  4  type=CC     chn= 3 cc= 19   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  5  type=CC     chn= 3 cc= 20   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+EVENT_AIN    id=  6  type=CC     chn= 3 cc= 21   range=  0:127  offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_ain"
+
+
+# SysEx variables
+SYSEX_VAR dev=0 pat=0 bnk=0 ins=0 chn=0
+
+
+# ENC hardware
+
+
+# DIN_MATRIX hardware
+DIN_MATRIX n= 1   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 2   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 3   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 4   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 5   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 6   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 7   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+DIN_MATRIX n= 8   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_din1= 0 sr_din2= 0
+
+
+# DOUT_MATRIX hardware
+DOUT_MATRIX n=1   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=2   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=3   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=4   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=5   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=6   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=7   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+DOUT_MATRIX n=8   rows=8  inverted_sel=0  inverted_row=0  sr_dout_sel1= 0 sr_dout_sel2= 0  sr_dout_r1= 0 sr_dout_r2= 0  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+
+# LED_MATRIX_PATTERNs
+LED_MATRIX_PATTERN n=1  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n=1  pos= 1  pattern=1100000000000000
+LED_MATRIX_PATTERN n=1  pos= 2  pattern=1100000000000000
+LED_MATRIX_PATTERN n=1  pos= 3  pattern=1110000000000000
+LED_MATRIX_PATTERN n=1  pos= 4  pattern=1110000000000000
+LED_MATRIX_PATTERN n=1  pos= 5  pattern=1111000000000000
+LED_MATRIX_PATTERN n=1  pos= 6  pattern=1111000000000000
+LED_MATRIX_PATTERN n=1  pos= 7  pattern=1111100000000000
+LED_MATRIX_PATTERN n=1  pos= M  pattern=1111110000010000
+LED_MATRIX_PATTERN n=1  pos= 8  pattern=1111111000000000
+LED_MATRIX_PATTERN n=1  pos= 9  pattern=1111111100000000
+LED_MATRIX_PATTERN n=1  pos=10  pattern=1111111100000000
+LED_MATRIX_PATTERN n=1  pos=11  pattern=1111111110000000
+LED_MATRIX_PATTERN n=1  pos=12  pattern=1111111110000000
+LED_MATRIX_PATTERN n=1  pos=13  pattern=1111111111000000
+LED_MATRIX_PATTERN n=1  pos=14  pattern=1111111111000000
+LED_MATRIX_PATTERN n=1  pos=15  pattern=1111111111100000
+
+LED_MATRIX_PATTERN n=2  pos= 0  pattern=1111110000000000
+LED_MATRIX_PATTERN n=2  pos= 1  pattern=0111110000000000
+LED_MATRIX_PATTERN n=2  pos= 2  pattern=0111110000000000
+LED_MATRIX_PATTERN n=2  pos= 3  pattern=0011110000000000
+LED_MATRIX_PATTERN n=2  pos= 4  pattern=0001110000000000
+LED_MATRIX_PATTERN n=2  pos= 5  pattern=0001110000000000
+LED_MATRIX_PATTERN n=2  pos= 6  pattern=0000110000000000
+LED_MATRIX_PATTERN n=2  pos= 7  pattern=0000010000000000
+LED_MATRIX_PATTERN n=2  pos= M  pattern=0000111000010000
+LED_MATRIX_PATTERN n=2  pos= 8  pattern=0000010000000000
+LED_MATRIX_PATTERN n=2  pos= 9  pattern=0000011000000000
+LED_MATRIX_PATTERN n=2  pos=10  pattern=0000011000000000
+LED_MATRIX_PATTERN n=2  pos=11  pattern=0000011100000000
+LED_MATRIX_PATTERN n=2  pos=12  pattern=0000011110000000
+LED_MATRIX_PATTERN n=2  pos=13  pattern=0000011110000000
+LED_MATRIX_PATTERN n=2  pos=14  pattern=0000011111000000
+LED_MATRIX_PATTERN n=2  pos=15  pattern=0000011111100000
+
+LED_MATRIX_PATTERN n=3  pos= 0  pattern=1000000000000000
+LED_MATRIX_PATTERN n=3  pos= 1  pattern=0100000000000000
+LED_MATRIX_PATTERN n=3  pos= 2  pattern=0100000000000000
+LED_MATRIX_PATTERN n=3  pos= 3  pattern=0010000000000000
+LED_MATRIX_PATTERN n=3  pos= 4  pattern=0010000000000000
+LED_MATRIX_PATTERN n=3  pos= 5  pattern=0001000000000000
+LED_MATRIX_PATTERN n=3  pos= 6  pattern=0000100000000000
+LED_MATRIX_PATTERN n=3  pos= 7  pattern=0000010000000000
+LED_MATRIX_PATTERN n=3  pos= M  pattern=0000111000010000
+LED_MATRIX_PATTERN n=3  pos= 8  pattern=0000010000000000
+LED_MATRIX_PATTERN n=3  pos= 9  pattern=0000001000000000
+LED_MATRIX_PATTERN n=3  pos=10  pattern=0000000100000000
+LED_MATRIX_PATTERN n=3  pos=11  pattern=0000000100000000
+LED_MATRIX_PATTERN n=3  pos=12  pattern=0000000010000000
+LED_MATRIX_PATTERN n=3  pos=13  pattern=0000000001000000
+LED_MATRIX_PATTERN n=3  pos=14  pattern=0000000001000000
+LED_MATRIX_PATTERN n=3  pos=15  pattern=0000000000100000
+
+LED_MATRIX_PATTERN n=4  pos= 0  pattern=0000010000000000
+LED_MATRIX_PATTERN n=4  pos= 1  pattern=0000010000000000
+LED_MATRIX_PATTERN n=4  pos= 2  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 3  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 4  pattern=0000111000000000
+LED_MATRIX_PATTERN n=4  pos= 5  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= 6  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= 7  pattern=0001111100000000
+LED_MATRIX_PATTERN n=4  pos= M  pattern=0011111110010000
+LED_MATRIX_PATTERN n=4  pos= 8  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos= 9  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos=10  pattern=0011111110000000
+LED_MATRIX_PATTERN n=4  pos=11  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=12  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=13  pattern=0111111111000000
+LED_MATRIX_PATTERN n=4  pos=14  pattern=1111111111100000
+LED_MATRIX_PATTERN n=4  pos=15  pattern=1111111111100000
+
+
+
+# AIN hardware
+AIN enable_mask=000000
+
+
+# AINSER hardware
+AINSER n=1   enabled=0  cs=0  num_pins=64  resolution=7bit
+AINSER n=2   enabled=0  cs=1  num_pins=64  resolution=7bit
+
+
+# KEYBOARD hardware
+KEYBOARD n=1   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=36 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+KEYBOARD n=2   rows=0  dout_sr1=0  dout_sr2=0  din_sr1=0  din_sr2=0  din_inverted=0  break_inverted=0  din_key_offset=32 \
+               scan_velocity=1  scan_optimized=0  note_offset=36 \
+               delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
+
+
+# MF hardware (has to be configured for Motormix protocol!)
+MF n=1   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=2   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=3   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+MF n=4   enabled=0  midi_in_port=0x00  midi_out_port=0x00  chn=1  ts_first_button_id=0  config_port=0x00
+
+
+# AOUT hardware
+AOUT  type=none  cs=0  num_channels=8
+
+
+# ROUTER definitions (Note: chn=0 disables, chn=17 selects all channels)
+ROUTER n= 1   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 2   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 3   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 4   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 5   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 6   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 7   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 8   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n= 9   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=10   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=11   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=12   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=13   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=14   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=15   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+ROUTER n=16   src_port=USB1  src_chn= 0   dst_port=OUT1  dst_chn=17
+
+
+# Ethernet Setup
+ETH dhcp=1  local_ip=192.168.1.180  netmask=255.255.255.0  gateway=192.168.1.1
+
+
+# OSC Configuration
+OSC n=1  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=2  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=3  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+OSC n=4  remote_ip=192.168.1.101  remote_port=8001  local_port=8000  transfer_mode=MIDI
+
+
+# Misc. Configuration
+DebounceCtr 20
+GlobalChannel 0
+AllNotesOffChannel 0
+ConvertNoteOffToOn0 1

@@ -1,0 +1,277 @@
+
+################################################################################
+# This script tests that 4 MCU units can be emulated by MIDIbox NG
+#
+# Note that the configuration is far from completion - the intention is to
+# check if there is any blocking point when a single USB MIDI connection with
+# 4 MIDI IO ports is used.
+#
+# Result: Logic 10 automatically detects 4 MCUs and starts the communication
+################################################################################
+
+RESET_HW
+LCD "%C@(1:1:1)MC"
+
+
+################################################################################
+# SysEx communication
+################################################################################
+
+# Device ID selects the device:
+#   0x10 : Logic Control
+#   0x11 : Logic Control XT
+#   0x14 : Mackie Control
+#   0x15 : Mackie Control XT
+SYSEX_VAR dev=0x15
+
+
+################################################################################
+# MCU1 via USB1
+################################################################################
+
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=101  fwd_id=SENDER:101 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=101 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=102  fwd_id=SENDER:102 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=102 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=103  fwd_id=SENDER:103 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=103 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=104  fwd_id=SENDER:104 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=104 \
+               ports=1000000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
+
+
+
+################################################################################
+# MCU2 via USB2
+################################################################################
+
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=201  fwd_id=SENDER:201 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=201 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=202  fwd_id=SENDER:202 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=202 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=203  fwd_id=SENDER:203 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=203 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=204  fwd_id=SENDER:204 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=204 \
+               ports=0100000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
+
+
+
+################################################################################
+# MCU3 via USB3
+################################################################################
+
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=301  fwd_id=SENDER:301 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=301 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=302  fwd_id=SENDER:302 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=302 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=303  fwd_id=SENDER:303 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=303 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=304  fwd_id=SENDER:304 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=304 \
+               ports=0010000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
+
+
+
+################################################################################
+# MCU4 via USB4
+################################################################################
+
+# Receive Device Query -> send Host Connection Query
+EVENT_RECEIVER id=401  fwd_id=SENDER:401 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x00 0xf7"
+EVENT_SENDER   id=401 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x01 0x4d 0x42 0x4e 0x47 0x56 0x31 0x00 0x00 0x00 0x00 0xf7"
+
+
+# Receive Host Connection Reply -> send Host Connection Confirmation
+EVENT_RECEIVER id=402  fwd_id=SENDER:402 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x02 0xf7"
+EVENT_SENDER   id=402 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x03 0x4d 0x42 0x4e 0x47 0x56 0x31 0xf7"
+
+
+# Firmware version request
+EVENT_RECEIVER id=403  fwd_id=SENDER:403 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x13 00 0xf7"
+EVENT_SENDER   id=403 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x14 0x56 0x31 0x2e 0x34 0x32 0xf7"
+
+
+# Special Query for Mackie Control
+EVENT_RECEIVER id=404  fwd_id=SENDER:404 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1a 0xf7"
+EVENT_SENDER   id=404 \
+               ports=0001000000000000 \
+               type=SysEx stream="0xf0 0x00 0x00 0x66 ^dev 0x1b 0x42 0xf7"
+
+
+################################################################################
+# Motorfaders
+################################################################################
+
+# we've four MBHP_MF_NG module with 8 motorfaders
+# They have to be configured for Motormix protocol!
+# Each MBHP_MF_NG is connected to a dedicated MIDI IN/OUT port via J11E of the MBHP_CORE_STM32F4 module
+# Note: no config_port=USBx has been configured, since this would result into a feedback loop
+# For calibration, just use another .ngc script which enables 'config_port=USB1 ... USB3' for each MF unit
+MF n=1  enabled=1  midi_in_port=IN1  midi_out_port=OUT1  chn=1  ts_first_button_id=2001
+MF n=2  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=1  ts_first_button_id=2101
+MF n=3  enabled=1  midi_in_port=IN3  midi_out_port=OUT3  chn=1  ts_first_button_id=2201
+MF n=4  enabled=1  midi_in_port=IN4  midi_out_port=OUT4  chn=1  ts_first_button_id=2301
+
+# on motorfader movements
+EVENT_MF  id= 1  ports=1000000000000000  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id= 2  ports=1000000000000000  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id= 3  ports=1000000000000000  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id= 4  ports=1000000000000000  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id= 5  ports=1000000000000000  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id= 6  ports=1000000000000000  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id= 7  ports=1000000000000000  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id= 8  ports=1000000000000000  type=PitchBend  chn= 8  range=0:16383
+
+EVENT_MF  id= 9  ports=0100000000000000  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id=10  ports=0100000000000000  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id=11  ports=0100000000000000  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id=12  ports=0100000000000000  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id=13  ports=0100000000000000  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id=14  ports=0100000000000000  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id=15  ports=0100000000000000  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id=16  ports=0100000000000000  type=PitchBend  chn= 8  range=0:16383
+
+EVENT_MF  id=17  ports=0010000000000000  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id=18  ports=0010000000000000  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id=19  ports=0010000000000000  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id=20  ports=0010000000000000  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id=21  ports=0010000000000000  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id=22  ports=0010000000000000  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id=23  ports=0010000000000000  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id=24  ports=0010000000000000  type=PitchBend  chn= 8  range=0:16383
+
+EVENT_MF  id=25  ports=0001000000000000  type=PitchBend  chn= 1  range=0:16383
+EVENT_MF  id=26  ports=0001000000000000  type=PitchBend  chn= 2  range=0:16383
+EVENT_MF  id=27  ports=0001000000000000  type=PitchBend  chn= 3  range=0:16383
+EVENT_MF  id=28  ports=0001000000000000  type=PitchBend  chn= 4  range=0:16383
+EVENT_MF  id=29  ports=0001000000000000  type=PitchBend  chn= 5  range=0:16383
+EVENT_MF  id=30  ports=0001000000000000  type=PitchBend  chn= 6  range=0:16383
+EVENT_MF  id=31  ports=0001000000000000  type=PitchBend  chn= 7  range=0:16383
+EVENT_MF  id=32  ports=0001000000000000  type=PitchBend  chn= 8  range=0:16383
+
+# on touchsensor event (first id has been specified in the MF configuration above)
+EVENT_BUTTON  id= 2001  ports=1000000000000000  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2002  ports=1000000000000000  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2003  ports=1000000000000000  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2004  ports=1000000000000000  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2005  ports=1000000000000000  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2006  ports=1000000000000000  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2007  ports=1000000000000000  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2008  ports=1000000000000000  type=NoteOn chn= 1 key=0x75  range=0:127
+
+EVENT_BUTTON  id= 2101  ports=0100000000000000  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2102  ports=0100000000000000  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2103  ports=0100000000000000  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2104  ports=0100000000000000  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2105  ports=0100000000000000  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2106  ports=0100000000000000  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2107  ports=0100000000000000  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2108  ports=0100000000000000  type=NoteOn chn= 1 key=0x75  range=0:127
+
+EVENT_BUTTON  id= 2201  ports=0010000000000000  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2202  ports=0010000000000000  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2203  ports=0010000000000000  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2204  ports=0010000000000000  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2205  ports=0010000000000000  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2206  ports=0010000000000000  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2207  ports=0010000000000000  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2208  ports=0010000000000000  type=NoteOn chn= 1 key=0x75  range=0:127
+
+EVENT_BUTTON  id= 2301  ports=0001000000000000  type=NoteOn chn= 1 key=0x68  range=0:127
+EVENT_BUTTON  id= 2302  ports=0001000000000000  type=NoteOn chn= 1 key=0x69  range=0:127
+EVENT_BUTTON  id= 2303  ports=0001000000000000  type=NoteOn chn= 1 key=0x70  range=0:127
+EVENT_BUTTON  id= 2304  ports=0001000000000000  type=NoteOn chn= 1 key=0x71  range=0:127
+EVENT_BUTTON  id= 2305  ports=0001000000000000  type=NoteOn chn= 1 key=0x72  range=0:127
+EVENT_BUTTON  id= 2306  ports=0001000000000000  type=NoteOn chn= 1 key=0x73  range=0:127
+EVENT_BUTTON  id= 2307  ports=0001000000000000  type=NoteOn chn= 1 key=0x74  range=0:127
+EVENT_BUTTON  id= 2308  ports=0001000000000000  type=NoteOn chn= 1 key=0x75  range=0:127

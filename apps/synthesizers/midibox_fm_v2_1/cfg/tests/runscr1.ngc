@@ -1,0 +1,49 @@
+# Run Script demo
+# The run script is located in RUNSCR1.NGR - this file has to be uploaded as well!
+
+RESET_HW
+
+# This LCD line will be overwritten by the run script after the config file has been processed
+LCD "%CLoading Config"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+
+# trigger different sections
+EVENT_BUTTON id=2000  type=Meta   meta=RunSection:1  button_mode=OnOnly
+EVENT_BUTTON id=2001  type=Meta   meta=RunSection:2  button_mode=OnOnly
+EVENT_BUTTON id=2002  type=Meta   meta=RunSection:3  button_mode=OnOnly
+EVENT_BUTTON id=2003  type=Meta   meta=RunSection:4  button_mode=OnOnly
+EVENT_BUTTON id=2004  type=Meta   meta=RunSection:5  button_mode=OnOnly
+
+EVENT_ENC    id=2000  type=Meta   meta=RunSection:10
+
+
+# 8 button functions will will be controlled by the run script
+EVENT_BUTTON id=  1  fwd_id=LED:1   fwd_to_lcd=1  type=NoteOn key=36  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  2  fwd_id=LED:2   fwd_to_lcd=1  type=NoteOn key=37  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  3  fwd_id=LED:3   fwd_to_lcd=1  type=NoteOn key=38  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  4  fwd_id=LED:4   fwd_to_lcd=1  type=NoteOn key=39  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  5  fwd_id=LED:5   fwd_to_lcd=1  type=NoteOn key=40  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  6  fwd_id=LED:6   fwd_to_lcd=1  type=NoteOn key=41  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  7  fwd_id=LED:7   fwd_to_lcd=1  type=NoteOn key=42  lcd_pos=1:1:1 label="Note:%3N%B"
+EVENT_BUTTON id=  8  fwd_id=LED:8   fwd_to_lcd=1  type=NoteOn key=43  lcd_pos=1:1:1 label="Note:%3N%B"
+
+
+# test that radio groups can be controlled from .NGR correctly
+EVENT_BUTTON id=  9  fwd_id=LED:9   fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 0:0   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 10  fwd_id=LED:10  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 1:1   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 11  fwd_id=LED:11  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 2:2   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 12  fwd_id=LED:12  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 3:3   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 13  fwd_id=LED:13  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 4:4   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 14  fwd_id=LED:14  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 5:5   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 15  fwd_id=LED:15  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 6:6   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"
+EVENT_BUTTON id= 16  fwd_id=LED:16  fwd_to_lcd=1  type=CC cc=16  button_mode=OnOnly  range= 7:7   radio_group=1  lcd_pos=1:1:1 label="Group1:%2d"

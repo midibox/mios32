@@ -1,0 +1,19 @@
+RESET_HW
+
+LCD "%CHigh-Res CV"
+
+# initialize the AOUT module
+# available types: None, AOUT, AOUT_LC, AOUT_NG
+AOUT  type=AOUT_NG  cs=0  num_channels=8
+
+
+# these two events listen to any key on channel 1
+# the first event uses the "key" as value, sets CV Channel #1 and the CV Gate #1 (at J5A.A0)
+# the second event uses velocity as value (default) and sets CV Channel #2
+EVENT_CV  id= 1  fwd_to_lcd=1  type=NoteOn  chn= 1 key=any use_key_number=1  fwd_gate_to_dout_pin=1.D7  lcd_pos=1:1:1  label="^std_cv"
+EVENT_CV  id= 2  fwd_to_lcd=1  type=NoteOn  chn= 1 key=any use_key_number=0  lcd_pos=1:1:2  label="^std_cv"
+
+
+# the same for a Korg MS20 with Hz/V scaling:
+EVENT_CV  id= 3  fwd_to_lcd=1  type=NoteOn  chn= 2 key=any use_key_number=1  fwd_gate_to_dout_pin=1.D7  cv_hz_v=1  lcd_pos=1:1:1  label="^std_cv"
+EVENT_CV  id= 4  fwd_to_lcd=1  type=NoteOn  chn= 2 key=any use_key_number=0  lcd_pos=1:1:2  label="^std_cv"

@@ -1,0 +1,106 @@
+################################################################################
+# Testing the communication with two MBHP_MF_NG modules, connected in a chain
+#
+# The first MBHP_MF_NG is:
+# - configured for Device ID 00
+# - configured for Motormix protocol, sending over MIDI Channel 1
+# - configured as MIDIbox Link Forwarding Point
+#
+# The second MBHP_MF_NG is:
+# - configured for Device ID 01 (changed with the change_id application)
+# - configured for Motormix protocol, sending over MIDI Channel 2
+# - configured as MIDIbox Link End Point
+# - Hint: when you are changing the Device ID, it has to be set accordingly
+#   in the Upload Panel of MIOS Studio to upload the firmware.
+#   *And* it has to be set in the MBHP_MF_NG Tool window again, otherwise
+#   you will configure the first core with Device ID 00!
+#
+# MIDI Connections:
+#    MIDIbox NG MIDI OUT2 -> MIDI IN of MBHP_MF_NG Device ID 00
+#    MIDI OUT of MBHP_MF_NG Device ID 00 -> MIDI IN of MBHP_MF_NG Device ID 01
+#    MIDI OUT of MBHP_MF_NG Device ID 01 -> MIDIbox NG MIDI IN2
+#
+# Now MIDIbox NG sends/receives CC#16..CC#32 on/for fader movements
+# And the MBHP_MF_NG modules can be accessed with Device ID 00 and 01 via USB2
+#
+# NOTE: due to a conceptional issue with the way, how MIOS8 tunnels MIDI events
+# in a MIDIbox Link chain, it won't be possible to access the "Forwarding Points"
+# via SysEx. This means, that neither a MIOS Studio Query, Firmware update, nor
+# configuration with the MBHP_MF_NG tool is possible.
+# Communication only works with the last core in the chain.
+# Even more annoying: on a MIOS Studio query, the addressed core will reset
+# after ca. 3..4 seconds since it assumes a code upload... This reset may
+# cause confusion as well (because temporary no MIDI events are forwarded anymore).
+#
+# WORKAROUND: with the MBHP_MF_NG tool, temporary configure the last core as
+# a Forwarding Point instead of End Point.
+# Then you will be able to access the other cores as well.
+# Once you did your configuration, change back the last core to an End Point
+# to avoid an unwanted MIDI feedback with MIDIbox NG (would update the MF
+# events unintentionally) and your DAW.
+#
+# NOTE for myself:
+# I've checked that the firmware can be updated, and that the first MBHP_MF_NG
+# core can be configured with this workaround via USB2 -> seems to be sufficient! :)
+#
+# With the MBHP_MF_NG tool it's important to know, that whenver the Device ID
+# is changed between 00 and 01, the "Receive" button has to be pushed to get the
+# current configuration of the selected core, and that the "Send" button has
+# to be pushed to permanently store the changed configuration in the EEPROM,
+# so that it will be restored after power-on.
+#
+################################################################################
+
+################################################################################
+# Reset the setup to default settings
+# This command ensures, that previous hardware definitions will be overwritten
+# by a new setup without the need to set defintions for all components
+################################################################################
+RESET_HW
+
+LCD "%C@(1:1:1)MF CC Test"
+
+MF n=1  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=1  ts_first_button_id=2001  config_port=USB2
+MF n=2  enabled=1  midi_in_port=IN2  midi_out_port=OUT2  chn=2  ts_first_button_id=2009  config_port=USB2
+
+################################################################################
+
+# on motorfader movements
+# for MF n=1 (allocate id=1..8)
+EVENT_MF  id= 1  type=CC  chn= 1 cc=16  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 2  type=CC  chn= 1 cc=17  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 3  type=CC  chn= 1 cc=18  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 4  type=CC  chn= 1 cc=19  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 5  type=CC  chn= 1 cc=20  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 6  type=CC  chn= 1 cc=21  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 7  type=CC  chn= 1 cc=22  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id= 8  type=CC  chn= 1 cc=23  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+# for MF n=2 (allocate id=9..16)
+EVENT_MF  id= 9  type=CC  chn= 1 cc=24  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=10  type=CC  chn= 1 cc=25  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=11  type=CC  chn= 1 cc=26  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=12  type=CC  chn= 1 cc=27  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=13  type=CC  chn= 1 cc=28  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=14  type=CC  chn= 1 cc=29  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=15  type=CC  chn= 1 cc=30  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+EVENT_MF  id=16  type=CC  chn= 1 cc=31  range=0:127  lcd_pos=1:1:1  label="^std_mf"
+
+# on touchsensor event (first id has been specified in the MF configuration above)
+EVENT_BUTTON  id= 2001  type=NoteOn chn= 1 key=0x68  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2002  type=NoteOn chn= 1 key=0x69  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2003  type=NoteOn chn= 1 key=0x70  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2004  type=NoteOn chn= 1 key=0x71  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2005  type=NoteOn chn= 1 key=0x72  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2006  type=NoteOn chn= 1 key=0x73  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2007  type=NoteOn chn= 1 key=0x74  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2008  type=NoteOn chn= 1 key=0x75  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+
+EVENT_BUTTON  id= 2009  type=NoteOn chn= 1 key=0x76  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2010  type=NoteOn chn= 1 key=0x77  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2011  type=NoteOn chn= 1 key=0x78  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2012  type=NoteOn chn= 1 key=0x79  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2013  type=NoteOn chn= 1 key=0x7a  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2014  type=NoteOn chn= 1 key=0x7b  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2015  type=NoteOn chn= 1 key=0x7c  range=0:127  lcd_pos=1:1:2  label="^std_btn"
+EVENT_BUTTON  id= 2016  type=NoteOn chn= 1 key=0x7d  range=0:127  lcd_pos=1:1:2  label="^std_btn"

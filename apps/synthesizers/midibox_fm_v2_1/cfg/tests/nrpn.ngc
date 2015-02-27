@@ -1,0 +1,23 @@
+LCD "%C@(1:1:1)NRPN Test"
+
+# common NRPNs with different addresses and ranges
+EVENT_ENC    id=  1  fwd_id=LED_MATRIX:1  type=NRPN chn=1 nrpn=123   range=  0:1000                 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  2  fwd_id=LED_MATRIX:2  type=NRPN chn=1 nrpn=10000 range=  10:20                  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  3  fwd_id=LED_MATRIX:3  type=NRPN chn=1 nrpn=16383 range= 8128:8255 offset=-8192  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id=  4  fwd_id=LED_MATRIX:4  type=NRPN chn=2 nrpn=456   range= -20:20                  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+
+# MBCV2 MIDI channel (can be tested with Lemur panel)
+EVENT_ENC    id=  5  fwd_id=LED_MATRIX:5  type=NRPN chn=1 nrpn=16    range=   0:16  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+
+# MBSIDV2 CutOff
+EVENT_ENC    id=  6  fwd_id=LED_MATRIX:6  type=NRPN chn=1 nrpn=4     range=  0:16383 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+
+# different ranges (to check ENC auto-speed)
+EVENT_ENC    id=  9  fwd_id=LED_MATRIX:9  type=NRPN chn=1 nrpn=0     range=   0:7     ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 10  fwd_id=LED_MATRIX:10 type=NRPN chn=2 nrpn=0     range=   0:15    ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 11  fwd_id=LED_MATRIX:11 type=NRPN chn=3 nrpn=0     range=   0:63    ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 12  fwd_id=LED_MATRIX:12 type=NRPN chn=4 nrpn=0     range=   0:127   ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 13  fwd_id=LED_MATRIX:13 type=NRPN chn=5 nrpn=0     range=   0:511   ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 14  fwd_id=LED_MATRIX:14 type=NRPN chn=6 nrpn=0     range=   0:1023  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 15  fwd_id=LED_MATRIX:15 type=NRPN chn=7 nrpn=0     range=   0:4095  ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"
+EVENT_ENC    id= 16  fwd_id=LED_MATRIX:16 type=NRPN chn=8 nrpn=0     range=   0:16383 ports=1000100000001000  lcd_pos=1:1:1 label="Enc%3i:      %5d%B"

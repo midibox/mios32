@@ -1,0 +1,40 @@
+# Test that labels can be included into SysEx strings
+
+RESET_HW
+
+LCD "%CSyx Test"
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+# Controlled from SCS buttons at J10 in main page
+
+# These SysEx strings will be displayed by the Terminal in MIOS Studio
+EVENT_BUTTON id=2000  button_mode=OnOnly \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Button #%3i: %3d"
+
+EVENT_BUTTON id=2001  button_mode=OnOnly \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Button #%3i: %3d"
+
+EVENT_BUTTON id=2002  button_mode=OnOnly \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Button #%3i: %3d"
+
+EVENT_BUTTON id=2003  button_mode=OnOnly \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Button #%3i: %3d"
+
+EVENT_BUTTON id=2004  button_mode=OnOnly \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Button #%3i: %3d"
+
+EVENT_ENC    id=2000 \
+             type=SysEx stream="0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x40 ^label 0xf7" \
+             lcd_pos=1:1:1 label="Enc    #%3i: %3d"
