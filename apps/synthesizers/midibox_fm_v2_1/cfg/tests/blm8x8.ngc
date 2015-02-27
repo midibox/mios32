@@ -1,0 +1,17 @@
+
+# BLM8x8 without button/LED emulation
+
+RESET_HW
+
+LCD "%C@(1:1:1)Simple 8x8 BLM"
+
+# HW definitions:
+DIN_MATRIX  n= 1   rows=8  inverted_sel=0  sr_dout_sel1=1  sr_din1=1
+DOUT_MATRIX n= 1   rows=8  inverted_sel=0  sr_dout_sel1=1  sr_dout_r1=2
+# note: actually the sr_dout_sel1 in DOUT_MATRIX could be removed,
+# since DIN_MATRIX already outputs the selection pulses there
+# this is just for the case that somebody copy&pastes the definition...
+
+# which events should be sent by the button matrix?
+# the key number will be automatically incremented depending on the button index of the matrix
+EVENT_BUTTON_MATRIX id=1  fwd_id=LED_MATRIX:1  type=NoteOn key=36 lcd_pos=1:1:1 label="Matrix1 Pin %2p %b"

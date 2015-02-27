@@ -1,0 +1,20 @@
+RESET_HW
+
+LCD "%CAIN Mode Tests"
+
+EVENT_AINSER id=  1  fwd_id=LED_MATRIX:1  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Direct    type=CC  chn= 1 cc= 16   range=  0:127   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  fwd_id=LED_MATRIX:2  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Snap      type=CC  chn= 1 cc= 17   range=  0:127   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  fwd_id=LED_MATRIX:3  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Relative  type=CC  chn= 1 cc= 18   range=  0:127   lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  fwd_id=LED_MATRIX:4  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Parallax  type=CC  chn= 1 cc= 19   range=  0:127   lcd_pos=1:1:1  label="^std_aser"
+
+EVENT_AINSER id=  5  fwd_id=LED_MATRIX:5  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Direct    type=CC  chn= 1 cc= 20   range=127:0     lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  6  fwd_id=LED_MATRIX:6  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Snap      type=CC  chn= 1 cc= 21   range=127:0     lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  7  fwd_id=LED_MATRIX:7  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Relative  type=CC  chn= 1 cc= 22   range=127:0     lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  8  fwd_id=LED_MATRIX:8  led_matrix_pattern=1  fwd_to_lcd=1  ain_mode=Parallax  type=CC  chn= 1 cc= 23   range=127:0     lcd_pos=1:1:1  label="^std_aser"
+
+
+# LEDring configuration
+DOUT_MATRIX n= 1   rows=16 inverted=0  sr_dout_sel1= 1 sr_dout_sel2= 2  sr_dout_r1= 3 sr_dout_r2= 4  sr_dout_g1= 0 sr_dout_g2= 0  sr_dout_b1= 0 sr_dout_b2= 0
+
+# enable first AINSER module
+AINSER n=  1   enabled=1  cs=0  resolution=7bit

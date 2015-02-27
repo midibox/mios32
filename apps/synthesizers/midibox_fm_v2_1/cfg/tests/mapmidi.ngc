@@ -1,0 +1,52 @@
+RESET_HW
+
+
+# the SCS should emulate button/enc functions in main page
+SCS soft1_button_emu_id=2000 \
+    soft2_button_emu_id=2001 \
+    soft3_button_emu_id=2002 \
+    soft4_button_emu_id=2003 \
+    shift_button_emu_id=2004 \
+    enc_emu_id=2000
+
+
+# Controlled from SCS buttons at J10 in main page
+EVENT_BUTTON id=2000  type=Meta   meta=SetBank   button_mode=OnOnly range=1:1
+EVENT_BUTTON id=2001  type=Meta   meta=SetBank   button_mode=OnOnly range=2:2
+EVENT_BUTTON id=2002  type=Meta   meta=SetBank   button_mode=OnOnly range=3:3
+EVENT_BUTTON id=2003  type=Meta   meta=SetBank   button_mode=OnOnly range=4:4
+EVENT_BUTTON id=2004  type=Meta   meta=EncFast:4 button_mode=OnOff  range=0:2
+
+# the SCS encoder at J10 just increments/decrements the bank
+# redundant function - could be changed in future
+EVENT_ENC    id=2000  type=Meta   meta=SetBank   range=1:4
+
+
+
+LCD "%CMap MIDI Values"
+
+# the used maps:
+MAP1  0 1 2 4 8 16 32 64
+
+# map incoming CC#16 to CC#17 via MAP1 at the sender side:
+EVENT_RECEIVER id=  1  fwd_id=SENDER:1  fwd_to_lcd=1  type=CC chn=1 cc=16   range=  0:127  lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  1                   fwd_to_lcd=1  type=CC chn=1 cc=17   range=map1     lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+# map incoming CC#18 to CC#19 via MAP1 at the receiver side
+EVENT_RECEIVER id=  2  fwd_id=SENDER:2  fwd_to_lcd=1  type=CC chn=1 cc=18   range=map1     lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  2                   fwd_to_lcd=1  type=CC chn=1 cc=19   range=  0:127  lcd_pos=1:1:2 label="Sender%3i:   %e"
+
+
+# the difference makes sense when values are forwarded to multiple items!
+# either the sender forwards the same mapped value to all items, or different maps are used by different senders of the forwarding chain
+
+
+# test mapping with different banks
+# Note: it's possible to assign the same ID to multiple senders
+# advantage: only a single receiver has to be defined, which then forwards to multiple sender located in different banks
+EVENT_RECEIVER id=  3  fwd_id=SENDER:3          fwd_to_lcd=1  type=CC chn=1 cc=20   lcd_pos=1:1:1 label="Receiver%3i: %e"
+EVENT_SENDER   id=  3                   bank=1  fwd_to_lcd=1  type=CC chn=1 cc=20   lcd_pos=1:1:2 label="Sender%3i/1: %e"
+EVENT_SENDER   id=  3                   bank=2  fwd_to_lcd=1  type=CC chn=2 cc=20   lcd_pos=1:1:2 label="Sender%3i/2: %e"
+EVENT_SENDER   id=  3                   bank=3  fwd_to_lcd=1  type=CC chn=3 cc=20   lcd_pos=1:1:2 label="Sender%3i/3: %e"
+EVENT_SENDER   id=  3                   bank=4  fwd_to_lcd=1  type=CC chn=4 cc=20   lcd_pos=1:1:2 label="Sender%3i/4: %e"

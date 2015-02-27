@@ -1,0 +1,29 @@
+
+# don't do anything during startup & patch load
+if ^section == 0
+  exit
+endif
+
+if ^section == 1
+  if    ENC:2000 == 0 
+    LCD "@(1:1:1)VAL0"
+    delay_ms 1000
+  elsif ENC:2000 == 1 
+    LCD "@(1:1:1)VAL1"
+    delay_ms 1000
+  elsif ENC:2000 == 2 
+    LCD "@(1:1:1)VAL2"
+    delay_ms 1000
+  else
+    LCD "@(1:1:1)VAL3"
+    delay_ms 1000
+  endif
+
+  if BUTTON:2000 != 0
+    exec_meta RunSection:1
+  else
+    LCD "@(1:1:1)----"
+  endif  
+
+  exit
+endif
