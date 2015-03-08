@@ -2092,7 +2092,9 @@ http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion
 - copy/paste using the top row of step view buttons: ALT+step button copies that measure, keep holding ALT and press another step button to paste the copied steps into the second step view.  Keep holding ALT and press a third, 4th, 5th, etc. step button to paste the copied steps into additional step views.  Release ALT without pressing a second step button to cancel out without pasting.
 - bugfix for drum track switching
 ----------------------------------------------------------
-
+MPC style note repeat function:
+http://midibox.org/forums/topic/19406-mpc-style-note-repeat-function/#entry169201
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
