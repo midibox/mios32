@@ -1,6 +1,6 @@
-// $Id$
+// $Id: seq_ui_bpm_presets.c 690 2009-08-04 22:49:33Z tk $
 /*
- * Track clock divider page
+ * Live Repeat page
  *
  * ==========================================================================
  *
@@ -16,46 +16,49 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
-#include "seq_lcd.h"
+
 #include "seq_ui.h"
-#include "seq_cc.h"
+#include "seq_lcd.h"
+#include "seq_live.h"
+#include "seq_record.h"
+#include "seq_core.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       5
-#define ITEM_GXTY          0
-#define ITEM_DIVIDER       1
-#define ITEM_TRIPLET       2
-#define ITEM_SYNCH_TO_MEASURE 3
-#define ITEM_MANUAL        4
+#define NUM_OF_ITEMS         3
+#define ITEM_GXTY            0
+#define ITEM_TRG_SELECT      1
+#define ITEM_REPEAT_ENABLE   2
+#define ITEM_REPEAT_LENGTH   3
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static const char quicksel_str[8][6] =  { "  1  ", "  2  ", "  4  ", "  8  ", "  8T ", "  16 ", "  16T", "  32 " };
-static const u16 quicksel_timebase[8] = {  255,      127,     63,      31,   31|0x100,    15,   15|0x100,    7   };
-
+static const char quicksel_str[8][6] = { "  1  ", "  2  ", "  4  ", "  6  ", "  8  ", "  16 ", "  24 ", "  32 " };
+static const u16 quicksel_repeat[8]  = {  256,      128,     64,      48,      32,       16,      12,      8    };
 
 /////////////////////////////////////////////////////////////////////////////
 // Search for item in quick selection list
 /////////////////////////////////////////////////////////////////////////////
 static s32 QUICKSEL_SearchItem(u8 track)
 {
-  u16 search_pattern = SEQ_CC_Get(track, SEQ_CC_CLK_DIVIDER) | 
-                    ((SEQ_CC_Get(track, SEQ_CC_CLKDIV_FLAGS)&2)<<7);
+  u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
+  u16 search_pattern = slot->repeat_ticks;
+
   int i;
   for(i=0; i<8; ++i)
-    if( quicksel_timebase[i] == search_pattern )
+    if( quicksel_repeat[i] == search_pattern )
       return i;
 
   return -1; // item not found
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -67,21 +70,16 @@ static s32 LED_Handler(u16 *gp_leds)
 
   switch( ui_selected_item ) {
     case ITEM_GXTY: *gp_leds = 0x0001; break;
-    case ITEM_DIVIDER: *gp_leds = 0x0002; break;
-    case ITEM_TRIPLET: *gp_leds = 0x000c; break;
-    case ITEM_SYNCH_TO_MEASURE: *gp_leds = 0x0070; break;
-    case ITEM_MANUAL:  *gp_leds = 0x0080; break;
+    case ITEM_TRG_SELECT: *gp_leds = 0x0002; break;
+    case ITEM_REPEAT_ENABLE: *gp_leds = 0x0004; break;
+    case ITEM_REPEAT_LENGTH: *gp_leds = 0x0010; break;
   }
 
   {
     u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 manual_clock = SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<2);
-
-    if( !manual_clock ) {
-      s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
-      if( quicksel_item >= 0 )
-	*gp_leds |= 1 << (quicksel_item+8);
-    }
+    s32 quicksel_item = QUICKSEL_SearchItem(visible_track);
+    if( quicksel_item >= 0 )
+      *gp_leds |= 1 << (quicksel_item+8);
   }
 
   return 0; // no error
@@ -98,7 +96,9 @@ static s32 LED_Handler(u16 *gp_leds)
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 manual_clock = SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<2);
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
 
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
@@ -106,22 +106,27 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_DIVIDER;
+      ui_selected_item = ITEM_TRG_SELECT;
       break;
 
     case SEQ_UI_ENCODER_GP3:
-    case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_TRIPLET;
+      ui_selected_item = ITEM_REPEAT_ENABLE;
       break;
+
+    case SEQ_UI_ENCODER_GP4:
+      return -1; // not used
 
     case SEQ_UI_ENCODER_GP5:
-    case SEQ_UI_ENCODER_GP6:
-    case SEQ_UI_ENCODER_GP7:
-      ui_selected_item = ITEM_SYNCH_TO_MEASURE;
+      ui_selected_item = ITEM_REPEAT_LENGTH;
       break;
 
+    case SEQ_UI_ENCODER_GP6:
+    case SEQ_UI_ENCODER_GP7:
+      return -1; // not used
+
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_MANUAL;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_TRKLIVE);
+      return 0;
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -132,11 +137,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16: {
-      if( !manual_clock ) {
-	int quicksel = encoder - 8;
-	SEQ_UI_CC_Set(SEQ_CC_CLK_DIVIDER, quicksel_timebase[quicksel] & 0xff);
-	SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (quicksel_timebase[quicksel] & 0x100) ? (1<<1) : 0);
-      }
+      int quicksel = encoder - 8;
+      slot->repeat_ticks = quicksel_repeat[quicksel];
+
       return 1; // value has been changed
     }
   }
@@ -144,32 +147,37 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
   case ITEM_GXTY:          return SEQ_UI_GxTyInc(incrementer);
-  case ITEM_DIVIDER: 
-    if( manual_clock )
-      return 0;
-    return SEQ_UI_CC_Inc(SEQ_CC_CLK_DIVIDER, 0, 255, incrementer);
 
-  case ITEM_TRIPLET:
-    if( manual_clock )
-      return 0;
-    if( !incrementer ) // toggle flag
-      incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<1)) ? -1 : 1;
-    return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<1), (incrementer >= 0) ? (1<<1) : 0);
+  case ITEM_TRG_SELECT: {
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      u8 num_drums = SEQ_TRG_NumInstrumentsGet(visible_track);
+      return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_drums-1, incrementer);
+    } else {
+      //u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+      //return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, num_t_layers-1, incrementer);
+      return -1;
+    }
+  } break;
 
-  case ITEM_SYNCH_TO_MEASURE:
-    if( manual_clock )
-      return 0;
-    if( !incrementer ) // toggle flag
-      incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<0)) ? -1 : 1;
-    return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<0), (incrementer >= 0) ? (1<<0) : 0);
+  case ITEM_REPEAT_ENABLE: {
+    if( incrementer == 0 )
+      slot->enabled = slot->enabled ? 0 : 1;
+    else
+      slot->enabled = (incrementer > 0);
+    return 1;
+  } break;
 
-  case ITEM_MANUAL:
-    if( !incrementer ) // toggle flag
-      incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<2)) ? -1 : 1;
-    return SEQ_UI_CC_SetFlags(SEQ_CC_CLKDIV_FLAGS, (1<<2), (incrementer >= 0) ? (1<<2) : 0);
+  case ITEM_REPEAT_LENGTH: {
+    u8 value = slot->len;
+    if( SEQ_UI_Var8_Inc(&value, 0, 94, incrementer) > 0 ) {
+      slot->len = value;
+      return 1;
+    }
+    return 0;
+  } break;
   }
 
-  return -1; // invalid or unsupported encoder
+  return -1; // don't use any encoder function
 }
 
 
@@ -210,7 +218,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return Encoder_Handler(SEQ_UI_ENCODER_Datawheel, -1);
   }
 
-  return -1; // invalid or unsupported button
+  return -1; // ignore remaining buttons
 }
 
 
@@ -227,17 +235,23 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Clock Divider  SyncToMeasure Manual         Quick Selection: Timebase      
-  // G1T1   4 (normal)        yes        no    1    2    4    8    8T   16  16T   32 
+  // Trk. Drum Repeat    Length          Live         Quick Selection: Repeat        
+  // G1T1  BD    on        75%           Page  1    2    4    6    8    16   24   32 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
+
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("Trk. Clock Divider  SyncToMeasure Manual");
-  SEQ_LCD_PrintString("       Quick Selection: Timebase        ");
-
-  u8 manual_clock = SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<2);
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    SEQ_LCD_PrintString("Trk. Drum ");
+  } else {
+    SEQ_LCD_PrintString("Trk.      ");
+  }
+  SEQ_LCD_PrintString("Repeat    Length          Live         Quick Selection: Repeat        ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -250,62 +264,44 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_DIVIDER && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_TRG_SELECT && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+    } else {
+      SEQ_LCD_PrintSpaces(5);
+    }
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_REPEAT_ENABLE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString(slot->enabled ? "  on " : "  off");
+  }
+  SEQ_LCD_PrintSpaces(6);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_REPEAT_LENGTH && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    if( manual_clock ) {
-      SEQ_LCD_PrintString(" ---");
-    } else {
-      SEQ_LCD_PrintFormattedString("%3d ", SEQ_CC_Get(visible_track, SEQ_CC_CLK_DIVIDER)+1);
-    }
+    SEQ_LCD_PrintGatelength(slot->len + 1);
   }
 
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_TRIPLET && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(11);
-  } else {
-    if( manual_clock ) {
-      SEQ_LCD_PrintString("--------   ");
-    } else {
-      SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<1)) ? "(triplet)  " : "(normal)   ");
-    }
-  }
+  SEQ_LCD_PrintSpaces(11);
+  SEQ_LCD_PrintString("Page");
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_SYNCH_TO_MEASURE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(13);
-  } else {
-    SEQ_LCD_PrintSpaces(6);
-    if( manual_clock ) {
-      SEQ_LCD_PrintString("---");
-    } else {
-      SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_CLKDIV_FLAGS) & (1<<0)) ? "yes" : "no ");
-    }
-    SEQ_LCD_PrintSpaces(4);
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_MANUAL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(7);
-  } else {
-    SEQ_LCD_PrintSpaces(2);
-    SEQ_LCD_PrintString(manual_clock ? "yes" : " no");
-    SEQ_LCD_PrintSpaces(2);
-  }
-
-  ///////////////////////////////////////////////////////////////////////////
-  s32 quicksel_item = QUICKSEL_SearchItem(SEQ_UI_VisibleTrackGet());
+  s32 quicksel_item = QUICKSEL_SearchItem(visible_track);
 
   int i;
   for(i=0; i<8; ++i) {
     if( quicksel_item == i && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(5);
     } else {
-      if( manual_clock ) {
-	SEQ_LCD_PrintString(" --- ");
-      } else {
-	SEQ_LCD_PrintString((char *)quicksel_str[i]);
-      }
+      SEQ_LCD_PrintString((char *)quicksel_str[i]);
     }
   }
 
@@ -316,7 +312,7 @@ static s32 LCD_Handler(u8 high_prio)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_TRKDIV_Init(u32 mode)
+s32 SEQ_UI_TRKREPEAT_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);

@@ -346,6 +346,7 @@ extern s32 SEQ_UI_ETH_Init(u32 mode);
 extern s32 SEQ_UI_BOOKMARKS_Init(u32 mode);
 extern s32 SEQ_UI_INFO_Init(u32 mode);
 extern s32 SEQ_UI_TRKLIVE_Init(u32 mode);
+extern s32 SEQ_UI_TRKREPEAT_Init(u32 mode);
 extern s32 SEQ_UI_PATTERN_RMX_Init(u32 mode);
 extern s32 SEQ_UI_TRKEUCLID_Init(u32 mode);
 

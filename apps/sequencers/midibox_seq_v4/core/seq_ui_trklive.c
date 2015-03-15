@@ -48,10 +48,16 @@
 #define ITEM_RESET_STACKS  12
 
 
+// future soft-configurable option?
+#define GP_BUTTONS_USED_AS_KEYBOARD 0
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
+#if GP_BUTTONS_USED_AS_KEYBOARD
 static u16 gp_button_pressed;
+#endif
 
 static u8 selected_bus = 0;
 
@@ -61,7 +67,9 @@ static u8 selected_bus = 0;
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
 {
-#if 0
+#if GP_BUTTONS_USED_AS_KEYBOARD
+  *gp_leds = gp_button_pressed;
+#else
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
@@ -80,8 +88,6 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_IN_MODE: *gp_leds |= 0x2000; break;
     case ITEM_RESET_STACKS: *gp_leds |= 0x8000; break;
   }
-#else
-  *gp_leds = gp_button_pressed;
 #endif
 
   return 0; // no error
@@ -97,6 +103,9 @@ static s32 LED_Handler(u16 *gp_leds)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
   // ensure that original record screen will be print immediately
   ui_hold_msg_ctr = 0;
 
@@ -126,8 +135,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP7:
-    case SEQ_UI_ENCODER_GP8:
       return 0; // not mapped (yet)
+
+    case SEQ_UI_ENCODER_GP8:
+      // enter repeat page
+      SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREPEAT);
+      return 0;
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -174,7 +187,6 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( !seq_midi_in_options[selected_bus].MODE_PLAY )
 	return -1;
 
-      u8 visible_track = SEQ_UI_VisibleTrackGet();
       u16 mask = 1 << visible_track;
 
       if( incrementer < 0 )
@@ -187,6 +199,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case ITEM_OCT_TRANSPOSE: {
       if( !seq_midi_in_options[selected_bus].MODE_PLAY )
 	return -1;
+
+      if( event_mode == SEQ_EVENT_MODE_Drum )
+	return -1; // disabled
 
       u8 tmp = seq_live_options.OCT_TRANSPOSE + 5;
       if( SEQ_UI_Var8_Inc(&tmp, 0, 10, incrementer) >= 0 ) {
@@ -298,6 +313,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
+#if GP_BUTTONS_USED_AS_KEYBOARD
   if( button <= SEQ_UI_BUTTON_GP16 ) {
     if( !seq_midi_in_options[selected_bus].MODE_PLAY )
       return -1;
@@ -318,10 +334,16 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
     SEQ_LIVE_PlayEvent(visible_track, p);
     return 0;
   }
+#endif
 
   // exit if button depressed
   if( depressed )
     return -1;
+
+  if( button <= SEQ_UI_BUTTON_GP16 ) {
+    // -> forward to encoder handler
+    return Encoder_Handler((int)button, 0);
+  }
 
   // remaining buttons:
   switch( button ) {
@@ -364,8 +386,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Mute Oct. Vel. FTS   Fx             Bus Port Chn. Lower/Upper Mode   Reset 
-  // G1T1       +0  100   on   on              1  IN1  #16   ---   ---  T&A    Stacks
+  // Trk. Mute Oct. Vel. FTS   Fx      Repeat Bus Port Chn. Lower/Upper Mode   Reset 
+  // G1T1       +0  100   on   on      Config  1  IN1  #16   ---   ---  T&A    Stacks
 
   // The selected Bus1 is not configured      Bus Port Chn. Lower/Upper Mode   Reset 
   // for Play mode (but for Transposer&Arp.)   1  IN1  #16   ---   ---  T&A    Stacks
@@ -375,7 +397,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( !seq_midi_in_options[selected_bus].MODE_PLAY ) {
     SEQ_LCD_PrintFormattedString("The selected Bus%d is not configured     ", selected_bus+1);
   } else {
-    SEQ_LCD_PrintString("Trk. Mute Oct. Vel. FTS   Fx            ");
+    SEQ_LCD_PrintString("Trk. Mute Oct. Vel. FTS   Fx      Repeat");
   }
 
   SEQ_LCD_CursorSet(40, 0);
@@ -438,7 +460,9 @@ static s32 LCD_Handler(u8 high_prio)
     } else {
       SEQ_LCD_PrintString(seq_live_options.FX ? " on" : "off");
     }
-    SEQ_LCD_PrintSpaces(2 + 10);
+    SEQ_LCD_PrintSpaces(2 + 4);
+
+    SEQ_LCD_PrintString("Config");
   }
 
 
@@ -543,7 +567,9 @@ s32 SEQ_UI_TRKLIVE_Init(u32 mode)
   SEQ_UI_InstallLCDCallback(LCD_Handler);
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
+#if GP_BUTTONS_USED_AS_KEYBOARD
   gp_button_pressed = 0x0000;
+#endif
 
   return 0; // no error
 }

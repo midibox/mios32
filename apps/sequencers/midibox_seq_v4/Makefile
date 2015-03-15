@@ -69,6 +69,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_parsel.c \
 		core/seq_ui_tracksel.c \
 		core/seq_ui_trklive.c \
+		core/seq_ui_trkrepeat.c \
 		core/seq_cv.c \
 		core/seq_midi_port.c \
 		core/seq_midi_in.c \
