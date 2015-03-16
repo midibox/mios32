@@ -339,8 +339,11 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
   }
 #else
   // faster version - execution time does matter for some features!
+#if MIOS32_IIC_MIDI_NUM <= 4
+  // TK: works only for 4 IIC ports - this is a fail-safe measure only, therefore ignore this if MIOS32_IIC_MIDI_NUM has ben set to a value > 4
   if( (port & 0x0f) >= 4 )
     return 0; // only 1..4, filter number 5..16
+#endif
 
   switch( port & 0xf0 ) {
     // has to be kept in sync with out_ports[]!
@@ -348,9 +351,9 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
     case USB0:  return (port & 0x0f) + 1;
     case UART0: return (port & 0x0f) + 5;
     case IIC0:  return (port & 0x0f) + 9;
-    case OSC0:  return (port & 0x0f) + 13;
-    case 0x80:  return (port & 0x0f) + 17; // AOUT
-    case 0xf0:  return (port & 0x0f) + 18; // Bus
+    case OSC0:  return (port & 0x0f) + 9 + MIOS32_IIC_MIDI_NUM;
+    case 0x80:  return (port & 0x0f) + 9 + 4 + MIOS32_IIC_MIDI_NUM; // AOUT
+    case 0xf0:  return (port & 0x0f) + 9 + 5 + MIOS32_IIC_MIDI_NUM; // Bus
   }
 #endif
 
