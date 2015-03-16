@@ -66,6 +66,8 @@ extern s32 SEQ_LIVE_AllNotesOff(void);
 
 extern s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick);
 
+extern seq_live_repeat_t *SEQ_LIVE_CurrentSlotGet(void);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
