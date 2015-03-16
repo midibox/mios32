@@ -44,6 +44,7 @@
 /////////////////////////////////////////////////////////////////////////////
 seq_live_options_t seq_live_options;
 seq_live_repeat_t seq_live_repeat[SEQ_LIVE_REPEAT_SLOTS];
+seq_live_arp_pattern_t seq_live_arp_pattern[SEQ_LIVE_NUM_ARP_PATTERNS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,27 @@ static u32 live_note_played[LIVE_NUM_KEYS / 32];
 static mios32_midi_port_t live_keyboard_port[LIVE_NUM_KEYS];
 static u8 live_keyboard_chn[LIVE_NUM_KEYS];
 static u8 live_keyboard_note[LIVE_NUM_KEYS];
+
+
+const seq_live_arp_pattern_t seq_live_arp_pattern_preset[SEQ_LIVE_NUM_ARP_PATTERNS] = {
+//  gate    accent
+  { 0x0001, 0x0000 },
+  { 0x0101, 0x0000 },
+  { 0x1010, 0x0000 },
+  { 0x1111, 0x0000 },
+  { 0x1111, 0x0101 },
+  { 0x4444, 0x0000 },
+  { 0x4444, 0x0404 },
+  { 0x5555, 0x0000 },
+  { 0x5555, 0x0101 },
+  { 0xaaaa, 0x0000 },
+  { 0xaaaa, 0x2222 },
+  { 0xffff, 0x0000 },
+  { 0xffff, 0x0001 },
+  { 0xffff, 0x0101 },
+  { 0xffff, 0x1111 },
+  { 0xffff, 0x2020 },
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,11 +96,20 @@ s32 SEQ_LIVE_Init(u32 mode)
     seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
     for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
       slot->enabled = 0;
-      slot->repeat_ticks = 64;
+      slot->pattern = 0;
       slot->chn = 0;
       slot->note = 0;
       slot->velocity = 0;
       slot->len = 71;
+    }
+  }
+
+  {
+    int i;
+    seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[0];
+    seq_live_arp_pattern_t *preset = (seq_live_arp_pattern_t *)&seq_live_arp_pattern_preset[0];
+    for(i=0; i<SEQ_LIVE_NUM_ARP_PATTERNS; ++i) {
+      *(pattern++) = *(preset++);
     }
   }
 
@@ -350,8 +381,6 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
     return 0; // only for visible track
 
   seq_cc_trk_t *tcc = (seq_cc_trk_t *)&seq_cc_trk[track];
-  u32 step_length = ((tcc->clkdiv.value+1) * (tcc->clkdiv.TRIPLETS ? 4 : 6));
-  u32 step_ticks = new_step * step_length;
   u8 play_step = 1;
 
   seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
@@ -360,8 +389,13 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
     for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
       if( slot->enabled && slot->note && slot->velocity ) {
-	u32 repeat_ticks = slot->repeat_ticks * (tcc->clkdiv.TRIPLETS ? 4 : 6);
-	if( (step_ticks % repeat_ticks) == 0 ) {
+	seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+	u16 pattern_mask = 1 << (new_step % 16);
+	if( pattern->gate & pattern_mask ) {
+	  u8 velocity = slot->velocity;
+	  if( pattern->accent & pattern_mask ) {
+	    velocity = tcc->lay_const[SEQ_CC_LAY_CONST_C1 + i];
+	  }
 
 	  // note played on keyboard?
 	  u32 note_ix32 = slot->note / 32;
@@ -373,7 +407,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	    e.midi_package.event = NoteOn;
 	    e.midi_package.chn = slot->chn;
 	    e.midi_package.note = slot->note;
-	    e.midi_package.velocity = slot->velocity;
+	    e.midi_package.velocity = velocity;
 	    e.len = slot->len + 1;
 	    e.layer_tag = 0;
 
@@ -386,8 +420,13 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
     }
   } else {
     if( slot->enabled && slot->note && slot->velocity ) {
-      u32 repeat_ticks = slot->repeat_ticks * (tcc->clkdiv.TRIPLETS ? 4 : 6);
-      if( (step_ticks % repeat_ticks) == 0 ) {
+      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+      u16 pattern_mask = 1 << (new_step % 16);
+      if( pattern->gate & pattern_mask ) {
+	u8 velocity = slot->velocity;
+	if( pattern->accent & pattern_mask ) {
+	  velocity = 127;
+	}
 
 	// trigger all played notes
 	u32 note_ix32;
@@ -404,7 +443,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 		e.midi_package.event = NoteOn;
 		e.midi_package.chn = slot->chn;
 		e.midi_package.note = note_ix32*32 + i;
-		e.midi_package.velocity = slot->velocity;
+		e.midi_package.velocity = velocity;
 		e.len = slot->len + 1;
 		e.layer_tag = 0;
 

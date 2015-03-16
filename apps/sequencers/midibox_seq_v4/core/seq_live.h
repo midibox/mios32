@@ -21,6 +21,9 @@
 // for up to 16 instruments in drum tracks
 #define SEQ_LIVE_REPEAT_SLOTS 16
 
+// number of arp patterns
+#define SEQ_LIVE_NUM_ARP_PATTERNS 16
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -37,17 +40,19 @@ typedef union {
   };
 } seq_live_options_t;
 
-typedef union {
-  unsigned long long ALL;
-  struct {
-    u32 enabled:1;
-    u32 repeat_ticks:15;
-    u32 note:8;
-    u32 velocity:8;
-    u32 len:8;
-    u32 chn:4;
-  };
+typedef struct {
+  u32 pattern:7;
+  u32 enabled:1;
+  u32 note:8;
+  u32 velocity:8;
+  u32 len:8;
+  u32 chn:4;
 } seq_live_repeat_t;
+
+typedef struct {
+  u16 gate;
+  u16 accent;
+} seq_live_arp_pattern_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -68,5 +73,6 @@ extern s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick);
 
 extern seq_live_options_t seq_live_options;
 extern seq_live_repeat_t seq_live_repeat[SEQ_LIVE_REPEAT_SLOTS];
+extern seq_live_arp_pattern_t seq_live_arp_pattern[SEQ_LIVE_NUM_ARP_PATTERNS];
 
 #endif /* _SEQ_LIVE_H */
