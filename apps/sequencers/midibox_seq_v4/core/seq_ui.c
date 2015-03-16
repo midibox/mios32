@@ -31,6 +31,7 @@
 #include "seq_led.h"
 #include "seq_midply.h"
 #include "seq_mixer.h"
+#include "seq_live.h"
 #include "seq_core.h"
 #include "seq_song.h"
 #include "seq_par.h"
@@ -409,6 +410,15 @@ static void SEQ_UI_Msg_SongPos(char *line2)
 {
   char buffer[20];
   sprintf(buffer, "Song Position %c%d", 'A' + (ui_song_edit_pos >> 3), (ui_song_edit_pos&7)+1);
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+static void SEQ_UI_Msg_LivePattern(char *line2)
+{
+  char buffer[20];
+
+  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  sprintf(buffer, "Live Pattern #%d", slot->pattern + 1);
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
@@ -877,6 +887,11 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
     SEQ_UI_SONG_Copy();
     SEQ_UI_Msg_SongPos("copied");
     return 1;
+  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+    if( depressed ) return -1;
+    SEQ_UI_UTIL_CopyLivePattern();
+    SEQ_UI_Msg_LivePattern("copied");
+    return 1;
   } else {
     if( seq_ui_button_state.MENU_PRESSED ) {
       return SEQ_UI_Button_MultiCopy(depressed);
@@ -975,6 +990,11 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
     SEQ_UI_SONG_Paste();
     SEQ_UI_Msg_SongPos("pasted");
     return 1;
+  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+    if( depressed ) return -1;
+    SEQ_UI_UTIL_PasteLivePattern();
+    SEQ_UI_Msg_LivePattern("pasted");
+    return 1;
   } else {
     if( seq_ui_button_state.MENU_PRESSED ) {
       return SEQ_UI_Button_MultiPaste(depressed);
@@ -1015,6 +1035,13 @@ static void SEQ_UI_Button_Clear_SongPos(u32 dummy)
   SEQ_UI_Msg_SongPos("cleared");
 }
 
+// callback function for delayed Clear LivePattern function
+static void SEQ_UI_Button_Clear_LivePattern(u32 dummy)
+{
+  SEQ_UI_UTIL_ClearLivePattern();
+  SEQ_UI_Msg_LivePattern("cleared");
+}
+
 // callback function for clear track
 static void SEQ_UI_Button_Clear_Track(u32 dummy)
 {
@@ -1049,6 +1076,14 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
     else {
       SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, clear_delay, 0);
       SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
+    }
+    return 1;
+  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+    if( depressed )
+      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern);
+    else {
+      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern, clear_delay, 0);
+      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Pattern");
     }
     return 1;
   } else {

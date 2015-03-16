@@ -462,3 +462,15 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
   // TK: disable overdubbing so that remaining trigger layers are played
   return play_step ? 0 : 0; // 0 in both cases
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns pointer to current selected pattern slot
+/////////////////////////////////////////////////////////////////////////////
+seq_live_repeat_t *SEQ_LIVE_CurrentSlotGet(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  return (seq_live_repeat_t *)&seq_live_repeat[ix];    
+}

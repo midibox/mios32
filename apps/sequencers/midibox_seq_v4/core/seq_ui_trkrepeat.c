@@ -45,10 +45,7 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   if( seq_ui_button_state.SELECT_PRESSED ) {
-    u8 visible_track = SEQ_UI_VisibleTrackGet();
-    u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-    u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
-    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
+    seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
     seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
     *gp_leds = pattern->gate;
   } else {
@@ -80,6 +77,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
 
   if( seq_ui_button_state.SELECT_PRESSED && encoder < 16 ) {
+    if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
+      return -1; // invalid pattern
+
     seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
     u16 mask = (1 << encoder);
     u8 gate = (pattern->gate & mask) ? 1 : 0;
@@ -148,9 +148,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP14:
-    case SEQ_UI_ENCODER_GP15:
-    case SEQ_UI_ENCODER_GP16:
       return -1; // not used
+
+    case SEQ_UI_ENCODER_GP15:
+      SEQ_UI_UTIL_CopyLivePattern();
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Pattern copied", "into Edit Buffer");
+      return 1;
+
+    case SEQ_UI_ENCODER_GP16:
+      if( SEQ_UI_UTIL_PasteLivePattern() < 0 ) {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Edit Buffer", "is empty!");
+      } else {
+	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Pattern copied", "from Edit Buffer");
+      }
+      return 1;
   }
 
   // for GP encoders and Datawheel
@@ -253,8 +264,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Drum Repeat                    Live       Pattern      Length (press SELECT
-  // G1T1  BD    on                      Page 1 *.*.*.*.*.*.*.*.   75%   to edit Ptn)
+  // Trk. Drum Repeat                    Live       Pattern      Length              
+  // G1T1  BD    on                      Page 1 *.*.*.*.*.*.*.*.   75%     Copy Paste
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -273,7 +284,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( seq_ui_button_state.SELECT_PRESSED ) {
     SEQ_LCD_PrintString("    Edit Mode");
   } else {
-    SEQ_LCD_PrintString("(press SELECT");
+    SEQ_LCD_PrintSpaces(13);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -336,12 +347,12 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
 
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(5);
 
   if( seq_ui_button_state.SELECT_PRESSED ) {
-    SEQ_LCD_PrintSpaces(12);
+    SEQ_LCD_PrintSpaces(10);
   } else {
-    SEQ_LCD_PrintString("to edit Ptn)");
+    SEQ_LCD_PrintString("Copy Paste");
   }
 
   return 0; // no error

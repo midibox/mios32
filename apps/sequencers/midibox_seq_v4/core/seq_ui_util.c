@@ -25,6 +25,7 @@
 #include "seq_par.h"
 #include "seq_trg.h"
 #include "seq_cc.h"
+#include "seq_live.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -817,6 +818,144 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
   return 0; // no error
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Copy/Paste/Clear Live pattern
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_CopyLivePattern(void)
+{
+  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
+    return -1; // invalid pattern
+  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // start with common copy operation
+  COPY_Track(visible_track);
+  copypaste_begin = 0;
+  copypaste_end = 15;
+
+  u8 event_mode = copypaste_cc[SEQ_CC_MIDI_EVENT_MODE];
+
+  u8 trg_instrument = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  u8 num_t_layers = copypaste_trg_layers;
+  u8 num_t_steps8 = copypaste_trg_steps / 8;
+
+  {
+    u8 gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
+    if( gate_assignment > 0 ) {
+      // similar to SEQ_TRG_Get16:
+      u8 trg_layer = gate_assignment - 1;
+      u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8);
+      if( step_ix >= SEQ_TRG_MAX_BYTES )
+	step_ix = 0;
+
+      {
+	u8 *values = (u8 *)&copypaste_trg_layer[step_ix];
+	*values = pattern->gate;
+	++values;
+	*values = (pattern->gate >> 8);
+      }
+    }
+  }
+
+  {
+    u8 accent_assignment = copypaste_cc[SEQ_CC_ASG_ACCENT];
+    if( accent_assignment > 0 ) {
+      // similar to SEQ_TRG_Get16:
+      u8 trg_layer = accent_assignment - 1;
+      u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8);
+      if( step_ix >= SEQ_TRG_MAX_BYTES )
+	step_ix = 0;
+
+      {
+	u8 *values = (u8 *)&copypaste_trg_layer[step_ix];
+	*values = pattern->accent;
+	++values;
+	*values = (pattern->accent >> 8);
+      }
+    }
+  }
+
+  return 0; // no error
+}
+
+s32 SEQ_UI_UTIL_PasteLivePattern(void)
+{
+  if( !copypaste_buffer_filled )
+    return -1; // edit buffer empty
+
+  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
+    return -1; // invalid pattern
+  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+
+  //u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = copypaste_cc[SEQ_CC_MIDI_EVENT_MODE];
+
+  u8 trg_instrument = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  u8 num_t_layers = copypaste_trg_layers;
+  u8 num_t_steps8 = copypaste_trg_steps / 8;
+
+  {
+    u16 gate = 0;
+    u8 gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
+    if( gate_assignment == 0 ) {
+      gate = 0xffff; // no assignment -> gate always on
+    } else {
+      // similar to SEQ_TRG_Get16:
+      u8 trg_layer = gate_assignment - 1;
+      u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8);
+      if( step_ix >= SEQ_TRG_MAX_BYTES )
+	step_ix = 0;
+
+      {
+	u8 *values = (u8 *)&copypaste_trg_layer[step_ix];
+	gate = *values;
+	++values;
+	gate |= ((u16)*values << 8);
+      }
+    }
+    pattern->gate = gate;
+  }
+
+  {
+    u16 accent = 0;
+    u8 accent_assignment = copypaste_cc[SEQ_CC_ASG_ACCENT];
+    if( accent_assignment == 0 ) {
+      accent = 0; // no assignment -> accent always off
+    } else {
+      // similar to SEQ_TRG_Get16:
+      u8 trg_layer = accent_assignment - 1;
+      u16 step_ix = (trg_instrument * num_t_layers * num_t_steps8) + (trg_layer * num_t_steps8);
+      if( step_ix >= SEQ_TRG_MAX_BYTES )
+	step_ix = 0;
+
+      {
+	u8 *values = (u8 *)&copypaste_trg_layer[step_ix];
+	accent = *values;
+	++values;
+	accent |= ((u16)*values << 8);
+      }
+    }
+    pattern->accent = accent;
+  }
+
+  return 0; // no error
+}
+
+s32 SEQ_UI_UTIL_ClearLivePattern(void)
+{
+  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
+    return -1; // invalid pattern
+  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+
+  pattern->gate = 0;
+  pattern->accent = 0;
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Help functions for move step feature
@@ -970,4 +1109,3 @@ s32 SEQ_UI_UTIL_UndoButton(s32 depressed)
 {
   return Button_Handler(SEQ_UI_BUTTON_GP8, depressed);
 }
-

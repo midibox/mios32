@@ -360,6 +360,10 @@ extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
 
+extern s32 SEQ_UI_UTIL_CopyLivePattern(void);
+extern s32 SEQ_UI_UTIL_PasteLivePattern(void);
+extern s32 SEQ_UI_UTIL_ClearLivePattern(void);
+
 extern s32 SEQ_UI_MIXER_Copy(void);
 extern s32 SEQ_UI_MIXER_Paste(void);
 extern s32 SEQ_UI_MIXER_Clear(void);
