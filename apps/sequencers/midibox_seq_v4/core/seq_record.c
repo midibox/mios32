@@ -653,11 +653,53 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       for(instrument=0; instrument<num_instruments; ++instrument) {
 	u8 note = tcc->lay_const[0*16 + instrument];
 	if( seq_record_played_notes[note>>5] & (1 << (note & 0x1f)) ) {
-	  // disable gate of new step
-	  SEQ_TRG_GateSet(track, new_step, instrument, 0);
+	  u8 gate = 0;
+	  u8 accent = 0;
+	  // BEGIN live pattern insertion
+	  {
+	    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[instrument];
+	    if( slot->enabled ) {
+	      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+	      u16 mask = 1 << (new_step % 16);
+	      gate = (pattern->gate & mask) ? 1 : 0;
+	      accent = (pattern->accent & mask) ? 1 : 0;
+
+	      if( tcc->link_par_layer_velocity >= 0 ) {
+		SEQ_PAR_Set(track, new_step, tcc->link_par_layer_velocity, instrument, slot->velocity);
+	      }
+	    }
+	  }
+	  // END live pattern insertion
+
+	  SEQ_TRG_GateSet(track, new_step, instrument, gate);
+	  SEQ_TRG_AccentSet(track, new_step, instrument, accent);
 	}
       }
     } else {
+      u8 gate = 0;
+      u8 accent = 0;
+      u8 length_prev_step = 95;
+      u8 length_new_step = 1;
+      int velocity = -1; // take over new velocity if >= 0
+      // BEGIN live pattern insertion
+      {
+	seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
+	if( slot->enabled ) {
+	  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+	  u16 mask = 1 << (new_step % 16);
+	  gate = (pattern->gate & mask) ? 1 : 0;
+	  accent = (pattern->accent & mask) ? 1 : 0;
+	  velocity = slot->velocity;
+	  length_prev_step = slot->len;
+	  length_new_step = slot->len;
+	}
+      }
+      // END live pattern insertion
+
+      // disable gate of new step
+      SEQ_TRG_GateSet(track, new_step, instrument, gate);
+      SEQ_TRG_AccentSet(track, new_step, instrument, accent);
+
       // copy notes of previous step to new step
       u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
       u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
@@ -676,21 +718,25 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
 	  u8 note = SEQ_PAR_Get(track, prev_step, par_layer, instrument);
 	  if( seq_record_played_notes[note>>5] & (1 << (note&0x1f)) ) {
-	    SEQ_PAR_Set(track+2, prev_step, par_layer, instrument, 95);
-	    SEQ_PAR_Set(track+2, new_step, par_layer, instrument, 1);
+	    SEQ_PAR_Set(track+2, prev_step, par_layer, instrument, length_prev_step);
+	    SEQ_PAR_Set(track+2, new_step, par_layer, instrument, length_new_step);
 	  }
+	}
+
+	// insert velocity into track 2/9
+	if( velocity >= 0 ) {
+	  SEQ_PAR_Set(track+1, new_step, par_layer, instrument, velocity);
 	}
       } else {
 	if( tcc->link_par_layer_length >= 0 ) {
-	  SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, 95);
-	  SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, 1);
+	  SEQ_PAR_Set(track, prev_step, tcc->link_par_layer_length, instrument, length_prev_step);
+	  SEQ_PAR_Set(track, new_step, tcc->link_par_layer_length, instrument, length_new_step);
+	}
+	if( velocity >= 0 && tcc->link_par_layer_velocity >= 0 ) {
+	  SEQ_PAR_Set(track, new_step, tcc->link_par_layer_velocity, instrument, velocity);
 	}
       }
-
-      // disable gate of new step
-      SEQ_TRG_GateSet(track, new_step, instrument, 0);
     }
-
   }
 
   t->state.REC_DONT_OVERWRITE_NEXT_STEP = 0;
