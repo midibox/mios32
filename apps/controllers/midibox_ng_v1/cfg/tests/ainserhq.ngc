@@ -1,0 +1,33 @@
+# Reset to default
+RESET_HW
+
+
+# LCD message after load
+LCD "%C@(1:1:1)AINSER HQ Test"
+
+
+# AINSER64 hardware
+# only first 16 inputs are used to send Pitchbend events
+
+# AINSER n=  1   enabled=1  muxed=1  cs=0  resolution=12bit
+# use 10bit instead of 12bit for reduced (resp. on good HW: no!) jitter
+AINSER n=  1   enabled=1  muxed=1  cs=0  resolution=10bit
+
+
+# EVENTs
+EVENT_AINSER id=  1  type=PitchBend  chn= 1  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  2  type=PitchBend  chn= 2  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  3  type=PitchBend  chn= 3  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  4  type=PitchBend  chn= 4  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  5  type=PitchBend  chn= 5  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  6  type=PitchBend  chn= 6  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  7  type=PitchBend  chn= 7  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  8  type=PitchBend  chn= 8  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id=  9  type=PitchBend  chn= 9  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 10  type=PitchBend  chn=10  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 11  type=PitchBend  chn=11  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 12  type=PitchBend  chn=12  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 13  type=PitchBend  chn=13  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 14  type=PitchBend  chn=14  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 15  type=PitchBend  chn=15  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
+EVENT_AINSER id= 16  type=PitchBend  chn=16  range=0:16383 offset=  0  ports=1000100000001000  lcd_pos=1:1:1  label="^std_aser"
