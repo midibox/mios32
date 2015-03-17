@@ -1238,7 +1238,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      // skip in record mode if the same note is already played
-	      if( seq_record_state.ENABLED &&
+	      if( seq_record_state.ENABLED && t->state.STRETCHED_GL &&
 		  (seq_record_played_notes[p->note>>5] & (1 << (p->note&0x1f))) )
 		continue;
 

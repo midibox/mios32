@@ -26,6 +26,7 @@
 #include "seq_par.h"
 #include "seq_chord.h"
 #include "seq_record.h"
+#include "seq_live.h"
 #include "seq_ui.h"
 #include "seq_morph.h"
 
@@ -671,7 +672,24 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
       for(drum=0; drum<num_instruments; ++drum) {
 	u8 drum_note = tcc->lay_const[0*16 + drum];
 	if( drum_note == layer_event.midi_package.note ) {
-	  SEQ_TRG_GateSet(track, step, drum, 1);
+
+	  // BEGIN live pattern insertion
+	  u8 gate = 1;
+	  u8 accent = 0;
+	  {
+	    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[drum];
+	    if( slot->enabled ) {
+	      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+	      u16 mask = 1 << (step % 16);
+	      gate = (pattern->gate & mask) ? 1 : 0;
+	      accent = (pattern->accent & mask) ? 1 : 0;
+	      layer_event.midi_package.velocity = slot->velocity;
+	    }
+	  }
+	  // END live pattern insertion
+
+	  SEQ_TRG_GateSet(track, step, drum, gate);
+	  SEQ_TRG_AccentSet(track, step, drum, accent);
 	  
 	  int par_layer;
 	  if( (par_layer=tcc->link_par_layer_velocity) >= 0 )
@@ -686,6 +704,22 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
     int par_layer;
     u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
 
+    // BEGIN live pattern insertion
+    u8 gate = 1;
+    u8 accent = 0;
+    {
+      seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
+      if( slot->enabled ) {
+	seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
+	u16 mask = 1 << (step % 16);
+	gate = (pattern->gate & mask) ? 1 : 0;
+	accent = (pattern->accent & mask) ? 1 : 0;
+	layer_event.midi_package.velocity = slot->velocity;
+	layer_event.len = slot->len;
+      }
+    }
+    // END live pattern insertion
+
     // in poly mode: check if note already recorded
     if( seq_record_options.POLY_RECORD && layer_event.midi_package.event == NoteOn ) {
       for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
@@ -694,7 +728,8 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	    SEQ_PAR_Get(track, step, par_layer, instrument) == layer_event.midi_package.note ) {
 
 	  // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
-	  SEQ_TRG_GateSet(track, step, instrument, 1);
+	  SEQ_TRG_GateSet(track, step, instrument, gate);
+	  SEQ_TRG_AccentSet(track, step, instrument, accent);
 
 	  if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
 	    // insert velocity into track 2/9
@@ -747,7 +782,8 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	    SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.note);
 
 	    // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
-	    SEQ_TRG_GateSet(track, step, instrument, 1);
+	    SEQ_TRG_GateSet(track, step, instrument, gate);
+	    SEQ_TRG_AccentSet(track, step, instrument, accent);
 
 	    if( tcc->event_mode == SEQ_EVENT_MODE_Combined ) {
 	      // insert velocity into track 2/9

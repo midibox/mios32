@@ -28,12 +28,13 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS         5
+#define NUM_OF_ITEMS         6
 #define ITEM_GXTY            0
 #define ITEM_TRG_SELECT      1
 #define ITEM_REPEAT_ENABLE   2
-#define ITEM_REPEAT_PATTERN  3
-#define ITEM_REPEAT_LENGTH   4
+#define ITEM_RECORD          3
+#define ITEM_REPEAT_PATTERN  4
+#define ITEM_REPEAT_LENGTH   5
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,6 +54,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_GXTY: *gp_leds = 0x0001; break;
     case ITEM_TRG_SELECT: *gp_leds = 0x0002; break;
     case ITEM_REPEAT_ENABLE: *gp_leds = 0x0004; break;
+    case ITEM_RECORD: *gp_leds = 0x0040; break;
     case ITEM_REPEAT_PATTERN: *gp_leds = 0x0f00; break;
     case ITEM_REPEAT_LENGTH: *gp_leds = 0x1000; break;
     }
@@ -128,8 +130,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP4:
     case SEQ_UI_ENCODER_GP5:
     case SEQ_UI_ENCODER_GP6:
-    case SEQ_UI_ENCODER_GP7:
       return -1; // not used
+
+    case SEQ_UI_ENCODER_GP7:
+      ui_selected_item = ITEM_RECORD;
+      break;
 
     case SEQ_UI_ENCODER_GP8:
       SEQ_UI_PageSet(SEQ_UI_PAGE_TRKLIVE);
@@ -184,6 +189,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       slot->enabled = slot->enabled ? 0 : 1;
     else
       slot->enabled = (incrementer > 0);
+    return 1;
+  } break;
+
+  case ITEM_RECORD: {
+    if( incrementer == 0 )
+      seq_record_state.ENABLED = seq_record_state.ENABLED ? 0 : 1;
+    else
+      seq_record_state.ENABLED = (incrementer > 0);
     return 1;
   } break;
 
@@ -264,8 +277,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Drum Repeat                    Live       Pattern      Length              
-  // G1T1  BD    on                      Page 1 *.*.*.*.*.*.*.*.   75%     Copy Paste
+  // Trk. Drum Repeat              Rec.  Live       Pattern      Length              
+  // G1T1  BD    on                off   Page 1 *.*.*.*.*.*.*.*.   75%     Copy Paste
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -280,7 +293,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString("Trk.      ");
   }
-  SEQ_LCD_PrintString("Repeat                    Live       Pattern      Length ");
+  SEQ_LCD_PrintString("Repeat              Rec.  Live       Pattern      Length ");
   if( seq_ui_button_state.SELECT_PRESSED ) {
     SEQ_LCD_PrintString("    Edit Mode");
   } else {
@@ -315,7 +328,17 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString(slot->enabled ? "  on " : "  off");
   }
-  SEQ_LCD_PrintSpaces(21);
+  SEQ_LCD_PrintSpaces(15);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_RECORD && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString(seq_record_state.ENABLED ? " on" : "off");
+  }
+  SEQ_LCD_PrintSpaces(3);
+
+  ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintString("Page");
 
   ///////////////////////////////////////////////////////////////////////////

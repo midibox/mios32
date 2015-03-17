@@ -20,6 +20,7 @@
 
 #include "seq_ui.h"
 #include "seq_live.h"
+#include "seq_record.h"
 #include "seq_core.h"
 #include "seq_bpm.h"
 #include "seq_cc.h"
@@ -379,6 +380,9 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 {
   if( track != SEQ_UI_VisibleTrackGet() )
     return 0; // only for visible track
+
+  if( seq_record_state.ENABLED )
+    return 0; // not relevant when recording enabled (pattern handling is part of SEQ_RECORD_NewStep)
 
   seq_cc_trk_t *tcc = (seq_cc_trk_t *)&seq_cc_trk[track];
   u8 play_step = 1;
