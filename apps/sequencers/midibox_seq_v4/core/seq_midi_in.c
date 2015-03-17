@@ -118,13 +118,6 @@ mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
 // external controller assignments
 u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
 
-// For Record function:
-// 0 disables MIDI In, 1..16 define the MIDI channel which should be used
-u8 seq_midi_in_rec_channel;
-// which IN port should be used? (0: All)
-mios32_midi_port_t seq_midi_in_rec_port;
-
-
 // for Sections:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_sect_channel;
@@ -176,10 +169,12 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   // stored in global config:
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     seq_midi_in_channel[bus] = bus+1; // Channel #1 (0 disables MIDI IN)
+    seq_midi_in_options[bus].MODE_PLAY = (bus == 0); // first bus in Play mode by default (for recording)
     seq_midi_in_port[bus] = DEFAULT; // All ports
     seq_midi_in_lower[bus] = 0x00; // lowest note
     seq_midi_in_upper[bus] = 0x7f; // highest note
     seq_midi_in_options[bus].ALL = 0; // disable all options
+    
   }
 
   seq_midi_in_ext_ctrl_channel = 0; // 0 disables MIDI IN
@@ -204,9 +199,6 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = SEQ_MIDI_IN_EXT_CTRL_PC_MODE_OFF;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = 128;
   seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS] = 128;
-
-  seq_midi_in_rec_channel = 1; // Channel #1 (0 disables MIDI IN)
-  seq_midi_in_rec_port = DEFAULT; // All ports
 
   seq_midi_in_sect_channel = 0; // disabled by default
   seq_midi_in_sect_port = DEFAULT; // All ports
@@ -411,9 +403,20 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   s32 status = 0;
 
   // check if we should record this event
-  u8 is_record_port = 
-    ((!seq_midi_in_rec_port || port == seq_midi_in_rec_port) &&
-     (seq_midi_in_rec_channel == 17 || midi_package.chn == (seq_midi_in_rec_channel-1)));
+  u8 is_record_port = 0;
+  int bus;
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    if( seq_midi_in_options[bus].MODE_PLAY ) {
+      mios32_midi_port_t rec_port = seq_midi_in_port[bus];
+      u8 rec_chn = seq_midi_in_channel[bus];
+
+      if( (!rec_port || port == seq_midi_in_port[bus]) &&
+	  (rec_chn == 17 || midi_package.chn == (rec_chn-1)) ) {
+	is_record_port = 1;
+	break;
+      }
+    }
+  }
   u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
 
   // simplify Note On/Off handling
@@ -425,7 +428,6 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   // search for matching ports
   // status[0] set if at least one port matched
   // status[1] set if remote function active
-  int bus;
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     // filter MIDI port (if 0: no filter, listen to all ports)
     if( (!seq_midi_in_port[bus] || port == seq_midi_in_port[bus]) &&
@@ -474,9 +476,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	      }
 
 	      if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		  || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
+		  || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
 		  ) {
 		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	      }
@@ -516,9 +516,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 		}
 
 		if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-		    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
+		    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
 		    ) {
 		  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 		}
@@ -538,9 +536,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	  }
 
 	  if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-	      || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
+	      || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
 	      ) {
 	    SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	  }
@@ -551,9 +547,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
       default:
 	if( seq_midi_in_options[bus].MODE_PLAY
-#ifdef MBSEQV4L
-	    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // MBSEQV4L: forward event if FWD_MIDI enabled but not in record page
-#endif
+	    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
 	    ) {
 	  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	}

@@ -114,9 +114,6 @@ extern u8 seq_midi_in_lower[SEQ_MIDI_IN_NUM_BUSSES];
 extern u8 seq_midi_in_upper[SEQ_MIDI_IN_NUM_BUSSES];
 extern seq_midi_in_options_t seq_midi_in_options[SEQ_MIDI_IN_NUM_BUSSES];
 
-extern u8 seq_midi_in_rec_channel;
-extern mios32_midi_port_t seq_midi_in_rec_port;
-
 extern u8 seq_midi_in_ext_ctrl_channel;
 extern mios32_midi_port_t seq_midi_in_ext_ctrl_port;
 extern mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
