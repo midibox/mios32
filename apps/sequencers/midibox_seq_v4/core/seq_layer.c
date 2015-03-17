@@ -676,7 +676,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	  // BEGIN live pattern insertion
 	  u8 gate = 1;
 	  u8 accent = 0;
-	  {
+	  if( !seq_record_options.STEP_RECORD ) {
 	    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[drum];
 	    if( slot->enabled ) {
 	      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
@@ -707,7 +707,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
     // BEGIN live pattern insertion
     u8 gate = 1;
     u8 accent = 0;
-    {
+    if( !seq_record_options.STEP_RECORD ) {
       seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
       if( slot->enabled ) {
 	seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];

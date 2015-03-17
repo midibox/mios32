@@ -656,7 +656,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	  u8 gate = 0;
 	  u8 accent = 0;
 	  // BEGIN live pattern insertion
-	  {
+	  if( !seq_record_options.STEP_RECORD ) {
 	    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[instrument];
 	    if( slot->enabled ) {
 	      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
@@ -682,7 +682,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       u8 length_new_step = 1;
       int velocity = -1; // take over new velocity if >= 0
       // BEGIN live pattern insertion
-      {
+      if( !seq_record_options.STEP_RECORD ) {
 	seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
 	if( slot->enabled ) {
 	  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
