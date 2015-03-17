@@ -475,9 +475,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 #endif
 	      }
 
-	      if( seq_midi_in_options[bus].MODE_PLAY
-		  || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
-		  ) {
+	      if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
 		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	      }
 	      
@@ -515,9 +513,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 #endif
 		}
 
-		if( seq_midi_in_options[bus].MODE_PLAY
-		    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
-		    ) {
+	      if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
 		  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 		}
 
@@ -535,9 +531,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	    SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
 	  }
 
-	  if( seq_midi_in_options[bus].MODE_PLAY
-	      || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
-	      ) {
+	  if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
 	    SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	  }
 
@@ -546,9 +540,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	break;
 
       default:
-	if( seq_midi_in_options[bus].MODE_PLAY
-	    || (seq_record_options.FWD_MIDI && !seq_record_state.ENABLED) // forward event if FWD_MIDI enabled but not in record page
-	    ) {
+	if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
 	  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
 	}
       }
