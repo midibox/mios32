@@ -142,9 +142,9 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
   }
 
   if( min <= max ) {
-    value = min + (((256*value)/4096) * (max-min+1) / 256);
+    value = min + (value * (max-min)) / 4095;
   } else {
-    value = min - (((256*value)/4096) * (min-max+1) / 256);
+    value = min - (value * (min-max)) / 4095;
   }
 
   if( map_len > 0 ) {
@@ -153,9 +153,9 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
 
   int prev_value;
   if( min <= max ) {
-    prev_value = min + (((256*prev_pin_value)/4096) * (max-min+1) / 256);
+    prev_value = min + (value * (max-min)) / 4095;
   } else {
-    prev_value = min - (((256*prev_pin_value)/4096) * (min-max+1) / 256);
+    prev_value = min - (value * (min-max)) / 4095;
   }
 
   if( map_len > 0 ) {
