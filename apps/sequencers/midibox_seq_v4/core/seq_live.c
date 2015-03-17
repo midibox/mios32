@@ -87,7 +87,6 @@ s32 SEQ_LIVE_Init(u32 mode)
 {
   seq_live_options.ALL = 0;
   seq_live_options.OCT_TRANSPOSE = 0;
-  seq_live_options.VELOCITY = 100;
   seq_live_options.FORCE_SCALE = 0;
   seq_live_options.FX = 1;
   seq_live_options.KEEP_CHANNEL = 0;
@@ -275,7 +274,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	    if( effective_note == *drum_note_ptr ) {
 	      // auto-select trg layer in drum mode
 	      // (also useful for other pages?)
-	      if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+	      if( ui_page == SEQ_UI_PAGE_TRKREC ) {
 		ui_selected_instrument = i;
 		seq_ui_display_update_req = 1;
 	      }

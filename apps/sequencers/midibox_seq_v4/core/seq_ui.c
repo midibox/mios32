@@ -887,7 +887,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
     SEQ_UI_SONG_Copy();
     SEQ_UI_Msg_SongPos("copied");
     return 1;
-  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
     if( depressed ) return -1;
     SEQ_UI_UTIL_CopyLivePattern();
     SEQ_UI_Msg_LivePattern("copied");
@@ -990,7 +990,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
     SEQ_UI_SONG_Paste();
     SEQ_UI_Msg_SongPos("pasted");
     return 1;
-  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
     if( depressed ) return -1;
     SEQ_UI_UTIL_PasteLivePattern();
     SEQ_UI_Msg_LivePattern("pasted");
@@ -1078,7 +1078,7 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
       SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
     }
     return 1;
-  } else if( ui_page == SEQ_UI_PAGE_TRKREPEAT ) {
+  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern);
     else {
@@ -3491,12 +3491,25 @@ s32 SEQ_UI_MIDILearnMessage(seq_ui_msg_type_t msg_type, u8 on_off)
 {
   if( on_off ) {
     char tmp[20];
-    if( seq_midi_in_rec_channel == 0 ) {
+
+    u8 learn_chn = 0;
+    mios32_midi_port_t learn_port = 0;
+
+    // pick up first matching port which is in Play mode
+    int bus;
+    for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+      if( seq_midi_in_options[bus].MODE_PLAY && (learn_chn = seq_midi_in_channel[bus]) ) {
+	learn_port = seq_midi_in_port[bus];
+	break;
+      }
+    }
+
+    if( learn_chn == 0 ) {
       sprintf(tmp, "disable (config in REC page!)");
-    } else if( seq_midi_in_rec_channel > 16 ) {
-      sprintf(tmp, "Port: %s  Chn All", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port)));
+    } else if( learn_chn > 16 ) {
+      sprintf(tmp, "Port: %s  Chn All", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(learn_port)));
     } else {
-      sprintf(tmp, "Port: %s  Chn #%2d", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_midi_in_rec_port)), seq_midi_in_rec_channel);
+      sprintf(tmp, "Port: %s  Chn #%2d", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(learn_port)), learn_chn);
     }
     SEQ_UI_Msg(msg_type, 1000, "MIDI Learn active:", tmp);
   } else {

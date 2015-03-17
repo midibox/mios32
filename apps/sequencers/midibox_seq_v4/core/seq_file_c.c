@@ -314,7 +314,8 @@ s32 SEQ_FILE_C_Read(char *session)
 	  } else if( strcmp(parameter, "LiveOctTranspose") == 0 ) {
 	    seq_live_options.OCT_TRANSPOSE = value;
 	  } else if( strcmp(parameter, "LiveVelocity") == 0 ) {
-	    seq_live_options.VELOCITY = value;
+	    //seq_live_options.VELOCITY = value;
+	    // obsolete - silently ignore
 	  } else if( strcmp(parameter, "LiveForceToScale") == 0 ) {
 	    seq_live_options.FORCE_SCALE = value;
 	  } else if( strcmp(parameter, "LiveKeepChannel") == 0 ) {
@@ -402,9 +403,11 @@ s32 SEQ_FILE_C_Read(char *session)
 	    if( strcmp(parameter+8, "MClock_Ports") == 0 ) {
 	      seq_midi_router_mclk_in = value;
 	    } else if( strcmp(parameter+8, "RecChannel") == 0 ) {
-	      seq_midi_in_rec_channel = value;
+	      // seq_midi_in_rec_channel = value;
+	      // parameter is obsolete - silently ignore
 	    } else if( strcmp(parameter+8, "RecPort") == 0 ) {
-	      seq_midi_in_rec_port = (mios32_midi_port_t)value;
+	      // seq_midi_in_rec_port = (mios32_midi_port_t)value;
+	      // parameter is obsolete - silently ignore
 	    } else if( strcmp(parameter+8, "SectChannel") == 0 ) {
 	      seq_midi_in_sect_channel = value;
 	    } else if( strcmp(parameter+8, "SectPort") == 0 ) {
@@ -670,9 +673,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "LiveOctTranspose %d\n", seq_live_options.OCT_TRANSPOSE);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "LiveVelocity %d\n", seq_live_options.VELOCITY);
-  FLUSH_BUFFER;
-
   sprintf(line_buffer, "LiveForceToScale %d\n", seq_live_options.FORCE_SCALE);
   FLUSH_BUFFER;
 
@@ -704,12 +704,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   }
 
   sprintf(line_buffer, "MIDI_IN_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_in);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MIDI_IN_RecChannel %d\n", seq_midi_in_rec_channel);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "MIDI_IN_RecPort %d\n", (u8)seq_midi_in_rec_port);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_IN_SectChannel %d\n", seq_midi_in_sect_channel);
