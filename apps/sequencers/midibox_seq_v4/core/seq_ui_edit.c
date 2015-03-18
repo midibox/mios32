@@ -1212,7 +1212,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     seq_record_options.STEP_RECORD = 1;
     seq_record_options.FWD_MIDI = prev_seq_record_options.FWD_MIDI;
 
-    seq_record_state.ENABLED = 1;
+    SEQ_RECORD_Enable(1);
     seq_record_step = ui_selected_step;
 
     SEQ_RECORD_Receive(p, visible_track);
@@ -1246,7 +1246,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     }
 
     seq_record_options.ALL = prev_seq_record_options.ALL;
-    seq_record_state.ENABLED = 0;
+    SEQ_RECORD_Enable(0);
 
     ui_hold_msg_ctr_drum_edit = 0;
 

@@ -823,7 +823,7 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_UI_UTIL_CopyLivePattern(void)
 {
-  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
   if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
     return -1; // invalid pattern
   seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
@@ -885,7 +885,7 @@ s32 SEQ_UI_UTIL_PasteLivePattern(void)
   if( !copypaste_buffer_filled )
     return -1; // edit buffer empty
 
-  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
   if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
     return -1; // invalid pattern
   seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
@@ -946,7 +946,7 @@ s32 SEQ_UI_UTIL_PasteLivePattern(void)
 
 s32 SEQ_UI_UTIL_ClearLivePattern(void)
 {
-  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
   if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
     return -1; // invalid pattern
   seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];

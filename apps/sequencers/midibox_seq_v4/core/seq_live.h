@@ -18,8 +18,8 @@
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// for up to 16 instruments in drum tracks
-#define SEQ_LIVE_REPEAT_SLOTS 16
+// for up to 16 drum instruments (index 1..16) + 1 common track (index 0)
+#define SEQ_LIVE_PATTERN_SLOTS 17
 
 // number of arp patterns
 #define SEQ_LIVE_NUM_ARP_PATTERNS 16
@@ -46,7 +46,7 @@ typedef struct {
   u32 velocity:8;
   u32 len:8;
   u32 chn:4;
-} seq_live_repeat_t;
+} seq_live_pattern_slot_t;
 
 typedef struct {
   u16 gate;
@@ -65,7 +65,7 @@ extern s32 SEQ_LIVE_AllNotesOff(void);
 
 extern s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick);
 
-extern seq_live_repeat_t *SEQ_LIVE_CurrentSlotGet(void);
+extern seq_live_pattern_slot_t *SEQ_LIVE_CurrentSlotGet(void);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -73,7 +73,9 @@ extern seq_live_repeat_t *SEQ_LIVE_CurrentSlotGet(void);
 /////////////////////////////////////////////////////////////////////////////
 
 extern seq_live_options_t seq_live_options;
-extern seq_live_repeat_t seq_live_repeat[SEQ_LIVE_REPEAT_SLOTS];
+extern seq_live_pattern_slot_t seq_live_pattern_slot[SEQ_LIVE_PATTERN_SLOTS];
 extern seq_live_arp_pattern_t seq_live_arp_pattern[SEQ_LIVE_NUM_ARP_PATTERNS];
+
+extern u32 seq_live_played_notes[4];
 
 #endif /* _SEQ_LIVE_H */
