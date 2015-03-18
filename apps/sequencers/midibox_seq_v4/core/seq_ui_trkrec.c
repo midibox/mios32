@@ -117,7 +117,7 @@ static s32 LED_Handler(u16 *gp_leds)
 
   // print edit pattern
   if( selected_subpage == SUBPAGE_REC_PTN && seq_ui_button_state.SELECT_PRESSED ) {
-    seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+    seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
     seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
     *gp_leds = pattern->gate;
     return 0; // no error
@@ -233,8 +233,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
-  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? (1+ui_selected_instrument) : 0;
+  seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[ix];    
 
   // ensure that original record screen will be print immediately
   ui_hold_msg_ctr = 0;
@@ -480,11 +480,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     return SEQ_UI_GxTyInc(incrementer);
 
   case ITEM_REC_ENABLE: {
+    u8 value = seq_record_state.ENABLED;
     if( incrementer == 0 )
-      seq_record_state.ENABLED = seq_record_state.ENABLED ? 0 : 1;
+      value = value ? 0 : 1;
     else
-      seq_record_state.ENABLED = (incrementer > 0);
-    return 1;
+      value = (incrementer > 0);
+
+    if( value != seq_record_state.ENABLED ) {
+      SEQ_RECORD_Enable(value);
+      return 1;
+    }
+    return 0;
   }
 
   case ITEM_FWD_ENABLE: {
@@ -640,6 +646,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1-4, incrementer) >= 0 ) { // don't allow selection of Bus1..Bus4
       seq_midi_in_port[selected_bus] = SEQ_MIDI_PORT_InPortGet(port_ix);
       SEQ_RECORD_AllNotesOff(); // reset note markers
+      SEQ_LIVE_AllNotesOff();
       ui_store_file_required = 1;
       return 1; // value changed
     }
@@ -650,6 +657,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( SEQ_UI_Var8_Inc(&seq_midi_in_channel[selected_bus], 0, 17, incrementer) >= 0 ) {
       ui_store_file_required = 1;
       SEQ_RECORD_AllNotesOff(); // reset note markers
+      SEQ_LIVE_AllNotesOff();
       return 1; // value changed
     }
     return 0; // no change
@@ -658,6 +666,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_MIDI_IN_LOWER: {
     if( SEQ_UI_Var8_Inc(&seq_midi_in_lower[selected_bus], 0, 127, incrementer) >= 0 ) {
       SEQ_RECORD_AllNotesOff(); // reset note markers
+      SEQ_LIVE_AllNotesOff();
       ui_store_file_required = 1;
       return 1; // value changed
     }
@@ -667,6 +676,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_MIDI_IN_UPPER: {
     if( SEQ_UI_Var8_Inc(&seq_midi_in_upper[selected_bus], 0, 127, incrementer) >= 0 ) {
       SEQ_RECORD_AllNotesOff(); // reset note markers
+      SEQ_LIVE_AllNotesOff();
       ui_store_file_required = 1;
       return 1; // value changed
     }
@@ -680,6 +690,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( SEQ_UI_Var8_Inc(&fwd, 0, 1, incrementer) >= 0 ) {
       seq_midi_in_options[selected_bus].MODE_PLAY = fwd;
       SEQ_RECORD_AllNotesOff(); // reset note markers
+      SEQ_LIVE_AllNotesOff();
       ui_store_file_required = 1;
       return 1; // value changed
     }
@@ -689,6 +700,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_MIDI_RESET_STACKS: {
     SEQ_MIDI_IN_ResetTransArpStacks();
     SEQ_RECORD_AllNotesOff(); // reset note markers
+    SEQ_LIVE_AllNotesOff();
     SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 2000, "Transposer/Arp.", "Stacks cleared!");
     return 1;
   } break;
@@ -825,8 +837,8 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
-  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[ix];    
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? (1+ui_selected_instrument) : 0;
+  seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[ix];    
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -958,6 +970,9 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   case SUBPAGE_REC_PTN: {
+    // using drum symbols
+    SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
+
     SEQ_LCD_CursorSet(40, 0);
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       SEQ_LCD_PrintString("Drum");
@@ -1147,7 +1162,8 @@ static s32 EXIT_Handler(void)
   }
 
   // disable recording
-  seq_record_state.ENABLED = 0;
+  // SEQ_RECORD_Enable(0);
+  // not in revised trkrec page anymore
 
   return status;
 }
@@ -1166,10 +1182,11 @@ s32 SEQ_UI_TRKREC_Init(u32 mode)
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   // enable recording
-  //seq_record_state.ENABLED = 1;
+  // SEQ_RECORD_Enable(1);
   // no auto-enable in revised page anymore...
 
-  SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_DrumSymbolsBig);
+  // switch step recording depending on subpage
+  seq_record_options.STEP_RECORD = (selected_subpage == SUBPAGE_REC_STEP) ? 1 : 0;
 
   return 0; // no error
 }

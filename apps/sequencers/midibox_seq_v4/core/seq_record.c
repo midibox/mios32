@@ -148,6 +148,34 @@ s32 SEQ_RECORD_AllNotesOff(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// This function enables recording and takes over active live notes
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RECORD_Enable(u8 enable)
+{
+  // take over live notes on transition 0->1
+  if( !seq_record_state.ENABLED && enable ) {
+    u32 timestamp = MIOS32_TIMESTAMP_Get();
+    int i;
+    for(i=0; i<128; ++i)
+      seq_record_note_timestamp_ms[i] = timestamp;
+
+    for(i=0; i<4; ++i) {
+      seq_record_played_notes[i] = seq_live_played_notes[i];
+    }
+  }
+
+  // clear record notes if recording disabled
+  if( seq_record_state.ENABLED && !enable ) {
+    SEQ_RECORD_AllNotesOff();
+  }
+
+  seq_record_state.ENABLED = enable;
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This function interacts with the UI to print the edit screen when an
 // event has been recorded or changed
 /////////////////////////////////////////////////////////////////////////////
@@ -657,7 +685,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	  u8 accent = 0;
 	  // BEGIN live pattern insertion
 	  if( !seq_record_options.STEP_RECORD ) {
-	    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[instrument];
+	    seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[1+instrument];
 	    if( slot->enabled ) {
 	      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
 	      u16 mask = 1 << (new_step % 16);
@@ -683,7 +711,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       int velocity = -1; // take over new velocity if >= 0
       // BEGIN live pattern insertion
       if( !seq_record_options.STEP_RECORD ) {
-	seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
+	seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];
 	if( slot->enabled ) {
 	  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
 	  u16 mask = 1 << (new_step % 16);

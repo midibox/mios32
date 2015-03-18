@@ -44,8 +44,10 @@
 // Global variables
 /////////////////////////////////////////////////////////////////////////////
 seq_live_options_t seq_live_options;
-seq_live_repeat_t seq_live_repeat[SEQ_LIVE_REPEAT_SLOTS];
+seq_live_pattern_slot_t seq_live_pattern_slot[SEQ_LIVE_PATTERN_SLOTS];
 seq_live_arp_pattern_t seq_live_arp_pattern[SEQ_LIVE_NUM_ARP_PATTERNS];
+
+u32 seq_live_played_notes[4];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,6 @@ seq_live_arp_pattern_t seq_live_arp_pattern[SEQ_LIVE_NUM_ARP_PATTERNS];
 /////////////////////////////////////////////////////////////////////////////
 // for tracking played notes
 #define LIVE_NUM_KEYS 128
-static u32 live_note_played[LIVE_NUM_KEYS / 32];
 static mios32_midi_port_t live_keyboard_port[LIVE_NUM_KEYS];
 static u8 live_keyboard_chn[LIVE_NUM_KEYS];
 static u8 live_keyboard_note[LIVE_NUM_KEYS];
@@ -93,8 +94,8 @@ s32 SEQ_LIVE_Init(u32 mode)
 
   {
     int i;
-    seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
-    for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
+    seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];    
+    for(i=0; i<SEQ_LIVE_PATTERN_SLOTS; ++i, ++slot) {
       slot->enabled = 0;
       slot->pattern = 0;
       slot->chn = 0;
@@ -115,7 +116,6 @@ s32 SEQ_LIVE_Init(u32 mode)
 
   return 0; // no error
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Plays an event over the given track (internal, also used by repeat function)
@@ -217,7 +217,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 
     // in any case (key depressed or not), play note off if note is active!
     // this ensures that note off event is sent if for example the OCT_TRANSPOSE has been changed
-    if( live_note_played[note_ix32] & note_mask ) {
+    if( seq_live_played_notes[note_ix32] & note_mask ) {
       // send velocity off
       MUTEX_MIDIOUT_TAKE;
       SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
@@ -230,9 +230,9 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
     }
 
     if( p.velocity == 0 ) {
-      live_note_played[note_ix32] &= ~note_mask;
+      seq_live_played_notes[note_ix32] &= ~note_mask;
     } else {
-      live_note_played[note_ix32] |= note_mask;
+      seq_live_played_notes[note_ix32] |= note_mask;
 
       int effective_note;
       u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
@@ -256,7 +256,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
       u8 play_note = 1;
       if( track == SEQ_UI_VisibleTrackGet() ) {
 	if( event_mode != SEQ_EVENT_MODE_Drum ) {
-	  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
+	  seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];
 	  // take over note value and velocity
 	  slot->chn = chn;
 	  slot->note = effective_note;
@@ -269,7 +269,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	  int i;
 	  u8 num_drums = SEQ_TRG_NumInstrumentsGet(track);
 	  u8 *drum_note_ptr = (u8 *)&seq_cc_trk[track].lay_const[0]; // is SEQ_CC_LAY_CONST_A1
-	  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];
+	  seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[1];
 	  for(i=0; i<num_drums; ++i, ++slot, ++drum_note_ptr ) {
 	    if( effective_note == *drum_note_ptr ) {
 	      // auto-select trg layer in drum mode
@@ -322,15 +322,15 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
     // Aftertouch: take over velocity in repeat slot
     if( p.type == PolyPressure ) {
       int i;
-      seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
-      for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
+      seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];
+      for(i=0; i<SEQ_LIVE_PATTERN_SLOTS; ++i, ++slot) {
 	if( slot->note == p.note )
 	  slot->velocity = p.velocity;
       }
     } else if( p.type == Aftertouch ) {
       int i;
-      seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
-      for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
+      seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];
+      for(i=0; i<SEQ_LIVE_PATTERN_SLOTS; ++i, ++slot) {
 	slot->velocity = p.evnt1;
       }
     }
@@ -351,7 +351,7 @@ s32 SEQ_LIVE_AllNotesOff(void)
     u32 note_ix32 = note / 32;
     u32 note_mask = (1 << (note % 32));
 
-    if( live_note_played[note_ix32] & note_mask ) {
+    if( seq_live_played_notes[note_ix32] & note_mask ) {
       // send velocity off
       MUTEX_MIDIOUT_TAKE;
       SEQ_MIDI_PORT_FilterOscPacketsSet(1); // important to avoid OSC feedback loops!
@@ -363,7 +363,7 @@ s32 SEQ_LIVE_AllNotesOff(void)
       MUTEX_MIDIOUT_GIVE;
     }
 
-    live_note_played[note_ix32] &= ~note_mask;
+    seq_live_played_notes[note_ix32] &= ~note_mask;
   }
 
   return 0; // no error
@@ -386,11 +386,12 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
   seq_cc_trk_t *tcc = (seq_cc_trk_t *)&seq_cc_trk[track];
   u8 play_step = 1;
 
-  seq_live_repeat_t *slot = (seq_live_repeat_t *)&seq_live_repeat[0];    
+  seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[0];    
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
     int i;
 
-    for(i=0; i<SEQ_LIVE_REPEAT_SLOTS; ++i, ++slot) {
+    // (drums starting with index 1)
+    for(++slot, i=1; i<SEQ_LIVE_PATTERN_SLOTS; ++i, ++slot) {
       if( slot->enabled && slot->note && slot->velocity ) {
 	seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
 	u16 pattern_mask = 1 << (new_step % 16);
@@ -403,7 +404,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	  // note played on keyboard?
 	  u32 note_ix32 = slot->note / 32;
 	  u32 note_mask = (1 << (slot->note % 32));
-	  if( live_note_played[note_ix32] & note_mask ) {
+	  if( seq_live_played_notes[note_ix32] & note_mask ) {
 	    seq_layer_evnt_t e;
 	    e.midi_package.ALL = 0;
 	    e.midi_package.cin = NoteOn;
@@ -434,7 +435,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	// trigger all played notes
 	u32 note_ix32;
 	for(note_ix32=0; note_ix32<4; ++note_ix32) {
-	  u32 played = live_note_played[note_ix32];
+	  u32 played = seq_live_played_notes[note_ix32];
 	  if( played ) {
 	    u32 note_mask = 1;
 	    int i;
@@ -470,10 +471,10 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 /////////////////////////////////////////////////////////////////////////////
 // Returns pointer to current selected pattern slot
 /////////////////////////////////////////////////////////////////////////////
-seq_live_repeat_t *SEQ_LIVE_CurrentSlotGet(void)
+seq_live_pattern_slot_t *SEQ_LIVE_CurrentSlotGet(void)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
-  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
-  return (seq_live_repeat_t *)&seq_live_repeat[ix];    
+  u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? (1+ui_selected_instrument) : 0;
+  return (seq_live_pattern_slot_t *)&seq_live_pattern_slot[ix];    
 }

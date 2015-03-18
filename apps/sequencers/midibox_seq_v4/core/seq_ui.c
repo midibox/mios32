@@ -417,7 +417,7 @@ static void SEQ_UI_Msg_LivePattern(char *line2)
 {
   char buffer[20];
 
-  seq_live_repeat_t *slot = SEQ_LIVE_CurrentSlotGet();
+  seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
   sprintf(buffer, "Live Pattern #%d", slot->pattern + 1);
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
@@ -1944,10 +1944,10 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
 	// PUNCH_IN, PUNCH_OUT
   if( depressed ) {
     // disable recording
-    seq_record_state.ENABLED = 0;
+    SEQ_RECORD_Enable(0);
   } else {
     // enable recording
-    seq_record_state.ENABLED = 1;
+    SEQ_RECORD_Enable(1);
     seq_record_state.ARMED_TRACKS = ui_selected_tracks; // not used yet, just preparation for future changes
   }
 
