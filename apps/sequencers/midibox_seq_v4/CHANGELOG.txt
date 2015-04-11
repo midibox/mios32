@@ -2098,6 +2098,15 @@ http://midibox.org/forums/topic/19406-mpc-style-note-repeat-function/#entry16920
 Trigger steps from another track:
 http://midibox.org/forums/topic/19410-step-trigger/?p=169253
 ----------------------------------------------------------
+FTS for Random Generator
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
+----------------------------------------------------------
+Selectable Button Behaviour for Step View
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
+----------------------------------------------------------
+FTS for Recording Mode
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169705
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
