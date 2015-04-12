@@ -2110,6 +2110,9 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169705
 Send Note Off instead of Note On with velocity 0
 http://midibox.org/forums/topic/19471-note-off-hex-80/?p=169684
 ----------------------------------------------------------
+"nth" layer:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169722
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
