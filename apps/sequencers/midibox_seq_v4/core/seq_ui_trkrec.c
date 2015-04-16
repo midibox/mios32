@@ -41,6 +41,7 @@
 #define SUBPAGE_REC_PTN   2
 #define SUBPAGE_MIDI      3
 #define SUBPAGE_MISC      4
+#define SUBPAGE_PATSEL    5
 
 
 #define ITEM_GXTY               0
@@ -104,6 +105,7 @@ static u8 selected_bus = 0;
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 GetNumNoteLayers(void);
+static s32 SEQ_UI_TRKREC_Hlp_PrintPattern(u8 pattern);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -116,7 +118,7 @@ static s32 LED_Handler(u16 *gp_leds)
     return SEQ_UI_EDIT_LED_Handler(gp_leds);
 
   // print edit pattern
-  if( selected_subpage == SUBPAGE_REC_PTN && seq_ui_button_state.SELECT_PRESSED ) {
+  if( selected_subpage == SUBPAGE_PATSEL || (selected_subpage == SUBPAGE_REC_PTN && seq_ui_button_state.SELECT_PRESSED) ) {
     seq_live_pattern_slot_t *slot = SEQ_LIVE_CurrentSlotGet();
     seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
     *gp_leds = pattern->gate;
@@ -129,7 +131,6 @@ static s32 LED_Handler(u16 *gp_leds)
   if( selected_subpage < 5 ) {
     *gp_leds = 1 << (selected_subpage + 3);
   }
-
 
   switch( selected_subpage ) {
   case SUBPAGE_REC_STEP:
@@ -239,9 +240,22 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   // ensure that original record screen will be print immediately
   ui_hold_msg_ctr = 0;
 
-  if( selected_subpage == SUBPAGE_REC_PTN && seq_ui_button_state.SELECT_PRESSED && encoder < 16 ) {
+  if( (selected_subpage == SUBPAGE_PATSEL || (selected_subpage == SUBPAGE_REC_PTN && seq_ui_button_state.SELECT_PRESSED)) && encoder < 16 ) {
     if( slot->pattern >= SEQ_LIVE_NUM_ARP_PATTERNS )
       return -1; // invalid pattern
+
+    // in PATSEL page: only encoders change the gate/accent
+    // buttons select on/off, pattern and exit
+    if( selected_subpage == SUBPAGE_PATSEL && incrementer == 0 ) {
+      if( encoder == SEQ_UI_ENCODER_GP15 ) { // actually SEQ_UI_BUTTON_GP15
+	selected_subpage = SUBPAGE_REC_PTN;
+      } else if( encoder == SEQ_UI_ENCODER_GP16 ) { // actually SEQ_UI_BUTTON_GP16
+	slot->enabled = slot->enabled ? 0 : 1;
+      } else {
+	slot->pattern = encoder;
+      }
+      return 1; // key taken
+    }
 
     seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
     u16 mask = (1 << encoder);
@@ -390,6 +404,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP12:
       case SEQ_UI_ENCODER_GP13:
 	ui_selected_item = ITEM_PTN_PATTERN;
+
+	// button pressed -> change to PATSEL page
+	if( incrementer == 0 ) {
+	  selected_subpage = SUBPAGE_PATSEL;
+	  return 1;
+	}
 	break;
 
       case SEQ_UI_ENCODER_GP14:
@@ -825,6 +845,15 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
+  // Trk. G1T1   Pattern  1  *.*.*.*.*.*.*.*.                              Ptn.  Cfg.
+  //  > 1<   2    3    4    5    6    7    8    9  10   11   12   13   14   on   Page
+  // Trk. G1T1   Pattern  1  *.*.*.*.*.*.*.*.                              Cfg.  Ptn.
+  //  > 1<   2    3    4    5    6    7    8    9  10   11   12   13   14  Page   on 
+
+
+  // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
+  // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
+  // <--------------------------------------><-------------------------------------->
   // Trk. Rec. Fwd.    Configuration Pages    Bus Port Chn. Lower/Upper Mode   Reset 
   // G1T1 off   on  Step Live Ptn.>MIDI<Misc   1  IN1  #16   ---   ---  Rec    Stacks
 
@@ -839,6 +868,41 @@ static s32 LCD_Handler(u8 high_prio)
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 ix = (event_mode == SEQ_EVENT_MODE_Drum) ? (1+ui_selected_instrument) : 0;
   seq_live_pattern_slot_t *slot = (seq_live_pattern_slot_t *)&seq_live_pattern_slot[ix];    
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  if( selected_subpage == SUBPAGE_PATSEL ) {
+    u8 pattern_num = slot->pattern;
+
+    SEQ_LCD_CursorSet(0, 0);
+    SEQ_LCD_PrintString("Trk. ");
+    SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
+    SEQ_LCD_PrintFormattedString("   Pattern %2d  ", pattern_num + 1);
+    SEQ_UI_TRKREC_Hlp_PrintPattern(slot->pattern);
+    SEQ_LCD_PrintSpaces(30);
+    SEQ_LCD_PrintString("Cfg.  Ptn.");
+
+    SEQ_LCD_CursorSet(0, 1);
+    {
+      int i;
+      for(i=0; i<14; ++i) {
+	if( i == pattern_num ) {
+	  SEQ_LCD_PrintFormattedString(">%2d< ", i+1);
+	} else {
+	  SEQ_LCD_PrintFormattedString(" %2d  ", i+1);
+	}
+      }
+    }
+
+    SEQ_LCD_PrintString("Page  ");
+    SEQ_LCD_PrintString(slot->enabled ? " on " : "off ");
+
+    return 0; // no error
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -1010,16 +1074,7 @@ static s32 LCD_Handler(u8 high_prio)
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    {
-      seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[slot->pattern];
-      int step;
-      u16 mask = 0x0001;
-      for(step=0; step<16; ++step, mask <<= 1) {
-	u8 gate = (pattern->gate & mask) ? 1 : 0;
-	u8 accent = (pattern->accent & mask) ? 2 : 0;
-	SEQ_LCD_PrintChar(gate | accent);
-      }
-    }
+    SEQ_UI_TRKREC_Hlp_PrintPattern(slot->pattern);
     SEQ_LCD_PrintSpaces(1);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1221,3 +1276,20 @@ s32 SEQ_UI_TRKREC_PatternRecordSelected(void)
   return (ui_page == SEQ_UI_PAGE_TRKREC && selected_subpage == SUBPAGE_REC_PTN) ? 1 : 0;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Prints selected Live Pattern (16 chars)
+/////////////////////////////////////////////////////////////////////////////
+static s32 SEQ_UI_TRKREC_Hlp_PrintPattern(u8 pattern_num)
+{
+  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[pattern_num];
+  int step;
+  u16 mask = 0x0001;
+  for(step=0; step<16; ++step, mask <<= 1) {
+    u8 gate = (pattern->gate & mask) ? 1 : 0;
+    u8 accent = (pattern->accent & mask) ? 2 : 0;
+    SEQ_LCD_PrintChar(gate | accent);
+  }
+
+  return 0; // no error
+}
