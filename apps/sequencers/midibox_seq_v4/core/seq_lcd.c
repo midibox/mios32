@@ -636,7 +636,7 @@ s32 SEQ_LCD_PrintNthValue(u8 nth_value)
   int bars = (nth_value & 0xf) + 1;
   int mode = (nth_value >> 4) & 0x7;
 
-  return SEQ_LCD_PrintFormattedString("%c%c%2d ", nth_char1[mode], nth_char2[mode], bars);
+  return SEQ_LCD_PrintFormattedString("%c%c%2d", nth_char1[mode], nth_char2[mode], bars);
 }
 
 
