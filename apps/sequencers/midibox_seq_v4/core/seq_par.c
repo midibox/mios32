@@ -56,6 +56,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Roll ", // 9
   "Roll2", // 10
   "PrgCh", // 11
+  " Nth ", // 12
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -71,6 +72,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Roll
   0,    // Roll2
   0,    // PrgCh
+  0,    // Nth
 };
 
 
@@ -367,6 +369,23 @@ s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
   }
 
   return 0; // no roll2
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the Nth mode if assigned to any parameter layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PAR_NthValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  s8 par_layer;
+
+  if( (par_layer=tcc->link_par_layer_nth) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
+    return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
+
+  return 0; // no nth
 }
 
 

@@ -1107,8 +1107,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       } else {
 	if( layer_event.len >= 96 )
 	  SEQ_LCD_PrintHBar(15); // glide or stretched event
-	else
-	  SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/100);
+	else {
+	  //SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/100);
+	  SEQ_LCD_PrintHBar(((layer_event.len-1)*16)/110); // so that we see a difference if note not stretched
+	}
       }
       previous_length = ((gate && layer_event.midi_package.velocity) || (previous_length >= 96 && layer_event.len >= 96)) ? layer_event.len : 0;
     }

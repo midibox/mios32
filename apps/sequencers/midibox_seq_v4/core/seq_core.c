@@ -572,6 +572,7 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
     t->state.ALL = 0;
     SEQ_CORE_ResetTrkPos(track, t, tcc);
 
+    t->bar = 0;
     t->layer_muted_from_midi = 0;
     t->layer_muted_from_midi_next = 0;
     t->lfo_cc_muted_from_midi = 0;
@@ -647,6 +648,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
     for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
       if( seq_core_state.reset_trkpos_req & (1 << track) ) {
 	SEQ_CORE_ResetTrkPos(track, t, tcc);
+	++t->bar;
       }
 
       // NEW: temporary layer mutes on incoming MIDI
@@ -825,10 +827,12 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
-      if( synch_to_measure_req && (tcc->clkdiv.SYNCH_TO_MEASURE || t->state.SYNC_MEASURE) )
+      if( synch_to_measure_req && (tcc->clkdiv.SYNCH_TO_MEASURE || t->state.SYNC_MEASURE) ) {
         SEQ_CORE_ResetTrkPos(track, t, tcc);
+	++t->bar;
+      }
 
-      u8 skip_this_step = 0;
+      u8 mute_this_step = 0;
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
 
       if( next_step_event ) {
@@ -862,7 +866,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      t->arp_pos = 0;
 	    } else if( tcc->clkdiv.MANUAL ) {
 	      // if clkdiv MANUAL mode: step was not requested, skip it!
-	      skip_this_step = 1;
+	      mute_this_step = 1;
 	    } else {
 	      // determine next step depending on direction mode
 	      if( !t->state.FIRST_CLK && inc_step )
@@ -955,8 +959,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	  if( !skip_this_step ) { // if not already skipped (e.g. MANUAL mode)
-	    skip_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	  if( !mute_this_step ) { // if not already skipped (e.g. MANUAL mode)
+	    mute_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
 	  }
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
@@ -964,7 +968,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  // forward to live function (for repeats)
 	  // if it returns 1, the step won't be played
 	  if( SEQ_LIVE_NewStep(track, prev_step, t->step, bpm_tick) == 1 )
-	    skip_this_step = 1;
+	    mute_this_step = 1;
 
 	  // inform UI about a new step (UI will clear this variable)
 	  seq_core_step_update_req = 1;
@@ -985,7 +989,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
 	    (round && mute_nonloopback_tracks) || // all non-loopback tracks should be muted
 	    midply_solo || // MIDI player in exclusive mode
-	    skip_this_step ) { // Record Mode, new step and FWD_MIDI off
+	    mute_this_step ) { // Record Mode, new step and FWD_MIDI off
 
 	  if( t->state.STRETCHED_GL || t->state.SUSTAINED ) {
 	    int i;
@@ -1007,12 +1011,12 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  continue;
 	}
 
+	// parameter layer mute flags (only if not in drum mode)
+	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? (t->layer_muted | t->layer_muted_from_midi) : 0;
+
         // if random gate trigger set: play step with 1:1 probability
         if( SEQ_TRG_RandomGateGet(track, t->step, 0) && (SEQ_RANDOM_Gen(0) & 1) )
 	  continue;
-
-	// parameter layer mute flags (only if not in drum mode)
-	u16 layer_muted = (tcc->event_mode != SEQ_EVENT_MODE_Drum) ? (t->layer_muted | t->layer_muted_from_midi) : 0;
 
 	// check probability if not in drum mode
 	// if probability < 100: play step with given probability
@@ -1070,7 +1074,41 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
 		continue;
 	    }
-  
+
+	    // get nofx flag
+	    robotize_flags = SEQ_ROBOTIZE_Event(track, t->step, e);
+	    u8 no_fx = SEQ_TRG_NoFxGet(track, t->step, instrument);
+
+	    // get nth trigger flag
+	    // note: this check will be done again during the second pass for some triggers which are not handled during first pass
+	    u8 nth_trigger = 0;
+	    {
+	      u8 nth_value = SEQ_PAR_NthValueGet(track, t->step, instrument, layer_muted);
+
+	      if( nth_value ) {
+		int bar = nth_value & 0xf;
+		int trigger = (t->bar % (bar+1)) == 0;
+
+		int mode = (nth_value >> 4) & 0x7;
+		if( mode == SEQ_PAR_TYPE_NTH_PLAY ) {
+		  if( !trigger )
+		    continue; // step not played
+		} else if( mode == SEQ_PAR_TYPE_NTH_MUTE ) {
+		  if( trigger )
+		    continue; // step not played
+		} else if( mode == SEQ_PAR_TYPE_NTH_FX ) {
+		  if( !trigger )
+		    no_fx = 1;
+		} else if( mode == SEQ_PAR_TYPE_NTH_FX ) {		  
+		  if( trigger )
+		    no_fx = 1;
+		} else {
+		  if( trigger )
+		    nth_trigger = mode;
+		}
+	      }
+	    }
+
             // transpose notes/CCs
             SEQ_CORE_Transpose(t, tcc, p);
 
@@ -1115,7 +1153,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
             if( p->type != NoteOn ) {
 	      // apply Pre-FX
-	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
+	      if( !no_fx ) {
 		SEQ_LFO_Event(track, e);
 	      }
 
@@ -1129,35 +1167,31 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
 #endif
 
-
-
 	      // apply Pre-FX before force-to-scale
-	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-			SEQ_HUMANIZE_Event(track, t->step, e);
+	      if( !no_fx ) {
+		SEQ_HUMANIZE_Event(track, t->step, e);
 			
-			robotize_flags = SEQ_ROBOTIZE_Event(track, t->step, e);
-
-			if( !robotize_flags.NOFX ) {
-			  SEQ_LFO_Event(track, e);
-			}
+		if( !robotize_flags.NOFX ) {
+		  SEQ_LFO_Event(track, e);
+		}
 	      }
-			
+
 	      tcc->mode.ROBOSUSTAIN = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
 
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
-			u8 scale, root_selection, root;
-			SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-			SEQ_SCALE_Note(p, scale, root);
+		u8 scale, root_selection, root;
+		SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+		SEQ_SCALE_Note(p, scale, root);
 	      }
 
 	      // apply Pre-FX after force-to-scale
-	      if( !SEQ_TRG_NoFxGet(track, t->step, instrument) ) {
-			SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
+	      if( !no_fx ) {
+		SEQ_CORE_Limit(t, tcc, e); // should be the last Fx in the chain!
 	      }
 
 	      // force velocity to 0x7f (drum mode: selectable value) if accent flag set
-	      if( SEQ_TRG_AccentGet(track, t->step, instrument) ) {
+	      if( nth_trigger == SEQ_PAR_TYPE_NTH_ACCENT || SEQ_TRG_AccentGet(track, t->step, instrument) ) {
 		if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
 		  p->velocity = tcc->lay_const[2*16 + i];
 		else
@@ -1229,6 +1263,32 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    // instrument layers only used for drum tracks
 	    u8 instrument = (tcc->event_mode == SEQ_EVENT_MODE_Drum) ? e->layer_tag : 0;
 
+	    robotize_flags = SEQ_ROBOTIZE_Event(track, t->step, e);
+	    u8 no_fx = SEQ_TRG_NoFxGet(track, t->step, instrument);
+
+	    // get nth trigger flag
+	    // note: this check was already done during first pass, do it here again for triggers which are handled in the second pass
+	    u8 nth_trigger = 0;
+	    {
+	      u8 nth_value = SEQ_PAR_NthValueGet(track, t->step, instrument, layer_muted);
+	      if( nth_value ) {
+		int bar = nth_value & 0xf;
+		int trigger = (t->bar % (bar+1)) == 0;
+
+		int mode = (nth_value >> 4) & 0x7;
+		if( mode == SEQ_PAR_TYPE_NTH_FX ) {
+		  if( !trigger )
+		    no_fx = 1;
+		} else if( mode == SEQ_PAR_TYPE_NTH_NO_FX ) {		  
+		  if( trigger )
+		    no_fx = 1;
+		} else {
+		  if( trigger )
+		    nth_trigger = mode;
+		}
+	      }
+	    }
+
 	    if( p->type != NoteOn ) {
 	      // e.g. CC, PitchBend, ProgramChange
 	      if( loopback_port )
@@ -1272,7 +1332,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0, robotize_flags);
 
 		  // apply Post-FX
-		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX ) {
+		  if( !no_fx && !robotize_flags.NOFX ) {
 		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
 
 		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength, robotize_flags);
@@ -1309,7 +1369,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  u8 roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument, layer_muted);
 		  u8 roll2_mode = 0; // taken if roll1 not assigned
 		  // with less priority (parameter == 0): force roll mode if Roll trigger is set
-		  if( !roll_mode && SEQ_TRG_RollGet(track, t->step, instrument) )
+		  if( nth_trigger == SEQ_PAR_TYPE_NTH_ROLL || (!roll_mode && SEQ_TRG_RollGet(track, t->step, instrument)) )
 		    roll_mode = 0x0a; // 2D10
 		  // if roll mode != 0: increase number of triggers
 		  if( roll_mode ) {
@@ -1384,7 +1444,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  }
 
 		  // apply Post-FX
-		  if( !SEQ_TRG_NoFxGet(track, t->step, instrument) && !robotize_flags.NOFX) {
+		  if( !no_fx && !robotize_flags.NOFX) {
 		    if( ( (tcc->echo_repeats & 0x3f) && ( !(tcc->echo_repeats & 0x40) || robotize_flags.ECHO ) && gatelength ) )
 		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength, robotize_flags);
 		  }
@@ -1605,6 +1665,8 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
       // jump to last step if first loop step has been reached or a position reset has been requested
       // in pendulum mode: switch to forward direction
       if( t->state.POS_RESET || t->step <= tcc->loop ) {
+	++t->bar;
+
 	if( tcc->dir_mode == SEQ_CORE_TRKDIR_Pendulum ) {
 	  t->state.BACKWARD = 0;
 	} else {
@@ -1624,6 +1686,8 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
       // jump to first (loop) step if last step has been reached or a position reset has been requested
       // in pendulum mode: switch to backward direction
       if( t->state.POS_RESET || t->step >= tcc->length ) {
+	++t->bar;
+
 	if( tcc->dir_mode == SEQ_CORE_TRKDIR_Pendulum ) {
 	  t->state.BACKWARD = 1;
 	} else {

@@ -277,6 +277,7 @@ typedef struct {
   s8 link_par_layer_delay;       // parameter layer which stores delay value (-1 if not assigned)
   s8 link_par_layer_roll;        // parameter layer which stores roll value (-1 if not assigned)
   s8 link_par_layer_roll2;       // parameter layer which stores roll2 value (-1 if not assigned)
+  s8 link_par_layer_nth;         // parameter layer which stores nth value (-1 if not assigned)
 } seq_cc_trk_t;
 
 
