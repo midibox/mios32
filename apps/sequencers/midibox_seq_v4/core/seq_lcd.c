@@ -622,6 +622,25 @@ s32 SEQ_LCD_PrintRoll2Mode(u8 roll2_mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints the Nth mode (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintNthValue(u8 nth_value)
+{
+  if( nth_value == 0 )
+    return SEQ_LCD_PrintString("----");
+
+  // NOTE: characters have to be aligned with the SEQ_PAR_TYPE_NTH_* numbers in seq_par.h!
+  const char nth_char1[8] = { '-', 'M', 'P', 'A', 'R', 'F', 'N', '?' };
+  const char nth_char2[8] = { '-', 'u', 'l', 'c', 'o', 'x', 'x', '?' };
+
+  int bars = (nth_value & 0xf) + 1;
+  int mode = (nth_value >> 4) & 0x7;
+
+  return SEQ_LCD_PrintFormattedString("%c%c%2d ", nth_char1[mode], nth_char2[mode], bars);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints event type of MIDI package with given number of chars
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)
@@ -777,6 +796,10 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Roll2:
     SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(track, step, instrument, 0x0000));
+    break;
+
+  case SEQ_PAR_Type_Nth:
+    SEQ_LCD_PrintNthValue(SEQ_PAR_NthValueGet(track, step, instrument, 0x0000));
     break;
 
   default:

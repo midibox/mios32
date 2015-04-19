@@ -36,6 +36,15 @@ MIDIboxSEQ V4.088
 
    o added DETENTED4/DETENTED5 option for rotary encoders in MBSEQ_HW.V4 file
 
+   o added new parameter layer "Nth" which triggers a special action on each nth bar.
+     Following trigger conditions are available:
+     - Pl (Play each nth bar)
+     - Mu (Mute each nth bar)
+     - Ac (Accent each nth bar)
+     - Ro (Roll each nth bar)
+     - Fx (enable Fx each nth bar)
+     - Nx (don't enable Fx each nth bar)
+
 
 MIDIboxSEQ V4.087
 ~~~~~~~~~~~~~~~~~
@@ -2109,9 +2118,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169705
 ----------------------------------------------------------
 Send Note Off instead of Note On with velocity 0
 http://midibox.org/forums/topic/19471-note-off-hex-80/?p=169684
-----------------------------------------------------------
-"nth" layer:
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169722
 ----------------------------------------------------------
 
 
