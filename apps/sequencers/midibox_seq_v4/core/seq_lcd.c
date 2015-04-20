@@ -798,8 +798,12 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     SEQ_LCD_PrintRoll2Mode(SEQ_PAR_Roll2ModeGet(track, step, instrument, 0x0000));
     break;
 
-  case SEQ_PAR_Type_Nth:
-    SEQ_LCD_PrintNthValue(SEQ_PAR_NthValueGet(track, step, instrument, 0x0000));
+  case SEQ_PAR_Type_Nth1:
+    SEQ_LCD_PrintNthValue(SEQ_PAR_Nth1ValueGet(track, step, instrument, 0x0000));
+    break;
+
+  case SEQ_PAR_Type_Nth2:
+    SEQ_LCD_PrintNthValue(SEQ_PAR_Nth2ValueGet(track, step, instrument, 0x0000));
     break;
 
   default:

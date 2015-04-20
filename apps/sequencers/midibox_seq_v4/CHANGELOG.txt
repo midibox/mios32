@@ -36,7 +36,8 @@ MIDIboxSEQ V4.088
 
    o added DETENTED4/DETENTED5 option for rotary encoders in MBSEQ_HW.V4 file
 
-   o added new parameter layer "Nth" which triggers a special action on each nth bar.
+   o added new parameter layers "Nth1" and "Nth2" which trigger a special action 
+     on each nth bar (Nth1) starting at the 1st bar, or after nth bars (Nth2).
      Following trigger conditions are available:
      - Pl (Play each nth bar)
      - Mu (Mute each nth bar)

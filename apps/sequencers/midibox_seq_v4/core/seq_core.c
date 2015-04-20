@@ -586,7 +586,8 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
       // leads to bad result with Logic Audio: it starts one step earlier and assumes 16th steps!
       u32 step_length = 96;
 #endif
-      u8 pos_step = (u8)((bpm_start / step_length) % ((u32)tcc->length+1));
+      u32 pos_step = (u8)((bpm_start / step_length) % ((u32)tcc->length+1));
+      u32 pos_bar  = (u8)((bpm_start / step_length) / ((u32)tcc->length+1));
 
       // next part depends on forward/backward direction
       if( tcc->dir_mode == SEQ_CORE_TRKDIR_Backward ) {
@@ -594,6 +595,8 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
       } else {
 	t->step = pos_step;
       }
+
+      t->bar = pos_bar;
     }
 
     SEQ_RECORD_Reset(track);
@@ -1083,11 +1086,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    // note: this check will be done again during the second pass for some triggers which are not handled during first pass
 	    u8 nth_trigger = 0;
 	    {
-	      u8 nth_value = SEQ_PAR_NthValueGet(track, t->step, instrument, layer_muted);
+	      u8 nth_variant = 0; // Nth1 or Nth2
+	      u8 nth_value = SEQ_PAR_Nth1ValueGet(track, t->step, instrument, layer_muted);
+	      if( !nth_value ) {
+		nth_variant = 1;
+		nth_value = SEQ_PAR_Nth2ValueGet(track, t->step, instrument, layer_muted);
+	      }
 
 	      if( nth_value ) {
 		int bar = nth_value & 0xf;
-		int trigger = (t->bar % (bar+1)) == 0;
+		int trigger = nth_variant ? ((t->bar % (bar+1)) == bar) : ((t->bar % (bar+1)) == 0);
 
 		int mode = (nth_value >> 4) & 0x7;
 		if( mode == SEQ_PAR_TYPE_NTH_PLAY ) {
@@ -1270,10 +1278,16 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    // note: this check was already done during first pass, do it here again for triggers which are handled in the second pass
 	    u8 nth_trigger = 0;
 	    {
-	      u8 nth_value = SEQ_PAR_NthValueGet(track, t->step, instrument, layer_muted);
+	      u8 nth_variant = 0; // Nth1 or Nth2
+	      u8 nth_value = SEQ_PAR_Nth1ValueGet(track, t->step, instrument, layer_muted);
+	      if( !nth_value ) {
+		nth_variant = 1;
+		nth_value = SEQ_PAR_Nth2ValueGet(track, t->step, instrument, layer_muted);
+	      }
+
 	      if( nth_value ) {
 		int bar = nth_value & 0xf;
-		int trigger = (t->bar % (bar+1)) == 0;
+		int trigger = nth_variant ? ((t->bar % (bar+1)) == bar) : ((t->bar % (bar+1)) == 0);
 
 		int mode = (nth_value >> 4) & 0x7;
 		if( mode == SEQ_PAR_TYPE_NTH_FX ) {
