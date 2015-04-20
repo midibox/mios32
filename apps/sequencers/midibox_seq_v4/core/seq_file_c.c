@@ -322,6 +322,42 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_live_options.KEEP_CHANNEL = value;
 	  } else if( strcmp(parameter, "LiveFx") == 0 ) {
 	    seq_live_options.FX = value;
+	  } else if( strcmp(parameter, "LivePattern") == 0 ) {
+	      int num = get_dec(word);
+	      if( num < 1 || num > SEQ_LIVE_NUM_ARP_PATTERNS ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR LivePattern: invalid pattern number (expect 1..%d)!\n",
+			  1, SEQ_LIVE_NUM_ARP_PATTERNS);
+#endif
+		break;
+	      } else {
+		word = strtok_r(NULL, separators, &brkt);
+		if( word == NULL ) {
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR LivePattern %d: missing pattern!\n", num);
+		} else {
+		  int i;
+
+		  u16 mask = 1;
+		  seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[num-1];
+		  pattern->gate = 0x0000;
+		  pattern->accent = 0x0000;
+		  for(i=0; i<16; ++i, mask <<= 1) {
+		    if( word[i] == 0 ) {
+		      DEBUG_MSG("[SEQ_FILE_C] ERROR LivePattern %d: missing characters in pattern (expecting 16 chars)!\n", num);
+		      break;
+		    } else if( word[i] == '.' ) {
+		      // no change
+		    } else if( word[i] == 'o' ) {
+		      pattern->gate |= mask;
+		    } else if( word[i] == '*' ) {
+		      pattern->gate |= mask;
+		      pattern->accent |= mask;
+		    } else {
+		      DEBUG_MSG("[SEQ_FILE_C] ERROR LivePattern %d: invalid character '%c' in pattern, expecting '.' or 'o' or '*'!\n", num, word[i]);
+		    }
+		  }
+		}
+	      }
 	  } else if( strcmp(parameter, "MIDI_OUT_ExtCtrlPort") == 0 ) {
 	    seq_midi_in_ext_ctrl_out_port = (mios32_midi_port_t)value;
 	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
@@ -681,6 +717,28 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "LiveKeepChannel %d\n", seq_live_options.KEEP_CHANNEL);
   FLUSH_BUFFER;
+
+  {
+    int i;
+    seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[0];
+    for(i=0; i<SEQ_LIVE_NUM_ARP_PATTERNS; ++i, ++pattern) {
+      int j;
+      u16 mask = 1;
+      char buffer[17];
+      for(j=0; j<16; ++j, mask <<= 1) {
+	if( pattern->accent & mask )
+	  buffer[j] = '*';
+	else if( pattern->gate & mask )
+	  buffer[j] = 'o';
+	else
+	  buffer[j] = '.';
+      }
+      buffer[j] = 0;
+
+      sprintf(line_buffer, "LivePattern %2d  %s\n", i+1, buffer);
+      FLUSH_BUFFER;
+    }
+  }
 
   sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
   FLUSH_BUFFER;

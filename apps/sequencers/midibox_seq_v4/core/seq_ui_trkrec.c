@@ -285,6 +285,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       pattern->gate |= mask;
       pattern->accent |= mask;
     }
+    ui_store_file_required = 1;
 
     return 1;
   }
