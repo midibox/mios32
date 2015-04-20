@@ -789,7 +789,7 @@ static s32 SEQ_UI_Button_Record(s32 depressed)
 
   if( !seq_record_state.ENABLED ) {
     // change to record page
-    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
   } else {
     // change to edit page
     SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
@@ -887,7 +887,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
     SEQ_UI_SONG_Copy();
     SEQ_UI_Msg_SongPos("copied");
     return 1;
-  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
+  } else if( SEQ_UI_TRKJAM_PatternRecordSelected() ) {
     if( depressed ) return -1;
     SEQ_UI_UTIL_CopyLivePattern();
     SEQ_UI_Msg_LivePattern("copied");
@@ -990,7 +990,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
     SEQ_UI_SONG_Paste();
     SEQ_UI_Msg_SongPos("pasted");
     return 1;
-  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
+  } else if( SEQ_UI_TRKJAM_PatternRecordSelected() ) {
     if( depressed ) return -1;
     SEQ_UI_UTIL_PasteLivePattern();
     SEQ_UI_Msg_LivePattern("pasted");
@@ -1078,7 +1078,7 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
       SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
     }
     return 1;
-  } else if( SEQ_UI_TRKREC_PatternRecordSelected() ) {
+  } else if( SEQ_UI_TRKJAM_PatternRecordSelected() ) {
     if( depressed )
       SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern);
     else {

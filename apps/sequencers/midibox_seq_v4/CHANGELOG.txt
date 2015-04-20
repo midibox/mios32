@@ -46,8 +46,8 @@ MIDIboxSEQ V4.088
      - Fx (enable Fx each nth bar)
      - Nx (don't enable Fx each nth bar)
 
-   o combined Record and Live page to a single page with sub pages to improve the
-     overview and simplify the configuration.
+   o combined Record and Live page to a new single "Jam" page with sub pages 
+     to improve the overview and simplify the configuration.
 
    o added Live Patterns to REC page which can be used to play (live) and record
      customizable arp sequences.
