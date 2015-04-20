@@ -323,8 +323,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 						 if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
 							 // do nothing...
 						 } else {
+#ifndef MIOS32_FAMILY_EMULATION
 							 // delay our task for ableton get a breath before change the pattern line
 							 vTaskDelay(50);
+#endif
 							 // send slot play envet to ableton: cc (111 + track) with value 127 to channel 16
 							 MIOS32_MIDI_SendCC(ableton_port, 15, (111 + track), 127);
 						 }
@@ -615,8 +617,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 							// here we need to send a clip line change request
 							MIOS32_MIDI_SendCC(ableton_port, 15, 110, ableton_pattern_number);
 						
+#ifndef MIOS32_FAMILY_EMULATION
 							// delay our task for ableton get a breath before change the pattern line
 							vTaskDelay(50);
+#endif
 
 							// clip triggering
 							u8 track;
@@ -626,8 +630,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
               	if ( ((1 << track) | seq_pattern_remix_map) == seq_pattern_remix_map ) {
                 	// do nothing...
               	} else {
+#ifndef MIOS32_FAMILY_EMULATION
 									// delay our task for ableton get a breath before change the pattern line
 									vTaskDelay(50);									
+#endif
 									// send clip slot play envet to ableton cc (111 + track) with value 127 to channel 16
                 	MIOS32_MIDI_SendCC(ableton_port, 15, (111 + track), 127);
               	}

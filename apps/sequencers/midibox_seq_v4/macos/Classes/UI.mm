@@ -98,6 +98,7 @@ static NSButton *_buttonF4;
 static NSButton *_buttonUp;
 static NSButton *_buttonDown;
 
+static u32 mios32_timestamp;
 
 //////////////////////////////////////////////////////////////////////////////
 // Emulation specific LED access functions
@@ -277,6 +278,22 @@ extern "C" s32 EMU_DIN_NotifyToggle(u32 pin, u32 value)
 
 
 //////////////////////////////////////////////////////////////////////////////
+// Timestamp functions
+//////////////////////////////////////////////////////////////////////////////
+extern "C" s32 MIOS32_TIMESTAMP_Get(void)
+{
+    return mios32_timestamp;
+}
+
+extern "C" s32 MIOS32_TIMESTAMP_GetDelay(u32 captured_timestamp)
+{
+    // will automatically roll over:
+    // e.g. 0x00000010 - 0xfffffff0 = 0x00000020
+    return mios32_timestamp - captured_timestamp;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 // printf compatible function to output debug messages
 // referenced in mios32_config.h (DEBUG_MSG macro)
 //////////////////////////////////////////////////////////////////////////////
@@ -313,6 +330,9 @@ extern "C" void SRIO_ServiceFinish(void)
 
 - (void)periodicSRIOTask:(NSTimer *)aTimer
 {
+    // increment mios timestamp
+    ++mios32_timestamp;
+
 	// notify application about SRIO scan start
 	APP_SRIO_ServicePrepare();
 
@@ -323,7 +343,7 @@ extern "C" void SRIO_ServiceFinish(void)
 	// emulation: transfer new DOUT SR values to GUI LED elements
 	int sr;
 	for(sr=0; sr<MIOS32_SRIO_NUM_SR; ++sr)
-		EMU_DOUT_SRSet(sr, mios32_srio_dout[MIOS32_SRIO_NUM_SR-sr-1]);
+		EMU_DOUT_SRSet(sr, mios32_srio_dout[0][MIOS32_SRIO_NUM_SR-sr-1]);
 
 	MIOS32_IRQ_Enable();
 

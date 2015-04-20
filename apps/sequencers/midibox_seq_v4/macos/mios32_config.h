@@ -39,6 +39,7 @@ extern s32 UI_printf(char *format, ...);
 //#define MIOS32_DONT_USE_UART_MIDI
 #define MIOS32_DONT_USE_IIC
 #define MIOS32_DONT_USE_IIC_MIDI
+#define MIOS32_DONT_USE_SPI_MIDI
 #define MIOS32_USE_I2S
 //#define MIOS32_DONT_USE_BOARD
 //#define MIOS32_DONT_USE_TIMER

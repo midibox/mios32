@@ -17,7 +17,9 @@
 #include <mios32.h>
 #include <string.h>
 
+#if !defined(MIOS32_FAMILY_EMULATION)
 #include "uip.h"
+#endif
 #include "osc_server.h"
 #include "osc_client.h"
 
@@ -128,9 +130,11 @@ s32 OSC_CLIENT_SendMIDIEvent(u8 osc_port, mios32_midi_package_t package)
   if( osc_port >= OSC_CLIENT_NUM_PORTS )
     return -1; // invalid port
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // check if server is running
   if( !UIP_TASK_ServicesRunning() )
     return -2; 
+#endif
 
   // create the OSC packet
   u8 packet[128];
@@ -410,9 +414,11 @@ s32 OSC_CLIENT_SendNRPNEvent(u8 osc_port, u8 chn, u16 nrpn_number, u16 nrpn_valu
   if( osc_port >= OSC_CLIENT_NUM_PORTS )
     return -1; // invalid port
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // check if server is running
   if( !UIP_TASK_ServicesRunning() )
     return -2; 
+#endif
 
   // create the OSC packet
   u8 packet[128];
@@ -490,9 +496,11 @@ s32 OSC_CLIENT_SendSysEx(u8 osc_port, u8 *stream, u32 count)
   if( osc_port >= OSC_CLIENT_NUM_PORTS )
     return -1; // invalid port
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // check if server is running
   if( !UIP_TASK_ServicesRunning() )
     return -2; 
+#endif
 
   // we limit the maximum blob size to 64
   // send multiple blobs if required
@@ -530,9 +538,11 @@ s32 OSC_CLIENT_SendMIDIEventBundled(u8 osc_port, mios32_midi_package_t *p, u8 nu
   if( osc_port >= OSC_CLIENT_NUM_PORTS )
     return -1; // invalid port
 
+#if !defined(MIOS32_FAMILY_EMULATION)
   // check if server is running
   if( !UIP_TASK_ServicesRunning() )
     return -2; 
+#endif
 
   // create the OSC packet
   u8 packet[256];

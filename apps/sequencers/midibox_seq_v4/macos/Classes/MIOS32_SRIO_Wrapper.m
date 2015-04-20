@@ -20,7 +20,7 @@
 // DOUT SR registers in reversed (!) order (since DMA doesn't provide a decrement address function)
 // Note that also the bits are in reversed order compared to PIC based MIOS
 // So long the array is accessed via MIOS32_DOUT_* functions, they programmer won't notice a difference!
-volatile u8 mios32_srio_dout[MIOS32_SRIO_NUM_SR];
+volatile u8 mios32_srio_dout[1][MIOS32_SRIO_NUM_SR];
 
 // DIN values of last scan
 volatile u8 mios32_srio_din[MIOS32_SRIO_NUM_SR];
@@ -68,7 +68,7 @@ s32 MIOS32_SRIO_Init(u32 mode)
 
 	// we don't reference to these functions here to allow the programmer to remove/replace these driver modules)
 	for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
-		mios32_srio_dout[i] = 0x00;       // passive state (LEDs off)
+		mios32_srio_dout[0][i] = 0x00;       // passive state (LEDs off)
 		mios32_srio_din[i] = 0xff;        // passive state (Buttons depressed)
 		mios32_srio_din_buffer[i] = 0xff; // passive state (Buttons depressed)
 		mios32_srio_din_changed[i] = 0;   // no change
@@ -116,9 +116,19 @@ s32 MIOS32_SRIO_DebounceStart(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// dummy stub
+// dummy stubs
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_SRIO_DebounceSet(u8 _debounce_time)
+{
+	return 0; // no error
+}
+
+s32 MIOS32_SRIO_ScanNumSet(u8 num)
+{
+	return 0; // no error
+}
+
+u8 MIOS32_SRIO_ScanNumGet(void)
 {
 	return 0; // no error
 }

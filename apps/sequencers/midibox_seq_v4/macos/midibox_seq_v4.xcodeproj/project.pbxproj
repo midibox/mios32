@@ -33,6 +33,16 @@
 		52417A630FB6DECF00D84E75 /* seq_ui_bpm_presets.c in Sources */ = {isa = PBXBuildFile; fileRef = 52417A620FB6DECF00D84E75 /* seq_ui_bpm_presets.c */; };
 		5245AE8913983A1A00C99E6D /* seq_live.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245AE8713983A1A00C99E6D /* seq_live.c */; };
 		5245AE8B13983A2B00C99E6D /* seq_ui_trklive.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */; };
+		5245E4BF1AE583D700616A6E /* osc_client.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4BB1AE583D700616A6E /* osc_client.c */; };
+		5245E4CC1AE587FF00616A6E /* seq_robotize.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C11AE587FF00616A6E /* seq_robotize.c */; };
+		5245E4CD1AE587FF00616A6E /* seq_tpd.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C31AE587FF00616A6E /* seq_tpd.c */; };
+		5245E4CE1AE587FF00616A6E /* seq_ui_fx_dupl.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C51AE587FF00616A6E /* seq_ui_fx_dupl.c */; };
+		5245E4CF1AE587FF00616A6E /* seq_ui_fx_robotize.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C61AE587FF00616A6E /* seq_ui_fx_robotize.c */; };
+		5245E4D01AE587FF00616A6E /* seq_ui_pages.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C71AE587FF00616A6E /* seq_ui_pages.c */; };
+		5245E4D11AE587FF00616A6E /* seq_ui_pattern_remix.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4C91AE587FF00616A6E /* seq_ui_pattern_remix.c */; };
+		5245E4D21AE587FF00616A6E /* seq_ui_trkeuclid.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4CA1AE587FF00616A6E /* seq_ui_trkeuclid.c */; };
+		5245E4D31AE587FF00616A6E /* seq_ui_trkinst.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4CB1AE587FF00616A6E /* seq_ui_trkinst.c */; };
+		5245E4D51AE5889600616A6E /* glcd_font_normal.c in Sources */ = {isa = PBXBuildFile; fileRef = 5245E4D41AE5889600616A6E /* glcd_font_normal.c */; };
 		524A6FF90FB63949006134D1 /* aout.c in Sources */ = {isa = PBXBuildFile; fileRef = 524A6FF70FB63949006134D1 /* aout.c */; };
 		524AE14D0F8696BF008C64B8 /* seq_record.c in Sources */ = {isa = PBXBuildFile; fileRef = 524AE14C0F8696BF008C64B8 /* seq_record.c */; };
 		5251924F0F13DDBD007A6BFF /* seq_scale.c in Sources */ = {isa = PBXBuildFile; fileRef = 5251924D0F13DDBD007A6BFF /* seq_scale.c */; };
@@ -122,7 +132,6 @@
 		5299B5D0122973B700D38C38 /* seq_ui_eth.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299B5CF122973B700D38C38 /* seq_ui_eth.c */; };
 		5299B61F1229953900D38C38 /* seq_file_gc.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299B61D1229953900D38C38 /* seq_file_gc.c */; };
 		5299E3EE1094879C0037F37A /* seq_ui_midimon.c in Sources */ = {isa = PBXBuildFile; fileRef = 5299E3ED1094879C0037F37A /* seq_ui_midimon.c */; };
-		529B498911B6FD4100F0D319 /* seq_midi_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529B498711B6FD4100F0D319 /* seq_midi_osc.c */; };
 		529B499D11B7007E00F0D319 /* mios32_osc.c in Sources */ = {isa = PBXBuildFile; fileRef = 529B499C11B7007E00F0D319 /* mios32_osc.c */; };
 		529B49A511B7041C00F0D319 /* OscServer_Wrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 529B49A411B7041C00F0D319 /* OscServer_Wrapper.m */; };
 		529B49B911B7080200F0D319 /* UDPEcho.m in Sources */ = {isa = PBXBuildFile; fileRef = 529B49B811B7080200F0D319 /* UDPEcho.m */; };
@@ -172,7 +181,6 @@
 		52EEE7D30FB2039200524AC0 /* seq_hwcfg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52EEE7D10FB2039200524AC0 /* seq_hwcfg.c */; };
 		52EEE7DB0FB227B300524AC0 /* seq_file_hw.c in Sources */ = {isa = PBXBuildFile; fileRef = 52EEE7D90FB227B300524AC0 /* seq_file_hw.c */; };
 		52F3E3D70F0F87A600355951 /* seq_ui_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F3E3D60F0F87A600355951 /* seq_ui_util.c */; };
-		52F714280F1ABB590043546F /* printf-stdarg.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F714270F1ABB590043546F /* printf-stdarg.c */; };
 		52F7756813845D70009B9A20 /* seq_ui_bookmarks.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */; };
 		52F7757313845E39009B9A20 /* seq_file_bm.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F7757113845E39009B9A20 /* seq_file_bm.c */; };
 		52F8CD860F197F3A00539304 /* seq_file_m.c in Sources */ = {isa = PBXBuildFile; fileRef = 52F8CD820F197F3A00539304 /* seq_file_m.c */; };
@@ -234,6 +242,20 @@
 		5245AE8713983A1A00C99E6D /* seq_live.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_live.c; path = ../core/seq_live.c; sourceTree = SOURCE_ROOT; };
 		5245AE8813983A1A00C99E6D /* seq_live.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_live.h; path = ../core/seq_live.h; sourceTree = SOURCE_ROOT; };
 		5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trklive.c; path = ../core/seq_ui_trklive.c; sourceTree = SOURCE_ROOT; };
+		5245E4BB1AE583D700616A6E /* osc_client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = osc_client.c; path = ../../../../modules/uip_task_standard/osc_client.c; sourceTree = "<group>"; };
+		5245E4BC1AE583D700616A6E /* osc_client.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = osc_client.h; path = ../../../../modules/uip_task_standard/osc_client.h; sourceTree = "<group>"; };
+		5245E4C11AE587FF00616A6E /* seq_robotize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_robotize.c; path = ../core/seq_robotize.c; sourceTree = "<group>"; };
+		5245E4C21AE587FF00616A6E /* seq_robotize.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_robotize.h; path = ../core/seq_robotize.h; sourceTree = "<group>"; };
+		5245E4C31AE587FF00616A6E /* seq_tpd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_tpd.c; path = ../core/seq_tpd.c; sourceTree = "<group>"; };
+		5245E4C41AE587FF00616A6E /* seq_tpd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_tpd.h; path = ../core/seq_tpd.h; sourceTree = "<group>"; };
+		5245E4C51AE587FF00616A6E /* seq_ui_fx_dupl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_dupl.c; path = ../core/seq_ui_fx_dupl.c; sourceTree = "<group>"; };
+		5245E4C61AE587FF00616A6E /* seq_ui_fx_robotize.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_fx_robotize.c; path = ../core/seq_ui_fx_robotize.c; sourceTree = "<group>"; };
+		5245E4C71AE587FF00616A6E /* seq_ui_pages.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_pages.c; path = ../core/seq_ui_pages.c; sourceTree = "<group>"; };
+		5245E4C81AE587FF00616A6E /* seq_ui_pages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_ui_pages.h; path = ../core/seq_ui_pages.h; sourceTree = "<group>"; };
+		5245E4C91AE587FF00616A6E /* seq_ui_pattern_remix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_pattern_remix.c; path = ../core/seq_ui_pattern_remix.c; sourceTree = "<group>"; };
+		5245E4CA1AE587FF00616A6E /* seq_ui_trkeuclid.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkeuclid.c; path = ../core/seq_ui_trkeuclid.c; sourceTree = "<group>"; };
+		5245E4CB1AE587FF00616A6E /* seq_ui_trkinst.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_trkinst.c; path = ../core/seq_ui_trkinst.c; sourceTree = "<group>"; };
+		5245E4D41AE5889600616A6E /* glcd_font_normal.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = glcd_font_normal.c; path = ../../../../modules/glcd_font/glcd_font_normal.c; sourceTree = "<group>"; };
 		524A6FF70FB63949006134D1 /* aout.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = aout.c; path = ../../../../modules/aout/aout.c; sourceTree = SOURCE_ROOT; };
 		524A6FF80FB63949006134D1 /* aout.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = aout.h; path = ../../../../modules/aout/aout.h; sourceTree = SOURCE_ROOT; };
 		524AE14C0F8696BF008C64B8 /* seq_record.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_record.c; path = ../core/seq_record.c; sourceTree = SOURCE_ROOT; };
@@ -371,8 +393,6 @@
 		5299B61D1229953900D38C38 /* seq_file_gc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_gc.c; path = ../core/seq_file_gc.c; sourceTree = SOURCE_ROOT; };
 		5299B61E1229953900D38C38 /* seq_file_gc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_gc.h; path = ../core/seq_file_gc.h; sourceTree = SOURCE_ROOT; };
 		5299E3ED1094879C0037F37A /* seq_ui_midimon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_midimon.c; path = ../core/seq_ui_midimon.c; sourceTree = SOURCE_ROOT; };
-		529B498711B6FD4100F0D319 /* seq_midi_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_midi_osc.c; path = ../core/seq_midi_osc.c; sourceTree = SOURCE_ROOT; };
-		529B498811B6FD4100F0D319 /* seq_midi_osc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_midi_osc.h; path = ../core/seq_midi_osc.h; sourceTree = SOURCE_ROOT; };
 		529B499C11B7007E00F0D319 /* mios32_osc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mios32_osc.c; path = ../../../../mios32/common/mios32_osc.c; sourceTree = SOURCE_ROOT; };
 		529B49A311B7041C00F0D319 /* OscServer_Wrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = OscServer_Wrapper.h; path = Classes/OscServer_Wrapper.h; sourceTree = "<group>"; };
 		529B49A411B7041C00F0D319 /* OscServer_Wrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = OscServer_Wrapper.m; path = Classes/OscServer_Wrapper.m; sourceTree = "<group>"; };
@@ -456,7 +476,6 @@
 		52EEE7D90FB227B300524AC0 /* seq_file_hw.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_hw.c; path = ../core/seq_file_hw.c; sourceTree = SOURCE_ROOT; };
 		52EEE7DA0FB227B300524AC0 /* seq_file_hw.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_hw.h; path = ../core/seq_file_hw.h; sourceTree = SOURCE_ROOT; };
 		52F3E3D60F0F87A600355951 /* seq_ui_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_util.c; path = ../core/seq_ui_util.c; sourceTree = SOURCE_ROOT; };
-		52F714270F1ABB590043546F /* printf-stdarg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "printf-stdarg.c"; path = "../../../../mios32/common/printf-stdarg.c"; sourceTree = SOURCE_ROOT; };
 		52F7756713845D70009B9A20 /* seq_ui_bookmarks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_ui_bookmarks.c; path = ../core/seq_ui_bookmarks.c; sourceTree = SOURCE_ROOT; };
 		52F7757113845E39009B9A20 /* seq_file_bm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = seq_file_bm.c; path = ../core/seq_file_bm.c; sourceTree = SOURCE_ROOT; };
 		52F7757213845E39009B9A20 /* seq_file_bm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = seq_file_bm.h; path = ../core/seq_file_bm.h; sourceTree = SOURCE_ROOT; };
@@ -486,6 +505,18 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				5245E4D41AE5889600616A6E /* glcd_font_normal.c */,
+				5245E4C11AE587FF00616A6E /* seq_robotize.c */,
+				5245E4C21AE587FF00616A6E /* seq_robotize.h */,
+				5245E4C31AE587FF00616A6E /* seq_tpd.c */,
+				5245E4C41AE587FF00616A6E /* seq_tpd.h */,
+				5245E4C51AE587FF00616A6E /* seq_ui_fx_dupl.c */,
+				5245E4C61AE587FF00616A6E /* seq_ui_fx_robotize.c */,
+				5245E4C71AE587FF00616A6E /* seq_ui_pages.c */,
+				5245E4C81AE587FF00616A6E /* seq_ui_pages.h */,
+				5245E4C91AE587FF00616A6E /* seq_ui_pattern_remix.c */,
+				5245E4CA1AE587FF00616A6E /* seq_ui_trkeuclid.c */,
+				5245E4CB1AE587FF00616A6E /* seq_ui_trkinst.c */,
 				5299B61D1229953900D38C38 /* seq_file_gc.c */,
 				5299B61E1229953900D38C38 /* seq_file_gc.h */,
 				5299B5CF122973B700D38C38 /* seq_ui_eth.c */,
@@ -584,6 +615,8 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				5245E4BB1AE583D700616A6E /* osc_client.c */,
+				5245E4BC1AE583D700616A6E /* osc_client.h */,
 				526F61EA13D2FBC900F1BB30 /* file.c */,
 				526F61EB13D2FBC900F1BB30 /* file.h */,
 				5245AE8A13983A2B00C99E6D /* seq_ui_trklive.c */,
@@ -597,8 +630,6 @@
 				527CE3741256B9990097C2BB /* seq_lcd_logo.inc */,
 				527CE3751256B9990097C2BB /* seq_ui_cv.c */,
 				529B499C11B7007E00F0D319 /* mios32_osc.c */,
-				529B498711B6FD4100F0D319 /* seq_midi_osc.c */,
-				529B498811B6FD4100F0D319 /* seq_midi_osc.h */,
 				5224AEFD119C6399002CA83A /* seq_blm.c */,
 				5224AEFE119C6399002CA83A /* seq_blm.h */,
 				52D90E7E1141CFA10054119B /* seq_statistics.c */,
@@ -675,7 +706,6 @@
 				520C95B40F2D1A890021C202 /* jsw_rand.c */,
 				520C95B50F2D1A890021C202 /* jsw_rand.h */,
 				523FE8CB0F1E9C5A00852A2B /* seq_ui_stepsel.c */,
-				52F714270F1ABB590043546F /* printf-stdarg.c */,
 				52988C2D0F1A84680046F70C /* seq_chord.c */,
 				52988C2E0F1A84680046F70C /* seq_chord.h */,
 				52C8E2D70F1A605D00B69B65 /* seq_file.h */,
@@ -885,6 +915,8 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "midibox_seq_v4" */;
 			compatibilityVersion = "Xcode 3.0";
 			developmentRegion = English;
@@ -950,6 +982,7 @@
 				8D11072D0486CEB800E47090 /* main.m in Sources */,
 				522A10F70E910BCA0084B1EE /* seq_lcd.c in Sources */,
 				52D6822D0EE1E7AF0050D856 /* seq_core.c in Sources */,
+				5245E4D21AE587FF00616A6E /* seq_ui_trkeuclid.c in Sources */,
 				52D6822E0EE1E7AF0050D856 /* seq_led.c in Sources */,
 				52D682300EE1E7AF0050D856 /* seq_par.c in Sources */,
 				52D682310EE1E7AF0050D856 /* seq_trg.c in Sources */,
@@ -989,6 +1022,7 @@
 				526B84F00EF6C1CE0092E5B3 /* seq_ui_pattern.c in Sources */,
 				52DA1B2D0EFB000E00E889A5 /* seq_bpm.c in Sources */,
 				52DA1B2E0EFB000E00E889A5 /* seq_midi_out.c in Sources */,
+				5245E4D51AE5889600616A6E /* glcd_font_normal.c in Sources */,
 				52DA1B310EFB002900E889A5 /* mid_parser.c in Sources */,
 				52DA1B3B0EFB006400E889A5 /* seq_midply.c in Sources */,
 				52C4BC590F0EB3600063D223 /* seq_ui_fx.c in Sources */,
@@ -996,6 +1030,7 @@
 				52CC0E530F0EC93F0073F107 /* seq_ui_bpm.c in Sources */,
 				52F3E3D70F0F87A600355951 /* seq_ui_util.c in Sources */,
 				52B5BEF30F1037B800E68948 /* seq_ui_opt.c in Sources */,
+				5245E4D11AE587FF00616A6E /* seq_ui_pattern_remix.c in Sources */,
 				52B5BEF40F1037B800E68948 /* seq_ui_trkrnd.c in Sources */,
 				526DA2D20F12C93A00ED244D /* seq_file.c in Sources */,
 				526DA2D30F12C93A00ED244D /* seq_file_b.c in Sources */,
@@ -1003,12 +1038,13 @@
 				5251924F0F13DDBD007A6BFF /* seq_scale.c in Sources */,
 				525192540F13DDDA007A6BFF /* seq_ui_save.c in Sources */,
 				5282AE190F18C4AF00901181 /* seq_ui_menu.c in Sources */,
+				5245E4CF1AE587FF00616A6E /* seq_ui_fx_robotize.c in Sources */,
 				52F8CD860F197F3A00539304 /* seq_file_m.c in Sources */,
 				52F8CD870F197F3A00539304 /* seq_mixer.c in Sources */,
+				5245E4BF1AE583D700616A6E /* osc_client.c in Sources */,
 				52F8CD880F197F3A00539304 /* seq_ui_mixer.c in Sources */,
 				52C8E2D60F1A604000B69B65 /* seq_midi_port.c in Sources */,
 				52988C2F0F1A84680046F70C /* seq_chord.c in Sources */,
-				52F714280F1ABB590043546F /* printf-stdarg.c in Sources */,
 				523FE8CC0F1E9C5A00852A2B /* seq_ui_stepsel.c in Sources */,
 				520C95B60F2D1A890021C202 /* jsw_rand.c in Sources */,
 				52077B610F3113AB002E2E55 /* seq_ui_parsel.c in Sources */,
@@ -1016,6 +1052,7 @@
 				525E4C570F3B996400B29461 /* seq_groove.c in Sources */,
 				525E4C580F3B996400B29461 /* seq_ui_trkgrv.c in Sources */,
 				525B4B690F3F86A40077C87B /* seq_humanize.c in Sources */,
+				5245E4D31AE587FF00616A6E /* seq_ui_trkinst.c in Sources */,
 				5278A32B0F44B6FD00DF885C /* seq_file_c.c in Sources */,
 				52ECBDCC0F76DD1F00576C54 /* seq_file_s.c in Sources */,
 				52ECBDCD0F76DD1F00576C54 /* seq_song.c in Sources */,
@@ -1048,12 +1085,14 @@
 				5223419A0FF6B8DC0001D7E7 /* seq_midi_sysex.c in Sources */,
 				528F03901024889E009439A6 /* notestack.c in Sources */,
 				52CFD823105C355100513D1B /* seq_cc_labels.c in Sources */,
+				5245E4CC1AE587FF00616A6E /* seq_robotize.c in Sources */,
 				52D84F9D1072A28F00697CCC /* seq_lcd_logo.c in Sources */,
 				52DD80771083AF7300B8667F /* seq_ui_sysex.c in Sources */,
 				52DEED701084CA1F004116B8 /* seq_ui_info.c in Sources */,
 				522C2BB510936B9700EC1349 /* seq_midimp.c in Sources */,
 				522C2BB810936BA700EC1349 /* seq_midexp.c in Sources */,
 				5299E3EE1094879C0037F37A /* seq_ui_midimon.c in Sources */,
+				5245E4CE1AE587FF00616A6E /* seq_ui_fx_dupl.c in Sources */,
 				525D237110A209F3006A2123 /* seq_file_t.c in Sources */,
 				52D90E821141CFA10054119B /* seq_statistics.c in Sources */,
 				52D90E831141CFA10054119B /* seq_terminal.c in Sources */,
@@ -1062,6 +1101,7 @@
 				520511C11177ADFA00B60101 /* CLcd.cpp in Sources */,
 				5297A0801177E728000F82E2 /* FATFS_Wrapper_Dir.c in Sources */,
 				5297A0811177E728000F82E2 /* FATFS_Wrapper.m in Sources */,
+				5245E4CD1AE587FF00616A6E /* seq_tpd.c in Sources */,
 				5297A0821177E728000F82E2 /* FreeRTOS_Wrapper.m in Sources */,
 				5297A0841177E728000F82E2 /* MIOS32_BOARD_Wrapper.m in Sources */,
 				5297A0851177E728000F82E2 /* MIOS32_COM_Wrapper.m in Sources */,
@@ -1080,10 +1120,10 @@
 				5297A0921177E728000F82E2 /* Tasks.m in Sources */,
 				5297A0931177E728000F82E2 /* UI.mm in Sources */,
 				5224AEFF119C6399002CA83A /* seq_blm.c in Sources */,
-				529B498911B6FD4100F0D319 /* seq_midi_osc.c in Sources */,
 				529B499D11B7007E00F0D319 /* mios32_osc.c in Sources */,
 				529B49A511B7041C00F0D319 /* OscServer_Wrapper.m in Sources */,
 				529B49B911B7080200F0D319 /* UDPEcho.m in Sources */,
+				5245E4D01AE587FF00616A6E /* seq_ui_pages.c in Sources */,
 				529B49CE11B70C2500F0D319 /* OscPort.m in Sources */,
 				5299B5D0122973B700D38C38 /* seq_ui_eth.c in Sources */,
 				5299B61F1229953900D38C38 /* seq_file_gc.c in Sources */,
@@ -1170,21 +1210,19 @@
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
 					../../../../include/mios32,
+					../../../../modules/glcd_font,
 					.,
 				);
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 		C01FCF5008A954540054247B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = (
-					ppc,
-					i386,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
 				GCC_INSTRUMENT_PROGRAM_FLOW_ARCS = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					MIOS32_FAMILY_EMULATION,
@@ -1200,11 +1238,12 @@
 					../../../../drivers/MacOS,
 					../../../../modules/blm_x,
 					../../../../include/mios32,
+					../../../../modules/glcd_font,
 					.,
 				);
 				INFOPLIST_PREPROCESSOR_DEFINITIONS = "";
 				PREBINDING = NO;
-				SDKROOT = "$(DEVELOPER_SDK_DIR)/MacOSX10.4u.sdk";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};

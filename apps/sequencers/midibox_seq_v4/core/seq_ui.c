@@ -1281,8 +1281,10 @@ static s32 SEQ_UI_Button_Pattern_Remix(s32 depressed)
 {
 	
 	if ( ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
+#ifndef MIOS32_FAMILY_EMULATION
 		// to avoid race conditions using the same button(any other way of solving that?)
 		vTaskDelay(60);
+#endif
 		// a trick to use the same button with 2 functionalitys
 		ui_button_callback(SEQ_UI_BUTTON_Edit, depressed);
 	} else {
