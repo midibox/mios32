@@ -43,6 +43,7 @@ extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
 extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
 extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
+extern void APP_SendDebugMessage(char *format, ...);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

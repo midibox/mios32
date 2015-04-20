@@ -74,7 +74,7 @@ static NSTimeInterval timer_period[NUM_TIMERS];
 // }
 //
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_TIMER_Init(u8 timer, u32 period, void *_irq_handler, u8 irq_priority)
+s32 MIOS32_TIMER_Init(u8 timer, u32 period, void (*_irq_handler)(void), u8 irq_priority)
 {
 	// check if valid timer
 	if( timer >= NUM_TIMERS )

@@ -317,6 +317,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	  out("('%s' wasn't the right \"password\")", brkt);
 	}
       } else {
+#if !defined(MIOS32_FAMILY_EMULATION)
 	MUTEX_SDCARD_TAKE;
 	out("Formatting SD Card...");
 	FRESULT res;
@@ -332,6 +333,9 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	  out("Thereafter enter 'reset' to restart the application.");
 	}
 	MUTEX_SDCARD_GIVE;
+#else
+	out("Not in emulation...!");
+#endif
       }
     } else if( strcmp(parameter, "global") == 0 ) {
       SEQ_TERMINAL_PrintGlobalConfig(out);
