@@ -105,7 +105,7 @@ static u8 selected_bus = 0;
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 GetNumNoteLayers(void);
-static s32 SEQ_UI_TRKREC_Hlp_PrintPattern(u8 pattern);
+static s32 SEQ_UI_TRKJAM_Hlp_PrintPattern(u8 pattern);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -880,7 +880,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintString("Trk. ");
     SEQ_LCD_PrintGxTy(ui_selected_group, ui_selected_tracks);
     SEQ_LCD_PrintFormattedString("   Pattern %2d  ", pattern_num + 1);
-    SEQ_UI_TRKREC_Hlp_PrintPattern(slot->pattern);
+    SEQ_UI_TRKJAM_Hlp_PrintPattern(slot->pattern);
     SEQ_LCD_PrintSpaces(30);
     SEQ_LCD_PrintString("Cfg.  Ptn.");
 
@@ -1075,7 +1075,7 @@ static s32 LCD_Handler(u8 high_prio)
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    SEQ_UI_TRKREC_Hlp_PrintPattern(slot->pattern);
+    SEQ_UI_TRKJAM_Hlp_PrintPattern(slot->pattern);
     SEQ_LCD_PrintSpaces(1);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1219,7 +1219,7 @@ static s32 EXIT_Handler(void)
 
   // disable recording
   // SEQ_RECORD_Enable(0);
-  // not in revised trkrec page anymore
+  // not in revised trkjam page anymore
 
   return status;
 }
@@ -1228,7 +1228,7 @@ static s32 EXIT_Handler(void)
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_TRKREC_Init(u32 mode)
+s32 SEQ_UI_TRKJAM_Init(u32 mode)
 {
   // install callback routines
   SEQ_UI_InstallButtonCallback(Button_Handler);
@@ -1272,16 +1272,16 @@ static s32 GetNumNoteLayers(void)
 // For copy/paste/clear button in seq_ui.c:
 // Returns 1 if pattern subpage is selected
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_TRKREC_PatternRecordSelected(void)
+s32 SEQ_UI_TRKJAM_PatternRecordSelected(void)
 {
-  return (ui_page == SEQ_UI_PAGE_TRKREC && selected_subpage == SUBPAGE_REC_PTN) ? 1 : 0;
+  return (ui_page == SEQ_UI_PAGE_TRKJAM && selected_subpage == SUBPAGE_REC_PTN) ? 1 : 0;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prints selected Live Pattern (16 chars)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_UI_TRKREC_Hlp_PrintPattern(u8 pattern_num)
+static s32 SEQ_UI_TRKJAM_Hlp_PrintPattern(u8 pattern_num)
 {
   seq_live_arp_pattern_t *pattern = (seq_live_arp_pattern_t *)&seq_live_arp_pattern[pattern_num];
   int step;

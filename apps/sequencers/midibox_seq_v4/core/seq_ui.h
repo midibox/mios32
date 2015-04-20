@@ -320,7 +320,7 @@ extern s32 SEQ_UI_TRKGRV_Init(u32 mode);
 extern s32 SEQ_UI_TRGASG_Init(u32 mode);
 extern s32 SEQ_UI_TRKMORPH_Init(u32 mode);
 extern s32 SEQ_UI_TRKRND_Init(u32 mode);
-extern s32 SEQ_UI_TRKREC_Init(u32 mode);
+extern s32 SEQ_UI_TRKJAM_Init(u32 mode);
 extern s32 SEQ_UI_MANUAL_Init(u32 mode);
 extern s32 SEQ_UI_GROOVE_Init(u32 mode);
 extern s32 SEQ_UI_FX_ECHO_Init(u32 mode);
@@ -384,7 +384,7 @@ extern s32 SEQ_UI_UTIL_UndoUpdate(u8 track);
 extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
 extern u8 SEQ_UI_UTIL_CopyPasteEndGet(void);
 
-extern s32 SEQ_UI_TRKREC_PatternRecordSelected(void);
+extern s32 SEQ_UI_TRKJAM_PatternRecordSelected(void);
 
 extern s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *line2);
 extern s32 SEQ_UI_MsgStop(void);

@@ -78,7 +78,7 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "MORPH",        "Mrp. ", "Track Morphing    ", 30, (void *)&SEQ_UI_TRKMORPH_Init },
   { "RANDOM",       "Rnd. ", "Random Generator  ", 31, (void *)&SEQ_UI_TRKRND_Init },
   { "EUCLID",       "Eucl.", "Track Euclid Gen. ", 55, (void *)&SEQ_UI_TRKEUCLID_Init },
-  { "RECORD",       "Rec. ", "Record            ", 32, (void *)&SEQ_UI_TRKREC_Init },
+  { "JAM",          "Jam  ", "Jam (Recording)   ", 32, (void *)&SEQ_UI_TRKJAM_Init },
   { "MANUAL",       "Man. ", "Manual Trigger    ", 33, (void *)&SEQ_UI_MANUAL_Init },
   { "FX_ECHO",      "Echo ", "Track Fx: Echo    ", 34, (void *)&SEQ_UI_FX_ECHO_Init },
   { "FX_HUMANIZER", "Hum. ", "Track Fx: Humanize", 35, (void *)&SEQ_UI_FX_HUMANIZE_Init },

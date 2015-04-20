@@ -51,7 +51,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   if( encoder <= 16 ) {
     // enter record page
-    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
     return 1;
   }
 
@@ -99,7 +99,7 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("This page is obsolete, parameters are now located in the Track Recording page!  ");
+  SEQ_LCD_PrintString("This page is obsolete, parameters are now located in the Track Jam page!        ");
   SEQ_LCD_CursorSet(0, 1);
   SEQ_LCD_PrintString("Press any GP button to switch to this page!                                     ");
 

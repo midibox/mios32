@@ -251,7 +251,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
       case SEQ_UI_ENCODER_GP11:
       case SEQ_UI_ENCODER_GP12:
-	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKREC);
+	SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
 	break;
 
       case SEQ_UI_ENCODER_GP13:

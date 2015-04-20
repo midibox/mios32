@@ -274,7 +274,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	    if( effective_note == *drum_note_ptr ) {
 	      // auto-select trg layer in drum mode
 	      // (also useful for other pages?)
-	      if( ui_page == SEQ_UI_PAGE_TRKREC ) {
+	      if( ui_page == SEQ_UI_PAGE_TRKJAM ) {
 		ui_selected_instrument = i;
 		seq_ui_display_update_req = 1;
 	      }

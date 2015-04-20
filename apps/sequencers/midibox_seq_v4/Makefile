@@ -39,7 +39,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_trkmorph.c \
 		core/seq_ui_trkrnd.c \
 		core/seq_ui_trkeuclid.c \
-		core/seq_ui_trkrec.c \
+		core/seq_ui_trkjam.c \
 		core/seq_ui_trgasg.c \
 		core/seq_ui_fx.c \
 		core/seq_ui_fx_echo.c \
