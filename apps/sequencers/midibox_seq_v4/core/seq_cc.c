@@ -448,7 +448,8 @@ s32 SEQ_CC_LinkUpdate(u8 track)
   tcc->link_par_layer_delay = -1;
   tcc->link_par_layer_roll = -1;
   tcc->link_par_layer_roll2 = -1;
-  tcc->link_par_layer_nth = -1;
+  tcc->link_par_layer_nth1 = -1;
+  tcc->link_par_layer_nth2 = -1;
 
   u8 num_layers = SEQ_PAR_NumLayersGet(track);
   if( num_layers ) {
@@ -464,7 +465,8 @@ s32 SEQ_CC_LinkUpdate(u8 track)
         case SEQ_PAR_Type_Delay: tcc->link_par_layer_delay = layer; break;
         case SEQ_PAR_Type_Roll: tcc->link_par_layer_roll = layer; break;
         case SEQ_PAR_Type_Roll2: tcc->link_par_layer_roll2 = layer; break;
-        case SEQ_PAR_Type_Nth: tcc->link_par_layer_nth = layer; break;
+        case SEQ_PAR_Type_Nth1: tcc->link_par_layer_nth1 = layer; break;
+        case SEQ_PAR_Type_Nth2: tcc->link_par_layer_nth2 = layer; break;
       }
     }
   }

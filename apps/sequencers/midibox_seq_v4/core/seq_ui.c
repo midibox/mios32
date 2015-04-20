@@ -2390,11 +2390,11 @@ s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed)
     case 0x41: // F-4
       return SEQ_UI_Button_StepView(depressed);
     case 0x42: // F#4
-      return SEQ_UI_Button_Group(depressed, 1);
+      return SEQ_UI_Button_Group(depressed, 2);
     case 0x43: // G-4
       return 0; // ignore
     case 0x44: // G#4
-      return SEQ_UI_Button_Group(depressed, 2);
+      return SEQ_UI_Button_Group(depressed, 3);
     case 0x45: // A-4
       return SEQ_UI_Button_Left(depressed);
     case 0x46: // A#4
