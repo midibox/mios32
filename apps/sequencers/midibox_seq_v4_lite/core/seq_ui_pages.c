@@ -280,9 +280,9 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
     ++trg_ptr;
     leds |= (*trg_ptr << 8);
 
-    u16 record_step_mask = (1 << (seq_record_step % 16));
+    u16 record_step_mask = (1 << (ui_selected_step % 16));
     if( ui_cursor_flash &&
-	((seq_record_step >> 4) == ui_selected_step_view) ) {
+	((ui_selected_step >> 4) == ui_selected_step_view) ) {
       leds ^= record_step_mask;
     }
 
@@ -883,7 +883,7 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
     // should be atomic
     portENTER_CRITICAL();
 
-    seq_record_step = 16*ui_selected_step_view + button;
+    ui_selected_step = 16*ui_selected_step_view + button;
 
     // we will always clear the current step for more comfortable handling
     // (no need to select the Trigger page for doing this)
