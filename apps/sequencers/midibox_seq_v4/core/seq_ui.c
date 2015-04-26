@@ -787,13 +787,8 @@ static s32 SEQ_UI_Button_Record(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  if( !seq_record_state.ENABLED ) {
-    // change to record page
-    SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
-  } else {
-    // change to edit page
-    SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
-  }
+  // change to record page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
 
   return 0; // no error
 }
@@ -3111,7 +3106,11 @@ s32 SEQ_UI_MENU_Handler_Periodic()
   // important: flash flag has to be recalculated on each invocation of this
   // handler, since counter could also be reseted outside this function
   u8 old_ui_cursor_flash = ui_cursor_flash;
-  ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
+  if( ui_page == SEQ_UI_PAGE_EDIT )
+    ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF_EDIT_PAGE;
+  else
+    ui_cursor_flash = ui_cursor_flash_ctr >= SEQ_UI_CURSOR_FLASH_CTR_LED_OFF;
+
   if( old_ui_cursor_flash != ui_cursor_flash )
     seq_ui_display_update_req = 1;
 

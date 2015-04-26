@@ -46,7 +46,6 @@
 seq_record_options_t seq_record_options;
 seq_record_state_t seq_record_state;
 
-u8 seq_record_step;
 u8 seq_record_quantize;
 
 // one bit for each note, 32*4 = 128 notes supported (covers all notes of one MIDI channel)
@@ -87,9 +86,6 @@ s32 SEQ_RECORD_Init(u32 mode)
   SEQ_RECORD_ResetAllTracks();
 
   SEQ_RECORD_AllNotesOff();
-
-  // used for all tracks
-  seq_record_step = 0;
 
   return 0; // no error
 }
@@ -187,7 +183,6 @@ s32 SEQ_RECORD_PrintEditScreen(void)
 #endif
 
   // select visible steps depending on record step
-  ui_selected_step = seq_record_step;
   ui_selected_step_view = ui_selected_step/16;
 
 #ifndef MBSEQV4L
@@ -382,7 +377,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	      len = 95;
 	  }
 
-	  int len_step = step_record_mode ? seq_record_step : t->step;
+	  int len_step = step_record_mode ? ui_selected_step : t->step;
 	  u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
 
 	  while( 1 ) {
@@ -423,7 +418,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    int par_layer;
 	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
 	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
-		u8 note = SEQ_PAR_Get(track, seq_record_step, par_layer, instrument);
+		u8 note = SEQ_PAR_Get(track, ui_selected_step, par_layer, instrument);
 		SEQ_PAR_Set(track, len_step, par_layer, instrument, note);
 	      }
 	    }
@@ -454,7 +449,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    u8 instrument = 0;
 	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
 	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord )
-		SEQ_PAR_Set(track, seq_record_step, par_layer, instrument, 0x00);
+		SEQ_PAR_Set(track, ui_selected_step, par_layer, instrument, 0x00);
 	    }
 	  }
 	}
@@ -510,10 +505,10 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 
   if( rec_event ) {
     if( !step_record_mode ) {
-      u8 prev_step = seq_record_step;
+      u8 prev_step = ui_selected_step;
       u8 new_step = t->step;
 
-      seq_record_step = new_step;
+      ui_selected_step = new_step;
 
       // take next step if it will be reached "soon" (>80% of current step)
       if( SEQ_BPM_IsRunning() ) {
@@ -531,18 +526,18 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	}
 
 	if( shift_event ) {
-	  int next_step = seq_record_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
+	  int next_step = ui_selected_step + 1; // tmp. variable used for u8 -> u32 conversion to handle 256 steps properly
 	  if( next_step > tcc->length ) // TODO: handle this correctly if track is played backwards
 	    next_step = tcc->loop;
 #if DEBUG_VERBOSE_LEVEL >= 2
-	  MIOS32_MIDI_SendDebugMessage("Shifted step %d -> %d\n", seq_record_step, next_step);
+	  MIOS32_MIDI_SendDebugMessage("Shifted step %d -> %d\n", ui_selected_step, next_step);
 #endif
-	  seq_record_step = next_step;
+	  ui_selected_step = next_step;
 	  t->state.REC_DONT_OVERWRITE_NEXT_STEP = 1; // next step won't be overwritten
 	}
       }
 
-      if( seq_record_step != prev_step )
+      if( ui_selected_step != prev_step )
 	t->rec_poly_ctr = 0;
     }
 
@@ -550,7 +545,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     // has been inserted into the (returned) layer.
     // if < 0, no event has been inserted.
     int insert_layer;
-    if( (insert_layer=SEQ_LAYER_RecEvent(track, seq_record_step, layer_event)) < 0 )
+    if( (insert_layer=SEQ_LAYER_RecEvent(track, ui_selected_step, layer_event)) < 0 )
       rec_event = 0;
     else {
 #ifndef MBSEQV4L
@@ -581,7 +576,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  SEQ_LIVE_PlayEvent(track, midi_package);
 	} else {
 	  seq_layer_evnt_t layer_events[16];
-	  u8 record_step = seq_record_step;
+	  u8 record_step = ui_selected_step;
 #ifdef MBSEQV4L
 	  // extra MBSEQ V4L if CC track: read 16th step in step record mode
 	  // could also be provided for normal MBSEQ V4 later (has to be made more flexible!)
@@ -600,13 +595,13 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       }
 
       if( step_record_mode && !seq_record_options.POLY_RECORD ) {
-	int next_step = (seq_record_step + seq_record_options.STEPS_PER_KEY) % ((int)tcc->length+1);
+	int next_step = (ui_selected_step + seq_record_options.STEPS_PER_KEY) % ((int)tcc->length+1);
 
 	int i;
 	for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)
 	  SEQ_RECORD_Reset(i);
 
-	seq_record_step = next_step;
+	ui_selected_step = next_step;
       }
     }
   }

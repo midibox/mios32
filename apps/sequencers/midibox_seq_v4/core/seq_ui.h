@@ -25,6 +25,7 @@
 // 450..499 mS: cursor off
 #define SEQ_UI_CURSOR_FLASH_CTR_MAX     500  // mS
 #define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF 450  // mS
+#define SEQ_UI_CURSOR_FLASH_CTR_LED_OFF_EDIT_PAGE 300  // mS in edit page
 
 #define SEQ_UI_BOOKMARKS_NUM 16
 
