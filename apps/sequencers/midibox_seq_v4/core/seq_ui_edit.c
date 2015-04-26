@@ -886,16 +886,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintSpaces(1);
 
 
+  u8 print_instrument = 0;
   if( ui_page == SEQ_UI_PAGE_EDIT && edit_passive_mode == 2 ) {
-    if( ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(15);
-    } else {
+    if( !ui_cursor_flash ) {
       SEQ_LCD_PrintString("PASSIVE EDITING");
     }
   } else if( seq_record_state.ENABLED || edit_mode == SEQ_UI_EDIT_MODE_RECORD || midi_learn_mode == MIDI_LEARN_MODE_ON ) {
-    if( ui_cursor_flash ) {
-      SEQ_LCD_PrintSpaces(15);
-    } else {
+    if( !ui_cursor_flash ) {
       if( midi_learn_mode == MIDI_LEARN_MODE_ON ) {
 	SEQ_LCD_PrintString("EDIT RECORDING ");
       } else if( seq_record_options.STEP_RECORD ) {
@@ -907,9 +904,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   } else {
     switch( edit_mode ) {
     case SEQ_UI_EDIT_MODE_COPY: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	char str_buffer[10];
 	sprintf(str_buffer, "%d-%d", SEQ_UI_UTIL_CopyPasteBeginGet()+1, SEQ_UI_UTIL_CopyPasteEndGet()+1);
 	SEQ_LCD_PrintFormattedString("COPY S%-9s", str_buffer);
@@ -917,56 +912,50 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     } break;
 
     case SEQ_UI_EDIT_MODE_PASTE: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	SEQ_LCD_PrintFormattedString("PASTE OFFS.%3d ", ui_selected_step+1);
       }
     } break;
 
     case SEQ_UI_EDIT_MODE_MOVE: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	SEQ_LCD_PrintString("MOVE STEPS     ");
       }
     } break;
 
     case SEQ_UI_EDIT_MODE_SCROLL: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	SEQ_LCD_PrintString("SCROLL TRACK   ");
       }
     } break;
 
     case SEQ_UI_EDIT_MODE_RANDOM: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	SEQ_LCD_PrintString("RANDOMIZED     ");
       }
     } break;
 
     case SEQ_UI_EDIT_MODE_MANUAL: {
-      if( ui_cursor_flash ) {
-	SEQ_LCD_PrintSpaces(15);
-      } else {
+      if( !ui_cursor_flash ) {
 	SEQ_LCD_PrintString("MANUAL TRIGGER ");
       }
     } break;
 
     default: {
-      if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	SEQ_LCD_PrintChar(' ');
-	SEQ_LCD_PrintChar(' ');
-	SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
-	SEQ_LCD_PrintChar(' ');
-	SEQ_LCD_PrintFormattedString("Chn.%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
-      } else {
-	SEQ_LCD_PrintTrackLabel(visible_track, (char *)seq_core_trk[visible_track].name);
-      }
+      print_instrument = 1;
     }
+    }
+  }
+
+  if( print_instrument || ui_cursor_flash ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintChar(' ');
+      SEQ_LCD_PrintChar(' ');
+      SEQ_LCD_PrintMIDIOutPort(SEQ_CC_Get(visible_track, SEQ_CC_MIDI_PORT));
+      SEQ_LCD_PrintChar(' ');
+      SEQ_LCD_PrintFormattedString("Chn.%2d  ", SEQ_CC_Get(visible_track, SEQ_CC_MIDI_CHANNEL)+1);
+    } else {
+      SEQ_LCD_PrintTrackLabel(visible_track, (char *)seq_core_trk[visible_track].name);
     }
   }
 
@@ -1215,7 +1204,6 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     seq_record_options.FWD_MIDI = prev_seq_record_options.FWD_MIDI;
 
     SEQ_RECORD_Enable(1);
-    seq_record_step = ui_selected_step;
 
     SEQ_RECORD_Receive(p, visible_track);
 
@@ -1234,11 +1222,11 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 
 	  if( layer_type == rec_layer_type ||
 	      ((rec_layer_type == SEQ_PAR_Type_Note || rec_layer_type == SEQ_PAR_Type_Chord) && (layer_type == SEQ_PAR_Type_Velocity || layer_type == SEQ_PAR_Type_Length)) ) {
-	    u8 value = SEQ_PAR_Get(visible_track, seq_record_step, p_layer, ui_selected_instrument);
+	    u8 value = SEQ_PAR_Get(visible_track, ui_selected_step, p_layer, ui_selected_instrument);
 
 	    u16 step;
 	    for(step=0; step<num_steps; ++step) {
-	      if( step != seq_record_step && (selected_steps & (1 << (step % 16))) ) {
+	      if( step != ui_selected_step && (selected_steps & (1 << (step % 16))) ) {
 		SEQ_PAR_Set(visible_track, step, p_layer, ui_selected_instrument, value);
 	      }
 	    }
@@ -1253,6 +1241,8 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     ui_hold_msg_ctr_drum_edit = 0;
 
     seq_ui_display_update_req = 1;
+
+    return 1; // don't continue recording/live forwarding processing
   }
 
   return 0;

@@ -68,7 +68,6 @@ extern s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 extern seq_record_options_t seq_record_options;
 extern seq_record_state_t seq_record_state;
 
-extern u8 seq_record_step;
 extern u8 seq_record_quantize;
 
 extern u32 seq_record_played_notes[4];

@@ -419,6 +419,15 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   }
   u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
 
+#ifndef MBSEQV4L
+  if( is_record_port ) {
+    // inform UI MIDI callback
+    if( SEQ_UI_NotifyMIDIINCallback(port, midi_package) > 0 )
+      return 0; // stop processing
+  }
+#endif
+
+
   // simplify Note On/Off handling
   if( midi_package.event == NoteOff ) {
     midi_package.event = NoteOn;
@@ -552,11 +561,6 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
   if( !(status & 2) && is_record_port ) {
     if( should_be_recorded ) {
       SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
-    } else {
-#ifndef MBSEQV4L
-      // inform UI MIDI callback
-      SEQ_UI_NotifyMIDIINCallback(port, midi_package);
-#endif
     }
   }
 

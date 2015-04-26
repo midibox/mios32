@@ -562,13 +562,13 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   }
 
   case ITEM_STEP_RECORD_STEP: {
-    u8 step = seq_record_step;
+    u8 step = ui_selected_step;
     if( SEQ_UI_Var8_Inc(&step, 0, SEQ_CC_Get(visible_track, SEQ_CC_LENGTH), incrementer) > 0 ) {
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
 	SEQ_RECORD_Reset(track);
 
-      seq_record_step = step;
+      ui_selected_step = step;
 
       // print edit screen
       SEQ_RECORD_PrintEditScreen();
@@ -601,19 +601,19 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       gate = 0;
     else
 #endif
-      gate = SEQ_TRG_GateGet(visible_track, seq_record_step, ui_selected_instrument) ? 0 : 1;
+      gate = SEQ_TRG_GateGet(visible_track, ui_selected_step, ui_selected_instrument) ? 0 : 1;
 
     int i;
     for(i=0; i<SEQ_TRG_NumInstrumentsGet(visible_track); ++i)
-      SEQ_TRG_GateSet(visible_track, seq_record_step, i, gate);
+      SEQ_TRG_GateSet(visible_track, ui_selected_step, i, gate);
 
     // increment step
-    int next_step = (seq_record_step + seq_record_options.STEPS_PER_KEY) % ((int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
+    int next_step = (ui_selected_step + seq_record_options.STEPS_PER_KEY) % ((int)SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1);
 
     for(i=0; i<SEQ_CORE_NUM_TRACKS; ++i)
       SEQ_RECORD_Reset(i);
 
-    seq_record_step = next_step;
+    ui_selected_step = next_step;
 
     // print edit screen
     SEQ_RECORD_PrintEditScreen();
@@ -980,7 +980,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_selected_item == ITEM_STEP_RECORD_STEP && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(3);
     } else {
-      SEQ_LCD_PrintFormattedString("%3d", seq_record_step+1);
+      SEQ_LCD_PrintFormattedString("%3d", ui_selected_step+1);
     }
     SEQ_LCD_PrintSpaces(2);
 
