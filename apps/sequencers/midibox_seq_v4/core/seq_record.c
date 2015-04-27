@@ -146,23 +146,28 @@ s32 SEQ_RECORD_AllNotesOff(void)
 /////////////////////////////////////////////////////////////////////////////
 // This function enables recording and takes over active live notes
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_RECORD_Enable(u8 enable)
+s32 SEQ_RECORD_Enable(u8 enable, u8 reset_timestamps)
 {
   // take over live notes on transition 0->1
   if( !seq_record_state.ENABLED && enable ) {
-    u32 timestamp = MIOS32_TIMESTAMP_Get();
-    int i;
-    for(i=0; i<128; ++i)
-      seq_record_note_timestamp_ms[i] = timestamp;
 
-    for(i=0; i<4; ++i) {
-      seq_record_played_notes[i] = seq_live_played_notes[i];
+    if( reset_timestamps ) {
+      u32 timestamp = MIOS32_TIMESTAMP_Get();
+      int i;
+      for(i=0; i<128; ++i)
+	seq_record_note_timestamp_ms[i] = timestamp;
+
+      for(i=0; i<4; ++i) {
+	seq_record_played_notes[i] = seq_live_played_notes[i];
+      }
     }
   }
 
   // clear record notes if recording disabled
   if( seq_record_state.ENABLED && !enable ) {
-    SEQ_RECORD_AllNotesOff();
+    if( reset_timestamps ) {
+      SEQ_RECORD_AllNotesOff();
+    }
   }
 
   seq_record_state.ENABLED = enable;

@@ -73,10 +73,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       // if toggle function active: jump back to previous menu
       // this is especially useful for the emulated MBSEQ, where we can only click on a single button
       // (trigger gets deactivated when clicking on GP button or moving encoder)
-      if( seq_ui_button_state.TRG_LAYER_SEL ) {
-	seq_ui_button_state.TRG_LAYER_SEL = 0;
-	SEQ_UI_PageSet(ui_trglayer_prev_page);
-      }
+      seq_ui_button_state.TRG_LAYER_SEL = 0;
+      SEQ_UI_PageSet(ui_trglayer_prev_page);
     }
 
     return 1; // value changed

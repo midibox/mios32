@@ -508,7 +508,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       value = (incrementer > 0);
 
     if( value != seq_record_state.ENABLED ) {
-      SEQ_RECORD_Enable(value);
+      SEQ_RECORD_Enable(value, 1);
       return 1;
     }
     return 0;
@@ -1218,7 +1218,7 @@ static s32 EXIT_Handler(void)
   }
 
   // disable recording
-  // SEQ_RECORD_Enable(0);
+  // SEQ_RECORD_Enable(0, 1);
   // not in revised trkjam page anymore
 
   return status;
@@ -1238,7 +1238,7 @@ s32 SEQ_UI_TRKJAM_Init(u32 mode)
   SEQ_UI_InstallExitCallback(EXIT_Handler);
 
   // enable recording
-  // SEQ_RECORD_Enable(1);
+  // SEQ_RECORD_Enable(1, 1);
   // no auto-enable in revised page anymore...
 
   // switch step recording depending on subpage
