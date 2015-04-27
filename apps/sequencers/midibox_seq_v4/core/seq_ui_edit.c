@@ -527,7 +527,8 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     // enable/disable MIDI Learn mode
     midi_learn_mode = depressed ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
 
-    if( depressed ) return 0; // ignore when button depressed
+    if( depressed )
+      return 0; // ignore when button depressed
 
     if( seq_ui_button_state.EDIT_PRESSED )
       return Encoder_Handler(button, 0);
@@ -1198,12 +1199,13 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 
     // quick & dirty for evaluation purposes
     seq_record_options_t prev_seq_record_options = seq_record_options;
+    u8 reset_timestamps = p.type == NoteOn && p.velocity > 0;
 
     seq_record_options.ALL = 0;
     seq_record_options.STEP_RECORD = 1;
     seq_record_options.FWD_MIDI = prev_seq_record_options.FWD_MIDI;
 
-    SEQ_RECORD_Enable(1);
+    SEQ_RECORD_Enable(1, reset_timestamps);
 
     SEQ_RECORD_Receive(p, visible_track);
 
@@ -1236,7 +1238,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     }
 
     seq_record_options.ALL = prev_seq_record_options.ALL;
-    SEQ_RECORD_Enable(0);
+    SEQ_RECORD_Enable(0, 0);
 
     ui_hold_msg_ctr_drum_edit = 0;
 
