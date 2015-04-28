@@ -402,50 +402,26 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 {
   s32 status = 0;
 
-  // check if we should record this event
-  u8 is_record_port = 0;
-  int bus;
-  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
-    if( seq_midi_in_options[bus].MODE_PLAY ) {
-      mios32_midi_port_t rec_port = seq_midi_in_port[bus];
-      u8 rec_chn = seq_midi_in_channel[bus];
-
-      if( (!rec_port || port == seq_midi_in_port[bus]) &&
-	  (rec_chn == 17 || midi_package.chn == (rec_chn-1)) ) {
-	is_record_port = 1;
-	break;
-      }
-    }
-  }
-  u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
-
-#ifndef MBSEQV4L
-  if( is_record_port ) {
-    // inform UI MIDI callback
-    if( SEQ_UI_NotifyMIDIINCallback(port, midi_package) > 0 )
-      return 0; // stop processing
-  }
-#endif
-
-
   // simplify Note On/Off handling
   if( midi_package.event == NoteOff ) {
     midi_package.event = NoteOn;
     midi_package.velocity = 0;
   }
 
-  // search for matching ports
-  // status[0] set if at least one port matched
-  // status[1] set if remote function active
+  // check if we should record this event or for remote function
+  u8 is_record_port = 0;
+  int bus;
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
-    // filter MIDI port (if 0: no filter, listen to all ports)
-    if( (!seq_midi_in_port[bus] || port == seq_midi_in_port[bus]) &&
-	(seq_midi_in_channel[bus] == 17 || midi_package.chn == (seq_midi_in_channel[bus]-1)) ) {
+    mios32_midi_port_t check_port = seq_midi_in_port[bus];
+    u8 check_chn = seq_midi_in_channel[bus];
 
-      switch( midi_package.event ) {
-      case NoteOff:
-      case NoteOn:
+    if( (!check_port || port == check_port) && (check_chn == 17 || midi_package.chn == (check_chn-1)) ) {
+      if( seq_midi_in_options[bus].MODE_PLAY ) {
+	is_record_port = 1;
+      }
 
+      // check for remote key
+      if( midi_package.event == NoteOn ) {
 	if( midi_package.velocity == 0 ) {
 	  if( remote_active ) {
 	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
@@ -462,73 +438,102 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	    } else {
 	      SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 1); // depressed
 	    }
-	    status |= 2;
-	  } else {
-	    if( !should_be_recorded &&
-		midi_package.note >= seq_midi_in_lower[bus] &&
-		(!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
-
-	      if( !seq_midi_in_options[bus].MODE_PLAY ) {
-#if 0
-		// octave normalisation - too complicated for normal users...
-		mios32_midi_package_t p = midi_package;
-		if( seq_midi_in_lower[bus] ) { // normalize to first octave
-		  int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		  // ensure that note is in the 0..127 range
-		  normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
-		  p.note = normalized_note;
-		}
-		SEQ_MIDI_IN_BusReceive(bus, p, 0);
-#else
-		SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
-#endif
-	      }
-
-	      if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
-		SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-	      }
-	      
-	      status |= 1;
-	    }
+	    return 0; // stop processing
 	  }
 	} else {
-	  if( remote_active )
+	  if( remote_active ) {
 	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 0);
-	  else {
+	    return 0; // stop processing
+	  } else {
 	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
 	      MUTEX_MIDIOUT_TAKE;
 	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access activated");
 	      MUTEX_MIDIOUT_GIVE;
 	      remote_active = 1;
-	      status |= 2;
-	    } else {
-	      if( !should_be_recorded &&
-		  midi_package.note >= seq_midi_in_lower[bus] &&
-		  (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
-
-		if( !seq_midi_in_options[bus].MODE_PLAY ) {
-#if 0
-		  // octave normalisation - too complicated for normal users...
-		  mios32_midi_package_t p = midi_package;
-		  if( seq_midi_in_lower[bus] ) { // normalize to first octave
-		    int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
-		    // ensure that note is in the 0..127 range
-		    normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
-		    p.note = normalized_note;
-		  }
-		  SEQ_MIDI_IN_BusReceive(bus, p, 0);
-#else
-		  SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
-#endif
-		}
-
-	      if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
-		  SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
-		}
-
-		status |= 1;
-	      }
+	      return 0; // stop processing
 	    }
+	  }
+	}
+      }
+    }
+  }
+  u8 should_be_recorded = seq_record_state.ENABLED && is_record_port;
+
+#ifndef MBSEQV4L
+  if( is_record_port ) {
+    // inform UI MIDI callback
+    if( SEQ_UI_NotifyMIDIINCallback(port, midi_package) > 0 )
+      return 0; // stop processing
+  }
+#endif
+
+
+  // search for matching ports
+  // status[0] set if at least one port matched
+  for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
+    mios32_midi_port_t check_port = seq_midi_in_port[bus];
+    u8 check_chn = seq_midi_in_channel[bus];
+    // filter MIDI port (if 0: no filter, listen to all ports)
+
+    if( (!check_port || port == check_port) && (check_chn == 17 || midi_package.chn == (check_chn-1)) ) {
+
+      switch( midi_package.event ) {
+      case NoteOff:
+      case NoteOn:
+
+	if( midi_package.velocity == 0 ) {
+	  if( !should_be_recorded &&
+	      midi_package.note >= seq_midi_in_lower[bus] &&
+	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+
+	    if( !seq_midi_in_options[bus].MODE_PLAY ) {
+#if 0
+	      // octave normalisation - too complicated for normal users...
+	      mios32_midi_package_t p = midi_package;
+	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		// ensure that note is in the 0..127 range
+		normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
+		p.note = normalized_note;
+	      }
+	      SEQ_MIDI_IN_BusReceive(bus, p, 0);
+#else
+	      SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
+#endif
+	    }
+
+	    if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
+	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+	    }
+	      
+	    status |= 1;
+	  }
+	} else {
+	  if( !should_be_recorded &&
+	      midi_package.note >= seq_midi_in_lower[bus] &&
+	      (!seq_midi_in_upper[bus] || midi_package.note <= seq_midi_in_upper[bus]) ) {
+
+	    if( !seq_midi_in_options[bus].MODE_PLAY ) {
+#if 0
+	      // octave normalisation - too complicated for normal users...
+	      mios32_midi_package_t p = midi_package;
+	      if( seq_midi_in_lower[bus] ) { // normalize to first octave
+		int normalized_note = 0x30 + p.note - ((int)seq_midi_in_lower[bus]/12)*12;
+		// ensure that note is in the 0..127 range
+		normalized_note = SEQ_CORE_TrimNote(normalized_note, 0, 127);
+		p.note = normalized_note;
+	      }
+	      SEQ_MIDI_IN_BusReceive(bus, p, 0);
+#else
+	      SEQ_MIDI_IN_BusReceive(bus, midi_package, 0);
+#endif
+	    }
+
+	    if( seq_midi_in_options[bus].MODE_PLAY && seq_record_options.FWD_MIDI && !seq_record_state.ENABLED ) {
+	      SEQ_LIVE_PlayEvent(SEQ_UI_VisibleTrackGet(), midi_package);
+	    }
+
+	    status |= 1;
 	  }
 	}
 	break;
@@ -558,15 +563,13 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 
   // record function
-  if( !(status & 2) && is_record_port ) {
-    if( should_be_recorded ) {
-      SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
-    }
+  if( should_be_recorded ) {
+    SEQ_RECORD_Receive(midi_package, SEQ_UI_VisibleTrackGet());
+    return 0; // stop processing
   }
 
   // External Control
-  if( !(status & 2) &&
-      ((seq_midi_in_ext_ctrl_port == 0xff || port == seq_midi_in_ext_ctrl_port) &&
+  if( ((seq_midi_in_ext_ctrl_port == 0xff || port == seq_midi_in_ext_ctrl_port) &&
        (seq_midi_in_ext_ctrl_channel == 17 || midi_package.chn == (seq_midi_in_ext_ctrl_channel-1))) ) {
 
     switch( midi_package.event ) {
@@ -586,8 +589,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 
   // Section Changer
-  if( !(status & 2) &&
-      (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
+  if( (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
        (seq_midi_in_sect_channel == 17 || midi_package.chn == (seq_midi_in_sect_channel-1))) ) {
     u8 forward_event = 1;
 
@@ -616,8 +618,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 
 #if PATCH_CHANGER_ENABLED
   // Patch Changer (currently assigned to channel+1)
-  if( !(status & 2) &&
-      (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
+  if( (seq_midi_in_sect_port && port == seq_midi_in_sect_port &&
        (seq_midi_in_sect_channel == 17 || midi_package.chn == (seq_midi_in_sect_channel))) ) {
     u8 forward_event = 1;
 
