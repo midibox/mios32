@@ -1107,7 +1107,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		} else if( mode == SEQ_PAR_TYPE_NTH_FX ) {
 		  if( !trigger )
 		    no_fx = 1;
-		} else if( mode == SEQ_PAR_TYPE_NTH_FX ) {		  
+		} else if( mode == SEQ_PAR_TYPE_NTH_NO_FX ) {		  
 		  if( trigger )
 		    no_fx = 1;
 		} else {
@@ -1290,7 +1290,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		int trigger = nth_variant ? ((t->bar % (bar+1)) == bar) : ((t->bar % (bar+1)) == 0);
 
 		int mode = (nth_value >> 4) & 0x7;
-		if( mode == SEQ_PAR_TYPE_NTH_FX ) {
+		if( mode == SEQ_PAR_TYPE_NTH_PLAY ) {
+		  if( !trigger )
+		    continue; // step not played
+		} else if( mode == SEQ_PAR_TYPE_NTH_MUTE ) {
+		  if( trigger )
+		    continue; // step not played
+		} else if( mode == SEQ_PAR_TYPE_NTH_FX ) {
 		  if( !trigger )
 		    no_fx = 1;
 		} else if( mode == SEQ_PAR_TYPE_NTH_NO_FX ) {		  
