@@ -814,7 +814,7 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_selected_item == ITEM_IN_MODE && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	SEQ_LCD_PrintString(seq_midi_in_options[selected_bus].MODE_PLAY ? "Rec " : "T&A ");
+	SEQ_LCD_PrintString(seq_midi_in_options[selected_bus].MODE_PLAY ? "Jam " : "T&A ");
       }
       SEQ_LCD_PrintSpaces(3);
 

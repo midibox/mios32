@@ -9,7 +9,7 @@
 ##################################################
 
 # The note number which activates the remote function
-# 96 = C-7 (by some MIDI monitors displayed as C-8)
+# 96 = C-6 (some MIDI monitors display C-5)
 # 0 disables the remote keyboard function
 MIDI_REMOTE_KEY 96
 
