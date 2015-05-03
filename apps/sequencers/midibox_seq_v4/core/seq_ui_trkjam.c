@@ -846,8 +846,6 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. G1T1   Pattern  1  *.*.*.*.*.*.*.*.                              Ptn.  Cfg.
-  //  > 1<   2    3    4    5    6    7    8    9  10   11   12   13   14   on   Page
   // Trk. G1T1   Pattern  1  *.*.*.*.*.*.*.*.                              Cfg.  Ptn.
   //  > 1<   2    3    4    5    6    7    8    9  10   11   12   13   14  Page   on 
 
@@ -856,7 +854,7 @@ static s32 LCD_Handler(u8 high_prio)
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
   // Trk. Rec. Fwd.    Configuration Pages    Bus Port Chn. Lower/Upper Mode   Reset 
-  // G1T1 off   on  Step Live Ptn.>MIDI<Misc   1  IN1  #16   ---   ---  Rec    Stacks
+  // G1T1 off   on  Step Live Ptn.>MIDI<Misc   1  IN1  #16   ---   ---  Jam    Stacks
 
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
@@ -1150,7 +1148,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_selected_item == ITEM_MIDI_IN_MODE && ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(4);
     } else {
-      SEQ_LCD_PrintString(seq_midi_in_options[selected_bus].MODE_PLAY ? "Rec " : "T&A ");
+      SEQ_LCD_PrintString(seq_midi_in_options[selected_bus].MODE_PLAY ? "Jam " : "T&A ");
     }
     SEQ_LCD_PrintSpaces(3);
 
