@@ -504,24 +504,3 @@ void SYNTH_ReloadSampleBuffer(u32 state)
   knob[n+16]=(short)ADC_DR2;
 #endif
 }
-
-
-#if 0
-  s16 chn1_velocity = osc_velocity[0];
-  s16 chn2_velocity = osc_velocity[1];
-
-  for(i=0; i<SAMPLE_BUFFER_SIZE/2; ++i) {
-    int chn;
-
-    for(chn=0; chn<2; ++chn) {
-      if( (wavetable_pos[chn] += wavetable_accumulator[chn]) >= (WAVETABLE_SIZE << FP_PRECISSION) )
-	wavetable_pos[chn] -= (WAVETABLE_SIZE << FP_PRECISSION);
-    }
-
-    u32 chn1_value = (wavetable_buffer[0][(u32)wavetable_pos[0] >> FP_PRECISSION] * chn1_velocity) / 128;
-    u32 chn2_value = (wavetable_buffer[1][(u32)wavetable_pos[1] >> FP_PRECISSION] * chn2_velocity) / 128;
-
-    *buffer++ = ((u32)chn2_value << 16) | (chn1_value & 0xffff);
-  }
-}
-#endif
