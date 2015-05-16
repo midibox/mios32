@@ -657,6 +657,14 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	  item.secondary_value = item.stream[1];
 	} break;
 
+	case MBNG_EVENT_TYPE_NOTE_ON_OFF: {
+	  item.stream_size = 2;
+	  item.stream[0] = 0x90;
+	  item.stream[1] = 0x30;
+
+	  item.secondary_value = item.stream[1];
+	} break;
+
 	case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
 	case MBNG_EVENT_TYPE_AFTERTOUCH:
 	case MBNG_EVENT_TYPE_PITCHBEND: {
@@ -723,6 +731,7 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
       if( item.flags.type != MBNG_EVENT_TYPE_NOTE_OFF &&
 	  item.flags.type != MBNG_EVENT_TYPE_NOTE_ON &&
+	  item.flags.type != MBNG_EVENT_TYPE_NOTE_ON_OFF &&
 	  item.flags.type != MBNG_EVENT_TYPE_POLY_PRESSURE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] WARNING: no key number expected for EVENT_%s due to type: %s\n", line, event, MBNG_EVENT_ItemTypeStrGet(&item));
@@ -1559,6 +1568,14 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
       // just continue to keep files compatible
     }
+  }
+
+  // mapped value -> update ix
+  // NOTE: this will only work correctly if map has been defined before EVENT!
+  if( item.map ) {
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+    item.map_ix = MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value);
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -3900,6 +3917,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
       switch( item.flags.type ) {
       case MBNG_EVENT_TYPE_NOTE_OFF:
       case MBNG_EVENT_TYPE_NOTE_ON:
+      case MBNG_EVENT_TYPE_NOTE_ON_OFF:
       case MBNG_EVENT_TYPE_POLY_PRESSURE: {
 	if( item.stream_size >= 2 ) {
 	  if( item.flags.use_any_key_or_cc ) {

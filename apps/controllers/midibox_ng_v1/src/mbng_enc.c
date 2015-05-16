@@ -216,14 +216,20 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
       break;
 
     default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
+      u8 force_send = 0;
       if( map_len > 0 ) {
-	int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value);
+	int map_ix = item.map_ix; // MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value);
+	int prev_map_ix = map_ix;
 	map_ix += event_incrementer;
 	if( map_ix >= map_len )
 	  map_ix = map_len - 1;
 	else if( map_ix < 0 )
 	  map_ix = 0;
+	MBNG_EVENT_ItemSetMapIx(&item, map_ix);
 	value = map_values[map_ix];
+
+	if( prev_map_ix != map_ix )
+	  force_send = 1;
       } else {
 	if( item.min <= item.max ) {
 	  value = item.value + event_incrementer;
@@ -241,7 +247,7 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 	}
       }
 
-      if( value == item.value )
+      if( value == item.value && !force_send )
 	return 0; // no change
     }
     }

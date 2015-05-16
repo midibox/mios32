@@ -53,6 +53,7 @@ typedef enum {
   MBNG_EVENT_TYPE_SYSEX,
   MBNG_EVENT_TYPE_NRPN,
   MBNG_EVENT_TYPE_META,
+  MBNG_EVENT_TYPE_NOTE_ON_OFF,
 } mbng_event_type_t;
 
 typedef enum {
@@ -357,6 +358,7 @@ typedef struct {
   u32 stream_size;
   u8* stream;
   u8 map;
+  u8 map_ix;
   u8 bank;
   u8 secondary_value;
   u8 lcd;
@@ -387,7 +389,7 @@ extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
 
 extern s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len);
 extern s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values);
-extern s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value);
+extern s32 MBNG_EVENT_MapIxFromValue(u8 *map_values, u8 map_len, u8 value);
 
 extern s32 MBNG_EVENT_NumBanksGet(void);
 extern s32 MBNG_EVENT_SelectedBankGet(void);
@@ -408,6 +410,7 @@ extern s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item);
 extern s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock);
 extern s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active);
 extern s32 MBNG_EVENT_ItemSetNoDump(mbng_event_item_t *item, u8 no_dump);
+extern s32 MBNG_EVENT_ItemSetMapIx(mbng_event_item_t *item, u8 map_ix);
 extern s32 MBNG_EVENT_ItemCheckMatchingCondition(mbng_event_item_t *item);
 
 extern s32 MBNG_EVENT_LCMeters_Init(void);
