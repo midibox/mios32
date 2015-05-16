@@ -84,9 +84,10 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
       u8 *map_values;
       int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
       if( map_len > 0 ) {
-	int map_ix = MBNG_EVENT_MapIxGet(map_values, map_len, item.value) + 1;
+	int map_ix = item.map_ix + 1; // MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value) + 1;
 	if( map_ix >= map_len )
 	  map_ix = 0;
+	MBNG_EVENT_ItemSetMapIx(&item, map_ix);
 	item.value = map_values[map_ix];
       } else {
 	if( item.min <= item.max ) {

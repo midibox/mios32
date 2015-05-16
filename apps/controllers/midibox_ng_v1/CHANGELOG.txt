@@ -19,9 +19,14 @@ MIDIbox NG V1.033
    o implemented new meta command "LearnEvent" which allows to learn SendEvent based controller assignments during runtime.
      See cfg/test/metalrn.ngc for a usage example
 
+   o added new event type "NoteOnOff", which will send a NoteOff event immediately after NoteOn (resp. actually it will
+     send Note On with velocity 0 for runtime event optimisation)
+
    o bugfix for DELAY_MS
 
    o bugfix for fwd_id to a non-existing ID with specific value
+
+   o bugfix for maps with duplicated values
 
 
 MIDIbox NG V1.032

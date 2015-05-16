@@ -691,6 +691,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   switch( event_type ) {
   case MBNG_EVENT_TYPE_NOTE_OFF:       num_values = 3; break;
   case MBNG_EVENT_TYPE_NOTE_ON:        num_values = 3; break;
+  case MBNG_EVENT_TYPE_NOTE_ON_OFF:    num_values = 3; break;
   case MBNG_EVENT_TYPE_POLY_PRESSURE:  num_values = 3; break;
   case MBNG_EVENT_TYPE_CC:             num_values = 3; break;
   case MBNG_EVENT_TYPE_PROGRAM_CHANGE: num_values = 2; break;
@@ -776,6 +777,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   switch( event_type ) {
   case MBNG_EVENT_TYPE_NOTE_OFF:       MIOS32_MIDI_SendNoteOff(port, (values[0]-1) & 0xf, values[1] & 0x7f, values[2] & 0x7f); break;
   case MBNG_EVENT_TYPE_NOTE_ON:        MIOS32_MIDI_SendNoteOn(port, (values[0]-1) & 0xf, values[1] & 0x7f, values[2] & 0x7f); break;
+  case MBNG_EVENT_TYPE_NOTE_ON_OFF:    MIOS32_MIDI_SendNoteOn(port, (values[0]-1) & 0xf, values[1] & 0x7f, values[2] & 0x7f); break;
   case MBNG_EVENT_TYPE_POLY_PRESSURE:  MIOS32_MIDI_SendPolyPressure(port, (values[0]-1) & 0xf, values[1] & 0x7f, values[2] & 0x7f); break;
   case MBNG_EVENT_TYPE_CC:             MIOS32_MIDI_SendCC(port, (values[0]-1), values[1] & 0x7f, values[2] & 0x7f); break;
   case MBNG_EVENT_TYPE_PROGRAM_CHANGE: MIOS32_MIDI_SendProgramChange(port, (values[0]-1) & 0xf, values[1] & 0x7f); break;

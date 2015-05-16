@@ -90,6 +90,7 @@ typedef struct { // should be dividable by u16
   u8 len_label;
   u8 bank;
   u8 secondary_value;
+  u8 map_ix;
   u8 data_begin; // data section for streams, label and extra parameters starts here, it can have multiple bytes
 } mbng_event_pool_item_t;
 
@@ -552,7 +553,7 @@ s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
 /////////////////////////////////////////////////////////////////////////////
 //! Returns the index of a given value
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_MapIxGet(u8 *map_values, u8 map_len, u8 value)
+s32 MBNG_EVENT_MapIxFromValue(u8 *map_values, u8 map_len, u8 value)
 {
   // first search for exact match
   {
@@ -697,6 +698,7 @@ s32 MBNG_EVENT_ItemNoDumpDefault(mbng_event_item_t *item)
     //case MBNG_EVENT_TYPE_UNDEFINED:
     case MBNG_EVENT_TYPE_NOTE_OFF:
     case MBNG_EVENT_TYPE_NOTE_ON:
+    case MBNG_EVENT_TYPE_NOTE_ON_OFF:
     case MBNG_EVENT_TYPE_POLY_PRESSURE:
     case MBNG_EVENT_TYPE_CC:
     case MBNG_EVENT_TYPE_PROGRAM_CHANGE:
@@ -737,6 +739,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->map = 0;
   item->bank = 0;
   item->secondary_value = 0;
+  item->map_ix = 0;
   item->lcd = 0;
   item->lcd_x = 0;
   item->lcd_y = 0;
@@ -820,6 +823,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
 
   item->matrix_pin = 0; // has to be set after creation by the MATRIX handler
   item->secondary_value = pool_item->secondary_value;
+  item->map_ix = pool_item->map_ix;
   item->stream_size = pool_item->len_stream;
   item->stream = pool_item->len_stream ? (u8 *)&pool_item->data_begin : NULL;
   item->label = pool_item->len_label ? ((char *)&pool_item->data_begin + pool_item->len_stream) : NULL;
@@ -881,6 +885,7 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
     extra_par += 1;
   } else {
     item->map = 0;
+    item->map_ix = 0;
   }
 
   if( extra_par_available.has_lcd ) {
@@ -921,6 +926,7 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
   pool_item->enabled_ports = item->enabled_ports;
   pool_item->syxdump_pos.ALL = item->syxdump_pos.ALL;
   pool_item->secondary_value = item->secondary_value;
+  pool_item->map_ix = item->map_ix;
 
   u32 label_len = item->label ? (strlen(item->label)+1) : 0;
   u32 pool_item_len = sizeof(mbng_event_pool_item_t) - 1 + item->stream_size + label_len;
@@ -1405,6 +1411,22 @@ s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! sets the map index
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_ItemSetMapIx(mbng_event_item_t *item, u8 map_ix)
+{
+  // take over in pool item
+  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+    pool_item->map_ix = map_ix;
+    item->map_ix = map_ix;
+  }
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! \retval 0 if no matching condition
 //! \retval 1 if matching condition (or no condition)
 //! \retval 2 if matching condition and stop requested
@@ -1482,6 +1504,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     switch( item->flags.type ) {
     case MBNG_EVENT_TYPE_NOTE_OFF:
     case MBNG_EVENT_TYPE_NOTE_ON:
+    case MBNG_EVENT_TYPE_NOTE_ON_OFF:
     case MBNG_EVENT_TYPE_POLY_PRESSURE: {
       if( item->stream_size >= 2 ) {
 	DEBUG_MSG("  - chn=%d", (item->stream[0] & 0xf)+1);
@@ -1578,6 +1601,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     DEBUG_MSG("  - value=%d", item->value);
     DEBUG_MSG("  - secondary_value=%d", item->secondary_value);
     DEBUG_MSG("  - map=%d", item->map);
+    DEBUG_MSG("  - map_ix=%d", item->map_ix);
     DEBUG_MSG("  - min=%d", item->min);
     DEBUG_MSG("  - max=%d", item->max);
     DEBUG_MSG("  - offset=%d", item->offset);
@@ -2293,6 +2317,7 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
   switch( item->flags.type ) {
   case MBNG_EVENT_TYPE_NOTE_OFF:       return "NoteOff";
   case MBNG_EVENT_TYPE_NOTE_ON:        return "NoteOn";
+  case MBNG_EVENT_TYPE_NOTE_ON_OFF:    return "NoteOnOff";
   case MBNG_EVENT_TYPE_POLY_PRESSURE:  return "PolyPressure";
   case MBNG_EVENT_TYPE_CC:             return "CC";
   case MBNG_EVENT_TYPE_PROGRAM_CHANGE: return "ProgramChange";
@@ -2312,6 +2337,7 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
 mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
 {
   if( strcasecmp(event_type, "NoteOff") == 0 )       return MBNG_EVENT_TYPE_NOTE_OFF;
+  if( strcasecmp(event_type, "NoteOnOff") == 0 )     return MBNG_EVENT_TYPE_NOTE_ON_OFF;
   if( strcasecmp(event_type, "NoteOn") == 0 || strcasecmp(event_type, "Note") == 0 ) return MBNG_EVENT_TYPE_NOTE_ON;
   if( strcasecmp(event_type, "PolyPressure") == 0 )  return MBNG_EVENT_TYPE_POLY_PRESSURE;
   if( strcasecmp(event_type, "CC") == 0 )            return MBNG_EVENT_TYPE_CC;
@@ -3299,7 +3325,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
     return 0; // nothing to send
 
   mbng_event_type_t event_type = item->flags.type;
-  if( event_type <= MBNG_EVENT_TYPE_PITCHBEND ) {
+  if( event_type <= MBNG_EVENT_TYPE_PITCHBEND || event_type == MBNG_EVENT_TYPE_NOTE_ON_OFF ) {
     u8 event = (item->stream[0] >> 4) | 8;
 
     // create MIDI package
@@ -3360,6 +3386,15 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	MUTEX_MIDIOUT_TAKE;
 	MIOS32_MIDI_SendPackage(port, p);
 	MUTEX_MIDIOUT_GIVE;
+
+	// Note off?
+	if( event_type == MBNG_EVENT_TYPE_NOTE_ON_OFF ) {
+	  mios32_midi_package_t p_off = p;
+	  p_off.velocity = 0;
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendPackage(port, p_off);
+	  MUTEX_MIDIOUT_GIVE;
+	}
       }
     }
     return 0; // no error
@@ -3476,6 +3511,13 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 
   // take over new value
   item->value = value;
+
+  // mapped value -> update ix
+  if( item->map ) {
+    u8 *map_values;
+    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
+    item->map_ix = MBNG_EVENT_MapIxFromValue(map_values, map_len, value);
+  }
 
   // value modified from MIDI?
   item->flags.value_from_midi = from_midi;
@@ -3788,8 +3830,9 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     else if( (item->id & 0xf000) == MBNG_EVENT_CONTROLLER_AINSER )
       ain_sensor_mode = item->custom_flags.AINSER.ain_sensor_mode;
 
-    if( ain_sensor_mode == MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF ) {
-      if( (item->flags.type == MBNG_EVENT_TYPE_NOTE_ON || item->flags.type == MBNG_EVENT_TYPE_NOTE_OFF) && prev_value ) {
+    // TK: actually this mode is obsolete - the new MBNG_EVENT_TYPE_NOTE_ON_OFF should do the same!
+    if( ain_sensor_mode == MBNG_EVENT_AIN_SENSOR_MODE_NOTE_ON_OFF || item->flags.type == MBNG_EVENT_TYPE_NOTE_ON_OFF ) {
+      if( (item->flags.type == MBNG_EVENT_TYPE_NOTE_ON || item->flags.type == MBNG_EVENT_TYPE_NOTE_OFF || item->flags.type == MBNG_EVENT_TYPE_NOTE_ON_OFF) && prev_value ) {
 	s16 tmp_value = item->value;
 	u8 tmp_secondary_value = item->secondary_value;
 
