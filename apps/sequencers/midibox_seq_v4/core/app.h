@@ -49,6 +49,8 @@ extern void APP_SendDebugMessage(char *format, ...);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+extern u8 app_din_testmode;
+
 #ifdef __cplusplus
 }
 #endif

@@ -77,6 +77,12 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// global variables
+/////////////////////////////////////////////////////////////////////////////
+u8 app_din_testmode;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
@@ -91,6 +97,9 @@ void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+
+  // disable DIN test mode by default
+  app_din_testmode = 0;
 
 #ifdef MBSEQV4L
   // MBSEQV4L: set default port to 0xc0: multiple outputs
@@ -357,9 +366,9 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("Pin %3d (SR%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
-#endif
+  if( app_din_testmode ) {
+    DEBUG_MSG("[DIN_TESTMODE] Pin %3d (SR%d:D%d) %s\n", pin, (pin>>3)+1, pin&7, pin_value ? "depressed" : "pressed");
+  }
 
 #ifndef MBSEQV4L
   SEQ_LCD_LOGO_ScreenSaver_Disable();
@@ -380,16 +389,16 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 #ifndef MBSEQV4L
   u8 row = pin / 16;
   u8 pin_of_row = pin % 16;
-#if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("BLM Pin %3d (Row%d:D%d) = %d\n", pin, row, pin_of_row, pin_value);
-#endif
+  if( app_din_testmode ) {
+    DEBUG_MSG("[DIN_TESTMODE] BLM Pin M%d D%d %s\n", row+1, pin_of_row, pin_value ? "depressed" : "pressed");
+  }
 
   // forward to UI BLM button handler
   SEQ_UI_BLM_Button_Handler(row, pin_of_row, pin_value);
 #else
-#if 0
-  MIOS32_MIDI_SendDebugMessage("SR: %d  Pin:%d  Value:%d\n", (pin>>3)+1, pin & 7, pin_value);
-#endif
+  if( app_din_testmode ) {
+    MIOS32_MIDI_SendDebugMessage("[DIN_TESTMODE] SR%d Pin D%d %s\n", (pin>>3)+1, pin & 7, pin_value ? "depressed" : "pressed");
+  }
 
   // forward to UI button handler
   SEQ_UI_Button_Handler(pin, pin_value);
@@ -408,9 +417,9 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("BLM8x8 Pin %3d (M%d:D%d) = %d\n", pin, (pin>>3)+1, pin&7, pin_value);
-#endif
+  if( app_din_testmode ) {
+    DEBUG_MSG("[DIN_TESTMODE] BLM8x8 Pin M%d D%d %s\n", (pin>>3)+1, pin&7, pin_value ? "depressed" : "pressed");
+  }
 
 #ifndef MBSEQV4L
   SEQ_LCD_LOGO_ScreenSaver_Disable();
@@ -428,9 +437,9 @@ void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-#if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
-#endif
+  if( app_din_testmode ) {
+    DEBUG_MSG("Enc %2d = %d\n", encoder, incrementer);
+  }
 
 #ifndef MBSEQV4L
   SEQ_LCD_LOGO_ScreenSaver_Disable();

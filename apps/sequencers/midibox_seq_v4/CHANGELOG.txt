@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.089
+~~~~~~~~~~~~~~~~~
+
+   o added DIN testmode which can be enabled from the MIOS terminal with the
+     "set din_testmode on" command to display button and encoder movements.
+
+
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~
 
