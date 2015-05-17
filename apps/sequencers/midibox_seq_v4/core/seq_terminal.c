@@ -550,6 +550,17 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	      }
 	    }
 	  }
+	} else if( strcmp(parameter, "din_testmode") == 0 ) {
+          int on_off = -1;
+          if( (parameter = strtok_r(NULL, separators, &brkt)) )
+            on_off = get_on_off(parameter);
+
+          if( on_off < 0 ) {
+            out("Expecting 'on' or 'off'");
+          } else {
+            app_din_testmode = on_off;
+            out("DIN testmode turned %s", on_off ? "on" : "off");
+          }
 	} else if( strcmp(parameter, "blm_port") == 0 ) {
 	  char *arg;
 	  if( !(arg = strtok_r(NULL, separators, &brkt)) ) {
@@ -831,6 +842,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
+  out("  set din_testmode <on|off>: change DIN (button/encoder) testmode (current: %s)", app_din_testmode ? "on" : "off");
   out("  set blm_port <off|in-port>: change BLM input port (same port is used for output)");
   out("  set rec_quantisation <1..100>: change record quantisation (default: 10%%, current: %d%%)\n", seq_record_quantize);
 
