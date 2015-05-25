@@ -144,9 +144,9 @@ extern void wavupa(); // waveform generation code
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// at 48kHz sample frequency and two channels, the sample buffer has to be refilled
-// at a rate of 48Khz / SAMPLE_BUFFER_SIZE
-#define SAMPLE_BUFFER_SIZE 8  // -> 8 L/R samples, 6 kHz refill rate (166 uS period)
+// at 35.1kHz sample frequency and two channels, the sample buffer has to be refilled
+// at a rate of 35.1Khz / SAMPLE_BUFFER_SIZE
+#define SAMPLE_BUFFER_SIZE 8  // -> 8 L/R samples, 4.4 kHz refill rate (227 uS period)
 
 
 /////////////////////////////////////////////////////////////////////////////

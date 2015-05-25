@@ -18,9 +18,9 @@ THUMB_SOURCE    = src/app.c \
 		  src/synth.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
-THUMB_AS_SOURCE =
+THUMB_AS_SOURCE = src/wave.s
 ARM_SOURCE      =
-ARM_AS_SOURCE   = src/wave.s
+ARM_AS_SOURCE   = 
 
 C_INCLUDE = 	-I ./src
 A_INCLUDE = 	-I ./src

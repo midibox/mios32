@@ -29,4 +29,8 @@
 # define MIOS32_I2S_MCLK_ENABLE  1
 #endif
 
+// Sample rate: use the same like in the original Goom project
+// (72 MHz / 2048)
+#define MIOS32_I2S_AUDIO_FREQ  35156
+
 #endif /* _MIOS32_CONFIG_H */
