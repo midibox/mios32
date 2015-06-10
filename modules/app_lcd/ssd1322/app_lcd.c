@@ -98,51 +98,50 @@ s32 APP_LCD_Init(u32 mode)
   APP_LCD_Cmd(0xae | 0); // Set_Display_Off
 
   APP_LCD_Cmd(0x15); // Set_Column_Address
-  APP_LCD_Data(0x1c);
-  APP_LCD_Data(0x5b);
+  APP_LCD_Data(0x1c);  
+  APP_LCD_Data(0x5b); 
 
   APP_LCD_Cmd(0x75); // Set_Row_Address
-  APP_LCD_Data(0x00);
-  APP_LCD_Data(0x3f);
+  APP_LCD_Data(0x00); 
+  APP_LCD_Data(0x3f); 
 
   APP_LCD_Cmd(0xca); // Set_Multiplex_Ratio
-  APP_LCD_Data(0x3f);
+  APP_LCD_Data(0x3f); 
 
   APP_LCD_Cmd(0xa0); // Set_Remap_Format
   APP_LCD_Data(0x14); 
   APP_LCD_Data(0x11); 
 
-
   APP_LCD_Cmd(0xb3); // Set_Display_Clock
-  APP_LCD_Data(0x22); 
+  APP_LCD_Data(0);
+  APP_LCD_Data(12);
 
   APP_LCD_Cmd(0xc1); // Set_Contrast_Current
-  APP_LCD_Data(0x78);
+  APP_LCD_Data(0xff);
 
   APP_LCD_Cmd(0xc7); // Set_Master_Current
   APP_LCD_Data(0x0f);
 
   APP_LCD_Cmd(0xb9); // Set_Linear_Gray_Scale_Table();
-  APP_LCD_Cmd(0x00); // enable gray scale table
+  APP_LCD_Cmd(0x00); // OLD  enable gray scale table
 
   APP_LCD_Cmd(0xb1); // Set_Phase_Length(0xE2);
-  APP_LCD_Data(0x56);
+  APP_LCD_Data(0x56); 
 
   APP_LCD_Cmd(0xbb); // Set_Precharge_Voltage(0x1F);
-  APP_LCD_Data(0x0);
+  APP_LCD_Data(0x0); 
 
   APP_LCD_Cmd(0xb6); // Set_Precharge_Period(0x08);
   APP_LCD_Data(0x08);
 
   APP_LCD_Cmd(0xbe); // Set_VCOMH(0x07);
-  APP_LCD_Data(0x00);
+  APP_LCD_Data(0x00); 
 
-  APP_LCD_Cmd(0xa4 | 0x02); // Set_Display_Mode(0x02);
+  APP_LCD_Cmd(0xa4 | 0x02); // OLD Set_Display_Mode(0x02);
 
   APP_LCD_Clear();
 
   APP_LCD_Cmd(0xae | 1); // Set_Display_On_Off(0x01);
-
 
   return (display_available & (1 << mios32_lcd_device)) ? 0 : -1; // return -1 if display not available
 }
