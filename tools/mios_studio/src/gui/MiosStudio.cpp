@@ -27,6 +27,7 @@
 //==============================================================================
 MiosStudio::MiosStudio()
     : batchMode(false)
+    , duggleMode(false)
     , uploadWindow(0)
     , midiInMonitor(0)
     , midiOutMonitor(0)
@@ -135,6 +136,8 @@ MiosStudio::MiosStudio()
                 }
             } else if( commandLineArray[i].startsWith("--query") ) {
                 batchJobs.add(String("query"));
+            } else if( commandLineArray[i].startsWith("--duggle") ) {
+                duggleMode = true;
             } else if( commandLineArray[i].startsWith("--upload_hex") ) {
                 String file = commandLineArray[i].substring(13);
                 file.trimCharactersAtStart(" \t\"'");
@@ -189,6 +192,10 @@ MiosStudio::MiosStudio()
             } else if( commandLineArray[i].startsWith("--gui_hide_keyboard") ) {
                 hideKeyboard = true;
             } else if( commandLineArray[i].startsWith("-psn") ) {
+                // ignore for MacOS
+            } else if( commandLineArray[i].startsWith("-NSDocumentRevisionsDebugMode") ) {
+                // ignore for MacOS
+            } else if( commandLineArray[i].startsWith("YES") ) {
                 // ignore for MacOS
             } else {
                 commandLineErrorMessages += String("ERROR: unknown command line parameter: ") + commandLineArray[i] + String("\n");
@@ -946,7 +953,7 @@ bool MiosStudio::perform(const InvocationInfo& info)
 
     case rescanDevices:
         // TK: doesn't always work, therefore some warnings ;-)
-        if( AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
+        if( !duggleMode && AlertWindow::showOkCancelBox(AlertWindow::WarningIcon,
                                          T("Rescan MIDI Devices"),
                                          T("Please note that the rescan function\nmostly doesn't work properly!\nIt's better to restart MIOS Studio!\n"),
                                          T("I've no idea what this means"),

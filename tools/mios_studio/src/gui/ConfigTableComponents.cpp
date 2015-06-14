@@ -154,7 +154,7 @@ void ConfigTableLabel::setRowAndColumn(const int newRow, const int newColumn)
 
     String content(owner.getTableString(row, columnId));
 
-    label->setText(content, false);
+    label->setText(content, sendNotification);
     if( !content.compare(T("no name available")) ) {
         label->setEnabled(false);
         label->setEditable(false);

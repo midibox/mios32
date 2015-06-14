@@ -88,13 +88,13 @@ void HexTextEditor::textEditorTextChanged(TextEditor &editor)
 
     if( isEnabled() && isVisible() ) {
         if( invalidBytesFound )
-            statusLabel->setText(T("Invalid Syntax!"), true);
+            statusLabel->setText(T("Invalid Syntax!"), sendNotification);
         else if( numBytes == 0 )
-            statusLabel->setText(String::empty, true);
+            statusLabel->setText(String::empty, sendNotification);
         else if( numBytes == 1 )
-            statusLabel->setText(T("1 byte"), true);
+            statusLabel->setText(T("1 byte"), sendNotification);
         else
-            statusLabel->setText(String(numBytes) + T(" bytes"), true);
+            statusLabel->setText(String(numBytes) + T(" bytes"), sendNotification);
     }
 }
 

@@ -126,6 +126,7 @@ public:
 protected:
     //==============================================================================
     bool batchMode;
+    bool duggleMode;
     String commandLineErrorMessages;
     String commandLineInfoMessages;
     String inPortFromCommandLine;
