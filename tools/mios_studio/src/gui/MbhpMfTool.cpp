@@ -199,7 +199,7 @@ void MbhpMfToolConfigGlobals::resized()
 void MbhpMfToolConfigGlobals::sliderValueChanged(Slider* slider)
 {
     if( slider == pwmStepsSlider ) {
-        pwmStepsLabel->setText(String::formatted(T("PWM Steps (resulting period: %4.2f mS):"), (float)(slider->getValue()*0.05)), true);
+        pwmStepsLabel->setText(String::formatted(T("PWM Steps (resulting period: %4.2f mS):"), (float)(slider->getValue()*0.05)), sendNotification);
     }
 
     // request SysEx update
@@ -700,7 +700,7 @@ void MbhpMfToolCalibration::sliderValueChanged(Slider* slider)
 {
     if( slider == traceScaleSlider ) {
         calibrationCurveLabel->setText(String::
-formatted(T("x=%d mS per unit, y=256 steps per unit"), (unsigned)traceScaleSlider->getValue()*50), true);
+formatted(T("x=%d mS per unit, y=256 steps per unit"), (unsigned)traceScaleSlider->getValue()*50), sendNotification);
         Array<uint16> emptyTrace;
         calibrationCurve->setTrace(emptyTrace);
     } else if( slider == traceSlider ) {

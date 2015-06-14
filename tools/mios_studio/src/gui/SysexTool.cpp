@@ -359,7 +359,7 @@ void SysexToolReceive::buttonClicked(Button* buttonThatWasClicked)
         receiveStopButton->setEnabled(true);
         receiveFileChooser->setEnabled(false);
         receivedData.clear();
-        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), true);
+        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), sendNotification);
     } else if( buttonThatWasClicked == receiveStopButton ) {
         receiveStopButton->setEnabled(false);
         receiveStartButton->setEnabled(true);
@@ -398,7 +398,7 @@ void SysexToolReceive::filenameComponentChanged(FilenameComponent *fileComponent
                 uint8 *data = &saveData.getReference(0);
                 outFileStream->write(data, saveData.size());
                 delete outFileStream;
-                statusLabel->setText(String(saveData.size()) + T(" bytes saved"), true);
+                statusLabel->setText(String(saveData.size()) + T(" bytes saved"), sendNotification);
             }
         }
 
@@ -419,7 +419,7 @@ void SysexToolReceive::handleIncomingMidiMessage(const MidiMessage& message, uin
     if( !receiveStartButton->isEnabled() ) { // !enabled means that we are ready for receive
         Array<uint8> data(message.getRawData(), message.getRawDataSize());
         receivedData.addArray(data);
-        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), true);
+        statusLabel->setText(String(receivedData.size()) + T(" bytes received"), sendNotification);
     }
 }
 

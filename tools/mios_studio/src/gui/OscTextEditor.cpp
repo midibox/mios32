@@ -62,7 +62,7 @@ void OscTextEditor::textEditorTextChanged(TextEditor &editor)
 {
     String statusMessage;
     currentBinary = OscHelper::string2Packet(getText(), statusMessage);
-    statusLabel->setText(statusMessage, true);
+    statusLabel->setText(statusMessage, sendNotification);
 }
 
 void OscTextEditor::textEditorReturnKeyPressed(TextEditor &editor)

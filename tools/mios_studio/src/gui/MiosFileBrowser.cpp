@@ -175,11 +175,11 @@ MiosFileBrowser::MiosFileBrowser(MiosStudio *_miosStudio)
 {
     addAndMakeVisible(editLabel = new Label(T("Edit"), String::empty));
     editLabel->setJustificationType(Justification::left);
-    editLabel->setText(String::empty, true);
+    editLabel->setText(String::empty, sendNotification);
 
     addAndMakeVisible(statusLabel = new Label(T("Status"), String::empty));
     statusLabel->setJustificationType(Justification::left);
-    statusLabel->setText(T("Please connect to MIOS32 core by pressing the Update button!"), true);
+    statusLabel->setText(T("Please connect to MIOS32 core by pressing the Update button!"), sendNotification);
 
     addAndMakeVisible(updateButton = new TextButton(T("Update")));
     updateButton->addListener(this);
@@ -301,7 +301,7 @@ void MiosFileBrowser::setStatus(const String& str)
     if( miosStudio->runningInBatchMode() ) {
         std::cout << str << std::endl;
     } else {
-        statusLabel->setText(str, true);
+        statusLabel->setText(str, sendNotification);
     }
 }
 
@@ -373,7 +373,7 @@ void MiosFileBrowser::buttonClicked(Button* buttonThatWasClicked)
             hexEditor->setReadOnly(true);
             textEditor->clear();
             textEditor->setReadOnly(true);
-            editLabel->setText(String::empty, true);
+            editLabel->setText(String::empty, sendNotification);
 
             disableFileButtons(); // to disable also editor buttons
             enableFileButtons();
@@ -702,11 +702,11 @@ bool MiosFileBrowser::downloadFinished(void)
     if( openHexEditorAfterRead ) {
         openHexEditor(currentReadData);
         setStatus(T("Editing ") + currentReadFileName);
-        editLabel->setText(currentReadFileName, true);
+        editLabel->setText(currentReadFileName, sendNotification);
     } else if( openTextEditorAfterRead ) {
         openTextEditor(currentReadData);
         setStatus(T("Editing ") + currentReadFileName);
-        editLabel->setText(currentReadFileName, true);
+        editLabel->setText(currentReadFileName, sendNotification);
     } else if( currentReadFileStream ) {
         currentReadFileStream->write((uint8 *)&currentReadData.getReference(0), currentReadData.size());
         delete currentReadFileStream;
