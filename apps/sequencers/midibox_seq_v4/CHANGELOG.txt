@@ -12,6 +12,9 @@ MIDIboxSEQ V4.089
    o added DIN testmode which can be enabled from the MIOS terminal with the
      "set din_testmode on" command to display button and encoder movements.
 
+   o added "Roll Gate" as new optional trigger layer assignment.
+     It gates the Roll or Roll2 value which is configured in a parameter layer.
+
 
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~

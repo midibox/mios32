@@ -171,6 +171,7 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       case SEQ_CC_ASG_RANDOM_GATE: tcc->trg_assignments.random_gate = value; break;
       case SEQ_CC_ASG_RANDOM_VALUE: tcc->trg_assignments.random_value = value; break;
       case SEQ_CC_ASG_NO_FX: tcc->trg_assignments.no_fx = value; break;
+      case SEQ_CC_ASG_ROLL_GATE: tcc->trg_assignments.roll_gate = value; break;
 
       case SEQ_CC_PAR_ASG_DRUM_LAYER_A:
 	tcc->par_assignment_drum[0] = value;
@@ -369,6 +370,7 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
     case SEQ_CC_ASG_RANDOM_GATE: return tcc->trg_assignments.random_gate;
     case SEQ_CC_ASG_RANDOM_VALUE: return tcc->trg_assignments.random_value;
     case SEQ_CC_ASG_NO_FX: return tcc->trg_assignments.no_fx;
+    case SEQ_CC_ASG_ROLL_GATE: return tcc->trg_assignments.roll_gate;
 
     case SEQ_CC_PAR_ASG_DRUM_LAYER_A: return tcc->par_assignment_drum[0];
     case SEQ_CC_PAR_ASG_DRUM_LAYER_B: return tcc->par_assignment_drum[1];

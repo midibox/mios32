@@ -1386,20 +1386,22 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		  // roll/flam?
 		  // get roll mode from parameter layer
-		  u8 roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument, layer_muted);
+		  u8 roll_mode = 0;
 		  u8 roll2_mode = 0; // taken if roll1 not assigned
-		  // with less priority (parameter == 0): force roll mode if Roll trigger is set
-		  if( nth_trigger == SEQ_PAR_TYPE_NTH_ROLL || (!roll_mode && SEQ_TRG_RollGet(track, t->step, instrument)) )
-		    roll_mode = 0x0a; // 2D10
-		  // if roll mode != 0: increase number of triggers
-		  if( roll_mode ) {
-		    triggers = ((roll_mode & 0x30)>>4) + 2;
-		  } else {
-		    roll2_mode = SEQ_PAR_Roll2ModeGet(track, t->step, instrument, layer_muted);
-		    if( roll2_mode )
-		      triggers = (roll2_mode >> 5) + 2;
+		  if( SEQ_TRG_RollGateGet(track, t->step, instrument) ) { // optional roll gate
+		    roll_mode = SEQ_PAR_RollModeGet(track, t->step, instrument, layer_muted);
+		    // with less priority (parameter == 0): force roll mode if Roll trigger is set
+		    if( nth_trigger == SEQ_PAR_TYPE_NTH_ROLL || (!roll_mode && SEQ_TRG_RollGet(track, t->step, instrument)) )
+		      roll_mode = 0x0a; // 2D10
+		    // if roll mode != 0: increase number of triggers
+		    if( roll_mode ) {
+		      triggers = ((roll_mode & 0x30)>>4) + 2;
+		    } else {
+		      roll2_mode = SEQ_PAR_Roll2ModeGet(track, t->step, instrument, layer_muted);
+		      if( roll2_mode )
+			triggers = (roll2_mode >> 5) + 2;
+		    }
 		  }
-
 
 		  if( triggers > 1 ) {
 		    if( roll2_mode ) {
