@@ -27,6 +27,8 @@
 //   - 64 steps for 16 drums, 2 trigger layers: 16*64*2/8 = 256
 // don't change this value - it directly affects the constraints of the bank file format!
 
+// number of trigger assignments (must be alligned with seq_trg_assignments_t)
+#define SEQ_TRG_ASG_NUM 9
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -34,17 +36,18 @@
 
 typedef union {
   struct {
-    u32 ALL;
+    unsigned long long ALL;
   };
   struct {
-    u8 gate:4;
-    u8 accent:4;
-    u8 roll:4;
-    u8 glide:4;
-    u8 skip:4;
-    u8 random_gate:4;
-    u8 random_value:4;
-    u8 no_fx:4;
+    unsigned long long gate:4;
+    unsigned long long accent:4;
+    unsigned long long roll:4;
+    unsigned long long glide:4;
+    unsigned long long skip:4;
+    unsigned long long random_gate:4;
+    unsigned long long random_value:4;
+    unsigned long long no_fx:4;
+    unsigned long long roll_gate:4;
   };
 } seq_trg_assignments_t;
 
@@ -75,6 +78,7 @@ extern s32 SEQ_TRG_SkipGet(u8 track, u16 step, u8 trg_instrument);
 extern s32 SEQ_TRG_RandomGateGet(u8 track, u16 step, u8 trg_instrument);
 extern s32 SEQ_TRG_RandomValueGet(u8 track, u16 step, u8 trg_instrument);
 extern s32 SEQ_TRG_NoFxGet(u8 track, u16 step, u8 trg_instrument);
+extern s32 SEQ_TRG_RollGateGet(u8 track, u16 step, u8 trg_instrument);
 
 extern s32 SEQ_TRG_Set(u8 track, u16 step, u8 trg_layer, u8 trg_instrument, u8 value);
 extern s32 SEQ_TRG_Set8(u8 track, u8 step8, u8 trg_layer, u8 trg_instrument, u8 value);
@@ -86,6 +90,7 @@ extern s32 SEQ_TRG_SkipSet(u8 track, u16 step, u8 trg_instrument, u8 value);
 extern s32 SEQ_TRG_RandomGateSet(u8 track, u16 step, u8 trg_instrument, u8 value);
 extern s32 SEQ_TRG_RandomValueSet(u8 track, u16 step, u8 trg_instrument, u8 value);
 extern s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 trg_instrument, u8 value);
+extern s32 SEQ_TRG_RollGateSet(u8 track, u16 step, u8 trg_instrument, u8 value);
 
 extern char *SEQ_TRG_TypeStr(u8 trg_num);
 extern char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer);

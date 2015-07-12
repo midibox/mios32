@@ -40,7 +40,7 @@ static u8 trg_layer_num_steps8[SEQ_CORE_NUM_TRACKS];
 static u8 trg_layer_num_layers[SEQ_CORE_NUM_TRACKS];
 static u8 trg_layer_num_instruments[SEQ_CORE_NUM_TRACKS];
 
-static const char seq_trg_names[8][6] = {
+static const char seq_trg_names[SEQ_TRG_ASG_NUM][6] = {
   "Gate ", // 0
   "Acc. ", // 1
   "Roll ", // 2
@@ -48,7 +48,8 @@ static const char seq_trg_names[8][6] = {
   " Skip", // 4
   " R.G ", // 5
   " R.V ", // 6
-  "No Fx"  // 7
+  "No Fx", // 7
+  "RollG", // 8
 };
 
 
@@ -250,6 +251,13 @@ s32 SEQ_TRG_NoFxGet(u8 track, u16 step, u8 trg_instrument)
   return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 0;
 }
 
+s32 SEQ_TRG_RollGateGet(u8 track, u16 step, u8 trg_instrument)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll_gate;
+  return trg_assignment ? SEQ_TRG_Get(track, step, trg_assignment-1, trg_instrument) : 1;
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // sets value of a given trigger layer
@@ -356,6 +364,13 @@ s32 SEQ_TRG_NoFxSet(u8 track, u16 step, u8 trg_instrument, u8 value)
   return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
 }
 
+s32 SEQ_TRG_RollGateSet(u8 track, u16 step, u8 trg_instrument, u8 value)
+{
+  u8 trg_assignment = seq_cc_trk[track].trg_assignments.roll_gate;
+  return trg_assignment ? SEQ_TRG_Set(track, step, trg_assignment-1, trg_instrument, value) : -1;
+}
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This function returns the string to a trigger assignment type
@@ -373,20 +388,20 @@ char *SEQ_TRG_TypeStr(u8 trg_num)
 /////////////////////////////////////////////////////////////////////////////
 char *SEQ_TRG_AssignedTypeStr(u8 track, u8 trg_layer)
 {
-  u32 trg_assignments = seq_cc_trk[track].trg_assignments.ALL;
-  u32 pattern = trg_layer+1;
-  u32 mask = 0xf;
+  unsigned long long trg_assignments = seq_cc_trk[track].trg_assignments.ALL;
+  unsigned long long pattern = trg_layer+1;
+  unsigned long long mask = 0xf;
   int assigned = -1;
   int num = 0;
 
   int i;
-  for(i=0; i<8; ++i) {
+  for(i=0; i<SEQ_TRG_ASG_NUM; ++i) {
     if( (trg_assignments & mask) == pattern ) {
       assigned = i;
       ++num;
     }
-    mask <<= 4;
-    pattern <<= 4;
+    mask <<= 4ULL;
+    pattern <<= 4ULL;
   }
 
   if( !num )

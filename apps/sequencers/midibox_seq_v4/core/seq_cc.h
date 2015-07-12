@@ -140,7 +140,8 @@
 #define SEQ_CC_ASG_RANDOM_GATE	0x65
 #define SEQ_CC_ASG_RANDOM_VALUE	0x66
 #define SEQ_CC_ASG_NO_FX	0x67
-// free: 0x68..0x6f, evtl. for more trigger types
+#define SEQ_CC_ASG_ROLL_GATE	0x68
+// free: 0x69..0x6f, evtl. for more trigger types
 
 #define SEQ_CC_ECHO_REPEATS	0x70
 #define SEQ_CC_ECHO_DELAY	0x71

@@ -339,6 +339,8 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    if( flags.CFG ) tcc->trg_assignments.random_value = value;
 	  } else if( strcmp(parameter, "TriggerAsgnNoFx") == 0 ) {
 	    if( flags.CFG ) tcc->trg_assignments.no_fx = value;
+	  } else if( strcmp(parameter, "TriggerAsngRollGate") == 0 ) {
+	    if( flags.CFG ) tcc->trg_assignments.roll_gate = value;
 	  } else if( strcmp(parameter, "DrumParAsgnA") == 0 ) {
 	    if( flags.CFG ) tcc->par_assignment_drum[0] = value;
 	  } else if( strcmp(parameter, "DrumParAsgnB") == 0 ) {
@@ -667,6 +669,9 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "TriggerAsgnNoFx %d (%c)\n", tcc->trg_assignments.no_fx, trg_asg_str[tcc->trg_assignments.no_fx]);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TriggerAsngRollGate %d (%c)\n", tcc->trg_assignments.roll_gate, trg_asg_str[tcc->trg_assignments.roll_gate]);
   FLUSH_BUFFER;
 
   

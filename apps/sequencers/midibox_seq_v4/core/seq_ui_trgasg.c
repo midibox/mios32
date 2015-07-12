@@ -25,7 +25,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       9
+#define NUM_OF_ITEMS       10
 #define ITEM_GXTY          0
 #define ITEM_GATE          1
 #define ITEM_ACCENT        2
@@ -35,6 +35,7 @@
 #define ITEM_RANDOM_GATE   6
 #define ITEM_RANDOM_VALUE  7
 #define ITEM_NO_FX         8
+#define ITEM_ROLL_GATE     9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_RANDOM_GATE: *gp_leds = 0x0040; break;
     case ITEM_RANDOM_VALUE: *gp_leds = 0x0080; break;
     case ITEM_NO_FX: *gp_leds = 0x0100; break;
+    case ITEM_ROLL_GATE: *gp_leds = 0x0200; break;
   }
 
   return 0; // no error
@@ -111,6 +113,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP10:
+      ui_selected_item = ITEM_ROLL_GATE;
+      break;
+
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
@@ -134,6 +139,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   case ITEM_RANDOM_GATE:   cc_asg = SEQ_CC_ASG_RANDOM_GATE; break;
   case ITEM_RANDOM_VALUE:  cc_asg = SEQ_CC_ASG_RANDOM_VALUE; break;
   case ITEM_NO_FX:         cc_asg = SEQ_CC_ASG_NO_FX; break;
+  case ITEM_ROLL_GATE:     cc_asg = SEQ_CC_ASG_ROLL_GATE; break;
   }
 
   if( cc_asg ) {
@@ -208,8 +214,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. Gate Acc. Roll Glide Skip R.G  R.V No Fx                                  
-  // G1T1   A    B    C    D     E   F    G    H                                    
+  // Trk. Gate Acc. Roll Glide Skip R.G  R.V NoFx RollGate                           
+  // G1T1   A    B    C    D     E   F    G    H     -                               
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -218,10 +224,10 @@ static s32 LCD_Handler(u8 high_prio)
   SEQ_LCD_PrintString("Trk. ");
 
   int i;
-  for(i=0; i<8; ++i)
+  for(i=0; i<SEQ_TRG_ASG_NUM; ++i)
     SEQ_LCD_PrintString(SEQ_TRG_TypeStr(i));
  
-  SEQ_LCD_PrintSpaces(35);
+  SEQ_LCD_PrintSpaces(80 - 5 - SEQ_TRG_ASG_NUM*5);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -236,7 +242,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
 
-  for(i=0; i<8; ++i) {
+  for(i=0; i<SEQ_TRG_ASG_NUM; ++i) {
     SEQ_LCD_PrintChar(' ');
     SEQ_LCD_PrintChar(((i+1) == ui_selected_item) ? '>' : ' ');
 
@@ -252,7 +258,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(35);
+  SEQ_LCD_PrintSpaces(80 - 5 - SEQ_TRG_ASG_NUM*5);
 
   return 0; // no error
 }
