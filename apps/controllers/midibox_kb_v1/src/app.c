@@ -305,7 +305,7 @@ static void TASK_Period_1mS(void *pvParameters)
     {
       int pin;
 
-      for(pin=0; pin<6; ++pin) {
+      for(pin=0; pin<8; ++pin) {
 	KEYBOARD_AIN_NotifyChange(pin, MIOS32_AIN_PinGet(pin));
       }
     }

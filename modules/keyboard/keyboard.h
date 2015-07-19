@@ -24,10 +24,11 @@
 
 
 // AIN components
-#define KEYBOARD_AIN_NUM        3
+#define KEYBOARD_AIN_NUM        4
 #define KEYBOARD_AIN_PITCHWHEEL 0
 #define KEYBOARD_AIN_MODWHEEL   1
 #define KEYBOARD_AIN_SUSTAIN    2
+#define KEYBOARD_AIN_EXPRESSION 3
 
 
 // send a note over an external hook
