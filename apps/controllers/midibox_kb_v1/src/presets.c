@@ -59,7 +59,8 @@ s32 PRESETS_Init(u32 mode)
   if( status < 0 ||
       (magic != EEPROM_MAGIC_NUMBER &&
        magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 &&
-       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2) ) {
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2 &&
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT3) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] magic number not found (was 0x%08x) - initialize EEPROM!\n", magic);
 #endif
@@ -81,7 +82,8 @@ s32 PRESETS_Init(u32 mode)
   }
 
   if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ||
-      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT2 ) {
+      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT2 ||
+      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT3 ) {
 
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] new format detected: clearing upper part of EEPROM...\n");
@@ -148,10 +150,13 @@ s32 PRESETS_Init(u32 mode)
 
       kc->delay_fastest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST + offset);
       kc->delay_slowest                    = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST + offset);
-      kc->delay_fastest_black_keys         = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_BLACK_KEYS + offset);
-      kc->delay_fastest_release            = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE + offset);
-      kc->delay_fastest_release_black_keys = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE_BLACK_KEYS + offset);
-      kc->delay_slowest_release 	   = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST_RELEASE + offset);
+
+      if( magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 && magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2 ) {
+	kc->delay_fastest_black_keys         = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_BLACK_KEYS + offset);
+	kc->delay_fastest_release            = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE + offset);
+	kc->delay_fastest_release_black_keys = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_FASTEST_RELEASE_BLACK_KEYS + offset);
+	kc->delay_slowest_release 	   = PRESETS_Read16(PRESETS_ADDR_KB1_DELAY_SLOWEST_RELEASE + offset);
+      }
 
       if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ) {
 	u16 ain_assign = PRESETS_Read16(0xcb + offset);
@@ -161,7 +166,22 @@ s32 PRESETS_Init(u32 mode)
 	u16 ctrl_assign = PRESETS_Read16(0xcc + offset);
 	kc->ain_ctrl[KEYBOARD_AIN_PITCHWHEEL] = (ctrl_assign >> 0) & 0xff;
 	kc->ain_ctrl[KEYBOARD_AIN_MODWHEEL]   = (ctrl_assign >> 8) & 0xff;
+      } else if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT2 || magic == EEPROM_MAGIC_NUMBER_OLDFORMAT3 ) {
+	int i;
+	for(i=0; i<3; ++i) {
+	  u16 ain_cfg1 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG1_1 + i*2 + offset);
+	  kc->ain_pin[i]  = (ain_cfg1 >> 0) & 0xff;
+	  kc->ain_ctrl[i] = (ain_cfg1 >> 8) & 0xff;
+
+	  u16 ain_cfg2 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset);
+	  kc->ain_min[i] = (ain_cfg2 >> 0) & 0xff;
+	  kc->ain_max[i] = (ain_cfg2 >> 8) & 0xff;
+	}
       } else {
+#if KEYBOARD_AIN_NUM != 4
+# error "please adapt the code below"
+#endif
+
 	// new format
 	int i;
 	for(i=0; i<KEYBOARD_AIN_NUM; ++i) {
@@ -174,14 +194,12 @@ s32 PRESETS_Init(u32 mode)
 	  kc->ain_max[i] = (ain_cfg2 >> 8) & 0xff;
 	}
 
-#if KEYBOARD_AIN_NUM != 3
-# error "please adapt the code below"
-#endif
 	u16 ain_cfg4 = PRESETS_Read16(PRESETS_ADDR_KB1_AIN_CFG4 + offset);
 	kc->ain_bandwidth_ms = (ain_cfg4 >> 0) & 0xff;
 	kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] = (ain_cfg4 >>  8) & 1;
 	kc->ain_inverted[KEYBOARD_AIN_MODWHEEL]   = (ain_cfg4 >>  9) & 1;
 	kc->ain_inverted[KEYBOARD_AIN_SUSTAIN]    = (ain_cfg4 >> 10) & 1;
+	kc->ain_inverted[KEYBOARD_AIN_EXPRESSION] = (ain_cfg4 >> 11) & 1;
 	kc->ain_sustain_switch                    = (ain_cfg4 >> 15) & 1;
       }
     }
@@ -327,7 +345,7 @@ s32 PRESETS_StoreAll(void)
 	status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG1_2 + i*2 + offset, ain_cfg2);
       }
 
-#if KEYBOARD_AIN_NUM != 3
+#if KEYBOARD_AIN_NUM != 4
 # error "please adapt the code below"
 #endif
       u16 ain_cfg4 =
@@ -335,6 +353,7 @@ s32 PRESETS_StoreAll(void)
 	(kc->ain_inverted[KEYBOARD_AIN_PITCHWHEEL] ? 0x0100 : 0) |
 	(kc->ain_inverted[KEYBOARD_AIN_MODWHEEL]   ? 0x0200 : 0) |
 	(kc->ain_inverted[KEYBOARD_AIN_SUSTAIN]    ? 0x0400 : 0) |
+	(kc->ain_inverted[KEYBOARD_AIN_EXPRESSION] ? 0x0800 : 0) |
 	(kc->ain_sustain_switch                    ? 0x8000 : 0);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG4 + offset, ain_cfg4);
     }
