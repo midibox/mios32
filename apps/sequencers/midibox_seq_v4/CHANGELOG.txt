@@ -2138,6 +2138,23 @@ http://midibox.org/forums/topic/19471-note-off-hex-80/?p=169684
 Global Groove Pattern:
 http://midibox.org/forums/topic/19622-global-groove/
 ----------------------------------------------------------
+http://midibox.org/forums/topic/19018-seqv4-my-collection-of-feature-proposals/?p=170899
+Fast copy&paste to increase length of a track:
+1. press and hold "copy" button
+2. press paste button
+3. pattern length is doubled along with all layer informations
+----------------------------------------------------------
+http://midibox.org/forums/topic/19018-seqv4-my-collection-of-feature-proposals/?p=170899
+Euclid generator: allow to select the note layer into which the pattern will be copied
+----------------------------------------------------------
+http://midibox.org/forums/topic/19018-seqv4-my-collection-of-feature-proposals/?p=170899
+Optional Save&Take behaviour:
+while in phrase mode (and using the save&take over patterns function):
+-song 1  „save and take over patterns“: a1-p1
+-song 2  „save and take over patterns“: a2-p2
+-…
+-song 8  „save and take over patterns“: a8-p8
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
