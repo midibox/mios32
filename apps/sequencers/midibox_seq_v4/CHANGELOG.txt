@@ -15,6 +15,10 @@ MIDIboxSEQ V4.089
    o added "Roll Gate" as new optional trigger layer assignment.
      It gates the Roll or Roll2 value which is configured in a parameter layer.
 
+   o Euclid Generator: parameter layer into which the pattern will be copied
+     now selectable.
+     Velocity/Accent will only be changed if the first parameter layer is selected.
+
 
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~

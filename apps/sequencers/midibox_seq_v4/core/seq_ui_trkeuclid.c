@@ -40,8 +40,8 @@
 #define NUM_OF_ITEMS         9
 #define ITEM_GXTY            0
 #define ITEM_TRK_LENGTH      1
-#define ITEM_TRG_SELECT      2
-#define ITEM_DRUM_NOTE       3
+#define ITEM_PARTRG_SELECT   2
+#define ITEM_PAR_VALUE       3
 #define ITEM_DRUM_VEL_N      4
 #define ITEM_DRUM_VEL_A      5
 #define ITEM_RND_ACC_PROB    6
@@ -62,6 +62,13 @@ static u8 euclid_offset[NUM_EUCLID_CFG] = { 0,  0,  0,  0,  0,  0,  0,  0,  0,  
 static u8 rnd_acc_probability = 50;
 static u8 rnd_acc_n = 100; // only for non-drum layers
 static u8 rnd_acc_a = 127; // only for non-drum layers
+static u8 par_val[16] = { // used parameter layer values
+  0x3c, 0x3c, 0x3c, 0x3c,
+  0x3c, 0x3c, 0x3c, 0x3c,
+  0x3c, 0x3c, 0x3c, 0x3c,
+  0x3c, 0x3c, 0x3c, 0x3c,
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -83,8 +90,8 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( ui_selected_item ) {
     case ITEM_GXTY:          *gp_leds = 0x0001; break;
     case ITEM_TRK_LENGTH:    *gp_leds = 0x0006; break;
-    case ITEM_TRG_SELECT:    *gp_leds = 0x0008; break;
-    case ITEM_DRUM_NOTE:     *gp_leds = 0x0010; break;
+    case ITEM_PARTRG_SELECT: *gp_leds = 0x0008; break;
+    case ITEM_PAR_VALUE:     *gp_leds = 0x0010; break;
     case ITEM_DRUM_VEL_N:    *gp_leds = 0x0020; break;
     case ITEM_DRUM_VEL_A:    *gp_leds = 0x0040; break;
     case ITEM_RND_ACC_PROB:  *gp_leds = 0x0080; break;
@@ -123,11 +130,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP4:
-      ui_selected_item = ITEM_TRG_SELECT;
+      ui_selected_item = ITEM_PARTRG_SELECT;
       break;
 
     case SEQ_UI_ENCODER_GP5:
-      ui_selected_item = ITEM_DRUM_NOTE;
+      ui_selected_item = ITEM_PAR_VALUE;
       break;
 
     case SEQ_UI_ENCODER_GP6:
@@ -177,22 +184,25 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
   } break;
 
-  case ITEM_TRG_SELECT: {
+  case ITEM_PARTRG_SELECT: {
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       u8 num_drums = SEQ_TRG_NumInstrumentsGet(visible_track);
       return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_drums-1, incrementer);
     } else {
-      //u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
-      //return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, num_t_layers-1, incrementer);
-      return -1;
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
+      return SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, num_p_layers-1, incrementer);
     }
   } break;
 
-  case ITEM_DRUM_NOTE: {
+  case ITEM_PAR_VALUE: {
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       return SEQ_UI_CC_Inc(SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, 0, 127, incrementer);
     } else {
-      return -1; // not supported
+      if( SEQ_UI_Var8_Inc(&par_val[ui_selected_par_layer], 0, 127, incrementer) > 0 ) {
+	EuclidGenerator(visible_track, (int)euclid_length[euclid_layer]+1, euclid_pulses[euclid_layer], euclid_offset[euclid_layer]);
+	return 1;
+      }
+      return 0;
     }
   } break;
 
@@ -246,8 +256,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     // generate new pattern
     EuclidGenerator(visible_track, (int)euclid_length[euclid_layer]+1, euclid_pulses[euclid_layer], euclid_offset[euclid_layer]);
-    // +accent
-    AccentGenerator(visible_track, (int)euclid_length[euclid_layer]+1);
+
+    // +accent if drum track or first par layer
+    if( event_mode == SEQ_EVENT_MODE_Drum || ui_selected_par_layer == 0 ) {
+      AccentGenerator(visible_track, (int)euclid_length[euclid_layer]+1);
+    }
 
     return 1;
   } break;
@@ -327,8 +340,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. TrkLength           VelN VelA RndA Len Pulses Offs.    *..*..*..*..*.*.*..*
-  // G1T1   64/128             100  127  50%  16    6     0                          
+  // Trk. TrkLength ParA Val. VelN VelA RndA Len Pulses Offs.    *..*..*..*..*.*.*..*
+  // G1T1   64/128  Note Orig  100  127  50%  16    6     0                          
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
@@ -341,7 +354,8 @@ static s32 LCD_Handler(u8 high_prio)
   if( event_mode == SEQ_EVENT_MODE_Drum ) {
     SEQ_LCD_PrintString("Drum Note VelN VelA RndA ");
   } else {
-    SEQ_LCD_PrintString("          VelN VelA RndA ");
+    SEQ_LCD_PrintFormattedString("Par%c", 'A'+ui_selected_par_layer);
+    SEQ_LCD_PrintString(" Val. VelN VelA RndA ");
   }
   SEQ_LCD_PrintString("Len Pulses Offs.    ");
 
@@ -353,7 +367,12 @@ static s32 LCD_Handler(u8 high_prio)
 
     int i;
     for(i=0; i<max_trigger; ++i) {
-      u8 gate = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
+      u8 gate;
+      if( event_mode == SEQ_EVENT_MODE_Drum || ui_selected_par_layer == 0 ) {
+	gate = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
+      } else {
+	gate = SEQ_PAR_Get(visible_track, i, ui_selected_par_layer, ui_selected_instrument) > 0;
+      }
       u8 accent = !gate ? 0 : SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument);
 
       if( gate && !accent && tcc->link_par_layer_velocity >= 0 ) {
@@ -399,25 +418,34 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_TRG_SELECT && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_PARTRG_SELECT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(5);
   } else {
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
     } else {
-      //SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, ui_selected_trg_layer));
-      SEQ_LCD_PrintSpaces(5);
+      SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
     }
   }
 
   /////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(1);
-  if( event_mode != SEQ_EVENT_MODE_Drum || (ui_selected_item == ITEM_DRUM_NOTE && ui_cursor_flash) ) {
-    SEQ_LCD_PrintSpaces(3);
+  if( ui_selected_item == ITEM_PAR_VALUE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintSpaces(1);
+      SEQ_LCD_PrintNote(SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument));
+      SEQ_LCD_PrintSpaces(1);
+    } else {
+      if( ui_selected_par_layer == 0 ) {
+	SEQ_LCD_PrintString("Orig ");
+      } else {
+	SEQ_LCD_PrintLayerValue(visible_track, ui_selected_par_layer, par_val[ui_selected_par_layer]);
+	SEQ_LCD_PrintSpaces(1);
+      }
+    }
   }
-  SEQ_LCD_PrintSpaces(2);
+  SEQ_LCD_PrintSpaces(1);
 
   /////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_DRUM_VEL_N && ui_cursor_flash ) {
@@ -502,21 +530,30 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
   u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
   u16 num_steps = SEQ_TRG_NumStepsGet(track);
   u8 instrument = (event_mode == SEQ_EVENT_MODE_Drum) ? ui_selected_instrument : 0;
+  u8 modify_par_layer = event_mode != SEQ_EVENT_MODE_Drum && ui_selected_par_layer > 0;
+
+
+  // to simplify code
+#define EUCLID_SET_GATE(xstep, xgate) if( modify_par_layer ) {		\
+                                        SEQ_PAR_Set(track, xstep, ui_selected_par_layer, instrument, (xgate) ? par_val[ui_selected_par_layer] : 0); \
+                                      } else { \
+                                        SEQ_TRG_GateSet(track, xstep, instrument, xgate); \
+                                      }
 
   if( pulses >= steps ) {
     u16 step;
     for(step=0; step<num_steps; ++step) {
-      SEQ_TRG_GateSet(track, step, instrument, 1);
+      EUCLID_SET_GATE(step, 1);
     }
   } else if( pulses == 0 ) {
     u16 step;
     for(step=0; step<num_steps; ++step) {
-      SEQ_TRG_GateSet(track, step, instrument, 0);
+      EUCLID_SET_GATE(step, 0);
     }
   } else if( steps == 1 ) {
     u16 step;
     for(step=0; step<num_steps; ++step) {
-      SEQ_TRG_GateSet(track, step, instrument, (pulses && step == offset) ? 1 : 0);
+      EUCLID_SET_GATE(step, (pulses && step == offset) ? 1 : 0);
     }
   } else {
     int pauses = steps - pulses;
@@ -532,14 +569,14 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
 
 	int i;
 	for(i=0; i<pulses; ++i) {
-	  SEQ_TRG_GateSet(track, loop_offset + step, instrument, 1);
+	  EUCLID_SET_GATE(loop_offset + step, 1);
 	  if( ++processed_steps >= steps )
 	    break;
 	  step = (step + 1) % steps;
 	  
 	  int j;
 	  for(j=0; j<per_pulse; ++j) {
-	    SEQ_TRG_GateSet(track, loop_offset + step, instrument, 0);
+	    EUCLID_SET_GATE(loop_offset + step, 0);
 	    if( ++processed_steps >= steps )
 	      break;
 	    step = (step + 1) % steps;
@@ -549,7 +586,7 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
 	    break;
 
 	  if( i < remainder ) {
-	    SEQ_TRG_GateSet(track, loop_offset + step, instrument, 0);
+	    EUCLID_SET_GATE(loop_offset + step, 0);
 	    if( ++processed_steps >= steps )
 	      break;
 	    step = (step + 1) % steps;
@@ -570,19 +607,19 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
 
 	int i;
 	for(i=0; i<pauses; ++i) {
-	  SEQ_TRG_GateSet(track, loop_offset + step, instrument, 1);
+	  EUCLID_SET_GATE(loop_offset + step, 1);
 	  if( ++processed_steps >= steps )
 	    break;
 	  step = (step + 1) % steps;
 
-	  SEQ_TRG_GateSet(track, loop_offset + step, instrument, 0);
+	  EUCLID_SET_GATE(loop_offset + step, 0);
 	  if( ++processed_steps >= steps )
 	    break;
 	  step = (step + 1) % steps;
 
 	  int j;
 	  for(j=0; j<per_pause; ++j) {
-	    SEQ_TRG_GateSet(track, loop_offset + step, instrument, 1);
+	    EUCLID_SET_GATE(loop_offset + step, 1);
 	    if( ++processed_steps >= steps )
 	      break;
 	    step = (step + 1) % steps;
@@ -592,7 +629,7 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
 	    break;
 
 	  if( i < remainder ) {
-	    SEQ_TRG_GateSet(track, loop_offset + step, instrument, 1);
+	    EUCLID_SET_GATE(loop_offset + step, 1);
 	    if( ++processed_steps >= steps )
 	      break;
 	    step = (step + 1) % steps;

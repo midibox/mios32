@@ -687,6 +687,96 @@ s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)
 /////////////////////////////////////////////////////////////////////////////
 // prints layer event
 /////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
+{
+  seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, par_layer);
+
+  // TODO: tmp. solution to print chord velocity correctly
+  if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
+    layer_type = SEQ_PAR_Type_Chord;
+
+  switch( layer_type ) {
+  case SEQ_PAR_Type_None:
+    SEQ_LCD_PrintString("None");
+    break;
+
+  case SEQ_PAR_Type_Note:
+  case SEQ_PAR_Type_Velocity: {
+    if( layer_type == SEQ_PAR_Type_Note ) {
+      if( par_value ) {
+	if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
+	  SEQ_LCD_PrintArp(par_value);
+	else
+	  SEQ_LCD_PrintNote(par_value);
+	SEQ_LCD_PrintChar(' ');
+      } else {
+	SEQ_LCD_PrintString("----");
+      }
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d ", par_value);
+    }
+  } break;
+
+  case SEQ_PAR_Type_Chord: {
+    if( par_value ) {
+      u8 chord_ix = par_value & 0x1f;
+      u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
+      u8 chord_oct = par_value >> 5;
+      SEQ_LCD_PrintFormattedString("%c/%d ", chord_char, chord_oct);
+    } else {
+      SEQ_LCD_PrintString("----");
+    }
+  } break;
+	  
+  case SEQ_PAR_Type_Length:
+    SEQ_LCD_PrintGatelength(par_value);
+    break;
+
+  case SEQ_PAR_Type_CC:
+  case SEQ_PAR_Type_ProgramChange:
+  case SEQ_PAR_Type_PitchBend: {
+    if( par_value >= 0x80 ) {
+      SEQ_LCD_PrintFormattedString("####"); // currently used for CC in live recording mode: unrecorded value
+    } else {
+      SEQ_LCD_PrintFormattedString("%3d ", par_value);
+    }
+  } break;
+
+  case SEQ_PAR_Type_Probability:
+    SEQ_LCD_PrintProbability(par_value);
+    break;
+
+  case SEQ_PAR_Type_Delay:
+    SEQ_LCD_PrintStepDelay(par_value);
+    break;
+
+  case SEQ_PAR_Type_Roll:
+    SEQ_LCD_PrintRollMode(par_value);
+    break;
+
+  case SEQ_PAR_Type_Roll2:
+    SEQ_LCD_PrintRoll2Mode(par_value);
+    break;
+
+  case SEQ_PAR_Type_Nth1:
+    SEQ_LCD_PrintNthValue(par_value);
+    break;
+
+  case SEQ_PAR_Type_Nth2:
+    SEQ_LCD_PrintNthValue(par_value);
+    break;
+
+  default:
+    SEQ_LCD_PrintString("????");
+    break;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// prints layer event
+/////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 step_view, int print_edit_value)
 {
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, par_layer);
