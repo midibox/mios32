@@ -28,6 +28,8 @@ MIDIbox NG V1.033
 
    o bugfix for maps with duplicated values
 
+   o bugfix for sporadic file access errors reported during snapshot restore
+
 
 MIDIbox NG V1.032
 ~~~~~~~~~~~~~~~~~

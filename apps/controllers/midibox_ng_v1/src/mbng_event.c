@@ -3113,15 +3113,21 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
     } break;
 
     case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT: {
+      MUTEX_SDCARD_TAKE;
       MBNG_FILE_S_Read(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+      MUTEX_SDCARD_GIVE;
     } break;
 
     case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT: {
+      MUTEX_SDCARD_TAKE;
       MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+      MUTEX_SDCARD_GIVE;
     } break;
 
     case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT: {
+      MUTEX_LCD_TAKE; // this is to ensure that no LCD update takes place until all values have been dumped
       MBNG_EVENT_Dump();
+      MUTEX_LCD_GIVE;
     } break;
 
     case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: {
