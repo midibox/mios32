@@ -367,25 +367,33 @@ static s32 LCD_Handler(u8 high_prio)
 
     int i;
     for(i=0; i<max_trigger; ++i) {
-      u8 gate;
-      if( event_mode == SEQ_EVENT_MODE_Drum || ui_selected_par_layer == 0 ) {
-	gate = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
-      } else {
-	gate = SEQ_PAR_Get(visible_track, i, ui_selected_par_layer, ui_selected_instrument) > 0;
-      }
-      u8 accent = !gate ? 0 : SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument);
-
-      if( gate && !accent && tcc->link_par_layer_velocity >= 0 ) {
-	u8 value = SEQ_PAR_Get(visible_track, i, tcc->link_par_layer_velocity, ui_selected_instrument);
-	if( rnd_acc_n <= rnd_acc_a ) {
-	  if( value >= rnd_acc_a )
-	    accent |= 1;
+      u8 gate = SEQ_TRG_GateGet(visible_track, i, ui_selected_instrument);
+      u8 gate_disabled = 0;
+      if( event_mode != SEQ_EVENT_MODE_Drum && ui_selected_par_layer > 0 ) {
+	if( !gate ) {
+	  gate_disabled = SEQ_PAR_Get(visible_track, i, ui_selected_par_layer, ui_selected_instrument) > 0;
 	} else {
-	  if( value <= rnd_acc_a )
-	    accent |= 1;
+	  gate = SEQ_PAR_Get(visible_track, i, ui_selected_par_layer, ui_selected_instrument) > 0;
 	}
       }
-      SEQ_LCD_PrintChar(gate | (accent << 1));
+
+      if( gate_disabled ) {
+	SEQ_LCD_PrintChar('-');
+      } else {
+	u8 accent = !gate ? 0 : SEQ_TRG_AccentGet(visible_track, i, ui_selected_instrument);
+
+	if( gate && !accent && tcc->link_par_layer_velocity >= 0 ) {
+	  u8 value = SEQ_PAR_Get(visible_track, i, tcc->link_par_layer_velocity, ui_selected_instrument);
+	  if( rnd_acc_n <= rnd_acc_a ) {
+	    if( value >= rnd_acc_a )
+	      accent |= 1;
+	  } else {
+	    if( value <= rnd_acc_a )
+	      accent |= 1;
+	  }
+	}
+	SEQ_LCD_PrintChar(gate | (accent << 1));
+      }
     }
 
     for(;i<20; ++i) {
