@@ -1,5 +1,13 @@
 $Id$
 
+MIDIbox KB V1.016
+~~~~~~~~~~~~~~~~~
+
+   o Support for AINSER8 module
+     It has to be connected to J19; chip select line RC1 will be used (set jumper J4 accordingly)
+     In the AIN configuration it can be selected as pin 128..135
+
+
 MIDIbox KB V1.015
 ~~~~~~~~~~~~~~~~~
 

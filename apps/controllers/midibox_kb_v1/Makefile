@@ -56,6 +56,9 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 # KEYBOARD driver
 include $(MIOS32_PATH)/modules/keyboard/keyboard.mk
 
+# AINSER driver
+include $(MIOS32_PATH)/modules/ainser/ainser.mk
+
 # MIDI Router (and port handling)
 include $(MIOS32_PATH)/modules/midi_router/midi_router.mk
 
