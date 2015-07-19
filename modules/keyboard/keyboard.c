@@ -1015,15 +1015,15 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> delay_slowest <0-65535>:   slowest delay for velocity calculation");
   out("  set kb <1|2> delay_slowest_release <0-65535>: slowest release delay for velocity calculation");
 #if !KEYBOARD_DONT_USE_AIN
-  out("  set kb <1|2> ain_pitchwheel <0..5> or off:     assigns pitchwheel to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_pitchwheel <0-129>:          assigns CC/PB(=128)/AT(=129) to PitchWheel");
-  out("  set kb <1|2> ain_pitchwheel_inverted <on|off>: inverts the pitchwheel controller");
-  out("  set kb <1|2> ain_modwheel <0..5> or off:       assigns ModWheel to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_modwheel <0-129>:            assigns CC/PB(=128)/AT(=129) to ModWheel");
-  out("  set kb <1|2> ain_modwheel_inverted <on|off>:   inverts the modwheel controller");
-  out("  set kb <1|2> ain_sustain <0..5> or off:        assigns Sustain Pedal to given J5.A<0..5> pin");
-  out("  set kb <1|2> ctrl_sustain <0-129>:             assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
-  out("  set kb <1|2> ain_sustain_inverted <on|off>:    inverts the sustain controller");
+  out("  set kb <1|2> ain_pitchwheel <0..5/128..135> or off: assigns pitchwheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_pitchwheel <0-129>:               assigns CC/PB(=128)/AT(=129) to PitchWheel");
+  out("  set kb <1|2> ain_pitchwheel_inverted <on|off>:      inverts the pitchwheel controller");
+  out("  set kb <1|2> ain_modwheel <0..5/128..135> or off:   assigns ModWheel to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_modwheel <0-129>:                 assigns CC/PB(=128)/AT(=129) to ModWheel");
+  out("  set kb <1|2> ain_modwheel_inverted <on|off>:        inverts the modwheel controller");
+  out("  set kb <1|2> ain_sustain <0..5/128..135> or off:    assigns Sustain Pedal to given J5.A<0..5> pin");
+  out("  set kb <1|2> ctrl_sustain <0-129>:                  assigns CC/PB(=128)/AT(=129) to Sustain Pedal");
+  out("  set kb <1|2> ain_sustain_inverted <on|off>:         inverts the sustain controller");
   out("  set kb <1|2> ain_sustain_switch <on|off>:      set to on if the pedal should behave like a switch");
   out("  set kb <1|2> ain_bandwidth_ms <delay>:         defines the bandwidth of AIN scans in milliseconds");
   out("  set kb <1|2> calibration <off|pitchwheel|modwheel|sustain>: starts AIN calibration");
@@ -1495,8 +1495,8 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  if( strcmp(parameter, "off") != 0 ) {
 	    ain = get_dec(parameter);
 
-	    if( ain < 0 || ain >= 6 ) {
-	      out("AIN pin should be in the range of 0..5");
+	    if( ain < 0 || ain > 255 ) {
+	      out("AIN pin should be in the range of 0..255");
 	      return 1; // command taken
 	    }
 	    ain += 1;
@@ -1515,7 +1515,11 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  }
 
 	  if( ain ) {
-	    out("Keyboard #%d: %s assigned to J5.A%d!", kb+1, wheel_name, ain-1);
+	    if( ain >= 128 ) {
+	      out("Keyboard #%d: %s assigned to AINSER pin A%d!", kb+1, wheel_name, ain-1-128);
+	    } else {
+	      out("Keyboard #%d: %s assigned to J5.A%d!", kb+1, wheel_name, ain-1);
+	    }
 	  } else {
 	    out("Keyboard #%d: %s disabled!", kb+1, wheel_name);
 	  }

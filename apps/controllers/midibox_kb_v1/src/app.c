@@ -24,6 +24,7 @@
 #include <queue.h>
 
 #include <keyboard.h>
+#include <ainser.h>
 #include <midi_port.h>
 #include <midi_router.h>
 #include <midimon.h>
@@ -69,6 +70,8 @@ static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 byte);
 static s32 NOTIFY_MIDI_Tx(mios32_midi_port_t port, mios32_midi_package_t package);
 static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 
+static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -101,6 +104,12 @@ void APP_Init(void)
   // init MIDI port/router handling
   MIDI_PORT_Init(0);
   MIDI_ROUTER_Init(0);
+
+  // initialize the AINSER module(s)
+  AINSER_Init(0);
+  AINSER_NumModulesSet(1); // 1 module
+  AINSER_MuxedSet(0, 0);   // disable muxing
+  AINSER_NumPinsSet(0, 8); // 8 pins
 
   // init terminal
   TERMINAL_Init(0);
@@ -152,6 +161,9 @@ void APP_Tick(void)
   // PWM modulate the status LED (this is a sign of life)
   u32 timestamp = MIOS32_TIMESTAMP_Get();
   MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+
+  // scan AINSER pins
+  AINSER_Handler(APP_AINSER_NotifyChange);
 }
 
 
@@ -250,6 +262,15 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 #if 0
   MIOS32_MIDI_SendCC(DEFAULT, Chn1, 0x10 + pin, pin_value >> 5);
 #endif
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called when an AINSER pot has been moved
+/////////////////////////////////////////////////////////////////////////////
+static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
+{
+  // -> continue with normal AIN handler
+  APP_AIN_NotifyChange(128 + pin, pin_value);
 }
 
 
