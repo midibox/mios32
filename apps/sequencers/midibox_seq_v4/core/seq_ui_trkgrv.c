@@ -35,7 +35,7 @@
 #define ITEM_GXTY              0
 #define ITEM_GROOVE_STYLE      1
 #define ITEM_GROOVE_VALUE      2
-#define ITEM_GROOVE_VALUE_GLB  3
+#define ITEM_GROOVE_GLOBAL     3
 #define ITEM_GROOVE_STEP       4
 #define ITEM_GROOVE_DELAY      5
 #define ITEM_GROOVE_LENGTH     6
@@ -62,7 +62,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_GXTY: *gp_leds = 0x0001; break;
     case ITEM_GROOVE_STYLE: *gp_leds = 0x000e; break;
     case ITEM_GROOVE_VALUE: *gp_leds = 0x0030; break;
-    case ITEM_GROOVE_VALUE_GLB: *gp_leds = 0x00c0; break;
+    case ITEM_GROOVE_GLOBAL: *gp_leds = 0x00c0; break;
     case ITEM_GROOVE_STEP: *gp_leds = 0x0100; break;
     case ITEM_GROOVE_DELAY: *gp_leds = 0x0200; break;
     case ITEM_GROOVE_LENGTH: *gp_leds = 0x0400; break;
@@ -103,7 +103,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_GROOVE_VALUE_GLB;
+      ui_selected_item = ITEM_GROOVE_GLOBAL;
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -143,74 +143,101 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     g = (seq_groove_entry_t *)&seq_groove_presets[selected_groove];
 
   switch( ui_selected_item ) {
-    case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
-    case ITEM_GROOVE_STYLE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_STYLE, 0, grooves_total-1, incrementer);
-    case ITEM_GROOVE_VALUE:      return SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer);
-    case ITEM_GROOVE_STEP:       return SEQ_UI_Var8_Inc(&edit_step, 0, g->num_steps-1, incrementer);
+  case ITEM_GXTY:              return SEQ_UI_GxTyInc(incrementer);
 
-    case ITEM_GROOVE_VALUE_GLB: {
-      if( SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer) > 0 ) {
-	// change value for all tracks
-	u8 value = SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE);
-	u8 track;
-	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-	  SEQ_CC_Set(track, SEQ_CC_GROOVE_VALUE, value);
-	}
-	return 1;
-      }
-      return 0;
+  case ITEM_GROOVE_STYLE: {
+    u16 tmp = ui_selected_tracks;
+    u8 local_change = (seq_groove_ui_local_selection & (1 << visible_track)) ? 1 : 0;
+    if( !local_change ) {
+      ui_selected_tracks = ~seq_groove_ui_local_selection;
     }
-
-    case ITEM_GROOVE_DELAY: {
-      if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
-	return 0;
-      u8 value = (u8)seq_groove_templates[groove_template].add_step_delay[edit_step] + 128;
-      if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
-	seq_groove_templates[groove_template].add_step_delay[edit_step] = (s8)(value - 128);
-	ui_store_file_required = 1;
-	return 1;
-      }
-      return 0;
+    s32 status = SEQ_UI_CC_Inc(SEQ_CC_GROOVE_STYLE, 0, grooves_total-1, incrementer);
+    if( !local_change ) {
+      ui_selected_tracks = tmp;
     }
+    return status;
+  } break;
 
-    case ITEM_GROOVE_LENGTH: {
-      if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
-	return 0;
-      u8 value = (u8)seq_groove_templates[groove_template].add_step_length[edit_step] + 128;
-      if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
-	seq_groove_templates[groove_template].add_step_length[edit_step] = (s8)(value - 128);
-	ui_store_file_required = 1;
-	return 1;
-      }
-      return 0;
+  case ITEM_GROOVE_VALUE: {
+    u16 tmp = ui_selected_tracks;
+    u8 local_change = (seq_groove_ui_local_selection & (1 << visible_track)) ? 1 : 0;
+    if( !local_change ) {
+      ui_selected_tracks = ~seq_groove_ui_local_selection;
     }
-
-    case ITEM_GROOVE_VELOCITY: {
-      if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
-	return 0;
-      u8 value = (u8)seq_groove_templates[groove_template].add_step_velocity[edit_step] + 128;
-      if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
-	seq_groove_templates[groove_template].add_step_velocity[edit_step] = (s8)(value - 128);
-	ui_store_file_required = 1;
-	return 1;
-      }
-      return 0;
+    s32 status = SEQ_UI_CC_Inc(SEQ_CC_GROOVE_VALUE, 0, 127, incrementer);
+    if( !local_change ) {
+      ui_selected_tracks = tmp;
     }
+    return status;
+  } break;
 
-    case ITEM_GROOVE_NUM_STEPS: {
-      if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
-	return 0;
-      u8 value = (u8)seq_groove_templates[groove_template].num_steps;
-      if( SEQ_UI_Var8_Inc(&value, 1, 16, incrementer) > 0 ) {
-	seq_groove_templates[groove_template].num_steps = value;
-	ui_store_file_required = 1;
-	return 1;
+  case ITEM_GROOVE_GLOBAL: {
+    u8 global = (seq_groove_ui_local_selection & (1 << visible_track)) ? 0 : 1;
+    if( !incrementer ) incrementer = global ? -1 : 1;
+    if( SEQ_UI_Var8_Inc(&global, 0, 1, incrementer) > 0 ) {
+      if( global ) {
+	seq_groove_ui_local_selection &= ~ui_selected_tracks;
+      } else {
+	seq_groove_ui_local_selection |= ui_selected_tracks;
       }
-      return 0;
+      return 1;
     }
-
+    return 0;
   }
 
+  case ITEM_GROOVE_STEP: {
+    return SEQ_UI_Var8_Inc(&edit_step, 0, g->num_steps-1, incrementer);
+  } break;
+
+  case ITEM_GROOVE_DELAY: {
+    if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
+      return 0;
+    u8 value = (u8)seq_groove_templates[groove_template].add_step_delay[edit_step] + 128;
+    if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
+      seq_groove_templates[groove_template].add_step_delay[edit_step] = (s8)(value - 128);
+      ui_store_file_required = 1;
+      return 1;
+    }
+    return 0;
+  }
+
+  case ITEM_GROOVE_LENGTH: {
+    if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
+      return 0;
+    u8 value = (u8)seq_groove_templates[groove_template].add_step_length[edit_step] + 128;
+    if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
+      seq_groove_templates[groove_template].add_step_length[edit_step] = (s8)(value - 128);
+      ui_store_file_required = 1;
+      return 1;
+    }
+    return 0;
+  }
+
+  case ITEM_GROOVE_VELOCITY: {
+    if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
+      return 0;
+    u8 value = (u8)seq_groove_templates[groove_template].add_step_velocity[edit_step] + 128;
+    if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) > 0 ) {
+      seq_groove_templates[groove_template].add_step_velocity[edit_step] = (s8)(value - 128);
+      ui_store_file_required = 1;
+      return 1;
+    }
+    return 0;
+  }
+
+  case ITEM_GROOVE_NUM_STEPS: {
+    if( groove_template < 0 || groove_template >= SEQ_GROOVE_NUM_TEMPLATES )
+      return 0;
+    u8 value = (u8)seq_groove_templates[groove_template].num_steps;
+    if( SEQ_UI_Var8_Inc(&value, 1, 16, incrementer) > 0 ) {
+      seq_groove_templates[groove_template].num_steps = value;
+      ui_store_file_required = 1;
+      return 1;
+    }
+    return 0;
+  }
+  }
+  
   return -1; // invalid or unsupported encoder
 }
 
@@ -285,8 +312,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.  Groove Style  Intensity Change forStep Dly. Len. Vel. NumSteps        Clr 
-  // G1T1  Inv. Shuffle     15     all Tracks  1    0    0    0  Preset not editable!
+  // Trk.  Groove Style  Intensity Global    Step Dly. Len. Vel. NumSteps        Clr 
+  // G1T1  Inv. Shuffle     15       on        1    0    0    0  Preset not editable!
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -301,14 +328,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity ");
-  if( ui_selected_item == ITEM_GROOVE_VALUE_GLB && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(10);
-  } else {
-    SEQ_LCD_PrintString("Change for");
-  }
-  SEQ_LCD_PrintString("Step Dly. Len. Vel. NumSteps        Clr ");
-
+  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity Global    Step Dly. Len. Vel. NumSteps        Clr ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -338,11 +358,13 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_GROOVE_VALUE_GLB && ui_cursor_flash ) {
+  if( ui_selected_item == ITEM_GROOVE_GLOBAL && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(10);
   } else {
-    SEQ_LCD_PrintString("all Tracks");
+    u8 local = (seq_groove_ui_local_selection & (1 << visible_track)) ? 1 : 0;
+    SEQ_LCD_PrintString(local ? "  off " : "  on  ");
   }
+  SEQ_LCD_PrintSpaces(4);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GROOVE_STEP && ui_cursor_flash ) {

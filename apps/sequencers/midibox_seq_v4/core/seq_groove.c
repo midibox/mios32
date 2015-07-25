@@ -212,6 +212,11 @@ const seq_groove_entry_t seq_groove_templates_presets[SEQ_GROOVE_NUM_TEMPLATES] 
 };
 
 
+// stored in local configuration: UI setting to change groove only locally
+// each track has one bit in this variable (we assume that MBSEQ V4 will never provide more than 16 tracks...)
+u16 seq_groove_ui_local_selection;
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
 /////////////////////////////////////////////////////////////////////////////
@@ -220,6 +225,8 @@ s32 SEQ_GROOVE_Init(u32 mode)
   // initialise custom templates with presets
   // will be loaded from SD Card in SEQ_FILE_G
   memcpy(seq_groove_templates, seq_groove_templates_presets, sizeof(seq_groove_templates));
+
+  seq_groove_ui_local_selection = 0;
 
   return 0; // no error
 }

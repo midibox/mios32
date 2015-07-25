@@ -41,6 +41,7 @@
 #include "seq_pattern.h"
 #include "seq_core.h"
 #include "seq_live.h"
+#include "seq_groove.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -305,6 +306,8 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_core_global_scale_ctrl = value;
 	  } else if( strcmp(parameter, "GlobalScaleRoot") == 0 ) {
 	    seq_core_global_scale_root_selection = value;
+	  } else if( strcmp(parameter, "LocalGrooveSelection") == 0 ) {
+	    seq_groove_ui_local_selection = value;
 	  } else if( strcmp(parameter, "LoopMode") == 0 ) {
 	    seq_core_glb_loop_mode = value;
 	  } else if( strcmp(parameter, "LoopOffset") == 0 ) {
@@ -695,6 +698,9 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "LocalGrooveSelection 0x%04x\n", seq_groove_ui_local_selection);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LoopMode %d\n", seq_core_glb_loop_mode);

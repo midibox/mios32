@@ -720,6 +720,31 @@ static s32 PASTE_Track(u8 track)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// COPY+PASTE pressed: duplicates the steps
+// return 1 if successfull, and 0 if no duplication possible (track full)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track)
+{
+  COPY_Track(track);
+
+  int length = (int)SEQ_CC_Get(track, SEQ_CC_LENGTH) + 1;
+  int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+  if( 2*length > num_trg_steps )
+    return 0; // no duplication possible
+
+  copypaste_begin = 0;
+  copypaste_end = length - 1;
+  SEQ_UI_SelectedStepSet(length);
+  PASTE_Track(track);
+
+  copypaste_end = 2*length - 1;
+  SEQ_CC_Set(track, SEQ_CC_LENGTH, copypaste_end);
+
+  return 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // clear a track
 /////////////////////////////////////////////////////////////////////////////
 static s32 CLEAR_Track(u8 track)
