@@ -57,5 +57,6 @@ extern s32 SEQ_GROOVE_Clear(u8 groove);
 
 extern seq_groove_entry_t seq_groove_templates[SEQ_GROOVE_NUM_TEMPLATES];
 extern const seq_groove_entry_t seq_groove_presets[SEQ_GROOVE_NUM_PRESETS];
+extern u16 seq_groove_ui_local_selection;
 
 #endif /* _SEQ_GROOVE_H */

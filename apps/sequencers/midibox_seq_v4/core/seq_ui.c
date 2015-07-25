@@ -896,13 +896,14 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
       prev_page = ui_page;
       SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
     }
-
-    s32 status = SEQ_UI_UTIL_CopyButton(depressed);
+    
+    s32 status = 1;
+    status = SEQ_UI_UTIL_CopyButton(depressed);
 
     if( depressed ) {
       if( prev_page != SEQ_UI_PAGE_UTIL )
 	SEQ_UI_PageSet(prev_page);
-
+      
       SEQ_UI_Msg_Track("copied");
     }
 
@@ -993,6 +994,20 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
   } else {
     if( seq_ui_button_state.MENU_PRESSED ) {
       return SEQ_UI_Button_MultiPaste(depressed);
+    }
+
+    if( seq_ui_button_state.COPY ) {
+      // copy+paste pressed: duplicate steps
+      if( !depressed ) {
+	u8 visible_track = SEQ_UI_VisibleTrackGet();
+	if( SEQ_UI_UTIL_PasteDuplicateSteps(visible_track) >= 1 ) {
+	  SEQ_UI_Msg_Track("steps duplicated");
+	} else {
+	  SEQ_UI_Msg_Track("full - no duplication!");
+	}
+      }
+
+      return 1;
     }
 
     if( !depressed ) {

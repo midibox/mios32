@@ -361,6 +361,8 @@ extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
 
+extern s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track);
+
 extern s32 SEQ_UI_UTIL_CopyLivePattern(void);
 extern s32 SEQ_UI_UTIL_PasteLivePattern(void);
 extern s32 SEQ_UI_UTIL_ClearLivePattern(void);
