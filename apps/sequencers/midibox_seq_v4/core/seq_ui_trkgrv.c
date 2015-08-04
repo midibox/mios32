@@ -359,7 +359,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GROOVE_GLOBAL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(10);
+    SEQ_LCD_PrintSpaces(6);
   } else {
     u8 local = (seq_groove_ui_local_selection & (1 << visible_track)) ? 1 : 0;
     SEQ_LCD_PrintString(local ? "  off " : "  on  ");
