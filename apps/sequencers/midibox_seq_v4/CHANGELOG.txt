@@ -2150,6 +2150,8 @@ while in phrase mode (and using the save&take over patterns function):
 -…
 -song 8  „save and take over patterns“: a8-p8
 ----------------------------------------------------------
+http://midibox.org/forums/topic/19644-muting-independent-drum-lines-notes-via-midi/?p=171143
+Clear individual drum instruments
 
 
 Wishlist for MIDIbox SEQ V4 Plus
