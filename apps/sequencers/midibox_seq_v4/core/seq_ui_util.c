@@ -47,6 +47,10 @@
 #define MOVE_BUFFER_OLD 1
 
 
+// saves some memory for LPC17 (tmp. check)
+#define UNDO_ENABLED 1
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -79,6 +83,7 @@ static u8 copypaste_num_instruments;
 static u8 copypaste_selected_par_layer;
 static u8 copypaste_selected_instrument;
 
+#if UNDO_ENABLED
 static u8 undo_buffer_filled = 0;
 static u8 undo_track = 0;
 static u8 undo_par_layer[SEQ_PAR_MAX_BYTES];
@@ -90,6 +95,7 @@ static u16 undo_par_steps;
 static u8 undo_trg_layers;
 static u16 undo_trg_steps;
 static u8 undo_num_instruments;
+#endif
 
 static s8 move_enc;
 static u8 move_par_layer[2][16];
@@ -783,6 +789,7 @@ static s32 CLEAR_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 static s32 UNDO_Track(void)
 {
+#if UNDO_ENABLED
   // exit if undo buffer not filled
   if( !undo_buffer_filled )
     return 0; // no error
@@ -806,6 +813,7 @@ static s32 UNDO_Track(void)
     for(i=0; i<128; ++i)
 	SEQ_CC_Set(undo_track, i, undo_cc[i]);
   }
+#endif
 
   return 0; // no error
 }
@@ -817,6 +825,7 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 {
   int i;
 
+#if UNDO_ENABLED
   // store track in special variable, so that we restore to the right one later
   undo_track = track;
 
@@ -839,6 +848,7 @@ s32 SEQ_UI_UTIL_UndoUpdate(u8 track)
 
   // notify that undo buffer is filled
   undo_buffer_filled = 1;
+#endif
 
   return 0; // no error
 }
