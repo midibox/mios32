@@ -2155,6 +2155,10 @@ Clear individual drum instruments
 ----------------------------------------------------------
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=171488
 Store seq_record_options
+----------------------------------------------------------
+http://midibox.org/forums/topic/19688-sync-problems-tempest-mpc5000/?do=findComment&comment=171467
+Adjustable MIDI clock delay
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
