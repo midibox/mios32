@@ -2152,6 +2152,9 @@ while in phrase mode (and using the save&take over patterns function):
 ----------------------------------------------------------
 http://midibox.org/forums/topic/19644-muting-independent-drum-lines-notes-via-midi/?p=171143
 Clear individual drum instruments
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=171488
+Store seq_record_options
 
 
 Wishlist for MIDIbox SEQ V4 Plus
