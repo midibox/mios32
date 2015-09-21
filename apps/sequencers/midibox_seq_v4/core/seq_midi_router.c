@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <seq_midi_out.h>
+#include <seq_bpm.h>
 
 #include "tasks.h"
 #include "seq_midi_port.h"
@@ -273,8 +274,15 @@ s32 SEQ_MIDI_ROUTER_SendMIDIClockEvent(u8 evnt0, u32 bpm_tick)
 
       // TODO: special check for OSC, since MIOS32_MIDI_CheckAvailable() won't work here
       if( MIOS32_MIDI_CheckAvailable(port) ) {
-	if( bpm_tick )
-	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, bpm_tick, 0);
+	u32 local_bpm_tick = bpm_tick;
+
+	u8 delay = SEQ_MIDI_PORT_ClkDelayGet(port);
+	if( delay > 0 ) {
+	  local_bpm_tick += SEQ_BPM_TicksFor_mS(delay + 1) + 1; // TK: compensate out loop execution delay
+	}
+
+	if( local_bpm_tick )
+	  SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_ClkEvent, local_bpm_tick, 0);
 	else {
 	  MUTEX_MIDIOUT_TAKE;
 	  MIOS32_MIDI_SendPackage(port, p);

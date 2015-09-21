@@ -25,6 +25,9 @@ MIDIboxSEQ V4.089
    o Groove page: by default, groove configuration changes are applied on all tracks now.
      It's possible to select a "local groove" by pressing GP7 button in the groove page.
 
+   o BPM page: it's now possible to add a clock output delay for each MIDI port.
+     Note: currently, the delay will only affect MIDI clock events and no other events!
+
 
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~
@@ -2156,8 +2159,8 @@ Clear individual drum instruments
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=171488
 Store seq_record_options
 ----------------------------------------------------------
-http://midibox.org/forums/topic/19688-sync-problems-tempest-mpc5000/?do=findComment&comment=171467
-Adjustable MIDI clock delay
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=171522
+Scale Editor
 ----------------------------------------------------------
 
 
