@@ -48,7 +48,11 @@
 
 
 // saves some memory for LPC17 (tmp. check)
-#define UNDO_ENABLED 1
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define UNDO_ENABLED 0
+#else
+# define UNDO_ENABLED 1
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
