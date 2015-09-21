@@ -382,6 +382,8 @@ s32 AOUT_IF_Init(u32 mode)
     } break;
 
     case AOUT_IF_TLV5630: {
+      int dev;
+
       // determine number of connected TLV5630 depending on number of channels
       aout_num_devices = aout_config.num_channels / 8;
       if( aout_config.num_channels % 8 )
@@ -391,18 +393,22 @@ s32 AOUT_IF_Init(u32 mode)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
 
       // initialize CTRL0
-      // DO=1 (DOUT Enable), R=3 (internal reference, 2V)
-      u8 ctrl0 = (1 << 3) | (3 << 1);
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      MIOS32_SPI_TransferByte(AOUT_SPI, 0x8 << 4);
-      MIOS32_SPI_TransferByte(AOUT_SPI, ctrl0);
+      for(dev=aout_num_devices-1; dev>=0; --dev) {
+	// DO=1 (DOUT Enable), R=3 (internal reference, 2V)
+	u8 ctrl0 = (1 << 3) | (3 << 1);
+	MIOS32_SPI_TransferByte(AOUT_SPI, 0x8 << 4);
+	MIOS32_SPI_TransferByte(AOUT_SPI, ctrl0);
+      }
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
       // initialize CTRL1
-      u8 ctrl1 = 0;
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
-      MIOS32_SPI_TransferByte(AOUT_SPI, 0x9 << 4);
-      MIOS32_SPI_TransferByte(AOUT_SPI, ctrl1);
+      for(dev=aout_num_devices-1; dev>=0; --dev) {
+	u8 ctrl1 = 0;
+	MIOS32_SPI_TransferByte(AOUT_SPI, 0x9 << 4);
+	MIOS32_SPI_TransferByte(AOUT_SPI, ctrl1);
+      }
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
     } break;
 
