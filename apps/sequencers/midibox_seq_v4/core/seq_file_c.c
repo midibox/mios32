@@ -37,6 +37,7 @@
 #include "seq_mixer.h"
 #include "seq_midi_in.h"
 #include "seq_midi_router.h"
+#include "seq_midi_port.h"
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
@@ -148,6 +149,22 @@ static s32 get_dec(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Another help function which also returns an error message if range is violated
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_dec_range(char *word, char *parameter, int min, int max)
+{
+  int value = get_dec(word);
+  if( value < -255 || value < min || value > max ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[SEQ_FILE_C] ERROR invalid value '%s' for parameter '%s'\n", word, parameter);
+#endif
+    return -255; // invalid value or range
+  }
+  return value;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // reads the config file content (again)
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -194,19 +211,11 @@ s32 SEQ_FILE_C_Read(char *session)
 	  // ignore comments
 	} else {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 value = get_dec(word);
 
-	  if( value < -255 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_C] ERROR invalid value for parameter '%s'\n", parameter);
-#endif
-	  } else if( strcmp(parameter, "BPMx10_P") == 0 ) {
-	    if( value >= SEQ_CORE_NUM_BPM_PRESETS ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid preset slot %d for parameter '%s'\n", value, parameter);
-#endif
+	  if( strcmp(parameter, "BPMx10_P") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, SEQ_CORE_NUM_BPM_PRESETS-1);
+	    if( value < 0 )
 	      continue;
-	    }
 
 	    word = strtok_r(NULL, separators, &brkt);
 	    s32 tempo = get_dec(word);
@@ -231,31 +240,28 @@ s32 SEQ_FILE_C_Read(char *session)
 	    seq_core_bpm_preset_tempo[value] = (float)(tempo/10.0);
 	    seq_core_bpm_preset_ramp[value] = (float)(ramp/10.0);
 	  } else if( strcmp(parameter, "BPM_Preset") == 0 ) {
-	    if( value >= SEQ_CORE_NUM_BPM_PRESETS ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR invalid preset number %d for parameter '%s'\n", value, parameter);
-#endif
-	      continue;
-	    }
-	    seq_core_bpm_preset_num = value;
+	    s32 value = get_dec_range(word, parameter, 0, SEQ_CORE_NUM_BPM_PRESETS-1);
+	    if( value >= 0 )
+	      seq_core_bpm_preset_num = value;
 	  } else if( strcmp(parameter, "BPM_Mode") == 0 ) {
-	    SEQ_BPM_ModeSet(value);
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      SEQ_BPM_ModeSet(value);
 	  } else if( strcmp(parameter, "LastSong") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, SEQ_CORE_NUM_BPM_PRESETS-1);
 	    if( value )
 	      SEQ_SONG_NumSet(value-1);
 	  } else if( strcmp(parameter, "LastMixerMap") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, SEQ_MIXER_NUM-1);
 	    if( value )
 	      SEQ_MIXER_NumSet(value-1);
 	  } else if( strcmp(parameter, "MixerCC1234BeforePC") == 0 ) {
-	    seq_mixer_cc1234_before_pc = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_mixer_cc1234_before_pc = value;
 	  } else if( strcmp(parameter, "LastPattern") == 0 ) {
-	    int group = value;
-
-	    if( group < 1 || group > SEQ_CORE_NUM_GROUPS ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR Pattern: wrong group %d\n", group);
-#endif
-	    } else {
+	    int group = get_dec_range(word, parameter, 1, SEQ_CORE_NUM_GROUPS);
+	    if( group >= 1 ) {
 	      group -= 1; // 0..3
 
 	      // expected format: "LastPattern %d %d:%c%d"
@@ -289,42 +295,76 @@ s32 SEQ_FILE_C_Read(char *session)
 	      }
 	    }
 	  } else if( strcmp(parameter, "SynchedPatternChange") == 0 ) {
-	    seq_core_options.SYNCHED_PATTERN_CHANGE = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_core_options.SYNCHED_PATTERN_CHANGE = value;
 	  } else if( strcmp(parameter, "SynchedMute") == 0 ) {
-	    seq_core_options.SYNCHED_MUTE = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_core_options.SYNCHED_MUTE = value;
 	  } else if( strcmp(parameter, "SynchedUnmute") == 0 ) {
-	    seq_core_options.SYNCHED_UNMUTE = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_core_options.SYNCHED_UNMUTE = value;
 	  } else if( strcmp(parameter, "RATOPC") == 0 ) {
-	    seq_core_options.RATOPC = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_core_options.RATOPC = value;
 	  } else if( strcmp(parameter, "StepsPerMeasure") == 0 ) {
-	    seq_core_steps_per_measure = value;
+	    s32 value = get_dec_range(word, parameter, 0, 256);
+	    if( value >= 0 )
+	      seq_core_steps_per_measure = value;
 	  } else if( strcmp(parameter, "StepsPerPattern") == 0 ) {
-	    seq_core_steps_per_pattern = value;
+	    s32 value = get_dec_range(word, parameter, 0, 256);
+	    if( value >= 0 )
+	      seq_core_steps_per_pattern = value;
 	  } else if( strcmp(parameter, "GlobalScale") == 0 ) {
-	    seq_core_global_scale = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_core_global_scale = value;
 	  } else if( strcmp(parameter, "GlobalScaleCtrl") == 0 ) {
-	    seq_core_global_scale_ctrl = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_core_global_scale_ctrl = value;
 	  } else if( strcmp(parameter, "GlobalScaleRoot") == 0 ) {
-	    seq_core_global_scale_root_selection = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_core_global_scale_root_selection = value;
 	  } else if( strcmp(parameter, "LocalGrooveSelection") == 0 ) {
-	    seq_groove_ui_local_selection = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_groove_ui_local_selection = value;
 	  } else if( strcmp(parameter, "LoopMode") == 0 ) {
-	    seq_core_glb_loop_mode = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_core_glb_loop_mode = value;
 	  } else if( strcmp(parameter, "LoopOffset") == 0 ) {
-	    seq_core_glb_loop_offset = value-1;
+	    s32 value = get_dec_range(word, parameter, 1, 255);
+	    if( value >= 0 )
+	      seq_core_glb_loop_offset = value-1;
 	  } else if( strcmp(parameter, "LoopSteps") == 0 ) {
-	    seq_core_glb_loop_steps = value-1;
+	    s32 value = get_dec_range(word, parameter, 1, 255);
+	    if( value >= 0 )
+	      seq_core_glb_loop_steps = value-1;
 	  } else if( strcmp(parameter, "LiveOctTranspose") == 0 ) {
-	    seq_live_options.OCT_TRANSPOSE = value;
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_live_options.OCT_TRANSPOSE = value;
 	  } else if( strcmp(parameter, "LiveVelocity") == 0 ) {
 	    //seq_live_options.VELOCITY = value;
 	    // obsolete - silently ignore
 	  } else if( strcmp(parameter, "LiveForceToScale") == 0 ) {
-	    seq_live_options.FORCE_SCALE = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_live_options.FORCE_SCALE = value;
 	  } else if( strcmp(parameter, "LiveKeepChannel") == 0 ) {
-	    seq_live_options.KEEP_CHANNEL = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_live_options.KEEP_CHANNEL = value;
 	  } else if( strcmp(parameter, "LiveFx") == 0 ) {
-	    seq_live_options.FX = value;
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_live_options.FX = value;
 	  } else if( strcmp(parameter, "LivePattern") == 0 ) {
 	      int num = get_dec(word);
 	      if( num < 1 || num > SEQ_LIVE_NUM_ARP_PATTERNS ) {
@@ -362,7 +402,14 @@ s32 SEQ_FILE_C_Read(char *session)
 		}
 	      }
 	  } else if( strcmp(parameter, "MIDI_OUT_ExtCtrlPort") == 0 ) {
-	    seq_midi_in_ext_ctrl_out_port = (mios32_midi_port_t)value;
+	    s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	    if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid OUT port '%s'!", parameter, word);
+#endif
+	    } else {
+	      seq_midi_in_ext_ctrl_out_port = (mios32_midi_port_t)port;
+	    }
 	  } else if( strcmp(parameter, "QuickSelLength") == 0 ) {
 	    int i;
 	    for(i=0; i<UI_QUICKSEL_NUM_PRESETS; ++i) {
@@ -415,9 +462,16 @@ s32 SEQ_FILE_C_Read(char *session)
 	      }
 	    }
 	  } else if( strcmp(parameter, "MIDI_DefaultPort") == 0 ) {
-	    MIOS32_MIDI_DefaultPortSet(value);
+	    s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	    if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid default port '%s'!", parameter, word);
+#endif
+	    } else {
+	      MIOS32_MIDI_DefaultPortSet(port);
+	    }
 	  } else if( strncmp(parameter, "MIDI_BUS_", 9) == 0 ) {
-	    int bus = value;
+	    s32 bus = get_dec_range(word, parameter, 0, SEQ_MIDI_IN_NUM_BUSSES-1);
 	    if( bus >= 0 && bus < SEQ_MIDI_IN_NUM_BUSSES ) {
 	      word = strtok_r(NULL, separators, &brkt);
 	      int v = get_dec(word);
@@ -440,7 +494,9 @@ s32 SEQ_FILE_C_Read(char *session)
 	    }
 	  } else if( strncmp(parameter, "MIDI_IN_", 8) == 0 ) {
 	    if( strcmp(parameter+8, "MClock_Ports") == 0 ) {
-	      seq_midi_router_mclk_in = value;
+	      s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+	      if( value >= 0 )
+		seq_midi_router_mclk_in = value;
 	    } else if( strcmp(parameter+8, "RecChannel") == 0 ) {
 	      // seq_midi_in_rec_channel = value;
 	      // parameter is obsolete - silently ignore
@@ -448,13 +504,33 @@ s32 SEQ_FILE_C_Read(char *session)
 	      // seq_midi_in_rec_port = (mios32_midi_port_t)value;
 	      // parameter is obsolete - silently ignore
 	    } else if( strcmp(parameter+8, "SectChannel") == 0 ) {
-	      seq_midi_in_sect_channel = value;
+	      s32 value = get_dec_range(word, parameter, 0, 255);
+	      if( value >= 0 )
+		seq_midi_in_sect_channel = value;
 	    } else if( strcmp(parameter+8, "SectPort") == 0 ) {
-	      seq_midi_in_sect_port = (mios32_midi_port_t)value;
+	      s32 port = SEQ_MIDI_PORT_InPortFromNameGet(word);
+	      if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid IN port '%s'!", parameter, word);
+#endif
+	      } else {
+		seq_midi_in_sect_port = (mios32_midi_port_t)port;
+	      }
 	    } else if( strcmp(parameter+8, "SectFwdPort") == 0 ) {
-	      seq_midi_in_sect_fwd_port = (mios32_midi_port_t)value;
+	      s32 port = SEQ_MIDI_PORT_InPortFromNameGet(word);
+	      if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid IN port '%s'!", parameter, word);
+#endif
+	      } else {
+		seq_midi_in_sect_fwd_port = (mios32_midi_port_t)port;
+	      }
 	    } else if( strcmp(parameter+8, "SectNotes") == 0 ) {
 	      int values[4];
+
+	      s32 value = get_dec_range(word, parameter, 0, 255);
+	      if( value < 0 )
+		continue;
 
 	      values[0] = value;
 	      int i;
@@ -476,45 +552,90 @@ s32 SEQ_FILE_C_Read(char *session)
 	      }
 	    } else if( strncmp(parameter+8, "ExtCtrl", 7) == 0 ) {
 	      if( strcmp(parameter+8+7, "Channel") == 0 ) {
-		seq_midi_in_ext_ctrl_channel = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_channel = value;
 	      } else if( strcmp(parameter+8+7, "Port") == 0 ) {
-		seq_midi_in_ext_ctrl_port = (mios32_midi_port_t)value;
+		s32 port = SEQ_MIDI_PORT_InPortFromNameGet(word);
+		if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid IN port '%s'!", parameter, word);
+#endif
+		} else {
+		  seq_midi_in_ext_ctrl_port = (mios32_midi_port_t)port;
+		}
 	      } else if( strcmp(parameter+8+7, "CcMorph") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH] = value;
 	      } else if( strcmp(parameter+8+7, "CcScale") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE] = value;
 	      } else if( strcmp(parameter+8+7, "CcSong") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SONG] = value;
 	      } else if( strcmp(parameter+8+7, "CcPhrase") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PHRASE] = value;
 	      } else if( strcmp(parameter+8+7, "CcMixerMap") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MIXER_MAP] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG1") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG2") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G2] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG3") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G3] = value;
 	      } else if( strcmp(parameter+8+7, "CcPatternG4") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PATTERN_G4] = value;
 	      } else if( strcmp(parameter+8+7, "CcBankG1") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G1] = value;
 	      } else if( strcmp(parameter+8+7, "CcBankG2") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G2] = value;
 	      } else if( strcmp(parameter+8+7, "CcBankG3") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G3] = value;
 	      } else if( strcmp(parameter+8+7, "CcBankG4") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G4] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_BANK_G4] = value;
 	      } else if( strcmp(parameter+8+7, "CcAllNotesOff") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF] = value;
 	      } else if( strcmp(parameter+8+7, "NrpnEnabled") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED] = value;
 	      } else if( strcmp(parameter+8+7, "PcMode") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE] = value;
 	      } else if( strcmp(parameter+8+7, "CcMutes") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES] = value;
 	      } else if( strcmp(parameter+8+7, "CcSteps") == 0 ) {
-		seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS] = value;
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS] = value;
 	      } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
@@ -526,15 +647,45 @@ s32 SEQ_FILE_C_Read(char *session)
 #endif
 	    }
 	  } else if( strcmp(parameter, "MIDI_OUT_MClock_Ports") == 0 ) {
-	    seq_midi_router_mclk_out = value;
+	    s32 value = get_dec_range(word, parameter, 0, 0x7fffffff);
+	    if( value >= 0 )
+	      seq_midi_router_mclk_out = value;
+	  } else if( strcmp(parameter, "MIDI_OUT_MClock_Delay") == 0 ) {
+	    s32 port = SEQ_MIDI_PORT_ClkPortFromNameGet(word);
+
+	    if( port < 0 || port >= 0x100 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid port number '%s'!", parameter, word);
+#endif
+	    } else {
+	      word = strtok_r(NULL, separators, &brkt);
+	      s32 value = get_dec(word);
+	      if( value < 0 || value > 255 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid delay value '%s'!", parameter, word);
+#endif
+	      } else {
+		SEQ_MIDI_PORT_ClkDelaySet(port, value);
+	      }
+	    }
 	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
 	    int values[5];
 
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value < 0 )
+	      continue;
+	      
 	    values[0] = value;
 	    int i;
 	    for(i=1; i<5; ++i) {
 	      word = strtok_r(NULL, separators, &brkt);
-	      values[i] = get_dec(word);
+	      if( i == 1 ) {
+		values[i] = SEQ_MIDI_PORT_InPortFromNameGet(word);
+	      } else if( i == 3 ) {
+		values[i] = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	      } else {
+		values[i] = get_dec(word);
+	      }
 	      if( values[i] < 0 ) {
 		break;
 	      }
@@ -542,7 +693,7 @@ s32 SEQ_FILE_C_Read(char *session)
 
 	    if( i != 5 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: missing parameter %d\n", i);
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR MIDI_RouterNode: missing or wrong parameter %d\n", i);
 #endif
 	    } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -746,16 +897,24 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
     }
   }
 
-  sprintf(line_buffer, "MIDI_DefaultPort %d\n", MIOS32_MIDI_DefaultPortGet());
-  FLUSH_BUFFER;
+  {
+    char buffer[5];
+    SEQ_MIDI_PORT_OutPortToName(MIOS32_MIDI_DefaultPortGet(), buffer);
+    sprintf(line_buffer, "MIDI_DefaultPort %s\n", buffer);
+    FLUSH_BUFFER;
+  }
 
   u8 bus;
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     sprintf(line_buffer, "MIDI_BUS_Channel %d %d\n", bus, seq_midi_in_channel[bus]);
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "MIDI_BUS_Port %d %d\n", bus, (u8)seq_midi_in_port[bus]);
-    FLUSH_BUFFER;
+    {
+      char buffer[5];
+      SEQ_MIDI_PORT_InPortToName(seq_midi_in_port[bus], buffer);
+      sprintf(line_buffer, "MIDI_BUS_Port %d %s\n", bus, buffer);
+      FLUSH_BUFFER;
+    }
 
     sprintf(line_buffer, "MIDI_BUS_Lower %d %d\n", bus, seq_midi_in_lower[bus]);
     FLUSH_BUFFER;
@@ -773,11 +932,19 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_SectChannel %d\n", seq_midi_in_sect_channel);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_IN_SectPort %d\n", (u8)seq_midi_in_sect_port);
-  FLUSH_BUFFER;
+  {
+    char buffer[5];
+    SEQ_MIDI_PORT_InPortToName(seq_midi_in_sect_port, buffer);
+    sprintf(line_buffer, "MIDI_IN_SectPort %s\n", buffer);
+    FLUSH_BUFFER;
+  }
 
-  sprintf(line_buffer, "MIDI_IN_SectFwdPort %d\n", (u8)seq_midi_in_sect_fwd_port);
-  FLUSH_BUFFER;
+  {
+    char buffer[5];
+    SEQ_MIDI_PORT_InPortToName(seq_midi_in_sect_fwd_port, buffer);
+    sprintf(line_buffer, "MIDI_IN_SectFwdPort %s\n", buffer);
+    FLUSH_BUFFER;
+  }
 
   sprintf(line_buffer, "MIDI_IN_SectNotes %d %d %d %d\n", (u8)seq_midi_in_sect_note[0], (u8)seq_midi_in_sect_note[1], (u8)seq_midi_in_sect_note[2], (u8)seq_midi_in_sect_note[3]);
   FLUSH_BUFFER;
@@ -785,10 +952,19 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_ExtCtrlChannel %d\n", seq_midi_in_ext_ctrl_channel);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_IN_ExtCtrlPort %d\n", (u8)seq_midi_in_ext_ctrl_port);
-  FLUSH_BUFFER;
-  sprintf(line_buffer, "MIDI_OUT_ExtCtrlPort %d\n", (u8)seq_midi_in_ext_ctrl_out_port);
-  FLUSH_BUFFER;
+  {
+    char buffer[5];
+    SEQ_MIDI_PORT_InPortToName(seq_midi_in_ext_ctrl_port, buffer);
+    sprintf(line_buffer, "MIDI_IN_ExtCtrlPort %s\n", buffer);
+    FLUSH_BUFFER;
+  }
+
+  {
+    char buffer[5];
+    SEQ_MIDI_PORT_OutPortToName(seq_midi_in_ext_ctrl_out_port, buffer);
+    sprintf(line_buffer, "MIDI_OUT_ExtCtrlPort %s\n", buffer);
+    FLUSH_BUFFER;
+  }
 
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMorph %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MORPH]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcScale %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_SCALE]); FLUSH_BUFFER;
@@ -809,13 +985,29 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMutes %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcSteps %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS]); FLUSH_BUFFER;
 
-  sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out);
-  FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out); FLUSH_BUFFER;
+
+  {
+    u8 port_ix;
+    u8 num_clk_ports = SEQ_MIDI_PORT_ClkNumGet();
+
+    for(port_ix=0; port_ix<num_clk_ports; ++port_ix) {
+      u8 delay = SEQ_MIDI_PORT_ClkIxDelayGet(port_ix);
+      sprintf(line_buffer, "MIDI_OUT_MClock_Delay %s %d\n", SEQ_MIDI_PORT_ClkNameGet(port_ix), delay);
+      FLUSH_BUFFER;
+    }
+  }
 
   u8 node;
   seq_midi_router_node_t *n = &seq_midi_router_node[0];
   for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-    sprintf(line_buffer, "MIDI_RouterNode %d %d %d %d %d\n", node, n->src_port, n->src_chn, n->dst_port, n->dst_chn);
+    char src_buffer[5];
+    char dst_buffer[5];
+
+    SEQ_MIDI_PORT_InPortToName(n->src_port, src_buffer);
+    SEQ_MIDI_PORT_OutPortToName(n->dst_port, dst_buffer);
+
+    sprintf(line_buffer, "MIDI_RouterNode %d %s %d %s %d\n", node, src_buffer, n->src_chn, dst_buffer, n->dst_chn);
     FLUSH_BUFFER;
   }
 

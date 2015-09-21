@@ -171,6 +171,8 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   { OSC3,    "OSC4" },
 };
 
+static u8 clk_port_delay[NUM_CLK_PORTS];
+
 
 // MIDI Out mute function
 static u32 muted_out;
@@ -210,6 +212,10 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
   for(i=0; i<NUM_IN_PORTS; ++i) {
     midi_in_ctr[i] = 0;
     midi_in_package[i].ALL = 0;
+  }
+
+  for(i=0; i<NUM_CLK_PORTS; ++i) {
+    clk_port_delay[i] = 0;
   }
 
   seq_midi_port_out_combined_ctr = 0;
@@ -362,11 +368,29 @@ u8 SEQ_MIDI_PORT_OutIxGet(mios32_midi_port_t port)
 
 u8 SEQ_MIDI_PORT_ClkIxGet(mios32_midi_port_t port)
 {
+#if 0
   u8 ix;
   for(ix=0; ix<NUM_CLK_PORTS; ++ix) {
     if( clk_ports[ix].port == port )
       return ix;
   }
+#else
+  // faster version - execution time does matter for some features!
+#if MIOS32_IIC_MIDI_NUM <= 4
+  // TK: works only for 4 IIC ports - this is a fail-safe measure only, therefore ignore this if MIOS32_IIC_MIDI_NUM has ben set to a value > 4
+  if( (port & 0x0f) >= 4 )
+    return 0; // only 1..4, filter number 5..16
+#endif
+
+  switch( port & 0xf0 ) {
+    // has to be kept in sync with out_ports[]!
+    case USB0:  return (port & 0x0f) + 0;
+    case UART0: return (port & 0x0f) + 4;
+    case IIC0:  return (port & 0x0f) + 8;
+    case OSC0:  return (port & 0x0f) + 8 + MIOS32_IIC_MIDI_NUM;
+  }
+#endif
+
   return 0; // return first ix if not found
 }
 
@@ -568,7 +592,6 @@ s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port)
   return (muted_out & (1 << port_ix)) ? 1 : 0;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Mutes/Unmutes a MIDI port
 /////////////////////////////////////////////////////////////////////////////
@@ -590,6 +613,38 @@ s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute)
   else
     muted_out &= ~(1 << port_ix);
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Configures Clock Output Delay
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_MIDI_PORT_ClkDelayGet(mios32_midi_port_t port)
+{
+  u8 port_ix = SEQ_MIDI_PORT_ClkIxGet(port);
+  return clk_port_delay[port_ix];
+}
+
+u8 SEQ_MIDI_PORT_ClkIxDelayGet(u8 port_ix)
+{
+  if( port_ix >= NUM_CLK_PORTS )
+    return 0;
+  return clk_port_delay[port_ix];
+}
+
+s32 SEQ_MIDI_PORT_ClkDelaySet(mios32_midi_port_t port, u8 delay)
+{
+  u8 port_ix = SEQ_MIDI_PORT_ClkIxGet(port);
+  clk_port_delay[port_ix] = delay;
+  return 0; // no error
+}
+
+s32 SEQ_MIDI_PORT_ClkIxDelaySet(u8 port_ix, u8 delay)
+{
+  if( port_ix >= NUM_CLK_PORTS )
+    return -1; // invalid clock port
+  clk_port_delay[port_ix] = delay;
   return 0; // no error
 }
 

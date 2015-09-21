@@ -43,6 +43,7 @@
 #define ITEM_MCLK_PORT     4
 #define ITEM_MCLK_IN       5
 #define ITEM_MCLK_OUT      6
+#define ITEM_MCLK_DELAY    7
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -97,6 +98,7 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_MCLK_PORT: *gp_leds |= 0x0100; break;
     case ITEM_MCLK_IN: *gp_leds |= 0x0200; break;
     case ITEM_MCLK_OUT: *gp_leds |= 0x0400; break;
+    case ITEM_MCLK_DELAY: *gp_leds |= 0x1800; break;
   }
 
   return 0; // no error
@@ -159,7 +161,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP12:
     case SEQ_UI_ENCODER_GP13:
-      return -1; // not used (yet)
+      ui_selected_item = ITEM_MCLK_DELAY;
+      break;
 
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
@@ -246,6 +249,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       }
       return 0; // no change
     } break;
+
+    case ITEM_MCLK_DELAY: {
+      u8 delay = SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port);
+      if( SEQ_UI_Var8_Inc(&delay, 0, 255, incrementer) >= 0 ) {
+        SEQ_MIDI_PORT_ClkDelaySet(selected_mclk_port, delay);
+        ui_store_file_required = 1;
+        return 1; // value changed
+      }
+      return 0; // no change
+    } break;
   }
 
   return -1; // invalid or unsupported encoder
@@ -329,12 +342,12 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out              Ext.    Tap 
-  // Master   1   140.0   1s    Preset  Page USB1 I:on O:off           Restart Tempo
+  //  Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out    Delay      Ext.    Tap  
+  // Master   1   140.0   1s    Preset  Page USB1 I:on O:off    0mS     Restart Tempo
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out               ");
+  SEQ_LCD_PrintString(" Mode Preset Tempo  Ramp    Fire  Preset  MClk In/Out    Delay      ");
   SEQ_LCD_PrintString(seq_core_state.EXT_RESTART_REQ ? "Ongoing" : " Ext.  ");
   SEQ_LCD_PrintString(" Tap ");
 
@@ -376,7 +389,7 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintString("    Preset  Page  ");
+  SEQ_LCD_PrintString("    Preset  Page ");
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MCLK_PORT && ui_cursor_flash ) {
@@ -420,10 +433,15 @@ static s32 LCD_Handler(u8 high_prio)
       default: SEQ_LCD_PrintString("---");
     }
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(1);
 
-  // DIN Sync moved to CV configuration
-  SEQ_LCD_PrintSpaces(3+4);
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_MCLK_DELAY && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintFormattedString("%3dmS", SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port));
+  }
+  SEQ_LCD_PrintSpaces(5);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_PrintString("Restart Tempo");
