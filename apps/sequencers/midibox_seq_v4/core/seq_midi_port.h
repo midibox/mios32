@@ -70,10 +70,15 @@ extern char *SEQ_MIDI_PORT_ClkPortToName(mios32_midi_port_t port, char str_buffe
 extern s32 SEQ_MIDI_PORT_OutMuteGet(mios32_midi_port_t port);
 extern s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute);
 
-extern u8 SEQ_MIDI_PORT_ClkDelayGet(mios32_midi_port_t port);
-extern s32 SEQ_MIDI_PORT_ClkDelaySet(mios32_midi_port_t port, u8 delay);
-extern u8 SEQ_MIDI_PORT_ClkIxDelayGet(u8 port_ix);
-extern s32 SEQ_MIDI_PORT_ClkIxDelaySet(u8 port_ix, u8 delay);
+extern s8  SEQ_MIDI_PORT_ClkDelayGet(mios32_midi_port_t port);
+extern s32 SEQ_MIDI_PORT_ClkDelaySet(mios32_midi_port_t port, s8 delay);
+extern s8  SEQ_MIDI_PORT_ClkIxDelayGet(u8 port_ix);
+extern s32 SEQ_MIDI_PORT_ClkIxDelaySet(u8 port_ix, s8 delay);
+
+extern s32 SEQ_MIDI_PORT_ClkDelayUpdate(mios32_midi_port_t port);
+extern s32 SEQ_MIDI_PORT_ClkDelayUpdateAll(void);
+
+extern s8  SEQ_MIDI_PORT_TickDelayMaxNegativeOffset(void);
 
 extern mios32_midi_package_t SEQ_MIDI_PORT_OutPackageGet(mios32_midi_port_t port);
 extern mios32_midi_package_t SEQ_MIDI_PORT_InPackageGet(mios32_midi_port_t port);

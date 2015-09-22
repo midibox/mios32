@@ -25,8 +25,8 @@ MIDIboxSEQ V4.089
    o Groove page: by default, groove configuration changes are applied on all tracks now.
      It's possible to select a "local groove" by pressing GP7 button in the groove page.
 
-   o BPM page: it's now possible to add a clock output delay for each MIDI port.
-     Note: currently, the delay will only affect MIDI clock events and no other events!
+   o BPM page: it's now possible to configure an output delay for each MIDI port.
+     (positive and negative delays are supported - this is currently an experimental feature!)
 
 
 MIDIboxSEQ V4.088

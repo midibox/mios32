@@ -758,6 +758,7 @@ static s32 SEQ_MIDPLY_PlayMeta(u8 track, u8 meta, u32 len, u8 *buffer, u32 tick)
 	// set tempo immediately on first tick
 	if( tick == 0 ) {
 	  SEQ_BPM_Set(bpm);
+	  SEQ_MIDI_PORT_ClkDelayUpdateAll();
 	} else {
 	  // put tempo change request into the queue
 	  mios32_midi_package_t tempo_package; // or Softis?
