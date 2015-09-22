@@ -112,6 +112,11 @@ static seq_midi_out_queue_item_t *alloc_heap;
 static u32 alloc_pos;
 #endif
 
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+#define PPQN_DELAY_NUM 256
+static s8 ppqn_delay[PPQN_DELAY_NUM];
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! Initialisation of MIDI output scheduler
@@ -139,6 +144,15 @@ s32 SEQ_MIDI_OUT_Init(u32 mode)
 
   // memory will be allocated with first event
   SEQ_MIDI_OUT_FreeHeap();
+
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+  {
+    int i;
+    for(i=0; i<PPQN_DELAY_NUM; ++i) {
+      ppqn_delay[i] = 0;
+    }
+  }
+#endif
 
   return 0; // no error
 }
@@ -287,6 +301,18 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
     return -1; // allocation error
   };
 
+
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+  if( port < PPQN_DELAY_NUM ) {
+    s8 delay = ppqn_delay[port];
+    if( (delay < 0) && (timestamp < -delay) ) {
+      timestamp = 0;
+    } else {
+      timestamp += delay;
+    }
+  }
+#endif
+
   // create new item
   seq_midi_out_queue_item_t *new_item;
   if( (new_item=SEQ_MIDI_OUT_SlotMalloc()) == NULL ) {
@@ -304,7 +330,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
 #if DEBUG_VERBOSE_LEVEL == 2
   if( event_type != SEQ_MIDI_OUT_ClkEvent )
 #endif
-  DEBUG_MSG("[SEQ_MIDI_OUT_Send:%u] (tag %d) %02x %02x %02x len:%u\n", timestamp, midi_package.cable, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len);
+  DEBUG_MSG("[SEQ_MIDI_OUT_Send:%u] (tag %d) %02x %02x %02x len:%u @%u\n", timestamp, midi_package.cable, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2, len, SEQ_BPM_TickGet());
 #endif
 
   // search in queue for last item which has the same (or earlier) timestamp
@@ -386,7 +412,7 @@ s32 SEQ_MIDI_OUT_Send(mios32_midi_port_t port, mios32_midi_package_t midi_packag
   DEBUG_MSG("--- vvv ---\n");
   item=midi_queue;
   while( item != NULL ) {
-    DEBUG_MSG("[%u] (tag %d) %02x %02x %02x len:%u\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2, item->len);
+    DEBUG_MSG("[%u] (tag %d) %02x %02x %02x len:%u @%u\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2, item->len, SEQ_BPM_TickGet());
     item = item->next;
   }
   DEBUG_MSG("--- ^^^ ---\n");
@@ -431,7 +457,7 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
     // and ignore events, which will be played with next invocation of the Out Handler to avoid,
     // that a re-scheduled event will be checked again
     u8 evnt1 = item->package.evnt1;
-    if( (item->event_type == event_type) && (item->package.cable == tag) && (item->timestamp > timestamp) &&
+    if( (item->event_type == event_type) && (item->package.cable == tag) &&
 	(reschedule_filter == NULL ||
 	 !(reschedule_filter[evnt1>>5] & (1 << (evnt1 & 0x1f)))) ) {
       // ensure that we get a free memory slot by releasing the current item before queuing the off item
@@ -448,6 +474,20 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
       copy.next = item->next;
 #endif
 
+      u32 delayed_timestamp = timestamp;
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+      if( copy.port < PPQN_DELAY_NUM ) {
+	s8 delay = ppqn_delay[copy.port];
+	if( (delay < 0) && (delayed_timestamp < -delay) ) {
+	  delayed_timestamp = 0;
+	} else {
+	  delayed_timestamp += delay;
+	}
+      }
+#endif
+      if( item->timestamp <= delayed_timestamp )
+	break;
+
       // remove item from queue
       seq_midi_out_queue_item_t *next_item = item->next;
       SEQ_MIDI_OUT_SlotFree(item);
@@ -461,7 +501,7 @@ s32 SEQ_MIDI_OUT_ReSchedule(u8 tag, seq_midi_out_event_type_t event_type, u32 ti
       }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-      DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] (tag %d) %02x %02x %02x\n", timestamp, copy.package.cable, copy.package.evnt0, copy.package.evnt1, copy.package.evnt2);
+      DEBUG_MSG("[SEQ_MIDI_OUT_ReSchedule:%u] (tag %d) %02x %02x %02x @%u\n", timestamp, copy.package.cable, copy.package.evnt0, copy.package.evnt1, copy.package.evnt2, SEQ_BPM_TickGet());
 #endif
 
       // re-schedule copied item at new timestamp
@@ -579,7 +619,7 @@ s32 SEQ_MIDI_OUT_Handler(void)
 #if DEBUG_VERBOSE_LEVEL == 2
     if( item->event_type != SEQ_MIDI_OUT_ClkEvent )
 #endif
-    DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%u] (tag %d) %02x %02x %02x\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2);
+    DEBUG_MSG("[SEQ_MIDI_OUT_Handler:%u] (tag %d) %02x %02x %02x @%u\n", item->timestamp, item->package.cable, item->package.evnt0, item->package.evnt1, item->package.evnt2, SEQ_BPM_TickGet());
 #endif
 
     // if tempo event: change BPM stored in midi_package.ALL
@@ -610,7 +650,20 @@ s32 SEQ_MIDI_OUT_Handler(void)
       midi_queue = item->next;
       SEQ_MIDI_OUT_SlotFree(item);
 
-      SEQ_MIDI_OUT_Send(copy.port, copy.package, SEQ_MIDI_OUT_OffEvent, copy.len + copy.timestamp, 0);
+      u32 delayed_timestamp = copy.len + copy.timestamp;
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+      // revert timestamp delay (will be added again by SEQ_MIDI_OUT_Send())
+      if( copy.port < PPQN_DELAY_NUM ) {
+	s8 delay = ppqn_delay[copy.port];
+	if( (delay > 0) && (delayed_timestamp < delay) ) {
+	  delayed_timestamp = 0;
+	} else {
+	  delayed_timestamp -= delay;
+	}
+      }
+#endif
+
+      SEQ_MIDI_OUT_Send(copy.port, copy.package, SEQ_MIDI_OUT_OffEvent, delayed_timestamp, 0);
     } else {
       // remove item from queue
       midi_queue = item->next;
@@ -801,6 +854,31 @@ static void SEQ_MIDI_OUT_SlotFree(seq_midi_out_queue_item_t *item)
   }
 #endif
 }
+
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+/////////////////////////////////////////////////////////////////////////////
+//! Sets a delay for the given MIDI port
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_OUT_DelaySet(mios32_midi_port_t port, s8 delay)
+{
+  if( port >= PPQN_DELAY_NUM )
+    return -1; // invalid port
+  ppqn_delay[port] = delay;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the delay for the given MIDI port
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s8  SEQ_MIDI_OUT_DelayGet(mios32_midi_port_t port)
+{
+  if( port >= PPQN_DELAY_NUM )
+    return 0;
+  return ppqn_delay[port];
+}
+#endif
 
 
 //! \}

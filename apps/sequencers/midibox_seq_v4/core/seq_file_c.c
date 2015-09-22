@@ -660,12 +660,13 @@ s32 SEQ_FILE_C_Read(char *session)
 	    } else {
 	      word = strtok_r(NULL, separators, &brkt);
 	      s32 value = get_dec(word);
-	      if( value < 0 || value > 255 ) {
+	      if( value < -128 || value > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid delay value '%s'!", parameter, word);
 #endif
 	      } else {
 		SEQ_MIDI_PORT_ClkDelaySet(port, value);
+		SEQ_MIDI_PORT_ClkDelayUpdate(port);
 	      }
 	    }
 	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
@@ -992,7 +993,7 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
     u8 num_clk_ports = SEQ_MIDI_PORT_ClkNumGet();
 
     for(port_ix=0; port_ix<num_clk_ports; ++port_ix) {
-      u8 delay = SEQ_MIDI_PORT_ClkIxDelayGet(port_ix);
+      s8 delay = SEQ_MIDI_PORT_ClkIxDelayGet(port_ix);
       sprintf(line_buffer, "MIDI_OUT_MClock_Delay %s %d\n", SEQ_MIDI_PORT_ClkNameGet(port_ix), delay);
       FLUSH_BUFFER;
     }

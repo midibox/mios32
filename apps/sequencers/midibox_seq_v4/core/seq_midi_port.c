@@ -21,6 +21,7 @@
 #include <osc_client.h>
 
 #include "seq_hwcfg.h"
+#include "seq_bpm.h"
 #include "seq_midi_port.h"
 #include "seq_midi_in.h"
 #include "seq_cv.h"
@@ -171,8 +172,8 @@ static const seq_midi_port_entry_t clk_ports[NUM_CLK_PORTS] = {
   { OSC3,    "OSC4" },
 };
 
-static u8 clk_port_delay[NUM_CLK_PORTS];
-
+static s8 clk_port_delay[NUM_CLK_PORTS];
+static s8 tick_max_negative_offset;
 
 // MIDI Out mute function
 static u32 muted_out;
@@ -216,6 +217,7 @@ s32 SEQ_MIDI_PORT_Init(u32 mode)
 
   for(i=0; i<NUM_CLK_PORTS; ++i) {
     clk_port_delay[i] = 0;
+    tick_max_negative_offset = 0;
   }
 
   seq_midi_port_out_combined_ctr = 0;
@@ -620,32 +622,84 @@ s32 SEQ_MIDI_PORT_OutMuteSet(mios32_midi_port_t port, u8 mute)
 /////////////////////////////////////////////////////////////////////////////
 // Configures Clock Output Delay
 /////////////////////////////////////////////////////////////////////////////
-u8 SEQ_MIDI_PORT_ClkDelayGet(mios32_midi_port_t port)
+s8 SEQ_MIDI_PORT_ClkDelayGet(mios32_midi_port_t port)
 {
   u8 port_ix = SEQ_MIDI_PORT_ClkIxGet(port);
   return clk_port_delay[port_ix];
 }
 
-u8 SEQ_MIDI_PORT_ClkIxDelayGet(u8 port_ix)
+s8 SEQ_MIDI_PORT_ClkIxDelayGet(u8 port_ix)
 {
   if( port_ix >= NUM_CLK_PORTS )
     return 0;
   return clk_port_delay[port_ix];
 }
 
-s32 SEQ_MIDI_PORT_ClkDelaySet(mios32_midi_port_t port, u8 delay)
+s32 SEQ_MIDI_PORT_ClkDelaySet(mios32_midi_port_t port, s8 delay)
 {
   u8 port_ix = SEQ_MIDI_PORT_ClkIxGet(port);
   clk_port_delay[port_ix] = delay;
   return 0; // no error
 }
 
-s32 SEQ_MIDI_PORT_ClkIxDelaySet(u8 port_ix, u8 delay)
+s32 SEQ_MIDI_PORT_ClkIxDelaySet(u8 port_ix, s8 delay)
 {
   if( port_ix >= NUM_CLK_PORTS )
     return -1; // invalid clock port
   clk_port_delay[port_ix] = delay;
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Updates the ppqn delays whenever a mS delay value has been changed
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_ClkDelayUpdate(mios32_midi_port_t port)
+{
+  s8 delay = SEQ_MIDI_PORT_ClkDelayGet(port);
+
+  if( delay == 0 ) {
+    SEQ_MIDI_OUT_DelaySet(port, 0);
+  } else {
+    s32 ppqn_delay;
+    if( delay > 0 ) {
+      ppqn_delay = SEQ_BPM_TicksFor_mS(delay) + 1;
+      if( ppqn_delay > 127 )
+	ppqn_delay = 127;
+    } else {
+      ppqn_delay = -(SEQ_BPM_TicksFor_mS(-delay) + 1);
+      if( ppqn_delay < -128 )
+	ppqn_delay = -128;
+
+      if( ppqn_delay < tick_max_negative_offset )
+	tick_max_negative_offset = ppqn_delay;
+    }
+    SEQ_MIDI_OUT_DelaySet(port, ppqn_delay);
+  }
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// should be called on BPM changes
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MIDI_PORT_ClkDelayUpdateAll(void)
+{
+  int port_ix;
+
+  tick_max_negative_offset = 0; // will be updated in ClkDelayUpdate
+  for(port_ix=0; port_ix<NUM_CLK_PORTS; ++port_ix) {
+    SEQ_MIDI_PORT_ClkDelayUpdate(clk_ports[port_ix].port);
+  }
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns the maximum negative offset which needs to be considered when
+// scheduling events
+/////////////////////////////////////////////////////////////////////////////
+s8 SEQ_MIDI_PORT_TickDelayMaxNegativeOffset(void)
+{
+  return tick_max_negative_offset;
 }
 
 

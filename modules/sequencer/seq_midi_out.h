@@ -46,6 +46,11 @@ extern "C" {
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 0
 #endif
 
+// support for ppqn accurate delays
+#ifndef SEQ_MIDI_OUT_SUPPORT_DELAY
+#define SEQ_MIDI_OUT_SUPPORT_DELAY 0
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -78,6 +83,10 @@ extern s32 SEQ_MIDI_OUT_FlushQueue(void);
 extern s32 SEQ_MIDI_OUT_FreeHeap(void);
 extern s32 SEQ_MIDI_OUT_Handler(void);
 
+#if SEQ_MIDI_OUT_SUPPORT_DELAY
+extern s32 SEQ_MIDI_OUT_DelaySet(mios32_midi_port_t port, s8 delay);
+extern s8  SEQ_MIDI_OUT_DelayGet(mios32_midi_port_t port);
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

@@ -122,7 +122,7 @@ u8 seq_core_glb_loop_steps;
 /////////////////////////////////////////////////////////////////////////////
 
 static u32 bpm_tick_prefetch_req;
-static u32 bpm_tick_prefetched_ctr;
+static u32 bpm_tick_prefetched;
 
 static float seq_core_bpm_target;
 static float seq_core_bpm_sweep_inc;
@@ -396,6 +396,10 @@ s32 SEQ_CORE_Handler(void)
       // release slave mute
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
 
+      // update delays
+      SEQ_MIDI_PORT_ClkDelayUpdateAll();
+
+      // send continue event
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
 
       // release pause mode
@@ -406,6 +410,10 @@ s32 SEQ_CORE_Handler(void)
       // release slave mute
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
 
+      // update delays
+      SEQ_MIDI_PORT_ClkDelayUpdateAll();
+
+      // send start event and reset sequencer
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       SEQ_SONG_Reset(0);
       SEQ_CORE_Reset(0);
@@ -422,6 +430,10 @@ s32 SEQ_CORE_Handler(void)
       // release slave mute
       seq_core_slaveclk_mute = SEQ_CORE_SLAVECLK_MUTE_Off;
 
+      // update delays
+      SEQ_MIDI_PORT_ClkDelayUpdateAll();
+
+      // new position
       u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
       SEQ_CORE_Reset(new_tick);
       SEQ_SONG_Reset(new_tick);
@@ -445,81 +457,76 @@ s32 SEQ_CORE_Handler(void)
       // check all requests again after execution of this part
       again = 1;
 
-      if( bpm_tick_prefetched_ctr ) {
-	// ticks already generated due to prefetching - wait until we catch up
-	--bpm_tick_prefetched_ctr;
-      } else {
-	// it's possible to forward the sequencer on pattern changes
-	// in this case bpm_tick_prefetch_req is > bpm_tick
-	// in all other cases, we only generate a single tick (realtime play)
+      // it's possible to forward the sequencer on pattern changes
+      // in this case bpm_tick_prefetch_req is > bpm_tick
+      // in all other cases, we only generate a single tick (realtime play)
+      u32 add_bpm_ticks = 0;
+      if( bpm_tick_prefetch_req > bpm_tick ) {
+	add_bpm_ticks = bpm_tick_prefetch_req - bpm_tick;
+      }
+      // invalidate request before a new one will be generated (e.g. via SEQ_SONG_NextPos())
+      bpm_tick_prefetch_req = 0;
 
-	u32 bpm_tick_target = bpm_tick;
-	u8 is_prefetch = 0;
-	if( bpm_tick_prefetch_req > bpm_tick ) {
-	  is_prefetch = 1;
-	  bpm_tick_target = bpm_tick_prefetch_req;
-	  bpm_tick_prefetched_ctr = bpm_tick_target - bpm_tick;
-#if 0
-	  DEBUG_MSG("[SEQ_CORE:%u] bpm_tick:%u  bpm_tick_target:%u  bpm_tick_prefetched_ctr:%u\n",
-		    SEQ_BPM_TickGet(), bpm_tick, bpm_tick_target, bpm_tick_prefetched_ctr);
-#endif
-	}
+      // consider negative delay offsets: preload the appr. number of ticks
+      s8 max_negative_offset = SEQ_MIDI_PORT_TickDelayMaxNegativeOffset();	
+      if( max_negative_offset < 0 ) {
+	s32 offset = -max_negative_offset + 3; // +3 margin
+	add_bpm_ticks += offset;
+      }
 
-	// invalidate request before a new one will be generated (e.g. via SEQ_SONG_NextPos())
-	bpm_tick_prefetch_req = 0;
+      // remove ticks which have already been processed before
+      u32 bpm_tick_target = bpm_tick + add_bpm_ticks;
+      if( !seq_core_state.FIRST_CLK && bpm_tick <= bpm_tick_prefetched ) {
+	bpm_tick = bpm_tick_prefetched + 1;
+      }
 
-	for(; bpm_tick<=bpm_tick_target; ++bpm_tick) {
-#if LED_PERFORMANCE_MEASURING == 1
-	  MIOS32_BOARD_LED_Set(0xffffffff, 1);
-#endif
-#if STOPWATCH_PERFORMANCE_MEASURING == 1
-	  SEQ_STATISTICS_StopwatchReset();
-#endif
-
-	  // generate MIDI events
-	  SEQ_CORE_Tick(bpm_tick, -1, 0);
-	  SEQ_MIDPLY_Tick(bpm_tick);
+      // processing remaining ticks
+      for(; bpm_tick<=bpm_tick_target; ++bpm_tick) {
+	bpm_tick_prefetched = bpm_tick;
 
 #if LED_PERFORMANCE_MEASURING == 1
-	  MIOS32_BOARD_LED_Set(0xffffffff, 0);
+	MIOS32_BOARD_LED_Set(0xffffffff, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
-	  SEQ_STATISTICS_StopwatchCapture();
+	SEQ_STATISTICS_StopwatchReset();
 #endif
 
-	  // load new pattern/song step if reference step reached measure
-	  // (this code is outside SEQ_CORE_Tick() to save stack space!)
-	  if( (bpm_tick % 96) == 20 ) {
-	    if( SEQ_SONG_ActiveGet() ) {
-	      if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
-		    seq_core_state.ref_step_song == seq_cc_trk[seq_song_guide_track-1].length) ||
-		  (!seq_song_guide_track && seq_core_state.ref_step_song == seq_core_steps_per_pattern) ) {
+	// generate MIDI events
+	SEQ_CORE_Tick(bpm_tick, -1, 0);
+	SEQ_MIDPLY_Tick(bpm_tick);
 
-		if( seq_song_guide_track ) {
-		  // request synch-to-measure for all tracks
-		  SEQ_CORE_ManualSynchToMeasure(0xffff);
+#if LED_PERFORMANCE_MEASURING == 1
+	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+#endif
+#if STOPWATCH_PERFORMANCE_MEASURING == 1
+	SEQ_STATISTICS_StopwatchCapture();
+#endif
 
-		  // corner case: we will load new tracks and the length of the guide track could change
-		  // in order to ensure that the reference step jumps back to 0, we've to force this here:
-		  seq_core_state.FORCE_REF_STEP_RESET = 1;
-		}
-
-		SEQ_SONG_NextPos();
+	// load new pattern/song step if reference step reached measure
+	// (this code is outside SEQ_CORE_Tick() to save stack space!)
+	if( (bpm_tick % 96) == 20 ) {
+	  if( SEQ_SONG_ActiveGet() ) {
+	    if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
+		  seq_core_state.ref_step_song == seq_cc_trk[seq_song_guide_track-1].length) ||
+		(!seq_song_guide_track && seq_core_state.ref_step_song == seq_core_steps_per_pattern) ) {
+	      
+	      if( seq_song_guide_track ) {
+		// request synch-to-measure for all tracks
+		SEQ_CORE_ManualSynchToMeasure(0xffff);
+		
+		// corner case: we will load new tracks and the length of the guide track could change
+		// in order to ensure that the reference step jumps back to 0, we've to force this here:
+		seq_core_state.FORCE_REF_STEP_RESET = 1;
 	      }
-	    } else {
-	      if( seq_core_options.SYNCHED_PATTERN_CHANGE &&
-		  seq_core_state.ref_step == seq_core_steps_per_pattern ) {
-		SEQ_PATTERN_Handler();
-	      }
+	      
+	      SEQ_SONG_NextPos();
+	    }
+	  } else {
+	    if( seq_core_options.SYNCHED_PATTERN_CHANGE &&
+		seq_core_state.ref_step == seq_core_steps_per_pattern ) {
+	      SEQ_PATTERN_Handler();
 	    }
 	  }
-	}
-
-	if( is_prefetch ) {
-#if 0
-
-	  DEBUG_MSG("[SEQ_CORE:%u] prefetching finished, saved %d ticks\n", SEQ_BPM_TickGet(), bpm_tick_target-SEQ_BPM_TickGet());
-#endif
 	}
       }
     }
@@ -611,7 +618,7 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 
   // cancel prefetch requests/counter
   bpm_tick_prefetch_req = 0;
-  bpm_tick_prefetched_ctr = 0;
+  bpm_tick_prefetched = bpm_start;
 
   // cancel stop and set step request
   seq_core_state.MANUAL_TRIGGER_STOP_REQ = 0;
@@ -2253,6 +2260,7 @@ s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp)
   if( sweep_ramp <= 0.0 ) {
     seq_core_bpm_target = bpm;
     SEQ_BPM_Set(seq_core_bpm_target);
+    SEQ_MIDI_PORT_ClkDelayUpdateAll();
     seq_core_bpm_sweep_inc = 0.0;
   } else {
     seq_core_bpm_target = bpm;
@@ -2282,8 +2290,10 @@ s32 SEQ_CORE_BPM_SweepHandler(void)
 	(seq_core_bpm_sweep_inc < 0.0 && current_bpm <= (seq_core_bpm_target+tolerance)) ) {
       seq_core_bpm_sweep_inc = 0.0; // final value reached
       SEQ_BPM_Set(seq_core_bpm_target);
+      SEQ_MIDI_PORT_ClkDelayUpdateAll();
     } else {
       SEQ_BPM_Set(current_bpm + seq_core_bpm_sweep_inc);
+      SEQ_MIDI_PORT_ClkDelayUpdateAll();
     }
   }
 

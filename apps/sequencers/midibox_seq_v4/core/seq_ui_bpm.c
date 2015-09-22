@@ -251,9 +251,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } break;
 
     case ITEM_MCLK_DELAY: {
-      u8 delay = SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port);
+      u8 delay = SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port) + 128;
       if( SEQ_UI_Var8_Inc(&delay, 0, 255, incrementer) >= 0 ) {
-        SEQ_MIDI_PORT_ClkDelaySet(selected_mclk_port, delay);
+        SEQ_MIDI_PORT_ClkDelaySet(selected_mclk_port, (s32)delay - 128);
+	SEQ_MIDI_PORT_ClkDelayUpdate(selected_mclk_port);
         ui_store_file_required = 1;
         return 1; // value changed
       }
@@ -433,13 +434,12 @@ static s32 LCD_Handler(u8 high_prio)
       default: SEQ_LCD_PrintString("---");
     }
   }
-  SEQ_LCD_PrintSpaces(1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MCLK_DELAY && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+    SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintFormattedString("%3dmS", SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port));
+    SEQ_LCD_PrintFormattedString("%4dmS", SEQ_MIDI_PORT_ClkDelayGet(selected_mclk_port));
   }
   SEQ_LCD_PrintSpaces(5);
 
@@ -535,6 +535,7 @@ s32 SEQ_UI_BPM_TapTempo(void)
     float bpmF = bpm / 1000.0;
     seq_core_bpm_preset_tempo[seq_core_bpm_preset_num] = bpmF;
     SEQ_BPM_Set(bpmF);
+    SEQ_MIDI_PORT_ClkDelayUpdateAll();
 
     // if in auto mode and BPM generator is clocked in slave mode:
     // change to master mode

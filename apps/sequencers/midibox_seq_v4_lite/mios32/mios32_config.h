@@ -88,6 +88,9 @@ extern void APP_SendDebugMessage(char *format, ...);
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
+// support delays
+#define SEQ_MIDI_OUT_SUPPORT_DELAY 1
+
 
 // enable four UARTs
 #define MIOS32_UART_NUM 4

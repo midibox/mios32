@@ -92,6 +92,9 @@ extern void APP_SendDebugMessage(char *format, ...);
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
 
+// support delays
+#define SEQ_MIDI_OUT_SUPPORT_DELAY 1
+
 
 #if defined(MIOS32_FAMILY_STM32F10x)
 // enable third UART
