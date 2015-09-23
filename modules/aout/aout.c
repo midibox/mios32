@@ -393,16 +393,20 @@ s32 AOUT_IF_Init(u32 mode)
       status |= MIOS32_SPI_TransferModeInit(AOUT_SPI, MIOS32_SPI_MODE_CLK0_PHASE1, MIOS32_SPI_PRESCALER_16); // ca. 5 MBit
 
       // initialize CTRL0
-      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
+      // Note: with each CTRL0 access we enable the DOUT pin which is connected to DIN of the next module
+      // Therefore we've to strobe FS after each 16bit transfer to ensure that the next module will get the following data
       for(dev=aout_num_devices-1; dev>=0; --dev) {
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
 	// DO=1 (DOUT Enable), R=3 (internal reference, 2V)
 	u8 ctrl0 = (1 << 3) | (3 << 1);
 	MIOS32_SPI_TransferByte(AOUT_SPI, 0x8 << 4);
 	MIOS32_SPI_TransferByte(AOUT_SPI, ctrl0);
+	MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	MIOS32_DELAY_Wait_uS(1); // short delay to ensure that RC will be pulsed by at least 1 uS
       }
-      MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
 
       // initialize CTRL1
+      // Note: now we can access all chained modules in one run (FS only strobed once)
       MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 0); // spi, rc_pin, pin_value
       for(dev=aout_num_devices-1; dev>=0; --dev) {
 	u8 ctrl1 = 0;
@@ -1128,14 +1132,13 @@ s32 AOUT_Update(void)
 	      u16 hword = (chn << 12) | dac_value;
 
 	      // transfer word
-	      MIOS32_IRQ_Disable();
 	      MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
 	      MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
-	      MIOS32_IRQ_Enable();
 	    }
 
 	    // deactivate chip select
 	    MIOS32_SPI_RC_PinSet(AOUT_SPI, AOUT_SPI_RC_PIN, 1); // spi, rc_pin, pin_value
+	    MIOS32_DELAY_Wait_uS(1); // short delay to ensure that RC will be pulsed by at least 1 uS
 	  }
 	}
       } break;
@@ -1167,10 +1170,8 @@ s32 AOUT_Update(void)
 	      }
 
 	      // transfer word
-	      MIOS32_IRQ_Disable();
 	      MIOS32_SPI_TransferByte(AOUT_SPI, hword >> 8);
 	      MIOS32_SPI_TransferByte(AOUT_SPI, hword & 0xff);
-	      MIOS32_IRQ_Enable();
 	    }
 
 	    // deactivate chip select
