@@ -3703,6 +3703,10 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     } else {
       ++num_forwarded;
 
+      // clear the custom flags, because they are very likely not compatible
+      // see also http://midibox.org/forums/topic/19709-dio-matrix-going-haywire/#comment-171691
+      fwd_item.custom_flags.ALL = 0;
+
       // notify item (will also store value in pool item)
       if( fwd_item.flags.use_key_or_cc || fwd_item.flags.use_any_key_or_cc ) // only change secondary value if key_or_cc option selected, or if fwd item allows to change the key value
 	fwd_item.secondary_value = item->secondary_value;
