@@ -287,6 +287,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       APP_LCD_TerminalHelp(_output_function);
 #endif
       out("  set dout <pin> <0|1>:             directly sets DOUT (all or 0..%d) to given level (1 or 0)", MIOS32_SRIO_NUM_SR*8 - 1);
+      out("  show douts:                       prints the current DOUT patterns");
       out("  set debug <on|off>:               enables debug messages (current: %s)", debug_verbose_level ? "on" : "off");
       out("  set autoload <on|off>:            enables autoload after filebrowser upload (current: %s)", autoload_enabled ? "on" : "off");
       out("  save <name>:                      stores current config on SD Card");
@@ -493,6 +494,17 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       } else {
 	if( strcmp(parameter, "file") == 0 ) {
 	  MBNG_FILE_C_Debug();
+	} else if( strcmp(parameter, "douts") == 0 ) {
+	  int page;
+	  for(page=0; page<MIOS32_SRIO_NUM_DOUT_PAGES; ++page) {
+	    char buffer[3*MIOS32_SRIO_NUM_SR + 20];
+	    sprintf(buffer, "Page %2d:", page+0);
+	    int i;
+	    for(i=0; i<MIOS32_SRIO_NUM_SR; ++i) {
+	      sprintf((char *)&buffer[8+i*3], " %02x", mios32_srio_dout[page][MIOS32_SRIO_NUM_SR-i-1]);
+	    }
+	    MIOS32_MIDI_SendDebugString(buffer);
+	  }
 	} else if( strcmp(parameter, "poolbin") == 0 ) {
 	  MBNG_EVENT_PoolPrint();
 	} else if( strcmp(parameter, "pool") == 0 ) {
