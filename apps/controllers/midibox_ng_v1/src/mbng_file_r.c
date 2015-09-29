@@ -46,6 +46,35 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Tokenize the source file?
+/////////////////////////////////////////////////////////////////////////////
+#if defined(MIOS32_FAMILY_STM32F4xx)
+# define NGR_TOKENIZED 0 // 1 -- currently disabled until the feature is fully implemented
+#else
+# define NGR_TOKENIZED 0
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+//! Defines and variables for the tokenizer
+/////////////////////////////////////////////////////////////////////////////
+#if NGR_TOKENIZED
+#define NGR_TOKEN_MEM_SIZE 16384
+static u8 ngr_token_mem[NGR_TOKEN_MEM_SIZE];
+static u32 ngr_token_mem_end;
+
+typedef enum {
+  TOKEN_NOP = 0,
+  TOKEN_LCD     = 0x01,
+  TOKEN_LOG     = 0x02,
+  TOKEN_IF      = 0x80,
+  TOKEN_ELSE    = 0x81,
+  TOKEN_ELSEIF  = 0x82,
+  TOKEN_ENDIF   = 0x84,
+} ngr_token_t;
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! Nesting vars
 /////////////////////////////////////////////////////////////////////////////
 #define IF_MAX_NESTING_LEVEL 16
@@ -72,7 +101,8 @@ static u8 if_state[IF_MAX_NESTING_LEVEL];
 
 // file informations stored in RAM
 typedef struct {
-  unsigned valid: 1;   // file is accessible
+  unsigned valid: 1;      // file is accessible
+  unsigned tokenized: 1;  // file has already been tokenized
   file_t r_file;
 } mbng_file_r_info_t;
 
@@ -154,7 +184,14 @@ s32 MBNG_FILE_R_Init(u32 mode)
 s32 MBNG_FILE_R_Load(char *filename)
 {
   s32 error;
-  error = MBNG_FILE_R_Read(filename, 0);
+
+#if NGR_TOKENIZED
+  u8 tokenize_req = 1; // called if file not valid yet
+#else
+  u8 tokenize_req = 0;
+#endif
+
+  error = MBNG_FILE_R_Read(filename, 0, tokenize_req);
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_R] Tried to open script %s, status: %d\n", filename, error);
 #endif
@@ -171,8 +208,13 @@ s32 MBNG_FILE_R_Load(char *filename)
 s32 MBNG_FILE_R_Unload(void)
 {
   mbng_file_r_info.valid = 0;
+  mbng_file_r_info.tokenized = 0;
   mbng_file_r_req.ALL = 0;
   mbng_file_r_delay_ctr = 0;
+
+#if NGR_TOKENIZED
+  ngr_token_mem_end = 0;
+#endif
 
   return 0; // no error
 }
@@ -186,6 +228,27 @@ s32 MBNG_FILE_R_Unload(void)
 s32 MBNG_FILE_R_Valid(void)
 {
   return mbng_file_r_info.valid;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Prints information about the token memory (used in terminal.c)
+//! returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_TokenMemPrint(void)
+{
+#if !NGR_TOKENIZED
+  DEBUG_MSG("ERROR: tokenized .NGR scripts not supported by this processor!");
+  return -1;
+#else
+  DEBUG_MSG("Token memory allocation: %d of %d bytes", ngr_token_mem_end, NGR_TOKEN_MEM_SIZE);
+
+  if( ngr_token_mem_end > 0 ) {
+    MIOS32_MIDI_SendDebugHexDump(ngr_token_mem, ngr_token_mem_end);
+  }
+
+  return 0; // no error
+#endif
 }
 
 
@@ -214,6 +277,64 @@ s32 MBNG_FILE_R_VarValueGet()
 {
   return vars.value;
 }
+
+
+#if NGR_TOKENIZED
+/////////////////////////////////////////////////////////////////////////////
+//! Adds a token to the ngr memory
+//! returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_PushToken(ngr_token_t token, u8 line)
+{
+  if( ngr_token_mem_end >= (NGR_TOKEN_MEM_SIZE-1) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: no free token memory anymore (%d bytes allocated!)", line, NGR_TOKEN_MEM_SIZE);
+#endif
+    return -1;
+  }
+
+  ngr_token_mem[ngr_token_mem_end++] = (u8)token;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Pushes a string to the ngr memory
+//! returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_PushString(char *str, u8 line)
+{
+  for(; *str != 0; ++str) {
+    if( MBNG_FILE_R_PushToken(*str, line) < 0 )
+      return -1;
+  }
+
+  return MBNG_FILE_R_PushToken(0, line);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Pushes a memory region to the ngr memory
+//! returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_PushMemory(u8 *src, u32 src_size, u8 line)
+{
+  if( (ngr_token_mem_end+src_size) > NGR_TOKEN_MEM_SIZE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: no free token memory anymore (%d bytes allocated!)", line, NGR_TOKEN_MEM_SIZE);
+#endif
+    return -1;
+  }
+
+  u8 *dst = (u8 *)&ngr_token_mem[ngr_token_mem_end];
+  int i;
+  for(i=0; i<src_size; ++i) {
+    *(dst++) = *(src++);
+  }
+  ngr_token_mem_end += src_size;
+
+  return 0; // no error
+}
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -395,7 +516,7 @@ static mbng_file_r_item_id_t parseId(char *parameter)
 //! \returns >= 0 if value is valid
 //! \returns -1000000000 if value is invalid
 /////////////////////////////////////////////////////////////////////////////
-static s32 parseValue(u32 line, char *command, char *value_str)
+static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
 {
   if( value_str == NULL || value_str[0] == 0 )
     return -1000000000;
@@ -405,8 +526,8 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     int len = strlen(value_str);
     if( value_str[len-1] != ']' ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid syntax for math operation:", line);
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: '%s' should end with ']' in '%s' command!", line, value_str, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid syntax for math operation:", line);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' should end with ']' in '%s' command!", line, value_str, command);
 #endif
       return -1000000000;
     }
@@ -440,7 +561,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
 
       if( operator == '?' ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: no operator in math operation '%s'!", line, value_str);
+	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: no operator in math operation '%s'!", line, value_str);
 #endif
 	return -1000000000;
       }
@@ -449,19 +570,19 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     //DEBUG_MSG("Calc: %s %c %s\n", lOperand, operator, rOperand);
 
     // get left side value (recursively)
-    s32 lValue = parseValue(line, command, trim(lOperand));
+    s32 lValue = parseValue(line, command, trim(lOperand), tokenize_req);
     if( lValue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid left side operand '%s' in '%s' command!", line, lOperand, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid left side operand '%s' in '%s' command!", line, lOperand, command);
 #endif
       return -1000000000;
     }
 
     // get right side value (recursively)
-    s32 rValue = parseValue(line, command, trim(rOperand));
+    s32 rValue = parseValue(line, command, trim(rOperand), tokenize_req);
     if( rValue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid right side operand '%s' in '%s' command!", line, rOperand, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid right side operand '%s' in '%s' command!", line, rOperand, command);
 #endif
       return -1000000000;
     }
@@ -478,7 +599,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
     }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: unsupported operator in math operation '%s'!", line, value_str);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unsupported operator in math operation '%s'!", line, value_str);
 #endif
     return -1000000000;
   }
@@ -503,8 +624,8 @@ static s32 parseValue(u32 line, char *command, char *value_str)
       return mbng_patch_cfg.sysex_chn;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid or unsupported variable:", line);
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: '%s' in '%s' command!", line, value_str, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid or unsupported variable:", line);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' in '%s' command!", line, value_str, command);
 #endif
       return -1000000000;
     }
@@ -520,7 +641,7 @@ static s32 parseValue(u32 line, char *command, char *value_str)
       return item.value;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: '%s' not found in event pool by '%s' command!", line, value_str, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: '%s' not found in event pool by '%s' command!", line, value_str, command);
 #endif
       return -1000000000;
     }
@@ -556,67 +677,97 @@ s32 lineIsEmpty(char *line)
 //! \returns < 0 if condition is invalid
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseCondition(u32 line, char *command, char **brkt)
+s32 parseCondition(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *lvalue_str, *condition_str, *rvalue_str;
 
   if( !(lvalue_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing left value of expression in '%s' command!", line, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing left value of expression in '%s' command!", line, command);
 #endif
     return -1;
   }
 
   if( !(condition_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing condition of expression in '%s' command!", line, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing condition of expression in '%s' command!", line, command);
 #endif
     return -2;
   }
 
   if( !(rvalue_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing right value of expression in '%s' command!", line, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing right value of expression in '%s' command!", line, command);
 #endif
     return -3;
   }
 
-  s32 lvalue = parseValue(line, command, lvalue_str);
+  s32 lvalue = parseValue(line, command, lvalue_str, tokenize_req);
   if( lvalue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid left value '%s' in '%s' command!", line, lvalue_str, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid left value '%s' in '%s' command!", line, lvalue_str, command);
 #endif
     return -4;
   }
 
-  s32 rvalue = parseValue(line, command, rvalue_str);
+  s32 rvalue = parseValue(line, command, rvalue_str, tokenize_req);
   if( rvalue <= -1000000000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid right value '%s' in '%s' command!", line, rvalue_str, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid right value '%s' in '%s' command!", line, rvalue_str, command);
 #endif
     return -5;
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_C:%d] condition: %s %s %s (%d %s %d)\n", line, lvalue_str, condition_str, rvalue_str, lvalue, condition_str, rvalue);
+  DEBUG_MSG("[MBNG_FILE_R:%d] condition: %s %s %s (%d %s %d)\n", line, lvalue_str, condition_str, rvalue_str, lvalue, condition_str, rvalue);
 #endif
 
   if( strcasecmp(condition_str, "==") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue == rvalue;
   } else if( strcasecmp(condition_str, "!=") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue != rvalue;
   } else if( strcasecmp(condition_str, ">=") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue >= rvalue;
   } else if( strcasecmp(condition_str, "<=") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue <= rvalue;
   } else if( strcasecmp(condition_str, ">") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue > rvalue;
   } else if( strcasecmp(condition_str, "<") == 0 ) {
+#if NGR_TOKENIZED
+    if( tokenize_req ) {
+    }
+#endif
+
     return lvalue < rvalue;
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 1
-  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid or unsupported condition '%s' in '%s' command!", line, condition_str, command);
+  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid or unsupported condition '%s' in '%s' command!", line, condition_str, command);
 #endif
 
   return -10; // invalid condition
@@ -627,12 +778,12 @@ s32 parseCondition(u32 line, char *command, char **brkt)
 //! help function which parses a SEND command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSend(u32 line, char *command, char **brkt)
+s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *event_str;
   if( !(event_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing event type in '%s' command!", line, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing event type in '%s' command!", line, command);
 #endif
     return -1;
   }
@@ -640,7 +791,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   mbng_event_type_t event_type;
   if( (event_type=MBNG_EVENT_ItemTypeFromStrGet(event_str)) == MBNG_EVENT_TYPE_UNDEFINED ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: unknown event type '%s' in '%s' command!", line, event_str, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unknown event type '%s' in '%s' command!", line, event_str, command);
 #endif
     return -1;
   }
@@ -649,7 +800,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
   char *port_str;
   if( !(port_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: missing MIDI port in '%s' command!", line, command);
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing MIDI port in '%s' command!", line, command);
 #endif
     return -1;
   }
@@ -671,9 +822,9 @@ s32 parseSend(u32 line, char *command, char **brkt)
       }
     }
     
-    if( out_port == 0xff && ((out_port=parseValue(line, command, port_str)) < 0 || out_port > 0xff) ) {
+    if( out_port == 0xff && ((out_port=parseValue(line, command, port_str, tokenize_req)) < 0 || out_port > 0xff) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI port '%s' in '%s' command!", line, port_str, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid MIDI port '%s' in '%s' command!", line, port_str, command);
 #endif
       return -1;
     }
@@ -720,7 +871,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
 	}
       } else {
 	int value;
-	if( (value=parseValue(line, command, stream_str)) < 0 || value > 0xff ) {
+	if( (value=parseValue(line, command, stream_str, tokenize_req)) < 0 || value > 0xff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid SysEx value '%s' in command '%s', expecting 0..255 (0x00..0xff)\n", line, stream_str, command);
 #endif
@@ -763,7 +914,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
     }
 
     s32 value;
-    if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+    if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value for '%s' event in '%s' command!", line, event_str, command);
 #endif
@@ -814,7 +965,7 @@ s32 parseSend(u32 line, char *command, char **brkt)
 //! help function which parses a EXEC_META command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseExecMeta(u32 line, char *command, char **brkt)
+s32 parseExecMeta(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   u8 stream[10];
 
@@ -898,7 +1049,7 @@ s32 parseExecMeta(u32 line, char *command, char **brkt)
 //! help function which parses a SET command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
+s32 parseSet(u32 line, char *command, char **brkt, u8 send_event, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -939,7 +1090,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
   }
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
@@ -969,7 +1120,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
       mbng_patch_cfg.sysex_chn = value;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid or unsupported variable '%s' in '%s' command!", line, dst_str, command);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid or unsupported variable '%s' in '%s' command!", line, dst_str, command);
 #endif
       return -1;
     }
@@ -1021,7 +1172,7 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event)
 //! help function which parses a SET_RGB command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetRgb(u32 line, char *command, char **brkt)
+s32 parseSetRgb(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1131,7 +1282,7 @@ s32 parseSetRgb(u32 line, char *command, char **brkt)
 //! help function which parses a SET_LOCK command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetLock(u32 line, char *command, char **brkt)
+s32 parseSetLock(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1160,7 +1311,7 @@ s32 parseSetLock(u32 line, char *command, char **brkt)
   }
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
@@ -1202,7 +1353,7 @@ s32 parseSetLock(u32 line, char *command, char **brkt)
 //! help function which parses a TRIGGER command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseTrigger(u32 line, char *command, char **brkt)
+s32 parseTrigger(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *dst_str = NULL;
   mbng_file_r_item_id_t id; id.ALL = 0;
@@ -1255,7 +1406,7 @@ s32 parseTrigger(u32 line, char *command, char **brkt)
 //! help function which parses a SET_ACTIVE command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetActive(u32 line, char *command, char **brkt)
+s32 parseSetActive(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1284,7 +1435,7 @@ s32 parseSetActive(u32 line, char *command, char **brkt)
   }
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
@@ -1327,7 +1478,7 @@ s32 parseSetActive(u32 line, char *command, char **brkt)
 //! help function which parses a SET_NO_DUMP command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetNoDump(u32 line, char *command, char **brkt)
+s32 parseSetNoDump(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1356,7 +1507,7 @@ s32 parseSetNoDump(u32 line, char *command, char **brkt)
   }
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
@@ -1399,7 +1550,7 @@ s32 parseSetNoDump(u32 line, char *command, char **brkt)
 //! help function which parses a SET_MIN and SET_MAX command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max)
+s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max, u8 tokenize_req)
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1428,7 +1579,7 @@ s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max)
   }
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str)) < -16384 || value >= 16383 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
@@ -1477,7 +1628,7 @@ s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max)
 //! returns > 0 if a delay has been requested
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseDelay(u32 line, char *command, char **brkt)
+s32 parseDelay(u32 line, char *command, char **brkt, u8 tokenize_req)
 {
   char *value_str;
   s32 value;
@@ -1488,7 +1639,7 @@ s32 parseDelay(u32 line, char *command, char **brkt)
     return -1;
   }
 
-  if( (value=parseValue(line, command, value_str)) < 0 || value > 100000 ) {
+  if( (value=parseValue(line, command, value_str, tokenize_req)) < 0 || value > 100000 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s' command (expecting 0..100000)!\n", line, command, value_str);
 #endif
@@ -1508,7 +1659,7 @@ s32 parseDelay(u32 line, char *command, char **brkt)
 //! returns > 0 if a valid filename has been specified
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename)
+s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename, u8 tokenize_req)
 {
   char *filename;
   if( !(filename = ngr_strtok_r(NULL, separators, brkt)) ) {
@@ -1552,7 +1703,7 @@ s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename)
 //! Parses a .NGR command line
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, char *load_filename)
+s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_level, char *load_filename, u8 tokenize_req)
 {
   s32 status = 0;
 
@@ -1567,6 +1718,12 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       return 0;
     }
 
+
+    /////////////////////////////////////////////////////////////////////////
+    //
+    // IF/ELSE/ELSEIF/ENDIF
+    //
+    /////////////////////////////////////////////////////////////////////////
     if( strcasecmp(parameter, "IF") == 0 ) {
       if( !if_state ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1586,7 +1743,15 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this IF is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
-	  s32 match = parseCondition(line, parameter, &brkt);
+#if NGR_TOKENIZED
+	  if( tokenize_req ) { // store token
+	    if( MBNG_FILE_R_PushToken(TOKEN_IF, line) < 0 )
+	      return 2; // exit due to error
+	  }
+#endif
+
+	  s32 match = parseCondition(line, parameter, &brkt, tokenize_req);
+
 	  if( match < 0 ) {
 	    return 2; // exit due to error
 	  } else {
@@ -1610,11 +1775,19 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
 #endif
       } else {
-	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
+	if( !tokenize_req && *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
-	  if( if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
-	    s32 match = parseCondition(line, parameter, &brkt);
+	  if( tokenize_req || if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
+
+#if NGR_TOKENIZED
+	    if( tokenize_req ) { // store token
+	      if( MBNG_FILE_R_PushToken(TOKEN_ELSEIF, line) < 0 )
+		return 2; // exit due to error
+	    }
+#endif
+
+	    s32 match = parseCondition(line, parameter, &brkt, tokenize_req);
 	    if( match < 0 ) {
 	      return 2; // exit due to error
 	    } else {
@@ -1648,6 +1821,13 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
 #endif
       } else {
+#if NGR_TOKENIZED
+	if( tokenize_req ) { // store token
+	  if( MBNG_FILE_R_PushToken(TOKEN_ENDIF, line) < 0 )
+	    return 2; // exit due to error
+	}
+#endif
+
 	--(*nesting_level);
       }
       return 0; // read next line
@@ -1672,6 +1852,13 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
 #endif
       } else {
+#if NGR_TOKENIZED
+	if( tokenize_req ) { // store token
+	  if( MBNG_FILE_R_PushToken(TOKEN_ELSE, line) < 0 )
+	    return 2; // exit due to error
+	}
+#endif
+
 	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
@@ -1685,20 +1872,33 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       return 0; // read next line
     }
 
-    if( !if_state || *nesting_level == 0 || if_state[*nesting_level-1] == 1 ) {
-      if( strcasecmp(parameter,
- "LCD") == 0 ) {
+
+    /////////////////////////////////////////////////////////////////////////
+    //
+    // COMMANDS
+    //
+    /////////////////////////////////////////////////////////////////////////
+    if( !if_state || tokenize_req || *nesting_level == 0 || if_state[*nesting_level-1] == 1 ) {
+      if( strcasecmp(parameter, "LCD") == 0 ) {
 	char *str = brkt;
 	if( !(str=remove_quotes(str)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LCD message!\n", line);
 #endif
 	} else {
-	  // print from a dummy item
-	  mbng_event_item_t item;
-	  MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
-	  item.label = str;
-	  MBNG_LCD_PrintItemLabel(&item, NULL, 0);
+#if NGR_TOKENIZED
+	  if( tokenize_req ) {
+	    MBNG_FILE_R_PushToken(TOKEN_LCD, line);
+	    MBNG_FILE_R_PushString(str, line);
+	  } else
+#endif
+	  {
+	    // print from a dummy item
+	    mbng_event_item_t item;
+	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
+	    item.label = str;
+	    MBNG_LCD_PrintItemLabel(&item, NULL, 0);
+	  }
 	}
       } else if( strcasecmp(parameter, "LOG") == 0 ) {
 	char *str = brkt;
@@ -1707,39 +1907,47 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing string after LOG message!\n", line);
 #endif
 	} else {
-	  MIOS32_MIDI_SendDebugString(str);
+#if NGR_TOKENIZED
+	  if( tokenize_req ) {
+	    MBNG_FILE_R_PushToken(TOKEN_LOG, line);
+	    MBNG_FILE_R_PushString(str, line);
+	  } else
+#endif
+	  {
+	    MIOS32_MIDI_SendDebugString(str);
+	  }
 	}
       } else if( strcasecmp(parameter, "SEND") == 0 ) {
-	parseSend(line, parameter, &brkt);
+	parseSend(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "EXEC_META") == 0 ) {
-	parseExecMeta(line, parameter, &brkt);
+	parseExecMeta(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "EXIT") == 0 ) {
 	if( nesting_level )
 	  *nesting_level = 0; // doesn't matter anymore
 	return 1;
       } else if( strcasecmp(parameter, "SET") == 0 ) {
-	parseSet(line, parameter, &brkt, 1); // and send
+	parseSet(line, parameter, &brkt, 1, tokenize_req); // and send
       } else if( strcasecmp(parameter, "CHANGE") == 0 ) {
-	parseSet(line, parameter, &brkt, 0); // don't send
+	parseSet(line, parameter, &brkt, 0, tokenize_req); // don't send
       } else if( strcasecmp(parameter, "SET_RGB") == 0 ) {
-	parseSetRgb(line, parameter, &brkt);
+	parseSetRgb(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
-	parseSetLock(line, parameter, &brkt);
+	parseSetLock(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
-	parseSetActive(line, parameter, &brkt);
+	parseSetActive(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "SET_NO_DUMP") == 0 ) {
-	parseSetNoDump(line, parameter, &brkt);
+	parseSetNoDump(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "SET_MIN") == 0 ) {
-	parseSetMinMax(line, parameter, &brkt, 0); // min
+	parseSetMinMax(line, parameter, &brkt, 0, tokenize_req); // min
       } else if( strcasecmp(parameter, "SET_MAX") == 0 ) {
-	parseSetMinMax(line, parameter, &brkt, 1); // max
+	parseSetMinMax(line, parameter, &brkt, 1, tokenize_req); // max
       } else if( strcasecmp(parameter, "TRIGGER") == 0 ) {
-	parseTrigger(line, parameter, &brkt);
+	parseTrigger(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
-	s32 delay = parseDelay(line, parameter, &brkt);
+	s32 delay = parseDelay(line, parameter, &brkt, tokenize_req);
 	mbng_file_r_delay_ctr = (delay >= 0 ) ? delay : 0;
       } else if( strcasecmp(parameter, "LOAD") == 0 ) {
-	if( parseLoad(line, parameter, &brkt, load_filename) > 0 ) {
+	if( parseLoad(line, parameter, &brkt, load_filename, tokenize_req) > 0 ) {
 	  return 1;
 	}
       } else {
@@ -1765,7 +1973,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 //! reads the config file content (again)
 //! \returns < 0 on errors (error codes are documented in mbng_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
+s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 tokenize_req)
 {
   s32 status = 0;
   mbng_file_r_info_t *info = &mbng_file_r_info;
@@ -1846,7 +2054,7 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
       load_filename[0] = 0; // invalidate filename
 
       // parse line
-      exit = MBNG_FILE_R_Parser(line, line_buffer, if_state, &nesting_level, load_filename);
+      exit = MBNG_FILE_R_Parser(line, line_buffer, if_state, &nesting_level, load_filename, tokenize_req);
     }
 
   } while( !exit && !mbng_file_r_delay_ctr && status >= 1 );
@@ -1892,6 +2100,23 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! Executes the tokenized content of a NGR file
+//! \returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_R_Exec(u8 cont_script)
+{
+#if !NGR_TOKENIZED
+# if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[MBNG_FILE_R] ERROR MBNG_FILE_R_Exec has been called, although tokens are not supported!");
+# endif
+  return -1; // not supported!
+#else
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! request to read the script file from run thread
 //! \returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
@@ -1910,6 +2135,16 @@ s32 MBNG_FILE_R_ReadRequest(char *filename, u8 section, s16 value, u8 notify_don
   mbng_file_r_req.value = value;
   mbng_file_r_req.notify_done = notify_done;
   mbng_file_r_req.load = 1;
+
+#if NGR_TOKENIZED
+  if( mbng_file_r_info.valid && mbng_file_r_info.tokenized ) {
+    mbng_file_r_req.load = 0; // no load required anymore
+
+    MUTEX_MIDIOUT_TAKE;
+    MBNG_FILE_R_Exec(0);
+    MUTEX_MIDIOUT_GIVE;
+  }
+#endif
 
   return 0; // no error
 }
@@ -1945,11 +2180,26 @@ s32 MBNG_FILE_R_CheckRequest(void)
     vars.section = mbng_file_r_req.section;
     vars.value = mbng_file_r_req.value;
 
-    MUTEX_MIDIOUT_TAKE;
-    MUTEX_SDCARD_TAKE;
-    MBNG_FILE_R_Read(mbng_file_r_script_name, cont_script);
-    MUTEX_SDCARD_GIVE;
-    MUTEX_MIDIOUT_GIVE;
+#if NGR_TOKENIZED
+    if( mbng_file_r_info.valid && mbng_file_r_info.tokenized ) {
+      MUTEX_MIDIOUT_TAKE;
+      MBNG_FILE_R_Exec(cont_script);
+      MUTEX_MIDIOUT_GIVE;
+    } else
+#endif
+    {
+#if NGR_TOKENIZED
+      u8 tokenize_req = 1; // called if file not valid yet
+#else
+      u8 tokenize_req = 0;
+#endif
+
+      MUTEX_MIDIOUT_TAKE;
+      MUTEX_SDCARD_TAKE;
+      MBNG_FILE_R_Read(mbng_file_r_script_name, cont_script, tokenize_req);
+      MUTEX_SDCARD_GIVE;
+      MUTEX_MIDIOUT_GIVE;
+    }
 
 #if DEBUG_FILE_HANDLER_PERFORMANCE
     u32 cycles = MIOS32_STOPWATCH_ValueGet();
