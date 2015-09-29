@@ -297,6 +297,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
       out("  show poolbin:                     shows the event pool in binary format");
       out("  show id <element>:<id>            shows informations about the given element id (e.g. BUTTON:1)");
       out("  show hw_id <element>:<hw_id>      shows informations about the given element hw_id (e.g. BUTTON:1)");
+      out("  show ngr_tokens:                  shows .NGR token information");
       out("  lcd <string>:                     directly prints a string on LCD (can be formatted!)");
       out("  run [<section>] [<value>]:        executes the .NGR script with the optional section and value");
       out("  ngr_value:                        value used for 'run' (without parameter) and 'ngr' (is: %d)", ngr_value);
@@ -440,7 +441,7 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 
 	MBNG_FILE_R_VarSectionSet(ngr_section);
 	MBNG_FILE_R_VarValueSet(ngr_value);
-	MBNG_FILE_R_Parser(0, brkt, NULL, NULL, load_filename);
+	MBNG_FILE_R_Parser(0, brkt, NULL, NULL, load_filename, 0);
 	out("Executed command with ^section==%d ^value==%d", ngr_section, ngr_value);
 
 	if( load_filename[0] ) {
@@ -505,6 +506,8 @@ s32 TERMINAL_ParseLine(char *input, void *_output_function)
 	    }
 	    MIOS32_MIDI_SendDebugString(buffer);
 	  }
+	} else if( strcmp(parameter, "ngr_tokens") == 0 || strcmp(parameter, "ngrtokens") == 0 ) {
+	  MBNG_FILE_R_TokenMemPrint();
 	} else if( strcmp(parameter, "poolbin") == 0 ) {
 	  MBNG_EVENT_PoolPrint();
 	} else if( strcmp(parameter, "pool") == 0 ) {

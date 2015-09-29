@@ -3477,6 +3477,7 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
   mbng_event_item_id_t tmp_hw_id = item->hw_id;
   mbng_event_item_id_t tmp_fwd_id = item->fwd_id;
   mbng_event_flags_t flags; flags.ALL = item->flags.ALL;
+  mbng_event_custom_flags_t custom_flags; custom_flags.ALL = item->custom_flags.ALL;
   u8 tmp_map = item->map;
   u8 tmp_condition = item->cond.condition;
   u16 tmp_pool_address = item->pool_address;
@@ -3485,6 +3486,7 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
   item->hw_id = send_id;
   item->fwd_id = 0;
   item->flags.fwd_to_lcd = 0;
+  item->custom_flags.ALL = 0;
   item->map = 0; // we assume that the value has already been mapped
   item->cond.condition = 0; // disable conditions
   item->pool_address = 0xffff;
@@ -3495,6 +3497,7 @@ s32 MBNG_EVENT_ItemSendVirtual(mbng_event_item_t *item, mbng_event_item_id_t sen
   item->hw_id = tmp_hw_id;
   item->fwd_id = tmp_fwd_id;
   item->flags.ALL = flags.ALL;
+  item->custom_flags.ALL = custom_flags.ALL;
   item->map = tmp_map;
   item->cond.condition = tmp_condition;
   item->pool_address = tmp_pool_address;
@@ -3703,9 +3706,11 @@ s32 MBNG_EVENT_ItemForward(mbng_event_item_t *item)
     } else {
       ++num_forwarded;
 
-      // clear the custom flags, because they are very likely not compatible
+      // clear the custom flags if not the same event type, because they are very likely not compatible
       // see also http://midibox.org/forums/topic/19709-dio-matrix-going-haywire/#comment-171691
-      fwd_item.custom_flags.ALL = 0;
+      if( ((fwd_item.id ^ item->id) & 0xf000) != 0 ) {
+	fwd_item.custom_flags.ALL = 0;
+      }
 
       // notify item (will also store value in pool item)
       if( fwd_item.flags.use_key_or_cc || fwd_item.flags.use_any_key_or_cc ) // only change secondary value if key_or_cc option selected, or if fwd item allows to change the key value
@@ -3756,10 +3761,16 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
     if( pool_item->flags.radio_group == radio_group ) {
       mbng_event_item_t fwd_item;
       MBNG_EVENT_ItemCopy2User(pool_item, &fwd_item);
-      fwd_item.value = item->value; // forward the value of the sender
+
+      // clear the custom flags if not the same event type, because they are very likely not compatible
+      // see also http://midibox.org/forums/topic/19709-dio-matrix-going-haywire/#comment-171691
+      if( ((fwd_item.id ^ item->id) & 0xf000) != 0 ) {
+	fwd_item.custom_flags.ALL = 0;
+      }
 
       // value in range?
       // (currently only used to filter MIDI output of an EVENT_SENDER)
+      fwd_item.value = item->value; // forward the value of the sender
       u8 value_in_range = (fwd_item.value >= fwd_item.min) && (fwd_item.value <= fwd_item.max);
 
       // sender/receiver will map the value
