@@ -1604,10 +1604,13 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     DEBUG_MSG("  - map_ix=%d", item->map_ix);
     DEBUG_MSG("  - min=%d", item->min);
     DEBUG_MSG("  - max=%d", item->max);
+    DEBUG_MSG("  - syxdump_pos=%d:%d", item->syxdump_pos.receiver, item->syxdump_pos.pos);
     DEBUG_MSG("  - offset=%d", item->offset);
     DEBUG_MSG("  - dimmed=%d", item->flags.dimmed);
     DEBUG_MSG("  - rgb=%d:%d:%d", item->rgb.r, item->rgb.g, item->rgb.b);
-    DEBUG_MSG("  - syxdump_pos=%d:%d", item->syxdump_pos.receiver, item->syxdump_pos.pos);
+    DEBUG_MSG("  - locked=%d", item->flags.write_locked);
+    DEBUG_MSG("  - no_dump=%d", item->flags.no_dump);
+    DEBUG_MSG("  - active=%d", item->flags.active);
     DEBUG_MSG("  - radio_group=%d", item->flags.radio_group);
 
     switch( item->id & 0xf000 ) {

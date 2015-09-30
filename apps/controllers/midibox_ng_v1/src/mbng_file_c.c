@@ -37,6 +37,7 @@
 #include "file.h"
 #include "mbng_file.h"
 #include "mbng_file_c.h"
+#include "mbng_file_r.h"
 #include "mbng_patch.h"
 #include "mbng_event.h"
 #include "mbng_dout.h"
@@ -3533,6 +3534,7 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       MBNG_MF_Init(0);
       MBNG_CV_Init(0);
       MBNG_KB_Init(0);
+      MBNG_FILE_R_TokenizedNgrSet(1);
     } else if( strcasecmp(parameter, "LCD") == 0 ) {
       char *str = brkt;
       if( !(str=remove_quotes(str)) ) {
@@ -3610,6 +3612,10 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       int value = parseSimpleValue(line, parameter, &brkt, 0, 16);
       if( value >= 0 )
 	mbng_patch_cfg.convert_note_off_to_on0 = value;
+    } else if( strcasecmp(parameter, "TokenizedNgr") == 0 ) {
+      int value = parseSimpleValue(line, parameter, &brkt, 0, 1);
+      if( value >= 0 )
+	MBNG_FILE_R_TokenizedNgrSet(value);
     } else if( strcasecmp(parameter, "BPM_Preset") == 0 ) {
       int value = parseSimpleValue(line, parameter, &brkt, 1, 1000);
       if( value >= 0 )
@@ -4816,6 +4822,8 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
   sprintf(line_buffer, "ConvertNoteOffToOn0 %d\n", mbng_patch_cfg.convert_note_off_to_on0);
   FLUSH_BUFFER;
+  //sprintf(line_buffer, "TokenizedNgr %d\n", MBNG_FILE_R_TokenizedNgrGet()); // no official command yet...
+  //FLUSH_BUFFER;
 
   return status;
 }
