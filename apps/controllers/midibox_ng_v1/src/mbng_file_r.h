@@ -37,6 +37,9 @@ extern s32 MBNG_FILE_R_Load(char *filename);
 extern s32 MBNG_FILE_R_Unload(void);
 
 extern s32 MBNG_FILE_R_Valid(void);
+
+extern s32 MBNG_FILE_R_TokenizedNgrSet(u8 enable);
+extern s32 MBNG_FILE_R_TokenizedNgrGet(void);
 extern s32 MBNG_FILE_R_TokenMemPrint(void);
 
 extern s32 MBNG_FILE_R_VarSectionSet(u8 section);
