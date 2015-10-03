@@ -1286,6 +1286,12 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 	else if( note_start > 127 ) note_start = 127;
 
 	note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
+
+	// FIX: ensure that this note is in the selected scale!
+	note_start -= 1;
+	if( note_start < 0 ) note_start = 0;
+	note_start = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
+
 	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	int i;
 	for(i=0; i<button_column; ++i) {

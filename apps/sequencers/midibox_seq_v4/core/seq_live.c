@@ -121,7 +121,7 @@ s32 SEQ_LIVE_Init(u32 mode)
 // Plays an event over the given track (internal, also used by repeat function)
 // bpm_tick == 0xffffffff will play the step immediately, all other ticks will schedule it
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u32 bpm_tick)
+static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_note, u32 bpm_tick)
 {
   seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
@@ -167,6 +167,11 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u32 bpm_tick
       SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
       SEQ_SCALE_Note(&e.midi_package, scale, root);
     }
+  }
+
+  if( original_note ) {
+    // note value may have been changed by FTS, Limit or Humanizer - capture it in live_keyboard_note
+    live_keyboard_note[original_note] = e.midi_package.note;
   }
 
   if( bpm_tick == 0xffffffff ) {
@@ -306,7 +311,7 @@ s32 SEQ_LIVE_PlayEvent(u8 track, mios32_midi_package_t p)
 	e.len = 95; // full note (only used for echo effects)
 	e.layer_tag = 0;
 
-	SEQ_LIVE_PlayEventInternal(track, e, 0xffffffff);
+	SEQ_LIVE_PlayEventInternal(track, e, p.note, 0xffffffff);
       }
     }
   } else if( p.type >= 0x8 && p.type <= 0xe ) {
@@ -415,7 +420,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 	    e.len = slot->len + 1;
 	    e.layer_tag = 0;
 
-	    SEQ_LIVE_PlayEventInternal(track, e, bpm_tick);
+	    SEQ_LIVE_PlayEventInternal(track, e, 0, bpm_tick);
 
 	    play_step = 0; // sequencer shouldn't play the step
 	  }
@@ -451,7 +456,7 @@ s32 SEQ_LIVE_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 		e.len = slot->len + 1;
 		e.layer_tag = 0;
 
-		SEQ_LIVE_PlayEventInternal(track, e, bpm_tick);
+		SEQ_LIVE_PlayEventInternal(track, e, 0, bpm_tick);
 
 		play_step = 0; // sequencer shouldn't play the step
 	      }

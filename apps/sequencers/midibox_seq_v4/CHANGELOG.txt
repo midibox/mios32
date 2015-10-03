@@ -28,6 +28,8 @@ MIDIboxSEQ V4.089
    o BPM page: it's now possible to configure an output delay for each MIDI port.
      (positive and negative delays are supported - this is currently an experimental feature!)
 
+   o fixed NoteOff in Jam Forwarding mode if FTS, Limit or Humanizer is enabled
+
 
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~
