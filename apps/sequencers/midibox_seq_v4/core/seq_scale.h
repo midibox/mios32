@@ -34,9 +34,11 @@ extern s32 SEQ_SCALE_Init(u32 mode);
 extern s32 SEQ_SCALE_NumGet(void);
 extern char *SEQ_SCALE_NameGet(u8 scale);
 
+extern s32 SEQ_SCALE_NoteValueGet(u8 note, u8 scale, u8 root);
+extern s32 SEQ_SCALE_NextNoteInScale(u8 current_note, u8 scale, u8 root);
+
 extern s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root);
 
-extern s32 SEQ_SCALE_NextNoteInScale(u8 current_note, u8 scale, u8 root);
 
 
 /////////////////////////////////////////////////////////////////////////////
