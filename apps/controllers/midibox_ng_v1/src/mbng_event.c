@@ -3529,6 +3529,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     u8 *map_values;
     int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
     item->map_ix = MBNG_EVENT_MapIxFromValue(map_values, map_len, value);
+    MBNG_EVENT_ItemSetMapIx(item, item->map_ix); // store in pool
   }
 
   // value modified from MIDI?
