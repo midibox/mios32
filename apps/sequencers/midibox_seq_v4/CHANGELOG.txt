@@ -6,6 +6,13 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.090
+~~~~~~~~~~~~~~~~~
+
+   o Fx->Scale page: the configured scale is now displayed at the right
+     half of the page
+
+
 MIDIboxSEQ V4.089
 ~~~~~~~~~~~~~~~~~
 

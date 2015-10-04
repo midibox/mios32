@@ -98,7 +98,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     case SEQ_UI_ENCODER_GP14:
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
-      return -1; // not mapped
+      // just to make it clear... ;-)
+      SEQ_UI_Msg(SEQ_UI_MSG_USER_R, 1000, "To display the scale only", "No editing possible (yet ;-)");
+      return 0;
   }
 
   // for GP encoders and Datawheel
@@ -206,6 +208,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
+  const char keys_str[13][5] = { // note: this array is also used to determine halfnotes, don't touch it (or some code needs to be adapted below)
+    "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
+  };
+
   if( high_prio )
     return 0; // there are no high-priority updates
 
@@ -220,7 +226,6 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
   SEQ_LCD_PrintString(" Control  Root      Selected Scale      ");
-  SEQ_LCD_PrintSpaces(40);
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -246,10 +251,7 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_SCALE_ROOT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    const char root_str[13][5] = {
-      "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
-    };
-    SEQ_LCD_PrintString((char *)root_str[root_selection]);
+    SEQ_LCD_PrintFormattedString((char *)keys_str[root_selection]);
   }
   SEQ_LCD_PrintSpaces(2);
 
@@ -262,7 +264,30 @@ static s32 LCD_Handler(u8 high_prio)
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  SEQ_LCD_PrintSpaces(40);
+  int y;
+  int i;
+  for(y=0; y<2; ++y) {
+    SEQ_LCD_CursorSet(40, y);
+    SEQ_LCD_PrintSpaces(2);
+
+    for(i=0; i<12; ++i) {
+      u8 key_ix = (root + i) % 12;
+      char *key_str = (char *)&keys_str[key_ix+1][0];
+      u8 halftone = key_str[2] == '#';
+
+      u8 scaled_note = SEQ_SCALE_NoteValueGet(key_ix, scale, root);
+      char *scaled_key_str = (char *)&keys_str[(scaled_note % 12)+1][0];
+
+      if( (halftone && y == 0) || (!halftone && y == 1) ) {
+	int j;
+	for(j=0; j<3; ++j)
+	  SEQ_LCD_PrintChar(scaled_key_str[j]);
+      } else {
+	SEQ_LCD_PrintSpaces(3);
+      }
+    }
+    SEQ_LCD_PrintSpaces(2);
+  }
 
   return 0; // no error
 }

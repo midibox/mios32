@@ -276,24 +276,19 @@ char *SEQ_SCALE_NameGet(u8 scale)
 }
 
 
+
 /////////////////////////////////////////////////////////////////////////////
-// This function is called if a note value should be forced to the globally
-// selected scale
-// IN: *p: midi note (a mios32_midi_package_t) - will be modified, 
-//     therefore passed as pointer
+// Returns the note of a scale
+// IN: note: the current note
 //     scale: within the range 0..SEQ_SCALE_GetNum()-1
 //     root: the root note (0..11)
-// returns modified note in *p
+// returns next note in scale
 // returns < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
+s32 SEQ_SCALE_NoteValueGet(u8 note, u8 scale, u8 root)
 {
-  // exit if no Note event
-  if( p->type != NoteOn && p->type != NoteOff )
-    return -1;
-
   // normalize note and determine octave
-  int note_number = p->note - root;
+  int note_number = note - root;
   if( note_number < 0 ) note_number += 12;
   u8 octave = note_number / 12;
   note_number = note_number % 12;
@@ -308,10 +303,7 @@ s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
   // ensure that note is in the 0..127 range
   note_scaled = SEQ_CORE_TrimNote(note_scaled, 0, 127);
 
-  // replace note number in package
-  p->note = note_scaled;
-
-  return 0; // no error
+  return note_scaled;
 }
 
 
@@ -348,4 +340,26 @@ s32 SEQ_SCALE_NextNoteInScale(u8 current_note, u8 scale, u8 root)
   } while( ++next_note < 127 ); // set limit
 
   return next_note;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function is called if a note value should be forced to the globally
+// selected scale
+// IN: *p: midi note (a mios32_midi_package_t) - will be modified, 
+//     therefore passed as pointer
+//     scale: within the range 0..SEQ_SCALE_GetNum()-1
+//     root: the root note (0..11)
+// returns modified note in *p
+// returns < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_SCALE_Note(mios32_midi_package_t *p, u8 scale, u8 root)
+{
+  // exit if no Note event
+  if( p->type != NoteOn && p->type != NoteOff )
+    return -1;
+
+  p->note = SEQ_SCALE_NoteValueGet(p->note, scale, root);
+
+  return 0; // no error
 }
