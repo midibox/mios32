@@ -312,8 +312,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk.  Groove Style  Intensity Global    Step Dly. Len. Vel. NumSteps        Clr 
-  // G1T1  Inv. Shuffle     15       on        1    0    0    0  Preset not editable!
+  // Trk.  Groove Style  Intensity  Global   Step Dly. Len. Vel. NumSteps        Clr 
+  // G1T1  Inv. Shuffle     15        on       1    0    0    0  Preset not editable!
 
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -328,7 +328,7 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
 
-  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity Global    Step Dly. Len. Vel. NumSteps        Clr ");
+  SEQ_LCD_PrintString("Trk.  Groove Style  Intensity  Global   Step Dly. Len. Vel. NumSteps        Clr ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
@@ -354,7 +354,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("%3d", SEQ_CC_Get(visible_track, SEQ_CC_GROOVE_VALUE));
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(5);
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -364,7 +364,7 @@ static s32 LCD_Handler(u8 high_prio)
     u8 local = (seq_groove_ui_local_selection & (1 << visible_track)) ? 1 : 0;
     SEQ_LCD_PrintString(local ? "  off " : "  on  ");
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(3);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GROOVE_STEP && ui_cursor_flash ) {

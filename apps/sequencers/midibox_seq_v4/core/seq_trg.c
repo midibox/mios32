@@ -48,7 +48,7 @@ static const char seq_trg_names[SEQ_TRG_ASG_NUM][6] = {
   " Skip", // 4
   " R.G ", // 5
   " R.V ", // 6
-  "No Fx", // 7
+  "NoFx ", // 7
   "RollG", // 8
 };
 

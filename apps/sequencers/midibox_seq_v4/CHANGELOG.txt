@@ -30,6 +30,9 @@ MIDIboxSEQ V4.089
 
    o fixed NoteOff in Jam Forwarding mode if FTS, Limit or Humanizer is enabled
 
+   o NOTE: due to a RAM capacity issue, the UNDO function is currently not available
+     for the LPC17 firmware
+
 
 MIDIboxSEQ V4.088
 ~~~~~~~~~~~~~~~~~
