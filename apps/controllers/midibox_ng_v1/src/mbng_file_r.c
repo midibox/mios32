@@ -1439,10 +1439,88 @@ s32 parseExecMeta(u32 line, char *command, char **brkt, u8 tokenize_req)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! help functions for various commands
+/////////////////////////////////////////////////////////////////////////////
+static s32 execSET(mbng_event_item_t *item, s32 value)
+{
+  item->value = value;
+  MBNG_EVENT_ItemReceive(item, item->value, 1, 0); // "from_midi" and forwarding disabled
+
+  if( MBNG_EVENT_NotifySendValue(item) == 2 )
+    return 2; // stop has been requested
+
+  return 0; // no error
+}
+
+static s32 execCHANGE(mbng_event_item_t *item, s32 value)
+{
+  item->value = value;
+  return MBNG_EVENT_ItemReceive(item, item->value, 1, 0); // "from_midi" and forwarding disabled
+}
+
+static s32 execCHANGE_Virtual(mbng_event_item_id_t id, s32 value) // also used for SET
+{
+  // hw_id: send to dummy item    
+  mbng_event_item_t item;
+  MBNG_EVENT_ItemInit(&item, id);
+  item.flags.active = 1;
+  item.value = value;
+  return MBNG_EVENT_ItemSendVirtual(&item, item.id);
+}
+
+static s32 execTRIGGER(mbng_event_item_t *item, s32 value)
+{
+  if( MBNG_EVENT_NotifySendValue(item) == 2 )
+    return 2; // stop has been requested
+
+  return 0; // no error
+}
+
+static s32 execSET_RGB(mbng_event_item_t *item, s32 value)
+{
+  item->rgb.ALL = value;
+  MBNG_EVENT_ItemModify(item);
+  MBNG_EVENT_ItemReceive(item, item->value, 1, 0); // "from_midi" and forwarding disabled
+
+  if( MBNG_EVENT_NotifySendValue(item) == 2 )
+    return 2; // stop has been requested
+
+  return 0; // no error
+}
+
+static s32 execSET_LOCK(mbng_event_item_t *item, s32 value)
+{
+  return MBNG_EVENT_ItemSetLock(item, value);
+}
+
+static s32 execSET_ACTIVE(mbng_event_item_t *item, s32 value)
+{
+  return MBNG_EVENT_ItemSetActive(item, value);
+}
+
+static s32 execSET_NO_DUMP(mbng_event_item_t *item, s32 value)
+{
+  return MBNG_EVENT_ItemSetNoDump(item, value);
+}
+
+static s32 execSET_MIN(mbng_event_item_t *item, s32 value)
+{
+  item->min = value;
+  return MBNG_EVENT_ItemModify(item);
+}
+
+static s32 execSET_MAX(mbng_event_item_t *item, s32 value)
+{
+  item->max = value;
+  return MBNG_EVENT_ItemModify(item);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! help function which SETs a value based on a token
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, u8 send_event)
+s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
 {
   switch( token ) {
   case TOKEN_VALUE_SECTION:   vars.section = value; break;
@@ -1461,40 +1539,32 @@ s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, u8 send_event)
     // search for items with matching ID
     mbng_event_item_t item;
     u32 continue_ix = 0;
-    u32 num_set = 0;
+    u32 num_exec_items = 0;
     do {
       if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
 	  (!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
 	break;
       } else {
-	++num_set;
+	++num_exec_items;
 
-	// notify item
-	item.value = value;
-	MBNG_EVENT_ItemReceive(&item, item.value, 1, 0); // "from_midi" and forwarding disabled
-
-	// also send an event (SET command) --- use CHANGE command to avoid sending
-	if( send_event ) {
-	  if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-	    break; // stop has been requested
-	}
+	// pass to item
+	if( exec_function(&item, value) > 0 )
+	  break; // stop has been requested
       }
     } while( continue_ix );
 
-    if( !num_set ) {
+    if( !num_exec_items ) {
       if( !is_hw_id ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: %s:%d not found in event pool at mem pos 0x%x (must be hw_id)!", 
+	DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x (must be hw_id)!", 
 		  is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
 #endif
 	return -1;
       }
 
-      // hw_id: send to dummy item    
-      MBNG_EVENT_ItemInit(&item, id);
-      item.flags.active = 1;
-      item.value = value;
-      MBNG_EVENT_ItemSendVirtual(&item, item.id);
+      // pass to virtual item
+      if( exec_virtual_function )
+	exec_virtual_function(id, value);
     }
 
   } break;
@@ -1503,11 +1573,51 @@ s32 setTokenizedValue(ngr_token_t token, u16 id, s32 value, u8 send_event)
   return 0; // no error
 }
 
+
+#if NGR_TOKENIZED
+/////////////////////////////////////////////////////////////////////////////
+//! help function which executes a token
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 execToken(ngr_token_t command_token, u8 if_condition_matching, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
+{
+  ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
+
+  u16 id = 0;
+  if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
+    id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
+  }
+	
+  s32 value = 0;
+  switch( command_token ) {
+
+  case TOKEN_TRIGGER:
+    break; // no additional parameter
+
+  case TOKEN_SET_RGB:
+    value  = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
+    value |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
+    break;
+
+  default:
+    value = parseTokenizedValue();
+  }
+
+  if( if_condition_matching && value >= -16384 ) {
+    setTokenizedValue(value_token, id, value, exec_function, exec_virtual_function);
+  }
+
+  return 0; // no error
+}
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses a SET command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSet(u32 line, char *command, char **brkt, u8 send_event, u8 tokenize_req)
+s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_token_t command_token, s32 (*exec_function)(mbng_event_item_t *item, s32 value), s32 (*exec_virtual_function)(mbng_event_item_id_t id, s32 value))
 {
   char *dst_str = NULL;
   char *value_str = NULL;
@@ -1539,31 +1649,24 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event, u8 tokenize_re
     }
   }
 
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = TOKEN_NOP;
+  ngr_token_t value_token = TOKEN_NOP;
   if( is_var ) {
     if( strcasecmp((char *)&dst_str[1], "SECTION") == 0 ) {
-      token = TOKEN_VALUE_SECTION;
+      value_token = TOKEN_VALUE_SECTION;
     } else if( strcasecmp((char *)&dst_str[1], "VALUE") == 0 ) {
-      token = TOKEN_VALUE_VALUE;
+      value_token = TOKEN_VALUE_VALUE;
     } else if( strcasecmp((char *)&dst_str[1], "BANK") == 0 ) {
-      token = TOKEN_VALUE_BANK;
+      value_token = TOKEN_VALUE_BANK;
     } else if( strcasecmp((char *)&dst_str[1], "DEV") == 0 ) {
-      token = TOKEN_VALUE_SYSEX_DEV;
+      value_token = TOKEN_VALUE_SYSEX_DEV;
     } else if( strcasecmp((char *)&dst_str[1], "PAT") == 0 ) {
-      token = TOKEN_VALUE_SYSEX_PAT;
+      value_token = TOKEN_VALUE_SYSEX_PAT;
     } else if( strcasecmp((char *)&dst_str[1], "BNK") == 0 ) {
-      token = TOKEN_VALUE_SYSEX_BNK;
+      value_token = TOKEN_VALUE_SYSEX_BNK;
     } else if( strcasecmp((char *)&dst_str[1], "INS") == 0 ) {
-      token = TOKEN_VALUE_SYSEX_INS;
+      value_token = TOKEN_VALUE_SYSEX_INS;
     } else if( strcasecmp((char *)&dst_str[1], "CHN") == 0 ) {
-      token = TOKEN_VALUE_SYSEX_CHN;
+      value_token = TOKEN_VALUE_SYSEX_CHN;
     } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid or unsupported variable '%s' in '%s' command!", line, dst_str, command);
@@ -1571,16 +1674,16 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event, u8 tokenize_re
       return -1;
     }
   } else {
-    token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
+    value_token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
   }
 
 #if NGR_TOKENIZED
   if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(send_event ? TOKEN_CHANGE : TOKEN_SET, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 )
+    if( MBNG_FILE_R_PushToken(command_token, line) < 0 ||
+	MBNG_FILE_R_PushToken(value_token, line) < 0 )
       return -1;
 
-    if( token == TOKEN_VALUE_ID || token == TOKEN_VALUE_HW_ID ) {
+    if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
       if( MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
 	  MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
 	return -1;
@@ -1589,117 +1692,20 @@ s32 parseSet(u32 line, char *command, char **brkt, u8 send_event, u8 tokenize_re
 #endif
 
   s32 value = 0;
-  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
+  switch( command_token ) {
+  /////////////////////////////////////////////////////////////////////////////
+  case TOKEN_SET_RGB: {
+    int r = 0;
+    int g = 0;
+    int b = 0;
+
+    if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
-#endif
-    return -1;
-  }
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
-#endif
-
-#if NGR_TOKENIZED
-  if( !tokenize_req )
-#endif
-  {
-    setTokenizedValue(token, id.id, value, send_event);
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which sets the tokenized RGB value
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedRgb(ngr_token_t token, u16 id, mbng_event_rgb_t rgb)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // notify item
-      item.rgb.ALL = rgb.ALL;
-
-      MBNG_EVENT_ItemModify(&item);
-
-      MBNG_EVENT_ItemReceive(&item, item.value, 1, 0); // "from_midi" and forwarding disabled
-
-      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-	break; // stop has been requested
-    }
-  } while( continue_ix );
-
-  if( !num_set ) {
-    if( !is_hw_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x (must be hw_id)!", 
-		  is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
 #endif
       return -1;
     }
 
-    // hw_id: send to dummy item    
-    MBNG_EVENT_ItemInit(&item, id);
-    item.flags.active = 1;
-    item.value = 127;
-    item.rgb.ALL = rgb.ALL;
-    MBNG_EVENT_ItemSendVirtual(&item, item.id);
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET_RGB command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetRgb(u32 line, char *command, char **brkt, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  char *value_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  int r = 0;
-  int g = 0;
-  int b = 0;
-
-  {
     char *brkt_local;
     if( !(value_str = ngr_strtok_r(value_str, separator_colon, &brkt_local)) ||
 	(r=get_dec(value_str)) < 0 ||
@@ -1721,126 +1727,46 @@ s32 parseSetRgb(u32 line, char *command, char **brkt, u8 tokenize_req)
 #endif
       return -1;
     }
-  }
 
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
-#endif
+    mbng_event_rgb_t rgb;
+    rgb.ALL = 0;
+    rgb.r = r;
+    rgb.g = g;
+    rgb.b = b;
 
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-  mbng_event_rgb_t rgb;
-  rgb.ALL = 0;
-  rgb.r = r;
-  rgb.g = g;
-  rgb.b = b;
+    value = rgb.ALL;
 
 #if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(TOKEN_SET_RGB, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((rgb.ALL >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((rgb.ALL >> 8) & 0xff, line) < 0 )
-      return -1;
-  } else
-#endif
-  {
-    return setTokenizedRgb(token, id.id, rgb);
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which sets the tokenized Lock
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedLock(ngr_token_t token, u16 id, u8 lock)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // lock/unlock
-      MBNG_EVENT_ItemSetLock(&item, lock);
+    if( tokenize_req ) { // store token
+      if( MBNG_FILE_R_PushToken((rgb.ALL >> 0) & 0xff, line) < 0 ||
+	  MBNG_FILE_R_PushToken((rgb.ALL >> 8) & 0xff, line) < 0 )
+	return -1;
     }
-  } while( continue_ix );
+#endif
+  } break;
 
-  if( !num_set ) {
-    if( !is_hw_id ) {
+  /////////////////////////////////////////////////////////////////////////////
+  case TOKEN_TRIGGER:
+    break; // no value
+
+  /////////////////////////////////////////////////////////////////////////////
+  default: // all other command tokens
+    if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
-		is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
+#endif
+      return -1;
+    }
+
+    if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
 #endif
       return -1;
     }
   }
+  /////////////////////////////////////////////////////////////////////////////
 
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET_LOCK command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetLock(u32 line, char *command, char **brkt, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  char *value_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-#if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(TOKEN_SET_LOCK, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
-      return -1;
-  }
-#endif
-
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  s32 value = 0;
-  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
-#endif
-    return -1;
-  }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
   DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
@@ -1850,418 +1776,11 @@ s32 parseSetLock(u32 line, char *command, char **brkt, u8 tokenize_req)
   if( !tokenize_req )
 #endif
   {
-    return setTokenizedLock(token, id.id, value);
+    setTokenizedValue(value_token, id.id, value, exec_function, exec_virtual_function);
   }
 
   return 0; // no error
 }
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which triggers the tokenized ID
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 triggerTokenized(ngr_token_t token, u16 id)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // notify item
-      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-	break; // stop has been requested
-    }
-  } while( continue_ix );
-
-  if( !num_set ) {
-    if( !is_hw_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
-		is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
-#endif
-      return -1;
-    }
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a TRIGGER command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseTrigger(u32 line, char *command, char **brkt, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-#if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(TOKEN_TRIGGER, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
-      return -1;
-  }
-#endif
-
-#if NGR_TOKENIZED
-  if( !tokenize_req )
-#endif
-  {
-    return triggerTokenized(token, id.id);
-  }
-
-  return 0; // no error
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which sets the tokenized Active
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedActive(ngr_token_t token, u16 id, u8 active)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // activate/deactivate
-      MBNG_EVENT_ItemSetActive(&item, active);
-    }
-  } while( continue_ix );
-
-  if( !num_set ) {
-    if( !is_hw_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
-		is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
-#endif
-      return -1;
-    }
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET_ACTIVE command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetActive(u32 line, char *command, char **brkt, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  char *value_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-#if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(TOKEN_SET_ACTIVE, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
-      return -1;
-  }
-#endif
-
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  s32 value = 0;
-  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
-#endif
-    return -1;
-  }
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
-#endif
-
-#if NGR_TOKENIZED
-  if( !tokenize_req )
-#endif
-  {
-    return setTokenizedActive(token, id.id, value);
-  }
-
-  return 0; // no error
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which sets the tokenized NoDump
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedNoDump(ngr_token_t token, u16 id, u8 no_dump)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // activate/deactivate
-      MBNG_EVENT_ItemSetNoDump(&item, no_dump);
-    }
-  } while( continue_ix );
-
-  if( !num_set ) {
-    if( !is_hw_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
-		is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
-#endif
-      return -1;
-    }
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET_NO_DUMP command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetNoDump(u32 line, char *command, char **brkt, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  char *value_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-#if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(TOKEN_SET_NO_DUMP, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
-      return -1;
-  }
-#endif
-
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  s32 value = 0;
-  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
-#endif
-    return -1;
-  }
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
-#endif
-
-#if NGR_TOKENIZED
-  if( !tokenize_req )
-#endif
-  {
-    return setTokenizedNoDump(token, id.id, value);
-  }
-
-  return 0; // no error
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which sets the tokenized Min/Max
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 setTokenizedMinMax(ngr_token_t token, u16 id, s16 value, u8 set_max)
-{
-  // search for items with matching ID
-  u8 is_hw_id = token == TOKEN_VALUE_HW_ID;
-  mbng_event_item_t item;
-  u32 continue_ix = 0;
-  u32 num_set = 0;
-
-  do {
-    if( (is_hw_id && MBNG_EVENT_ItemSearchByHwId(id, &item, &continue_ix) < 0) ||
-	(!is_hw_id && MBNG_EVENT_ItemSearchById(id, &item, &continue_ix) < 0) ) {
-      break;
-    } else {
-      ++num_set;
-
-      // change min/max value
-      if( set_max )
-	item.max = value;
-      else
-	item.min = value;
-
-      MBNG_EVENT_ItemModify(&item);
-    }
-  } while( continue_ix );
-
-  if( !num_set ) {
-    if( !is_hw_id ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: (%s)%s:%d not found in event pool at mem pos 0x%x!", 
-		is_hw_id ? "hw_id" : "id", MBNG_EVENT_ItemControllerStrGet(id), id & 0xfff, ngr_token_mem_run_pos);
-#endif
-      return -1;
-    }
-  }
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-//! help function which parses a SET_MIN and SET_MAX command
-/////////////////////////////////////////////////////////////////////////////
-//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
-s32 parseSetMinMax(u32 line, char *command, char **brkt, u8 set_max, u8 tokenize_req)
-{
-  char *dst_str = NULL;
-  char *value_str = NULL;
-  mbng_file_r_item_id_t id; id.ALL = 0;
-
-  if( !(dst_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing id in '%s' command!\n", line, command);
-#endif
-    return -1;
-  }
-
-  id = parseId(dst_str);
-  if( !id.valid ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid id '%s %s'!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  ngr_token_t token = id.is_hw_id ? TOKEN_VALUE_HW_ID : TOKEN_VALUE_ID;
-#if NGR_TOKENIZED
-  if( tokenize_req ) { // store token
-    if( MBNG_FILE_R_PushToken(set_max ? TOKEN_SET_MAX : TOKEN_SET_MIN, line) < 0 ||
-	MBNG_FILE_R_PushToken(token, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 0) & 0xff, line) < 0 ||
-	MBNG_FILE_R_PushToken((id.id >> 8) & 0xff, line) < 0 )
-      return -1;
-  }
-#endif
-
-  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
-#endif
-    return -1;
-  }
-
-  s32 value = 0;
-  if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value in '%s %s %s' command (expecting -16384..16383!\n", line, command, dst_str, value_str);
-#endif
-    return -1;
-  }
-
-#if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] %s = %d\n", line, dst_str, value);
-#endif
-
-#if NGR_TOKENIZED
-  if( !tokenize_req )
-#endif
-  {
-    return setTokenizedMinMax(token, id.id, value, set_max);
-  }
-
-  return 0; // no error
-}
-
-
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which parses a DELAY_MS command
@@ -2586,23 +2105,23 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	  return 1;
 	}
       } else if( strcasecmp(parameter, "SET") == 0 ) {
-	parseSet(line, parameter, &brkt, 1, tokenize_req); // and send
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET, execSET, execCHANGE_Virtual);
       } else if( strcasecmp(parameter, "CHANGE") == 0 ) {
-	parseSet(line, parameter, &brkt, 0, tokenize_req); // don't send
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_CHANGE, execCHANGE, execCHANGE_Virtual);
       } else if( strcasecmp(parameter, "SET_RGB") == 0 ) {
-	parseSetRgb(line, parameter, &brkt, tokenize_req);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, NULL);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
-	parseSetLock(line, parameter, &brkt, tokenize_req);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_LOCK, execSET_LOCK, NULL);
       } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
-	parseSetActive(line, parameter, &brkt, tokenize_req);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_ACTIVE, execSET_ACTIVE, NULL);
       } else if( strcasecmp(parameter, "SET_NO_DUMP") == 0 ) {
-	parseSetNoDump(line, parameter, &brkt, tokenize_req);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_NO_DUMP, execSET_NO_DUMP, NULL);
       } else if( strcasecmp(parameter, "SET_MIN") == 0 ) {
-	parseSetMinMax(line, parameter, &brkt, 0, tokenize_req); // min
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_MIN, execSET_MIN, NULL);
       } else if( strcasecmp(parameter, "SET_MAX") == 0 ) {
-	parseSetMinMax(line, parameter, &brkt, 1, tokenize_req); // max
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_MAX, execSET_MAX, NULL);
       } else if( strcasecmp(parameter, "TRIGGER") == 0 ) {
-	parseTrigger(line, parameter, &brkt, tokenize_req);
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_TRIGGER, execTRIGGER, NULL);
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
 	s32 delay = parseDelay(line, parameter, &brkt, tokenize_req);
 #if NGR_TOKENIZED
@@ -2662,13 +2181,17 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 
   while( ngr_token_mem_run_pos < ngr_token_mem_end ) {
     u32 init_ngr_token_mem_run_pos = ngr_token_mem_run_pos;
-    ngr_token_t token = ngr_token_mem[ngr_token_mem_run_pos++];
+    ngr_token_t command_token = ngr_token_mem[ngr_token_mem_run_pos++];
     u8 if_condition_matching = nesting_level == 0 || if_state[nesting_level-1] == 1;
 
     //DEBUG_MSG("[MBNG_FILE_R_Exec:%d] %02x\n", init_ngr_token_mem_run_pos, token);
 
     /////////////////////////////////////////////////////////////////////////
-    if( token == TOKEN_IF ) {
+    /////////////////////////////////////////////////////////////////////////
+    switch( command_token ) {
+
+    /////////////////////////////////////////////////////////////////////////
+    case TOKEN_IF: {
       if_offset[nesting_level] = init_ngr_token_mem_run_pos;
       ngr_token_mem_run_pos += 2; // offset not used yet!
 
@@ -2693,9 +2216,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	  }
 	}
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_ELSEIF ) {
+    case TOKEN_ELSEIF: {
       if( nesting_level == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
       DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: tried to execute an unexpected ELSEIF token at mem pos 0x%x!", init_ngr_token_mem_run_pos);
@@ -2721,9 +2245,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	  }
 	}
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_ELSE ) {
+    case TOKEN_ELSE: {
       if( nesting_level == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: tried to execute an unexpected ELSE token at mem pos 0x%x!", init_ngr_token_mem_run_pos);
@@ -2741,9 +2266,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	  }
 	}
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_ENDIF ) {
+    case TOKEN_ENDIF: {
       if( nesting_level == 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: tried to execute an unexpected ENDIF token at mem pos 0x%x!", init_ngr_token_mem_run_pos);
@@ -2751,24 +2277,27 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       } else {
 	--nesting_level;
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_EXIT ) {
+    case TOKEN_EXIT: {
       if( if_condition_matching ) {
 	nesting_level = 0; // doesn't matter anymore
 	return 1;
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_DELAY_MS ) {
+    case TOKEN_DELAY_MS: {
       s32 value = parseTokenizedValue();
       if( if_condition_matching && value >= 0 ) {
 	mbng_file_r_delay_ctr = value;
 	return 1;
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_LCD ) {
+    case TOKEN_LCD: {
       if( if_condition_matching ) {
 	// print from a dummy item
 	mbng_event_item_t item;
@@ -2782,9 +2311,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       while( ngr_token_mem[ngr_token_mem_run_pos] != 0 && ngr_token_mem_run_pos < ngr_token_mem_end )
 	++ngr_token_mem_run_pos;
       ++ngr_token_mem_run_pos;
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_LOG ) {
+    case TOKEN_LOG: {
       if( if_condition_matching ) {
 	MIOS32_MIDI_SendDebugString((char *)&ngr_token_mem[ngr_token_mem_run_pos]);
       }
@@ -2792,9 +2322,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       while( ngr_token_mem[ngr_token_mem_run_pos] != 0 && ngr_token_mem_run_pos < ngr_token_mem_end )
 	++ngr_token_mem_run_pos;
       ++ngr_token_mem_run_pos;
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SEND ) {
+    case TOKEN_SEND: {
       mbng_event_type_t event_type = ngr_token_mem[ngr_token_mem_run_pos++];
       mios32_midi_port_t port = ngr_token_mem[ngr_token_mem_run_pos++];
       u8 stream_size = ngr_token_mem[ngr_token_mem_run_pos++];
@@ -2813,9 +2344,10 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	sendTokenized(port, event_type, stream, stream_size);
 	MUTEX_MIDIOUT_GIVE;
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_EXEC_META ) {
+    case TOKEN_EXEC_META: {
       mbng_event_item_t item;
       MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
       u8 stream[10];
@@ -2841,120 +2373,24 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	if( item.stream[0] == MBNG_EVENT_META_TYPE_RUN_SECTION )
 	  return 1; // prevent recursion
       }
+    } break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET || token == TOKEN_CHANGE ) {
-      u8 send_event = token == TOKEN_CHANGE;
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-	
-      s32 value = parseTokenizedValue();
-      if( if_condition_matching && value >= 0 ) {
-	setTokenizedValue(value_token, id, value, send_event);
-      }
+    case TOKEN_SET:         execToken(command_token, if_condition_matching, execSET, execCHANGE_Virtual); break;
+    case TOKEN_CHANGE:      execToken(command_token, if_condition_matching, execCHANGE, execCHANGE_Virtual); break;
+    case TOKEN_TRIGGER:     execToken(command_token, if_condition_matching, execTRIGGER, NULL); break;
+    case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, NULL); break;
+    case TOKEN_SET_LOCK:    execToken(command_token, if_condition_matching, execSET_LOCK, NULL); break;
+    case TOKEN_SET_ACTIVE:  execToken(command_token, if_condition_matching, execSET_ACTIVE, NULL); break;
+    case TOKEN_SET_NO_DUMP: execToken(command_token, if_condition_matching, execSET_NO_DUMP, NULL); break;
+    case TOKEN_SET_MIN:     execToken(command_token, if_condition_matching, execSET_MIN, NULL); break;
+    case TOKEN_SET_MAX:     execToken(command_token, if_condition_matching, execSET_MAX, NULL); break;
 
     /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_TRIGGER ) {
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-
-      if( if_condition_matching ) {
-	triggerTokenized(value_token, id);
-      }
-    /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET_RGB ) {
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-	
-      mbng_event_rgb_t rgb;
-      rgb.ALL = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-      rgb.ALL |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
-
-      if( if_condition_matching ) {
-	setTokenizedRgb(value_token, id, rgb);
-      }
-
-    /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET_LOCK ) {
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-
-      s32 value = parseTokenizedValue();
-      if( if_condition_matching && value >= 0 ) {
-	setTokenizedLock(value_token, id, value);
-      }
-
-    /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET_ACTIVE ) {
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-
-      s32 value = parseTokenizedValue();
-      if( if_condition_matching && value >= 0 ) {
-	setTokenizedActive(value_token, id, value);
-      }
-
-    /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET_NO_DUMP ) {
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-
-      s32 value = parseTokenizedValue();
-      if( if_condition_matching && value >= 0 ) {
-	setTokenizedNoDump(value_token, id, value);
-      }
-
-    /////////////////////////////////////////////////////////////////////////
-    } else if( token == TOKEN_SET_MIN || token == TOKEN_SET_MAX ) {
-      u8 set_max = token == TOKEN_SET_MAX;
-      ngr_token_t value_token = ngr_token_mem[ngr_token_mem_run_pos++];
-
-      u16 id = 0;
-      if( value_token == TOKEN_VALUE_ID || value_token == TOKEN_VALUE_HW_ID ) {
-	id = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
-	id |= (u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8;
-      }
-
-      s32 value = parseTokenizedValue();
-      if( if_condition_matching && value >= -32768 ) { // negative values allowed
-	setTokenizedMinMax(value_token, id, value, set_max);
-      }
-
-    /////////////////////////////////////////////////////////////////////////
-    } else {
+    default:
       // should never happen...
 # if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: tried to execute invalid token 0x%02x at mem pos 0x%x!", token, init_ngr_token_mem_run_pos);
+      DEBUG_MSG("[MBNG_FILE_R_Exec] ERROR: tried to execute invalid token 0x%02x at mem pos 0x%x!", command_token, init_ngr_token_mem_run_pos);
 # endif
       mbng_file_r_info.valid = 0;
       mbng_file_r_info.tokenized = 0;
