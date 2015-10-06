@@ -378,7 +378,7 @@ s32 SEQ_UI_PageSet(seq_ui_page_t page)
 /////////////////////////////////////////////////////////////////////////////
 // Local help functions for copy/paste/clear/undo operations
 /////////////////////////////////////////////////////////////////////////////
-static void SEQ_UI_Msg_Track(char *line2)
+void SEQ_UI_Msg_Track(char *line2)
 {
   char buffer[40];
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -386,7 +386,7 @@ static void SEQ_UI_Msg_Track(char *line2)
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
-static void SEQ_UI_Msg_Layer(char *line2)
+void SEQ_UI_Msg_Layer(char *line2)
 {
   char buffer[20];
   u8 visible_track = SEQ_UI_VisibleTrackGet();
@@ -399,21 +399,21 @@ static void SEQ_UI_Msg_Layer(char *line2)
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
-static void SEQ_UI_Msg_MixerMap(char *line2)
+void SEQ_UI_Msg_MixerMap(char *line2)
 {
   char buffer[20];
   sprintf(buffer, "Mixer Map #%d", SEQ_MIXER_NumGet()+1);
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
-static void SEQ_UI_Msg_SongPos(char *line2)
+void SEQ_UI_Msg_SongPos(char *line2)
 {
   char buffer[20];
   sprintf(buffer, "Song Position %c%d", 'A' + (ui_song_edit_pos >> 3), (ui_song_edit_pos&7)+1);
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
-static void SEQ_UI_Msg_LivePattern(char *line2)
+void SEQ_UI_Msg_LivePattern(char *line2)
 {
   char buffer[20];
 

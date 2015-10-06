@@ -281,6 +281,19 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return 1;
 
     case SEQ_UI_BUTTON_GP3: // Paste
+      // duplicate steps if COPY button pressed as well
+      if( in_menu_msg == MSG_COPY ) {
+	if( !depressed ) {
+	  u8 visible_track = SEQ_UI_VisibleTrackGet();
+	  if( SEQ_UI_UTIL_PasteDuplicateSteps(visible_track) >= 1 ) {
+	    SEQ_UI_Msg_Track("steps duplicated");
+	  } else {
+	    SEQ_UI_Msg_Track("full - no duplication!");
+	  }
+	}
+	return 1;
+      }
+
       if( depressed ) {
 	if( in_menu_msg != MSG_PASTE )
 	  return 0; // ignore if no paste message

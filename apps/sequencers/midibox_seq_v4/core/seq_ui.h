@@ -394,6 +394,12 @@ extern s32 SEQ_UI_MsgStop(void);
 extern s32 SEQ_UI_SDCardErrMsg(u16 delay, s32 status);
 extern s32 SEQ_UI_MIDILearnMessage(seq_ui_msg_type_t msg_type, u8 on_off);
 
+extern void SEQ_UI_Msg_Track(char *line2);
+extern void SEQ_UI_Msg_Layer(char *line2);
+extern void SEQ_UI_Msg_MixerMap(char *line2);
+extern void SEQ_UI_Msg_SongPos(char *line2);
+extern void SEQ_UI_Msg_LivePattern(char *line2);
+
 extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
 
