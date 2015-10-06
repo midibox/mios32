@@ -12,6 +12,8 @@ MIDIboxSEQ V4.090
    o Fx->Scale page: the configured scale is now displayed at the right
      half of the page
 
+   o Track duplication now also possible with COPY+PASTE in UTILITY page
+
 
 MIDIboxSEQ V4.089
 ~~~~~~~~~~~~~~~~~
