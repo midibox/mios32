@@ -662,7 +662,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
       for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i, ++step) {
 	u16 pattern = 0;
 	if( SEQ_TRG_GateGet(visible_track, step, 0) ) {
-	  int note = blm_root_key + root;
+	  int note = blm_root_key + (use_scale ? root : 0);
 
 	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
 	  u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
@@ -707,12 +707,12 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
     if( (played_step / 16) == ui_selected_step_view ) {
       if( blm_leds_rotate_view ) {
 	blm_leds_red[step_in_view] = 0xffff;
-	blm_leds_green[step_in_view] = 0x0000; // disable green LEDs
+	//blm_leds_green[step_in_view] = 0x0000; // disable green LEDs
       } else {
 	u16 mask = 1 << step_in_view;
 	for(i=0; i<SEQ_BLM_NUM_ROWS; ++i) {
 	  blm_leds_red[i] |= mask;
-	  blm_leds_green[i] &= ~mask; // disable green LEDs
+	  //blm_leds_green[i] &= ~mask; // disable green LEDs
 	}
       }
     }
@@ -816,14 +816,15 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
       }
     } else {
       u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : seq_cc_trk[visible_track].mode.FORCE_SCALE;
-      u8 scale, root_selection, root;
-      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-      if( root_selection == 0 )
-	root = 0; // force root to C (don't use KEYB based root)
 
       u8 note_start;
       u8 note_next;
       if( use_scale ) {
+	u8 scale, root_selection, root;
+	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	if( root_selection == 0 )
+	  root = 0; // force root to C (don't use KEYB based root)
+
 	// determine matching note range in scale
 	note_start = blm_root_key + root;
 	note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
@@ -834,7 +835,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	}
       } else {
 	note_start = (blm_num_rows <= 8) ? (blm_root_key + 7-button_row) : (blm_root_key + 15-button_row); // C-3/E-2 ..
-	note_next = note_start;
+	note_next = note_start + 1;
       }
 
       u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
@@ -1277,10 +1278,13 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
       }
     } else {
       u8 use_scale = 1; // should we use this only for force-to-scale mode? I don't think so - for best "first impression" :)
-      u8 scale, root_selection, root;
-      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
 
       if( use_scale ) {
+	u8 scale, root_selection, root;
+	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	if( root_selection == 0 )
+	  root = 0; // force root to C (don't use KEYB based root)
+
 	// determine matching note range in scale
 	note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
 	note_start += (blm_root_key - 0x3c);
@@ -1298,6 +1302,7 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 	int i;
 	for(i=0; i<button_column; ++i) {
 	  note_start = note_next;
+	  note_start = SEQ_BLM_BUTTON_Hlp_TransposeNote(visible_track, note_start); // transpose this note based on track settings
 	  note_next = SEQ_SCALE_NextNoteInScale(note_start, scale, root);
 	}
       } else {
