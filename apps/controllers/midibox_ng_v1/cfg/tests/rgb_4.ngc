@@ -7,6 +7,8 @@ LCD "%C@(1:1:1)Multicolour Test"
 # All three LEDs are assigned to the same MIDI event, but they range over different value maps which specify the brightness
 # maps have been generated with generated with tools/gen_colour_maps.pl
 
+# prepared for Common-Anode RGB LED, therefore dim values are inverted! (15 - dim_level)
+
 MAP1    15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
         15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
         15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  15  \
