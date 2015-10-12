@@ -22,6 +22,7 @@
 
 #include <mios32.h>
 #include "tasks.h"
+#include "app.h"
 
 #include <string.h>
 #include <md5.h>
@@ -83,6 +84,7 @@ static mbng_file_s_info_t mbng_file_s_info;
 
 static u8 current_snapshot;
 
+static u8 delayed_snapshot_ctr;
 
 /////////////////////////////////////////////////////////////////////////////
 //! Global variables
@@ -130,6 +132,7 @@ s32 MBNG_FILE_S_Unload(void)
 {
   mbng_file_s_info.valid = 0;
   current_snapshot = 0;
+  delayed_snapshot_ctr = 0;
 
   return 0; // no error
 }
@@ -183,6 +186,10 @@ s32 MBNG_FILE_S_Read(char *filename, int snapshot)
     DEBUG_MSG("[MBNG_FILE_S] Invalid snapshot cannot be loaded: %d!\n", snapshot);
 #endif
     return -3;
+  }
+
+  if( mbng_file_s_patch_name != NULL ) {
+    MBNG_FILE_S_Periodic_1s(1); // enforce snapshot store if requested
   }
 
   s32 status = 0;
@@ -492,6 +499,43 @@ s32 MBNG_FILE_S_Write(char *filename, int snapshot)
     DEBUG_MSG("[MBNG_FILE_S] ERROR: failed while writing %s!\n", filepath);
 #endif
     return status;
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Requests a delayed snapshot
+//! \param delay_s the delay in seconds - will be take if there is no ongoing request
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_S_RequestDelayedSnapshot(u8 delay_s)
+{
+  if( !delayed_snapshot_ctr ) {
+    delayed_snapshot_ctr = delay_s;
+  }
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Should be called periodically each second to check for a delayed snapshot
+//! \param force if set to != 0, an ongoing request will be enforced
+//! \returns < 0 on errors (error codes are documented in seq_file.h)
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_FILE_S_Periodic_1s(u8 force)
+{
+  if( delayed_snapshot_ctr && (force || --delayed_snapshot_ctr == 0) ) {
+    delayed_snapshot_ctr = 0;
+
+    if( debug_verbose_level >= DEBUG_VERBOSE_LEVEL_INFO ) {
+      MUTEX_MIDIOUT_TAKE;
+      DEBUG_MSG("[MBNG_FILE_S] delayed snapshot stored\n");
+      MUTEX_MIDIOUT_GIVE;
+    }
+    
+    MUTEX_SDCARD_TAKE;
+    MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
+    MUTEX_SDCARD_GIVE;
   }
 
   return 0; // no error

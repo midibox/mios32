@@ -46,6 +46,10 @@ extern s32 MBNG_FILE_S_SnapshotSet(u8 snapshot);
 extern s32 MBNG_FILE_S_Read(char *filename, int snapshot);
 extern s32 MBNG_FILE_S_Write(char *filename, int snapshot);
 
+extern s32 MBNG_FILE_S_RequestDelayedSnapshot(u8 delay_s);
+extern s32 MBNG_FILE_S_Periodic_1s(u8 force);
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
