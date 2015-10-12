@@ -23,6 +23,9 @@ MIDIbox NG V1.033
    o implemented new meta command "LearnEvent" which allows to learn SendEvent based controller assignments during runtime.
      See cfg/test/metalrn.ngc for a usage example
 
+   o added new meta command "SaveDelayedSnapshot:<seconds>"
+     It will request to store a snapshot after at least the given seconds.
+
    o added new event type "NoteOnOff", which will send a NoteOff event immediately after NoteOn (resp. actually it will
      send Note On with velocity 0 for runtime event optimisation)
 

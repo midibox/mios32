@@ -58,6 +58,7 @@
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
 #include "mbng_file_r.h"
+#include "mbng_file_s.h"
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
@@ -271,9 +272,6 @@ void APP_Background(void)
 
     MUTEX_LCD_GIVE;
 
-    // -> keyboard handler
-    KEYBOARD_Periodic_1mS();
-
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
 
@@ -345,6 +343,9 @@ void APP_Background(void)
 
 	hw_enabled = 1; // enable hardware after first read...
       }
+
+      // delayed snapshot handling
+      MBNG_FILE_S_Periodic_1s(0);
 
       MUTEX_SDCARD_GIVE;
     }
@@ -428,6 +429,9 @@ void APP_Tick(void)
 
     // scan AINSER pins
     AINSER_Handler(APP_AINSER_NotifyChange);
+
+    // -> keyboard handler
+    KEYBOARD_Periodic_1mS();
   }
 }
 

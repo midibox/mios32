@@ -2669,6 +2669,7 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT:      return "CycleSnapshot";
   case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT:       return "LoadSnapshot";
   case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return "SaveSnapshot";
+  case MBNG_EVENT_META_TYPE_SAVE_DELAYED_SNAPSHOT: return "SaveDelayedSnapshot";
   case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return "DumpSnapshot";
 
   case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: return "RetrieveAinValues";
@@ -2740,6 +2741,7 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "CycleSnapshot") == 0 ) return MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT;
   if( strcasecmp(meta_type, "LoadSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT;
   if( strcasecmp(meta_type, "SaveSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT;
+  if( strcasecmp(meta_type, "SaveDelayedSnapshot") == 0 ) return MBNG_EVENT_META_TYPE_SAVE_DELAYED_SNAPSHOT;
   if( strcasecmp(meta_type, "DumpSnapshot") == 0 )  return MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT;
 
   if( strcasecmp(meta_type, "RetrieveAinValues") == 0 ) return MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES;
@@ -2811,6 +2813,7 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_CYCLE_SNAPSHOT:      return 0;
   case MBNG_EVENT_META_TYPE_LOAD_SNAPSHOT:       return 0;
   case MBNG_EVENT_META_TYPE_SAVE_SNAPSHOT:       return 0;
+  case MBNG_EVENT_META_TYPE_SAVE_DELAYED_SNAPSHOT: return 1;
   case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT:       return 0;
 
   case MBNG_EVENT_META_TYPE_RETRIEVE_AIN_VALUES: return 0;
@@ -3125,6 +3128,10 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       MUTEX_SDCARD_TAKE;
       MBNG_FILE_S_Write(mbng_file_s_patch_name, MBNG_FILE_S_SnapshotGet());
       MUTEX_SDCARD_GIVE;
+    } break;
+
+    case MBNG_EVENT_META_TYPE_SAVE_DELAYED_SNAPSHOT: {
+      MBNG_FILE_S_RequestDelayedSnapshot(meta_values[0]);
     } break;
 
     case MBNG_EVENT_META_TYPE_DUMP_SNAPSHOT: {
