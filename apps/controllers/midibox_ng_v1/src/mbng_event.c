@@ -22,6 +22,7 @@
 #include <ainser.h>
 #include <midimon.h>
 #include <seq_bpm.h>
+#include <ws2812.h>
 
 #include "app.h"
 #include "tasks.h"
@@ -29,6 +30,7 @@
 #include "mbng_lcd.h"
 #include "mbng_din.h"
 #include "mbng_dout.h"
+#include "mbng_rgbled.h"
 #include "mbng_matrix.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
@@ -2707,6 +2709,11 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
 
   case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE:    return "KbBreakIsMake";
 
+  case MBNG_EVENT_META_TYPE_RGB_LED_CLEAR_ALL:   return "RgbLedClearAll";
+  case MBNG_EVENT_META_TYPE_RGB_LED_SET_RGB:     return "RgbLedSetRgb";
+  case MBNG_EVENT_META_TYPE_RGB_LED_SET_HSV:     return "RgbLedSetHsv";
+  case MBNG_EVENT_META_TYPE_RGB_LED_RAINBOW:     return "RgbLedRainbow";
+
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return "ScsEnc";
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return "ScsMenu";
   case MBNG_EVENT_META_TYPE_SCS_SOFT1:           return "ScsSoft1";
@@ -2777,7 +2784,12 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "CvTransposeOctave") == 0 )    return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_OCTAVE;
   if( strcasecmp(meta_type, "CvTransposeSemitones") == 0 ) return MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES;
 
-  if( strcasecmp(meta_type, "KbBreakIsMake") == 0 ) return MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE;
+  if( strcasecmp(meta_type, "KbBreakIsMake") == 0 )        return MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE;
+
+  if( strcasecmp(meta_type, "RgbLedClearAll") == 0 )       return MBNG_EVENT_META_TYPE_RGB_LED_CLEAR_ALL;
+  if( strcasecmp(meta_type, "RgbLedSetRgb") == 0 )         return MBNG_EVENT_META_TYPE_RGB_LED_SET_RGB;
+  if( strcasecmp(meta_type, "RgbLedSetHsv") == 0 )         return MBNG_EVENT_META_TYPE_RGB_LED_SET_HSV;
+  if( strcasecmp(meta_type, "RgbLedRainbow") == 0 )        return MBNG_EVENT_META_TYPE_RGB_LED_RAINBOW;
 
   if( strcasecmp(meta_type, "ScsEnc") == 0 )        return MBNG_EVENT_META_TYPE_SCS_ENC;
   if( strcasecmp(meta_type, "ScsMenu") == 0 )       return MBNG_EVENT_META_TYPE_SCS_MENU;
@@ -2850,6 +2862,11 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_CV_TRANSPOSE_SEMITONES: return 1;
 
   case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE:    return 1;
+
+  case MBNG_EVENT_META_TYPE_RGB_LED_CLEAR_ALL:   return 0;
+  case MBNG_EVENT_META_TYPE_RGB_LED_SET_RGB:     return 4;
+  case MBNG_EVENT_META_TYPE_RGB_LED_SET_HSV:     return 4;
+  case MBNG_EVENT_META_TYPE_RGB_LED_RAINBOW:     return 2;
 
   case MBNG_EVENT_META_TYPE_SCS_ENC:             return 0;
   case MBNG_EVENT_META_TYPE_SCS_MENU:            return 0;
@@ -3290,6 +3307,34 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
 
     case MBNG_EVENT_META_TYPE_KB_BREAK_IS_MAKE: {
       MBNG_KB_BreakIsMakeSet(meta_values[0]-1, item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RGB_LED_CLEAR_ALL: {
+      MBNG_RGBLED_RainbowSpeedSet(0);
+      MBNG_RGBLED_Init(0);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RGB_LED_SET_RGB: {
+      u16 led;
+      if( (led=meta_values[0]) ) {
+	led -= 1;
+	WS2812_LED_SetRGB(led, 0, meta_values[1]);
+	WS2812_LED_SetRGB(led, 1, meta_values[2]);
+	WS2812_LED_SetRGB(led, 2, meta_values[3]);
+      }
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RGB_LED_SET_HSV: {
+      u16 led;
+      if( (led=meta_values[0]) ) {
+	led -= 1;
+	WS2812_LED_SetHSV(led, meta_values[1], meta_values[2] / 100.0, meta_values[3] / 100.0);
+      }
+    } break;
+
+    case MBNG_EVENT_META_TYPE_RGB_LED_RAINBOW: {
+      MBNG_RGBLED_RainbowSpeedSet(meta_values[0]);
+      MBNG_RGBLED_RainbowBrightnessSet(meta_values[1]);
     } break;
 
     case MBNG_EVENT_META_TYPE_SCS_ENC: {

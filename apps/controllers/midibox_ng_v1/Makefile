@@ -21,6 +21,7 @@ THUMB_SOURCE    = src/app.c \
 		  src/mbng_din.c \
 		  src/mbng_dout.c \
 		  src/mbng_dio.c \
+		  src/mbng_rgbled.c \
 		  src/mbng_enc.c \
 		  src/mbng_ain.c \
 		  src/mbng_ainser.c \
@@ -99,6 +100,9 @@ include $(MIOS32_PATH)/modules/aout/aout.mk
 
 # MAX72xx Driver
 include $(MIOS32_PATH)/modules/max72xx/max72xx.mk
+
+# WS2812 RGB LED strip driver
+include $(MIOS32_PATH)/modules/ws2812/ws2812.mk
 
 # Notestack functions
 include $(MIOS32_PATH)/modules/notestack/notestack.mk
