@@ -30,7 +30,7 @@
 //!
 //!
 //! Currently this driver is only supported for the MBHP_CORE_STM32F4 module.
-//! We take TIM4, since it isn't used by MIOS32 (yet), and pin PB4 (available at J4B.SC)
+//! We take TIM4, since it isn't used by MIOS32 (yet), and pin PB6 (available at J4B.SC)
 //! since the second IIC port is normally not used by applications.
 //! This pin has already a 2.2k pull-up resistor on the MBHP_CORE_STM32F4 board,
 //! which is required to pull the output to 5V (the pin is configured in open-drain mode)
