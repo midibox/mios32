@@ -12,6 +12,20 @@ MIDIbox NG V1.033
      In the bootloader update app, enter "set spi_midi 1" to enable the SPI MIDI device at J16 (RC2 chip select line).
      This will also disable the OSC ports via MBHP_ETH module, which is normally connected to this port.
 
+   o support for WS2812 LED strips (currently only for the MBHP_CORE_STM32F4 module).
+     The data input has to be connected to J4B.SC, ground to J4B.VS and +5V to an external PSU (required, since
+     each RGB LED can consume up to 20 mA!)
+
+     Following meta event commands are available:
+     - RgbLedClearAll (clears all LEDs)
+     - RgbLedSetRgb:<led>:<r>:<g>:<b> (led=1..64, r/g/b=0..255)
+     - RgbLedSetHsv:<led>:<h>:<s>:<v> (led=1..64, h=0..359, s=0..100, v=0..100)
+     - RgbLedRainbow:<speed>:<brightness> (speed=1..255, brightness=0..100)
+
+    Most simple way to test a LED strip: enter following command in MIOS Terminal
+       ngr exec_neta RgbLedRainbow:9:100
+    (don't forget to wear sunglasses, or start with brightness 20!!! ;-)
+
    o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
 
    o .NGR file: added "load <setup>" command which allows to switch to another setup (.NGC, .NGS, .NGR, ... files)

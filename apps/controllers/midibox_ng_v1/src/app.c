@@ -31,6 +31,7 @@
 #include <midi_router.h>
 #include <midimon.h>
 #include <keyboard.h>
+#include <ws2812.h>
 
 #include "mbng_sysex.h"
 #include "mbng_patch.h"
@@ -39,6 +40,7 @@
 #include "mbng_din.h"
 #include "mbng_dout.h"
 #include "mbng_dio.h"
+#include "mbng_rgbled.h"
 #include "mbng_enc.h"
 #include "mbng_ain.h"
 #include "mbng_ainser.h"
@@ -183,6 +185,8 @@ void APP_Init(void)
   MBNG_EVENT_Init(0);
   MBNG_DIN_Init(0);
   MBNG_DOUT_Init(0);
+  WS2812_Init(0);
+  MBNG_RGBLED_Init(0);
   MBNG_ENC_Init(0);
   MBNG_MF_Init(0);
   MBNG_AIN_Init(0);
@@ -274,6 +278,9 @@ void APP_Background(void)
 
     // MIDI In/Out monitor
     MIDI_PORT_Period1mS();
+
+    // RGB LEDs
+    MBNG_RGBLED_Periodic_1mS();
 
     // call MIDI event tick
     MBNG_EVENT_Tick();
