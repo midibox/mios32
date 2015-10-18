@@ -1113,6 +1113,37 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
       item.rgb.g = values[1];
       item.rgb.b = values[2];
 
+    } else if( strcasecmp(parameter, "hsv") == 0 ) {
+      char *values_str = value_str;
+      char *brkt_local;
+      int values[3];
+      if( !(values_str = strtok_r(value_str, separator_colon, &brkt_local)) ||
+	  (values[0]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[1]=get_dec(values_str)) < 0 ||
+	  !(values_str = strtok_r(NULL, separator_colon, &brkt_local)) ||
+	  (values[2]=get_dec(values_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid hsv format in EVENT_%s ... %s=%s\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      int i;
+      for(i=0; i<3; ++i) {
+	int max = (i == 0) ? 359 : 100;
+	if( values[i] < 0 || values[i] > max ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid hsv format (digit #%d) in EVENT_%s ... %s=%s\n", line, i+1, event, parameter, value_str);
+#endif
+	  return -1;
+	}
+      }
+
+      item.hsv.h = values[0];
+      item.hsv.s = values[1];
+      item.hsv.v = values[2];
+
     } else if( strcasecmp(parameter, "colour") == 0 || strcasecmp(parameter, "color") == 0 ) {
       int value;
       if( (value=get_dec(value_str)) < 0 || value > 2 ) {
@@ -1514,7 +1545,6 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 #endif
 	return -1;
       }
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "lcd_pos") == 0 ) {
@@ -4066,6 +4096,11 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	FLUSH_BUFFER;
       }
 
+      if( item.hsv.ALL ) {
+	sprintf(line_buffer, " hsv=%d:%d:%d", item.hsv.h, item.hsv.s, item.hsv.v);
+	FLUSH_BUFFER;
+      }
+
       {
 	char ports_bin[21];
 	int bit;
@@ -4199,6 +4234,9 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  kb_velocity_map=map%d", (s8)item.custom_flags.KB.kb_velocity_map);
 	  FLUSH_BUFFER;
 	}
+      } break;
+
+      case MBNG_EVENT_CONTROLLER_RGBLED: {
       } break;
       }
 

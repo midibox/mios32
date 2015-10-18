@@ -94,11 +94,12 @@ typedef enum {
   TOKEN_CHANGE          = 0x08, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
   TOKEN_TRIGGER         = 0x09, // followed by 3 bytes (TOKEN_VALUE_*)
   TOKEN_SET_RGB         = 0x0a, // followed by 5 bytes (TOKEN_VALUE_*) + id + rgb value
-  TOKEN_SET_LOCK        = 0x0b, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_ACTIVE      = 0x0c, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_NO_DUMP     = 0x0d, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MIN         = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MAX         = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_HSV         = 0x0b, // followed by 7 bytes (TOKEN_VALUE_*) + id + hsv value
+  TOKEN_SET_LOCK        = 0x0c, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_ACTIVE      = 0x0d, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_NO_DUMP     = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MIN         = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MAX         = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
 
   TOKEN_IF              = 0x80, // +2 bytes for jump offset
   TOKEN_ELSE            = 0x81, // +2 bytes for jump offset
@@ -1488,6 +1489,18 @@ static s32 execSET_RGB(mbng_event_item_t *item, s32 value)
   return 0; // no error
 }
 
+static s32 execSET_HSV(mbng_event_item_t *item, s32 value)
+{
+  item->hsv.ALL = (u32)value;
+  MBNG_EVENT_ItemModify(item);
+  MBNG_EVENT_ItemReceive(item, item->value, 1, 0); // "from_midi" and forwarding disabled
+
+  if( MBNG_EVENT_NotifySendValue(item) == 2 )
+    return 2; // stop has been requested
+
+  return 0; // no error
+}
+
 static s32 execSET_LOCK(mbng_event_item_t *item, s32 value)
 {
   return MBNG_EVENT_ItemSetLock(item, value);
@@ -1598,6 +1611,13 @@ s32 execToken(ngr_token_t command_token, u8 if_condition_matching, s32 (*exec_fu
   case TOKEN_SET_RGB:
     value  = (u16)ngr_token_mem[ngr_token_mem_run_pos++];
     value |= ((u16)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
+    break;
+
+  case TOKEN_SET_HSV:
+    value  = (u32)ngr_token_mem[ngr_token_mem_run_pos++];
+    value |= ((u32)ngr_token_mem[ngr_token_mem_run_pos++] << 8);
+    value |= ((u32)ngr_token_mem[ngr_token_mem_run_pos++] << 16);
+    value |= ((u32)ngr_token_mem[ngr_token_mem_run_pos++] << 24);
     break;
 
   default:
@@ -1714,7 +1734,7 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
 	!(value_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
 	(b=get_dec(value_str)) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid rgb format in '%s %s' command!\n", line, command, dst_str);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid RGB format in '%s %s' command!\n", line, command, dst_str);
 #endif
       return -1;
     }
@@ -1723,7 +1743,7 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
 	g < 0 || g >= 16 ||
 	b < 0 || b >= 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid rgb values in '%s %s' command!\n", line, command, dst_str);
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid RGB values in '%s %s' command!\n", line, command, dst_str);
 #endif
       return -1;
     }
@@ -1740,6 +1760,60 @@ s32 parseCommand(u32 line, char *command, char **brkt, u8 tokenize_req, ngr_toke
     if( tokenize_req ) { // store token
       if( MBNG_FILE_R_PushToken((rgb.ALL >> 0) & 0xff, line) < 0 ||
 	  MBNG_FILE_R_PushToken((rgb.ALL >> 8) & 0xff, line) < 0 )
+	return -1;
+    }
+#endif
+  } break;
+
+  /////////////////////////////////////////////////////////////////////////////
+  case TOKEN_SET_HSV: {
+    int h = 0;
+    int s = 0;
+    int v = 0;
+
+    if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value after '%s %s' command!\n", line, command, dst_str);
+#endif
+      return -1;
+    }
+
+    char *brkt_local;
+    if( !(value_str = ngr_strtok_r(value_str, separator_colon, &brkt_local)) ||
+	(h=get_dec(value_str)) < 0 ||
+	!(value_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
+	(s=get_dec(value_str)) < 0 ||
+	!(value_str = ngr_strtok_r(NULL, separator_colon, &brkt_local)) ||
+	(v=get_dec(value_str)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid HSV format in '%s %s' command!\n", line, command, dst_str);
+#endif
+      return -1;
+    }
+
+    if( h < 0 || h >= 360 ||
+	s < 0 || s >= 101 ||
+	v < 0 || v >= 101 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid HSV values in '%s %s' command!\n", line, command, dst_str);
+#endif
+      return -1;
+    }
+
+    mbng_event_hsv_t hsv;
+    hsv.ALL = 0;
+    hsv.h = h;
+    hsv.s = s;
+    hsv.v = v;
+
+    value = hsv.ALL;
+
+#if NGR_TOKENIZED
+    if( tokenize_req ) { // store token
+      if( MBNG_FILE_R_PushToken((hsv.ALL >> 0) & 0xff, line) < 0 ||
+	  MBNG_FILE_R_PushToken((hsv.ALL >> 8) & 0xff, line) < 0 ||
+	  MBNG_FILE_R_PushToken((hsv.ALL >> 16) & 0xff, line) < 0 ||
+	  MBNG_FILE_R_PushToken((hsv.ALL >> 24) & 0xff, line) < 0 )
 	return -1;
     }
 #endif
@@ -2110,6 +2184,8 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_CHANGE, execCHANGE, execCHANGE_Virtual);
       } else if( strcasecmp(parameter, "SET_RGB") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_RGB, execSET_RGB, NULL);
+      } else if( strcasecmp(parameter, "SET_HSV") == 0 ) {
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_HSV, execSET_HSV, NULL);
       } else if( strcasecmp(parameter, "SET_LOCK") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_LOCK, execSET_LOCK, NULL);
       } else if( strcasecmp(parameter, "SET_ACTIVE") == 0 ) {
@@ -2380,6 +2456,7 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
     case TOKEN_CHANGE:      execToken(command_token, if_condition_matching, execCHANGE, execCHANGE_Virtual); break;
     case TOKEN_TRIGGER:     execToken(command_token, if_condition_matching, execTRIGGER, NULL); break;
     case TOKEN_SET_RGB:     execToken(command_token, if_condition_matching, execSET_RGB, NULL); break;
+    case TOKEN_SET_HSV:     execToken(command_token, if_condition_matching, execSET_HSV, NULL); break;
     case TOKEN_SET_LOCK:    execToken(command_token, if_condition_matching, execSET_LOCK, NULL); break;
     case TOKEN_SET_ACTIVE:  execToken(command_token, if_condition_matching, execSET_ACTIVE, NULL); break;
     case TOKEN_SET_NO_DUMP: execToken(command_token, if_condition_matching, execSET_NO_DUMP, NULL); break;
