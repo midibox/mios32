@@ -70,6 +70,7 @@ typedef union {
     u16 has_max:1;
     u16 has_offset:1;
     u16 has_rgb:1;
+    u16 has_hsv:1;
     u16 has_map:1;
     u16 has_lcd:1;
     u16 has_lcd_x:1;
@@ -696,6 +697,7 @@ s32 MBNG_EVENT_ItemNoDumpDefault(mbng_event_item_t *item)
   case MBNG_EVENT_CONTROLLER_MF:
   case MBNG_EVENT_CONTROLLER_CV:
   //case MBNG_EVENT_CONTROLLER_KB            = 0xc000,
+  case MBNG_EVENT_CONTROLLER_RGBLED:
     switch( item->flags.type ) {
     //case MBNG_EVENT_TYPE_UNDEFINED:
     case MBNG_EVENT_TYPE_NOTE_OFF:
@@ -737,6 +739,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->offset = 0;
   item->syxdump_pos.ALL = 0;
   item->rgb.ALL = 0;
+  item->hsv.ALL = 0;
   item->stream_size = 0;
   item->map = 0;
   item->bank = 0;
@@ -790,6 +793,12 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_KB: {
+  }; break;
+
+  case MBNG_EVENT_CONTROLLER_RGBLED: {
+    item->hsv.h = 200;
+    item->hsv.s = 100;
+    item->hsv.v = 20;
   }; break;
   }
 
@@ -876,10 +885,17 @@ static s32 MBNG_EVENT_ItemCopy2User(mbng_event_pool_item_t* pool_item, mbng_even
   }
 
   if( extra_par_available.has_rgb ) {
-    item->rgb.ALL = (s16)(extra_par[0] | (extra_par[1] << 8));
+    item->rgb.ALL = extra_par[0] | ((u16)extra_par[1] << 8);
     extra_par += 2;
   } else {
     item->rgb.ALL = 0;
+  }
+
+  if( extra_par_available.has_hsv ) {
+    item->hsv.ALL = extra_par[0] | ((u32)extra_par[1] << 8) | ((u32)extra_par[2] << 16) | ((u32)extra_par[3] << 24);
+    extra_par += 4;
+  } else {
+    item->hsv.ALL = 0;
   }
 
   if( extra_par_available.has_map ) {
@@ -1003,6 +1019,16 @@ static s32 MBNG_EVENT_ItemCopy2Pool(mbng_event_item_t *item, mbng_event_pool_ite
     pool_item_len += 2;
   }
 
+  if( item->hsv.ALL ) {
+    pool_item->extra_par_available.has_hsv = 1;
+    extra_par[0] = item->hsv.ALL;
+    extra_par[1] = item->hsv.ALL >> 8;
+    extra_par[2] = item->hsv.ALL >> 16;
+    extra_par[3] = item->hsv.ALL >> 24;
+    extra_par += 4;
+    pool_item_len += 4;
+  }
+
   if( item->map ) {
     pool_item->extra_par_available.has_map = 1;
     extra_par[0] = item->map;
@@ -1074,6 +1100,10 @@ static u32 MBNG_EVENT_ItemCalcPoolItemLen(mbng_event_item_t *item)
 
   if( item->rgb.ALL ) {
     pool_item_len += 2;
+  }
+
+  if( item->hsv.ALL ) {
+    pool_item_len += 4;
   }
 
   if( item->map ) {
@@ -1610,6 +1640,7 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     DEBUG_MSG("  - offset=%d", item->offset);
     DEBUG_MSG("  - dimmed=%d", item->flags.dimmed);
     DEBUG_MSG("  - rgb=%d:%d:%d", item->rgb.r, item->rgb.g, item->rgb.b);
+    DEBUG_MSG("  - hsv=%d:%d:%d", item->hsv.h, item->hsv.s, item->hsv.v);
     DEBUG_MSG("  - locked=%d", item->flags.write_locked);
     DEBUG_MSG("  - no_dump=%d", item->flags.no_dump);
     DEBUG_MSG("  - active=%d", item->flags.active);
@@ -1673,6 +1704,9 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
     case MBNG_EVENT_CONTROLLER_KB: {
       DEBUG_MSG("  - kb_transpose=%d", (s8)item->custom_flags.KB.kb_transpose);
       DEBUG_MSG("  - kb_velocity_map=map%d", (s8)item->custom_flags.KB.kb_velocity_map);
+    } break;
+
+    case MBNG_EVENT_CONTROLLER_RGBLED: {
     } break;
     }
 
@@ -2289,6 +2323,7 @@ const char *MBNG_EVENT_ItemControllerStrGet(mbng_event_item_id_t id)
   case MBNG_EVENT_CONTROLLER_MF:            return "MF";
   case MBNG_EVENT_CONTROLLER_CV:            return "CV";
   case MBNG_EVENT_CONTROLLER_KB:            return "KB";
+  case MBNG_EVENT_CONTROLLER_RGBLED:        return "RGBLED";
   }
   return "DISABLED";
 }
@@ -2310,6 +2345,7 @@ mbng_event_item_id_t MBNG_EVENT_ItemIdFromControllerStrGet(char *event)
   if( strcasecmp(event, "MF") == 0 )            return MBNG_EVENT_CONTROLLER_MF;
   if( strcasecmp(event, "CV") == 0 )            return MBNG_EVENT_CONTROLLER_CV;
   if( strcasecmp(event, "KB") == 0 )            return MBNG_EVENT_CONTROLLER_KB;
+  if( strcasecmp(event, "RGBLED") == 0 )        return MBNG_EVENT_CONTROLLER_RGBLED;
 
   return MBNG_EVENT_CONTROLLER_DISABLED;
 }
@@ -3621,6 +3657,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
   case MBNG_EVENT_CONTROLLER_MF:            MBNG_MF_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_CV:            MBNG_CV_NotifyReceivedValue(item); break;
   case MBNG_EVENT_CONTROLLER_KB:            MBNG_KB_NotifyReceivedValue(item); break;
+  case MBNG_EVENT_CONTROLLER_RGBLED:        MBNG_RGBLED_NotifyReceivedValue(item); break;
 
   case MBNG_EVENT_CONTROLLER_SENDER: {
     int sender_ix = item->id & 0xfff;

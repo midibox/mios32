@@ -23,8 +23,13 @@ MIDIbox NG V1.033
      - RgbLedRainbow:<speed>:<brightness> (speed=1..255, brightness=0..100)
 
     Most simple way to test a LED strip: enter following command in MIOS Terminal
-       ngr exec_neta RgbLedRainbow:9:100
+       ngr exec_meta RgbLedRainbow:9:100
     (don't forget to wear sunglasses, or start with brightness 20!!! ;-)
+
+   o added EVENT_RGBLED
+     See cfg/test/rgbled_1.ngc for usage examples
+
+   o .NGR file: added "set_hsv" command which allows to control the hue parameters of a RGBLED
 
    o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
 

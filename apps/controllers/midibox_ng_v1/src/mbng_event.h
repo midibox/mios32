@@ -37,6 +37,7 @@ typedef enum {
   MBNG_EVENT_CONTROLLER_MF            = 0xa000,
   MBNG_EVENT_CONTROLLER_CV            = 0xb000,
   MBNG_EVENT_CONTROLLER_KB            = 0xc000,
+  MBNG_EVENT_CONTROLLER_RGBLED        = 0xd000,
 } mbng_event_item_id_t;
 
 
@@ -311,6 +312,9 @@ typedef union {
     u16 kb_velocity_map:8;
   } KB;
 
+  //struct {
+  //} RGBLED;
+
 } mbng_event_custom_flags_t;
 
 
@@ -344,6 +348,16 @@ typedef union {
   };
 } mbng_event_rgb_t;
 
+typedef union {
+  u32 ALL;
+
+  struct {
+    u16 h;
+    u8  s;
+    u8  v;
+  };
+} mbng_event_hsv_t;
+
 typedef struct {
   u16 id;
   u16 hw_id;
@@ -360,6 +374,7 @@ typedef struct {
   s16 offset;
   u16 matrix_pin;
   mbng_event_rgb_t rgb;
+  mbng_event_hsv_t hsv;
   mbng_event_syxdump_pos_t syxdump_pos;
   u32 stream_size;
   u8* stream;
