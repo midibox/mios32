@@ -70,6 +70,12 @@ s32 MBNG_RGBLED_Periodic_1mS(void)
       h += rainbow_speed;
       if( h >= 360 ) h -= 360;
     }
+
+    // for the case that the rainbow effect has been turned off while this
+    // function has been executed in a background task
+    if( !rainbow_speed ) {
+      MBNG_RGBLED_Init(0);
+    }
   }
 
   return 0; // no error
