@@ -50,7 +50,7 @@ typedef union {
   struct {
     u8 port;
     u8 chn;
-    u8 send_function;
+    u16 send_function;
   };
 } seq_blm_fader_t;
 
