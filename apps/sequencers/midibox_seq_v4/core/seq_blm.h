@@ -22,11 +22,16 @@
 // for 16x16 LEDs
 // rows should match with number of tracks
 #define SEQ_BLM_NUM_ROWS 16
+
 // columns should match with bitwidth of seq_blm_led* variables
 // Note: previously we supported wide screen displays (e.g. with 16, 32, 64, 128 LEDs per row)
 // this has been removed to simplify and speed up the routines!
 // However, a 32 LED mode is still feasible with some changes... have fun! ;)
 #define SEQ_BLM_NUM_COLUMNS 16
+
+// BLM faders
+#define SEQ_BLM_NUM_FADERS 8
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -38,6 +43,16 @@ typedef union {
     u8 ALWAYS_USE_FTS:1;  // Force-to-Scale always used independent from the Track Mode selection
   };
 } seq_blm_options_t;
+
+
+typedef union {
+  u32 ALL;
+  struct {
+    u8 port;
+    u8 chn;
+    u8 send_function;
+  };
+} seq_blm_fader_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -66,5 +81,6 @@ extern s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t m
 extern mios32_midi_port_t seq_blm_port;
 extern u8 seq_blm_timeout_ctr;
 extern seq_blm_options_t seq_blm_options;
+extern seq_blm_fader_t seq_blm_fader[SEQ_BLM_NUM_FADERS];
 
 #endif /* _SEQ_MIDI_BLM_H */

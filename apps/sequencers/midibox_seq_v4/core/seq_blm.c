@@ -155,6 +155,8 @@ u8 seq_blm_timeout_ctr;
 
 seq_blm_options_t seq_blm_options;
 
+seq_blm_fader_t seq_blm_fader[SEQ_BLM_NUM_FADERS];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -288,6 +290,17 @@ s32 SEQ_BLM_Init(u32 mode)
   blm_root_key = 0x30;
 
   sysex_device_id = 0; // only device 0 supported yet
+
+  {
+    int fader_ix;
+
+    seq_blm_fader_t *fader = (seq_blm_fader_t *)&seq_blm_fader[0];
+    for(fader_ix=0; fader_ix<SEQ_BLM_NUM_FADERS; ++fader_ix, ++fader) {
+      fader->port = DEFAULT; // Trk
+      fader->chn = 0; // Trk
+      fader->send_function = 1; // CC#1
+    }
+  }
 
   return 0; // no error
 }
@@ -2237,9 +2250,23 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
       return 1; // MIDI event has been taken
     }
 
-  } else if( midi_package.event == CC && midi_package.chn < 8 ) {
-    // Fader Event
-    // TODO: map it to customized port/channel/CC
+  } else if( midi_package.event == CC && midi_package.chn < SEQ_BLM_NUM_FADERS ) {
+    seq_blm_fader_t *fader = &seq_blm_fader[midi_package.chn];
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+
+    mios32_midi_port_t port = (fader->port == 0) ? tcc->midi_port : fader->port;
+    u8 chn = (fader->chn == 0) ? tcc->midi_chn : (fader->chn - 1);
+
+    if( fader->send_function < 128 ) {
+      // send CC
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, fader->send_function, midi_package.value);
+      MUTEX_MIDIOUT_GIVE;      
+    } else {
+      // special functions
+      // TODO
+    }
   }
 
   return 0; // MIDI event has not been taken

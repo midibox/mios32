@@ -14,6 +14,12 @@ MIDIboxSEQ V4.090
 
    o Track duplication now also possible with COPY+PASTE in UTILITY page
 
+   o added BLM fader configuration to UTILITY->Opt menu (item #13/15)
+     Up to 8 faders can be connected to the BLM16x16+X
+     They can send a CC value either to a statically assigned Port/Chn, or to
+     the Port/Chn defined by the track.
+     Up to 128 additional (internal) functions can be added in future.
+
 
 MIDIboxSEQ V4.089
 ~~~~~~~~~~~~~~~~~

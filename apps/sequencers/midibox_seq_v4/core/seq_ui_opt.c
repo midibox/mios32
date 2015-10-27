@@ -52,10 +52,11 @@
 #define ITEM_LIVE_LAYER_MUTE 9
 #define ITEM_TPD_MODE        10
 #define ITEM_BLM_ALWAYS_USE_FTS 11
-#define ITEM_MIXER_CC1234    12
-#define ITEM_SCREEN_SAVER    13
+#define ITEM_BLM_FADERS      12
+#define ITEM_MIXER_CC1234    13
+#define ITEM_SCREEN_SAVER    14
 
-#define NUM_OF_ITEMS         14
+#define NUM_OF_ITEMS         15
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -121,6 +122,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   },
 
   {//<-------------------------------------->
+    "BLM16x16+X Fader Assignments",
+    ""
+  },
+
+  {//<-------------------------------------->
     "Mixer CCs which should be sent after PC",
     ""
   },
@@ -137,6 +143,7 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
 static u8 local_selected_item = 0; // stays stable when menu is exit
 
+static u8 selected_blm_fader = 0;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -295,6 +302,54 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       else
 	seq_blm_options.ALWAYS_USE_FTS ^= 1;
       ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_BLM_FADERS: {
+      seq_blm_fader_t *fader = &seq_blm_fader[selected_blm_fader];
+
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9: {
+	if( SEQ_UI_Var8_Inc(&selected_blm_fader, 0, SEQ_BLM_NUM_FADERS-1, incrementer) >= 0 ) {
+	  return 1;
+	}
+	return 0;
+      } break;
+
+      case SEQ_UI_ENCODER_GP10:
+      case SEQ_UI_ENCODER_GP11: {
+	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(fader->port);
+	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	  fader->port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+
+      case SEQ_UI_ENCODER_GP12:
+      case SEQ_UI_ENCODER_GP13: {
+	u8 value = fader->chn;
+	if( SEQ_UI_Var8_Inc(&value, 0, 16, incrementer) >= 0 ) {
+	  fader->chn = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP16:
+      case SEQ_UI_ENCODER_GP15: {
+	u8 value = fader->send_function;
+	if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) >= 0 ) {
+	  fader->send_function = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      }
       return 1;
     } break;
 
@@ -544,6 +599,38 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(40-len);
     } else {
       SEQ_LCD_PrintStringPadded(seq_blm_options.ALWAYS_USE_FTS ? "yes" : "no", 40-len);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_BLM_FADERS: {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      seq_blm_fader_t *fader = &seq_blm_fader[selected_blm_fader];
+
+      SEQ_LCD_PrintFormattedString("Fader:%d ", selected_blm_fader+1);
+
+      SEQ_LCD_PrintString("Port:");
+      if( fader->port == DEFAULT ) {
+	SEQ_LCD_PrintString("Trk ");
+      } else {
+	SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(fader->port)));
+      }
+
+      SEQ_LCD_PrintString(" Chn:");
+      if( fader->chn == 0 ) {
+	SEQ_LCD_PrintString("Trk");
+      } else {
+	SEQ_LCD_PrintFormattedString("%2d ", fader->chn);
+      }
+      SEQ_LCD_PrintString(" Send:");
+
+      if( fader->send_function < 128 ) {
+	SEQ_LCD_PrintFormattedString("CC#%3d    ", fader->send_function);
+      } else {
+	SEQ_LCD_PrintFormattedString("TODO#%3d  ", fader->send_function & 0x7f);
+      }
     }
   } break;
 
