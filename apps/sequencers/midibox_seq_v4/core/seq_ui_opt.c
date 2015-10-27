@@ -341,8 +341,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       case SEQ_UI_ENCODER_GP14:
       case SEQ_UI_ENCODER_GP16:
       case SEQ_UI_ENCODER_GP15: {
-	u8 value = fader->send_function;
-	if( SEQ_UI_Var8_Inc(&value, 0, 255, incrementer) >= 0 ) {
+	u16 value = fader->send_function;
+	if( SEQ_UI_Var16_Inc(&value, 0, 256, incrementer) >= 0 ) {
 	  fader->send_function = value;
 	  ui_store_file_required = 1;
 	  return 1;
@@ -627,9 +627,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString(" Send:");
 
       if( fader->send_function < 128 ) {
-	SEQ_LCD_PrintFormattedString("CC#%3d    ", fader->send_function);
+	SEQ_LCD_PrintFormattedString("CC#%3d   ", fader->send_function);
+      } else if( fader->send_function < 256 ) {
+	SEQ_LCD_PrintFormattedString("CC#%3dInv", fader->send_function - 128);
       } else {
-	SEQ_LCD_PrintFormattedString("TODO#%3d  ", fader->send_function & 0x7f);
+	SEQ_LCD_PrintFormattedString("TODO#%3d ", fader->send_function & 0x7f);
       }
     }
   } break;

@@ -693,7 +693,7 @@ s32 SEQ_FILE_C_Read(char *session)
 		  values[i] = get_dec_range(word, parameter, 0, 16);
 		}
 	      } else {
-		values[i] = get_dec_range(word, parameter, 0, 255);
+		values[i] = get_dec_range(word, parameter, 0, 65535);
 	      }
 	      if( values[i] < 0 ) {
 		break;

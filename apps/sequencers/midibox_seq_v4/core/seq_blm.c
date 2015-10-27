@@ -2261,7 +2261,12 @@ s32 SEQ_BLM_MIDI_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pac
     if( fader->send_function < 128 ) {
       // send CC
       MUTEX_MIDIOUT_TAKE;
-      MIOS32_MIDI_SendCC(port, chn, fader->send_function, midi_package.value);
+      MIOS32_MIDI_SendCC(port, chn, fader->send_function & 0x7f, midi_package.value);
+      MUTEX_MIDIOUT_GIVE;      
+    } else if( fader->send_function < 256 ) {
+      // send inverted CC
+      MUTEX_MIDIOUT_TAKE;
+      MIOS32_MIDI_SendCC(port, chn, fader->send_function & 0x7f, 127 - midi_package.value);
       MUTEX_MIDIOUT_GIVE;      
     } else {
       // special functions
