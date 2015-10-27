@@ -669,6 +669,47 @@ s32 SEQ_FILE_C_Read(char *session)
 		SEQ_MIDI_PORT_ClkDelayUpdate(port);
 	      }
 	    }
+	  } else if( strcmp(parameter, "BLM_Fader") == 0 ) {
+	    int values[3];
+
+	    s32 fader_ix = get_dec_range(word, parameter, 1, SEQ_BLM_NUM_FADERS);
+	    if( fader_ix < 1 )
+	      continue;
+	    --fader_ix; // counting from 0
+	      
+	    int i;
+	    for(i=0; i<3; ++i) {
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( i == 0 ) {
+		if( strcmp(word, "Trk") == 0 ) {
+		  values[i] = 0;
+		} else {
+		  values[i] = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+		}
+	      } else if( i == 1 ) {
+		if( strcmp(word, "Trk") == 0 ) {
+		  values[i] = 0;
+		} else {
+		  values[i] = get_dec_range(word, parameter, 0, 16);
+		}
+	      } else {
+		values[i] = get_dec_range(word, parameter, 0, 255);
+	      }
+	      if( values[i] < 0 ) {
+		break;
+	      }
+	    }
+
+	    if( i != 3 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_C] ERROR BLM_Fader: missing or wrong parameter %d\n", i+1);
+#endif
+	    } else {
+	      seq_blm_fader_t *fader = &seq_blm_fader[fader_ix];
+	      fader->port = values[0];
+	      fader->chn = values[1];
+	      fader->send_function = values[2];
+	    }
 	  } else if( strcmp(parameter, "MIDI_RouterNode") == 0 ) {
 	    int values[5];
 
@@ -999,17 +1040,43 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
     }
   }
 
-  u8 node;
-  seq_midi_router_node_t *n = &seq_midi_router_node[0];
-  for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
-    char src_buffer[5];
-    char dst_buffer[5];
+  {
+    u8 fader_ix;
+    seq_blm_fader_t *fader = &seq_blm_fader[0];
+    for(fader_ix=0; fader_ix<SEQ_BLM_NUM_FADERS; ++fader_ix, ++fader) {
+      char port_buffer[5];
+      char chn_buffer[5];
 
-    SEQ_MIDI_PORT_InPortToName(n->src_port, src_buffer);
-    SEQ_MIDI_PORT_OutPortToName(n->dst_port, dst_buffer);
+      if( fader->port == 0 ) {
+	strcpy(port_buffer, "Trk");
+      } else {
+	SEQ_MIDI_PORT_OutPortToName(fader->port, port_buffer);
+      }
 
-    sprintf(line_buffer, "MIDI_RouterNode %d %s %d %s %d\n", node, src_buffer, n->src_chn, dst_buffer, n->dst_chn);
-    FLUSH_BUFFER;
+      if( fader->chn == 0 ) {
+	strcpy(chn_buffer, "Trk");
+      } else {
+	sprintf(chn_buffer, "%d", fader->chn);
+      }
+
+      sprintf(line_buffer, "BLM_Fader %d %s %s %d\n", fader_ix+1, port_buffer, chn_buffer, fader->send_function);
+      FLUSH_BUFFER;
+    }
+  }
+
+  {
+    u8 node;
+    seq_midi_router_node_t *n = &seq_midi_router_node[0];
+    for(node=0; node<SEQ_MIDI_ROUTER_NUM_NODES; ++node, ++n) {
+      char src_buffer[5];
+      char dst_buffer[5];
+
+      SEQ_MIDI_PORT_InPortToName(n->src_port, src_buffer);
+      SEQ_MIDI_PORT_OutPortToName(n->dst_port, dst_buffer);
+
+      sprintf(line_buffer, "MIDI_RouterNode %d %s %d %s %d\n", node, src_buffer, n->src_chn, dst_buffer, n->dst_chn);
+      FLUSH_BUFFER;
+    }
   }
 
   return status;
