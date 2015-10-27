@@ -18,8 +18,12 @@ MIDIboxSEQ V4.090
      Up to 8 faders can be connected to the BLM16x16+X
      They can send a CC value either to a statically assigned Port/Chn, or to
      the Port/Chn defined by the track.
+
      Optionally value can be sent with inverted polarity (turn encoder beyond CC#127).
+
      Additional (internal) functions can be added in future.
+
+   o BLM in keyboard mode: transpose only takes place if track not in normal (no transpose) mode!
 
 
 MIDIboxSEQ V4.089

@@ -1133,6 +1133,7 @@ static s32 SEQ_BLM_BUTTON_GP_PatternMode(u8 button_row, u8 button_column, u8 dep
 static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 {
   int i;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 sequencer_running = SEQ_BPM_IsRunning();
 
   ///////////////////////////////////////////////////////////////////////////
@@ -1231,7 +1232,11 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
       blm_leds_extracolumn_red = blm_leds_extracolumn_green;
     }
 
-    u8 transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+    u8 transposer_note = 0x3c; // C-3
+    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+    if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
+      transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+
     if( transposer_note >= 0x3c && transposer_note <= 0x4b )
       blm_leds_extrarow_green = 1 << (transposer_note - 0x3c);
     else
@@ -1299,7 +1304,11 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 	  root = 0; // force root to C (don't use KEYB based root)
 
 	// determine matching note range in scale
-	note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+	note_start = 0x3c; // C-3
+	seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+	if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
+	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+
 	note_start += (blm_root_key - 0x3c);
 	if( note_start < 0 ) note_start = 0;
 	else if( note_start > 127 ) note_start = 127;
