@@ -25,6 +25,9 @@ MIDIboxSEQ V4.090
 
    o BLM in keyboard mode: transpose only takes place if track not in normal (no transpose) mode!
 
+   o if a track plays a sustained note, and doesn't play a step anymore (all gates cleared),
+     the sustain will be cancled now
+
 
 MIDIboxSEQ V4.089
 ~~~~~~~~~~~~~~~~~
