@@ -823,7 +823,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL) ) {
+      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || (!tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL)) ) {
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
@@ -2367,7 +2367,7 @@ s32 SEQ_CORE_CancelSustainedNotes(u8 track)
       int i;
 
       for(i=0; i<num_trg_steps; i+=8) {
-	if( SEQ_TRG_Get8(track, i / 8, gate_trg_assignment, trg_instrument) != 0 ) {
+	if( SEQ_TRG_Get8(track, i / 8, gate_trg_assignment-1, trg_instrument) != 0 ) {
 	  any_gate_set = 1;
 	  break;
 	}
