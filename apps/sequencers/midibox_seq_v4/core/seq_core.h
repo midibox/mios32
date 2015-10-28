@@ -75,6 +75,7 @@ typedef union {
     u16 SUSTAINED:1;    // sustained note
     u16 STRETCHED_GL:1; // stretched gatelength
     u16 MANUAL_STEP_REQ:1; // manual_step should be copied to step
+    u16 CANCEL_SUSTAIN_REQ:1; // cancel ongoing sustain
   };
 } seq_core_trk_state_t;
 
@@ -257,6 +258,8 @@ extern s32 SEQ_CORE_BPM_Update(float bpm, float sweep_ramp);
 extern s32 SEQ_CORE_BPM_SweepHandler(void);
 
 extern s32 SEQ_CORE_Scrub(s32 incrementer);
+
+extern s32 SEQ_CORE_CancelSustainedNotes(u8 track);
 
 extern u8 SEQ_CORE_TrimNote(s32 note, u8 lower, u8 upper);
 

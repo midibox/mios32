@@ -343,6 +343,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && encoder <= SEQ_UI_ENCODER_GP8) ) {
 	u8 sel = (u8)encoder-1;
 	SEQ_TRG_Set(visible_track, ui_selected_step, sel, ui_selected_instrument, incrementer > 0 ? 1 : 0);
+	SEQ_CORE_CancelSustainedNotes(visible_track); // cancel sustain if there are no notes played by the track anymore
 	return 1;
       } else if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 
@@ -598,6 +599,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 	    u16 num_steps = SEQ_TRG_NumStepsGet(track);
 	    for(step=0; step<num_steps; ++step)
 	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, new_value);
+	    SEQ_CORE_CancelSustainedNotes(track); // cancel sustain if there are no notes played by the track anymore
 	  }
       } else {
 	// a) ALL function active, but ALL button not pressed: invert complete trigger layer
@@ -610,6 +612,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 	      u8 new_value = SEQ_TRG_Get(track, step, ui_selected_trg_layer, ui_selected_instrument) ? 0 : 1;
 	      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, new_value);
 	    }
+	    SEQ_CORE_CancelSustainedNotes(track); // cancel sustain if there are no notes played by the track anymore
 	  }
 	}
       }
@@ -621,6 +624,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	if( SEQ_UI_IsSelectedTrack(track) ) {
 	  SEQ_TRG_Set(track, ui_selected_step, ui_selected_trg_layer, ui_selected_instrument, new_value);
+	  SEQ_CORE_CancelSustainedNotes(track); // cancel sustain if there are no notes played by the track anymore
 	}
       }
     }

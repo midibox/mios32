@@ -738,6 +738,8 @@ static s32 PASTE_Track(u8 track)
     memcpy((u8 *)seq_core_trk[track].name, (u8 *)copypaste_trk_name, 81);
   }
 
+  // cancel sustain if there are no steps played by the track anymore.
+  SEQ_CORE_CancelSustainedNotes(track);
 
   return 0; // no error
 }
@@ -798,6 +800,9 @@ static s32 CLEAR_Track(u8 track)
     memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
   }
 
+  // cancel sustain if there are no steps played by the track anymore.
+  SEQ_CORE_CancelSustainedNotes(track);
+
   return 0; // no error
 }
 
@@ -830,6 +835,9 @@ static s32 UNDO_Track(void)
     for(i=0; i<128; ++i)
 	SEQ_CC_Set(undo_track, i, undo_cc[i]);
   }
+
+  // cancel sustain if there are no steps played by the track anymore.
+  SEQ_CORE_CancelSustainedNotes(undo_track);
 #endif
 
   return 0; // no error

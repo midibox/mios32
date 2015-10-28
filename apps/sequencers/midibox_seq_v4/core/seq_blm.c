@@ -901,6 +901,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	  if( num_used_layers < 2 ) {
 	    // only one note: clear gate
 	    SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 0);
+	    SEQ_CORE_CancelSustainedNotes(visible_track); // cancel sustain if there are no notes played by the track anymore
 	  } else {
 	    // clear note
 	    SEQ_PAR_Set(visible_track, ui_selected_step, found_note_in_layer, instrument, 0x00);
@@ -1576,6 +1577,7 @@ static s32 SEQ_BLM_BUTTON_GP_303Mode(u8 button_row, u8 button_column, u8 depress
     if( SEQ_TRG_GateGet(visible_track, ui_selected_step, instrument) && (note % 12) == note_key ) {
       // clear gate
       SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 0);
+      SEQ_CORE_CancelSustainedNotes(visible_track); // cancel sustain if there are no notes played by the track anymore
     } else {
       // set gate and note new note
       SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 1);

@@ -823,7 +823,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( t->state.SUSTAINED && !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL ) {
+      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL) ) {
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
@@ -834,6 +834,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	for(i=0; i<4; ++i)
 	  t->glide_notes[i] = 0;
       }
+      t->state.CANCEL_SUSTAIN_REQ = 0;
 
       // if "synch to measure" flag set: reset track if master has reached the selected number of steps
       // MEMO: we could also provide the option to synch to another track
@@ -2338,6 +2339,45 @@ s32 SEQ_CORE_Scrub(s32 incrementer)
       seq_core_state.ref_step = seq_core_steps_per_measure;
   }
 #endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function has to be called from the UI whenever notes have been
+// updated to ensure that an ongoing sustained note is cancled if
+// there is no step played by the track anymore.
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_CancelSustainedNotes(u8 track)
+{
+  if( track >= SEQ_CORE_NUM_TRACKS )
+    return -1; // invalid track
+
+  seq_core_trk_t *t = &seq_core_trk[track];
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  if( t->state.SUSTAINED && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
+    u8 gate_trg_assignment = tcc->trg_assignments.gate;
+
+    if( gate_trg_assignment ) {
+      u8 any_gate_set = 0;
+      u8 trg_instrument = 0;
+      int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+      int i;
+
+      for(i=0; i<num_trg_steps; i+=8) {
+	if( SEQ_TRG_Get8(track, i / 8, gate_trg_assignment, trg_instrument) != 0 ) {
+	  any_gate_set = 1;
+	  break;
+	}
+      }
+
+      if( !any_gate_set ) {
+	t->state.CANCEL_SUSTAIN_REQ = 1;
+      }
+    }
+  }
 
   return 0; // no error
 }
