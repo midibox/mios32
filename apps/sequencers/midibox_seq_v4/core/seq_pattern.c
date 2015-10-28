@@ -271,16 +271,26 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
 
   MUTEX_SDCARD_GIVE;
 
+  // cancel sustain if there are no notes played by the track anymore
+  {
+    int i;
+    u8 track = group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+    for(i=0; i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++i, ++track)
+      SEQ_CORE_CancelSustainedNotes(track);
+  }
+
   // reset latched PB/CC values (because assignments could change)
   SEQ_LAYER_ResetLatchedValues();
 
   // send program change & bank selects
-  MUTEX_MIDIOUT_TAKE;
-  int i;
-  u8 track = group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
-  for(i=0; i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++i, ++track)
-    SEQ_LAYER_SendPCBankValues(track, 0, 1);
-  MUTEX_MIDIOUT_GIVE;
+  {
+    MUTEX_MIDIOUT_TAKE;
+    int i;
+    u8 track = group * SEQ_CORE_NUM_TRACKS_PER_GROUP;
+    for(i=0; i<SEQ_CORE_NUM_TRACKS_PER_GROUP; ++i, ++track)
+      SEQ_LAYER_SendPCBankValues(track, 0, 1);
+    MUTEX_MIDIOUT_GIVE;
+  }
 
   return status;
 }

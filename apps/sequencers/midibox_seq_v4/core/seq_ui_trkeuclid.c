@@ -650,6 +650,8 @@ static s32 EuclidGenerator(u8 track, u16 steps, u16 pulses, u16 offset)
     }
   }
 
+  SEQ_CORE_CancelSustainedNotes(track);
+
   return 0; // no error
 }
 
