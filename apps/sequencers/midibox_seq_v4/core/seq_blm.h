@@ -41,6 +41,7 @@ typedef union {
   u8 ALL;
   struct {
     u8 ALWAYS_USE_FTS:1;  // Force-to-Scale always used independent from the Track Mode selection
+    u8 SWAP_KEYBOARD_COLOURS:1;  // swap LED colours in keyboard display
   };
 } seq_blm_options_t;
 

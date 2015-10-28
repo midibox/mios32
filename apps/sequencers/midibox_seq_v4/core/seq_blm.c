@@ -277,6 +277,7 @@ s32 SEQ_BLM_Init(u32 mode)
 
   seq_blm_options.ALL = 0;
   seq_blm_options.ALWAYS_USE_FTS = 1; // enabled by default for best "first impression" :)
+  seq_blm_options.SWAP_KEYBOARD_COLOURS = 0; // for blue/green LEDs
 
   blm_mode = BLM_MODE_TRACKS; // for compatibility with 4x16 BLM, will be changed to BLM_MODE_GRID on first connection
   blm_connection = BLM_CONNECTION_IDLE;
@@ -1143,6 +1144,9 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 
   blm_leds_rotate_view = 1;
 
+  u16 *keyboard_leds_green = (u16 *)(seq_blm_options.SWAP_KEYBOARD_COLOURS ? &blm_leds_red : &blm_leds_green);
+  u16 *keyboard_leds_red = (u16 *)(seq_blm_options.SWAP_KEYBOARD_COLOURS ? &blm_leds_green : &blm_leds_red);
+
   if( blm_num_rows <= 8 ) {
     for(i=0; i<SEQ_BLM_NUM_COLUMNS; ++i) {
       if( blm_keyboard_velocity[i] ) {
@@ -1157,8 +1161,8 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 	// 7: 0xff
 	u32 pattern = (0x1ff << vel3) >> 8;
 
-	blm_leds_green[i] = pattern & 0x3f;
-	blm_leds_red[i] = pattern & 0xf8;
+	keyboard_leds_green[i] = pattern & 0x3f;
+	keyboard_leds_red[i] = pattern & 0xf8;
 #else
 	// 0: 0x80
 	// 1: 0xc0
@@ -1168,12 +1172,12 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 	// 7: 0xff
 	u32 pattern = 0xffff80 >> vel3;
 
-	blm_leds_green[i] = pattern & 0xfc;
-	blm_leds_red[i] = pattern & 0x1f;
+	keyboard_leds_green[i] = pattern & 0xfc;
+	keyboard_leds_red[i] = pattern & 0x1f;
 #endif
       } else {
-	blm_leds_green[i] = 0x0000;
-	blm_leds_red[i] = 0x0000;
+	keyboard_leds_green[i] = 0x0000;
+	keyboard_leds_red[i] = 0x0000;
       }
     }
   } else { // blm_num_rows <= 16
@@ -1190,8 +1194,8 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 	// 15: 0xffff
 	u32 pattern = (0x1ffff << vel4) >> 16;
 
-	blm_leds_green[i] = pattern & 0x1fff;
-	blm_leds_red[i] = pattern & 0xff00;
+	keyboard_leds_green[i] = pattern & 0x1fff;
+	keyboard_leds_red[i] = pattern & 0xff00;
 #else
 	// 0: 0x8000
 	// 1: 0xc000
@@ -1201,12 +1205,12 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 	// 15: 0xffff
 	u32 pattern = 0xffff8000 >> vel4;
 
-	blm_leds_green[i] = pattern & 0xfff8;
-	blm_leds_red[i] = pattern & 0x00ff;
+	keyboard_leds_green[i] = pattern & 0xfff8;
+	keyboard_leds_red[i] = pattern & 0x00ff;
 #endif
       } else {
-	blm_leds_green[i] = 0x0000;
-	blm_leds_red[i] = 0x0000;
+	keyboard_leds_green[i] = 0x0000;
+	keyboard_leds_red[i] = 0x0000;
       }
     }
   }
