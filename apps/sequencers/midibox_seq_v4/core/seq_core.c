@@ -2363,11 +2363,11 @@ s32 SEQ_CORE_CancelSustainedNotes(u8 track)
     if( gate_trg_assignment ) {
       u8 any_gate_set = 0;
       u8 trg_instrument = 0;
-      int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+      int trk_len = (int)tcc->length + 1;
       int i;
 
-      for(i=0; i<num_trg_steps; i+=8) {
-	if( SEQ_TRG_Get8(track, i / 8, gate_trg_assignment-1, trg_instrument) != 0 ) {
+      for(i=0; i<trk_len; ++i) {
+	if( SEQ_TRG_Get(track, i, gate_trg_assignment-1, trg_instrument) ) {
 	  any_gate_set = 1;
 	  break;
 	}
