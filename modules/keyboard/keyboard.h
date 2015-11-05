@@ -49,6 +49,18 @@
 #endif
 
 
+// debug feature to measure delays
+// will be used for calibration later
+#ifndef KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+#define KEYBOARD_USE_SINGLE_KEY_CALIBRATION 1
+#endif
+
+// for calibration feature: max keys per keyboard
+#ifndef KEYBOARD_MAX_KEYS
+#define KEYBOARD_MAX_KEYS 128
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
@@ -80,6 +92,7 @@ typedef struct {
   u8  scan_release_velocity:1;
   u8  make_debounced:1;
   u8  break_is_make:1;
+  u8  key_calibration:1;
 
   u16 delay_fastest;
   u16 delay_fastest_black_keys;
@@ -87,6 +100,10 @@ typedef struct {
   u16 delay_fastest_release_black_keys;
   u16 delay_slowest;
   u16 delay_slowest_release;
+
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+  u16 delay_key[KEYBOARD_MAX_KEYS];
+#endif
 
 #if !KEYBOARD_DONT_USE_AIN
   u32 ain_timestamp[KEYBOARD_AIN_NUM];
@@ -99,6 +116,7 @@ typedef struct {
   u8  ain_sustain_switch;
   u8  ain_bandwidth_ms;
 #endif
+
 } keyboard_config_t;
 
 
@@ -122,6 +140,7 @@ extern void KEYBOARD_AIN_NotifyChange(u32 pin, u32 pin_value);
 extern s32 KEYBOARD_TerminalHelp(void *_output_function);
 extern s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function);
 extern s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function);
+extern s32 KEYBOARD_TerminalPrintDelays(int kb, void *_output_function);
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
