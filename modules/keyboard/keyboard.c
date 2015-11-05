@@ -39,6 +39,7 @@
 // for FantomXR's Yamaha keyboard - currently only a hardcoded option
 #define FANTOM_XR_VARIANT 0
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Global Variables
 /////////////////////////////////////////////////////////////////////////////
@@ -121,6 +122,17 @@ s32 KEYBOARD_Init(u32 mode)
       kc->delay_slowest = 1000;
       kc->delay_slowest_release = 1000;
 
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+      {
+	int i;
+
+	for(i=0; i<KEYBOARD_MAX_KEYS; ++i) {
+	  kc->delay_key[i] = 0;
+	}
+      }
+#endif
+
+
       // set low verbose level by default (only warnings)
       kc->verbose_level = 1;
 
@@ -130,6 +142,7 @@ s32 KEYBOARD_Init(u32 mode)
       kc->scan_release_velocity = 0;
       kc->make_debounced = 0;
       kc->break_is_make = 0;
+      kc->key_calibration = 0;
 
       if( kb == 0 ) {
 	kc->num_rows = 8;
@@ -454,8 +467,8 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 #endif
 
   // ensure valid range
-  if( key > 127 )
-    key = 127;
+  if( key >= KEYBOARD_MAX_KEYS )
+    key = KEYBOARD_MAX_KEYS-1;
 
   // determine note number (here we could insert an octave shift)
   int note_number = key + kc->note_offset;
@@ -580,9 +593,18 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	*ts_make_ptr = 0;
 	*ts_break_ptr = 0;
         MIOS32_IRQ_Enable();
+
 	u16 delay_fastest = ( black_key && kc->delay_fastest_release_black_keys ) ? kc->delay_fastest_release_black_keys
 										  : kc->delay_fastest_release;
 	u16 delay_slowest = kc->delay_slowest_release;
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+	if( kc->key_calibration ) {
+	  kc->delay_key[key] = delay;
+	} else {
+	  if( kc->delay_key[key] )
+	    delay_slowest = kc->delay_key[key];
+	}
+#endif
 	velocity = KEYBOARD_GetVelocity(delay, delay_slowest, delay_fastest);
 
 	if( kc->verbose_level >= 2 )
@@ -640,6 +662,16 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
       } else if( kc->scan_velocity ) {
 	u16 delay_fastest = ( black_key && kc->delay_fastest_black_keys ) ? kc->delay_fastest_black_keys : kc->delay_fastest;
 	u16 delay_slowest = kc->delay_slowest;
+
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+	if( kc->key_calibration ) {
+	  kc->delay_key[key] = delay;
+	} else {
+	  if( kc->delay_key[key] )
+	    delay_slowest = kc->delay_key[key];
+	}
+#endif
+
 	velocity = KEYBOARD_GetVelocity(delay, delay_slowest, delay_fastest);
 
 	if( kc->verbose_level >= 2 )
@@ -1033,7 +1065,10 @@ s32 KEYBOARD_TerminalHelp(void *_output_function)
   out("  set kb <1|2> ain_sustain_inverted <on|off>:         inverts the sustain controller");
   out("  set kb <1|2> ain_sustain_switch <on|off>:      set to on if the pedal should behave like a switch");
   out("  set kb <1|2> ain_bandwidth_ms <delay>:         defines the bandwidth of AIN scans in milliseconds");
-  out("  set kb <1|2> calibration <off|pitchwheel|modwheel|expression|sustain>: starts AIN calibration");
+  out("  set kb <1|2> ain_calibration <off|pitchwheel|modwheel|expression|sustain>: starts AIN calibration");
+#endif
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+  out("  set kb <1|2> key_calibration <on|off>    enables/disables key calibration");
 #endif
 
   return 0; // no error
@@ -1070,6 +1105,16 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	out("Invalid Keyboard number specified as first parameter (expecting kb 1..%d)!", KEYBOARD_NUM);
 	return 1; // command taken
       }
+
+      if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
+	if( strcmp(parameter, "delays") == 0 ) {
+	  KEYBOARD_TerminalPrintDelays(kb-1, _output_function);
+	} else {
+	  out("Unknown command after 'kb %d': %s!", kb, parameter);
+	}
+	return 1; // command taken
+      }
+
       KEYBOARD_TerminalPrintConfig(kb-1, _output_function);
     } else if( strcmp(parameter, "set") == 0 ) {
       if( !(parameter = strtok_r(NULL, separators, &brkt)) ) {
@@ -1617,7 +1662,36 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  out("Keyboard #%d: %s controller inversion %s!", kb+1, wheel_name, value ? "on" : "off");
 
 	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "calibration") == 0 || strcmp(parameter, "calibrate") == 0 ) {
+	} else if( strcmp(parameter, "key_calibration") == 0 || strcmp(parameter, "key_calibrate") == 0 ) {
+	  int value;
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
+	      (value=get_on_off(parameter)) < 0 ) {
+	    out("Please specify on or off!");
+	    return 1; // command taken
+	  }
+
+	  kc->key_calibration = value;
+
+	  if( kc->key_calibration ) {
+	    int i;
+
+	    for(i=0; i<KEYBOARD_MAX_KEYS; ++i) {
+	      kc->delay_key[i] = 0;
+	    }
+
+	    out("Key calibration enabled.");
+	    out("Press all keys with slowest velocity now.");
+	    out("Enter 'set kb %d key_calibration off' to finish calibration", kb+1);
+	    out("Enter 'kb %d delays' to display current measurement results", kb+1);
+	  } else {
+	    out("Key calibration disabled.");
+	    out("Enter 'kb %d delays' to display measured delays.", kb+1);
+	  }
+	  return 1; // command taken
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "calibration") == 0 || strcmp(parameter, "calibrate") == 0 ||
+		   strcmp(parameter, "ain_calibration") == 0 || strcmp(parameter, "ain_calibrate") == 0) {
 
 	  int pin = -1;
 	  u8 invalid_mode = 0;
@@ -1795,5 +1869,39 @@ s32 KEYBOARD_TerminalPrintConfig(int kb, void *_output_function)
 
   return 0; // no error
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Keyboard Configuration (can also be called from external)
+/////////////////////////////////////////////////////////////////////////////
+s32 KEYBOARD_TerminalPrintDelays(int kb, void *_output_function)
+{
+  void (*out)(char *format, ...) = _output_function;
+
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
+
+#if !KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+  out("ERROR: key calibration not enabled");
+  return -1;
+#endif
+
+  int last_key;
+  for(last_key=127; last_key >= 0; --last_key) {
+    if( kc->delay_key[last_key] > 0 )
+      break;
+  }
+
+  if( last_key < 0 ) {
+    out("No delays measured yet; please enable key_calibration and press the keys");
+  } else {
+    int i;
+    for(i=0; i<=last_key; ++i) {
+      out("Key#%3d: %d\n", kc->delay_key[i]);
+    }
+  }
+
+  return 0; // no error
+}
+
 
 //! \}
