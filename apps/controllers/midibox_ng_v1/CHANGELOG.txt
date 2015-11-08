@@ -33,6 +33,8 @@ MIDIbox NG V1.033
 
    o SRIO num_sr=<value> reconfiguration works correctly with DIN/DOUT matrices now
 
+   o added "inverted=1" to EVENT_BUTTON and EVENT_LED
+
    o .NGR file: added "load <setup>" command which allows to switch to another setup (.NGC, .NGS, .NGR, ... files)
 
    o implemented new meta command "SendEvent" which allows to remote control one or more events from a single event
@@ -47,6 +49,16 @@ MIDIbox NG V1.033
 
    o added new event type "NoteOnOff", which will send a NoteOff event immediately after NoteOn (resp. actually it will
      send Note On with velocity 0 for runtime event optimisation)
+
+   o added possibility to calibrate the delay_slowest values for each individual key of a keyboard.
+     New terminal commands:
+     - set kb <1|2> key_calibration on: delay values will be measured (method described at the MIDIbox KB webpage)
+     - set kb <1|2> key_calibration off: captured delay values will be used: (<measured-delay> * delay_slowest / 1000)
+     - set kb <1|2> key_calibration clean: shows the captured measurement values
+     - set kb <1|2> key_calibration_value <key> <value>: allows to modify a calibration value directly
+     - kb <1|2> delays: shows the measured delay values
+
+   o keyboard calibration values are stored in a new file: .NGK, and can also be edited there
 
    o bugfix for DELAY_MS
 

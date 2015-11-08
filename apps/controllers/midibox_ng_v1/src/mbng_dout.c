@@ -139,20 +139,30 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
 
     // set LED
     int pin = (hw_id & 0xfff) - 1;
+    u8 inverted = item->custom_flags.DOUT.inverted;
+
     if( item->rgb.ALL ) {
       u8 level = (item->flags.colour == 1) ? item->rgb.g : (item->flags.colour == 2) ? item->rgb.b : item->rgb.r;
       u32 pattern = dout_value ? dim_pattern[level] : 0;
       int i;
       for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, pattern >>= 1) {
-	MIOS32_DOUT_PagePinSet(i, pin, pattern & 1);
+	u8 value = pattern & 1;
+	if( inverted )
+	  value ^= 1;
+	MIOS32_DOUT_PagePinSet(i, pin, value);
       }
     } else if( !item->flags.dimmed ) {
+      if( inverted )
+	dout_value = dout_value ? 0 : 1;
       MIOS32_DOUT_PinSet(pin, dout_value);
     } else {
       u32 pattern = dim_pattern[(dout_value < NUM_DIM_LEVELS) ? dout_value : (NUM_DIM_LEVELS-1)];
       int i;
       for(i=0; i<MIOS32_SRIO_NUM_DOUT_PAGES; ++i, pattern >>= 1) {
-	MIOS32_DOUT_PagePinSet(i, pin, pattern & 1);
+	u8 value = pattern & 1;
+	if( inverted )
+	  value ^= 1;
+	MIOS32_DOUT_PagePinSet(i, pin, value);
       }
     }
   }

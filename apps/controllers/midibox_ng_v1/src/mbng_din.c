@@ -75,6 +75,9 @@ s32 MBNG_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
     // button depressed?
     u8 depressed = pin_value ? 1 : 0;
+    if( item.custom_flags.DIN.inverted ) {
+      depressed ^= 1;
+    }
 
     // toggle mode?
     if( item.custom_flags.DIN.button_mode == MBNG_EVENT_BUTTON_MODE_TOGGLE ) {
