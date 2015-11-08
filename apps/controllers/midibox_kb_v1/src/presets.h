@@ -120,6 +120,12 @@
 #define PRESETS_ADDR_ROUTER_BEGIN        0x100 // allocates 2*16 halfwords (4*16 bytes)
 #define PRESETS_ADDR_ROUTER_END          0x11f
 
+#define PRESETS_ADDR_KB1_CALIDATA_BEGIN  0x200 // 128 halfwords (=256 bytes)
+#define PRESETS_ADDR_KB1_CALIDATA_END    0x27f
+
+#define PRESETS_ADDR_KB2_CALIDATA_BEGIN  0x280 // 128 halfwords (=256 bytes)
+#define PRESETS_ADDR_KB2_CALIDATA_END    0x2ff
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

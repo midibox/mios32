@@ -277,7 +277,7 @@ s32 SEQ_BLM_Init(u32 mode)
 
   seq_blm_options.ALL = 0;
   seq_blm_options.ALWAYS_USE_FTS = 1; // enabled by default for best "first impression" :)
-  seq_blm_options.SWAP_KEYBOARD_COLOURS = 0; // for blue/green LEDs
+  seq_blm_options.SWAP_KEYBOARD_COLOURS = 1; // for blue/green LEDs
 
   blm_mode = BLM_MODE_TRACKS; // for compatibility with 4x16 BLM, will be changed to BLM_MODE_GRID on first connection
   blm_connection = BLM_CONNECTION_IDLE;

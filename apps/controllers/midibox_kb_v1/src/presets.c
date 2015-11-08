@@ -60,7 +60,8 @@ s32 PRESETS_Init(u32 mode)
       (magic != EEPROM_MAGIC_NUMBER &&
        magic != EEPROM_MAGIC_NUMBER_OLDFORMAT1 &&
        magic != EEPROM_MAGIC_NUMBER_OLDFORMAT2 &&
-       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT3) ) {
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT3 &&
+       magic != EEPROM_MAGIC_NUMBER_OLDFORMAT4) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] magic number not found (was 0x%08x) - initialize EEPROM!\n", magic);
 #endif
@@ -83,7 +84,8 @@ s32 PRESETS_Init(u32 mode)
 
   if( magic == EEPROM_MAGIC_NUMBER_OLDFORMAT1 ||
       magic == EEPROM_MAGIC_NUMBER_OLDFORMAT2 ||
-      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT3 ) {
+      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT3 ||
+      magic == EEPROM_MAGIC_NUMBER_OLDFORMAT4 ) {
 
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[PRESETS] new format detected: clearing upper part of EEPROM...\n");
@@ -201,6 +203,17 @@ s32 PRESETS_Init(u32 mode)
 	kc->ain_inverted[KEYBOARD_AIN_SUSTAIN]    = (ain_cfg5 >> 10) & 1;
 	kc->ain_inverted[KEYBOARD_AIN_EXPRESSION] = (ain_cfg5 >> 11) & 1;
 	kc->ain_sustain_switch                    = (ain_cfg5 >> 15) & 1;
+      }
+
+      // restore calibration data
+      if( magic > EEPROM_MAGIC_NUMBER_OLDFORMAT4 ) {
+	int i;
+
+	u16 calidata_base = (kb >= 1) ? PRESETS_ADDR_KB2_CALIDATA_BEGIN : PRESETS_ADDR_KB1_CALIDATA_BEGIN;
+	for(i=0; i<128 && i<KEYBOARD_MAX_KEYS; ++i) { // note: actually KEYBOARD_MAX_KEYS is 128, we just want to avoid memory overwrites for the case that somebody defines a lower number
+	  u16 delay = PRESETS_Read16(calidata_base + i);
+	  kc->delay_key[i] = delay;
+	}
       }
     }
     KEYBOARD_Init(1); // without overwriting default configuration
@@ -356,6 +369,14 @@ s32 PRESETS_StoreAll(void)
 	(kc->ain_inverted[KEYBOARD_AIN_EXPRESSION] ? 0x0800 : 0) |
 	(kc->ain_sustain_switch                    ? 0x8000 : 0);
       status |= PRESETS_Write16(PRESETS_ADDR_KB1_AIN_CFG5 + offset, ain_cfg5);
+
+      // store calibration data
+      {
+	u16 calidata_base = (kb >= 1) ? PRESETS_ADDR_KB2_CALIDATA_BEGIN : PRESETS_ADDR_KB1_CALIDATA_BEGIN;
+	for(i=0; i<128 && i<KEYBOARD_MAX_KEYS; ++i) { // note: actually KEYBOARD_MAX_KEYS is 128, we just want to avoid memory overwrites for the case that somebody defines a lower number
+	  status |= PRESETS_Write16(calidata_base + i, kc->delay_key[i]);
+	}
+      }
     }
   }
 
