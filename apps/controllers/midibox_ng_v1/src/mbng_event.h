@@ -271,10 +271,12 @@ typedef union {
 
   struct {
     u16 button_mode:2; // mbng_event_button_mode_t
+    u16 inverted:1;
   } DIN;
 
-  //struct {
-  //} DOUT;
+  struct {
+    u16 inverted:1;
+  } DOUT;
 
   struct {
     u16 mapped:1;

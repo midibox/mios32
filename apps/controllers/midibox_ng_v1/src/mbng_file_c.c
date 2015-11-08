@@ -1083,6 +1083,31 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 
       item.flags.dimmed = value;
 
+    } else if( strcasecmp(parameter, "inverted") == 0 ) {
+      int value;
+      if( (value=get_dec(value_str)) < 0 || value > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid flag in EVENT_%s ... %s=%s (expect 0 or 1)\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      }
+
+      switch( item.id & 0xf000 ) {
+      case MBNG_EVENT_CONTROLLER_BUTTON:
+	item.custom_flags.DIN.inverted = value;
+	break;
+
+      case MBNG_EVENT_CONTROLLER_LED:
+	item.custom_flags.DOUT.inverted = value;
+	break;
+
+      default:
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: EVENT_%s ... %s=%s only expected for EVENT_BUTTON or _LED!\n", line, event, parameter, value_str);
+#endif
+	return -1;
+      }
+
     } else if( strcasecmp(parameter, "rgb") == 0 ) {
       char *values_str = value_str;
       char *brkt_local;
@@ -4145,9 +4170,17 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  sprintf(line_buffer, "  button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(&item));
 	  FLUSH_BUFFER;
 	}
+	if( item.custom_flags.DIN.inverted ) {
+	  sprintf(line_buffer, "  inverted=%d", item.custom_flags.DIN.inverted);
+	  FLUSH_BUFFER;
+	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_LED: {
+	if( item.custom_flags.DOUT.inverted ) {
+	  sprintf(line_buffer, "  inverted=%d", item.custom_flags.DOUT.inverted);
+	  FLUSH_BUFFER;
+	}
       } break;
 
       case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {

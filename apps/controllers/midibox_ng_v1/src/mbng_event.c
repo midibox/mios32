@@ -1657,9 +1657,11 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
 
     case MBNG_EVENT_CONTROLLER_BUTTON: {
       DEBUG_MSG("  - button_mode=%s", MBNG_EVENT_ItemButtonModeStrGet(item));
+      DEBUG_MSG("  - inverted=%d", item->custom_flags.DIN.inverted);
     } break;
 
     case MBNG_EVENT_CONTROLLER_LED: {
+      DEBUG_MSG("  - inverted=%d", item->custom_flags.DOUT.inverted);
     } break;
 
     case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {

@@ -1,5 +1,18 @@
 $Id$
 
+
+MIDIbox KB V1.017
+~~~~~~~~~~~~~~~~~
+
+   o added possibility to calibrate the delay_slowest values for each individual key of a keyboard.
+     New terminal commands:
+     - set kb <1|2> key_calibration on: delay values will be measured (method described at the MIDIbox KB webpage)
+     - set kb <1|2> key_calibration off: captured delay values will be used: (<measured-delay> * delay_slowest / 1000)
+     - set kb <1|2> key_calibration clean: shows the captured measurement values
+     - set kb <1|2> key_calibration_value <key> <value>: allows to modify a calibration value directly
+     - kb <1|2> delays: shows the measured delay values
+
+
 MIDIbox KB V1.016
 ~~~~~~~~~~~~~~~~~
 
