@@ -321,7 +321,7 @@ s32 MBNG_FILE_K_Write(char *filename)
     sprintf(line_buffer, "# Calibration Data\n");
     FLUSH_BUFFER;
 
-    sprintf(line_buffer, "# SYNTAX: CALI <kb> <key> <delay>\n");
+    sprintf(line_buffer, "# SYNTAX: CAL <kb> <key> <delay>\n");
     FLUSH_BUFFER;
 
     {
