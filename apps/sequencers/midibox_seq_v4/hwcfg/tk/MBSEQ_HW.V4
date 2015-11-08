@@ -329,7 +329,7 @@ TPD_ROWS_SR_RED_R 0
 # CV and Gate/Trigger/Sync Setup
 ##################################################
 
-# AOUT interface now selected in CV Configuration Menu and stored in MBSEQ_CV.V4 file
+# AOUT interface now selected in CV Configuration Menu and stored in MBSEQ_GC.V4 file
 # please scroll through the menu to find this page!
 
 # the 8 CV gates can be assigned to a shift register (0=off, 1-32: number of shift register):
