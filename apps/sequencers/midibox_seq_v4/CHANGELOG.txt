@@ -2190,6 +2190,16 @@ Store seq_record_options
 http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=171522
 Scale Editor
 ----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172144
+Transpose key selection mode
+----------------------------------------------------------
+http://midibox.org/forums/topic/19778-live-recording-autostart-behaving-strangely/#comment-172112
+Added to the wishlist to check this (so that it doesn't get lost)
+----------------------------------------------------------
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-172090
+Check song mode behaviour
+----------------------------------------------------------
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
