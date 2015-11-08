@@ -30,6 +30,7 @@
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
 #include "mbng_file_s.h"
+#include "mbng_file_k.h"
 #include "mbng_file_r.h"
 
 
@@ -212,6 +213,7 @@ s32 MBNG_PATCH_Load(char *filename)
   MBNG_FILE_L_Read(filename);
 #endif
   MBNG_FILE_S_Read(filename, -1);
+  MBNG_FILE_K_Read(filename);
   MBNG_FILE_R_ReadRequest(filename, 0, 0, 0);
   MUTEX_SDCARD_GIVE;
 
@@ -230,6 +232,7 @@ s32 MBNG_PATCH_Store(char *filename)
 {
   MUTEX_SDCARD_TAKE;
   s32 status = MBNG_FILE_C_Write(filename);
+  status |= MBNG_FILE_K_Write(filename);
   MUTEX_SDCARD_GIVE;
 
   return status;

@@ -29,22 +29,27 @@
 // used by mbng_file_c.c
 #define MBNG_FILE_C_ERR_READ            -130 // error while reading file (exact error status cannot be determined anymore)
 #define MBNG_FILE_C_ERR_WRITE           -131 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_C_ERR_NO_FILE         -132 // no or invalid bank file
+#define MBNG_FILE_C_ERR_NO_FILE         -132 // no or invalid file
 
 // used by mbng_file_l.c
 #define MBNG_FILE_L_ERR_READ            -140 // error while reading file (exact error status cannot be determined anymore)
 #define MBNG_FILE_L_ERR_WRITE           -141 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_L_ERR_NO_FILE         -142 // no or invalid bank file
+#define MBNG_FILE_L_ERR_NO_FILE         -142 // no or invalid file
 
 // used by mbng_file_s.c
 #define MBNG_FILE_S_ERR_READ            -150 // error while reading file (exact error status cannot be determined anymore)
 #define MBNG_FILE_S_ERR_WRITE           -151 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_S_ERR_NO_FILE         -152 // no or invalid bank file
+#define MBNG_FILE_S_ERR_NO_FILE         -152 // no or invalid file
 
 // used by mbng_file_r.c
 #define MBNG_FILE_R_ERR_READ            -160 // error while reading file (exact error status cannot be determined anymore)
 #define MBNG_FILE_R_ERR_WRITE           -161 // error while writing file (exact error status cannot be determined anymore)
-#define MBNG_FILE_R_ERR_NO_FILE         -162 // no or invalid bank file
+#define MBNG_FILE_R_ERR_NO_FILE         -162 // no or invalid file
+
+// used by mbng_file_k.c
+#define MBNG_FILE_K_ERR_READ            -170 // error while reading file (exact error status cannot be determined anymore)
+#define MBNG_FILE_K_ERR_WRITE           -171 // error while writing file (exact error status cannot be determined anymore)
+#define MBNG_FILE_K_ERR_NO_FILE         -172 // no or invalid file
 
 
 /////////////////////////////////////////////////////////////////////////////
