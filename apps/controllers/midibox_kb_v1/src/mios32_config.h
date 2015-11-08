@@ -31,11 +31,12 @@
 #define EEPROM_EMULATED_SIZE 2048
 
 // magic number in EEPROM - if it doesn't exist at address 0x00..0x03, the EEPROM will be cleared
-#define EEPROM_MAGIC_NUMBER 0x47114227
+#define EEPROM_MAGIC_NUMBER 0x47114228
 // to consider an older format (see presets.c)
 #define EEPROM_MAGIC_NUMBER_OLDFORMAT1 0x47114224
 #define EEPROM_MAGIC_NUMBER_OLDFORMAT2 0x47114225
 #define EEPROM_MAGIC_NUMBER_OLDFORMAT3 0x47114226
+#define EEPROM_MAGIC_NUMBER_OLDFORMAT4 0x47114227
 
 // AIN configuration:
 // Pin mapping on MBHP_CORE_LPC17 module:
