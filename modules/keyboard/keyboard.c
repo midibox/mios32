@@ -599,10 +599,10 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	u16 delay_slowest = kc->delay_slowest_release;
 #if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
 	if( kc->key_calibration ) {
-	  kc->delay_key[key] = delay;
+	  kc->delay_key[key] = delay;;
 	} else {
 	  if( kc->delay_key[key] )
-	    delay_slowest = kc->delay_key[key];
+	    delay_slowest = (kc->delay_key[key] * delay_slowest) / 1000;
 	}
 #endif
 	velocity = KEYBOARD_GetVelocity(delay, delay_slowest, delay_fastest);
@@ -668,7 +668,7 @@ static void KEYBOARD_NotifyToggle(u8 kb, u8 row, u8 column, u8 depressed)
 	  kc->delay_key[key] = delay;
 	} else {
 	  if( kc->delay_key[key] )
-	    delay_slowest = kc->delay_key[key];
+	    delay_slowest = (kc->delay_key[key] * delay_slowest) / 1000;
 	}
 #endif
 
