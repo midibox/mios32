@@ -67,7 +67,6 @@
 // file informations stored in RAM
 typedef struct {
   unsigned valid: 1;   // file is accessible
-  file_t bin_file;
 } mbng_file_s_info_t;
 
 

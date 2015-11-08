@@ -1532,6 +1532,62 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	    out("Keyboard #%d: delay_slowest_release set to %d!", kb+1, kc->delay_slowest_release);
 	  }
 
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "key_calibration_value") == 0 ) {
+	  int key;
+	  int value;
+
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
+	      ((key=get_dec(parameter)) < 0 || key >= KEYBOARD_MAX_KEYS) ) {
+	    out("Invalid <key> value, expect 0..%d!", KEYBOARD_MAX_KEYS-1);
+	    return 1; // command taken
+	  }
+
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
+	      ((value=get_dec(parameter)) < 0 || value >= 65535) ) {
+	    out("Invalid <delay> value, expect 0..65535!");
+	    return 1; // command taken
+	  }
+
+	  kc->delay_key[key] = value;
+	  out("Delay of key #%d set to %d", key, value);
+
+	/////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "key_calibration") == 0 || strcmp(parameter, "key_calibrate") == 0 ) {
+	  int value;
+	  int clean = -1;
+	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
+	      ((value=get_on_off(parameter)) < 0 && (clean=strcmp(parameter, "clean")) != 0) ) {
+	    out("Please specify on, off or clean!");
+	    return 1; // command taken
+	  }
+
+	  if( clean == 0 ) { // matching string
+	      int i;
+
+	      for(i=0; i<KEYBOARD_MAX_KEYS; ++i) {
+		kc->delay_key[i] = 0;
+	      }
+
+	      out("Cleaned calibration data.");
+	  } else {
+	    kc->key_calibration = value;
+
+	    if( kc->key_calibration ) {
+	      out("Key calibration enabled.");
+	      out("Press all keys with slowest velocity now.");
+	      out("Enter 'set kb %d key_calibration clean' to clean previous data", kb+1);
+	      out("Enter 'set kb %d key_calibration off' to finish calibration", kb+1);
+	      out("Enter 'kb %d delays' to display current measurement results", kb+1);
+	    } else {
+	      out("Key calibration disabled.");
+	      out("Enter 'kb %d delays' to display measured delays.", kb+1);
+	    }
+	  }
+	  return 1; // command taken
+#endif
+
 #if !KEYBOARD_DONT_USE_AIN
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "ain_pitchwheel") == 0 ||
@@ -1662,60 +1718,6 @@ s32 KEYBOARD_TerminalParseLine(char *input, void *_output_function)
 	  }
 
 	  out("Keyboard #%d: %s controller inversion %s!", kb+1, wheel_name, value ? "on" : "off");
-
-	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "key_calibration_value") == 0 ) {
-	  int key;
-	  int value;
-
-	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
-	      ((key=get_dec(parameter)) < 0 || key >= KEYBOARD_MAX_KEYS) ) {
-	    out("Invalid <key> value, expect 0..%d!", KEYBOARD_MAX_KEYS-1);
-	    return 1; // command taken
-	  }
-
-	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
-	      ((value=get_dec(parameter)) < 0 || value >= 65535) ) {
-	    out("Invalid <delay> value, expect 0..65535!");
-	    return 1; // command taken
-	  }
-
-	  kc->delay_key[key] = value;
-	  out("Delay of key #%d set to %d", key, value);
-
-	/////////////////////////////////////////////////////////////////////
-	} else if( strcmp(parameter, "key_calibration") == 0 || strcmp(parameter, "key_calibrate") == 0 ) {
-	  int value;
-	  int clean = -1;
-	  if( !(parameter = strtok_r(NULL, separators, &brkt)) ||
-	      ((value=get_on_off(parameter)) < 0 && (clean=strcmp(parameter, "clean")) != 0) ) {
-	    out("Please specify on, off or clean!");
-	    return 1; // command taken
-	  }
-
-	  if( clean == 0 ) { // matching string
-	      int i;
-
-	      for(i=0; i<KEYBOARD_MAX_KEYS; ++i) {
-		kc->delay_key[i] = 0;
-	      }
-
-	      out("Cleaned calibration data.");
-	  } else {
-	    kc->key_calibration = value;
-
-	    if( kc->key_calibration ) {
-	      out("Key calibration enabled.");
-	      out("Press all keys with slowest velocity now.");
-	      out("Enter 'set kb %d key_calibration clean' to clean previous data", kb+1);
-	      out("Enter 'set kb %d key_calibration off' to finish calibration", kb+1);
-	      out("Enter 'kb %d delays' to display current measurement results", kb+1);
-	    } else {
-	      out("Key calibration disabled.");
-	      out("Enter 'kb %d delays' to display measured delays.", kb+1);
-	    }
-	  }
-	  return 1; // command taken
 
 	/////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "calibration") == 0 || strcmp(parameter, "calibrate") == 0 ||
@@ -1906,12 +1908,11 @@ s32 KEYBOARD_TerminalPrintDelays(int kb, void *_output_function)
 {
   void (*out)(char *format, ...) = _output_function;
 
-  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
-
 #if !KEYBOARD_USE_SINGLE_KEY_CALIBRATION
   out("ERROR: key calibration not enabled");
   return -1;
-#endif
+#else
+  keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
   int last_key;
   for(last_key=127; last_key >= 0; --last_key) {
@@ -1929,6 +1930,7 @@ s32 KEYBOARD_TerminalPrintDelays(int kb, void *_output_function)
   }
 
   return 0; // no error
+#endif
 }
 
 

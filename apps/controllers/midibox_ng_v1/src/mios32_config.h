@@ -151,6 +151,10 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #define KEYBOARD_DONT_USE_MIDI_CFG 1
 #define KEYBOARD_DONT_USE_AIN 1
 
+// disable calibration for LPC17 (not enough memory...)
+#if defined(MIOS32_FAMILY_LPC17xx)
+#define KEYBOARD_USE_SINGLE_KEY_CALIBRATION 0
+#endif
 
 // enable 4 SPI MIDI ports
 // Note: SPI MIDI port has to be explicitely enabled by the user

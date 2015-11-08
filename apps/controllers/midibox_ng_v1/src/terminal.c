@@ -89,6 +89,7 @@ s32 TERMINAL_Init(u32 mode)
   
   // invalidate autoload file
   autoload_ngc_file[0] = 0;
+
   // enable autoload by default
   autoload_enabled = 1;
 
@@ -210,6 +211,7 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
     if( len < 5 || len > 12 || 
 	(strcasecmp((char *)&filename[len-4], ".ngc") != 0 &&
 	 strcasecmp((char *)&filename[len-4], ".ngl") != 0 &&
+	 strcasecmp((char *)&filename[len-4], ".ngk") != 0 &&
 	 strcasecmp((char *)&filename[len-4], ".ngr") != 0) )
       return 0; // no .NGC file
 

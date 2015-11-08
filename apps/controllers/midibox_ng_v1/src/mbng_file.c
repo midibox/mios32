@@ -29,6 +29,7 @@
 #include "mbng_file_c.h"
 #include "mbng_file_l.h"
 #include "mbng_file_s.h"
+#include "mbng_file_k.h"
 #include "mbng_file_r.h"
 #include "mbng_event.h"
 
@@ -87,6 +88,7 @@ s32 MBNG_FILE_LoadAllFiles(u8 including_hw)
   status |= MBNG_FILE_C_Load("DEFAULT");
   status |= MBNG_FILE_L_Load("DEFAULT");
   status |= MBNG_FILE_S_Load("DEFAULT", -1);
+  status |= MBNG_FILE_K_Load("DEFAULT");
   //status |= MBNG_FILE_R_Load("DEFAULT");
   status |= MBNG_FILE_R_ReadRequest("DEFAULT", 0, 0, 0);
 
@@ -103,6 +105,7 @@ s32 MBNG_FILE_UnloadAllFiles(void)
   status |= MBNG_FILE_C_Unload();
   status |= MBNG_FILE_L_Unload();
   status |= MBNG_FILE_S_Unload();
+  status |= MBNG_FILE_K_Unload();
   status |= MBNG_FILE_R_Unload();
   return status;
 }
@@ -150,6 +153,18 @@ s32 MBNG_FILE_CreateDefaultFiles(void)
       DEBUG_MSG("Failed to create file! (status: %d)\n", status);
     } else {
       DEBUG_MSG("Initial DEFAULT.NGS file has been created.\n");
+    }
+  }
+
+  // check if snapshot file exists
+  if( !MBNG_FILE_K_Valid() ) {
+    // create new one
+    DEBUG_MSG("Creating initial DEFAULT.NGK file\n");
+
+    if( (status=MBNG_FILE_K_Write("DEFAULT")) < 0 ) {
+      DEBUG_MSG("Failed to create file! (status: %d)\n", status);
+    } else {
+      DEBUG_MSG("Initial DEFAULT.NGK file has been created.\n");
     }
   }
 
