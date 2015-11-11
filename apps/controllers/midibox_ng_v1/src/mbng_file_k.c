@@ -249,7 +249,9 @@ s32 MBNG_FILE_K_Read(char *filename)
 	      DEBUG_MSG("[MBNG_FILE_K:%d] ERROR: invalid <delay> number, expect 0..65535", line);
 #endif
 	    } else {
+#if KEYBOARD_USE_SINGLE_KEY_CALIBRATION
 	      keyboard_config[kb-1].delay_key[key] = delay;
+#endif
 	    }
 	  }
 	  
@@ -318,6 +320,10 @@ s32 MBNG_FILE_K_Write(char *filename)
     char line_buffer[256];
 #define FLUSH_BUFFER { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
+#if !KEYBOARD_USE_SINGLE_KEY_CALIBRATION
+    sprintf(line_buffer, "# Keyboard Calibration not supported by this derivative!\n");
+    FLUSH_BUFFER;
+#else
     sprintf(line_buffer, "# Calibration Data\n");
     FLUSH_BUFFER;
 
@@ -336,6 +342,7 @@ s32 MBNG_FILE_K_Write(char *filename)
 	}
       }
     }
+#endif
   }
 
   FILE_WriteClose(); // important to free memory given by malloc
