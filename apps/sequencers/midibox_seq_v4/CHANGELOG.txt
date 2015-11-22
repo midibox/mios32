@@ -2199,6 +2199,9 @@ Added to the wishlist to check this (so that it doesn't get lost)
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-172090
 Check song mode behaviour
 ----------------------------------------------------------
+Klee Sequencer Tracks:
+http://midibox.org/forums/topic/19806-klee-sequencer-emulation/#comment-172311
+----------------------------------------------------------
 
 
 
