@@ -2202,6 +2202,9 @@ Check song mode behaviour
 Klee Sequencer Tracks:
 http://midibox.org/forums/topic/19806-klee-sequencer-emulation/#comment-172311
 ----------------------------------------------------------
+Remember Random Generator settings for each track:
+http://midibox.org/forums/topic/19804-separate-random-generator-settings-for-each-track/#comment-172293
+----------------------------------------------------------
 
 
 
