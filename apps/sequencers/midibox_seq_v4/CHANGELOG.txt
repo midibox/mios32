@@ -2208,6 +2208,9 @@ http://midibox.org/forums/topic/19804-separate-random-generator-settings-for-eac
 BLM16x16: allow to select two tracks for keyboard playing
 http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=172256
 ----------------------------------------------------------
+Store/Restore layer selections when switching tracks:
+http://midibox.org/forums/topic/19822-each-track-remember-what-layer-is-edditing/#comment-172483
+----------------------------------------------------------
 
 
 
