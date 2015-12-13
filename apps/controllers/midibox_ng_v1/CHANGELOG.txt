@@ -1,5 +1,11 @@
 $Id$
 
+MIDIbox NG V1.034
+~~~~~~~~~~~~~~~~~
+
+   o label "std_rgbled" renamed to "std_rgb" to avoid error message
+
+
 MIDIbox NG V1.033
 ~~~~~~~~~~~~~~~~~
 
