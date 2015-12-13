@@ -9,28 +9,28 @@ LCD "%C@(1:1:1)RGB LED Test"
 # EVENTs
 
 # LED will change hue in range of 0..127 (for larger range a NRPN is required)
-EVENT_RGBLED id=1  hsv=0:100:20    type=CC chn=1 cc=16 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=1  hsv=0:100:20    type=CC chn=1 cc=16 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED will change hue in range of 127..0 (reversed)
-EVENT_RGBLED id=2  hsv=0:100:20    type=CC chn=1 cc=17 range=127:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=2  hsv=0:100:20    type=CC chn=1 cc=17 range=127:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED will change hue in range of 200..300 (hue offset defined with hsv parameter) - values >100 saturate to 100
-EVENT_RGBLED id=3  hsv=200:100:20  type=CC chn=1 cc=18 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=3  hsv=200:100:20  type=CC chn=1 cc=18 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED will change hue in range of 300..200 (hue offset defined with hsv parameter) - values >100 saturate to 100
-EVENT_RGBLED id=4  hsv=200:100:20  type=CC chn=1 cc=19 range=100:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=4  hsv=200:100:20  type=CC chn=1 cc=19 range=100:0 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED will change brightness (v) based on value (hue statically defined)
-EVENT_RGBLED id=5  hsv=120:100:20  dimmed=1 type=CC chn=1 cc=20 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=5  hsv=120:100:20  dimmed=1 type=CC chn=1 cc=20 range=0:100 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED has a RGB definition
 # we expect that the LED will be turned on/off depending on value
 # note that r/g/b are 4bit values, they will be scaled up to 8bit
-EVENT_RGBLED id=6  rgb=15:3:7               type=CC chn=1 cc=21 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=6  rgb=15:3:7               type=CC chn=1 cc=21 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 # LED has a RGB definition + dimmed=1
 # we expect that the LED will dimmed between the specified levels
-EVENT_RGBLED id=7  rgb=15:3:7 dimmed=1      type=CC chn=1 cc=22 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgbled"
+EVENT_RGBLED id=7  rgb=15:3:7 dimmed=1      type=CC chn=1 cc=22 range=0:127 fwd_to_lcd=1 lcd_pos=1:1:2 label="^std_rgb"
 
 
 # some buttons set the 8th LED to different hues + dimming depending on velocity value (if the appr. MIDI event is received)

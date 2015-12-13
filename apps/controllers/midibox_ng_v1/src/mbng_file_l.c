@@ -905,7 +905,7 @@ static s32 MBNG_FILE_L_Write_Hlp(u8 write_to_file)
 
   strcpy(line_buffer, "# Standard label for RGB LEDs:\n");
   FLUSH_BUFFER;
-  strcpy(line_buffer, "LABEL std_rgbled \"RGBLED #%3i %3d%B\"\n\n");
+  strcpy(line_buffer, "LABEL std_rgb \"RGBLED #%3i %3d%B\"\n\n");
   FLUSH_BUFFER;
 
 
@@ -1086,8 +1086,8 @@ const char *MBNG_FILE_L_GetLabel(char *label, u16 value)
     return "MF #%3i     %3d%B";
   if( strcmp(label, "std_cv") == 0 )
     return "CV #%3i     %3d%B";
-  if( strcmp(label, "std_rgbled") == 0 )
-    return "RGBLED #%3i %3d%B";
+  if( strcmp(label, "std_rgb") == 0 )
+    return "RGB #%3i    %3d%B";
 
   return NULL; // label not found
 }
