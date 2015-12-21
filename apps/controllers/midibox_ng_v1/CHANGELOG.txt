@@ -5,6 +5,8 @@ MIDIbox NG V1.034
 
    o label "std_rgbled" renamed to "std_rgb" to avoid error message
 
+   o Cursor handling on SysEx based GLCD output should now work correctly if the big font is activated
+
 
 MIDIbox NG V1.033
 ~~~~~~~~~~~~~~~~~
