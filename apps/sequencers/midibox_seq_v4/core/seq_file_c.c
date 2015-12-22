@@ -41,6 +41,7 @@
 #include "seq_blm.h"
 #include "seq_pattern.h"
 #include "seq_core.h"
+#include "seq_record.h"
 #include "seq_live.h"
 #include "seq_groove.h"
 
@@ -346,6 +347,26 @@ s32 SEQ_FILE_C_Read(char *session)
 	    s32 value = get_dec_range(word, parameter, 1, 255);
 	    if( value >= 0 )
 	      seq_core_glb_loop_steps = value-1;
+	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 100);
+	    if( value >= 0 )
+	      seq_record_quantize = value;
+	  } else if( strcmp(parameter, "RecStepInc") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 255);
+	    if( value >= 0 )
+	      seq_record_options.STEPS_PER_KEY = value;
+	  } else if( strcmp(parameter, "RecPoly") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_record_options.POLY_RECORD = value;
+	  } else if( strcmp(parameter, "RecAutoStart") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_record_options.AUTO_START = value;
+	  } else if( strcmp(parameter, "RecFwdMidi") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_record_options.FWD_MIDI = value;
 	  } else if( strcmp(parameter, "LiveOctTranspose") == 0 ) {
 	    s32 value = get_dec_range(word, parameter, 0, 255);
 	    if( value >= 0 )
@@ -903,6 +924,21 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LoopSteps %d\n", (int)seq_core_glb_loop_steps+1);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecQuantisation %d\n", (u8)seq_record_quantize);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecStepInc %d\n", (u8)seq_record_options.STEPS_PER_KEY);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecPoly %d\n", (u8)seq_record_options.POLY_RECORD);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecAutoStart %d\n", (u8)seq_record_options.AUTO_START);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "RecFwdMidi %d\n", (u8)seq_record_options.FWD_MIDI);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "LiveOctTranspose %d\n", seq_live_options.OCT_TRANSPOSE);

@@ -506,9 +506,12 @@ s32 SEQ_CORE_Handler(void)
 	// (this code is outside SEQ_CORE_Tick() to save stack space!)
 	if( (bpm_tick % 96) == 20 ) {
 	  if( SEQ_SONG_ActiveGet() ) {
+	    // to handle the case as described under http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/
+	    // seq_core_steps_per_measure was lower than seq_core_steps_per_pattern
+	    u32 song_switch_step = (seq_core_steps_per_measure < seq_core_steps_per_pattern) ? seq_core_steps_per_measure : seq_core_steps_per_pattern;
 	    if( ( seq_song_guide_track && seq_song_guide_track <= SEQ_CORE_NUM_TRACKS &&
 		  seq_core_state.ref_step_song == seq_cc_trk[seq_song_guide_track-1].length) ||
-		(!seq_song_guide_track && seq_core_state.ref_step_song == seq_core_steps_per_pattern) ) {
+		(!seq_song_guide_track && seq_core_state.ref_step_song == song_switch_step) ) {
 	      
 	      if( seq_song_guide_track ) {
 		// request synch-to-measure for all tracks

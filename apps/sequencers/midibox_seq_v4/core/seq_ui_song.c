@@ -207,7 +207,7 @@ static s32 LED_Handler(u16 *gp_leds)
 
   ///////////////////////////////////////////////////////////////////////////
   case SONG_UTIL_PAGE_NEW_PATTERN: {
-    if( seq_ui_button_state.SELECT_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
       *gp_leds = 0x0000;
     } else {
       *gp_leds = song_util_page_new_pattern__led_pattern;
@@ -383,7 +383,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   ///////////////////////////////////////////////////////////////////////////
   case SONG_UTIL_PAGE_NEW_PATTERN: {
-    if( seq_ui_button_state.SELECT_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
       return 0;
     }
 
@@ -854,21 +854,23 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return -1;
 
     case SEQ_UI_BUTTON_Select:
-      switch( song_util_page ) {
-      case SONG_UTIL_PAGE_NONE: {
-	if( !depressed )
-	  song_util_page = SONG_UTIL_PAGE_SELECT;
-      } break;
+      if( !seq_ui_button_state.SONG_PRESSED ) { // NOTE: in future only controlled with the SONG button anymore!
+	switch( song_util_page ) {
+	case SONG_UTIL_PAGE_NONE: {
+	  if( !depressed )
+	    song_util_page = SONG_UTIL_PAGE_SELECT;
+	} break;
 
-      case SONG_UTIL_PAGE_SELECT: {
-	if( depressed )
-	  song_util_page = SONG_UTIL_PAGE_NONE;
-      } break;
+	case SONG_UTIL_PAGE_SELECT: {
+	  if( depressed )
+	    song_util_page = SONG_UTIL_PAGE_NONE;
+	} break;
 
-      case SONG_UTIL_PAGE_NEW_PATTERN: {
-	if( !depressed ) // also allows to cancel the operation...
-	  song_util_page = SONG_UTIL_PAGE_SELECT;
-      } break;
+	case SONG_UTIL_PAGE_NEW_PATTERN: {
+	  if( !depressed ) // also allows to cancel the operation...
+	    song_util_page = SONG_UTIL_PAGE_SELECT;
+	} break;
+	}
       }
       return 1; // value always changed
 
@@ -906,6 +908,18 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
+  if( high_prio ) {
+    // note: in future, only the SONG button will switch to the configuration page anymore
+    // currently we provide the same function for the SELECT button for legacy reasons
+    if( !seq_ui_button_state.SELECT_PRESSED ) {
+      if( seq_ui_button_state.SONG_PRESSED && song_util_page == SONG_UTIL_PAGE_NONE ) {
+	song_util_page = SONG_UTIL_PAGE_SELECT;
+      } else if( !seq_ui_button_state.SONG_PRESSED ) {
+	song_util_page = SONG_UTIL_PAGE_NONE;
+      }
+    }
+  }
+
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
@@ -1346,7 +1360,7 @@ static s32 LCD_Handler(u8 high_prio)
     // Please select Phrase Slot (* indicates, that the slot is already allocated)     
     //   A    B    C    D    E    F    G    H    I    J    K    L    M    N    O    P  
 
-    if( seq_ui_button_state.SELECT_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintString("This function will store your current   Mutes, Mixer Map and Patterns into      ");
       SEQ_LCD_CursorSet(0, 1);

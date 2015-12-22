@@ -303,7 +303,33 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
     } else if( strcmp(parameter, "system") == 0 ) {
       SEQ_TERMINAL_PrintSystem(out);
     } else if( strcmp(parameter, "memory") == 0 ) {
-      SEQ_TERMINAL_PrintMemoryInfo(out);
+      // new: expert option (therefore not documented in help page):
+      // "memory <from-address> <to-address> dumps any memory region (not protected against bus errors - potential hard fault!)
+      char *arg;
+      if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	int begin_addr = get_dec(arg);
+	int end_addr = -1;
+
+	if( (arg = strtok_r(NULL, separators, &brkt)) ) {
+	  end_addr = get_dec(arg);
+	}
+
+	if( begin_addr == -1 || end_addr == -1 ) {
+	  out("SYNTAX: memory <begin-addr> <end-addr>");
+	} else if( begin_addr > end_addr ) {
+	  out("ERROR: end address has to be greater equal the start address");
+	} else {
+	  u32 size = end_addr - begin_addr;
+	  if( size > 0x10000 ) {
+	    out("ERROR: it isn't recommended to dump more than 64k at once!");
+	  } else {
+	    u8 *ptr = (u8 *)begin_addr;
+	    MIOS32_MIDI_SendDebugHexDump(ptr, size);
+	  }
+	}
+      }	else {
+	SEQ_TERMINAL_PrintMemoryInfo(out);
+      }
     } else if( strcmp(parameter, "sdcard") == 0 ) {
       SEQ_TERMINAL_PrintSdCardInfo(out);
     } else if( strcmp(parameter, "sdcard_format") == 0 ) {

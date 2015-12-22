@@ -99,10 +99,26 @@ u8 seq_ui_saveall_req;
 
 u8 seq_ui_sent_cc_track;
 
+seq_ui_options_t seq_ui_options;
+
 // to display directories via SEQ_UI_SelectListItem() and SEQ_LCD_PrintList() -- see seq_ui_sysex.c as example
 char ui_global_dir_list[80];
 
 seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
+
+mios32_sys_time_t seq_play_timer;
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Local types
+/////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+  u8 selected_instrument;
+  u8 selected_par_layer;
+  u8 selected_trg_layer;
+  u8 selected_step_view;
+} seq_ui_track_setup_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -129,7 +145,8 @@ static u16 ui_delayed_action_ctr;
 
 static seq_ui_page_t ui_page_before_bookmark;
 
-mios32_sys_time_t seq_play_timer;
+static u8 seq_ui_track_setup_visible_track;
+static seq_ui_track_setup_t seq_ui_track_setup[SEQ_CORE_NUM_TRACKS];
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -159,6 +176,8 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step = 0;
   ui_selected_item = 0;
   ui_selected_gp_buttons = 0;
+
+  seq_ui_options.ALL = 0;
 
   ui_hold_msg_ctr = 0;
   ui_msg_ctr = 0;
@@ -601,7 +620,7 @@ s32 SEQ_UI_Button_Play(s32 depressed)
 #endif
   }
 
-	seq_play_timer = MIOS32_SYS_TimeGet();
+  seq_play_timer = MIOS32_SYS_TimeGet();
 	
   return 0; // no error
 }
@@ -3208,6 +3227,17 @@ s32 SEQ_UI_CheckSelections(void)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
+  if( seq_ui_options.RESTORE_TRACK_SELECTIONS && visible_track != seq_ui_track_setup_visible_track ) {
+    seq_ui_track_setup_t *s = &seq_ui_track_setup[visible_track];
+    ui_selected_instrument = s->selected_instrument;
+    ui_selected_par_layer  = s->selected_par_layer;
+    ui_selected_trg_layer  = s->selected_trg_layer;
+    ui_selected_step_view  = s->selected_step_view;
+
+    // ensure that selected step is within view
+    ui_selected_step = 16*ui_selected_step_view + (ui_selected_step % 16);
+  }
+
   if( ui_selected_instrument >= SEQ_PAR_NumInstrumentsGet(visible_track) )
     ui_selected_instrument = 0;
 
@@ -3229,6 +3259,16 @@ s32 SEQ_UI_CheckSelections(void)
     if( ui_selected_step < (16*ui_selected_step_view) || 
 	ui_selected_step >= (16*(ui_selected_step_view+1)) )
       ui_selected_step_view = ui_selected_step / 16;
+  }
+
+  // store settings for restore function
+  seq_ui_track_setup_visible_track = visible_track;
+  {
+    seq_ui_track_setup_t *s = &seq_ui_track_setup[visible_track];
+    s->selected_instrument = ui_selected_instrument;
+    s->selected_par_layer  = ui_selected_par_layer;
+    s->selected_trg_layer  = ui_selected_trg_layer;
+    s->selected_step_view  = ui_selected_step_view;
   }
 
   // send selected track via MIDI if it has been changed

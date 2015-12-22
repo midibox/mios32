@@ -299,7 +299,10 @@ s32 SEQ_BLM_Init(u32 mode)
     for(fader_ix=0; fader_ix<SEQ_BLM_NUM_FADERS; ++fader_ix, ++fader) {
       fader->port = DEFAULT; // Trk
       fader->chn = 0; // Trk
-      fader->send_function = 1; // CC#1
+      if( fader_ix == 0 )
+	fader->send_function = 1; // CC#1
+      else
+	fader->send_function = 16+fader_ix-1; // CC#16...
     }
   }
 
