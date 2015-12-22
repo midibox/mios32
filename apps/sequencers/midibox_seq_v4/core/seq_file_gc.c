@@ -290,7 +290,7 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
 	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
-	    seq_record_quantize = value;
+	    seq_record_quantize = value; // only for legacy reasons - quantisation moved to local configuration file seq_file_c.c
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
 	    seq_core_options.PASTE_CLR_ALL = value;
 #ifndef MBSEQV4L
@@ -307,6 +307,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_options.PATTERN_MIXER_MAP_COUPLING = value;
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
 	    seq_midi_port_multi_enable_flags = value;
+	  } else if( strcmp(parameter, "UiRestoreTrackSelections") == 0 ) {
+	    seq_ui_options.RESTORE_TRACK_SELECTIONS = value;
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
 	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
@@ -501,9 +503,6 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "RecQuantisation %d\n", (u8)seq_record_quantize);
-  FLUSH_BUFFER;
-
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
   FLUSH_BUFFER;
 
@@ -525,6 +524,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MultiPortEnableFlags 0x%06x\n", seq_midi_port_multi_enable_flags);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "UiRestoreTrackSelections %d\n", seq_ui_options.RESTORE_TRACK_SELECTIONS);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_midi_sysex_remote_mode);

@@ -519,6 +519,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       seq_record_options.FWD_MIDI = seq_record_options.FWD_MIDI ? 0 : 1;
     else
       seq_record_options.FWD_MIDI = (incrementer > 0);
+    ui_store_file_required = 1;
     return 1;
   }
 

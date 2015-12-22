@@ -14,7 +14,11 @@ MIDIboxSEQ V4.090
 
    o Track duplication now also possible with COPY+PASTE in UTILITY page
 
-   o added BLM fader configuration to UTILITY->Opt menu (item #13/15)
+   o Track selections (Parameter/Trigger Layer, instrument, step view)
+     can now be handled individually for each track.
+     This function can be enabled in the UTILITY->Opt menu (item #9/16)
+
+   o added BLM fader configuration to UTILITY->Opt menu (item #14/16)
      Up to 8 faders can be connected to the BLM16x16+X
      They can send a CC value either to a statically assigned Port/Chn, or to
      the Port/Chn defined by the track.
@@ -23,10 +27,23 @@ MIDIboxSEQ V4.090
 
      Additional (internal) functions can be added in future.
 
-   o BLM in keyboard mode: transpose only takes place if track not in normal (no transpose) mode!
+   o BLM in keyboard mode: transpose only takes place if track not in normal
+     (no transpose) mode!
 
-   o if a track plays a sustained note, and doesn't play a step anymore (all gates cleared),
-     the sustain will be cancled now
+   o if a track plays a sustained note, and doesn't play a step anymore
+     (all gates cleared), the sustain will be cancled now
+
+   o improved Auto Start in Jam page
+
+   o Jam recording options are now stored/restored in/from session 
+     configuration file
+
+   o SONG button has now the same function like the SELECT button: it shows
+     a configuration page. This makes it more consistent to the EDIT button.
+     In future, the SELECT button might get a new function in SONG page.
+
+   o Song mode: if Steps per Measure < Steps for Pattern synchronisation, the
+     song sequencer will already switch to the next pattern with the next measure.
 
 
 MIDIboxSEQ V4.089
@@ -2184,20 +2201,11 @@ while in phrase mode (and using the save&take over patterns function):
 http://midibox.org/forums/topic/19644-muting-independent-drum-lines-notes-via-midi/?p=171143
 Clear individual drum instruments
 ----------------------------------------------------------
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=171488
-Store seq_record_options
-----------------------------------------------------------
 http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=171522
 Scale Editor
 ----------------------------------------------------------
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172144
 Transpose key selection mode
-----------------------------------------------------------
-http://midibox.org/forums/topic/19778-live-recording-autostart-behaving-strangely/#comment-172112
-Added to the wishlist to check this (so that it doesn't get lost)
-----------------------------------------------------------
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-172090
-Check song mode behaviour
 ----------------------------------------------------------
 Klee Sequencer Tracks:
 http://midibox.org/forums/topic/19806-klee-sequencer-emulation/#comment-172311
@@ -2207,9 +2215,6 @@ http://midibox.org/forums/topic/19804-separate-random-generator-settings-for-eac
 ----------------------------------------------------------
 BLM16x16: allow to select two tracks for keyboard playing
 http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=172256
-----------------------------------------------------------
-Store/Restore layer selections when switching tracks:
-http://midibox.org/forums/topic/19822-each-track-remember-what-layer-is-edditing/#comment-172483
 ----------------------------------------------------------
 
 

@@ -176,6 +176,14 @@ typedef union {
   u8 ALL;
 
   struct {
+    u8 RESTORE_TRACK_SELECTIONS:1;
+  };
+} seq_ui_options_t;
+
+typedef union {
+  u8 ALL;
+
+  struct {
     u8 LOCKED:1;
     u8 SOLO:1;
     u8 CHANGE_ALL_STEPS:1;
@@ -460,6 +468,8 @@ extern char ui_global_dir_list[80];
 
 extern seq_ui_edit_view_t seq_ui_edit_view;
 extern seq_ui_edit_datawheel_mode_t seq_ui_edit_datawheel_mode;
+
+extern seq_ui_options_t seq_ui_options;
 
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 

@@ -48,15 +48,16 @@
 #define ITEM_SYNC_MUTE       5
 #define ITEM_SYNC_UNMUTE     6
 #define ITEM_PASTE_CLR_ALL   7
-#define ITEM_INIT_CC         8
+#define ITEM_RESTORE_TRACK_SELECTIONS 8
 #define ITEM_LIVE_LAYER_MUTE 9
-#define ITEM_TPD_MODE        10
-#define ITEM_BLM_ALWAYS_USE_FTS 11
-#define ITEM_BLM_FADERS      12
-#define ITEM_MIXER_CC1234    13
-#define ITEM_SCREEN_SAVER    14
+#define ITEM_INIT_CC         10
+#define ITEM_TPD_MODE        11
+#define ITEM_BLM_ALWAYS_USE_FTS 12
+#define ITEM_BLM_FADERS      13
+#define ITEM_MIXER_CC1234    14
+#define ITEM_SCREEN_SAVER    15
 
-#define NUM_OF_ITEMS         15
+#define NUM_OF_ITEMS         16
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -99,6 +100,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Paste and Clear button will modify",
     NULL, // Only Steps/Complete Track
+  },
+
+  {//<-------------------------------------->
+    "Selections restored on Track Change",
+    NULL, // enabled/disabled
   },
 
   {//<-------------------------------------->
@@ -262,6 +268,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_UNMUTE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_UNMUTE ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_RESTORE_TRACK_SELECTIONS: {
+      if( incrementer )
+	seq_ui_options.RESTORE_TRACK_SELECTIONS = incrementer > 0 ? 1 : 0;
+      else
+	seq_ui_options.RESTORE_TRACK_SELECTIONS ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -534,6 +549,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintFormattedString("%-8s", seq_core_options.PASTE_CLR_ALL ? "Complete Track" : "Only Steps    ");
     }
     SEQ_LCD_PrintSpaces(40-14);
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_RESTORE_TRACK_SELECTIONS: {
+    enabled_value = seq_ui_options.RESTORE_TRACK_SELECTIONS;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
