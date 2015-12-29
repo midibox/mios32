@@ -2210,14 +2210,17 @@ Transpose key selection mode
 Klee Sequencer Tracks:
 http://midibox.org/forums/topic/19806-klee-sequencer-emulation/#comment-172311
 ----------------------------------------------------------
-Remember Random Generator settings for each track:
-http://midibox.org/forums/topic/19804-separate-random-generator-settings-for-each-track/#comment-172293
-----------------------------------------------------------
 BLM16x16: allow to select two tracks for keyboard playing
 http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=172256
 ----------------------------------------------------------
 Change BPM via MIDI
 http://midibox.org/forums/topic/19850-remote-bpm/
+----------------------------------------------------------
+Apply Groove pattern to CV and MIDI clock outputs
+http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&comment=172791
+----------------------------------------------------------
+Clock Dividers for MIDI clock outputs
+http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&comment=172791
 ----------------------------------------------------------
 
 
