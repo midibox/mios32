@@ -3673,6 +3673,10 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
     if( map_len > 0 ) {
       item->value = map_values[(value < map_len) ? value : (map_len-1)];
+
+      // store in pool
+      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+      pool_item->value = item->value;
     }
 
     // send MIDI event
