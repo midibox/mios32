@@ -171,27 +171,35 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
     }
 
     // set speed mode
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
+    int map_len = 0;
+    {
+      mbng_event_map_type_t map_type;
+      u8 *map_values;
+      map_len = MBNG_EVENT_MapGet(item.map, &map_type, &map_values);
+    }
     int range = (map_len > 0) ? map_len : ((item.min <= item.max) ? (item.max - item.min + 1) : (item.min - item.max + 1));
     MBNG_ENC_AutoSpeed(encoder, &item, range);
 
     // change value
-    s32 value = 0;
+    u8 dont_send = 0;
     switch( item.custom_flags.ENC.enc_mode ) {
-    case MBNG_EVENT_ENC_MODE_40SPEED:
-      value = 0x40 + event_incrementer;
+    case MBNG_EVENT_ENC_MODE_40SPEED: {
+      s32 value = 0x40 + event_incrementer;
+
       if( value < 0 )
 	value = 0;
       else if( value >= 0x7f )
 	value = 0x7f;
-      break;
+
+      item.value = value;
+    } break;
 
     case MBNG_EVENT_ENC_MODE_00SPEED:
-      value = event_incrementer & 0x7f;
+      item.value = event_incrementer & 0x7f;
       break;
 
-    case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED:
+    case MBNG_EVENT_ENC_MODE_INC00SPEED_DEC40SPEED: {
+      s32 value;
       if( event_incrementer < 0 ) {
 	if( event_incrementer < -63 )
 	  event_incrementer = -63;
@@ -201,62 +209,54 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 	  event_incrementer = 63;
 	value = event_incrementer;
       }
-      break;
+      item.value = value;
+    } break;
 
     case MBNG_EVENT_ENC_MODE_INC41_DEC3F:
-      value = event_incrementer > 0 ? 0x41 : 0x3f;
+      item.value = event_incrementer > 0 ? 0x41 : 0x3f;
       break;
 
     case MBNG_EVENT_ENC_MODE_INC01_DEC7F:
-      value = event_incrementer > 0 ? 0x01 : 0x7f;
+      item.value = event_incrementer > 0 ? 0x01 : 0x7f;
       break;
 
     case MBNG_EVENT_ENC_MODE_INC01_DEC41:
-      value = event_incrementer > 0 ? 0x01 : 0x41;
+      item.value = event_incrementer > 0 ? 0x01 : 0x41;
       break;
 
     default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
-      u8 force_send = 0;
-      if( map_len > 0 ) {
-	int map_ix = item.map_ix; // MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value);
-	int prev_map_ix = map_ix;
-	map_ix += event_incrementer;
-	if( map_ix >= map_len )
-	  map_ix = map_len - 1;
-	else if( map_ix < 0 )
-	  map_ix = 0;
-	MBNG_EVENT_ItemSetMapIx(&item, map_ix);
-	value = map_values[map_ix];
-
-	if( prev_map_ix != map_ix )
-	  force_send = 1;
+      s32 ix_updated;
+      s32 prev_value = item.value;
+      if( (ix_updated=MBNG_EVENT_MapItemValueInc(item.map, &item, event_incrementer, 0)) >= 0 ) {
+	dont_send = (prev_value == item.value) && !ix_updated;
       } else {
+	s32 value = item.value;
 	if( item.min <= item.max ) {
-	  value = item.value + event_incrementer;
+	  value = event_incrementer;
 	  if( value < item.min )
 	    value = item.min;
 	  else if( value > item.max )
 	    value = item.max;
 	} else {
 	  // reversed range
-	  value = item.value - event_incrementer;
+	  value = event_incrementer;
 	  if( value < item.max )
 	    value = item.max;
 	  else if( value > item.min )
 	    value = item.min;
 	}
+
+	item.value = value;
+
+	dont_send = value == prev_value;
       }
-
-      if( value == item.value && !force_send )
-	return 0; // no change
     }
     }
 
-    // take over new value
-    item.value = value;
-
-    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
-      break; // stop has been requested
+    if( !dont_send ) {
+      if( MBNG_EVENT_NotifySendValue(&item) == 2 )
+	break; // stop has been requested
+    }
   } while( continue_ix );
 
   return 0; // no error

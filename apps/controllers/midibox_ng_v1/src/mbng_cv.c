@@ -250,11 +250,10 @@ s32 MBNG_CV_NotifyReceivedValue(mbng_event_item_t *item)
 
     if( set_value ) {
       // scale value to 16bit
-      int value16;
-      u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-      if( map_len > 0 ) {
-	value16 = MBNG_EVENT_MapIxFromValue(map_values, map_len, value) * (65536 / map_len);
+      u16 value16 = value;
+      s32 mapped_value;
+      if( (mapped_value=MBNG_EVENT_MapValue(item->map, value16, 65535, 0)) >= 0 ) {
+	value16 = mapped_value;
       } else if( item->min <= item->max ) {
 	int range = item->max - item->min + 1;
 	value16 = (value - item->min) * (65536 / range);

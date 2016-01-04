@@ -121,14 +121,9 @@ s32 MBNG_RGBLED_NotifyReceivedValue(mbng_event_item_t *item)
   }
 
   float led_value;
-
-  u8 *map_values;
-  int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-  if( map_len > 0 ) {
-    int map_ix = item->value;
-    if( map_ix >= map_len )
-      map_ix = map_len - 1;
-    led_value = map_values[map_ix];
+  s32 mapped_led_value;
+  if( (mapped_led_value=MBNG_EVENT_MapValue(item->map, item->value, 0, 0)) >= 0 ) {
+    led_value = (float)mapped_led_value;
   } else {
     //int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
     if( item->flags.radio_group ) {

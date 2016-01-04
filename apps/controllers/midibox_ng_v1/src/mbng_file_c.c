@@ -104,6 +104,7 @@ static mbng_file_c_info_t mbng_file_c_info;
 
 static const char *separators = " \t";
 static const char *separator_colon = ":";
+static const char *separators_map = " \t,/:;";
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1629,9 +1630,10 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
   // mapped value -> update ix
   // NOTE: this will only work correctly if map has been defined before EVENT!
   if( item.map ) {
+    mbng_event_map_type_t map_type;
     u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-    item.map_ix = MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value);
+    int map_len = MBNG_EVENT_MapGet(item.map, &map_type, &map_values);
+    item.map_ix = MBNG_EVENT_MapIxFromValue(map_type, map_values, map_len, item.value);
   }
 
 #if DEBUG_VERBOSE_LEVEL >= 2
@@ -1659,27 +1661,61 @@ s32 parseMap(u32 line, char *cmd, char *brkt)
 {
   int map;
 
-  if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map number in %s\n", line, cmd);
-#endif
-  }
-
 #define MAP_VALUE_MAX_SIZE 128
   u8 map_values[MAP_VALUE_MAX_SIZE];
 
+  if( (map=get_dec((char *)&cmd[3])) < 1 || map >= 256 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map type or number in %s\n", line, cmd);
+#endif
+    return -1;
+  }
+
+  // forward to string after decimal value
+  char *type_str = (char *)&cmd[3];
+  for(;*type_str != 0 && *type_str >= '0' && *type_str <= '9'; ++type_str);
+
+  mbng_event_map_type_t map_type = MBNG_EVENT_MAP_TYPE_BYTE;
+  u8 read_hword = 0;
+  if( *type_str == '/' ) {
+    ++type_str;
+
+    if( strcasecmp(type_str, "BYTE") == 0 ) {
+      map_type = MBNG_EVENT_MAP_TYPE_BYTE;
+      read_hword = 0;
+    } else if( strcasecmp(type_str, "HWORD") == 0 ) {
+      map_type = MBNG_EVENT_MAP_TYPE_HWORD;
+      read_hword = 1;
+    } else if( strcasecmp(type_str, "BYTEI") == 0 ) {
+      map_type = MBNG_EVENT_MAP_TYPE_BYTEI;
+      read_hword = 0;
+    } else if( strcasecmp(type_str, "HWORDI") == 0 ) {
+      map_type = MBNG_EVENT_MAP_TYPE_HWORDI;
+      read_hword = 1;
+    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map type in %s\n", line, cmd);
+#endif
+      return -1;
+    }
+  }
+
   int pos = 0;
   char *value_str;
-  while( pos < MAP_VALUE_MAX_SIZE && (value_str = strtok_r(NULL, separators, &brkt)) ) {
+  while( pos < MAP_VALUE_MAX_SIZE && (value_str = strtok_r(NULL, separators_map, &brkt)) ) {
     int value;
-    if( (value=get_dec(value_str)) < 0 || value > 0xff ) {
+    u16 max = read_hword ? 0xffff : 0xff;
+
+    if( (value=get_dec(value_str)) < 0 || value > max ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map value '%s' in %s, expecting 0..255 (0x00..0x7f)\n", line, value_str, cmd);
+      DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid map value '%s' in %s, expecting 0..%d (0x00..%x)\n", line, value_str, cmd, max, max);
 #endif
       return -1;
     } else {
       if( pos < MAP_VALUE_MAX_SIZE )
 	map_values[pos++] = (u8)value;
+      if( read_hword && pos < MAP_VALUE_MAX_SIZE )
+	map_values[pos++] = (u8)(value >> 8);
     }
   }
 
@@ -1689,9 +1725,9 @@ s32 parseMap(u32 line, char *cmd, char *brkt)
 #endif
   } else if( pos > MAP_VALUE_MAX_SIZE ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: too many values defined for %s (max: %d)!\n", line, cmd, MAP_VALUE_MAX_SIZE);
+    DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: too many values defined for %s (max: %d)!\n", line, cmd, read_hword ? (MAP_VALUE_MAX_SIZE / 2) : MAP_VALUE_MAX_SIZE);
 #endif
-  } else if( MBNG_EVENT_MapAdd(map, map_values, pos) < 0 ) {
+  } else if( MBNG_EVENT_MapAdd(map, map_type, map_values, pos) < 0 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
     DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: failed to add %s to the pool!\n", line, cmd);
 #endif
@@ -4304,16 +4340,32 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
     int num_maps = MBNG_EVENT_PoolNumMapsGet();
     int map_ix;
     for(map_ix=1; map_ix<=num_maps; ++map_ix) {
+      mbng_event_map_type_t map_type;
       u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(map_ix, &map_values);
+      int map_len = MBNG_EVENT_MapGet(map_ix, &map_type, &map_values);
       if( map_len > 0 ) {
-	sprintf(line_buffer, "MAP%d", map_ix);
+	switch( map_type ) {
+	//case MBNG_EVENT_MAP_TYPE_BYTE: // see default
+	case MBNG_EVENT_MAP_TYPE_HWORD:  sprintf(line_buffer, "MAP%d/HWORD", map_ix); break;
+	case MBNG_EVENT_MAP_TYPE_BYTEI:  sprintf(line_buffer, "MAP%d/BYTEI", map_ix); break;
+	case MBNG_EVENT_MAP_TYPE_HWORDI: sprintf(line_buffer, "MAP%d/HWORDI", map_ix); break;
+	default:                         sprintf(line_buffer, "MAP%d/BYTE", map_ix);
+	}
 	FLUSH_BUFFER;
 
         int i;
-	for(i=0; i<map_len; ++i) {
-	  sprintf(line_buffer, " %d", map_values[i]);
-	  FLUSH_BUFFER;
+	if( map_type == MBNG_EVENT_MAP_TYPE_HWORD || map_type == MBNG_EVENT_MAP_TYPE_HWORDI ) {
+	  for(i=0; i<map_len; i+=2) {
+	    char sep = (map_type == MBNG_EVENT_MAP_TYPE_HWORDI && (i%4) == 2) ? ':' : ' ';
+	    sprintf(line_buffer, "%c%d", sep, map_values[i] | ((u16)map_values[i+1] << 8));
+	    FLUSH_BUFFER;
+	  }
+	} else {
+	  for(i=0; i<map_len; ++i) {
+	    char sep = (map_type == MBNG_EVENT_MAP_TYPE_BYTEI && (i%2) == 1) ? ':' : ' ';
+	    sprintf(line_buffer, "%c%d", sep, map_values[i]);
+	    FLUSH_BUFFER;
+	  }
 	}
 	sprintf(line_buffer, "\n");
 	FLUSH_BUFFER;

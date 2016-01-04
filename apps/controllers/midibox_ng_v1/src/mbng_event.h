@@ -231,6 +231,13 @@ typedef enum {
   MBNG_EVENT_META_TYPE_SCS_SHIFT,
 } mbng_event_meta_type_t;
 
+typedef enum {
+  MBNG_EVENT_MAP_TYPE_BYTE = 0,
+  MBNG_EVENT_MAP_TYPE_HWORD,
+  MBNG_EVENT_MAP_TYPE_BYTEI,
+  MBNG_EVENT_MAP_TYPE_HWORDI,
+} mbng_event_map_type_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Type definitions
@@ -410,9 +417,11 @@ extern s32 MBNG_EVENT_PoolNumMapsGet(void);
 extern s32 MBNG_EVENT_PoolSizeGet(void);
 extern s32 MBNG_EVENT_PoolMaxSizeGet(void);
 
-extern s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len);
-extern s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values);
-extern s32 MBNG_EVENT_MapIxFromValue(u8 *map_values, u8 map_len, u8 value);
+extern s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u8 len);
+extern s32 MBNG_EVENT_MapGet(u8 map, mbng_event_map_type_t *map_type, u8 **map_values);
+extern s32 MBNG_EVENT_MapValue(u8 map, u16 value, u16 range, u8 reverse_interpolation);
+extern s32 MBNG_EVENT_MapItemValueInc(u8 map, mbng_event_item_t *item, s32 incrementer, u8 auto_wrap);
+extern s32 MBNG_EVENT_MapIxFromValue(mbng_event_map_type_t map_type, u8 *map_values, u8 map_len, u8 value);
 
 extern s32 MBNG_EVENT_NumBanksGet(void);
 extern s32 MBNG_EVENT_SelectedBankGet(void);
@@ -477,6 +486,8 @@ extern mbng_event_sysex_var_t MBNG_EVENT_ItemSysExVarFromStrGet(char *sysex_var)
 extern const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type);
 extern mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type);
 extern u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type);
+extern mbng_event_map_type_t MBNG_EVENT_ItemMapFromStrGet(char *map_type);
+extern const char *MBNG_EVENT_ItemMapTypeStrGet(mbng_event_item_t *item);
 
 
 extern s32 MBNG_EVENT_SendOptimizedNRPN(mios32_midi_port_t port, mios32_midi_chn_t chn, u16 nrpn_address, u16 nrpn_value, u8 msb_only);
@@ -504,6 +515,5 @@ extern s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in);
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables
 /////////////////////////////////////////////////////////////////////////////
-
 
 #endif /* _MBNG_EVENT_H */

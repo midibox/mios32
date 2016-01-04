@@ -3,6 +3,25 @@ $Id$
 MIDIbox NG V1.034
 ~~~~~~~~~~~~~~~~~
 
+   o Support for interpolation tables:
+     MAPs can now apply linear interpolation between data points.
+     This allows to quickly define curves without the need to enter the values for the complete range.
+     E.g. previously it was required to enter 128 values to create a curve for a CC controller,
+     now it's mostly sufficient to define the same with 3..4 data points. MBNG will interpolate
+     the values between these points.
+
+     Interpolation tables can be defined with following commands:
+     MAP<n>/BYTEI and MAP<n>/HWORDI
+
+     A BYTEI map can define up to 64 datapoints with 8bit resultion,
+     and a HWORDI map can define up to 32 datapoints with 16bit resolution.
+
+     Usage examples can be found under cfg/test/map* and cfg/test/kb_2.ngc
+
+     See the user manual for further explanations.
+
+   o Support for 16bit maps: with MAP<n>/HWORD 16bit values can be mapped.
+
    o label "std_rgbled" renamed to "std_rgb" to avoid error message
 
    o Cursor handling on SysEx based GLCD output should now work correctly if the big font is activated
