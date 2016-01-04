@@ -2222,6 +2222,9 @@ http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&co
 Clock Dividers for MIDI clock outputs
 http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&comment=172791
 ----------------------------------------------------------
+Allow to use BLM fader handling with external controllers
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172905
+----------------------------------------------------------
 
 
 
