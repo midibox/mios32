@@ -252,7 +252,6 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
       s32 mapped_value;
       if( (mapped_value=MBNG_EVENT_MapValue(item->map, value14, 16383, 0)) >= 0 ) {
 	value14 = mapped_value;
-	DEBUG_MSG("%d -> %d\n", item->value, mapped_value);
       } else if( item->min <= item->max ) {
 	int range = item->max - item->min + 1;
 	value14 = (item->value - item->min) * (16384 / range);
