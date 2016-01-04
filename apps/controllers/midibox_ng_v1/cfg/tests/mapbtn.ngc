@@ -19,3 +19,8 @@ EVENT_LED id=  5  range=8:8    radio_group=1
 EVENT_LED id=  6  range=16:16  radio_group=1
 EVENT_LED id=  7  range=32:32  radio_group=1
 EVENT_LED id=  8  range=64:64  radio_group=1
+
+
+# a button which doesn't toggle, but just turns on/off
+# in this case either the lowest or highest item of a map will be taken
+EVENT_BUTTON id=  2  fwd_to_lcd=1  type=CC chn=1 cc=17  button_mode=OnOff  range=map1  radio_group=1  lcd_pos=1:1:1 label="^std_btn"

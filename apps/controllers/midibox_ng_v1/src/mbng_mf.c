@@ -157,31 +157,26 @@ s32 MBNG_MF_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t mi
 	  }
 
 	  // scale value from 14bit
-	  s16 min = item.min;
-	  s16 max = item.max;
-	  u8 *map_values;
-	  int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-	  if( map_len > 0 ) {
-	    min = 0;
-	    max = map_len-1;
-	  }
-
-	  u32 value_scaled;
-	  if( min <= max ) {
-	    int range = max - min + 1;
-	    value_scaled = min + (value / (16384 / range));
+	  u16 value16 = value;
+	  s32 mapped_value;
+	  if( (mapped_value=MBNG_EVENT_MapValue(item.map, value16, 16383, 1)) >= 0 ) {
+	    value16 = mapped_value;
 	  } else {
-	    int range = min - max + 1;
-	    value_scaled = max + (value / (16384 / range));
+	    s16 min = item.min;
+	    s16 max = item.max;
+
+	    if( min <= max ) {
+	      int range = max - min + 1;
+	      value16 = min + (value / (16384 / range));
+	    } else {
+	      int range = min - max + 1;
+	      value16 = max + (value / (16384 / range));
+	    }
 	  }
 
-	  if( map_len > 0 ) {
-	    value_scaled = map_values[value_scaled];
-	  }
-
-	  if( item.value != value_scaled ) {
+	  if( item.value != value16 ) {
 	    // take over new value
-	    item.value = value_scaled;
+	    item.value = value16;
 
 	    if( MBNG_EVENT_NotifySendValue(&item) == 2 )
 	      break; // stop has been requested
@@ -253,11 +248,11 @@ s32 MBNG_MF_NotifyReceivedValue(mbng_event_item_t *item)
     mbng_patch_mf_entry_t *mf = (mbng_patch_mf_entry_t *)&mbng_patch_mf[module];
     if( mf->flags.enabled ) {
       // scale value to 14bit
-      int value14;
-      u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-      if( map_len > 0 ) {
-	value14 = MBNG_EVENT_MapIxFromValue(map_values, map_len, item->value) * (16384 / map_len);
+      int value14 = item->value;
+      s32 mapped_value;
+      if( (mapped_value=MBNG_EVENT_MapValue(item->map, value14, 16383, 0)) >= 0 ) {
+	value14 = mapped_value;
+	DEBUG_MSG("%d -> %d\n", item->value, mapped_value);
       } else if( item->min <= item->max ) {
 	int range = item->max - item->min + 1;
 	value14 = (item->value - item->min) * (16384 / range);

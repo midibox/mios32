@@ -100,7 +100,8 @@ typedef struct { // should be dividable by u16
 typedef struct {
   u8 len;
   u8 num;
-  u8 data_begin; // data section for value map starts here, it can have multiple bytes
+  mbng_event_map_type_t map_type;
+  u8 data[128]; // data section for value map starts here, it can have up to 128 bytes
 } mbng_event_pool_map_t;
 
 
@@ -132,8 +133,8 @@ static u16 event_pool_num_maps;
 mbng_event_item_id_t last_event_item_id;
 
 // banks
-u8 selected_bank;
-u8 num_banks;
+static u8 selected_bank;
+static u8 num_banks;
 
 // listen to NRPN for up to 8 ports at up to 16 channels
 // in order to save RAM, we only listen to USB and UART based ports! (this already costs us 512 byte!)
@@ -414,6 +415,7 @@ s32 MBNG_EVENT_PoolUpdate(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_EVENT_PoolPrint(void)
 {
+  DEBUG_MSG("Pool Size: %d, Maps starting at 0x%04x", event_pool_size, event_pool_maps_begin);
   return MIOS32_MIDI_SendDebugHexDump(event_pool, event_pool_size);
 }
 
@@ -456,17 +458,34 @@ s32 MBNG_EVENT_PoolMapsPrint(void)
     u32 i;
     for(i=0; i<event_pool_num_maps; ++i) {
       mbng_event_pool_map_t *pool_map = (mbng_event_pool_map_t *)pool_ptr;
-
       char value_str[128];
-      sprintf(value_str, "MAP%d", pool_map->num);
-
-      u8 *map_values = (u8 *)&pool_map->data_begin;
-      int j;
-      for(j=2; j<pool_map->len && j < 16; ++j ) {
-	sprintf(value_str, "%s %d", value_str, *map_values++);
+      switch( pool_map->map_type ) {
+      case MBNG_EVENT_MAP_TYPE_BYTE:   sprintf(value_str, "MAP%d/BYTE", pool_map->num); break;
+      case MBNG_EVENT_MAP_TYPE_HWORD:  sprintf(value_str, "MAP%d/HWORD", pool_map->num); break;
+      case MBNG_EVENT_MAP_TYPE_BYTEI:  sprintf(value_str, "MAP%d/BYTEI", pool_map->num); break;
+      case MBNG_EVENT_MAP_TYPE_HWORDI: sprintf(value_str, "MAP%d/HWORDI", pool_map->num); break;
+      default:                         sprintf(value_str, "MAP%d", pool_map->num); // legacy
       }
 
-      if( j == 16 ) {
+      u8 max_values = 32;
+      u8 *map_values = (u8 *)&pool_map->data;
+      int j;
+      int len = pool_map->len - 3;
+      if( pool_map->map_type == MBNG_EVENT_MAP_TYPE_HWORD || pool_map->map_type == MBNG_EVENT_MAP_TYPE_HWORDI ) {
+	for(j=0; j<len && j < max_values; j+=2) {
+	  u16 value = *(map_values++);
+	  value |= (u16)*(map_values++) << 8;
+	  char sep = (pool_map->map_type == MBNG_EVENT_MAP_TYPE_HWORDI && (j%4) == 2) ? ':' : ' ';
+	  sprintf(value_str, "%s%c%d", value_str, sep, value);
+	}
+      } else {
+	for(j=0; j<len && j < max_values; ++j) {
+	  char sep = (pool_map->map_type == MBNG_EVENT_MAP_TYPE_BYTEI && (j%2) == 1) ? ':' : ' ';
+	  sprintf(value_str, "%s%c%d", value_str, sep, *(map_values++));
+	}
+      }
+
+      if( len > max_values ) {
 	sprintf(value_str, "%s ...", value_str);
       }
       DEBUG_MSG(value_str);
@@ -514,20 +533,21 @@ s32 MBNG_EVENT_PoolMaxSizeGet(void)
 /////////////////////////////////////////////////////////////////////////////
 //! Adds a map to event pool
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len)
+s32 MBNG_EVENT_MapAdd(u8 map, mbng_event_map_type_t map_type, u8 *map_values, u8 len)
 {
-  if( (event_pool_size+len+2) > MBNG_EVENT_POOL_MAX_SIZE )
+  if( (event_pool_size+len+3) > MBNG_EVENT_POOL_MAX_SIZE )
     return -2; // out of storage 
 
   u32 event_pool_map_start = event_pool_size;
 
   ++event_pool_num_maps;
   u8 *pool_ptr = (u8 *)&event_pool[event_pool_map_start];
-  *pool_ptr++ = len+2;
+  *pool_ptr++ = len+3;
   *pool_ptr++ = map;
+  *pool_ptr++ = map_type;
   memcpy(pool_ptr, (u8 *)map_values, len);
 
-  event_pool_size += len + 2;
+  event_pool_size += len + 3;
 
   return 0; // no error
 }
@@ -535,7 +555,7 @@ s32 MBNG_EVENT_MapAdd(u8 map, u8 *map_values, u8 len)
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a map from the event pool
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
+s32 MBNG_EVENT_MapGet(u8 map, mbng_event_map_type_t *map_type, u8 **map_values)
 {
   u8 *pool_ptr = (u8 *)&event_pool[event_pool_maps_begin];
   u32 i;
@@ -543,8 +563,9 @@ s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
       mbng_event_pool_map_t *pool_map = (mbng_event_pool_map_t *)pool_ptr;
 
       if( pool_map->num == map ) {
-	*map_values = (u8 *)&pool_map->data_begin;
-	return pool_map->len - 2;
+	*map_type = pool_map->map_type;
+	*map_values = (u8 *)&pool_map->data;
+	return pool_map->len - 3;
       }
 
       pool_ptr += pool_map->len;
@@ -554,30 +575,256 @@ s32 MBNG_EVENT_MapGet(u8 map, u8 **map_values)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Maps a 16bit value to a map (map type will be considered)
+//! \return >= 0 if map has been applied (returns value)
+//! \return -1 if no map assigned
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MapValue(u8 map, u16 value, u16 range, u8 reverse_interpolation)
+{
+  mbng_event_map_type_t map_type = MBNG_EVENT_MAP_TYPE_BYTE;
+  u8 *map_values = NULL;
+  int map_len = MBNG_EVENT_MapGet(map, &map_type, &map_values);
+
+  if( map_len > 0 ) {
+    switch( map_type ) {
+
+    /////////////////////////////////////////////////////////////////////////
+    case MBNG_EVENT_MAP_TYPE_BYTE: {
+      int ix;
+      if( range ) {
+	ix = (value * (map_len-1)) / range;
+      } else {
+	ix = (value < map_len) ? value : (map_len-1);
+      }
+
+      return map_values[ix];
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case MBNG_EVENT_MAP_TYPE_HWORD: {
+      int ix;
+      if( range ) {
+	ix = 2 * ((value * ((map_len/2)-1)) / range);
+      } else {
+	ix = 2 * ((value < (map_len/2)) ? value : ((map_len/2)-1));
+      }
+
+      return map_values[ix+0] | ((u16)map_values[ix+1] << 8);
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case MBNG_EVENT_MAP_TYPE_BYTEI: {
+      if( map_len <= 1 ) { // not enough values -> always return first value
+	return map_values[0];
+      } else {
+	int ix;
+	int max_ix = map_len-2;
+
+	if( reverse_interpolation ) {
+	  for(ix=0; ix<max_ix; ix+=2, map_values += 2) {
+	    int x0 = map_values[1];
+	    int x1 = map_values[3];
+	    if( (x1 >= x0 && x0 <= value && x1 >= value) ||
+		(x0 > x1  && x1 <= value && x0 >= value) ) {
+	      int y0 = map_values[0];
+	      int y1 = map_values[2];
+	      int n = value - x0;
+	      return y0 + ((y1 - y0) * n) / (x1 - x0);
+	    }
+	  }
+	} else {
+	  for(ix=0; ix<max_ix; ix+=2, map_values += 2) {
+	    int x0 = map_values[0];
+	    int x1 = map_values[2];
+	    if( (x1 >= x0 && x0 <= value && x1 >= value) ||
+		(x0 > x1  && x1 <= value && x0 >= value) ) {
+	      int y0 = map_values[1];
+	      int y1 = map_values[3];
+	      int n = value - x0;
+	      return y0 + ((y1 - y0) * n) / (x1 - x0);
+	    }
+	  }
+	}
+
+	if( reverse_interpolation ) {
+	  return map_values[0]; // return last mapped value
+	} else {
+	  return map_values[1]; // return last mapped value
+	}
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case MBNG_EVENT_MAP_TYPE_HWORDI: {
+      if( map_len <= 2 ) { // not enough values -> always return first value
+	return map_values[0] | ((u16)map_values[1] << 8);
+      } else {
+	int ix;
+	int max_ix = map_len-4;
+
+	if( reverse_interpolation ) {
+	  for(ix=0; ix<max_ix; ix+=4, map_values += 4) {
+	    int x0 = map_values[2] | ((u16)map_values[3] << 8);
+	    int x1 = map_values[6] | ((u16)map_values[7] << 8);
+	    if( (x1 >= x0 && x0 <= value && x1 >= value) ||
+		(x0 > x1  && x1 <= value && x0 >= value) ) {
+	      int y0 = map_values[0] | ((u16)map_values[1] << 8);
+	      int y1 = map_values[4] | ((u16)map_values[5] << 8);
+	      int n = value - x0;
+	      return y0 + ((y1 - y0) * n) / (x1 - x0);
+	    }
+	  }
+	} else {
+	  for(ix=0; ix<max_ix; ix+=4, map_values += 4) {
+	    int x0 = map_values[0] | ((u16)map_values[1] << 8);
+	    int x1 = map_values[4] | ((u16)map_values[5] << 8);
+	    if( (x1 >= x0 && x0 <= value && x1 >= value) ||
+		(x0 > x1  && x1 <= value && x0 >= value) ) {
+	      int y0 = map_values[2] | ((u16)map_values[3] << 8);
+	      int y1 = map_values[6] | ((u16)map_values[7] << 8);
+	      int n = value - x0;
+	      return y0 + ((y1 - y0) * n) / (x1 - x0);
+	    }
+	  }
+	}
+
+	if( reverse_interpolation ) {
+	  return map_values[0] | ((u16)map_values[1] << 8); // return last mapped value
+	} else {
+	  return map_values[2] | ((u16)map_values[3] << 8); // return last mapped value
+	}
+      }
+    } break;
+    }
+  }
+  return -1;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Increments map items based on item->map_ix
+//! \return 0 if map available but value index hasn't been changed
+//! \return 1 if map available and value index has been changed
+//! \return -1 if no map assigned
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_EVENT_MapItemValueInc(u8 map, mbng_event_item_t *item, s32 incrementer, u8 auto_wrap)
+{
+  mbng_event_map_type_t map_type = MBNG_EVENT_MAP_TYPE_BYTE;
+  u8 *map_values = NULL;
+
+  int map_len = MBNG_EVENT_MapGet(map, &map_type, &map_values);
+  if( map_len > 0 ) {
+    int num_map_items = 0;
+    u8 read_hword = 0;
+    u8 read_second = 0;
+    switch( map_type ) {
+    case MBNG_EVENT_MAP_TYPE_BYTE: {
+      num_map_items = map_len;
+    } break;
+    case MBNG_EVENT_MAP_TYPE_HWORD: {
+      num_map_items = map_len / 2;
+      read_hword = 1;
+    } break;
+    case MBNG_EVENT_MAP_TYPE_BYTEI: {
+      num_map_items = map_len / 2;
+      read_second = 1;
+    } break;
+    case MBNG_EVENT_MAP_TYPE_HWORDI: {
+      num_map_items = map_len / 4;
+      read_hword = 1;
+      read_second = 1;
+    } break;
+    }
+
+    int map_ix = item->map_ix; // MBNG_EVENT_MapIxFromValue(map_values, map_len, item.value);
+    int prev_map_ix = map_ix;
+    map_ix += incrementer;
+    if( map_ix >= num_map_items )
+      map_ix = auto_wrap ? 0 : (num_map_items - 1);
+    else if( map_ix < 0 )
+      map_ix = auto_wrap ? (num_map_items - 1) : 0;
+
+    MBNG_EVENT_ItemSetMapIx(item, map_ix);
+
+    if( read_hword ) {
+      u8 ix = read_second ? (4*map_ix+2) : (2*map_ix);
+      item->value = map_values[ix+0] | ((u16)map_values[ix+1] << 8);
+    } else {
+      u8 ix = read_second ? (2*map_ix+1) : map_ix;
+      item->value = map_values[ix];
+    }
+
+    return prev_map_ix != map_ix;
+  }
+
+  return -1;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! Returns the index of a given value
 /////////////////////////////////////////////////////////////////////////////
-s32 MBNG_EVENT_MapIxFromValue(u8 *map_values, u8 map_len, u8 value)
+s32 MBNG_EVENT_MapIxFromValue(mbng_event_map_type_t map_type, u8 *map_values, u8 map_len, u8 value)
 {
+  int num_map_items = 0;
+  u8 read_hword = 0;
+  u8 read_second = 0;
+  switch( map_type ) {
+  case MBNG_EVENT_MAP_TYPE_BYTE: {
+    num_map_items = map_len;
+  } break;
+  case MBNG_EVENT_MAP_TYPE_HWORD: {
+    num_map_items = map_len / 2;
+    read_hword = 1;
+  } break;
+  case MBNG_EVENT_MAP_TYPE_BYTEI: {
+    num_map_items = map_len / 2;
+    read_second = 1;
+  } break;
+  case MBNG_EVENT_MAP_TYPE_HWORDI: {
+    num_map_items = map_len / 4;
+    read_hword = 1;
+    read_second = 1;
+  } break;
+  }
+
   // first search for exact match
   {
     int i;
-    u8 *map_values_ptr = map_values;
-    for(i=0; i<map_len; ++i)
-      if( *map_values_ptr++ == value )
+    u8 *map_values_ptr = (u8 *)&map_values[1];
+
+    for(i=0; i<num_map_items; ++i) {
+      if( read_second )
+	map_values_ptr += 2;
+
+      u16 map_value = *(map_values_ptr++);
+      if( read_hword )
+	map_value |= (u16)*(map_values_ptr++) << 8;
+
+      if( map_value == value ) {
 	return i;
+      }
+    }
   }
 
   // otherwise search for match which is close to the given value
   {
     int i;
-    u8 *map_values_ptr = map_values;
-    for(i=0; i<map_len; ++i)
-      if( *map_values_ptr++ > value ) {
+    u8 *map_values_ptr = (u8 *)&map_values[1];
+
+    for(i=0; i<num_map_items; ++i) {
+      if( read_second )
+	map_values_ptr += 2;
+
+      u16 map_value = *(map_values_ptr++);
+      if( read_hword )
+	map_value |= (u16)*(map_values_ptr++) << 8;
+
+      if( map_value > value ) {
 	return (i == 0) ? 0 : (i-1);
       }
+    }
   }
 
-  return map_len-1; // no match -> take last index
+  return num_map_items-1; // no match -> take last index
 }
 
 
@@ -741,9 +988,9 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->rgb.ALL = 0;
   item->hsv.ALL = 0;
   item->stream_size = 0;
-  item->map = 0;
   item->bank = 0;
   item->secondary_value = 0;
+  item->map = 0;
   item->map_ix = 0;
   item->lcd = 0;
   item->lcd_x = 0;
@@ -1370,7 +1617,7 @@ s32 MBNG_EVENT_ItemRetrieveValues(mbng_event_item_id_t *id, s16 *value, u8 *seco
 s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
 {
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
     if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
@@ -1388,7 +1635,7 @@ s32 MBNG_EVENT_ItemCopyValueToPool(mbng_event_item_t *item)
 s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active)
 {
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->flags.active = active;
     item->flags.active = active;
@@ -1417,7 +1664,7 @@ s32 MBNG_EVENT_ItemSetActive(mbng_event_item_t *item, u8 active)
 s32 MBNG_EVENT_ItemSetNoDump(mbng_event_item_t *item, u8 no_dump)
 {
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->flags.no_dump = no_dump;
     item->flags.no_dump = no_dump;
@@ -1433,7 +1680,7 @@ s32 MBNG_EVENT_ItemSetNoDump(mbng_event_item_t *item, u8 no_dump)
 s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
 {
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->flags.write_locked = lock;
   }
@@ -1448,7 +1695,7 @@ s32 MBNG_EVENT_ItemSetLock(mbng_event_item_t *item, u8 lock)
 s32 MBNG_EVENT_ItemSetMapIx(mbng_event_item_t *item, u8 map_ix)
 {
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->map_ix = map_ix;
     item->map_ix = map_ix;
@@ -2922,8 +3169,6 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   return 0;
 }
 
-
-
 /////////////////////////////////////////////////////////////////////////////
 //! Sends a NRPN event. Skips address bytes if they already have been sent!
 /////////////////////////////////////////////////////////////////////////////
@@ -3446,7 +3691,7 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
       break;
 
     case MBNG_EVENT_TYPE_PITCHBEND:
-      if( (item->max-item->min) < 128 ) { // 7bit range
+      if( !item->map && (item->max-item->min) < 128 ) { // 7bit range
 	u8 value = item->value & 0x7f; // just to ensure
 	p.evnt1 = (value == 0x40) ? 0x00 : value;
 	p.evnt2 = value;
@@ -3616,9 +3861,10 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 
   // mapped value -> update ix
   if( item->map ) {
+    mbng_event_map_type_t map_type;
     u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-    item->map_ix = MBNG_EVENT_MapIxFromValue(map_values, map_len, value);
+    int map_len = MBNG_EVENT_MapGet(item->map, &map_type, &map_values);
+    item->map_ix = MBNG_EVENT_MapIxFromValue(map_type, map_values, map_len, value);
     MBNG_EVENT_ItemSetMapIx(item, item->map_ix); // store in pool
   }
 
@@ -3626,7 +3872,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
   item->flags.value_from_midi = from_midi;
 
   // take over in pool item
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->value = item->value;
     if( item->flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
@@ -3669,14 +3915,17 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     }
 
     // map?
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-    if( map_len > 0 ) {
-      item->value = map_values[(value < map_len) ? value : (map_len-1)];
+    {
+      s32 mapped_value;
+      if( (mapped_value=MBNG_EVENT_MapValue(item->map, item->value, 0, 0)) >= 0 ) {
+	item->value = mapped_value;
 
-      // store in pool
-      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
-      pool_item->value = item->value;
+	// store in pool
+	if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
+	  mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+	  pool_item->value = value;
+	}
+      }
     }
 
     // send MIDI event
@@ -3691,21 +3940,24 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
     }
 
     // map?
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-    if( map_len > 0 ) {
-      item->value = map_values[(value < map_len) ? value : (map_len-1)];
-    } else {
-      // range?
-      if( value < item->min )
-	item->value = item->min;
-      else if( value > item->max )
-	item->value = item->max;
+    {
+      s32 mapped_value;
+      if( (mapped_value=MBNG_EVENT_MapValue(item->map, item->value, 0, 0)) >= 0 ) {
+	item->value = mapped_value;
+      } else {
+	// range?
+	if( value < item->min )
+	  item->value = item->min;
+	else if( value > item->max )
+	  item->value = item->max;
+      }
     }
 
     // store in pool
-    mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
-    pool_item->value = item->value;
+    if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
+      mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
+      pool_item->value = item->value;
+    }
 
     // ENC emulation mode?
     if( item->custom_flags.RECEIVER.emu_enc_hw_id ) {
@@ -3758,6 +4010,7 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
   } break;
   }
 
+
   // forward
   if( fwd_enabled ) {
     if( item->fwd_id )
@@ -3767,12 +4020,13 @@ s32 MBNG_EVENT_ItemReceive(mbng_event_item_t *item, u16 value, u8 from_midi, u8 
 	MBNG_EVENT_ItemForwardToRadioGroup(item, item->flags.radio_group);
     }
 
-    if( item->flags.fwd_to_lcd && item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+    if( item->flags.fwd_to_lcd && item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
       mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
       pool_item->flags.update_lcd = 1;
       last_event_item_id = pool_item->id;
     }
   }
+
 
   return cond_match; // no error
 }
@@ -3875,15 +4129,14 @@ s32 MBNG_EVENT_ItemForwardToRadioGroup(mbng_event_item_t *item, u8 radio_group)
       // sender/receiver will map the value
       u16 fwd_id_type = fwd_item.id & 0xf000;
       if( fwd_id_type == MBNG_EVENT_CONTROLLER_SENDER || fwd_id_type == MBNG_EVENT_CONTROLLER_RECEIVER ) {
-	u8 *map_values;
-	int map_len = MBNG_EVENT_MapGet(fwd_item.map, &map_values);
-	if( map_len > 0 ) {
-	  fwd_item.value = map_values[(fwd_item.value < map_len) ? fwd_item.value : (map_len-1)];
+	s32 mapped_value;
+	if( (mapped_value=MBNG_EVENT_MapValue(fwd_item.map, fwd_item.value, 0, 0)) >= 0 ) {
+	  fwd_item.value = mapped_value;
 	}
       }
 
       // take over value of item in pool item
-      if( fwd_item.pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+      if( fwd_item.pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
 	mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + fwd_item.pool_address);
 	pool_item->value = fwd_item.value;
 	if( fwd_item.flags.use_key_or_cc ) // only change secondary value if key_or_cc option selected
@@ -3927,7 +4180,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
   // take over in pool item
   s16 prev_value = 0;
   //s16 prev_secondary_value = 0;
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     prev_value = pool_item->value;
     //prev_secondary_value = pool_item->secondary_value;
@@ -3983,7 +4236,7 @@ s32 MBNG_EVENT_NotifySendValue(mbng_event_item_t *item)
     MBNG_EVENT_ItemForward(item);
 
   // print label
-  if( item->pool_address < MBNG_EVENT_POOL_MAX_SIZE ) {
+  if( item->pool_address < (MBNG_EVENT_POOL_MAX_SIZE-1) ) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)((u32)&event_pool[0] + item->pool_address);
     pool_item->flags.update_lcd = 1;
     last_event_item_id = pool_item->id;
@@ -4000,6 +4253,7 @@ s32 MBNG_EVENT_Refresh(void)
 {
   u8 *pool_ptr = (u8 *)&event_pool[0];
   u32 i;
+
   for(i=0; i<event_pool_num_items; ++i) {
     mbng_event_pool_item_t *pool_item = (mbng_event_pool_item_t *)pool_ptr;
 
@@ -4527,13 +4781,11 @@ s32 MBNG_EVENT_ReceiveSysEx(mios32_midi_port_t port, u8 midi_in)
 		u8 y = pool_item->value / x_wrap;
 
 		// mapped X?
-		u8 *map_values;
-		int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-		if( map_len > 0 ) {
-		  if( x < map_len )
-		    x = map_values[x];
-		  else
-		    x = map_values[map_len-1];
+		{
+		  s32 mapped_value;
+		  if( (mapped_value=MBNG_EVENT_MapValue(item.map, x, 0, 0)) >= 0 ) {
+		    x = mapped_value;
+		  }
 		}
 
 		// multiply Y due to big GLCD font?

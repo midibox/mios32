@@ -131,56 +131,55 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
   }
 
   // scale 12bit value between min/max with fixed point artithmetic
-  int value = pin_value;
-  s16 min = item->min;
-  s16 max = item->max;
-  u8 *map_values;
-  int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-  if( map_len > 0 ) {
-    min = 0;
-    max = map_len-1;
-  }
-
-  if( min <= max ) {
-    value = min + (value * (max-min)) / 4095;
+  u16 value16 = pin_value;
+  s32 mapped_value;
+  if( (mapped_value=MBNG_EVENT_MapValue(item->map, value16, 4095, 0)) >= 0 ) {
+    value16 = mapped_value;
   } else {
-    value = min - (value * (min-max)) / 4095;
+    s16 min = item->min;
+    s16 max = item->max;
+
+    if( min <= max ) {
+      value16 = min + (value16 * (max-min)) / 4095;
+    } else {
+      value16 = min - (value16 * (min-max)) / 4095;
+    }
   }
 
-  if( map_len > 0 ) {
-    value = map_values[value];
-  }
-
-  int prev_value;
-  if( min <= max ) {
-    prev_value = min + (value * (max-min)) / 4095;
+  u16 prev_value16 = prev_pin_value;
+  s32 mapped_prev_value;
+  if( (mapped_prev_value=MBNG_EVENT_MapValue(item->map, prev_value16, 4095, 0)) >= 0 ) {
+    prev_value16 = mapped_prev_value;
   } else {
-    prev_value = min - (value * (min-max)) / 4095;
-  }
+    s16 min = item->min;
+    s16 max = item->max;
 
-  if( map_len > 0 ) {
-    prev_value = map_values[prev_value];
+    if( min <= max ) {
+      prev_value16 = min + (prev_value16 * (max-min)) / 4095;
+    } else {
+      prev_value16 = min - (prev_value16 * (min-max)) / 4095;
+    }
   }
 
   switch( ain_mode ) {
   case MBNG_EVENT_AIN_MODE_SNAP: {
-    if( value == item->value )
+    if( value16 == item->value )
       return -1; // value already sent
 
     if( item->flags.value_from_midi ) {
-      int diff = value - prev_value;
+      int diff = value16 - prev_value16;
       if( diff >= 0 ) { // moved clockwise
-	if( prev_value > item->value || value < item->value ) // wrong direction, or target value not reached yet
+	if( prev_value16 > item->value || value16 < item->value ) // wrong direction, or target value not reached yet
 	  return -2; // don't send
       } else { // moved counter-clockwise
-	if( prev_value < item->value || value > item->value ) // wrong direction, target value not reached yet
+	if( prev_value16 < item->value || value16 > item->value ) // wrong direction, target value not reached yet
 	  return -2; // don't send
       }
     }
   } break;
 
   case MBNG_EVENT_AIN_MODE_RELATIVE: {
-    int diff = value - prev_value;
+    int diff = value16 - prev_value16;
     int new_value = item->value + diff;
 
     if( diff >= 0 ) { // moved clockwise
@@ -200,58 +199,60 @@ s32 MBNG_AIN_HandleAinMode(mbng_event_item_t *item, u16 pin_value, u16 prev_pin_
 	  new_value = item->max;
       }
     }
-    value = new_value;
+    value16 = new_value;
   } break;
 
   case MBNG_EVENT_AIN_MODE_PARALLAX: {
     // see also http://www.ucapps.de/midibox/midibox_plus_parallax.gif
     if( item->flags.value_from_midi ) {
-      int diff = value - prev_value;
+      int diff = value16 - prev_value16;
       if( diff >= 0 ) { // moved clockwise
-	if( prev_value > item->value || value < item->value ) { // wrong direction, or target value not reached yet
+	if( prev_value16 > item->value || value16 < item->value ) { // wrong direction, or target value not reached yet
 	  if( item->min <= item->max ) {
-	    if( (item->max - value) > 0 ) {
-	      value = item->value + ((item->max - item->value) / (item->max - value));
+	    if( (item->max - value16) > 0 ) {
+	      value16 = item->value + ((item->max - item->value) / (item->max - value16));
 	    }
 	  } else {
-	    if( (item->min - value) > 0 )
-	      value = item->value + ((item->min - item->value) / (item->min - value));
+	    if( (item->min - value16) > 0 )
+	      value16 = item->value + ((item->min - item->value) / (item->min - value16));
 	  }
-	  return value; // not taken over
+	  return value16; // not taken over
 	}
       } else { // moved counter-clockwise
-	if( prev_value < item->value || value > item->value ) { // wrong direction, target value not reached yet
-	  if( value )
-	    value = item->value - (item->value / value);
-	  return value; // not taken over
+	if( prev_value16 < item->value || value16 > item->value ) { // wrong direction, target value not reached yet
+	  if( value16 )
+	    value16 = item->value - (item->value / value16);
+	  return value16; // not taken over
 	}
       }
     }
 
-    if( value == item->value )
+    if( value16 == item->value )
       return -1; // value already sent    
   } break;
 
   case MBNG_EVENT_AIN_MODE_TOGGLE: {
-    u8 inverted = item->min > item->max;
+    s16 min = item->min;
+    s16 max = item->max;
+    u8 inverted = min > max;
     if( !inverted ) {
-      value = (item->value >= max) ? min : max;
+      value16 = (item->value >= max) ? min : max;
     } else {
-      value = (item->value >= min) ? max : min;
+      value16 = (item->value >= min) ? max : min;
     }
 
-    item->value = value; // taken over
+    item->value = value16; // taken over
 
     return 0; // value taken over
   } break;
 
   case MBNG_EVENT_AIN_MODE_SWITCH: // no additional handling required (hysteresis was handled at the begin of this function)
   default: // MBNG_EVENT_AIN_MODE_DIRECT:
-    if( value == item->value )
+    if( value16 == item->value )
       return -1; // value already sent    
   }
 
-  item->value = value; // taken over
+  item->value = value16; // taken over
 
   return 0; // value taken over
 }

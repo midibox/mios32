@@ -228,6 +228,7 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
       DEBUG_MSG("AUTOLOAD '%s'\n", autoload_ngc_file);
 
       s32 status = MBNG_PATCH_Load(autoload_ngc_file);
+
       if( status >= 0 ) {
 	DEBUG_MSG("Patch '%s' loaded from SD Card!", autoload_ngc_file);
       } else {

@@ -108,10 +108,9 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
 
     // velocity map
     if( item.custom_flags.KB.kb_velocity_map ) {
-      u8 *map_values;
-      int map_len = MBNG_EVENT_MapGet(item.custom_flags.KB.kb_velocity_map, &map_values);
-      if( map_len > 0 ) {
-	velocity = map_values[(velocity > map_len) ? (map_len-1) : velocity];
+      s32 mapped_velocity;
+      if( (mapped_velocity=MBNG_EVENT_MapValue(item.custom_flags.KB.kb_velocity_map, velocity, 0, 0)) >= 0 ) {
+	velocity = mapped_velocity;
       }
     }
 
@@ -130,23 +129,19 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
       } else {
 	// scale 7bit value between min/max with fixed point artithmetic
 	int value = velocity;
-	s16 min = item.min;
-	s16 max = item.max;
-	u8 *map_values;
-	int map_len = MBNG_EVENT_MapGet(item.map, &map_values);
-	if( map_len > 0 ) {
-	  min = 0;
-	  max = map_len-1;
-	}
 
-	if( min <= max ) {
-	  value = min + (((256*value)/128) * (max-min+1) / 256);
+	s32 mapped_value;
+	if( (mapped_value=MBNG_EVENT_MapValue(item.map, value, 0, 0)) >= 0 ) {
+	  value = mapped_value;
 	} else {
-	  value = min - (((256*value)/128) * (min-max+1) / 256);
-	}
+	  s16 min = item.min;
+	  s16 max = item.max;
 
-	if( map_len > 0 ) {
-	  value = map_values[value];
+	  if( min <= max ) {
+	    value = min + (((256*value)/128) * (max-min+1) / 256);
+	  } else {
+	    value = min - (((256*value)/128) * (min-max+1) / 256);
+	  }
 	}
 
 	item.value = value;

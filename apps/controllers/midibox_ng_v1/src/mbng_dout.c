@@ -106,15 +106,11 @@ s32 MBNG_DOUT_NotifyReceivedValue(mbng_event_item_t *item)
   }
 
   if( !emulated ) {
-    u8 dout_value;
+    u16 dout_value = item->value;
 
-    u8 *map_values;
-    int map_len = MBNG_EVENT_MapGet(item->map, &map_values);
-    if( map_len > 0 ) {
-      int map_ix = item->value;
-      if( map_ix >= map_len )
-	map_ix = map_len - 1;
-      dout_value = map_values[map_ix];
+    s32 mapped_value;
+    if( (mapped_value=MBNG_EVENT_MapValue(item->map, dout_value, 0, 0)) >= 0 ) {
+      dout_value = mapped_value;
     } else {
       int range = (item->min <= item->max) ? (item->max - item->min + 1) : (item->min - item->max + 1);
       if( item->flags.radio_group ) {
