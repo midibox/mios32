@@ -15,6 +15,10 @@ PF = /usr/local
 #ARCH = -arch ppc -arch i386
 ARCH = -arch i386
 
+# TK: added for newer MacOS versions
+#CARBON_INC = /Developer/Headers/FlatCarbon
+CARBON_INC = /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers
+
 pmlib = pm_mac/libportmidi.a
 
 CC = gcc $(VFLAGS) $(PMFLAGS) $(ARCH) -g -Ipm_common -Iporttime
@@ -71,7 +75,7 @@ pm_mac/pmmacosxcm.o: pm_mac/Makefile.osx pm_mac/pmmacosxcm.c pm_mac/pmmacosxcm.h
 	$(CC) -c pm_mac/pmmacosxcm.c -o pm_mac/pmmacosxcm.o
 
 pm_mac/readbinaryplist.o: pm_mac/Makefile.osx pm_mac/readbinaryplist.c pm_mac/readbinaryplist.h
-	$(CC) -c -I/Developer/Headers/FlatCarbon \
+	$(CC) -c -I $(CARBON_INC) \
 	pm_mac/readbinaryplist.c -o pm_mac/readbinaryplist.o
 
 pm_mac/finddefault.o: pm_mac/Makefile.osx pm_mac/finddefault.c pm_mac/pmmacosxcm.h
@@ -129,7 +133,7 @@ backup: cleanest
 dylib: pm_mac/libportmidi.dylib
 
 pm_mac/libportmidi.dylib: $(PMSRC) $(PTSRC)
-	cc -single_module -g $(PMDLFLAGS) -Iporttime -Ipm_common -I/Developer/Headers/FlatCarbon $(ARCH) \
+	cc -single_module -g $(PMDLFLAGS) -Iporttime -Ipm_common -I$(CARBON_INC) $(ARCH) \
           -dynamiclib $(PMSRC) $(PTSRC) -o pm_mac/libportmidi.dylib \
 	  -flat_namespace -undefined suppress \
 	  -framework CoreMIDI -framework CoreFoundation \
@@ -153,7 +157,7 @@ jni: pm_java/pmjni/libpmjni.jnilib
 pm_java/pmjni/libpmjni.jnilib: $(PMSRC) pm_java/jportmidi/JPortMidiApi.class pm_java/pmjni/jportmidi_JPortMidiApi.h pm_java/pmjni/pmjni.c
 	cc -single_module -g -Iporttime -Ipm_common \
           -Ipm_java/pmjni -I/System/Library/Frameworks/JavaVM.framework/Headers \
-	  -I/Developer/Headers/FlatCarbon \
+	  -I$(CARBON_INC) \
           $(ARCH) -dynamiclib $(PMSRC) $(PTSRC) pm_java/pmjni/pmjni.c \
           -o pm_java/pmjni/libpmjni.jnilib \
           -flat_namespace -undefined suppress \
@@ -181,7 +185,7 @@ PLHDR = pm_mac/readbinaryplist.h
 PLSRC = pm_mac/plisttest.c pm_mac/readbinaryplist.c
 pm_mac/plisttest: $(PLHDR) $(PLSRC)
 	cc -g -Ipm_mac \
-	    -I/Developer/Headers/FlatCarbon \
+	    -I$(CARBON_INC) \
 	    -I/System/Library/Frameworks/CoreFoundation.framework/Headers \
 	    -I/System/Library/Frameworks/CoreServices.framework/Headers \
 	    $(PLSRC) -o pm_mac/plisttest \
