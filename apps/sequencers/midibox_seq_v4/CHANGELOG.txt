@@ -2225,6 +2225,12 @@ http://midibox.org/forums/topic/19826-mb-seq-v4-clock-feature/?do=findComment&co
 Allow to use BLM fader handling with external controllers
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=172905
 ----------------------------------------------------------
+Random generator: allow to select random range (e.g. SELECT button)
+http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172921
+----------------------------------------------------------
+Parameter Layer display: show CC#<number> for CC layers
+http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172944
+----------------------------------------------------------
 
 
 
