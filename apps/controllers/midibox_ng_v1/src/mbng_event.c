@@ -789,7 +789,7 @@ s32 MBNG_EVENT_MapIxFromValue(mbng_event_map_type_t map_type, u8 *map_values, u8
   // first search for exact match
   {
     int i;
-    u8 *map_values_ptr = (u8 *)&map_values[1];
+    u8 *map_values_ptr = (u8 *)&map_values[0];
 
     for(i=0; i<num_map_items; ++i) {
       if( read_second )
@@ -808,7 +808,7 @@ s32 MBNG_EVENT_MapIxFromValue(mbng_event_map_type_t map_type, u8 *map_values, u8
   // otherwise search for match which is close to the given value
   {
     int i;
-    u8 *map_values_ptr = (u8 *)&map_values[1];
+    u8 *map_values_ptr = (u8 *)&map_values[0];
 
     for(i=0; i<num_map_items; ++i) {
       if( read_second )
