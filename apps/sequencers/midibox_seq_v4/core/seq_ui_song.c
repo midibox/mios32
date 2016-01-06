@@ -914,7 +914,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( !seq_ui_button_state.SELECT_PRESSED ) {
       if( seq_ui_button_state.SONG_PRESSED && song_util_page == SONG_UTIL_PAGE_NONE ) {
 	song_util_page = SONG_UTIL_PAGE_SELECT;
-      } else if( !seq_ui_button_state.SONG_PRESSED ) {
+      } else if( !seq_ui_button_state.SONG_PRESSED && song_util_page != SONG_UTIL_PAGE_NEW_PATTERN ) {
 	song_util_page = SONG_UTIL_PAGE_NONE;
       }
     }
