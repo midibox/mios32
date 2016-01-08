@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <osc_client.h>
+#include <blm_scalar_master.h>
 
 #include "seq_hwcfg.h"
 #include "seq_bpm.h"
@@ -859,11 +860,12 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
   } else if( port == 0xc0 ) { // Multi OUT port
     int i;
     u32 mask = 1;
+    mios32_midi_port_t blm_port = BLM_SCALAR_MASTER_MIDI_PortGet(0);
     for(i=0; i<16; ++i, mask <<= 1) {
       if( seq_midi_port_multi_enable_flags & mask ) {
 	// USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
 	mios32_midi_port_t port = 0x10 + ((i&0xc) << 2) + (i&3);
-	if( port != seq_blm_port ) // ensure that no note will be sent to BLM port if enabled
+	if( port != blm_port ) // ensure that no note will be sent to BLM port if enabled
 	  MIOS32_MIDI_SendPackage(port, package);
       }
     }

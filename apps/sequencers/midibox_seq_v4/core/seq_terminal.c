@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <seq_midi_out.h>
+#include <blm_scalar_master.h>
 #include <ff.h>
 
 #include <aout.h>
@@ -593,7 +594,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	    out("Please specifify BLM MIDI input port or 'off' to disable BLM!");
 	  } else {
 	    if( strcmp(arg, "off") == 0 ) {
-	      seq_blm_port = 0x00;
+	      BLM_SCALAR_MASTER_MIDI_PortSet(0, 0x00);
 	      out("BLM port has been disabled!");
 	    } else {
 	      mios32_midi_port_t blm_port = 0xff;
@@ -613,8 +614,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	      if( blm_port >= 0xf0 ) {
 		out("Unknown or invalid BLM input port!");
 	      } else {
-		seq_blm_port = blm_port;
-		out("BLM port set to %s", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
+		BLM_SCALAR_MASTER_MIDI_PortSet(0, blm_port);
+		out("BLM port set to %s", SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(BLM_SCALAR_MASTER_MIDI_PortGet(0))));
 	      }
 	    }
 	  }
