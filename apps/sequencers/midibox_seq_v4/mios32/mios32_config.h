@@ -147,6 +147,17 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define BLM_X_DEBOUNCE_MODE       1
 
 
+// BLM_SCALAR master driver: enable this switch if the application supports OSC (based on osc_server module)
+#define BLM_SCALAR_MASTER_OSC_SUPPORT 1
+
+// map MIDI mutex to BLM_SCALAR master
+// located in tasks.c to access MIDI IN/OUT mutex from external
+extern void TASKS_MUTEX_MIDIOUT_Take(void);
+extern void TASKS_MUTEX_MIDIOUT_Give(void);
+#define BLM_SCALAR_MASTER_MUTEX_MIDIOUT_TAKE { TASKS_MUTEX_MIDIOUT_Take(); }
+#define BLM_SCALAR_MASTER_MUTEX_MIDIOUT_GIVE       { TASKS_MUTEX_MIDIOUT_Give(); }
+
+
 // optional for Francois' 4 * 20x2 LCD configuration
 // currently this option cannot be enabled in the MBSEQ_HW.V4 file - this will be possible later
 #if 0

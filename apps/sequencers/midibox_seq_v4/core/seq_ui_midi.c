@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <blm_scalar_master.h>
 #include "tasks.h"
 
 #include "seq_lcd.h"
@@ -636,12 +637,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0; // no change
 
     case ITEM_BLM_SCALAR_PORT: {
-      u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_blm_port);
+      u8 port_ix = SEQ_MIDI_PORT_InIxGet(BLM_SCALAR_MASTER_MIDI_PortGet(0));
       if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1, incrementer) >= 0 ) {
-	seq_blm_port = SEQ_MIDI_PORT_InPortGet(port_ix);
+	BLM_SCALAR_MASTER_MIDI_PortSet(0, SEQ_MIDI_PORT_InPortGet(port_ix));
 	MUTEX_MIDIOUT_TAKE;
-	seq_blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
-	SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
+	BLM_SCALAR_MASTER_TimeoutCtrSet(0, 0); // fake timeout (so that "BLM not found" message will be displayed)
+	BLM_SCALAR_MASTER_SendRequest(0, 0x00); // request layout from BLM_SCALAR
 	MUTEX_MIDIOUT_GIVE;
 	ui_store_file_required = 1;
 	return 1; // value changed
@@ -1073,13 +1074,14 @@ static s32 LCD_Handler(u8 high_prio)
       if( ui_selected_item == ITEM_BLM_SCALAR_PORT && ui_cursor_flash ) {
 	SEQ_LCD_PrintSpaces(4);
       } else {
-	if( !seq_blm_port )
+	mios32_midi_port_t blm_port = BLM_SCALAR_MASTER_MIDI_PortGet(0);
+	if( !blm_port )
 	  SEQ_LCD_PrintString(" off");
 	else
-	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(seq_blm_port)));
+	  SEQ_LCD_PrintString(SEQ_MIDI_PORT_InNameGet(SEQ_MIDI_PORT_InIxGet(blm_port)));
       }
 
-      SEQ_LCD_PrintString(seq_blm_timeout_ctr ? " (found)  " : "          ");
+      SEQ_LCD_PrintString(BLM_SCALAR_MASTER_TimeoutCtrGet(0) ? " (found)  " : "          ");
 
       // free for new parameters
       SEQ_LCD_PrintSpaces(12);

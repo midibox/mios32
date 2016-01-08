@@ -28,6 +28,7 @@
 #include <blm_cheapo.h>
 #endif
 #include <blm_x.h>
+#include <blm_scalar_master.h>
 
 #include "tasks.h"
 
@@ -199,8 +200,8 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
     SEQ_MIDI_ROUTER_Receive(port, p);
 #endif
   } else {
-    if( port == seq_blm_port ) {
-      SEQ_BLM_MIDI_Receive(port, midi_package);
+    if( port == BLM_SCALAR_MASTER_MIDI_PortGet(0) ) {
+      BLM_SCALAR_MASTER_MIDI_Receive(port, midi_package);
     } else {
       // returns > 0 if byte has been used for remote function
       if( SEQ_UI_REMOTE_MIDI_Receive(port, midi_package) < 1 ) {
@@ -226,7 +227,7 @@ s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
   SEQ_MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
   // forward event to BLM as well
-  SEQ_BLM_SYSEX_Parser(port, midi_in);
+  BLM_SCALAR_MASTER_SYSEX_Parser(port, midi_in);
 
   // forward to common SysEx handler
   SEQ_MIDI_SYSEX_Parser(port, midi_in);
@@ -547,12 +548,6 @@ void SEQ_TASK_Period1S(void)
       return;
   }
 
-  // BLM timeout counter
-  MIOS32_IRQ_Disable();
-  if( seq_blm_timeout_ctr )
-    --seq_blm_timeout_ctr;
-  MIOS32_IRQ_Enable();
-
   // check if SD Card connected
   MUTEX_SDCARD_TAKE;
 
@@ -741,9 +736,7 @@ void SEQ_TASK_Period1S(void)
   // load content of SD card if requested ((re-)connection detected)
   if( load_sd_content && !SEQ_FILE_FormattingRequired() ) {
     // send layout request to MBHP_BLM_SCALAR
-    MUTEX_MIDIOUT_TAKE;
-    SEQ_BLM_SYSEX_SendRequest(0x00);
-    MUTEX_MIDIOUT_GIVE;
+    BLM_SCALAR_MASTER_SendRequest(0, 0x00);
 
     // TODO: should we load the patterns when SD Card has been detected?
     // disadvantage: current edit patterns are destroyed - this could be fatal during a live session if there is a bad contact!
@@ -817,6 +810,9 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port)
 {  
   // forward to SysEx parser
   SEQ_MIDI_SYSEX_TimeOut(port);
+
+  // forward timeout to BLM MASTER
+  BLM_SCALAR_MASTER_MIDI_TimeOut(port);
 
 #ifndef MBSEQV4L
   // print message on screen

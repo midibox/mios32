@@ -122,6 +122,9 @@ include $(MIOS32_PATH)/modules/blm_cheapo/blm_cheapo.mk
 # BLM_X
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
+# BLM_SCALAR_MASTER
+include $(MIOS32_PATH)/modules/blm_scalar_master/blm_scalar_master.mk
+
 # MIDI file Player
 include $(MIOS32_PATH)/modules/midifile/midifile.mk
 

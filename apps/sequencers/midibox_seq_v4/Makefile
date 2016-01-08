@@ -158,6 +158,9 @@ include $(MIOS32_PATH)/modules/blm/blm.mk
 # BLM_X
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
+# BLM_SCALAR_MASTER
+include $(MIOS32_PATH)/modules/blm_scalar_master/blm_scalar_master.mk
+
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk
 

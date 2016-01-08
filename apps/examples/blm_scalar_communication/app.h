@@ -1,67 +1,49 @@
 // $Id$
 /*
- * Header file for MBHP_BLM_SCALAR routines
+ * Header file of application
  *
  * ==========================================================================
  *
- *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Copyright (C) <year> <your name> (<your email address>)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
  * ==========================================================================
  */
 
-#ifndef _SEQ_BLM_H
-#define _SEQ_BLM_H
+#ifndef _APP_H
+#define _APP_H
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
 
-// BLM faders
-#define SEQ_BLM_NUM_FADERS 8
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
-
-typedef union {
-  u8 ALL;
-  struct {
-    u8 ALWAYS_USE_FTS:1;  // Force-to-Scale always used independent from the Track Mode selection
-    u8 SWAP_KEYBOARD_COLOURS:1;  // swap LED colours in keyboard display
-  };
-} seq_blm_options_t;
-
-
-typedef union {
-  u32 ALL;
-  struct {
-    u8 port;
-    u8 chn;
-    u16 send_function;
-  };
-} seq_blm_fader_t;
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_BLM_Init(u32 mode);
-
-extern s32 SEQ_BLM_LED_Update(void);
+extern void APP_Init(void);
+extern void APP_Background(void);
+extern void APP_Tick(void);
+extern void APP_MIDI_Tick(void);
+extern void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package);
+extern void APP_SRIO_ServicePrepare(void);
+extern void APP_SRIO_ServiceFinish(void);
+extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
+extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
+extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
-extern mios32_midi_port_t seq_blm_port;
-extern u8 seq_blm_timeout_ctr;
-extern seq_blm_options_t seq_blm_options;
-extern seq_blm_fader_t seq_blm_fader[SEQ_BLM_NUM_FADERS];
 
-#endif /* _SEQ_MIDI_BLM_H */
+#endif /* _APP_H */

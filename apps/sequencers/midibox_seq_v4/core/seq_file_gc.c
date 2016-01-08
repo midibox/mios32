@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include <osc_client.h>
+#include <blm_scalar_master.h>
 
 #include "file.h"
 #include "seq_file.h"
@@ -308,7 +309,9 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "MultiPortEnableFlags") == 0 ) {
 	    seq_midi_port_multi_enable_flags = value;
 	  } else if( strcmp(parameter, "UiRestoreTrackSelections") == 0 ) {
+#ifndef MBSEQV4L
 	    seq_ui_options.RESTORE_TRACK_SELECTIONS = value;
+#endif
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
 	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
@@ -374,12 +377,10 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "TpdMode") == 0 ) {
 	    SEQ_TPD_ModeSet(value);
 	  } else if( strcmp(parameter, "BLM_SCALAR_Port") == 0 ) {
-	    seq_blm_port = value;
+	    BLM_SCALAR_MASTER_MIDI_PortSet(0, value);
 
-	    MUTEX_MIDIOUT_TAKE;
-	    SEQ_BLM_SYSEX_SendRequest(0x00); // request layout from BLM_SCALAR
-	    MUTEX_MIDIOUT_GIVE;
-	    seq_blm_timeout_ctr = 0; // fake timeout (so that "BLM not found" message will be displayed)
+	    BLM_SCALAR_MASTER_TimeoutCtrSet(0, 0); // fake timeout (so that "BLM not found" message will be displayed)
+	    BLM_SCALAR_MASTER_SendRequest(0, 0x00); // request layout from BLM_SCALAR
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 	  } else if( strcmp(parameter, "BLM_SCALAR_AlwaysUseFts") == 0 ) {
@@ -526,8 +527,10 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MultiPortEnableFlags 0x%06x\n", seq_midi_port_multi_enable_flags);
   FLUSH_BUFFER;
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "UiRestoreTrackSelections %d\n", seq_ui_options.RESTORE_TRACK_SELECTIONS);
   FLUSH_BUFFER;
+#endif
 
   sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_midi_sysex_remote_mode);
   FLUSH_BUFFER;
@@ -564,7 +567,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)seq_blm_port);
+  sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)BLM_SCALAR_MASTER_MIDI_PortGet(0));
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BLM_SCALAR_AlwaysUseFts %d\n", (u8)seq_blm_options.ALWAYS_USE_FTS);

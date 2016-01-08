@@ -21,6 +21,7 @@
 #include <blm_x.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
+#include <blm_scalar_master.h>
 
 #include "tasks.h"
 #include "seq_ui.h"
@@ -3061,7 +3062,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
       // Prepare Green LEDs (triggers)
       // re-used from BLM_SCALAR code
-      u16 green_pattern = SEQ_BLM_PatternGreenGet(track);
+      u16 green_pattern = blm_scalar_master_leds_green[track];
 
       // Red LEDs (position marker)
       if( seq_hwcfg_blm.dout_duocolour ) {
