@@ -153,21 +153,17 @@ static seq_lcd_charset_t seq_lcd_current_charset = SEQ_LCD_CHARSET_None;
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_Init(u32 mode)
 {
-#if 0
-  // obsolete
-  // now done in main.c
-
   u8 dev;
 
-  // first LCD already initialized
-  for(dev=1; dev<LCD_NUM_DEVICES; ++dev) {
+  // first two LCDs already initialized in main.c
+  // for the case that more than two LCDs have been configured:
+  for(dev=2; dev<LCD_NUM_DEVICES; ++dev) {
     MIOS32_LCD_DeviceSet(dev);
     MIOS32_LCD_Init(0);
   }
 
   // switch back to first LCD
   MIOS32_LCD_DeviceSet(0);
-#endif
 
   return 0; // no error
 }
