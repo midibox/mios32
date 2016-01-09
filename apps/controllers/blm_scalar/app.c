@@ -371,11 +371,14 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
   // a pot has been moved, send modulation CC#1
   if( pin < 16 ) {
+    // convert 12bit value to 7bit value
+    u8 value_7bit = pin_value >> 5;
+
 #if 0
-    MIOS32_MIDI_SendCC(DEFAULT, pin, 0x01, pin_value);
+    MIOS32_MIDI_SendCC(DEFAULT, pin, 0x01, value_7bit);
 #else
-    MIOS32_MIDI_SendCC(USB0, pin, 0x01, pin_value);
-    MIOS32_MIDI_SendCC(UART0, pin, 0x01, pin_value);
+    MIOS32_MIDI_SendCC(USB0, pin, 0x01, value_7bit);
+    MIOS32_MIDI_SendCC(UART0, pin, 0x01, value_7bit);
 #endif
   }
 }
