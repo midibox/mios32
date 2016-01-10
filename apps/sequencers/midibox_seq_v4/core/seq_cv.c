@@ -83,8 +83,9 @@ s32 SEQ_CV_Init(u32 mode)
 #elif defined(MIOS32_FAMILY_STM32F4xx)
   for(i=6; i<7; ++i)
     MIOS32_BOARD_J5_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
-  for(i=8; i<16; ++i)
-    MIOS32_BOARD_J10_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
+  // potential conflict with LCD driver, keep these pins in current state
+  //for(i=8; i<16; ++i)
+  //  MIOS32_BOARD_J10_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
 #elif defined(MIOS32_FAMILY_LPC17xx)
   for(i=0; i<4; ++i)
     MIOS32_BOARD_J28_PinInit(i, MIOS32_BOARD_PIN_MODE_INPUT_PD);
@@ -400,27 +401,31 @@ s32 SEQ_CV_Update(void)
   if( start_stop != last_start_stop ) {
     last_start_stop = start_stop;
 
+    if( seq_hwcfg_j5_enabled ) {
 #if defined(MIOS32_FAMILY_STM32F10x)
-    MIOS32_BOARD_J5_PinSet(9, start_stop);
+      MIOS32_BOARD_J5_PinSet(9, start_stop);
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-    MIOS32_BOARD_J10_PinSet(9, start_stop);
+      MIOS32_BOARD_J10_PinSet(9, start_stop);
 #elif defined(MIOS32_FAMILY_LPC17xx)
-    MIOS32_BOARD_J28_PinSet(1, start_stop);
+      MIOS32_BOARD_J28_PinSet(1, start_stop);
+#else
+# warning "please adapt for this MIOS32_FAMILY"
+#endif
+    }
+  }
+
+  if( seq_hwcfg_j5_enabled ) {
+  // DIN Sync Pulse at J5C.A8
+#if defined(MIOS32_FAMILY_STM32F10x)
+    MIOS32_BOARD_J5_PinSet(8, (clk_sr_value & 1));
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+    MIOS32_BOARD_J10_PinSet(8, (clk_sr_value & 1));
+#elif defined(MIOS32_FAMILY_LPC17xx)
+    MIOS32_BOARD_J28_PinSet(0, (clk_sr_value & 1));
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
   }
-
-  // DIN Sync Pulse at J5C.A8
-#if defined(MIOS32_FAMILY_STM32F10x)
-  MIOS32_BOARD_J5_PinSet(8, (clk_sr_value & 1));
-#elif defined(MIOS32_FAMILY_STM32F4xx)
-  MIOS32_BOARD_J10_PinSet(8, (clk_sr_value & 1));
-#elif defined(MIOS32_FAMILY_LPC17xx)
-  MIOS32_BOARD_J28_PinSet(0, (clk_sr_value & 1));
-#else
-# warning "please adapt for this MIOS32_FAMILY"
-#endif
 
   // update J5 Outputs (forwarding AOUT digital pins for modules which don't support gates)
   // The MIOS32_BOARD_* function won't forward pin states if J5_ENABLED was set to 0
@@ -433,49 +438,51 @@ s32 SEQ_CV_Update(void)
     if( seq_hwcfg_cv_gate_sr[0] )
       MIOS32_DOUT_SRSet(seq_hwcfg_cv_gate_sr[0]-1, new_gates);
 
+    if( seq_hwcfg_j5_enabled ) {
 #ifndef MBSEQV4L
-    // MBSEQV4L: allocated by BLM_CHEAPO driver
-    int i;
-    u8 tmp = new_gates;
-    for(i=0; i<6; ++i) {
-      MIOS32_BOARD_J5_PinSet(i, tmp & 1);
-      tmp >>= 1;
-    }
+      // MBSEQV4L: allocated by BLM_CHEAPO driver
+      int i;
+      u8 tmp = new_gates;
+      for(i=0; i<6; ++i) {
+	MIOS32_BOARD_J5_PinSet(i, tmp & 1);
+	tmp >>= 1;
+      }
 #endif
 
 #if MIRROR_J5_A0_AT_J18 && defined(MIOS32_FAMILY_LPC17xx)
-    MIOS32_SYS_LPC_PINSET(0, 4, (new_gates & 1));
+      MIOS32_SYS_LPC_PINSET(0, 4, (new_gates & 1));
 #endif
 
 #if defined(MIOS32_FAMILY_STM32F10x)
 #ifndef MBSEQV4L
-    // J5B.A6 and J5B.A7 allocated by MIDI OUT3
-    // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
-    // MBSEQV4L: use shift register gates!
-    MIOS32_BOARD_J5_PinSet(10, (new_gates & 0x40) ? 1 : 0);
-    MIOS32_BOARD_J5_PinSet(11, (new_gates & 0x80) ? 1 : 0);
+      // J5B.A6 and J5B.A7 allocated by MIDI OUT3
+      // therefore Gate 7 and 8 are routed to J5C.A10 and J5C.A11
+      // MBSEQV4L: use shift register gates!
+      MIOS32_BOARD_J5_PinSet(10, (new_gates & 0x40) ? 1 : 0);
+      MIOS32_BOARD_J5_PinSet(11, (new_gates & 0x80) ? 1 : 0);
 #endif
 #elif defined(MIOS32_FAMILY_STM32F4xx)
 #ifndef MBSEQV4L
-    // no special routing required for STM32F4
-    // MBSEQV4L: use shift register gates!
-    MIOS32_BOARD_J5_PinSet(6, (new_gates & 0x40) ? 1 : 0);
-    MIOS32_BOARD_J5_PinSet(7, (new_gates & 0x80) ? 1 : 0);
+      // no special routing required for STM32F4
+      // MBSEQV4L: use shift register gates!
+      MIOS32_BOARD_J5_PinSet(6, (new_gates & 0x40) ? 1 : 0);
+      MIOS32_BOARD_J5_PinSet(7, (new_gates & 0x80) ? 1 : 0);
 #endif
 #elif defined(MIOS32_FAMILY_LPC17xx)
 #ifndef MBSEQV4L
-    // J5B.A6 and J5B.A7 allocated by MIDI OUT3
-    // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
-    MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x40) ? 1 : 0);
-    MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x80) ? 1 : 0);
+      // J5B.A6 and J5B.A7 allocated by MIDI OUT3
+      // therefore Gate 7 and 8 are routed to J28.WS and J28.MCLK
+      MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x40) ? 1 : 0);
+      MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x80) ? 1 : 0);
 #else
-    // MBSEQV4L: Gate 1 and 2 are routed to J28.WS and J28.MCLK
-    MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x01) ? 1 : 0);
-    MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x02) ? 1 : 0);
+      // MBSEQV4L: Gate 1 and 2 are routed to J28.WS and J28.MCLK
+      MIOS32_BOARD_J28_PinSet(2, (new_gates & 0x01) ? 1 : 0);
+      MIOS32_BOARD_J28_PinSet(3, (new_gates & 0x02) ? 1 : 0);
 #endif
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
+    }
   }
 
   // update AOUTs

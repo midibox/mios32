@@ -482,6 +482,7 @@ u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
 u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 u8 seq_hwcfg_clk_sr = 0;
+u8 seq_hwcfg_j5_enabled = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
