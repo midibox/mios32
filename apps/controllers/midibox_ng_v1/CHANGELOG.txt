@@ -1,5 +1,13 @@
 $Id$
 
+MIDIbox NG V1.035
+~~~~~~~~~~~~~~~~~
+
+   o Support for secure keyboard handling if patch is switched: keep original
+     MIDI port, note, channel when playing Note Off
+     (this feature is not supported for LPC17 due to high memory consumption)
+
+
 MIDIbox NG V1.034
 ~~~~~~~~~~~~~~~~~
 

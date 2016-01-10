@@ -19,14 +19,39 @@
 
 #include <keyboard.h>
 #include "app.h"
+#include "tasks.h"
 #include "mbng_kb.h"
 #include "mbng_event.h"
 #include "mbng_patch.h"
 
 
+#if defined(MIOS32_FAMILY_LPC17xx)
+// not enough memory
+# define SUPPORT_SECURE_NOTE_OFF_HANDLING 0
+#else
+# define SUPPORT_SECURE_NOTE_OFF_HANDLING 1
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+//! local types
+/////////////////////////////////////////////////////////////////////////////
+
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
+typedef struct {
+  u16 midi_ports;
+  u8 chn;
+  u8 note;
+} kb_played_note_t;
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 //! local variables
 /////////////////////////////////////////////////////////////////////////////
+
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
+static kb_played_note_t kb_played_note[KEYBOARD_NUM][KEYBOARD_MAX_KEYS];
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -37,7 +62,26 @@ s32 MBNG_KB_Init(u32 mode)
   if( mode != 0 )
     return -1; // only mode 0 supported
 
+  // NOTE: kb_played_note isn't initialized by intention!
+  // to ensure that NoteOff will be played on patch changes
+
+  u8 any_key_was_played = 0;
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
   {
+    int kb, key;
+    for(kb=0; kb<KEYBOARD_NUM; ++kb) {
+      kb_played_note_t *kbn = (kb_played_note_t *)&kb_played_note[kb][0];
+      for(key=0; key<KEYBOARD_MAX_KEYS; ++key, ++kbn) {
+	if( kbn->midi_ports ) {
+	  any_key_was_played = 1;
+	  break;
+	}
+      }
+    }
+  }
+#endif
+
+  if( !any_key_was_played ) {
     KEYBOARD_Init(0);
 
     // disable keyboard SR assignments by default
@@ -96,56 +140,97 @@ s32 MBNG_KB_NotifyToggle(u8 kb, u8 note_number, u8 velocity)
       MBNG_EVENT_ItemPrint(&item, 0);
     }
 
-    // transpose
-    s8 kb_transpose = (s8)item.custom_flags.KB.kb_transpose;
-    int note = note_number + kb_transpose;
-    if( item.stream_size >= 2 ) {
-      if( note < 0 )
-	note = 0;
-      else if( note > 127 )
-	note = 127;
-    }
+    // for Note Off handling
+    u8 new_note = 1;
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
+    // play original key over original port/chn
+    if( !velocity && kb < KEYBOARD_NUM && note_number < KEYBOARD_MAX_KEYS ) {
+      kb_played_note_t *kbn = (kb_played_note_t *)&kb_played_note[kb][note_number];
 
-    // velocity map
-    if( item.custom_flags.KB.kb_velocity_map ) {
-      s32 mapped_velocity;
-      if( (mapped_velocity=MBNG_EVENT_MapValue(item.custom_flags.KB.kb_velocity_map, velocity, 0, 0)) >= 0 ) {
-	velocity = mapped_velocity;
-      }
-    }
+      if( kbn->midi_ports ) {
+	new_note = 0;
 
-    if( item.flags.use_key_or_cc ) {
-      // for keyboard zones
-      if( note_number < item.min || note_number > item.max )
-	continue;
+	item.enabled_ports = kbn->midi_ports;
+	item.stream[0] = (item.stream[0] & 0xf0) | (kbn->chn & 0x0f);
 
-      item.value = note;
-      item.secondary_value = velocity;
-    } else {
-      item.stream[1] = note;
+	if( item.flags.use_key_or_cc ) {
+	  // for keyboard zones
+	  if( note_number < item.min || note_number > item.max )
+	    continue;
 
-      if( velocity == 0 ) { // we should always send Note-Off on velocity==0
-	item.value = 0;
-      } else {
-	// scale 7bit value between min/max with fixed point artithmetic
-	int value = velocity;
-
-	s32 mapped_value;
-	if( (mapped_value=MBNG_EVENT_MapValue(item.map, value, 0, 0)) >= 0 ) {
-	  value = mapped_value;
+	  item.value = kbn->note;
+	  item.secondary_value = 0;
 	} else {
-	  s16 min = item.min;
-	  s16 max = item.max;
-
-	  if( min <= max ) {
-	    value = min + (((256*value)/128) * (max-min+1) / 256);
-	  } else {
-	    value = min - (((256*value)/128) * (min-max+1) / 256);
-	  }
+	  item.stream[1] = kbn->note;
+	  item.value = 0;
 	}
-
-	item.value = value;
       }
+    }
+#endif
+    
+    if( new_note ) {
+      // transpose
+      s8 kb_transpose = (s8)item.custom_flags.KB.kb_transpose;
+      int note = note_number + kb_transpose;
+      if( item.stream_size >= 2 ) {
+	if( note < 0 )
+	  note = 0;
+	else if( note > 127 )
+	  note = 127;
+      }
+
+      // velocity map
+      if( item.custom_flags.KB.kb_velocity_map ) {
+	s32 mapped_velocity;
+	if( (mapped_velocity=MBNG_EVENT_MapValue(item.custom_flags.KB.kb_velocity_map, velocity, 0, 0)) >= 0 ) {
+	  velocity = mapped_velocity;
+	}
+      }
+
+      if( item.flags.use_key_or_cc ) {
+	// for keyboard zones
+	if( note_number < item.min || note_number > item.max )
+	  continue;
+	
+	item.value = note;
+	item.secondary_value = velocity;
+      } else {
+	item.stream[1] = note;
+
+	if( velocity == 0 ) { // we should always send Note-Off on velocity==0
+	  item.value = 0;
+	} else {
+	  // scale 7bit value between min/max with fixed point artithmetic
+	  int value = velocity;
+
+	  s32 mapped_value;
+	  if( (mapped_value=MBNG_EVENT_MapValue(item.map, value, 0, 0)) >= 0 ) {
+	    velocity = mapped_value;
+	  } else {
+	    s16 min = item.min;
+	    s16 max = item.max;
+
+	    if( min <= max ) {
+	      velocity = min + (((256*velocity)/128) * (max-min+1) / 256);
+	    } else {
+	      velocity = min - (((256*velocity)/128) * (min-max+1) / 256);
+	    }
+	  }
+
+	  item.value = velocity;
+	}
+      }
+
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
+      // store original key/port/chn
+      if( velocity && kb < KEYBOARD_NUM && note_number < KEYBOARD_MAX_KEYS ) {
+	kb_played_note_t *kbn = (kb_played_note_t *)&kb_played_note[kb][note_number];
+
+	kbn->midi_ports = item.enabled_ports;
+	kbn->chn = item.stream[0] & 0x0f;
+	kbn->note = note;
+      }
+#endif
     }
 
     if( MBNG_EVENT_NotifySendValue(&item) == 2 )
@@ -186,6 +271,45 @@ s32 MBNG_KB_BreakIsMakeSet(u8 kb, u8 value)
   kc->break_is_make = value ? 1 : 0;
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Play Off Events
+//! Returns number of played keys
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_KB_AllNotesOff(u8 kb)
+{
+  s32 num_played_keys = 0;
+
+  if( kb >= KEYBOARD_NUM )
+    return -1; // invalid keyboard
+
+#if SUPPORT_SECURE_NOTE_OFF_HANDLING
+  int key;
+  kb_played_note_t *kbn = (kb_played_note_t *)&kb_played_note[kb][0];
+  for(key=0; key<KEYBOARD_MAX_KEYS; ++key, ++kbn) {
+    if( kbn->midi_ports ) {
+      ++num_played_keys;
+
+      int i;
+      u32 mask = 1;
+      for(i=0; i<16; ++i, mask <<= 1) {
+	if( kbn->midi_ports & mask ) {
+	  // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
+	  mios32_midi_port_t port = USB0 + ((i&0x1c) << 2) + (i&3);
+	  MUTEX_MIDIOUT_TAKE;
+	  MIOS32_MIDI_SendNoteOn(port, kbn->chn, kbn->note, 0);
+	  MUTEX_MIDIOUT_GIVE;
+	}
+      }
+
+      kbn->midi_ports = 0; // don't play NoteOff again
+    }
+  }
+#endif
+
+  return num_played_keys;
 }
 
 //! \}
