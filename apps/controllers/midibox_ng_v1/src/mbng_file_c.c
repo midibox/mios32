@@ -2485,7 +2485,8 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
   }
 
   if( num >= 1 ) {
-    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[num-1];
+    u8 kb = num-1;
+    keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[kb];
 
     // note: we re-initialize only if the HW configuration has been changed
     // this allows to keep the key states over patch changes
@@ -2503,6 +2504,10 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
 	kc->note_offset != note_offset ) {
       // (no need to check for delay values
 
+      // send OFF events for played notes
+      MBNG_KB_AllNotesOff(kb);
+
+      // reconfigure keyboard
       kc->num_rows = rows;
       kc->dout_sr1 = dout_sr1;
       kc->dout_sr2 = dout_sr2;
