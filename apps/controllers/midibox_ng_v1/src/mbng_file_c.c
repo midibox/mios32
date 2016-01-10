@@ -2486,23 +2486,41 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
 
   if( num >= 1 ) {
     keyboard_config_t *kc = (keyboard_config_t *)&keyboard_config[num-1];
-    kc->num_rows = rows;
-    kc->dout_sr1 = dout_sr1;
-    kc->dout_sr2 = dout_sr2;
-    kc->din_sr1 = din_sr1;
-    kc->din_sr2 = din_sr2;
-    kc->din_inverted = din_inverted;
-    kc->break_inverted = break_inverted;
-    kc->make_debounced = make_debounced;
-    kc->din_key_offset = din_key_offset;
-    kc->scan_velocity = scan_velocity;
-    kc->scan_optimized = scan_optimized;
-    kc->note_offset = note_offset;
-    kc->delay_fastest = delay_fastest;
-    kc->delay_fastest_black_keys = delay_fastest_black_keys;
-    kc->delay_slowest = delay_slowest;
 
-    KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+    // note: we re-initialize only if the HW configuration has been changed
+    // this allows to keep the key states over patch changes
+    if( kc->num_rows != rows ||
+	kc->dout_sr1 != dout_sr1 ||
+	kc->dout_sr2 != dout_sr2 ||
+	kc->din_sr1 != din_sr1 ||
+	kc->din_sr2 != din_sr2 ||
+	kc->din_inverted != din_inverted ||
+	kc->break_inverted != break_inverted ||
+	kc->make_debounced != make_debounced ||
+	kc->din_key_offset != din_key_offset ||
+	kc->scan_velocity != scan_velocity ||
+	kc->scan_optimized != scan_optimized ||
+	kc->note_offset != note_offset ) {
+      // (no need to check for delay values
+
+      kc->num_rows = rows;
+      kc->dout_sr1 = dout_sr1;
+      kc->dout_sr2 = dout_sr2;
+      kc->din_sr1 = din_sr1;
+      kc->din_sr2 = din_sr2;
+      kc->din_inverted = din_inverted;
+      kc->break_inverted = break_inverted;
+      kc->make_debounced = make_debounced;
+      kc->din_key_offset = din_key_offset;
+      kc->scan_velocity = scan_velocity;
+      kc->scan_optimized = scan_optimized;
+      kc->note_offset = note_offset;
+      kc->delay_fastest = delay_fastest;
+      kc->delay_fastest_black_keys = delay_fastest_black_keys;
+      kc->delay_slowest = delay_slowest;
+
+      KEYBOARD_Init(1); // re-init runtime variables, don't touch configuration
+    }
   }
 
   return 0; // no error
