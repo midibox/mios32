@@ -1337,44 +1337,49 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  int i;
-	  mios32_board_pin_mode_t pin_mode = MIOS32_BOARD_PIN_MODE_INPUT_PD;
-	  if( j5_enabled == 1 )
-	    pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_PP;
-	  if( j5_enabled == 2 )
-	    pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_OD;
+	  // copy to global variable (used in seq_cv)
+	  seq_hwcfg_j5_enabled = j5_enabled;
 
-	  for(i=0; i<6; ++i) {
-	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
-	    MIOS32_BOARD_J5_PinSet(i, 0);
-	  }
+	  if( j5_enabled ) {
+	    int i;
+	    mios32_board_pin_mode_t pin_mode = MIOS32_BOARD_PIN_MODE_INPUT_PD;
+	    if( j5_enabled == 1 )
+	      pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_PP;
+	    if( j5_enabled == 2 )
+	      pin_mode = MIOS32_BOARD_PIN_MODE_OUTPUT_OD;
+
+	    for(i=0; i<6; ++i) {
+	      MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	      MIOS32_BOARD_J5_PinSet(i, 0);
+	    }
 
 #if defined(MIOS32_FAMILY_STM32F10x)
-	  // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
-	  for(i=8; i<12; ++i) {
-	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
-	    MIOS32_BOARD_J5_PinSet(i, 0);
-	  }
+	    // pin J5.A6 and J5.A7 used for UART2 (-> MIDI OUT3)
+	    for(i=8; i<12; ++i) {
+	      MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	      MIOS32_BOARD_J5_PinSet(i, 0);
+	    }
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-	  // pin J5.A6 and J5.A7 used as gates
-	  for(i=6; i<8; ++i) {
-	    MIOS32_BOARD_J5_PinInit(i, pin_mode);
-	    MIOS32_BOARD_J5_PinSet(i, 0);
-	  }
-	  // and J10B for additional outputs
-	  for(i=8; i<16; ++i) {
-	    MIOS32_BOARD_J10_PinInit(i, pin_mode);
-	    MIOS32_BOARD_J10_PinSet(i, 0);
-	  }
+	    // pin J5.A6 and J5.A7 used as gates
+	    for(i=6; i<8; ++i) {
+	      MIOS32_BOARD_J5_PinInit(i, pin_mode);
+	      MIOS32_BOARD_J5_PinSet(i, 0);
+	    }
+	    // and J10B for additional outputs
+	    for(i=8; i<16; ++i) {
+	      MIOS32_BOARD_J10_PinInit(i, pin_mode);
+	      MIOS32_BOARD_J10_PinSet(i, 0);
+	    }
 #elif defined(MIOS32_FAMILY_LPC17xx)
-	  // and pin J28 for additional outputs
-	  for(i=0; i<4; ++i) {
-	    MIOS32_BOARD_J28_PinInit(i, pin_mode);
-	    MIOS32_BOARD_J28_PinSet(i, 0);
-	  }
+	    // and pin J28 for additional outputs
+	    for(i=0; i<4; ++i) {
+	      MIOS32_BOARD_J28_PinInit(i, pin_mode);
+	      MIOS32_BOARD_J28_PinSet(i, 0);
+	    }
 #else
 # warning "please adapt for this MIOS32_FAMILY"
 #endif
+	  }
 
 	} else if( strcasecmp(parameter, "DIN_SYNC_CLK_PULSEWIDTH") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4 now!
