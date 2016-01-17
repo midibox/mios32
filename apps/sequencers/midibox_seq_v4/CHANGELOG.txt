@@ -2231,6 +2231,12 @@ http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&com
 Parameter Layer display: show CC#<number> for CC layers
 http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172944
 ----------------------------------------------------------
+Allow to define number of displayed steps:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173142
+----------------------------------------------------------
+Additional chord tables:
+http://midibox.org/forums/topic/19886-extended-chords-dominants-tensions/?do=findComment&comment=173161
+----------------------------------------------------------
 
 
 
