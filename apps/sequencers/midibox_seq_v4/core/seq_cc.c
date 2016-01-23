@@ -460,7 +460,8 @@ s32 SEQ_CC_LinkUpdate(u8 track)
     for(layer=num_layers-1; layer>=0; --layer) {
       switch( (seq_par_layer_type_t)par_asg[layer] ) {
         case SEQ_PAR_Type_Note: tcc->link_par_layer_note = layer; break;
-        case SEQ_PAR_Type_Chord: tcc->link_par_layer_chord = layer; break;
+        case SEQ_PAR_Type_Chord1: tcc->link_par_layer_chord = layer; break;
+        case SEQ_PAR_Type_Chord2: tcc->link_par_layer_chord = layer; break;
         case SEQ_PAR_Type_Velocity: tcc->link_par_layer_velocity = layer; break;
         case SEQ_PAR_Type_Length: tcc->link_par_layer_length = layer; break;
         case SEQ_PAR_Type_Probability: tcc->link_par_layer_probability = layer; break;

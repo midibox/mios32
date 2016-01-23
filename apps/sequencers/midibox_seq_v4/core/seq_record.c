@@ -422,7 +422,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
 	    int par_layer;
 	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
-	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord1 || *layer_type_ptr == SEQ_PAR_Type_Chord2 ) {
 		u8 note = SEQ_PAR_Get(track, ui_selected_step, par_layer, instrument);
 		SEQ_PAR_Set(track, len_step, par_layer, instrument, note);
 	      }
@@ -453,7 +453,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    int par_layer;
 	    u8 instrument = 0;
 	    for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
-	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord )
+	      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord1 || *layer_type_ptr == SEQ_PAR_Type_Chord2 )
 		SEQ_PAR_Set(track, ui_selected_step, par_layer, instrument, 0x00);
 	    }
 	  }
@@ -733,7 +733,7 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       u8 *layer_type_ptr = (u8 *)&tcc->lay_const[0*16];
       int par_layer;
       for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
-	if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord ) {
+	if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord1 || *layer_type_ptr == SEQ_PAR_Type_Chord2 ) {
 	  u8 note = SEQ_PAR_Get(track, prev_step, par_layer, instrument);
 	  SEQ_PAR_Set(track, new_step, par_layer, instrument, note);
 	}

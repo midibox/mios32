@@ -684,7 +684,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	    
 	  case ITEM_LAYER_CONTROL: {
 	    // Layer Control selection now has to be confirmed with GP button
-	    return SEQ_UI_Var8_Inc(&edit_layer_type, 0, SEQ_PAR_NUM_TYPES-1, incrementer);
+	    u8 value = SEQ_PAR_MappedTypeGet(edit_layer_type);
+	    if( SEQ_UI_Var8_Inc(&value, 0, SEQ_PAR_NUM_TYPES-1, incrementer) > 0 ) {
+	      edit_layer_type = SEQ_PAR_UnMappedTypeGet(value);
+	      return 1;
+	    }
+	    return 0;
 	  } break;
 	}
       }

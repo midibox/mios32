@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.091
+~~~~~~~~~~~~~~~~~
+
+   o new parameter type "Chord2" provides an alternative set of 32 chords
+
+
 MIDIboxSEQ V4.090
 ~~~~~~~~~~~~~~~~~
 
@@ -2233,9 +2239,6 @@ http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&com
 ----------------------------------------------------------
 Allow to define number of displayed steps:
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173142
-----------------------------------------------------------
-Additional chord tables:
-http://midibox.org/forums/topic/19886-extended-chords-dominants-tensions/?do=findComment&comment=173161
 ----------------------------------------------------------
 
 
