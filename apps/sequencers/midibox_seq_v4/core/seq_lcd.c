@@ -689,7 +689,7 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
 
   // TODO: tmp. solution to print chord velocity correctly
   if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
-    layer_type = SEQ_PAR_Type_Chord;
+    layer_type = SEQ_PAR_Type_Chord1;
 
   switch( layer_type ) {
   case SEQ_PAR_Type_None:
@@ -713,7 +713,8 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
     }
   } break;
 
-  case SEQ_PAR_Type_Chord: {
+  case SEQ_PAR_Type_Chord1:
+  case SEQ_PAR_Type_Chord2: {
     if( par_value ) {
       u8 chord_ix = par_value & 0x1f;
       u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
@@ -782,7 +783,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   // TODO: tmp. solution to print chord velocity correctly
   if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
-    layer_type = SEQ_PAR_Type_Chord;
+    layer_type = SEQ_PAR_Type_Chord1;
 
   switch( layer_type ) {
   case SEQ_PAR_Type_None:
@@ -791,7 +792,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    if( seq_cc_trk[track].mode.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord ) {
+    if( seq_cc_trk[track].mode.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 ) {
       if( layer_event.midi_package.note ) {
 	u8 scale, root_selection, root;
 	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
@@ -829,9 +830,10 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     }
   } break;
 
-  case SEQ_PAR_Type_Chord: {
+  case SEQ_PAR_Type_Chord1:
+  case SEQ_PAR_Type_Chord2: {
     u8 par_value;
-    // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord
+    // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord[12]
     if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
       par_value = SEQ_PAR_ChordGet(track, step, instrument, 0x0000);
     else

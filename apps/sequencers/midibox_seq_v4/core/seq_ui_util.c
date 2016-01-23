@@ -663,7 +663,7 @@ static s32 PASTE_Track(u8 track)
       SEQ_CC_LinkUpdate(track);
 
       // some additional operations depending on parameter type
-      if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord ) {
+      if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 ) {
 	// set gates (don't clear already enabled gates)
 	u8 trg_gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
 	if( trg_gate_assignment >= 1 ) {

@@ -58,12 +58,31 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "PrgCh", // 11
   "Nth1 ", // 12
   "Nth2 ", // 13
+  "Chrd2", // 14
+};
+
+static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order for the UI selection
+  SEQ_PAR_Type_None,
+  SEQ_PAR_Type_Note,
+  SEQ_PAR_Type_Chord1,
+  SEQ_PAR_Type_Chord2,
+  SEQ_PAR_Type_Velocity,
+  SEQ_PAR_Type_Length,
+  SEQ_PAR_Type_CC,
+  SEQ_PAR_Type_PitchBend,
+  SEQ_PAR_Type_ProgramChange,
+  SEQ_PAR_Type_Probability,
+  SEQ_PAR_Type_Delay,
+  SEQ_PAR_Type_Roll,
+  SEQ_PAR_Type_Roll2,
+  SEQ_PAR_Type_Nth1,
+  SEQ_PAR_Type_Nth2,
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0x00, // None
   0x3c, // Note: C-3
-  0x40, // Chord: 0
+  0x40, // Chord1: A/2
   100,  // Velocity
   71,   // Length
   64,   // CC // NEW: overruled via seq_core_options.INIT_CC !!!
@@ -75,6 +94,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // PrgCh
   0,    // Nth1
   0,    // Nth2
+  0x40, // Chord2: A/2
 };
 
 
@@ -428,6 +448,28 @@ char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer)
   return SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(track, par_layer));
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// Returns mapped parameter type
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_PAR_MappedTypeGet(u8 par_type)
+{
+  int i;
+  u8 *seq_par_map_ptr = (u8 *)&seq_par_map[0];
+  for(i=0; i<SEQ_PAR_NUM_TYPES; ++i) {
+    if( *(seq_par_map_ptr++) == par_type )
+      return i;
+  }
+
+  return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Returns unmapped parameter type
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_PAR_UnMappedTypeGet(u8 mapped_par_type)
+{
+  return (mapped_par_type >= SEQ_PAR_NUM_TYPES) ? 0 : seq_par_map[mapped_par_type];
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns initial value of given parameter assignment type
@@ -437,7 +479,7 @@ u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer)
   if( par_type >= SEQ_PAR_NUM_TYPES )
     return 0;
 
-  if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord) )
+  if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2) )
     return 0x00; // Note/Chords are 0 by default if not in Layer A
 
   // new: variable init value

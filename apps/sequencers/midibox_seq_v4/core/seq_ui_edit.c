@@ -881,7 +881,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   // TODO: tmp. solution to print chord velocity correctly
   if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[visible_track].link_par_layer_chord == 0) )
-    layer_type = SEQ_PAR_Type_Chord;
+    layer_type = SEQ_PAR_Type_Chord1;
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -1011,14 +1011,15 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
 	SEQ_LCD_PrintArp(par_value);
-      } else if( layer_type == SEQ_PAR_Type_Chord ) {
+      } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 ) {
 	u8 par_value = PassiveEditValid()
 	  ? edit_passive_value
 	  : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
 
+	u8 chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : 0;
 	u8 chord_ix = par_value & 0x1f;
 	u8 chord_oct = par_value >> 5;
-	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_ix));
+	SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, chord_ix));
 	SEQ_LCD_PrintFormattedString("/%d", chord_oct);
       } else {
 	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
@@ -1061,7 +1062,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       show_drum_triggers =
 	!ui_hold_msg_ctr_drum_edit &&
 	layer_type != SEQ_PAR_Type_Note &&
-	layer_type != SEQ_PAR_Type_Chord &&
+	layer_type != SEQ_PAR_Type_Chord1 &&
+	layer_type != SEQ_PAR_Type_Chord2 &&
 	layer_type != SEQ_PAR_Type_Velocity &&
 	layer_type != SEQ_PAR_Type_CC &&
 	layer_type != SEQ_PAR_Type_PitchBend &&
@@ -1227,7 +1229,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
 	  seq_par_layer_type_t layer_type = tcc->lay_const[p_layer];
 
 	  if( layer_type == rec_layer_type ||
-	      ((rec_layer_type == SEQ_PAR_Type_Note || rec_layer_type == SEQ_PAR_Type_Chord) && (layer_type == SEQ_PAR_Type_Velocity || layer_type == SEQ_PAR_Type_Length)) ) {
+	      ((rec_layer_type == SEQ_PAR_Type_Note || rec_layer_type == SEQ_PAR_Type_Chord1 || rec_layer_type == SEQ_PAR_Type_Chord2) && (layer_type == SEQ_PAR_Type_Velocity || layer_type == SEQ_PAR_Type_Length)) ) {
 	    u8 value = SEQ_PAR_Get(visible_track, ui_selected_step, p_layer, ui_selected_instrument);
 
 	    u16 step;
@@ -1332,7 +1334,7 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   // http://midibox.org/forums/index.php?/topic/13137-midibox-seq-v4-beta-release-feedback/page__st__100
 
   // if note/chord/velocity parameter: only change gate if requested
-  if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) &&
+  if( (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Velocity) &&
       !change_gate &&
       !SEQ_TRG_GateGet(track, trg_step, ui_selected_instrument) )
     return -1;
@@ -1363,7 +1365,7 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   // extra for more comfortable editing of multi-note tracks:
   // if assigned parameter layer is Note or Chord, and currently 0, re-start at C-3 resp. A/2
   // when value is incremented
-  if( incrementer > 0 && forced_value < 0 && old_value == 0x00 && (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord) )
+  if( incrementer > 0 && forced_value < 0 && old_value == 0x00 && (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2) )
     new_value = (layer_type == SEQ_PAR_Type_Note && SEQ_CC_Get(track, SEQ_CC_MODE) != SEQ_CORE_TRKMODE_Arpeggiator) ? 0x3c : 0x40;
 
   if( !dont_change_gate ) {
@@ -1384,7 +1386,7 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   SEQ_PAR_Set(track, par_step, ui_selected_par_layer, ui_selected_instrument, (u8)new_value);
 
   if( !dont_change_gate &&
-      (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord || layer_type == SEQ_PAR_Type_Velocity) ) {
+      (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Velocity) ) {
     // (de)activate gate depending on value
     if( new_value )
       SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
@@ -1396,7 +1398,7 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
       int i;
       for(i=0; i<num_p_layers; ++i) {
 	seq_par_layer_type_t localLayerType = SEQ_PAR_AssignmentGet(track, i);
-	if( (localLayerType == SEQ_PAR_Type_Note || localLayerType == SEQ_PAR_Type_Chord) &&
+	if( (localLayerType == SEQ_PAR_Type_Note || localLayerType == SEQ_PAR_Type_Chord1 || localLayerType == SEQ_PAR_Type_Chord2) &&
 	    SEQ_PAR_Get(track, par_step, i, ui_selected_instrument) > 0 ) {
 	  allNotesZero = 0;
 	  break;
@@ -1422,7 +1424,7 @@ static s32 PassiveEditEnter(void)
 
   // passive edit mode currently only supported for notes/chords
 
-  if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord ) {
+  if( layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 ) {
     // enter passive edit mode and store track/step/layer/instrument for later checks
     edit_passive_mode = 1;
     edit_passive_track = visible_track;
