@@ -70,7 +70,7 @@ s32 SEQ_STATISTICS_Idle(void)
     // CPU Load is printed in main menu screen
     cpu_load_in_percent = 100 - ((100 * idle_ctr) / MAX_IDLE_CTR);
 
-#if 0
+#if MEASURE_IDLE_CTR
     DEBUG_MSG("Load: %d%% (Ctr: %d)\n", cpu_load_in_percent, idle_ctr);
 #endif
     

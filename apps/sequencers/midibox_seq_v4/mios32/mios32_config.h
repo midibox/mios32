@@ -69,10 +69,15 @@ extern void APP_SendDebugMessage(char *format, ...);
 
 // maximum idle counter value to be expected
 #if defined(MIOS32_FAMILY_LPC17xx)
-#define MAX_IDLE_CTR 908500 // LPC1769@120 MHz
+#define MAX_IDLE_CTR 628000 // LPC1769@120 MHz
+#elif defined(MIOS32_FAMILY_STM32F4xx)
+#define MAX_IDLE_CTR 962000 // STM32F407VG@160 MHz
 #else
-#define MAX_IDLE_CTR 228000 // STM32F103RE@80 MHz
+#define MAX_IDLE_CTR 192000 // STM32F103RE@80 MHz
 #endif
+
+// will bypass all tasks to measure minimum load
+#define MEASURE_IDLE_CTR 0
 
 
 // memory alloccation method:
