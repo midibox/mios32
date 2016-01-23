@@ -11,6 +11,8 @@ MIDIboxSEQ V4.091
 
    o new parameter type "Chord2" provides an alternative set of 32 chords
 
+   o CPU load display has been re-adjusted for LPC17 and STM32F4
+
 
 MIDIboxSEQ V4.090
 ~~~~~~~~~~~~~~~~~

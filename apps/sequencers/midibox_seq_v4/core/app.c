@@ -463,6 +463,7 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1mS(void)
 {
+#if MEASURE_IDLE_CTR == 0
   // update high-prio LED functions
   SEQ_UI_LED_Handler_Periodic();
 
@@ -487,6 +488,7 @@ void SEQ_TASK_Period1mS(void)
     // check for BLM_X pin changes, call button handler of sequencer on each toggled pin
     BLM_X_BtnHandler(APP_BLM_X_NotifyToggle);
   }
+#endif
 }
 
 
@@ -495,6 +497,7 @@ void SEQ_TASK_Period1mS(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1mS_LowPrio(void)
 {
+#if MEASURE_IDLE_CTR == 0
   // call LCD Handler
   SEQ_UI_LCD_Handler();
 
@@ -522,7 +525,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 #endif
     }
   }
-
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -530,6 +533,7 @@ void SEQ_TASK_Period1mS_LowPrio(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_Period1S(void)
 {
+#if MEASURE_IDLE_CTR == 0
   static s8 wait_boot_ctr = 3; // wait 3 seconds before loading from SD Card - this is to increase the time where the boot screen is print!
   u8 load_sd_content = 0;
 
@@ -748,6 +752,7 @@ void SEQ_TASK_Period1S(void)
 #ifndef MBSEQV4L
   SEQ_LCD_LOGO_ScreenSaver_Period1S();
 #endif
+#endif
 }
 
 
@@ -757,6 +762,7 @@ void SEQ_TASK_Period1S(void)
 /////////////////////////////////////////////////////////////////////////////
 void SEQ_TASK_MIDI(void)
 {
+#if MEASURE_IDLE_CTR == 0
   MUTEX_MIDIOUT_TAKE;
 
   // execute sequencer handler
@@ -769,6 +775,7 @@ void SEQ_TASK_MIDI(void)
   SEQ_CV_Update();
 
   MUTEX_MIDIOUT_GIVE;
+#endif
 }
 
 

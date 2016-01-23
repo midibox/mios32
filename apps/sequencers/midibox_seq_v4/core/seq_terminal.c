@@ -969,7 +969,7 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   }
 
   out("Systime: %02d:%02d:%02d\n", hours, minutes, seconds);
-  out("CPU Load: %02d%%\n", SEQ_STATISTICS_CurrentCPULoad());
+  out("CPU Load: %d%%\n", SEQ_STATISTICS_CurrentCPULoad());
   out("MIDI Scheduler: Alloc %3d/%3d Drops: %3d",
 	    seq_midi_out_allocated, seq_midi_out_max_allocated, seq_midi_out_dropouts);
 
