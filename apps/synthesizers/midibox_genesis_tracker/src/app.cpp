@@ -20,7 +20,6 @@
 #include <genesis.h>
 #include <file.h>
 
-#include "vgmsource.h"
 #include "vgmsourcestream.h"
 #include "vgmhead.h"
 #include "vgmplayer.h"
@@ -51,20 +50,33 @@ extern "C" void APP_Init(void){
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Background(void)
 {
-    static u8 count = 0;
+    static u32 count = 0;
     static VgmSourceStream* vgms = NULL;
     static VgmHead* vgmh = NULL;
+    static s32 res = 0;
     
     if(vgms == NULL){
         vgms = new VgmSourceStream();
-        bool res = vgms->startStream("/vgm/starlightzone.vgm");
-        if(res){
-            DBG("Loaded VGM!");
-            vgms->readHeader();
-            vgmh = new VgmHead(vgms);
-            VgmPlayer_AddHead(vgmh);
-        }else{
-            DBG("Failed to load VGM");
+        res = FILE_CheckSDCard();
+        if(res == 1 || res == 3){
+            res = vgms->startStream("/vgm/sonic1/starlight.vgm");
+            if(res >= 0){
+                DBG("Loaded VGM!");
+                vgms->readHeader();
+                vgmh = new VgmHead(vgms);
+                VgmPlayer_AddHead(vgmh);
+            }else{
+                DBG("Failed to load VGM");
+            }
+        }
+    }else{
+        vgms->bg_streamBuffer();
+    }
+    if(count % 30000 == 0){
+        if(res < 0){
+            DBG("Error %d", res);
+        }else if(res >= 0 && vgmh != NULL){
+            DBG("Okay %d, playback addr 0x%X", res, vgmh->getCurAddress());
         }
     }
     
@@ -210,7 +222,7 @@ extern "C" void APP_Background(void)
     MIOS32_DELAY_Wait_uS(0xFF00);
     */
     //Flash LEDs
-    MIOS32_BOARD_LED_Set(0xF, (count & 0xF));
+    MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
     ++count;
 }
 

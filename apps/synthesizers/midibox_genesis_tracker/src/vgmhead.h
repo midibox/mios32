@@ -13,7 +13,7 @@
 #ifndef _VGMHEAD_H
 #define _VGMHEAD_H
 
-#include "vgmsource.h"
+#include "vgmsourcestream.h"
 
 union ChipWriteCmd {
     u32 all;
@@ -27,14 +27,14 @@ union ChipWriteCmd {
 
 class VgmHead {
 public:
-    VgmHead(VgmSource* src);
+    VgmHead(VgmSourceStream* src);
     ~VgmHead();
     
     void restart();
     
-    void cmdNext(u16 curtime);
+    void cmdNext(u32 curtime);
     inline bool cmdIsWait() {return iswait || isdone;}
-    inline s32 cmdGetWaitRemaining(u16 curtime) {return (isdone ? 65535 : (waitduration - (curtime - waitstarttime)));}
+    inline s32 cmdGetWaitRemaining(u32 curtime) {return (isdone ? 65535 : ((s32)waitduration - (s32)((u32)curtime - (u32)waitstarttime)));}
     inline bool cmdIsChipWrite() {return iswrite && !isdone;}
     inline ChipWriteCmd cmdGetChipWrite() {return writecmd;}
     
@@ -43,13 +43,15 @@ public:
     inline bool isPaused() { return paused; }
     inline void setPaused(bool p) { paused = p; }
     
+    inline u32 getCurAddress() { return srcaddr; }
+    
 private:
-    VgmSource* source;
+    VgmSourceStream* source;
     u32 srcaddr;
     u32 srcblockaddr;
     
     bool iswait, iswrite;
-    u16 waitduration, waitstarttime;
+    u32 waitduration, waitstarttime;
     ChipWriteCmd writecmd;
     
     bool isdacwrite, isfreqwrite;

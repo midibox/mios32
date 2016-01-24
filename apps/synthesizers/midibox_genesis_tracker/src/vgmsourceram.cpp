@@ -13,7 +13,7 @@
 #include <mios32.h>
 #include "vgmsourceram.h"
 
-VgmSourceRam::VgmSourceRam(){
+VgmSourceRam::VgmSourceRam() {
     data = nullptr;
     datalen = 0;
 }

@@ -14,7 +14,7 @@
 #include "vgmhead.h"
 
 
-VgmHead::VgmHead(VgmSource* src){
+VgmHead::VgmHead(VgmSourceStream* src){
     source = src;
     srcaddr = 0;
     isdone = false;
@@ -25,7 +25,7 @@ VgmHead::VgmHead(VgmSource* src){
     restart();
 }
 
-void VgmHead::cmdNext(u16 curtime){
+void VgmHead::cmdNext(u32 curtime){
     if(isfreqwrite){
         //Second virtual command is the second byte
         isfreqwrite = false;

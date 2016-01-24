@@ -25,16 +25,21 @@ VgmHead* vgmp_head;
 
 void VgmPlayer_AddHead(VgmHead* vgmh){
     vgmp_head = vgmh;
+    //Start it!
+    vgmp_head->cmdNext(VgmPlayerLL_GetVGMTime());
 }
 void VgmPlayer_RemoveHead(VgmHead* vgmh){
     vgmp_head = NULL;
 }
 
 // Where all the work gets done.
-u16 VgmPlayer_WorkCallback(u16 hr_time, u16 vgm_time){
+u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
     ////////////////////////////////////////////////////////////////////////
     // PLAY VGMS
     ////////////////////////////////////////////////////////////////////////
+    if(hr_time % 10000 == 0){
+        DBG("WorkCallback at hr_time=%d, vgm_time=%d", hr_time, vgm_time);
+    }
     VgmHead* h;
     s32 minvgmwaitremaining = 65535; s32 s;
     ChipWriteCmd cmd;

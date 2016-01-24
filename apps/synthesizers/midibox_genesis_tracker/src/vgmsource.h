@@ -13,10 +13,12 @@
 #ifndef _VGMSOURCE_H
 #define _VGMSOURCE_H
 
+#error "Don't use this!"
+
 class VgmSource {
 public:
     VgmSource();
-    ~VgmSource();
+    virtual ~VgmSource();
     
     virtual u8 getByte(u32 addr) = 0;
     virtual u32 getSize() = 0;

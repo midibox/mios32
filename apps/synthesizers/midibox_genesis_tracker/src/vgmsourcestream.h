@@ -13,7 +13,7 @@
 #ifndef _VGMSOURCESTREAM_H
 #define _VGMSOURCESTREAM_H
 
-#include "vgmsource.h"
+//#include "vgmsource.h"
 #include <file.h>
 
 #ifndef VGMSOURCESTREAM_BUFSIZE
@@ -21,7 +21,7 @@
 #endif
 
 
-class VgmSourceStream : public VgmSource {
+class VgmSourceStream {
 public:
     VgmSourceStream();
     ~VgmSourceStream();
@@ -33,9 +33,16 @@ public:
     inline u32 getBlockSize() { return blocklen; }
     void loadBlock(u32 startaddr, u32 len);
     
-    bool startStream(char* filename);
+    s32 startStream(char* filename);
     
     void bg_streamBuffer();
+    
+    void readHeader();
+    u32 vgmdatastartaddr;
+    u32 opn2clock;
+    u32 psgclock;
+    u32 loopaddr;
+    u32 loopsamples;
     
 private:
     file_t file;
