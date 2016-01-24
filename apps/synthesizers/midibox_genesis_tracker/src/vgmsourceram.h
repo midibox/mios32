@@ -18,14 +18,14 @@
 class VgmSourceRam : public VgmSource {
 public:
     VgmSourceRam();
-    ~VgmSourceRam();
+    virtual ~VgmSourceRam();
     
-    inline u8 getByte(u32 addr) { return ((addr < datalen) ? (data[addr]) : 0); }
-    inline u32 getSize() { return datalen; }
+    virtual inline u8 getByte(u32 addr) { return ((addr < datalen) ? (data[addr]) : 0); }
+    virtual inline u32 getSize() { return datalen; }
     
-    inline u8 getBlockByte(u32 blockaddr) { return 0; }
-    inline u32 getBlockSize() { return 0; }
-    inline void loadBlock(u32 startaddr, u32 len) { return; }
+    virtual inline u8 getBlockByte(u32 blockaddr) { return 0; }
+    virtual inline u32 getBlockSize() { return 0; }
+    virtual inline void loadBlock(u32 startaddr, u32 len) { return; }
     
     bool loadFromSDCard(char* filename);
     

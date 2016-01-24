@@ -18,7 +18,6 @@ THUMB_SOURCE    =   src/vgmplayer_ll.c
 # add C++ files here
 THUMB_CPP_SOURCE =  src/app.cpp \
                     src/vgmhead.cpp \
-                    src/vgmsource.cpp \
                     src/vgmsourcestream.cpp \
                     src/vgmplayer.cpp \
 

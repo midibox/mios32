@@ -14,7 +14,7 @@
 #include "vgmsourcestream.h"
 
 
-VgmSourceStream::VgmSourceStream(){
+VgmSourceStream::VgmSourceStream() {
     block = NULL;
     blocklen = 0;
     blockorigaddr = 0xFFFFFFFF;
@@ -30,21 +30,21 @@ VgmSourceStream::~VgmSourceStream(){
     }
 }
 
-bool VgmSourceStream::startStream(char* filename){
+s32 VgmSourceStream::startStream(char* filename){
     s32 res = FILE_ReadOpen(&file, filename);
-    if(res < 0) return false;
+    if(res < 0) return res;
     datalen = FILE_ReadGetCurrentSize();
     //Fill both buffers
     buffer1addr = 0;
     res = FILE_ReadBuffer(buffer1, VGMSOURCESTREAM_BUFSIZE);
-    if(res < 0){datalen = 0; return false;}
+    if(res < 0){datalen = 0; return -2;}
     buffer2addr = VGMSOURCESTREAM_BUFSIZE;
     res = FILE_ReadBuffer(buffer2, VGMSOURCESTREAM_BUFSIZE);
-    if(res < 0){datalen = 0; return false;}
+    if(res < 0){datalen = 0; return -3;}
     //Close file and save for reopening
     res = FILE_ReadClose(&file);
-    if(res < 0){datalen = 0; return false;}
-    return true;
+    if(res < 0){datalen = 0; return -4;}
+    return 0;
 }
     
 u8 VgmSourceStream::getByte(u32 addr){
@@ -98,6 +98,7 @@ void VgmSourceStream::bg_streamBuffer(){
             if(res < 0) return;
             buffer2addr = wantbufferaddr;
         }
+        wantbuffer = 0;
         FILE_ReadClose(&file);
     }
 }
@@ -117,3 +118,30 @@ void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
     FILE_ReadClose(&file);
 }
 
+void VgmSourceStream::readHeader(){
+    if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
+        //File has header
+        //Get version
+        u8 ver_lo = getByte(8);
+        u8 ver_hi = getByte(9);
+        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
+                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
+        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
+                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
+                 + 0x1C;
+        loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
+                 | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
+        opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
+                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
+        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+            vgmdatastartaddr = 0x40;
+        }else{
+            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
+                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
+                 + 0x34;
+        }
+    }else{
+        vgmdatastartaddr = 0;
+        opn2clock = psgclock = 0;
+    }
+}
