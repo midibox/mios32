@@ -24,8 +24,8 @@ THUMB_AS_SOURCE =
 ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
-C_INCLUDE = 	-I .
-A_INCLUDE = 	-I .
+C_INCLUDE = 	-I src
+A_INCLUDE = 	-I src
 
 LIBS = 		
 
@@ -52,6 +52,9 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# MBHP_Genesis module driver
+include $(MIOS32_PATH)/modules/genesis/genesis.mk
 
 # common make rules
 # Please keep this include statement at the end of this Makefile. Add new modules above.

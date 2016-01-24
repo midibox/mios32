@@ -24,7 +24,6 @@ VgmSourceRam::~VgmSourceRam(){
 }
 
 bool VgmSourceRam::loadFromSDCard(char* filename){
-    //TODO skip header, but also read chip clock rates
     //TODO preprocessing
     file_t file;
     s32 res = FILE_ReadOpen(&file, filename);

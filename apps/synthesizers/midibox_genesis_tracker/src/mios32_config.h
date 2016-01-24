@@ -18,4 +18,8 @@
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox Genesis Tracker"
 #define MIOS32_USB_MIDI_NUM_PORTS 1
 
+// VGM timers
+#define MIOS32_DONT_USE_TIMER
+#define MIOS32_IRQ_PRIO_INSANE 3
+
 #endif /* _MIOS32_CONFIG_H */

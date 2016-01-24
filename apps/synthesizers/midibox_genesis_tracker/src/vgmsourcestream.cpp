@@ -16,6 +16,7 @@
 VgmSourceStream::VgmSourceStream(){
     block = nullptr;
     blocklen = 0;
+    blockorigaddr = 0xFFFFFFFF;
     buffer1 = new u8[VGMSOURCESTREAM_BUFSIZE];
     buffer2 = new u8[VGMSOURCESTREAM_BUFSIZE];
     datalen = 0;
@@ -33,7 +34,6 @@ bool VgmSourceStream::startStream(char* filename){
     if(res < 0) return false;
     datalen = FILE_ReadGetCurrentSize();
     //Fill both buffers
-    //TODO skip header but read chip clock info
     buffer1addr = 0;
     res = FILE_ReadBuffer(buffer1, VGMSOURCESTREAM_BUFSIZE);
     if(res < 0){datalen = 0; return false;}
@@ -102,6 +102,7 @@ void VgmSourceStream::bg_streamBuffer(){
 }
 
 void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
+    if(startaddr == blockorigaddr && len == blocklen) return; //Don't reload existing block
     if(block != nullptr){
         delete[] block;
     }
