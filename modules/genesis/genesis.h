@@ -33,8 +33,13 @@ extern "C" {
 #define GENESIS_COUNT 1       //4
 #endif
 
+/*
+OPN2 Timeout Test Results
+235: still unstable
+256: appears to get every message
+*/
 #ifndef GENESIS_OPN2_WRITETIMEOUT
-#define GENESIS_OPN2_WRITETIMEOUT 160
+#define GENESIS_OPN2_WRITETIMEOUT 256 //256 
 #endif
 
 #ifndef GENESIS_PSG_WRITETIMEOUT
@@ -352,9 +357,9 @@ typedef union {
         union {
             u8 readbits;
             struct {
-                u8 dummy1:4;
+                u8 dummy3:4;
                 u8 opn2_irq:1;  //OPN2 /IRQ pin state (active low)
-                u8 dummy2:1;
+                u8 dummy4:1;
                 u8 test_pin:1;  //OPN2 TEST pin state
                 u8 psg_ready:1; //PSG READY pin state
             };
@@ -396,12 +401,13 @@ extern void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data);
 // Write a value to a PSG.
 extern void Genesis_PSGWrite(u8 board, u8 data);
 
-// Check whether an OPN2 is busy.
-extern bool Genesis_CheckOPN2Busy(u8 board);
+// Check whether an OPN2 is busy. This is relatively costly in time (a couple
+// microseconds).
+extern u8 Genesis_CheckOPN2Busy(u8 board);
 
 // Check whether a PSG is busy. Also loads the current status bits into
 // genesis[board].board.readbits .
-extern bool Genesis_CheckPSGBusy(u8 board);
+extern u8 Genesis_CheckPSGBusy(u8 board);
 
 // Reset (and un-reset) a board.
 extern void Genesis_Reset(u8 board);

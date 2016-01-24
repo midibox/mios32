@@ -21,12 +21,16 @@
 // Help Macros
 /////////////////////////////////////////////////////////////////////////////
 
+//This has to be a global (static) variable, since otherwise evidently the
+//compiler optimizes away the delay loops!
+u32 timeout_counter;
 //One OPN2 clock is, worst case (7 MHz), 24 CPU cycles
 //So one OPN2 internal clock (divide by 6) is 144 CPU cycles
-//Wait 160 cycles to give it a little extra time
-#define GENESIS_OPN2_WRITEWAIT do { u8 temp = 0; while(++temp <= (GENESIS_OPN2_WRITETIMEOUT >> 2)); } while(false)
+//Smallest value which works consistently is 256, meaning either it's less than
+//4 cycles per loop, or we need more like 2 OPN2 internal cycles
+#define GENESIS_OPN2_WRITEWAIT { timeout_counter = 0; while(++timeout_counter <= (GENESIS_OPN2_WRITETIMEOUT >> 2)); }
 //Wait timeout, roughly 100 ns, for PSG/board bits reads/writes
-#define GENESIS_PSG_WRITEWAIT do { u8 temp = 0; while(++temp <= (GENESIS_PSG_WRITETIMEOUT >> 2)); } while(false)
+#define GENESIS_PSG_WRITEWAIT { timeout_counter = 0; while(++timeout_counter <= (GENESIS_PSG_WRITETIMEOUT >> 2)); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -97,6 +101,7 @@ void Genesis_Init(){
     GPIOC->OSPEEDR |= 0xFC000000;   //GOTTA GO FAST
     GPIOC->PUPDR &= 0x03FFFFFF;     //Turn off all pull-ups
     //Reset all (also resets internal chip state)
+    u8 i;
     for(i=0; i<GENESIS_COUNT; i++){
         Genesis_Reset(i);
     }
@@ -150,23 +155,18 @@ void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
     a <<= 4; //Move over into place, A0 = 0 for address write
     porte |= a; //Write to our temp copy
     GPIOE->ODR = porte; //Write
-    u32 portc = GPIOC->ODR;
-    portc &= 0xFFFF5FFF; //Write /CS and /WR low
-    GPIOC->ODR = portc; //Write
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
+    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
-    GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
-    portc |= 0x0000A000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
-    porte &= 0xFFFF00FF;
-    porte |= ((u32)data << 8);
+    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
+    porte &= 0xFFFF00FF; //Get rid of address value
+    porte |= ((u32)data << 8); //Put in data value
     porte |= 4; //A0 = 1 for data write
     GPIOE->ODR = porte; //Write
-    portc &= 0xFFFF5FFF; //Write /CS and /WR low
-    GPIOC->ODR = portc; //Write
+    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
-    portc |= 0x0000A000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
+    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
+    GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
 
@@ -215,18 +215,15 @@ void Genesis_PSGWrite(u8 board, u8 data){
     a |= 0x20; //A2 = 1 for PSG write, A1 = 0 for PSG not output bits, A0 = -
     porte |= a; //Write to our temp copy
     GPIOE->ODR = porte; //Write
-    u32 portc = GPIOC->ODR;
-    portc &= 0xFFFF5FFF; //Write /CS and /WR low
-    GPIOC->ODR = portc; //Write
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
+    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
+    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
-    portc |= 0x0000A000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
 
-bool Genesis_CheckOPN2Busy(u8 board){
+u8 Genesis_CheckOPN2Busy(u8 board){
     board &= 0x03;
     if(genesis[board].opn2.test_readdat){
         //Switch back to read status mode
@@ -238,45 +235,35 @@ bool Genesis_CheckOPN2Busy(u8 board){
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs (in case not already)
     u32 porte = GPIOE->ODR;
     porte &= 0xFFFF000B; //Mask out the things we will set
-    u32 a = address;
-    a <<= 2; //Make room for board number
-    a |= board;
+    u32 a = board;
     a <<= 6; //Move into place; A2 = 0 for OPN2 read, A1 = -, A0 = -
     porte |= a; //Write to our temp copy
     GPIOE->ODR = porte; //Write
-    u32 portc = GPIOC->ODR;
-    portc &= 0xFFFF3FFF; //Write /CS and /RD low
-    GPIOC->ODR = portc; //Write
+    GPIOC->ODR &= 0xFFFF9FFF; //Write /CS and /RD low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
-    u8 res = ((GPIOE->IDR >> 8) && 0xFF); //Read OPN2 data
-    portc |= 0x0000C000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
+    u8 res = ((GPIOE->IDR >> 8) & 0xFF); //Read OPN2 data
+    GPIOC->ODR |= 0x00006000; //Write /CS and /RD high
     MIOS32_IRQ_Enable(); //Turn on interrupts
     return ((res & 0x80) > 0);
 }
 
-bool Genesis_CheckPSGBusy(u8 board){
+u8 Genesis_CheckPSGBusy(u8 board){
     board &= 0x03;
     MIOS32_IRQ_Disable(); //Turn off interrupts
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs (in case not already)
     u32 porte = GPIOE->ODR;
     porte &= 0xFFFF000B; //Mask out the things we will set
-    u32 a = address;
-    a <<= 2; //Make room for board number
-    a |= board;
+    u32 a = board;
     a <<= 6; //Move into place
-    a |= 0x40; //A2 = 1 for board bits read, A1 = -, A0 = -
+    a |= 0x20; //A2 = 1 for board bits read, A1 = -, A0 = -
     porte |= a; //Write to our temp copy
     GPIOE->ODR = porte; //Write
-    u32 portc = GPIOC->ODR;
-    portc &= 0xFFFF3FFF; //Write /CS and /RD low
-    GPIOC->ODR = portc; //Write
+    GPIOC->ODR &= 0xFFFF9FFF; //Write /CS and /RD low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
-    genesis[board].board.readbits = ((GPIOE->IDR >> 8) && 0xFF); //Read board bits data
-    portc |= 0x0000C000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
+    genesis[board].board.readbits = ((GPIOE->IDR >> 8) & 0xFF); //Read board bits data
+    GPIOC->ODR |= 0x00006000; //Write /CS and /RD high
     MIOS32_IRQ_Enable(); //Turn on interrupts
-    return genesis[board].board.psg_ready;
+    return !(genesis[board].board.psg_ready);
 }
 
 void Genesis_WriteBoardBits(u8 board){
@@ -292,25 +279,23 @@ void Genesis_WriteBoardBits(u8 board){
     a |= 0x30; //A2 = 1 for PSG write, A1 = 1 for board bits, A0 = -
     porte |= a; //Write to our temp copy
     GPIOE->ODR = porte; //Write
-    u32 portc = GPIOC->ODR;
-    portc &= 0xFFFF5FFF; //Write /CS and /WR low
-    GPIOC->ODR = portc; //Write
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
+    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
+    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
-    portc |= 0x0000A000; //Write /CS and /WR high
-    GPIOC->ODR = portc; //Write
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
 
 void Genesis_Reset(u8 board){
     board &= 0x03;
     //Clear internal state
-    for(j=0; j<154; j++){
-        genesis[board].ALL[j] = 0;
+    u8 i;
+    for(i=0; i<154; i++){
+        genesis[board].ALL[i] = 0;
     }
-    for(j=0; j<6; j++){
-        genesis[board].opn2.chan[j].lfooutreg = 0xE0; //Output bits initialized to 1
+    for(i=0; i<6; i++){
+        genesis[board].opn2.chan[i].lfooutreg = 0xE0; //Output bits initialized to 1
     }
     genesis[board].board.test_dir = 1;
     //Do chip reset
@@ -320,6 +305,18 @@ void Genesis_Reset(u8 board){
     genesis[board].board.reset = 1;
     Genesis_WriteBoardBits(board);
     MIOS32_DELAY_Wait_uS(GENESIS_RESETTIMEOUTUS);
+    //Reset the PSG (turn off all voices and set all frequencies to lowest)
+    Genesis_PSGWrite(board, 0b10001111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b00111111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b10011111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b10101111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b00111111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b10111111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b11001111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b00111111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b11011111); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b11100000); MIOS32_DELAY_Wait_uS(20);
+    Genesis_PSGWrite(board, 0b11111111); MIOS32_DELAY_Wait_uS(20);
 }
 
 
