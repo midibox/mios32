@@ -20,9 +20,10 @@ VgmHead::VgmHead(){
     delay62 = 735;
     delay63 = 882;
     opn2mult = 0x1000;
+    restart();
 }
 
-void VgmHead::cmdNext(u32 curtime){
+void VgmHead::cmdNext(u16 curtime){
     if(isfreqwrite){
         //Second virtual command is the second byte
         isfreqwrite = false;
@@ -130,8 +131,17 @@ void VgmHead::cmdNext(u32 curtime){
             //Behaves like endless stream of 65535-tick waits
             isdone = true;
         }else if(type == 0x67){
-            //Data block TODO
-            u8 todo;
+            //Data block
+            ++srcaddr; //Skip 0x66
+            u32 a = source->getByte(srcaddr++);
+            if(a != 0){
+                isdone = true;
+            }else{
+                a = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
+                    | ((u32)source->getByte(srcaddr+2) << 16) | ((u32)source->getByte(srcaddr+3) << 24);
+                source->loadBlock(srcaddr, a);
+                srcaddr += a;
+            }
         }else if(type == 0xE0){
             //Seek in data block
             srcblockaddr = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
@@ -178,5 +188,10 @@ void VgmHead::cmdNext(u32 curtime){
             //Unsupported, do nothing (assume 0 byte command)
         }
     }
+}
+
+void VgmHead::restart(){
+    srcaddr = vgmdatastartaddr;
+    srcblockaddr = 0;
 }
 

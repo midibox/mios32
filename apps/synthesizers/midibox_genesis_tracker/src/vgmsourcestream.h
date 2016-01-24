@@ -51,6 +51,7 @@ private:
 
     u8* block;
     u32 blocklen;
+    u32 blockorigaddr;
 };
 
 

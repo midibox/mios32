@@ -1,5 +1,5 @@
 /*
- * MIDIbox Genesis Tracker: VGM Player Class
+ * MIDIbox Genesis Tracker: VGM Player
  *
  * ==========================================================================
  *
@@ -13,30 +13,21 @@
 #ifndef _VGMPLAYER_H
 #define _VGMPLAYER_H
 
+
 #include <genesis.h>
 #include "vgm.h"
 
+
 struct vgmp_chipdata {
-    u32 lastwritetime;
+    u16 lastwritetime;
     u8 cmdmadebusy;
 };
 
-class VgmPlayer {
-    VgmPlayer();
-    ~VgmPlayer();
-    
-    
-    
-private:
-    Vgm** vgms;
-    u32 num_vgms;
-    
-    u32 hr_time;
-    u32 sample_time;
-    
-    vgmp_chipdata chipdata[2*GENESIS_COUNT];
-};
+// Call at startup
+extern void VgmPlayer_Init();
 
-extern VgmPlayer vgmplayer;
+extern void VgmPlayer_AddHead(VgmHead* vgmh);
+extern void VgmPlayer_RemoveHead(VgmHead* vgmh);
+
 
 #endif /* _VGMPLAYER_H */

@@ -17,6 +17,7 @@
 #include <mios32.h>
 #include "app.h"
 
+#include <genesis.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -28,6 +29,9 @@ extern "C" void APP_Init(void)
 {
   // initialize all LEDs
   MIOS32_BOARD_LED_Init(0xffffffff);
+  
+  //Initialize MBHP_Genesis module
+  Genesis_Init();
 }
 
 
@@ -36,6 +40,150 @@ extern "C" void APP_Init(void)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Background(void)
 {
+    static u8 count = 0;
+    //Play some things on the PSG
+    /*
+    Genesis_PSGWrite(0, 0b10010000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b10000000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b00010000); while(Genesis_CheckPSGBusy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_PSGWrite(0, 0b10000000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b00001000); while(Genesis_CheckPSGBusy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_PSGWrite(0, 0b10000000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b00000100); while(Genesis_CheckPSGBusy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_PSGWrite(0, 0b10000000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b00000010); while(Genesis_CheckPSGBusy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_PSGWrite(0, 0b10000000); while(Genesis_CheckPSGBusy(0));
+    Genesis_PSGWrite(0, 0b00000001); while(Genesis_CheckPSGBusy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    */
+    //OPN2 piano test patch
+    Genesis_OPN2Write(0, 0, 0x22, 0x00); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x27, 0x00); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x2B, 0x00); while(Genesis_CheckOPN2Busy(0));
+    for(u8 ah=0; ah<2; ah++){
+        Genesis_OPN2Write(0, ah, 0x30, 0x71); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x34, 0x0D); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x38, 0x33); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x3C, 0x01); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x40, 0x23); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x44, 0x2D); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x48, 0x26); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x4C, 0x00); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x50, 0x5F); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x54, 0x99); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x58, 0x5F); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x5C, 0x94); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x60, 0x05); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x64, 0x05); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x68, 0x05); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x6C, 0x07); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x70, 0x02); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x74, 0x02); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x78, 0x02); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x7C, 0x02); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x80, 0x11); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x84, 0x11); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x88, 0x11); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x8C, 0xA6); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x90, 0x00); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x94, 0x00); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x98, 0x00); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0x9C, 0x00); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0xB0, 0x32); while(Genesis_CheckOPN2Busy(0));
+        Genesis_OPN2Write(0, ah, 0xB4, 0xC0); while(Genesis_CheckOPN2Busy(0));
+    }
+    Genesis_OPN2Write(0, 0, 0xA4, 0x22); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0xA0, 0x69); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF0); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA4, 0x2B); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA0, 0x47); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF4); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_OPN2Write(0, 0, 0x28, 0x00); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0x04); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_OPN2Write(0, 0, 0xA4, 0x12); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0xA0, 0x69); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF0); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA4, 0x1B); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA0, 0x47); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF4); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_OPN2Write(0, 0, 0x28, 0x00); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0x04); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_OPN2Write(0, 0, 0xA4, 0x02); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0xA0, 0x69); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF0); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA4, 0x0B); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 1, 0xA0, 0x47); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0xF4); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    Genesis_OPN2Write(0, 0, 0x28, 0x00); while(Genesis_CheckOPN2Busy(0));
+    Genesis_OPN2Write(0, 0, 0x28, 0x04); while(Genesis_CheckOPN2Busy(0));
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    MIOS32_DELAY_Wait_uS(0xFF00);
+    
+    //Flash LEDs
+    MIOS32_BOARD_LED_Set(0xF, (count & 0xF));
+    ++count;
 }
 
 
@@ -49,8 +197,8 @@ extern "C" void APP_Background(void)
 extern "C" void APP_Tick(void)
 {
   // PWM modulate the status LED (this is a sign of life)
-  u32 timestamp = MIOS32_TIMESTAMP_Get();
-  MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+  //u32 timestamp = MIOS32_TIMESTAMP_Get();
+  //MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
 }
 
 
