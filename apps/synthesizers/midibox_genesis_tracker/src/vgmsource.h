@@ -15,15 +15,15 @@
 
 class VgmSource {
 public:
-    virtual VgmSource();
-    virtual ~VgmSource();
+    VgmSource();
+    ~VgmSource();
     
-    virtual u8 getByte(u32 addr);
-    virtual u32 getSize();
+    virtual u8 getByte(u32 addr) = 0;
+    virtual u32 getSize() = 0;
     
-    virtual u8 getBlockByte(u32 blockaddr);
-    virtual u32 getBlockSize();
-    virtual void loadBlock(u32 startaddr, u32 len);
+    virtual u8 getBlockByte(u32 blockaddr) = 0;
+    virtual u32 getBlockSize() = 0;
+    virtual void loadBlock(u32 startaddr, u32 len) = 0;
     
     void readHeader();
     u32 vgmdatastartaddr;

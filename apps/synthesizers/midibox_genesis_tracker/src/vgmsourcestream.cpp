@@ -11,10 +11,11 @@
  */
 
 #include <mios32.h>
-#include "vgmsource.h"
+#include "vgmsourcestream.h"
+
 
 VgmSourceStream::VgmSourceStream(){
-    block = nullptr;
+    block = NULL;
     blocklen = 0;
     blockorigaddr = 0xFFFFFFFF;
     buffer1 = new u8[VGMSOURCESTREAM_BUFSIZE];
@@ -24,7 +25,7 @@ VgmSourceStream::VgmSourceStream(){
 }
 
 VgmSourceStream::~VgmSourceStream(){
-    if(block != nullptr){
+    if(block != NULL){
         delete[] block;
     }
 }
@@ -103,7 +104,7 @@ void VgmSourceStream::bg_streamBuffer(){
 
 void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
     if(startaddr == blockorigaddr && len == blocklen) return; //Don't reload existing block
-    if(block != nullptr){
+    if(block != NULL){
         delete[] block;
     }
     block = new u8[len];

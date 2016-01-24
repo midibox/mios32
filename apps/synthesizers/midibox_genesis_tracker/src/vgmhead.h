@@ -13,6 +13,8 @@
 #ifndef _VGMHEAD_H
 #define _VGMHEAD_H
 
+#include "vgmsource.h"
+
 union ChipWriteCmd {
     u32 all;
     struct {

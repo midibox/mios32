@@ -14,7 +14,7 @@
 #define _VGMSOURCESTREAM_H
 
 #include "vgmsource.h"
-
+#include <file.h>
 
 #ifndef VGMSOURCESTREAM_BUFSIZE
 #define VGMSOURCESTREAM_BUFSIZE 512

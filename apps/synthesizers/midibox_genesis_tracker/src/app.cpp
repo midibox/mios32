@@ -18,6 +18,12 @@
 #include "app.h"
 
 #include <genesis.h>
+#include <file.h>
+
+#include "vgmsource.h"
+#include "vgmsourcestream.h"
+#include "vgmhead.h"
+#include "vgmplayer.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -25,13 +31,18 @@
 // access this function - you can safely write your own functions in C++
 // In other words: there is no need to add "extern C" to your own functions!
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_Init(void)
-{
-  // initialize all LEDs
-  MIOS32_BOARD_LED_Init(0xffffffff);
-  
-  //Initialize MBHP_Genesis module
-  Genesis_Init();
+extern "C" void APP_Init(void){
+    // initialize all LEDs
+    MIOS32_BOARD_LED_Init(0xffffffff);
+
+    // initialize SD card
+    FILE_Init(0);
+
+    //Initialize MBHP_Genesis module
+    Genesis_Init();
+
+    //Initialize VGM Player component
+    VgmPlayer_Init();
 }
 
 
@@ -41,6 +52,22 @@ extern "C" void APP_Init(void)
 extern "C" void APP_Background(void)
 {
     static u8 count = 0;
+    static VgmSourceStream* vgms = NULL;
+    static VgmHead* vgmh = NULL;
+    
+    if(vgms == NULL){
+        vgms = new VgmSourceStream();
+        bool res = vgms->startStream("/vgm/starlightzone.vgm");
+        if(res){
+            DBG("Loaded VGM!");
+            vgms->readHeader();
+            vgmh = new VgmHead(vgms);
+            VgmPlayer_AddHead(vgmh);
+        }else{
+            DBG("Failed to load VGM");
+        }
+    }
+    
     //Play some things on the PSG
     /*
     Genesis_PSGWrite(0, 0b10010000); while(Genesis_CheckPSGBusy(0));
@@ -61,6 +88,7 @@ extern "C" void APP_Background(void)
     MIOS32_DELAY_Wait_uS(0xFF00);
     */
     //OPN2 piano test patch
+    /*
     Genesis_OPN2Write(0, 0, 0x22, 0x00); while(Genesis_CheckOPN2Busy(0));
     Genesis_OPN2Write(0, 0, 0x27, 0x00); while(Genesis_CheckOPN2Busy(0));
     Genesis_OPN2Write(0, 0, 0x2B, 0x00); while(Genesis_CheckOPN2Busy(0));
@@ -180,7 +208,7 @@ extern "C" void APP_Background(void)
     MIOS32_DELAY_Wait_uS(0xFF00);
     MIOS32_DELAY_Wait_uS(0xFF00);
     MIOS32_DELAY_Wait_uS(0xFF00);
-    
+    */
     //Flash LEDs
     MIOS32_BOARD_LED_Set(0xF, (count & 0xF));
     ++count;

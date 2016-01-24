@@ -13,10 +13,14 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 # add plain C files here
-THUMB_SOURCE    = 
+THUMB_SOURCE    =   src/vgmplayer_ll.c
 
 # add C++ files here
-THUMB_CPP_SOURCE = src/app.cpp
+THUMB_CPP_SOURCE =  src/app.cpp \
+                    src/vgmhead.cpp \
+                    src/vgmsource.cpp \
+                    src/vgmsourcestream.cpp \
+                    src/vgmplayer.cpp \
 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -52,6 +56,12 @@ include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+
+# FAT filesystem module driver
+include $(MIOS32_PATH)/modules/fatfs/fatfs.mk
+
+# FILE module driver
+include $(MIOS32_PATH)/modules/file/file.mk
 
 # MBHP_Genesis module driver
 include $(MIOS32_PATH)/modules/genesis/genesis.mk

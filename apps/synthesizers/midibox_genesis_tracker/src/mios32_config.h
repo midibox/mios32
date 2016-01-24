@@ -5,6 +5,8 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+#define DBG MIOS32_MIDI_SendDebugMessage
+
 // Make sure only STM32F4
 #if !defined(MIOS32_BOARD_STM32F4DISCOVERY) && !defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #error "MIDIbox Genesis Tracker only supported on STM32F4 MCU!"

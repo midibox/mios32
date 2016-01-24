@@ -14,8 +14,7 @@
 #define _VGMPLAYER_H
 
 
-#include <genesis.h>
-#include "vgm.h"
+#include "vgmhead.h"
 
 
 struct vgmp_chipdata {
@@ -29,5 +28,6 @@ extern void VgmPlayer_Init();
 extern void VgmPlayer_AddHead(VgmHead* vgmh);
 extern void VgmPlayer_RemoveHead(VgmHead* vgmh);
 
+extern u16 VgmPlayer_WorkCallback(u16 hr_time, u16 vgm_time);
 
 #endif /* _VGMPLAYER_H */

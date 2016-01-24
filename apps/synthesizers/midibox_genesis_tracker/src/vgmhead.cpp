@@ -13,13 +13,15 @@
 #include <mios32.h>
 #include "vgmhead.h"
 
-VgmHead::VgmHead(){
+
+VgmHead::VgmHead(VgmSource* src){
     source = src;
     srcaddr = 0;
     isdone = false;
     delay62 = 735;
     delay63 = 882;
     opn2mult = 0x1000;
+    paused = false;
     restart();
 }
 
@@ -64,7 +66,7 @@ void VgmHead::cmdNext(u16 curtime){
             writecmd.data = source->getByte(srcaddr++);
             writecmd.data2 = source->getByte(srcaddr++);
             u8 block; u32 freq;
-            if(!(addr & 0x04)){
+            if(!(writecmd.addr & 0x04)){
                 //The VGM wrote the LSB first, swap them
                 writecmd.addr |= 0x04;
                 block = writecmd.data;
@@ -139,7 +141,9 @@ void VgmHead::cmdNext(u16 curtime){
             }else{
                 a = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
                     | ((u32)source->getByte(srcaddr+2) << 16) | ((u32)source->getByte(srcaddr+3) << 24);
+                DBG("Loading data block from %x size %x", srcaddr, a);
                 source->loadBlock(srcaddr, a);
+                DBG("Block loaded!");
                 srcaddr += a;
             }
         }else if(type == 0xE0){
@@ -148,7 +152,7 @@ void VgmHead::cmdNext(u16 curtime){
                 | ((u32)source->getByte(srcaddr+2) << 16) | ((u32)source->getByte(srcaddr+3) << 24);
             srcaddr += 4;
         }else if(type == 0xDF){
-            //Loop within VGM [unofficial]
+            //Loop within VGM [unofficial] TODO scrap this there's loop info in the header
             srcaddr = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
                 | ((u32)source->getByte(srcaddr+2) << 16);
         }else if(type == 0x90){
@@ -191,7 +195,7 @@ void VgmHead::cmdNext(u16 curtime){
 }
 
 void VgmHead::restart(){
-    srcaddr = vgmdatastartaddr;
+    srcaddr = source->vgmdatastartaddr;
     srcblockaddr = 0;
 }
 
