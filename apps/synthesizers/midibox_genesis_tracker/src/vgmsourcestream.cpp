@@ -83,6 +83,7 @@ u8 VgmSourceStream::getByte(u32 addr){
 
 void VgmSourceStream::bg_streamBuffer(){
     if(wantbuffer == 1 || wantbuffer == 2){
+        MIOS32_IRQ_Disable();
         s32 res = FILE_ReadReOpen(&file);
         if(res < 0) return;
         res = FILE_ReadSeek(wantbufferaddr);
@@ -100,6 +101,7 @@ void VgmSourceStream::bg_streamBuffer(){
         }
         wantbuffer = 0;
         FILE_ReadClose(&file);
+        MIOS32_IRQ_Enable();
     }
 }
 

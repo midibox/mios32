@@ -55,5 +55,6 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 // Export global variables
 /////////////////////////////////////////////////////////////////////////////
 
+u32 DEBUGVAL;
 
 #endif /* _APP_H */
