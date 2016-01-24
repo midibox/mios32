@@ -31,6 +31,7 @@
 // In other words: there is no need to add "extern C" to your own functions!
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Init(void){
+    DEBUGVAL = 0;
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
 
@@ -54,31 +55,57 @@ extern "C" void APP_Background(void)
     static VgmSourceStream* vgms = NULL;
     static VgmHead* vgmh = NULL;
     static s32 res = 0;
+    static u8 gotsdcard = 0;
     
-    if(vgms == NULL){
-        vgms = new VgmSourceStream();
-        res = FILE_CheckSDCard();
-        if(res == 1 || res == 3){
-            res = vgms->startStream("/vgm/sonic1/starlight.vgm");
-            if(res >= 0){
-                DBG("Loaded VGM!");
-                vgms->readHeader();
-                vgmh = new VgmHead(vgms);
-                VgmPlayer_AddHead(vgmh);
-            }else{
-                DBG("Failed to load VGM");
+    if(count % 500000 == 0){
+        if(!gotsdcard){
+            res = FILE_CheckSDCard();
+            if(res == 3){
+                gotsdcard = 1;
+                //FILE_PrintSDCardInfos();
             }
         }
-    }else{
-        vgms->bg_streamBuffer();
-    }
-    if(count % 30000 == 0){
-        if(res < 0){
-            DBG("Error %d", res);
-        }else if(res >= 0 && vgmh != NULL){
-            DBG("Okay %d, playback addr 0x%X", res, vgmh->getCurAddress());
+        if(gotsdcard){
+            if(vgms == NULL){
+                vgms = new VgmSourceStream();
+                DEBUGVAL = 3;
+                char* filename = new char[50];
+                sprintf(filename, "NEWWORLD.VGM");
+                //res = FILE_FileExists(filename);
+                //DBG("File existence: %d", res);
+                res = vgms->startStream(filename);
+                DEBUGVAL = 4;
+                if(res >= 0){
+                    DEBUGVAL = 5;
+                    DBG("Loaded VGM!");
+                    DEBUGVAL = 6;
+                    vgms->readHeader();
+                    DEBUGVAL = 7;
+                    vgmh = new VgmHead(vgms);
+                    DEBUGVAL = 8;
+                    VgmPlayer_AddHead(vgmh);
+                    DEBUGVAL = 9;
+                }else{
+                    DBG("Failed to load VGM");
+                    //DEBUGVAL = -1;
+                }
+                delete[] filename;
+            }else{
+                //DEBUGVAL = 2;
+            }
+        }
+        if(vgmh == NULL){
+            DBG("DEBUGVAL %d, res = %d", DEBUGVAL, res);
+        }else{
+            DBG("VGM address 0x%x", vgmh->getCurAddress());
         }
     }
+    
+    if(vgms != NULL){
+        vgms->bg_streamBuffer();
+    }
+    
+    
     
     //Play some things on the PSG
     /*

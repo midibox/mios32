@@ -52,7 +52,7 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
             //Check for delay
             if(h->cmdIsWait()){
                 s = h->cmdGetWaitRemaining(vgm_time);
-                if(s < 0){
+                if(s <= 0){
                     //Advance to next command
                     h->cmdNext(vgm_time);
                 }else if(s < minvgmwaitremaining){
