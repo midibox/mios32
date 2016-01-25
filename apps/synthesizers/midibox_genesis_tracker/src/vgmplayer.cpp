@@ -51,19 +51,17 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
     //Scan all VGMs for delays
     if(vgmp_head != NULL){
         h = vgmp_head;
-        if(!h->isPaused()){
-            //Check for delay
-            if(h->cmdIsWait()){
-                s = h->cmdGetWaitRemaining(vgm_time);
-                if(s <= 0){
-                    //Advance to next command
-                    h->cmdNext(vgm_time);
-                }else{
-                    u = s * VGMP_HRTICKSPERSAMPLE;
-                    if(u < minwait){
-                        //Store it as the shortest remaining time
-                        minwait = u;
-                    }
+        //Check for delay
+        if(h->cmdIsWait()){
+            s = h->cmdGetWaitRemaining(vgm_time);
+            if(s <= 0){
+                //Advance to next command
+                h->cmdNext(vgm_time);
+            }else{
+                u = s * VGMP_HRTICKSPERSAMPLE;
+                if(u < minwait){
+                    //Store it as the shortest remaining time
+                    minwait = u;
                 }
             }
         }
@@ -74,49 +72,46 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
         wrotetochip = 0;
         if(vgmp_head != NULL){
             h = vgmp_head;
-            if(!h->isPaused()){
-                //Check for command
-                if(h->cmdIsChipWrite()){
-                    cmd = h->cmdGetChipWrite();
-                    if(cmd.cmd == 0x50){
-                        //PSG write
-                        u = hr_time - chipdata[0].psg_lastwritetime;
-                        if(u < VGMP_PSGBUSYDELAY){
-                            u = VGMP_PSGBUSYDELAY - u;
-                            if(u < minwait){
-                                minwait = u;
-                            }
-                        }else{
-                            Genesis_PSGWrite(0, cmd.data);
-                            h->cmdNext(vgm_time);
-                            chipdata[0].psg_lastwritetime = hr_time;
-                            wrotetochip = 1;
+            //Check for command
+            if(h->cmdIsChipWrite()){
+                cmd = h->cmdGetChipWrite();
+                if(cmd.cmd == 0x50){
+                    //PSG write
+                    u = hr_time - chipdata[0].psg_lastwritetime;
+                    if(u < VGMP_PSGBUSYDELAY){
+                        u = VGMP_PSGBUSYDELAY - u;
+                        if(u < minwait){
+                            minwait = u;
                         }
-                    }else if((cmd.cmd & 0xFE) == 0x52){
-                        //OPN2 write
-                        u = hr_time - chipdata[0].opn2_lastwritetime;
-                        if(u < VGMP_OPN2BUSYDELAY){
-                            u = VGMP_OPN2BUSYDELAY - u;
-                            if(u < minwait){
-                                minwait = u;
-                            }
-                        }else{
-                            Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
-                            h->cmdNext(vgm_time);
-                            //Don't delay after 0x2x commands
-                            if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
-                                chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
-                            }else{
-                                chipdata[0].opn2_lastwritetime = hr_time;
-                            }
-                            wrotetochip = 1;
+                    }else{
+                        Genesis_PSGWrite(0, cmd.data);
+                        h->cmdNext(vgm_time);
+                        chipdata[0].psg_lastwritetime = hr_time;
+                        wrotetochip = 1;
+                    }
+                }else if((cmd.cmd & 0xFE) == 0x52){
+                    //OPN2 write
+                    u = hr_time - chipdata[0].opn2_lastwritetime;
+                    if(u < VGMP_OPN2BUSYDELAY){
+                        u = VGMP_OPN2BUSYDELAY - u;
+                        if(u < minwait){
+                            minwait = u;
                         }
+                    }else{
+                        Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
+                        h->cmdNext(vgm_time);
+                        //Don't delay after 0x2x commands
+                        if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
+                            chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
+                        }else{
+                            chipdata[0].opn2_lastwritetime = hr_time;
+                        }
+                        wrotetochip = 1;
                     }
                 }
             }
         }
     }
-    /*
     //Set up next delay
     if(minwait < 100){
         //TODO loop instead of returning and re-timing
@@ -124,8 +119,7 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
     }else if(minwait > VGMP_MAXDELAY){
         minwait = VGMP_MAXDELAY;
     }
-    */
-    minwait = 1000;
+    //minwait = 1000;
     MIOS32_BOARD_LED_Set(0b1111, leds);
     return minwait;
 }

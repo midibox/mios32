@@ -23,6 +23,9 @@
 #include "vgmsourcestream.h"
 #include "vgmhead.h"
 #include "vgmplayer.h"
+#include "vgmplayer_ll.h"
+
+u32 DEBUGVAL;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -31,7 +34,7 @@
 // In other words: there is no need to add "extern C" to your own functions!
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Init(void){
-    DEBUGVAL = 0;
+    DEBUGVAL = 117;
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
 
@@ -70,36 +73,29 @@ extern "C" void APP_Background(void)
         if(gotsdcard){
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
-                DEBUGVAL = 3;
                 char* filename = new char[50];
-                sprintf(filename, "GOODEND.VGM");
+                sprintf(filename, "S2CREDIT.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
-                DEBUGVAL = 4;
                 if(res >= 0){
-                    DEBUGVAL = 5;
                     DBG("Loaded VGM!");
-                    DEBUGVAL = 6;
                     vgms->readHeader();
-                    DEBUGVAL = 7;
                     vgmh = new VgmHead(vgms);
-                    DEBUGVAL = 8;
+                    vgmh->restart(VgmPlayerLL_GetVGMTime());
                     VgmPlayer_AddHead(vgmh);
-                    DEBUGVAL = 9;
                 }else{
                     DBG("Failed to load VGM");
-                    //DEBUGVAL = -1;
                 }
                 delete[] filename;
             }else{
-                //DEBUGVAL = 2;
+                //
             }
         }
         if(vgmh == NULL){
-            DBG("DEBUGVAL %d, res = %d", DEBUGVAL, res);
+            //DBG("DEBUGVAL %d, res = %d", DEBUGVAL, res);
         }else{
-            DBG("VGM address 0x%x", vgmh->getCurAddress());
+            //DBG("DEBUGVAL %d, VGM address 0x%x", DEBUGVAL, vgmh->getCurAddress());
         }
     }
     

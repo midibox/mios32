@@ -34,4 +34,4 @@ project_build/src/app.o: src/app.cpp \
  /data/Hardware/MIDIbox/mios32/trunk/include/mios32/mios32_enc28j60.h \
  src/app.h /data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.h \
  /data/Hardware/MIDIbox/mios32/trunk/modules/file/file.h \
- src/vgmsourcestream.h src/vgmhead.h src/vgmplayer.h
+ src/vgmsourcestream.h src/vgmhead.h src/vgmplayer.h src/vgmplayer_ll.h
