@@ -30,18 +30,15 @@ public:
     VgmHead(VgmSourceStream* src);
     ~VgmHead();
     
-    void restart();
+    void restart(u32 vgm_time);
     
-    void cmdNext(u32 curtime);
+    void cmdNext(u32 vgm_time);
     inline bool cmdIsWait() {return iswait || isdone;}
-    inline s32 cmdGetWaitRemaining(u32 curtime) {return (isdone ? 65535 : ((s32)waitduration - (s32)((u32)curtime - (u32)waitstarttime)));}
+    inline s32 cmdGetWaitRemaining(u32 vgm_time) {return (isdone ? 65535 : ((s32)ticks - (s32)vgm_time));}
     inline bool cmdIsChipWrite() {return iswrite && !isdone;}
     inline ChipWriteCmd cmdGetChipWrite() {return writecmd;}
     
     inline void setOPN2FreqMultiplier(u32 mult) {opn2mult = mult;} // Ratio of VGM to actual OPN2 clock, times 0x1000
-    
-    inline bool isPaused() { return paused; }
-    inline void setPaused(bool p) { paused = p; }
     
     inline u32 getCurAddress() { return srcaddr; }
     
@@ -51,8 +48,9 @@ private:
     u32 srcblockaddr;
     
     bool iswait, iswrite;
-    u32 waitduration, waitstarttime;
     ChipWriteCmd writecmd;
+    
+    u32 ticks;
     
     bool isdacwrite, isfreqwrite;
     
@@ -61,7 +59,6 @@ private:
     
     u32 opn2mult;
     
-    bool paused;
 };
 
 #endif /* _VGMHEAD_H */

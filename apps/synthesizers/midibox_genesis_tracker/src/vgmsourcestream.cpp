@@ -12,6 +12,7 @@
 
 #include <mios32.h>
 #include "vgmsourcestream.h"
+#include "app.h"
 
 
 VgmSourceStream::VgmSourceStream() {
@@ -55,7 +56,6 @@ u8 VgmSourceStream::getByte(u32 addr){
             wantbuffer = 2;
             wantbufferaddr = buffer1addr + VGMSOURCESTREAM_BUFSIZE;
         }
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
         return buffer1[addr - buffer1addr];
     }
     if(addr >= buffer2addr && addr < (buffer2addr + VGMSOURCESTREAM_BUFSIZE)){
@@ -64,7 +64,6 @@ u8 VgmSourceStream::getByte(u32 addr){
             wantbuffer = 1;
             wantbufferaddr = buffer2addr + VGMSOURCESTREAM_BUFSIZE;
         }
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
         return buffer2[addr - buffer2addr];
     }
     //Have to load something right now
@@ -89,10 +88,15 @@ u8 VgmSourceStream::getByte(u32 addr){
 void VgmSourceStream::bg_streamBuffer(){
     if(wantbuffer == 1 || wantbuffer == 2){
         MIOS32_IRQ_Disable();
+        u8 leds = MIOS32_BOARD_LED_Get();
+        MIOS32_BOARD_LED_Set(0b1111, 0b0001);
+        DEBUGVAL = 1;
         s32 res = FILE_ReadReOpen(&file);
         if(res < 0) return;
+        DEBUGVAL = 2;
         res = FILE_ReadSeek(wantbufferaddr);
         if(res < 0) return;
+        DEBUGVAL = 3;
         if(wantbuffer == 1){
             buffer1addr = 0xFFFF0000; //if you have a 4GB VGM that's a problem
             res = FILE_ReadBuffer(buffer1, VGMSOURCESTREAM_BUFSIZE);
@@ -106,6 +110,8 @@ void VgmSourceStream::bg_streamBuffer(){
         }
         wantbuffer = 0;
         FILE_ReadClose(&file);
+        MIOS32_BOARD_LED_Set(0b1111, leds);
+        DEBUGVAL = 0;
         MIOS32_IRQ_Enable();
     }
 }
@@ -123,6 +129,7 @@ void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
     res = FILE_ReadBuffer(block, len);
     if(res < 0) return;
     FILE_ReadClose(&file);
+    blocklen = len;
 }
 
 void VgmSourceStream::readHeader(){

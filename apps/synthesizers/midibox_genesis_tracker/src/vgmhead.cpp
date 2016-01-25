@@ -21,11 +21,9 @@ VgmHead::VgmHead(VgmSourceStream* src){
     delay62 = 735;
     delay63 = 882;
     opn2mult = 0x1000;
-    paused = false;
-    restart();
 }
 
-void VgmHead::cmdNext(u32 curtime){
+void VgmHead::cmdNext(u32 vgm_time){
     if(isfreqwrite){
         //Second virtual command is the second byte
         isfreqwrite = false;
@@ -94,37 +92,31 @@ void VgmHead::cmdNext(u32 curtime){
             //OPN2 DAC write
             /*
             iswait = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
+            ticks += type - 0x80;
             */
             isdacwrite = true;
             iswrite = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
+            ticks += type - 0x80;
             writecmd.cmd = 0x52;
             writecmd.addr = 0x2A;
             writecmd.data = source->getBlockByte(srcblockaddr++);
         }else if(type >= 0x70 && type <= 0x7F){
             //Short wait
             iswait = true;
-            waitduration = type - 0x6F;
-            waitstarttime = curtime;
+            ticks += type - 0x6F;
         }else if(type == 0x61){
             //Long wait
             iswait = true;
-            waitduration = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
-            waitstarttime = curtime;
+            ticks += source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
             srcaddr += 2;
         }else if(type == 0x62){
             //60 Hz wait
             iswait = true;
-            waitduration = delay62;
-            waitstarttime = curtime;
+            ticks += delay62;
         }else if(type == 0x63){
             //50 Hz wait
             iswait = true;
-            waitduration = delay63;
-            waitstarttime = curtime;
+            ticks += delay63;
         }else if(type == 0x64){
             //Override wait lengths
             u8 tooverride = source->getByte(srcaddr++);
@@ -203,8 +195,9 @@ void VgmHead::cmdNext(u32 curtime){
     }
 }
 
-void VgmHead::restart(){
+void VgmHead::restart(u32 vgm_time){
     srcaddr = source->vgmdatastartaddr;
     srcblockaddr = 0;
+    ticks = vgm_time;
 }
 

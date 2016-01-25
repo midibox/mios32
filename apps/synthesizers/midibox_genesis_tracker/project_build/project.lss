@@ -5,21 +5,21 @@ Sections:
 Idx Name          Size      VMA       LMA       File off  Algn  Flags
   0 .mios32_bsl   00004000  08000000  08000000  00008000  2**0  CONTENTS, ALLOC, LOAD, READONLY, DATA
   1 .isr_vector   00000188  08004000  08004000  0000c000  2**2  CONTENTS, ALLOC, LOAD, READONLY, DATA
-  2 .text         0000bd44  08010000  08010000  00010000  2**2  CONTENTS, ALLOC, LOAD, READONLY, CODE
-  3 .rodata       00001914  0801bd44  0801bd44  0001bd44  2**2  CONTENTS, ALLOC, LOAD, READONLY, DATA
-  4 .data         00000068  20000000  0801d658  00020000  2**3  CONTENTS, ALLOC, LOAD, DATA
-  5 .bss          00011c28  20000068  0801d6c0  00020068  2**3  ALLOC
-  6 ._usrstack    00000100  20011c90  0801d6c0  00021c90  2**0  ALLOC
+  2 .text         0000bd24  08010000  08010000  00010000  2**2  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  3 .rodata       000018ec  0801bd24  0801bd24  0001bd24  2**2  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .data         00000068  20000000  0801d610  00020000  2**3  CONTENTS, ALLOC, LOAD, DATA
+  5 .bss          00011c28  20000068  0801d678  00020068  2**3  ALLOC
+  6 ._usrstack    00000100  20011c90  0801d678  00021c90  2**0  ALLOC
   7 .comment      00000070  00000000  00000000  00020068  2**0  CONTENTS, READONLY
   8 .ARM.attributes 00000033  00000000  00000000  000200d8  2**0  CONTENTS, READONLY
   9 .debug_aranges 000028a8  00000000  00000000  0002010b  2**0  CONTENTS, READONLY, DEBUGGING
- 10 .debug_info   000478fc  00000000  00000000  000229b3  2**0  CONTENTS, READONLY, DEBUGGING
- 11 .debug_abbrev 0000acb9  00000000  00000000  0006a2af  2**0  CONTENTS, READONLY, DEBUGGING
- 12 .debug_line   00012393  00000000  00000000  00074f68  2**0  CONTENTS, READONLY, DEBUGGING
- 13 .debug_frame  00006174  00000000  00000000  000872fc  2**2  CONTENTS, READONLY, DEBUGGING
- 14 .debug_str    0000e5dd  00000000  00000000  0008d470  2**0  CONTENTS, READONLY, DEBUGGING
- 15 .debug_loc    0001fb1f  00000000  00000000  0009ba4d  2**0  CONTENTS, READONLY, DEBUGGING
- 16 .debug_ranges 00002e48  00000000  00000000  000bb56c  2**0  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_info   000477be  00000000  00000000  000229b3  2**0  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_abbrev 0000acad  00000000  00000000  0006a171  2**0  CONTENTS, READONLY, DEBUGGING
+ 12 .debug_line   000123c4  00000000  00000000  00074e1e  2**0  CONTENTS, READONLY, DEBUGGING
+ 13 .debug_frame  00006168  00000000  00000000  000871e4  2**2  CONTENTS, READONLY, DEBUGGING
+ 14 .debug_str    0000e576  00000000  00000000  0008d34c  2**0  CONTENTS, READONLY, DEBUGGING
+ 15 .debug_loc    0001fb22  00000000  00000000  0009b8c2  2**0  CONTENTS, READONLY, DEBUGGING
+ 16 .debug_ranges 00002e58  00000000  00000000  000bb3e4  2**0  CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
 
@@ -240,7 +240,7 @@ void VgmPlayerLL_Init(){
  80100ec:	4621      	mov	r1, r4
  80100ee:	f005 f8dd 	bl	80152ac <TIM_ITConfig>
     TIM_TimeBaseStructure.TIM_Period = (VGMP_MAXDELAY-1); //Will be changed
- 80100f2:	f644 2067 	movw	r0, #19047	; 0x4a67
+ 80100f2:	f240 30e7 	movw	r0, #999	; 0x3e7
  80100f6:	9002      	str	r0, [sp, #8]
     TIM_TimeBaseStructure.TIM_Prescaler = 1; //maximum speed
     TIM_TimeBaseStructure.TIM_ClockDivision = 0; //maximum accuracy
@@ -311,7 +311,7 @@ void SRIO_ServiceFinish(void)
 
   // notify application about finished SRIO scan
   APP_SRIO_ServiceFinish();
- 8010142:	f00b b997 	b.w	801b474 <APP_SRIO_ServiceFinish>
+ 8010142:	f00b b979 	b.w	801b438 <APP_SRIO_ServiceFinish>
 	...
 
 08010148 <TASK_Hooks>:
@@ -377,13 +377,13 @@ static void TASK_Hooks(void *pvParameters)
     // optional APP_Tick() hook
     // helps to save memory (re-use the TASK_Hooks for other purposes...)
     APP_Tick();
- 801017c:	f00b f976 	bl	801b46c <APP_Tick>
+ 801017c:	f00b f958 	bl	801b430 <APP_Tick>
   }
  8010180:	e7e6      	b.n	8010150 <TASK_Hooks+0x8>
  8010182:	bf00      	nop
- 8010184:	0801b477 	.word	0x0801b477
- 8010188:	0801b479 	.word	0x0801b479
- 801018c:	0801b47b 	.word	0x0801b47b
+ 8010184:	0801b43b 	.word	0x0801b43b
+ 8010188:	0801b43d 	.word	0x0801b43d
+ 801018c:	0801b43f 	.word	0x0801b43f
 
 08010190 <TASK_MIDI_Hooks>:
 // MIDI task (separated from TASK_Hooks() to ensure parallel handling of
@@ -430,11 +430,11 @@ static void TASK_MIDI_Hooks(void *pvParameters)
     // optional application specific hook
     // helps to save memory (re-use the TASK_Hooks for other purposes...)
     APP_MIDI_Tick();
- 80101b8:	f00b f959 	bl	801b46e <APP_MIDI_Tick>
+ 80101b8:	f00b f93b 	bl	801b432 <APP_MIDI_Tick>
   }
  80101bc:	e7ec      	b.n	8010198 <TASK_MIDI_Hooks+0x8>
  80101be:	bf00      	nop
- 80101c0:	0801b471 	.word	0x0801b471
+ 80101c0:	0801b435 	.word	0x0801b435
 
 080101c4 <main>:
 
@@ -557,7 +557,7 @@ int main(void)
 
   // call C++ constructors
   __libc_init_array();
- 8010240:	f00b fd24 	bl	801bc8c <__libc_init_array>
+ 8010240:	f00b fd14 	bl	801bc6c <__libc_init_array>
 
   // initialize application
   APP_Init();
@@ -624,9 +624,9 @@ int main(void)
  801028e:	4620      	mov	r0, r4
  8010290:	b005      	add	sp, #20
  8010292:	bd30      	pop	{r4, r5, pc}
- 8010294:	0801bd49 	.word	0x0801bd49
+ 8010294:	0801bd29 	.word	0x0801bd29
  8010298:	08010149 	.word	0x08010149
- 801029c:	0801bd44 	.word	0x0801bd44
+ 801029c:	0801bd24 	.word	0x0801bd24
  80102a0:	08010191 	.word	0x08010191
 
 080102a4 <vApplicationTickHook>:
@@ -645,7 +645,7 @@ void vApplicationTickHook(void)
 #if !defined(MIOS32_DONT_USE_SRIO) && !defined(MIOS32_DONT_SERVICE_SRIO_SCAN)
   // notify application about SRIO scan start
   APP_SRIO_ServicePrepare();
- 80102aa:	f00b f8e2 	bl	801b472 <APP_SRIO_ServicePrepare>
+ 80102aa:	f00b f8c4 	bl	801b436 <APP_SRIO_ServicePrepare>
 
   // start next SRIO scan - IRQ notification to SRIO_ServiceFinish()
   MIOS32_SRIO_ScanStart(SRIO_ServiceFinish);
@@ -716,7 +716,7 @@ void _abort(void)
  80102f4:	f003 f92e 	bl	8013554 <MIOS32_BOARD_LED_Set>
  80102f8:	e7e4      	b.n	80102c4 <_abort+0x4>
  80102fa:	bf00      	nop
- 80102fc:	0801b471 	.word	0x0801b471
+ 80102fc:	0801b435 	.word	0x0801b435
 
 08010300 <HardFault_Handler_c>:
 
@@ -923,29 +923,29 @@ void HardFault_Handler_c(unsigned int * hardfault_args)
 
   _abort();
  80103e8:	f7ff ff6a 	bl	80102c0 <_abort>
- 80103ec:	0801bdbb 	.word	0x0801bdbb
- 80103f0:	0801bda5 	.word	0x0801bda5
- 80103f4:	0801bdcf 	.word	0x0801bdcf
- 80103f8:	0801bde3 	.word	0x0801bde3
+ 80103ec:	0801bd9b 	.word	0x0801bd9b
+ 80103f0:	0801bd85 	.word	0x0801bd85
+ 80103f4:	0801bdaf 	.word	0x0801bdaf
+ 80103f8:	0801bdc3 	.word	0x0801bdc3
  80103fc:	e000ed3c 	.word	0xe000ed3c
- 8010400:	0801bdee 	.word	0x0801bdee
- 8010404:	0801bdf9 	.word	0x0801bdf9
- 8010408:	0801be04 	.word	0x0801be04
- 801040c:	0801be0f 	.word	0x0801be0f
- 8010410:	0801be1b 	.word	0x0801be1b
- 8010414:	0801bdb0 	.word	0x0801bdb0
- 8010418:	0801be26 	.word	0x0801be26
+ 8010400:	0801bdce 	.word	0x0801bdce
+ 8010404:	0801bdd9 	.word	0x0801bdd9
+ 8010408:	0801bde4 	.word	0x0801bde4
+ 801040c:	0801bdef 	.word	0x0801bdef
+ 8010410:	0801bdfb 	.word	0x0801bdfb
+ 8010414:	0801bd90 	.word	0x0801bd90
+ 8010418:	0801be06 	.word	0x0801be06
  801041c:	e000ed38 	.word	0xe000ed38
- 8010420:	0801be32 	.word	0x0801be32
+ 8010420:	0801be12 	.word	0x0801be12
  8010424:	e000ed28 	.word	0xe000ed28
- 8010428:	0801be3f 	.word	0x0801be3f
+ 8010428:	0801be1f 	.word	0x0801be1f
  801042c:	e000ed2c 	.word	0xe000ed2c
- 8010430:	0801be4c 	.word	0x0801be4c
+ 8010430:	0801be2c 	.word	0x0801be2c
  8010434:	e000ed30 	.word	0xe000ed30
- 8010438:	0801be59 	.word	0x0801be59
- 801043c:	0801be66 	.word	0x0801be66
- 8010440:	0801be73 	.word	0x0801be73
- 8010444:	0801be84 	.word	0x0801be84
+ 8010438:	0801be39 	.word	0x0801be39
+ 801043c:	0801be46 	.word	0x0801be46
+ 8010440:	0801be53 	.word	0x0801be53
+ 8010444:	0801be64 	.word	0x0801be64
 
 08010448 <HardFault_Handler>:
 }
@@ -1110,7 +1110,7 @@ tskTCB *pxNewTCB;
  80104e4:	00ba      	lsls	r2, r7, #2
  80104e6:	4628      	mov	r0, r5
  80104e8:	21a5      	movs	r1, #165	; 0xa5
- 80104ea:	f00b fbfe 	bl	801bcea <memset>
+ 80104ea:	f00b fbee 	bl	801bcca <memset>
 		stack grows from high memory to low (as per the 80x86) or visa versa.
 		portSTACK_GROWTH is used to make the result positive or negative as
 		required by the port. */
@@ -1142,7 +1142,7 @@ tskTCB *pxNewTCB;
 		/* Don't bring strncpy into the build unnecessarily. */
 		strncpy( ( char * ) pxTCB->pcTaskName, ( const char * ) pcName, ( unsigned short ) configMAX_TASK_NAME_LEN );
  80104fe:	f104 0034 	add.w	r0, r4, #52	; 0x34
- 8010502:	f00b fc0a 	bl	801bd1a <strncpy>
+ 8010502:	f00b fbfa 	bl	801bcfa <strncpy>
  8010506:	2e04      	cmp	r6, #4
  8010508:	bf34      	ite	cc
  801050a:	4635      	movcc	r5, r6
@@ -1584,7 +1584,7 @@ void vTaskStartScheduler( void )
  8010678:	b005      	add	sp, #20
  801067a:	bd30      	pop	{r4, r5, pc}
  801067c:	08010865 	.word	0x08010865
- 8010680:	0801be91 	.word	0x0801be91
+ 8010680:	0801be71 	.word	0x0801be71
  8010684:	20000088 	.word	0x20000088
  8010688:	2000013c 	.word	0x2000013c
 
@@ -3334,7 +3334,7 @@ static void umm_make_new_block( unsigned short int c,
 }
  8010d5e:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
  8010d60:	20000a90 	.word	0x20000a90
- 8010d64:	0801bfbb 	.word	0x0801bfbb
+ 8010d64:	0801bf9b 	.word	0x0801bf9b
 
 08010d68 <Default_Handler>:
  * @param  None     
@@ -3429,7 +3429,7 @@ void Reset_Handler(void)
  8010da2:	bf00      	nop
  8010da4:	20000000 	.word	0x20000000
  8010da8:	20000068 	.word	0x20000068
- 8010dac:	0801d658 	.word	0x0801d658
+ 8010dac:	0801d610 	.word	0x0801d610
  8010db0:	20000068 	.word	0x20000068
  8010db4:	20011c90 	.word	0x20011c90
 
@@ -5047,7 +5047,7 @@ s32 MIOS32_ENC_Handler(void *_callback)
 }
  80113c4:	2000      	movs	r0, #0
  80113c6:	4770      	bx	lr
- 80113c8:	0801bfe2 	.word	0x0801bfe2
+ 80113c8:	0801bfc2 	.word	0x0801bfc2
  80113cc:	20010dd2 	.word	0x20010dd2
  80113d0:	08003fc0 	.word	0x08003fc0
  80113d4:	08003fc1 	.word	0x08003fc1
@@ -5418,7 +5418,7 @@ s32 MIOS32_LCD_Init(u32 mode)
 }
  80114e4:	bd1c      	pop	{r2, r3, r4, pc}
  80114e6:	bf00      	nop
- 80114e8:	0801bfdd 	.word	0x0801bfdd
+ 80114e8:	0801bfbd 	.word	0x0801bfbd
  80114ec:	20000174 	.word	0x20000174
 
 080114f0 <MIOS32_LCD_PrintChar>:
@@ -5615,8 +5615,8 @@ s32 MIOS32_LCD_PrintBootMessage(void)
  8011598:	bd38      	pop	{r3, r4, r5, pc}
  801159a:	bf00      	nop
  801159c:	20000180 	.word	0x20000180
- 80115a0:	0801c064 	.word	0x0801c064
- 80115a4:	0801c07c 	.word	0x0801c07c
+ 80115a0:	0801c044 	.word	0x0801c044
+ 80115a4:	0801c05c 	.word	0x0801c05c
 
 080115a8 <MIOS32_LCD_PrintFormattedString>:
 //! \param[in] *format zero-terminated format string - 64 characters supported maximum!
@@ -6729,7 +6729,7 @@ s32 MIOS32_MIDI_SendDebugString(const char *str)
 #else
   s32 status = 0;
   u32 len = strlen(str);
- 8011960:	f00a f9d3 	bl	801bd0a <strlen>
+ 8011960:	f00a f9c3 	bl	801bcea <strlen>
 
   status |= MIOS32_MIDI_SendDebugStringHeader(debug_port, 0x40, str[0]);
  8011964:	4f0a      	ldr	r7, [pc, #40]	; (8011990 <MIOS32_MIDI_SendDebugString+0x34>)
@@ -6793,7 +6793,7 @@ s32 MIOS32_MIDI_SendDebugMessage(const char *format, ...)
   // other the other hand we don't want to allocate too many byte for buffer[] to save stack
   if( strlen(format) > 100 ) {
  801199c:	4628      	mov	r0, r5
- 801199e:	f00a f9b4 	bl	801bd0a <strlen>
+ 801199e:	f00a f9a4 	bl	801bcea <strlen>
  80119a2:	2864      	cmp	r0, #100	; 0x64
  80119a4:	d901      	bls.n	80119aa <MIOS32_MIDI_SendDebugMessage+0x16>
     // exit with less costly message
@@ -6828,7 +6828,7 @@ s32 MIOS32_MIDI_SendDebugMessage(const char *format, ...)
 
   u32 len = strlen(str);
  80119b8:	4620      	mov	r0, r4
- 80119ba:	f00a f9a6 	bl	801bd0a <strlen>
+ 80119ba:	f00a f996 	bl	801bcea <strlen>
   u8 *str_ptr = (u8 *)str;
   int i;
   for(i=0; i<len; ++i) {
@@ -6859,7 +6859,7 @@ s32 MIOS32_MIDI_SendDebugMessage(const char *format, ...)
  80119d8:	e8bd 4030 	ldmia.w	sp!, {r4, r5, lr}
  80119dc:	b004      	add	sp, #16
  80119de:	4770      	bx	lr
- 80119e0:	0801c0d8 	.word	0x0801c0d8
+ 80119e0:	0801c0b8 	.word	0x0801c0b8
 
 080119e4 <MIOS32_MIDI_TimeOut>:
 
@@ -6931,7 +6931,7 @@ static s32 MIOS32_MIDI_SYSEX_CmdFinished(void)
  8011a24:	20000194 	.word	0x20000194
  8011a28:	20000188 	.word	0x20000188
  8011a2c:	200001b4 	.word	0x200001b4
- 8011a30:	0801c12b 	.word	0x0801c12b
+ 8011a30:	0801c10b 	.word	0x0801c10b
 
 08011a34 <MIOS32_MIDI_Periodic_mS>:
 //! by a task in the programming model!
@@ -7110,7 +7110,7 @@ s32 MIOS32_MIDI_SendPackageToRxCallback(mios32_midi_port_t port, mios32_midi_pac
  8011ac0:	4620      	mov	r0, r4
  8011ac2:	bdfe      	pop	{r1, r2, r3, r4, r5, r6, r7, pc}
  8011ac4:	2000018c 	.word	0x2000018c
- 8011ac8:	0801c0c8 	.word	0x0801c0c8
+ 8011ac8:	0801c0a8 	.word	0x0801c0a8
 
 08011acc <MIOS32_MIDI_DebugPortSet>:
 //! \param[in] port MIDI port (USB0..USB7, UART0..UART3, IIC0..IIC7, SPIM0..SPIM7)
@@ -7581,20 +7581,20 @@ static s32 MIOS32_MIDI_SYSEX_CmdFinished(void)
  8011c52:	bf00      	nop
  8011c54:	20000188 	.word	0x20000188
  8011c58:	20000195 	.word	0x20000195
- 8011c5c:	0801c16d 	.word	0x0801c16d
- 8011c60:	0801be8c 	.word	0x0801be8c
- 8011c64:	0801c174 	.word	0x0801c174
- 8011c68:	0801c186 	.word	0x0801c186
- 8011c6c:	0801c190 	.word	0x0801c190
- 8011c70:	0801d610 	.word	0x0801d610
- 8011c74:	0801c064 	.word	0x0801c064
- 8011c78:	0801c07c 	.word	0x0801c07c
+ 8011c5c:	0801c14d 	.word	0x0801c14d
+ 8011c60:	0801be6c 	.word	0x0801be6c
+ 8011c64:	0801c154 	.word	0x0801c154
+ 8011c68:	0801c166 	.word	0x0801c166
+ 8011c6c:	0801c170 	.word	0x0801c170
+ 8011c70:	0801c172 	.word	0x0801c172
+ 8011c74:	0801c044 	.word	0x0801c044
+ 8011c78:	0801c05c 	.word	0x0801c05c
  8011c7c:	20000009 	.word	0x20000009
  8011c80:	20000190 	.word	0x20000190
  8011c84:	200001a4 	.word	0x200001a4
  8011c88:	20000194 	.word	0x20000194
  8011c8c:	2000000a 	.word	0x2000000a
- 8011c90:	0801c192 	.word	0x0801c192
+ 8011c90:	0801c175 	.word	0x0801c175
  8011c94:	2000019c 	.word	0x2000019c
 
 08011c98 <MIOS32_MIDI_SYSEX_Parser>:
@@ -7787,7 +7787,7 @@ static s32 MIOS32_MIDI_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
  8011d5a:	bf00      	nop
  8011d5c:	2000019c 	.word	0x2000019c
  8011d60:	20000194 	.word	0x20000194
- 8011d64:	0801c1e8 	.word	0x0801c1e8
+ 8011d64:	0801c1cb 	.word	0x0801c1cb
  8011d68:	20000196 	.word	0x20000196
  8011d6c:	20000188 	.word	0x20000188
 
@@ -8512,7 +8512,7 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
  80120c0:	b00e      	add	sp, #56	; 0x38
  80120c2:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
  80120c6:	bf00      	nop
- 80120c8:	0801c090 	.word	0x0801c090
+ 80120c8:	0801c070 	.word	0x0801c070
  80120cc:	200001a8 	.word	0x200001a8
  80120d0:	20000198 	.word	0x20000198
 
@@ -9125,10 +9125,10 @@ s32 MIOS32_UART_MIDI_PackageSend_NonBlocking(u8 uart_port, mios32_midi_package_t
 #endif
 }
  80122c2:	bdfe      	pop	{r1, r2, r3, r4, r5, r6, r7, pc}
- 80122c4:	0801c0c8 	.word	0x0801c0c8
+ 80122c4:	0801c0a8 	.word	0x0801c0a8
  80122c8:	200001d8 	.word	0x200001d8
  80122cc:	200001bc 	.word	0x200001bc
- 80122d0:	0801c1ed 	.word	0x0801c1ed
+ 80122d0:	0801c1d0 	.word	0x0801c1d0
  80122d4:	200001da 	.word	0x200001da
 
 080122d8 <MIOS32_UART_MIDI_PackageSend>:
@@ -9638,8 +9638,8 @@ static s32 MIOS32_UART_MIDI_RecordReset(u8 uart_port)
  801248c:	e7e5      	b.n	801245a <MIOS32_UART_MIDI_PackageReceive+0x16e>
  801248e:	bf00      	nop
  8012490:	200001c0 	.word	0x200001c0
- 8012494:	0801c1e0 	.word	0x0801c1e0
- 8012498:	0801c0b8 	.word	0x0801c0b8
+ 8012494:	0801c1c3 	.word	0x0801c1c3
+ 8012498:	0801c098 	.word	0x0801c098
 
 0801249c <MIOS32_SPI_MIDI_Init>:
   MIOS32_SPI_MIDI_InitScanBuffer((u32 *)&tx_upstream_buffer[0]);
@@ -10897,7 +10897,7 @@ s32 MIOS32_SYS_Reset(void)
  801298a:	4b03      	ldr	r3, [pc, #12]	; (8012998 <MIOS32_SYS_Reset+0xa8>)
  801298c:	60da      	str	r2, [r3, #12]
  801298e:	e7fe      	b.n	801298e <MIOS32_SYS_Reset+0x9e>
- 8012990:	0801c1f0 	.word	0x0801c1f0
+ 8012990:	0801c1d3 	.word	0x0801c1d3
  8012994:	05fa0001 	.word	0x05fa0001
  8012998:	e000ed00 	.word	0xe000ed00
 
@@ -14180,7 +14180,7 @@ s32 MIOS32_BOARD_J10_PinInit(u8 pin, mios32_board_pin_mode_t mode)
  8013620:	bd10      	pop	{r4, pc}
  8013622:	bf00      	nop
  8013624:	200001fa 	.word	0x200001fa
- 8013628:	0801c204 	.word	0x0801c204
+ 8013628:	0801c1e4 	.word	0x0801c1e4
 
 0801362c <MIOS32_BOARD_J10_PinSet>:
 s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value)
@@ -14244,7 +14244,7 @@ s32 MIOS32_BOARD_J10_PinSet(u8 pin, u8 value)
 }
  8013666:	4770      	bx	lr
  8013668:	200001fa 	.word	0x200001fa
- 801366c:	0801c204 	.word	0x0801c204
+ 801366c:	0801c1e4 	.word	0x0801c1e4
 
 08013670 <MIOS32_BOARD_J15_PortInit>:
 {
@@ -15184,7 +15184,7 @@ static uint8_t *  USBD_USR_DeviceDescriptor( uint8_t speed , uint16_t *length)
 }
  801393c:	4800      	ldr	r0, [pc, #0]	; (8013940 <USBD_USR_DeviceDescriptor+0x8>)
  801393e:	4770      	bx	lr
- 8013940:	0801c300 	.word	0x0801c300
+ 8013940:	0801c2e0 	.word	0x0801c2e0
 
 08013944 <USBD_USR_LangIDStrDescriptor>:
 * @param  length : pointer to data length variable
@@ -15199,7 +15199,7 @@ static uint8_t *  USBD_USR_LangIDStrDescriptor( uint8_t speed , uint16_t *length
 }
  8013948:	4800      	ldr	r0, [pc, #0]	; (801394c <USBD_USR_LangIDStrDescriptor+0x8>)
  801394a:	4770      	bx	lr
- 801394c:	0801c2fc 	.word	0x0801c2fc
+ 801394c:	0801c2dc 	.word	0x0801c2dc
 
 08013950 <USBD_USR_Init>:
 *         Displays the message on LCD for host lib initialization
@@ -15434,7 +15434,7 @@ static uint8_t  MIOS32_USB_CLASS_EP0_RxReady (void  *pdev)
 }
  801398c:	4800      	ldr	r0, [pc, #0]	; (8013990 <MIOS32_USB_CLASS_GetCfgDesc+0x8>)
  801398e:	4770      	bx	lr
- 8013990:	0801c33f 	.word	0x0801c33f
+ 8013990:	0801c31f 	.word	0x0801c31f
 
 08013994 <USBD_USR_SerialStrDescriptor>:
 * @param  speed : current device speed
@@ -15491,7 +15491,7 @@ static uint8_t *  USBD_USR_SerialStrDescriptor( uint8_t speed , uint16_t *length
  80139be:	4802      	ldr	r0, [pc, #8]	; (80139c8 <USBD_USR_SerialStrDescriptor+0x34>)
  80139c0:	b00c      	add	sp, #48	; 0x30
  80139c2:	bd10      	pop	{r4, pc}
- 80139c4:	0801c330 	.word	0x0801c330
+ 80139c4:	0801c310 	.word	0x0801c310
  80139c8:	20011944 	.word	0x20011944
 
 080139cc <USBD_USR_ProductStrDescriptor>:
@@ -15596,7 +15596,7 @@ static uint8_t *  USBD_USR_ProductStrDescriptor( uint8_t speed , uint16_t *lengt
  8013a1e:	4803      	ldr	r0, [pc, #12]	; (8013a2c <USBD_USR_ProductStrDescriptor+0x60>)
  8013a20:	b006      	add	sp, #24
  8013a22:	bd70      	pop	{r4, r5, r6, pc}
- 8013a24:	0801c064 	.word	0x0801c064
+ 8013a24:	0801c044 	.word	0x0801c044
  8013a28:	08003fe0 	.word	0x08003fe0
  8013a2c:	20011944 	.word	0x20011944
 
@@ -15671,7 +15671,7 @@ static uint8_t *  USBD_USR_ManufacturerStrDescriptor( uint8_t speed , uint16_t *
  8013a5e:	b004      	add	sp, #16
  8013a60:	bd10      	pop	{r4, pc}
  8013a62:	bf00      	nop
- 8013a64:	0801c333 	.word	0x0801c333
+ 8013a64:	0801c313 	.word	0x0801c313
  8013a68:	20011944 	.word	0x20011944
 
 08013a6c <MIOS32_USB_CLASS_DataOut>:
@@ -16539,12 +16539,12 @@ s32 MIOS32_USB_Init(u32 mode)
  8013d40:	bd7c      	pop	{r2, r3, r4, r5, r6, pc}
  8013d42:	bf00      	nop
  8013d44:	20010e28 	.word	0x20010e28
- 8013d48:	0801c284 	.word	0x0801c284
+ 8013d48:	0801c264 	.word	0x0801c264
  8013d4c:	200118bc 	.word	0x200118bc
- 8013d50:	0801c3c0 	.word	0x0801c3c0
- 8013d54:	0801c2cc 	.word	0x0801c2cc
- 8013d58:	0801c3a4 	.word	0x0801c3a4
- 8013d5c:	0801c314 	.word	0x0801c314
+ 8013d50:	0801c3a0 	.word	0x0801c3a0
+ 8013d54:	0801c2ac 	.word	0x0801c2ac
+ 8013d58:	0801c384 	.word	0x0801c384
+ 8013d5c:	0801c2f4 	.word	0x0801c2f4
  8013d60:	40020000 	.word	0x40020000
 
 08013d64 <USBH_ClassRequest>:
@@ -20068,7 +20068,7 @@ static int print( char **out, const char *format, va_list args )
  8014c22:	4620      	mov	r0, r4
  8014c24:	b009      	add	sp, #36	; 0x24
  8014c26:	bdf0      	pop	{r4, r5, r6, r7, pc}
- 8014c28:	0801c3d0 	.word	0x0801c3d0
+ 8014c28:	0801c3b0 	.word	0x0801c3b0
 
 08014c2c <sprintf>:
 {
@@ -24364,7 +24364,7 @@ static void USBD_ClrFeature(USB_OTG_CORE_HANDLE  *pdev,
  8015a82:	490d      	ldr	r1, [pc, #52]	; (8015ab8 <USBD_StdDevReq+0x2a8>)
  8015a84:	4632      	mov	r2, r6
  8015a86:	a802      	add	r0, sp, #8
- 8015a88:	f006 f926 	bl	801bcd8 <memcpy>
+ 8015a88:	f006 f916 	bl	801bcb8 <memcpy>
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x2F,0x55,0x46,0x1F,
 	0x00,0xD8,0x48,0x40,0x37,0x6A,0xF7,0x6A,0x00,0x30,0x00,0x00,0xC7,0x06,0x2E,0x73,
 	0x4A,0x2C,0x13,0x7B,0xE9,0x7F,0x32,0x00,0x2A,0x28,0x0D,0x9B,0xFE,0x0B,0x21,0xEF,
@@ -24404,7 +24404,7 @@ static void USBD_ClrFeature(USB_OTG_CORE_HANDLE  *pdev,
  8015aac:	200005c8 	.word	0x200005c8
  8015ab0:	200005c0 	.word	0x200005c0
  8015ab4:	20011940 	.word	0x20011940
- 8015ab8:	0801c3d7 	.word	0x0801c3d7
+ 8015ab8:	0801c3b7 	.word	0x0801c3b7
 
 08015abc <USBD_GetString>:
   * @param  unicode : Formatted string buffer (unicode)
@@ -25897,7 +25897,7 @@ static USBH_Status USBH_HandleEnum(USB_OTG_CORE_HANDLE *pdev, USBH_HOST *phost)
 }
  80160a0:	b014      	add	sp, #80	; 0x50
  80160a2:	bd70      	pop	{r4, r5, r6, pc}
- 80160a4:	0801c457 	.word	0x0801c457
+ 80160a4:	0801c437 	.word	0x0801c437
 
 080160a8 <USBH_Open_Channel>:
                             uint8_t hc_num,
@@ -30264,7 +30264,7 @@ USB_OTG_STS USB_OTG_CoreInitDev (USB_OTG_CORE_HANDLE *pdev)
   return speed;
 }
  8016e72:	4770      	bx	lr
- 8016e74:	0801c45b 	.word	0x0801c45b
+ 8016e74:	0801c43b 	.word	0x0801c43b
 
 08016e78 <USB_OTG_EP0Activate>:
   USB_OTG_DEPCTL_TypeDef  diepctl;
@@ -37738,7 +37738,7 @@ s32 APP_LCD_Cmd(u8 cmd)
  80192d4:	f890 8000 	ldrb.w	r8, [r0]
  80192d8:	e9d1 0100 	ldrd	r0, r1, [r1]
  80192dc:	4642      	mov	r2, r8
- 80192de:	f002 fcbd 	bl	801bc5c <__aeabi_llsr>
+ 80192de:	f002 fcad 	bl	801bc3c <__aeabi_llsr>
  80192e2:	2401      	movs	r4, #1
  80192e4:	2500      	movs	r5, #0
  80192e6:	4020      	ands	r0, r4
@@ -37878,7 +37878,7 @@ s32 APP_LCD_Cmd(u8 cmd)
  8019398:	781a      	ldrb	r2, [r3, #0]
  801939a:	2001      	movs	r0, #1
  801939c:	2100      	movs	r1, #0
- 801939e:	f002 fc69 	bl	801bc74 <__aeabi_llsl>
+ 801939e:	f002 fc59 	bl	801bc54 <__aeabi_llsl>
  80193a2:	e9d4 2300 	ldrd	r2, r3, [r4]
  80193a6:	ea22 0000 	bic.w	r0, r2, r0
  80193aa:	ea23 0101 	bic.w	r1, r3, r1
@@ -37958,7 +37958,7 @@ s32 APP_LCD_Data(u8 data)
  801940c:	f899 b000 	ldrb.w	fp, [r9]
  8019410:	e9da 0100 	ldrd	r0, r1, [sl]
  8019414:	465a      	mov	r2, fp
- 8019416:	f002 fc21 	bl	801bc5c <__aeabi_llsr>
+ 8019416:	f002 fc11 	bl	801bc3c <__aeabi_llsr>
  801941a:	2201      	movs	r2, #1
  801941c:	2300      	movs	r3, #0
  801941e:	4010      	ands	r0, r2
@@ -38024,7 +38024,7 @@ s32 APP_LCD_Data(u8 data)
  8019484:	f899 2000 	ldrb.w	r2, [r9]
  8019488:	2001      	movs	r0, #1
  801948a:	2100      	movs	r1, #0
- 801948c:	f002 fbf2 	bl	801bc74 <__aeabi_llsl>
+ 801948c:	f002 fbe2 	bl	801bc54 <__aeabi_llsl>
  8019490:	e9da 2300 	ldrd	r2, r3, [sl]
  8019494:	ea22 0000 	bic.w	r0, r2, r0
  8019498:	ea23 0101 	bic.w	r1, r3, r1
@@ -38249,7 +38249,7 @@ s32 APP_LCD_Data(u8 data)
  8019582:	7812      	ldrb	r2, [r2, #0]
  8019584:	2001      	movs	r0, #1
  8019586:	2100      	movs	r1, #0
- 8019588:	f002 fb74 	bl	801bc74 <__aeabi_llsl>
+ 8019588:	f002 fb64 	bl	801bc54 <__aeabi_llsl>
  801958c:	e9d4 2300 	ldrd	r2, r3, [r4]
  8019590:	ea22 0000 	bic.w	r0, r2, r0
  8019594:	ea23 0101 	bic.w	r1, r3, r1
@@ -38339,7 +38339,7 @@ s32 APP_LCD_Init(u32 mode)
  8019610:	4642      	mov	r2, r8
  8019612:	2001      	movs	r0, #1
  8019614:	2100      	movs	r1, #0
- 8019616:	f002 fb2d 	bl	801bc74 <__aeabi_llsl>
+ 8019616:	f002 fb1d 	bl	801bc54 <__aeabi_llsl>
  801961a:	e9d6 4500 	ldrd	r4, r5, [r6]
 
   switch( mios32_lcd_parameters.lcd_type ) {
@@ -38810,7 +38810,7 @@ s32 APP_LCD_Init(u32 mode)
  801989c:	4a26      	ldr	r2, [pc, #152]	; (8019938 <APP_LCD_Init+0x350>)
  801989e:	e9d3 0100 	ldrd	r0, r1, [r3]
  80198a2:	7812      	ldrb	r2, [r2, #0]
- 80198a4:	f002 f9da 	bl	801bc5c <__aeabi_llsr>
+ 80198a4:	f002 f9ca 	bl	801bc3c <__aeabi_llsr>
  80198a8:	2201      	movs	r2, #1
  80198aa:	2300      	movs	r3, #0
  80198ac:	4010      	ands	r0, r2
@@ -38884,7 +38884,7 @@ s32 APP_LCD_Init(u32 mode)
  801990a:	4a0b      	ldr	r2, [pc, #44]	; (8019938 <APP_LCD_Init+0x350>)
  801990c:	e9d0 0100 	ldrd	r0, r1, [r0]
  8019910:	7812      	ldrb	r2, [r2, #0]
- 8019912:	f002 f9a3 	bl	801bc5c <__aeabi_llsr>
+ 8019912:	f002 f993 	bl	801bc3c <__aeabi_llsr>
  8019916:	2201      	movs	r2, #1
  8019918:	2300      	movs	r3, #0
  801991a:	4010      	ands	r0, r2
@@ -38899,7 +38899,7 @@ s32 APP_LCD_Init(u32 mode)
  8019930:	20010dd2 	.word	0x20010dd2
  8019934:	200005d8 	.word	0x200005d8
  8019938:	20000180 	.word	0x20000180
- 801993c:	0801c45e 	.word	0x0801c45e
+ 801993c:	0801c43e 	.word	0x0801c43e
 
 08019940 <APP_LCD_Clear>:
 // Clear Screen
@@ -39248,7 +39248,7 @@ s32 APP_LCD_Clear(void)
  8019a76:	bd70      	pop	{r4, r5, r6, pc}
  8019a78:	200005d1 	.word	0x200005d1
  8019a7c:	20010dd2 	.word	0x20010dd2
- 8019a80:	0801c462 	.word	0x0801c462
+ 8019a80:	0801c442 	.word	0x0801c442
  8019a84:	200005e0 	.word	0x200005e0
 
 08019a88 <APP_LCD_GCursorSet>:
@@ -39752,7 +39752,7 @@ DSTATUS disk_initialize (
  8019c88:	bd10      	pop	{r4, pc}
  8019c8a:	bf00      	nop
  8019c8c:	200005e4 	.word	0x200005e4
- 8019c90:	0801c766 	.word	0x0801c766
+ 8019c90:	0801c746 	.word	0x0801c746
 
 08019c94 <disk_status>:
     // we don't use MIOS32_SDCARD_CheckAvailable() here, since the status is checked very frequently!
@@ -39846,7 +39846,7 @@ DRESULT disk_read (
   return RES_PARERR;
 }
  8019cd8:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
- 8019cdc:	0801c7a6 	.word	0x0801c7a6
+ 8019cdc:	0801c786 	.word	0x0801c786
 
 08019ce0 <disk_write>:
 	BYTE drv,			/* Physical drive nmuber (0..) */
@@ -39928,7 +39928,7 @@ DRESULT disk_write (
   return RES_PARERR;
 }
  8019d1c:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
- 8019d20:	0801c7d1 	.word	0x0801c7d1
+ 8019d20:	0801c7b1 	.word	0x0801c7b1
 
 08019d24 <get_fattime>:
 DWORD __attribute__ ((weak)) get_fattime(void)
@@ -41606,8 +41606,8 @@ int mem_cmp (const void* dst, const void* src, int cnt) {
 	return res;
 }
  801a444:	e8bd 81f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, pc}
- 801a448:	0801c876 	.word	0x0801c876
- 801a44c:	0801c842 	.word	0x0801c842
+ 801a448:	0801c856 	.word	0x0801c856
+ 801a44c:	0801c822 	.word	0x0801c822
 
 0801a450 <dir_register>:
 #if !_FS_READONLY
@@ -43558,9 +43558,9 @@ static s32 FILE_MountFS(void)
  801ac4c:	2000083b 	.word	0x2000083b
  801ac50:	2000083a 	.word	0x2000083a
  801ac54:	200005fc 	.word	0x200005fc
- 801ac58:	0801c8f6 	.word	0x0801c8f6
- 801ac5c:	0801c929 	.word	0x0801c929
- 801ac60:	0801c92b 	.word	0x0801c92b
+ 801ac58:	0801c8d6 	.word	0x0801c8d6
+ 801ac5c:	0801c909 	.word	0x0801c909
+ 801ac60:	0801c90b 	.word	0x0801c90b
  801ac64:	200005f0 	.word	0x200005f0
  801ac68:	20000838 	.word	0x20000838
 
@@ -43934,7 +43934,7 @@ s32 FILE_ReadOpen(file_t* file, char *filepath)
  801ad80:	bd70      	pop	{r4, r5, r6, pc}
  801ad82:	bf00      	nop
  801ad84:	2000083a 	.word	0x2000083a
- 801ad88:	0801c9d6 	.word	0x0801c9d6
+ 801ad88:	0801c9b6 	.word	0x0801c9b6
  801ad8c:	2000083c 	.word	0x2000083c
  801ad90:	20011bac 	.word	0x20011bac
 
@@ -44092,7 +44092,7 @@ s32 FILE_ReadReOpen(file_t* file)
 }
  801adee:	bd38      	pop	{r3, r4, r5, pc}
  801adf0:	2000083a 	.word	0x2000083a
- 801adf4:	0801ca32 	.word	0x0801ca32
+ 801adf4:	0801ca12 	.word	0x0801ca12
  801adf8:	200005fc 	.word	0x200005fc
  801adfc:	2000083c 	.word	0x2000083c
 
@@ -44587,9 +44587,9 @@ void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
     MIOS32_IRQ_Enable(); //Turn on interrupts
  801afe8:	f7f7 bdee 	b.w	8012bc8 <MIOS32_IRQ_Enable>
- 801afec:	0801d5c2 	.word	0x0801d5c2
+ 801afec:	0801d5a2 	.word	0x0801d5a2
  801aff0:	20011bb4 	.word	0x20011bb4
- 801aff4:	0801d5ba 	.word	0x0801d5ba
+ 801aff4:	0801d59a 	.word	0x0801d59a
  801aff8:	40021000 	.word	0x40021000
  801affc:	40020800 	.word	0x40020800
  801b000:	20011bb0 	.word	0x20011bb0
@@ -45150,39 +45150,33 @@ void Genesis_Reset(u8 board){
  801b320:	40021000 	.word	0x40021000
 
 0801b324 <APP_Init>:
-// It's delcared as "extern C" so that the MIOS32 programming model can
-// access this function - you can safely write your own functions in C++
-// In other words: there is no need to add "extern C" to your own functions!
-/////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_Init(void){
-    DEBUGVAL = 0;
- 801b324:	4b08      	ldr	r3, [pc, #32]	; (801b348 <APP_Init+0x24>)
 // This hook is called after startup to initialize the application
 // It's delcared as "extern C" so that the MIOS32 programming model can
 // access this function - you can safely write your own functions in C++
 // In other words: there is no need to add "extern C" to your own functions!
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Init(void){
- 801b326:	b510      	push	{r4, lr}
-    DEBUGVAL = 0;
+ 801b324:	b508      	push	{r3, lr}
+    DEBUGVAL = 117;
+ 801b326:	4b08      	ldr	r3, [pc, #32]	; (801b348 <APP_Init+0x24>)
+ 801b328:	2275      	movs	r2, #117	; 0x75
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
- 801b328:	f04f 30ff 	mov.w	r0, #4294967295
+ 801b32a:	f04f 30ff 	mov.w	r0, #4294967295
 // It's delcared as "extern C" so that the MIOS32 programming model can
 // access this function - you can safely write your own functions in C++
 // In other words: there is no need to add "extern C" to your own functions!
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Init(void){
-    DEBUGVAL = 0;
- 801b32c:	2400      	movs	r4, #0
- 801b32e:	601c      	str	r4, [r3, #0]
+    DEBUGVAL = 117;
+ 801b32e:	601a      	str	r2, [r3, #0]
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
  801b330:	f7f8 f8e4 	bl	80134fc <MIOS32_BOARD_LED_Init>
 
     // initialize SD card
     FILE_Init(0);
- 801b334:	4620      	mov	r0, r4
+ 801b334:	2000      	movs	r0, #0
  801b336:	f7ff fc99 	bl	801ac6c <FILE_Init>
 
     //Initialize MBHP_Genesis module
@@ -45192,14 +45186,14 @@ extern "C" void APP_Init(void){
     //Initialize VGM Player component
     VgmPlayer_Init();
 }
- 801b33e:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+ 801b33e:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
 
     //Initialize MBHP_Genesis module
     Genesis_Init();
 
     //Initialize VGM Player component
     VgmPlayer_Init();
- 801b342:	f000 bc6f 	b.w	801bc24 <VgmPlayer_Init()>
+ 801b342:	f000 bc5f 	b.w	801bc04 <VgmPlayer_Init()>
  801b346:	bf00      	nop
  801b348:	20000a68 	.word	0x20000a68
 
@@ -45211,37 +45205,37 @@ extern "C" void APP_Init(void){
     
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
  801b34c:	2008      	movs	r0, #8
+ 801b34e:	4601      	mov	r1, r0
 
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Background(void)
 {
- 801b34e:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 801b350:	b570      	push	{r4, r5, r6, lr}
     static VgmSourceStream* vgms = NULL;
     static VgmHead* vgmh = NULL;
     static s32 res = 0;
     static u8 gotsdcard = 0;
     
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
- 801b350:	4601      	mov	r1, r0
  801b352:	f7f8 f8ff 	bl	8013554 <MIOS32_BOARD_LED_Set>
     
     if(count % 500000 == 0){
- 801b356:	4b39      	ldr	r3, [pc, #228]	; (801b43c <APP_Background+0xf0>)
- 801b358:	4839      	ldr	r0, [pc, #228]	; (801b440 <APP_Background+0xf4>)
+ 801b356:	4b2d      	ldr	r3, [pc, #180]	; (801b40c <APP_Background+0xc0>)
+ 801b358:	482d      	ldr	r0, [pc, #180]	; (801b410 <APP_Background+0xc4>)
  801b35a:	681a      	ldr	r2, [r3, #0]
  801b35c:	fbb2 f1f0 	udiv	r1, r2, r0
  801b360:	fb00 2311 	mls	r3, r0, r1, r2
  801b364:	2b00      	cmp	r3, #0
- 801b366:	d15f      	bne.n	801b428 <APP_Background+0xdc>
+ 801b366:	d147      	bne.n	801b3f8 <APP_Background+0xac>
         if(!gotsdcard){
- 801b368:	4c36      	ldr	r4, [pc, #216]	; (801b444 <APP_Background+0xf8>)
+ 801b368:	4c2a      	ldr	r4, [pc, #168]	; (801b414 <APP_Background+0xc8>)
  801b36a:	7822      	ldrb	r2, [r4, #0]
  801b36c:	b93a      	cbnz	r2, 801b37e <APP_Background+0x32>
             res = FILE_CheckSDCard();
  801b36e:	f7ff fc9f 	bl	801acb0 <FILE_CheckSDCard>
- 801b372:	4935      	ldr	r1, [pc, #212]	; (801b448 <APP_Background+0xfc>)
+ 801b372:	4929      	ldr	r1, [pc, #164]	; (801b418 <APP_Background+0xcc>)
             if(res == 3){
  801b374:	2803      	cmp	r0, #3
     
@@ -45262,2077 +45256,2023 @@ extern "C" void APP_Background(void)
         if(gotsdcard){
  801b37e:	7823      	ldrb	r3, [r4, #0]
  801b380:	2b00      	cmp	r3, #0
- 801b382:	d042      	beq.n	801b40a <APP_Background+0xbe>
+ 801b382:	d039      	beq.n	801b3f8 <APP_Background+0xac>
             if(vgms == NULL){
- 801b384:	4d31      	ldr	r5, [pc, #196]	; (801b44c <APP_Background+0x100>)
- 801b386:	682a      	ldr	r2, [r5, #0]
+ 801b384:	4c25      	ldr	r4, [pc, #148]	; (801b41c <APP_Background+0xd0>)
+ 801b386:	6822      	ldr	r2, [r4, #0]
  801b388:	2a00      	cmp	r2, #0
- 801b38a:	d13e      	bne.n	801b40a <APP_Background+0xbe>
+ 801b38a:	d135      	bne.n	801b3f8 <APP_Background+0xac>
                 vgms = new VgmSourceStream();
  801b38c:	2058      	movs	r0, #88	; 0x58
- 801b38e:	f000 fc59 	bl	801bc44 <operator new(unsigned int)>
- 801b392:	4604      	mov	r4, r0
- 801b394:	f000 fa32 	bl	801b7fc <VgmSourceStream::VgmSourceStream()>
- 801b398:	602c      	str	r4, [r5, #0]
-                DEBUGVAL = 3;
- 801b39a:	4c2d      	ldr	r4, [pc, #180]	; (801b450 <APP_Background+0x104>)
- 801b39c:	2603      	movs	r6, #3
+ 801b38e:	f000 fc49 	bl	801bc24 <operator new(unsigned int)>
+ 801b392:	4605      	mov	r5, r0
+ 801b394:	f000 fa15 	bl	801b7c2 <VgmSourceStream::VgmSourceStream()>
                 char* filename = new char[50];
- 801b39e:	2032      	movs	r0, #50	; 0x32
+ 801b398:	2032      	movs	r0, #50	; 0x32
+                //FILE_PrintSDCardInfos();
             }
         }
         if(gotsdcard){
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
-                DEBUGVAL = 3;
- 801b3a0:	6026      	str	r6, [r4, #0]
+ 801b39a:	6025      	str	r5, [r4, #0]
                 char* filename = new char[50];
- 801b3a2:	f000 fc57 	bl	801bc54 <operator new[](unsigned int)>
-                sprintf(filename, "GOODEND.VGM");
- 801b3a6:	492b      	ldr	r1, [pc, #172]	; (801b454 <APP_Background+0x108>)
+ 801b39c:	f000 fc4a 	bl	801bc34 <operator new[](unsigned int)>
+                sprintf(filename, "S2CREDIT.VGM");
+ 801b3a0:	491f      	ldr	r1, [pc, #124]	; (801b420 <APP_Background+0xd4>)
+            }
         }
         if(gotsdcard){
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
-                DEBUGVAL = 3;
                 char* filename = new char[50];
- 801b3a8:	4606      	mov	r6, r0
-                sprintf(filename, "GOODEND.VGM");
- 801b3aa:	f000 fca6 	bl	801bcfa <strcpy>
+ 801b3a2:	4605      	mov	r5, r0
+                sprintf(filename, "S2CREDIT.VGM");
+ 801b3a4:	f000 fc99 	bl	801bcda <strcpy>
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
- 801b3ae:	4631      	mov	r1, r6
- 801b3b0:	6828      	ldr	r0, [r5, #0]
- 801b3b2:	f000 fa3a 	bl	801b82a <VgmSourceStream::startStream(char*)>
- 801b3b6:	4924      	ldr	r1, [pc, #144]	; (801b448 <APP_Background+0xfc>)
-                DEBUGVAL = 4;
- 801b3b8:	2304      	movs	r3, #4
+ 801b3a8:	4629      	mov	r1, r5
+ 801b3aa:	6820      	ldr	r0, [r4, #0]
+ 801b3ac:	f000 fa20 	bl	801b7f0 <VgmSourceStream::startStream(char*)>
+ 801b3b0:	4919      	ldr	r1, [pc, #100]	; (801b418 <APP_Background+0xcc>)
                 if(res >= 0){
- 801b3ba:	2800      	cmp	r0, #0
-                DEBUGVAL = 3;
+ 801b3b2:	2800      	cmp	r0, #0
+                vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "GOODEND.VGM");
+                sprintf(filename, "S2CREDIT.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
- 801b3bc:	6008      	str	r0, [r1, #0]
-                DEBUGVAL = 4;
- 801b3be:	6023      	str	r3, [r4, #0]
+ 801b3b4:	6008      	str	r0, [r1, #0]
                 if(res >= 0){
- 801b3c0:	db1c      	blt.n	801b3fc <APP_Background+0xb0>
-                    DEBUGVAL = 5;
- 801b3c2:	2705      	movs	r7, #5
+ 801b3b6:	db18      	blt.n	801b3ea <APP_Background+0x9e>
                     DBG("Loaded VGM!");
- 801b3c4:	4824      	ldr	r0, [pc, #144]	; (801b458 <APP_Background+0x10c>)
-                //res = FILE_FileExists(filename);
-                //DBG("File existence: %d", res);
-                res = vgms->startStream(filename);
-                DEBUGVAL = 4;
-                if(res >= 0){
-                    DEBUGVAL = 5;
- 801b3c6:	6027      	str	r7, [r4, #0]
-                    DBG("Loaded VGM!");
- 801b3c8:	f7f6 fae4 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
-                    DEBUGVAL = 6;
- 801b3cc:	2006      	movs	r0, #6
- 801b3ce:	6020      	str	r0, [r4, #0]
+ 801b3b8:	481a      	ldr	r0, [pc, #104]	; (801b424 <APP_Background+0xd8>)
+ 801b3ba:	f7f6 faeb 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
                     vgms->readHeader();
- 801b3d0:	6828      	ldr	r0, [r5, #0]
- 801b3d2:	f000 fae4 	bl	801b99e <VgmSourceStream::readHeader()>
-                    DEBUGVAL = 7;
- 801b3d6:	2207      	movs	r2, #7
+ 801b3be:	6820      	ldr	r0, [r4, #0]
+ 801b3c0:	f000 fac5 	bl	801b94e <VgmSourceStream::readHeader()>
                     vgmh = new VgmHead(vgms);
- 801b3d8:	2030      	movs	r0, #48	; 0x30
-                if(res >= 0){
-                    DEBUGVAL = 5;
-                    DBG("Loaded VGM!");
-                    DEBUGVAL = 6;
-                    vgms->readHeader();
-                    DEBUGVAL = 7;
- 801b3da:	6022      	str	r2, [r4, #0]
-                    vgmh = new VgmHead(vgms);
- 801b3dc:	f000 fc32 	bl	801bc44 <operator new(unsigned int)>
- 801b3e0:	6829      	ldr	r1, [r5, #0]
- 801b3e2:	4607      	mov	r7, r0
- 801b3e4:	f000 f9f6 	bl	801b7d4 <VgmHead::VgmHead(VgmSourceStream*)>
- 801b3e8:	491c      	ldr	r1, [pc, #112]	; (801b45c <APP_Background+0x110>)
-                    DEBUGVAL = 8;
- 801b3ea:	2308      	movs	r3, #8
+ 801b3c4:	2028      	movs	r0, #40	; 0x28
+ 801b3c6:	f000 fc2d 	bl	801bc24 <operator new(unsigned int)>
+ 801b3ca:	6821      	ldr	r1, [r4, #0]
+ 801b3cc:	4c16      	ldr	r4, [pc, #88]	; (801b428 <APP_Background+0xdc>)
+ 801b3ce:	4606      	mov	r6, r0
+ 801b3d0:	f000 f836 	bl	801b440 <VgmHead::VgmHead(VgmSourceStream*)>
+ 801b3d4:	6026      	str	r6, [r4, #0]
+                    vgmh->restart(VgmPlayerLL_GetVGMTime());
+ 801b3d6:	f7f4 fe13 	bl	8010000 <VgmPlayerLL_GetVGMTime>
+ 801b3da:	4601      	mov	r1, r0
+ 801b3dc:	4630      	mov	r0, r6
+ 801b3de:	f000 f9e9 	bl	801b7b4 <VgmHead::restart(unsigned long)>
                     VgmPlayer_AddHead(vgmh);
- 801b3ec:	4638      	mov	r0, r7
-                    DEBUGVAL = 5;
-                    DBG("Loaded VGM!");
-                    DEBUGVAL = 6;
-                    vgms->readHeader();
-                    DEBUGVAL = 7;
-                    vgmh = new VgmHead(vgms);
- 801b3ee:	600f      	str	r7, [r1, #0]
-                    DEBUGVAL = 8;
- 801b3f0:	6023      	str	r3, [r4, #0]
-                    VgmPlayer_AddHead(vgmh);
- 801b3f2:	f000 fc09 	bl	801bc08 <VgmPlayer_AddHead(VgmHead*)>
-                    DEBUGVAL = 9;
- 801b3f6:	2009      	movs	r0, #9
- 801b3f8:	6020      	str	r0, [r4, #0]
- 801b3fa:	e002      	b.n	801b402 <APP_Background+0xb6>
+ 801b3e2:	6820      	ldr	r0, [r4, #0]
+ 801b3e4:	f000 fc00 	bl	801bbe8 <VgmPlayer_AddHead(VgmHead*)>
+ 801b3e8:	e002      	b.n	801b3f0 <APP_Background+0xa4>
                 }else{
                     DBG("Failed to load VGM");
- 801b3fc:	4818      	ldr	r0, [pc, #96]	; (801b460 <APP_Background+0x114>)
- 801b3fe:	f7f6 fac9 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
-                    //DEBUGVAL = -1;
+ 801b3ea:	4810      	ldr	r0, [pc, #64]	; (801b42c <APP_Background+0xe0>)
+ 801b3ec:	f7f6 fad2 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
                 }
                 delete[] filename;
- 801b402:	b116      	cbz	r6, 801b40a <APP_Background+0xbe>
- 801b404:	4630      	mov	r0, r6
- 801b406:	f000 fc27 	bl	801bc58 <operator delete[](void*)>
-            }else{
-                //DEBUGVAL = 2;
-            }
-        }
-        if(vgmh == NULL){
- 801b40a:	4a14      	ldr	r2, [pc, #80]	; (801b45c <APP_Background+0x110>)
- 801b40c:	6811      	ldr	r1, [r2, #0]
- 801b40e:	b939      	cbnz	r1, 801b420 <APP_Background+0xd4>
-            DBG("DEBUGVAL %d, res = %d", DEBUGVAL, res);
- 801b410:	4b0f      	ldr	r3, [pc, #60]	; (801b450 <APP_Background+0x104>)
- 801b412:	4a0d      	ldr	r2, [pc, #52]	; (801b448 <APP_Background+0xfc>)
- 801b414:	6819      	ldr	r1, [r3, #0]
- 801b416:	6812      	ldr	r2, [r2, #0]
- 801b418:	4812      	ldr	r0, [pc, #72]	; (801b464 <APP_Background+0x118>)
- 801b41a:	f7f6 fabb 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
- 801b41e:	e003      	b.n	801b428 <APP_Background+0xdc>
-        }else{
-            DBG("VGM address 0x%x", vgmh->getCurAddress());
- 801b420:	4811      	ldr	r0, [pc, #68]	; (801b468 <APP_Background+0x11c>)
- 801b422:	6849      	ldr	r1, [r1, #4]
- 801b424:	f7f6 fab6 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
+ 801b3f0:	b115      	cbz	r5, 801b3f8 <APP_Background+0xac>
+ 801b3f2:	4628      	mov	r0, r5
+ 801b3f4:	f000 fc20 	bl	801bc38 <operator delete[](void*)>
     MIOS32_DELAY_Wait_uS(0xFF00);
     MIOS32_DELAY_Wait_uS(0xFF00);
     */
     //Flash LEDs
     //MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
     ++count;
- 801b428:	4804      	ldr	r0, [pc, #16]	; (801b43c <APP_Background+0xf0>)
- 801b42a:	6801      	ldr	r1, [r0, #0]
- 801b42c:	1c4b      	adds	r3, r1, #1
- 801b42e:	6003      	str	r3, [r0, #0]
+ 801b3f8:	4804      	ldr	r0, [pc, #16]	; (801b40c <APP_Background+0xc0>)
+ 801b3fa:	6803      	ldr	r3, [r0, #0]
+ 801b3fc:	1c5a      	adds	r2, r3, #1
+ 801b3fe:	6002      	str	r2, [r0, #0]
     MIOS32_BOARD_LED_Set(0b1000, 0b0000);
- 801b430:	2100      	movs	r1, #0
- 801b432:	2008      	movs	r0, #8
+ 801b400:	2100      	movs	r1, #0
+ 801b402:	2008      	movs	r0, #8
 }
- 801b434:	e8bd 40f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, lr}
+ 801b404:	e8bd 4070 	ldmia.w	sp!, {r4, r5, r6, lr}
     MIOS32_DELAY_Wait_uS(0xFF00);
     */
     //Flash LEDs
     //MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
     ++count;
     MIOS32_BOARD_LED_Set(0b1000, 0b0000);
- 801b438:	f7f8 b88c 	b.w	8013554 <MIOS32_BOARD_LED_Set>
- 801b43c:	20000a64 	.word	0x20000a64
- 801b440:	0007a120 	.word	0x0007a120
- 801b444:	20000a70 	.word	0x20000a70
- 801b448:	20000a74 	.word	0x20000a74
- 801b44c:	20000a6c 	.word	0x20000a6c
- 801b450:	20000a68 	.word	0x20000a68
- 801b454:	0801d5d2 	.word	0x0801d5d2
- 801b458:	0801d5de 	.word	0x0801d5de
- 801b45c:	20000a60 	.word	0x20000a60
- 801b460:	0801d5ea 	.word	0x0801d5ea
- 801b464:	0801d5fd 	.word	0x0801d5fd
- 801b468:	0801d613 	.word	0x0801d613
+ 801b408:	f7f8 b8a4 	b.w	8013554 <MIOS32_BOARD_LED_Set>
+ 801b40c:	20000a64 	.word	0x20000a64
+ 801b410:	0007a120 	.word	0x0007a120
+ 801b414:	20000a70 	.word	0x20000a70
+ 801b418:	20000a74 	.word	0x20000a74
+ 801b41c:	20000a6c 	.word	0x20000a6c
+ 801b420:	0801d5b2 	.word	0x0801d5b2
+ 801b424:	0801d5bf 	.word	0x0801d5bf
+ 801b428:	20000a60 	.word	0x20000a60
+ 801b42c:	0801d5cb 	.word	0x0801d5cb
 
-0801b46c <APP_Tick>:
+0801b430 <APP_Tick>:
 // more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
 // Alternatively you could create a dedicated task for application specific
 // jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Tick(void)
 {
- 801b46c:	4770      	bx	lr
+ 801b430:	4770      	bx	lr
 
-0801b46e <APP_MIDI_Tick>:
+0801b432 <APP_MIDI_Tick>:
 // This hook is called each mS from the MIDI task which checks for incoming
 // MIDI events. You could add more MIDI related jobs here, but they shouldn't
 // consume more than 300 uS to ensure the responsiveness of incoming MIDI.
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_MIDI_Tick(void)
 {
- 801b46e:	4770      	bx	lr
+ 801b432:	4770      	bx	lr
 
-0801b470 <APP_MIDI_NotifyPackage>:
+0801b434 <APP_MIDI_NotifyPackage>:
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
- 801b470:	4770      	bx	lr
+ 801b434:	4770      	bx	lr
 
-0801b472 <APP_SRIO_ServicePrepare>:
+0801b436 <APP_SRIO_ServicePrepare>:
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_SRIO_ServicePrepare(void)
 {
- 801b472:	4770      	bx	lr
+ 801b436:	4770      	bx	lr
 
-0801b474 <APP_SRIO_ServiceFinish>:
+0801b438 <APP_SRIO_ServiceFinish>:
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_SRIO_ServiceFinish(void)
 {
- 801b474:	4770      	bx	lr
+ 801b438:	4770      	bx	lr
 
-0801b476 <APP_DIN_NotifyToggle>:
+0801b43a <APP_DIN_NotifyToggle>:
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a button has been toggled
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
- 801b476:	4770      	bx	lr
+ 801b43a:	4770      	bx	lr
 
-0801b478 <APP_ENC_NotifyChange>:
+0801b43c <APP_ENC_NotifyChange>:
 // This hook is called when an encoder has been moved
 // incrementer is positive when encoder has been turned clockwise, else
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
- 801b478:	4770      	bx	lr
+ 801b43c:	4770      	bx	lr
 
-0801b47a <APP_AIN_NotifyChange>:
+0801b43e <APP_AIN_NotifyChange>:
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a pot has been moved
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
- 801b47a:	4770      	bx	lr
+ 801b43e:	4770      	bx	lr
 
-0801b47c <VgmHead::cmdNext(unsigned long)>:
-    paused = false;
-    restart();
-}
+0801b440 <VgmHead::VgmHead(VgmSourceStream*)>:
+#include "vgmhead.h"
 
-void VgmHead::cmdNext(u32 curtime){
-    if(isfreqwrite){
- 801b47c:	7f42      	ldrb	r2, [r0, #29]
+
+VgmHead::VgmHead(VgmSourceStream* src){
+    source = src;
+    srcaddr = 0;
+ 801b440:	2200      	movs	r2, #0
+#include <mios32.h>
+#include "vgmhead.h"
+
+
+VgmHead::VgmHead(VgmSourceStream* src){
+    source = src;
+ 801b442:	6001      	str	r1, [r0, #0]
+    srcaddr = 0;
+    isdone = false;
+    delay62 = 735;
+ 801b444:	f240 21df 	movw	r1, #735	; 0x2df
+#include "vgmhead.h"
+
+
+VgmHead::VgmHead(VgmSourceStream* src){
+    source = src;
+    srcaddr = 0;
+ 801b448:	6042      	str	r2, [r0, #4]
+    isdone = false;
+ 801b44a:	7682      	strb	r2, [r0, #26]
+    delay62 = 735;
+ 801b44c:	61c1      	str	r1, [r0, #28]
+    delay63 = 882;
     opn2mult = 0x1000;
-    paused = false;
-    restart();
+ 801b44e:	f44f 5280 	mov.w	r2, #4096	; 0x1000
+VgmHead::VgmHead(VgmSourceStream* src){
+    source = src;
+    srcaddr = 0;
+    isdone = false;
+    delay62 = 735;
+    delay63 = 882;
+ 801b452:	3193      	adds	r1, #147	; 0x93
+ 801b454:	6201      	str	r1, [r0, #32]
+    opn2mult = 0x1000;
+ 801b456:	6242      	str	r2, [r0, #36]	; 0x24
+}
+ 801b458:	4770      	bx	lr
+	...
+
+0801b45c <VgmHead::cmdNext(unsigned long)>:
+
+void VgmHead::cmdNext(u32 vgm_time){
+    if(isfreqwrite){
+ 801b45c:	7e42      	ldrb	r2, [r0, #25]
+    delay62 = 735;
+    delay63 = 882;
+    opn2mult = 0x1000;
 }
 
-void VgmHead::cmdNext(u32 curtime){
- 801b47e:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
- 801b480:	4604      	mov	r4, r0
- 801b482:	460d      	mov	r5, r1
+void VgmHead::cmdNext(u32 vgm_time){
+ 801b45e:	b570      	push	{r4, r5, r6, lr}
+ 801b460:	4604      	mov	r4, r0
     if(isfreqwrite){
- 801b484:	b142      	cbz	r2, 801b498 <VgmHead::cmdNext(unsigned long)+0x1c>
+ 801b462:	b142      	cbz	r2, 801b476 <VgmHead::cmdNext(unsigned long)+0x1a>
         //Second virtual command is the second byte
         isfreqwrite = false;
         writecmd.data = writecmd.data2;
- 801b486:	7ec2      	ldrb	r2, [r0, #27]
+ 801b464:	7cc2      	ldrb	r2, [r0, #19]
         writecmd.addr ^= 0x04; //Switch from frequency MSB to LSB or vice versa
- 801b488:	7e43      	ldrb	r3, [r0, #25]
+ 801b466:	7c43      	ldrb	r3, [r0, #17]
 
-void VgmHead::cmdNext(u32 curtime){
+void VgmHead::cmdNext(u32 vgm_time){
     if(isfreqwrite){
         //Second virtual command is the second byte
         isfreqwrite = false;
         writecmd.data = writecmd.data2;
- 801b48a:	7682      	strb	r2, [r0, #26]
+ 801b468:	7482      	strb	r2, [r0, #18]
 }
 
-void VgmHead::cmdNext(u32 curtime){
+void VgmHead::cmdNext(u32 vgm_time){
     if(isfreqwrite){
         //Second virtual command is the second byte
         isfreqwrite = false;
- 801b48c:	2100      	movs	r1, #0
- 801b48e:	7741      	strb	r1, [r0, #29]
+ 801b46a:	2100      	movs	r1, #0
+ 801b46c:	7641      	strb	r1, [r0, #25]
         writecmd.data = writecmd.data2;
         writecmd.addr ^= 0x04; //Switch from frequency MSB to LSB or vice versa
- 801b490:	f083 0004 	eor.w	r0, r3, #4
- 801b494:	7660      	strb	r0, [r4, #25]
+ 801b46e:	f083 0004 	eor.w	r0, r3, #4
+ 801b472:	7460      	strb	r0, [r4, #17]
         return;
- 801b496:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b474:	bd70      	pop	{r4, r5, r6, pc}
     }else if(isdacwrite){
- 801b498:	7f03      	ldrb	r3, [r0, #28]
- 801b49a:	b123      	cbz	r3, 801b4a6 <VgmHead::cmdNext(unsigned long)+0x2a>
+ 801b476:	7e03      	ldrb	r3, [r0, #24]
+ 801b478:	b123      	cbz	r3, 801b484 <VgmHead::cmdNext(unsigned long)+0x28>
         //Second virtual command is the wait by itself
         isdacwrite = false;
- 801b49c:	7702      	strb	r2, [r0, #28]
+ 801b47a:	7602      	strb	r2, [r0, #24]
         iswait = true;
- 801b49e:	2001      	movs	r0, #1
- 801b4a0:	7320      	strb	r0, [r4, #12]
+ 801b47c:	2001      	movs	r0, #1
+ 801b47e:	7320      	strb	r0, [r4, #12]
         iswrite = false;
- 801b4a2:	7362      	strb	r2, [r4, #13]
+ 801b480:	7362      	strb	r2, [r4, #13]
         return;
- 801b4a4:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b482:	bd70      	pop	{r4, r5, r6, pc}
     }
     u8 type;
     iswait = iswrite = false;
- 801b4a6:	7343      	strb	r3, [r0, #13]
- 801b4a8:	7303      	strb	r3, [r0, #12]
+ 801b484:	7343      	strb	r3, [r0, #13]
+ 801b486:	7303      	strb	r3, [r0, #12]
     while(!(iswait || iswrite)){
- 801b4aa:	7b20      	ldrb	r0, [r4, #12]
- 801b4ac:	2800      	cmp	r0, #0
- 801b4ae:	f040 8185 	bne.w	801b7bc <VgmHead::cmdNext(unsigned long)+0x340>
- 801b4b2:	7b66      	ldrb	r6, [r4, #13]
- 801b4b4:	2e00      	cmp	r6, #0
- 801b4b6:	f040 8181 	bne.w	801b7bc <VgmHead::cmdNext(unsigned long)+0x340>
+ 801b488:	7b20      	ldrb	r0, [r4, #12]
+ 801b48a:	2800      	cmp	r0, #0
+ 801b48c:	f040 818c 	bne.w	801b7a8 <VgmHead::cmdNext(unsigned long)+0x34c>
+ 801b490:	7b65      	ldrb	r5, [r4, #13]
+ 801b492:	2d00      	cmp	r5, #0
+ 801b494:	f040 8188 	bne.w	801b7a8 <VgmHead::cmdNext(unsigned long)+0x34c>
         type = source->getByte(srcaddr++);
- 801b4ba:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b4be:	1c4a      	adds	r2, r1, #1
- 801b4c0:	6062      	str	r2, [r4, #4]
- 801b4c2:	f000 f9e3 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b498:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b49c:	1c4a      	adds	r2, r1, #1
+ 801b49e:	6062      	str	r2, [r4, #4]
+ 801b4a0:	f000 f9d7 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
         if(type == 0x50){
- 801b4c6:	2850      	cmp	r0, #80	; 0x50
- 801b4c8:	d106      	bne.n	801b4d8 <VgmHead::cmdNext(unsigned long)+0x5c>
+ 801b4a4:	2850      	cmp	r0, #80	; 0x50
+ 801b4a6:	d106      	bne.n	801b4b6 <VgmHead::cmdNext(unsigned long)+0x5a>
             //PSG write
             iswrite = true;
             writecmd.cmd = type;
- 801b4ca:	7620      	strb	r0, [r4, #24]
+ 801b4a8:	7420      	strb	r0, [r4, #16]
             writecmd.data = source->getByte(srcaddr++);
- 801b4cc:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b4aa:	e894 0003 	ldmia.w	r4, {r0, r1}
     iswait = iswrite = false;
     while(!(iswait || iswrite)){
         type = source->getByte(srcaddr++);
         if(type == 0x50){
             //PSG write
             iswrite = true;
- 801b4d0:	2301      	movs	r3, #1
- 801b4d2:	7363      	strb	r3, [r4, #13]
+ 801b4ae:	2301      	movs	r3, #1
+ 801b4b0:	7363      	strb	r3, [r4, #13]
             writecmd.cmd = type;
             writecmd.data = source->getByte(srcaddr++);
- 801b4d4:	18ca      	adds	r2, r1, r3
- 801b4d6:	e011      	b.n	801b4fc <VgmHead::cmdNext(unsigned long)+0x80>
+ 801b4b2:	18ca      	adds	r2, r1, r3
+ 801b4b4:	e011      	b.n	801b4da <VgmHead::cmdNext(unsigned long)+0x7e>
         }else if(type == 0x52 || type == 0x53){
- 801b4d8:	f1a0 0152 	sub.w	r1, r0, #82	; 0x52
- 801b4dc:	b2cb      	uxtb	r3, r1
- 801b4de:	2b01      	cmp	r3, #1
- 801b4e0:	d811      	bhi.n	801b506 <VgmHead::cmdNext(unsigned long)+0x8a>
+ 801b4b6:	f1a0 0152 	sub.w	r1, r0, #82	; 0x52
+ 801b4ba:	b2cb      	uxtb	r3, r1
+ 801b4bc:	2b01      	cmp	r3, #1
+ 801b4be:	d811      	bhi.n	801b4e4 <VgmHead::cmdNext(unsigned long)+0x88>
             //OPN2 write
             iswrite = true;
             writecmd.cmd = type;
- 801b4e2:	7620      	strb	r0, [r4, #24]
+ 801b4c0:	7420      	strb	r0, [r4, #16]
             writecmd.addr = source->getByte(srcaddr++);
- 801b4e4:	e894 0003 	ldmia.w	r4, {r0, r1}
-            iswrite = true;
-            writecmd.cmd = type;
-            writecmd.data = source->getByte(srcaddr++);
-        }else if(type == 0x52 || type == 0x53){
-            //OPN2 write
-            iswrite = true;
- 801b4e8:	2201      	movs	r2, #1
-            writecmd.cmd = type;
-            writecmd.addr = source->getByte(srcaddr++);
- 801b4ea:	188b      	adds	r3, r1, r2
+ 801b4c2:	e894 0003 	ldmia.w	r4, {r0, r1}
             iswrite = true;
             writecmd.cmd = type;
             writecmd.data = source->getByte(srcaddr++);
         }else if(type == 0x52 || type == 0x53){
             //OPN2 write
             iswrite = true;
- 801b4ec:	7362      	strb	r2, [r4, #13]
+ 801b4c6:	2201      	movs	r2, #1
             writecmd.cmd = type;
             writecmd.addr = source->getByte(srcaddr++);
- 801b4ee:	6063      	str	r3, [r4, #4]
- 801b4f0:	f000 f9cc 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b4f4:	7660      	strb	r0, [r4, #25]
+ 801b4c8:	188b      	adds	r3, r1, r2
+            iswrite = true;
+            writecmd.cmd = type;
             writecmd.data = source->getByte(srcaddr++);
- 801b4f6:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b4fa:	1c4a      	adds	r2, r1, #1
- 801b4fc:	6062      	str	r2, [r4, #4]
- 801b4fe:	f000 f9c5 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b502:	76a0      	strb	r0, [r4, #26]
- 801b504:	e7d1      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+        }else if(type == 0x52 || type == 0x53){
+            //OPN2 write
+            iswrite = true;
+ 801b4ca:	7362      	strb	r2, [r4, #13]
+            writecmd.cmd = type;
+            writecmd.addr = source->getByte(srcaddr++);
+ 801b4cc:	6063      	str	r3, [r4, #4]
+ 801b4ce:	f000 f9c0 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b4d2:	7460      	strb	r0, [r4, #17]
+            writecmd.data = source->getByte(srcaddr++);
+ 801b4d4:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b4d8:	1c4a      	adds	r2, r1, #1
+ 801b4da:	6062      	str	r2, [r4, #4]
+ 801b4dc:	f000 f9b9 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b4e0:	74a0      	strb	r0, [r4, #18]
+ 801b4e2:	e7d1      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type == 0xDE){
- 801b506:	28de      	cmp	r0, #222	; 0xde
- 801b508:	d143      	bne.n	801b592 <VgmHead::cmdNext(unsigned long)+0x116>
+ 801b4e4:	28de      	cmp	r0, #222	; 0xde
+ 801b4e6:	d143      	bne.n	801b570 <VgmHead::cmdNext(unsigned long)+0x114>
             //-- Address of first byte to write (e.g. 0xA4)
             //-- Data to write to first byte
             //-- Data to write to second byte (e.g. 0xA0)
             isfreqwrite = true;
             iswrite = true;
             writecmd.addr = source->getByte(srcaddr++);
+ 801b4e8:	e894 0003 	ldmia.w	r4, {r0, r1}
+            //OPN2 Frequency write [unofficial]
+            //Format:
+            //-- Address of first byte to write (e.g. 0xA4)
+            //-- Data to write to first byte
+            //-- Data to write to second byte (e.g. 0xA0)
+            isfreqwrite = true;
+ 801b4ec:	2201      	movs	r2, #1
+            iswrite = true;
+            writecmd.addr = source->getByte(srcaddr++);
+ 801b4ee:	188b      	adds	r3, r1, r2
+ 801b4f0:	6063      	str	r3, [r4, #4]
+            //OPN2 Frequency write [unofficial]
+            //Format:
+            //-- Address of first byte to write (e.g. 0xA4)
+            //-- Data to write to first byte
+            //-- Data to write to second byte (e.g. 0xA0)
+            isfreqwrite = true;
+ 801b4f2:	7662      	strb	r2, [r4, #25]
+            iswrite = true;
+ 801b4f4:	7362      	strb	r2, [r4, #13]
+            writecmd.addr = source->getByte(srcaddr++);
+ 801b4f6:	f000 f9ac 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b4fa:	7460      	strb	r0, [r4, #17]
+            writecmd.data = source->getByte(srcaddr++);
+ 801b4fc:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b500:	1c4a      	adds	r2, r1, #1
+ 801b502:	6062      	str	r2, [r4, #4]
+ 801b504:	f000 f9a5 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b508:	74a0      	strb	r0, [r4, #18]
+            writecmd.data2 = source->getByte(srcaddr++);
  801b50a:	e894 0003 	ldmia.w	r4, {r0, r1}
-            //OPN2 Frequency write [unofficial]
-            //Format:
-            //-- Address of first byte to write (e.g. 0xA4)
-            //-- Data to write to first byte
-            //-- Data to write to second byte (e.g. 0xA0)
-            isfreqwrite = true;
- 801b50e:	2201      	movs	r2, #1
-            iswrite = true;
-            writecmd.addr = source->getByte(srcaddr++);
- 801b510:	188b      	adds	r3, r1, r2
- 801b512:	6063      	str	r3, [r4, #4]
-            //OPN2 Frequency write [unofficial]
-            //Format:
-            //-- Address of first byte to write (e.g. 0xA4)
-            //-- Data to write to first byte
-            //-- Data to write to second byte (e.g. 0xA0)
-            isfreqwrite = true;
- 801b514:	7762      	strb	r2, [r4, #29]
-            iswrite = true;
- 801b516:	7362      	strb	r2, [r4, #13]
-            writecmd.addr = source->getByte(srcaddr++);
- 801b518:	f000 f9b8 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b51c:	7660      	strb	r0, [r4, #25]
-            writecmd.data = source->getByte(srcaddr++);
- 801b51e:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b522:	1c4a      	adds	r2, r1, #1
- 801b524:	6062      	str	r2, [r4, #4]
- 801b526:	f000 f9b1 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b52a:	76a0      	strb	r0, [r4, #26]
-            writecmd.data2 = source->getByte(srcaddr++);
- 801b52c:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b530:	1c4b      	adds	r3, r1, #1
- 801b532:	6063      	str	r3, [r4, #4]
- 801b534:	f000 f9aa 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b50e:	1c4b      	adds	r3, r1, #1
+ 801b510:	6063      	str	r3, [r4, #4]
+ 801b512:	f000 f99e 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
             u8 block; u32 freq;
             if(!(writecmd.addr & 0x04)){
- 801b538:	7e61      	ldrb	r1, [r4, #25]
+ 801b516:	7c61      	ldrb	r1, [r4, #17]
             //-- Data to write to second byte (e.g. 0xA0)
             isfreqwrite = true;
             iswrite = true;
             writecmd.addr = source->getByte(srcaddr++);
             writecmd.data = source->getByte(srcaddr++);
             writecmd.data2 = source->getByte(srcaddr++);
- 801b53a:	76e0      	strb	r0, [r4, #27]
+ 801b518:	74e0      	strb	r0, [r4, #19]
             u8 block; u32 freq;
             if(!(writecmd.addr & 0x04)){
- 801b53c:	f001 0204 	and.w	r2, r1, #4
- 801b540:	b2d3      	uxtb	r3, r2
- 801b542:	b92b      	cbnz	r3, 801b550 <VgmHead::cmdNext(unsigned long)+0xd4>
+ 801b51a:	f001 0204 	and.w	r2, r1, #4
+ 801b51e:	b2d3      	uxtb	r3, r2
+ 801b520:	b92b      	cbnz	r3, 801b52e <VgmHead::cmdNext(unsigned long)+0xd2>
                 //The VGM wrote the LSB first, swap them
                 writecmd.addr |= 0x04;
                 block = writecmd.data;
- 801b544:	7ea2      	ldrb	r2, [r4, #26]
+ 801b522:	7ca2      	ldrb	r2, [r4, #18]
                 writecmd.data = writecmd.data2;
- 801b546:	76a0      	strb	r0, [r4, #26]
+ 801b524:	74a0      	strb	r0, [r4, #18]
             writecmd.data = source->getByte(srcaddr++);
             writecmd.data2 = source->getByte(srcaddr++);
             u8 block; u32 freq;
             if(!(writecmd.addr & 0x04)){
                 //The VGM wrote the LSB first, swap them
                 writecmd.addr |= 0x04;
- 801b548:	f041 0104 	orr.w	r1, r1, #4
- 801b54c:	7661      	strb	r1, [r4, #25]
+ 801b526:	f041 0104 	orr.w	r1, r1, #4
+ 801b52a:	7461      	strb	r1, [r4, #17]
                 block = writecmd.data;
                 writecmd.data = writecmd.data2;
                 writecmd.data2 = block;
- 801b54e:	76e2      	strb	r2, [r4, #27]
+ 801b52c:	74e2      	strb	r2, [r4, #19]
             }
             block = (writecmd.data >> 3) & 0x07;
- 801b550:	7ea0      	ldrb	r0, [r4, #26]
+ 801b52e:	7ca0      	ldrb	r0, [r4, #18]
             freq = ((u32)(writecmd.data & 0x07) << 8) | writecmd.data2; //Up to 11 bits set
- 801b552:	7ee3      	ldrb	r3, [r4, #27]
- 801b554:	f000 0107 	and.w	r1, r0, #7
+ 801b530:	7ce3      	ldrb	r3, [r4, #19]
+ 801b532:	f000 0107 	and.w	r1, r0, #7
                 writecmd.addr |= 0x04;
                 block = writecmd.data;
                 writecmd.data = writecmd.data2;
                 writecmd.data2 = block;
             }
             block = (writecmd.data >> 3) & 0x07;
- 801b558:	f3c0 02c2 	ubfx	r2, r0, #3, #3
+ 801b536:	f3c0 02c2 	ubfx	r2, r0, #3, #3
             freq = ((u32)(writecmd.data & 0x07) << 8) | writecmd.data2; //Up to 11 bits set
- 801b55c:	ea43 2301 	orr.w	r3, r3, r1, lsl #8
+ 801b53a:	ea43 2301 	orr.w	r3, r3, r1, lsl #8
             freq <<= block; //Up to 18 bits set
             freq *= opn2mult; //If unity (0x1000), up to 30 bits set (29 downto 0)
- 801b560:	6aa0      	ldr	r0, [r4, #40]	; 0x28
+ 801b53e:	6a60      	ldr	r0, [r4, #36]	; 0x24
                 writecmd.data = writecmd.data2;
                 writecmd.data2 = block;
             }
             block = (writecmd.data >> 3) & 0x07;
             freq = ((u32)(writecmd.data & 0x07) << 8) | writecmd.data2; //Up to 11 bits set
             freq <<= block; //Up to 18 bits set
- 801b562:	fa03 f302 	lsl.w	r3, r3, r2
+ 801b540:	fa03 f302 	lsl.w	r3, r3, r2
             freq *= opn2mult; //If unity (0x1000), up to 30 bits set (29 downto 0)
- 801b566:	4343      	muls	r3, r0
+ 801b544:	4343      	muls	r3, r0
             //Check for overflow
             if(freq & 0xC0000000){
                 freq = 0x3FFFFFFF;
- 801b568:	f013 4f40 	tst.w	r3, #3221225472	; 0xc0000000
- 801b56c:	bf18      	it	ne
- 801b56e:	f06f 4340 	mvnne.w	r3, #3221225472	; 0xc0000000
- 801b572:	2208      	movs	r2, #8
+ 801b546:	f013 4f40 	tst.w	r3, #3221225472	; 0xc0000000
+ 801b54a:	bf18      	it	ne
+ 801b54c:	f06f 4340 	mvnne.w	r3, #3221225472	; 0xc0000000
+ 801b550:	2208      	movs	r2, #8
             }
             //To floating point: find most-significant 1
             for(block=8; block>1; --block){
                 if(freq & 0x20000000) break;
- 801b574:	0099      	lsls	r1, r3, #2
- 801b576:	d404      	bmi.n	801b582 <VgmHead::cmdNext(unsigned long)+0x106>
+ 801b552:	0099      	lsls	r1, r3, #2
+ 801b554:	d404      	bmi.n	801b560 <VgmHead::cmdNext(unsigned long)+0x104>
             //Check for overflow
             if(freq & 0xC0000000){
                 freq = 0x3FFFFFFF;
             }
             //To floating point: find most-significant 1
             for(block=8; block>1; --block){
- 801b578:	1e51      	subs	r1, r2, #1
- 801b57a:	b2ca      	uxtb	r2, r1
-                if(freq & 0x20000000) break;
-                freq <<= 1;
- 801b57c:	005b      	lsls	r3, r3, #1
-            //Check for overflow
-            if(freq & 0xC0000000){
-                freq = 0x3FFFFFFF;
-            }
-            //To floating point: find most-significant 1
-            for(block=8; block>1; --block){
- 801b57e:	2a01      	cmp	r2, #1
- 801b580:	d1f8      	bne.n	801b574 <VgmHead::cmdNext(unsigned long)+0xf8>
+ 801b556:	1e51      	subs	r1, r2, #1
+ 801b558:	b2ca      	uxtb	r2, r1
                 if(freq & 0x20000000) break;
                 freq <<= 1;
+ 801b55a:	005b      	lsls	r3, r3, #1
+            //Check for overflow
+            if(freq & 0xC0000000){
+                freq = 0x3FFFFFFF;
             }
-            --block;
- 801b582:	1e51      	subs	r1, r2, #1
-            freq >>= 19; //Previously up to 30 bits set, now up to 11 bits set
-            writecmd.data = (freq >> 8) | (block << 3);
- 801b584:	00ca      	lsls	r2, r1, #3
+            //To floating point: find most-significant 1
             for(block=8; block>1; --block){
+ 801b55c:	2a01      	cmp	r2, #1
+ 801b55e:	d1f8      	bne.n	801b552 <VgmHead::cmdNext(unsigned long)+0xf6>
                 if(freq & 0x20000000) break;
                 freq <<= 1;
             }
             --block;
+ 801b560:	1e51      	subs	r1, r2, #1
             freq >>= 19; //Previously up to 30 bits set, now up to 11 bits set
- 801b586:	0cd8      	lsrs	r0, r3, #19
             writecmd.data = (freq >> 8) | (block << 3);
- 801b588:	ea42 63d3 	orr.w	r3, r2, r3, lsr #27
- 801b58c:	76a3      	strb	r3, [r4, #26]
+ 801b562:	00ca      	lsls	r2, r1, #3
+            for(block=8; block>1; --block){
+                if(freq & 0x20000000) break;
+                freq <<= 1;
+            }
+            --block;
+            freq >>= 19; //Previously up to 30 bits set, now up to 11 bits set
+ 801b564:	0cd8      	lsrs	r0, r3, #19
+            writecmd.data = (freq >> 8) | (block << 3);
+ 801b566:	ea42 63d3 	orr.w	r3, r2, r3, lsr #27
+ 801b56a:	74a3      	strb	r3, [r4, #18]
             writecmd.data2 = (freq & 0xFF);
- 801b58e:	76e0      	strb	r0, [r4, #27]
- 801b590:	e78b      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b56c:	74e0      	strb	r0, [r4, #19]
+ 801b56e:	e78b      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type >= 0x80 && type <= 0x8F){
- 801b592:	f1a0 0180 	sub.w	r1, r0, #128	; 0x80
- 801b596:	b2ca      	uxtb	r2, r1
- 801b598:	2a0f      	cmp	r2, #15
- 801b59a:	d814      	bhi.n	801b5c6 <VgmHead::cmdNext(unsigned long)+0x14a>
-            isdacwrite = true;
-            iswrite = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
-            writecmd.cmd = 0x52;
-            writecmd.addr = 0x2A;
- 801b59c:	232a      	movs	r3, #42	; 0x2a
-            writecmd.data = source->getBlockByte(srcblockaddr++);
- 801b59e:	6822      	ldr	r2, [r4, #0]
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
+ 801b570:	f1a0 0280 	sub.w	r2, r0, #128	; 0x80
+ 801b574:	b2d1      	uxtb	r1, r2
+ 801b576:	290f      	cmp	r1, #15
+ 801b578:	d816      	bhi.n	801b5a8 <VgmHead::cmdNext(unsigned long)+0x14c>
+            iswait = true;
+            ticks += type - 0x80;
             */
             isdacwrite = true;
             iswrite = true;
-            waitduration = type - 0x80;
- 801b5a0:	6121      	str	r1, [r4, #16]
-            waitstarttime = curtime;
-            writecmd.cmd = 0x52;
- 801b5a2:	2152      	movs	r1, #82	; 0x52
+            ticks += type - 0x80;
+ 801b57a:	6962      	ldr	r2, [r4, #20]
+            //OPN2 DAC write
             /*
             iswait = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
+            ticks += type - 0x80;
             */
             isdacwrite = true;
- 801b5a4:	2001      	movs	r0, #1
+ 801b57c:	2301      	movs	r3, #1
             iswrite = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
+            ticks += type - 0x80;
+ 801b57e:	3a80      	subs	r2, #128	; 0x80
+ 801b580:	1811      	adds	r1, r2, r0
+            //OPN2 DAC write
+            /*
+            iswait = true;
+            ticks += type - 0x80;
+            */
+            isdacwrite = true;
+ 801b582:	7623      	strb	r3, [r4, #24]
+            iswrite = true;
+            ticks += type - 0x80;
             writecmd.cmd = 0x52;
- 801b5a6:	7621      	strb	r1, [r4, #24]
+ 801b584:	2052      	movs	r0, #82	; 0x52
             writecmd.addr = 0x2A;
- 801b5a8:	7663      	strb	r3, [r4, #25]
+            writecmd.data = source->getBlockByte(srcblockaddr++);
+ 801b586:	6822      	ldr	r2, [r4, #0]
+            /*
+            iswait = true;
+            ticks += type - 0x80;
+            */
+            isdacwrite = true;
+            iswrite = true;
+ 801b588:	7363      	strb	r3, [r4, #13]
+            ticks += type - 0x80;
+            writecmd.cmd = 0x52;
+            writecmd.addr = 0x2A;
+ 801b58a:	232a      	movs	r3, #42	; 0x2a
+            ticks += type - 0x80;
+            */
+            isdacwrite = true;
+            iswrite = true;
+            ticks += type - 0x80;
+            writecmd.cmd = 0x52;
+ 801b58c:	7420      	strb	r0, [r4, #16]
+            writecmd.addr = 0x2A;
+ 801b58e:	7463      	strb	r3, [r4, #17]
+            writecmd.data = source->getBlockByte(srcblockaddr++);
+ 801b590:	68a0      	ldr	r0, [r4, #8]
     ~VgmSourceStream();
     
     u8 getByte(u32 addr);
     inline u32 getSize() { return datalen; }
     
     inline u8 getBlockByte(u32 blockaddr) { return ((blockaddr < blocklen) ? (block[blockaddr]) : 0); }
- 801b5aa:	6d13      	ldr	r3, [r2, #80]	; 0x50
-            /*
+ 801b592:	6d13      	ldr	r3, [r2, #80]	; 0x50
             iswait = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
-            */
-            isdacwrite = true;
- 801b5ac:	7720      	strb	r0, [r4, #28]
-            iswrite = true;
- 801b5ae:	7360      	strb	r0, [r4, #13]
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
-            writecmd.cmd = 0x52;
-            writecmd.addr = 0x2A;
-            writecmd.data = source->getBlockByte(srcblockaddr++);
- 801b5b0:	68a0      	ldr	r0, [r4, #8]
-            waitstarttime = curtime;
+            ticks += type - 0x80;
             */
             isdacwrite = true;
             iswrite = true;
-            waitduration = type - 0x80;
-            waitstarttime = curtime;
- 801b5b2:	6165      	str	r5, [r4, #20]
+            ticks += type - 0x80;
+ 801b594:	6161      	str	r1, [r4, #20]
             writecmd.cmd = 0x52;
             writecmd.addr = 0x2A;
             writecmd.data = source->getBlockByte(srcblockaddr++);
- 801b5b4:	1c41      	adds	r1, r0, #1
- 801b5b6:	4298      	cmp	r0, r3
- 801b5b8:	bf38      	it	cc
- 801b5ba:	6cd2      	ldrcc	r2, [r2, #76]	; 0x4c
- 801b5bc:	60a1      	str	r1, [r4, #8]
- 801b5be:	bf38      	it	cc
- 801b5c0:	5c16      	ldrbcc	r6, [r2, r0]
- 801b5c2:	76a6      	strb	r6, [r4, #26]
- 801b5c4:	e771      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b596:	1c41      	adds	r1, r0, #1
+ 801b598:	4298      	cmp	r0, r3
+ 801b59a:	bf38      	it	cc
+ 801b59c:	6cd2      	ldrcc	r2, [r2, #76]	; 0x4c
+ 801b59e:	60a1      	str	r1, [r4, #8]
+ 801b5a0:	bf38      	it	cc
+ 801b5a2:	5c15      	ldrbcc	r5, [r2, r0]
+ 801b5a4:	74a5      	strb	r5, [r4, #18]
+ 801b5a6:	e76f      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type >= 0x70 && type <= 0x7F){
- 801b5c6:	f1a0 0370 	sub.w	r3, r0, #112	; 0x70
- 801b5ca:	b2d9      	uxtb	r1, r3
- 801b5cc:	290f      	cmp	r1, #15
- 801b5ce:	d804      	bhi.n	801b5da <VgmHead::cmdNext(unsigned long)+0x15e>
+ 801b5a8:	f1a0 0370 	sub.w	r3, r0, #112	; 0x70
+ 801b5ac:	b2da      	uxtb	r2, r3
+ 801b5ae:	2a0f      	cmp	r2, #15
+ 801b5b0:	d806      	bhi.n	801b5c0 <VgmHead::cmdNext(unsigned long)+0x164>
             //Short wait
             iswait = true;
- 801b5d0:	2201      	movs	r2, #1
-            waitduration = type - 0x6F;
- 801b5d2:	386f      	subs	r0, #111	; 0x6f
+            ticks += type - 0x6F;
+ 801b5b2:	6961      	ldr	r1, [r4, #20]
+ 801b5b4:	396f      	subs	r1, #111	; 0x6f
             writecmd.cmd = 0x52;
             writecmd.addr = 0x2A;
             writecmd.data = source->getBlockByte(srcblockaddr++);
         }else if(type >= 0x70 && type <= 0x7F){
             //Short wait
             iswait = true;
- 801b5d4:	7322      	strb	r2, [r4, #12]
-            waitduration = type - 0x6F;
- 801b5d6:	6120      	str	r0, [r4, #16]
- 801b5d8:	e018      	b.n	801b60c <VgmHead::cmdNext(unsigned long)+0x190>
-            waitstarttime = curtime;
+ 801b5b6:	2201      	movs	r2, #1
+            ticks += type - 0x6F;
+ 801b5b8:	1808      	adds	r0, r1, r0
+            writecmd.cmd = 0x52;
+            writecmd.addr = 0x2A;
+            writecmd.data = source->getBlockByte(srcblockaddr++);
+        }else if(type >= 0x70 && type <= 0x7F){
+            //Short wait
+            iswait = true;
+ 801b5ba:	7322      	strb	r2, [r4, #12]
+            ticks += type - 0x6F;
+ 801b5bc:	6160      	str	r0, [r4, #20]
+ 801b5be:	e763      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type == 0x61){
- 801b5da:	2861      	cmp	r0, #97	; 0x61
- 801b5dc:	d110      	bne.n	801b600 <VgmHead::cmdNext(unsigned long)+0x184>
+ 801b5c0:	2861      	cmp	r0, #97	; 0x61
+ 801b5c2:	d111      	bne.n	801b5e8 <VgmHead::cmdNext(unsigned long)+0x18c>
             //Long wait
             iswait = true;
- 801b5de:	2601      	movs	r6, #1
- 801b5e0:	7326      	strb	r6, [r4, #12]
-            waitduration = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
- 801b5e2:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b5e6:	f000 f951 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b5ea:	4606      	mov	r6, r0
- 801b5ec:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b5f0:	3101      	adds	r1, #1
- 801b5f2:	f000 f94b 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b5f6:	ea46 2100 	orr.w	r1, r6, r0, lsl #8
- 801b5fa:	6121      	str	r1, [r4, #16]
-            waitstarttime = curtime;
- 801b5fc:	6165      	str	r5, [r4, #20]
- 801b5fe:	e0cb      	b.n	801b798 <VgmHead::cmdNext(unsigned long)+0x31c>
+ 801b5c4:	2501      	movs	r5, #1
+ 801b5c6:	7325      	strb	r5, [r4, #12]
+            ticks += source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
+ 801b5c8:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b5cc:	f000 f941 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b5d0:	4605      	mov	r5, r0
+ 801b5d2:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b5d6:	3101      	adds	r1, #1
+ 801b5d8:	f000 f93b 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b5dc:	ea45 2200 	orr.w	r2, r5, r0, lsl #8
+ 801b5e0:	6960      	ldr	r0, [r4, #20]
+ 801b5e2:	1881      	adds	r1, r0, r2
+ 801b5e4:	6161      	str	r1, [r4, #20]
+ 801b5e6:	e0cd      	b.n	801b784 <VgmHead::cmdNext(unsigned long)+0x328>
             srcaddr += 2;
         }else if(type == 0x62){
- 801b600:	2862      	cmp	r0, #98	; 0x62
- 801b602:	d105      	bne.n	801b610 <VgmHead::cmdNext(unsigned long)+0x194>
+ 801b5e8:	2862      	cmp	r0, #98	; 0x62
+ 801b5ea:	d104      	bne.n	801b5f6 <VgmHead::cmdNext(unsigned long)+0x19a>
             //60 Hz wait
             iswait = true;
- 801b604:	2001      	movs	r0, #1
-            waitduration = delay62;
- 801b606:	6a22      	ldr	r2, [r4, #32]
-            waitduration = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
-            waitstarttime = curtime;
-            srcaddr += 2;
-        }else if(type == 0x62){
-            //60 Hz wait
-            iswait = true;
- 801b608:	7320      	strb	r0, [r4, #12]
-            waitduration = delay62;
- 801b60a:	6122      	str	r2, [r4, #16]
-            waitstarttime = curtime;
- 801b60c:	6165      	str	r5, [r4, #20]
- 801b60e:	e74c      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b5ec:	2101      	movs	r1, #1
+ 801b5ee:	7321      	strb	r1, [r4, #12]
+            ticks += delay62;
+ 801b5f0:	6962      	ldr	r2, [r4, #20]
+ 801b5f2:	69e0      	ldr	r0, [r4, #28]
+ 801b5f4:	e005      	b.n	801b602 <VgmHead::cmdNext(unsigned long)+0x1a6>
         }else if(type == 0x63){
- 801b610:	2863      	cmp	r0, #99	; 0x63
- 801b612:	d103      	bne.n	801b61c <VgmHead::cmdNext(unsigned long)+0x1a0>
+ 801b5f6:	2863      	cmp	r0, #99	; 0x63
+ 801b5f8:	d106      	bne.n	801b608 <VgmHead::cmdNext(unsigned long)+0x1ac>
             //50 Hz wait
             iswait = true;
- 801b614:	2301      	movs	r3, #1
- 801b616:	7323      	strb	r3, [r4, #12]
-            waitduration = delay63;
- 801b618:	6a62      	ldr	r2, [r4, #36]	; 0x24
- 801b61a:	e7f6      	b.n	801b60a <VgmHead::cmdNext(unsigned long)+0x18e>
-            waitstarttime = curtime;
+ 801b5fa:	2301      	movs	r3, #1
+            ticks += delay63;
+ 801b5fc:	6962      	ldr	r2, [r4, #20]
+ 801b5fe:	6a20      	ldr	r0, [r4, #32]
+            //60 Hz wait
+            iswait = true;
+            ticks += delay62;
+        }else if(type == 0x63){
+            //50 Hz wait
+            iswait = true;
+ 801b600:	7323      	strb	r3, [r4, #12]
+            ticks += delay63;
+ 801b602:	1813      	adds	r3, r2, r0
+ 801b604:	6163      	str	r3, [r4, #20]
+ 801b606:	e73f      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type == 0x64){
- 801b61c:	2864      	cmp	r0, #100	; 0x64
- 801b61e:	d11e      	bne.n	801b65e <VgmHead::cmdNext(unsigned long)+0x1e2>
+ 801b608:	2864      	cmp	r0, #100	; 0x64
+ 801b60a:	d11e      	bne.n	801b64a <VgmHead::cmdNext(unsigned long)+0x1ee>
             //Override wait lengths
             u8 tooverride = source->getByte(srcaddr++);
- 801b620:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b624:	1c4f      	adds	r7, r1, #1
- 801b626:	6067      	str	r7, [r4, #4]
- 801b628:	f000 f930 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b62c:	4606      	mov	r6, r0
+ 801b60c:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b610:	1c4e      	adds	r6, r1, #1
+ 801b612:	6066      	str	r6, [r4, #4]
+ 801b614:	f000 f91d 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b618:	4605      	mov	r5, r0
             u32 newdelay = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
- 801b62e:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b632:	f000 f92b 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b636:	4607      	mov	r7, r0
- 801b638:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b63c:	3101      	adds	r1, #1
- 801b63e:	f000 f925 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b642:	ea47 2200 	orr.w	r2, r7, r0, lsl #8
+ 801b61a:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b61e:	f000 f918 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b622:	4606      	mov	r6, r0
+ 801b624:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b628:	3101      	adds	r1, #1
+ 801b62a:	f000 f912 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b62e:	ea46 2200 	orr.w	r2, r6, r0, lsl #8
             srcaddr += 2;
- 801b646:	6860      	ldr	r0, [r4, #4]
- 801b648:	1c81      	adds	r1, r0, #2
+ 801b632:	6860      	ldr	r0, [r4, #4]
+ 801b634:	1c81      	adds	r1, r0, #2
             if(tooverride == 0x62){
- 801b64a:	2e62      	cmp	r6, #98	; 0x62
-            waitstarttime = curtime;
+ 801b636:	2d62      	cmp	r5, #98	; 0x62
+            ticks += delay63;
         }else if(type == 0x64){
             //Override wait lengths
             u8 tooverride = source->getByte(srcaddr++);
             u32 newdelay = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8);
             srcaddr += 2;
- 801b64c:	6061      	str	r1, [r4, #4]
+ 801b638:	6061      	str	r1, [r4, #4]
             if(tooverride == 0x62){
- 801b64e:	d101      	bne.n	801b654 <VgmHead::cmdNext(unsigned long)+0x1d8>
+ 801b63a:	d101      	bne.n	801b640 <VgmHead::cmdNext(unsigned long)+0x1e4>
                 delay62 = newdelay;
- 801b650:	6222      	str	r2, [r4, #32]
- 801b652:	e72a      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b63c:	61e2      	str	r2, [r4, #28]
+ 801b63e:	e723      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
             }else if(tooverride == 0x63){
- 801b654:	2e63      	cmp	r6, #99	; 0x63
- 801b656:	f47f af28 	bne.w	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b640:	2d63      	cmp	r5, #99	; 0x63
+ 801b642:	f47f af21 	bne.w	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
                 delay63 = newdelay;
- 801b65a:	6262      	str	r2, [r4, #36]	; 0x24
- 801b65c:	e725      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b646:	6222      	str	r2, [r4, #32]
+ 801b648:	e71e      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
             }
         }else if(type == 0x65){
- 801b65e:	2865      	cmp	r0, #101	; 0x65
- 801b660:	f43f af23 	beq.w	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b64a:	2865      	cmp	r0, #101	; 0x65
+ 801b64c:	f43f af1c 	beq.w	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
             //Nop [unofficial]
         }else if(type == 0x66){
- 801b664:	2866      	cmp	r0, #102	; 0x66
- 801b666:	d009      	beq.n	801b67c <VgmHead::cmdNext(unsigned long)+0x200>
+ 801b650:	2866      	cmp	r0, #102	; 0x66
+ 801b652:	d009      	beq.n	801b668 <VgmHead::cmdNext(unsigned long)+0x20c>
             //End of data
             //Behaves like endless stream of 65535-tick waits
             isdone = true;
         }else if(type == 0x67){
- 801b668:	2867      	cmp	r0, #103	; 0x67
- 801b66a:	d135      	bne.n	801b6d8 <VgmHead::cmdNext(unsigned long)+0x25c>
+ 801b654:	2867      	cmp	r0, #103	; 0x67
+ 801b656:	d135      	bne.n	801b6c4 <VgmHead::cmdNext(unsigned long)+0x268>
             //Data block
             ++srcaddr; //Skip 0x66
             u32 a = source->getByte(srcaddr++);
- 801b66c:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b670:	1c8a      	adds	r2, r1, #2
- 801b672:	6062      	str	r2, [r4, #4]
- 801b674:	3101      	adds	r1, #1
- 801b676:	f000 f909 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b658:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b65c:	1c8a      	adds	r2, r1, #2
+ 801b65e:	6062      	str	r2, [r4, #4]
+ 801b660:	3101      	adds	r1, #1
+ 801b662:	f000 f8f6 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
             if(a != 0){
- 801b67a:	b110      	cbz	r0, 801b682 <VgmHead::cmdNext(unsigned long)+0x206>
+ 801b666:	b110      	cbz	r0, 801b66e <VgmHead::cmdNext(unsigned long)+0x212>
                 isdone = true;
- 801b67c:	2301      	movs	r3, #1
- 801b67e:	77a3      	strb	r3, [r4, #30]
- 801b680:	e713      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b668:	2301      	movs	r3, #1
+ 801b66a:	76a3      	strb	r3, [r4, #26]
+ 801b66c:	e70c      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
             }else{
                 a = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
- 801b682:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b686:	f000 f901 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b68a:	4607      	mov	r7, r0
- 801b68c:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b690:	3101      	adds	r1, #1
- 801b692:	f000 f8fb 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b696:	4606      	mov	r6, r0
+ 801b66e:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b672:	f000 f8ee 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b676:	4606      	mov	r6, r0
+ 801b678:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b67c:	3101      	adds	r1, #1
+ 801b67e:	f000 f8e8 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b682:	4605      	mov	r5, r0
                     | ((u32)source->getByte(srcaddr+2) << 16) | ((u32)source->getByte(srcaddr+3) << 24);
- 801b698:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b69c:	3102      	adds	r1, #2
- 801b69e:	f000 f8f5 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b6a2:	0400      	lsls	r0, r0, #16
- 801b6a4:	ea40 2606 	orr.w	r6, r0, r6, lsl #8
- 801b6a8:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b6ac:	3103      	adds	r1, #3
- 801b6ae:	f000 f8ed 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b6b2:	433e      	orrs	r6, r7
- 801b6b4:	ea46 6600 	orr.w	r6, r6, r0, lsl #24
+ 801b684:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b688:	3102      	adds	r1, #2
+ 801b68a:	f000 f8e2 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b68e:	0400      	lsls	r0, r0, #16
+ 801b690:	ea40 2505 	orr.w	r5, r0, r5, lsl #8
+ 801b694:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b698:	3103      	adds	r1, #3
+ 801b69a:	f000 f8da 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b69e:	4335      	orrs	r5, r6
+ 801b6a0:	ea45 6500 	orr.w	r5, r5, r0, lsl #24
                 DBG("Loading data block from %x size %x", srcaddr, a);
- 801b6b8:	4632      	mov	r2, r6
- 801b6ba:	6861      	ldr	r1, [r4, #4]
- 801b6bc:	4840      	ldr	r0, [pc, #256]	; (801b7c0 <VgmHead::cmdNext(unsigned long)+0x344>)
- 801b6be:	f7f6 f969 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
+ 801b6a4:	462a      	mov	r2, r5
+ 801b6a6:	6861      	ldr	r1, [r4, #4]
+ 801b6a8:	4840      	ldr	r0, [pc, #256]	; (801b7ac <VgmHead::cmdNext(unsigned long)+0x350>)
+ 801b6aa:	f7f6 f973 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
                 source->loadBlock(srcaddr, a);
- 801b6c2:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b6c6:	4632      	mov	r2, r6
- 801b6c8:	f000 f93f 	bl	801b94a <VgmSourceStream::loadBlock(unsigned long, unsigned long)>
+ 801b6ae:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b6b2:	462a      	mov	r2, r5
+ 801b6b4:	f000 f922 	bl	801b8fc <VgmSourceStream::loadBlock(unsigned long, unsigned long)>
                 DBG("Block loaded!");
- 801b6cc:	483d      	ldr	r0, [pc, #244]	; (801b7c4 <VgmHead::cmdNext(unsigned long)+0x348>)
- 801b6ce:	f7f6 f961 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
+ 801b6b8:	483d      	ldr	r0, [pc, #244]	; (801b7b0 <VgmHead::cmdNext(unsigned long)+0x354>)
+ 801b6ba:	f7f6 f96b 	bl	8011994 <MIOS32_MIDI_SendDebugMessage>
                 srcaddr += a;
- 801b6d2:	6861      	ldr	r1, [r4, #4]
- 801b6d4:	198e      	adds	r6, r1, r6
- 801b6d6:	e034      	b.n	801b742 <VgmHead::cmdNext(unsigned long)+0x2c6>
+ 801b6be:	6861      	ldr	r1, [r4, #4]
+ 801b6c0:	194d      	adds	r5, r1, r5
+ 801b6c2:	e034      	b.n	801b72e <VgmHead::cmdNext(unsigned long)+0x2d2>
             }
         }else if(type == 0xE0){
- 801b6d8:	28e0      	cmp	r0, #224	; 0xe0
- 801b6da:	d11c      	bne.n	801b716 <VgmHead::cmdNext(unsigned long)+0x29a>
+ 801b6c4:	28e0      	cmp	r0, #224	; 0xe0
+ 801b6c6:	d11c      	bne.n	801b702 <VgmHead::cmdNext(unsigned long)+0x2a6>
             //Seek in data block
             srcblockaddr = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
- 801b6dc:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b6e0:	f000 f8d4 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b6e4:	4607      	mov	r7, r0
- 801b6e6:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b6ea:	3101      	adds	r1, #1
- 801b6ec:	f000 f8ce 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b6f0:	4606      	mov	r6, r0
+ 801b6c8:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b6cc:	f000 f8c1 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b6d0:	4606      	mov	r6, r0
+ 801b6d2:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b6d6:	3101      	adds	r1, #1
+ 801b6d8:	f000 f8bb 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b6dc:	4605      	mov	r5, r0
                 | ((u32)source->getByte(srcaddr+2) << 16) | ((u32)source->getByte(srcaddr+3) << 24);
- 801b6f2:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b6f6:	3102      	adds	r1, #2
- 801b6f8:	f000 f8c8 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b6fc:	0400      	lsls	r0, r0, #16
- 801b6fe:	ea40 2606 	orr.w	r6, r0, r6, lsl #8
- 801b702:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b706:	3103      	adds	r1, #3
- 801b708:	f000 f8c0 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b70c:	433e      	orrs	r6, r7
- 801b70e:	ea46 6100 	orr.w	r1, r6, r0, lsl #24
- 801b712:	60a1      	str	r1, [r4, #8]
- 801b714:	e04e      	b.n	801b7b4 <VgmHead::cmdNext(unsigned long)+0x338>
+ 801b6de:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b6e2:	3102      	adds	r1, #2
+ 801b6e4:	f000 f8b5 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b6e8:	0400      	lsls	r0, r0, #16
+ 801b6ea:	ea40 2505 	orr.w	r5, r0, r5, lsl #8
+ 801b6ee:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b6f2:	3103      	adds	r1, #3
+ 801b6f4:	f000 f8ad 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b6f8:	4335      	orrs	r5, r6
+ 801b6fa:	ea45 6200 	orr.w	r2, r5, r0, lsl #24
+ 801b6fe:	60a2      	str	r2, [r4, #8]
+ 801b700:	e04e      	b.n	801b7a0 <VgmHead::cmdNext(unsigned long)+0x344>
             srcaddr += 4;
         }else if(type == 0xDF){
- 801b716:	28df      	cmp	r0, #223	; 0xdf
- 801b718:	d115      	bne.n	801b746 <VgmHead::cmdNext(unsigned long)+0x2ca>
+ 801b702:	28df      	cmp	r0, #223	; 0xdf
+ 801b704:	d115      	bne.n	801b732 <VgmHead::cmdNext(unsigned long)+0x2d6>
             //Loop within VGM [unofficial] TODO scrap this there's loop info in the header
             srcaddr = source->getByte(srcaddr) | ((u32)source->getByte(srcaddr+1) << 8)
- 801b71a:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b71e:	f000 f8b5 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b722:	4606      	mov	r6, r0
- 801b724:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b728:	3101      	adds	r1, #1
- 801b72a:	f000 f8af 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b72e:	4607      	mov	r7, r0
+ 801b706:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b70a:	f000 f8a2 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b70e:	4605      	mov	r5, r0
+ 801b710:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b714:	3101      	adds	r1, #1
+ 801b716:	f000 f89c 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b71a:	4606      	mov	r6, r0
                 | ((u32)source->getByte(srcaddr+2) << 16);
- 801b730:	e894 0003 	ldmia.w	r4, {r0, r1}
- 801b734:	3102      	adds	r1, #2
- 801b736:	f000 f8a9 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b73a:	0403      	lsls	r3, r0, #16
- 801b73c:	ea43 2707 	orr.w	r7, r3, r7, lsl #8
- 801b740:	433e      	orrs	r6, r7
- 801b742:	6066      	str	r6, [r4, #4]
- 801b744:	e6b1      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b71c:	e894 0003 	ldmia.w	r4, {r0, r1}
+ 801b720:	3102      	adds	r1, #2
+ 801b722:	f000 f896 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b726:	0403      	lsls	r3, r0, #16
+ 801b728:	ea43 2606 	orr.w	r6, r3, r6, lsl #8
+ 801b72c:	4335      	orrs	r5, r6
+ 801b72e:	6065      	str	r5, [r4, #4]
+ 801b730:	e6aa      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
         }else if(type == 0x90){
- 801b746:	2890      	cmp	r0, #144	; 0x90
- 801b748:	d034      	beq.n	801b7b4 <VgmHead::cmdNext(unsigned long)+0x338>
+ 801b732:	2890      	cmp	r0, #144	; 0x90
+ 801b734:	d034      	beq.n	801b7a0 <VgmHead::cmdNext(unsigned long)+0x344>
             //Setup Stream Control not supported
             srcaddr += 4;
         }else if(type == 0x91){
- 801b74a:	2891      	cmp	r0, #145	; 0x91
- 801b74c:	d032      	beq.n	801b7b4 <VgmHead::cmdNext(unsigned long)+0x338>
+ 801b736:	2891      	cmp	r0, #145	; 0x91
+ 801b738:	d032      	beq.n	801b7a0 <VgmHead::cmdNext(unsigned long)+0x344>
             //Set Stream Data not supported
             srcaddr += 4;
         }else if(type == 0x92){
- 801b74e:	2892      	cmp	r0, #146	; 0x92
- 801b750:	d102      	bne.n	801b758 <VgmHead::cmdNext(unsigned long)+0x2dc>
+ 801b73a:	2892      	cmp	r0, #146	; 0x92
+ 801b73c:	d102      	bne.n	801b744 <VgmHead::cmdNext(unsigned long)+0x2e8>
             //Set Stream Frequency not supported
             srcaddr += 5;
- 801b752:	6862      	ldr	r2, [r4, #4]
- 801b754:	1d53      	adds	r3, r2, #5
- 801b756:	e02f      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b73e:	6861      	ldr	r1, [r4, #4]
+ 801b740:	1d4b      	adds	r3, r1, #5
+ 801b742:	e02f      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if(type == 0x93){
- 801b758:	2893      	cmp	r0, #147	; 0x93
- 801b75a:	d102      	bne.n	801b762 <VgmHead::cmdNext(unsigned long)+0x2e6>
+ 801b744:	2893      	cmp	r0, #147	; 0x93
+ 801b746:	d102      	bne.n	801b74e <VgmHead::cmdNext(unsigned long)+0x2f2>
             //Start Stream not supported
             srcaddr += 10;
- 801b75c:	6863      	ldr	r3, [r4, #4]
- 801b75e:	330a      	adds	r3, #10
- 801b760:	e02a      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b748:	6863      	ldr	r3, [r4, #4]
+ 801b74a:	330a      	adds	r3, #10
+ 801b74c:	e02a      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if(type == 0x94){
- 801b762:	2894      	cmp	r0, #148	; 0x94
- 801b764:	d00b      	beq.n	801b77e <VgmHead::cmdNext(unsigned long)+0x302>
+ 801b74e:	2894      	cmp	r0, #148	; 0x94
+ 801b750:	d00b      	beq.n	801b76a <VgmHead::cmdNext(unsigned long)+0x30e>
             //Stop Stream not supported
             srcaddr++;
         }else if(type == 0x95){
- 801b766:	2895      	cmp	r0, #149	; 0x95
- 801b768:	d024      	beq.n	801b7b4 <VgmHead::cmdNext(unsigned long)+0x338>
+ 801b752:	2895      	cmp	r0, #149	; 0x95
+ 801b754:	d024      	beq.n	801b7a0 <VgmHead::cmdNext(unsigned long)+0x344>
             //Start Stream fast not supported
             srcaddr += 4;
         }else if(type == 0x68){
- 801b76a:	2868      	cmp	r0, #104	; 0x68
- 801b76c:	d102      	bne.n	801b774 <VgmHead::cmdNext(unsigned long)+0x2f8>
+ 801b756:	2868      	cmp	r0, #104	; 0x68
+ 801b758:	d102      	bne.n	801b760 <VgmHead::cmdNext(unsigned long)+0x304>
             //PCM RAM write, not supported
             srcaddr += 11;
- 801b76e:	6863      	ldr	r3, [r4, #4]
- 801b770:	330b      	adds	r3, #11
- 801b772:	e021      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b75a:	6863      	ldr	r3, [r4, #4]
+ 801b75c:	330b      	adds	r3, #11
+ 801b75e:	e021      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if(type >= 0x30 && type <= 0x3F){
- 801b774:	f1a0 0230 	sub.w	r2, r0, #48	; 0x30
- 801b778:	b2d3      	uxtb	r3, r2
- 801b77a:	2b0f      	cmp	r3, #15
- 801b77c:	d802      	bhi.n	801b784 <VgmHead::cmdNext(unsigned long)+0x308>
+ 801b760:	f1a0 0130 	sub.w	r1, r0, #48	; 0x30
+ 801b764:	b2cb      	uxtb	r3, r1
+ 801b766:	2b0f      	cmp	r3, #15
+ 801b768:	d802      	bhi.n	801b770 <VgmHead::cmdNext(unsigned long)+0x314>
             //Unsupported single-byte command
             srcaddr++;
- 801b77e:	6861      	ldr	r1, [r4, #4]
- 801b780:	1c4b      	adds	r3, r1, #1
- 801b782:	e019      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b76a:	6862      	ldr	r2, [r4, #4]
+ 801b76c:	1c53      	adds	r3, r2, #1
+ 801b76e:	e019      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if((type >= 0x40 && type <= 0x4E) || (type >= 0xA0 && type <= 0xBF)){
- 801b784:	f1a0 0140 	sub.w	r1, r0, #64	; 0x40
- 801b788:	b2ca      	uxtb	r2, r1
- 801b78a:	2a0e      	cmp	r2, #14
- 801b78c:	d904      	bls.n	801b798 <VgmHead::cmdNext(unsigned long)+0x31c>
- 801b78e:	f100 0360 	add.w	r3, r0, #96	; 0x60
- 801b792:	b2d9      	uxtb	r1, r3
- 801b794:	291f      	cmp	r1, #31
- 801b796:	d802      	bhi.n	801b79e <VgmHead::cmdNext(unsigned long)+0x322>
+ 801b770:	f1a0 0240 	sub.w	r2, r0, #64	; 0x40
+ 801b774:	b2d1      	uxtb	r1, r2
+ 801b776:	290e      	cmp	r1, #14
+ 801b778:	d904      	bls.n	801b784 <VgmHead::cmdNext(unsigned long)+0x328>
+ 801b77a:	f100 0360 	add.w	r3, r0, #96	; 0x60
+ 801b77e:	b2da      	uxtb	r2, r3
+ 801b780:	2a1f      	cmp	r2, #31
+ 801b782:	d802      	bhi.n	801b78a <VgmHead::cmdNext(unsigned long)+0x32e>
             //Unsupported double-byte command
             srcaddr += 2;
- 801b798:	6863      	ldr	r3, [r4, #4]
- 801b79a:	3302      	adds	r3, #2
- 801b79c:	e00c      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b784:	6863      	ldr	r3, [r4, #4]
+ 801b786:	3302      	adds	r3, #2
+ 801b788:	e00c      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if(type >= 0xC0 && type <= 0xDD){
- 801b79e:	f100 0240 	add.w	r2, r0, #64	; 0x40
- 801b7a2:	b2d3      	uxtb	r3, r2
- 801b7a4:	2b1d      	cmp	r3, #29
- 801b7a6:	d802      	bhi.n	801b7ae <VgmHead::cmdNext(unsigned long)+0x332>
+ 801b78a:	f100 0140 	add.w	r1, r0, #64	; 0x40
+ 801b78e:	b2cb      	uxtb	r3, r1
+ 801b790:	2b1d      	cmp	r3, #29
+ 801b792:	d802      	bhi.n	801b79a <VgmHead::cmdNext(unsigned long)+0x33e>
             //Unsupported triple-byte command
             srcaddr += 3;
- 801b7a8:	6860      	ldr	r0, [r4, #4]
- 801b7aa:	1cc3      	adds	r3, r0, #3
- 801b7ac:	e004      	b.n	801b7b8 <VgmHead::cmdNext(unsigned long)+0x33c>
+ 801b794:	6860      	ldr	r0, [r4, #4]
+ 801b796:	1cc3      	adds	r3, r0, #3
+ 801b798:	e004      	b.n	801b7a4 <VgmHead::cmdNext(unsigned long)+0x348>
         }else if(type >= 0xE1 && type <= 0xFF){
- 801b7ae:	28e0      	cmp	r0, #224	; 0xe0
- 801b7b0:	f67f ae7b 	bls.w	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
+ 801b79a:	28e0      	cmp	r0, #224	; 0xe0
+ 801b79c:	f67f ae74 	bls.w	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
             //Unsupported quadruple-byte command
             srcaddr += 4;
- 801b7b4:	6862      	ldr	r2, [r4, #4]
- 801b7b6:	1d13      	adds	r3, r2, #4
- 801b7b8:	6063      	str	r3, [r4, #4]
- 801b7ba:	e676      	b.n	801b4aa <VgmHead::cmdNext(unsigned long)+0x2e>
- 801b7bc:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
- 801b7be:	bf00      	nop
- 801b7c0:	0801d624 	.word	0x0801d624
- 801b7c4:	0801d647 	.word	0x0801d647
+ 801b7a0:	6861      	ldr	r1, [r4, #4]
+ 801b7a2:	1d0b      	adds	r3, r1, #4
+ 801b7a4:	6063      	str	r3, [r4, #4]
+ 801b7a6:	e66f      	b.n	801b488 <VgmHead::cmdNext(unsigned long)+0x2c>
+ 801b7a8:	bd70      	pop	{r4, r5, r6, pc}
+ 801b7aa:	bf00      	nop
+ 801b7ac:	0801d5de 	.word	0x0801d5de
+ 801b7b0:	0801d601 	.word	0x0801d601
 
-0801b7c8 <VgmHead::restart()>:
+0801b7b4 <VgmHead::restart(unsigned long)>:
         }
     }
 }
 
-void VgmHead::restart(){
+void VgmHead::restart(u32 vgm_time){
     srcaddr = source->vgmdatastartaddr;
- 801b7c8:	6803      	ldr	r3, [r0, #0]
- 801b7ca:	6819      	ldr	r1, [r3, #0]
+ 801b7b4:	6803      	ldr	r3, [r0, #0]
+ 801b7b6:	681a      	ldr	r2, [r3, #0]
     srcblockaddr = 0;
- 801b7cc:	2200      	movs	r2, #0
+    ticks = vgm_time;
+ 801b7b8:	6141      	str	r1, [r0, #20]
+    }
+}
+
+void VgmHead::restart(u32 vgm_time){
+    srcaddr = source->vgmdatastartaddr;
+    srcblockaddr = 0;
+ 801b7ba:	2300      	movs	r3, #0
         }
     }
 }
 
-void VgmHead::restart(){
+void VgmHead::restart(u32 vgm_time){
     srcaddr = source->vgmdatastartaddr;
- 801b7ce:	6041      	str	r1, [r0, #4]
+ 801b7bc:	6042      	str	r2, [r0, #4]
     srcblockaddr = 0;
- 801b7d0:	6082      	str	r2, [r0, #8]
- 801b7d2:	4770      	bx	lr
+ 801b7be:	6083      	str	r3, [r0, #8]
+    ticks = vgm_time;
+ 801b7c0:	4770      	bx	lr
 
-0801b7d4 <VgmHead::VgmHead(VgmSourceStream*)>:
-
-VgmHead::VgmHead(VgmSourceStream* src){
-    source = src;
-    srcaddr = 0;
-    isdone = false;
-    delay62 = 735;
- 801b7d4:	f240 22df 	movw	r2, #735	; 0x2df
-
-#include <mios32.h>
-#include "vgmhead.h"
-
-
-VgmHead::VgmHead(VgmSourceStream* src){
- 801b7d8:	b510      	push	{r4, lr}
-    source = src;
-    srcaddr = 0;
- 801b7da:	2300      	movs	r3, #0
-#include <mios32.h>
-#include "vgmhead.h"
-
-
-VgmHead::VgmHead(VgmSourceStream* src){
-    source = src;
- 801b7dc:	6001      	str	r1, [r0, #0]
-    srcaddr = 0;
-    isdone = false;
-    delay62 = 735;
- 801b7de:	6202      	str	r2, [r0, #32]
-    delay63 = 882;
-    opn2mult = 0x1000;
- 801b7e0:	f44f 5180 	mov.w	r1, #4096	; 0x1000
-VgmHead::VgmHead(VgmSourceStream* src){
-    source = src;
-    srcaddr = 0;
-    isdone = false;
-    delay62 = 735;
-    delay63 = 882;
- 801b7e4:	3293      	adds	r2, #147	; 0x93
-
-#include <mios32.h>
-#include "vgmhead.h"
-
-
-VgmHead::VgmHead(VgmSourceStream* src){
- 801b7e6:	4604      	mov	r4, r0
-    source = src;
-    srcaddr = 0;
- 801b7e8:	6043      	str	r3, [r0, #4]
-    isdone = false;
- 801b7ea:	7783      	strb	r3, [r0, #30]
-    delay62 = 735;
-    delay63 = 882;
- 801b7ec:	6242      	str	r2, [r0, #36]	; 0x24
-    opn2mult = 0x1000;
- 801b7ee:	6281      	str	r1, [r0, #40]	; 0x28
-    paused = false;
- 801b7f0:	f880 302c 	strb.w	r3, [r0, #44]	; 0x2c
-    restart();
- 801b7f4:	f7ff ffe8 	bl	801b7c8 <VgmHead::restart()>
-}
- 801b7f8:	4620      	mov	r0, r4
- 801b7fa:	bd10      	pop	{r4, pc}
-
-0801b7fc <VgmSourceStream::VgmSourceStream()>:
-
+0801b7c2 <VgmSourceStream::VgmSourceStream()>:
 #include <mios32.h>
 #include "vgmsourcestream.h"
+#include "app.h"
 
 
 VgmSourceStream::VgmSourceStream() {
- 801b7fc:	b538      	push	{r3, r4, r5, lr}
+ 801b7c2:	b538      	push	{r3, r4, r5, lr}
     block = NULL;
- 801b7fe:	2500      	movs	r5, #0
+ 801b7c4:	2500      	movs	r5, #0
     blocklen = 0;
     blockorigaddr = 0xFFFFFFFF;
- 801b800:	f04f 33ff 	mov.w	r3, #4294967295
-
+ 801b7c6:	f04f 33ff 	mov.w	r3, #4294967295
 #include <mios32.h>
 #include "vgmsourcestream.h"
+#include "app.h"
 
 
 VgmSourceStream::VgmSourceStream() {
- 801b804:	4604      	mov	r4, r0
+ 801b7ca:	4604      	mov	r4, r0
     block = NULL;
     blocklen = 0;
     blockorigaddr = 0xFFFFFFFF;
- 801b806:	6543      	str	r3, [r0, #84]	; 0x54
-#include <mios32.h>
+ 801b7cc:	6543      	str	r3, [r0, #84]	; 0x54
 #include "vgmsourcestream.h"
+#include "app.h"
 
 
 VgmSourceStream::VgmSourceStream() {
     block = NULL;
- 801b808:	64c5      	str	r5, [r0, #76]	; 0x4c
+ 801b7ce:	64c5      	str	r5, [r0, #76]	; 0x4c
     blocklen = 0;
- 801b80a:	6505      	str	r5, [r0, #80]	; 0x50
+ 801b7d0:	6505      	str	r5, [r0, #80]	; 0x50
     blockorigaddr = 0xFFFFFFFF;
     buffer1 = new u8[VGMSOURCESTREAM_BUFSIZE];
- 801b80c:	f44f 7000 	mov.w	r0, #512	; 0x200
- 801b810:	f000 fa20 	bl	801bc54 <operator new[](unsigned int)>
- 801b814:	63a0      	str	r0, [r4, #56]	; 0x38
+ 801b7d2:	f44f 7000 	mov.w	r0, #512	; 0x200
+ 801b7d6:	f000 fa2d 	bl	801bc34 <operator new[](unsigned int)>
+ 801b7da:	63a0      	str	r0, [r4, #56]	; 0x38
     buffer2 = new u8[VGMSOURCESTREAM_BUFSIZE];
- 801b816:	f44f 7000 	mov.w	r0, #512	; 0x200
- 801b81a:	f000 fa1b 	bl	801bc54 <operator new[](unsigned int)>
+ 801b7dc:	f44f 7000 	mov.w	r0, #512	; 0x200
+ 801b7e0:	f000 fa28 	bl	801bc34 <operator new[](unsigned int)>
     datalen = 0;
- 801b81e:	6365      	str	r5, [r4, #52]	; 0x34
+ 801b7e4:	6365      	str	r5, [r4, #52]	; 0x34
 VgmSourceStream::VgmSourceStream() {
     block = NULL;
     blocklen = 0;
     blockorigaddr = 0xFFFFFFFF;
     buffer1 = new u8[VGMSOURCESTREAM_BUFSIZE];
     buffer2 = new u8[VGMSOURCESTREAM_BUFSIZE];
- 801b820:	63e0      	str	r0, [r4, #60]	; 0x3c
+ 801b7e6:	63e0      	str	r0, [r4, #60]	; 0x3c
     datalen = 0;
     wantbuffer = 0;
- 801b822:	f884 5048 	strb.w	r5, [r4, #72]	; 0x48
+ 801b7e8:	f884 5048 	strb.w	r5, [r4, #72]	; 0x48
 }
- 801b826:	4620      	mov	r0, r4
- 801b828:	bd38      	pop	{r3, r4, r5, pc}
+ 801b7ec:	4620      	mov	r0, r4
+ 801b7ee:	bd38      	pop	{r3, r4, r5, pc}
 
-0801b82a <VgmSourceStream::startStream(char*)>:
+0801b7f0 <VgmSourceStream::startStream(char*)>:
     if(block != NULL){
         delete[] block;
     }
 }
 
 s32 VgmSourceStream::startStream(char* filename){
- 801b82a:	b570      	push	{r4, r5, r6, lr}
+ 801b7f0:	b570      	push	{r4, r5, r6, lr}
     s32 res = FILE_ReadOpen(&file, filename);
- 801b82c:	f100 0614 	add.w	r6, r0, #20
+ 801b7f2:	f100 0614 	add.w	r6, r0, #20
     if(block != NULL){
         delete[] block;
     }
 }
 
 s32 VgmSourceStream::startStream(char* filename){
- 801b830:	4604      	mov	r4, r0
+ 801b7f6:	4604      	mov	r4, r0
     s32 res = FILE_ReadOpen(&file, filename);
- 801b832:	4630      	mov	r0, r6
- 801b834:	f7ff fa68 	bl	801ad08 <FILE_ReadOpen>
+ 801b7f8:	4630      	mov	r0, r6
+ 801b7fa:	f7ff fa85 	bl	801ad08 <FILE_ReadOpen>
     if(res < 0) return res;
- 801b838:	2800      	cmp	r0, #0
- 801b83a:	db26      	blt.n	801b88a <VgmSourceStream::startStream(char*)+0x60>
+ 801b7fe:	2800      	cmp	r0, #0
+ 801b800:	db26      	blt.n	801b850 <VgmSourceStream::startStream(char*)+0x60>
     datalen = FILE_ReadGetCurrentSize();
- 801b83c:	f7ff fb0e 	bl	801ae5c <FILE_ReadGetCurrentSize>
+ 801b802:	f7ff fb2b 	bl	801ae5c <FILE_ReadGetCurrentSize>
     //Fill both buffers
     buffer1addr = 0;
- 801b840:	2500      	movs	r5, #0
+ 801b806:	2500      	movs	r5, #0
 }
 
 s32 VgmSourceStream::startStream(char* filename){
     s32 res = FILE_ReadOpen(&file, filename);
     if(res < 0) return res;
     datalen = FILE_ReadGetCurrentSize();
- 801b842:	6360      	str	r0, [r4, #52]	; 0x34
+ 801b808:	6360      	str	r0, [r4, #52]	; 0x34
     //Fill both buffers
     buffer1addr = 0;
- 801b844:	6425      	str	r5, [r4, #64]	; 0x40
+ 801b80a:	6425      	str	r5, [r4, #64]	; 0x40
     res = FILE_ReadBuffer(buffer1, VGMSOURCESTREAM_BUFSIZE);
- 801b846:	6ba0      	ldr	r0, [r4, #56]	; 0x38
- 801b848:	f44f 7100 	mov.w	r1, #512	; 0x200
- 801b84c:	f7ff fb0c 	bl	801ae68 <FILE_ReadBuffer>
+ 801b80c:	6ba0      	ldr	r0, [r4, #56]	; 0x38
+ 801b80e:	f44f 7100 	mov.w	r1, #512	; 0x200
+ 801b812:	f7ff fb29 	bl	801ae68 <FILE_ReadBuffer>
     if(res < 0){datalen = 0; return -2;}
- 801b850:	42a8      	cmp	r0, r5
- 801b852:	da03      	bge.n	801b85c <VgmSourceStream::startStream(char*)+0x32>
- 801b854:	6365      	str	r5, [r4, #52]	; 0x34
- 801b856:	f06f 0001 	mvn.w	r0, #1
- 801b85a:	bd70      	pop	{r4, r5, r6, pc}
+ 801b816:	42a8      	cmp	r0, r5
+ 801b818:	da03      	bge.n	801b822 <VgmSourceStream::startStream(char*)+0x32>
+ 801b81a:	6365      	str	r5, [r4, #52]	; 0x34
+ 801b81c:	f06f 0001 	mvn.w	r0, #1
+ 801b820:	bd70      	pop	{r4, r5, r6, pc}
     buffer2addr = VGMSOURCESTREAM_BUFSIZE;
- 801b85c:	f44f 7100 	mov.w	r1, #512	; 0x200
- 801b860:	6461      	str	r1, [r4, #68]	; 0x44
+ 801b822:	f44f 7100 	mov.w	r1, #512	; 0x200
+ 801b826:	6461      	str	r1, [r4, #68]	; 0x44
     res = FILE_ReadBuffer(buffer2, VGMSOURCESTREAM_BUFSIZE);
- 801b862:	6be0      	ldr	r0, [r4, #60]	; 0x3c
- 801b864:	f7ff fb00 	bl	801ae68 <FILE_ReadBuffer>
+ 801b828:	6be0      	ldr	r0, [r4, #60]	; 0x3c
+ 801b82a:	f7ff fb1d 	bl	801ae68 <FILE_ReadBuffer>
     if(res < 0){datalen = 0; return -3;}
- 801b868:	2800      	cmp	r0, #0
- 801b86a:	da03      	bge.n	801b874 <VgmSourceStream::startStream(char*)+0x4a>
- 801b86c:	6365      	str	r5, [r4, #52]	; 0x34
- 801b86e:	f06f 0002 	mvn.w	r0, #2
- 801b872:	bd70      	pop	{r4, r5, r6, pc}
+ 801b82e:	2800      	cmp	r0, #0
+ 801b830:	da03      	bge.n	801b83a <VgmSourceStream::startStream(char*)+0x4a>
+ 801b832:	6365      	str	r5, [r4, #52]	; 0x34
+ 801b834:	f06f 0002 	mvn.w	r0, #2
+ 801b838:	bd70      	pop	{r4, r5, r6, pc}
     //Close file and save for reopening
     res = FILE_ReadClose(&file);
- 801b874:	4630      	mov	r0, r6
- 801b876:	f7ff fac3 	bl	801ae00 <FILE_ReadClose>
+ 801b83a:	4630      	mov	r0, r6
+ 801b83c:	f7ff fae0 	bl	801ae00 <FILE_ReadClose>
     if(res < 0){datalen = 0; return -4;}
- 801b87a:	2800      	cmp	r0, #0
+ 801b840:	2800      	cmp	r0, #0
     return 0;
- 801b87c:	bfa8      	it	ge
- 801b87e:	4628      	movge	r0, r5
+ 801b842:	bfa8      	it	ge
+ 801b844:	4628      	movge	r0, r5
     buffer2addr = VGMSOURCESTREAM_BUFSIZE;
     res = FILE_ReadBuffer(buffer2, VGMSOURCESTREAM_BUFSIZE);
     if(res < 0){datalen = 0; return -3;}
     //Close file and save for reopening
     res = FILE_ReadClose(&file);
     if(res < 0){datalen = 0; return -4;}
- 801b880:	da03      	bge.n	801b88a <VgmSourceStream::startStream(char*)+0x60>
- 801b882:	6365      	str	r5, [r4, #52]	; 0x34
- 801b884:	f06f 0003 	mvn.w	r0, #3
- 801b888:	bd70      	pop	{r4, r5, r6, pc}
+ 801b846:	da03      	bge.n	801b850 <VgmSourceStream::startStream(char*)+0x60>
+ 801b848:	6365      	str	r5, [r4, #52]	; 0x34
+ 801b84a:	f06f 0003 	mvn.w	r0, #3
+ 801b84e:	bd70      	pop	{r4, r5, r6, pc}
     return 0;
 }
- 801b88a:	bd70      	pop	{r4, r5, r6, pc}
+ 801b850:	bd70      	pop	{r4, r5, r6, pc}
 
-0801b88c <VgmSourceStream::getByte(unsigned long)>:
+0801b852 <VgmSourceStream::getByte(unsigned long)>:
     
 u8 VgmSourceStream::getByte(u32 addr){    
- 801b88c:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 801b852:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
     if(addr >= datalen) return 0;
- 801b88e:	6b43      	ldr	r3, [r0, #52]	; 0x34
- 801b890:	4299      	cmp	r1, r3
+ 801b854:	6b43      	ldr	r3, [r0, #52]	; 0x34
+ 801b856:	4299      	cmp	r1, r3
     res = FILE_ReadClose(&file);
     if(res < 0){datalen = 0; return -4;}
     return 0;
 }
     
 u8 VgmSourceStream::getByte(u32 addr){    
- 801b892:	4604      	mov	r4, r0
- 801b894:	460d      	mov	r5, r1
+ 801b858:	4604      	mov	r4, r0
+ 801b85a:	460d      	mov	r5, r1
     if(addr >= datalen) return 0;
- 801b896:	d256      	bcs.n	801b946 <VgmSourceStream::getByte(unsigned long)+0xba>
+ 801b85c:	d24c      	bcs.n	801b8f8 <VgmSourceStream::getByte(unsigned long)+0xa6>
     if(addr >= buffer1addr && addr < (buffer1addr + VGMSOURCESTREAM_BUFSIZE)){
- 801b898:	6c02      	ldr	r2, [r0, #64]	; 0x40
- 801b89a:	6c40      	ldr	r0, [r0, #68]	; 0x44
- 801b89c:	4291      	cmp	r1, r2
- 801b89e:	d312      	bcc.n	801b8c6 <VgmSourceStream::getByte(unsigned long)+0x3a>
- 801b8a0:	f502 7100 	add.w	r1, r2, #512	; 0x200
- 801b8a4:	428d      	cmp	r5, r1
- 801b8a6:	d20e      	bcs.n	801b8c6 <VgmSourceStream::getByte(unsigned long)+0x3a>
+ 801b85e:	6c02      	ldr	r2, [r0, #64]	; 0x40
+ 801b860:	6c40      	ldr	r0, [r0, #68]	; 0x44
+ 801b862:	4291      	cmp	r1, r2
+ 801b864:	d30d      	bcc.n	801b882 <VgmSourceStream::getByte(unsigned long)+0x30>
+ 801b866:	f502 7100 	add.w	r1, r2, #512	; 0x200
+ 801b86a:	428d      	cmp	r5, r1
+ 801b86c:	d209      	bcs.n	801b882 <VgmSourceStream::getByte(unsigned long)+0x30>
         if(buffer2addr != buffer1addr + VGMSOURCESTREAM_BUFSIZE){
- 801b8a8:	4288      	cmp	r0, r1
- 801b8aa:	d004      	beq.n	801b8b6 <VgmSourceStream::getByte(unsigned long)+0x2a>
+ 801b86e:	4288      	cmp	r0, r1
+ 801b870:	d004      	beq.n	801b87c <VgmSourceStream::getByte(unsigned long)+0x2a>
             //Set up to background buffer next
             wantbuffer = 2;
- 801b8ac:	2002      	movs	r0, #2
- 801b8ae:	f884 0048 	strb.w	r0, [r4, #72]	; 0x48
+ 801b872:	2002      	movs	r0, #2
+ 801b874:	f884 0048 	strb.w	r0, [r4, #72]	; 0x48
             wantbufferaddr = buffer1addr + VGMSOURCESTREAM_BUFSIZE;
- 801b8b2:	f884 2049 	strb.w	r2, [r4, #73]	; 0x49
+ 801b878:	f884 2049 	strb.w	r2, [r4, #73]	; 0x49
         }
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
- 801b8b6:	2100      	movs	r1, #0
- 801b8b8:	2004      	movs	r0, #4
- 801b8ba:	f7f7 fe4b 	bl	8013554 <MIOS32_BOARD_LED_Set>
         return buffer1[addr - buffer1addr];
- 801b8be:	6c21      	ldr	r1, [r4, #64]	; 0x40
- 801b8c0:	6ba2      	ldr	r2, [r4, #56]	; 0x38
- 801b8c2:	1a6d      	subs	r5, r5, r1
- 801b8c4:	e013      	b.n	801b8ee <VgmSourceStream::getByte(unsigned long)+0x62>
+ 801b87c:	1aad      	subs	r5, r5, r2
+ 801b87e:	6ba3      	ldr	r3, [r4, #56]	; 0x38
+ 801b880:	e00e      	b.n	801b8a0 <VgmSourceStream::getByte(unsigned long)+0x4e>
     }
     if(addr >= buffer2addr && addr < (buffer2addr + VGMSOURCESTREAM_BUFSIZE)){
- 801b8c6:	4285      	cmp	r5, r0
- 801b8c8:	d313      	bcc.n	801b8f2 <VgmSourceStream::getByte(unsigned long)+0x66>
- 801b8ca:	f500 7300 	add.w	r3, r0, #512	; 0x200
- 801b8ce:	429d      	cmp	r5, r3
- 801b8d0:	d20f      	bcs.n	801b8f2 <VgmSourceStream::getByte(unsigned long)+0x66>
+ 801b882:	4285      	cmp	r5, r0
+ 801b884:	d30e      	bcc.n	801b8a4 <VgmSourceStream::getByte(unsigned long)+0x52>
+ 801b886:	f500 7300 	add.w	r3, r0, #512	; 0x200
+ 801b88a:	429d      	cmp	r5, r3
+ 801b88c:	d20a      	bcs.n	801b8a4 <VgmSourceStream::getByte(unsigned long)+0x52>
         if(buffer1addr != buffer2addr + VGMSOURCESTREAM_BUFSIZE){
- 801b8d2:	429a      	cmp	r2, r3
- 801b8d4:	d004      	beq.n	801b8e0 <VgmSourceStream::getByte(unsigned long)+0x54>
+ 801b88e:	429a      	cmp	r2, r3
+ 801b890:	d004      	beq.n	801b89c <VgmSourceStream::getByte(unsigned long)+0x4a>
             //Set up to background buffer next
             wantbuffer = 1;
- 801b8d6:	2101      	movs	r1, #1
- 801b8d8:	f884 1048 	strb.w	r1, [r4, #72]	; 0x48
+ 801b892:	2101      	movs	r1, #1
+ 801b894:	f884 1048 	strb.w	r1, [r4, #72]	; 0x48
             wantbufferaddr = buffer2addr + VGMSOURCESTREAM_BUFSIZE;
- 801b8dc:	f884 0049 	strb.w	r0, [r4, #73]	; 0x49
+ 801b898:	f884 0049 	strb.w	r0, [r4, #73]	; 0x49
         }
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
- 801b8e0:	2004      	movs	r0, #4
- 801b8e2:	2100      	movs	r1, #0
- 801b8e4:	f7f7 fe36 	bl	8013554 <MIOS32_BOARD_LED_Set>
         return buffer2[addr - buffer2addr];
- 801b8e8:	6c63      	ldr	r3, [r4, #68]	; 0x44
- 801b8ea:	6be2      	ldr	r2, [r4, #60]	; 0x3c
- 801b8ec:	1aed      	subs	r5, r5, r3
- 801b8ee:	5d50      	ldrb	r0, [r2, r5]
- 801b8f0:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b89c:	6be3      	ldr	r3, [r4, #60]	; 0x3c
+ 801b89e:	1a2d      	subs	r5, r5, r0
+ 801b8a0:	5d58      	ldrb	r0, [r3, r5]
+ 801b8a2:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
     }
     //Have to load something right now
     u8 leds = MIOS32_BOARD_LED_Get();
- 801b8f2:	f7f7 fe61 	bl	80135b8 <MIOS32_BOARD_LED_Get>
+ 801b8a4:	f7f7 fe88 	bl	80135b8 <MIOS32_BOARD_LED_Get>
     MIOS32_BOARD_LED_Set(0b1111, 0b0100);
     s32 res = FILE_ReadReOpen(&file);
- 801b8f6:	f104 0614 	add.w	r6, r4, #20
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
-        return buffer2[addr - buffer2addr];
-    }
-    //Have to load something right now
-    u8 leds = MIOS32_BOARD_LED_Get();
-    MIOS32_BOARD_LED_Set(0b1111, 0b0100);
- 801b8fa:	2104      	movs	r1, #4
+ 801b8a8:	f104 0614 	add.w	r6, r4, #20
         }
-        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
         return buffer2[addr - buffer2addr];
     }
     //Have to load something right now
     u8 leds = MIOS32_BOARD_LED_Get();
- 801b8fc:	4607      	mov	r7, r0
     MIOS32_BOARD_LED_Set(0b1111, 0b0100);
- 801b8fe:	200f      	movs	r0, #15
- 801b900:	f7f7 fe28 	bl	8013554 <MIOS32_BOARD_LED_Set>
+ 801b8ac:	2104      	movs	r1, #4
+            wantbufferaddr = buffer2addr + VGMSOURCESTREAM_BUFSIZE;
+        }
+        return buffer2[addr - buffer2addr];
+    }
+    //Have to load something right now
+    u8 leds = MIOS32_BOARD_LED_Get();
+ 801b8ae:	4607      	mov	r7, r0
+    MIOS32_BOARD_LED_Set(0b1111, 0b0100);
+ 801b8b0:	200f      	movs	r0, #15
+ 801b8b2:	f7f7 fe4f 	bl	8013554 <MIOS32_BOARD_LED_Set>
     s32 res = FILE_ReadReOpen(&file);
- 801b904:	4630      	mov	r0, r6
- 801b906:	f7ff fa45 	bl	801ad94 <FILE_ReadReOpen>
+ 801b8b6:	4630      	mov	r0, r6
+ 801b8b8:	f7ff fa6c 	bl	801ad94 <FILE_ReadReOpen>
     if(res < 0) return 0;
- 801b90a:	2800      	cmp	r0, #0
- 801b90c:	db1b      	blt.n	801b946 <VgmSourceStream::getByte(unsigned long)+0xba>
+ 801b8bc:	2800      	cmp	r0, #0
+ 801b8be:	db1b      	blt.n	801b8f8 <VgmSourceStream::getByte(unsigned long)+0xa6>
     res = FILE_ReadSeek(addr);
- 801b90e:	4628      	mov	r0, r5
- 801b910:	f7ff fa92 	bl	801ae38 <FILE_ReadSeek>
+ 801b8c0:	4628      	mov	r0, r5
+ 801b8c2:	f7ff fab9 	bl	801ae38 <FILE_ReadSeek>
     if(res < 0) return 0;
- 801b914:	2800      	cmp	r0, #0
- 801b916:	db16      	blt.n	801b946 <VgmSourceStream::getByte(unsigned long)+0xba>
+ 801b8c6:	2800      	cmp	r0, #0
+ 801b8c8:	db16      	blt.n	801b8f8 <VgmSourceStream::getByte(unsigned long)+0xa6>
     res = FILE_ReadBuffer(buffer1, VGMSOURCESTREAM_BUFSIZE);
- 801b918:	6ba0      	ldr	r0, [r4, #56]	; 0x38
- 801b91a:	f44f 7100 	mov.w	r1, #512	; 0x200
- 801b91e:	f7ff faa3 	bl	801ae68 <FILE_ReadBuffer>
+ 801b8ca:	6ba0      	ldr	r0, [r4, #56]	; 0x38
+ 801b8cc:	f44f 7100 	mov.w	r1, #512	; 0x200
+ 801b8d0:	f7ff faca 	bl	801ae68 <FILE_ReadBuffer>
     if(res < 0) return 0;
- 801b922:	2800      	cmp	r0, #0
- 801b924:	db0f      	blt.n	801b946 <VgmSourceStream::getByte(unsigned long)+0xba>
+ 801b8d4:	2800      	cmp	r0, #0
+ 801b8d6:	db0f      	blt.n	801b8f8 <VgmSourceStream::getByte(unsigned long)+0xa6>
     buffer1addr = addr;
- 801b926:	6425      	str	r5, [r4, #64]	; 0x40
+ 801b8d8:	6425      	str	r5, [r4, #64]	; 0x40
     FILE_ReadClose(&file);
- 801b928:	4630      	mov	r0, r6
- 801b92a:	f7ff fa69 	bl	801ae00 <FILE_ReadClose>
+ 801b8da:	4630      	mov	r0, r6
+ 801b8dc:	f7ff fa90 	bl	801ae00 <FILE_ReadClose>
     //Set up to load the next buffer next
     wantbuffer = 2;
- 801b92e:	2202      	movs	r2, #2
- 801b930:	f884 2048 	strb.w	r2, [r4, #72]	; 0x48
+ 801b8e0:	2202      	movs	r2, #2
+ 801b8e2:	f884 2048 	strb.w	r2, [r4, #72]	; 0x48
     wantbufferaddr = addr + VGMSOURCESTREAM_BUFSIZE;
- 801b934:	f884 5049 	strb.w	r5, [r4, #73]	; 0x49
+ 801b8e6:	f884 5049 	strb.w	r5, [r4, #73]	; 0x49
     //Done
     MIOS32_BOARD_LED_Set(0b1111, leds);
- 801b938:	200f      	movs	r0, #15
- 801b93a:	b2f9      	uxtb	r1, r7
- 801b93c:	f7f7 fe0a 	bl	8013554 <MIOS32_BOARD_LED_Set>
+ 801b8ea:	200f      	movs	r0, #15
+ 801b8ec:	b2f9      	uxtb	r1, r7
+ 801b8ee:	f7f7 fe31 	bl	8013554 <MIOS32_BOARD_LED_Set>
     return buffer1[0];
- 801b940:	6ba0      	ldr	r0, [r4, #56]	; 0x38
- 801b942:	7800      	ldrb	r0, [r0, #0]
- 801b944:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b8f2:	6ba0      	ldr	r0, [r4, #56]	; 0x38
+ 801b8f4:	7800      	ldrb	r0, [r0, #0]
+ 801b8f6:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
     if(res < 0){datalen = 0; return -4;}
     return 0;
 }
     
 u8 VgmSourceStream::getByte(u32 addr){    
     if(addr >= datalen) return 0;
- 801b946:	2000      	movs	r0, #0
+ 801b8f8:	2000      	movs	r0, #0
     wantbuffer = 2;
     wantbufferaddr = addr + VGMSOURCESTREAM_BUFSIZE;
     //Done
     MIOS32_BOARD_LED_Set(0b1111, leds);
     return buffer1[0];
 }
- 801b948:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b8fa:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
 
-0801b94a <VgmSourceStream::loadBlock(unsigned long, unsigned long)>:
-        FILE_ReadClose(&file);
+0801b8fc <VgmSourceStream::loadBlock(unsigned long, unsigned long)>:
+        DEBUGVAL = 0;
         MIOS32_IRQ_Enable();
     }
 }
 
 void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
- 801b94a:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
+ 801b8fc:	b5f8      	push	{r3, r4, r5, r6, r7, lr}
     if(startaddr == blockorigaddr && len == blocklen) return; //Don't reload existing block
- 801b94c:	6d43      	ldr	r3, [r0, #84]	; 0x54
- 801b94e:	4299      	cmp	r1, r3
-        FILE_ReadClose(&file);
+ 801b8fe:	6d43      	ldr	r3, [r0, #84]	; 0x54
+ 801b900:	4299      	cmp	r1, r3
+        DEBUGVAL = 0;
         MIOS32_IRQ_Enable();
     }
 }
 
 void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
- 801b950:	4604      	mov	r4, r0
- 801b952:	460f      	mov	r7, r1
- 801b954:	4615      	mov	r5, r2
+ 801b902:	4604      	mov	r4, r0
+ 801b904:	460f      	mov	r7, r1
+ 801b906:	4615      	mov	r5, r2
     if(startaddr == blockorigaddr && len == blocklen) return; //Don't reload existing block
- 801b956:	d102      	bne.n	801b95e <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x14>
- 801b958:	6d00      	ldr	r0, [r0, #80]	; 0x50
- 801b95a:	4282      	cmp	r2, r0
- 801b95c:	d01e      	beq.n	801b99c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x52>
+ 801b908:	d102      	bne.n	801b910 <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x14>
+ 801b90a:	6d00      	ldr	r0, [r0, #80]	; 0x50
+ 801b90c:	4282      	cmp	r2, r0
+ 801b90e:	d01d      	beq.n	801b94c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x50>
     if(block != NULL){
- 801b95e:	6ce0      	ldr	r0, [r4, #76]	; 0x4c
- 801b960:	b108      	cbz	r0, 801b966 <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x1c>
+ 801b910:	6ce0      	ldr	r0, [r4, #76]	; 0x4c
+ 801b912:	b108      	cbz	r0, 801b918 <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x1c>
         delete[] block;
- 801b962:	f000 f979 	bl	801bc58 <operator delete[](void*)>
+ 801b914:	f000 f990 	bl	801bc38 <operator delete[](void*)>
     }
     block = new u8[len];
- 801b966:	4628      	mov	r0, r5
- 801b968:	f000 f974 	bl	801bc54 <operator new[](unsigned int)>
+ 801b918:	4628      	mov	r0, r5
+ 801b91a:	f000 f98b 	bl	801bc34 <operator new[](unsigned int)>
     s32 res = FILE_ReadReOpen(&file);
- 801b96c:	f104 0614 	add.w	r6, r4, #20
+ 801b91e:	f104 0614 	add.w	r6, r4, #20
 void VgmSourceStream::loadBlock(u32 startaddr, u32 len){
     if(startaddr == blockorigaddr && len == blocklen) return; //Don't reload existing block
     if(block != NULL){
         delete[] block;
     }
     block = new u8[len];
- 801b970:	64e0      	str	r0, [r4, #76]	; 0x4c
+ 801b922:	64e0      	str	r0, [r4, #76]	; 0x4c
     s32 res = FILE_ReadReOpen(&file);
- 801b972:	4630      	mov	r0, r6
- 801b974:	f7ff fa0e 	bl	801ad94 <FILE_ReadReOpen>
+ 801b924:	4630      	mov	r0, r6
+ 801b926:	f7ff fa35 	bl	801ad94 <FILE_ReadReOpen>
     if(res < 0) return;
- 801b978:	2800      	cmp	r0, #0
- 801b97a:	db0f      	blt.n	801b99c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x52>
+ 801b92a:	2800      	cmp	r0, #0
+ 801b92c:	db0e      	blt.n	801b94c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x50>
     res = FILE_ReadSeek(startaddr);
- 801b97c:	4638      	mov	r0, r7
- 801b97e:	f7ff fa5b 	bl	801ae38 <FILE_ReadSeek>
+ 801b92e:	4638      	mov	r0, r7
+ 801b930:	f7ff fa82 	bl	801ae38 <FILE_ReadSeek>
     if(res < 0) return;
- 801b982:	2800      	cmp	r0, #0
- 801b984:	db0a      	blt.n	801b99c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x52>
+ 801b934:	2800      	cmp	r0, #0
+ 801b936:	db09      	blt.n	801b94c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x50>
     res = FILE_ReadBuffer(block, len);
- 801b986:	6ce0      	ldr	r0, [r4, #76]	; 0x4c
- 801b988:	4629      	mov	r1, r5
- 801b98a:	f7ff fa6d 	bl	801ae68 <FILE_ReadBuffer>
+ 801b938:	6ce0      	ldr	r0, [r4, #76]	; 0x4c
+ 801b93a:	4629      	mov	r1, r5
+ 801b93c:	f7ff fa94 	bl	801ae68 <FILE_ReadBuffer>
     if(res < 0) return;
- 801b98e:	2800      	cmp	r0, #0
- 801b990:	db04      	blt.n	801b99c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x52>
+ 801b940:	2800      	cmp	r0, #0
+ 801b942:	db03      	blt.n	801b94c <VgmSourceStream::loadBlock(unsigned long, unsigned long)+0x50>
     FILE_ReadClose(&file);
- 801b992:	4630      	mov	r0, r6
-}
- 801b994:	e8bd 40f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, lr}
-    if(res < 0) return;
-    res = FILE_ReadSeek(startaddr);
-    if(res < 0) return;
-    res = FILE_ReadBuffer(block, len);
-    if(res < 0) return;
-    FILE_ReadClose(&file);
- 801b998:	f7ff ba32 	b.w	801ae00 <FILE_ReadClose>
- 801b99c:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
+ 801b944:	4630      	mov	r0, r6
+ 801b946:	f7ff fa5b 	bl	801ae00 <FILE_ReadClose>
+    blocklen = len;
+ 801b94a:	6525      	str	r5, [r4, #80]	; 0x50
+ 801b94c:	bdf8      	pop	{r3, r4, r5, r6, r7, pc}
 
-0801b99e <VgmSourceStream::readHeader()>:
+0801b94e <VgmSourceStream::readHeader()>:
 }
 
 void VgmSourceStream::readHeader(){
- 801b99e:	e92d 43f8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, lr}
+ 801b94e:	e92d 43f8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, lr}
     if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
- 801b9a2:	2100      	movs	r1, #0
-    res = FILE_ReadBuffer(block, len);
+ 801b952:	2100      	movs	r1, #0
     if(res < 0) return;
     FILE_ReadClose(&file);
+    blocklen = len;
 }
 
 void VgmSourceStream::readHeader(){
- 801b9a4:	4604      	mov	r4, r0
+ 801b954:	4604      	mov	r4, r0
     if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
- 801b9a6:	f7ff ff71 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b9aa:	2856      	cmp	r0, #86	; 0x56
- 801b9ac:	f040 80af 	bne.w	801bb0e <VgmSourceStream::readHeader()+0x170>
- 801b9b0:	2101      	movs	r1, #1
- 801b9b2:	4620      	mov	r0, r4
- 801b9b4:	f7ff ff6a 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b9b8:	2867      	cmp	r0, #103	; 0x67
- 801b9ba:	f040 80a8 	bne.w	801bb0e <VgmSourceStream::readHeader()+0x170>
- 801b9be:	2102      	movs	r1, #2
- 801b9c0:	4620      	mov	r0, r4
- 801b9c2:	f7ff ff63 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b9c6:	286d      	cmp	r0, #109	; 0x6d
- 801b9c8:	f040 80a1 	bne.w	801bb0e <VgmSourceStream::readHeader()+0x170>
- 801b9cc:	2103      	movs	r1, #3
- 801b9ce:	4620      	mov	r0, r4
- 801b9d0:	f7ff ff5c 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b9d4:	2820      	cmp	r0, #32
- 801b9d6:	4606      	mov	r6, r0
- 801b9d8:	f040 8099 	bne.w	801bb0e <VgmSourceStream::readHeader()+0x170>
+ 801b956:	f7ff ff7c 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b95a:	2856      	cmp	r0, #86	; 0x56
+ 801b95c:	f040 80af 	bne.w	801babe <VgmSourceStream::readHeader()+0x170>
+ 801b960:	2101      	movs	r1, #1
+ 801b962:	4620      	mov	r0, r4
+ 801b964:	f7ff ff75 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b968:	2867      	cmp	r0, #103	; 0x67
+ 801b96a:	f040 80a8 	bne.w	801babe <VgmSourceStream::readHeader()+0x170>
+ 801b96e:	2102      	movs	r1, #2
+ 801b970:	4620      	mov	r0, r4
+ 801b972:	f7ff ff6e 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b976:	286d      	cmp	r0, #109	; 0x6d
+ 801b978:	f040 80a1 	bne.w	801babe <VgmSourceStream::readHeader()+0x170>
+ 801b97c:	2103      	movs	r1, #3
+ 801b97e:	4620      	mov	r0, r4
+ 801b980:	f7ff ff67 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b984:	2820      	cmp	r0, #32
+ 801b986:	4606      	mov	r6, r0
+ 801b988:	f040 8099 	bne.w	801babe <VgmSourceStream::readHeader()+0x170>
         //File has header
         //Get version
         u8 ver_lo = getByte(8);
- 801b9dc:	2108      	movs	r1, #8
- 801b9de:	4620      	mov	r0, r4
- 801b9e0:	f7ff ff54 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b98c:	2108      	movs	r1, #8
+ 801b98e:	4620      	mov	r0, r4
+ 801b990:	f7ff ff5f 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
         u8 ver_hi = getByte(9);
- 801b9e4:	2109      	movs	r1, #9
+ 801b994:	2109      	movs	r1, #9
 
 void VgmSourceStream::readHeader(){
     if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
         //File has header
         //Get version
         u8 ver_lo = getByte(8);
- 801b9e6:	4680      	mov	r8, r0
+ 801b996:	4680      	mov	r8, r0
         u8 ver_hi = getByte(9);
- 801b9e8:	4620      	mov	r0, r4
- 801b9ea:	f7ff ff4f 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b998:	4620      	mov	r0, r4
+ 801b99a:	f7ff ff5a 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
         psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
- 801b9ee:	210c      	movs	r1, #12
+ 801b99e:	210c      	movs	r1, #12
 void VgmSourceStream::readHeader(){
     if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
         //File has header
         //Get version
         u8 ver_lo = getByte(8);
         u8 ver_hi = getByte(9);
- 801b9f0:	4605      	mov	r5, r0
+ 801b9a0:	4605      	mov	r5, r0
         psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
- 801b9f2:	4620      	mov	r0, r4
- 801b9f4:	f7ff ff4a 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801b9f8:	210d      	movs	r1, #13
- 801b9fa:	4681      	mov	r9, r0
+ 801b9a2:	4620      	mov	r0, r4
+ 801b9a4:	f7ff ff55 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b9a8:	210d      	movs	r1, #13
+ 801b9aa:	4681      	mov	r9, r0
+ 801b9ac:	4620      	mov	r0, r4
+ 801b9ae:	f7ff ff50 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
+ 801b9b2:	210e      	movs	r1, #14
+    if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
+        //File has header
+        //Get version
+        u8 ver_lo = getByte(8);
+        u8 ver_hi = getByte(9);
+        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
+ 801b9b4:	4607      	mov	r7, r0
+                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
+ 801b9b6:	4620      	mov	r0, r4
+ 801b9b8:	f7ff ff4b 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b9bc:	0400      	lsls	r0, r0, #16
+ 801b9be:	ea40 2107 	orr.w	r1, r0, r7, lsl #8
+ 801b9c2:	ea41 0709 	orr.w	r7, r1, r9
+ 801b9c6:	4620      	mov	r0, r4
+ 801b9c8:	210f      	movs	r1, #15
+ 801b9ca:	f7ff ff42 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b9ce:	ea47 6200 	orr.w	r2, r7, r0, lsl #24
+ 801b9d2:	60a2      	str	r2, [r4, #8]
+        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
+ 801b9d4:	211c      	movs	r1, #28
+ 801b9d6:	4620      	mov	r0, r4
+ 801b9d8:	f7ff ff3b 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801b9dc:	211d      	movs	r1, #29
+ 801b9de:	4681      	mov	r9, r0
+ 801b9e0:	4620      	mov	r0, r4
+ 801b9e2:	f7ff ff36 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
+ 801b9e6:	211e      	movs	r1, #30
+        //Get version
+        u8 ver_lo = getByte(8);
+        u8 ver_hi = getByte(9);
+        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
+                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
+        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
+ 801b9e8:	4607      	mov	r7, r0
+                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
+ 801b9ea:	4620      	mov	r0, r4
+ 801b9ec:	f7ff ff31 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+                 + 0x1C;
+ 801b9f0:	0403      	lsls	r3, r0, #16
+ 801b9f2:	ea43 2007 	orr.w	r0, r3, r7, lsl #8
+ 801b9f6:	ea40 0709 	orr.w	r7, r0, r9
+        u8 ver_lo = getByte(8);
+        u8 ver_hi = getByte(9);
+        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
+                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
+        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
+                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
+ 801b9fa:	211f      	movs	r1, #31
  801b9fc:	4620      	mov	r0, r4
- 801b9fe:	f7ff ff45 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
-                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
- 801ba02:	210e      	movs	r1, #14
-    if(getByte(0) == 'V' && getByte(1) == 'g' && getByte(2) == 'm' && getByte(3) == ' '){
-        //File has header
-        //Get version
-        u8 ver_lo = getByte(8);
-        u8 ver_hi = getByte(9);
-        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
- 801ba04:	4607      	mov	r7, r0
-                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
- 801ba06:	4620      	mov	r0, r4
- 801ba08:	f7ff ff40 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba0c:	0400      	lsls	r0, r0, #16
- 801ba0e:	ea40 2107 	orr.w	r1, r0, r7, lsl #8
- 801ba12:	ea41 0709 	orr.w	r7, r1, r9
- 801ba16:	4620      	mov	r0, r4
- 801ba18:	210f      	movs	r1, #15
- 801ba1a:	f7ff ff37 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba1e:	ea47 6200 	orr.w	r2, r7, r0, lsl #24
- 801ba22:	60a2      	str	r2, [r4, #8]
-        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
- 801ba24:	211c      	movs	r1, #28
- 801ba26:	4620      	mov	r0, r4
- 801ba28:	f7ff ff30 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba2c:	211d      	movs	r1, #29
- 801ba2e:	4681      	mov	r9, r0
- 801ba30:	4620      	mov	r0, r4
- 801ba32:	f7ff ff2b 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
-                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
- 801ba36:	211e      	movs	r1, #30
-        //Get version
-        u8 ver_lo = getByte(8);
-        u8 ver_hi = getByte(9);
-        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
-                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
-        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
- 801ba38:	4607      	mov	r7, r0
-                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
- 801ba3a:	4620      	mov	r0, r4
- 801ba3c:	f7ff ff26 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801b9fe:	f7ff ff28 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
                  + 0x1C;
- 801ba40:	0403      	lsls	r3, r0, #16
- 801ba42:	ea43 2007 	orr.w	r0, r3, r7, lsl #8
- 801ba46:	ea40 0709 	orr.w	r7, r0, r9
-        u8 ver_lo = getByte(8);
-        u8 ver_hi = getByte(9);
-        psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
-                 | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
-        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
-                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
- 801ba4a:	211f      	movs	r1, #31
- 801ba4c:	4620      	mov	r0, r4
- 801ba4e:	f7ff ff1d 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
-                 + 0x1C;
- 801ba52:	ea47 6100 	orr.w	r1, r7, r0, lsl #24
- 801ba56:	f101 021c 	add.w	r2, r1, #28
- 801ba5a:	60e2      	str	r2, [r4, #12]
+ 801ba02:	ea47 6100 	orr.w	r1, r7, r0, lsl #24
+ 801ba06:	f101 021c 	add.w	r2, r1, #28
+ 801ba0a:	60e2      	str	r2, [r4, #12]
         loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
- 801ba5c:	4631      	mov	r1, r6
- 801ba5e:	4620      	mov	r0, r4
- 801ba60:	f7ff ff14 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba64:	2121      	movs	r1, #33	; 0x21
- 801ba66:	4607      	mov	r7, r0
- 801ba68:	4620      	mov	r0, r4
- 801ba6a:	f7ff ff0f 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801ba0c:	4631      	mov	r1, r6
+ 801ba0e:	4620      	mov	r0, r4
+ 801ba10:	f7ff ff1f 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba14:	2121      	movs	r1, #33	; 0x21
+ 801ba16:	4607      	mov	r7, r0
+ 801ba18:	4620      	mov	r0, r4
+ 801ba1a:	f7ff ff1a 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
                  | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
- 801ba6e:	2122      	movs	r1, #34	; 0x22
+ 801ba1e:	2122      	movs	r1, #34	; 0x22
         psgclock = ((u32)getByte(0x0C)) | ((u32)getByte(0x0D) << 8)
                  | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
         loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
                  | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
                  + 0x1C;
         loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
- 801ba70:	4606      	mov	r6, r0
+ 801ba20:	4606      	mov	r6, r0
                  | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
- 801ba72:	4620      	mov	r0, r4
- 801ba74:	f7ff ff0a 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba78:	2123      	movs	r1, #35	; 0x23
- 801ba7a:	0403      	lsls	r3, r0, #16
- 801ba7c:	4620      	mov	r0, r4
- 801ba7e:	ea43 2606 	orr.w	r6, r3, r6, lsl #8
- 801ba82:	f7ff ff03 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba86:	433e      	orrs	r6, r7
- 801ba88:	ea46 6000 	orr.w	r0, r6, r0, lsl #24
+ 801ba22:	4620      	mov	r0, r4
+ 801ba24:	f7ff ff15 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba28:	2123      	movs	r1, #35	; 0x23
+ 801ba2a:	0403      	lsls	r3, r0, #16
+ 801ba2c:	4620      	mov	r0, r4
+ 801ba2e:	ea43 2606 	orr.w	r6, r3, r6, lsl #8
+ 801ba32:	f7ff ff0e 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba36:	433e      	orrs	r6, r7
+ 801ba38:	ea46 6000 	orr.w	r0, r6, r0, lsl #24
         opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
- 801ba8c:	212c      	movs	r1, #44	; 0x2c
+ 801ba3c:	212c      	movs	r1, #44	; 0x2c
                  | ((u32)getByte(0x0E) << 16) | ((u32)getByte(0x0F) << 24);
         loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
                  | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
                  + 0x1C;
         loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
                  | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
- 801ba8e:	6120      	str	r0, [r4, #16]
+ 801ba3e:	6120      	str	r0, [r4, #16]
         opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
+ 801ba40:	4620      	mov	r0, r4
+ 801ba42:	f7ff ff06 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba46:	212d      	movs	r1, #45	; 0x2d
+ 801ba48:	4607      	mov	r7, r0
+ 801ba4a:	4620      	mov	r0, r4
+ 801ba4c:	f7ff ff01 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
+ 801ba50:	212e      	movs	r1, #46	; 0x2e
+        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
+                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
+                 + 0x1C;
+        loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
+                 | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
+        opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
+ 801ba52:	4606      	mov	r6, r0
+                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
+ 801ba54:	4620      	mov	r0, r4
+ 801ba56:	f7ff fefc 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba5a:	0401      	lsls	r1, r0, #16
+ 801ba5c:	ea41 2606 	orr.w	r6, r1, r6, lsl #8
+ 801ba60:	4620      	mov	r0, r4
+ 801ba62:	212f      	movs	r1, #47	; 0x2f
+ 801ba64:	f7ff fef5 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba68:	433e      	orrs	r6, r7
+ 801ba6a:	ea46 6200 	orr.w	r2, r6, r0, lsl #24
+ 801ba6e:	6062      	str	r2, [r4, #4]
+        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+ 801ba70:	b125      	cbz	r5, 801ba7c <VgmSourceStream::readHeader()+0x12e>
+ 801ba72:	2d01      	cmp	r5, #1
+ 801ba74:	d106      	bne.n	801ba84 <VgmSourceStream::readHeader()+0x136>
+ 801ba76:	f1b8 0f4f 	cmp.w	r8, #79	; 0x4f
+ 801ba7a:	d803      	bhi.n	801ba84 <VgmSourceStream::readHeader()+0x136>
+            vgmdatastartaddr = 0x40;
+ 801ba7c:	2140      	movs	r1, #64	; 0x40
+ 801ba7e:	6021      	str	r1, [r4, #0]
+ 801ba80:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
+        }else{
+            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
+ 801ba84:	2134      	movs	r1, #52	; 0x34
+ 801ba86:	4620      	mov	r0, r4
+ 801ba88:	f7ff fee3 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801ba8c:	2135      	movs	r1, #53	; 0x35
+ 801ba8e:	4606      	mov	r6, r0
  801ba90:	4620      	mov	r0, r4
- 801ba92:	f7ff fefb 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801ba96:	212d      	movs	r1, #45	; 0x2d
- 801ba98:	4607      	mov	r7, r0
+ 801ba92:	f7ff fede 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
+ 801ba96:	2136      	movs	r1, #54	; 0x36
+        opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
+                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
+        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+            vgmdatastartaddr = 0x40;
+        }else{
+            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
+ 801ba98:	4605      	mov	r5, r0
+                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
  801ba9a:	4620      	mov	r0, r4
- 801ba9c:	f7ff fef6 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
+ 801ba9c:	f7ff fed9 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
+ 801baa0:	2137      	movs	r1, #55	; 0x37
+                 + 0x34;
+ 801baa2:	0403      	lsls	r3, r0, #16
                  | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
- 801baa0:	212e      	movs	r1, #46	; 0x2e
-        loopaddr = (((u32)getByte(0x1C)) | ((u32)getByte(0x1D) << 8)
-                 | ((u32)getByte(0x1E) << 16) | ((u32)getByte(0x1F) << 24))
-                 + 0x1C;
-        loopsamples = ((u32)getByte(0x20)) | ((u32)getByte(0x21) << 8)
-                 | ((u32)getByte(0x22) << 16) | ((u32)getByte(0x23) << 24);
-        opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
- 801baa2:	4606      	mov	r6, r0
-                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
+        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+            vgmdatastartaddr = 0x40;
+        }else{
+            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
+                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
  801baa4:	4620      	mov	r0, r4
- 801baa6:	f7ff fef1 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801baaa:	0401      	lsls	r1, r0, #16
- 801baac:	ea41 2606 	orr.w	r6, r1, r6, lsl #8
- 801bab0:	4620      	mov	r0, r4
- 801bab2:	212f      	movs	r1, #47	; 0x2f
- 801bab4:	f7ff feea 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801bab8:	433e      	orrs	r6, r7
- 801baba:	ea46 6200 	orr.w	r2, r6, r0, lsl #24
- 801babe:	6062      	str	r2, [r4, #4]
-        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
- 801bac0:	b125      	cbz	r5, 801bacc <VgmSourceStream::readHeader()+0x12e>
- 801bac2:	2d01      	cmp	r5, #1
- 801bac4:	d106      	bne.n	801bad4 <VgmSourceStream::readHeader()+0x136>
- 801bac6:	f1b8 0f4f 	cmp.w	r8, #79	; 0x4f
- 801baca:	d803      	bhi.n	801bad4 <VgmSourceStream::readHeader()+0x136>
-            vgmdatastartaddr = 0x40;
- 801bacc:	2140      	movs	r1, #64	; 0x40
- 801bace:	6021      	str	r1, [r4, #0]
- 801bad0:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
-        }else{
-            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
- 801bad4:	2134      	movs	r1, #52	; 0x34
- 801bad6:	4620      	mov	r0, r4
- 801bad8:	f7ff fed8 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801badc:	2135      	movs	r1, #53	; 0x35
- 801bade:	4606      	mov	r6, r0
- 801bae0:	4620      	mov	r0, r4
- 801bae2:	f7ff fed3 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
-                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
- 801bae6:	2136      	movs	r1, #54	; 0x36
-        opn2clock = ((u32)getByte(0x2C)) | ((u32)getByte(0x2D) << 8)
-                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
-        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
-            vgmdatastartaddr = 0x40;
-        }else{
-            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
- 801bae8:	4605      	mov	r5, r0
-                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
- 801baea:	4620      	mov	r0, r4
- 801baec:	f7ff fece 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
- 801baf0:	2137      	movs	r1, #55	; 0x37
                  + 0x34;
- 801baf2:	0403      	lsls	r3, r0, #16
+ 801baa6:	ea43 2505 	orr.w	r5, r3, r5, lsl #8
                  | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
         if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
             vgmdatastartaddr = 0x40;
         }else{
             vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
                  | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
- 801baf4:	4620      	mov	r0, r4
+ 801baaa:	f7ff fed2 	bl	801b852 <VgmSourceStream::getByte(unsigned long)>
                  + 0x34;
- 801baf6:	ea43 2505 	orr.w	r5, r3, r5, lsl #8
-                 | ((u32)getByte(0x2E) << 16) | ((u32)getByte(0x2F) << 24);
-        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
-            vgmdatastartaddr = 0x40;
-        }else{
-            vgmdatastartaddr = (((u32)getByte(0x34)) | ((u32)getByte(0x35) << 8)
-                 | ((u32)getByte(0x36) << 16) | ((u32)getByte(0x37) << 24))
- 801bafa:	f7ff fec7 	bl	801b88c <VgmSourceStream::getByte(unsigned long)>
-                 + 0x34;
- 801bafe:	4335      	orrs	r5, r6
- 801bb00:	ea45 6000 	orr.w	r0, r5, r0, lsl #24
- 801bb04:	f100 0534 	add.w	r5, r0, #52	; 0x34
- 801bb08:	6025      	str	r5, [r4, #0]
- 801bb0a:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
+ 801baae:	4335      	orrs	r5, r6
+ 801bab0:	ea45 6000 	orr.w	r0, r5, r0, lsl #24
+ 801bab4:	f100 0534 	add.w	r5, r0, #52	; 0x34
+ 801bab8:	6025      	str	r5, [r4, #0]
+ 801baba:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
         }
     }else{
         vgmdatastartaddr = 0;
- 801bb0e:	2300      	movs	r3, #0
- 801bb10:	6023      	str	r3, [r4, #0]
+ 801babe:	2300      	movs	r3, #0
+ 801bac0:	6023      	str	r3, [r4, #0]
         opn2clock = psgclock = 0;
- 801bb12:	60a3      	str	r3, [r4, #8]
- 801bb14:	6063      	str	r3, [r4, #4]
- 801bb16:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
+ 801bac2:	60a3      	str	r3, [r4, #8]
+ 801bac4:	6063      	str	r3, [r4, #4]
+ 801bac6:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
 	...
 
-0801bb1c <VgmPlayer_WorkCallback(unsigned long, unsigned long)>:
+0801bacc <VgmPlayer_WorkCallback(unsigned long, unsigned long)>:
 void VgmPlayer_RemoveHead(VgmHead* vgmh){
     vgmp_head = NULL;
 }
 
 // Where all the work gets done.
 u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
- 801bb1c:	e92d 43f8 	stmdb	sp!, {r3, r4, r5, r6, r7, r8, r9, lr}
- 801bb20:	460e      	mov	r6, r1
- 801bb22:	4605      	mov	r5, r0
+ 801bacc:	e92d 47f0 	stmdb	sp!, {r4, r5, r6, r7, r8, r9, sl, lr}
+ 801bad0:	460f      	mov	r7, r1
+ 801bad2:	4606      	mov	r6, r0
     /*
     if(hr_time % 10000 == 0){
         DBG("WorkCallback at hr_time=%d, vgm_time=%d", hr_time, vgm_time);
     }
     */
     u8 leds = MIOS32_BOARD_LED_Get();
- 801bb24:	f7f7 fd48 	bl	80135b8 <MIOS32_BOARD_LED_Get>
+ 801bad4:	f7f7 fd70 	bl	80135b8 <MIOS32_BOARD_LED_Get>
     MIOS32_BOARD_LED_Set(0b1111, 0b0010);
- 801bb28:	2102      	movs	r1, #2
+ 801bad8:	2102      	movs	r1, #2
     /*
     if(hr_time % 10000 == 0){
         DBG("WorkCallback at hr_time=%d, vgm_time=%d", hr_time, vgm_time);
     }
     */
     u8 leds = MIOS32_BOARD_LED_Get();
- 801bb2a:	4680      	mov	r8, r0
+ 801bada:	4681      	mov	r9, r0
     MIOS32_BOARD_LED_Set(0b1111, 0b0010);
- 801bb2c:	200f      	movs	r0, #15
- 801bb2e:	f7f7 fd11 	bl	8013554 <MIOS32_BOARD_LED_Set>
+ 801badc:	200f      	movs	r0, #15
+ 801bade:	f7f7 fd39 	bl	8013554 <MIOS32_BOARD_LED_Set>
     VgmHead* h;
     u32 minwait = 0xFFFFFFFF; s32 s; u32 u;
     ChipWriteCmd cmd;
     u8 wrotetochip;
     //Scan all VGMs for delays
     if(vgmp_head != NULL){
- 801bb32:	4b33      	ldr	r3, [pc, #204]	; (801bc00 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe4>)
- 801bb34:	6818      	ldr	r0, [r3, #0]
- 801bb36:	b180      	cbz	r0, 801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
-        h = vgmp_head;
-        if(!h->isPaused()){
- 801bb38:	f890 202c 	ldrb.w	r2, [r0, #44]	; 0x2c
- 801bb3c:	b96a      	cbnz	r2, 801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
+ 801bae2:	4b3f      	ldr	r3, [pc, #252]	; (801bbe0 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x114>)
+ 801bae4:	6818      	ldr	r0, [r3, #0]
+ 801bae6:	b158      	cbz	r0, 801bb00 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x34>
     ~VgmHead();
     
-    void restart();
+    void restart(u32 vgm_time);
     
-    void cmdNext(u32 curtime);
+    void cmdNext(u32 vgm_time);
     inline bool cmdIsWait() {return iswait || isdone;}
- 801bb3e:	7b01      	ldrb	r1, [r0, #12]
- 801bb40:	7f84      	ldrb	r4, [r0, #30]
- 801bb42:	b901      	cbnz	r1, 801bb46 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x2a>
- 801bb44:	b14c      	cbz	r4, 801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
-    inline s32 cmdGetWaitRemaining(u32 curtime) {return (isdone ? 65535 : ((s32)waitduration - (s32)((u32)curtime - (u32)waitstarttime)));}
- 801bb46:	b944      	cbnz	r4, 801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
- 801bb48:	6943      	ldr	r3, [r0, #20]
- 801bb4a:	6902      	ldr	r2, [r0, #16]
- 801bb4c:	1b99      	subs	r1, r3, r6
- 801bb4e:	188c      	adds	r4, r1, r2
-            //Check for delay
-            if(h->cmdIsWait()){
-                s = h->cmdGetWaitRemaining(vgm_time);
-                if(s <= 0){
- 801bb50:	2c00      	cmp	r4, #0
- 801bb52:	dc02      	bgt.n	801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
-                    //Advance to next command
-                    h->cmdNext(vgm_time);
- 801bb54:	4631      	mov	r1, r6
- 801bb56:	f7ff fc91 	bl	801b47c <VgmHead::cmdNext(unsigned long)>
+ 801bae8:	7b01      	ldrb	r1, [r0, #12]
+ 801baea:	7e82      	ldrb	r2, [r0, #26]
+ 801baec:	b901      	cbnz	r1, 801baf0 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x24>
+ 801baee:	b13a      	cbz	r2, 801bb00 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x34>
+    inline s32 cmdGetWaitRemaining(u32 vgm_time) {return (isdone ? 65535 : ((s32)ticks - (s32)vgm_time));}
+ 801baf0:	b94a      	cbnz	r2, 801bb06 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3a>
+ 801baf2:	6944      	ldr	r4, [r0, #20]
+ 801baf4:	1be4      	subs	r4, r4, r7
+        h = vgmp_head;
+        //Check for delay
+        if(h->cmdIsWait()){
+            s = h->cmdGetWaitRemaining(vgm_time);
+            if(s <= 0){
+ 801baf6:	2c00      	cmp	r4, #0
+ 801baf8:	dc07      	bgt.n	801bb0a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
+                //Advance to next command
+                h->cmdNext(vgm_time);
+ 801bafa:	4639      	mov	r1, r7
+ 801bafc:	f7ff fcae 	bl	801b45c <VgmHead::cmdNext(unsigned long)>
+    }
+    */
+    u8 leds = MIOS32_BOARD_LED_Get();
+    MIOS32_BOARD_LED_Set(0b1111, 0b0010);
+    VgmHead* h;
+    u32 minwait = 0xFFFFFFFF; s32 s; u32 u;
+ 801bb00:	f04f 34ff 	mov.w	r4, #4294967295
+ 801bb04:	e004      	b.n	801bb10 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x44>
+ 801bb06:	f64f 74ff 	movw	r4, #65535	; 0xffff
+            s = h->cmdGetWaitRemaining(vgm_time);
+            if(s <= 0){
+                //Advance to next command
+                h->cmdNext(vgm_time);
+            }else{
+                u = s * VGMP_HRTICKSPERSAMPLE;
+ 801bb0a:	f240 7071 	movw	r0, #1905	; 0x771
+ 801bb0e:	4344      	muls	r4, r0
     }
     //Scan all VGMs for pending chip write commands
     wrotetochip = 1;
     while(wrotetochip){
         wrotetochip = 0;
         if(vgmp_head != NULL){
- 801bb5a:	4829      	ldr	r0, [pc, #164]	; (801bc00 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe4>)
- 801bb5c:	6804      	ldr	r4, [r0, #0]
- 801bb5e:	2c00      	cmp	r4, #0
- 801bb60:	d044      	beq.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
-            h = vgmp_head;
-            if(!h->isPaused()){
- 801bb62:	f894 302c 	ldrb.w	r3, [r4, #44]	; 0x2c
- 801bb66:	2b00      	cmp	r3, #0
- 801bb68:	d140      	bne.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
+ 801bb10:	4d33      	ldr	r5, [pc, #204]	; (801bbe0 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x114>)
+ 801bb12:	682d      	ldr	r5, [r5, #0]
+ 801bb14:	b93d      	cbnz	r5, 801bb26 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x5a>
+                }
+            }
+        }
+    }
+    //Set up next delay
+    if(minwait < 100){
+ 801bb16:	2c63      	cmp	r4, #99	; 0x63
+ 801bb18:	d90c      	bls.n	801bb34 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x68>
+ 801bb1a:	f5b4 7f7a 	cmp.w	r4, #1000	; 0x3e8
+ 801bb1e:	bf28      	it	cs
+ 801bb20:	f44f 747a 	movcs.w	r4, #1000	; 0x3e8
+ 801bb24:	e007      	b.n	801bb36 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x6a>
     inline bool cmdIsChipWrite() {return iswrite && !isdone;}
- 801bb6a:	7b61      	ldrb	r1, [r4, #13]
- 801bb6c:	2900      	cmp	r1, #0
- 801bb6e:	d03d      	beq.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
- 801bb70:	7fa0      	ldrb	r0, [r4, #30]
- 801bb72:	2800      	cmp	r0, #0
- 801bb74:	d13a      	bne.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
-    inline ChipWriteCmd cmdGetChipWrite() {return writecmd;}
- 801bb76:	69a3      	ldr	r3, [r4, #24]
- 801bb78:	b2da      	uxtb	r2, r3
-                //Check for command
-                if(h->cmdIsChipWrite()){
-                    cmd = h->cmdGetChipWrite();
-                    if(cmd.cmd == 0x50){
- 801bb7a:	2a50      	cmp	r2, #80	; 0x50
- 801bb7c:	f3c3 2707 	ubfx	r7, r3, #8, #8
- 801bb80:	f3c3 4307 	ubfx	r3, r3, #16, #8
- 801bb84:	d10e      	bne.n	801bba4 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x88>
-                        //PSG write
-                        u = hr_time - chipdata[0].psg_lastwritetime;
- 801bb86:	4f1f      	ldr	r7, [pc, #124]	; (801bc04 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe8>)
- 801bb88:	687a      	ldr	r2, [r7, #4]
- 801bb8a:	1aa9      	subs	r1, r5, r2
-                        if(u < VGMP_PSGBUSYDELAY){
- 801bb8c:	f5b1 7f2f 	cmp.w	r1, #700	; 0x2bc
- 801bb90:	d32c      	bcc.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
-                            u = VGMP_PSGBUSYDELAY - u;
-                            if(u < minwait){
-                                minwait = u;
-                            }
-                        }else{
-                            Genesis_PSGWrite(0, cmd.data);
- 801bb92:	4619      	mov	r1, r3
- 801bb94:	f7ff fa36 	bl	801b004 <Genesis_PSGWrite>
-                            h->cmdNext(vgm_time);
- 801bb98:	4620      	mov	r0, r4
- 801bb9a:	4631      	mov	r1, r6
- 801bb9c:	f7ff fc6e 	bl	801b47c <VgmHead::cmdNext(unsigned long)>
-                            chipdata[0].psg_lastwritetime = hr_time;
- 801bba0:	607d      	str	r5, [r7, #4]
- 801bba2:	e7da      	b.n	801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
-                            wrotetochip = 1;
-                        }
-                    }else if((cmd.cmd & 0xFE) == 0x52){
- 801bba4:	f002 01fe 	and.w	r1, r2, #254	; 0xfe
- 801bba8:	2952      	cmp	r1, #82	; 0x52
- 801bbaa:	d11f      	bne.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
-                        //OPN2 write
-                        u = hr_time - chipdata[0].opn2_lastwritetime;
- 801bbac:	f8df 9054 	ldr.w	r9, [pc, #84]	; 801bc04 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe8>
- 801bbb0:	f8d9 1000 	ldr.w	r1, [r9]
-                        if(u < VGMP_OPN2BUSYDELAY){
- 801bbb4:	f640 0e33 	movw	lr, #2099	; 0x833
-                            chipdata[0].psg_lastwritetime = hr_time;
-                            wrotetochip = 1;
-                        }
-                    }else if((cmd.cmd & 0xFE) == 0x52){
-                        //OPN2 write
-                        u = hr_time - chipdata[0].opn2_lastwritetime;
- 801bbb8:	1a69      	subs	r1, r5, r1
-                        if(u < VGMP_OPN2BUSYDELAY){
- 801bbba:	4571      	cmp	r1, lr
- 801bbbc:	d916      	bls.n	801bbec <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xd0>
-                            u = VGMP_OPN2BUSYDELAY - u;
-                            if(u < minwait){
-                                minwait = u;
-                            }
-                        }else{
-                            Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
- 801bbbe:	f002 0101 	and.w	r1, r2, #1
- 801bbc2:	463a      	mov	r2, r7
- 801bbc4:	f7ff f972 	bl	801aeac <Genesis_OPN2Write>
-                            h->cmdNext(vgm_time);
- 801bbc8:	4620      	mov	r0, r4
- 801bbca:	4631      	mov	r1, r6
-                            //Don't delay after 0x2x commands
-                            if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
- 801bbcc:	f1a7 0420 	sub.w	r4, r7, #32
-                            if(u < minwait){
-                                minwait = u;
-                            }
-                        }else{
-                            Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
-                            h->cmdNext(vgm_time);
- 801bbd0:	f7ff fc54 	bl	801b47c <VgmHead::cmdNext(unsigned long)>
-                            //Don't delay after 0x2x commands
-                            if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
- 801bbd4:	2c0e      	cmp	r4, #14
- 801bbd6:	d806      	bhi.n	801bbe6 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xca>
- 801bbd8:	2f28      	cmp	r7, #40	; 0x28
- 801bbda:	d004      	beq.n	801bbe6 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xca>
-                                chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
- 801bbdc:	f6a5 0334 	subw	r3, r5, #2100	; 0x834
- 801bbe0:	f8c9 3000 	str.w	r3, [r9]
- 801bbe4:	e7b9      	b.n	801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
-                            }else{
-                                chipdata[0].opn2_lastwritetime = hr_time;
- 801bbe6:	4807      	ldr	r0, [pc, #28]	; (801bc04 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe8>)
- 801bbe8:	6005      	str	r5, [r0, #0]
- 801bbea:	e7b6      	b.n	801bb5a <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x3e>
+ 801bb26:	7b6b      	ldrb	r3, [r5, #13]
+ 801bb28:	2b00      	cmp	r3, #0
+ 801bb2a:	d0f4      	beq.n	801bb16 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x4a>
+ 801bb2c:	7ea8      	ldrb	r0, [r5, #26]
+ 801bb2e:	2800      	cmp	r0, #0
+ 801bb30:	d1f1      	bne.n	801bb16 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x4a>
+ 801bb32:	e008      	b.n	801bb46 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x7a>
+        //TODO loop instead of returning and re-timing
+        minwait = 100;
+ 801bb34:	2464      	movs	r4, #100	; 0x64
     }else if(minwait > VGMP_MAXDELAY){
         minwait = VGMP_MAXDELAY;
     }
-    */
-    minwait = 1000;
+    //minwait = 1000;
     MIOS32_BOARD_LED_Set(0b1111, leds);
- 801bbec:	200f      	movs	r0, #15
- 801bbee:	fa5f f188 	uxtb.w	r1, r8
- 801bbf2:	f7f7 fcaf 	bl	8013554 <MIOS32_BOARD_LED_Set>
+ 801bb36:	200f      	movs	r0, #15
+ 801bb38:	fa5f f189 	uxtb.w	r1, r9
+ 801bb3c:	f7f7 fd0a 	bl	8013554 <MIOS32_BOARD_LED_Set>
     return minwait;
-}
- 801bbf6:	f44f 707a 	mov.w	r0, #1000	; 0x3e8
- 801bbfa:	e8bd 83f8 	ldmia.w	sp!, {r3, r4, r5, r6, r7, r8, r9, pc}
- 801bbfe:	bf00      	nop
- 801bc00:	20000a78 	.word	0x20000a78
- 801bc04:	20000a7c 	.word	0x20000a7c
+ 801bb40:	b2a0      	uxth	r0, r4
+ 801bb42:	e8bd 87f0 	ldmia.w	sp!, {r4, r5, r6, r7, r8, r9, sl, pc}
+    inline ChipWriteCmd cmdGetChipWrite() {return writecmd;}
+ 801bb46:	6929      	ldr	r1, [r5, #16]
+ 801bb48:	b2ca      	uxtb	r2, r1
+        if(vgmp_head != NULL){
+            h = vgmp_head;
+            //Check for command
+            if(h->cmdIsChipWrite()){
+                cmd = h->cmdGetChipWrite();
+                if(cmd.cmd == 0x50){
+ 801bb4a:	2a50      	cmp	r2, #80	; 0x50
+ 801bb4c:	f3c1 2807 	ubfx	r8, r1, #8, #8
+ 801bb50:	f3c1 4307 	ubfx	r3, r1, #16, #8
+ 801bb54:	d117      	bne.n	801bb86 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xba>
+                    //PSG write
+                    u = hr_time - chipdata[0].psg_lastwritetime;
+ 801bb56:	f8df 808c 	ldr.w	r8, [pc, #140]	; 801bbe4 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x118>
+ 801bb5a:	f8d8 2004 	ldr.w	r2, [r8, #4]
+ 801bb5e:	1ab1      	subs	r1, r6, r2
+                    if(u < VGMP_PSGBUSYDELAY){
+ 801bb60:	f5b1 7f2f 	cmp.w	r1, #700	; 0x2bc
+ 801bb64:	d205      	bcs.n	801bb72 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xa6>
+                        u = VGMP_PSGBUSYDELAY - u;
+ 801bb66:	f5c1 702f 	rsb	r0, r1, #700	; 0x2bc
+                        if(u < minwait){
+ 801bb6a:	4284      	cmp	r4, r0
+ 801bb6c:	bf28      	it	cs
+ 801bb6e:	4604      	movcs	r4, r0
+ 801bb70:	e7d1      	b.n	801bb16 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x4a>
+                            minwait = u;
+                        }
+                    }else{
+                        Genesis_PSGWrite(0, cmd.data);
+ 801bb72:	4619      	mov	r1, r3
+ 801bb74:	f7ff fa46 	bl	801b004 <Genesis_PSGWrite>
+                        h->cmdNext(vgm_time);
+ 801bb78:	4628      	mov	r0, r5
+ 801bb7a:	4639      	mov	r1, r7
+ 801bb7c:	f7ff fc6e 	bl	801b45c <VgmHead::cmdNext(unsigned long)>
+                        chipdata[0].psg_lastwritetime = hr_time;
+ 801bb80:	f8c8 6004 	str.w	r6, [r8, #4]
+ 801bb84:	e7c4      	b.n	801bb10 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x44>
+                        wrotetochip = 1;
+                    }
+                }else if((cmd.cmd & 0xFE) == 0x52){
+ 801bb86:	f002 01fe 	and.w	r1, r2, #254	; 0xfe
+ 801bb8a:	2952      	cmp	r1, #82	; 0x52
+ 801bb8c:	d1c3      	bne.n	801bb16 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x4a>
+                    //OPN2 write
+                    u = hr_time - chipdata[0].opn2_lastwritetime;
+ 801bb8e:	f8df a054 	ldr.w	sl, [pc, #84]	; 801bbe4 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x118>
+ 801bb92:	f8da 1000 	ldr.w	r1, [sl]
+                    if(u < VGMP_OPN2BUSYDELAY){
+ 801bb96:	f640 0e33 	movw	lr, #2099	; 0x833
+                        chipdata[0].psg_lastwritetime = hr_time;
+                        wrotetochip = 1;
+                    }
+                }else if((cmd.cmd & 0xFE) == 0x52){
+                    //OPN2 write
+                    u = hr_time - chipdata[0].opn2_lastwritetime;
+ 801bb9a:	1a71      	subs	r1, r6, r1
+                    if(u < VGMP_OPN2BUSYDELAY){
+ 801bb9c:	4571      	cmp	r1, lr
+ 801bb9e:	d806      	bhi.n	801bbae <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0xe2>
+                        u = VGMP_OPN2BUSYDELAY - u;
+ 801bba0:	f5c1 6203 	rsb	r2, r1, #2096	; 0x830
+ 801bba4:	1d11      	adds	r1, r2, #4
+                        if(u < minwait){
+ 801bba6:	428c      	cmp	r4, r1
+ 801bba8:	bf28      	it	cs
+ 801bbaa:	460c      	movcs	r4, r1
+ 801bbac:	e7b3      	b.n	801bb16 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x4a>
+                            minwait = u;
+                        }
+                    }else{
+                        Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
+ 801bbae:	f002 0101 	and.w	r1, r2, #1
+ 801bbb2:	4642      	mov	r2, r8
+ 801bbb4:	f7ff f97a 	bl	801aeac <Genesis_OPN2Write>
+                        h->cmdNext(vgm_time);
+ 801bbb8:	4628      	mov	r0, r5
+ 801bbba:	4639      	mov	r1, r7
+ 801bbbc:	f7ff fc4e 	bl	801b45c <VgmHead::cmdNext(unsigned long)>
+                        //Don't delay after 0x2x commands
+                        if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
+ 801bbc0:	f1a8 0020 	sub.w	r0, r8, #32
+ 801bbc4:	280e      	cmp	r0, #14
+ 801bbc6:	d807      	bhi.n	801bbd8 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x10c>
+ 801bbc8:	f1b8 0f28 	cmp.w	r8, #40	; 0x28
+ 801bbcc:	d004      	beq.n	801bbd8 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x10c>
+                            chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
+ 801bbce:	f6a6 0334 	subw	r3, r6, #2100	; 0x834
+ 801bbd2:	f8ca 3000 	str.w	r3, [sl]
+ 801bbd6:	e79b      	b.n	801bb10 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x44>
+                        }else{
+                            chipdata[0].opn2_lastwritetime = hr_time;
+ 801bbd8:	4d02      	ldr	r5, [pc, #8]	; (801bbe4 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x118>)
+ 801bbda:	602e      	str	r6, [r5, #0]
+ 801bbdc:	e798      	b.n	801bb10 <VgmPlayer_WorkCallback(unsigned long, unsigned long)+0x44>
+ 801bbde:	bf00      	nop
+ 801bbe0:	20000a78 	.word	0x20000a78
+ 801bbe4:	20000a7c 	.word	0x20000a7c
 
-0801bc08 <VgmPlayer_AddHead(VgmHead*)>:
+0801bbe8 <VgmPlayer_AddHead(VgmHead*)>:
 
 // For this test software, there's only one head.
 VgmHead* vgmp_head;
 
 void VgmPlayer_AddHead(VgmHead* vgmh){
     vgmp_head = vgmh;
- 801bc08:	4b05      	ldr	r3, [pc, #20]	; (801bc20 <VgmPlayer_AddHead(VgmHead*)+0x18>)
+ 801bbe8:	4b05      	ldr	r3, [pc, #20]	; (801bc00 <VgmPlayer_AddHead(VgmHead*)+0x18>)
 vgmp_chipdata chipdata[GENESIS_COUNT];
 
 // For this test software, there's only one head.
 VgmHead* vgmp_head;
 
 void VgmPlayer_AddHead(VgmHead* vgmh){
- 801bc0a:	b510      	push	{r4, lr}
- 801bc0c:	4604      	mov	r4, r0
+ 801bbea:	b510      	push	{r4, lr}
+ 801bbec:	4604      	mov	r4, r0
     vgmp_head = vgmh;
- 801bc0e:	6018      	str	r0, [r3, #0]
+ 801bbee:	6018      	str	r0, [r3, #0]
     //Start it!
     vgmp_head->cmdNext(VgmPlayerLL_GetVGMTime());
- 801bc10:	f7f4 f9f6 	bl	8010000 <VgmPlayerLL_GetVGMTime>
- 801bc14:	4601      	mov	r1, r0
- 801bc16:	4620      	mov	r0, r4
+ 801bbf0:	f7f4 fa06 	bl	8010000 <VgmPlayerLL_GetVGMTime>
+ 801bbf4:	4601      	mov	r1, r0
+ 801bbf6:	4620      	mov	r0, r4
 }
- 801bc18:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
+ 801bbf8:	e8bd 4010 	ldmia.w	sp!, {r4, lr}
 VgmHead* vgmp_head;
 
 void VgmPlayer_AddHead(VgmHead* vgmh){
     vgmp_head = vgmh;
     //Start it!
     vgmp_head->cmdNext(VgmPlayerLL_GetVGMTime());
- 801bc1c:	f7ff bc2e 	b.w	801b47c <VgmHead::cmdNext(unsigned long)>
- 801bc20:	20000a78 	.word	0x20000a78
+ 801bbfc:	f7ff bc2e 	b.w	801b45c <VgmHead::cmdNext(unsigned long)>
+ 801bc00:	20000a78 	.word	0x20000a78
 
-0801bc24 <VgmPlayer_Init()>:
+0801bc04 <VgmPlayer_Init()>:
     MIOS32_BOARD_LED_Set(0b1111, leds);
     return minwait;
 }
 
 
 void VgmPlayer_Init(){
- 801bc24:	b508      	push	{r3, lr}
+ 801bc04:	b508      	push	{r3, lr}
     vgmp_head = NULL;
- 801bc26:	4b05      	ldr	r3, [pc, #20]	; (801bc3c <VgmPlayer_Init()+0x18>)
+ 801bc06:	4b05      	ldr	r3, [pc, #20]	; (801bc1c <VgmPlayer_Init()+0x18>)
     VgmPlayerLL_RegisterCallback(VgmPlayer_WorkCallback);
- 801bc28:	4805      	ldr	r0, [pc, #20]	; (801bc40 <VgmPlayer_Init()+0x1c>)
+ 801bc08:	4805      	ldr	r0, [pc, #20]	; (801bc20 <VgmPlayer_Init()+0x1c>)
     return minwait;
 }
 
 
 void VgmPlayer_Init(){
     vgmp_head = NULL;
- 801bc2a:	2200      	movs	r2, #0
- 801bc2c:	601a      	str	r2, [r3, #0]
+ 801bc0a:	2200      	movs	r2, #0
+ 801bc0c:	601a      	str	r2, [r3, #0]
     VgmPlayerLL_RegisterCallback(VgmPlayer_WorkCallback);
- 801bc2e:	f7f4 fa13 	bl	8010058 <VgmPlayerLL_RegisterCallback>
+ 801bc0e:	f7f4 fa23 	bl	8010058 <VgmPlayerLL_RegisterCallback>
     VgmPlayerLL_Init();
 }
- 801bc32:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
+ 801bc12:	e8bd 4008 	ldmia.w	sp!, {r3, lr}
 
 
 void VgmPlayer_Init(){
     vgmp_head = NULL;
     VgmPlayerLL_RegisterCallback(VgmPlayer_WorkCallback);
     VgmPlayerLL_Init();
- 801bc36:	f7f4 ba15 	b.w	8010064 <VgmPlayerLL_Init>
- 801bc3a:	bf00      	nop
- 801bc3c:	20000a78 	.word	0x20000a78
- 801bc40:	0801bb1d 	.word	0x0801bb1d
+ 801bc16:	f7f4 ba25 	b.w	8010064 <VgmPlayerLL_Init>
+ 801bc1a:	bf00      	nop
+ 801bc1c:	20000a78 	.word	0x20000a78
+ 801bc20:	0801bacd 	.word	0x0801bacd
 
-0801bc44 <operator new(unsigned int)>:
+0801bc24 <operator new(unsigned int)>:
 
 #include <stdlib.h>                   // for prototypes of malloc() and free()
 
 //............................................................................
 void *operator new(size_t size) throw() {
 	return malloc(size); // note: will use FreeRTOS based malloc() in freertos_malloc.cpp
- 801bc44:	f000 b802 	b.w	801bc4c <malloc>
+ 801bc24:	f000 b802 	b.w	801bc2c <malloc>
 
-0801bc48 <operator delete(void*)>:
+0801bc28 <operator delete(void*)>:
 }
 //............................................................................
 void operator delete(void *p) throw() {
 	free(p); // note: will use FreeRTOS based free() in freertos_malloc.cpp
- 801bc48:	f000 b802 	b.w	801bc50 <free>
+ 801bc28:	f000 b802 	b.w	801bc30 <free>
 
-0801bc4c <malloc>:
+0801bc2c <malloc>:
 #include <stdlib.h>	// for prototypes of malloc(), calloc() and free()
 
 //............................................................................
 extern "C" void *malloc(size_t size)
 {
   return pvPortMalloc(size);
- 801bc4c:	f7f4 bffe 	b.w	8010c4c <pvPortMalloc>
+ 801bc2c:	f7f5 b80e 	b.w	8010c4c <pvPortMalloc>
 
-0801bc50 <free>:
+0801bc30 <free>:
 }
 #endif
 //............................................................................
 extern "C" void free(void *p)
 {
   vPortFree(p);
- 801bc50:	f7f4 bfc2 	b.w	8010bd8 <vPortFree>
+ 801bc30:	f7f4 bfd2 	b.w	8010bd8 <vPortFree>
 
-0801bc54 <operator new[](unsigned int)>:
- 801bc54:	f7ff bff6 	b.w	801bc44 <operator new(unsigned int)>
+0801bc34 <operator new[](unsigned int)>:
+ 801bc34:	f7ff bff6 	b.w	801bc24 <operator new(unsigned int)>
 
-0801bc58 <operator delete[](void*)>:
- 801bc58:	f7ff bff6 	b.w	801bc48 <operator delete(void*)>
+0801bc38 <operator delete[](void*)>:
+ 801bc38:	f7ff bff6 	b.w	801bc28 <operator delete(void*)>
 
-0801bc5c <__aeabi_llsr>:
- 801bc5c:	40d0      	lsrs	r0, r2
- 801bc5e:	1c0b      	adds	r3, r1, #0
- 801bc60:	40d1      	lsrs	r1, r2
- 801bc62:	469c      	mov	ip, r3
- 801bc64:	3a20      	subs	r2, #32
+0801bc3c <__aeabi_llsr>:
+ 801bc3c:	40d0      	lsrs	r0, r2
+ 801bc3e:	1c0b      	adds	r3, r1, #0
+ 801bc40:	40d1      	lsrs	r1, r2
+ 801bc42:	469c      	mov	ip, r3
+ 801bc44:	3a20      	subs	r2, #32
+ 801bc46:	40d3      	lsrs	r3, r2
+ 801bc48:	4318      	orrs	r0, r3
+ 801bc4a:	4252      	negs	r2, r2
+ 801bc4c:	4663      	mov	r3, ip
+ 801bc4e:	4093      	lsls	r3, r2
+ 801bc50:	4318      	orrs	r0, r3
+ 801bc52:	4770      	bx	lr
+
+0801bc54 <__aeabi_llsl>:
+ 801bc54:	4091      	lsls	r1, r2
+ 801bc56:	1c03      	adds	r3, r0, #0
+ 801bc58:	4090      	lsls	r0, r2
+ 801bc5a:	469c      	mov	ip, r3
+ 801bc5c:	3a20      	subs	r2, #32
+ 801bc5e:	4093      	lsls	r3, r2
+ 801bc60:	4319      	orrs	r1, r3
+ 801bc62:	4252      	negs	r2, r2
+ 801bc64:	4663      	mov	r3, ip
  801bc66:	40d3      	lsrs	r3, r2
- 801bc68:	4318      	orrs	r0, r3
- 801bc6a:	4252      	negs	r2, r2
- 801bc6c:	4663      	mov	r3, ip
- 801bc6e:	4093      	lsls	r3, r2
- 801bc70:	4318      	orrs	r0, r3
- 801bc72:	4770      	bx	lr
+ 801bc68:	4319      	orrs	r1, r3
+ 801bc6a:	4770      	bx	lr
 
-0801bc74 <__aeabi_llsl>:
- 801bc74:	4091      	lsls	r1, r2
- 801bc76:	1c03      	adds	r3, r0, #0
- 801bc78:	4090      	lsls	r0, r2
- 801bc7a:	469c      	mov	ip, r3
- 801bc7c:	3a20      	subs	r2, #32
- 801bc7e:	4093      	lsls	r3, r2
- 801bc80:	4319      	orrs	r1, r3
- 801bc82:	4252      	negs	r2, r2
- 801bc84:	4663      	mov	r3, ip
- 801bc86:	40d3      	lsrs	r3, r2
- 801bc88:	4319      	orrs	r1, r3
- 801bc8a:	4770      	bx	lr
+0801bc6c <__libc_init_array>:
+ 801bc6c:	b538      	push	{r3, r4, r5, lr}
+ 801bc6e:	4d0e      	ldr	r5, [pc, #56]	; (801bca8 <__libc_init_array+0x3c>)
+ 801bc70:	4b0e      	ldr	r3, [pc, #56]	; (801bcac <__libc_init_array+0x40>)
+ 801bc72:	1ae8      	subs	r0, r5, r3
+ 801bc74:	1085      	asrs	r5, r0, #2
+ 801bc76:	2400      	movs	r4, #0
+ 801bc78:	42ac      	cmp	r4, r5
+ 801bc7a:	d005      	beq.n	801bc88 <__libc_init_array+0x1c>
+ 801bc7c:	490b      	ldr	r1, [pc, #44]	; (801bcac <__libc_init_array+0x40>)
+ 801bc7e:	f851 2024 	ldr.w	r2, [r1, r4, lsl #2]
+ 801bc82:	4790      	blx	r2
+ 801bc84:	3401      	adds	r4, #1
+ 801bc86:	e7f7      	b.n	801bc78 <__libc_init_array+0xc>
+ 801bc88:	f7f5 f896 	bl	8010db8 <_init>
+ 801bc8c:	4908      	ldr	r1, [pc, #32]	; (801bcb0 <__libc_init_array+0x44>)
+ 801bc8e:	4a09      	ldr	r2, [pc, #36]	; (801bcb4 <__libc_init_array+0x48>)
+ 801bc90:	1a54      	subs	r4, r2, r1
+ 801bc92:	10a5      	asrs	r5, r4, #2
+ 801bc94:	2400      	movs	r4, #0
+ 801bc96:	42ac      	cmp	r4, r5
+ 801bc98:	d005      	beq.n	801bca6 <__libc_init_array+0x3a>
+ 801bc9a:	4b05      	ldr	r3, [pc, #20]	; (801bcb0 <__libc_init_array+0x44>)
+ 801bc9c:	f853 0024 	ldr.w	r0, [r3, r4, lsl #2]
+ 801bca0:	4780      	blx	r0
+ 801bca2:	3401      	adds	r4, #1
+ 801bca4:	e7f7      	b.n	801bc96 <__libc_init_array+0x2a>
+ 801bca6:	bd38      	pop	{r3, r4, r5, pc}
+ 801bca8:	0801d610 	.word	0x0801d610
+ 801bcac:	0801d610 	.word	0x0801d610
+ 801bcb0:	0801d610 	.word	0x0801d610
+ 801bcb4:	0801d610 	.word	0x0801d610
 
-0801bc8c <__libc_init_array>:
- 801bc8c:	b538      	push	{r3, r4, r5, lr}
- 801bc8e:	4d0e      	ldr	r5, [pc, #56]	; (801bcc8 <__libc_init_array+0x3c>)
- 801bc90:	4b0e      	ldr	r3, [pc, #56]	; (801bccc <__libc_init_array+0x40>)
- 801bc92:	1ae8      	subs	r0, r5, r3
- 801bc94:	1085      	asrs	r5, r0, #2
- 801bc96:	2400      	movs	r4, #0
- 801bc98:	42ac      	cmp	r4, r5
- 801bc9a:	d005      	beq.n	801bca8 <__libc_init_array+0x1c>
- 801bc9c:	490b      	ldr	r1, [pc, #44]	; (801bccc <__libc_init_array+0x40>)
- 801bc9e:	f851 2024 	ldr.w	r2, [r1, r4, lsl #2]
- 801bca2:	4790      	blx	r2
- 801bca4:	3401      	adds	r4, #1
- 801bca6:	e7f7      	b.n	801bc98 <__libc_init_array+0xc>
- 801bca8:	f7f5 f886 	bl	8010db8 <_init>
- 801bcac:	4908      	ldr	r1, [pc, #32]	; (801bcd0 <__libc_init_array+0x44>)
- 801bcae:	4a09      	ldr	r2, [pc, #36]	; (801bcd4 <__libc_init_array+0x48>)
- 801bcb0:	1a54      	subs	r4, r2, r1
- 801bcb2:	10a5      	asrs	r5, r4, #2
- 801bcb4:	2400      	movs	r4, #0
- 801bcb6:	42ac      	cmp	r4, r5
- 801bcb8:	d005      	beq.n	801bcc6 <__libc_init_array+0x3a>
- 801bcba:	4b05      	ldr	r3, [pc, #20]	; (801bcd0 <__libc_init_array+0x44>)
- 801bcbc:	f853 0024 	ldr.w	r0, [r3, r4, lsl #2]
- 801bcc0:	4780      	blx	r0
- 801bcc2:	3401      	adds	r4, #1
- 801bcc4:	e7f7      	b.n	801bcb6 <__libc_init_array+0x2a>
- 801bcc6:	bd38      	pop	{r3, r4, r5, pc}
- 801bcc8:	0801d658 	.word	0x0801d658
- 801bccc:	0801d658 	.word	0x0801d658
- 801bcd0:	0801d658 	.word	0x0801d658
- 801bcd4:	0801d658 	.word	0x0801d658
+0801bcb8 <memcpy>:
+ 801bcb8:	b510      	push	{r4, lr}
+ 801bcba:	2300      	movs	r3, #0
+ 801bcbc:	4293      	cmp	r3, r2
+ 801bcbe:	d003      	beq.n	801bcc8 <memcpy+0x10>
+ 801bcc0:	5ccc      	ldrb	r4, [r1, r3]
+ 801bcc2:	54c4      	strb	r4, [r0, r3]
+ 801bcc4:	3301      	adds	r3, #1
+ 801bcc6:	e7f9      	b.n	801bcbc <memcpy+0x4>
+ 801bcc8:	bd10      	pop	{r4, pc}
 
-0801bcd8 <memcpy>:
- 801bcd8:	b510      	push	{r4, lr}
- 801bcda:	2300      	movs	r3, #0
- 801bcdc:	4293      	cmp	r3, r2
- 801bcde:	d003      	beq.n	801bce8 <memcpy+0x10>
- 801bce0:	5ccc      	ldrb	r4, [r1, r3]
- 801bce2:	54c4      	strb	r4, [r0, r3]
- 801bce4:	3301      	adds	r3, #1
- 801bce6:	e7f9      	b.n	801bcdc <memcpy+0x4>
- 801bce8:	bd10      	pop	{r4, pc}
+0801bcca <memset>:
+ 801bcca:	1882      	adds	r2, r0, r2
+ 801bccc:	4603      	mov	r3, r0
+ 801bcce:	4293      	cmp	r3, r2
+ 801bcd0:	d002      	beq.n	801bcd8 <memset+0xe>
+ 801bcd2:	f803 1b01 	strb.w	r1, [r3], #1
+ 801bcd6:	e7fa      	b.n	801bcce <memset+0x4>
+ 801bcd8:	4770      	bx	lr
 
-0801bcea <memset>:
- 801bcea:	1882      	adds	r2, r0, r2
- 801bcec:	4603      	mov	r3, r0
- 801bcee:	4293      	cmp	r3, r2
- 801bcf0:	d002      	beq.n	801bcf8 <memset+0xe>
- 801bcf2:	f803 1b01 	strb.w	r1, [r3], #1
- 801bcf6:	e7fa      	b.n	801bcee <memset+0x4>
+0801bcda <strcpy>:
+ 801bcda:	4603      	mov	r3, r0
+ 801bcdc:	f811 2b01 	ldrb.w	r2, [r1], #1
+ 801bce0:	f803 2b01 	strb.w	r2, [r3], #1
+ 801bce4:	2a00      	cmp	r2, #0
+ 801bce6:	d1f9      	bne.n	801bcdc <strcpy+0x2>
+ 801bce8:	4770      	bx	lr
+
+0801bcea <strlen>:
+ 801bcea:	4603      	mov	r3, r0
+ 801bcec:	f813 2b01 	ldrb.w	r2, [r3], #1
+ 801bcf0:	2a00      	cmp	r2, #0
+ 801bcf2:	d1fb      	bne.n	801bcec <strlen+0x2>
+ 801bcf4:	1a18      	subs	r0, r3, r0
+ 801bcf6:	3801      	subs	r0, #1
  801bcf8:	4770      	bx	lr
 
-0801bcfa <strcpy>:
- 801bcfa:	4603      	mov	r3, r0
- 801bcfc:	f811 2b01 	ldrb.w	r2, [r1], #1
- 801bd00:	f803 2b01 	strb.w	r2, [r3], #1
- 801bd04:	2a00      	cmp	r2, #0
- 801bd06:	d1f9      	bne.n	801bcfc <strcpy+0x2>
- 801bd08:	4770      	bx	lr
-
-0801bd0a <strlen>:
- 801bd0a:	4603      	mov	r3, r0
- 801bd0c:	f813 2b01 	ldrb.w	r2, [r3], #1
- 801bd10:	2a00      	cmp	r2, #0
- 801bd12:	d1fb      	bne.n	801bd0c <strlen+0x2>
- 801bd14:	1a18      	subs	r0, r3, r0
- 801bd16:	3801      	subs	r0, #1
- 801bd18:	4770      	bx	lr
-
-0801bd1a <strncpy>:
- 801bd1a:	b530      	push	{r4, r5, lr}
- 801bd1c:	3901      	subs	r1, #1
- 801bd1e:	4603      	mov	r3, r0
- 801bd20:	461c      	mov	r4, r3
- 801bd22:	b13a      	cbz	r2, 801bd34 <strncpy+0x1a>
- 801bd24:	f811 5f01 	ldrb.w	r5, [r1, #1]!
- 801bd28:	f803 5b01 	strb.w	r5, [r3], #1
- 801bd2c:	3a01      	subs	r2, #1
- 801bd2e:	461c      	mov	r4, r3
- 801bd30:	2d00      	cmp	r5, #0
- 801bd32:	d1f5      	bne.n	801bd20 <strncpy+0x6>
- 801bd34:	1899      	adds	r1, r3, r2
- 801bd36:	428c      	cmp	r4, r1
- 801bd38:	d003      	beq.n	801bd42 <strncpy+0x28>
- 801bd3a:	2200      	movs	r2, #0
- 801bd3c:	f804 2b01 	strb.w	r2, [r4], #1
- 801bd40:	e7f9      	b.n	801bd36 <strncpy+0x1c>
- 801bd42:	bd30      	pop	{r4, r5, pc}
+0801bcfa <strncpy>:
+ 801bcfa:	b530      	push	{r4, r5, lr}
+ 801bcfc:	3901      	subs	r1, #1
+ 801bcfe:	4603      	mov	r3, r0
+ 801bd00:	461c      	mov	r4, r3
+ 801bd02:	b13a      	cbz	r2, 801bd14 <strncpy+0x1a>
+ 801bd04:	f811 5f01 	ldrb.w	r5, [r1, #1]!
+ 801bd08:	f803 5b01 	strb.w	r5, [r3], #1
+ 801bd0c:	3a01      	subs	r2, #1
+ 801bd0e:	461c      	mov	r4, r3
+ 801bd10:	2d00      	cmp	r5, #0
+ 801bd12:	d1f5      	bne.n	801bd00 <strncpy+0x6>
+ 801bd14:	1899      	adds	r1, r3, r2
+ 801bd16:	428c      	cmp	r4, r1
+ 801bd18:	d003      	beq.n	801bd22 <strncpy+0x28>
+ 801bd1a:	2200      	movs	r2, #0
+ 801bd1c:	f804 2b01 	strb.w	r2, [r4], #1
+ 801bd20:	e7f9      	b.n	801bd16 <strncpy+0x1c>
+ 801bd22:	bd30      	pop	{r4, r5, pc}
