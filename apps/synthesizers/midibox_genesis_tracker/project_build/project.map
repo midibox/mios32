@@ -74,7 +74,7 @@ mios32_lcd_cursor_map
 mios32_lcd_line     0x2               project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
 mios32_srio_din_buffer
                     0x10              project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_srio.o
-umm_heap            0x27fc            project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
+umm_heap            0xfffc            project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
 file_dfs_errno      0x4               project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
 USB_OTG_dev         0xa94             project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
 genesis             0xda              project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
@@ -244,7 +244,7 @@ Discarded input sections
  .data          0x00000000        0x0 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
  .bss           0x00000000        0x0 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
  .text.umm_info
-                0x00000000      0x170 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
+                0x00000000      0x174 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
  .text.realloc  0x00000000      0x120 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
  .rodata.umm_numblocks
                 0x00000000        0x2 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
@@ -2606,6 +2606,10 @@ Discarded input sections
  .text          0x00000000        0x0 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .data          0x00000000        0x0 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .bss           0x00000000        0x0 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+ .text.Genesis_CheckOPN2Busy
+                0x00000000       0x7c project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+ .text.Genesis_CheckPSGBusy
+                0x00000000       0x78 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .text          0x00000000        0x0 project_build/src/app.o
  .data          0x00000000        0x0 project_build/src/app.o
  .bss           0x00000000        0x0 project_build/src/app.o
@@ -2617,6 +2621,8 @@ Discarded input sections
  .bss           0x00000000        0x0 project_build/src/vgmsourcestream.o
  .text._ZN15VgmSourceStreamD2Ev
                 0x00000000       0x10 project_build/src/vgmsourcestream.o
+ .text._ZN15VgmSourceStream15bg_streamBufferEv
+                0x00000000       0x80 project_build/src/vgmsourcestream.o
  .text          0x00000000        0x0 project_build/src/vgmplayer.o
  .data          0x00000000        0x0 project_build/src/vgmplayer.o
  .bss           0x00000000        0x0 project_build/src/vgmplayer.o
@@ -2958,7 +2964,7 @@ END GROUP
  *(.flashtext)
                 0x08010000                . = ALIGN (0x4)
 
-.text           0x08010000     0xbe58
+.text           0x08010000     0xbd44
                 0x08010000                . = ALIGN (0x4)
  CREATE_OBJECT_SYMBOLS
  *(.text .text.* .gnu.linkonce.t.*)
@@ -4343,120 +4349,112 @@ END GROUP
  .text.Genesis_PSGWrite
                 0x0801b004      0x11c project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
                 0x0801b004                Genesis_PSGWrite
- .text.Genesis_CheckOPN2Busy
-                0x0801b120       0x7c project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x0801b120                Genesis_CheckOPN2Busy
- .text.Genesis_CheckPSGBusy
-                0x0801b19c       0x78 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x0801b19c                Genesis_CheckPSGBusy
  .text.Genesis_WriteBoardBits
-                0x0801b214       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x0801b214                Genesis_WriteBoardBits
+                0x0801b120       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x0801b120                Genesis_WriteBoardBits
  .text.Genesis_Reset
-                0x0801b294      0x114 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x0801b294                Genesis_Reset
+                0x0801b1a0      0x114 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x0801b1a0                Genesis_Reset
  .text.Genesis_Init
-                0x0801b3a8       0x70 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x0801b3a8                Genesis_Init
+                0x0801b2b4       0x70 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x0801b2b4                Genesis_Init
  .text.APP_Init
-                0x0801b418       0x28 project_build/src/app.o
-                0x0801b418                APP_Init
+                0x0801b324       0x28 project_build/src/app.o
+                0x0801b324                APP_Init
  .text.APP_Background
-                0x0801b440      0x124 project_build/src/app.o
-                0x0801b440                APP_Background
+                0x0801b34c      0x120 project_build/src/app.o
+                0x0801b34c                APP_Background
  .text.APP_Tick
-                0x0801b564        0x2 project_build/src/app.o
-                0x0801b564                APP_Tick
+                0x0801b46c        0x2 project_build/src/app.o
+                0x0801b46c                APP_Tick
  .text.APP_MIDI_Tick
-                0x0801b566        0x2 project_build/src/app.o
-                0x0801b566                APP_MIDI_Tick
+                0x0801b46e        0x2 project_build/src/app.o
+                0x0801b46e                APP_MIDI_Tick
  .text.APP_MIDI_NotifyPackage
-                0x0801b568        0x2 project_build/src/app.o
-                0x0801b568                APP_MIDI_NotifyPackage
+                0x0801b470        0x2 project_build/src/app.o
+                0x0801b470                APP_MIDI_NotifyPackage
  .text.APP_SRIO_ServicePrepare
-                0x0801b56a        0x2 project_build/src/app.o
-                0x0801b56a                APP_SRIO_ServicePrepare
+                0x0801b472        0x2 project_build/src/app.o
+                0x0801b472                APP_SRIO_ServicePrepare
  .text.APP_SRIO_ServiceFinish
-                0x0801b56c        0x2 project_build/src/app.o
-                0x0801b56c                APP_SRIO_ServiceFinish
+                0x0801b474        0x2 project_build/src/app.o
+                0x0801b474                APP_SRIO_ServiceFinish
  .text.APP_DIN_NotifyToggle
-                0x0801b56e        0x2 project_build/src/app.o
-                0x0801b56e                APP_DIN_NotifyToggle
+                0x0801b476        0x2 project_build/src/app.o
+                0x0801b476                APP_DIN_NotifyToggle
  .text.APP_ENC_NotifyChange
-                0x0801b570        0x2 project_build/src/app.o
-                0x0801b570                APP_ENC_NotifyChange
+                0x0801b478        0x2 project_build/src/app.o
+                0x0801b478                APP_ENC_NotifyChange
  .text.APP_AIN_NotifyChange
-                0x0801b572        0x2 project_build/src/app.o
-                0x0801b572                APP_AIN_NotifyChange
+                0x0801b47a        0x2 project_build/src/app.o
+                0x0801b47a                APP_AIN_NotifyChange
  .text._ZN7VgmHead7cmdNextEm
-                0x0801b574      0x328 project_build/src/vgmhead.o
-                0x0801b574                VgmHead::cmdNext(unsigned long)
+                0x0801b47c      0x34c project_build/src/vgmhead.o
+                0x0801b47c                VgmHead::cmdNext(unsigned long)
  .text._ZN7VgmHead7restartEv
-                0x0801b89c        0xc project_build/src/vgmhead.o
-                0x0801b89c                VgmHead::restart()
+                0x0801b7c8        0xc project_build/src/vgmhead.o
+                0x0801b7c8                VgmHead::restart()
  .text._ZN7VgmHeadC2EP15VgmSourceStream
-                0x0801b8a8       0x28 project_build/src/vgmhead.o
-                0x0801b8a8                VgmHead::VgmHead(VgmSourceStream*)
-                0x0801b8a8                VgmHead::VgmHead(VgmSourceStream*)
+                0x0801b7d4       0x28 project_build/src/vgmhead.o
+                0x0801b7d4                VgmHead::VgmHead(VgmSourceStream*)
+                0x0801b7d4                VgmHead::VgmHead(VgmSourceStream*)
  .text._ZN15VgmSourceStreamC2Ev
-                0x0801b8d0       0x2e project_build/src/vgmsourcestream.o
-                0x0801b8d0                VgmSourceStream::VgmSourceStream()
-                0x0801b8d0                VgmSourceStream::VgmSourceStream()
+                0x0801b7fc       0x2e project_build/src/vgmsourcestream.o
+                0x0801b7fc                VgmSourceStream::VgmSourceStream()
+                0x0801b7fc                VgmSourceStream::VgmSourceStream()
  .text._ZN15VgmSourceStream11startStreamEPc
-                0x0801b8fe       0x62 project_build/src/vgmsourcestream.o
-                0x0801b8fe                VgmSourceStream::startStream(char*)
+                0x0801b82a       0x62 project_build/src/vgmsourcestream.o
+                0x0801b82a                VgmSourceStream::startStream(char*)
  .text._ZN15VgmSourceStream7getByteEm
-                0x0801b960       0x94 project_build/src/vgmsourcestream.o
-                0x0801b960                VgmSourceStream::getByte(unsigned long)
- .text._ZN15VgmSourceStream15bg_streamBufferEv
-                0x0801b9f4       0x80 project_build/src/vgmsourcestream.o
-                0x0801b9f4                VgmSourceStream::bg_streamBuffer()
+                0x0801b88c       0xbe project_build/src/vgmsourcestream.o
+                0x0801b88c                VgmSourceStream::getByte(unsigned long)
  .text._ZN15VgmSourceStream9loadBlockEmm
-                0x0801ba74       0x54 project_build/src/vgmsourcestream.o
-                0x0801ba74                VgmSourceStream::loadBlock(unsigned long, unsigned long)
+                0x0801b94a       0x54 project_build/src/vgmsourcestream.o
+                0x0801b94a                VgmSourceStream::loadBlock(unsigned long, unsigned long)
  .text._ZN15VgmSourceStream10readHeaderEv
-                0x0801bac8      0x17c project_build/src/vgmsourcestream.o
-                0x0801bac8                VgmSourceStream::readHeader()
+                0x0801b99e      0x17c project_build/src/vgmsourcestream.o
+                0x0801b99e                VgmSourceStream::readHeader()
+ *fill*         0x0801bb1a        0x2 00
  .text._Z22VgmPlayer_WorkCallbackmm
-                0x0801bc44       0xd8 project_build/src/vgmplayer.o
-                0x0801bc44                VgmPlayer_WorkCallback(unsigned long, unsigned long)
+                0x0801bb1c       0xec project_build/src/vgmplayer.o
+                0x0801bb1c                VgmPlayer_WorkCallback(unsigned long, unsigned long)
  .text._Z17VgmPlayer_AddHeadP7VgmHead
-                0x0801bd1c       0x1c project_build/src/vgmplayer.o
-                0x0801bd1c                VgmPlayer_AddHead(VgmHead*)
+                0x0801bc08       0x1c project_build/src/vgmplayer.o
+                0x0801bc08                VgmPlayer_AddHead(VgmHead*)
  .text._Z14VgmPlayer_Initv
-                0x0801bd38       0x20 project_build/src/vgmplayer.o
-                0x0801bd38                VgmPlayer_Init()
- .text._Znwj    0x0801bd58        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
-                0x0801bd58                operator new(unsigned int)
- .text._ZdlPv   0x0801bd5c        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
-                0x0801bd5c                operator delete(void*)
- .text.malloc   0x0801bd60        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
-                0x0801bd60                malloc
- .text.free     0x0801bd64        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
-                0x0801bd64                free
- .text._Znaj    0x0801bd68        0x4 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(new_opv.o)
-                0x0801bd68                operator new[](unsigned int)
- .text._ZdaPv   0x0801bd6c        0x4 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(del_opv.o)
-                0x0801bd6c                operator delete[](void*)
- .text          0x0801bd70       0x18 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/armv7e-m/libgcc.a(_lshrdi3.o)
-                0x0801bd70                __aeabi_llsr
-                0x0801bd70                __lshrdi3
- .text          0x0801bd88       0x18 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/armv7e-m/libgcc.a(_ashldi3.o)
-                0x0801bd88                __ashldi3
-                0x0801bd88                __aeabi_llsl
+                0x0801bc24       0x20 project_build/src/vgmplayer.o
+                0x0801bc24                VgmPlayer_Init()
+ .text._Znwj    0x0801bc44        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+                0x0801bc44                operator new(unsigned int)
+ .text._ZdlPv   0x0801bc48        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+                0x0801bc48                operator delete(void*)
+ .text.malloc   0x0801bc4c        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+                0x0801bc4c                malloc
+ .text.free     0x0801bc50        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+                0x0801bc50                free
+ .text._Znaj    0x0801bc54        0x4 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(new_opv.o)
+                0x0801bc54                operator new[](unsigned int)
+ .text._ZdaPv   0x0801bc58        0x4 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(del_opv.o)
+                0x0801bc58                operator delete[](void*)
+ .text          0x0801bc5c       0x18 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/armv7e-m/libgcc.a(_lshrdi3.o)
+                0x0801bc5c                __aeabi_llsr
+                0x0801bc5c                __lshrdi3
+ .text          0x0801bc74       0x18 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/armv7e-m/libgcc.a(_ashldi3.o)
+                0x0801bc74                __ashldi3
+                0x0801bc74                __aeabi_llsl
  .text.__libc_init_array
-                0x0801bda0       0x4c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-init.o)
-                0x0801bda0                __libc_init_array
- .text.memcpy   0x0801bdec       0x12 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memcpy.o)
-                0x0801bdec                memcpy
- .text.memset   0x0801bdfe       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memset.o)
-                0x0801bdfe                memset
- .text.strcpy   0x0801be0e       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strcpy.o)
-                0x0801be0e                strcpy
- .text.strlen   0x0801be1e       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strlen.o)
-                0x0801be1e                strlen
- .text.strncpy  0x0801be2e       0x2a /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strncpy.o)
-                0x0801be2e                strncpy
+                0x0801bc8c       0x4c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-init.o)
+                0x0801bc8c                __libc_init_array
+ .text.memcpy   0x0801bcd8       0x12 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memcpy.o)
+                0x0801bcd8                memcpy
+ .text.memset   0x0801bcea       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memset.o)
+                0x0801bcea                memset
+ .text.strcpy   0x0801bcfa       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strcpy.o)
+                0x0801bcfa                strcpy
+ .text.strlen   0x0801bd0a       0x10 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strlen.o)
+                0x0801bd0a                strlen
+ .text.strncpy  0x0801bd1a       0x2a /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strncpy.o)
+                0x0801bd1a                strncpy
  *(.plt)
  *(.gnu.warning)
  *(.glue_7t)
@@ -4468,10 +4466,10 @@ END GROUP
  *(.ARM.extab* .gnu.linkonce.armextab.*)
  *(.gcc_except_table)
 
-.v4_bx          0x0801be58        0x0
+.v4_bx          0x0801bd44        0x0
  .v4_bx         0x00000000        0x0 linker stubs
 
-.iplt           0x0801be58        0x0
+.iplt           0x0801bd44        0x0
  .iplt          0x00000000        0x0 project_build/src/vgmplayer_ll.o
 
 .eh_frame_hdr
@@ -4479,155 +4477,152 @@ END GROUP
 
 .eh_frame
  *(.eh_frame)
-                0x0801be58                __exidx_start = .
+                0x0801bd44                __exidx_start = .
 
 .ARM.exidx
  *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-                0x0801be58                __exidx_end = .
+                0x0801bd44                __exidx_end = .
 
-.rodata         0x0801be58     0x1940
+.rodata         0x0801bd44     0x1914
  *(.rodata .rodata.* .gnu.linkonce.r.*)
  .rodata.str1.1
-                0x0801be58      0x14d project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
+                0x0801bd44      0x14d project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
                                 0x15e (size before relaxing)
  .rodata.str1.1
-                0x0801bfa5        0x5 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/tasks.o
+                0x0801be91        0x5 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/tasks.o
  .rodata.str1.1
-                0x0801bfaa      0x147 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
- .rodata        0x0801c0f1        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
- *fill*         0x0801c0f5        0x1 00
+                0x0801be96      0x147 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
+ .rodata        0x0801bfdd        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
+ *fill*         0x0801bfe1        0x1 00
  .rodata.default_parameters.9879
-                0x0801c0f6        0xa project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
+                0x0801bfe2        0xa project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
  .rodata.str1.1
-                0x0801c100       0xa1 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
- *fill*         0x0801c1a1        0x3 00
- .rodata        0x0801c1a4       0x28 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801bfec       0xa1 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
+ *fill*         0x0801c08d        0x3 00
+ .rodata        0x0801c090       0x28 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
  .rodata.mios32_midi_expected_bytes_system
-                0x0801c1cc       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
-                0x0801c1cc                mios32_midi_expected_bytes_system
+                0x0801c0b8       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801c0b8                mios32_midi_expected_bytes_system
  .rodata.mios32_midi_pcktype_num_bytes
-                0x0801c1dc       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
-                0x0801c1dc                mios32_midi_pcktype_num_bytes
+                0x0801c0c8       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801c0c8                mios32_midi_pcktype_num_bytes
  .rodata.str1.1
-                0x0801c1ec      0x108 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801c0d8      0x108 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
                                 0x13d (size before relaxing)
  .rodata.mios32_midi_expected_bytes_common
-                0x0801c2f4        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
-                0x0801c2f4                mios32_midi_expected_bytes_common
+                0x0801c1e0        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801c1e0                mios32_midi_expected_bytes_common
  .rodata.mios32_midi_sysex_header
-                0x0801c2fc        0x5 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
-                0x0801c2fc                mios32_midi_sysex_header
+                0x0801c1e8        0x5 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_midi.o
+                0x0801c1e8                mios32_midi_sysex_header
  .rodata.CSWTCH.23
-                0x0801c301        0x3 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_uart_midi.o
+                0x0801c1ed        0x3 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_uart_midi.o
  .rodata.str1.1
-                0x0801c304       0x11 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_sys.o
- *fill*         0x0801c315        0x3 00
+                0x0801c1f0       0x11 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_sys.o
+ *fill*         0x0801c201        0x3 00
  .rodata.j10_pin
-                0x0801c318       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_board.o
+                0x0801c204       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_board.o
  .rodata.USBH_USR_Callbacks
-                0x0801c398       0x48 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c284       0x48 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.MIOS32_USB_CLASS_cb
-                0x0801c3e0       0x30 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c2cc       0x30 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.USBD_LangIDDesc
-                0x0801c410        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c2fc        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.MIOS32_USB_DeviceDescriptor
-                0x0801c414       0x12 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
- *fill*         0x0801c426        0x2 00
+                0x0801c300       0x12 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+ *fill*         0x0801c312        0x2 00
  .rodata.USR_desc
-                0x0801c428       0x1c project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c314       0x1c project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.str1.1
-                0x0801c444        0xf project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c330        0xf project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
                                  0x27 (size before relaxing)
  .rodata.MIOS32_USB_ConfigDescriptor
-                0x0801c453       0x65 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c33f       0x65 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.USBD_USR_Callbacks
-                0x0801c4b8       0x1c project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x0801c3a4       0x1c project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
  .rodata.MIOS32_MIDI_USBH_Callbacks
-                0x0801c4d4       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb_midi.o
-                0x0801c4d4                MIOS32_MIDI_USBH_Callbacks
+                0x0801c3c0       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb_midi.o
+                0x0801c3c0                MIOS32_MIDI_USBH_Callbacks
  .rodata.str1.1
-                0x0801c4e4        0x7 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/printf-stdarg.o
- .rodata        0x0801c4eb       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_req.o
+                0x0801c3d0        0x7 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/printf-stdarg.o
+ .rodata        0x0801c3d7       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_req.o
  .rodata.str1.1
-                0x0801c56b        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_HOST_Library/Core/src/usbh_core.o
+                0x0801c457        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_HOST_Library/Core/src/usbh_core.o
  .rodata.CSWTCH.36
-                0x0801c56f        0x3 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_OTG_Driver/src/usb_core.o
- .rodata        0x0801c572        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/app_lcd/universal/app_lcd.o
+                0x0801c45b        0x3 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_OTG_Driver/src/usb_core.o
+ .rodata        0x0801c45e        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/app_lcd/universal/app_lcd.o
  .rodata.GLCD_FONT_NORMAL
-                0x0801c576      0x304 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/glcd_font/glcd_font_normal.o
-                0x0801c576                GLCD_FONT_NORMAL
+                0x0801c462      0x304 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/glcd_font/glcd_font_normal.o
+                0x0801c462                GLCD_FONT_NORMAL
  .rodata.str1.1
-                0x0801c87a       0xdd project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/diskio.o
+                0x0801c766       0xdd project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/diskio.o
  .rodata.str1.1
-                0x0801c957       0x33 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
+                0x0801c843       0x33 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .rodata.cvt.4391
-                0x0801c98a       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
+                0x0801c876       0x80 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .rodata.str1.1
-                0x0801ca0a      0xcc4 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
+                0x0801c8f6      0xcc4 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
                                 0xcda (size before relaxing)
  .rodata.OPN2Ch3Regs
-                0x0801d6ce        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x0801d5ba        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .rodata.OPN2GlobalRegs
-                0x0801d6d6       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x0801d5c2       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .rodata.str1.1
-                0x0801d6e6       0x53 project_build/src/app.o
+                0x0801d5d2       0x52 project_build/src/app.o
  .rodata.str1.1
-                0x0801d739       0x31 project_build/src/vgmhead.o
- .rodata.str1.1
-                0x0801d76a       0x28 project_build/src/vgmplayer.o
-                0x0801d794                . = ALIGN (0x4)
- *fill*         0x0801d792        0x2 00
+                0x0801d624       0x31 project_build/src/vgmhead.o
+                0x0801d658                . = ALIGN (0x4)
+ *fill*         0x0801d655        0x3 00
  *(.init)
-                0x0801d794                . = ALIGN (0x4)
-                0x0801d794                __preinit_array_start = .
+                0x0801d658                . = ALIGN (0x4)
+                0x0801d658                __preinit_array_start = .
  *(.preinit_array)
-                0x0801d794                __preinit_array_end = .
-                0x0801d794                . = ALIGN (0x4)
-                0x0801d794                __init_array_start = .
+                0x0801d658                __preinit_array_end = .
+                0x0801d658                . = ALIGN (0x4)
+                0x0801d658                __init_array_start = .
  *(SORT(.init_array.*))
  *(.init_array)
-                0x0801d794                __init_array_end = .
-                0x0801d794                . = ALIGN (0x4)
+                0x0801d658                __init_array_end = .
+                0x0801d658                . = ALIGN (0x4)
  *(.fini)
-                0x0801d794                . = ALIGN (0x4)
-                0x0801d794                __fini_array_start = .
+                0x0801d658                . = ALIGN (0x4)
+                0x0801d658                __fini_array_start = .
  *(.fini_array)
  *(SORT(.fini_array.*))
-                0x0801d794                __fini_array_end = .
-                0x0801d794                . = ALIGN (0x4)
+                0x0801d658                __fini_array_end = .
+                0x0801d658                . = ALIGN (0x4)
  *crtbegin.o(.ctors)
  *(EXCLUDE_FILE(*crtend.o) .ctors)
  *(SORT(.ctors.*))
  *crtend.o(.ctors)
-                0x0801d794                . = ALIGN (0x4)
+                0x0801d658                . = ALIGN (0x4)
  *crtbegin.o(.dtors)
  *(EXCLUDE_FILE(*crtend.o) .dtors)
  *(SORT(.dtors.*))
  *crtend.o(.dtors)
  *(.init .init.*)
  *(.fini .fini.*)
-                0x0801d794                PROVIDE (__preinit_array_start, .)
+                0x0801d658                PROVIDE (__preinit_array_start, .)
  *(.preinit_array)
-                0x0801d794                PROVIDE (__preinit_array_end, .)
-                0x0801d794                PROVIDE (__init_array_start, .)
+                0x0801d658                PROVIDE (__preinit_array_end, .)
+                0x0801d658                PROVIDE (__init_array_start, .)
  *(SORT(.init_array.*))
  *(.init_array)
-                0x0801d794                PROVIDE (__init_array_end, .)
-                0x0801d794                PROVIDE (__fini_array_start, .)
+                0x0801d658                PROVIDE (__init_array_end, .)
+                0x0801d658                PROVIDE (__fini_array_start, .)
  *(.fini_array)
  *(SORT(.fini_array.*))
-                0x0801d794                PROVIDE (__fini_array_end, .)
-                0x0801d798                . = ALIGN (0x8)
- *fill*         0x0801d794        0x4 00
+                0x0801d658                PROVIDE (__fini_array_end, .)
+                0x0801d658                . = ALIGN (0x8)
  *(.rom)
  *(.rom.b)
-                0x0801d798                _etext = .
-                0x0801d798                _sidata = _etext
+                0x0801d658                _etext = .
+                0x0801d658                _sidata = _etext
 
-.rel.dyn        0x0801d798        0x0
+.rel.dyn        0x0801d658        0x0
  .rel.iplt      0x00000000        0x0 project_build/src/vgmplayer_ll.o
 
-.data           0x20000000       0x68 load address 0x0801d798
+.data           0x20000000       0x68 load address 0x0801d658
                 0x20000000                __ram_start = .
                 0x20000000                _sdata = .
                 0x20000000                . = ALIGN (0x80)
@@ -4677,10 +4672,10 @@ END GROUP
                 0x20000068                . = ALIGN (0x4)
                 0x20000068                _edata = .
 
-.igot.plt       0x20000068        0x0 load address 0x0801d800
+.igot.plt       0x20000068        0x0 load address 0x0801d6c0
  .igot.plt      0x00000000        0x0 project_build/src/vgmplayer_ll.o
 
-.bss            0x20000068     0x4420 load address 0x0801d800
+.bss            0x20000068    0x11c28 load address 0x0801d6c0
                 0x20000068                . = ALIGN (0x4)
                 0x20000068                _sbss = .
  *(.shbss)
@@ -4933,62 +4928,64 @@ END GROUP
  .bss.vgmp_head
                 0x20000a78        0x4 project_build/src/vgmplayer.o
                 0x20000a78                vgmp_head
+ .bss.chipdata  0x20000a7c        0x8 project_build/src/vgmplayer.o
+                0x20000a7c                chipdata
  *(COMMON)
- COMMON         0x20000a7c     0x2808 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
-                0x20000a7c                heapInfo
-                0x20000a88                umm_heap
- COMMON         0x20003284       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_srio.o
-                0x20003284                mios32_srio_din_changed
-                0x20003294                mios32_srio_dout
-                0x200032a4                mios32_srio_din_buffer
-                0x200032b4                mios32_srio_din
- *fill*         0x200032c4        0x4 00
- COMMON         0x200032c8      0x300 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_enc.o
-                0x200032c8                enc_config
-                0x200033c8                enc_state
- COMMON         0x200035c8       0x16 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
-                0x200035c8                mios32_lcd_y
-                0x200035ca                mios32_lcd_parameters
-                0x200035d4                mios32_lcd_column
-                0x200035d6                mios32_lcd_cursor_map
-                0x200035da                mios32_lcd_line
-                0x200035dc                mios32_lcd_x
- *fill*         0x200035de        0x2 00
- COMMON         0x200035e0      0xb58 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
-                0x200035e0                USB_rx_buffer
-                0x20003620                USB_OTG_dev
-                0x200040b4                USB_Host
- COMMON         0x20004138        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_core.o
-                0x20004138                SET_TEST_MODE
- COMMON         0x2000413c       0x64 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_req.o
-                0x2000413c                USBD_StrDesc
- COMMON         0x200041a0      0x200 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_HOST_Library/Core/src/usbh_stdreq.o
-                0x200041a0                USBH_CfgDesc
- COMMON         0x200043a0        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
-                0x200043a0                file_copy_percentage
-                0x200043a4                file_dfs_errno
- COMMON         0x200043a8       0xde project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
-                0x200043a8                timeout_counter
-                0x200043ac                genesis
-                0x20004488                . = ALIGN (0x8)
- *fill*         0x20004486        0x2 00
+ COMMON         0x20000a84    0x10008 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/portable/MemMang/umm_malloc.o
+                0x20000a84                heapInfo
+                0x20000a90                umm_heap
+ COMMON         0x20010a8c       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_srio.o
+                0x20010a8c                mios32_srio_din_changed
+                0x20010a9c                mios32_srio_dout
+                0x20010aac                mios32_srio_din_buffer
+                0x20010abc                mios32_srio_din
+ *fill*         0x20010acc        0x4 00
+ COMMON         0x20010ad0      0x300 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_enc.o
+                0x20010ad0                enc_config
+                0x20010bd0                enc_state
+ COMMON         0x20010dd0       0x16 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/common/mios32_lcd.o
+                0x20010dd0                mios32_lcd_y
+                0x20010dd2                mios32_lcd_parameters
+                0x20010ddc                mios32_lcd_column
+                0x20010dde                mios32_lcd_cursor_map
+                0x20010de2                mios32_lcd_line
+                0x20010de4                mios32_lcd_x
+ *fill*         0x20010de6        0x2 00
+ COMMON         0x20010de8      0xb58 project_build//data/Hardware/MIDIbox/mios32/trunk/mios32/STM32F4xx/mios32_usb.o
+                0x20010de8                USB_rx_buffer
+                0x20010e28                USB_OTG_dev
+                0x200118bc                USB_Host
+ COMMON         0x20011940        0x4 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_core.o
+                0x20011940                SET_TEST_MODE
+ COMMON         0x20011944       0x64 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_Device_Library/Core/src/usbd_req.o
+                0x20011944                USBD_StrDesc
+ COMMON         0x200119a8      0x200 project_build//data/Hardware/MIDIbox/mios32/trunk/drivers/STM32F4xx/v1.1.0/STM32_USB_HOST_Library/Core/src/usbh_stdreq.o
+                0x200119a8                USBH_CfgDesc
+ COMMON         0x20011ba8        0x8 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
+                0x20011ba8                file_copy_percentage
+                0x20011bac                file_dfs_errno
+ COMMON         0x20011bb0       0xde project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
+                0x20011bb0                timeout_counter
+                0x20011bb4                genesis
+                0x20011c90                . = ALIGN (0x8)
+ *fill*         0x20011c8e        0x2 00
  *(.ram.b)
-                0x20004488                . = ALIGN (0x4)
-                0x20004488                _ebss = .
-                0x20004488                _end = .
-                0x20004488                PROVIDE (end, _ebss)
-                0x20004488                PROVIDE (_end, _ebss)
+                0x20011c90                . = ALIGN (0x4)
+                0x20011c90                _ebss = .
+                0x20011c90                _end = .
+                0x20011c90                PROVIDE (end, _ebss)
+                0x20011c90                PROVIDE (_end, _ebss)
                 0x20000068                PROVIDE (__bss_start__, _sbss)
-                0x20004488                PROVIDE (__bss_end__, _ebss)
+                0x20011c90                PROVIDE (__bss_end__, _ebss)
 
-._usrstack      0x20004488      0x100 load address 0x0801d800
-                0x20004488                . = ALIGN (0x4)
-                0x20004488                _susrstack = .
-                0x20004588                . = (. + _Minimum_Stack_Size)
- *fill*         0x20004488      0x100 00
-                0x20004588                . = ALIGN (0x4)
-                0x20004588                _eusrstack = .
-                0x20004588                __ram_end = .
+._usrstack      0x20011c90      0x100 load address 0x0801d6c0
+                0x20011c90                . = ALIGN (0x4)
+                0x20011c90                _susrstack = .
+                0x20011d90                . = (. + _Minimum_Stack_Size)
+ *fill*         0x20011c90      0x100 00
+                0x20011d90                . = ALIGN (0x4)
+                0x20011d90                _eusrstack = .
+                0x20011d90                __ram_end = .
 
 .b1text
  *(.b1text)
@@ -5433,7 +5430,7 @@ END GROUP
 .debug_pubnames
  *(.debug_pubnames)
 
-.debug_info     0x00000000    0x477c5
+.debug_info     0x00000000    0x478fc
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x00000000      0x9b6 project_build/src/vgmplayer_ll.o
  .debug_info    0x000009b6      0xf3f project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
@@ -5499,14 +5496,14 @@ END GROUP
  .debug_info    0x0003d8c6     0x2b62 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .debug_info    0x00040428     0x2f97 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
  .debug_info    0x000433bf     0x146c project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
- .debug_info    0x0004482b      0xe3e project_build/src/app.o
- .debug_info    0x00045669      0x8f6 project_build/src/vgmhead.o
- .debug_info    0x00045f5f      0xb26 project_build/src/vgmsourcestream.o
- .debug_info    0x00046a85      0xa48 project_build/src/vgmplayer.o
- .debug_info    0x000474cd      0x182 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_info    0x0004764f      0x176 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_info    0x0004482b      0xe53 project_build/src/app.o
+ .debug_info    0x0004567e      0x941 project_build/src/vgmhead.o
+ .debug_info    0x00045fbf      0xbd5 project_build/src/vgmsourcestream.o
+ .debug_info    0x00046b94      0xa70 project_build/src/vgmplayer.o
+ .debug_info    0x00047604      0x182 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_info    0x00047786      0x176 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
 
-.debug_abbrev   0x00000000     0xac94
+.debug_abbrev   0x00000000     0xacb9
  *(.debug_abbrev)
  .debug_abbrev  0x00000000      0x20f project_build/src/vgmplayer_ll.o
  .debug_abbrev  0x0000020f      0x2d1 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
@@ -5572,14 +5569,14 @@ END GROUP
  .debug_abbrev  0x00009463      0x40a project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .debug_abbrev  0x0000986d      0x3c0 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
  .debug_abbrev  0x00009c2d      0x2ed project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
- .debug_abbrev  0x00009f1a      0x356 project_build/src/app.o
- .debug_abbrev  0x0000a270      0x26f project_build/src/vgmhead.o
- .debug_abbrev  0x0000a4df      0x2a6 project_build/src/vgmsourcestream.o
- .debug_abbrev  0x0000a785      0x32e project_build/src/vgmplayer.o
- .debug_abbrev  0x0000aab3      0x110 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_abbrev  0x0000abc3       0xd1 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_abbrev  0x00009f1a      0x351 project_build/src/app.o
+ .debug_abbrev  0x0000a26b      0x2a1 project_build/src/vgmhead.o
+ .debug_abbrev  0x0000a50c      0x2b3 project_build/src/vgmsourcestream.o
+ .debug_abbrev  0x0000a7bf      0x319 project_build/src/vgmplayer.o
+ .debug_abbrev  0x0000aad8      0x110 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_abbrev  0x0000abe8       0xd1 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
 
-.debug_line     0x00000000    0x1234a
+.debug_line     0x00000000    0x12393
  *(.debug_line)
  .debug_line    0x00000000      0x2ac project_build/src/vgmplayer_ll.o
  .debug_line    0x000002ac      0x57d project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
@@ -5645,14 +5642,14 @@ END GROUP
  .debug_line    0x0000fec7      0xb15 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .debug_line    0x000109dc      0xb12 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
  .debug_line    0x000114ee      0x3c6 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
- .debug_line    0x000118b4      0x232 project_build/src/app.o
- .debug_line    0x00011ae6      0x1ba project_build/src/vgmhead.o
- .debug_line    0x00011ca0      0x231 project_build/src/vgmsourcestream.o
- .debug_line    0x00011ed1      0x1c5 project_build/src/vgmplayer.o
- .debug_line    0x00012096      0x16a project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_line    0x00012200      0x14a project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_line    0x000118b4      0x234 project_build/src/app.o
+ .debug_line    0x00011ae8      0x1e6 project_build/src/vgmhead.o
+ .debug_line    0x00011cce      0x23a project_build/src/vgmsourcestream.o
+ .debug_line    0x00011f08      0x1d7 project_build/src/vgmplayer.o
+ .debug_line    0x000120df      0x16a project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_line    0x00012249      0x14a project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
 
-.debug_frame    0x00000000     0x6170
+.debug_frame    0x00000000     0x6174
  *(.debug_frame)
  .debug_frame   0x00000000       0x78 project_build/src/vgmplayer_ll.o
  .debug_frame   0x00000078      0x138 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
@@ -5718,20 +5715,20 @@ END GROUP
  .debug_frame   0x00005c9c       0xc4 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .debug_frame   0x00005d60       0xc8 project_build/src/app.o
  .debug_frame   0x00005e28       0x58 project_build/src/vgmhead.o
- .debug_frame   0x00005e80       0xdc project_build/src/vgmsourcestream.o
- .debug_frame   0x00005f5c       0x74 project_build/src/vgmplayer.o
- .debug_frame   0x00005fd0       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_frame   0x00006010       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
- .debug_frame   0x00006050       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(new_opv.o)
- .debug_frame   0x00006070       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(del_opv.o)
- .debug_frame   0x00006090       0x2c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-init.o)
- .debug_frame   0x000060bc       0x28 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memcpy.o)
- .debug_frame   0x000060e4       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memset.o)
- .debug_frame   0x00006104       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strcpy.o)
- .debug_frame   0x00006124       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strlen.o)
- .debug_frame   0x00006144       0x2c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strncpy.o)
+ .debug_frame   0x00005e80       0xe0 project_build/src/vgmsourcestream.o
+ .debug_frame   0x00005f60       0x74 project_build/src/vgmplayer.o
+ .debug_frame   0x00005fd4       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_frame   0x00006014       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_frame   0x00006054       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(new_opv.o)
+ .debug_frame   0x00006074       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libstdc++_s.a(del_opv.o)
+ .debug_frame   0x00006094       0x2c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-init.o)
+ .debug_frame   0x000060c0       0x28 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memcpy.o)
+ .debug_frame   0x000060e8       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-memset.o)
+ .debug_frame   0x00006108       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strcpy.o)
+ .debug_frame   0x00006128       0x20 /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strlen.o)
+ .debug_frame   0x00006148       0x2c /usr/local/etc/mios32_toolchain/bin/../lib/gcc/arm-none-eabi/4.7.4/../../../../arm-none-eabi/lib/armv7e-m/libc_s.a(lib_a-strncpy.o)
 
-.debug_str      0x00000000     0xe5c2
+.debug_str      0x00000000     0xe5dd
  *(.debug_str)
  .debug_str     0x00000000      0x8ba project_build/src/vgmplayer_ll.o
                                 0x917 (size before relaxing)
@@ -5864,17 +5861,17 @@ END GROUP
  .debug_str     0x0000dd61      0x603 project_build/src/app.o
                                 0xa6d (size before relaxing)
  .debug_str     0x0000e364       0x4d project_build/src/vgmhead.o
-                                0x689 (size before relaxing)
+                                0x693 (size before relaxing)
  .debug_str     0x0000e3b1       0x62 project_build/src/vgmsourcestream.o
-                                0x4ee (size before relaxing)
- .debug_str     0x0000e413       0xc4 project_build/src/vgmplayer.o
-                                0x7f4 (size before relaxing)
- .debug_str     0x0000e4d7       0x8f project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+                                0x51d (size before relaxing)
+ .debug_str     0x0000e413       0xdf project_build/src/vgmplayer.o
+                                0x7f5 (size before relaxing)
+ .debug_str     0x0000e4f2       0x8f project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
                                 0x19b (size before relaxing)
- .debug_str     0x0000e566       0x5c project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_str     0x0000e581       0x5c project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
                                 0x16e (size before relaxing)
 
-.debug_loc      0x00000000    0x1faa4
+.debug_loc      0x00000000    0x1fb1f
  *(.debug_loc)
  .debug_loc     0x00000000       0x6d project_build/src/vgmplayer_ll.o
  .debug_loc     0x0000006d      0x31a project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
@@ -5939,11 +5936,11 @@ END GROUP
  .debug_loc     0x0001ca45     0x1f43 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
  .debug_loc     0x0001e988      0x66b project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .debug_loc     0x0001eff3       0x5e project_build/src/app.o
- .debug_loc     0x0001f051      0x30e project_build/src/vgmhead.o
- .debug_loc     0x0001f35f      0x39c project_build/src/vgmsourcestream.o
- .debug_loc     0x0001f6fb      0x2c2 project_build/src/vgmplayer.o
- .debug_loc     0x0001f9bd       0x63 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_loc     0x0001fa20       0x84 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_loc     0x0001f051      0x338 project_build/src/vgmhead.o
+ .debug_loc     0x0001f389      0x402 project_build/src/vgmsourcestream.o
+ .debug_loc     0x0001f78b      0x2ad project_build/src/vgmplayer.o
+ .debug_loc     0x0001fa38       0x63 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_loc     0x0001fa9b       0x84 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
 
 .debug_macinfo
  *(.debug_macinfo)
@@ -5961,7 +5958,7 @@ END GROUP
  *(.debug_varnames)
 OUTPUT(project_build/project.elf elf32-littlearm)
 
-.debug_ranges   0x00000000     0x2e40
+.debug_ranges   0x00000000     0x2e48
  .debug_ranges  0x00000000       0x48 project_build/src/vgmplayer_ll.o
  .debug_ranges  0x00000048       0x70 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/main.o
  .debug_ranges  0x000000b8      0x1f8 project_build//data/Hardware/MIDIbox/mios32/trunk/FreeRTOS/Source/tasks.o
@@ -6024,9 +6021,9 @@ OUTPUT(project_build/project.elf elf32-littlearm)
  .debug_ranges  0x000026d8      0x288 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/fatfs/src/ff.o
  .debug_ranges  0x00002960      0x2c0 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/file/file.o
  .debug_ranges  0x00002c20       0x40 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
- .debug_ranges  0x00002c60       0x58 project_build/src/app.o
- .debug_ranges  0x00002cb8       0x38 project_build/src/vgmhead.o
- .debug_ranges  0x00002cf0       0xb0 project_build/src/vgmsourcestream.o
- .debug_ranges  0x00002da0       0x60 project_build/src/vgmplayer.o
- .debug_ranges  0x00002e00       0x20 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
- .debug_ranges  0x00002e20       0x20 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o
+ .debug_ranges  0x00002c60       0x78 project_build/src/app.o
+ .debug_ranges  0x00002cd8       0x58 project_build/src/vgmhead.o
+ .debug_ranges  0x00002d30       0xb0 project_build/src/vgmsourcestream.o
+ .debug_ranges  0x00002de0       0x28 project_build/src/vgmplayer.o
+ .debug_ranges  0x00002e08       0x20 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/mini_cpp.o
+ .debug_ranges  0x00002e28       0x20 project_build//data/Hardware/MIDIbox/mios32/trunk/programming_models/traditional/freertos_heap.o

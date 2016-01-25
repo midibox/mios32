@@ -18,8 +18,8 @@
 
 
 struct vgmp_chipdata {
-    u16 lastwritetime;
-    u8 cmdmadebusy;
+    u32 opn2_lastwritetime;
+    u32 psg_lastwritetime;
 };
 
 // Call at startup

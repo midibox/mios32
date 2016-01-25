@@ -92,11 +92,11 @@ void VgmHead::cmdNext(u32 curtime){
             writecmd.data2 = (freq & 0xFF);
         }else if(type >= 0x80 && type <= 0x8F){
             //OPN2 DAC write
-            //FIXME turn into regular wait command
+            /*
             iswait = true;
             waitduration = type - 0x80;
             waitstarttime = curtime;
-            /* TODO 
+            */
             isdacwrite = true;
             iswrite = true;
             waitduration = type - 0x80;
@@ -104,7 +104,6 @@ void VgmHead::cmdNext(u32 curtime){
             writecmd.cmd = 0x52;
             writecmd.addr = 0x2A;
             writecmd.data = source->getBlockByte(srcblockaddr++);
-            */
         }else if(type >= 0x70 && type <= 0x7F){
             //Short wait
             iswait = true;

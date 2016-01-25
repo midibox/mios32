@@ -18,7 +18,7 @@
 #include "vgmplayer_ll.h"
 
 
-//vgmp_chipdata chipdata[GENESIS_COUNT];
+vgmp_chipdata chipdata[GENESIS_COUNT];
 
 // For this test software, there's only one head.
 VgmHead* vgmp_head;
@@ -37,14 +37,17 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
     ////////////////////////////////////////////////////////////////////////
     // PLAY VGMS
     ////////////////////////////////////////////////////////////////////////
+    /*
     if(hr_time % 10000 == 0){
         DBG("WorkCallback at hr_time=%d, vgm_time=%d", hr_time, vgm_time);
     }
+    */
+    u8 leds = MIOS32_BOARD_LED_Get();
+    MIOS32_BOARD_LED_Set(0b1111, 0b0010);
     VgmHead* h;
-    s32 minvgmwaitremaining = 65535; s32 s;
+    u32 minwait = 0xFFFFFFFF; s32 s; u32 u;
     ChipWriteCmd cmd;
-    u8 chipwasbusy = 0, wrotetochip;
-    u16 nextdelay;
+    u8 wrotetochip;
     //Scan all VGMs for delays
     if(vgmp_head != NULL){
         h = vgmp_head;
@@ -55,9 +58,12 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                 if(s <= 0){
                     //Advance to next command
                     h->cmdNext(vgm_time);
-                }else if(s < minvgmwaitremaining){
-                    //Store it as the shortest remaining time
-                    minvgmwaitremaining = s;
+                }else{
+                    u = s * VGMP_HRTICKSPERSAMPLE;
+                    if(u < minwait){
+                        //Store it as the shortest remaining time
+                        minwait = u;
+                    }
                 }
             }
         }
@@ -74,22 +80,35 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                     cmd = h->cmdGetChipWrite();
                     if(cmd.cmd == 0x50){
                         //PSG write
-                        //TODO better timing scheme, multiple chips
-                        if(Genesis_CheckPSGBusy(0)){
-                            chipwasbusy = 1;
+                        u = hr_time - chipdata[0].psg_lastwritetime;
+                        if(u < VGMP_PSGBUSYDELAY){
+                            u = VGMP_PSGBUSYDELAY - u;
+                            if(u < minwait){
+                                minwait = u;
+                            }
                         }else{
                             Genesis_PSGWrite(0, cmd.data);
                             h->cmdNext(vgm_time);
+                            chipdata[0].psg_lastwritetime = hr_time;
                             wrotetochip = 1;
                         }
                     }else if((cmd.cmd & 0xFE) == 0x52){
                         //OPN2 write
-                        //TODO better timing scheme, multiple chips
-                        if(Genesis_CheckOPN2Busy(0)){
-                            chipwasbusy = 1;
+                        u = hr_time - chipdata[0].opn2_lastwritetime;
+                        if(u < VGMP_OPN2BUSYDELAY){
+                            u = VGMP_OPN2BUSYDELAY - u;
+                            if(u < minwait){
+                                minwait = u;
+                            }
                         }else{
                             Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
                             h->cmdNext(vgm_time);
+                            //Don't delay after 0x2x commands
+                            if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
+                                chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
+                            }else{
+                                chipdata[0].opn2_lastwritetime = hr_time;
+                            }
                             wrotetochip = 1;
                         }
                     }
@@ -97,17 +116,18 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
             }
         }
     }
+    /*
     //Set up next delay
-    if(chipwasbusy){
-        nextdelay = VGMP_CHIPBUSYDELAY;
-    }else{
-        if(minvgmwaitremaining < 10){
-            nextdelay = minvgmwaitremaining * VGMP_HRTICKSPERSAMPLE;
-        }else{
-            nextdelay = VGMP_MAXDELAY;
-        }
+    if(minwait < 100){
+        //TODO loop instead of returning and re-timing
+        minwait = 100;
+    }else if(minwait > VGMP_MAXDELAY){
+        minwait = VGMP_MAXDELAY;
     }
-    return nextdelay;
+    */
+    minwait = 1000;
+    MIOS32_BOARD_LED_Set(0b1111, leds);
+    return minwait;
 }
 
 

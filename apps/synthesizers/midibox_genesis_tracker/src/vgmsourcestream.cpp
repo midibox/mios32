@@ -47,7 +47,7 @@ s32 VgmSourceStream::startStream(char* filename){
     return 0;
 }
     
-u8 VgmSourceStream::getByte(u32 addr){
+u8 VgmSourceStream::getByte(u32 addr){    
     if(addr >= datalen) return 0;
     if(addr >= buffer1addr && addr < (buffer1addr + VGMSOURCESTREAM_BUFSIZE)){
         if(buffer2addr != buffer1addr + VGMSOURCESTREAM_BUFSIZE){
@@ -55,6 +55,7 @@ u8 VgmSourceStream::getByte(u32 addr){
             wantbuffer = 2;
             wantbufferaddr = buffer1addr + VGMSOURCESTREAM_BUFSIZE;
         }
+        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
         return buffer1[addr - buffer1addr];
     }
     if(addr >= buffer2addr && addr < (buffer2addr + VGMSOURCESTREAM_BUFSIZE)){
@@ -63,9 +64,12 @@ u8 VgmSourceStream::getByte(u32 addr){
             wantbuffer = 1;
             wantbufferaddr = buffer2addr + VGMSOURCESTREAM_BUFSIZE;
         }
+        MIOS32_BOARD_LED_Set(0b0100, 0b0000);
         return buffer2[addr - buffer2addr];
     }
     //Have to load something right now
+    u8 leds = MIOS32_BOARD_LED_Get();
+    MIOS32_BOARD_LED_Set(0b1111, 0b0100);
     s32 res = FILE_ReadReOpen(&file);
     if(res < 0) return 0;
     res = FILE_ReadSeek(addr);
@@ -78,6 +82,7 @@ u8 VgmSourceStream::getByte(u32 addr){
     wantbuffer = 2;
     wantbufferaddr = addr + VGMSOURCESTREAM_BUFSIZE;
     //Done
+    MIOS32_BOARD_LED_Set(0b1111, leds);
     return buffer1[0];
 }
 

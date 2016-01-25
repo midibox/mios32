@@ -24,4 +24,7 @@
 #define MIOS32_DONT_USE_TIMER
 #define MIOS32_IRQ_PRIO_INSANE 3
 
+// The heap (amount of RAM for realtime allocation)
+#define MIOS32_HEAP_SIZE 64*1024
+
 #endif /* _MIOS32_CONFIG_H */

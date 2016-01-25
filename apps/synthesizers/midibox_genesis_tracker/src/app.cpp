@@ -57,6 +57,8 @@ extern "C" void APP_Background(void)
     static s32 res = 0;
     static u8 gotsdcard = 0;
     
+    MIOS32_BOARD_LED_Set(0b1000, 0b1000);
+    
     if(count % 500000 == 0){
         if(!gotsdcard){
             res = FILE_CheckSDCard();
@@ -70,7 +72,7 @@ extern "C" void APP_Background(void)
                 vgms = new VgmSourceStream();
                 DEBUGVAL = 3;
                 char* filename = new char[50];
-                sprintf(filename, "NEWWORLD.VGM");
+                sprintf(filename, "GOODEND.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -102,7 +104,7 @@ extern "C" void APP_Background(void)
     }
     
     if(vgms != NULL){
-        vgms->bg_streamBuffer();
+        //vgms->bg_streamBuffer();
     }
     
     
@@ -249,8 +251,9 @@ extern "C" void APP_Background(void)
     MIOS32_DELAY_Wait_uS(0xFF00);
     */
     //Flash LEDs
-    MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
+    //MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
     ++count;
+    MIOS32_BOARD_LED_Set(0b1000, 0b0000);
 }
 
 
