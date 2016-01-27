@@ -49,8 +49,10 @@ private:
     
     bool iswait, iswrite;
     ChipWriteCmd writecmd;
-    
     u32 ticks;
+    
+    u8 subbuffer[4];
+    u8 subbufferlen;
     
     bool isdacwrite, isfreqwrite;
     
