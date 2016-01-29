@@ -31,6 +31,8 @@ u32 timeout_counter;
 #define GENESIS_OPN2_WRITEWAIT { timeout_counter = 0; while(++timeout_counter <= (GENESIS_OPN2_WRITETIMEOUT >> 2)); }
 //Wait timeout, roughly 100 ns, for PSG/board bits reads/writes
 #define GENESIS_PSG_WRITEWAIT { timeout_counter = 0; while(++timeout_counter <= (GENESIS_PSG_WRITETIMEOUT >> 2)); }
+//Short wait for glue logic
+#define GENESIS_SHORTWAIT { timeout_counter = 0; while(++timeout_counter <= (GENESIS_SHORTWAITTIME >> 2)); }
 
 /////////////////////////////////////////////////////////////////////////////
 // Global variables
@@ -154,15 +156,17 @@ void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
     a |= addrhi;
     a <<= 4; //Move over into place, A0 = 0 for address write
     porte |= a; //Write to our temp copy
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits and data
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
+    GENESIS_SHORTWAIT;
     GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
     GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
     porte &= 0xFFFF00FF; //Get rid of address value
     porte |= ((u32)data << 8); //Put in data value
     porte |= 4; //A0 = 1 for data write
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits and data
+    GENESIS_SHORTWAIT;
     GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
     GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
@@ -214,11 +218,16 @@ void Genesis_PSGWrite(u8 board, u8 data){
     a <<= 6; //Move into place
     a |= 0x20; //A2 = 1 for PSG write, A1 = 0 for PSG not output bits, A0 = -
     porte |= a; //Write to our temp copy
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits and data
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
-    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR &= 0xFFFFDFFF; //Write /CS low
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR &= 0xFFFF7FFF; //Write /WR low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
-    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
+    GPIOC->ODR |= 0x00008000; //Write /WR high first to avoid race condition
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR |= 0x00002000; //Now write /CS high to turn off bus drivers
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
@@ -238,7 +247,8 @@ u8 Genesis_CheckOPN2Busy(u8 board){
     u32 a = board;
     a <<= 6; //Move into place; A2 = 0 for OPN2 read, A1 = -, A0 = -
     porte |= a; //Write to our temp copy
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits
+    GENESIS_SHORTWAIT;
     GPIOC->ODR &= 0xFFFF9FFF; //Write /CS and /RD low
     GENESIS_OPN2_WRITEWAIT; //Wait for 1 OPN2 internal cycle
     u8 res = ((GPIOE->IDR >> 8) & 0xFF); //Read OPN2 data
@@ -257,7 +267,8 @@ u8 Genesis_CheckPSGBusy(u8 board){
     a <<= 6; //Move into place
     a |= 0x20; //A2 = 1 for board bits read, A1 = -, A0 = -
     porte |= a; //Write to our temp copy
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits
+    GENESIS_SHORTWAIT;
     GPIOC->ODR &= 0xFFFF9FFF; //Write /CS and /RD low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
     genesis[board].board.readbits = ((GPIOE->IDR >> 8) & 0xFF); //Read board bits data
@@ -278,11 +289,16 @@ void Genesis_WriteBoardBits(u8 board){
     a <<= 6; //Move into place
     a |= 0x30; //A2 = 1 for PSG write, A1 = 1 for board bits, A0 = -
     porte |= a; //Write to our temp copy
-    GPIOE->ODR = porte; //Write
+    GPIOE->ODR = porte; //Write address bits and data
     GPIOE->MODER |= 0x55550000; //Set data pins to outputs
-    GPIOC->ODR &= 0xFFFF5FFF; //Write /CS and /WR low
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR &= 0xFFFFDFFF; //Write /CS low
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR &= 0xFFFF7FFF; //Write /WR low
     GENESIS_PSG_WRITEWAIT; //Wait for the glue logic to catch up
-    GPIOC->ODR |= 0x0000A000; //Write /CS and /WR high
+    GPIOC->ODR |= 0x00008000; //Write /WR high first to avoid race condition
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR |= 0x00002000; //Now write /CS high to turn off bus drivers
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
