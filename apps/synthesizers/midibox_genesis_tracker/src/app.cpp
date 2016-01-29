@@ -74,7 +74,7 @@ extern "C" void APP_Background(void)
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "RKACREDS.VGM");
+                sprintf(filename, "RKA7.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
