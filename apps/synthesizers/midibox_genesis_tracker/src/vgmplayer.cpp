@@ -89,6 +89,17 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                         chipdata[0].psg_lastwritetime = hr_time;
                         wrotetochip = 1;
                     }
+                    /*
+                    if(Genesis_CheckPSGBusy(0)){
+                        if(VGMP_PSGBUSYDELAY < minwait){
+                            minwait = VGMP_PSGBUSYDELAY;
+                        }
+                    }else{
+                        Genesis_PSGWrite(0, cmd.data);
+                        h->cmdNext(vgm_time);
+                        wrotetochip = 1;
+                    }
+                    */
                 }else if((cmd.cmd & 0xFE) == 0x52){
                     //OPN2 write
                     u = hr_time - chipdata[0].opn2_lastwritetime;
