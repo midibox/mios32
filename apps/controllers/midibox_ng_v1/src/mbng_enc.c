@@ -232,14 +232,14 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
       } else {
 	s32 value = item.value;
 	if( item.min <= item.max ) {
-	  value = event_incrementer;
+	  value += event_incrementer;
 	  if( value < item.min )
 	    value = item.min;
 	  else if( value > item.max )
 	    value = item.max;
 	} else {
 	  // reversed range
-	  value = event_incrementer;
+	  value -= event_incrementer;
 	  if( value < item.max )
 	    value = item.max;
 	  else if( value > item.min )
