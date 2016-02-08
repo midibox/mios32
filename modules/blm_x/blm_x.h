@@ -13,6 +13,11 @@
 #ifndef _BLM_X_H
 #define _BLM_X_H
 
+// Added by Sauraen for compatibility with C++ apps
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -183,6 +188,12 @@ extern blm_x_config_t BLM_X_ConfigGet(void);
 // [color 0, col 0][color 0, col 1]...[color 1, col 0][color 1, col 1]....
 #if (BLM_X_LED_FIRST_DOUT_SR > 0)
 extern u8 BLM_X_LED_rows[BLM_X_NUM_ROWS][BLM_X_NUM_LED_SR];
+#endif
+
+
+// Added by Sauraen for compatibility with C++ apps
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _BLM_X_H */
