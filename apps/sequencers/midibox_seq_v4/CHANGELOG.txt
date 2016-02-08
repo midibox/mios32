@@ -2282,7 +2282,9 @@ BUTTON_SAVE_ALL      M1   2
 
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
 ----------------------------------------------------------
-
+Add FX MENU button + LED
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173466
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
