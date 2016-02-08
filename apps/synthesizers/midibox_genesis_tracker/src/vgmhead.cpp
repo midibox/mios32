@@ -121,7 +121,7 @@ void VgmHead::cmdNext(u32 vgm_time){
         }else if(type == 0xDE){
             //OPN2 Frequency write [unofficial]
             /*
-            FIXME this doesn't work because of different bank hi
+            FIXME this doesn't work because of different addr hi
             iswrite = true;
             writecmd.addr = source->getByte(srcaddr++);
             writecmd.data = source->getByte(srcaddr++);
