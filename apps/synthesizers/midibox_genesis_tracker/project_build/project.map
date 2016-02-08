@@ -4570,53 +4570,52 @@ END GROUP
  .rodata.OPN2GlobalRegs
                 0x0801d69a       0x10 project_build//data/Hardware/MIDIbox/mios32/trunk/modules/genesis/genesis.o
  .rodata.str1.1
-                0x0801d6aa       0x28 project_build/src/app.o
+                0x0801d6aa       0x2c project_build/src/app.o
  .rodata.str1.1
-                0x0801d6d2       0x31 project_build/src/vgmhead.o
-                0x0801d704                . = ALIGN (0x4)
- *fill*         0x0801d703        0x1 00
+                0x0801d6d6       0x31 project_build/src/vgmhead.o
+                0x0801d708                . = ALIGN (0x4)
+ *fill*         0x0801d707        0x1 00
  *(.init)
-                0x0801d704                . = ALIGN (0x4)
-                0x0801d704                __preinit_array_start = .
+                0x0801d708                . = ALIGN (0x4)
+                0x0801d708                __preinit_array_start = .
  *(.preinit_array)
-                0x0801d704                __preinit_array_end = .
-                0x0801d704                . = ALIGN (0x4)
-                0x0801d704                __init_array_start = .
+                0x0801d708                __preinit_array_end = .
+                0x0801d708                . = ALIGN (0x4)
+                0x0801d708                __init_array_start = .
  *(SORT(.init_array.*))
  *(.init_array)
-                0x0801d704                __init_array_end = .
-                0x0801d704                . = ALIGN (0x4)
+                0x0801d708                __init_array_end = .
+                0x0801d708                . = ALIGN (0x4)
  *(.fini)
-                0x0801d704                . = ALIGN (0x4)
-                0x0801d704                __fini_array_start = .
+                0x0801d708                . = ALIGN (0x4)
+                0x0801d708                __fini_array_start = .
  *(.fini_array)
  *(SORT(.fini_array.*))
-                0x0801d704                __fini_array_end = .
-                0x0801d704                . = ALIGN (0x4)
+                0x0801d708                __fini_array_end = .
+                0x0801d708                . = ALIGN (0x4)
  *crtbegin.o(.ctors)
  *(EXCLUDE_FILE(*crtend.o) .ctors)
  *(SORT(.ctors.*))
  *crtend.o(.ctors)
-                0x0801d704                . = ALIGN (0x4)
+                0x0801d708                . = ALIGN (0x4)
  *crtbegin.o(.dtors)
  *(EXCLUDE_FILE(*crtend.o) .dtors)
  *(SORT(.dtors.*))
  *crtend.o(.dtors)
  *(.init .init.*)
  *(.fini .fini.*)
-                0x0801d704                PROVIDE (__preinit_array_start, .)
+                0x0801d708                PROVIDE (__preinit_array_start, .)
  *(.preinit_array)
-                0x0801d704                PROVIDE (__preinit_array_end, .)
-                0x0801d704                PROVIDE (__init_array_start, .)
+                0x0801d708                PROVIDE (__preinit_array_end, .)
+                0x0801d708                PROVIDE (__init_array_start, .)
  *(SORT(.init_array.*))
  *(.init_array)
-                0x0801d704                PROVIDE (__init_array_end, .)
-                0x0801d704                PROVIDE (__fini_array_start, .)
+                0x0801d708                PROVIDE (__init_array_end, .)
+                0x0801d708                PROVIDE (__fini_array_start, .)
  *(.fini_array)
  *(SORT(.fini_array.*))
-                0x0801d704                PROVIDE (__fini_array_end, .)
+                0x0801d708                PROVIDE (__fini_array_end, .)
                 0x0801d708                . = ALIGN (0x8)
- *fill*         0x0801d704        0x4 00
  *(.rom)
  *(.rom.b)
                 0x0801d708                _etext = .

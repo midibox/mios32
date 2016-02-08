@@ -45304,7 +45304,7 @@ extern "C" void APP_Background(void)
  801b3fe:	6025      	str	r5, [r4, #0]
                 char* filename = new char[50];
  801b400:	f000 fc94 	bl	801bd2c <operator new[](unsigned int)>
-                sprintf(filename, "RKA7.VGM");
+                sprintf(filename, "NEWWORLD.VGM");
  801b404:	491f      	ldr	r1, [pc, #124]	; (801b484 <APP_Background+0xd4>)
             }
         }
@@ -45313,7 +45313,7 @@ extern "C" void APP_Background(void)
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
  801b406:	4605      	mov	r5, r0
-                sprintf(filename, "RKA7.VGM");
+                sprintf(filename, "NEWWORLD.VGM");
  801b408:	f000 fce3 	bl	801bdd2 <strcpy>
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
@@ -45326,7 +45326,7 @@ extern "C" void APP_Background(void)
  801b416:	2800      	cmp	r0, #0
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "RKA7.VGM");
+                sprintf(filename, "NEWWORLD.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -45393,9 +45393,9 @@ extern "C" void APP_Background(void)
  801b47c:	20000a74 	.word	0x20000a74
  801b480:	20000a6c 	.word	0x20000a6c
  801b484:	0801d6aa 	.word	0x0801d6aa
- 801b488:	0801d6b3 	.word	0x0801d6b3
+ 801b488:	0801d6b7 	.word	0x0801d6b7
  801b48c:	20000a60 	.word	0x20000a60
- 801b490:	0801d6bf 	.word	0x0801d6bf
+ 801b490:	0801d6c3 	.word	0x0801d6c3
 
 0801b494 <APP_Tick>:
 // more than 300 uS to ensure the responsiveness of buttons, encoders, pots.
@@ -46371,8 +46371,8 @@ void VgmHead::cmdNext(u32 vgm_time){
  801b89e:	6063      	str	r3, [r4, #4]
  801b8a0:	e641      	b.n	801b526 <VgmHead::cmdNext(unsigned long)+0xa>
  801b8a2:	bd70      	pop	{r4, r5, r6, pc}
- 801b8a4:	0801d6d2 	.word	0x0801d6d2
- 801b8a8:	0801d6f5 	.word	0x0801d6f5
+ 801b8a4:	0801d6d6 	.word	0x0801d6d6
+ 801b8a8:	0801d6f9 	.word	0x0801d6f9
 
 0801b8ac <VgmHead::restart(unsigned long)>:
         }
@@ -47402,10 +47402,10 @@ extern "C" void free(void *p)
  801bd9a:	3401      	adds	r4, #1
  801bd9c:	e7f7      	b.n	801bd8e <__libc_init_array+0x2a>
  801bd9e:	bd38      	pop	{r3, r4, r5, pc}
- 801bda0:	0801d704 	.word	0x0801d704
- 801bda4:	0801d704 	.word	0x0801d704
- 801bda8:	0801d704 	.word	0x0801d704
- 801bdac:	0801d704 	.word	0x0801d704
+ 801bda0:	0801d708 	.word	0x0801d708
+ 801bda4:	0801d708 	.word	0x0801d708
+ 801bda8:	0801d708 	.word	0x0801d708
+ 801bdac:	0801d708 	.word	0x0801d708
 
 0801bdb0 <memcpy>:
  801bdb0:	b510      	push	{r4, lr}

@@ -19,11 +19,13 @@
 
 #include <genesis.h>
 #include <file.h>
+#include <blm_x.h>
 
 #include "vgmsourcestream.h"
 #include "vgmhead.h"
 #include "vgmplayer.h"
 #include "vgmplayer_ll.h"
+#include "frontpanel.h"
 
 u32 DEBUGVAL;
 
@@ -46,6 +48,12 @@ extern "C" void APP_Init(void){
 
     //Initialize VGM Player component
     VgmPlayer_Init();
+    
+    //Initialize Button-LED Matrix driver
+    BLM_X_Init();
+    
+    //Initialize front panel wrapper
+    FrontPanel_Init();
 }
 
 
@@ -74,7 +82,7 @@ extern "C" void APP_Background(void)
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "RKA7.VGM");
+                sprintf(filename, "NEWWORLD.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -260,11 +268,9 @@ extern "C" void APP_Background(void)
 // Alternatively you could create a dedicated task for application specific
 // jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_Tick(void)
-{
-  // PWM modulate the status LED (this is a sign of life)
-  //u32 timestamp = MIOS32_TIMESTAMP_Get();
-  //MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+extern "C" void APP_Tick(void){
+    //TODO maybe move to its own task?
+    BLM_X_BtnHandler(&FrontPanel_ButtonChange);
 }
 
 
@@ -273,32 +279,32 @@ extern "C" void APP_Tick(void)
 // MIDI events. You could add more MIDI related jobs here, but they shouldn't
 // consume more than 300 uS to ensure the responsiveness of incoming MIDI.
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_MIDI_Tick(void)
-{
+extern "C" void APP_MIDI_Tick(void){
+    //Nothing here
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a MIDI package has been received
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
-{
+extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){
+    //TODO MIDI input
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called before the shift register chain is scanned
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_SRIO_ServicePrepare(void)
-{
+extern "C" void APP_SRIO_ServicePrepare(void){
+    BLM_X_PrepareRow();
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after the shift register chain has been scanned
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_SRIO_ServiceFinish(void)
-{
+extern "C" void APP_SRIO_ServiceFinish(void){
+    BLM_X_GetRow();
 }
 
 
@@ -306,8 +312,8 @@ extern "C" void APP_SRIO_ServiceFinish(void)
 // This hook is called when a button has been toggled
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
-{
+extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
+    //Nothing here
 }
 
 
@@ -316,14 +322,14 @@ extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 // incrementer is positive when encoder has been turned clockwise, else
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
-{
+extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer){
+    FrontPanel_EncoderChange(encoder, incrementer);
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a pot has been moved
 /////////////////////////////////////////////////////////////////////////////
-extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
-{
+extern "C" void APP_AIN_NotifyChange(u32 pin, u32 pin_value){
+    //Nothing here
 }

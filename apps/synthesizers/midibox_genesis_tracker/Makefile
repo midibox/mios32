@@ -13,7 +13,8 @@ LCD       =     $(MIOS32_LCD)
 ################################################################################
 
 # add plain C files here
-THUMB_SOURCE    =   src/vgmplayer_ll.c
+THUMB_SOURCE    =   src/vgmplayer_ll.c \
+                    src/frontpanel.c
 
 # add C++ files here
 THUMB_CPP_SOURCE =  src/app.cpp \
@@ -64,6 +65,9 @@ include $(MIOS32_PATH)/modules/file/file.mk
 
 # MBHP_Genesis module driver
 include $(MIOS32_PATH)/modules/genesis/genesis.mk
+
+# BLM_X module driver
+include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
 # common make rules
 # Please keep this include statement at the end of this Makefile. Add new modules above.
