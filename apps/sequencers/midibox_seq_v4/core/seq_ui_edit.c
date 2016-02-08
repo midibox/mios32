@@ -784,8 +784,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LCD_CursorSet(0, 0);
     SEQ_LCD_PrintString("Step Gate Acc. Glide Oct. Key ");
     int i;
-    for(i=1; i<num_p_layers; ++i)
-	SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
+    for(i=1; i<num_p_layers; ++i) {
+      char str_buffer[6];
+      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_LCD_PrintString(str_buffer);
+    }
 
     SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
 
@@ -849,9 +852,13 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     SEQ_LCD_PrintString("Step ");
     int i;
     for(i=0; i<num_t_layers; ++i)
-	SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, i));
-    for(i=0; i<num_p_layers; ++i)
-	SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
+      SEQ_LCD_PrintString(SEQ_TRG_AssignedTypeStr(visible_track, i));
+
+    for(i=0; i<num_p_layers; ++i) {
+      char str_buffer[6];
+      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_LCD_PrintString(str_buffer);
+    }
 
     SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
 
@@ -970,14 +977,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
   SEQ_LCD_PrintChar(':');
 
-  if( layer_type == SEQ_PAR_Type_CC ) {
-    if( layer_event.midi_package.cc_number >= 0x80 ) {
-      SEQ_LCD_PrintFormattedString("CC#off ");
-    } else {
-      SEQ_LCD_PrintFormattedString("CC#%3d ", layer_event.midi_package.cc_number);
-    }
-  } else {
-    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+  {
+    char str_buffer[6];
+    SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer, str_buffer);
+    SEQ_LCD_PrintString(str_buffer);
     SEQ_LCD_PrintSpaces(2);
   }
 

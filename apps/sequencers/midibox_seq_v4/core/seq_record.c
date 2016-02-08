@@ -516,6 +516,10 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       SEQ_BPM_CheckAutoMaster();
       // start generator
       SEQ_BPM_Start();
+
+      // start with first step
+      ui_selected_step = 0;
+
     }
 
     if( !step_record_mode ) {

@@ -13,6 +13,19 @@ MIDIboxSEQ V4.091
 
    o CPU load display has been re-adjusted for LPC17 and STM32F4
 
+   o hwcfg/wilba*/MBSEQ_HW.V4: default F1-F4 assignments changed to:
+     F1: Bookmark, F2: Record, F3: Tap Tempo, F4: Save All
+
+   o MBSEQ_HW.V4: added new button/LED function "FX" which changes and
+     displays the FX menu
+
+   o CC Parameter layer label now prints "#<number>" instead of "CC"
+
+   o Jam page: AStart now starts to record into first step (as intended)
+
+   o New option page item #10 "Initial Gate Trigger Layer" 
+     (empty or trigger on each 4th step)
+
 
 MIDIboxSEQ V4.090
 ~~~~~~~~~~~~~~~~~
@@ -2192,9 +2205,6 @@ http://midibox.org/forums/topic/19410-step-trigger/?p=169253
 FTS for Random Generator
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
 ----------------------------------------------------------
-Selectable Button Behaviour for Step View
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
-----------------------------------------------------------
 FTS for Recording Mode
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169705
 ----------------------------------------------------------
@@ -2236,22 +2246,10 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Random generator: allow to select random range (e.g. SELECT button)
 http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172921
 ----------------------------------------------------------
-Parameter Layer display: show CC#<number> for CC layers
-http://midibox.org/forums/topic/19867-random-generator-range/?do=findComment&comment=172944
-----------------------------------------------------------
 Allow to define number of displayed steps:
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173142
 ----------------------------------------------------------
-Track Event page: CC message for GP ENC 11-13 only if CC is visible
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
-AStart: ensure that recording is started with first step
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
 Allow to delete presets
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
-Add option which avoids that each 4th gate will be turned on in the initialisation pattern.
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
 ----------------------------------------------------------
 Song Page: add "Mute Pattern" (all 4 tracks) command
@@ -2259,31 +2257,6 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 ----------------------------------------------------------
 Add command which copies the current pattern configurations into multiple pattern slots (e.g. current patterns -> A1/A2/A3/...)
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
-Check behaviour of "BUTTON_SAVE_ALL" and "BUTTON_TAP_TEMPO" - they are implemented, but it seems that they aren't working?
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
-Integrate revised F1..F4 assignments into mbseq_hw.v4 files:
-
-# Following button functions are usually assigned to Fx
-# buttons, or to dedicated (labeled) buttons
-# In Wilba's frontpanel layout:
-# F1 is located at SR M3 Pin 3; by default it is set for quick access to the Bookmark page.
-# F2 is located at SR M2 Pin 2; by default it is set for quick access to the Jam page.
-# F3 is located at SR M2 Pin 3; by default it is set for quick access to Tap tempo [if that can be made available]
-# F4 is located at SR M1 Pin 2; by default it is set for quick access to Save all patterns [if that can be made available]
-# and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
-
-#                    SR  Pin
-BUTTON_BOOKMARK      M3   3
-BUTTON_RECORD        M2   2
-BUTTON_TAP_TEMPO     M2   3
-BUTTON_SAVE_ALL      M1   2
-
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
-----------------------------------------------------------
-Add FX MENU button + LED
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173466
 ----------------------------------------------------------
 
 

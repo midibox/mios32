@@ -432,7 +432,9 @@ static s32 LCD_Handler(u8 high_prio)
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
     } else {
-      SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+      char str_buffer[6];
+      SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer, str_buffer);
+      SEQ_LCD_PrintString(str_buffer);
     }
   }
 

@@ -1136,8 +1136,9 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	SEQ_TRG_Set8(track, step8, layer, instrument, 0x00);
     } else {
       // Note/Chord/Drum: enable trigger for each beat of (first) gate layer
+      // New: can be disabled with INIT_WITH_TRIGGERS = 0 (configureable in OPTIONS menu)
       for(step8=0; step8<(num_t_steps/8); ++step8)
-	SEQ_TRG_Set8(track, step8, layer, instrument, 0x11);
+	SEQ_TRG_Set8(track, step8, layer, instrument, seq_core_options.INIT_WITH_TRIGGERS ? 0x11 : 0x00);
     }
   }
 
