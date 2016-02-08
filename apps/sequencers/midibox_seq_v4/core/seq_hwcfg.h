@@ -117,6 +117,7 @@ typedef struct {
   u8 track_direction;
   u8 track_morph;
   u8 track_transpose;
+  u8 fx;
 
   u8 mute_all_tracks;
   u8 mute_track_layers;
@@ -225,6 +226,7 @@ typedef struct {
   u8 track_direction;
   u8 track_transpose;
   u8 track_morph;
+  u8 fx;
 
   u8 mute_all_tracks;
   u8 mute_track_layers;

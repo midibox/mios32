@@ -204,6 +204,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+  .fx              = ((( 0   -1)<<3)+    0),
 
   //                                   SR   ignore    Pin
   .mute_all_tracks               = ((( 0   -1)<<3)+    0),
@@ -357,6 +358,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+  .fx              = ((( 0   -1)<<3)+    0),
 #else
   //          SR    ignore    Pin
   .play  = ((( 0   -1)<<3)+    0),
@@ -403,6 +405,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .track_direction = ((( 0   -1)<<3)+    0),
   .track_morph     = ((( 0   -1)<<3)+    0),
   .track_transpose = ((( 0   -1)<<3)+    0),
+  .fx              = ((( 0   -1)<<3)+    0),
 
   //                                   SR   ignore    Pin
   .mute_all_tracks               = ((( 0   -1)<<3)+    0),

@@ -480,6 +480,7 @@ LED_TRACK_LENGTH     0   0
 LED_TRACK_DIRECTION  0   0
 LED_TRACK_MORPH      0   0
 LED_TRACK_TRANSPOSE  0   0
+LED_FX               0   0
 
 #                                SR  Pin
 LED_MUTE_ALL_TRACKS               0   0
@@ -506,7 +507,6 @@ BUTTON_RIGHT  0   0
 #                SR  Pin
 BUTTON_SCRUB     M4   4
 BUTTON_METRONOME M4   5
-BUTTON_RECORD     0   0
 BUTTON_LIVE       0   0
 
 #             SR  Pin
@@ -607,9 +607,15 @@ BUTTON_TRG_LAYER_C  M1   6
 
 #                    SR  Pin
 BUTTON_BOOKMARK      M3   3
-BUTTON_PAR_LAYER_SEL M2   2
-BUTTON_TRG_LAYER_SEL M2   3
-BUTTON_TRACK_SEL     M1   2
+BUTTON_RECORD        M2   2
+BUTTON_TAP_TEMPO     M2   3
+BUTTON_SAVE_ALL      M1   2
+
+
+#                    SR  Pin
+BUTTON_PAR_LAYER_SEL  0   0
+BUTTON_TRG_LAYER_SEL  0   0
+BUTTON_TRACK_SEL      0   0
 
 #               SR  Pin
 BUTTON_UTILITY  M3   2
@@ -622,7 +628,6 @@ BUTTON_UNDO      0   0
 BUTTON_STEP_VIEW  M5   5
 
 #                 SR  Pin
-BUTTON_TAP_TEMPO   0   0
 BUTTON_EXT_RESTART 0   0
 
 #                SR  Pin
@@ -630,7 +635,6 @@ BUTTON_MIXER      0   0
 
 #                SR  Pin
 BUTTON_SAVE       0   0
-BUTTON_SAVE_ALL   0   0
 
 #                   SR  Pin
 BUTTON_PATTERN_RMX   0   0
@@ -645,7 +649,8 @@ BUTTON_TRACK_LENGTH     0   0
 BUTTON_TRACK_DIRECTION  0   0
 BUTTON_TRACK_MORPH      0   0
 BUTTON_TRACK_TRANSPOSE  0   0
-BUTTON_TEMPO_PRESET     0    0
+BUTTON_FX               0   0
+BUTTON_TEMPO_PRESET     0   0
 
 
 #                                   SR  Pin

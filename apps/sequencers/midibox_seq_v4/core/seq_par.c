@@ -440,12 +440,25 @@ char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// This function returns the string to the assigned parameter
+// This function puts the string to the assigned parameter into str_buffer[6]
+// (5 characters + terminator)
 // if layer is not assigned, it returns "None "
 /////////////////////////////////////////////////////////////////////////////
-char *SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer)
+s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, char *str_buffer)
 {
-  return SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(track, par_layer));
+  seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(track, par_layer);
+
+  if( asg == SEQ_PAR_Type_CC ) {
+    u8 cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1 + par_layer);
+    if( cc_number >= 0x80 ) {
+      strcpy(str_buffer, "COff ");
+    } else {
+      sprintf(str_buffer, "#%03d ", cc_number);
+    }
+  } else {
+    strncpy(str_buffer, SEQ_PAR_TypeStr(asg), 6);
+  }
+  return 0; // no error
 }
 
 /////////////////////////////////////////////////////////////////////////////

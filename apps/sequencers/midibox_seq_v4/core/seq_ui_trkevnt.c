@@ -542,26 +542,34 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	    case SEQ_UI_ENCODER_GP11:
 	    case SEQ_UI_ENCODER_GP12:
-	    case SEQ_UI_ENCODER_GP13:
-	      // CC number selection now has to be confirmed with GP button
-	      if( incrementer ) {
-		if( ui_selected_item != ITEM_LAYER_PAR ) {
-		  edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
-		  ui_selected_item = ITEM_LAYER_PAR;
-		}
-		SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
-	      } else {
-		if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
-		  SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
-		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+	    case SEQ_UI_ENCODER_GP13: {
+	      u8 assignment = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
+	      if( ui_selected_item == ITEM_LAYER_CONTROL )
+		assignment = edit_layer_type;
+
+	      if( assignment == SEQ_PAR_Type_CC ) {
+		// CC number selection now has to be confirmed with GP button
+		if( incrementer ) {
+		  if( ui_selected_item != ITEM_LAYER_PAR ) {
+		    edit_cc_number = SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer);
+		    ui_selected_item = ITEM_LAYER_PAR;
+		  }
+		  SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Please confirm CC", "with GP button!");
 		} else {
-		  // send MIDI event
-		  if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
-		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		  if( edit_cc_number != SEQ_CC_Get(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer) ) {
+		    SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_B1 + ui_selected_par_layer, edit_cc_number);
+		    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "CC number", "has been changed.");
+		  } else {
+		    // send MIDI event
+		    if( SEQ_LAYER_DirectSendEvent(visible_track, ui_selected_par_layer) >= 0 ) {
+		      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "MIDI event", "has been sent.");
+		    }
 		  }
 		}
+	      } else {
+		return -1; // ignore
 	      }
-	      break;
+	    } break;
 
 	    case SEQ_UI_ENCODER_GP14:
 	    case SEQ_UI_ENCODER_GP15:
@@ -1201,7 +1209,7 @@ static s32 LCD_Handler(u8 high_prio)
 	if( ui_selected_item == ITEM_LAYER_A_SELECT && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, 0));
+	  SEQ_LCD_PrintString(SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, 0)));
 	}
 
 	/////////////////////////////////////////////////////////////////////////
@@ -1209,7 +1217,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
 	  if( layer_config[selected_layer_config].par_layers >= 2 ) {
-	    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, 1));
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, 1)));
 	  } else {
 	    if( ui_selected_item == ITEM_LAYER_B_SELECT )
 	      SEQ_LCD_PrintString("---- "); // not a bug, but a feature - highlight, that layer not configurable
@@ -1278,7 +1286,7 @@ static s32 LCD_Handler(u8 high_prio)
 	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(edit_layer_type));
 	  } else {
 	    SEQ_LCD_PrintChar(' ');
-	    SEQ_LCD_PrintString(SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer));
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer)));
 	  }
 	}
 

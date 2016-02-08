@@ -143,8 +143,11 @@ static s32 LCD_Handler(u8 high_prio)
   for(i=0; i<num_layers; ++i)
     if( i == ui_selected_par_layer && ui_cursor_flash )
       SEQ_LCD_PrintSpaces(5);
-    else
-      SEQ_LCD_PrintString((char *)SEQ_PAR_AssignedTypeStr(visible_track, i));
+    else {
+      char str_buffer[6];
+      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_LCD_PrintString(str_buffer);
+    }
 
   SEQ_LCD_PrintSpaces(80 - (5*num_layers));
 

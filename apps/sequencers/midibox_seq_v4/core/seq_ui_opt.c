@@ -50,14 +50,15 @@
 #define ITEM_PASTE_CLR_ALL   7
 #define ITEM_RESTORE_TRACK_SELECTIONS 8
 #define ITEM_LIVE_LAYER_MUTE 9
-#define ITEM_INIT_CC         10
-#define ITEM_TPD_MODE        11
-#define ITEM_BLM_ALWAYS_USE_FTS 12
-#define ITEM_BLM_FADERS      13
-#define ITEM_MIXER_CC1234    14
-#define ITEM_SCREEN_SAVER    15
+#define ITEM_INIT_WITH_TRIGGERS 10
+#define ITEM_INIT_CC         11
+#define ITEM_TPD_MODE        12
+#define ITEM_BLM_ALWAYS_USE_FTS 13
+#define ITEM_BLM_FADERS      14
+#define ITEM_MIXER_CC1234    15
+#define ITEM_SCREEN_SAVER    16
 
-#define NUM_OF_ITEMS         16
+#define NUM_OF_ITEMS         17
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -108,13 +109,18 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   },
 
   {//<-------------------------------------->
-    "Initial CC value for Clear and Init",
-    "is: ",
+    "If Live function, matching received",
+    "MIDI Events will: ",
   },
 
   {//<-------------------------------------->
-    "If Live function, matching received",
-    "MIDI Events will: ",
+    "Initial Gate Trigger Layer Pattern:",
+    NULL,
+  },
+
+  {//<-------------------------------------->
+    "Initial CC value for Clear and Init",
+    "is: ",
   },
 
   {//<-------------------------------------->
@@ -277,6 +283,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_ui_options.RESTORE_TRACK_SELECTIONS = incrementer > 0 ? 1 : 0;
       else
 	seq_ui_options.RESTORE_TRACK_SELECTIONS ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_INIT_WITH_TRIGGERS: {
+      if( incrementer )
+	seq_core_options.INIT_WITH_TRIGGERS = incrementer > 0 ? 1 : 0;
+      else
+	seq_core_options.INIT_WITH_TRIGGERS ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -546,7 +561,7 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(14);
     } else {
-      SEQ_LCD_PrintFormattedString("%-8s", seq_core_options.PASTE_CLR_ALL ? "Complete Track" : "Only Steps    ");
+      SEQ_LCD_PrintString(seq_core_options.PASTE_CLR_ALL ? "Complete Track" : "Only Steps    ");
     }
     SEQ_LCD_PrintSpaces(40-14);
   } break;
@@ -554,6 +569,16 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_RESTORE_TRACK_SELECTIONS: {
     enabled_value = seq_ui_options.RESTORE_TRACK_SELECTIONS;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_INIT_WITH_TRIGGERS: {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(25);
+    } else {
+      SEQ_LCD_PrintString(seq_core_options.INIT_WITH_TRIGGERS ? "Set gate on each 4th step" : "Empty                    ");
+    }
+    SEQ_LCD_PrintSpaces(40-25);
   } break;
 
   ///////////////////////////////////////////////////////////////////////////

@@ -142,6 +142,7 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_options.ALL = 0;
   if( mode == 0 ) {
     seq_core_options.INIT_CC = 64;
+    seq_core_options.INIT_WITH_TRIGGERS = 1;
     seq_core_options.PASTE_CLR_ALL = 1;
     seq_core_options.PATTERN_MIXER_MAP_COUPLING = 0;
     seq_core_options.MIXER_LIVE_SEND = 1;

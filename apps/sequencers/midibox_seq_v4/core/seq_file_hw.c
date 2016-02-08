@@ -489,6 +489,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.track_morph = din_value;
 	  } else if( strcasecmp(parameter, "TRANSPOSE") == 0 || strcasecmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_button.track_transpose = din_value;
+	  } else if( strcasecmp(parameter, "FX") == 0 ) {
+	    seq_hwcfg_button.fx = din_value;
 	  } else if( strcasecmp(parameter, "FOOTSWITCH") == 0 ) {
 	    seq_hwcfg_button.footswitch = din_value;
           } else if( strcasecmp(parameter, "PATTERN_RMX") == 0 ) {
@@ -693,6 +695,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.track_morph = dout_value;
 	  } else if( strcasecmp(parameter, "TRANSPOSE") == 0 || strcasecmp(parameter, "TRACK_TRANSPOSE") == 0 ) {
 	    seq_hwcfg_led.track_transpose = dout_value;
+	  } else if( strcasecmp(parameter, "FX") == 0 ) {
+	    seq_hwcfg_led.fx = dout_value;
           } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {
             seq_hwcfg_led.mute_all_tracks = dout_value;
           } else if( strcasecmp(parameter, "MUTE_TRACK_LAYERS") == 0 ) {
