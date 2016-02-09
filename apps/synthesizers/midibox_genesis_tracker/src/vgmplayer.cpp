@@ -17,6 +17,7 @@
 
 #include "vgmplayer_ll.h"
 
+#define USE_GENESIS 0
 
 vgmp_chipdata chipdata[GENESIS_COUNT];
 
@@ -77,16 +78,16 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                 cmd = h->cmdGetChipWrite();
                 if(cmd.cmd == 0x50){
                     //PSG write
-                    u = hr_time - chipdata[0].psg_lastwritetime;
+                    u = hr_time - chipdata[USE_GENESIS].psg_lastwritetime;
                     if(u < VGMP_PSGBUSYDELAY){
                         u = VGMP_PSGBUSYDELAY - u;
                         if(u < minwait){
                             minwait = u;
                         }
                     }else{
-                        Genesis_PSGWrite(0, cmd.data);
+                        Genesis_PSGWrite(USE_GENESIS, cmd.data);
                         h->cmdNext(vgm_time);
-                        chipdata[0].psg_lastwritetime = hr_time;
+                        chipdata[USE_GENESIS].psg_lastwritetime = hr_time;
                         wrotetochip = 1;
                     }
                     /*
@@ -102,20 +103,20 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                     */
                 }else if((cmd.cmd & 0xFE) == 0x52){
                     //OPN2 write
-                    u = hr_time - chipdata[0].opn2_lastwritetime;
+                    u = hr_time - chipdata[USE_GENESIS].opn2_lastwritetime;
                     if(u < VGMP_OPN2BUSYDELAY){
                         u = VGMP_OPN2BUSYDELAY - u;
                         if(u < minwait){
                             minwait = u;
                         }
                     }else{
-                        Genesis_OPN2Write(0, (cmd.cmd & 0x01), cmd.addr, cmd.data);
+                        Genesis_OPN2Write(USE_GENESIS, (cmd.cmd & 0x01), cmd.addr, cmd.data);
                         h->cmdNext(vgm_time);
                         //Don't delay after 0x2x commands
                         if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
-                            chipdata[0].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
+                            chipdata[USE_GENESIS].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
                         }else{
-                            chipdata[0].opn2_lastwritetime = hr_time;
+                            chipdata[USE_GENESIS].opn2_lastwritetime = hr_time;
                         }
                         wrotetochip = 1;
                     }
