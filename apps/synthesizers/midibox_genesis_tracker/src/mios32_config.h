@@ -20,12 +20,20 @@
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox Genesis Tracker"
 #define MIOS32_USB_MIDI_NUM_PORTS 1
 
+// MBHP_Genesis
+#define GENESIS_COUNT 4
+
 // VGM timers
 #define MIOS32_DONT_USE_TIMER
 #define MIOS32_IRQ_PRIO_INSANE 3
 
 // The heap (amount of RAM for realtime allocation)
 #define MIOS32_HEAP_SIZE 64*1024
+
+// Front panel
+#define MIOS32_SRIO_NUM_SR 12
+#define MIOS32_SRIO_NUM_DOUT_PAGES 1
+#define MIOS32_ENC_NUM_MAX 32
 
 // BLM_X configuration
 #define BLM_X_NUM_ROWS 8

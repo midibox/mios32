@@ -26,6 +26,7 @@
 #include "vgmplayer.h"
 #include "vgmplayer_ll.h"
 #include "frontpanel.h"
+#include "interface.h"
 
 u32 DEBUGVAL;
 
@@ -54,6 +55,9 @@ extern "C" void APP_Init(void){
     
     //Initialize front panel wrapper
     FrontPanel_Init();
+    
+    //Initialize main interface
+    Interface_Init();
 }
 
 
@@ -82,7 +86,7 @@ extern "C" void APP_Background(void)
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "NEWWORLD.VGM");
+                sprintf(filename, "DREAMER.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -110,7 +114,6 @@ extern "C" void APP_Background(void)
     if(vgms != NULL){
         //vgms->bg_streamBuffer();
     }
-    
     
     
     //Play some things on the PSG
@@ -269,8 +272,31 @@ extern "C" void APP_Background(void)
 // jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Tick(void){
-    //TODO maybe move to its own task?
-    BLM_X_BtnHandler(&FrontPanel_ButtonChange);
+    static u32 prescaler = 0;
+    static u8 row = 0, sr = 0, pin = 0, state = 1;
+    //TODO move to its own task
+    BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
+    //TODO testing front panel
+    ++prescaler;
+    if(prescaler == 4){
+        prescaler = 0;
+        row++;
+        if(row == 8){
+            row = 0;
+            pin++;
+            if(pin == 8){
+                pin = 0;
+                sr++;
+                if(sr == 11){
+                    sr = 0;
+                    state++;
+                    state &= 1;
+                }
+            }
+        }
+    }
+    u32 led = (row * 88) + (sr * 8) + pin;
+    BLM_X_LEDSet(led, 0, state);
 }
 
 
