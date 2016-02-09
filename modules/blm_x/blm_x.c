@@ -301,11 +301,11 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
   if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
     return -1;
   // compute row,sr,pin
-  row = led / BLM_X_BTN_NUM_COLS;
+  row = led / BLM_X_LED_NUM_COLS;
   if(blm_x_config.color_mode == 0)
-    sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
+    sr = ( pin = led % BLM_X_LED_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
   else
-    sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
+    sr = ( pin = (led % BLM_X_LED_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
   pin %= 8;
   // set value
   if( value )
@@ -330,13 +330,13 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
   if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS )
     return -1;
   // compute row,SR
-  row = led / BLM_X_BTN_NUM_COLS;
+  row = led / BLM_X_LED_NUM_COLS;
   for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
     //compute sr,pin
     if(blm_x_config.color_mode == 0)
-      sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
+      sr = ( pin = led % BLM_X_LED_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
     else
-      sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
+      sr = ( pin = (led % BLM_X_LED_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
     pin %= 8;
     // set value
     if( color_mask & (1 << c) )
@@ -363,14 +363,14 @@ u32 BLM_X_LEDColorGet(u32 led){
   if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS)
     return 0;
   // compute row,SR
-  row = led / BLM_X_BTN_NUM_COLS;
+  row = led / BLM_X_LED_NUM_COLS;
   color = 0;
   for(c = 0; c < BLM_X_LED_NUM_COLORS; c++){
     //compute sr,pin
     if(blm_x_config.color_mode == 0)
-      sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
+      sr = ( pin = led % BLM_X_LED_NUM_COLS + BLM_X_LED_NUM_COLS*c ) / 8;
     else
-      sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
+      sr = ( pin = (led % BLM_X_LED_NUM_COLS)*BLM_X_LED_NUM_COLORS + c ) / 8;
     pin %= 8;
     // get value
     if( BLM_X_LED_rows[row][sr] & (1 << pin) )
@@ -396,11 +396,11 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
   if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
     return -1;
   // compute row,sr,pin
-  row = led / BLM_X_BTN_NUM_COLS;
+  row = led / BLM_X_LED_NUM_COLS;
   if(blm_x_config.color_mode == 0)
-    sr = ( pin = led % BLM_X_BTN_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
+    sr = ( pin = led % BLM_X_LED_NUM_COLS + BLM_X_LED_NUM_COLS*color ) / 8;
   else
-    sr = ( pin = (led % BLM_X_BTN_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
+    sr = ( pin = (led % BLM_X_LED_NUM_COLS)*BLM_X_LED_NUM_COLORS + color ) / 8;
   pin %= 8;
   // return value
   return (BLM_X_LED_rows[row][sr] & (1 << pin)) ? 1 : 0;
