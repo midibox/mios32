@@ -2258,6 +2258,9 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 Add command which copies the current pattern configurations into multiple pattern slots (e.g. current patterns -> A1/A2/A3/...)
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
 ----------------------------------------------------------
+Drum track: select trigger layer, then push parameter button A or B: parameter values not displayed
+http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/?do=findComment&comment=173700
+----------------------------------------------------------
 
 
 Wishlist for MIDIbox SEQ V4 Plus
