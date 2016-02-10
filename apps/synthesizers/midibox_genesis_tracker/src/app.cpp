@@ -339,7 +339,7 @@ extern "C" void APP_SRIO_ServiceFinish(void){
 // pin_value is 1 when button released, and 0 when button pressed
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
-    //Nothing here
+    DBG("DIN pin %d changed %d", pin, pin_value);
 }
 
 

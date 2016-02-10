@@ -47,4 +47,6 @@
 #define BLM_X_DEBOUNCE_MODE 0
 #define BLM_X_COLOR_MODE 0
 
+#define FRONTPANEL_REVERSE_ROWS 1
+
 #endif /* _MIOS32_CONFIG_H */
