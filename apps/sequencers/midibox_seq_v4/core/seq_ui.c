@@ -2986,14 +2986,18 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
   // GP LEDs are updated when ui_gp_leds has changed
   static u16 prev_ui_gp_leds = 0x0000;
+  u8 sequencer_running = SEQ_BPM_IsRunning();
 
   // beat LED
-  u8 sequencer_running = SEQ_BPM_IsRunning();
-  u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step & 3) == 0);
+  u8 beat_led_on = sequencer_running && ((seq_core_state.ref_step % 4) == 0);
   SEQ_LED_PinSet(seq_hwcfg_led.beat, beat_led_on);
 
   // mirror to status LED (inverted, so that LED is normaly on)
   MIOS32_BOARD_LED_Set(0xffffffff, beat_led_on ? 0 : 1);
+
+  // measure LED
+  u8 measure_led_on = sequencer_running && ((seq_core_state.ref_step % (seq_core_steps_per_measure+1)) == 0);
+  SEQ_LED_PinSet(seq_hwcfg_led.measure, measure_led_on);
 
   // MIDI IN/OUT LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.midi_in_combined, seq_midi_port_in_combined_ctr);

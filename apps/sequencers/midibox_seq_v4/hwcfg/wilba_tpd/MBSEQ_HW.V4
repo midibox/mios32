@@ -401,8 +401,9 @@ LED_PAR_LAYER_A  M4   2
 LED_PAR_LAYER_B  M4   1
 LED_PAR_LAYER_C  M4   0
 
-#         SR  Pin
-LED_BEAT  M1   1
+#            SR  Pin
+LED_BEAT    M1   1
+LED_MEASURE  0   0
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0

@@ -400,8 +400,9 @@ LED_PAR_LAYER_A   1   4
 LED_PAR_LAYER_B   1   5
 LED_PAR_LAYER_C   1   6
 
-#          SR  Pin
-LED_BEAT    1   7
+#           SR  Pin
+LED_BEAT     1   7
+LED_MEASURE  0   0
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
@@ -479,6 +480,7 @@ LED_TRACK_LENGTH     0   0
 LED_TRACK_DIRECTION  0   0
 LED_TRACK_MORPH      0   0
 LED_TRACK_TRANSPOSE  0   0
+LED_FX               0   0
 
 #                                SR  Pin
 LED_MUTE_ALL_TRACKS               0   0
@@ -646,6 +648,7 @@ BUTTON_TRACK_LENGTH     0   0
 BUTTON_TRACK_DIRECTION  0   0
 BUTTON_TRACK_MORPH      0   0
 BUTTON_TRACK_TRANSPOSE  0   0
+BUTTON_FX               0   0
 
 
 #                                   SR  Pin

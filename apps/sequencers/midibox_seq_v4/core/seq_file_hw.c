@@ -597,6 +597,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.par_layer[hlp] = dout_value;
 	  } else if( strcasecmp(parameter, "BEAT") == 0 ) {
 	    seq_hwcfg_led.beat = dout_value;
+	  } else if( strcasecmp(parameter, "MEASURE") == 0 ) {
+	    seq_hwcfg_led.measure = dout_value;
 	  } else if( strcasecmp(parameter, "MIDI_IN_COMBINED") == 0 ) {
 	    seq_hwcfg_led.midi_in_combined = dout_value;
 	  } else if( strcasecmp(parameter, "MIDI_OUT_COMBINED") == 0 ) {
