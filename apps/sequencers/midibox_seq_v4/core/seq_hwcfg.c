@@ -278,8 +278,9 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .par_layer[1] = ((( 1   -1)<<3)+    5),
   .par_layer[2] = ((( 1   -1)<<3)+    6),
 
-  //         SR    ignore    Pin
-  .beat = ((( 1   -1)<<3)+    7),
+  //            SR    ignore    Pin
+  .beat    = ((( 1   -1)<<3)+    7),
+  .measure = ((( 0   -1)<<3)+    0),
 
   //                     SR    ignore    Pin
   .midi_in_combined =  ((( 0   -1)<<3)+    0),

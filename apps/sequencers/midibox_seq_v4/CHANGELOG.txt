@@ -19,6 +19,9 @@ MIDIboxSEQ V4.091
    o MBSEQ_HW.V4: added new button/LED function "FX" which changes and
      displays the FX menu
 
+   o MBSEQ_HW.V4: added new LED_MEASURE function which will activate a LED
+     when the first step of the measure is played.
+
    o CC Parameter layer label now prints "#<number>" instead of "CC"
 
    o Jam page: AStart now starts to record into first step (as intended)

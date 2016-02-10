@@ -164,6 +164,7 @@ typedef struct {
   u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
 
   u8 beat;
+  u8 measure;
 
   u8 midi_in_combined;
   u8 midi_out_combined;
