@@ -58,6 +58,10 @@ extern "C" void APP_Init(void){
     
     //Initialize main interface
     Interface_Init();
+    
+    DEBUG_Ring = 0;
+    DEBUG_RingState = 0;
+    DEBUG_RingDir = 1;
 }
 
 
@@ -273,10 +277,11 @@ extern "C" void APP_Background(void)
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Tick(void){
     static u32 prescaler = 0;
-    static u8 row = 0, sr = 0, pin = 0, state = 1;
+    //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
     //TODO testing front panel
+    /*
     ++prescaler;
     if(prescaler == 4){
         prescaler = 0;
@@ -297,6 +302,14 @@ extern "C" void APP_Tick(void){
     }
     u32 led = (row * 88) + (sr * 8) + pin;
     BLM_X_LEDSet(led, 0, state);
+    */
+    ++prescaler;
+    if((prescaler >> 7)){
+        prescaler = 0;
+        DEBUG_RingState += DEBUG_RingDir;
+        DEBUG_RingState &= 0xF;
+        FrontPanel_LEDRingSet(DEBUG_Ring, 0, DEBUG_RingState);
+    }
 }
 
 
