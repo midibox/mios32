@@ -90,7 +90,7 @@ extern "C" void APP_Background(void)
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "DREAMER.VGM");
+                sprintf(filename, "RKACREDS.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -118,7 +118,6 @@ extern "C" void APP_Background(void)
     if(vgms != NULL){
         //vgms->bg_streamBuffer();
     }
-    
     
     //Play some things on the PSG
     /*

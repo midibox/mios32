@@ -43,6 +43,12 @@ public:
     inline u32 getCurAddress() { return srcaddr; }
     
 private:
+    static u8 getCommandLen(u8 type);
+    static void fixOPN2Frequency(ChipWriteCmd* writecmd, u32 opn2mult);
+    
+    bool bufferNextCommand();
+    void unBuffer(u8 len);
+    
     VgmSourceStream* source;
     u32 srcaddr;
     u32 srcblockaddr;
@@ -51,7 +57,8 @@ private:
     ChipWriteCmd writecmd;
     u32 ticks;
     
-    u8 subbuffer[4];
+    #define SUBBUFFER_MAXLEN 32
+    u8 subbuffer[SUBBUFFER_MAXLEN];
     u8 subbufferlen;
     
     bool isdacwrite, isfreqwrite;
