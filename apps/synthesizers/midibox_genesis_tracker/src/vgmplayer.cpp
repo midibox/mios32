@@ -17,7 +17,7 @@
 
 #include "vgmplayer_ll.h"
 
-#define USE_GENESIS 0
+#define USE_GENESIS 3
 
 vgmp_chipdata chipdata[GENESIS_COUNT];
 
