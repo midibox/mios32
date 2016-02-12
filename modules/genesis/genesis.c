@@ -127,7 +127,7 @@ void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
         if(chan != 0x03){ //No channel 4 in first half
             chan += addrhi + (addrhi << 1); //Add 3 for channels 4, 5, 6
             reg = ((address & 0xF0) >> 4) - 3;
-            op = ((address & 0x80) >> 3) | ((address & 0x40) >> 1); //Ops 1,2,3,4: 0x30, 0x38, 0x34, 0x3C
+            op = ((address & 0x08) >> 3) | ((address & 0x04) >> 1); //Ops 1,2,3,4: 0x30, 0x38, 0x34, 0x3C
             genesis[board].opn2.chan[chan].op[op].ALL[reg] = data;
         }
     }else if(address <= 0xAE && address >= 0xA8){
