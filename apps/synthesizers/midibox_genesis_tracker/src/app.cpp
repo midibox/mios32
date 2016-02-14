@@ -34,6 +34,7 @@ u8 selgvoice;
 char* filenamelist;
 s32 numfiles;
 u8 playbackcommand;
+u8 vegasactive;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -73,6 +74,8 @@ extern "C" void APP_Init(void){
     MIOS32_LCD_CursorSet(0,0);
     MIOS32_LCD_PrintString("Searching for SD card...");
     
+    vegasactive = 0;
+    
 }
 
 
@@ -83,10 +86,12 @@ extern "C" void APP_Background(void)
 {
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
     
-    //Draw Genesis states
-    u8 g;
-    for(g=0; g<GENESIS_COUNT; g++){
-        DrawGenesisActivity(g);
+    if(!vegasactive){
+        //Draw Genesis states
+        u8 g;
+        for(g=0; g<GENESIS_COUNT; g++){
+            DrawGenesisActivity(g);
+        }
     }
     
     //Play some things on the PSG
@@ -249,6 +254,9 @@ extern "C" void APP_Tick(void){
     static u8 selfile = 0;
     static VgmSourceStream* vgms = NULL;
     static VgmHead* vgmh = NULL;
+    static u8 vegasstate = 0;
+    static u32 vegascounter = 0;
+    static u8 vegassub = 0;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
@@ -446,6 +454,95 @@ extern "C" void APP_Tick(void){
         }
     }
     */
+    
+    if(vegasactive){
+        switch(vegasstate){
+        case 0:
+            BLM_X_LEDSet(((vegascounter & 7) * 88) + (vegascounter >> 3), 0, 1);
+            if(++vegascounter == 88*8){
+                vegascounter = 0;
+                vegasstate = 1;
+            }
+            break;
+        case 1:
+            BLM_X_LEDSet(((vegascounter & 7) * 88) + (vegascounter >> 3), 0, 0);
+            if(++vegascounter == 88*8){
+                vegascounter = 0;
+                if(++vegassub == 2){
+                    vegassub = 0;
+                    vegasstate = 2;
+                }else{
+                    vegasstate = 0;
+                }
+            }
+            break;
+        case 2:
+            BLM_X_LEDSet(vegascounter, 0, 1);
+            if(++vegascounter == 88*8){
+                vegascounter = 0;
+                vegasstate = 3;
+            }
+            break;
+        case 3:
+            BLM_X_LEDSet(vegascounter, 0, 0);
+            if(++vegascounter == 88*8){
+                vegascounter = 0;
+                if(++vegassub == 2){
+                    vegassub = 0;
+                    vegasstate = 4;
+                }else{
+                    vegasstate = 2;
+                }
+            }
+            break;
+        case 4:
+            for(i=0; i<18; i++){
+                FrontPanel_LEDRingSet(i, 0, (i&1) ? (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
+            }
+            if(++vegascounter == 0x800){
+                vegascounter = 0;
+                vegasstate = 5;
+            }
+            break;
+        case 5:
+            for(i=0; i<18; i++){
+                FrontPanel_LEDRingSet(i, 0, !(i&1) ? (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
+            }
+            if(++vegascounter == 0x800){
+                vegascounter = 0;
+                if(++vegassub == 1){
+                    vegassub = 0;
+                    vegasstate = 6;
+                }else{
+                    vegasstate = 4;
+                }
+            }
+            break;
+        case 6:
+            for(i=0; i<18; i++){
+                FrontPanel_LEDRingSet(i, 1, ((vegascounter >> 6) & 0xF));
+            }
+            if(++vegascounter == 0x400){
+                vegascounter = 0;
+                vegasstate = 7;
+            }
+            break;
+        case 7:
+            for(i=0; i<18; i++){
+                FrontPanel_LEDRingSet(i, 1, 15 - ((vegascounter >> 6) & 0xF));
+            }
+            if(++vegascounter == 0x400){
+                vegascounter = 0;
+                if(++vegassub == 1){
+                    vegassub = 0;
+                    vegasstate = 0;
+                }else{
+                    vegasstate = 6;
+                }
+            }
+            break;
+        }
+    }
 }
 
 
@@ -464,6 +561,9 @@ extern "C" void APP_MIDI_Tick(void){
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){
     //TODO MIDI input
+    DBG("MIDI message received port %d type %d channel %d", port, midi_package.type, midi_package.chn);
+    MIOS32_MIDI_SendPackage(UART0, midi_package);
+    MIOS32_MIDI_SendPackage(UART1, midi_package);
 }
 
 
