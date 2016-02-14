@@ -26,6 +26,7 @@ s8 FP_SRADDR[7];
 Button_T FP_BUTTONS[64*3];
 
 LEDRing_T LED_RINGS[18];
+GenesisLEDColumn_T GENESIS_COLUMNS[0xC];
 
 void FrontPanel_Init(){
     //TODO read this all from a text-based config file
@@ -263,7 +264,7 @@ void FrontPanel_Init(){
     
     // Configure encoders
     mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(0);
-    enc_config.cfg.type = DETENTED2;
+    enc_config.cfg.type = DETENTED3;
     enc_config.cfg.speed = NORMAL;
     enc_config.cfg.speed_par = 0;
     for(i=0; i<21; i++){
@@ -271,87 +272,87 @@ void FrontPanel_Init(){
     }
     
     enc_config.cfg.sr  = 8;
-    enc_config.cfg.pos = 1;
+    enc_config.cfg.pos = 0;
     MIOS32_ENC_ConfigSet(FP_E_DATAWHEEL, enc_config);
     
     enc_config.cfg.sr  = 7;
-    enc_config.cfg.pos = 5;
+    enc_config.cfg.pos = 4;
     MIOS32_ENC_ConfigSet(FP_E_OP1LVL, enc_config);
     
     enc_config.cfg.sr  = 7;
-    enc_config.cfg.pos = 1;
+    enc_config.cfg.pos = 0;
     MIOS32_ENC_ConfigSet(FP_E_OP2LVL, enc_config);
     
     enc_config.cfg.sr  = 7;
-    enc_config.cfg.pos = 3;
+    enc_config.cfg.pos = 2;
     MIOS32_ENC_ConfigSet(FP_E_OP3LVL, enc_config);
     
     enc_config.cfg.sr  = 1;
-    enc_config.cfg.pos = 0;
+    enc_config.cfg.pos = 1;
     MIOS32_ENC_ConfigSet(FP_E_OP4LVL, enc_config);
     
     enc_config.cfg.sr  = 6;
-    enc_config.cfg.pos = 5;
+    enc_config.cfg.pos = 4;
     MIOS32_ENC_ConfigSet(FP_E_HARM, enc_config);
     
     enc_config.cfg.sr  = 6;
-    enc_config.cfg.pos = 3;
+    enc_config.cfg.pos = 2;
     MIOS32_ENC_ConfigSet(FP_E_DETUNE, enc_config);
     
     enc_config.cfg.sr  = 6;
-    enc_config.cfg.pos = 1;
+    enc_config.cfg.pos = 0;
     MIOS32_ENC_ConfigSet(FP_E_ATTACK, enc_config);
     
     enc_config.cfg.sr  = 5;
-    enc_config.cfg.pos = 5;
+    enc_config.cfg.pos = 4;
     MIOS32_ENC_ConfigSet(FP_E_DEC1R, enc_config);
     
     enc_config.cfg.sr  = 5;
-    enc_config.cfg.pos = 3;
+    enc_config.cfg.pos = 2;
     MIOS32_ENC_ConfigSet(FP_E_DECLVL, enc_config);
     
     enc_config.cfg.sr  = 5;
-    enc_config.cfg.pos = 1;
+    enc_config.cfg.pos = 0;
     MIOS32_ENC_ConfigSet(FP_E_DEC2R, enc_config);
     
     enc_config.cfg.sr  = 4;
-    enc_config.cfg.pos = 2;
+    enc_config.cfg.pos = 3;
     MIOS32_ENC_ConfigSet(FP_E_RELRATE, enc_config);
     
     enc_config.cfg.sr  = 4;
-    enc_config.cfg.pos = 0;
+    enc_config.cfg.pos = 1;
     MIOS32_ENC_ConfigSet(FP_E_CSMFREQ, enc_config);
     
     enc_config.cfg.sr  = 6;
-    enc_config.cfg.pos = 7;
+    enc_config.cfg.pos = 6;
     MIOS32_ENC_ConfigSet(FP_E_OCTAVE, enc_config);
     
     enc_config.cfg.sr  = 5;
-    enc_config.cfg.pos = 7;
+    enc_config.cfg.pos = 6;
     MIOS32_ENC_ConfigSet(FP_E_FREQ, enc_config);
     
     enc_config.cfg.sr  = 4;
-    enc_config.cfg.pos = 4;
+    enc_config.cfg.pos = 5;
     MIOS32_ENC_ConfigSet(FP_E_PSGFREQ, enc_config);
     
     enc_config.cfg.sr  = 4;
-    enc_config.cfg.pos = 6;
+    enc_config.cfg.pos = 7;
     MIOS32_ENC_ConfigSet(FP_E_PSGVOL, enc_config);
     
     enc_config.cfg.sr  = 1;
-    enc_config.cfg.pos = 3;
+    enc_config.cfg.pos = 2;
     MIOS32_ENC_ConfigSet(FP_E_LFOFDEP, enc_config);
     
     enc_config.cfg.sr  = 1;
-    enc_config.cfg.pos = 5;
+    enc_config.cfg.pos = 4;
     MIOS32_ENC_ConfigSet(FP_E_LFOADEP, enc_config);
     
     enc_config.cfg.sr  = 1;
-    enc_config.cfg.pos = 6;
+    enc_config.cfg.pos = 7;
     MIOS32_ENC_ConfigSet(FP_E_LFOFREQ, enc_config);
     
     enc_config.cfg.sr  = 7;
-    enc_config.cfg.pos = 7;
+    enc_config.cfg.pos = 6;
     MIOS32_ENC_ConfigSet(FP_E_FEEDBACK, enc_config);
     
     
@@ -375,6 +376,20 @@ void FrontPanel_Init(){
     LED_RINGS[FP_LEDR_LFOFREQ]  = (LEDRing_T){ .special = 0, .losr = 2, .lopin = 6, .hisr = 2, .hipin = 7 };
     LED_RINGS[FP_LEDR_FEEDBACK] = (LEDRing_T){ .special = 2 };
     
+    //Configure Genesis LED columns
+    GENESIS_COLUMNS[0x0] = (GenesisLEDColumn_T){ .sr = 3, .pin = 1 };
+    GENESIS_COLUMNS[0x1] = (GenesisLEDColumn_T){ .sr = 2, .pin = 1 };
+    GENESIS_COLUMNS[0x2] = (GenesisLEDColumn_T){ .sr = 2, .pin = 2 };
+    GENESIS_COLUMNS[0x3] = (GenesisLEDColumn_T){ .sr = 2, .pin = 3 };
+    GENESIS_COLUMNS[0x4] = (GenesisLEDColumn_T){ .sr = 2, .pin = 4 };
+    GENESIS_COLUMNS[0x5] = (GenesisLEDColumn_T){ .sr = 2, .pin = 5 };
+    GENESIS_COLUMNS[0x6] = (GenesisLEDColumn_T){ .sr = 3, .pin = 0 };
+    GENESIS_COLUMNS[0x7] = (GenesisLEDColumn_T){ .sr = 2, .pin = 0 };
+    GENESIS_COLUMNS[0x8] = (GenesisLEDColumn_T){ .sr = 3, .pin = 4 };
+    GENESIS_COLUMNS[0x9] = (GenesisLEDColumn_T){ .sr = 3, .pin = 5 };
+    GENESIS_COLUMNS[0xA] = (GenesisLEDColumn_T){ .sr = 3, .pin = 6 };
+    GENESIS_COLUMNS[0xB] = (GenesisLEDColumn_T){ .sr = 3, .pin = 7 };
+    
 }
 
 void FrontPanel_ButtonChange(u32 btn, u32 value){
@@ -386,14 +401,14 @@ void FrontPanel_ButtonChange(u32 btn, u32 value){
     row = 7 - row;
     #endif
     s8 sraddr = FP_SRADDR[sr];
-    DBG("FrontPanel_ButtonChange(%d, %d): row %d, sr %d, pin %d, sraddr %d", btn, value, row, sr, pin, sraddr);
+    //DBG("FrontPanel_ButtonChange(%d, %d): row %d, sr %d, pin %d, sraddr %d", btn, value, row, sr, pin, sraddr);
     if(sraddr < 0){
-        DBG("----Shift register %d excluded", sr);
+        //DBG("----Shift register %d excluded", sr);
         return;
     }
     Button_T button = FP_BUTTONS[64*sraddr + 8*pin + row];
     if(button.func == FP_B_NONE){
-        DBG("----No function assigned");
+        //DBG("----No function assigned");
         return;
     }else if(button.func >= FP_B_SYSTEM && button.func < FP_B_OUT){
         Interface_BtnSystem(button.func, value);
@@ -440,3 +455,10 @@ void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
     }
 }
 
+void FrontPanel_GenesisLEDSet(u8 genesis, u8 voice, u8 color, u8 value){
+    if(genesis >= GENESIS_COUNT) return;
+    if(voice >= 0xC) return;
+    if(color >= 2) return;
+    GenesisLEDColumn_T gled = GENESIS_COLUMNS[voice];
+    MATRIX_LED_SET((genesis << 1) | color, gled.sr, gled.pin, value);
+}

@@ -27,8 +27,10 @@
 #include "vgmplayer_ll.h"
 #include "frontpanel.h"
 #include "interface.h"
+#include "genesisstate.h"
 
 u32 DEBUGVAL;
+u8 selgvoice;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -59,9 +61,11 @@ extern "C" void APP_Init(void){
     //Initialize main interface
     Interface_Init();
     
+    /*
     DEBUG_Ring = 0;
     DEBUG_RingState = 0;
     DEBUG_RingDir = 1;
+    */
 }
 
 
@@ -78,7 +82,7 @@ extern "C" void APP_Background(void)
     
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
     
-    if(count % 500000 == 0){
+    if(count % 10000 == 0){
         if(!gotsdcard){
             res = FILE_CheckSDCard();
             if(res == 3){
@@ -90,7 +94,7 @@ extern "C" void APP_Background(void)
             if(vgms == NULL){
                 vgms = new VgmSourceStream();
                 char* filename = new char[50];
-                sprintf(filename, "RKACREDS.VGM");
+                sprintf(filename, "GOODEND.VGM");
                 //res = FILE_FileExists(filename);
                 //DBG("File existence: %d", res);
                 res = vgms->startStream(filename);
@@ -117,6 +121,12 @@ extern "C" void APP_Background(void)
     
     if(vgms != NULL){
         //vgms->bg_streamBuffer();
+    }
+    
+    //Draw Genesis states
+    u8 g;
+    for(g=0; g<GENESIS_COUNT; g++){
+        DrawGenesisActivity(g);
     }
     
     //Play some things on the PSG
@@ -275,7 +285,7 @@ extern "C" void APP_Background(void)
 // jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Tick(void){
-    static u32 prescaler = 0;
+    //static u32 prescaler = 0;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
@@ -300,8 +310,10 @@ extern "C" void APP_Tick(void){
         }
     }
     u32 led = (row * 88) + (sr * 8) + pin;
+    state = 1;
     BLM_X_LEDSet(led, 0, state);
     */
+    /*
     ++prescaler;
     if((prescaler >> 7)){
         prescaler = 0;
@@ -309,6 +321,10 @@ extern "C" void APP_Tick(void){
         DEBUG_RingState &= 0xF;
         FrontPanel_LEDRingSet(DEBUG_Ring, 0, DEBUG_RingState);
     }
+    */
+    
+    
+    
 }
 
 

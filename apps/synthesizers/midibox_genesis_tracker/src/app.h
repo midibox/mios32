@@ -35,6 +35,8 @@
 extern "C" {
 #endif
 
+extern u8 selgvoice;
+
 extern void APP_Init(void);
 extern void APP_Background(void);
 extern void APP_Tick(void);

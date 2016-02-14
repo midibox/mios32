@@ -13,11 +13,11 @@
 #endif
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox Genesis Tracker"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox Quad Genesis DEMO"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2016 Sauraen"
 
 // USB settings
-#define MIOS32_USB_PRODUCT_STR  "MIDIbox Genesis Tracker"
+#define MIOS32_USB_PRODUCT_STR  "MIDIbox Quad Genesis DEMO"
 #define MIOS32_USB_MIDI_NUM_PORTS 1
 
 // MBHP_Genesis

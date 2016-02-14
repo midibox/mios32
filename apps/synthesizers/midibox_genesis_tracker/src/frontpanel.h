@@ -132,6 +132,14 @@ typedef union {
     };
 } LEDRing_T;
 
+typedef union {
+    u8 all;
+    struct{
+        u8 pin:3;
+        u8 sr:5;
+    };
+} GenesisLEDColumn_T;
+
 #define FP_LEDR_OP1LVL 0
 #define FP_LEDR_OP2LVL 1
 #define FP_LEDR_OP3LVL 2
@@ -160,7 +168,7 @@ extern void FrontPanel_EncoderChange(u32 encoder, u32 incrementer);
 
 
 extern void FrontPanel_LEDSet(u32 led, u8 value);
-extern void FrontPanel_GenesisLEDSet(u8 genesis, u8 channel, u8 color, u8 value);
+extern void FrontPanel_GenesisLEDSet(u8 genesis, u8 voice, u8 color, u8 value);
 extern void FrontPanel_DrawAlgorithm(u8 algorithm);
 extern void FrontPanel_DrawDACValue(u16 bits);
 extern void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value);

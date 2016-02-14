@@ -36,4 +36,4 @@ project_build/src/app.o: src/app.cpp \
  /data/Hardware/MIDIbox/mios32/trunk/modules/file/file.h \
  /data/Hardware/MIDIbox/mios32/trunk/modules/blm_x/blm_x.h \
  src/vgmsourcestream.h src/vgmhead.h src/vgmplayer.h src/vgmplayer_ll.h \
- src/frontpanel.h src/interface.h
+ src/frontpanel.h src/interface.h src/genesisstate.h

@@ -17,10 +17,11 @@
 extern "C" {
 #endif
 
-
+/*
 extern u8 DEBUG_Ring;
 extern u8 DEBUG_RingState;
 extern s8 DEBUG_RingDir;
+*/
 
 extern void Interface_Init();
 
