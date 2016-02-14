@@ -60,7 +60,7 @@ OPN2 Timeout Test Results
 /////////////////////////////////////////////////////////////////////////////
 
 typedef union {
-    u8 ALL[7];
+    u8 ALL[8];
     struct {
         //Byte 0: 0x30 + operator offset
         union {
@@ -130,11 +130,22 @@ typedef union {
                 u8 dummy9:4;    //Bits ignored by OPN2
             };
         };
+        
+        //Byte 7: 0x28 (sort of), Key On state
+        union {
+            u8 keyonreg;
+            struct {
+                u8 kon:1;
+                u8 dummy10:7;
+            };
+        };
+        
+        
     };
 } opn2_operator_t;
 
 typedef union {
-    u8 ALL[32];
+    u8 ALL[36];
     struct {
         //Byte 0: 0xA0 + channel offset
         u8 fnum_low;    //Lower 8 bits of frequency number
@@ -177,7 +188,7 @@ typedef union {
 } opn2_channel_t;
 
 typedef union {
-    u8 ALL[144];
+    u8 ALL[159];
     struct {
         //Byte 0: 0x21 only in lower register set
         union {
@@ -188,7 +199,7 @@ typedef union {
                 u8 test_tmrspd:1;   //Test register 0x21 bit 2: run timers 24 times faster
                 u8 test_nopg:1;     //Test register 0x21 bit 3: freezes PG (disables phase register writebacks)
                 u8 test_ugly:1;     //Test register 0x21 bit 4: inverts MSB of operators, produces fun ugly (but pitched) sounds
-                u8 test_noeg:1;     //Test register 0x21 bit 5: freeses EG (disables EG phase counter writebacks)
+                u8 test_noeg:1;     //Test register 0x21 bit 5: freezes EG (disables EG phase counter writebacks)
                 u8 test_readdat:1;  //Test register 0x21 bit 6: enable reading test data (channel/operator) instead of status flags
                 u8 test_readmsb:1;  //Test register 0x21 bit 7: select LSB or MSB of read test data
             };
@@ -233,7 +244,8 @@ typedef union {
             };
         };
         
-        //Byte 6: 0x28 only in lower register set
+        //Byte X: 0x28 only in lower register set
+        /*
         union {
             u8 gatereg;
             struct {
@@ -245,11 +257,12 @@ typedef union {
                 u8 gate_op4:1;      //Gate operator 4
             };
         };
+        */
         
-        //Byte 7: 0x2A only in lower register set
+        //Byte 6: 0x2A only in lower register set
         u8 dac_high;        //Bits 8 downto 1 of Channel 6 DAC value
         
-        //Byte 8: 0x2B only in lower register set
+        //Byte 7: 0x2B only in lower register set
         union {
             u8 dacenablereg;
             struct {
@@ -258,7 +271,7 @@ typedef union {
             };
         };
         
-        //Byte 9: 0x2C only in lower register set
+        //Byte 8: 0x2C only in lower register set
         union {
             u8 testreg2C;
             struct {
@@ -271,10 +284,10 @@ typedef union {
             };
         };
         
-        //Byte 10: 0xA9 only in lower register set
+        //Byte 9: 0xA9 only in lower register set
         u8 ch3op1_fnum_low;     //Lower 8 bits of frequency number
 
-        //Byte 11: 0xAD only in lower register set
+        //Byte 10: 0xAD only in lower register set
         union {
             u8 ch3op1_fhireg;
             struct {
@@ -284,10 +297,10 @@ typedef union {
             };
         };
         
-        //Byte 12: 0xAA only in lower register set
+        //Byte 11: 0xAA only in lower register set
         u8 ch3op2_fnum_low;     //Lower 8 bits of frequency number
 
-        //Byte 13: 0xAE only in lower register set
+        //Byte 12: 0xAE only in lower register set
         union {
             u8 ch3op2_fhireg;
             struct {
@@ -297,10 +310,10 @@ typedef union {
             };
         };
         
-        //Byte 14: 0xA8 only in lower register set
+        //Byte 13: 0xA8 only in lower register set
         u8 ch3op3_fnum_low;     //Lower 8 bits of frequency number
 
-        //Byte 15: 0xAC only in lower register set
+        //Byte 14: 0xAC only in lower register set
         union {
             u8 ch3op3_fhireg;
             struct {
@@ -318,27 +331,43 @@ typedef union {
 typedef union {
     u16 ALL;
     struct {
-        u16 freq:10;    //Frequency
-        u8 dummy:2;     //Spacing only, not in PSG
         u8 atten:4;     //Attenuation, with 0xF = off
+        u8 dummy1:4;    //Spacing only, not in PSG
+        u8 dummy2;      //Spacing only, not in PSG
+    };
+} psg_voice_t;
+
+typedef union {
+    u16 ALL;
+    struct {
+        u8 atten:4;     //Attenuation, with 0xF = off
+        u8 dummy:2;     //Spacing only, not in PSG
+        u16 freq:10;    //Frequency
     };
 } psg_square_t;
 
 typedef union {
-    u8 ALL;
+    u16 ALL;
     struct {
+        u8 atten:4;     //Attenuation, with 0xF = off
+        u8 dummy1:4;    //Spacing only, not in PSG
         u8 rate:2;      //Noise rate: 00 high, 01 mid, 10 low, 11 channel 3 clock
         u8 type:1;      //Noise mode: 0 "periodic" (1/16 pulse), 1 "white"
-        u8 dummy1:1;    //Bits ignored by PSG
-        u8 atten:4;     //Attenuation, with 0xF = off
+        u8 dummy2:1;    //Bit ignored by PSG
+        u8 dummy3:4;    //Spacing only, not in PSG
     };
 } psg_noise_t;
 
 typedef union {
-    u8 ALL[8];
-    struct {
-        psg_square_t square[3];
-        psg_noise_t noise;
+    u8 ALL[9];
+    struct{
+        union{
+            psg_voice_t voice[4];
+            struct {
+                psg_square_t square[3];
+                psg_noise_t noise;
+            };
+        };
         u8 latchedaddr; //Last address written to, for frequency MSB commands
     };
 } psg_chip_t;
@@ -372,7 +401,7 @@ typedef union {
 } genesis_board_t;
 
 typedef union {
-    u8 ALL[154];
+    u8 ALL[170];
     struct {
         opn2_chip_t opn2;
         psg_chip_t psg;

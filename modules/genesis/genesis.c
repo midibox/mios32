@@ -53,7 +53,7 @@ static const u8 OPN2GlobalRegs[16] = {
     //0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27
       0xFF, 0x00, 0x01, 0xFF, 0x02, 0x03, 0x04, 0x05,
     //0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F
-      0x06, 0xFF, 0x07, 0x08, 0x09, 0xFF, 0xFF, 0xFF
+      0xFF, 0xFF, 0x06, 0x07, 0x08, 0xFF, 0xFF, 0xFF
 };
 
 static const u8 OPN2Ch3Regs[8] = {
@@ -117,9 +117,22 @@ void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
     if(address <= 0x2F){
         if(address >= 0x20 && !addrhi){
             //OPN2 global register
-            reg = OPN2GlobalRegs[address - 0x20];
-            if(reg < 0xFF){
-                genesis[board].opn2.ALL[reg] = data;
+            if(address == 0x28){
+                //Key On register
+                chan = data & 0x07;
+                if((chan & 0x03) != 0x03){ //Make sure not writing to 0x03 or 0x07
+                    if(chan >= 0x04) chan -= 1; //Move channels 4, 5, 6 down to 3, 4, 5
+                    reg = data >> 4;
+                    for(op=0; op<4; op++){
+                        genesis[board].opn2.chan[chan].op[op].kon = (reg & 1);
+                        reg >>= 1;
+                    }
+                }
+            }else{
+                reg = OPN2GlobalRegs[address - 0x20];
+                if(reg < 0xFF){
+                    genesis[board].opn2.ALL[reg] = data;
+                }
             }
         }
     }else if(address <= 0x9F){
@@ -184,15 +197,12 @@ void Genesis_PSGWrite(u8 board, u8 data){
         voice = (addr >> 1);
         if(addr & 1){
             //Attenuation
-            if(voice == 3){
-                genesis[board].psg.noise.atten = (data & 0x0F);
-            }else{
-                genesis[board].psg.square[voice].atten = (data & 0x0F);
-            }
+            genesis[board].psg.voice[voice].atten = (data & 0x0F);
         }else{
             if(voice == 3){
                 //Noise parameters
-                genesis[board].psg.noise.ALL = (genesis[board].psg.noise.ALL & 0xF0) | (data & 0x0F);
+                genesis[board].psg.noise.rate = data & 0x03;
+                genesis[board].psg.noise.type = (data & 0x04) >> 2;
             }else{
                 genesis[board].psg.square[voice].freq = (genesis[board].psg.square[voice].freq & 0xFFF0) | (data & 0x0F);
             }
