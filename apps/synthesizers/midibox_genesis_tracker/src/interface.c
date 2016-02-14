@@ -133,6 +133,10 @@ void Interface_BtnOpMute(u8 op, u8 state){
 void Interface_BtnSystem(u8 button, u8 state){
     //TODO
     DBG("System button %x state %d", button, state);
+    if(button == FP_B_PLAY && state){
+        DBG("Pressed play");
+        playbackcommand = 3;
+    }
 }
 void Interface_BtnEdit(u8 button, u8 state){
     //TODO
@@ -142,6 +146,11 @@ void Interface_BtnEdit(u8 button, u8 state){
 void Interface_EncDatawheel(s32 incrementer){
     //TODO
     DBG("Datawheel moved %d", incrementer);
+    if(incrementer > 0){
+        playbackcommand = 1;
+    }else{
+        playbackcommand = 2;
+    }
 }
 void Interface_EncEdit(u8 encoder, s32 incrementer){
     //TODO

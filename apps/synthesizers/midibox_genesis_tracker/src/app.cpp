@@ -31,6 +31,9 @@
 
 u32 DEBUGVAL;
 u8 selgvoice;
+char* filenamelist;
+s32 numfiles;
+u8 playbackcommand;
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
@@ -66,6 +69,10 @@ extern "C" void APP_Init(void){
     DEBUG_RingState = 0;
     DEBUG_RingDir = 1;
     */
+    MIOS32_LCD_Clear();
+    MIOS32_LCD_CursorSet(0,0);
+    MIOS32_LCD_PrintString("Searching for SD card...");
+    
 }
 
 
@@ -74,54 +81,7 @@ extern "C" void APP_Init(void){
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Background(void)
 {
-    static u32 count = 0;
-    static VgmSourceStream* vgms = NULL;
-    static VgmHead* vgmh = NULL;
-    static s32 res = 0;
-    static u8 gotsdcard = 0;
-    
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
-    
-    if(count % 10000 == 0){
-        if(!gotsdcard){
-            res = FILE_CheckSDCard();
-            if(res == 3){
-                gotsdcard = 1;
-                //FILE_PrintSDCardInfos();
-            }
-        }
-        if(gotsdcard){
-            if(vgms == NULL){
-                vgms = new VgmSourceStream();
-                char* filename = new char[50];
-                sprintf(filename, "GOODEND.VGM");
-                //res = FILE_FileExists(filename);
-                //DBG("File existence: %d", res);
-                res = vgms->startStream(filename);
-                if(res >= 0){
-                    DBG("Loaded VGM!");
-                    vgms->readHeader();
-                    vgmh = new VgmHead(vgms);
-                    vgmh->restart(VgmPlayerLL_GetVGMTime());
-                    VgmPlayer_AddHead(vgmh);
-                }else{
-                    DBG("Failed to load VGM");
-                }
-                delete[] filename;
-            }else{
-                //
-            }
-        }
-        if(vgmh == NULL){
-            //DBG("DEBUGVAL %d, res = %d", DEBUGVAL, res);
-        }else{
-            //DBG("DEBUGVAL %d, VGM address 0x%x", DEBUGVAL, vgmh->getCurAddress());
-        }
-    }
-    
-    if(vgms != NULL){
-        //vgms->bg_streamBuffer();
-    }
     
     //Draw Genesis states
     u8 g;
@@ -272,7 +232,6 @@ extern "C" void APP_Background(void)
     */
     //Flash LEDs
     //MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
-    ++count;
     MIOS32_BOARD_LED_Set(0b1000, 0b0000);
 }
 
@@ -285,7 +244,11 @@ extern "C" void APP_Background(void)
 // jobs as explained in $MIOS32_PATH/apps/tutorials/006_rtos_tasks
 /////////////////////////////////////////////////////////////////////////////
 extern "C" void APP_Tick(void){
-    //static u32 prescaler = 0;
+    static u32 prescaler = 0;
+    static u8 sdstate = 0;
+    static u8 selfile = 0;
+    static VgmSourceStream* vgms = NULL;
+    static VgmHead* vgmh = NULL;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
@@ -322,9 +285,167 @@ extern "C" void APP_Tick(void){
         FrontPanel_LEDRingSet(DEBUG_Ring, 0, DEBUG_RingState);
     }
     */
+    s32 res;
+    
+    ++prescaler;
+    char* tempbuf; u8 i;
+    if(prescaler == 500){
+        prescaler = 0;
+        switch(sdstate){
+        case 0:
+            res = FILE_CheckSDCard();
+            if(res == 3){
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintString("Loading list of VGM files...");
+                sdstate = 2;
+            }else if(res >= 0){
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintString("Waiting for SD card to speed up...");
+            }else{
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("SD Card error %d", res);
+                sdstate = 1;
+            }
+            break;
+        case 1:
+            //do nothing
+            break;
+        case 2:
+            //Load list of VGM files
+            filenamelist = new char[9*MAXNUMFILES];
+            numfiles = FILE_GetFiles("/", "vgm", filenamelist, MAXNUMFILES, 0);
+            if(numfiles < 0){
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Error %d finding files", numfiles);
+                sdstate = 1;
+            }else{
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
+                selfile = 0;
+                sdstate = 3;
+            }
+            break;
+        case 3:
+            if(playbackcommand != 0){
+                switch(playbackcommand){
+                case 1:
+                    if(selfile < numfiles - 1){
+                        ++selfile;
+                    }
+                    break;
+                case 2:
+                    if(selfile > 0){
+                        --selfile;
+                    }
+                    break;
+                case 3:
+                    BLM_X_LEDSet((3 * 88) + (1 * 8) + 4, 0, 1); //Play LED
+                    sdstate = 4;
+                    break;
+                };
+                playbackcommand = 0;
+            }
+            tempbuf = new char[9];
+            for(i=0; i<8; i++){
+                tempbuf[i] = filenamelist[(9*selfile)+i];
+            }
+            tempbuf[8] = 0;
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintFormattedString("File %d: %s.vgm", selfile, tempbuf);
+            delete[] tempbuf;
+            break;
+        case 4:
+            //Load VGM file
+            tempbuf = new char[13];
+            for(i=0; i<8; i++){
+                if(filenamelist[(9*selfile)+i] <= ' ') break;
+                tempbuf[i] = filenamelist[(9*selfile)+i];
+            }
+            tempbuf[i++] = '.';
+            tempbuf[i++] = 'v';
+            tempbuf[i++] = 'g';
+            tempbuf[i++] = 'm';
+            tempbuf[i++] = 0;
+            vgms = new VgmSourceStream();
+            res = vgms->startStream(tempbuf);
+            if(res >= 0){
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Loaded VGM!");
+                vgms->readHeader();
+                vgmh = new VgmHead(vgms);
+                vgmh->restart(VgmPlayerLL_GetVGMTime());
+                VgmPlayer_AddHead(vgmh);
+                sdstate = 5;
+            }else{
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Error loading %s", tempbuf);
+                delete vgms;
+                sdstate = 3;
+            }
+            delete[] tempbuf;
+        case 5:
+            if(playbackcommand == 3){
+                BLM_X_LEDSet((3 * 88) + (1 * 8) + 4, 0, 0); //Play LED
+                VgmPlayer_RemoveHead(vgmh);
+                delete vgmh;
+                delete vgms;
+                Genesis_Reset(0);
+                playbackcommand = 0;
+                sdstate = 3;
+            }
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintFormattedString("Playing...");
+            break;
+        }
+    }
+    
+    /*
+    static u32 count = 0;
+    static s32 res = 0;
+    static u8 gotsdcard = 0;
     
     
-    
+    if(count % 10000 == 0){
+        if(!gotsdcard){
+            res = FILE_CheckSDCard();
+            if(res == 3){
+                gotsdcard = 1;
+                //FILE_PrintSDCardInfos();
+            }
+        }
+        if(gotsdcard){
+            if(vgms == NULL){
+                vgms = new VgmSourceStream();
+                char* filename = new char[50];
+                sprintf(filename, "GOODEND.VGM");
+                //res = FILE_FileExists(filename);
+                //DBG("File existence: %d", res);
+                res = vgms->startStream(filename);
+                if(res >= 0){
+                    DBG("Loaded VGM!");
+                    vgms->readHeader();
+                    vgmh = new VgmHead(vgms);
+                    vgmh->restart(VgmPlayerLL_GetVGMTime());
+                    VgmPlayer_AddHead(vgmh);
+                }else{
+                    DBG("Failed to load VGM");
+                }
+                delete[] filename;
+            }
+        }
+    }
+    */
 }
 
 
