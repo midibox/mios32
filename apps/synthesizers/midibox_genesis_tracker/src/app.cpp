@@ -257,6 +257,7 @@ extern "C" void APP_Tick(void){
     static u8 vegasstate = 0;
     static u32 vegascounter = 0;
     static u8 vegassub = 0;
+    static u8 vegastemp1 = 0, vegastemp2 = 0;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
@@ -499,7 +500,9 @@ extern "C" void APP_Tick(void){
             for(i=0; i<18; i++){
                 FrontPanel_LEDRingSet(i, 0, (i&1) ? (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
             }
-            if(++vegascounter == 0x800){
+            FrontPanel_GenesisLEDSet((vegascounter >> 6) & 3, (vegascounter & 0xF), (vegascounter >> 8) & 1, 1);
+            FrontPanel_GenesisLEDSet((vegascounter >> 6) & 3, (vegascounter & 0xF), ~(vegascounter >> 8) & 1, 0);
+            if(++vegascounter == 0x400){
                 vegascounter = 0;
                 vegasstate = 5;
             }
@@ -508,9 +511,11 @@ extern "C" void APP_Tick(void){
             for(i=0; i<18; i++){
                 FrontPanel_LEDRingSet(i, 0, !(i&1) ? (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
             }
-            if(++vegascounter == 0x800){
+            FrontPanel_GenesisLEDSet(3 - ((vegascounter >> 6) & 3), (vegascounter & 0xF), (vegascounter >> 8) & 1, 1);
+            FrontPanel_GenesisLEDSet(3 - ((vegascounter >> 6) & 3), (vegascounter & 0xF), ~(vegascounter >> 8) & 1, 0);
+            if(++vegascounter == 0x400){
                 vegascounter = 0;
-                if(++vegassub == 1){
+                if(++vegassub == 2){
                     vegassub = 0;
                     vegasstate = 6;
                 }else{
@@ -522,6 +527,8 @@ extern "C" void APP_Tick(void){
             for(i=0; i<18; i++){
                 FrontPanel_LEDRingSet(i, 1, ((vegascounter >> 6) & 0xF));
             }
+            FrontPanel_GenesisLEDSet(((vegascounter >> 6) & 3), (vegascounter & 0xF), 0, ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (vegascounter & 1));
+            FrontPanel_GenesisLEDSet(((vegascounter >> 6) & 3), (vegascounter & 0xF), 1, ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (~vegascounter & 1));
             if(++vegascounter == 0x400){
                 vegascounter = 0;
                 vegasstate = 7;
@@ -531,6 +538,8 @@ extern "C" void APP_Tick(void){
             for(i=0; i<18; i++){
                 FrontPanel_LEDRingSet(i, 1, 15 - ((vegascounter >> 6) & 0xF));
             }
+            FrontPanel_GenesisLEDSet(((vegascounter >> 6) & 3), (vegascounter & 0xF), 0, ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (vegascounter & 1));
+            FrontPanel_GenesisLEDSet(((vegascounter >> 6) & 3), (vegascounter & 0xF), 1, ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (~vegascounter & 1));
             if(++vegascounter == 0x400){
                 vegascounter = 0;
                 if(++vegassub == 1){
