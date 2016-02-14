@@ -454,6 +454,8 @@ LED_COPY        0   0
 LED_PASTE       0   0
 LED_CLEAR       0   0
 LED_UNDO        0   0
+LED_MOVE        0   0
+LED_SCROLL      0   0
 
 #                  SR  Pin
 LED_STEP_VIEW      M3   1
@@ -623,6 +625,8 @@ BUTTON_COPY     M7   3
 BUTTON_PASTE    M8   2
 BUTTON_CLEAR    M8   3
 BUTTON_UNDO      0   0
+BUTTON_MOVE      0   0
+BUTTON_SCROLL    0   0
 
 #                 SR  Pin
 BUTTON_STEP_VIEW  M5   5

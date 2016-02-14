@@ -391,6 +391,11 @@ s32 SEQ_CORE_Handler(void)
       SEQ_MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
       SEQ_CORE_PlayOffEvents();
       SEQ_MIDPLY_PlayOffEvents();
+
+      int track;
+      for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+	SEQ_RECORD_Reset(track);
+      }
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -580,7 +585,12 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
   seq_core_trk_t *t = &seq_core_trk[0];
   seq_cc_trk_t *tcc = &seq_cc_trk[0];
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
-    t->state.ALL = 0;
+    // clear all states (except for recording)
+    {
+      u8 rec_dont_overwrite_next_step = t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+      t->state.ALL = 0;
+      t->state.REC_DONT_OVERWRITE_NEXT_STEP = rec_dont_overwrite_next_step;
+    }
     SEQ_CORE_ResetTrkPos(track, t, tcc);
 
     t->bar = 0;
@@ -609,8 +619,6 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 
       t->bar = pos_bar;
     }
-
-    SEQ_RECORD_Reset(track);
   }
 
   // since timebase has been changed, ensure that Off-Events are played 
@@ -974,9 +982,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	  if( !mute_this_step ) { // if not already skipped (e.g. MANUAL mode)
-	    mute_this_step = !seq_record_options.FWD_MIDI && t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+	  if( !mute_this_step && !seq_record_options.FWD_MIDI ) { // if not already skipped (e.g. MANUAL mode)
+	    mute_this_step = t->state.REC_DONT_OVERWRITE_NEXT_STEP;
+
+	    if( seq_core_state.FIRST_CLK && seq_record_options.AUTO_START )
+	      mute_this_step = 1; // mute initial step which is going to be recorded
 	  }
+
 	  // forward new step to recording function (only used in live recording mode)
 	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 

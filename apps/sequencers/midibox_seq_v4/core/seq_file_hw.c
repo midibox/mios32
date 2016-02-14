@@ -471,6 +471,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.clear = din_value;
 	  } else if( strcasecmp(parameter, "UNDO") == 0 ) {
 	    seq_hwcfg_button.undo = din_value;
+	  } else if( strcasecmp(parameter, "MOVE") == 0 ) {
+	    seq_hwcfg_button.move = din_value;
+	  } else if( strcasecmp(parameter, "SCROLL") == 0 ) {
+	    seq_hwcfg_button.scroll = din_value;
 	  } else if( strcasecmp(parameter, "MIXER") == 0 ) {
 	    seq_hwcfg_button.mixer = din_value;
 	  } else if( strcasecmp(parameter, "SAVE") == 0 ) {
@@ -665,6 +669,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.clear = dout_value;
 	  } else if( strcasecmp(parameter, "UNDO") == 0 ) {
 	    seq_hwcfg_led.undo = dout_value;
+	  } else if( strcasecmp(parameter, "MOVE") == 0 ) {
+	    seq_hwcfg_led.move = dout_value;
+	  } else if( strcasecmp(parameter, "SCROLL") == 0 ) {
+	    seq_hwcfg_led.scroll = dout_value;
 	  } else if( strcasecmp(parameter, "STEP_VIEW") == 0 ) {
 	    seq_hwcfg_led.step_view = dout_value;
 	  } else if( strcasecmp(parameter, "TRG_LAYER_SEL") == 0 ) {

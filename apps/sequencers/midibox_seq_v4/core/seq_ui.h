@@ -72,6 +72,8 @@ typedef union {
     u32 PASTE:1;
     u32 CLEAR:1;
     u32 UNDO:1;
+    u32 MOVE:1;
+    u32 SCROLL:1;
     u32 TAP_TEMPO:1;
     u32 UP:1;
     u32 DOWN:1;
@@ -368,6 +370,8 @@ extern s32 SEQ_UI_UTIL_CopyButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_PasteButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ClearButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_UndoButton(s32 depressed);
+extern s32 SEQ_UI_UTIL_MoveButton(s32 depressed);
+extern s32 SEQ_UI_UTIL_ScrollButton(s32 depressed);
 
 extern s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track);
 
