@@ -26,6 +26,9 @@ VgmHead::VgmHead(VgmSourceStream* src){
     subbufferlen = 0;
 }
 
+VgmHead::~VgmHead(){
+    //do nothing special
+}
 
 void VgmHead::restart(u32 vgm_time){
     srcaddr = source->vgmdatastartaddr;

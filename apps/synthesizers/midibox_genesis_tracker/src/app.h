@@ -36,6 +36,10 @@ extern "C" {
 #endif
 
 extern u8 selgvoice;
+#define MAXNUMFILES 56
+extern char* filenamelist;
+extern s32 numfiles;
+extern u8 playbackcommand;
 
 extern void APP_Init(void);
 extern void APP_Background(void);

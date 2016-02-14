@@ -436,6 +436,11 @@ void FrontPanel_EncoderChange(u32 encoder, u32 incrementer){
     }
 }
 
+void FrontPanel_LEDSet(u32 led, u8 value){
+    //TODO load from settings
+    
+}
+
 void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
     if(ring >= 18) return;
     LEDRing_T ledring = LED_RINGS[ring];
