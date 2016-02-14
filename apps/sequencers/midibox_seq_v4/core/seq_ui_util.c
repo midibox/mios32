@@ -1165,6 +1165,16 @@ s32 SEQ_UI_UTIL_ClearButton(s32 depressed)
   return Button_Handler(SEQ_UI_BUTTON_GP4, depressed);
 }
 
+s32 SEQ_UI_UTIL_MoveButton(s32 depressed)
+{
+  return Button_Handler(SEQ_UI_BUTTON_GP5, depressed);
+}
+
+s32 SEQ_UI_UTIL_ScrollButton(s32 depressed)
+{
+  return Button_Handler(SEQ_UI_BUTTON_GP6, depressed);
+}
+
 s32 SEQ_UI_UTIL_UndoButton(s32 depressed)
 {
   return Button_Handler(SEQ_UI_BUTTON_GP8, depressed);

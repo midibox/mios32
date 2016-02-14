@@ -1158,6 +1158,46 @@ static s32 SEQ_UI_Button_Undo(s32 depressed)
   }
 }
 
+static s32 SEQ_UI_Button_Move(s32 depressed)
+{
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  seq_ui_button_state.MOVE = depressed ? 0 : 1;
+
+  if( !depressed ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  }
+
+  s32 status = SEQ_UI_UTIL_MoveButton(depressed);
+  if( depressed ) {
+    if( prev_page != SEQ_UI_PAGE_UTIL )
+      SEQ_UI_PageSet(prev_page);
+  }
+
+  return status;
+}
+
+static s32 SEQ_UI_Button_Scroll(s32 depressed)
+{
+  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+
+  seq_ui_button_state.SCROLL = depressed ? 0 : 1;
+
+  if( !depressed ) {
+    prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_UTIL);
+  }
+
+  s32 status = SEQ_UI_UTIL_ScrollButton(depressed);
+  if( depressed ) {
+    if( prev_page != SEQ_UI_PAGE_UTIL )
+      SEQ_UI_PageSet(prev_page);
+  }
+
+  return status;
+}
+
 
 static s32 SEQ_UI_Button_Menu(s32 depressed)
 {
@@ -2119,6 +2159,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Clear(pin_value);
   if( pin == seq_hwcfg_button.undo )
     return SEQ_UI_Button_Undo(pin_value);
+  if( pin == seq_hwcfg_button.move )
+    return SEQ_UI_Button_Move(pin_value);
+  if( pin == seq_hwcfg_button.scroll )
+    return SEQ_UI_Button_Scroll(pin_value);
 
   if( pin == seq_hwcfg_button.menu )
     return SEQ_UI_Button_Menu(pin_value);
@@ -2886,6 +2930,8 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.paste, seq_ui_button_state.PASTE);
   SEQ_LED_PinSet(seq_hwcfg_led.undo, seq_ui_button_state.UNDO);
   SEQ_LED_PinSet(seq_hwcfg_led.clear, seq_ui_button_state.CLEAR);
+  SEQ_LED_PinSet(seq_hwcfg_led.move, seq_ui_button_state.MOVE);
+  SEQ_LED_PinSet(seq_hwcfg_led.scroll, seq_ui_button_state.SCROLL);
 
   SEQ_LED_PinSet(seq_hwcfg_led.tap_tempo, seq_ui_button_state.TAP_TEMPO);
   SEQ_LED_PinSet(seq_hwcfg_led.tempo_preset, ui_page == SEQ_UI_PAGE_BPM_PRESETS);

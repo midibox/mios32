@@ -16,8 +16,7 @@ MIDIboxSEQ V4.091
    o hwcfg/wilba*/MBSEQ_HW.V4: default F1-F4 assignments changed to:
      F1: Bookmark, F2: Record, F3: Tap Tempo, F4: Save All
 
-   o MBSEQ_HW.V4: added new button/LED function "FX" which changes and
-     displays the FX menu
+   o MBSEQ_HW.V4: added new button/LED functions: FX, MOVE, SCROLL
 
    o MBSEQ_HW.V4: added new LED_MEASURE function which will activate a LED
      when the first step of the measure is played.

@@ -341,6 +341,11 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
+  // Auto-Start: start with first step
+  if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START ) {
+    ui_selected_step = 0;
+  }
+
   // branch depending on event
   u8 rec_event = 0;
   u8 send_note_off = 0;
@@ -516,10 +521,6 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
       SEQ_BPM_CheckAutoMaster();
       // start generator
       SEQ_BPM_Start();
-
-      // start with first step
-      ui_selected_step = 0;
-
     }
 
     if( !step_record_mode ) {
