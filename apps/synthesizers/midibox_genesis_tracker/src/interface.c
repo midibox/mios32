@@ -117,7 +117,7 @@ void Interface_BtnSoftkey(u8 softkey, u8 state){
         }else if(softkey == 5){
             Genesis_OPN2Write(0, 0, 0x21, 0x20); while(Genesis_CheckOPN2Busy(0));
         }else if(softkey == 6){
-            Genesis_OPN2Write(0, 0, 0x21, 0x08); while(Genesis_CheckOPN2Busy(0));
+            Genesis_OPN2Write(0, 0, 0x21, 0x02); while(Genesis_CheckOPN2Busy(0));
         }else if(softkey == 7){
             Genesis_OPN2Write(0, 0, 0x21, 0x00); while(Genesis_CheckOPN2Busy(0));
         }
