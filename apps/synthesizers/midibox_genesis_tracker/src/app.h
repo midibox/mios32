@@ -40,6 +40,7 @@ extern u8 selgvoice;
 extern char* filenamelist;
 extern s32 numfiles;
 extern u8 playbackcommand;
+extern u8 vegasactive;
 
 extern void APP_Init(void);
 extern void APP_Background(void);

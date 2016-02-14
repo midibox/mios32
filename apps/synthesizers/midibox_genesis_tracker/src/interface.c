@@ -14,6 +14,7 @@
 #include "interface.h"
 
 #include <genesis.h>
+#include <blm_x.h>
 #include "frontpanel.h"
 #include "app.h"
 
@@ -136,6 +137,15 @@ void Interface_BtnSystem(u8 button, u8 state){
     if(button == FP_B_PLAY && state){
         DBG("Pressed play");
         playbackcommand = 3;
+    }else if(button == FP_B_MENU && state){
+        DBG("Pressed menu");
+        vegasactive = !vegasactive;
+        if(!vegasactive){
+            u16 i;
+            for(i=0; i<88*8; i++){
+                BLM_X_LEDSet(i, 0, 0);
+            }
+        }
     }
 }
 void Interface_BtnEdit(u8 button, u8 state){
