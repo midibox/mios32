@@ -21,6 +21,8 @@ VgmHead::VgmHead(VgmSourceStream* src){
     delay62 = 735;
     delay63 = 882;
     opn2mult = ((7670454 << 8) / 500000); //0x1000; //TODO adjust in real time
+    psgmult = 0x1000; //TODO adjust in real time
+    psgfreq0to1 = 1;
     subbufferlen = 0;
 }
 
@@ -148,6 +150,16 @@ void VgmHead::fixOPN2Frequency(ChipWriteCmd* writecmd, u32 opn2mult){
     writecmd->data2 = (freq & 0xFF);
 }
 
+void VgmHead::fixPSGFrequency(ChipWriteCmd* writecmd, u32 psgmult, u8 psgfreq0to1){
+    u32 freq = (writecmd->data & 0x0F) | ((writecmd->data2 & 0x3F) << 4);
+    //TODO psgmult
+    if(freq == 0 && psgfreq0to1){
+        freq = 1;
+    }
+    writecmd->data = (writecmd->data & 0xF0) | (freq & 0x0F);
+    writecmd->data2 = (freq >> 4) & 0x3F;
+}
+
 void VgmHead::cmdNext(u32 vgm_time){
     u8 type, cmdlen;
     iswait = iswrite = false;
@@ -164,7 +176,27 @@ void VgmHead::cmdNext(u32 vgm_time){
             iswrite = true;
             writecmd.cmd = type;
             writecmd.data = subbuffer[1];
-            //TODO also adjust frequency on PSG write
+            if((writecmd.data & 0x80) && !(writecmd.data & 0x10) && (writecmd.data < 0xE0)){
+                //It's a main write, not attenuation, and not noise
+                u8 bufferpos, newtype;
+                bufferpos = subbufferlen;
+                while(bufferNextCommand()){
+                    newtype = subbuffer[bufferpos];
+                    if(newtype == type){
+                        //Next command is another PSG write
+                        if((writecmd.data & 0x80)){
+                            //Second command is a frequency MSB write
+                            writecmd.data2 = subbuffer[bufferpos+1];
+                            fixPSGFrequency(&writecmd, psgmult, psgfreq0to1);
+                            //Reconstruct next command
+                            subbuffer[bufferpos+1] = writecmd.data2;
+                        }
+                        //If it's another main write, don't modify anything, and stop
+                        break;
+                    }
+                    bufferpos = subbufferlen;
+                }
+            }
         }else if((type & 0xFE) == 0x52){
             //OPN2 write
             iswrite = true;
@@ -174,7 +206,7 @@ void VgmHead::cmdNext(u32 vgm_time){
             if((writecmd.addr & 0xF4) == 0xA4){
                 //Frequency MSB write, read to find frequency LSB write command
                 u8 bufferpos, newtype;
-                bufferpos = 3;
+                bufferpos = subbufferlen;
                 while(bufferNextCommand()){
                     newtype = subbuffer[bufferpos];
                     if(newtype == type){

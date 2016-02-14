@@ -14,21 +14,32 @@
 #include "interface.h"
 
 #include <genesis.h>
+#include "frontpanel.h"
+#include "app.h"
 
+/*
 u8 DEBUG_Ring;
 u8 DEBUG_RingState;
 s8 DEBUG_RingDir;
+*/
+
 
 void Interface_Init(){
-    //TODO
+    selgvoice = 0;
+    FrontPanel_GenesisLEDSet((selgvoice >> 4), (selgvoice & 0xF), 1, 1);
 }
 
 
 void Interface_BtnGVoice(u8 gvoice, u8 state){
-    //TODO
     DBG("Genesis Voice button %x state %d", gvoice, state);
-    u8 g = (gvoice >> 4);
-    u8 v = (gvoice & 0xF);
+    //u8 g = (gvoice >> 4);
+    //u8 v = (gvoice & 0xF);
+    if(state){
+        FrontPanel_GenesisLEDSet((selgvoice >> 4), (selgvoice & 0xF), 1, 0);
+        selgvoice = gvoice;
+        FrontPanel_GenesisLEDSet((selgvoice >> 4), (selgvoice & 0xF), 1, 1);
+    }
+    /*
     if(v >= 8 && v <= 0xB){
         v -= 8;
         if(state){
@@ -45,9 +56,6 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
     }else if(v >= 1 && v <= 6){
         u8 ah = (v >= 4);
         if(state){
-            Genesis_OPN2Write(g, 0, 0x22, 0x00); while(Genesis_CheckOPN2Busy(g));
-            Genesis_OPN2Write(g, 0, 0x27, 0x00); while(Genesis_CheckOPN2Busy(g));
-            Genesis_OPN2Write(g, 0, 0x2B, 0x00); while(Genesis_CheckOPN2Busy(g));
             Genesis_OPN2Write(g, ah, 0x30, 0x71); while(Genesis_CheckOPN2Busy(g));
             Genesis_OPN2Write(g, ah, 0x34, 0x0D); while(Genesis_CheckOPN2Busy(g));
             Genesis_OPN2Write(g, ah, 0x38, 0x33); while(Genesis_CheckOPN2Busy(g));
@@ -85,19 +93,32 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
             Genesis_OPN2Write(g, 0, 0x28, 0x00 | (ah << 2)); while(Genesis_CheckOPN2Busy(g));
         }
     }
+    */
 }
 void Interface_BtnSoftkey(u8 softkey, u8 state){
     //TODO
     DBG("Softkey %x state %d", softkey, state);
     if(state){
         if(softkey == 0){
-            DEBUG_Ring++;
+            //DEBUG_Ring++;
         }else if(softkey == 1){
-            DEBUG_Ring--;
+            //DEBUG_Ring--;
         }else if(softkey == 2){
-            DEBUG_RingDir = 1;
+            genesis[0].board.cap_psg = 1;
+            genesis[0].board.cap_opn2 = 1;
+            Genesis_WriteBoardBits(0);
         }else if(softkey == 3){
-            DEBUG_RingDir = -1;
+            genesis[0].board.cap_psg = 0;
+            genesis[0].board.cap_opn2 = 0;
+            Genesis_WriteBoardBits(0);
+        }else if(softkey == 4){
+            Genesis_OPN2Write(0, 0, 0x21, 0x10); while(Genesis_CheckOPN2Busy(0));
+        }else if(softkey == 5){
+            Genesis_OPN2Write(0, 0, 0x21, 0x20); while(Genesis_CheckOPN2Busy(0));
+        }else if(softkey == 6){
+            Genesis_OPN2Write(0, 0, 0x21, 0x08); while(Genesis_CheckOPN2Busy(0));
+        }else if(softkey == 7){
+            Genesis_OPN2Write(0, 0, 0x21, 0x00); while(Genesis_CheckOPN2Busy(0));
         }
     }
 }

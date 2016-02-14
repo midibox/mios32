@@ -45,6 +45,7 @@ public:
 private:
     static u8 getCommandLen(u8 type);
     static void fixOPN2Frequency(ChipWriteCmd* writecmd, u32 opn2mult);
+    static void fixPSGFrequency(ChipWriteCmd* writecmd, u32 psgmult, u8 freq0to1);
     
     bool bufferNextCommand();
     void unBuffer(u8 len);
@@ -66,7 +67,8 @@ private:
     bool isdone;
     u32 delay62, delay63;
     
-    u32 opn2mult;
+    u32 opn2mult, psgmult;
+    u8 psgfreq0to1;
     
 };
 

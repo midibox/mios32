@@ -15,7 +15,8 @@ LCD       =     $(MIOS32_LCD)
 # add plain C files here
 THUMB_SOURCE    =   src/vgmplayer_ll.c \
                     src/frontpanel.c \
-                    src/interface.c
+                    src/interface.c \
+                    src/genesisstate.c
 
 # add C++ files here
 THUMB_CPP_SOURCE =  src/app.cpp \
