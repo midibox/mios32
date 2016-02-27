@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <esp8266.h>
 #include "app.h"
 #include "terminal.h"
 
@@ -25,6 +26,10 @@
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
+  // init ESP8266 driver
+  ESP8266_Init(0);
+  ESP8266_InitUart(UART2); // MIDI IN/OUT 3 port is sacrificed
+
   // init terminal
   TERMINAL_Init(0);
 

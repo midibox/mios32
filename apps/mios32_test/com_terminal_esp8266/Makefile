@@ -48,6 +48,9 @@ CFLAGS =	$(DEBUG) $(OPTIMIZE)
 # sources of programming model
 include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
+# ESP8266 driver
+include $(MIOS32_PATH)/modules/esp8266/esp8266.mk
+
 # application specific LCD driver (selected via makefile variable)
 include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
