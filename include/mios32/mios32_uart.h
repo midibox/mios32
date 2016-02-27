@@ -114,6 +114,11 @@
 
 extern s32 MIOS32_UART_Init(u32 mode);
 
+extern s32 MIOS32_UART_IsAssignedToMIDI(u8 uart);
+
+extern s32 MIOS32_UART_InitPort(u8 uart, u32 baudrate, mios32_board_pin_mode_t tx_pin_mode, u8 is_midi);
+extern s32 MIOS32_UART_InitPortDefault(u8 uart);
+
 extern s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate);
 extern u32 MIOS32_UART_BaudrateGet(u8 uart);
 

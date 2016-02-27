@@ -1243,17 +1243,19 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
     } midi_intf_table_t;
 
     const midi_intf_table_t midi_intf_table[] = {
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART0_ASSIGNMENT == 1
+#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI)
+#if MIOS32_UART_NUM >= 1
       { UART0, MIOS32_UART_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART1_ASSIGNMENT == 1
+#if MIOS32_UART_NUM >= 2
       { UART1, MIOS32_UART_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART2_ASSIGNMENT == 1
+#if MIOS32_UART_NUM >= 3
       { UART2, MIOS32_UART_MIDI_PackageReceive },
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && !defined(MIOS32_DONT_USE_UART_MIDI) && MIOS32_UART3_ASSIGNMENT == 1
+#if MIOS32_UART_NUM >= 4
       { UART3, MIOS32_UART_MIDI_PackageReceive },
+#endif
 #endif
 #if !defined(MIOS32_DONT_USE_IIC) && !defined(MIOS32_DONT_USE_IIC_MIDI)
 #if MIOS32_IIC_MIDI_NUM >= 1

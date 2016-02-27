@@ -28,6 +28,9 @@
 // Pin definitions and UART mappings
 /////////////////////////////////////////////////////////////////////////////
 
+// how many UARTs are supported?
+#define NUM_SUPPORTED_UARTS MIOS32_UART_NUM
+
 // UART peripherals are clocked at CCLK/4
 #define UART_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/4)
 
@@ -83,6 +86,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #if MIOS32_UART_NUM >= 1
+static u8  uart_assigned_to_midi;
+
 static const LPC_UART_TypeDef *uart_base[4] = { (LPC_UART_TypeDef*)MIOS32_UART0, (LPC_UART_TypeDef*)MIOS32_UART1, (LPC_UART_TypeDef*)MIOS32_UART2, (LPC_UART_TypeDef*)MIOS32_UART3 };
 
 static u32 uart_baudrate[MIOS32_UART_NUM];
@@ -122,48 +127,20 @@ s32 MIOS32_UART_Init(u32 mode)
   if( mode != 0 )
     return -1; // unsupported mode
 
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UARTs
 #else
 
-  // configure UART pins
-#if MIOS32_UART0_ASSIGNMENT != 0
-  MIOS32_UART0_TX_INIT;
-  MIOS32_UART0_RX_INIT;
-#endif
-#if MIOS32_UART_NUM >= 2 && MIOS32_UART1_ASSIGNMENT != 0
-  MIOS32_UART1_TX_INIT;
-  MIOS32_UART1_RX_INIT;
-#endif
-#if MIOS32_UART_NUM >= 3 && MIOS32_UART2_ASSIGNMENT != 0
-  MIOS32_UART2_TX_INIT;
-  MIOS32_UART2_RX_INIT;
-#endif
-#if MIOS32_UART_NUM >= 4 && MIOS32_UART3_ASSIGNMENT != 0
-  MIOS32_UART3_TX_INIT;
-  MIOS32_UART3_RX_INIT;
-#endif
+  // initialize UARTs and clear buffers
+  {
+    u8 uart;
+    for(uart=0; uart<NUM_SUPPORTED_UARTS; ++uart) {
+      rx_buffer_tail[uart] = rx_buffer_head[uart] = rx_buffer_size[uart] = 0;
+      tx_buffer_tail[uart] = tx_buffer_head[uart] = tx_buffer_size[uart] = 0;
 
-  // clear buffer counters
-  int i;
-  for(i=0; i<MIOS32_UART_NUM; ++i) {
-    rx_buffer_tail[i] = rx_buffer_head[i] = rx_buffer_size[i] = 0;
-    tx_buffer_tail[i] = tx_buffer_head[i] = tx_buffer_size[i] = 0;
+      MIOS32_UART_InitPortDefault(uart);
+    }
   }
-
-  // UART configuration
-#if MIOS32_UART0_ASSIGNMENT != 0
-  MIOS32_UART_BaudrateSet(0, MIOS32_UART0_BAUDRATE);
-#endif
-#if MIOS32_UART_NUM >=2 && MIOS32_UART1_ASSIGNMENT != 0
-  MIOS32_UART_BaudrateSet(1, MIOS32_UART1_BAUDRATE);
-#endif
-#if MIOS32_UART_NUM >=3 && MIOS32_UART2_ASSIGNMENT != 0
-  MIOS32_UART_BaudrateSet(2, MIOS32_UART2_BAUDRATE);
-#endif
-#if MIOS32_UART_NUM >=4 && MIOS32_UART3_ASSIGNMENT != 0
-  MIOS32_UART_BaudrateSet(3, MIOS32_UART3_BAUDRATE);
-#endif
 
   // configure and enable UART interrupts
 #if MIOS32_UART0_ASSIGNMENT != 0
@@ -171,20 +148,176 @@ s32 MIOS32_UART_Init(u32 mode)
   MIOS32_IRQ_Install(MIOS32_UART0_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
-#if MIOS32_UART_NUM >= 2 && MIOS32_UART1_ASSIGNMENT != 0
+#if NUM_SUPPORTED_UARTS >= 2 && MIOS32_UART1_ASSIGNMENT != 0
   MIOS32_UART1->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART1_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
-#if MIOS32_UART_NUM >= 3 && MIOS32_UART2_ASSIGNMENT != 0
+#if NUM_SUPPORTED_UARTS >= 3 && MIOS32_UART2_ASSIGNMENT != 0
   MIOS32_UART2->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART2_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
 
-#if MIOS32_UART_NUM >= 4 && MIOS32_UART2_ASSIGNMENT != 0
+#if NUM_SUPPORTED_UARTS >= 4 && MIOS32_UART2_ASSIGNMENT != 0
   MIOS32_UART3->IER = (1 << 1) | (1 << 0); // enable RBR and THRE (receive/transmit buffer) interrupt
   MIOS32_IRQ_Install(MIOS32_UART3_IRQ_CHANNEL, MIOS32_IRQ_UART_PRIORITY);
 #endif
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes a given UART interface based on given baudrate and TX output mode
+//! \param[in] uart UART number (0..2)
+//! \param[in] baudrate the baudrate
+//! \param[in] tx_pin_mode the TX pin mode
+//!   <UL>
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_PP: TX pin configured for push-pull mode
+//!     <LI>MIOS32_BOARD_PIN_MODE_OUTPUT_OD: TX pin configured for open drain mode
+//!   </UL>
+//! \param[in] is_midi MIDI or common UART interface?
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_InitPort(u8 uart, u32 baudrate, mios32_board_pin_mode_t tx_pin_mode, u8 is_midi)
+{
+#if NUM_SUPPORTED_UARTS == 0
+  return -1; // no UART available
+#else
+  if( uart >= NUM_SUPPORTED_UARTS )
+    return -1;
+
+
+  // MIDI assignment
+  if( is_midi ) {
+    uart_assigned_to_midi |= (1 << uart);
+  } else {
+    uart_assigned_to_midi &= ~(1 << uart);
+  }
+
+  switch( uart ) {
+#if NUM_SUPPORTED_UARTS >= 1 && MIOS32_UART0_ASSIGNMENT != 0
+  case 0: {
+    // configure UART pins (note: due to a LPC17 bug the TX pin won't work on PP mode, therefore tx_pin_mode note considered)
+    MIOS32_UART0_TX_INIT;
+    MIOS32_UART0_RX_INIT;
+
+    // UART configuration
+    MIOS32_UART_BaudrateSet(uart, baudrate);
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 2 && MIOS32_UART1_ASSIGNMENT != 0
+  case 1: {
+    // configure UART pins (note: due to a LPC17 bug the TX pin won't work on PP mode, therefore tx_pin_mode note considered)
+    MIOS32_UART1_TX_INIT;
+    MIOS32_UART1_RX_INIT;
+
+    // UART configuration
+    MIOS32_UART_BaudrateSet(uart, baudrate);
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 3 && MIOS32_UART2_ASSIGNMENT != 0
+  case 2: {
+    // configure UART pins (note: due to a LPC17 bug the TX pin won't work on PP mode, therefore tx_pin_mode note considered)
+    MIOS32_UART2_TX_INIT;
+    MIOS32_UART2_RX_INIT;
+
+    // UART configuration
+    MIOS32_UART_BaudrateSet(uart, baudrate);
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 4 && MIOS32_UART3_ASSIGNMENT != 0
+  case 3: {
+    // configure UART pins (note: due to a LPC17 bug the TX pin won't work on PP mode, therefore tx_pin_mode note considered)
+    MIOS32_UART3_TX_INIT;
+    MIOS32_UART3_RX_INIT;
+
+    // UART configuration
+    MIOS32_UART_BaudrateSet(uart, baudrate);
+  } break;
+#endif
+
+  default:
+    return -1; // unsupported UART
+  }
+
+  return 0; // no error
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return 0 if UART is not assigned to a MIDI function
+//! \return 1 if UART is assigned to a MIDI function
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_IsAssignedToMIDI(u8 uart)
+{
+#if NUM_SUPPORTED_UARTS == 0
+  return 0; // no UART available
+#else
+  return (uart_assigned_to_midi & (1 << uart)) ? 1 : 0;
+#endif
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes a given UART interface based on default settings
+//! \param[in] uart UART number (0..2)
+//! \return < 0 if initialisation failed
+/////////////////////////////////////////////////////////////////////////////
+s32 MIOS32_UART_InitPortDefault(u8 uart)
+{
+#if NUM_SUPPORTED_UARTS == 0
+  return -1; // no UART available
+#else
+  switch( uart ) {
+#if NUM_SUPPORTED_UARTS >= 1 && MIOS32_UART0_ASSIGNMENT != 0
+  case 0: {
+# if MIOS32_UART0_TX_OD
+    MIOS32_UART_InitPort(0, MIOS32_UART0_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_OD, MIOS32_UART0_ASSIGNMENT == 1);
+# else
+    MIOS32_UART_InitPort(0, MIOS32_UART0_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, MIOS32_UART0_ASSIGNMENT == 1);
+# endif
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 2 && MIOS32_UART1_ASSIGNMENT != 0
+  case 1: {
+# if MIOS32_UART1_TX_OD
+    MIOS32_UART_InitPort(1, MIOS32_UART1_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_OD, MIOS32_UART1_ASSIGNMENT == 1);
+# else
+    MIOS32_UART_InitPort(1, MIOS32_UART1_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, MIOS32_UART1_ASSIGNMENT == 1);
+# endif
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 3 && MIOS32_UART2_ASSIGNMENT != 0
+  case 2: {
+# if MIOS32_UART2_TX_OD
+    MIOS32_UART_InitPort(2, MIOS32_UART2_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_OD, MIOS32_UART2_ASSIGNMENT == 1);
+# else
+    MIOS32_UART_InitPort(2, MIOS32_UART2_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, MIOS32_UART2_ASSIGNMENT == 1);
+# endif
+  } break;
+#endif
+
+#if NUM_SUPPORTED_UARTS >= 4 && MIOS32_UART3_ASSIGNMENT != 0
+  case 3: {
+# if MIOS32_UART3_TX_OD
+    MIOS32_UART_InitPort(3, MIOS32_UART3_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_OD, MIOS32_UART3_ASSIGNMENT == 1);
+# else
+    MIOS32_UART_InitPort(3, MIOS32_UART3_BAUDRATE, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, MIOS32_UART3_ASSIGNMENT == 1);
+# endif
+  } break;
+#endif
+
+  default:
+    return -1; // unsupported UART
+  }
 
   return 0; // no error
 #endif
@@ -201,10 +334,10 @@ s32 MIOS32_UART_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1;
 
   LPC_UART_TypeDef *u = (LPC_UART_TypeDef *)uart_base[uart];
@@ -284,10 +417,10 @@ s32 MIOS32_UART_BaudrateSet(u8 uart, u32 baudrate)
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS32_UART_BaudrateGet(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return 0; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return 0;
   else
     return uart_baudrate[uart];
@@ -304,10 +437,10 @@ u32 MIOS32_UART_BaudrateGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferFree(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return 0; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return 0;
   else
     return MIOS32_UART_RX_BUFFER_SIZE - rx_buffer_size[uart];
@@ -324,10 +457,10 @@ s32 MIOS32_UART_RxBufferFree(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferUsed(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return 0; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return 0;
   else
     return rx_buffer_size[uart];
@@ -345,10 +478,10 @@ s32 MIOS32_UART_RxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferGet(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1; // UART not available
 
   if( !rx_buffer_size[uart] )
@@ -377,10 +510,10 @@ s32 MIOS32_UART_RxBufferGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPeek(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1; // UART not available
 
   if( !rx_buffer_size[uart] )
@@ -407,10 +540,10 @@ s32 MIOS32_UART_RxBufferPeek(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1; // UART not available
 
   if( rx_buffer_size[uart] >= MIOS32_UART_RX_BUFFER_SIZE )
@@ -438,10 +571,10 @@ s32 MIOS32_UART_RxBufferPut(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferFree(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return 0; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return 0;
   else
     return MIOS32_UART_TX_BUFFER_SIZE - tx_buffer_size[uart];
@@ -458,10 +591,10 @@ s32 MIOS32_UART_TxBufferFree(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferUsed(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return 0; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return 0;
   else
     return tx_buffer_size[uart];
@@ -479,10 +612,10 @@ s32 MIOS32_UART_TxBufferUsed(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferGet(u8 uart)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1; // UART not available
 
   if( !tx_buffer_size[uart] )
@@ -514,10 +647,10 @@ s32 MIOS32_UART_TxBufferGet(u8 uart)
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_UART_TxBufferPutMore_NonBlocking(u8 uart, u8 *buffer, u16 len)
 {
-#if MIOS32_UART_NUM == 0
+#if NUM_SUPPORTED_UARTS == 0
   return -1; // no UART available
 #else
-  if( uart >= MIOS32_UART_NUM )
+  if( uart >= NUM_SUPPORTED_UARTS )
     return -1; // UART not available
 
   if( (tx_buffer_size[uart]+len) >= MIOS32_UART_TX_BUFFER_SIZE )
@@ -616,7 +749,7 @@ s32 MIOS32_UART_TxBufferPut(u8 uart, u8 b)
 /////////////////////////////////////////////////////////////////////////////
 // Interrupt handler for first UART
 /////////////////////////////////////////////////////////////////////////////
-#if MIOS32_UART_NUM >= 1
+#if NUM_SUPPORTED_UARTS >= 1
 MIOS32_UART0_IRQHANDLER_FUNC
 {
   u32 iir_intid = MIOS32_UART0->IIR & 0xe; // IIR will be released with this access
@@ -626,11 +759,7 @@ MIOS32_UART0_IRQHANDLER_FUNC
     if( (MIOS32_UART0->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART0->RBR;
 
-#if MIOS32_UART0_ASSIGNMENT == 1
-      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART0, b);
-#else
-      s32 status = 0;
-#endif
+      s32 status = MIOS32_UART_IsAssignedToMIDI(0) ? MIOS32_MIDI_SendByteToRxCallback(UART0, b) : 0;
 
       // read byte from FIFO and put into SW based ringbuffer
       if( status == 0 && MIOS32_UART_RxBufferPut(0, b) < 0 ) {
@@ -653,7 +782,7 @@ MIOS32_UART0_IRQHANDLER_FUNC
 /////////////////////////////////////////////////////////////////////////////
 // Interrupt handler for second UART
 /////////////////////////////////////////////////////////////////////////////
-#if MIOS32_UART_NUM >= 2
+#if NUM_SUPPORTED_UARTS >= 2
 MIOS32_UART1_IRQHANDLER_FUNC
 {
   u32 iir_intid = MIOS32_UART1->IIR & 0xe; // IIR will be released with this access
@@ -663,11 +792,7 @@ MIOS32_UART1_IRQHANDLER_FUNC
     if( (MIOS32_UART1->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART1->RBR;
 
-#if MIOS32_UART1_ASSIGNMENT == 1
-      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART1, b);
-#else
-      s32 status = 0;
-#endif
+      s32 status = MIOS32_UART_IsAssignedToMIDI(1) ? MIOS32_MIDI_SendByteToRxCallback(UART0, b) : 0;
 
       // read byte from FIFO and put into SW based ringbuffer
       if( status == 0 && MIOS32_UART_RxBufferPut(1, b) < 0 ) {
@@ -691,7 +816,7 @@ MIOS32_UART1_IRQHANDLER_FUNC
 /////////////////////////////////////////////////////////////////////////////
 // Interrupt handler for third UART
 /////////////////////////////////////////////////////////////////////////////
-#if MIOS32_UART_NUM >= 3
+#if NUM_SUPPORTED_UARTS >= 3
 MIOS32_UART2_IRQHANDLER_FUNC
 {
   u32 iir_intid = MIOS32_UART2->IIR & 0xe; // IIR will be released with this access
@@ -701,11 +826,7 @@ MIOS32_UART2_IRQHANDLER_FUNC
     if( (MIOS32_UART2->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART2->RBR;
 
-#if MIOS32_UART2_ASSIGNMENT == 1
-      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART2, b);
-#else
-      s32 status = 0;
-#endif
+      s32 status = MIOS32_UART_IsAssignedToMIDI(2) ? MIOS32_MIDI_SendByteToRxCallback(UART0, b) : 0;
 
       // read byte from FIFO and put into SW based ringbuffer
       if( status == 0 && MIOS32_UART_RxBufferPut(2, b) < 0 ) {
@@ -729,7 +850,7 @@ MIOS32_UART2_IRQHANDLER_FUNC
 /////////////////////////////////////////////////////////////////////////////
 // Interrupt handler for fourth UART
 /////////////////////////////////////////////////////////////////////////////
-#if MIOS32_UART_NUM >= 4
+#if NUM_SUPPORTED_UARTS >= 4
 MIOS32_UART3_IRQHANDLER_FUNC
 {
   u32 iir_intid = MIOS32_UART3->IIR & 0xe; // IIR will be released with this access
@@ -739,11 +860,7 @@ MIOS32_UART3_IRQHANDLER_FUNC
     if( (MIOS32_UART3->LSR & LSR_RDR) ) { 
       u8 b = MIOS32_UART3->RBR;
 
-#if MIOS32_UART3_ASSIGNMENT == 1
-      s32 status = MIOS32_MIDI_SendByteToRxCallback(UART3, b);
-#else
-      s32 status = 0;
-#endif
+      s32 status = MIOS32_UART_IsAssignedToMIDI(3) ? MIOS32_MIDI_SendByteToRxCallback(UART0, b) : 0;
 
       // read byte from FIFO and put into SW based ringbuffer
       if( status == 0 && MIOS32_UART_RxBufferPut(3, b) < 0 ) {

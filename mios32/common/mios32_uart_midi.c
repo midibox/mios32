@@ -127,19 +127,7 @@ s32 MIOS32_UART_MIDI_CheckAvailable(u8 uart_port)
 #if MIOS32_UART_NUM == 0
   return -1; // all UARTs explicitely disabled
 #else
-  switch( uart_port ) {
-    case 0: return MIOS32_UART0_ASSIGNMENT == 1 ? 1 : 0; // UART0 assigned to MIDI?
-#if MIOS32_UART_NUM >= 2
-    case 1: return MIOS32_UART1_ASSIGNMENT == 1 ? 1 : 0; // UART1 assigned to MIDI?
-#endif
-#if MIOS32_UART_NUM >= 3
-    case 2: return MIOS32_UART2_ASSIGNMENT == 1 ? 1 : 0; // UART2 assigned to MIDI?
-#endif
-#if MIOS32_UART_NUM >= 4
-    case 3: return MIOS32_UART3_ASSIGNMENT == 1 ? 1 : 0; // UART3 assigned to MIDI?
-#endif
-  }
-  return 0;
+  return MIOS32_UART_IsAssignedToMIDI(uart_port) >= 1; // UART assigned to MIDI?
 #endif
 }
 

@@ -73,10 +73,10 @@ extern s32 MIOS32_COM_SendChar_NonBlocking(mios32_com_port_t port, char c);
 extern s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c);
 extern s32 MIOS32_COM_SendBuffer_NonBlocking(mios32_com_port_t port, u8 *buffer, u16 len);
 extern s32 MIOS32_COM_SendBuffer(mios32_com_port_t port, u8 *buffer, u16 len);
-extern s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str);
-extern s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str);
-extern s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *format, ...);
-extern s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...);
+extern s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, const char *str);
+extern s32 MIOS32_COM_SendString(mios32_com_port_t port, const char *str);
+extern s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, const char *format, ...);
+extern s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, const char *format, ...);
 
 extern s32 MIOS32_COM_Receive_Handler(void);
 extern s32 MIOS32_COM_ReceiveCallback_Init(void *callback_receive);
