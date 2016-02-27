@@ -94,20 +94,7 @@ s32 MIOS32_COM_CheckAvailable(mios32_com_port_t port)
 
     case 2:
 #if !defined(MIOS32_DONT_USE_UART)
-      switch( port & 0xf ) {
-#if MIOS32_UART_NUM >= 1
-        case 0: return MIOS32_UART0_ASSIGNMENT == 2 ? 1 : 0; // UART0 assigned to COM?
-#endif
-#if MIOS32_UART_NUM >= 2
-        case 1: return MIOS32_UART1_ASSIGNMENT == 2 ? 1 : 0; // UART1 assigned to COM?
-#endif
-#if MIOS32_UART_NUM >= 3
-        case 2: return MIOS32_UART2_ASSIGNMENT == 2 ? 1 : 0; // UART2 assigned to COM?
-#endif
-#if MIOS32_UART_NUM >= 4
-        case 3: return MIOS32_UART3_ASSIGNMENT == 2 ? 1 : 0; // UART3 assigned to COM?
-#endif
-      }
+      return MIOS32_UART_IsAssignedToMIDI(port & 0xf) ? 0 : 1; // assigned to COM
 #endif
       return 0; // no UART
       
@@ -254,7 +241,7 @@ s32 MIOS32_COM_SendChar(mios32_com_port_t port, char c)
 //!         caller should retry until buffer is free again
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
+s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, const char *str)
 {
   return MIOS32_COM_SendBuffer_NonBlocking(port, (u8 *)str, (u16)strlen(str));
 }
@@ -268,7 +255,7 @@ s32 MIOS32_COM_SendString_NonBlocking(mios32_com_port_t port, char *str)
 //! \return -1 if port not available
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
+s32 MIOS32_COM_SendString(mios32_com_port_t port, const char *str)
 {
   return MIOS32_COM_SendBuffer(port, (u8 *)str, strlen(str));
 }
@@ -284,7 +271,7 @@ s32 MIOS32_COM_SendString(mios32_com_port_t port, char *str)
 //!         caller should retry until buffer is free again
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *format, ...)
+s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, const char *format, ...)
 {
   u8 buffer[128]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;
@@ -304,7 +291,7 @@ s32 MIOS32_COM_SendFormattedString_NonBlocking(mios32_com_port_t port, char *for
 //! \return -1 if port not available
 //! \return 0 on success
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, char *format, ...)
+s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, const char *format, ...)
 {
   u8 buffer[128]; // TODO: tmp!!! Provide a streamed COM method later!
   va_list args;
@@ -346,25 +333,11 @@ s32 MIOS32_COM_Receive_Handler(void)
 #else
       case 0: status = -1; break;
 #endif
-#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART0_ASSIGNMENT == 2
-      case 1: status = MIOS32_UART_RxBufferGet(0); port = UART0; break;
-#else
-      case 1: status = -1; break;
-#endif
-#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART1_ASSIGNMENT == 2
-      case 2: status = MIOS32_UART_RxBufferGet(1); port = UART1; break;
-#else
-      case 2: status = -1; break;
-#endif
-#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART2_ASSIGNMENT == 2
-      case 3: status = MIOS32_UART_RxBufferGet(2); port = UART2; break;
-#else
-      case 3: status = -1; break;
-#endif
-#if !defined(MIOS32_DONT_USE_UART) && MIOS32_UART3_ASSIGNMENT == 2
-      case 4: status = MIOS32_UART_RxBufferGet(3); port = UART3; break;
-#else
-      case 4: status = -1; break;
+#if !defined(MIOS32_DONT_USE_UART)
+      case 1: if( MIOS32_UART_IsAssignedToMIDI(0) ) { status = -1; } else { status = MIOS32_UART_RxBufferGet(0); port = UART0; } break;
+      case 2: if( MIOS32_UART_IsAssignedToMIDI(1) ) { status = -1; } else { status = MIOS32_UART_RxBufferGet(1); port = UART1; } break;
+      case 3: if( MIOS32_UART_IsAssignedToMIDI(2) ) { status = -1; } else { status = MIOS32_UART_RxBufferGet(2); port = UART2; } break;
+      case 4: if( MIOS32_UART_IsAssignedToMIDI(3) ) { status = -1; } else { status = MIOS32_UART_RxBufferGet(3); port = UART3; } break;
 #endif
       default:
 	// allow 64 forwards maximum to yield some CPU time for other tasks
