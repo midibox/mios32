@@ -22,11 +22,7 @@
 #define MIOS32_UART_NUM 3
 #endif
 
-#define MIOS32_UART2_TX_OD 0
-#define MIOS32_UART2_BAUDRATE 115200
-#define MIOS32_UART2_ASSIGNMENT 2
-
-#define ESP8266_UART UART2
-
+// support direct send command
+#define ESP8266_TERMINAL_DIRECT_SEND_CMD 1
 
 #endif /* _MIOS32_CONFIG_H */
