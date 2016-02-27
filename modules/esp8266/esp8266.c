@@ -143,6 +143,8 @@ s32 ESP8266_COM_Parse(mios32_midi_port_t port, char byte)
   if( !dev_uart || port != dev_uart )
     return -1; // ignore messages from other UARTs
 
+  //MIOS32_MIDI_SendDebugMessage("R %d (%c)\n", byte, byte);
+
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
@@ -204,7 +206,11 @@ s32 ESP8266_SendCommand(const char* cmd)
     return -1; // no device selected
   }
 
-  return MIOS32_COM_SendString(dev_uart, cmd);
+  s32 status = MIOS32_COM_SendString(dev_uart, cmd);
+  status |= MIOS32_COM_SendChar(dev_uart, '\r');
+  status |= MIOS32_COM_SendChar(dev_uart, '\n');
+
+  return status;
 }
 
 
@@ -228,13 +234,12 @@ s32 ESP8266_SendOscTestMessage(u8 chn, u8 cc, u8 value)
 
   // send command
   char cmd[50];
-  sprintf(cmd, "AT+CIPSEND=%d\r\n", len);
+  sprintf(cmd, "AT+CIPSEND=%d", len);
   ESP8266_SendCommand(cmd);
 
   MIOS32_DELAY_Wait_uS(2*1000); // TODO: wait for '>' sign, needs a proper communication handler
 
   MIOS32_COM_SendBuffer(dev_uart, packet, len);
-  sprintf(cmd, "\r\n", len);
 
   return 0; // no error
 }
@@ -284,14 +289,8 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
     if( len >= (STRING_MAX-3) ) {
       out("ERROR: string too long!\n");
     } else {
-      char buffer[STRING_MAX];
-      strcpy(buffer, input);
-      buffer[len++] = '\r';
-      buffer[len++] = '\n';
-      buffer[len] = 0;
-
       // send to ESP8266
-      ESP8266_SendCommand(&buffer[1]);
+      ESP8266_SendCommand(&input[1]);
       return 1; // command taken
     }
   }
@@ -304,7 +303,7 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
       if( (cmd = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcasecmp(cmd, "reset") == 0 ) {
 	  out("Reseting Device");
-	  ESP8266_SendCommand("AT+RST\r\n");
+	  ESP8266_SendCommand("AT+RST");
 	  return 1; // command taken
 	} else if( strcmp(cmd, "osctest") == 0 ) {
 	  ESP8266_SendOscTestMessage(0, 1, 64);
