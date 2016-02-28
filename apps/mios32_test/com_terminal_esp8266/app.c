@@ -28,7 +28,7 @@ void APP_Init(void)
 {
   // init ESP8266 driver
   ESP8266_Init(0);
-  ESP8266_InitUart(UART2); // MIDI IN/OUT 3 port is sacrificed
+  ESP8266_InitUart(UART2, 115200); // MIDI IN/OUT 3 port is sacrificed
 
   // init terminal
   TERMINAL_Init(0);
@@ -65,6 +65,9 @@ void APP_Tick(void)
   // PWM modulate the status LED (this is a sign of life)
   u32 timestamp = MIOS32_TIMESTAMP_Get();
   MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+
+  // ESP8266 handling
+  ESP8266_Periodic_mS();
 }
 
 

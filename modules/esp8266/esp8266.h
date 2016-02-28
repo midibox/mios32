@@ -42,8 +42,13 @@ extern "C" {
 
 extern s32 ESP8266_Init(u32 mode);
 
-extern s32 ESP8266_InitUart(mios32_midi_port_t port);
+extern s32 ESP8266_Periodic_mS(void);
+
+extern s32 ESP8266_TerminalModeSet(u8 terminal_mode);
+
+extern s32 ESP8266_InitUart(mios32_midi_port_t port, u32 baudrate);
 extern s32 ESP8266_DeInitUart(void);
+extern mios32_midi_port_t ESP8266_UartGet(void);
 
 extern s32 ESP8266_TerminalHelp(void *_output_function);
 extern s32 ESP8266_TerminalParseLine(char *input, void *_output_function);

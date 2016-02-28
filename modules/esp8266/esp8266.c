@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "esp8266.h"
+#include "esp8266_fw.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -28,7 +29,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #define STRING_MAX 256
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -69,9 +69,34 @@ s32 ESP8266_Init(u32 mode)
 
   // install the callback function which is called on incoming characters
   // from COM port
-  MIOS32_COM_ReceiveCallback_Init(ESP8266_COM_Parse);
+  ESP8266_TerminalModeSet(1);
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Should be called periodically from APP_Tick
+/////////////////////////////////////////////////////////////////////////////
+s32 ESP8266_Periodic_mS(void)
+{
+#if ESP8266_FW_ACCESS_ENABLED
+  ESP8266_FW_Periodic_mS();
+#endif
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Enables/Disables terminal mode.
+//! In terminal mode, received messages will be print on the MIOS terminal.
+//! If not enabled, the application has to poll incoming messages with
+//! the MIOS32_UART_RxBufferGet() function
+/////////////////////////////////////////////////////////////////////////////
+s32 ESP8266_TerminalModeSet(u8 terminal_mode)
+{
+  return MIOS32_COM_ReceiveCallback_Init(terminal_mode ? ESP8266_COM_Parse : 0);
 }
 
 
@@ -81,9 +106,10 @@ s32 ESP8266_Init(u32 mode)
 //! (optionally it can be called later - this function will switch a default
 //! MIDI port to a COM port)
 //! \param[in] port the UART port which should be used
+//! \param[in] baudrate the UART baudrate which should be used
 //! \return < 0 if initialisation failed
 /////////////////////////////////////////////////////////////////////////////
-s32 ESP8266_InitUart(mios32_midi_port_t port)
+s32 ESP8266_InitUart(mios32_midi_port_t port, u32 baudrate)
 {
   // de-initialize UART if it was assigned before
   if( dev_uart )
@@ -93,7 +119,7 @@ s32 ESP8266_InitUart(mios32_midi_port_t port)
   dev_uart = port;
 
   // init default baudrate
-  MIOS32_UART_InitPort(dev_uart & 0xf, 115200, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, 0);
+  MIOS32_UART_InitPort(dev_uart & 0xf, baudrate, MIOS32_BOARD_PIN_MODE_OUTPUT_PP, 0);
 
   return 0; // no error
 }
@@ -112,6 +138,14 @@ s32 ESP8266_DeInitUart(void)
   MIOS32_UART_InitPortDefault(dev_uart & 0xf);
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! \return the current UART
+/////////////////////////////////////////////////////////////////////////////
+mios32_midi_port_t ESP8266_UartGet(void)
+{
+  return dev_uart;
 }
 
 
@@ -143,13 +177,13 @@ s32 ESP8266_COM_Parse(mios32_midi_port_t port, char byte)
   if( !dev_uart || port != dev_uart )
     return -1; // ignore messages from other UARTs
 
-  //MIOS32_MIDI_SendDebugMessage("R %d (%c)\n", byte, byte);
+  //DEBUG_MSG("R %d (%c)\n", byte, byte);
 
   if( byte == '\r' ) {
     // ignore
   } else if( byte == '\n' ) {
     ESP8266_MUTEX_MIDIOUT_TAKE;
-    ESP8266_COM_ParseLine(com_line_buffer, MIOS32_MIDI_SendDebugMessage);
+    ESP8266_COM_ParseLine(com_line_buffer, DEBUG_MSG);
     ESP8266_MUTEX_MIDIOUT_GIVE;
     com_line_ix = 0;
     com_line_buffer[com_line_ix] = 0;
@@ -246,7 +280,7 @@ s32 ESP8266_SendOscTestMessage(u8 chn, u8 cc, u8 value)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns help page for implemented terminal commands of this module
+//! Returns help page for implemented terminal commands of this module
 /////////////////////////////////////////////////////////////////////////////
 s32 ESP8266_TerminalHelp(void *_output_function)
 {
@@ -255,15 +289,21 @@ s32 ESP8266_TerminalHelp(void *_output_function)
 #if ESP8266_TERMINAL_DIRECT_SEND_CMD
   out("  !<...>                            directly send string to ESP8266");
 #endif
+  out("  esp8266 baudrate <baudrate>       changes the baudrate used by the MIOS32 core (current: %d)", MIOS32_UART_BaudrateGet(dev_uart & 0xf));
   out("  esp8266 reset                     resets the chip");
+#if ESP8266_FW_ACCESS_ENABLED
+  out("  esp8266 bootloader_query          checks ESP8266 bootloader communication");
+  out("  esp8266 bootloader_erase_flash    erases the SPI Flash (should be done before prog!)");
+  out("  esp8266 bootloader_prog_flash     programs a new ESP8266 firmware");
+#endif
 
   return 0; // no error
 }
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Parser for a complete line
-// Returns > 0 if command line matches with UIP terminal commands
+//! Parser for a complete line
+//! Returns > 0 if command line matches with UIP terminal commands
 /////////////////////////////////////////////////////////////////////////////
 s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
 {
@@ -304,7 +344,25 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
 	if( strcasecmp(cmd, "reset") == 0 ) {
 	  out("Reseting Device");
 	  ESP8266_SendCommand("AT+RST");
-	  return 1; // command taken
+	} else if( strcasecmp(cmd, "baudrate") == 0 ) {
+	  int baudrate;
+	  if( (parameter = strtok_r(NULL, separators, &brkt)) &&
+	      (baudrate=get_dec(parameter)) >= 0 ) {
+	    out("Changing Baudrate to: %d", baudrate);
+	    if( ESP8266_InitUart(dev_uart, baudrate) < 0 ) {
+	      out("Baudrate initialisation failed!");
+	    }
+	  } else {
+	    out("Please specify baudrate");
+	  }
+#if ESP8266_FW_ACCESS_ENABLED
+	} else if( strcmp(cmd, "bootloader_query") == 0 ) {
+	  ESP8266_FW_Exec(ESP8266_FW_EXEC_CMD_QUERY);
+	} else if( strcmp(cmd, "bootloader_erase_flash") == 0 ) {
+	  ESP8266_FW_Exec(ESP8266_FW_EXEC_CMD_ERASE_FLASH);
+	} else if( strcmp(cmd, "bootloader_prog_flash") == 0 ) {
+	  ESP8266_FW_Exec(ESP8266_FW_EXEC_CMD_PROG_FLASH);
+#endif
 	} else if( strcmp(cmd, "osctest") == 0 ) {
 	  ESP8266_SendOscTestMessage(0, 1, 64);
 	} else {
@@ -326,7 +384,5 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
 
   return 0; // command not taken
 }
-
-
 
 //! \}
