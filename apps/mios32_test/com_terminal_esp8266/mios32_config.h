@@ -24,5 +24,8 @@
 
 // support direct send command
 #define ESP8266_TERMINAL_DIRECT_SEND_CMD 1
+// suport for FW parts (bootloader)
+#define ESP8266_FW_ACCESS_ENABLED 1
+
 
 #endif /* _MIOS32_CONFIG_H */

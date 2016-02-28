@@ -314,6 +314,10 @@ s32 MIOS32_COM_SendFormattedString(mios32_com_port_t port, const char *format, .
 /////////////////////////////////////////////////////////////////////////////
 s32 MIOS32_COM_Receive_Handler(void)
 {
+  // no callback -> no polling
+  if( receive_callback_func == NULL )
+    return -1;
+
   u8 port = DEFAULT;
 
   u8 intf = 0; // interface to be checked
