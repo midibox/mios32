@@ -6,9 +6,9 @@
 my $ret = "";
 my $numBytesTotal = 0;
 
-my $linesPerLine = 16;
+my $bytesPerLine = 16;
 my $buffer;
-while( read(STDIN, $buffer, $linesPerLine) ) {
+while( read(STDIN, $buffer, $bytesPerLine) ) {
   $ret .= "  ";
   foreach( split(//, $buffer) ) {
     $ret .= sprintf("0x%02x, ", ord($_));
