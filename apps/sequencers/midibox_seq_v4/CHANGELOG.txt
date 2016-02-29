@@ -2269,6 +2269,9 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Dedicated button function for "Step Record" and "Live Record"
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173905
 ----------------------------------------------------------
+Add "tune" knob which sends C-3 to all MIDI and AOUTs
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045
+----------------------------------------------------------
 
 
 
