@@ -2263,6 +2263,13 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 Drum track: select trigger layer, then push parameter button A or B: parameter values not displayed
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/?do=findComment&comment=173700
 ----------------------------------------------------------
+"Fingered portamento" for AOUTs
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173892
+----------------------------------------------------------
+Dedicated button function for "Step Record" and "Live Record"
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173905
+----------------------------------------------------------
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus

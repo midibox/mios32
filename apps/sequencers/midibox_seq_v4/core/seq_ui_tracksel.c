@@ -60,27 +60,40 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
-    if( multi_sel ) {
-      // next GP: toggle function (16 of 16)
-      ui_selected_tracks ^= (1 << (u8)encoder);
-    } else {
-      // first GP: radio-button function (1 of 16)
-      ui_selected_tracks = (1 << (u8)encoder);
-      multi_sel = 1; // start multi-selection
-    }
 
-    ui_selected_group = (u8)encoder / 4;
+    // must be atomic
+    MIOS32_IRQ_Disable();
+    {
+      u16 prev_ui_selected_tracks = ui_selected_tracks;
 
-    // if no track selected in current group anymore, search another (valid) group
-    if( (ui_selected_tracks >> (4*ui_selected_group)) == 0 ) {
-      u8 group;
-      for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
-	if( ((ui_selected_tracks >> (4*group) & 0xf)) != 0 ) {
-	  ui_selected_group = group;
-	  break;
+      if( multi_sel ) {
+	// next GP: toggle function (16 of 16)
+	ui_selected_tracks ^= (1 << (u8)encoder);
+      } else {
+	// first GP: radio-button function (1 of 16)
+	ui_selected_tracks = (1 << (u8)encoder);
+	multi_sel = 1; // start multi-selection
+      }
+
+      // if no track selected anymore, restore old selection
+      if( !ui_selected_tracks )
+	ui_selected_tracks = prev_ui_selected_tracks;
+
+      // new group
+      ui_selected_group = (u8)encoder / 4;
+
+      // if no track selected in current group anymore, search another (valid) group
+      if( ((ui_selected_tracks >> (4*ui_selected_group)) & 0xf) == 0 ) {
+	u8 group;
+	for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
+	  if( ((ui_selected_tracks >> (4*group) & 0xf)) != 0 ) {
+	    ui_selected_group = group;
+	    break;
+	  }
 	}
       }
     }
+    MIOS32_IRQ_Enable();
 
     return 1; // value changed
   }
