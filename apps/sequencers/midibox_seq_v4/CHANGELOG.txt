@@ -2287,6 +2287,18 @@ http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=fi
 Check Arp restart mode: multi-triggering?
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
 ----------------------------------------------------------
+Check Clear Track in conjunction with CC recording
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174052
+----------------------------------------------------------
+AutoSave mode
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+----------------------------------------------------------
+Multi Loop
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+----------------------------------------------------------
+Transpose page: alternative semitone selection and display:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+----------------------------------------------------------
 
 
 
@@ -2310,4 +2322,7 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 
 - allow to define delays based on ports & channels instead of only the port.
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
+
+- MIDI filter
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
 
