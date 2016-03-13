@@ -2272,6 +2272,21 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Add "tune" knob which sends C-3 to all MIDI and AOUTs
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045
 ----------------------------------------------------------
+Synced mute/unmute: the countdown should be displayed correctly if in song mode and guide track active
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
+----------------------------------------------------------
+Jam page: Metronome count-in on recording
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
+----------------------------------------------------------
+Record button enhancement: enable/disable recording function if already in Jam page
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
+----------------------------------------------------------
+Check Edit pattern handling in Recording page
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
+----------------------------------------------------------
+Check Arp restart mode: multi-triggering?
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
+----------------------------------------------------------
 
 
 
