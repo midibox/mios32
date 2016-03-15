@@ -23,10 +23,20 @@ MIDIboxSEQ V4.091
 
    o CC Parameter layer label now prints "#<number>" instead of "CC"
 
-   o Jam page: AStart now starts to record into first step (as intended)
+   o Jam page: AStart now starts to record into first step in 
+     live recording mode (as intended), it starts on the selected step
+     in step recording mode
+
+   o Purpose of Record and Live Button & LED change:
+     they switch between record (and live) mode w/o changing to the Jam page
+
+   o new button/LED combo: JAM_LIVE and JAM_STEP: they switch to the JAM
+     page and select Live resp. Step recording mode
 
    o New option page item #10 "Initial Gate Trigger Layer" 
      (empty or trigger on each 4th step)
+
+   o removed obsolete (non-working) pattern based scale control
 
 
 MIDIboxSEQ V4.090

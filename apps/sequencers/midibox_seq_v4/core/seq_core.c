@@ -91,7 +91,6 @@ u16 seq_core_trk_soloed;
 u8 seq_core_step_update_req;
 
 u8 seq_core_global_scale;
-u8 seq_core_global_scale_ctrl;
 u8 seq_core_global_scale_root;
 u8 seq_core_global_scale_root_selection;
 u8 seq_core_keyb_scale_root;
@@ -150,7 +149,6 @@ s32 SEQ_CORE_Init(u32 mode)
   seq_core_steps_per_measure = 16-1;
   seq_core_steps_per_pattern = 16-1;
   seq_core_global_scale = 0;
-  seq_core_global_scale_ctrl = 0; // global
   seq_core_global_scale_root_selection = 0; // from keyboard
   seq_core_keyb_scale_root = 0; // taken if enabled in OPT menu
   seq_core_global_transpose_enabled = 0;
@@ -1857,16 +1855,9 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
 {
-  if( seq_core_global_scale_ctrl > 0 ) {
-    // scale/root selection from a specific pattern group
-    u8 group = seq_core_global_scale_ctrl-1;
-    *scale = seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale;
-    *root_selection = seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root;
-  } else {
-    // global scale/root selection
-    *scale = seq_core_global_scale;
-    *root_selection = seq_core_global_scale_root_selection;
-  }
+  // global scale/root selection
+  *scale = seq_core_global_scale;
+  *root_selection = seq_core_global_scale_root_selection;
   *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
 
   return 0; // no error

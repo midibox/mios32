@@ -33,10 +33,9 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       3
-#define ITEM_SCALE_CTRL    0
-#define ITEM_SCALE_ROOT    1
-#define ITEM_SCALE         2
+#define NUM_OF_ITEMS       2
+#define ITEM_SCALE_ROOT    0
+#define ITEM_SCALE         1
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -53,7 +52,6 @@ static s32 LED_Handler(u16 *gp_leds)
     return 0;
 
   switch( ui_selected_item ) {
-    case ITEM_SCALE_CTRL:    *gp_leds = 0x0003; break;
     case ITEM_SCALE_ROOT:    *gp_leds = 0x0004; break;
     case ITEM_SCALE:         *gp_leds = 0x00f8; break;
   }
@@ -75,7 +73,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
     case SEQ_UI_ENCODER_GP2:
-      ui_selected_item = ITEM_SCALE_CTRL;
+      return -1; // obsolete
       break;
 
     case SEQ_UI_ENCODER_GP3:
@@ -105,45 +103,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // for GP encoders and Datawheel
   switch( ui_selected_item ) {
-    case ITEM_SCALE_CTRL:
-      if( SEQ_UI_Var8_Inc(&seq_core_global_scale_ctrl, 0, 4, incrementer) >= 0 ) {
+    case ITEM_SCALE_ROOT:
+      if( SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
 	ui_store_file_required = 1;
 	return 1;
       }
       return 0;
 
-    case ITEM_SCALE_ROOT:
-      if( seq_core_global_scale_ctrl == 0 ) {
-	if( SEQ_UI_Var8_Inc(&seq_core_global_scale_root_selection, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
-	  ui_store_file_required = 1;
-	  return 1;
-	}
-	return 0;
-      } else {
-	u8 group = seq_core_global_scale_ctrl-1;
-	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+3].shared.scale_root, 0, 12, incrementer) >= 0 ) { // Keyb, C..H
-	  ui_store_file_required = 1;
-	  return 1;
-	}
-	return 0;
-      }
-
     case ITEM_SCALE: {
       u8 scale_max = SEQ_SCALE_NumGet()-1;
-      if( seq_core_global_scale_ctrl == 0 ) {
-	if( SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer) >= 0 ) {
-	  ui_store_file_required = 1;
-	  return 1;
-	}
-	return 0;
-      } else {
-	u8 group = seq_core_global_scale_ctrl-1;
-	if( SEQ_UI_Var8_Inc(&seq_cc_trk[(group*SEQ_CORE_NUM_TRACKS_PER_GROUP)+2].shared.scale, 0, scale_max, incrementer) >= 0 ) { // Keyb, C..H
-	  ui_store_file_required = 1;
-	  return 1;
-	}
-	return 0;
+      if( SEQ_UI_Var8_Inc(&seq_core_global_scale, 0, scale_max, incrementer) >= 0 ) {
+	ui_store_file_required = 1;
+	return 1;
       }
+      return 0;
     } break;
   }
 
@@ -219,27 +192,17 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  Control  Root      Selected Scale      
-  //  Global   Keyb   50:Hungarian Gypsy    
+  //           Root      Selected Scale      
+  //           Keyb   50:Hungarian Gypsy    
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" Control  Root      Selected Scale      ");
+  SEQ_LCD_PrintString("          Root      Selected Scale      ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
-  SEQ_LCD_PrintSpaces(1);
-
-  if( ui_selected_item == ITEM_SCALE_CTRL && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(8);
-  } else {
-    if( seq_core_global_scale_ctrl )
-      SEQ_LCD_PrintFormattedString("Group G%d", seq_core_global_scale_ctrl);
-    else
-      SEQ_LCD_PrintString("Global  ");
-  }
-  SEQ_LCD_PrintSpaces(1);
+  SEQ_LCD_PrintSpaces(10);
 
   ///////////////////////////////////////////////////////////////////////////
 

@@ -282,7 +282,6 @@ extern u16 seq_core_trk_soloed;
 extern u8 seq_core_step_update_req;
 
 extern u8 seq_core_global_scale;
-extern u8 seq_core_global_scale_ctrl;
 extern u8 seq_core_global_scale_root_selection;
 extern u8 seq_core_keyb_scale_root;
 

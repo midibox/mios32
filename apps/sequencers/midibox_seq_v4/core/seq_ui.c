@@ -807,6 +807,32 @@ static s32 SEQ_UI_Button_Record(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
+  // enable/disable recording
+  SEQ_RECORD_Enable(seq_record_state.ENABLED ? 0 : 1, 1);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_JamLive(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  // enable live recording
+  seq_record_options.STEP_RECORD = 0;
+
+  // change to record page
+  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_JamStep(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  // enable step recording
+  seq_record_options.STEP_RECORD = 1;
+
   // change to record page
   SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
 
@@ -817,8 +843,8 @@ static s32 SEQ_UI_Button_Live(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
-  // change to live page
-  SEQ_UI_PageSet(SEQ_UI_PAGE_TRKLIVE);
+  // switch live mode
+  seq_record_options.FWD_MIDI = seq_record_options.FWD_MIDI ? 0 : 1;
 
   return 0; // no error
 }
@@ -2131,6 +2157,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
 
   if( pin == seq_hwcfg_button.record )
     return SEQ_UI_Button_Record(pin_value);
+  if( pin == seq_hwcfg_button.jam_live )
+    return SEQ_UI_Button_JamLive(pin_value);
+  if( pin == seq_hwcfg_button.jam_step )
+    return SEQ_UI_Button_JamStep(pin_value);
   if( pin == seq_hwcfg_button.live )
     return SEQ_UI_Button_Live(pin_value);
 
@@ -2923,7 +2953,9 @@ s32 SEQ_UI_LED_Handler(void)
   }
 
   SEQ_LED_PinSet(seq_hwcfg_led.record, seq_record_state.ENABLED);
-  SEQ_LED_PinSet(seq_hwcfg_led.live, ui_page == SEQ_UI_PAGE_TRKLIVE);
+  SEQ_LED_PinSet(seq_hwcfg_led.live, seq_record_options.FWD_MIDI);
+  SEQ_LED_PinSet(seq_hwcfg_led.jam_live, ui_page == SEQ_UI_PAGE_TRKJAM && !seq_record_options.STEP_RECORD);
+  SEQ_LED_PinSet(seq_hwcfg_led.jam_step, ui_page == SEQ_UI_PAGE_TRKJAM && seq_record_options.STEP_RECORD);
 
   SEQ_LED_PinSet(seq_hwcfg_led.utility, ui_page == SEQ_UI_PAGE_UTIL);
   SEQ_LED_PinSet(seq_hwcfg_led.copy, seq_ui_button_state.COPY);

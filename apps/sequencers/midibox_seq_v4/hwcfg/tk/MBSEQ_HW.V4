@@ -447,6 +447,8 @@ LED_BOOKMARK    0   0
 LED_SCRUB       0   0
 LED_METRONOME   0   0
 LED_RECORD      0   0
+LED_JAM_LIVE    0   0
+LED_JAM_STEP    0   0
 LED_LIVE        0   0
 LED_UTILITY     0   0
 LED_COPY        0   0
@@ -507,6 +509,8 @@ BUTTON_SCRUB      1   2
 BUTTON_METRONOME  1   3
 BUTTON_RECORD     0   0
 BUTTON_LIVE       0   0
+BUTTON_JAM_LIVE   0   0
+BUTTON_JAM_STEP   0   0
 
 #             SR  Pin
 BUTTON_STOP    1   4
