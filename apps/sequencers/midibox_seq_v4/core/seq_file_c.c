@@ -324,9 +324,7 @@ s32 SEQ_FILE_C_Read(char *session)
 	    if( value >= 0 )
 	      seq_core_global_scale = value;
 	  } else if( strcmp(parameter, "GlobalScaleCtrl") == 0 ) {
-	    s32 value = get_dec_range(word, parameter, 0, 255);
-	    if( value >= 0 )
-	      seq_core_global_scale_ctrl = value;
+	    // obsolete
 	  } else if( strcmp(parameter, "GlobalScaleRoot") == 0 ) {
 	    s32 value = get_dec_range(word, parameter, 0, 255);
 	    if( value >= 0 )
@@ -906,9 +904,6 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "GlobalScale %d\n", seq_core_global_scale);
-  FLUSH_BUFFER;
-
-  sprintf(line_buffer, "GlobalScaleCtrl %d\n", seq_core_global_scale_ctrl);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "GlobalScaleRoot %d\n", seq_core_global_scale_root_selection);

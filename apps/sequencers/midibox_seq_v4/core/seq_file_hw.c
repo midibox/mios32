@@ -396,6 +396,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.metronome = din_value;
 	  } else if( strcasecmp(parameter, "RECORD") == 0 ) {
 	    seq_hwcfg_button.record = din_value;
+	  } else if( strcasecmp(parameter, "JAM_LIVE") == 0 ) {
+	    seq_hwcfg_button.jam_live = din_value;
+	  } else if( strcasecmp(parameter, "JAM_STEP") == 0 ) {
+	    seq_hwcfg_button.jam_live = din_value;
 	  } else if( strcasecmp(parameter, "LIVE") == 0 ) {
 	    seq_hwcfg_button.live = din_value;
 	  } else if( strcasecmp(parameter, "STOP") == 0 ) {
@@ -657,6 +661,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.metronome = dout_value;
 	  } else if( strcasecmp(parameter, "RECORD") == 0 ) {
 	    seq_hwcfg_led.record = dout_value;
+	  } else if( strcasecmp(parameter, "JAM_LIVE") == 0 ) {
+	    seq_hwcfg_led.jam_live = dout_value;
+	  } else if( strcasecmp(parameter, "JAM_STEP") == 0 ) {
+	    seq_hwcfg_led.jam_step = dout_value;
 	  } else if( strcasecmp(parameter, "LIVE") == 0 ) {
 	    seq_hwcfg_led.live = dout_value;
 	  } else if( strcasecmp(parameter, "UTILITY") == 0 ) {

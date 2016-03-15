@@ -52,6 +52,8 @@ typedef struct {
   u8 scrub;
   u8 metronome;
   u8 record;
+  u8 jam_live;
+  u8 jam_step;
   u8 live;
 
   u8 stop;
@@ -210,6 +212,8 @@ typedef struct {
 
   u8 record;
   u8 live;
+  u8 jam_live;
+  u8 jam_step;
 
   u8 step_view;
   u8 trg_layer_sel;

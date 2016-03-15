@@ -342,7 +342,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   // Auto-Start: start with first step
-  if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START ) {
+  if( !SEQ_BPM_IsRunning() && seq_record_options.AUTO_START && !seq_record_options.STEP_RECORD ) {
     ui_selected_step = 0;
   }
 
