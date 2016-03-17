@@ -466,7 +466,12 @@ s32 MIOS32_SDCARD_SectorRead(u32 sector, u8 *buffer)
   }
 
   // read 512 bytes via DMA
+#ifdef MIOS32_SDCARD_TASK_SUSPEND_HOOK
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, NULL, buffer, 512, MIOS32_SDCARD_TASK_RESUME_HOOK);
+  MIOS32_SDCARD_TASK_SUSPEND_HOOK();
+#else
   MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, NULL, buffer, 512, NULL);
+#endif
 
   // read (and ignore) CRC
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
@@ -529,7 +534,12 @@ s32 MIOS32_SDCARD_SectorWrite(u32 sector, u8 *buffer)
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xfe);
 
   // send 512 bytes of data via DMA
+#ifdef MIOS32_SDCARD_TASK_SUSPEND_HOOK
+  MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, buffer, NULL, 512, MIOS32_SDCARD_TASK_RESUME_HOOK);
+  MIOS32_SDCARD_TASK_SUSPEND_HOOK();
+#else
   MIOS32_SPI_TransferBlock(MIOS32_SDCARD_SPI, buffer, NULL, 512, NULL);
+#endif
 
   // send CRC
   MIOS32_SPI_TransferByte(MIOS32_SDCARD_SPI, 0xff);
