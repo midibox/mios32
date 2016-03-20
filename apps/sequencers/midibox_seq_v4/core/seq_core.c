@@ -818,6 +818,13 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       if( round && export_track != -1 && export_track != track )
 	continue;
 
+      // recording enabled for this track?
+#ifndef MBSEQV4L
+      u8 track_record_enabled = (seq_record_state.ENABLED && (SEQ_UI_VisibleTrackGet() == track)) ? 1 : 0;
+#else
+      u8 track_record_enabled = (seq_record_state.ENABLED && (seq_record_state.ARMED_TRACKS & (1 << track)) != 0) ? 1 : 0;
+#endif
+
       // handle LFO effect
       SEQ_LFO_HandleTrk(track, bpm_tick);
 
@@ -838,7 +845,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
 	SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0,
-				seq_record_state.ENABLED ? seq_record_played_notes : NULL);
+				track_record_enabled ? seq_record_played_notes : NULL);
 	// clear state flag and note storage
 	t->state.SUSTAINED = 0;
 	for(i=0; i<4; ++i)
@@ -980,7 +987,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
 #endif
 
-	  if( !mute_this_step && !seq_record_options.FWD_MIDI ) { // if not already skipped (e.g. MANUAL mode)
+	  if( !mute_this_step && !seq_record_options.FWD_MIDI && track_record_enabled ) { // if not already skipped (e.g. MANUAL mode)
 	    mute_this_step = t->state.REC_DONT_OVERWRITE_NEXT_STEP;
 
 	    if( seq_core_state.FIRST_CLK && seq_record_options.AUTO_START )
@@ -988,7 +995,8 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  }
 
 	  // forward new step to recording function (only used in live recording mode)
-	  SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
+	  if( track_record_enabled )
+	    SEQ_RECORD_NewStep(track, prev_step, t->step, bpm_tick);
 
 	  // forward to live function (for repeats)
 	  // if it returns 1, the step won't be played
@@ -1021,10 +1029,10 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 	    if( !t->state.STRETCHED_GL ) // important: play Note Off before new Note On to avoid that glide is triggered on the synth
 	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick ? (bpm_tick-1) : 0,
-				      seq_record_state.ENABLED ? seq_record_played_notes : NULL);
+				      track_record_enabled ? seq_record_played_notes : NULL);
 	    else // Glide
 	      SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, bpm_tick,
-				      seq_record_state.ENABLED ? seq_record_played_notes : NULL);
+				      track_record_enabled ? seq_record_played_notes : NULL);
 
 	    // clear state flags and note storage
 	    t->state.STRETCHED_GL = 0;
@@ -1251,11 +1259,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      rescheduled_tick -= 1;
 
 	    SEQ_MIDI_OUT_ReSchedule(track, SEQ_MIDI_OUT_OffEvent, rescheduled_tick,
-				    seq_record_state.ENABLED ? seq_record_played_notes : (t->state.STRETCHED_GL ? next_glide_notes : NULL));
+				    track_record_enabled ? seq_record_played_notes : (t->state.STRETCHED_GL ? next_glide_notes : NULL));
 
 	    // clear state flag and note storage
 	    t->state.SUSTAINED = 0;
-	    if( seq_record_state.ENABLED || !t->state.STRETCHED_GL ) {
+	    if( track_record_enabled || !t->state.STRETCHED_GL ) {
 	      t->state.STRETCHED_GL = 0;
 
 	      u32 *dst_ptr = (u32 *)&t->glide_notes[0];
@@ -1340,7 +1348,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      // skip in record mode if the same note is already played
-	      if( seq_record_state.ENABLED && t->state.STRETCHED_GL &&
+	      if( track_record_enabled && t->state.STRETCHED_GL &&
 		  (seq_record_played_notes[p->note>>5] & (1 << (p->note&0x1f))) )
 		continue;
 
