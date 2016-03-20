@@ -72,6 +72,7 @@ u16 ui_selected_gp_buttons;
 u8 ui_selected_item;
 
 u16 ui_hold_msg_ctr;
+u8  ui_hold_msg_ctr_drum_edit; // 1 if a drum parameter is edited or parameter layer selection button is pushed
 
 seq_ui_page_t ui_page;
 seq_ui_page_t ui_selected_page;
@@ -810,6 +811,11 @@ static s32 SEQ_UI_Button_Record(s32 depressed)
   // enable/disable recording
   SEQ_RECORD_Enable(seq_record_state.ENABLED ? 0 : 1, 1);
 
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R,
+	     1000,
+	     seq_record_options.STEP_RECORD ? "Step Recording" : "Live Recording", 
+	     seq_record_state.ENABLED ? "      on" : "     off");
+
   return 0; // no error
 }
 
@@ -818,7 +824,7 @@ static s32 SEQ_UI_Button_JamLive(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
 
   // enable live recording
-  seq_record_options.STEP_RECORD = 0;
+  SEQ_UI_TRKJAM_RecordModeSet(0);
 
   // change to record page
   SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
@@ -831,7 +837,7 @@ static s32 SEQ_UI_Button_JamStep(s32 depressed)
   if( depressed ) return -1; // ignore when button depressed
 
   // enable step recording
-  seq_record_options.STEP_RECORD = 1;
+  SEQ_UI_TRKJAM_RecordModeSet(1);
 
   // change to record page
   SEQ_UI_PageSet(SEQ_UI_PAGE_TRKJAM);
@@ -845,6 +851,11 @@ static s32 SEQ_UI_Button_Live(s32 depressed)
 
   // switch live mode
   seq_record_options.FWD_MIDI = seq_record_options.FWD_MIDI ? 0 : 1;
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER_R,
+	     1000,
+	     "Live Forwarding",
+	     seq_record_options.FWD_MIDI ? "      on" : "     off");
 
   return 0; // no error
 }
@@ -1706,6 +1717,8 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
     u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
     if( event_mode == SEQ_EVENT_MODE_Drum ) {
       ui_hold_msg_ctr = depressed ? 0 : ~0; // show value for at least 65 seconds... enough?
+      if( ui_hold_msg_ctr )
+	ui_hold_msg_ctr_drum_edit = 1; // ensure that layer will be displayed
     }
   }
 
@@ -1733,6 +1746,7 @@ static s32 SEQ_UI_Button_ParLayer(s32 depressed, u32 par_layer)
 	char str1[21];
 	sprintf(str1, "Parameter Layer %c", 'A'+par_layer);
 	SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, str1, "not available!");
+	ui_hold_msg_ctr = 0;
       } else {
 	seq_ui_button_state.PAR_LAYER_SEL = 0;
 	ui_selected_par_layer = par_layer;

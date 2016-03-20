@@ -399,7 +399,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  } else if( strcasecmp(parameter, "JAM_LIVE") == 0 ) {
 	    seq_hwcfg_button.jam_live = din_value;
 	  } else if( strcasecmp(parameter, "JAM_STEP") == 0 ) {
-	    seq_hwcfg_button.jam_live = din_value;
+	    seq_hwcfg_button.jam_step = din_value;
 	  } else if( strcasecmp(parameter, "LIVE") == 0 ) {
 	    seq_hwcfg_button.live = din_value;
 	  } else if( strcasecmp(parameter, "STOP") == 0 ) {

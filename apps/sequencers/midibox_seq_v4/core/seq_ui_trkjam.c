@@ -224,6 +224,17 @@ static s32 SetSubpageBasedOnItem(u8 item)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Switches between Step/Live Record from external (button function)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_TRKJAM_RecordModeSet(u8 step_record)
+{
+  seq_record_options.STEP_RECORD = step_record;
+  selected_subpage = step_record ? SUBPAGE_REC_STEP : SUBPAGE_REC_LIVE;
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local encoder callback function
 // Should return:
 //   1 if value has been changed

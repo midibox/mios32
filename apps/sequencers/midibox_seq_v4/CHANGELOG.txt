@@ -14,7 +14,7 @@ MIDIboxSEQ V4.091
    o CPU load display has been re-adjusted for LPC17 and STM32F4
 
    o hwcfg/wilba*/MBSEQ_HW.V4: default F1-F4 assignments changed to:
-     F1: Bookmark, F2: Record, F3: Tap Tempo, F4: Save All
+     F1: Track Select, F2: Live Forwarding, F3: Recording, F4: Save All
 
    o MBSEQ_HW.V4: added new button/LED functions: FX, MOVE, SCROLL
 
@@ -2276,9 +2276,6 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 "Fingered portamento" for AOUTs
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173892
 ----------------------------------------------------------
-Dedicated button function for "Step Record" and "Live Record"
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173905
-----------------------------------------------------------
 Add "tune" knob which sends C-3 to all MIDI and AOUTs
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045
 ----------------------------------------------------------
@@ -2292,9 +2289,6 @@ Record button enhancement: enable/disable recording function if already in Jam p
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
 ----------------------------------------------------------
 Check Edit pattern handling in Recording page
-http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
-----------------------------------------------------------
-Check Arp restart mode: multi-triggering?
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174170
 ----------------------------------------------------------
 Check Clear Track in conjunction with CC recording

@@ -358,7 +358,7 @@ DOUT_GATE_SR6   0
 DOUT_GATE_SR7   0
 DOUT_GATE_SR8   0
 
-# if set to 1, the DOUT "gates" will send 1mS pulses
+# if set to 1, the additional DOUT "gates" will send 1mS pulses
 # useful for analog drums
 DOUT_1MS_TRIGGER 0
 
@@ -511,7 +511,7 @@ BUTTON_RIGHT  0   0
 #                SR  Pin
 BUTTON_SCRUB     M4   4
 BUTTON_METRONOME M4   5
-BUTTON_LIVE       0   0
+BUTTON_TAP_TEMPO  0   0
 BUTTON_JAM_LIVE   0   0
 BUTTON_JAM_STEP   0   0
 
@@ -612,16 +612,15 @@ BUTTON_TRG_LAYER_C  M1   6
 # and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
 
 #                    SR  Pin
-BUTTON_BOOKMARK      M3   3
-BUTTON_RECORD        M2   2
-BUTTON_TAP_TEMPO     M2   3
+BUTTON_TRACK_SEL     M3   3
+BUTTON_LIVE          M2   2
+BUTTON_RECORD        M2   3
 BUTTON_SAVE_ALL      M1   2
 
 
 #                    SR  Pin
 BUTTON_PAR_LAYER_SEL  0   0
 BUTTON_TRG_LAYER_SEL  0   0
-BUTTON_TRACK_SEL      0   0
 
 #               SR  Pin
 BUTTON_UTILITY  M3   2
@@ -631,6 +630,7 @@ BUTTON_CLEAR    M8   3
 BUTTON_UNDO      0   0
 BUTTON_MOVE      0   0
 BUTTON_SCROLL    0   0
+BUTTON_BOOKMARK  0   0
 
 #                 SR  Pin
 BUTTON_STEP_VIEW  M5   5

@@ -58,8 +58,6 @@ static u8 edit_passive_step;       // to store the step of the edit value
 static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 
-static u8 ui_hold_msg_ctr_drum_edit; // 1 if a drum parameter is edited
-
 
 /////////////////////////////////////////////////////////////////////////////
 
