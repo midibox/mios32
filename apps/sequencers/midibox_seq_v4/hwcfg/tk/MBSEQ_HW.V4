@@ -156,7 +156,7 @@ GP_DOUT_R_SR    4
 GP_DOUT_L2_SR  0
 GP_DOUT_R2_SR  0
 
-# OPTIONAL: individual track LEDs can optionally be assigned to SRs:
+# OPTIONAL: individual track LEDs can optionally be assigned to SRs
 # they correspond with the BUTTON_DIRECT_TRACK* buttons
 TRACKS_DOUT_L_SR 0
 TRACKS_DOUT_R_SR 0
@@ -400,8 +400,9 @@ LED_PAR_LAYER_A   1   4
 LED_PAR_LAYER_B   1   5
 LED_PAR_LAYER_C   1   6
 
-#         SR  Pin
-LED_BEAT   1   7
+#           SR  Pin
+LED_BEAT     1   7
+LED_MEASURE  0   0
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
@@ -431,8 +432,6 @@ LED_TRG_LAYER_B   0   1
 LED_TRG_LAYER_C   0   2
 
 #          SR  Pin
-LED_EXIT    0   0
-LED_SELECT  0   0
 LED_PLAY    0   0
 LED_STOP    0   0
 LED_PAUSE   0   0
@@ -442,6 +441,8 @@ LED_LOOP    0   0
 LED_FOLLOW  0   0
 
 #              SR  Pin
+LED_EXIT        0   0
+LED_SELECT      0   0
 LED_MENU        0   0
 LED_BOOKMARK    0   0
 LED_SCRUB       0   0
@@ -455,6 +456,8 @@ LED_COPY        0   0
 LED_PASTE       0   0
 LED_CLEAR       0   0
 LED_UNDO        0   0
+LED_MOVE        0   0
+LED_SCROLL      0   0
 
 #                  SR  Pin
 LED_STEP_VIEW       0   0
@@ -481,6 +484,7 @@ LED_TRACK_LENGTH     0   0
 LED_TRACK_DIRECTION  0   0
 LED_TRACK_MORPH      0   0
 LED_TRACK_TRANSPOSE  0   0
+LED_FX               0   0
 
 #                                SR  Pin
 LED_MUTE_ALL_TRACKS               0   0
@@ -489,6 +493,7 @@ LED_MUTE_ALL_TRACKS_AND_LAYERS    0   0
 LED_UNMUTE_ALL_TRACKS             0   0
 LED_UNMUTE_TRACK_LAYERS           0   0
 LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
+
 
 
 ##################################################
@@ -617,6 +622,9 @@ BUTTON_TRACK_SEL     2   4
 BUTTON_PAR_LAYER_SEL  0   0
 
 #                   SR  Pin
+BUTTON_PATTERN_RMX   0   0
+
+#                   SR  Pin
 BUTTON_TAP_TEMPO     0   0
 BUTTON_TEMPO_PRESET  0   0
 BUTTON_EXT_RESTART   0   0
@@ -626,6 +634,9 @@ BUTTON_COPY      0   0
 BUTTON_PASTE     0   0
 BUTTON_CLEAR     0   0
 BUTTON_UNDO      0   0
+BUTTON_MOVE      0   0
+BUTTON_SCROLL    0   0
+
 
 #                SR  Pin
 BUTTON_MIXER      0   0
@@ -633,9 +644,6 @@ BUTTON_MIXER      0   0
 #                SR  Pin
 BUTTON_SAVE       0   0
 BUTTON_SAVE_ALL   0   0
-
-#                   SR  Pin
-BUTTON_PATTERN_RMX   0   0
 
 #                 SR  Pin
 BUTTON_FOOTSWITCH  0   0
@@ -648,6 +656,7 @@ BUTTON_TRACK_LENGTH     0   0
 BUTTON_TRACK_DIRECTION  0   0
 BUTTON_TRACK_MORPH      0   0
 BUTTON_TRACK_TRANSPOSE  0   0
+BUTTON_FX               0   0
 
 
 #                                   SR  Pin
