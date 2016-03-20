@@ -75,10 +75,11 @@ static const seq_chord_entry_t seq_chord_table[2][32] = {
     {{ 0,  3,  8, -1, -1, -1 }, "Min.+ " }
   }, {
     // see http://midibox.org/forums/topic/19886-extended-chords-dominants-tensions
+    // corrected version at http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174313
     {{ 0,  7, -1, -1, -1, -1 }, "Pwr5  " },
     {{ 0,  7, 12, -1, -1, -1 }, "Pwr8  " },
     {{ 0,  4, -1, -1, -1, -1 }, "R+mj3 " },
-    {{ 0,  3, -1,- 1, -1, -1 }, "R+min3" },
+    {{ 0,  3, -1, -1, -1, -1 }, "R+min3" },
     // major chords
     {{ 0,  4,  7, -1, -1, -1 }, "Maj   " },
     {{ 0,  5,  7, -1, -1, -1 }, "Sus4  " },
@@ -88,20 +89,21 @@ static const seq_chord_entry_t seq_chord_table[2][32] = {
     {{ 0,  4,  7, 14, -1, -1 }, "add9  " },
     {{ 0,  4,  7, 11, 14, -1 }, "Maj9  " },
     {{ 0,  4,  7, 11, 14, 17 }, "Maj11 " },
-    {{ 0,  4,  7, 11, 14, 20 }, "Maj13 " },
+    {{ 0,  4,  7, 11, 14, 21 }, "Maj13 " },
     // minor chords
     {{ 0,  3,  7, -1, -1, -1 }, "Min   " },
+    {{ 0,  3,  7,  9, -1, -1 }, "Min6  " },
     {{ 0,  3,  7, 10, -1, -1 }, "Min7  " },
     {{ 0,  3,  7, 14, -1, -1 }, "Minad9" },
     {{ 0,  3,  7, 10, 14, -1 }, "Min9  " },
     {{ 0,  3,  7, 10, 14, 17 }, "Min11 " },
-    {{ 0,  3,  7, 10, 14, 20 }, "Min13 " },
+    {{ 0,  3,  7, 10, 14, 21 }, "Min13 " },
     // dominant chords
     {{ 0,  4,  7, 10, -1, -1 }, "Dom7  " },
     {{ 0,  5,  7, 10, -1, -1 }, "7Sus4 " },
     {{ 0,  4,  7, 10, 14, -1 }, "Dom9  " },
     {{ 0,  4,  7, 10, 14, 17 }, "Dom11 " },
-    {{ 0,  4,  7, 10, 14, 20 }, "Dom13 " },
+    {{ 0,  4,  7, 10, 14, 21 }, "Dom13 " },
     // dominant chords with tensions
     {{ 0,  4,  6, 10, -1, -1 }, "7b5   " },
     {{ 0,  4,  8, 10, -1, -1 }, "7#5   " },
@@ -112,8 +114,6 @@ static const seq_chord_entry_t seq_chord_table[2][32] = {
     {{ 0,  3,  6,  9, -1, -1 }, "Dim   " },
     // half diminished aka m7b5
     {{ 0,  3,  6, 10, -1, -1 }, "m7b5  " },
-    // stacked 4ths
-    {{ 0,  4, 10, -1, -1, -1 }, "poly4 " }
   }
 };
 

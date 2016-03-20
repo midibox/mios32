@@ -185,6 +185,7 @@ s32 SEQ_RECORD_PrintEditScreen(void)
 #ifndef MBSEQV4L
   // for 2 seconds
   ui_hold_msg_ctr = 2000;
+  ui_hold_msg_ctr_drum_edit = 0; // ensure that drum triggers are displayed
 #endif
 
   // select visible steps depending on record step

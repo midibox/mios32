@@ -400,6 +400,7 @@ extern u8 SEQ_UI_UTIL_CopyPasteBeginGet(void);
 extern u8 SEQ_UI_UTIL_CopyPasteEndGet(void);
 
 extern s32 SEQ_UI_TRKJAM_PatternRecordSelected(void);
+extern s32 SEQ_UI_TRKJAM_RecordModeSet(u8 step_record);
 
 extern s32 SEQ_UI_Msg(seq_ui_msg_type_t msg_type, u16 delay, char *line1, char *line2);
 extern s32 SEQ_UI_MsgStop(void);
@@ -438,6 +439,7 @@ extern u8 ui_selected_item;
 extern u16 ui_selected_gp_buttons;
 
 extern u16 ui_hold_msg_ctr;
+extern u8  ui_hold_msg_ctr_drum_edit;
 
 extern seq_ui_page_t ui_page;
 extern seq_ui_page_t ui_selected_page;
