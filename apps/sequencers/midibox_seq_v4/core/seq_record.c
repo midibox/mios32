@@ -157,8 +157,10 @@ s32 SEQ_RECORD_Enable(u8 enable, u8 reset_timestamps)
       for(i=0; i<128; ++i)
 	seq_record_note_timestamp_ms[i] = timestamp;
 
-      for(i=0; i<4; ++i) {
-	seq_record_played_notes[i] = seq_live_played_notes[i];
+      if( seq_record_options.FWD_MIDI ) {
+	for(i=0; i<4; ++i) {
+	  seq_record_played_notes[i] = seq_live_played_notes[i];
+	}
       }
     }
   }
@@ -450,6 +452,7 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	if( step_record_mode && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
 	  // check if another note is already played
 	  u8 any_note_played = seq_record_played_notes[0] || seq_record_played_notes[1] || seq_record_played_notes[2] || seq_record_played_notes[3];
+
 	  // if not: clear poly counter and all notes (so that new chord can be entered if all keys were released)
 	  if( !any_note_played ) {
 	    t->rec_poly_ctr = 0;
