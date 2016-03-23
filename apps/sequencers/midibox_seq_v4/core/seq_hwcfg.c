@@ -155,7 +155,6 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .trg_layer_sel = ((( 2   -1)<<3)+    3),
   .track_sel     = ((( 2   -1)<<3)+    4),
 
-
   //                 SR   ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
   .tempo_preset = ((( 2   -1)<<3)+    1),
@@ -172,11 +171,9 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   //                  SR   ignore    Pin
   .utility       = ((( 2   -1)<<3)+    1),
   .step_view     = ((( 2   -1)<<3)+    2),
+  .par_layer_sel = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 2   -1)<<3)+    3),
   .track_sel     = ((( 2   -1)<<3)+    4),
-
-  .par_layer_sel = ((( 0   -1)<<3)+    0),
-
 
   //                 SR   ignore    Pin
   .tap_tempo    = ((( 0   -1)<<3)+    0),
@@ -358,18 +355,6 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .down = (((14   -1)<<3)+    6),
   .up   = (((14   -1)<<3)+    7),
-
-  //         SR    ignore    Pin
-  .mixer =     ((( 0   -1)<<3)+    0),
-
-  //         SR    ignore    Pin
-  .track_mode      = ((( 0   -1)<<3)+    0),
-  .track_groove    = ((( 0   -1)<<3)+    0),
-  .track_length    = ((( 0   -1)<<3)+    0),
-  .track_direction = ((( 0   -1)<<3)+    0),
-  .track_morph     = ((( 0   -1)<<3)+    0),
-  .track_transpose = ((( 0   -1)<<3)+    0),
-  .fx              = ((( 0   -1)<<3)+    0),
 #else
   //          SR    ignore    Pin
   .play  = ((( 0   -1)<<3)+    0),
@@ -381,6 +366,8 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .follow = ((( 0   -1)<<3)+    0),
 
   //              SR    ignore    Pin
+  .exit      = ((( 0   -1)<<3)+    0),
+  .select    = ((( 0   -1)<<3)+    0),
   .menu      = ((( 0   -1)<<3)+    0),
   .bookmark  = ((( 0   -1)<<3)+    0),
   .scrub     = ((( 0   -1)<<3)+    0),
@@ -392,6 +379,10 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .undo      = ((( 0   -1)<<3)+    0),
   .move      = ((( 0   -1)<<3)+    0),
   .scroll    = ((( 0   -1)<<3)+    0),
+  .record    = ((( 0   -1)<<3)+    0),
+  .live      = ((( 0   -1)<<3)+    0),
+  .jam_live  = ((( 0   -1)<<3)+    0),
+  .jam_step  = ((( 0   -1)<<3)+    0),
 
   //               SR    ignore    Pin
   .step_view     = ((( 0   -1)<<3)+    0),
@@ -407,6 +398,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //         SR    ignore    Pin
   .down = ((( 0   -1)<<3)+    0),
   .up   = ((( 0   -1)<<3)+    0),
+#endif
 
   //         SR    ignore    Pin
   .mixer =     ((( 0   -1)<<3)+    0),
@@ -427,7 +419,6 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .unmute_all_tracks             = ((( 0   -1)<<3)+    0),
   .unmute_track_layers           = ((( 0   -1)<<3)+    0),
   .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
-#endif
 };
 
 
