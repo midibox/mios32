@@ -2302,8 +2302,9 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Multi Loop
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
 ----------------------------------------------------------
-Transpose page: alternative semitone selection and display:
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
+Guide track: doesn't work as expected if clock divider is used.
+Background: the guide track defines the measure length in 16th notes unrelated to the track divider settings.
+http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174095
 ----------------------------------------------------------
 
 
