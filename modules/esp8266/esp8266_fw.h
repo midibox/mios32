@@ -35,6 +35,11 @@ extern "C" {
 #define ESP8266_FW_DEFAULT_FIRMWARE 1
 #endif
 
+//! allows to change the address of the upper binary (which is usually located at 0x40000,
+//! but sometimes lower if a bigger OS kernel image is used)
+#ifndef ESP8266_FW_FIRMWARE_UPPER_BASE_ADDRESS
+#define ESP8266_FW_FIRMWARE_UPPER_BASE_ADDRESS 0x40000
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types

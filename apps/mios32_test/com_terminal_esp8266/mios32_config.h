@@ -27,5 +27,8 @@
 // suport for FW parts (bootloader)
 #define ESP8266_FW_ACCESS_ENABLED 1
 
+// don't use default firmware, but local version in esp8266_fw.inc instead
+#define ESP8266_FW_DEFAULT_FIRMWARE 0
+#define ESP8266_FW_FIRMWARE_UPPER_BASE_ADDRESS 0x20000
 
 #endif /* _MIOS32_CONFIG_H */
