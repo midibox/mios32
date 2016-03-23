@@ -293,7 +293,7 @@ s32 ESP8266_TerminalHelp(void *_output_function)
   out("  esp8266 reset                     resets the chip");
 #if ESP8266_FW_ACCESS_ENABLED
   out("  esp8266 bootloader_query          checks ESP8266 bootloader communication");
-  out("  esp8266 bootloader_erase_flash    erases the SPI Flash (should be done before prog!)");
+  out("  esp8266 bootloader_erase_flash    erases the SPI Flash");
   out("  esp8266 bootloader_prog_flash     programs a new ESP8266 firmware");
 #endif
 

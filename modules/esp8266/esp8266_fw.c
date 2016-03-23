@@ -1041,6 +1041,7 @@ s32 ESP8266_FW_Exec(esp8266_fw_exec_cmd_t exec_cmd)
 	DEBUG_MSG("ERROR: failed to determine Flash ID!\n");
       } else {
 	DEBUG_MSG("Flash ID: 0x%08X\n", flash_id);
+	DEBUG_MSG("Flash Size: %dk\n", (1 << (flash_id >> 16)) / 1024);
       }
     }
   }
@@ -1076,8 +1077,8 @@ s32 ESP8266_FW_Exec(esp8266_fw_exec_cmd_t exec_cmd)
 
       if( ESP8266_FW_FlashProg((u8 *)esp8266_fw_img_0x00000, sizeof(esp8266_fw_img_0x00000), 0x00000) < 0 ) {
 	DEBUG_MSG("ERROR: failed to program fw_img_0x00000!\n");
-      } else if( ESP8266_FW_FlashProg((u8 *)esp8266_fw_img_0x40000, sizeof(esp8266_fw_img_0x40000), 0x40000) < 0 ) {
-	DEBUG_MSG("ERROR: failed to program fw_img_0x40000!\n");
+      } else if( ESP8266_FW_FlashProg((u8 *)esp8266_fw_img_upper, sizeof(esp8266_fw_img_upper), ESP8266_FW_FIRMWARE_UPPER_BASE_ADDRESS) < 0 ) {
+	DEBUG_MSG("ERROR: failed to program fw_img_upper!\n");
       } else {
 	DEBUG_MSG("Programming done...\n");
 	DEBUG_MSG("Booting new firmware...\n");
