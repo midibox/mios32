@@ -2306,6 +2306,9 @@ Guide track: doesn't work as expected if clock divider is used.
 Background: the guide track defines the measure length in 16th notes unrelated to the track divider settings.
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174095
 ----------------------------------------------------------
+Muting a track cuts off all playing notes on that track, but muting an individual note layer doesn't do the same for the note that's currently playing in that layer -> hanging notes.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174360
+----------------------------------------------------------
 
 
 
