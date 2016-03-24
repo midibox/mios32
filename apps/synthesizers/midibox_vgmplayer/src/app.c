@@ -196,12 +196,12 @@ void APP_Tick(void){
             tempbuf[i++] = 'g';
             tempbuf[i++] = 'm';
             tempbuf[i++] = 0;
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintFormattedString("Loading VGM...");
             vgms = VGM_SourceStream_Create();
             res = VGM_SourceStream_Start(vgms, tempbuf);
             if(res >= 0){
-                MIOS32_LCD_Clear();
-                MIOS32_LCD_CursorSet(0,0);
-                MIOS32_LCD_PrintFormattedString("Loaded VGM!");
                 vgmh = VGM_Head_Create(vgms);
                 VGM_Head_Restart(vgmh, VGM_Player_GetVGMTime());
                 vgmh->playing = 1;
