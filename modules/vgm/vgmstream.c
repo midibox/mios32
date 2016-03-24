@@ -236,18 +236,18 @@ void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
         }else if(type == 0x67){
             //Data block
             //Skip 0x66 in subbuffer[1]
-            u32 a = vhs->subbuffer[2];
-            if(a != 0){
-                //Format other than uncompressed YM2612 PCM not supported
-                head->isdone = 1;
-            }else{
-                a = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
+            //u32 a = vhs->subbuffer[2];
+            //if(a != 0){
+            //    //Format other than uncompressed YM2612 PCM not supported
+            //    head->isdone = 1;
+            //}else{
+            u32    l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
                     | ((u32)vhs->subbuffer[5] << 16) | ((u32)vhs->subbuffer[6] << 24);
-                DBG("Loading data block from %x size %x", vhs->srcaddr, a);
-                VGM_SourceStream_loadBlock(vss, vhs->srcaddr, a);
-                DBG("Block loaded!");
-                vhs->srcaddr += a;
-            }
+            //    DBG("Loading data block from %x size %x", vhs->srcaddr, l);
+            //    VGM_SourceStream_loadBlock(vss, vhs->srcaddr, l);
+            //    DBG("Block loaded!");
+                vhs->srcaddr += l;
+            //}
         }else if(type == 0xE0){
             //Seek in data block
             vhs->srcblockaddr = vhs->subbuffer[1] | ((u32)vhs->subbuffer[2] << 8) 
@@ -272,13 +272,12 @@ VgmSource* VGM_SourceStream_Create(){
     vss->vgmdatastartaddr = 0;
     vss->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE);
     vss->buffer2 = malloc(VGM_SOURCESTREAM_BUFSIZE);
-    vss->buffer1addr = 0;
-    vss->buffer2addr = 0;
+    vss->buffer1addr = 0xFFFFFFFF;
+    vss->buffer2addr = 0xFFFFFFFF;
     vss->wantbuffer = 0;
     vss->wantbufferaddr = 0;
     vss->block = NULL;
     vss->blocklen = 0;
-    vss->blockorigaddr = 0xFFFFFFFF;
     return source;
 }
 void VGM_SourceStream_Delete(void* sourcestream){
@@ -288,66 +287,144 @@ void VGM_SourceStream_Delete(void* sourcestream){
     if(vss->block != NULL){
         free(vss->block);
     }
+    free(vss);
 }
-extern s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
+//Only for use of VGM_SourceStream_Start
+static void CheckAdvanceBuffer(u32 a, u32* bufstart, u8* buf){
+    if(a - *bufstart >= VGM_SOURCESTREAM_BUFSIZE){
+        FILE_ReadSeek(a); 
+        FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE); 
+        *bufstart = a;
+    }
+}
+s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     VgmSourceStream* vss = (VgmSourceStream*)source->data;
     s32 res = FILE_ReadOpen(&(vss->file), filename);
     if(res < 0) return res;
     vss->datalen = FILE_ReadGetCurrentSize();
-    //Fill both buffers
-    vss->buffer1addr = 0;
-    res = FILE_ReadBuffer(vss->buffer1, VGM_SOURCESTREAM_BUFSIZE);
-    if(res < 0){vss->datalen = 0; return -2;}
-    vss->buffer2addr = VGM_SOURCESTREAM_BUFSIZE;
-    res = FILE_ReadBuffer(vss->buffer2, VGM_SOURCESTREAM_BUFSIZE);
-    if(res < 0){vss->datalen = 0; return -3;}
-    //Close file and save for reopening
-    res = FILE_ReadClose(&(vss->file));
-    if(res < 0){vss->datalen = 0; return -4;}
     //Read header
-    if(        VGM_SourceStream_getByte(vss, 0) == 'V' 
-            && VGM_SourceStream_getByte(vss, 1) == 'g' 
-            && VGM_SourceStream_getByte(vss, 2) == 'm' 
-            && VGM_SourceStream_getByte(vss, 3) == ' '){
-        //File has header
-        //Get version
-        u8 ver_lo = VGM_SourceStream_getByte(vss, 8);
-        u8 ver_hi = VGM_SourceStream_getByte(vss, 9);
-        source->psgclock = ((u32)VGM_SourceStream_getByte(vss, 0x0C)) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x0D) << 8)
-                | ((u32)VGM_SourceStream_getByte(vss, 0x0E) << 16) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x0F) << 24);
-        source->loopaddr = (((u32)VGM_SourceStream_getByte(vss, 0x1C)) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x1D) << 8)
-                | ((u32)VGM_SourceStream_getByte(vss, 0x1E) << 16) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x1F) << 24))
-                + 0x1C;
-        source->loopsamples = ((u32)VGM_SourceStream_getByte(vss, 0x20)) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x21) << 8)
-                | ((u32)VGM_SourceStream_getByte(vss, 0x22) << 16) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x23) << 24);
-        source->opn2clock = ((u32)VGM_SourceStream_getByte(vss, 0x2C)) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x2D) << 8)
-                | ((u32)VGM_SourceStream_getByte(vss, 0x2E) << 16) 
-                | ((u32)VGM_SourceStream_getByte(vss, 0x2F) << 24);
-        if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
-            vss->vgmdatastartaddr = 0x40;
-        }else{
-            vss->vgmdatastartaddr = (((u32)VGM_SourceStream_getByte(vss, 0x34)) 
-                    | ((u32)VGM_SourceStream_getByte(vss, 0x35) << 8)
-                    | ((u32)VGM_SourceStream_getByte(vss, 0x36) << 16) 
-                    | ((u32)VGM_SourceStream_getByte(vss, 0x37) << 24))
-                    + 0x34;
+    u8 flag = 0;
+    if(vss->datalen > 0x40){
+        u8* hdrdata = malloc(0x40);
+        res = FILE_ReadBuffer(hdrdata, 0x40);
+        if(res < 0) { free(hdrdata); vss->datalen = 0; return -2; }
+        //Check if has VGM header or raw data
+        if(hdrdata[0] == 'V' && hdrdata[1] == 'g' && hdrdata[2] == 'm' && hdrdata[3] == ' '){
+            flag = 1;
+            //Get version
+            u8 ver_lo = hdrdata[8];
+            u8 ver_hi = hdrdata[9];
+            source->psgclock = ((u32)hdrdata[0x0C]) 
+                    | ((u32)hdrdata[0x0D] << 8)
+                    | ((u32)hdrdata[0x0E] << 16) 
+                    | ((u32)hdrdata[0x0F] << 24);
+            source->loopaddr = (((u32)hdrdata[0x1C]) 
+                    | ((u32)hdrdata[0x1D] << 8)
+                    | ((u32)hdrdata[0x1E] << 16) 
+                    | ((u32)hdrdata[0x1F] << 24))
+                    + 0x1C;
+            source->loopsamples = ((u32)hdrdata[0x20]) 
+                    | ((u32)hdrdata[0x21] << 8)
+                    | ((u32)hdrdata[0x22] << 16) 
+                    | ((u32)hdrdata[0x23] << 24);
+            source->opn2clock = ((u32)hdrdata[0x2C]) 
+                    | ((u32)hdrdata[0x2D] << 8)
+                    | ((u32)hdrdata[0x2E] << 16) 
+                    | ((u32)hdrdata[0x2F] << 24);
+            if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+                vss->vgmdatastartaddr = 0x40;
+            }else{
+                vss->vgmdatastartaddr = (((u32)hdrdata[0x34]) 
+                        | ((u32)hdrdata[0x35] << 8)
+                        | ((u32)hdrdata[0x36] << 16) 
+                        | ((u32)hdrdata[0x37] << 24))
+                        + 0x34;
+            }
+            DBG("VGM data starts at 0x%X", vss->vgmdatastartaddr);
         }
-    }else{
+        free(hdrdata);
+    }
+    if(!flag){
+        DBG("VGM data starts at 0");
         vss->vgmdatastartaddr = 0;
         source->opn2clock = 0;
         source->psgclock = 0;
         source->loopaddr = 0;
         source->loopsamples = 0xFFFFFFFF;
     }
+    //Scan entire file for data blocks
+    u32 totalblocksize = 0;
+    u32 a = vss->vgmdatastartaddr;
+    u32 bufstart = a;
+    u8 type;
+    u8 blockcount = 0;
+    u32 thisblocksize;
+    u8* buf = malloc(VGM_SOURCESTREAM_BUFSIZE);
+    FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+    while(1){
+        type = buf[a - bufstart];
+        if(type == 0x67){
+            //Data block
+            ++blockcount;
+            a += 3; /*Skip 0x66 0x00*/ CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize = (u32)buf[a-bufstart];
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 8;
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 16;
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 24;
+            totalblocksize += thisblocksize;
+            a += 1 + thisblocksize;
+            CheckAdvanceBuffer(a, &bufstart, buf);
+        }else if(type == 0x66){
+            //End of stream
+            break;
+        }else{
+            a += 1 + VGM_HeadStream_getCommandLen(type);
+            CheckAdvanceBuffer(a, &bufstart, buf);
+        }
+    }
+    DBG("Found %d blocks, total size 0x%X", blockcount, totalblocksize);
+    //Load blocks
+    vss->block = malloc(totalblocksize);
+    vss->blocklen = totalblocksize;
+    u32 blockaddr = 0;
+    a = vss->vgmdatastartaddr;
+    bufstart = a;
+    FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+    while(1){
+        type = buf[a - bufstart];
+        if(type == 0x67){
+            //Data block
+            a += 3; /*Skip 0x66 0x00*/ CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize = (u32)buf[a-bufstart];
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 8;
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 16;
+            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+            thisblocksize |= (u32)buf[a-bufstart] << 24;
+            FILE_ReadSeek(a+1);
+            FILE_ReadBuffer((u8*)(vss->block + blockaddr), thisblocksize);
+            blockaddr += thisblocksize;
+            a += 1 + thisblocksize;
+            CheckAdvanceBuffer(a, &bufstart, buf);
+        }else if(type == 0x66){
+            //End of stream
+            break;
+        }else{
+            a += 1 + VGM_HeadStream_getCommandLen(type);
+            CheckAdvanceBuffer(a, &bufstart, buf);
+        }
+    }
+    DBG("Loaded 0x%X block bytes", blockaddr);
+    //Clean up
+    FILE_ReadClose(&(vss->file));
+    free(buf);
     return 0;
 }
+
 u8 VGM_SourceStream_getByte(VgmSourceStream* vss, u32 addr){
     if(addr >= vss->datalen) return 0;
     if(addr >= vss->buffer1addr && addr < (vss->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
@@ -384,6 +461,7 @@ u8 VGM_SourceStream_getByte(VgmSourceStream* vss, u32 addr){
     MIOS32_BOARD_LED_Set(0b1111, leds);
     return vss->buffer1[0];
 }
+/*
 void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len){
     if(startaddr == vss->blockorigaddr && len == vss->blocklen) return; //Don't reload existing block
     if(vss->block != NULL){
@@ -399,3 +477,4 @@ void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len){
     FILE_ReadClose(&(vss->file));
     vss->blocklen = len;
 }
+*/
