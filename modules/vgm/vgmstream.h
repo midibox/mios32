@@ -40,7 +40,7 @@ extern void VGM_HeadStream_Restart(VgmHead* head);
 extern void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time);
 
 typedef union {
-    u8 ALL[44+sizeof(file_t)];
+    u8 ALL[40+sizeof(file_t)];
     struct{
         file_t file;
         u32 datalen;
@@ -58,7 +58,6 @@ typedef union {
 
         u8* block;
         u32 blocklen;
-        u32 blockorigaddr;
     };
 } VgmSourceStream;
 
@@ -67,6 +66,6 @@ extern void VGM_SourceStream_Delete(void* sourcestream);
 extern s32 VGM_SourceStream_Start(VgmSource* source, char* filename);
 extern u8 VGM_SourceStream_getByte(VgmSourceStream* vss, u32 addr);
 static inline u8 VGM_SourceStream_getBlockByte(VgmSourceStream* vss, u32 blockaddr){ return ((blockaddr < vss->blocklen) ? (vss->block[blockaddr]) : 0); }
-extern void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len);
+//extern void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len);
 
 #endif /* _VGMSTREAM_H */
