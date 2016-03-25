@@ -13,9 +13,11 @@
 #include "vgm.h"
 #include "vgmhead.h"
 #include "vgmplayer.h"
+#include "vgmsdtask.h"
 
 void VGM_Init(){
     VGM_Head_Init();
     VGM_Player_Init();
+    VGM_SDTask_Init();
 }
 

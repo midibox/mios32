@@ -25,47 +25,49 @@
 #define VGM_HEADSTREAM_SUBBUFFER_MAXLEN 16
 
 typedef union {
-    u8 ALL[9+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
-    struct{
-        u32 srcaddr;
-        u32 srcblockaddr;
-        u8 subbuffer[VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
-        u8 subbufferlen;
-    };
-} VgmHeadStream;
-
-extern VgmHeadStream* VGM_HeadStream_Create(VgmSource* source);
-extern void VGM_HeadStream_Delete(void* headstream);
-extern void VGM_HeadStream_Restart(VgmHead* head);
-extern void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time);
-
-typedef union {
-    u8 ALL[40+sizeof(file_t)];
+    u8 ALL[32+sizeof(file_t)+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
     struct{
         file_t file;
-        u32 datalen;
-        u32 vgmdatastartaddr;
+        
+        u32 srcaddr;
+        u32 srcblockaddr;
         
         u8* buffer1;
         u8* buffer2;
         u32 buffer1addr;
         u32 buffer2addr;
         
+        u8 subbuffer[VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
+        u8 subbufferlen;
+        
         u8 wantbuffer;
-        u8 dummy1;
         u16 dummy2;
         u32 wantbufferaddr;
+    };
+} VgmHeadStream;
 
+typedef union {
+    u8 ALL[16+sizeof(file_t)];
+    struct{
+        file_t file;
+        u32 datalen;
+        u32 vgmdatastartaddr;
+        
         u8* block;
         u32 blocklen;
     };
 } VgmSourceStream;
 
+extern VgmHeadStream* VGM_HeadStream_Create(VgmSource* source);
+extern void VGM_HeadStream_Delete(void* headstream);
+extern void VGM_HeadStream_Restart(VgmHead* head);
+extern u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time);
+extern u8 VGM_HeadStream_getByte(VgmSourceStream* vss, VgmHeadStream* vhs, u32 addr);
+extern void VGM_HeadStream_BackgroundBuffer(VgmHead* head);
+
 extern VgmSource* VGM_SourceStream_Create();
 extern void VGM_SourceStream_Delete(void* sourcestream);
 extern s32 VGM_SourceStream_Start(VgmSource* source, char* filename);
-extern u8 VGM_SourceStream_getByte(VgmSourceStream* vss, u32 addr);
 static inline u8 VGM_SourceStream_getBlockByte(VgmSourceStream* vss, u32 blockaddr){ return ((blockaddr < vss->blocklen) ? (vss->block[blockaddr]) : 0); }
-//extern void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len);
 
 #endif /* _VGMSTREAM_H */

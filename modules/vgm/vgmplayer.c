@@ -14,6 +14,7 @@
 #include <mios32.h>
 #include "vgmhead.h"
 #include <genesis.h>
+#include "vgmperfmon.h"
 
 
 typedef struct {
@@ -116,19 +117,21 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
 }
 
 
-// timers clocked at CPU/2 clock
-#define TIM_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/2)
-
 void TIM3_IRQHandler(void){
     if(TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET){
         TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
         TIM_Cmd(TIM3, DISABLE);
+        VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CHIP);
         u16 nextdelay = VgmPlayer_WorkCallback(TIM2->CNT, TIM5->CNT);
+        VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CHIP);
         TIM3->CNT = 0;
         TIM3->ARR = nextdelay;
         TIM_Cmd(TIM3, ENABLE);
     }
 }
+
+// timers clocked at CPU/2 clock
+//#define TIM_PERIPHERAL_FRQ (MIOS32_SYS_CPU_FREQUENCY/2)
 
 void VGM_Player_Init(){
     ////////////////////////////////////////////////////////////////////////////
@@ -166,7 +169,7 @@ void VGM_Player_Init(){
     TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
     TIM_ARRPreloadConfig(TIM3, DISABLE);
     TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE); //Enable interrupts
-    MIOS32_IRQ_Install(TIM3_IRQn, MIOS32_IRQ_PRIO_LOW); //MIOS32_IRQ_PRIO_INSANE);
+    MIOS32_IRQ_Install(TIM3_IRQn, MIOS32_IRQ_PRIO_INSANE); //highest priority!
     TIM_Cmd(TIM3, ENABLE); //Start counting!
 }
 

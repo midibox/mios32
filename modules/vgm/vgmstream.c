@@ -12,6 +12,8 @@
 
 
 #include "vgmstream.h"
+#include "vgmsdtask.h"
+#include "vgmperfmon.h"
 
 #define VGM_DELAY62 735
 #define VGM_DELAY63 882
@@ -80,14 +82,14 @@ u8 VGM_HeadStream_getCommandLen(u8 type){
 }
 u8 VGM_HeadStream_bufferNextCommand(VgmHeadStream* vhs, VgmSourceStream* vss){
     if(vhs->subbufferlen == VGM_HEADSTREAM_SUBBUFFER_MAXLEN) return 0;
-    u8 type = VGM_SourceStream_getByte(vss, vhs->srcaddr);
+    u8 type = VGM_HeadStream_getByte(vss, vhs, vhs->srcaddr);
     u8 len = VGM_HeadStream_getCommandLen(type);
     if(len + 1 + vhs->subbufferlen <= VGM_HEADSTREAM_SUBBUFFER_MAXLEN){
         ++vhs->srcaddr;
         vhs->subbuffer[vhs->subbufferlen++] = type;
         u8 i;
         for(i=0; i<len; ++i){
-            vhs->subbuffer[vhs->subbufferlen++] = VGM_SourceStream_getByte(vss, vhs->srcaddr++);
+            vhs->subbuffer[vhs->subbufferlen++] = VGM_HeadStream_getByte(vss, vhs, vhs->srcaddr++);
         }
         return 1;
     }else{
@@ -104,14 +106,24 @@ void VGM_HeadStream_unBuffer(VgmHeadStream* vhs, u8 len){
 }
 
 VgmHeadStream* VGM_HeadStream_Create(VgmSource* source){
+    VgmSourceStream* vss = (VgmSourceStream*)source->data;
     VgmHeadStream* vhs = malloc(sizeof(VgmHeadStream));
+    vhs->file = vss->file;
     vhs->srcaddr = 0;
     vhs->srcblockaddr = 0;
     vhs->subbufferlen = 0;
+    vhs->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE);
+    vhs->buffer2 = malloc(VGM_SOURCESTREAM_BUFSIZE);
+    vhs->buffer1addr = 0xFFFFFFFF;
+    vhs->buffer2addr = 0xFFFFFFFF;
+    vhs->wantbuffer = 0;
+    vhs->wantbufferaddr = 0;
     return vhs;
 }
 void VGM_HeadStream_Delete(void* headstream){
     VgmHeadStream* vhs = (VgmHeadStream*)headstream;
+    free(vhs->buffer1);
+    free(vhs->buffer2);
     free(vhs);
 }
 void VGM_HeadStream_Restart(VgmHead* head){
@@ -119,14 +131,60 @@ void VGM_HeadStream_Restart(VgmHead* head){
     VgmSourceStream* vss = (VgmSourceStream*)head->source->data;
     vhs->srcaddr = vss->vgmdatastartaddr;
     vhs->srcblockaddr = 0;
+    vhs->buffer1addr = 0xFFFFFFFF;
+    vhs->buffer2addr = 0xFFFFFFFF;
+    vhs->wantbufferaddr = vhs->srcaddr;
+    vhs->wantbuffer = 1;
 }
-void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
+u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
     VgmSourceStream* vss = (VgmSourceStream*)head->source->data;
     u8 type, cmdlen;
     head->iswait = head->iswrite = 0;
     u8 dontunbuffer;
     while(!(head->iswait || head->iswrite)){
+        //Check if we will have to skip a data block (buffer miss)
+        if(vhs->subbufferlen != 0 && vhs->subbuffer[0] == 0x67){ //There's a command buffered, and it's data block
+            //Load the block parameters and skip
+            u32 l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
+                | ((u32)vhs->subbuffer[5] << 16) | ((u32)vhs->subbuffer[6] << 24);
+            vhs->srcaddr += l;
+            VGM_HeadStream_unBuffer(vhs, 7); //Remove this command from subbuffer
+            //Set up the stream where the block ends
+            vhs->wantbufferaddr = vhs->srcaddr;
+            vhs->wantbuffer = 1;
+            head->iswait = 1; //Act as a wait for 0 (or negative) time
+            return 0; //Report that the command couldn't be loaded
+        }else if(vhs->subbufferlen == 0){
+            //Check if we're about to run out of buffer
+            if(vhs->srcaddr >= vhs->buffer1addr && vhs->srcaddr < (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
+                //We're in buffer1
+                if((vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE - vhs->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
+                        && vhs->buffer2addr != (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
+                    //About to run out of buffer1, and buffer2 isn't ready
+                    vhs->wantbufferaddr = (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE);
+                    vhs->wantbuffer = 2; //in case you didn't know already
+                    head->iswait = 1; //Act as a wait for 0 (or negative) time
+                    return 0; //Report that the command couldn't be loaded
+                }
+            }else if(vhs->srcaddr >= vhs->buffer2addr && vhs->srcaddr < (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
+                //We're in buffer2
+                if((vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE - vhs->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
+                        && vhs->buffer1addr != (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
+                    //About to run out of buffer2, and buffer1 isn't ready
+                    vhs->wantbufferaddr = (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE);
+                    vhs->wantbuffer = 1; //in case you didn't know already
+                    head->iswait = 1; //Act as a wait for 0 (or negative) time
+                    return 0; //Report that the command couldn't be loaded
+                }
+            }else{
+                //We're not in either buffer
+                vhs->wantbufferaddr = vhs->srcaddr;
+                vhs->wantbuffer = 1; //in case you didn't know already
+                head->iswait = 1; //Act as a wait for 0 (or negative) time
+                return 0; //Report that the command couldn't be loaded
+            }
+        }
         if(vhs->subbufferlen == 0){
             VGM_HeadStream_bufferNextCommand(vhs, vss); //Should never return 0
         }
@@ -236,17 +294,16 @@ void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
         }else if(type == 0x67){
             //Data block
             //Skip 0x66 in subbuffer[1]
-            //u32 a = vhs->subbuffer[2];
-            //if(a != 0){
-            //    //Format other than uncompressed YM2612 PCM not supported
-            //    head->isdone = 1;
-            //}else{
-            u32    l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
+            //a = vhs->subbuffer[2]; //== 0, format other than uncompressed YM2612 PCM not supported
+            u32 l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
                     | ((u32)vhs->subbuffer[5] << 16) | ((u32)vhs->subbuffer[6] << 24);
-            //    DBG("Loading data block from %x size %x", vhs->srcaddr, l);
-            //    VGM_SourceStream_loadBlock(vss, vhs->srcaddr, l);
-            //    DBG("Block loaded!");
-                vhs->srcaddr += l;
+            vhs->srcaddr += l;
+            VGM_HeadStream_unBuffer(vhs, 7); //Remove this command from subbuffer
+            //Set up the stream where the block ends
+            vhs->wantbufferaddr = vhs->srcaddr;
+            vhs->wantbuffer = 1;
+            head->iswait = 1; //Act as a wait for 0 (or negative) time
+            return 0; //Report that the command couldn't be loaded
             //}
         }else if(type == 0xE0){
             //Seek in data block
@@ -256,6 +313,73 @@ void VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
         if(!dontunbuffer){
             VGM_HeadStream_unBuffer(vhs, cmdlen+1);
         }
+    }
+    return 1;
+}
+u8 VGM_HeadStream_getByte(VgmSourceStream* vss, VgmHeadStream* vhs, u32 addr){
+    if(addr >= vss->datalen) return 0;
+    if(addr >= vhs->buffer1addr && addr < (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
+        if(vhs->buffer2addr != vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE){
+            //Set up to background buffer next
+            vhs->wantbuffer = 2;
+            vhs->wantbufferaddr = vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE;
+        }
+        return vhs->buffer1[addr - vhs->buffer1addr];
+    }
+    if(addr >= vhs->buffer2addr && addr < (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
+        if(vhs->buffer1addr != vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE){
+            //Set up to background buffer next
+            vhs->wantbuffer = 1;
+            vhs->wantbufferaddr = vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE;
+        }
+        return vhs->buffer2[addr - vhs->buffer2addr];
+    }
+    /*
+    //Have to load something right now
+    u8 leds = MIOS32_BOARD_LED_Get();
+    MIOS32_BOARD_LED_Set(0b1111, 0b0100);
+    s32 res = FILE_ReadReOpen(&(vhs->file));
+    if(res < 0) return 0;
+    res = FILE_ReadSeek(addr);
+    if(res < 0) return 0;
+    res = FILE_ReadBuffer(vhs->buffer1, VGM_SOURCESTREAM_BUFSIZE);
+    if(res < 0) return 0;
+    vhs->buffer1addr = addr;
+    FILE_ReadClose(&(vhs->file));
+    //Set up to load the next buffer next
+    vhs->wantbuffer = 2;
+    vhs->wantbufferaddr = addr + VGM_SOURCESTREAM_BUFSIZE;
+    //Done
+    MIOS32_BOARD_LED_Set(0b1111, leds);
+    return vhs->buffer1[0];
+    */
+    return 0x66; //error, stop stream
+}
+void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
+    VgmHeadStream* vhs = (VgmHeadStream*)head->data;
+    u8* bufferto = NULL;
+    u32* addrto = NULL;
+    if(vhs->wantbuffer == 1){
+        bufferto = vhs->buffer1;
+        addrto = &(vhs->buffer1addr);
+    }else if(vhs->wantbuffer == 2){
+        bufferto = vhs->buffer2;
+        addrto = &(vhs->buffer2addr);
+    }
+    if(bufferto != NULL){
+        u8 leds = MIOS32_BOARD_LED_Get();
+        MIOS32_BOARD_LED_Set(0b1111, 0b0100);
+        VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CARD);
+        vgm_sdtask_usingsdcard = 1;
+        FILE_ReadReOpen(&(vhs->file));
+        FILE_ReadSeek(vhs->wantbufferaddr);
+        FILE_ReadBuffer(bufferto, VGM_SOURCESTREAM_BUFSIZE);
+        FILE_ReadClose(&(vhs->file));
+        vgm_sdtask_usingsdcard = 0;
+        VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CARD);
+        MIOS32_BOARD_LED_Set(0b1111, leds);
+        vhs->wantbuffer = 0;
+        *addrto = vhs->wantbufferaddr;
     }
 }
 
@@ -270,20 +394,12 @@ VgmSource* VGM_SourceStream_Create(){
     source->data = vss;
     vss->datalen = 0;
     vss->vgmdatastartaddr = 0;
-    vss->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE);
-    vss->buffer2 = malloc(VGM_SOURCESTREAM_BUFSIZE);
-    vss->buffer1addr = 0xFFFFFFFF;
-    vss->buffer2addr = 0xFFFFFFFF;
-    vss->wantbuffer = 0;
-    vss->wantbufferaddr = 0;
     vss->block = NULL;
     vss->blocklen = 0;
     return source;
 }
 void VGM_SourceStream_Delete(void* sourcestream){
     VgmSourceStream* vss = (VgmSourceStream*)sourcestream;
-    free(vss->buffer1);
-    free(vss->buffer2);
     if(vss->block != NULL){
         free(vss->block);
     }
@@ -375,8 +491,17 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
             ++a; CheckAdvanceBuffer(a, &bufstart, buf);
             thisblocksize |= (u32)buf[a-bufstart] << 24;
             totalblocksize += thisblocksize;
-            a += 1 + thisblocksize;
-            CheckAdvanceBuffer(a, &bufstart, buf);
+            #ifndef VGM_STREAM_SUPPORTMULTIBLOCK
+                vss->block = malloc(totalblocksize);
+                vss->blocklen = totalblocksize;
+                FILE_ReadSeek(a+1);
+                FILE_ReadBuffer(vss->block, totalblocksize);
+                DBG("Loaded block 0x%X bytes", totalblocksize);
+                break;
+            #else
+                a += 1 + thisblocksize;
+                CheckAdvanceBuffer(a, &bufstart, buf);
+            #endif
         }else if(type == 0x66){
             //End of stream
             break;
@@ -385,96 +510,47 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
             CheckAdvanceBuffer(a, &bufstart, buf);
         }
     }
-    DBG("Found %d blocks, total size 0x%X", blockcount, totalblocksize);
-    //Load blocks
-    vss->block = malloc(totalblocksize);
-    vss->blocklen = totalblocksize;
-    u32 blockaddr = 0;
-    a = vss->vgmdatastartaddr;
-    bufstart = a;
-    FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
-    while(1){
-        type = buf[a - bufstart];
-        if(type == 0x67){
-            //Data block
-            a += 3; /*Skip 0x66 0x00*/ CheckAdvanceBuffer(a, &bufstart, buf);
-            thisblocksize = (u32)buf[a-bufstart];
-            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
-            thisblocksize |= (u32)buf[a-bufstart] << 8;
-            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
-            thisblocksize |= (u32)buf[a-bufstart] << 16;
-            ++a; CheckAdvanceBuffer(a, &bufstart, buf);
-            thisblocksize |= (u32)buf[a-bufstart] << 24;
-            FILE_ReadSeek(a+1);
-            FILE_ReadBuffer((u8*)(vss->block + blockaddr), thisblocksize);
-            blockaddr += thisblocksize;
-            a += 1 + thisblocksize;
-            CheckAdvanceBuffer(a, &bufstart, buf);
-        }else if(type == 0x66){
-            //End of stream
-            break;
-        }else{
-            a += 1 + VGM_HeadStream_getCommandLen(type);
-            CheckAdvanceBuffer(a, &bufstart, buf);
+    #ifdef VGM_STREAM_SUPPORTMULTIBLOCK
+        DBG("Found %d blocks, total size 0x%X", blockcount, totalblocksize);
+        //Load blocks
+        vss->block = malloc(totalblocksize);
+        vss->blocklen = totalblocksize;
+        u32 blockaddr = 0;
+        a = vss->vgmdatastartaddr;
+        bufstart = a;
+        FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+        while(1){
+            type = buf[a - bufstart];
+            if(type == 0x67){
+                //Data block
+                a += 3; /*Skip 0x66 0x00*/ CheckAdvanceBuffer(a, &bufstart, buf);
+                thisblocksize = (u32)buf[a-bufstart];
+                ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+                thisblocksize |= (u32)buf[a-bufstart] << 8;
+                ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+                thisblocksize |= (u32)buf[a-bufstart] << 16;
+                ++a; CheckAdvanceBuffer(a, &bufstart, buf);
+                thisblocksize |= (u32)buf[a-bufstart] << 24;
+                FILE_ReadSeek(a+1);
+                FILE_ReadBuffer((u8*)(vss->block + blockaddr), thisblocksize);
+                blockaddr += thisblocksize;
+                a += 1 + thisblocksize;
+                CheckAdvanceBuffer(a, &bufstart, buf);
+            }else if(type == 0x66){
+                //End of stream
+                break;
+            }else{
+                a += 1 + VGM_HeadStream_getCommandLen(type);
+                CheckAdvanceBuffer(a, &bufstart, buf);
+            }
         }
-    }
-    DBG("Loaded 0x%X block bytes", blockaddr);
+        DBG("Loaded 0x%X block bytes", blockaddr);
+    #endif
     //Clean up
     FILE_ReadClose(&(vss->file));
     free(buf);
     return 0;
 }
 
-u8 VGM_SourceStream_getByte(VgmSourceStream* vss, u32 addr){
-    if(addr >= vss->datalen) return 0;
-    if(addr >= vss->buffer1addr && addr < (vss->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
-        if(vss->buffer2addr != vss->buffer1addr + VGM_SOURCESTREAM_BUFSIZE){
-            //Set up to background buffer next
-            vss->wantbuffer = 2;
-            vss->wantbufferaddr = vss->buffer1addr + VGM_SOURCESTREAM_BUFSIZE;
-        }
-        return vss->buffer1[addr - vss->buffer1addr];
-    }
-    if(addr >= vss->buffer2addr && addr < (vss->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
-        if(vss->buffer1addr != vss->buffer2addr + VGM_SOURCESTREAM_BUFSIZE){
-            //Set up to background buffer next
-            vss->wantbuffer = 1;
-            vss->wantbufferaddr = vss->buffer2addr + VGM_SOURCESTREAM_BUFSIZE;
-        }
-        return vss->buffer2[addr - vss->buffer2addr];
-    }
-    //Have to load something right now
-    u8 leds = MIOS32_BOARD_LED_Get();
-    MIOS32_BOARD_LED_Set(0b1111, 0b0100);
-    s32 res = FILE_ReadReOpen(&(vss->file));
-    if(res < 0) return 0;
-    res = FILE_ReadSeek(addr);
-    if(res < 0) return 0;
-    res = FILE_ReadBuffer(vss->buffer1, VGM_SOURCESTREAM_BUFSIZE);
-    if(res < 0) return 0;
-    vss->buffer1addr = addr;
-    FILE_ReadClose(&(vss->file));
-    //Set up to load the next buffer next
-    vss->wantbuffer = 2;
-    vss->wantbufferaddr = addr + VGM_SOURCESTREAM_BUFSIZE;
-    //Done
-    MIOS32_BOARD_LED_Set(0b1111, leds);
-    return vss->buffer1[0];
-}
-/*
-void VGM_SourceStream_loadBlock(VgmSourceStream* vss, u32 startaddr, u32 len){
-    if(startaddr == vss->blockorigaddr && len == vss->blocklen) return; //Don't reload existing block
-    if(vss->block != NULL){
-        free(vss->block);
-    }
-    vss->block = malloc(len);
-    s32 res = FILE_ReadReOpen(&(vss->file));
-    if(res < 0) return;
-    res = FILE_ReadSeek(startaddr);
-    if(res < 0) return;
-    res = FILE_ReadBuffer(vss->block, len);
-    if(res < 0) return;
-    FILE_ReadClose(&(vss->file));
-    vss->blocklen = len;
-}
-*/
+
+
