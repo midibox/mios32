@@ -101,6 +101,7 @@ void APP_Tick(void){
     static u32 prescaler = 0;
     static u8 sdstate = 0;
     static u8 selfile = 0;
+    static u8 updatescreen = 1;
     static VgmSource* vgms = NULL;
     static VgmHead* vgmh = NULL;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
@@ -111,8 +112,12 @@ void APP_Tick(void){
     
     ++prescaler;
     char* tempbuf; u8 i;
-    if(prescaler == 100){
-        prescaler = 0;
+    if(prescaler % 100 == 0){
+        if(prescaler == 1000){
+            prescaler = 0;
+            VGM_PerfMon_Second();
+            updatescreen = 1;
+        }
         switch(sdstate){
         case 0:
             res = FILE_CheckSDCard();
@@ -150,6 +155,7 @@ void APP_Tick(void){
                 MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
                 selfile = 0;
                 sdstate = 3;
+                updatescreen = 1;
             }
             break;
         case 3:
@@ -171,18 +177,26 @@ void APP_Tick(void){
                     break;
                 };
                 playbackcommand = 0;
+                updatescreen = 1;
             }
-            tempbuf = malloc(9);
-            for(i=0; i<8; i++){
-                tempbuf[i] = filenamelist[(9*selfile)+i];
+            if(updatescreen){
+                tempbuf = malloc(9);
+                for(i=0; i<8; i++){
+                    tempbuf[i] = filenamelist[(9*selfile)+i];
+                }
+                tempbuf[8] = 0;
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
+                MIOS32_LCD_CursorSet(0,1);
+                MIOS32_LCD_PrintFormattedString("File %d: %s.vgm", selfile, tempbuf);
+                MIOS32_LCD_CursorSet(31,0);
+                MIOS32_LCD_PrintFormattedString("Chip:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP));
+                MIOS32_LCD_CursorSet(31,1);
+                MIOS32_LCD_PrintFormattedString("Card:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD));
+                free(tempbuf);
+                updatescreen = 0;
             }
-            tempbuf[8] = 0;
-            MIOS32_LCD_Clear();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
-            MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintFormattedString("File %d: %s.vgm", selfile, tempbuf);
-            free(tempbuf);
             break;
         case 4:
             //Load VGM file
@@ -213,8 +227,19 @@ void APP_Tick(void){
                 VGM_Source_Delete(vgms);
                 sdstate = 3;
             }
+            updatescreen = 1;
             free(tempbuf);
         case 5:
+            if(updatescreen){
+                MIOS32_LCD_Clear();
+                MIOS32_LCD_CursorSet(0,0);
+                MIOS32_LCD_PrintFormattedString("Playing...");
+                MIOS32_LCD_CursorSet(31,0);
+                MIOS32_LCD_PrintFormattedString("Chip:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP));
+                MIOS32_LCD_CursorSet(31,1);
+                MIOS32_LCD_PrintFormattedString("Card:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD));
+                updatescreen = 0;
+            }
             if(playbackcommand == 3){
                 BLM_X_LEDSet((3 * 88) + (1 * 8) + 4, 0, 0); //Play LED
                 VGM_Head_Delete(vgmh);
@@ -222,10 +247,8 @@ void APP_Tick(void){
                 Genesis_Reset(USE_GENESIS);
                 playbackcommand = 0;
                 sdstate = 3;
+                updatescreen = 1;
             }
-            MIOS32_LCD_Clear();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("Playing...");
             break;
         }
     }
