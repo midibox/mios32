@@ -1,5 +1,5 @@
 /*
- * VGM Data and Playback Driver: Main header
+ * VGM Data and Playback Driver: SD Card Buffer Task header
  *
  * ==========================================================================
  *
@@ -10,18 +10,14 @@
  * ==========================================================================
  */
 
-#ifndef _VGM_H
-#define _VGM_H
+#ifndef _VGMSDTASK_H
+#define _VGMSDTASK_H
 
 #include <mios32.h>
-#include "vgmhead.h"
-#include "vgmperfmon.h"
-#include "vgmplayer.h"
-#include "vgmram.h"
-#include "vgmsource.h"
-#include "vgmstream.h"
 
-extern void VGM_Init();
+extern u8 vgm_sdtask_disable;
+extern u8 vgm_sdtask_usingsdcard;
 
+extern void VGM_SDTask_Init();
 
-#endif /* _VGM_H */
+#endif /* _VGMSDTASK_H */
