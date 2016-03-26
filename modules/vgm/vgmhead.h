@@ -20,7 +20,9 @@
 typedef union {
     u32 all;
     struct {
-        u8 cmd; //0x50 PSG write, data in data only; 0x52, 0x53 OPN2 writes port 0, 1
+        u8 cmd; //0x00 PSG write, data in data only; 0x02, 0x03 OPN2 writes port 0, 1
+        //Plus 0x10 per board
+        //0xFF for null command
         u8 addr;
         u8 data;
         u8 data2;
@@ -39,7 +41,7 @@ typedef union {
     struct{
         u8 mute:1;
         u8 map_chip:2;
-        u8 map_voice:3; //Either 0-5 or 0-3
+        u8 map_voice:3; //Either 0-5 or 0-2; channels 0, 7, and B ignore
         u8 dummy:2;
     };
 } VgmHead_Channel;
@@ -51,7 +53,7 @@ typedef union {
         void* data;
         u32 ticks;
         VgmChipWriteCmd writecmd;
-        VgmHead_Channel channel[12];
+        VgmHead_Channel channel[12]; //0 OPN2, 1-6 voices, 7 DAC, 8-A sq, B noise
         u32 opn2mult;
         u32 psgmult;
         u32 tempomult;
@@ -60,7 +62,8 @@ typedef union {
         u8 iswrite:1;
         u8 isdone:1;
         u8 psgfreq0to1:1;
-        u32 dummy:27;
+        u8 psglastchannel:2;
+        u32 dummy:25;
     };
 } VgmHead;
 
@@ -76,7 +79,8 @@ extern void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time);
 static inline u8 VGM_Head_cmdIsWait(VgmHead* head) {return head->iswait || head->isdone;}
 static inline s32 VGM_Head_cmdGetWaitRemaining(VgmHead* head, u32 vgm_time) {return (head->isdone ? 65535 : (s32)(head->ticks - vgm_time));}
 static inline u8 VGM_Head_cmdIsChipWrite(VgmHead* head) {return head->iswrite && !head->isdone;}
-//static inline ChipWriteCmd VGM_Head_cmdGetChipWrite() {return head->writecmd;}
+//static inline VgmChipWriteCmd VGM_Head_cmdGetChipWrite() {return head->writecmd;}
+extern void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd);
 
 extern void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult);
 extern void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 freq0to1);

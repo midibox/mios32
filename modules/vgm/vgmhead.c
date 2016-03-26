@@ -28,7 +28,18 @@ VgmHead* VGM_Head_Create(VgmSource* source){
     head->playing = 0;
     head->source = source;
     head->ticks = 0; //will get changed at restart
-    //don't initialize mapping
+    u8 i;
+    for(i=0; i<12; ++i){
+        head->channel[i].mute = 0;
+        head->channel[i].map_chip = 0;
+        if(i>=1 && i<=6){
+            head->channel[i].map_voice = i-1;
+        }else if(i>=8 && i<=0xA){
+            head->channel[i].map_voice = i-8;
+        }else{
+            head->channel[i].map_voice = 0;
+        }
+    }
     head->opn2mult = ((7670454 << 8) / 500000); //0x1000; //TODO adjust in real time
     head->psgmult = 0x1000; //TODO adjust in real time
     head->psgfreq0to1 = 1;
@@ -127,4 +138,63 @@ void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 psgfreq0to1)
     }
     writecmd->data = (writecmd->data & 0xF0) | (freq & 0x0F);
     writecmd->data2 = (freq >> 4) & 0x3F;
+}
+
+void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
+    u8 chan, board;
+    u8 addrhi = (cmd->cmd & 0x01);
+    if(cmd->cmd == 0x00){
+        //PSG write command
+        if(cmd->data & 0x80){
+            chan = ((cmd->data & 0x60) >> 5);
+            head->psglastchannel = chan;
+            chan += 8;
+            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[chan].map_chip;
+            if(chan != 0xB){
+                chan = head->channel[chan].map_voice;
+                cmd->data = (cmd->data & 0x9F) | (chan << 5);
+            }
+        }else{
+            chan = head->psglastchannel + 8;
+            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[chan].map_chip;
+        }
+    }else{
+        //OPN2 write command
+        if(cmd->addr == 0x28){
+            //Key on
+            chan = cmd->data & 0x07;
+            if(chan < 0x03) chan += 1; //Move channels 0,1,2 up to 1,2,3
+            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[chan].map_chip;
+            chan = head->channel[chan].map_voice;
+            if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
+            cmd->data = (cmd->data & 0xF8) | chan;
+        }else if(cmd->addr == 0x2A || cmd->addr == 0x2B){
+            //DAC write
+            if(head->channel[7].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[7].map_chip;
+        }else if((cmd->addr <= 0xAE && cmd->addr >= 0xA8) || (cmd->addr <= 0x27 && cmd->addr >= 0x24)){
+            //Ch3 frequency write or options/timers write
+            if(head->channel[3].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[3].map_chip;
+        }else if(cmd->addr <= 0x2F || cmd->addr >= 0xB8){
+            //Other chip write
+            if(head->channel[0].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[0].map_chip;
+        }else{
+            //Operator or channel/voice write
+            chan = (cmd->addr & 0x03) + addrhi + (addrhi << 1) + 1; //Add 3 for channels 3,4,5
+            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            board = head->channel[chan].map_chip;
+            chan = head->channel[chan].map_voice;
+            if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
+            addrhi = (chan & 0x04) >> 2;
+            chan &= 0x03;
+            cmd->addr = (cmd->addr & 0xFC) | chan;
+            cmd->cmd = (cmd->cmd & 0xFE) | addrhi;
+        }
+    }
+    cmd->cmd |= board << 4;
 }

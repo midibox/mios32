@@ -194,7 +194,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
         if(type == 0x50){
             //PSG write
             head->iswrite = 1;
-            head->writecmd.cmd = type;
+            head->writecmd.cmd = 0x00;
             head->writecmd.data = vhs->subbuffer[1];
             if((head->writecmd.data & 0x80) && !(head->writecmd.data & 0x10) && (head->writecmd.data < 0xE0)){
                 //It's a main write, not attenuation, and not noise
@@ -217,10 +217,11 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                     bufferpos = vhs->subbufferlen;
                 }
             }
+            VGM_Head_fixCmd(head, &(head->writecmd));
         }else if((type & 0xFE) == 0x52){
             //OPN2 write
             head->iswrite = 1;
-            head->writecmd.cmd = type;
+            head->writecmd.cmd = (type & 0x01) | 0x02;
             head->writecmd.addr = vhs->subbuffer[1];
             head->writecmd.data = vhs->subbuffer[2];
             if((head->writecmd.addr & 0xF4) == 0xA4){
@@ -247,10 +248,11 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                     bufferpos = vhs->subbufferlen;
                 }
             }
+            VGM_Head_fixCmd(head, &(head->writecmd));
         }else if(type >= 0x80 && type <= 0x8F){
             //OPN2 DAC write
             head->iswrite = 1;
-            head->writecmd.cmd = 0x52;
+            head->writecmd.cmd = 0x02;
             head->writecmd.addr = 0x2A;
             head->writecmd.data = VGM_SourceStream_getBlockByte(vss, vhs->srcblockaddr++);
             if(type != 0x80){
@@ -258,6 +260,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                 vhs->subbuffer[0] = type - 0x11;
                 dontunbuffer = 1;
             }
+            VGM_Head_fixCmd(head, &(head->writecmd));
         }else if(type >= 0x70 && type <= 0x7F){
             //Short wait
             head->iswait = 1;
@@ -289,8 +292,19 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
             //Nop [unofficial]
         }else if(type == 0x66){
             //End of data
-            //Behaves like endless stream of 65535-tick waits
-            head->isdone = 1;
+            if(head->source->loopaddr >= vss->vgmdatastartaddr && head->source->loopaddr < vss->datalen){
+                //Jump to loop point
+                vhs->srcaddr = head->source->loopaddr;
+                VGM_HeadStream_unBuffer(vhs, 1); //Remove this command from subbuffer
+                //Set up to stream from here
+                vhs->wantbufferaddr = vhs->srcaddr;
+                vhs->wantbuffer = 1;
+                head->iswait = 1; //Act as a wait for 0 (or negative) time
+                return 0; //Report that the command couldn't be loaded
+            }else{
+                //Behaves like endless stream of 65535-tick waits
+                head->isdone = 1;
+            }
         }else if(type == 0x67){
             //Data block
             //Skip 0x66 in subbuffer[1]
