@@ -218,6 +218,24 @@ void APP_Tick(void){
             if(res >= 0){
                 vgmh = VGM_Head_Create(vgms);
                 VGM_Head_Restart(vgmh, VGM_Player_GetVGMTime());
+                vgmh->channel[0].map_chip = 3;
+                vgmh->channel[1].map_chip = 0;
+                    vgmh->channel[1].map_voice = 0;
+                vgmh->channel[2].map_chip = 1;
+                    vgmh->channel[2].map_voice = 0;
+                vgmh->channel[3].map_chip = 1;
+                vgmh->channel[4].map_chip = 2;
+                    vgmh->channel[4].map_voice = 0;
+                vgmh->channel[5].map_chip = 3;
+                    vgmh->channel[5].map_voice = 0;
+                vgmh->channel[6].map_chip = 0;
+                vgmh->channel[7].map_chip = 2;
+                vgmh->channel[8].map_chip = 1;
+                    vgmh->channel[8].map_voice = 2;
+                vgmh->channel[9].map_chip = 2;
+                    vgmh->channel[9].map_voice = 2;
+                vgmh->channel[0xA].map_chip = 3;
+                vgmh->channel[0xB].map_chip = 3;
                 vgmh->playing = 1;
                 sdstate = 5;
             }else{
