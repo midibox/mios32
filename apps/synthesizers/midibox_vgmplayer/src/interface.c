@@ -31,26 +31,9 @@ void Interface_BtnSoftkey(u8 softkey, u8 state){
     //TODO
     DBG("Softkey %x state %d", softkey, state);
     if(state){
-        if(softkey == 0){
-            //DEBUG_Ring++;
-        }else if(softkey == 1){
-            //DEBUG_Ring--;
-        }else if(softkey == 2){
-            genesis[0].board.cap_psg = 1;
-            genesis[0].board.cap_opn2 = 1;
-            Genesis_WriteBoardBits(0);
-        }else if(softkey == 3){
-            genesis[0].board.cap_psg = 0;
-            genesis[0].board.cap_opn2 = 0;
-            Genesis_WriteBoardBits(0);
-        }else if(softkey == 4){
-            Genesis_OPN2Write(0, 0, 0x21, 0x10); while(Genesis_CheckOPN2Busy(0));
-        }else if(softkey == 5){
-            Genesis_OPN2Write(0, 0, 0x21, 0x20); while(Genesis_CheckOPN2Busy(0));
-        }else if(softkey == 6){
-            Genesis_OPN2Write(0, 0, 0x21, 0x02); while(Genesis_CheckOPN2Busy(0));
-        }else if(softkey == 7){
-            Genesis_OPN2Write(0, 0, 0x21, 0x00); while(Genesis_CheckOPN2Busy(0));
+        if(softkey < 4){
+            selgenesis = softkey;
+            updatescreen = 1;
         }
     }
 }
@@ -67,9 +50,51 @@ void Interface_BtnSystem(u8 button, u8 state){
     DBG("System button %x state %d", button, state);
     if(button == FP_B_PLAY && state){
         DBG("Pressed play");
-        playbackcommand = 3;
+        u8 i;
+        if(sources[selgenesis] != NULL){
+            //Stop first
+            VGM_Head_Delete(heads[selgenesis]);
+            VGM_Source_Delete(sources[selgenesis]);
+            sources[selgenesis] = NULL;
+            heads[selgenesis] = NULL;
+            Genesis_Reset(selgenesis);
+        }
+        char* tempbuf = malloc(13);
+        for(i=0; i<8; i++){
+            if(filenamelist[(9*selfile)+i] <= ' ') break;
+            tempbuf[i] = filenamelist[(9*selfile)+i];
+        }
+        tempbuf[i++] = '.';
+        tempbuf[i++] = 'v';
+        tempbuf[i++] = 'g';
+        tempbuf[i++] = 'm';
+        tempbuf[i++] = 0;
+        VgmSource* vgms = VGM_SourceStream_Create();
+        sources[selgenesis] = vgms;
+        s32 res = VGM_SourceStream_Start(vgms, tempbuf);
+        if(res >= 0){
+            VgmHead* vgmh = VGM_Head_Create(vgms);
+            heads[selgenesis] = vgmh;
+            VGM_Head_Restart(vgmh, VGM_Player_GetVGMTime());
+            for(i=0; i<0xC; ++i){
+                vgmh->channel[i].map_chip = selgenesis;
+            }
+            vgmh->playing = 1;
+        }else{
+            VGM_Source_Delete(vgms);
+        }
+        updatescreen = 1;
+        free(tempbuf);
     }else if(button == FP_B_MENU && state){
         DBG("Pressed menu");
+        if(sources[selgenesis] != NULL){
+            VGM_Head_Delete(heads[selgenesis]);
+            VGM_Source_Delete(sources[selgenesis]);
+            sources[selgenesis] = NULL;
+            heads[selgenesis] = NULL;
+            Genesis_Reset(selgenesis);
+            updatescreen = 1;
+        }
     }
 }
 void Interface_BtnEdit(u8 button, u8 state){
@@ -80,10 +105,10 @@ void Interface_BtnEdit(u8 button, u8 state){
 void Interface_EncDatawheel(s32 incrementer){
     //TODO
     DBG("Datawheel moved %d", incrementer);
-    if(incrementer > 0){
-        playbackcommand = 1;
-    }else{
-        playbackcommand = 2;
+    s32 newselfile = incrementer + (s32)selfile;
+    if(newselfile < numfiles && newselfile >= 0){
+        selfile = newselfile;
+        updatescreen = 1;
     }
 }
 void Interface_EncEdit(u8 encoder, s32 incrementer){
