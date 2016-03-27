@@ -26,17 +26,95 @@
 #include "interface.h"
 #include "genesisstate.h"
 
-u32 DEBUGVAL;
 char* filenamelist;
 s32 numfiles;
-u8 playbackcommand;
+u8 selfile;
+u8 updatescreen;
+u8 selgenesis;
+VgmSource* sources[4];
+VgmHead* heads[4];
+
+static const u8 charset_mbvgm[8*8] = {
+  //Half-period sine
+  0b00001000,
+  0b00010100,
+  0b00010100,
+  0b00010101,
+  0b00000101,
+  0b00000101,
+  0b00000010,
+  0b00000000,
+  //Play symbol
+  0b00000000,
+  0b00001000,
+  0b00001100,
+  0b00001110,
+  0b00001100,
+  0b00001000,
+  0b00000000,
+  0b00000000,
+  //Stop symbol
+  0b00000000,
+  0b00000000,
+  0b00001110,
+  0b00001110,
+  0b00001110,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  //Filled bullet
+  0b00000000,
+  0b00001110,
+  0b00011111,
+  0b00011111,
+  0b00011111,
+  0b00001110,
+  0b00000000,
+  0b00000000,
+  
+  //Half-period abs-sine
+  0b00001010,
+  0b00001010,
+  0b00010101,
+  0b00010101,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  //Square pulse
+  0b00011111,
+  0b00010001,
+  0b00010001,
+  0b00010001,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  //Exp-saw
+  0b00010000,
+  0b00011000,
+  0b00010110,
+  0b00010001,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  0b00000000,
+  //LFO symbol
+  0b00010111,
+  0b00010100,
+  0b00010110,
+  0b00011100,
+  0b00000010,
+  0b00000101,
+  0b00000101,
+  0b00000010
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 
 void APP_Init(void){
-    DEBUGVAL = 117;
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
 
@@ -63,10 +141,15 @@ void APP_Init(void){
     DEBUG_RingState = 0;
     DEBUG_RingDir = 1;
     */
+    MIOS32_LCD_SpecialCharsInit((u8 *)charset_mbvgm);
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
     MIOS32_LCD_PrintString("Searching for SD card...");
     
+    numfiles = 0;
+    updatescreen = 1;
+    selgenesis = 0;
+    selfile = 0;
     
 }
 
@@ -100,10 +183,6 @@ void APP_Background(void)
 void APP_Tick(void){
     static u32 prescaler = 0;
     static u8 sdstate = 0;
-    static u8 selfile = 0;
-    static u8 updatescreen = 1;
-    static VgmSource* vgms = NULL;
-    static VgmHead* vgmh = NULL;
     //static u8 row = 0, sr = 0, pin = 0, state = 1;
     //TODO move to its own task
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
@@ -159,26 +238,6 @@ void APP_Tick(void){
             }
             break;
         case 3:
-            if(playbackcommand != 0){
-                switch(playbackcommand){
-                case 1:
-                    if(selfile < numfiles - 1){
-                        ++selfile;
-                    }
-                    break;
-                case 2:
-                    if(selfile > 0){
-                        --selfile;
-                    }
-                    break;
-                case 3:
-                    BLM_X_LEDSet((3 * 88) + (1 * 8) + 4, 0, 1); //Play LED
-                    sdstate = 4;
-                    break;
-                };
-                playbackcommand = 0;
-                updatescreen = 1;
-            }
             if(updatescreen){
                 tempbuf = malloc(9);
                 for(i=0; i<8; i++){
@@ -187,9 +246,11 @@ void APP_Tick(void){
                 tempbuf[8] = 0;
                 MIOS32_LCD_Clear();
                 MIOS32_LCD_CursorSet(0,0);
-                MIOS32_LCD_PrintFormattedString("Found %d files", numfiles);
-                MIOS32_LCD_CursorSet(0,1);
-                MIOS32_LCD_PrintFormattedString("File %d: %s.vgm", selfile, tempbuf);
+                MIOS32_LCD_PrintFormattedString("%d/%d:%s.vgm", selfile, numfiles, tempbuf);
+                for(i=0; i<4; i++){
+                    MIOS32_LCD_CursorSet(5*i,1);
+                    MIOS32_LCD_PrintFormattedString(" %c%c  ", (sources[i] == NULL ? 2 : 1), (i == selgenesis ? 3 : ' '));
+                }
                 MIOS32_LCD_CursorSet(31,0);
                 MIOS32_LCD_PrintFormattedString("Chip:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP));
                 MIOS32_LCD_CursorSet(31,1);
@@ -198,79 +259,8 @@ void APP_Tick(void){
                 updatescreen = 0;
             }
             break;
-        case 4:
-            //Load VGM file
-            tempbuf = malloc(13);
-            for(i=0; i<8; i++){
-                if(filenamelist[(9*selfile)+i] <= ' ') break;
-                tempbuf[i] = filenamelist[(9*selfile)+i];
-            }
-            tempbuf[i++] = '.';
-            tempbuf[i++] = 'v';
-            tempbuf[i++] = 'g';
-            tempbuf[i++] = 'm';
-            tempbuf[i++] = 0;
-            MIOS32_LCD_Clear();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("Loading VGM...");
-            vgms = VGM_SourceStream_Create();
-            res = VGM_SourceStream_Start(vgms, tempbuf);
-            if(res >= 0){
-                vgmh = VGM_Head_Create(vgms);
-                VGM_Head_Restart(vgmh, VGM_Player_GetVGMTime());
-                vgmh->channel[0].map_chip = 3;
-                vgmh->channel[1].map_chip = 0;
-                    vgmh->channel[1].map_voice = 0;
-                vgmh->channel[2].map_chip = 1;
-                    vgmh->channel[2].map_voice = 0;
-                vgmh->channel[3].map_chip = 1;
-                vgmh->channel[4].map_chip = 2;
-                    vgmh->channel[4].map_voice = 0;
-                vgmh->channel[5].map_chip = 3;
-                    vgmh->channel[5].map_voice = 0;
-                vgmh->channel[6].map_chip = 0;
-                vgmh->channel[7].map_chip = 2;
-                vgmh->channel[8].map_chip = 1;
-                    vgmh->channel[8].map_voice = 2;
-                vgmh->channel[9].map_chip = 2;
-                    vgmh->channel[9].map_voice = 2;
-                vgmh->channel[0xA].map_chip = 3;
-                vgmh->channel[0xB].map_chip = 3;
-                vgmh->playing = 1;
-                sdstate = 5;
-            }else{
-                MIOS32_LCD_Clear();
-                MIOS32_LCD_CursorSet(0,0);
-                MIOS32_LCD_PrintFormattedString("Error loading %s", tempbuf);
-                VGM_Source_Delete(vgms);
-                sdstate = 3;
-            }
-            updatescreen = 1;
-            free(tempbuf);
-        case 5:
-            if(updatescreen){
-                MIOS32_LCD_Clear();
-                MIOS32_LCD_CursorSet(0,0);
-                MIOS32_LCD_PrintFormattedString("Playing...");
-                MIOS32_LCD_CursorSet(31,0);
-                MIOS32_LCD_PrintFormattedString("Chip:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP));
-                MIOS32_LCD_CursorSet(31,1);
-                MIOS32_LCD_PrintFormattedString("Card:%3d%%", VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD));
-                updatescreen = 0;
-            }
-            if(playbackcommand == 3){
-                BLM_X_LEDSet((3 * 88) + (1 * 8) + 4, 0, 0); //Play LED
-                VGM_Head_Delete(vgmh);
-                VGM_Source_Delete(vgms);
-                Genesis_Reset(USE_GENESIS);
-                playbackcommand = 0;
-                sdstate = 3;
-                updatescreen = 1;
-            }
-            break;
         }
     }
-    
 }
 
 

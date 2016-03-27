@@ -14,6 +14,8 @@
 #define _APP_H
 
 
+#include "vgm.h"
+
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -46,8 +48,11 @@ extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
 #define MAXNUMFILES 200
 extern char* filenamelist;
 extern s32 numfiles;
-extern u8 playbackcommand;
-extern u32 DEBUGVAL;
+extern u8 selfile;
+extern u8 updatescreen;
+extern u8 selgenesis;
+extern VgmSource* sources[4];
+extern VgmHead* heads[4];
 
 
 #endif /* _APP_H */

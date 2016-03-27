@@ -28,7 +28,7 @@
 #define MIOS32_IRQ_PRIO_INSANE 3
 
 // The heap (amount of RAM for realtime allocation)
-#define MIOS32_HEAP_SIZE 64*1024
+#define MIOS32_HEAP_SIZE 100*1024
 
 // Front panel
 #define MIOS32_SRIO_NUM_SR 12
