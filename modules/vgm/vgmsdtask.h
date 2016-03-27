@@ -14,6 +14,15 @@
 #define _VGMSDTASK_H
 
 #include <mios32.h>
+#include <FreeRTOS.h>
+#include <portmacro.h>
+#include <task.h>
+#include <queue.h>
+#include <semphr.h>
+
+extern xSemaphoreHandle xSDCardSemaphore;
+#define MUTEX_SDCARD_TAKE { while( xSemaphoreTakeRecursive(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
+#define MUTEX_SDCARD_GIVE { xSemaphoreGiveRecursive(xSDCardSemaphore); }
 
 extern u8 vgm_sdtask_disable;
 extern u8 vgm_sdtask_usingsdcard;

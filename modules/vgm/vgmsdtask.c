@@ -23,6 +23,8 @@
 
 #define VGM_SDTASK_PRIORITY 3
 
+xSemaphoreHandle xSDCardSemaphore;
+
 u8 vgm_sdtask_disable;
 u8 vgm_sdtask_usingsdcard;
 
@@ -53,6 +55,7 @@ static void VGM_SDTask(void* pvParameters){
 }
 
 void VGM_SDTask_Init(){
+    xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
     vgm_sdtask_disable = 0;
     vgm_sdtask_usingsdcard = 0;
     xTaskCreate(VGM_SDTask, (signed portCHAR *)"VGM_SD", configMINIMAL_STACK_SIZE, NULL, VGM_SDTASK_PRIORITY, NULL);

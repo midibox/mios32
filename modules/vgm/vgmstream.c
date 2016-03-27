@@ -18,6 +18,7 @@
 #define VGM_DELAY62 735
 #define VGM_DELAY63 882
 
+
 u8 VGM_HeadStream_getCommandLen(u8 type){
     if((type & 0xFE) == 0x52){
         //OPN2 write
@@ -385,10 +386,12 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
         MIOS32_BOARD_LED_Set(0b1111, 0b0100);
         VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CARD);
         vgm_sdtask_usingsdcard = 1;
+        MUTEX_SDCARD_TAKE;
         FILE_ReadReOpen(&(vhs->file));
         FILE_ReadSeek(vhs->wantbufferaddr);
         FILE_ReadBuffer(bufferto, VGM_SOURCESTREAM_BUFSIZE);
         FILE_ReadClose(&(vhs->file));
+        MUTEX_SDCARD_GIVE;
         vgm_sdtask_usingsdcard = 0;
         VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CARD);
         MIOS32_BOARD_LED_Set(0b1111, leds);
@@ -429,15 +432,16 @@ static void CheckAdvanceBuffer(u32 a, u32* bufstart, u8* buf){
 }
 s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     VgmSourceStream* vss = (VgmSourceStream*)source->data;
+    MUTEX_SDCARD_TAKE;
     s32 res = FILE_ReadOpen(&(vss->file), filename);
-    if(res < 0) return res;
+    if(res < 0) { MUTEX_SDCARD_GIVE; return res; }
     vss->datalen = FILE_ReadGetCurrentSize();
     //Read header
     u8 flag = 0;
     if(vss->datalen > 0x40){
         u8* hdrdata = malloc(0x40);
         res = FILE_ReadBuffer(hdrdata, 0x40);
-        if(res < 0) { free(hdrdata); vss->datalen = 0; return -2; }
+        if(res < 0) { free(hdrdata); vss->datalen = 0; MUTEX_SDCARD_GIVE; return -2; }
         //Check if has VGM header or raw data
         if(hdrdata[0] == 'V' && hdrdata[1] == 'g' && hdrdata[2] == 'm' && hdrdata[3] == ' '){
             flag = 1;
@@ -563,6 +567,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     //Clean up
     FILE_ReadClose(&(vss->file));
     free(buf);
+    MUTEX_SDCARD_GIVE;
     return 0;
 }
 
