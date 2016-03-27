@@ -145,7 +145,7 @@ typedef union {
 } opn2_operator_t;
 
 typedef union {
-    u8 ALL[36];
+    u8 ALL[4+(4*sizeof(opn2_operator_t))]; //==36
     struct {
         //Byte 0: 0xA0 + channel offset
         u8 fnum_low;    //Lower 8 bits of frequency number
@@ -188,7 +188,7 @@ typedef union {
 } opn2_channel_t;
 
 typedef union {
-    u8 ALL[159];
+    u8 ALL[15+(6*sizeof(opn2_channel_t))]; //== 231
     struct {
         //Byte 0: 0x21 only in lower register set
         union {
@@ -401,7 +401,7 @@ typedef union {
 } genesis_board_t;
 
 typedef union {
-    u8 ALL[170];
+    u8 ALL[sizeof(opn2_chip_t)+sizeof(psg_chip_t)+sizeof(genesis_board_t)]; //==242
     struct {
         opn2_chip_t opn2;
         psg_chip_t psg;

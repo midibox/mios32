@@ -317,7 +317,7 @@ void Genesis_Reset(u8 board){
     board &= 0x03;
     //Clear internal state
     u8 i;
-    for(i=0; i<154; i++){
+    for(i=0; i<242; i++){
         genesis[board].ALL[i] = 0;
     }
     for(i=0; i<6; i++){
