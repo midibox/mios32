@@ -19,12 +19,8 @@
 
 #include <genesis.h>
 #include <file.h>
-#include <blm_x.h>
 #include <vgm.h>
 
-#include "frontpanel.h"
-#include "interface.h"
-#include "genesisstate.h"
 
 char* filenamelist;
 s32 numfiles;
@@ -35,16 +31,9 @@ VgmSource* sources[4];
 VgmHead* heads[4];
 
 static const u8 charset_mbvgm[8*8] = {
-  //Half-period sine
-  0b00001000,
-  0b00010100,
-  0b00010100,
-  0b00010101,
-  0b00000101,
-  0b00000101,
-  0b00000010,
-  0b00000000,
-  //Play symbol
+  //Unused character 0
+  0,0,0,0,0,0,0,0,
+  //Play symbol, character 1
   0b00000000,
   0b00001000,
   0b00001100,
@@ -53,7 +42,7 @@ static const u8 charset_mbvgm[8*8] = {
   0b00001000,
   0b00000000,
   0b00000000,
-  //Stop symbol
+  //Stop symbol, character 2
   0b00000000,
   0b00000000,
   0b00001110,
@@ -62,7 +51,7 @@ static const u8 charset_mbvgm[8*8] = {
   0b00000000,
   0b00000000,
   0b00000000,
-  //Filled bullet
+  //Filled bullet, character 3
   0b00000000,
   0b00001110,
   0b00011111,
@@ -71,43 +60,14 @@ static const u8 charset_mbvgm[8*8] = {
   0b00001110,
   0b00000000,
   0b00000000,
-  
-  //Half-period abs-sine
-  0b00001010,
-  0b00001010,
-  0b00010101,
-  0b00010101,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  //Square pulse
-  0b00011111,
-  0b00010001,
-  0b00010001,
-  0b00010001,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  //Exp-saw
-  0b00010000,
-  0b00011000,
-  0b00010110,
-  0b00010001,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  0b00000000,
-  //LFO symbol
-  0b00010111,
-  0b00010100,
-  0b00010110,
-  0b00011100,
-  0b00000010,
-  0b00000101,
-  0b00000101,
-  0b00000010
+  //Unused character 4
+  0,0,0,0,0,0,0,0,
+  //Unused character 5
+  0,0,0,0,0,0,0,0,
+  //Unused character 6
+  0,0,0,0,0,0,0,0,
+  //Unused character 7
+  0,0,0,0,0,0,0,0
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -127,25 +87,22 @@ void APP_Init(void){
     //Initialize VGM Player component
     VGM_Init();
     
-    //Initialize Button-LED Matrix driver
-    BLM_X_Init();
+    //Initialize front panel
+    mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(0);
+    enc_config.cfg.type = DETENTED3;
+    enc_config.cfg.speed = NORMAL;
+    enc_config.cfg.speed_par = 0;
+    enc_config.cfg.sr  = 1;
+    enc_config.cfg.pos = 0;
+    MIOS32_ENC_ConfigSet(0, enc_config);
     
-    //Initialize front panel wrapper
-    FrontPanel_Init();
-    
-    //Initialize main interface
-    Interface_Init();
-    
-    /*
-    DEBUG_Ring = 0;
-    DEBUG_RingState = 0;
-    DEBUG_RingDir = 1;
-    */
+    //Initialize LCD
     MIOS32_LCD_SpecialCharsInit((u8 *)charset_mbvgm);
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
     MIOS32_LCD_PrintString("Searching for SD card...");
     
+    //Initialize global variables
     numfiles = 0;
     updatescreen = 1;
     selgenesis = 0;
@@ -157,19 +114,9 @@ void APP_Init(void){
 /////////////////////////////////////////////////////////////////////////////
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
-void APP_Background(void)
-{
+void APP_Background(void){
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
-    
-    //Draw Genesis states
-    u8 g;
-    for(g=0; g<GENESIS_COUNT; g++){
-        DrawGenesisActivity(g);
-    }
-    
-    //Flash LEDs
-    //MIOS32_BOARD_LED_Set(0xF, ((count >> 12) & 0xF));
-    MIOS32_BOARD_LED_Set(0b1000, 0b0000);
+    //MIOS32_BOARD_LED_Set(0b1000, 0b0000);
 }
 
 
@@ -183,12 +130,7 @@ void APP_Background(void)
 void APP_Tick(void){
     static u32 prescaler = 0;
     static u8 sdstate = 0;
-    //static u8 row = 0, sr = 0, pin = 0, state = 1;
-    //TODO move to its own task
-    BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
-    
     s32 res;
-    
     ++prescaler;
     char* tempbuf; u8 i;
     if(prescaler % 100 == 0){
@@ -264,39 +206,6 @@ void APP_Tick(void){
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called each mS from the MIDI task which checks for incoming
-// MIDI events. You could add more MIDI related jobs here, but they shouldn't
-// consume more than 300 uS to ensure the responsiveness of incoming MIDI.
-/////////////////////////////////////////////////////////////////////////////
-void APP_MIDI_Tick(void){
-    //Nothing here
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a MIDI package has been received
-/////////////////////////////////////////////////////////////////////////////
-void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called before the shift register chain is scanned
-/////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServicePrepare(void){
-    BLM_X_PrepareRow();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called after the shift register chain has been scanned
-/////////////////////////////////////////////////////////////////////////////
-void APP_SRIO_ServiceFinish(void){
-    BLM_X_GetRow();
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a button has been toggled
@@ -304,6 +213,59 @@ void APP_SRIO_ServiceFinish(void){
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
     DBG("DIN pin %d changed %d", pin, pin_value);
+    if(pin_value) return; //button just released
+    if(pin >= 4 && pin <= 7){
+        DBG("Pressed softkey %d", pin-4);
+        selgenesis = pin - 4;
+        updatescreen = 1;
+    }else if(pin == 2){
+        DBG("Pressed play");
+        u8 i;
+        if(sources[selgenesis] != NULL){
+            //Stop first
+            VGM_Head_Delete(heads[selgenesis]);
+            VGM_Source_Delete(sources[selgenesis]);
+            sources[selgenesis] = NULL;
+            heads[selgenesis] = NULL;
+            Genesis_Reset(selgenesis);
+        }
+        char* tempbuf = malloc(13);
+        for(i=0; i<8; i++){
+            if(filenamelist[(9*selfile)+i] <= ' ') break;
+            tempbuf[i] = filenamelist[(9*selfile)+i];
+        }
+        tempbuf[i++] = '.';
+        tempbuf[i++] = 'v';
+        tempbuf[i++] = 'g';
+        tempbuf[i++] = 'm';
+        tempbuf[i++] = 0;
+        VgmSource* vgms = VGM_SourceStream_Create();
+        sources[selgenesis] = vgms;
+        s32 res = VGM_SourceStream_Start(vgms, tempbuf);
+        if(res >= 0){
+            VgmHead* vgmh = VGM_Head_Create(vgms);
+            heads[selgenesis] = vgmh;
+            VGM_Head_Restart(vgmh, VGM_Player_GetVGMTime());
+            for(i=0; i<0xC; ++i){
+                vgmh->channel[i].map_chip = selgenesis;
+            }
+            vgmh->playing = 1;
+        }else{
+            VGM_Source_Delete(vgms);
+        }
+        updatescreen = 1;
+        free(tempbuf);
+    }else if(pin == 3){
+        DBG("Pressed menu");
+        if(sources[selgenesis] != NULL){
+            VGM_Head_Delete(heads[selgenesis]);
+            VGM_Source_Delete(sources[selgenesis]);
+            sources[selgenesis] = NULL;
+            heads[selgenesis] = NULL;
+            Genesis_Reset(selgenesis);
+            updatescreen = 1;
+        }
+    }
 }
 
 
@@ -313,13 +275,19 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value){
 // it is negative
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer){
-    FrontPanel_EncoderChange(encoder, incrementer);
+    DBG("Encoder %d change %d", encoder, incrementer);
+    if(encoder) return; //Should be only one encoder, index 0
+    s32 newselfile = incrementer + (s32)selfile;
+    if(newselfile < numfiles && newselfile >= 0){
+        selfile = newselfile;
+        updatescreen = 1;
+    }
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// This hook is called when a pot has been moved
-/////////////////////////////////////////////////////////////////////////////
-void APP_AIN_NotifyChange(u32 pin, u32 pin_value){
-    //Nothing here
-}
+void APP_MIDI_Tick(void){}
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){}
+void APP_SRIO_ServicePrepare(void){}
+void APP_SRIO_ServiceFinish(void){}
+void APP_AIN_NotifyChange(u32 pin, u32 pin_value){}
+

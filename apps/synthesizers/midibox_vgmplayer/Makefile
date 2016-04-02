@@ -13,10 +13,7 @@ LCD       = $(MIOS32_LCD)
 ################################################################################
 
 # add plain C files here
-THUMB_SOURCE    =   src/app.c \
-                    src/frontpanel.c \
-                    src/interface.c \
-                    src/genesisstate.c
+THUMB_SOURCE    =   src/app.c
 
 # add C++ files here
 THUMB_CPP_SOURCE =  
