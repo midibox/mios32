@@ -2310,6 +2310,13 @@ Muting a track cuts off all playing notes on that track, but muting an individua
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174360
 ----------------------------------------------------------
 
+One little thing I found: On the STEP VIEW page the running cursor position LED changes to a slower mode to accommodate the much denser step display (compared to the EDIT screen). If STEP VIEW button is set to toggle and you exit the STEP VIEW page with the STEP VIEW button, the change from normal and slow running cursor mode works ok. But if you exit the STEP VIEW page with any other button than STEP VIEW, the running cursor mode stays in the slow mode, and won't change until you press STEP VIEW. However, in all cases the STEP VIEW indicator LED does go out when exiting the STEP VIEW page, even if the cursor mode doesn't change.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174448
+----------------------------------------------------------
+Another thing: If Rec is 'on', AStart is 'on', and Fwd is 'off', and you press PLAY, the first step of the active track won't sound.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174449
+----------------------------------------------------------
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
