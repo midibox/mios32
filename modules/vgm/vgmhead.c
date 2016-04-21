@@ -12,6 +12,7 @@
 
 
 #include "vgmhead.h"
+#include "vgmqueue.h"
 #include "vgmram.h"
 #include "vgmstream.h"
 
@@ -51,6 +52,8 @@ VgmHead* VGM_Head_Create(VgmSource* source){
         head->data = VGM_HeadRAM_Create(source);
     }else if(source->type == VGM_SOURCE_TYPE_STREAM){
         head->data = VGM_HeadStream_Create(source);
+    }else if(source->type == VGM_SOURCE_TYPE_QUEUE){
+        head->data = VGM_HeadQueue_Create(source);
     }
     MIOS32_IRQ_Disable();
     if(vgm_numheads == VGM_HEAD_MAXNUM){
@@ -84,6 +87,8 @@ s32 VGM_Head_Delete(VgmHead* head){
         VGM_HeadRAM_Delete(head->data);
     }else if(head->source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_HeadStream_Delete(head->data);
+    }else if(head->source->type == VGM_SOURCE_TYPE_QUEUE){
+        VGM_HeadQueue_Delete(head->data);
     }
     free(head);
     return ret;
@@ -98,6 +103,9 @@ void VGM_Head_Restart(VgmHead* head, u32 vgm_time){
     }else if(head->source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_HeadStream_Restart(head);
         VGM_HeadStream_cmdNext(head, vgm_time);
+    }else if(head->source->type == VGM_SOURCE_TYPE_QUEUE){
+        VGM_HeadQueue_Restart(head);
+        VGM_HeadQueue_cmdNext(head, vgm_time);
     }
 }
 void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){
@@ -106,38 +114,9 @@ void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){
         VGM_HeadRAM_cmdNext(head, vgm_time);
     }else if(head->source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_HeadStream_cmdNext(head, vgm_time);
+    }else if(head->source->type == VGM_SOURCE_TYPE_QUEUE){
+        VGM_HeadQueue_cmdNext(head, vgm_time);
     }
-}
-
-void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult){
-    u8 block; u32 freq;
-    block = (writecmd->data >> 3) & 0x07;
-    freq = ((u32)(writecmd->data & 0x07) << 8) | writecmd->data2; //Up to 11 bits set
-    freq <<= block; //Up to 18 bits set
-    freq *= opn2mult; //If unity (0x1000), up to 30 bits set (29 downto 0)
-    //Check for overflow
-    if(freq & 0xC0000000){
-        freq = 0x3FFFFFFF;
-    }
-    //To floating point: find most-significant 1
-    for(block=8; block>1; --block){
-        if(freq & 0x20000000) break;
-        freq <<= 1;
-    }
-    --block;
-    freq >>= 19; //Previously up to 30 bits set, now up to 11 bits set
-    writecmd->data = (freq >> 8) | (block << 3);
-    writecmd->data2 = (freq & 0xFF);
-}
-
-void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 psgfreq0to1){
-    u32 freq = (writecmd->data & 0x0F) | ((writecmd->data2 & 0x3F) << 4);
-    //TODO psgmult
-    if(freq == 0 && psgfreq0to1){
-        freq = 1;
-    }
-    writecmd->data = (writecmd->data & 0xF0) | (freq & 0x0F);
-    writecmd->data2 = (freq >> 4) & 0x3F;
 }
 
 void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){

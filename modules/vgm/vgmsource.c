@@ -13,6 +13,7 @@
 
 #include "vgmsource.h"
 #include "vgmhead.h"
+#include "vgmqueue.h"
 #include "vgmram.h"
 #include "vgmstream.h"
 
@@ -29,6 +30,8 @@ s32 VGM_Source_Delete(VgmSource* source){
         VGM_SourceRAM_Delete(source->data);
     }else if(source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_SourceStream_Delete(source->data);
+    }else if(source->type == VGM_SOURCE_TYPE_QUEUE){
+        VGM_SourceQueue_Delete(source->data);
     }
     free(source);
     return 0;

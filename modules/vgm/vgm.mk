@@ -11,10 +11,12 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/vgm/vgmhead.c \
 	$(MIOS32_PATH)/modules/vgm/vgmperfmon.c \
 	$(MIOS32_PATH)/modules/vgm/vgmplayer.c \
+	$(MIOS32_PATH)/modules/vgm/vgmqueue.c \
 	$(MIOS32_PATH)/modules/vgm/vgmram.c \
 	$(MIOS32_PATH)/modules/vgm/vgmsdtask.c \
 	$(MIOS32_PATH)/modules/vgm/vgmsource.c \
 	$(MIOS32_PATH)/modules/vgm/vgmstream.c \
+	$(MIOS32_PATH)/modules/vgm/vgmtuning.c \
 
 
 # directories and files that should be part of the distribution (release) package

@@ -82,9 +82,6 @@ static inline u8 VGM_Head_cmdIsChipWrite(VgmHead* head) {return head->iswrite &&
 //static inline VgmChipWriteCmd VGM_Head_cmdGetChipWrite() {return head->writecmd;}
 extern void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd);
 
-extern void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult);
-extern void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 freq0to1);
-
 #define VGM_HEAD_MAXNUM 64
 extern VgmHead* vgm_heads[VGM_HEAD_MAXNUM];
 extern u32 vgm_numheads;

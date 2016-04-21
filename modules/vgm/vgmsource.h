@@ -18,6 +18,7 @@
 
 #define VGM_SOURCE_TYPE_RAM 1
 #define VGM_SOURCE_TYPE_STREAM 2
+#define VGM_SOURCE_TYPE_QUEUE 3
 
 typedef union {
     u8 ALL[24];

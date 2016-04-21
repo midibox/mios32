@@ -19,4 +19,4 @@ void VGM_HeadRAM_Delete(void* headram) {}
 void VGM_HeadRAM_Restart(VgmHead* head) {}
 void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time) {}
 VgmSource* VGM_SourceRAM_Create() {return NULL;}
-void VGM_SourceRAM_Delete(void* sourcestream) {}
+void VGM_SourceRAM_Delete(void* sourceram) {}
