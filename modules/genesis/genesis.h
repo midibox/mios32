@@ -150,7 +150,7 @@ typedef union {
         //Byte 0: 0xA0 + channel offset
         u8 fnum_low;    //Lower 8 bits of frequency number
 
-        //Byte 1: 0xA4 + operator offset
+        //Byte 1: 0xA4 + channel offset
         union {
             u8 fhireg;
             struct {
@@ -160,7 +160,7 @@ typedef union {
             };
         };
 
-        //Byte 2: 0xB0 + operator offset
+        //Byte 2: 0xB0 + channel offset
         union {
             u8 algfbreg;
             struct {
@@ -170,7 +170,7 @@ typedef union {
             };
         };
         
-        //Byte 3: 0xB4 + operator offset
+        //Byte 3: 0xB4 + channel offset
         union {
             u8 lfooutreg;
             struct {
