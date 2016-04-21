@@ -17,9 +17,11 @@
 #include "vgmhead.h"
 #include "vgmperfmon.h"
 #include "vgmplayer.h"
+#include "vgmqueue.h"
 #include "vgmram.h"
 #include "vgmsource.h"
 #include "vgmstream.h"
+#include "vgmtuning.h"
 
 extern void VGM_Init();
 

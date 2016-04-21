@@ -14,6 +14,7 @@
 #include "vgmstream.h"
 #include "vgmsdtask.h"
 #include "vgmperfmon.h"
+#include "vgmtuning.h"
 
 #define VGM_DELAY62 735
 #define VGM_DELAY63 882
