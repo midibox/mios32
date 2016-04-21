@@ -13,11 +13,11 @@
 #endif
 
 // The boot message which is print during startup and returned on a SysEx query
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox VGM Player"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox Genesis Tracker"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2016 Sauraen"
 
 // USB settings
-#define MIOS32_USB_PRODUCT_STR  "MIDIbox VGM Player"
+#define MIOS32_USB_PRODUCT_STR  "MIDIbox Genesis Tracker"
 #define MIOS32_USB_MIDI_NUM_PORTS 1
 
 // MBHP_Genesis
@@ -34,6 +34,9 @@
 #define MIOS32_SRIO_NUM_SR 1
 #define MIOS32_SRIO_NUM_DOUT_PAGES 1
 #define MIOS32_ENC_NUM_MAX 8
+
+// GENMDM compatibility
+#define GENMDM_ALIGN_MSB 1
 
 
 #endif /* _MIOS32_CONFIG_H */
