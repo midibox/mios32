@@ -24,7 +24,7 @@
 
 s8 FP_SRADDR[7];
 Button_T FP_BUTTONS[64*3];
-
+LED_T FP_LEDS[125];
 LEDRing_T LED_RINGS[18];
 GenesisLEDColumn_T GENESIS_COLUMNS[0xC];
 
@@ -355,6 +355,132 @@ void FrontPanel_Init(){
     enc_config.cfg.pos = 6;
     MIOS32_ENC_ConfigSet(FP_E_FEEDBACK, enc_config);
     
+    //Configure LEDs
+    FP_LEDS[FP_LED_SYSTEM]      = (LED_T){ .pin = 7, .sr = 10, .row = 3 };
+    FP_LEDS[FP_LED_VOICE]       = (LED_T){ .pin = 7, .sr = 10, .row = 5 };
+    FP_LEDS[FP_LED_CHAN]        = (LED_T){ .pin = 7, .sr = 10, .row = 7 };
+    FP_LEDS[FP_LED_PROG]        = (LED_T){ .pin = 7, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_VGM]         = (LED_T){ .pin = 7, .sr = 10, .row = 2 };
+    FP_LEDS[FP_LED_MDLTR]       = (LED_T){ .pin = 7, .sr = 10, .row = 4 };
+    FP_LEDS[FP_LED_SAMPLE]      = (LED_T){ .pin = 7, .sr = 10, .row = 6 };
+    FP_LEDS[FP_LED_MUTE]        = (LED_T){ .pin = 3, .sr = 3, .row = 1 };
+    FP_LEDS[FP_LED_SOLO]        = (LED_T){ .pin = 3, .sr = 3, .row = 3 };
+    FP_LEDS[FP_LED_RELEASE]     = (LED_T){ .pin = 3, .sr = 3, .row = 5 };
+    FP_LEDS[FP_LED_PNLOVR]      = (LED_T){ .pin = 3, .sr = 3, .row = 7 };
+    FP_LEDS[FP_LED_RESTART]     = (LED_T){ .pin = 3, .sr = 3, .row = 2 };
+    FP_LEDS[FP_LED_PLAY]        = (LED_T){ .pin = 3, .sr = 3, .row = 4 };
+    FP_LEDS[FP_LED_RESET]       = (LED_T){ .pin = 3, .sr = 3, .row = 6 };
+    FP_LEDS[FP_LED_LOAD]        = (LED_T){ .pin = 6, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_SAVE]        = (LED_T){ .pin = 6, .sr = 10, .row = 2 };
+    FP_LEDS[FP_LED_NEW]         = (LED_T){ .pin = 6, .sr = 10, .row = 4 };
+    FP_LEDS[FP_LED_DELETE]      = (LED_T){ .pin = 6, .sr = 10, .row = 6 };
+    FP_LEDS[FP_LED_CROP]        = (LED_T){ .pin = 6, .sr = 10, .row = 1 };
+    FP_LEDS[FP_LED_CAPTURE]     = (LED_T){ .pin = 6, .sr = 10, .row = 3 };
+    FP_LEDS[FP_LED_DUPL]        = (LED_T){ .pin = 6, .sr = 10, .row = 5 };
+    FP_LEDS[FP_LED_PASTE]       = (LED_T){ .pin = 6, .sr = 10, .row = 7 };
+    FP_LEDS[FP_LED_GROUP]       = (LED_T){ .pin = 3, .sr = 3, .row = 0 };
+    FP_LEDS[FP_LED_CTRL_R]      = (LED_T){ .pin = 2, .sr = 3, .row = 2 };
+    FP_LEDS[FP_LED_CTRL_G]      = (LED_T){ .pin = 2, .sr = 3, .row = 0 };
+    FP_LEDS[FP_LED_TIME_R]      = (LED_T){ .pin = 2, .sr = 3, .row = 6 };
+    FP_LEDS[FP_LED_TIME_G]      = (LED_T){ .pin = 2, .sr = 3, .row = 4 };
+    FP_LEDS[FP_LED_CMDS]        = (LED_T){ .pin = 2, .sr = 3, .row = 5 };
+    FP_LEDS[FP_LED_STATE]       = (LED_T){ .pin = 2, .sr = 3, .row = 7 };
+    FP_LEDS[FP_LED_KSR]         = (LED_T){ .pin = 2, .sr = 4, .row = 2 };
+    FP_LEDS[FP_LED_SSGON]       = (LED_T){ .pin = 2, .sr = 4, .row = 3 };
+    FP_LEDS[FP_LED_SSGINIT]     = (LED_T){ .pin = 2, .sr = 4, .row = 4 };
+    FP_LEDS[FP_LED_SSGTGL]      = (LED_T){ .pin = 2, .sr = 4, .row = 5 };
+    FP_LEDS[FP_LED_SSGHOLD]     = (LED_T){ .pin = 2, .sr = 4, .row = 6 };
+    FP_LEDS[FP_LED_LFOAM]       = (LED_T){ .pin = 2, .sr = 4, .row = 7 };
+    FP_LEDS[FP_LED_CH3_NORMAL]  = (LED_T){ .pin = 0, .sr = 4, .row = 5 };
+    FP_LEDS[FP_LED_CH3_4FREQ]   = (LED_T){ .pin = 0, .sr = 4, .row = 6 };
+    FP_LEDS[FP_LED_CH3_CSM]     = (LED_T){ .pin = 0, .sr = 4, .row = 7 };
+    FP_LEDS[FP_LED_CH3FAST]     = (LED_T){ .pin = 1, .sr = 4, .row = 6 };
+    FP_LEDS[FP_LED_UGLY]        = (LED_T){ .pin = 1, .sr = 4, .row = 5 };
+    FP_LEDS[FP_LED_DACOVR]      = (LED_T){ .pin = 1, .sr = 4, .row = 4 };
+    FP_LEDS[FP_LED_LFO]         = (LED_T){ .pin = 1, .sr = 4, .row = 3 };
+    FP_LEDS[FP_LED_EG]          = (LED_T){ .pin = 1, .sr = 4, .row = 2 };
+    FP_LEDS[FP_LED_NS_HI]       = (LED_T){ .pin = 2, .sr = 4, .row = 1 };
+    FP_LEDS[FP_LED_NS_MED]      = (LED_T){ .pin = 2, .sr = 4, .row = 0 };
+    FP_LEDS[FP_LED_NS_LOW]      = (LED_T){ .pin = 3, .sr = 4, .row = 1 };
+    FP_LEDS[FP_LED_NS_SQ3]      = (LED_T){ .pin = 3, .sr = 4, .row = 0 };
+    FP_LEDS[FP_LED_NS_WHT]      = (LED_T){ .pin = 3, .sr = 4, .row = 3 };
+    FP_LEDS[FP_LED_NS_PLS]      = (LED_T){ .pin = 3, .sr = 4, .row = 2 };
+    FP_LEDS[FP_LED_SELOP_1]     = (LED_T){ .pin = 7, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_SELOP_2]     = (LED_T){ .pin = 7, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_SELOP_3]     = (LED_T){ .pin = 7, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_SELOP_4]     = (LED_T){ .pin = 7, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_OPCARR_1]    = (LED_T){ .pin = 7, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_OPCARR_2]    = (LED_T){ .pin = 7, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_OPCARR_3]    = (LED_T){ .pin = 7, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_OPCARR_4]    = (LED_T){ .pin = 7, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_OPNODE_R_1]  = (LED_T){ .pin = 6, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_OPNODE_R_2]  = (LED_T){ .pin = 6, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_OPNODE_R_3]  = (LED_T){ .pin = 6, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_OPNODE_R_4]  = (LED_T){ .pin = 6, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_OPNODE_G_1]  = (LED_T){ .pin = 6, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_OPNODE_G_2]  = (LED_T){ .pin = 6, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_OPNODE_G_3]  = (LED_T){ .pin = 6, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_OPNODE_G_4]  = (LED_T){ .pin = 6, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_FMW_A1]      = (LED_T){ .pin = 5, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_FMW_A2]      = (LED_T){ .pin = 5, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_FMW_A3]      = (LED_T){ .pin = 5, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_FMW_A4]      = (LED_T){ .pin = 5, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_FMW_A5]      = (LED_T){ .pin = 5, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_FMW_A6]      = (LED_T){ .pin = 5, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_FMW_B1]      = (LED_T){ .pin = 4, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_FMW_B2]      = (LED_T){ .pin = 4, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_FMW_B3]      = (LED_T){ .pin = 4, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_FMW_C1]      = (LED_T){ .pin = 4, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_FMW_C2]      = (LED_T){ .pin = 4, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_FMW_C3]      = (LED_T){ .pin = 4, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_FMW_C4]      = (LED_T){ .pin = 4, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_FMW_D1]      = (LED_T){ .pin = 1, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_FMW_D2]      = (LED_T){ .pin = 0, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_FMW_E1]      = (LED_T){ .pin = 1, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_FMW_E2]      = (LED_T){ .pin = 1, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_FMW_F]       = (LED_T){ .pin = 1, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_FEEDBACK]    = (LED_T){ .pin = 4, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_OUTL]        = (LED_T){ .pin = 5, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_OUTR]        = (LED_T){ .pin = 5, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_KEYON_1]     = (LED_T){ .pin = 1, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_KEYON_2]     = (LED_T){ .pin = 1, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_KEYON_3]     = (LED_T){ .pin = 1, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_KEYON_4]     = (LED_T){ .pin = 1, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_DACEN]       = (LED_T){ .pin = 0, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_DAC_1]       = (LED_T){ .pin = 3, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_DAC_2]       = (LED_T){ .pin = 3, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_DAC_3]       = (LED_T){ .pin = 3, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_DAC_4]       = (LED_T){ .pin = 3, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_DAC_5]       = (LED_T){ .pin = 2, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_DAC_6]       = (LED_T){ .pin = 2, .sr = 9, .row = 5 };
+    FP_LEDS[FP_LED_DAC_7]       = (LED_T){ .pin = 2, .sr = 9, .row = 6 };
+    FP_LEDS[FP_LED_DAC_8]       = (LED_T){ .pin = 2, .sr = 9, .row = 7 };
+    FP_LEDS[FP_LED_DAC_9]       = (LED_T){ .pin = 0, .sr = 9, .row = 4 };
+    FP_LEDS[FP_LED_LOAD_CHIP]   = (LED_T){ .pin = 5, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_LOAD_RAM]    = (LED_T){ .pin = 4, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_1]    = (LED_T){ .pin = 6, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_2]    = (LED_T){ .pin = 5, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_3]    = (LED_T){ .pin = 4, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_4]    = (LED_T){ .pin = 3, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_5]    = (LED_T){ .pin = 2, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_6]    = (LED_T){ .pin = 1, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_7]    = (LED_T){ .pin = 0, .sr = 11, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_8]    = (LED_T){ .pin = 7, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_9]    = (LED_T){ .pin = 6, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_10]   = (LED_T){ .pin = 5, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_11]   = (LED_T){ .pin = 4, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_12]   = (LED_T){ .pin = 3, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_13]   = (LED_T){ .pin = 2, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_VGMMTX_14]   = (LED_T){ .pin = 1, .sr = 12, .row = 0 };
+    FP_LEDS[FP_LED_DIG_MAIN_1]  = (LED_T){ .pin = 3, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_DIG_MAIN_2]  = (LED_T){ .pin = 2, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_DIG_MAIN_3]  = (LED_T){ .pin = 1, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_DIG_MAIN_4]  = (LED_T){ .pin = 0, .sr = 10, .row = 0 };
+    FP_LEDS[FP_LED_DIG_FREQ_1]  = (LED_T){ .pin = 6, .sr = 7, .row = 0 };
+    FP_LEDS[FP_LED_DIG_FREQ_2]  = (LED_T){ .pin = 5, .sr = 7, .row = 0 };
+    FP_LEDS[FP_LED_DIG_FREQ_3]  = (LED_T){ .pin = 4, .sr = 7, .row = 0 };
+    FP_LEDS[FP_LED_DIG_FREQ_4]  = (LED_T){ .pin = 7, .sr = 8, .row = 0 };
+    FP_LEDS[FP_LED_DIG_OCT]     = (LED_T){ .pin = 7, .sr = 7, .row = 0 };
     
     //Configure LED rings
     LED_RINGS[FP_LEDR_OP1LVL]   = (LEDRing_T){ .special = 0, .losr = 7, .lopin = 0, .hisr = 7, .hipin = 1 };
@@ -393,6 +519,7 @@ void FrontPanel_Init(){
 }
 
 void FrontPanel_ButtonChange(u32 btn, u32 value){
+    static u8 lednumber = 0xFF;
     value = (value == 0); //Invert
     u8 row = btn / BLM_X_BTN_NUM_COLS;
     u8 sr = (btn % BLM_X_BTN_NUM_COLS) >> 3;
@@ -412,6 +539,13 @@ void FrontPanel_ButtonChange(u32 btn, u32 value){
         return;
     }else if(button.func >= FP_B_SYSTEM && button.func < FP_B_OUT){
         Interface_BtnSystem(button.func, value);
+        //TODO XXX
+        if(value){
+            FrontPanel_LEDSet(lednumber, 0);
+            lednumber++;
+            if(lednumber >= 125) lednumber = 0;
+            FrontPanel_LEDSet(lednumber, 1);
+        }
     }else if(button.func >= FP_B_OUT){
         Interface_BtnEdit(button.func, value);
     }else if(button.func == FP_B_GVOICE){
@@ -437,8 +571,9 @@ void FrontPanel_EncoderChange(u32 encoder, u32 incrementer){
 }
 
 void FrontPanel_LEDSet(u32 led, u8 value){
-    //TODO load from settings
-    
+    if(led >= 125) return;
+    LED_T l = FP_LEDS[led];
+    MATRIX_LED_SET(l.row, l.sr, l.pin, value);
 }
 
 void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
