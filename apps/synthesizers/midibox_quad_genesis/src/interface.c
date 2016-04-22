@@ -45,50 +45,50 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
     if(v >= 8 && v <= 0xB){
         v -= 8;
         if(state){
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (0b10000000 | (v << 5)) });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = 0b00010000 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (0b10010000 | (v << 5)) });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), 
+                    .data = (0b10000000 | (v << 5)), .data2 = 0b00010000 }, 1);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (0b10010000 | (v << 5)) }, 0);
         }else{
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (0b10011111 | (v << 5)) });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (0b10011111 | (v << 5)) }, 0);
         }
     }else if(v >= 1 && v <= 6){
         u8 ah = (v >= 4);
         u8 cmd = (g << 4) | ah | 0x02;
         if(state){
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x30, .data=0x71 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x34, .data=0x0D });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x38, .data=0x33 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x3C, .data=0x01 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x40, .data=0x23 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x44, .data=0x2D });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x48, .data=0x26 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x4C, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x50, .data=0x5F });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x54, .data=0x99 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x58, .data=0x5F });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x5C, .data=0x94 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x60, .data=0x05 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x64, .data=0x05 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x68, .data=0x05 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x6C, .data=0x07 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x70, .data=0x02 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x74, .data=0x02 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x78, .data=0x02 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x7C, .data=0x02 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x80, .data=0x11 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x84, .data=0x11 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x88, .data=0x11 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x8C, .data=0xA6 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x90, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x94, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x98, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x9C, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xB0, .data=0x32 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xB4, .data=0xC0 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xA4, .data=0x22, .data2=0x69 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(g<<4)|2, .addr=0x28, .data=0xF0|(ah<<2) });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x30, .data=0x71 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x34, .data=0x0D }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x38, .data=0x33 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x3C, .data=0x01 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x40, .data=0x23 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x44, .data=0x2D }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x48, .data=0x26 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x4C, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x50, .data=0x5F }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x54, .data=0x99 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x58, .data=0x5F }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x5C, .data=0x94 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x60, .data=0x05 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x64, .data=0x05 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x68, .data=0x05 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x6C, .data=0x07 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x70, .data=0x02 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x74, .data=0x02 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x78, .data=0x02 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x7C, .data=0x02 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x80, .data=0x11 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x84, .data=0x11 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x88, .data=0x11 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x8C, .data=0xA6 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x90, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x94, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x98, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0x9C, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xB0, .data=0x32 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xB4, .data=0xC0 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=cmd, .addr=0xA4, .data=0x22, .data2=0x69 }, 1);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(g<<4)|2, .addr=0x28, .data=0xF0|(ah<<2) }, 0);
         }else{
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(g<<4)|2, .addr=0x28, .data=0x00|(ah<<2) });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(g<<4)|2, .addr=0x28, .data=0x00|(ah<<2) }, 0);
         }
     }
     
@@ -105,14 +105,14 @@ void Interface_BtnSoftkey(u8 softkey, u8 state){
             genesis[0].board.cap_opn2 = !genesis[0].board.cap_opn2;
             Genesis_WriteBoardBits(0);
         }else if(softkey == 5){
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x20 });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x20 }, 0);
         }else if(softkey == 6){
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x10 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x00 });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x10 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x00 }, 0);
         }else if(softkey == 7){
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x00 });
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x00 });
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x21, .data=0x00 }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){.cmd=(selgenesis<<4)|2, .addr=0x2C, .data=0x00 }, 0);
         }
     }
 }
