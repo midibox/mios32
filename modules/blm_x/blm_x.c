@@ -67,7 +67,7 @@ s32 BLM_X_Init(void){
     for(i=0; i<BLM_X_NUM_BTN_SR; ++i){
       btn_rows[r][i] = 0xff;
       btn_rows_changed[r][i] = 0x00;
-      }
+    }
 #if BLM_X_DEBOUNCE_MODE == 2
     // clear debounce counter for debounce-mode 2
     for(i=0; i < BLM_X_NUM_BTN_SR*8 ; ++i)
@@ -79,7 +79,7 @@ s32 BLM_X_Init(void){
     for(i=0; i<BLM_X_NUM_LED_SR; ++i)
       BLM_X_LED_rows[r][i] = 0x00;  
 #endif
-    }
+  }
   // clear debounce counter for debounce-mode 1
 #if ( (BLM_X_DEBOUNCE_MODE == 1) && (BLM_X_BTN_FIRST_DIN_SR > 0) )
   debounce_ctr = 0;
@@ -94,7 +94,7 @@ s32 BLM_X_Init(void){
   // init current row
   current_row = 0;
   return 0;
-  }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -159,14 +159,14 @@ s32 BLM_X_GetRow(void){
 #if (BLM_X_DEBOUNCE_MODE == 1)
         debounce_ctr = blm_x_config.debounce_delay;//restart debounce delay
 #endif
-        }
+      }
       //copy new values to btn_rows
       btn_rows[scanned_row][sr] = sr_value;
       MIOS32_IRQ_Enable();
       //*** end atomic block ***
-      } 
+    } 
 #if (BLM_X_DEBOUNCE_MODE == 1)
-    }
+  }
   else
     --debounce_ctr;//decrement debounce control
 #endif
@@ -196,15 +196,15 @@ s32 BLM_X_GetRow(void){
           btn_rows[scanned_row][sr] &= ~pin_mask;//clear value bit
         MIOS32_IRQ_Enable();
         //*** end atomic block ***
-        }
       }
-    }   
+    }
+  }   
 #endif
   return 0;
 #else
   return -1;//buttons disabled
 #endif
-  }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -240,14 +240,14 @@ s32 BLM_X_BtnHandler(void *_notify_hook){
         pin_mask = 1 << pin;
         if(changed & pin_mask)
           notify_hook(r * BLM_X_BTN_NUM_COLS + sr * 8 + pin, (values & pin_mask) ? 1 : 0 );
-        }
       }
     }
+  }
   return 0;
 #else
   return -1;//buttons disabled
 #endif
-  }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ s32 BLM_X_BtnGet(u32 btn){
 #else
   return -1;//buttons disabled
 #endif
-  }
+}
   
   
 /////////////////////////////////////////////////////////////////////////////
@@ -286,7 +286,7 @@ u8 BLM_X_BtnSRGet(u8 row, u8 sr){
 #else
   return 0;//buttons disabled
 #endif
-  }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -316,7 +316,7 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
 #else
   return -1;//LED's disabled
 #endif
-  }
+}
   
 /////////////////////////////////////////////////////////////////////////////
 // sets all colors of a LED
@@ -343,12 +343,12 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
       BLM_X_LED_rows[row][sr] |= (1 << pin);//set pin
     else
       BLM_X_LED_rows[row][sr] &= ~(1 << pin);//clear pin
-    }
+  }
   return 0;
 #else
   return -1;//LED's disabled
 #endif  
-  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // gets all colors of a LED
@@ -377,12 +377,12 @@ u32 BLM_X_LEDColorGet(u32 led){
       color |= (1 << c);//set pin
     else
       color &= ~(1 << c);//clear pin
-    }
+  }
   return color;
 #else
   return 0;//LED's disabled
 #endif  
-  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // returns the status of a LED / color
@@ -407,7 +407,7 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
 #else
   return -1;//LED's disabled
 #endif
-  }
+}
   
 /////////////////////////////////////////////////////////////////////////////
 // returns the LED serial-register value for a row / SR
@@ -422,7 +422,7 @@ u8 BLM_X_LEDSRGet(u8 row, u8 sr){
 #else
   return 0;//LED's disabled
 #endif
-  }
+}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -439,7 +439,7 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 #else
   return -1;//LED's disabled
 #endif
-  }
+}
   
 /////////////////////////////////////////////////////////////////////////////
 // sets the blm_x soft configurations
@@ -455,7 +455,7 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 s32 BLM_X_ConfigSet(blm_x_config_t config){
   blm_x_config = config;
   return 0;
-  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // gets the blm_x soft configurations
@@ -470,4 +470,4 @@ s32 BLM_X_ConfigSet(blm_x_config_t config){
 /////////////////////////////////////////////////////////////////////////////  
 blm_x_config_t BLM_X_ConfigGet(void){
   return blm_x_config;
-  }
+}
