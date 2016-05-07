@@ -2316,6 +2316,13 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Another thing: If Rec is 'on', AStart is 'on', and Fwd is 'off', and you press PLAY, the first step of the active track won't sound.
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174449
 ----------------------------------------------------------
+Song Mode: when a new pattern is selected, it would be helpful to sync the appr. tracks to the measures, e.g. to reset the LFO
+Add option for this behaviour.
+http://midibox.org/forums/topic/20066-question-on-lfos/
+----------------------------------------------------------
+BLM16x16+X only records to track 1 in Jam mode
+http://midibox.org/forums/topic/20062-jam-mode-with-blm-16x16x/
+----------------------------------------------------------
 
 
 
