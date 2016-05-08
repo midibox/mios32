@@ -13,6 +13,7 @@
 
 #include "vgmperfmon.h"
 #include "vgmplayer.h"
+#include <umm_malloc.h>
 
 static u32 timers[VGM_PERFMON_NUM_TASKS];
 static u8 percents[VGM_PERFMON_NUM_TASKS];
@@ -36,4 +37,12 @@ void VGM_PerfMon_Second(){
 u8 VGM_PerfMon_GetTaskCPU(u8 task){
     if(task >= VGM_PERFMON_NUM_TASKS) return 0;
     return percents[task];
+}
+
+vgm_meminfo_t VGM_PerfMon_GetMemInfo(){
+    vgm_meminfo_t ret;
+    umm_info(NULL, 0);
+    ret.numblocks = heapInfo.totalBlocks;
+    ret.numusedblocks = heapInfo.usedBlocks;
+    return ret;
 }
