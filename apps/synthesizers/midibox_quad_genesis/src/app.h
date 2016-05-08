@@ -13,9 +13,6 @@
 #ifndef _APP_H
 #define _APP_H
 
-
-#include "vgm.h"
-
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -40,23 +37,6 @@ extern void APP_SRIO_ServiceFinish(void);
 extern void APP_DIN_NotifyToggle(u32 pin, u32 pin_value);
 extern void APP_ENC_NotifyChange(u32 encoder, s32 incrementer);
 extern void APP_AIN_NotifyChange(u32 pin, u32 pin_value);
-
-/////////////////////////////////////////////////////////////////////////////
-// Export global variables
-/////////////////////////////////////////////////////////////////////////////
-
-#define MAXNUMFILES 200
-extern char* filenamelist;
-extern s32 numfiles;
-extern u8 selfile;
-extern u8 updatescreen;
-extern u8 selgenesis;
-extern u8 vegasactive;
-extern u8 selgvoice;
-extern VgmSource* sources[4];
-extern VgmHead* heads[4];
-extern VgmSource* qsource;
-extern VgmHead* qhead;
 
 
 #endif /* _APP_H */

@@ -16,7 +16,14 @@ LCD       =     $(MIOS32_LCD)
 THUMB_SOURCE    =   src/app.c \
                     src/frontpanel.c \
                     src/interface.c \
-                    src/genesisstate.c
+                    src/genesisstate.c \
+                    src/mode_system.c \
+                    src/mode_voice.c \
+                    src/mode_chan.c \
+                    src/mode_prog.c \
+                    src/mode_vgm.c \
+                    src/mode_mdltr.c \
+                    src/mode_sample.c
 
 # add C++ files here
 THUMB_CPP_SOURCE =  

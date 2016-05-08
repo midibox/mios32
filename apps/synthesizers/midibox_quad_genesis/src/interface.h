@@ -17,14 +17,22 @@
 extern "C" {
 #endif
 
-/*
-extern u8 DEBUG_Ring;
-extern u8 DEBUG_RingState;
-extern s8 DEBUG_RingDir;
-*/
 
+//Data
+
+#define MODE_SYSTEM 0
+#define MODE_VOICE 1
+#define MODE_CHAN 2
+#define MODE_PROG 3
+#define MODE_VGM 4
+#define MODE_MDLTR 5
+#define MODE_SAMPLE 6
+extern u8 interfacemode;
+
+// Event hooks
 extern void Interface_Init();
-
+extern void Interface_Tick();
+extern void Interface_Background();
 
 // Button hooks
 extern void Interface_BtnGVoice(u8 gvoice, u8 state);

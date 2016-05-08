@@ -22,6 +22,159 @@
 #error //Not really feeling it
 #endif
 
+static const u8 leddisplayfont[128] = {
+    //PGFEDCBA
+    0b00000000, // 'ctrl' 0
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    //PGFEDCBA
+    0b00000000, // 'ctrl' 16
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    0b00000000, // 'ctrl'
+    //PGFEDCBA
+    0b00000000, // ' ' 32
+    0b10000110, // '!'
+    0b00100010, // '"'
+    0b01110110, // '#'
+    0b01101101, // '$'
+    0b01010010, // '%'
+    0b01000110, // '&'
+    0b00000010, // '''
+    0b00111001, // '('
+    0b00001111, // ')'
+    0b01001001, // '*'
+    0b01000110, // '+'
+    0b10000000, // ','
+    0b01000000, // '-'
+    0b10000000, // '.'
+    0b01010010, // '/'
+    //PGFEDCBA
+    0b00111111, // '0' 48
+    0b00000110, // '1'
+    0b01011011, // '2'
+    0b01001111, // '3'
+    0b01100110, // '4'
+    0b01101101, // '5'
+    0b01111101, // '6'
+    0b00000111, // '7'
+    0b01111111, // '8'
+    0b01101111, // '9'
+    0b11000000, // ':'
+    0b11000000, // ';'
+    0b00011000, // '<'
+    0b01001000, // '='
+    0b01000100, // '>'
+    0b01010011, // '?'
+    //PGFEDCBA
+    0b00101111, // '@' 64
+    0b01110111, // 'A'
+    0b01111100, // 'B'
+    0b00111001, // 'C'
+    0b01011110, // 'D'
+    0b01111001, // 'E'
+    0b01110001, // 'F'
+    0b00111101, // 'G'
+    0b01110110, // 'H'
+    0b00000110, // 'I'
+    0b00011110, // 'J'
+    0b01110101, // 'K'
+    0b00111000, // 'L'
+    0b00110111, // 'M'
+    0b00110111, // 'N'
+    0b00111111, // 'O'
+    //PGFEDCBA
+    0b01110011, // 'P' 80
+    0b01100111, // 'Q'
+    0b01010000, // 'R'
+    0b01101101, // 'S'
+    0b01111000, // 'T'
+    0b00111110, // 'U'
+    0b00111110, // 'V'
+    0b00111110, // 'W'
+    0b01001001, // 'X'
+    0b01101110, // 'Y'
+    0b01011011, // 'Z'
+    0b00111001, // '['
+    0b01100100, // '\'
+    0b00001111, // ']'
+    0b00100011, // '^'
+    0b00001000, // '_'
+    //PGFEDCBA
+    0b00100000, // '`' 96
+    0b01110111, // 'a'
+    0b01111100, // 'b'
+    0b01011000, // 'c'
+    0b01011110, // 'd'
+    0b01111011, // 'e'
+    0b01110001, // 'f'
+    0b01101111, // 'g'
+    0b01110100, // 'h'
+    0b00000100, // 'i'
+    0b00011110, // 'j'
+    0b01110101, // 'k'
+    0b00000110, // 'l'
+    0b01010100, // 'm'
+    0b01010100, // 'n'
+    0b01011100, // 'o'
+    //PGFEDCBA
+    0b01110011, // 'p' 112
+    0b01100111, // 'q'
+    0b01010000, // 'r'
+    0b01101101, // 's'
+    0b01111000, // 't'
+    0b00011100, // 'u'
+    0b00011100, // 'v'
+    0b00011100, // 'w'
+    0b01001001, // 'x'
+    0b01101110, // 'y'
+    0b01011011, // 'z'
+    0b00111001, // '{'
+    0b00110000, // '|'
+    0b00001111, // '}'
+    0b01000000, // '~'
+    0b00000000, // 'ctrl'
+};
+
+static const u32 algwidgets[9] = {
+    //  FEEDDCCCCBBBAAAAAAGGGGRRRRCCCC
+    //   21214321321654321432143214321
+    0b00000000000111111111100001111000,
+    0b00000010011111111101100001111000,
+    0b00111111001111111101100001111000,
+    0b00000101100111110111100001111000,
+    0b00000000000101110011101001011010,
+    0b00111111011111101011111000011110,
+    0b00000000000001000011111000011110,
+    0b00000000000000000000111100001111,
+    0b00111111001111011110011001100000
+};
+
 s8 FP_SRADDR[7];
 Button_T FP_BUTTONS[64*3];
 LED_T FP_LEDS[125];
@@ -483,23 +636,23 @@ void FrontPanel_Init(){
     FP_LEDS[FP_LED_DIG_OCT]     = (LED_T){ .pin = 7, .sr = 7, .row = 0 };
     
     //Configure LED rings
-    LED_RINGS[FP_LEDR_OP1LVL]   = (LEDRing_T){ .special = 0, .losr = 7, .lopin = 0, .hisr = 7, .hipin = 1 };
-    LED_RINGS[FP_LEDR_OP2LVL]   = (LEDRing_T){ .special = 0, .losr = 7, .lopin = 2, .hisr = 7, .hipin = 3 };
-    LED_RINGS[FP_LEDR_OP3LVL]   = (LEDRing_T){ .special = 0, .losr = 8, .lopin = 0, .hisr = 8, .hipin = 1 };
-    LED_RINGS[FP_LEDR_OP4LVL]   = (LEDRing_T){ .special = 0, .losr = 8, .lopin = 2, .hisr = 8, .hipin = 3 };
-    LED_RINGS[FP_LEDR_HARM]     = (LEDRing_T){ .special = 0, .losr = 6, .lopin = 7, .hisr = 6, .hipin = 6 };
-    LED_RINGS[FP_LEDR_DETUNE]   = (LEDRing_T){ .special = 0, .losr = 6, .lopin = 5, .hisr = 6, .hipin = 4 };
-    LED_RINGS[FP_LEDR_ATTACK]   = (LEDRing_T){ .special = 0, .losr = 6, .lopin = 3, .hisr = 6, .hipin = 2 };
-    LED_RINGS[FP_LEDR_DEC1R]    = (LEDRing_T){ .special = 0, .losr = 6, .lopin = 1, .hisr = 6, .hipin = 0 };
-    LED_RINGS[FP_LEDR_DECLVL]   = (LEDRing_T){ .special = 0, .losr = 5, .lopin = 5, .hisr = 5, .hipin = 4 };
-    LED_RINGS[FP_LEDR_DEC2R]    = (LEDRing_T){ .special = 0, .losr = 5, .lopin = 7, .hisr = 5, .hipin = 6 };
-    LED_RINGS[FP_LEDR_RELRATE]  = (LEDRing_T){ .special = 0, .losr = 5, .lopin = 1, .hisr = 5, .hipin = 0 };
-    LED_RINGS[FP_LEDR_CSMFREQ]  = (LEDRing_T){ .special = 0, .losr = 5, .lopin = 3, .hisr = 5, .hipin = 2 };
-    LED_RINGS[FP_LEDR_PSGFREQ]  = (LEDRing_T){ .special = 0, .losr = 4, .lopin = 7, .hisr = 4, .hipin = 6 };
-    LED_RINGS[FP_LEDR_PSGVOL]   = (LEDRing_T){ .special = 0, .losr = 4, .lopin = 5, .hisr = 4, .hipin = 4 };
-    LED_RINGS[FP_LEDR_LFOFDEP]  = (LEDRing_T){ .special = 0, .losr = 8, .lopin = 4, .hisr = 8, .hipin = 5 };
+    LED_RINGS[FP_LEDR_OP1LVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 7, .lopin = 0, .hisr = 7, .hipin = 1 };
+    LED_RINGS[FP_LEDR_OP2LVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 7, .lopin = 2, .hisr = 7, .hipin = 3 };
+    LED_RINGS[FP_LEDR_OP3LVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 8, .lopin = 0, .hisr = 8, .hipin = 1 };
+    LED_RINGS[FP_LEDR_OP4LVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 8, .lopin = 2, .hisr = 8, .hipin = 3 };
+    LED_RINGS[FP_LEDR_HARM]     = (LEDRing_T){ .special = 0, .offset = 0, .losr = 6, .lopin = 7, .hisr = 6, .hipin = 6 };
+    LED_RINGS[FP_LEDR_DETUNE]   = (LEDRing_T){ .special = 0, .offset = 5, .losr = 6, .lopin = 5, .hisr = 6, .hipin = 4 };
+    LED_RINGS[FP_LEDR_ATTACK]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 6, .lopin = 3, .hisr = 6, .hipin = 2 };
+    LED_RINGS[FP_LEDR_DEC1R]    = (LEDRing_T){ .special = 0, .offset = 0, .losr = 6, .lopin = 1, .hisr = 6, .hipin = 0 };
+    LED_RINGS[FP_LEDR_DECLVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 5, .lopin = 5, .hisr = 5, .hipin = 4 };
+    LED_RINGS[FP_LEDR_DEC2R]    = (LEDRing_T){ .special = 0, .offset = 0, .losr = 5, .lopin = 7, .hisr = 5, .hipin = 6 };
+    LED_RINGS[FP_LEDR_RELRATE]  = (LEDRing_T){ .special = 0, .offset = 0, .losr = 5, .lopin = 1, .hisr = 5, .hipin = 0 };
+    LED_RINGS[FP_LEDR_CSMFREQ]  = (LEDRing_T){ .special = 0, .offset = 0, .losr = 5, .lopin = 3, .hisr = 5, .hipin = 2 };
+    LED_RINGS[FP_LEDR_PSGFREQ]  = (LEDRing_T){ .special = 0, .offset = 0, .losr = 4, .lopin = 7, .hisr = 4, .hipin = 6 };
+    LED_RINGS[FP_LEDR_PSGVOL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 4, .lopin = 5, .hisr = 4, .hipin = 4 };
+    LED_RINGS[FP_LEDR_LFOFDEP]  = (LEDRing_T){ .special = 0, .offset = 4, .losr = 8, .lopin = 4, .hisr = 8, .hipin = 5 };
     LED_RINGS[FP_LEDR_LFOADEP]  = (LEDRing_T){ .special = 1 };
-    LED_RINGS[FP_LEDR_LFOFREQ]  = (LEDRing_T){ .special = 0, .losr = 2, .lopin = 6, .hisr = 2, .hipin = 7 };
+    LED_RINGS[FP_LEDR_LFOFREQ]  = (LEDRing_T){ .special = 0, .offset = 4, .losr = 2, .lopin = 6, .hisr = 2, .hipin = 7 };
     LED_RINGS[FP_LEDR_FEEDBACK] = (LEDRing_T){ .special = 2 };
     
     //Configure Genesis LED columns
@@ -519,7 +672,7 @@ void FrontPanel_Init(){
 }
 
 void FrontPanel_ButtonChange(u32 btn, u32 value){
-    static u8 lednumber = 0xFF;
+    static u8 temp = 0;
     value = (value == 0); //Invert
     u8 row = btn / BLM_X_BTN_NUM_COLS;
     u8 sr = (btn % BLM_X_BTN_NUM_COLS) >> 3;
@@ -539,13 +692,6 @@ void FrontPanel_ButtonChange(u32 btn, u32 value){
         return;
     }else if(button.func >= FP_B_SYSTEM && button.func < FP_B_OUT){
         Interface_BtnSystem(button.func, value);
-        //TODO XXX
-        if(value){
-            FrontPanel_LEDSet(lednumber, 0);
-            lednumber++;
-            if(lednumber >= 125) lednumber = 0;
-            FrontPanel_LEDSet(lednumber, 1);
-        }
     }else if(button.func >= FP_B_OUT){
         Interface_BtnEdit(button.func, value);
     }else if(button.func == FP_B_GVOICE){
@@ -582,14 +728,22 @@ void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
     if(ledring.special){
         //TODO special case handlers
     }else{
+        value += ledring.offset;
         s8 r; 
         u8 d = 0;
+        u8 light;
         for(r=0; r<8; r++){
-            MATRIX_LED_SET(r, ledring.losr, ledring.lopin, (mode ? (d <= value) : (d == value)));
+            if(mode == 0) light = (d == value);
+            else if(mode == 1) light = (d <= value);
+            else light = 0;
+            MATRIX_LED_SET(r, ledring.losr, ledring.lopin, light);
             ++d;
         }
         for(r=7; r>=0; r--){
-            MATRIX_LED_SET(r, ledring.hisr, ledring.hipin, (mode ? (d <= value) : (d == value)));
+            if(mode == 0) light = (d == value);
+            else if(mode == 1) light = (d <= value);
+            else light = 0;
+            MATRIX_LED_SET(r, ledring.hisr, ledring.hipin, light);
             ++d;
         }
     }
@@ -601,4 +755,82 @@ void FrontPanel_GenesisLEDSet(u8 genesis, u8 voice, u8 color, u8 value){
     if(color >= 2) return;
     GenesisLEDColumn_T gled = GENESIS_COLUMNS[voice];
     MATRIX_LED_SET((genesis << 1) | color, gled.sr, gled.pin, value);
+}
+
+void FrontPanel_DrawAlgorithm(u8 algorithm){
+    u32 a = 0;
+    if(algorithm < 9) a = algwidgets[algorithm];
+    LED_T l;
+    u8 i;
+    for(i=FP_LED_OPCARR_1; i<=FP_LED_FMW_F; ++i){
+        l = FP_LEDS[i];
+        MATRIX_LED_SET(l.row, l.sr, l.pin, a & 1);
+        a >>= 1;
+    }
+}
+
+void FrontPanel_DrawDACValue(u16 bits){
+    u8 i;
+    LED_T l;
+    for(i=FP_LED_DAC_9; i>=FP_LED_DAC_1; --i){
+        l = FP_LEDS[i];
+        MATRIX_LED_SET(l.row, l.sr, l.pin, bits & 1);
+        bits >>= 1;
+    }
+}
+void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value){
+    if(row >= 7 || col >= 14) return;
+    LED_T l = FP_LEDS[FP_LED_VGMMTX_1 + col];
+    MATRIX_LED_SET(l.row + row, l.sr, l.pin, value);
+}
+void FrontPanel_DrawDigit(u8 digit, char value){
+    if(digit < FP_LED_DIG_MAIN_1 || digit > FP_LED_DIG_OCT) return;
+    LED_T l = FP_LEDS[digit];
+    u8 i; u8 d = leddisplayfont[value & 0x7F];
+    for(i=0; i<8; ++i){
+        MATRIX_LED_SET(l.row + i, l.sr, l.pin, d & 1);
+        d >>= 1;
+    }
+}
+void FrontPanel_DrawFreqNumber(u16 number){
+    u8 dig, blank = 0;
+    for(dig = 0; dig < 4; ++dig){
+        if(blank){
+            FrontPanel_DrawDigit(FP_LED_DIG_FREQ_4 - dig, ' ');
+        }else{
+            FrontPanel_DrawDigit(FP_LED_DIG_FREQ_4 - dig, '0' + (number % 10));
+        }
+        number /= 10;
+        if(number == 0) blank = 1;
+    }
+}
+void FrontPanel_DrawLoad(u8 type, u8 value){
+    LED_T l;
+    s8 row, incrementer; u8 maxcount, count;
+    switch(type){
+        case 0:
+            l = FP_LEDS[FP_LED_LOAD_CHIP];
+            row = 0;
+            incrementer = 1;
+            maxcount = 4;
+            break;
+        case 1:
+            l = FP_LEDS[FP_LED_LOAD_CHIP];
+            row = 7;
+            incrementer = -1;
+            maxcount = 4;
+            break;
+        case 2:
+            l = FP_LEDS[FP_LED_LOAD_RAM];
+            row = 0;
+            incrementer = 1;
+            maxcount = 8;
+            break;
+        default:
+            return;
+    }
+    for(count = 0; count < maxcount; ++count){
+        MATRIX_LED_SET(l.row + row, l.sr, l.pin, (value > count));
+        row += incrementer;
+    }
 }

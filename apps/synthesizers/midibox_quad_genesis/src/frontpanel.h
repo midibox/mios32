@@ -250,7 +250,8 @@ typedef union {
 typedef union {
     u32 all;
     struct{
-        u8 special; //0 if standard format, > 0 if special handler
+        u8 special:5; //0 if standard format, > 0 if special handler
+        u8 offset:3; //The number to add to get to the first segment
         u8 lopin:3;
         u8 losr:5;
         u8 hipin:3;
@@ -298,8 +299,10 @@ extern void FrontPanel_GenesisLEDSet(u8 genesis, u8 voice, u8 color, u8 value);
 extern void FrontPanel_DrawAlgorithm(u8 algorithm);
 extern void FrontPanel_DrawDACValue(u16 bits);
 extern void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value);
-extern void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value);
+extern void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value); //Mode: 0 line, 1 fill, else clear
 extern void FrontPanel_DrawDigit(u8 digit, char value);
+extern void FrontPanel_DrawFreqNumber(u16 number);
+extern void FrontPanel_DrawLoad(u8 type, u8 value);
 
 
 #ifdef __cplusplus
