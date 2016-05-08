@@ -19,6 +19,19 @@ extern "C" {
 
 extern void DrawGenesisActivity(u8 g);
 
+extern void DrawGenesisState_Op(u8 g, u8 chan, u8 op);
+extern void DrawGenesisState_Chan(u8 g, u8 chan);
+extern void DrawGenesisState_DAC(u8 g);
+extern void DrawGenesisState_OPN2(u8 g);
+extern void DrawGenesisState_PSG(u8 g, u8 voice);
+extern void DrawGenesisState_All(u8 g, u8 voice, u8 op);
+
+extern void ClearGenesisState_Op();
+extern void ClearGenesisState_Chan();
+extern void ClearGenesisState_DAC();
+extern void ClearGenesisState_OPN2();
+extern void ClearGenesisState_PSG();
+
 #ifdef __cplusplus
 }
 #endif
