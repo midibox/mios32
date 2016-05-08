@@ -2323,6 +2323,13 @@ http://midibox.org/forums/topic/20066-question-on-lfos/
 BLM16x16+X only records to track 1 in Jam mode
 http://midibox.org/forums/topic/20062-jam-mode-with-blm-16x16x/
 ----------------------------------------------------------
+Provide 2*64/2*128 for drum tracks
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174943
+----------------------------------------------------------
+UI allows CC par layer selection for drum tracks, but this isn't supported
+Don't display CC selection
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174943
+----------------------------------------------------------
 
 
 
