@@ -2357,3 +2357,8 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 - MIDI filter
   http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174145
 
+- Multi Channel Recording
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175313
+
+- Interpolate Pitch Bend values (+ more, such as CC?)
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175313
