@@ -22,7 +22,9 @@
 #include <genesis.h>
 #include <vgm.h>
 #include "frontpanel.h"
+#include "genesisstate.h"
 #include "interface.h"
+#include "syeng.h"
 
 
 static const u8 charset_mbvgm[8*8] = {
@@ -92,6 +94,8 @@ void APP_Init(void){
     //Initialize interface
     Interface_Init();
     
+    //Initialize synth engine
+    SyEng_Init();
 }
 
 
@@ -99,8 +103,12 @@ void APP_Init(void){
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void){
+    u8 i;
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
     Interface_Background();
+    for(i=0; i<GENESIS_COUNT; ++i){
+        DrawGenesisActivity(i);
+    }
     MIOS32_BOARD_LED_Set(0b1000, 0b0000);
 }
 
@@ -115,6 +123,7 @@ void APP_Background(void){
 void APP_Tick(void){
     static u16 prescaler = 0;
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
+    SyEng_Tick();
     Interface_Tick();
     if(prescaler == 1000){
         prescaler = 0;
@@ -155,5 +164,19 @@ void APP_SRIO_ServiceFinish(void){
 }
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value){}
 void APP_MIDI_Tick(void){}
-void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){}
+void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){
+    if(midi_package.event == 0x8 || (midi_package.event == 0x9 && midi_package.velocity == 0)){
+        if(channels[midi_package.chn].trackermode){
+            //Tracker_Note_Off(channels[midi_package.chn].trackervoice, midi_package);
+        }else{
+            SyEng_Note_Off(midi_package);
+        }
+    }else if(midi_package.event == 0x9){
+        if(channels[midi_package.chn].trackermode){
+            //Tracker_Note_On(channels[midi_package.chn].trackervoice, midi_package);
+        }else{
+            SyEng_Note_On(midi_package);
+        }
+    }
+}
 
