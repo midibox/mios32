@@ -110,3 +110,9 @@ VgmChipWriteCmd VGM_getPSGFrequency(u8 midinote, s8 cents, u32 psgclock){
     ret.data2 = (freq >> 4) & 0x0000003F;
     return ret;
 }
+
+u32 VGM_getFreqMultiplier(s8 deltanote){
+    u8 lowernote = 64 - (deltanote / 2);
+    u8 uppernote = lowernote + deltanote;
+    return (midinotefreq[uppernote] << 6) / (midinotefreq[lowernote] >> 6);
+}

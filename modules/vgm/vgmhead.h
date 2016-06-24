@@ -17,6 +17,10 @@
 #include "vgmsource.h"
 
 
+#define VGM_DELAY62 735
+#define VGM_DELAY63 882
+
+
 typedef union {
     u32 all;
     struct {
@@ -39,10 +43,11 @@ Channels are:
 typedef union {
     u8 ALL;
     struct{
+        u8 nodata:1; //Source has no data on this channel (used by allocator, VGM engine treats it like mute, though that shouldn't ever matter)
         u8 mute:1;
         u8 map_chip:2;
         u8 map_voice:3; //Either 0-5 or 0-2; channels 0, 7, and B ignore
-        u8 dummy:2;
+        u8 option:1; //For OPN2 voices, flag for using LFO; for PSG Noise, flag for using SQ3
     };
 } VgmHead_Channel;
 
@@ -61,17 +66,18 @@ typedef union {
         u8 iswait:1;
         u8 iswrite:1;
         u8 isdone:1;
+        u8 firstoftwo:1;
         u8 psgfreq0to1:1;
         u8 psglastchannel:2;
-        u32 dummy:25;
+        u32 dummy:24;
     };
 } VgmHead;
 
 
 extern void VGM_Head_Init();
 
-extern VgmHead* VGM_Head_Create(VgmSource* source);
-extern s32 VGM_Head_Delete(VgmHead* head);
+extern VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult);
+extern s32 VGM_Head_Delete(VgmHead* head); //Remove from queue and free
 
 extern void VGM_Head_Restart(VgmHead* head, u32 vgm_time);
 extern void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time);
@@ -80,7 +86,7 @@ static inline u8 VGM_Head_cmdIsWait(VgmHead* head) {return head->iswait || head-
 static inline s32 VGM_Head_cmdGetWaitRemaining(VgmHead* head, u32 vgm_time) {return (head->isdone ? 65535 : (s32)(head->ticks - vgm_time));}
 static inline u8 VGM_Head_cmdIsChipWrite(VgmHead* head) {return head->iswrite && !head->isdone;}
 //static inline VgmChipWriteCmd VGM_Head_cmdGetChipWrite() {return head->writecmd;}
-extern void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd);
+extern void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd);
 
 #define VGM_HEAD_MAXNUM 64
 extern VgmHead* vgm_heads[VGM_HEAD_MAXNUM];

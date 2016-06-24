@@ -15,6 +15,7 @@
 #include "vgmqueue.h"
 #include "vgmram.h"
 #include "vgmstream.h"
+#include <genesis.h>
 
 VgmHead* vgm_heads[VGM_HEAD_MAXNUM];
 u32 vgm_numheads;
@@ -23,7 +24,7 @@ void VGM_Head_Init(){
     vgm_numheads = 0;
 }
 
-VgmHead* VGM_Head_Create(VgmSource* source){
+VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     if(source == NULL) return NULL;
     VgmHead* head = malloc(sizeof(VgmHead));
     head->playing = 0;
@@ -41,10 +42,12 @@ VgmHead* VGM_Head_Create(VgmSource* source){
             head->channel[i].map_voice = 0;
         }
     }
-    head->opn2mult = ((7670454 << 8) / 500000); //0x1000; //TODO adjust in real time
-    head->psgmult = 0x1000; //TODO adjust in real time
+    head->opn2mult = (((source->opn2clock << 9) / (genesis_clock_opn2 >> 3)) * freqmult) >> 12; 
+    // ((7670454 << 8) / 500000); //0x1000;
+    head->psgmult = (((source->psgclock << 10) / (genesis_clock_psg >> 2)) * freqmult) >> 12;
+    // 0x1000;
     head->psgfreq0to1 = 1;
-    head->tempomult = 0x1000;
+    head->tempomult = tempomult;
     head->iswait = 1;
     head->iswrite = 0;
     head->isdone = 0;
@@ -119,8 +122,10 @@ void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){
     }
 }
 
-void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
-    u8 chan, board;
+#define CHECK_MUTE_NODATA(c) do{ if(head->channel[(c)].mute || head->channel[(c)].nodata) { cmd->cmd = 0xFF; return; }} while(0)
+
+void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
+    u8 chan = 0xFF, board = 0xFF;
     u8 addrhi = (cmd->cmd & 0x01);
     if(cmd->cmd == 0x00){
         //PSG write command
@@ -128,7 +133,7 @@ void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
             chan = ((cmd->data & 0x60) >> 5);
             head->psglastchannel = chan;
             chan += 8;
-            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
             if(chan != 0xB){
                 chan = head->channel[chan].map_voice;
@@ -136,7 +141,7 @@ void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
             }
         }else{
             chan = head->psglastchannel + 8;
-            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
         }
     }else{
@@ -145,27 +150,27 @@ void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
             //Key on
             chan = cmd->data & 0x07;
             if(chan < 0x03) chan += 1; //Move channels 0,1,2 up to 1,2,3
-            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
             chan = head->channel[chan].map_voice;
             if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
             cmd->data = (cmd->data & 0xF8) | chan;
         }else if(cmd->addr == 0x2A || cmd->addr == 0x2B){
             //DAC write
-            if(head->channel[7].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(7);
             board = head->channel[7].map_chip;
         }else if((cmd->addr <= 0xAE && cmd->addr >= 0xA8) || (cmd->addr <= 0x27 && cmd->addr >= 0x24)){
             //Ch3 frequency write or options/timers write
-            if(head->channel[3].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(3);
             board = head->channel[3].map_chip;
         }else if(cmd->addr <= 0x2F || cmd->addr >= 0xB8){
             //Other chip write
-            if(head->channel[0].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(0);
             board = head->channel[0].map_chip;
         }else{
             //Operator or channel/voice write
             chan = (cmd->addr & 0x03) + addrhi + (addrhi << 1) + 1; //Add 3 for channels 3,4,5
-            if(head->channel[chan].mute) { cmd->cmd = 0xFF; return; }
+            CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
             chan = head->channel[chan].map_voice;
             if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
@@ -177,3 +182,4 @@ void VGM_Head_fixCmd(VgmHead* head, VgmChipWriteCmd* cmd){
     }
     cmd->cmd |= board << 4;
 }
+

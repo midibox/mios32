@@ -16,9 +16,6 @@
 #include "vgmperfmon.h"
 #include "vgmtuning.h"
 
-#define VGM_DELAY62 735
-#define VGM_DELAY63 882
-
 
 u8 VGM_HeadStream_getCommandLen(u8 type){
     if((type & 0xFE) == 0x52){
@@ -219,7 +216,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                     bufferpos = vhs->subbufferlen;
                 }
             }
-            VGM_Head_fixCmd(head, &(head->writecmd));
+            VGM_Head_doMapping(head, &(head->writecmd));
         }else if((type & 0xFE) == 0x52){
             //OPN2 write
             head->iswrite = 1;
@@ -250,7 +247,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                     bufferpos = vhs->subbufferlen;
                 }
             }
-            VGM_Head_fixCmd(head, &(head->writecmd));
+            VGM_Head_doMapping(head, &(head->writecmd));
         }else if(type >= 0x80 && type <= 0x8F){
             //OPN2 DAC write
             head->iswrite = 1;
@@ -262,7 +259,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                 vhs->subbuffer[0] = type - 0x11;
                 dontunbuffer = 1;
             }
-            VGM_Head_fixCmd(head, &(head->writecmd));
+            VGM_Head_doMapping(head, &(head->writecmd));
         }else if(type >= 0x70 && type <= 0x7F){
             //Short wait
             head->iswait = 1;
@@ -404,10 +401,10 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
 VgmSource* VGM_SourceStream_Create(){
     VgmSource* source = malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_STREAM;
-    source->opn2clock = 0;
-    source->psgclock = 0;
-    source->loopaddr = 0;
-    source->loopsamples = 0xFFFFFFFF;
+    source->opn2clock = 7670454;
+    source->psgclock = 3579545;
+    source->loopaddr = 0xFFFFFFFF;
+    source->loopsamples = 0;
     VgmSourceStream* vss = malloc(sizeof(VgmSourceStream));
     source->data = vss;
     vss->datalen = 0;
@@ -482,10 +479,10 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     if(!flag){
         DBG("VGM data starts at 0");
         vss->vgmdatastartaddr = 0;
-        source->opn2clock = 0;
-        source->psgclock = 0;
-        source->loopaddr = 0;
-        source->loopsamples = 0xFFFFFFFF;
+        source->opn2clock = 7670454;
+        source->psgclock = 3579545;
+        source->loopaddr = 0xFFFFFFFF;
+        source->loopsamples = 0;
     }
     //Scan entire file for data blocks
     u32 totalblocksize = 0;
