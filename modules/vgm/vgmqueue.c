@@ -114,8 +114,8 @@ void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq){
 VgmSource* VGM_SourceQueue_Create(){
     VgmSource* source = malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_QUEUE;
-    source->opn2clock = 0;
-    source->psgclock = 0;
+    source->opn2clock = 7670454;
+    source->psgclock = 3579545;
     source->loopaddr = 0;
     source->loopsamples = 0xFFFFFFFF;
     source->data = NULL;

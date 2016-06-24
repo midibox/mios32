@@ -26,4 +26,6 @@ extern VgmChipWriteCmd VGM_getOPN2Frequency(u8 midinote, s8 cents, u32 opn2clock
 extern VgmChipWriteCmd VGM_getPSGFrequency(u8 midinote, s8 cents, u32 psgclock);
 
 
+extern u32 VGM_getFreqMultiplier(s8 deltanote);
+
 #endif /* _VGMTUNING_H */
