@@ -39,6 +39,8 @@ u32 timeout_counter;
 /////////////////////////////////////////////////////////////////////////////
 
 genesis_t genesis[GENESIS_COUNT];
+u32 genesis_clock_opn2;
+u32 genesis_clock_psg;
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -104,9 +106,12 @@ void Genesis_Init(){
     GPIOC->PUPDR &= 0x03FFFFFF;     //Turn off all pull-ups
     //Reset all (also resets internal chip state)
     u8 i;
-    for(i=0; i<GENESIS_COUNT; i++){
+    for(i=0; i<GENESIS_COUNT; ++i){
         Genesis_Reset(i);
     }
+    //Set clocks TODO: measure the clock from the busy delays
+    genesis_clock_opn2 = 8000000;
+    genesis_clock_psg = 3579545;
 }
 
 void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data){
