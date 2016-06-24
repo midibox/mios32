@@ -21,6 +21,322 @@ syngenesis_t syngenesis[GENESIS_COUNT];
 synproginstance_t proginstances[MBQG_NUM_PROGINSTANCES];
 synchannel_t channels[16*MBQG_NUM_PORTS];
 
+//TODO reset voice/genesis states when releasing
+//TODO divide chips that use globals by the types of globals used, so multiple
+//voices using the same effect e.g. "ugly" can play together
+//TODO take recency into account when items have the same score otherwise
+
+void ReleaseAllPI(synproginstance_t* pi){
+    u8 i, v;
+    VgmHead_Channel pimap;
+    syngenesis_t* sg;
+    for(i=0; i<12; ++i){
+        pimap = pi->mapping[i];
+        if(pimap.nodata) continue;
+        sg = syngenesis[pimap.map_chip];
+        if(i == 0){
+            //We were using OPN2 globals, so there can't be anything else
+            //allocated on this OPN2 besides this PI
+            DBG("--ReleaseAllPI: clearing whole OPN2 %d", pimap.map_chip);
+            sg->lfobits = 0;
+            sg->optionbits = 0;
+            for(v=0; v<8; ++v) sg->channels[v].ALL = 0;
+            //Skip to PSG section
+            i = 7;
+            continue;
+        }
+        if(i >= 1 && i <= 6){
+            //FM voice
+            v = pimap.map_voice;
+            sg->channels[v+1].ALL = 0;
+            sg->lfobits &= ~(1 << v);
+            if(sg->lfobits == 0){
+                sg->lfovaries = 0;
+                sg->lfofixed = 0;
+            }
+            if(i == 3) sg->fm3_special = 0;
+        }else if(i == 7){
+            //DAC
+            sg->channels[7].ALL = 0;
+        }else if(i >= 8 && i <= 10){
+            //SQ voice
+            v = pimap.map_voice;
+            sg->channels[v+8].ALL = 0;
+        }else{
+            //Noise
+            sg->channels[11].ALL = 0;
+            sg->noisefreqsq3 = 0;
+        }
+        DBG("--ReleaseAllPI: clearing voice %d", i);
+    }
+}
+
+void ClearPI(synproginstance_t* pi){
+    //Stop actually playing
+    if(pi->head != NULL){
+        VGM_Head_Delete(pi->head);
+        pi->head = NULL;
+    }
+    //Invalidate PI
+    pi->valid = 0;
+    pi->playing = 0;
+    pi->playinginit = 0;
+    pi->recency = VGM_Player_GetVGMTime() - (u32)0x80000000; //as far away as possible
+    //Release all resources
+    ReleaseAllPI(pi);
+}
+
+void StandbyPI(synproginstance_t* pi){
+    u8 i, v;
+    VgmHead_Channel pimap;
+    syngenesis_t* sg;
+    for(i=0; i<12; ++i){
+        pimap = pi->mapping[i];
+        if(pimap.nodata) continue;
+        sg = syngenesis[pimap.map_chip];
+        if(i == 0){
+            //We were using OPN2 globals
+            DBG("--StandbyPI: setting all voices to standby");
+            for(v=0; v<8; ++v){
+                sg->channels[v].use = 1;
+            }
+            //Skip to PSG section
+            i = 7;
+            continue;
+        }
+        if(i >= 1 && i <= 6){
+            //FM voice
+            v = pimap.map_voice;
+            sg->channels[v+1].use = 1;
+        }else if(i == 7){
+            //DAC
+            sg->channels[7].use = 1;
+        }else if(i >= 8 && i <= 10){
+            //SQ voice
+            v = pimap.map_voice;
+            sg->channels[v+8].use = 1;
+        }else{
+            //Noise
+            sg->channels[11].use = 1;
+        }
+        DBG("--StandbyPI: voice %d standing by", i);
+    }
+}
+
+u8 FindOPN2ClearLFO(){
+    //Find an OPN2 with as few voices as possible using the LFO
+    u8 i, g, v, score, bestscore, bestg;
+    bestscore = 0xFF;
+    for(g=0; g<GENESIS_COUNT; ++g){
+        score = 0;
+        for(v=1; v<6; ++v){
+            if(syngenesis[g].lfobits & (1 << (v-1))){
+                //Only for voices using the LFO
+                i = syngenesis[g].channels[v].use;
+                if(i >= 2) score += 10;
+                else if(i == 1) score += 1;
+            }
+        }
+        if(score < bestscore){
+            bestscore = score;
+            bestg = g;
+        }
+    }
+    //Kick out voices using the LFO
+    for(v=1; v<6; ++v){
+        if((syngenesis[bestg].lfobits & (1 << (v-1))) && syngenesis[bestg].channels[v].use > 0){
+            ClearPI(proginstances[syngenesis[bestg].channels[v].pi_using]);
+        }
+    }
+    return bestg;
+}
+
+void AssignVoiceToOPN2(u8 piindex, synproginstance_t* pi, u8 g, u8 v, u8 alsodac, u8 vlfo){
+    syngenesis_usage_t* sgusage = &syngenesis[g].channels[v];
+    if(sgusage->use > 0){
+        ClearPI(proginstances[sgusage->pi_using]);
+    }
+    //Assign voices
+    sgusage->use = 2;
+    sgusage->pi_using = piindex;
+    syngenesis[g].lfobits |= vlfo << (v-1);
+    //Map PI
+    pi->mapping[v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = v-1, .option = vlfo};
+    //DAC only
+    if(alsodac){
+        sgusage = &syngenesis[g].channels[7];
+        sgusage->use = 2;
+        sgusage->pi_using = piindex;
+        pi->mapping[7] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = 0, .option = 0};
+    }
+}
+
+void AllocatePI(u8 piindex, usage_t pusage){
+    synproginstance_t* pi = &proginstances[piindex];
+    syngenesis_t* sg;
+    syngenesis_usage_t* sgusage;
+    u8 i, g, v, score;
+    u8 bestg, bestv, bestscore;
+    u8 lfog, lfovaries;
+    u32 recency, maxrecency, now = VGM_Player_GetVGMTime();
+    //Initialize channels to have no data
+    for(i=0; i<12; ++i){
+        pi->mapping[i] = (VgmHead_Channel){.nodata = 1, .mute = 0, .map_chip = 0, .map_voice = 0, .option = 0};
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    //////////////////////////// OPN2 ALLOCATION ///////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    if(pusage.opn2_globals){
+        //We need an entire OPN2; find the best one to replace
+        bestscore = 0xFF;
+        for(g=0; g<GENESIS_COUNT; ++g){
+            score = 0;
+            for(v=0; v<8; ++v){
+                i = syngenesis[g].channels[v].use;
+                if(i >= 2) score += 10;
+                else if(i == 1) score += 1;
+            }
+            if(score < bestscore){
+                bestscore = score;
+                bestg = g;
+            }
+        }
+        //Replace this one
+        sg = &syngenesis[bestg];
+        for(v=0; v<8; ++v){
+            sgusage = sg->channels[v];
+            //Clear previous PIs using this chip
+            if(sgusage.use > 0){
+                ClearPI(proginstances[sgusage->pi_using]);
+            }
+            //Assign voices to this PI
+            sgusage->use = 2;
+            sgusage->pi_using = piindex;
+            //Set up mapping in PI
+            pi->mapping[v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = bestg, .map_voice = (v >= 1 && v <= 6) ? (v-1) : 0, .option = 1};
+        }
+        //Set up additional bits in chip allocation record
+        sg->lfobits = 0x3F;
+        sg->lfovaries = 1;
+        sg->lfofixed = 0;
+    }else{
+        lfovaries = 0;
+        if((pusage.all & 0x00000FC0) && !pusage.lfofixed){ //Any LFO used and not fixed
+            lfog = FindOPN2ClearLFO();
+            lfovaries = 1;
+            syngenesis[lfog].lfovaries = 1;
+            syngenesis[lfog].lfofixed = 0;
+        }
+        //Assign Ch6 if DAC used
+        if(pusage.dac){
+            if(pusage.fm6_lfo){
+                if(lfovaries){
+                    //LFO non-fixed; has to get assigned to lfog:6
+                    AssignVoiceToOPN2(piindex, pi, lfog, 6, 1, 1);
+                }else{
+                    //LFO fixed; can we find an OPN2 with DAC open with the same LFO fixed?
+                    for(g=0; g<GENESIS_COUNT; ++g){
+                        sg = &syngenesis[lfog];
+                        if(sg->lfofixed && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[6].use == 0){
+                            break;
+                        }
+                    }
+                    if(g == GENESIS_COUNT){
+                        //Clear an OPN2 of LFO
+                        g = FindOPN2ClearLFO();
+                        //Set it up to be fixed to us
+                        syngenesis[g].lfovaries = 0;
+                        syngenesis[g].lfofixed = 1;
+                        syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
+                        //Assign DAC to it, possibly overriding what was there
+                    }
+                    AssignVoiceToOPN2(piindex, pi, g, 6, 1, 1);
+                }
+            }else{
+                //DAC without LFO
+                //Find the best to replace
+                bestscore = 0xFF;
+                for(g=0; g<GENESIS_COUNT; ++g){
+                    score = 0;
+                    for(v=6; v<8; ++v){
+                        i = syngenesis[g].channels[v].use;
+                        if(i >= 2) score += 10;
+                        else if(i == 1) score += 1;
+                    }
+                    if(score < bestscore){
+                        bestscore = score;
+                        bestg = g;
+                    }
+                }
+                //Use bestg
+                AssignVoiceToOPN2(piindex, pi, bestg, 6, 1, 0);
+            }
+            pusage.fm6 = 0;
+        }
+        //Assign FM3 if FM3 Special mode
+        if(pusage.fm3_special){
+            if(pusage.fm3_lfo){
+                if(lfovaries){
+                    //LFO non-fixed; has to get assigned to lfog:3
+                    AssignVoiceToOPN2(piindex, pi, lfog, 3, 0, 1);
+                }else{
+                    //LFO fixed; can we find an OPN2 with FM3 open with the same LFO fixed?
+                    for(g=0; g<GENESIS_COUNT; ++g){
+                        sg = &syngenesis[lfog];
+                        if(sg->lfofixed && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[3].use == 0){
+                            break;
+                        }
+                    }
+                    if(g == GENESIS_COUNT){
+                        //Clear an OPN2 of LFO
+                        g = FindOPN2ClearLFO();
+                        //Set it up to be fixed to us
+                        syngenesis[g].lfovaries = 0;
+                        syngenesis[g].lfofixed = 1;
+                        syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
+                        //Assign FM3 to it, possibly overriding what was there
+                    }
+                    AssignVoiceToOPN2(piindex, pi, g, 3, 0, 1);
+                }
+            }else{
+                //FM3 without LFO
+                //Find the best to replace
+                bestscore = 0xFF;
+                for(g=0; g<GENESIS_COUNT; ++g){
+                    i = syngenesis[g].channels[3].use;
+                    score = (i >= 2) ? 10 : i;
+                    if(score < bestscore){
+                        bestscore = score;
+                        bestg = g;
+                    }
+                }
+                //Use bestg
+                AssignVoiceToOPN2(piindex, pi, bestg, 3, 0, 0);
+            }
+            pusage.fm3 = 0;
+        }
+        //Assign normal voices
+        for(v=1; v<=6; ++v){
+            if(pusage.all & (1 << (v-1))){ //Voice in use
+                if(pusage.all & (1 << (v+5))){ //LFO in use
+                    if(lfovaries){
+                        //Have to use lfog, find best voice
+                        //TODO
+                    }else{
+                        //LFO fixed; can we find an OPN2 with an open voice with the same LFO fixed?
+                        //If not create it
+                        //TODO
+                    }
+                }else{
+                    //No LFO, find best voice anywhere
+                    //TODO
+                }
+            }
+        }
+    }
+}
+
+
 
 void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
     u8 i;

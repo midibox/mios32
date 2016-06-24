@@ -49,19 +49,47 @@ typedef union {
         u8 noisefreqsq3:1;
         u8 dummy2:3;
     };
-} usage_t;
+} usage_bits_t;
 
-
+typedef union {
+    u8 ALL;
+    struct {
+        u8 pi_using:6;
+        u8 use:2; //2 or 3 for in use, 1 for standby, 0 for none
+    };
+} syngenesis_usage_t;
 
 typedef struct {
-    usage_t usage;
-    
+    union{
+        u8 lfobits;
+        struct{
+            u8 fm1_lfo:1;
+            u8 fm2_lfo:1;
+            u8 fm3_lfo:1;
+            u8 fm4_lfo:1;
+            u8 fm5_lfo:1;
+            u8 fm6_lfo:1;
+            u8 dummy:2;
+        };
+    };
+    union{
+        u8 optionbits;
+        struct{
+            u8 lfovaries:1;
+            u8 lfofixed:1;
+            u8 lfofixedspeed:3;
+            u8 noisefreqsq3:1;
+            u8 dummy2:2;
+        };
+    };
+    u16 dummy3;
+    syngenesis_usage_t channels[12];
 } syngenesis_t;
 
 extern syngenesis_t syngenesis[GENESIS_COUNT];
 
 typedef struct {
-    usage_t usage;
+    usage_bits_t usage;
     VgmSource* initsource;
     VgmSource* noteonsource;
     VgmSource* noteoffsource;
