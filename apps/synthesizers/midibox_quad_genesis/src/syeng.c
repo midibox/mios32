@@ -33,7 +33,7 @@ void ReleaseAllPI(synproginstance_t* pi){
     for(i=0; i<12; ++i){
         pimap = pi->mapping[i];
         if(pimap.nodata) continue;
-        sg = syngenesis[pimap.map_chip];
+        sg = &syngenesis[pimap.map_chip];
         if(i == 0){
             //We were using OPN2 globals, so there can't be anything else
             //allocated on this OPN2 besides this PI
@@ -54,7 +54,6 @@ void ReleaseAllPI(synproginstance_t* pi){
                 sg->lfovaries = 0;
                 sg->lfofixed = 0;
             }
-            if(i == 3) sg->fm3_special = 0;
         }else if(i == 7){
             //DAC
             sg->channels[7].ALL = 0;
@@ -93,7 +92,7 @@ void StandbyPI(synproginstance_t* pi){
     for(i=0; i<12; ++i){
         pimap = pi->mapping[i];
         if(pimap.nodata) continue;
-        sg = syngenesis[pimap.map_chip];
+        sg = &syngenesis[pimap.map_chip];
         if(i == 0){
             //We were using OPN2 globals
             DBG("--StandbyPI: setting all voices to standby");
@@ -145,37 +144,33 @@ u8 FindOPN2ClearLFO(){
     //Kick out voices using the LFO
     for(v=1; v<6; ++v){
         if((syngenesis[bestg].lfobits & (1 << (v-1))) && syngenesis[bestg].channels[v].use > 0){
-            ClearPI(proginstances[syngenesis[bestg].channels[v].pi_using]);
+            ClearPI(&proginstances[syngenesis[bestg].channels[v].pi_using]);
         }
     }
     return bestg;
 }
 
-void AssignVoiceToOPN2(u8 piindex, synproginstance_t* pi, u8 g, u8 v, u8 alsodac, u8 vlfo){
-    syngenesis_usage_t* sgusage = &syngenesis[g].channels[v];
+void AssignVoiceToOPN2(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
+    DBG("--Assigning PI %d voice %d to OPN2 %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
+    syngenesis_usage_t* sgusage = &syngenesis[g].channels[vdest];
     if(sgusage->use > 0){
-        ClearPI(proginstances[sgusage->pi_using]);
+        ClearPI(&proginstances[sgusage->pi_using]);
     }
     //Assign voices
+    u8 proper = (vdest >= 1 && vdest <= 6);
     sgusage->use = 2;
     sgusage->pi_using = piindex;
-    syngenesis[g].lfobits |= vlfo << (v-1);
-    //Map PI
-    pi->mapping[v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = v-1, .option = vlfo};
-    //DAC only
-    if(alsodac){
-        sgusage = &syngenesis[g].channels[7];
-        sgusage->use = 2;
-        sgusage->pi_using = piindex;
-        pi->mapping[7] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = 0, .option = 0};
+    if(vlfo && proper){
+        syngenesis[g].lfobits |= 1 << (vdest-1);
     }
+    //Map PI
+    pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = proper ? vdest-1 : 0, .option = vlfo};
 }
 
-void AllocatePI(u8 piindex, usage_t pusage){
+void AllocatePI(u8 piindex, usage_bits_t pusage){
     synproginstance_t* pi = &proginstances[piindex];
     syngenesis_t* sg;
-    syngenesis_usage_t* sgusage;
-    u8 i, g, v, score;
+    u8 i, g, v, use, score;
     u8 bestg, bestv, bestscore;
     u8 lfog, lfovaries;
     u32 recency, maxrecency, now = VGM_Player_GetVGMTime();
@@ -189,12 +184,13 @@ void AllocatePI(u8 piindex, usage_t pusage){
     if(pusage.opn2_globals){
         //We need an entire OPN2; find the best one to replace
         bestscore = 0xFF;
+        bestg = 0;
         for(g=0; g<GENESIS_COUNT; ++g){
             score = 0;
             for(v=0; v<8; ++v){
-                i = syngenesis[g].channels[v].use;
-                if(i >= 2) score += 10;
-                else if(i == 1) score += 1;
+                use = syngenesis[g].channels[v].use;
+                if(use >= 2) score += 10;
+                else if(use == 1) score += 1;
             }
             if(score < bestscore){
                 bestscore = score;
@@ -204,35 +200,28 @@ void AllocatePI(u8 piindex, usage_t pusage){
         //Replace this one
         sg = &syngenesis[bestg];
         for(v=0; v<8; ++v){
-            sgusage = sg->channels[v];
-            //Clear previous PIs using this chip
-            if(sgusage.use > 0){
-                ClearPI(proginstances[sgusage->pi_using]);
-            }
-            //Assign voices to this PI
-            sgusage->use = 2;
-            sgusage->pi_using = piindex;
-            //Set up mapping in PI
-            pi->mapping[v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = bestg, .map_voice = (v >= 1 && v <= 6) ? (v-1) : 0, .option = 1};
+            AssignVoiceToOPN2(piindex, pi, bestg, v, v, 1);
         }
         //Set up additional bits in chip allocation record
-        sg->lfobits = 0x3F;
         sg->lfovaries = 1;
         sg->lfofixed = 0;
     }else{
-        lfovaries = 0;
         if((pusage.all & 0x00000FC0) && !pusage.lfofixed){ //Any LFO used and not fixed
-            lfog = FindOPN2ClearLFO();
             lfovaries = 1;
+            lfog = FindOPN2ClearLFO();
             syngenesis[lfog].lfovaries = 1;
             syngenesis[lfog].lfofixed = 0;
+        }else{
+            lfovaries = 0;
+            lfog = 0;
         }
         //Assign Ch6 if DAC used
         if(pusage.dac){
             if(pusage.fm6_lfo){
                 if(lfovaries){
                     //LFO non-fixed; has to get assigned to lfog:6
-                    AssignVoiceToOPN2(piindex, pi, lfog, 6, 1, 1);
+                    AssignVoiceToOPN2(piindex, pi, lfog, 6, 6, 1);
+                    AssignVoiceToOPN2(piindex, pi, lfog, 7, 7, 0);
                 }else{
                     //LFO fixed; can we find an OPN2 with DAC open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
@@ -250,18 +239,20 @@ void AllocatePI(u8 piindex, usage_t pusage){
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign DAC to it, possibly overriding what was there
                     }
-                    AssignVoiceToOPN2(piindex, pi, g, 6, 1, 1);
+                    AssignVoiceToOPN2(piindex, pi, g, 6, 6, 1);
+                    AssignVoiceToOPN2(piindex, pi, g, 7, 7, 1);
                 }
             }else{
                 //DAC without LFO
                 //Find the best to replace
                 bestscore = 0xFF;
+                bestg = 0;
                 for(g=0; g<GENESIS_COUNT; ++g){
                     score = 0;
                     for(v=6; v<8; ++v){
-                        i = syngenesis[g].channels[v].use;
-                        if(i >= 2) score += 10;
-                        else if(i == 1) score += 1;
+                        use = syngenesis[g].channels[v].use;
+                        if(use >= 2) score += 10;
+                        else if(use == 1) score += 1;
                     }
                     if(score < bestscore){
                         bestscore = score;
@@ -269,7 +260,8 @@ void AllocatePI(u8 piindex, usage_t pusage){
                     }
                 }
                 //Use bestg
-                AssignVoiceToOPN2(piindex, pi, bestg, 6, 1, 0);
+                AssignVoiceToOPN2(piindex, pi, bestg, 6, 6, 0);
+                AssignVoiceToOPN2(piindex, pi, bestg, 7, 7, 0);
             }
             pusage.fm6 = 0;
         }
@@ -278,7 +270,7 @@ void AllocatePI(u8 piindex, usage_t pusage){
             if(pusage.fm3_lfo){
                 if(lfovaries){
                     //LFO non-fixed; has to get assigned to lfog:3
-                    AssignVoiceToOPN2(piindex, pi, lfog, 3, 0, 1);
+                    AssignVoiceToOPN2(piindex, pi, lfog, 3, 3, 1);
                 }else{
                     //LFO fixed; can we find an OPN2 with FM3 open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
@@ -296,46 +288,105 @@ void AllocatePI(u8 piindex, usage_t pusage){
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign FM3 to it, possibly overriding what was there
                     }
-                    AssignVoiceToOPN2(piindex, pi, g, 3, 0, 1);
+                    AssignVoiceToOPN2(piindex, pi, g, 3, 3, 1);
                 }
             }else{
                 //FM3 without LFO
                 //Find the best to replace
                 bestscore = 0xFF;
+                bestg = 0;
                 for(g=0; g<GENESIS_COUNT; ++g){
-                    i = syngenesis[g].channels[3].use;
-                    score = (i >= 2) ? 10 : i;
+                    use = syngenesis[g].channels[3].use;
+                    score = (use >= 2) ? 10 : use;
                     if(score < bestscore){
                         bestscore = score;
                         bestg = g;
                     }
                 }
                 //Use bestg
-                AssignVoiceToOPN2(piindex, pi, bestg, 3, 0, 0);
+                AssignVoiceToOPN2(piindex, pi, bestg, 3, 3, 0);
             }
             pusage.fm3 = 0;
         }
         //Assign normal voices
-        for(v=1; v<=6; ++v){
-            if(pusage.all & (1 << (v-1))){ //Voice in use
-                if(pusage.all & (1 << (v+5))){ //LFO in use
+        for(i=1; i<=6; ++i){
+            if(pusage.all & (1 << (i-1))){ //Voice in use
+                if(pusage.all & (1 << (i+5))){ //LFO in use
                     if(lfovaries){
                         //Have to use lfog, find best voice
-                        //TODO
+                        bestscore = 0xFF;
+                        bestv = 1;
+                        for(v=1; v<=6; ++v){
+                            use = syngenesis[lfog].channels[v].use;
+                            score = (use >= 2) ? 10 : (use << 1);
+                            if(v == 3 || v == 6) ++score;
+                            if(score < bestscore){
+                                bestscore = score;
+                                bestv = v;
+                            }
+                        }
+                        //Use this voice
+                        AssignVoiceToOPN2(piindex, pi, lfog, i, bestv, 1);
                     }else{
-                        //LFO fixed; can we find an OPN2 with an open voice with the same LFO fixed?
-                        //If not create it
-                        //TODO
+                        //LFO fixed: First is there a chip with LFO Fixed correct and a free voice?
+                        bestscore = 0xFF;
+                        for(g=0; g<GENESIS_COUNT; ++g){
+                            sg = &syngenesis[g];
+                            if(!sg->lfofixed || sg->lfofixedspeed != pusage.lfofixedspeed) continue;
+                            //If we have a chip with the right LFO Fixed, check the voices
+                            score = 0;
+                            for(v=1; v<=6; ++v){
+                                use = syngenesis[g].channels[v].use;
+                                if(use >= 2){
+                                    score = 0xFF;
+                                    break;
+                                }
+                            }
+                            if(score == 0) break;
+                        }
+                        if(g == GENESIS_COUNT){
+                            //Find the OPN2 with the least LFO use
+                            g = FindOPN2ClearLFO();
+                        }
+                        //Find best voice
+                        bestscore = 0xFF;
+                        for(v=1; v<=6; ++v){
+                            use = syngenesis[g].channels[v].use;
+                            score = (use >= 2) ? 10 : (use << 1);
+                            if(v == 3 || v == 6) ++score;
+                            if(score < bestscore){
+                                bestscore = score;
+                                bestv = v;
+                            }
+                        }
+                        //Use this voice
+                        AssignVoiceToOPN2(piindex, pi, g, i, bestv, 1);
                     }
                 }else{
                     //No LFO, find best voice anywhere
-                    //TODO
+                    bestscore = 0xFF;
+                    bestg = 0;
+                    bestv = 1;
+                    for(g=0; g<GENESIS_COUNT; ++g){
+                        for(v=1; v<=6; ++v){
+                            use = syngenesis[g].channels[v].use;
+                            score = (use >= 2) ? 10 : (use << 1);
+                            if(v == 3 || v == 6) ++score;
+                            if(score < bestscore){
+                                bestscore = score;
+                                bestv = v;
+                                bestg = g;
+                            }
+                        }
+                    }
+                    //Use this voice
+                    AssignVoiceToOPN2(piindex, pi, bestg, i, bestv, 0);
                 }
             }
         }
     }
+    //TODO allocate PSG voices
 }
-
 
 
 void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
@@ -345,235 +396,15 @@ void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
     }
 }
 
-s32 SyEng_Allocate(synproginstance_t* pi, usage_t pusage){
-    static const u8 voicetryorder[] = {0, 1, 3, 4, 2, 5};
-    u8 o, lfoo = GENESIS_COUNT, v, vc, succeeded, vlfo, i;
-    usage_t* u;
-    //Make temporary copy of chip usage to modify
-    usage_t gusage_copy[GENESIS_COUNT];
-    for(o=0; o<GENESIS_COUNT; ++o){
-        gusage_copy[o].all = syngenesis[o].usage.all;
-    }
-    //Initialize channels to have no data
-    for(i=0; i<12; ++i){
-        pi->mapping[i] = (VgmHead_Channel){.nodata = 1, .mute = 0, .map_chip = 0, .map_voice = 0, .option = 0};
-    }
-    //Allocate OPN2 voices
-    if(pusage.opn2_globals
-            || ((pusage.all & 0x00000FC0) /* Any LFO used */ && !pusage.lfofixed)){
-        //We need a whole unallocated chip
-        for(o=0; o<GENESIS_COUNT; ++o){
-            if(!(gusage_copy[o].all & 0x00FFFFFF)) break; //Ignore PSG mapping
-        }
-        if(o == GENESIS_COUNT) return 0; //No free chip
-        //We're good
-        DBG("--Allocating to entire OPN2 %d", o);
-        u = &gusage_copy[o];
-        u->all |= 0x00007FFF; //Say we're using everything, prevent anything else from being
-                              //assigned to this chip
-        //Assign all voices straightforward
-        pi->mapping[0] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 0};
-        pi->mapping[1] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 1};
-        pi->mapping[2] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 1, .option = 1};
-        pi->mapping[3] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 2, .option = 1};
-        pi->mapping[4] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 3, .option = 1};
-        pi->mapping[5] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 4, .option = 1};
-        pi->mapping[6] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 5, .option = 1};
-        pi->mapping[7] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 0};
-        //Go on to PSG allocation
-    }else{
-        if(pusage.lfofixed){
-            //Allocate all voices using LFO to a chip with the same speed (probably
-            //other PIs from the same program)
-            for(o=0; o<GENESIS_COUNT; ++o){
-                if(gusage_copy[o].lfofixed 
-                        && gusage_copy[o].lfofixedspeed == pusage.lfofixedspeed
-                        && !(pusage.fm6_lfo && pusage.dac && !gusage_copy[o].dac)
-                        && !(pusage.fm3_lfo && pusage.fm3_special && !gusage_copy[o].fm3)) break;
-            }
-            if(o == GENESIS_COUNT){
-                //Maybe there's one which has no LFO used at all?
-                for(o=0; o<GENESIS_COUNT; ++o){
-                    if(!(gusage_copy[o].all & 0x00000FC0)
-                        && !(pusage.fm6_lfo && pusage.dac && !gusage_copy[o].dac)
-                        && !(pusage.fm3_lfo && pusage.fm3_special && !gusage_copy[o].fm3)) break;
-                }
-                if(o == GENESIS_COUNT) return 0; //No chip with appropriate LFO available
-                //Set up this chip to have lfofixed
-                gusage_copy[o].lfofixed = 1;
-                gusage_copy[o].lfofixedspeed = pusage.lfofixedspeed;
-            }
-            //We have our chip, use chip o for all voices that use LFO
-            DBG("--Allocating LFO voices to OPN2 %d", o);
-            lfoo = o;
-        }
-        if(pusage.dac){
-            //Find an OPN2 with an available DAC
-            if(pusage.fm6_lfo){
-                //We already made sure this chip has both DAC and LFO free when
-                //figuring out the LFO
-                o = lfoo;
-            }else{
-                for(o=0; o<GENESIS_COUNT; ++o){
-                    if(!gusage_copy[o].dac && !gusage_copy[o].fm6) break;
-                }
-            }
-            if(o == GENESIS_COUNT) return 0; //No available DAC
-            //Use DAC and Ch6
-            DBG("--Allocating DAC to OPN2 %d", o);
-            gusage_copy[o].dac = 1;
-            gusage_copy[o].fm6 = 1;
-            //Set up routing
-            pi->mapping[6] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 5, .option = pusage.fm6_lfo};
-            pi->mapping[7] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 0};
-            //Mark FM6 as taken care of
-            pusage.fm6 = 0;
-        }
-        if(pusage.fm3_special){
-            //Find an OPN2 with an available Ch3
-            if(pusage.fm3_lfo){
-                //We already made sure this chip has both Ch3 Special and LFO free when
-                //figuring out the LFO
-                o = lfoo;
-            }else{
-                for(o=0; o<GENESIS_COUNT; ++o){
-                    if(!gusage_copy[o].fm3) break;
-                }
-            }
-            if(o == GENESIS_COUNT) return 0; //No available Ch3 Special
-            //Use Ch3 and special
-            DBG("--Allocating Ch3 Special to OPN2 %d", o);
-            gusage_copy[o].fm3 = 1;
-            gusage_copy[o].fm3_special = 1;
-            //Set up routing
-            pi->mapping[3] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 2, .option = pusage.fm3_lfo};
-            //Mark FM3 as taken care of
-            pusage.fm3 = 0;
-        }
-        //Allocate normal OPN2 voices
-        for(v=0; v<6; ++v){
-            if(!(pusage.all & (1 << v))) continue; //Voice not in use
-            vlfo = pusage.all & (1 << (v+6)); //LFO enabled on this voice
-            succeeded = 0;
-            //Find a voice
-            for(i=0; i<6 && !succeeded; ++i){
-                vc = voicetryorder[i]; //Try normal voices first, then Ch3, then Ch6
-                //Find a chip
-                if(vlfo){
-                    o = lfoo; //Only use the chip being used for LFO-needing voices
-                }else{
-                    o = 0; //Try all chips
-                }
-                do{
-                    if(!(gusage_copy[o].all & (1 << vc))){
-                        DBG("--Allocating FM%d to OPN2 %d voice %d", v, o, vc);
-                        gusage_copy[o].all |= 1 << vc;
-                        pi->mapping[1+v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = vc, .option = vlfo};
-                        succeeded = 1;
-                        break;
-                    }
-                    ++o;
-                }while(!vlfo && o < GENESIS_COUNT); //Loop through chips, or exit if LFO
-            }
-            if(!succeeded) return 0; //Could not find a voice
-        }
-    }
-    //Allocate PSG voices
-    if(pusage.noisefreqsq3){
-        //Find a chip with both sq3 and ns available
-        for(o=0; o<GENESIS_COUNT; ++o){
-            if(gusage_copy[o].sq3 || gusage_copy[o].noise) continue;
-            //Found it
-            DBG("--Allocating SQ3/NS to PSG %d", o);
-            gusage_copy[o].sq3 = 1;
-            gusage_copy[o].noise = 1;
-            pi->mapping[10] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 2, .option = 0};
-            pi->mapping[11] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 1};
-            pusage.sq3 = 0;
-            pusage.noise = 0;
-            break;
-        }
-        if(o == GENESIS_COUNT) return 0; //Could not find a chip
-    }else if(pusage.noise){
-        //Find a chip with noise available
-        for(o=0; o<GENESIS_COUNT; ++o){
-            if(gusage_copy[o].noise) continue;
-            //Found it
-            DBG("--Allocating NS to PSG %d", o);
-            gusage_copy[o].noise = 1;
-            pi->mapping[11] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = 0, .option = 1};
-            break;
-        }
-        if(o == GENESIS_COUNT) return 0; //Could not find a chip
-    }
-    //Allocate square voices
-    for(v=0; v<3; ++v){
-        if(!(pusage.all & (1 << (24+v)))) continue; //Voice not used
-        succeeded = 0;
-        //Find a voice
-        for(vc=0; vc<3 && !succeeded; ++vc){
-            //Find a chip
-            for(o=0; o<GENESIS_COUNT; ++o){
-                if(!(gusage_copy[o].all & (1 << (24+vc)))){
-                    DBG("--Allocating SQ%d to PSG %d voice %d", v, o, vc);
-                    gusage_copy[o].all |= 1 << (24+vc);
-                    pi->mapping[8+v] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = o, .map_voice = vc, .option = 0};
-                    succeeded = 1;
-                    break;
-                }
-            }
-        }
-        if(!succeeded) return 0; //Could not find a voice
-    }
-    //Copy usage back to actual chip usage
-    for(o=0; o<GENESIS_COUNT; ++o){
-        syngenesis[o].usage.all = gusage_copy[o].all;
-    }
-    return 1;
-}
-
-void SyEng_Deallocate(synproginstance_t* pi){
-    u8 i, v;
-    VgmHead_Channel pimap;
-    usage_t* usage;
-    for(i=0; i<12; ++i){
-        pimap = pi->mapping[i];
-        if(pimap.nodata) continue;
-        usage = &syngenesis[pimap.map_chip].usage;
-        if(i == 0){
-            //We were using OPN2 globals, so there can't be anything else
-            //allocated on this OPN2 besides this PI
-            DBG("--Deallocate: clearing whole OPN2 %d", pimap.map_chip);
-            usage->all &= 0xFF000000;
-            //Skip to PSG section
-            i = 7;
-            continue;
-        }
-        if(i >= 1 && i <= 6){
-            //FM voice
-            v = pimap.map_voice;
-            usage->all &= ~((u32)((1 << v) | (1 << (v+6)))); //Clear using voice and voice LFO
-        }else if(i == 7){
-            //DAC
-            usage->dac = 0;
-        }else if(i >= 8 && i <= 10){
-            //SQ voice
-            v = pimap.map_voice;
-            usage->all &= ~((u32)(1 << (v+24)));
-        }else{
-            //Noise
-            usage->noise = 0;
-            usage->noisefreqsq3 = 0;
-        }
-        DBG("--Deallocate: clearing voice %d", i);
-    }
-}
-
 void SyEng_Init(){
-    u8 i;
+    u8 i, j;
     //Initialize syngenesis
     for(i=0; i<GENESIS_COUNT; ++i){
-        syngenesis[i].usage.all = 0;
+        syngenesis[i].lfobits = 0;
+        syngenesis[i].optionbits = 0;
+        for(j=0; j<12; ++j){
+            syngenesis[i].channels[j].ALL = 0;
+        }
     }
     //Initialize proginstances
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
@@ -585,15 +416,17 @@ void SyEng_Init(){
         channels[i].trackermode = 0;
         channels[i].program = NULL;
     }
-    //TODO testing only
+    ////////////////////////////////////////////////////////////////////////////
+    /////////////////////////// TEST PROGRAM CH 2 //////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
     //Create program on channel 1
     synprogram_t* prog = malloc(sizeof(synprogram_t));
     channels[1].program = prog;
-    prog->usage = (usage_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                            .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                            .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                            .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
-    prog->rootnote = 60;
+    prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
+    prog->rootnote = 72;
     //Create init VGM file
     VgmSource* source = VGM_SourceRAM_Create();
     VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
@@ -657,6 +490,91 @@ void SyEng_Init(){
     data = malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
+    prog->noteoffsource = source;
+    ////////////////////////////////////////////////////////////////////////////
+    /////////////////////////// TEST PROGRAM CH 3 //////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    //Create program on channel 1
+    prog = malloc(sizeof(synprogram_t));
+    channels[2].program = prog;
+    prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
+    prog->rootnote = 60;
+    //Create init VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    source->opn2clock = 8000000;
+
+    vsr->numcmds = 27;
+    data = malloc(27*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
+    //
+    i=0;
+    //Voice 2
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3D, .data=0x01 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x49, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5D, .data=0x5F };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6D, .data=0x02 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8D, .data=0xA6 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB1, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB5, .data=0xC0 };
+    //Voice 4
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3C, .data=0x01 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x48, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4C, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5C, .data=0x5F };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6C, .data=0x02 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7C, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8C, .data=0xA6 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB0, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB4, .data=0xC0 };
+    //Voice 5
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3D, .data=0x01 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x49, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5D, .data=0x5F };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6D, .data=0x02 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8D, .data=0xA6 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB1, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB5, .data=0xC0 };
+    //
+    prog->initsource = source;
+    //Create note-on VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    source->opn2clock = 8000000;
+    vsr->numcmds = 6;
+    data = malloc(6*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
+        data[0].cmd  = 0x52;
+        data[0].addr = 0xA5;
+    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF1, .data2=0}; //Key on Ch2
+    data[2] = VGM_getOPN2Frequency(64, 0, 8000000); //E
+        data[2].cmd  = 0x53;
+        data[2].addr = 0xA4;
+    data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF4, .data2=0}; //Key on Ch4
+    data[4] = VGM_getOPN2Frequency(67, 0, 8000000); //G
+        data[4].cmd  = 0x53;
+        data[4].addr = 0xA5;
+    data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF5, .data2=0}; //Key on Ch5
+    prog->noteonsource = source;
+    //Create note-off VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    source->opn2clock = 8000000;
+    vsr->numcmds = 3;
+    data = malloc(3*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off Ch2
+    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch2
+    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch2
     prog->noteoffsource = source;
 }
 
@@ -758,34 +676,30 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     }
     //If we took away from another channel which was playing, release its resources
     if(pi->valid && pi->playing == 1){
-        DBG("--Deallocating existing PI resources");
-        SyEng_Deallocate(pi);
+        DBG("--Clearing existing PI resources");
+        ClearPI(pi);
     }
     //Find best allocation
     DBG("--Allocating resources for new PI");
-    if(SyEng_Allocate(pi, prog->usage)){
-        //Start the init VGM
-        if(pi->head != NULL){
-            //Stop playing whatever it was playing
-            VGM_Head_Delete(pi->head);
-            pi->head = NULL;
-        }
-        DBG("--Creating init head");
-        pi->sourcechannel = pkg.chn;
-        pi->valid = 1;
-        pi->playing = 1;
-        pi->playinginit = 1;
-        u32 fmultiplier = VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote);
-        pi->head = VGM_Head_Create(prog->initsource, fmultiplier, 0x1000);
-        DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
-        CopyPIMappingToHead(pi, pi->head);
-        VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-        pi->head->playing = 1;
-        DBG("--Done");
-    }else{
-        //Could not allocate voices
-        DBG("--Could not allocate voices!");
+    AllocatePI(bestrated, prog->usage);
+    //Start the init VGM
+    if(pi->head != NULL){
+        //Stop playing whatever it was playing
+        VGM_Head_Delete(pi->head);
+        pi->head = NULL;
     }
+    DBG("--Creating init head");
+    pi->sourcechannel = pkg.chn;
+    pi->valid = 1;
+    pi->playing = 1;
+    pi->playinginit = 1;
+    u32 fmultiplier = VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote);
+    pi->head = VGM_Head_Create(prog->initsource, fmultiplier, 0x1000);
+    DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
+    CopyPIMappingToHead(pi, pi->head);
+    VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
+    pi->head->playing = 1;
+    DBG("--Done");
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
     synproginstance_t* pi;
@@ -821,8 +735,8 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
     VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
     pi->head->playing = 1;
     //Mark pi as not playing, release resources
-    DBG("--Deallocating resources");
+    DBG("--Standing by PI resources");
+    StandbyPI(pi);
     pi->playing = 0;
-    SyEng_Deallocate(pi);
     DBG("--Done");
 }
