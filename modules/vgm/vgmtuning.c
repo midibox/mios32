@@ -18,6 +18,7 @@ static const u32 midinotefreq[128] = {
 
 void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult){
     u8 block; u32 freq;
+    if(opn2mult == 0) opn2mult = 1;
     block = (writecmd->data >> 3) & 0x07;
     freq = ((u32)(writecmd->data & 0x07) << 8) | writecmd->data2; //Up to 11 bits set
     freq <<= block; //Up to 18 bits set
@@ -38,10 +39,12 @@ void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult){
 }
 
 void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 psgfreq0to1){
+    if(psgmult == 0) psgmult = 1;
     u32 freq = (writecmd->data & 0x0F) | ((writecmd->data2 & 0x3F) << 4);
-    //TODO psgmult
     if(freq == 0 && psgfreq0to1){
         freq = 1;
+    }else{
+        freq = (freq << 12) / psgmult;
     }
     writecmd->data = (writecmd->data & 0xF0) | (freq & 0x0F);
     writecmd->data2 = (freq >> 4) & 0x3F;
