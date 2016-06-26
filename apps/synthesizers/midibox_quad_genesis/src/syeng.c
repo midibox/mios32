@@ -150,21 +150,31 @@ u8 FindOPN2ClearLFO(){
     return bestg;
 }
 
-void AssignVoiceToOPN2(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
-    DBG("--Assigning PI %d voice %d to OPN2 %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
+void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
+    DBG("--Assigning PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
     syngenesis_usage_t* sgusage = &syngenesis[g].channels[vdest];
     if(sgusage->use > 0){
         ClearPI(&proginstances[sgusage->pi_using]);
     }
     //Assign voices
-    u8 proper = (vdest >= 1 && vdest <= 6);
+    u8 proper, map_voice;
+    if(vdest >= 1 && vdest <= 6){
+        proper = 1;
+        map_voice = vdest - 1;
+    }else if(vdest >= 8 && vdest <= 10){
+        proper = 0;
+        map_voice = vdest - 8;
+    }else{
+        proper = 0;
+        map_voice = 0;
+    }
     sgusage->use = 2;
     sgusage->pi_using = piindex;
     if(vlfo && proper){
         syngenesis[g].lfobits |= 1 << (vdest-1);
     }
     //Map PI
-    pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = proper ? vdest-1 : 0, .option = vlfo};
+    pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
 }
 
 void AllocatePI(u8 piindex, usage_bits_t pusage){
@@ -200,7 +210,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
         //Replace this one
         sg = &syngenesis[bestg];
         for(v=0; v<8; ++v){
-            AssignVoiceToOPN2(piindex, pi, bestg, v, v, 1);
+            AssignVoiceToGenesis(piindex, pi, bestg, v, v, 1);
         }
         //Set up additional bits in chip allocation record
         sg->lfovaries = 1;
@@ -220,8 +230,8 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
             if(pusage.fm6_lfo){
                 if(lfovaries){
                     //LFO non-fixed; has to get assigned to lfog:6
-                    AssignVoiceToOPN2(piindex, pi, lfog, 6, 6, 1);
-                    AssignVoiceToOPN2(piindex, pi, lfog, 7, 7, 0);
+                    AssignVoiceToGenesis(piindex, pi, lfog, 6, 6, 1);
+                    AssignVoiceToGenesis(piindex, pi, lfog, 7, 7, 0);
                 }else{
                     //LFO fixed; can we find an OPN2 with DAC open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
@@ -239,8 +249,8 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign DAC to it, possibly overriding what was there
                     }
-                    AssignVoiceToOPN2(piindex, pi, g, 6, 6, 1);
-                    AssignVoiceToOPN2(piindex, pi, g, 7, 7, 1);
+                    AssignVoiceToGenesis(piindex, pi, g, 6, 6, 1);
+                    AssignVoiceToGenesis(piindex, pi, g, 7, 7, 1);
                 }
             }else{
                 //DAC without LFO
@@ -260,8 +270,8 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                     }
                 }
                 //Use bestg
-                AssignVoiceToOPN2(piindex, pi, bestg, 6, 6, 0);
-                AssignVoiceToOPN2(piindex, pi, bestg, 7, 7, 0);
+                AssignVoiceToGenesis(piindex, pi, bestg, 6, 6, 0);
+                AssignVoiceToGenesis(piindex, pi, bestg, 7, 7, 0);
             }
             pusage.fm6 = 0;
         }
@@ -270,7 +280,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
             if(pusage.fm3_lfo){
                 if(lfovaries){
                     //LFO non-fixed; has to get assigned to lfog:3
-                    AssignVoiceToOPN2(piindex, pi, lfog, 3, 3, 1);
+                    AssignVoiceToGenesis(piindex, pi, lfog, 3, 3, 1);
                 }else{
                     //LFO fixed; can we find an OPN2 with FM3 open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
@@ -288,7 +298,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign FM3 to it, possibly overriding what was there
                     }
-                    AssignVoiceToOPN2(piindex, pi, g, 3, 3, 1);
+                    AssignVoiceToGenesis(piindex, pi, g, 3, 3, 1);
                 }
             }else{
                 //FM3 without LFO
@@ -304,7 +314,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                     }
                 }
                 //Use bestg
-                AssignVoiceToOPN2(piindex, pi, bestg, 3, 3, 0);
+                AssignVoiceToGenesis(piindex, pi, bestg, 3, 3, 0);
             }
             pusage.fm3 = 0;
         }
@@ -326,7 +336,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                             }
                         }
                         //Use this voice
-                        AssignVoiceToOPN2(piindex, pi, lfog, i, bestv, 1);
+                        AssignVoiceToGenesis(piindex, pi, lfog, i, bestv, 1);
                     }else{
                         //LFO fixed: First is there a chip with LFO Fixed correct and a free voice?
                         bestscore = 0xFF;
@@ -360,7 +370,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                             }
                         }
                         //Use this voice
-                        AssignVoiceToOPN2(piindex, pi, g, i, bestv, 1);
+                        AssignVoiceToGenesis(piindex, pi, g, i, bestv, 1);
                     }
                 }else{
                     //No LFO, find best voice anywhere
@@ -380,12 +390,70 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                         }
                     }
                     //Use this voice
-                    AssignVoiceToOPN2(piindex, pi, bestg, i, bestv, 0);
+                    AssignVoiceToGenesis(piindex, pi, bestg, i, bestv, 0);
                 }
             }
         }
     }
-    //TODO allocate PSG voices
+    if(pusage.noisefreqsq3){
+        //Need SQ3 and NS together
+        bestscore = 0xFF;
+        bestg = 0;
+        for(g=0; g<GENESIS_COUNT; ++g){
+            use = syngenesis[g].channels[10].use;
+            score = (use >= 2) ? 10 : use;
+            use = syngenesis[g].channels[11].use;
+            score += (use >= 2) ? 10 : use;
+            if(score < bestscore){
+                bestscore = score;
+                bestg = g;
+            }
+        }
+        //Use this chip
+        AssignVoiceToGenesis(piindex, pi, bestg, 10, 10, 0);
+        AssignVoiceToGenesis(piindex, pi, bestg, 11, 11, 0);
+        //Mark these two as taken care of
+        pusage.sq3 = 0;
+        pusage.noise = 0;
+    }
+    if(pusage.noise){
+        //Need NS
+        bestscore = 0xFF;
+        bestg = 0;
+        for(g=0; g<GENESIS_COUNT; ++g){
+            use = syngenesis[g].channels[11].use;
+            score = (use >= 2) ? 10 : use;
+            if(score < bestscore){
+                bestscore = score;
+                bestg = g;
+            }
+        }
+        //Use this chip
+        AssignVoiceToGenesis(piindex, pi, bestg, 11, 11, 0);
+    }
+    //Squares
+    for(i=8; i<=10; ++i){
+        if(pusage.all & (0x01000000 << (i-8))){ //Voice in use
+            //Find best voice anywhere
+            bestscore = 0xFF;
+            bestg = 0;
+            bestv = 8;
+            for(g=0; g<GENESIS_COUNT; ++g){
+                for(v=8; v<=10; ++v){
+                    use = syngenesis[g].channels[v].use;
+                    score = (use >= 2) ? 10 : (use << 1);
+                    if(v == 10) ++score;
+                    if(score < bestscore){
+                        bestscore = score;
+                        bestv = v;
+                        bestg = g;
+                    }
+                }
+            }
+            //Use this voice
+            AssignVoiceToGenesis(piindex, pi, bestg, i, bestv, 0);
+        }
+    }
 }
 
 
@@ -419,7 +487,7 @@ void SyEng_Init(){
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// TEST PROGRAM CH 2 //////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    //Create program on channel 1
+    //Create program on channel 2
     synprogram_t* prog = malloc(sizeof(synprogram_t));
     channels[1].program = prog;
     prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
@@ -494,7 +562,7 @@ void SyEng_Init(){
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// TEST PROGRAM CH 3 //////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    //Create program on channel 1
+    //Create program on channel 3
     prog = malloc(sizeof(synprogram_t));
     channels[2].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
@@ -575,6 +643,68 @@ void SyEng_Init(){
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off Ch2
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch2
     data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch2
+    prog->noteoffsource = source;
+    ////////////////////////////////////////////////////////////////////////////
+    /////////////////////////// TEST PROGRAM CH 4 //////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    //Create program on channel 4
+    prog = malloc(sizeof(synprogram_t));
+    channels[3].program = prog;
+    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=0, .sq2=1, .sq3=0, .noise=0, .noisefreqsq3=0};
+    prog->rootnote = 60;
+    //Create init VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 1;
+    data = malloc(1*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    //
+    i=0;
+    //SQ2
+    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111 }; //Attenuate SQ2
+    //
+    prog->initsource = source;
+    //Create note-on VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 18;
+    data = malloc(18*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
+        data[0].cmd  = 0x50;
+        data[0].addr = 0x00;
+        data[0].data |= 0b10100000;
+    data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110000, .data2=0}; //Turn on SQ2
+    data[2] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0B}; //Wait
+    data[3] = VGM_getPSGFrequency(65, 0, 3579545); //F
+        data[3].cmd  = 0x50;
+        data[3].addr = 0x00;
+        data[3].data |= 0b10100000;
+    data[4] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
+    data[5] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110010, .data2=0}; //Attenuate
+    data[6] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
+    data[7] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110100, .data2=0}; //Attenuate
+    data[8] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
+    data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110110, .data2=0}; //Attenuate
+    data[10] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
+    data[11] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111000, .data2=0}; //Attenuate
+    data[12] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
+    data[13] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111010, .data2=0}; //Attenuate
+    data[14] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
+    data[15] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111100, .data2=0}; //Attenuate
+    data[16] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
+    data[17] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
+    prog->noteonsource = source;
+    //Create note-off VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 1;
+    data = malloc(1*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
     prog->noteoffsource = source;
 }
 
