@@ -15,8 +15,14 @@
 #include <vgm.h>
 #include <genesis.h>
 #include "frontpanel.h"
+#include "app.h" //XXX
+#include <umm_malloc.h> //Definitely XXX
 
 u8 submode;
+
+//TODO XXX FIXME
+u8* pointers[8];
+u8 pointermodes[8];
 
 void DrawUsage(){
     vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
@@ -25,6 +31,8 @@ void DrawUsage(){
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
     MIOS32_LCD_PrintFormattedString("RAM %d/%d Chip %d%% Card %d%%", meminfo.numusedblocks, meminfo.numblocks, chipuse, carduse);
+    MIOS32_LCD_CursorSet(30,0);
+    MIOS32_LCD_PrintFormattedString("DBG %d %d", DEBUG, DEBUG2); //XXX
 }
 void DrawMenu(){
     switch(submode){
@@ -51,6 +59,11 @@ void DrawMenu(){
 
 void Mode_System_Init(){
     submode = 0;
+    u8 i;
+    for(i=0; i<8; ++i){
+        pointers[i] = NULL;
+        pointermodes[i] = 0;
+    }
 }
 void Mode_System_GotFocus(){
     submode = 0;
@@ -59,7 +72,8 @@ void Mode_System_GotFocus(){
 
 void Mode_System_Tick(){
     static u16 prescaler = 0;
-    if(prescaler == 1000){
+    ++prescaler;
+    if(prescaler == 250){
         DrawUsage();
         prescaler = 0;
     }
@@ -73,6 +87,30 @@ void Mode_System_BtnGVoice(u8 gvoice, u8 state){
 }
 void Mode_System_BtnSoftkey(u8 softkey, u8 state){
     if(!state) return;
+    u32 lastusedblocks = umm_numusedblocks;
+    switch(pointermodes[softkey]){
+    case 0:
+        pointers[softkey] = malloc(1 << softkey);
+        //DBG("Bullshit stalling nonsense %d", softkey);
+        DBG("Malloc'd %d bytes, used %d blocks", 1 << softkey, umm_numusedblocks - lastusedblocks);
+        break;
+    case 1:
+        pointers[softkey] = realloc(pointers[softkey], (4 << softkey));
+        DBG("Realloc'd from %d to %d bytes, change %d blocks", (1 << softkey), (4 << softkey), (s32)umm_numusedblocks - (s32)lastusedblocks);
+        break;
+    case 2:
+        pointers[softkey] = realloc(pointers[softkey], (2 << softkey));
+        DBG("Realloc'd from %d to %d bytes, change %d blocks", (4 << softkey), (2 << softkey), (s32)umm_numusedblocks - (s32)lastusedblocks);
+        break;
+    case 3:
+        free(pointers[softkey]);
+        pointers[softkey] = NULL;
+        DBG("Freed %d blocks", lastusedblocks - umm_numusedblocks);
+        break;
+    }
+    ++pointermodes[softkey];
+    if(pointermodes[softkey] == 4) pointermodes[softkey] = 0;
+    /* TODO XXX
     switch(submode){
         case 0:
             switch(softkey){
@@ -103,6 +141,7 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintFormattedString("System invalid submode %d!", submode);
     }
+    */
 }
 void Mode_System_BtnSelOp(u8 op, u8 state){
 

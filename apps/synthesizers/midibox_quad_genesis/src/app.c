@@ -26,6 +26,8 @@
 #include "interface.h"
 #include "syeng.h"
 
+u8 DEBUG;
+u8 DEBUG2;
 
 static const u8 charset_mbvgm[8*8] = {
   //Unused character 0
@@ -94,8 +96,7 @@ void APP_Init(void){
     //Initialize interface
     Interface_Init();
     
-    //Initialize synth engine
-    SyEng_Init();
+    
 }
 
 
@@ -103,12 +104,33 @@ void APP_Init(void){
 // This task is running endless in background
 /////////////////////////////////////////////////////////////////////////////
 void APP_Background(void){
-    u8 i;
+    static u8 didsdcard = 0;
+    s32 res;
+    if(!didsdcard){
+        while(1){
+            res = FILE_CheckSDCard();
+            if(res == 3 || res < 0) break;
+            for(res = 0; res < 100; ++res){
+                MIOS32_DELAY_Wait_uS(1000);
+            }
+        }
+        if(res < 0){
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("ERRORERRORERRORERRORERRORERRORERRORERROR");
+        }
+        DEBUG = res;
+        for(res = 0; res < 1000; ++res){
+            MIOS32_DELAY_Wait_uS(1000);
+        }
+        
+        //Initialize synth engine
+        SyEng_Init();
+        
+        didsdcard = 1;
+    }
     MIOS32_BOARD_LED_Set(0b1000, 0b1000);
     Interface_Background();
-    for(i=0; i<GENESIS_COUNT; ++i){
-        DrawGenesisActivity(i);
-    }
     MIOS32_BOARD_LED_Set(0b1000, 0b0000);
 }
 
@@ -125,13 +147,14 @@ void APP_Tick(void){
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
     SyEng_Tick();
     Interface_Tick();
+    ++prescaler;
     if(prescaler == 1000){
         prescaler = 0;
         VGM_PerfMon_Second();
         vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
         FrontPanel_DrawLoad(0, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP) / 20);
-        FrontPanel_DrawLoad(0, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD) / 20);
-        FrontPanel_DrawLoad(0, (u8)((u32)meminfo.numusedblocks * 9ul / (u32)meminfo.numblocks));
+        FrontPanel_DrawLoad(1, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD) / 20);
+        FrontPanel_DrawLoad(2, (u8)((u32)meminfo.numusedblocks * 9ul / (u32)meminfo.numblocks));
     }
 }
 
