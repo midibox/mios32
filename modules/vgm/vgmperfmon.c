@@ -41,8 +41,7 @@ u8 VGM_PerfMon_GetTaskCPU(u8 task){
 
 vgm_meminfo_t VGM_PerfMon_GetMemInfo(){
     vgm_meminfo_t ret;
-    umm_info(NULL, 0);
-    ret.numblocks = heapInfo.totalBlocks;
-    ret.numusedblocks = heapInfo.usedBlocks;
+    ret.numblocks = umm_numblocks;
+    ret.numusedblocks = umm_numusedblocks;
     return ret;
 }
