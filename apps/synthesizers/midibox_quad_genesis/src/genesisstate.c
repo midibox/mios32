@@ -14,12 +14,10 @@
 #include "genesisstate.h"
 
 #include <genesis.h>
+#include <vgm.h>
 #include "frontpanel.h"
 
 void DrawGenesisActivity(u8 g){
-    static u8 lastdac = 0x80;
-    static u16 dacvu = 0;
-    static u16 vutimer = 0;
     //FM voices
     if(g >= GENESIS_COUNT) return;
     u8 v, o, k;
@@ -30,25 +28,6 @@ void DrawGenesisActivity(u8 g){
         }
         FrontPanel_GenesisLEDSet(g, v+1, 0, k);
     }
-    //DAC
-    u8 dac = genesis[g].opn2.dac_high;
-    u8 dacplaying = (genesis[g].opn2.dac_enable && dac != lastdac);
-    FrontPanel_GenesisLEDSet(g, 7, 0, dacplaying);
-    if(dacplaying){
-        if(dac >= 0xC0 || dac < 0x40) dacvu = 0x1FF;
-        else if(dac >= 0xA0 || dac < 0x60) dacvu = 0x0FF;
-        else if(dac >= 0x90 || dac < 0x70) dacvu = 0x07F;
-        else dacvu = 0x03F;
-        vutimer = 0;
-    }else{
-        ++vutimer;
-        if(vutimer > 700){
-            dacvu >>= 1;
-            vutimer = 0;
-        }
-    }
-    FrontPanel_DrawDACValue(dacvu);
-    lastdac = genesis[g].opn2.dac_high;
     //PSG voices
     for(v=0; v<4; v++){
         FrontPanel_GenesisLEDSet(g, v+8, 0, genesis[g].psg.voice[v].atten != 0xF);
@@ -150,10 +129,33 @@ extern void ClearGenesisState_Chan(){
     FrontPanel_LEDSet(FP_LED_OUTR, 0);
 }
 void DrawGenesisState_DAC(u8 g){
-    
+    static u8 lastdac = 0x80;
+    static u16 dacvu = 0;
+    static u32 timer = 0;
+    //DAC
+    u8 dac = genesis[g].opn2.dac_high;
+    u8 dacplaying = (genesis[g].opn2.dac_enable && dac != lastdac);
+    FrontPanel_GenesisLEDSet(g, 7, 0, dacplaying);
+    u32 now = VGM_Player_GetVGMTime();
+    if(dacplaying){
+        if(dac >= 0xC0 || dac < 0x40) dacvu = 0x1FF;
+        else if(dac >= 0xA0 || dac < 0x60) dacvu = 0x0FF;
+        else if(dac >= 0x90 || dac < 0x70) dacvu = 0x07F;
+        else dacvu = 0x03F;
+        timer = now;
+    }else{
+        if(now - timer > 1500){
+            dacvu >>= 1;
+            timer = now;
+        }
+    }
+    FrontPanel_DrawDACValue(dacvu);
+    lastdac = genesis[g].opn2.dac_high;
+    FrontPanel_LEDSet(FP_LED_DACEN, genesis[g].opn2.dac_enable);
 }
 extern void ClearGenesisState_DAC(){
-    
+    FrontPanel_DrawDACValue(0);
+    FrontPanel_LEDSet(FP_LED_DACEN, 0);
 }
 void DrawGenesisState_OPN2(u8 g){
     FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);

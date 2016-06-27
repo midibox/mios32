@@ -15,7 +15,9 @@
 
 #include <genesis.h>
 #include <vgm.h>
+#include "app.h" //XXX
 
+#define UNUSED_RECENCY 0x01000000ul //about 362 seconds ago
 
 syngenesis_t syngenesis[GENESIS_COUNT];
 synproginstance_t proginstances[MBQG_NUM_PROGINSTANCES];
@@ -24,7 +26,6 @@ synchannel_t channels[16*MBQG_NUM_PORTS];
 //TODO reset voice/genesis states when releasing
 //TODO divide chips that use globals by the types of globals used, so multiple
 //voices using the same effect e.g. "ugly" can play together
-//TODO take recency into account when items have the same score otherwise
 
 void ReleaseAllPI(synproginstance_t* pi){
     u8 i, v;
@@ -80,7 +81,7 @@ void ClearPI(synproginstance_t* pi){
     pi->valid = 0;
     pi->playing = 0;
     pi->playinginit = 0;
-    pi->recency = VGM_Player_GetVGMTime() - (u32)0x80000000; //as far away as possible
+    pi->recency = VGM_Player_GetVGMTime() - UNUSED_RECENCY;
     //Release all resources
     ReleaseAllPI(pi);
 }
@@ -194,17 +195,20 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
     if(pusage.opn2_globals){
         //We need an entire OPN2; find the best one to replace
         bestscore = 0xFF;
+        maxrecency = 0;
         bestg = 0;
         for(g=0; g<GENESIS_COUNT; ++g){
             score = 0;
+            recency = 0;
             for(v=0; v<8; ++v){
                 use = syngenesis[g].channels[v].use;
-                if(use >= 2) score += 10;
-                else if(use == 1) score += 1;
+                score += (use >= 2) ? 10 : use;
+                recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
             }
-            if(score < bestscore){
+            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                 bestscore = score;
                 bestg = g;
+                maxrecency = recency;
             }
         }
         //Replace this one
@@ -256,17 +260,20 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                 //DAC without LFO
                 //Find the best to replace
                 bestscore = 0xFF;
+                maxrecency = 0;
                 bestg = 0;
                 for(g=0; g<GENESIS_COUNT; ++g){
                     score = 0;
+                    recency = 0;
                     for(v=6; v<8; ++v){
                         use = syngenesis[g].channels[v].use;
-                        if(use >= 2) score += 10;
-                        else if(use == 1) score += 1;
+                        score += (use >= 2) ? 10 : use;
+                        recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
                     }
-                    if(score < bestscore){
+                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
                         bestscore = score;
                         bestg = g;
+                        maxrecency = recency;
                     }
                 }
                 //Use bestg
@@ -304,13 +311,16 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                 //FM3 without LFO
                 //Find the best to replace
                 bestscore = 0xFF;
+                maxrecency = 0;
                 bestg = 0;
                 for(g=0; g<GENESIS_COUNT; ++g){
                     use = syngenesis[g].channels[3].use;
                     score = (use >= 2) ? 10 : use;
-                    if(score < bestscore){
+                    recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[3].pi_using].recency) : UNUSED_RECENCY;
+                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
                         bestscore = score;
                         bestg = g;
+                        maxrecency = recency;
                     }
                 }
                 //Use bestg
@@ -325,14 +335,17 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                     if(lfovaries){
                         //Have to use lfog, find best voice
                         bestscore = 0xFF;
+                        maxrecency = 0;
                         bestv = 1;
                         for(v=1; v<=6; ++v){
                             use = syngenesis[lfog].channels[v].use;
                             score = (use >= 2) ? 10 : (use << 1);
+                            recency = (use >= 1) ? (now - proginstances[syngenesis[lfog].channels[v].pi_using].recency) : UNUSED_RECENCY;
                             if(v == 3 || v == 6) ++score;
-                            if(score < bestscore){
+                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                                 bestscore = score;
                                 bestv = v;
+                                maxrecency = recency;
                             }
                         }
                         //Use this voice
@@ -344,11 +357,11 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                             sg = &syngenesis[g];
                             if(!sg->lfofixed || sg->lfofixedspeed != pusage.lfofixedspeed) continue;
                             //If we have a chip with the right LFO Fixed, check the voices
-                            score = 0;
+                            score = 0xFF;
                             for(v=1; v<=6; ++v){
                                 use = syngenesis[g].channels[v].use;
-                                if(use >= 2){
-                                    score = 0xFF;
+                                if(use <= 1){
+                                    score = 0;
                                     break;
                                 }
                             }
@@ -360,13 +373,16 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                         }
                         //Find best voice
                         bestscore = 0xFF;
+                        maxrecency = 0;
                         for(v=1; v<=6; ++v){
                             use = syngenesis[g].channels[v].use;
                             score = (use >= 2) ? 10 : (use << 1);
+                            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
                             if(v == 3 || v == 6) ++score;
-                            if(score < bestscore){
+                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                                 bestscore = score;
                                 bestv = v;
+                                maxrecency = recency;
                             }
                         }
                         //Use this voice
@@ -375,17 +391,20 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
                 }else{
                     //No LFO, find best voice anywhere
                     bestscore = 0xFF;
+                    maxrecency = 0;
                     bestg = 0;
                     bestv = 1;
                     for(g=0; g<GENESIS_COUNT; ++g){
                         for(v=1; v<=6; ++v){
                             use = syngenesis[g].channels[v].use;
                             score = (use >= 2) ? 10 : (use << 1);
+                            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
                             if(v == 3 || v == 6) ++score;
-                            if(score < bestscore){
+                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                                 bestscore = score;
                                 bestv = v;
                                 bestg = g;
+                                maxrecency = recency;
                             }
                         }
                     }
@@ -398,15 +417,19 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
     if(pusage.noisefreqsq3){
         //Need SQ3 and NS together
         bestscore = 0xFF;
+        maxrecency = 0;
         bestg = 0;
         for(g=0; g<GENESIS_COUNT; ++g){
             use = syngenesis[g].channels[10].use;
             score = (use >= 2) ? 10 : use;
+            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[10].pi_using].recency) : UNUSED_RECENCY;
             use = syngenesis[g].channels[11].use;
             score += (use >= 2) ? 10 : use;
-            if(score < bestscore){
+            recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[11].pi_using].recency) : UNUSED_RECENCY;
+            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                 bestscore = score;
                 bestg = g;
+                maxrecency = recency;
             }
         }
         //Use this chip
@@ -419,13 +442,16 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
     if(pusage.noise){
         //Need NS
         bestscore = 0xFF;
+        maxrecency = 0;
         bestg = 0;
         for(g=0; g<GENESIS_COUNT; ++g){
             use = syngenesis[g].channels[11].use;
             score = (use >= 2) ? 10 : use;
-            if(score < bestscore){
+            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[11].pi_using].recency) : UNUSED_RECENCY;
+            if(score < bestscore || (score == bestscore && recency > maxrecency)){
                 bestscore = score;
                 bestg = g;
+                maxrecency = recency;
             }
         }
         //Use this chip
@@ -436,17 +462,20 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
         if(pusage.all & (0x01000000 << (i-8))){ //Voice in use
             //Find best voice anywhere
             bestscore = 0xFF;
+            maxrecency = 0;
             bestg = 0;
             bestv = 8;
             for(g=0; g<GENESIS_COUNT; ++g){
                 for(v=8; v<=10; ++v){
                     use = syngenesis[g].channels[v].use;
                     score = (use >= 2) ? 10 : (use << 1);
+                    recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
                     if(v == 10) ++score;
-                    if(score < bestscore){
+                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
                         bestscore = score;
                         bestv = v;
                         bestg = g;
+                        maxrecency = recency;
                     }
                 }
             }
@@ -485,9 +514,8 @@ void SyEng_Init(){
         channels[i].program = NULL;
     }
     ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////// TEST PROGRAM CH 2 //////////////////////////////
+    //////////////////////////// OPN2 GRAND PIANO //////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    //Create program on channel 2
     synprogram_t* prog = malloc(sizeof(synprogram_t));
     channels[1].program = prog;
     prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
@@ -560,11 +588,10 @@ void SyEng_Init(){
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////// TEST PROGRAM CH 3 //////////////////////////////
+    /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    //Create program on channel 3
     prog = malloc(sizeof(synprogram_t));
-    channels[2].program = prog;
+    channels[5].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
                                  .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
@@ -645,11 +672,10 @@ void SyEng_Init(){
     data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch2
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////// TEST PROGRAM CH 4 //////////////////////////////
+    ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    //Create program on channel 4
     prog = malloc(sizeof(synprogram_t));
-    channels[3].program = prog;
+    channels[4].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
                                  .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
@@ -706,6 +732,92 @@ void SyEng_Init(){
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
     prog->noteoffsource = source;
+    ////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    prog = malloc(sizeof(synprogram_t));
+    channels[2].program = prog;
+    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=0, .sq2=0, .sq3=1, .noise=1, .noisefreqsq3=1};
+    prog->rootnote = 42;
+    //Create init VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 3;
+    data = malloc(3*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    //
+    i=0;
+    //SQ2
+    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11100111 }; //Pulse wave, SQ3
+    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111 }; //Attenuate noise
+    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
+    //
+    prog->initsource = source;
+    //Create note-on VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 2;
+    data = malloc(2*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    //data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
+        data[0].cmd   = 0x50;
+        data[0].addr  = 0x00;
+        data[0].data  = 0b11000000;
+        data[0].data2 = 0b00001000;
+    data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11110000, .data2=0}; //Turn on noise
+    prog->noteonsource = source;
+    //Create note-off VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 1;
+    data = malloc(1*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
+    prog->noteoffsource = source;
+    ////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////// UNDER LOGIC ////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    prog = malloc(sizeof(synprogram_t));
+    channels[3].program = prog;
+    prog->usage = (usage_bits_t){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
+    prog->rootnote = 76;
+    //Create init VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 1;
+    data = malloc(1*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    i=0;
+    //Some BS which we don't care about
+    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
+    prog->initsource = source;
+    //Create note-on VGM file
+    source = VGM_SourceStream_Create();
+    DEBUG2 = VGM_SourceStream_Start(source, "UNDERLOG.vgm");
+    prog->noteonsource = source;
+    //Create note-off VGM file
+    source = VGM_SourceRAM_Create();
+    vsr = (VgmSourceRAM*)source->data;
+    vsr->numcmds = 10;
+    data = malloc(10*sizeof(VgmChipWriteCmd));
+    vsr->cmds = data;
+    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off
+    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off
+    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x02, .data2=0}; //Key off
+    data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off
+    data[4] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off
+    data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x06, .data2=0}; //Key off
+    data[6] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10011111, .data2=0}; //Turn off
+    data[7] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
+    data[8] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111, .data2=0}; //Turn off
+    data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off
+    prog->noteoffsource = source;
 }
 
 void SyEng_Tick(){
@@ -753,6 +865,7 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     //5: Other channel, playing
     u8 bestrating = 0xFF;
     u8 bestrated = 0xFF;
+    u32 recency, maxrecency = 0, now = VGM_Player_GetVGMTime();
     u8 rating, i;
     synproginstance_t* pi;
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
@@ -776,9 +889,11 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
                 }
             }
         }
-        if(rating < bestrating){
+        recency = now - pi->recency;
+        if(rating < bestrating || (rating == bestrating && recency > maxrecency)){
             bestrating = rating;
             bestrated = i;
+            maxrecency = recency;
         }
     }
     pi = &proginstances[bestrated];
@@ -799,8 +914,9 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
         DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
         CopyPIMappingToHead(pi, pi->head);
         VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-        pi->playing = 1;
         pi->head->playing = 1;
+        pi->playing = 1;
+        pi->recency = VGM_Player_GetVGMTime();
         DBG("--Done");
         return;
     }
@@ -829,6 +945,7 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     CopyPIMappingToHead(pi, pi->head);
     VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
     pi->head->playing = 1;
+    pi->recency = VGM_Player_GetVGMTime();
     DBG("--Done");
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
@@ -868,5 +985,6 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
     DBG("--Standing by PI resources");
     StandbyPI(pi);
     pi->playing = 0;
+    pi->recency = VGM_Player_GetVGMTime();
     DBG("--Done");
 }
