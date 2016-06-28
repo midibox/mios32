@@ -74,6 +74,9 @@ static const u8 charset_mbvgm[8*8] = {
 /////////////////////////////////////////////////////////////////////////////
 
 void APP_Init(void){
+    //Initialize VGM Second Heap
+    vgmh2_init();
+    
     // initialize all LEDs
     MIOS32_BOARD_LED_Init(0xffffffff);
 

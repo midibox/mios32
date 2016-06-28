@@ -177,8 +177,8 @@ static const u32 algwidgets[9] = {
 
 s8 FP_SRADDR[7];
 Button_T FP_BUTTONS[64*3];
-LED_T FP_LEDS[125];
-LEDRing_T LED_RINGS[18];
+LED_T FP_LEDS[FP_LED_COUNT];
+LEDRing_T LED_RINGS[FP_LEDR_COUNT];
 GenesisLEDColumn_T GENESIS_COLUMNS[0xC];
 
 void FrontPanel_Init(){
@@ -420,7 +420,7 @@ void FrontPanel_Init(){
     enc_config.cfg.type = DETENTED3;
     enc_config.cfg.speed = NORMAL;
     enc_config.cfg.speed_par = 0;
-    for(i=0; i<21; i++){
+    for(i=0; i<FP_E_COUNT; i++){
         MIOS32_ENC_ConfigSet(i, enc_config);
     }
     
@@ -634,6 +634,18 @@ void FrontPanel_Init(){
     FP_LEDS[FP_LED_DIG_FREQ_3]  = (LED_T){ .pin = 4, .sr = 7, .row = 0 };
     FP_LEDS[FP_LED_DIG_FREQ_4]  = (LED_T){ .pin = 7, .sr = 8, .row = 0 };
     FP_LEDS[FP_LED_DIG_OCT]     = (LED_T){ .pin = 7, .sr = 7, .row = 0 };
+    FP_LEDS[FP_LED_RING_FB_1]   = (LED_T){ .pin = 3, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_RING_FB_2]   = (LED_T){ .pin = 3, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_RING_FB_3]   = (LED_T){ .pin = 3, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_RING_FB_4]   = (LED_T){ .pin = 3, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_RING_FB_5]   = (LED_T){ .pin = 2, .sr = 9, .row = 3 };
+    FP_LEDS[FP_LED_RING_FB_6]   = (LED_T){ .pin = 2, .sr = 9, .row = 2 };
+    FP_LEDS[FP_LED_RING_FB_7]   = (LED_T){ .pin = 2, .sr = 9, .row = 1 };
+    FP_LEDS[FP_LED_RING_FB_8]   = (LED_T){ .pin = 2, .sr = 9, .row = 0 };
+    FP_LEDS[FP_LED_RING_LFOA_1] = (LED_T){ .pin = 6, .sr = 8, .row = 4 };
+    FP_LEDS[FP_LED_RING_LFOA_2] = (LED_T){ .pin = 6, .sr = 8, .row = 6 };
+    FP_LEDS[FP_LED_RING_LFOA_3] = (LED_T){ .pin = 6, .sr = 8, .row = 7 };
+    FP_LEDS[FP_LED_RING_LFOA_4] = (LED_T){ .pin = 6, .sr = 8, .row = 5 };
     
     //Configure LED rings
     LED_RINGS[FP_LEDR_OP1LVL]   = (LEDRing_T){ .special = 0, .offset = 0, .losr = 7, .lopin = 0, .hisr = 7, .hipin = 1 };
@@ -653,7 +665,7 @@ void FrontPanel_Init(){
     LED_RINGS[FP_LEDR_LFOFDEP]  = (LEDRing_T){ .special = 0, .offset = 4, .losr = 8, .lopin = 4, .hisr = 8, .hipin = 5 };
     LED_RINGS[FP_LEDR_LFOADEP]  = (LEDRing_T){ .special = 1 };
     LED_RINGS[FP_LEDR_LFOFREQ]  = (LEDRing_T){ .special = 0, .offset = 4, .losr = 2, .lopin = 6, .hisr = 2, .hipin = 7 };
-    LED_RINGS[FP_LEDR_FEEDBACK] = (LEDRing_T){ .special = 2 };
+    LED_RINGS[FP_LEDR_FEEDBACK] = (LEDRing_T){ .special = 1 };
     
     //Configure Genesis LED columns
     GENESIS_COLUMNS[0x0] = (GenesisLEDColumn_T){ .sr = 3, .pin = 1 };
@@ -717,21 +729,41 @@ void FrontPanel_EncoderChange(u32 encoder, u32 incrementer){
 }
 
 void FrontPanel_LEDSet(u32 led, u8 value){
-    if(led >= 125) return;
+    if(led >= FP_LED_COUNT) return;
     LED_T l = FP_LEDS[led];
     MATRIX_LED_SET(l.row, l.sr, l.pin, value);
 }
 
 void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
-    if(ring >= 18) return;
+    if(ring >= FP_LEDR_COUNT) return;
+    u8 d = 0;
+    u8 light;
     LEDRing_T ledring = LED_RINGS[ring];
     if(ledring.special){
-        //TODO special case handlers
+        u8 startled, max;
+        switch(ring){
+            case FP_LEDR_LFOADEP:
+                startled = FP_LED_RING_LFOA_1;
+                max = 4;
+                break;
+            case FP_LEDR_FEEDBACK:
+                startled = FP_LED_RING_FB_1;
+                max = 8;
+                break;
+            default:
+                return;
+        }
+        LED_T l;
+        for(d=0; d<max; ++d){
+            if(mode == 0) light = (d == value);
+            else if(mode == 1) light = (d <= value);
+            else light = 0;
+            l = FP_LEDS[startled + d];
+            MATRIX_LED_SET(l.row, l.sr, l.pin, light);
+        }
     }else{
         value += ledring.offset;
         s8 r; 
-        u8 d = 0;
-        u8 light;
         for(r=0; r<8; r++){
             if(mode == 0) light = (d == value);
             else if(mode == 1) light = (d <= value);

@@ -110,6 +110,7 @@ typedef union {
 #define FP_E_LFOADEP 18
 #define FP_E_LFOFREQ 19
 #define FP_E_FEEDBACK 20
+#define FP_E_COUNT 21
 
 typedef union {
     u16 all;
@@ -246,6 +247,20 @@ typedef union {
 #define FP_LED_DIG_FREQ_3 122
 #define FP_LED_DIG_FREQ_4 123
 #define FP_LED_DIG_OCT 124
+#define FP_LED_RING_FB_1 125
+#define FP_LED_RING_FB_2 126
+#define FP_LED_RING_FB_3 127
+#define FP_LED_RING_FB_4 128
+#define FP_LED_RING_FB_5 129
+#define FP_LED_RING_FB_6 130
+#define FP_LED_RING_FB_7 131
+#define FP_LED_RING_FB_8 132
+#define FP_LED_RING_LFOA_1 133
+#define FP_LED_RING_LFOA_2 134
+#define FP_LED_RING_LFOA_3 135
+#define FP_LED_RING_LFOA_4 136
+#define FP_LED_COUNT 137
+
 
 typedef union {
     u32 all;
@@ -277,6 +292,7 @@ typedef union {
 #define FP_LEDR_LFOADEP 15
 #define FP_LEDR_LFOFREQ 16
 #define FP_LEDR_FEEDBACK 17
+#define FP_LEDR_COUNT 18
 
 typedef union {
     u8 all;

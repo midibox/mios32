@@ -16,7 +16,6 @@
 #include <genesis.h>
 #include "frontpanel.h"
 #include "app.h" //XXX
-#include <umm_malloc.h> //Definitely XXX
 
 u8 submode;
 
@@ -25,12 +24,12 @@ u8* pointers[8];
 u8 pointermodes[8];
 
 void DrawUsage(){
-    vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
+    //vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
     u8 chipuse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP);
     u8 carduse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD);
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("RAM %d/%d Chip %d%% Card %d%%", meminfo.numusedblocks, meminfo.numblocks, chipuse, carduse);
+    MIOS32_LCD_PrintFormattedString("RAM %d/%d Chip %d%% Card %d%%", vgmh2_numusedblocks, VGMH2_NUMBLOCKS, chipuse, carduse);
     MIOS32_LCD_CursorSet(30,0);
     MIOS32_LCD_PrintFormattedString("DBG %d %d", DEBUG, DEBUG2); //XXX
 }
@@ -87,25 +86,24 @@ void Mode_System_BtnGVoice(u8 gvoice, u8 state){
 }
 void Mode_System_BtnSoftkey(u8 softkey, u8 state){
     if(!state) return;
-    u32 lastusedblocks = umm_numusedblocks;
+    u32 lastusedblocks = vgmh2_numusedblocks;
     switch(pointermodes[softkey]){
     case 0:
-        pointers[softkey] = malloc(1 << softkey);
-        //DBG("Bullshit stalling nonsense %d", softkey);
-        DBG("Malloc'd %d bytes, used %d blocks", 1 << softkey, umm_numusedblocks - lastusedblocks);
+        pointers[softkey] = vgmh2_malloc(1 << softkey);
+        DBG("Malloc'd %d bytes, used %d blocks", 1 << softkey, vgmh2_numusedblocks - lastusedblocks);
         break;
     case 1:
-        pointers[softkey] = realloc(pointers[softkey], (4 << softkey));
-        DBG("Realloc'd from %d to %d bytes, change %d blocks", (1 << softkey), (4 << softkey), (s32)umm_numusedblocks - (s32)lastusedblocks);
+        pointers[softkey] = vgmh2_realloc(pointers[softkey], (4 << softkey));
+        DBG("Realloc'd from %d to %d bytes, change %d blocks", (1 << softkey), (4 << softkey), (s32)vgmh2_numusedblocks - (s32)lastusedblocks);
         break;
     case 2:
-        pointers[softkey] = realloc(pointers[softkey], (2 << softkey));
-        DBG("Realloc'd from %d to %d bytes, change %d blocks", (4 << softkey), (2 << softkey), (s32)umm_numusedblocks - (s32)lastusedblocks);
+        pointers[softkey] = vgmh2_realloc(pointers[softkey], (2 << softkey));
+        DBG("Realloc'd from %d to %d bytes, change %d blocks", (4 << softkey), (2 << softkey), (s32)vgmh2_numusedblocks - (s32)lastusedblocks);
         break;
     case 3:
-        free(pointers[softkey]);
+        vgmh2_free(pointers[softkey]);
         pointers[softkey] = NULL;
-        DBG("Freed %d blocks", lastusedblocks - umm_numusedblocks);
+        DBG("Freed %d blocks", lastusedblocks - vgmh2_numusedblocks);
         break;
     }
     ++pointermodes[softkey];
