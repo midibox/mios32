@@ -22,6 +22,7 @@
 #include "vgmsource.h"
 #include "vgmstream.h"
 #include "vgmtuning.h"
+#include "vgm_heap2.h"
 
 extern void VGM_Init();
 
