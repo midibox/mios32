@@ -799,7 +799,7 @@ void SyEng_Init(){
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
-    DEBUG2 = VGM_SourceStream_Start(source, "UNDERLOG.vgm");
+    DEBUG2 = VGM_SourceStream_Start(source, "S2CREDIT.vgm");
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
