@@ -13,9 +13,10 @@
 
 #include "vgmqueue.h"
 #include "vgmtuning.h"
+#include "vgm_heap2.h"
 
 VgmHeadQueue* VGM_HeadQueue_Create(VgmSource* source){
-    VgmHeadQueue* vhq = malloc(sizeof(VgmHeadQueue));
+    VgmHeadQueue* vhq = vgmh2_malloc(sizeof(VgmHeadQueue));
     vhq->busy = 0;
     vhq->start = 0;
     vhq->depth = 0;
@@ -23,7 +24,7 @@ VgmHeadQueue* VGM_HeadQueue_Create(VgmSource* source){
 }
 void VGM_HeadQueue_Delete(void* headqueue){
     VgmHeadQueue* vhq = (VgmHeadQueue*)headqueue;
-    free(vhq);
+    vgmh2_free(vhq);
 }
 void VGM_HeadQueue_Restart(VgmHead* head){
     //do nothing, there's no concept of this
@@ -112,7 +113,7 @@ void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq){
 }
 
 VgmSource* VGM_SourceQueue_Create(){
-    VgmSource* source = malloc(sizeof(VgmSource));
+    VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_QUEUE;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
