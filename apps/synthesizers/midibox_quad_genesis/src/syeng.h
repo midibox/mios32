@@ -82,7 +82,24 @@ typedef struct {
             u8 dummy2:2;
         };
     };
-    u16 dummy3;
+    union{
+        u16 trackerbits;
+        struct{
+            u8 opn2_trkr:1;
+            u8 fm1_trkr:1;
+            u8 fm2_trkr:1;
+            u8 fm3_trkr:1;
+            u8 fm4_trkr:1;
+            u8 fm5_trkr:1;
+            u8 fm6_trkr:1;
+            u8 dac_trkr:1;
+            u8 sq1_trkr:1;
+            u8 sq2_trkr:1;
+            u8 sq3_trkr:1;
+            u8 noise_trkr:1;
+            u8 dummy3:4;
+        };
+    };
     syngenesis_usage_t channels[12];
 } syngenesis_t;
 

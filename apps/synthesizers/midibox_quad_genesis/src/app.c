@@ -151,13 +151,13 @@ void APP_Tick(void){
     SyEng_Tick();
     Interface_Tick();
     ++prescaler;
-    if(prescaler == 1000){
+    if(prescaler == 100){
         prescaler = 0;
-        VGM_PerfMon_Second();
-        vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
-        FrontPanel_DrawLoad(0, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP) / 20);
-        FrontPanel_DrawLoad(1, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD) / 20);
-        FrontPanel_DrawLoad(2, (u8)((u32)meminfo.numusedblocks * 9ul / (u32)meminfo.numblocks));
+        VGM_PerfMon_Periodic();
+        vgm_meminfo_t m = VGM_PerfMon_GetMemInfo();
+        FrontPanel_DrawLoad(0, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP) / 10); // 50% load shows as 100%
+        FrontPanel_DrawLoad(1, VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD) / 2); // 10% load shows as 100%
+        FrontPanel_DrawLoad(2, (u8)(((u32)m.main_used + (u32)m.vgmh2_used) * 9ul / ((u32)m.main_total + (u32)m.vgmh2_total)));
     }
 }
 

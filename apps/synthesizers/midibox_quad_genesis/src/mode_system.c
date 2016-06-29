@@ -15,27 +15,25 @@
 #include <vgm.h>
 #include <genesis.h>
 #include "frontpanel.h"
-#include "app.h" //XXX
 
 u8 submode;
 
-//TODO XXX FIXME
-u8* pointers[8];
-u8 pointermodes[8];
 
 void DrawUsage(){
-    //vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
+    vgm_meminfo_t m = VGM_PerfMon_GetMemInfo();
     u8 chipuse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP);
     u8 carduse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD);
-    MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("RAM %d/%d Chip %d%% Card %d%%", vgmh2_numusedblocks, VGMH2_NUMBLOCKS, chipuse, carduse);
-    MIOS32_LCD_CursorSet(30,0);
-    MIOS32_LCD_PrintFormattedString("DBG %d %d", DEBUG, DEBUG2); //XXX
+    MIOS32_LCD_PrintFormattedString("Chip %2d%% Card %2d%%", chipuse, carduse);
+    MIOS32_LCD_CursorSet(21,0);
+    MIOS32_LCD_PrintFormattedString("|   RAM %5d/%5d", m.main_used, m.main_total);
+    MIOS32_LCD_CursorSet(21,1);
+    MIOS32_LCD_PrintFormattedString("| Heap2 %5d/%5d", m.vgmh2_used, m.vgmh2_total);
 }
 void DrawMenu(){
     switch(submode){
         case 0:
+            MIOS32_LCD_Clear();
             DrawUsage();
             MIOS32_LCD_CursorSet(0,1);
             MIOS32_LCD_PrintFormattedString("Fltr");
@@ -58,11 +56,6 @@ void DrawMenu(){
 
 void Mode_System_Init(){
     submode = 0;
-    u8 i;
-    for(i=0; i<8; ++i){
-        pointers[i] = NULL;
-        pointermodes[i] = 0;
-    }
 }
 void Mode_System_GotFocus(){
     submode = 0;
@@ -72,8 +65,10 @@ void Mode_System_GotFocus(){
 void Mode_System_Tick(){
     static u16 prescaler = 0;
     ++prescaler;
-    if(prescaler == 250){
-        DrawUsage();
+    if(prescaler == 500){
+        if(submode == 0){
+            DrawUsage();
+        }
         prescaler = 0;
     }
 }
@@ -86,29 +81,6 @@ void Mode_System_BtnGVoice(u8 gvoice, u8 state){
 }
 void Mode_System_BtnSoftkey(u8 softkey, u8 state){
     if(!state) return;
-    u32 lastusedblocks = vgmh2_numusedblocks;
-    switch(pointermodes[softkey]){
-    case 0:
-        pointers[softkey] = vgmh2_malloc(1 << softkey);
-        DBG("Malloc'd %d bytes, used %d blocks", 1 << softkey, vgmh2_numusedblocks - lastusedblocks);
-        break;
-    case 1:
-        pointers[softkey] = vgmh2_realloc(pointers[softkey], (4 << softkey));
-        DBG("Realloc'd from %d to %d bytes, change %d blocks", (1 << softkey), (4 << softkey), (s32)vgmh2_numusedblocks - (s32)lastusedblocks);
-        break;
-    case 2:
-        pointers[softkey] = vgmh2_realloc(pointers[softkey], (2 << softkey));
-        DBG("Realloc'd from %d to %d bytes, change %d blocks", (4 << softkey), (2 << softkey), (s32)vgmh2_numusedblocks - (s32)lastusedblocks);
-        break;
-    case 3:
-        vgmh2_free(pointers[softkey]);
-        pointers[softkey] = NULL;
-        DBG("Freed %d blocks", lastusedblocks - vgmh2_numusedblocks);
-        break;
-    }
-    ++pointermodes[softkey];
-    if(pointermodes[softkey] == 4) pointermodes[softkey] = 0;
-    /* TODO XXX
     switch(submode){
         case 0:
             switch(softkey){
@@ -139,7 +111,6 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintFormattedString("System invalid submode %d!", submode);
     }
-    */
 }
 void Mode_System_BtnSelOp(u8 op, u8 state){
 
