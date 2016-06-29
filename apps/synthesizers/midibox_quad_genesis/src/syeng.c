@@ -499,6 +499,7 @@ void SyEng_Init(){
     for(i=0; i<GENESIS_COUNT; ++i){
         syngenesis[i].lfobits = 0;
         syngenesis[i].optionbits = 0;
+        syngenesis[i].trackerbits = 0;
         for(j=0; j<12; ++j){
             syngenesis[i].channels[j].ALL = 0;
         }
@@ -516,7 +517,7 @@ void SyEng_Init(){
     ////////////////////////////////////////////////////////////////////////////
     //////////////////////////// OPN2 GRAND PIANO //////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    synprogram_t* prog = malloc(sizeof(synprogram_t));
+    synprogram_t* prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[1].program = prog;
     prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -528,7 +529,7 @@ void SyEng_Init(){
     VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = 8000000;
     vsr->numcmds = 30;
-    VgmChipWriteCmd* data = malloc(30*sizeof(VgmChipWriteCmd));
+    VgmChipWriteCmd* data = vgmh2_malloc(30*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
     //
@@ -570,7 +571,7 @@ void SyEng_Init(){
     vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = 8000000;
     vsr->numcmds = 2;
-    data = malloc(2*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
         data[0].cmd  = 0x52;
@@ -583,14 +584,14 @@ void SyEng_Init(){
     vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = 8000000;
     vsr->numcmds = 1;
-    data = malloc(1*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    prog = malloc(sizeof(synprogram_t));
+    prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[5].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -603,7 +604,7 @@ void SyEng_Init(){
     source->opn2clock = 8000000;
 
     vsr->numcmds = 27;
-    data = malloc(27*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(27*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
     //
@@ -645,7 +646,7 @@ void SyEng_Init(){
     vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = 8000000;
     vsr->numcmds = 6;
-    data = malloc(6*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(6*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
         data[0].cmd  = 0x52;
@@ -665,7 +666,7 @@ void SyEng_Init(){
     vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = 8000000;
     vsr->numcmds = 3;
-    data = malloc(3*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off Ch2
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch2
@@ -674,7 +675,7 @@ void SyEng_Init(){
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    prog = malloc(sizeof(synprogram_t));
+    prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[4].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -685,7 +686,7 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
-    data = malloc(1*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //
     i=0;
@@ -697,7 +698,7 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 18;
-    data = malloc(18*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(18*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
         data[0].cmd  = 0x50;
@@ -728,14 +729,14 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
-    data = malloc(1*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    prog = malloc(sizeof(synprogram_t));
+    prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[2].program = prog;
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -746,7 +747,7 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 3;
-    data = malloc(3*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //
     i=0;
@@ -760,7 +761,7 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 2;
-    data = malloc(2*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
         data[0].cmd   = 0x50;
@@ -773,14 +774,14 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
-    data = malloc(1*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// UNDER LOGIC ////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
-    prog = malloc(sizeof(synprogram_t));
+    prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[3].program = prog;
     prog->usage = (usage_bits_t){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -791,7 +792,7 @@ void SyEng_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
-    data = malloc(1*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     i=0;
     //Some BS which we don't care about
@@ -799,13 +800,13 @@ void SyEng_Init(){
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
-    DEBUG2 = VGM_SourceStream_Start(source, "S2CREDIT.vgm");
+    DEBUG2 = VGM_SourceStream_Start(source, "XPANDONG.vgm");
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 10;
-    data = malloc(10*sizeof(VgmChipWriteCmd));
+    data = vgmh2_malloc(10*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off

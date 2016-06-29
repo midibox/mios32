@@ -17,6 +17,7 @@
 #include <blm_x.h>
 #include <vgm.h>
 #include "frontpanel.h"
+#include "genesisstate.h"
 #include "app.h"
 
 #include "mode_system.h"
@@ -60,8 +61,39 @@ void Interface_Tick(){
 void Interface_Background(){
     MIOS32_IRQ_Disable();
     if(wantmodechange >= 0){
+        //Clear all Genesis state lights
+        ClearGenesisState_Op();
+        ClearGenesisState_Chan();
+        ClearGenesisState_DAC();
+        ClearGenesisState_OPN2();
+        ClearGenesisState_PSG();
+        //Clear all voice buttons
+        u8 g, v;
+        for(g=0; g<GENESIS_COUNT; ++g){
+            for(v=0; v<12; ++v){
+                FrontPanel_GenesisLEDSet(g, v, 0, 0);
+                FrontPanel_GenesisLEDSet(g, v, 1, 0);
+            }
+        }
+        //Clear all op buttons
+        for(g=0; g<4; ++g){
+            FrontPanel_LEDSet(FP_LED_SELOP_1 + g, 0);
+        }
+        //Clear all non-system buttons
+        for(g=FP_LED_MUTE; g<=FP_LED_STATE; ++g){
+            FrontPanel_LEDSet(g, 0);
+        }
+        //Clear VGM Matrix
+        for(g=0; g<14; ++g){
+            for(v=0; v<7; ++v){
+                FrontPanel_VGMMatrixPoint(v, g, 0);
+            }
+        }
+        //Turn off the old mode light
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 0);
+        //Change modes
         interfacemode = wantmodechange;
+        //Turn on the new mode light
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 1);
         switch(interfacemode){
             case MODE_SYSTEM: Mode_System_GotFocus(); break;
