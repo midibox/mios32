@@ -16,6 +16,7 @@
 #include "vgmram.h"
 #include "vgmstream.h"
 #include <genesis.h>
+#include "vgm_heap2.h"
 
 VgmHead* vgm_heads[VGM_HEAD_MAXNUM];
 u32 vgm_numheads;
@@ -26,7 +27,7 @@ void VGM_Head_Init(){
 
 VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     if(source == NULL) return NULL;
-    VgmHead* head = malloc(sizeof(VgmHead));
+    VgmHead* head = vgmh2_malloc(sizeof(VgmHead));
     head->playing = 0;
     head->source = source;
     head->ticks = 0; //will get changed at restart
@@ -61,7 +62,7 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     MIOS32_IRQ_Disable();
     if(vgm_numheads == VGM_HEAD_MAXNUM){
         MIOS32_IRQ_Enable();
-        free(head);
+        vgmh2_free(head);
         return NULL;
     }
     vgm_heads[vgm_numheads] = head;
@@ -93,7 +94,7 @@ s32 VGM_Head_Delete(VgmHead* head){
     }else if(head->source->type == VGM_SOURCE_TYPE_QUEUE){
         VGM_HeadQueue_Delete(head->data);
     }
-    free(head);
+    vgmh2_free(head);
     return ret;
 }
 

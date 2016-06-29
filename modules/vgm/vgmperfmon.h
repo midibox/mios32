@@ -23,12 +23,14 @@
 extern void VGM_PerfMon_ClockIn(u8 task);
 extern void VGM_PerfMon_ClockOut(u8 task);
 
-extern void VGM_PerfMon_Second();
+extern void VGM_PerfMon_Periodic();
 extern u8 VGM_PerfMon_GetTaskCPU(u8 task);
 
 typedef struct {
-    u16 numblocks;
-    u16 numusedblocks;
+    u16 main_total;
+    u16 main_used;
+    u16 vgmh2_total;
+    u16 vgmh2_used;
 } vgm_meminfo_t;
 
 extern vgm_meminfo_t VGM_PerfMon_GetMemInfo();

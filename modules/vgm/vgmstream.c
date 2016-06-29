@@ -15,6 +15,7 @@
 #include "vgmsdtask.h"
 #include "vgmperfmon.h"
 #include "vgmtuning.h"
+#include "vgm_heap2.h"
 
 
 u8 VGM_HeadStream_getCommandLen(u8 type){
@@ -106,13 +107,13 @@ void VGM_HeadStream_unBuffer(VgmHeadStream* vhs, u8 len){
 
 VgmHeadStream* VGM_HeadStream_Create(VgmSource* source){
     VgmSourceStream* vss = (VgmSourceStream*)source->data;
-    VgmHeadStream* vhs = malloc(sizeof(VgmHeadStream));
+    VgmHeadStream* vhs = vgmh2_malloc(sizeof(VgmHeadStream));
     vhs->file = vss->file;
     vhs->srcaddr = 0;
     vhs->srcblockaddr = 0;
     vhs->subbufferlen = 0;
-    vhs->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE);
-    vhs->buffer2 = malloc(VGM_SOURCESTREAM_BUFSIZE);
+    vhs->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE); //Buffers accessed using DMA,
+    vhs->buffer2 = malloc(VGM_SOURCESTREAM_BUFSIZE); //have to use normal malloc
     vhs->buffer1addr = 0xFFFFFFFF;
     vhs->buffer2addr = 0xFFFFFFFF;
     vhs->wantbuffer = 0;
@@ -123,7 +124,7 @@ void VGM_HeadStream_Delete(void* headstream){
     VgmHeadStream* vhs = (VgmHeadStream*)headstream;
     free(vhs->buffer1);
     free(vhs->buffer2);
-    free(vhs);
+    vgmh2_free(vhs);
 }
 void VGM_HeadStream_Restart(VgmHead* head){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
@@ -399,13 +400,13 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
 }
 
 VgmSource* VGM_SourceStream_Create(){
-    VgmSource* source = malloc(sizeof(VgmSource));
+    VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_STREAM;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
-    VgmSourceStream* vss = malloc(sizeof(VgmSourceStream));
+    VgmSourceStream* vss = vgmh2_malloc(sizeof(VgmSourceStream));
     source->data = vss;
     vss->datalen = 0;
     vss->vgmdatastartaddr = 0;
@@ -418,7 +419,7 @@ void VGM_SourceStream_Delete(void* sourcestream){
     if(vss->block != NULL){
         free(vss->block);
     }
-    free(vss);
+    vgmh2_free(vss);
 }
 //Only for use of VGM_SourceStream_Start
 static void CheckAdvanceBuffer(u32 a, u32* bufstart, u8* buf){
@@ -437,7 +438,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     //Read header
     u8 flag = 0;
     if(vss->datalen > 0x40){
-        u8* hdrdata = malloc(0x40);
+        u8* hdrdata = malloc(0x40); //DMA target, have to use normal malloc
         res = FILE_ReadBuffer(hdrdata, 0x40);
         if(res < 0) { free(hdrdata); vss->datalen = 0; MUTEX_SDCARD_GIVE; return -2; }
         //Check if has VGM header or raw data
@@ -491,7 +492,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     u8 type;
     u8 blockcount = 0;
     u32 thisblocksize;
-    u8* buf = malloc(VGM_SOURCESTREAM_BUFSIZE);
+    u8* buf = malloc(VGM_SOURCESTREAM_BUFSIZE); //DMA target, have to use normal malloc
     FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
     while(1){
         type = buf[a - bufstart];
@@ -508,7 +509,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
             thisblocksize |= (u32)buf[a-bufstart] << 24;
             totalblocksize += thisblocksize;
             #ifndef VGM_STREAM_SUPPORTMULTIBLOCK
-                vss->block = malloc(totalblocksize);
+                vss->block = malloc(totalblocksize); //DMA target, have to use normal malloc
                 vss->blocklen = totalblocksize;
                 FILE_ReadSeek(a+1);
                 FILE_ReadBuffer(vss->block, totalblocksize);
@@ -529,7 +530,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     #ifdef VGM_STREAM_SUPPORTMULTIBLOCK
         DBG("Found %d blocks, total size 0x%X", blockcount, totalblocksize);
         //Load blocks
-        vss->block = malloc(totalblocksize);
+        vss->block = malloc(totalblocksize); //DMA target, have to use normal malloc
         vss->blocklen = totalblocksize;
         u32 blockaddr = 0;
         a = vss->vgmdatastartaddr;

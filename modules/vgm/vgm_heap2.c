@@ -173,7 +173,7 @@ void *vgmh2_malloc(size_t size){
         if(newEndOfHeap >= VGMH2_NUMBLOCKS){
             //The end of heap block would be outside the memory segment
             xTaskResumeAll(); //Leave critical section
-            return NULL;
+            return malloc(size); //Allocate in primary heap instead
         }
         VGMH2_NFREE(VGMH2_PFREE(cf)) = newEndOfHeap; //Previous-next point to the end of the heap
         memcpy(&VGMH2_BLOCK(newEndOfHeap), &VGMH2_BLOCK(cf), sizeof(vgmh2_block)); //Copied data: NBLOCK and NFREE are zeros, PFREE is whatever the last free block is, and PBLOCK will be overwritten next
@@ -193,6 +193,10 @@ void *vgmh2_realloc(void *ptr, size_t size){
     if(size == 0){
         vgmh2_free(ptr);
         return NULL;
+    }
+    if(ptr < (void*)(VGMH2_HEAPSTART) || ptr >= (void*)(VGMH2_HEAPSTART + VGMH2_HEAPSIZE)){
+        //The pointer is outside this heap, it must have been created with normal malloc
+        return realloc(ptr, size);
     }
     u16 blocksNeeded, curSizeBlocks, c, new_numusedblocks;
     size_t curSizeBytes;
@@ -256,6 +260,11 @@ void *vgmh2_realloc(void *ptr, size_t size){
 
 void vgmh2_free(void *ptr){
     if(ptr == NULL) return;
+    if(ptr < (void*)(VGMH2_HEAPSTART) || ptr >= (void*)(VGMH2_HEAPSTART + VGMH2_HEAPSIZE)){
+        //The pointer is outside this heap, it must have been created with normal malloc
+        free(ptr);
+        return;
+    }
     u16 c;
     vTaskSuspendAll(); //Enter critical section
     c = (ptr-(void *)(&(vgmh2_heap[0])))/sizeof(vgmh2_block); //What block this pointer points to

@@ -14,16 +14,17 @@
 #include "vgmram.h"
 #include "vgmhead.h"
 #include "vgmtuning.h"
+#include "vgm_heap2.h"
 
 VgmHeadRAM* VGM_HeadRAM_Create(VgmSource* source){
     //VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
-    VgmHeadRAM* vhr = malloc(sizeof(VgmHeadRAM));
+    VgmHeadRAM* vhr = vgmh2_malloc(sizeof(VgmHeadRAM));
     vhr->srcaddr = 0;
     return vhr;
 }
 void VGM_HeadRAM_Delete(void* headram){
     VgmHeadRAM* vhr = (VgmHeadRAM*)headram;
-    free(vhr);
+    vgmh2_free(vhr);
 }
 void VGM_HeadRAM_Restart(VgmHead* head){
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
@@ -131,13 +132,13 @@ void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
 }
 
 VgmSource* VGM_SourceRAM_Create(){
-    VgmSource* source = malloc(sizeof(VgmSource));
+    VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_RAM;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
-    VgmSourceRAM* vsr = malloc(sizeof(VgmSourceRAM));
+    VgmSourceRAM* vsr = vgmh2_malloc(sizeof(VgmSourceRAM));
     source->data = vsr;
     vsr->cmds = NULL;
     vsr->numcmds = 0;
@@ -146,7 +147,7 @@ VgmSource* VGM_SourceRAM_Create(){
 void VGM_SourceRAM_Delete(void* sourceram){
     VgmSourceRAM* vsr = (VgmSourceRAM*)sourceram;
     if(vsr->cmds != NULL){
-        free(vsr->cmds);
+        vgmh2_free(vsr->cmds);
     }
-    free(vsr);
+    vgmh2_free(vsr);
 }

@@ -16,6 +16,7 @@
 #include "vgmqueue.h"
 #include "vgmram.h"
 #include "vgmstream.h"
+#include "vgm_heap2.h"
 
 s32 VGM_Source_Delete(VgmSource* source){
     if(source == NULL) return -1;
@@ -33,6 +34,6 @@ s32 VGM_Source_Delete(VgmSource* source){
     }else if(source->type == VGM_SOURCE_TYPE_QUEUE){
         VGM_SourceQueue_Delete(source->data);
     }
-    free(source);
+    vgmh2_free(source);
     return 0;
 }
