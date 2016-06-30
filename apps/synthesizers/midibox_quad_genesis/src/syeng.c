@@ -27,7 +27,7 @@ synchannel_t channels[16*MBQG_NUM_PORTS];
 //TODO divide chips that use globals by the types of globals used, so multiple
 //voices using the same effect e.g. "ugly" can play together
 
-void ReleaseAllPI(synproginstance_t* pi){
+static void ReleaseAllPI(synproginstance_t* pi){
     u8 i, v;
     VgmHead_Channel pimap;
     syngenesis_t* sg;
@@ -71,7 +71,7 @@ void ReleaseAllPI(synproginstance_t* pi){
     }
 }
 
-void ClearPI(synproginstance_t* pi){
+static void ClearPI(synproginstance_t* pi){
     //Stop actually playing
     if(pi->head != NULL){
         VGM_Head_Delete(pi->head);
@@ -86,7 +86,7 @@ void ClearPI(synproginstance_t* pi){
     ReleaseAllPI(pi);
 }
 
-void StandbyPI(synproginstance_t* pi){
+static void StandbyPI(synproginstance_t* pi){
     u8 i, v;
     VgmHead_Channel pimap;
     syngenesis_t* sg;
@@ -123,7 +123,7 @@ void StandbyPI(synproginstance_t* pi){
     }
 }
 
-u8 FindOPN2ClearLFO(){
+static u8 FindOPN2ClearLFO(){
     //Find an OPN2 with as few voices as possible using the LFO
     u8 i, g, v, score, bestscore, bestg;
     bestscore = 0xFF;
@@ -151,7 +151,7 @@ u8 FindOPN2ClearLFO(){
     return bestg;
 }
 
-void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
+static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
     DBG("--Assigning PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
     syngenesis_usage_t* sgusage = &syngenesis[g].channels[vdest];
     if(sgusage->use > 0){
@@ -178,7 +178,7 @@ void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u
     pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
 }
 
-void AllocatePI(u8 piindex, usage_bits_t pusage){
+static void AllocatePI(u8 piindex, usage_bits_t pusage){
     synproginstance_t* pi = &proginstances[piindex];
     syngenesis_t* sg;
     u8 i, g, v, use, score;
@@ -486,7 +486,7 @@ void AllocatePI(u8 piindex, usage_bits_t pusage){
 }
 
 
-void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
+static void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
     u8 i;
     for(i=0; i<12; ++i){
         head->channel[i] = pi->mapping[i];
@@ -499,7 +499,6 @@ void SyEng_Init(){
     for(i=0; i<GENESIS_COUNT; ++i){
         syngenesis[i].lfobits = 0;
         syngenesis[i].optionbits = 0;
-        syngenesis[i].trackerbits = 0;
         for(j=0; j<12; ++j){
             syngenesis[i].channels[j].ALL = 0;
         }

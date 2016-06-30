@@ -25,6 +25,7 @@
 #include "genesisstate.h"
 #include "interface.h"
 #include "syeng.h"
+#include "tracker.h"
 
 u8 DEBUG;
 u8 DEBUG2;
@@ -191,18 +192,18 @@ void APP_SRIO_ServiceFinish(void){
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value){}
 void APP_MIDI_Tick(void){}
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package){
+    if((midi_package.event == 0x8 || midi_package.event == 0x9 || midi_package.event == 0xB)
+            && channels[midi_package.chn].trackermode){
+        u8 trackervoice = channels[midi_package.chn].trackervoice;
+        u8 g = trackervoice >> 4;
+        u8 v = trackervoice & 0xF;
+        VGM_MidiToGenesis(midi_package, g, v, 0, 0); //TODO
+        return;
+    }
     if(midi_package.event == 0x8 || (midi_package.event == 0x9 && midi_package.velocity == 0)){
-        if(channels[midi_package.chn].trackermode){
-            //Tracker_Note_Off(channels[midi_package.chn].trackervoice, midi_package);
-        }else{
-            SyEng_Note_Off(midi_package);
-        }
+        SyEng_Note_Off(midi_package);
     }else if(midi_package.event == 0x9){
-        if(channels[midi_package.chn].trackermode){
-            //Tracker_Note_On(channels[midi_package.chn].trackervoice, midi_package);
-        }else{
-            SyEng_Note_On(midi_package);
-        }
+        SyEng_Note_On(midi_package);
     }
 }
 

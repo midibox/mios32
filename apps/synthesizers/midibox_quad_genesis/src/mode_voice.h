@@ -18,6 +18,8 @@ extern "C" {
 #endif
 
 
+extern const char* GetVoiceName(u8 subvoice);
+
 extern void Mode_Voice_Init();
 extern void Mode_Voice_GotFocus();
 
