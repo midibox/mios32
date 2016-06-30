@@ -65,7 +65,7 @@ void DrawGenesisState_Op(u8 g, u8 chan, u8 op){
         }
     }
 }
-extern void ClearGenesisState_Op(){
+void ClearGenesisState_Op(){
     FrontPanel_LEDRingSet(FP_LEDR_HARM, 0xFF, 0);
     FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 0xFF, 0);
     FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 0xFF, 0);
@@ -107,7 +107,7 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
     FrontPanel_LEDSet(FP_LED_OUTL, genesis[g].opn2.chan[chan].out_l);
     FrontPanel_LEDSet(FP_LED_OUTR, genesis[g].opn2.chan[chan].out_r);
 }
-extern void ClearGenesisState_Chan(){
+void ClearGenesisState_Chan(){
     u8 op;
     for(op=0; op<4; ++op){
         FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 0xFF, 0);
@@ -153,7 +153,7 @@ void DrawGenesisState_DAC(u8 g){
     lastdac = genesis[g].opn2.dac_high;
     FrontPanel_LEDSet(FP_LED_DACEN, genesis[g].opn2.dac_enable);
 }
-extern void ClearGenesisState_DAC(){
+void ClearGenesisState_DAC(){
     FrontPanel_DrawDACValue(0);
     FrontPanel_LEDSet(FP_LED_DACEN, 0);
 }
@@ -171,7 +171,7 @@ void DrawGenesisState_OPN2(u8 g){
     FrontPanel_LEDSet(FP_LED_EG, !genesis[g].opn2.test_noeg);
     FrontPanel_LEDSet(FP_LED_DACEN, genesis[g].opn2.dac_enable);
 }
-extern void ClearGenesisState_OPN2(){
+void ClearGenesisState_OPN2(){
     FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0xFF, 0);
     FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 0xFF, 0);
     FrontPanel_LEDSet(FP_LED_CH3_NORMAL, 0);
@@ -208,7 +208,7 @@ void DrawGenesisState_PSG(u8 g, u8 voice){
         FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0, ((1023 - genesis[g].psg.square[voice].freq) >> 4) & 0xF);
     }
 }
-extern void ClearGenesisState_PSG(){
+void ClearGenesisState_PSG(){
     FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, 0xFF, 0);
     FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0xFF, 0);
     FrontPanel_LEDSet(FP_LED_NS_HI,  0);

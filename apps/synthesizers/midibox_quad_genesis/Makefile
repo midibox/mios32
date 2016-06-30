@@ -24,7 +24,8 @@ THUMB_SOURCE    =   src/app.c \
                     src/mode_vgm.c \
                     src/mode_mdltr.c \
                     src/mode_sample.c \
-                    src/syeng.c
+                    src/syeng.c \
+                    src/tracker.c
 
 # add C++ files here
 THUMB_CPP_SOURCE =  

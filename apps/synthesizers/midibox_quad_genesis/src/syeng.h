@@ -82,24 +82,7 @@ typedef struct {
             u8 dummy2:2;
         };
     };
-    union{
-        u16 trackerbits;
-        struct{
-            u8 opn2_trkr:1;
-            u8 fm1_trkr:1;
-            u8 fm2_trkr:1;
-            u8 fm3_trkr:1;
-            u8 fm4_trkr:1;
-            u8 fm5_trkr:1;
-            u8 fm6_trkr:1;
-            u8 dac_trkr:1;
-            u8 sq1_trkr:1;
-            u8 sq2_trkr:1;
-            u8 sq3_trkr:1;
-            u8 noise_trkr:1;
-            u8 dummy3:4;
-        };
-    };
+    u16 dummy3;
     syngenesis_usage_t channels[12];
 } syngenesis_t;
 
@@ -110,8 +93,8 @@ typedef struct {
     VgmSource* initsource;
     VgmSource* noteonsource;
     VgmSource* noteoffsource;
+    char name[9];
     u8 rootnote;
-    u8 dummy1;
     u16 dummy2;
 } synprogram_t;
 

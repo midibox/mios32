@@ -19,7 +19,7 @@
 u8 submode;
 
 
-void DrawUsage(){
+static void DrawUsage(){
     vgm_meminfo_t m = VGM_PerfMon_GetMemInfo();
     u8 chipuse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CHIP);
     u8 carduse = VGM_PerfMon_GetTaskCPU(VGM_PERFMON_TASK_CARD);
@@ -30,7 +30,7 @@ void DrawUsage(){
     MIOS32_LCD_CursorSet(21,1);
     MIOS32_LCD_PrintFormattedString("| Heap2 %5d/%5d", m.vgmh2_used, m.vgmh2_total);
 }
-void DrawMenu(){
+static void DrawMenu(){
     switch(submode){
         case 0:
             MIOS32_LCD_Clear();

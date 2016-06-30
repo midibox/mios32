@@ -15,9 +15,12 @@
 #include "frontpanel.h"
 #include "genesisstate.h"
 #include "syeng.h"
+#include "tracker.h"
 
 u8 selvoice;
 u8 selop;
+u8 voiceistracker;
+u8 voicetrackerchan;
 
 const char* GetVoiceName(u8 subvoice){
     switch(subvoice){
@@ -37,15 +40,24 @@ const char* GetVoiceName(u8 subvoice){
     }
 }
 
-void DrawVoiceInfo(){
+static void DrawVoiceInfo(){
+    u8 c;
+    voiceistracker = 0;
+    for(c=0; c<16*MBQG_NUM_PORTS; ++c){
+        if(channels[c].trackermode && channels[c].trackervoice == selvoice){
+            voiceistracker = 1;
+            voicetrackerchan = c;
+            break;
+        }
+    }
     u8 g = selvoice>>4;
     u8 v = selvoice & 0xF;
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    if(syngenesis[g].trackerbits & (1 << v)){
-        MIOS32_LCD_PrintFormattedString("G%d:%s: Tracker mode, state editable", g, GetVoiceName(v));
+    if(voiceistracker){
+        MIOS32_LCD_PrintFormattedString("G%d:%s: Tracker on Prt%d:Ch%2d, editable", g+1, GetVoiceName(v), (c>>4)+1, (c&0xF)+1);
     }else{
-        MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g, GetVoiceName(v));
+        MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
     }
     MIOS32_LCD_CursorSet(0,1);
     MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
@@ -123,5 +135,7 @@ void Mode_Voice_EncDatawheel(s32 incrementer){
 
 }
 void Mode_Voice_EncEdit(u8 encoder, s32 incrementer){
-
+    if(voiceistracker){
+        Tracker_EncToMIDI(encoder, incrementer, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+    }
 }
