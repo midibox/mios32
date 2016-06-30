@@ -16,6 +16,7 @@ THUMB_SOURCE += \
 	$(MIOS32_PATH)/modules/vgm/vgmsdtask.c \
 	$(MIOS32_PATH)/modules/vgm/vgmsource.c \
 	$(MIOS32_PATH)/modules/vgm/vgmstream.c \
+	$(MIOS32_PATH)/modules/vgm/vgmtracker.c \
 	$(MIOS32_PATH)/modules/vgm/vgmtuning.c \
 	$(MIOS32_PATH)/modules/vgm/vgm_heap2.c \
 
