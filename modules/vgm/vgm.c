@@ -14,10 +14,12 @@
 #include "vgmhead.h"
 #include "vgmplayer.h"
 #include "vgmsdtask.h"
+#include "vgmtracker.h"
 
 void VGM_Init(){
     VGM_Head_Init();
     VGM_Player_Init();
     VGM_SDTask_Init();
+    VGM_Tracker_Init();
 }
 
