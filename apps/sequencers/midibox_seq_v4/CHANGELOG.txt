@@ -2330,6 +2330,9 @@ UI allows CC par layer selection for drum tracks, but this isn't supported
 Don't display CC selection
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174943
 ----------------------------------------------------------
+Remove Bank Selections for pattern groups
+http://midibox.org/forums/topic/20128-save-all-saves-group-4-to-group-2help/#comment-175407
+----------------------------------------------------------
 
 
 
