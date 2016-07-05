@@ -39,6 +39,11 @@ typedef struct UMM_HEAP_INFO_t {
   UMM_HEAP_INFO;
   
 extern UMM_HEAP_INFO heapInfo;
+
+//So that memory space can be monitored by the application without calling
+//the time-consuming umm_info:
+extern const unsigned short int umm_numblocks; //This was already defined, just externing it
+extern volatile unsigned int umm_numusedblocks; //This is new
   
 void *umm_info( void *ptr, int force );
 
