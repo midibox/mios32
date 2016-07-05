@@ -20,6 +20,7 @@
 static VgmSource* qsource;
 static VgmHead* qhead;
 
+s8 trackervoicekeys[10*GENESIS_COUNT];
 
 void VGM_Tracker_Init(){
     qsource = VGM_SourceQueue_Create();
@@ -27,6 +28,10 @@ void VGM_Tracker_Init(){
     qsource->psgclock = genesis_clock_psg;
     qhead = VGM_Head_Create(qsource, 0x1000, 0x1000);
     qhead->playing = 1;
+    u8 i;
+    for(i=0; i<10*GENESIS_COUNT; ++i){
+        trackervoicekeys[i] = -1;
+    }
 }
 
 void VGM_Tracker_Enqueue(VgmChipWriteCmd cmd, u8 fixfreq){
@@ -45,6 +50,7 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
     u8 psgcmd = (g << 4);
     u8 opn2globcmd = psgcmd | 2;
     u8 opn2cmd = opn2globcmd | (v >= 4 && v <= 6);
+    u8 voicekeyidx = 10*g + chan + 6*ispsg;
     if(midi_package.event == 0xB){
         //CC
         u8 cc = midi_package.cc_number;
@@ -291,10 +297,16 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
         //Note Off
         if(isopn2 && (v != 3 || !ch3_op)){
             //Key off
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+            if(midi_package.note == trackervoicekeys[voicekeyidx]){
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+                trackervoicekeys[voicekeyidx] = -1;
+            }
         }else if(ispsg){
             //PSG square or noise channel
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (chan<<5)|0x9F }, 0);
+            if(midi_package.note == trackervoicekeys[voicekeyidx]){
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (chan<<5)|0x9F }, 0);
+                trackervoicekeys[voicekeyidx] = -1;
+            }
         }else if(ch3_op){
             //OPN2 ch3 additional frequency
             //TODO key off individual operators?
@@ -304,6 +316,11 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
         if(isopn2){
             //TODO under what conditions is velocity mapped to TL?
             //TODO key on individual operators if in Ch3 special/CSM mode?
+            if(trackervoicekeys[voicekeyidx] >= 0){
+                //Send note off first
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+            }
+            trackervoicekeys[voicekeyidx] = midi_package.note;
             u8 subchan = (chan < 3) ? chan : chan+1;
             VgmChipWriteCmd cmd = VGM_getOPN2Frequency(midi_package.note, 0, genesis_clock_opn2); //TODO cents
             cmd.cmd = (g << 4) | 2 | (subchan>>2);
@@ -314,14 +331,15 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             cmd.addr = 0x28;
             cmd.data = 0xF0 + subchan;
             VGM_HeadQueue_Enqueue(qhead, cmd, 0);
-        }else if(ispsg){
+        }else if(ispsg && v != 11){
             //PSG square channel
+            trackervoicekeys[voicekeyidx] = midi_package.note;
             VgmChipWriteCmd cmd = VGM_getPSGFrequency(midi_package.note, 0, genesis_clock_psg); //TODO cents
             cmd.data |= (chan<<5) | 0x80;
             cmd.cmd = (g << 4);
             VGM_HeadQueue_Enqueue(qhead, cmd, 0);
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (chan<<5)|0x90|(15-GENMDM_DECODE(midi_package.velocity, 4)) }, 0);
-        }else if(chan == 9){
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = (chan<<5)|0x90|(15-(midi_package.velocity >> 3)) }, 0);
+        }else if(v == 11){
             //PSG noise channel
             u8 mod, noiseopts;
             mod = (midi_package.note % 12);
@@ -341,8 +359,9 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             case 11:     noiseopts = 0b111; break;
             //get it? (:
             };
+            trackervoicekeys[voicekeyidx] = midi_package.note;
             VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = 0xE0|noiseopts }, 0);
-            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = 0xF0|(15-GENMDM_DECODE(midi_package.velocity, 4)) }, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = 0xF0|(15-(midi_package.velocity >> 3)) }, 0);
         }else if(ch3_op){
             //OPN2 ch3 additional frequency
             //TODO key on individual operators?
