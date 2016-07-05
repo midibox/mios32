@@ -18,6 +18,7 @@
 
 
 extern void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 midiport, u8 midichan);
+extern void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, u8 midichan);
 
 
 #endif /* _TRACKER_H */

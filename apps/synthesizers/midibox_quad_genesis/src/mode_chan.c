@@ -20,10 +20,14 @@
 u8 selchan;
 u8 submode;
 u8 cursor;
+u8 newprogname[13];
+u8 newprogtype;
 
 static void DrawMenu(){
     switch(submode){
         case 0:
+            FrontPanel_LEDSet(FP_LED_NEW, 0);
+            FrontPanel_LEDSet(FP_LED_DELETE, 0);
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintFormattedString("Prt%d:Ch%2d", (selchan >> 4)+1, (selchan & 0xF)+1);
@@ -33,11 +37,26 @@ static void DrawMenu(){
                 MIOS32_LCD_PrintFormattedString("Trkr  G%d   %s", (v >> 4)+1, GetVoiceName(v & 0xF));
                 if(cursor >= 1 && cursor <= 2){
                     MIOS32_LCD_CursorSet(5*cursor,1);
-                    MIOS32_LCD_PrintString("~");
+                    MIOS32_LCD_PrintChar('~');
                 }
             }else{
                 MIOS32_LCD_PrintString("Free");
+                synprogram_t* prog = channels[selchan].program;
+                MIOS32_LCD_CursorSet(20,0);
+                MIOS32_LCD_PrintFormattedString("Prog: %s", prog == NULL ? "<none>" : prog->name);
             }
+            break;
+        case 1:
+            FrontPanel_LEDSet(FP_LED_NEW, 1);
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintFormattedString("New program: %s", newprogname);
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintFormattedString("%s", newprogtype ? "Drum" : "Inst");
+            MIOS32_LCD_CursorSet(13+cursor,1);
+            MIOS32_LCD_PrintChar('^');
+            MIOS32_LCD_CursorSet(27,1);
+            MIOS32_LCD_PrintString("<    >   Aa");
             break;
         default:
             MIOS32_LCD_Clear();
@@ -108,7 +127,7 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     channels[selchan].trackermode = t;
                     u8 v = channels[selchan].trackervoice;
                     FrontPanel_GenesisLEDSet(v >> 4, v & 0xF, 0, t);
-                    cursor = 0;
+                    cursor = t ? 2 : 0;
                     DrawMenu();
                     break;
                 case 1:
@@ -123,6 +142,43 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     break;
             }
             break;
+        case 1:
+            switch(softkey){
+                case 0:
+                    newprogtype = !newprogtype;
+                    DrawMenu();
+                    break;
+                case 5:
+                    if(cursor == 0) return;
+                    u8 i;
+                    for(i=cursor; i<12; ++i){
+                        if(newprogname[i] > 0x20) break;
+                    }
+                    if(i == 12) newprogname[cursor] = 0;
+                    --cursor;
+                    DrawMenu();
+                    break;
+                case 6:
+                    if(cursor >= 11) return;
+                    ++cursor;
+                    if(newprogname[cursor] == 0) newprogname[cursor] = newprogname[cursor-1];
+                    DrawMenu();
+                    break;
+                case 7:
+                    if(newprogname[cursor] >= 'A' && newprogname[cursor] <= 'Z'){
+                        newprogname[cursor] += 'a' - 'A';
+                    }else if(newprogname[cursor] >= 'a' && newprogname[cursor] <= 'z'){
+                        newprogname[cursor] -= 'a' - 'A';
+                    }else if(newprogname[cursor] >= 'a'){
+                        newprogname[cursor] = 'n';
+                    }else{
+                        newprogname[cursor] = 'N';
+                    }
+                    MIOS32_LCD_CursorSet(13+cursor,0);
+                    MIOS32_LCD_PrintChar(newprogname[cursor]);
+                    break;
+            }
+            break;
     }
 }
 void Mode_Chan_BtnSelOp(u8 op, u8 state){
@@ -132,10 +188,46 @@ void Mode_Chan_BtnOpMute(u8 op, u8 state){
 
 }
 void Mode_Chan_BtnSystem(u8 button, u8 state){
-
+    if(!state) return;
+    if(button == FP_B_MENU){
+        submode = 0;
+        DrawMenu();
+        return;
+    }
+    switch(submode){
+        case 0:
+            switch(button){
+                case FP_B_LOAD:
+                    //TODO
+                    break;
+                case FP_B_SAVE:
+                    //TODO
+                    break;
+                case FP_B_NEW:
+                    if(channels[selchan].program != NULL){
+                        MIOS32_LCD_CursorSet(0,0);
+                        MIOS32_LCD_PrintFormattedString("Delete prog first!");
+                    }else{
+                        submode = 1;
+                        newprogtype = 0;
+                        u8 i;
+                        for(i=0; i<13; ++i){
+                            newprogname[i] = 0;
+                        }
+                        newprogname[0] = 'A';
+                        cursor = 0;
+                        DrawMenu();
+                    }
+                    break;
+                case FP_B_DELETE:
+                    //TODO
+                    break;
+            }
+            break;
+    }
 }
 void Mode_Chan_BtnEdit(u8 button, u8 state){
-
+    
 }
 
 void Mode_Chan_EncDatawheel(s32 incrementer){
@@ -169,6 +261,13 @@ void Mode_Chan_EncDatawheel(s32 incrementer){
                     MIOS32_LCD_CursorSet(11,1);
                     MIOS32_LCD_PrintFormattedString("%s  ", GetVoiceName(j));
                     break;
+            }
+            break;
+        case 1:
+            if((incrementer < 0 && (s32)newprogname[cursor] + incrementer >= 0x20) || (incrementer > 0 && (s32)newprogname[cursor] + incrementer <= 0xFF)){
+                newprogname[cursor] = (u8)((s32)newprogname[cursor] + incrementer);
+                MIOS32_LCD_CursorSet(13+cursor,0);
+                MIOS32_LCD_PrintChar(newprogname[cursor]);
             }
             break;
     }

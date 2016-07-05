@@ -55,7 +55,7 @@ typedef union {
     u8 ALL;
     struct {
         u8 pi_using:6;
-        u8 use:2; //2 or 3 for in use, 1 for standby, 0 for none
+        u8 use:2; //3 for tracker mode, 2 for in use, 1 for standby, 0 for none
     };
 } syngenesis_usage_t;
 
@@ -93,7 +93,7 @@ typedef struct {
     VgmSource* initsource;
     VgmSource* noteonsource;
     VgmSource* noteoffsource;
-    char name[9];
+    char name[13];
     u8 rootnote;
     u16 dummy2;
 } synprogram_t;
