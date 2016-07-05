@@ -17,6 +17,7 @@
 #include "syeng.h"
 #include "tracker.h"
 
+u8 submode;
 u8 selvoice;
 u8 selop;
 u8 voiceistracker;
@@ -40,7 +41,7 @@ const char* GetVoiceName(u8 subvoice){
     }
 }
 
-static void DrawVoiceInfo(){
+static void SeeIfVoiceIsTracker(){
     u8 c;
     voiceistracker = 0;
     for(c=0; c<16*MBQG_NUM_PORTS; ++c){
@@ -50,17 +51,40 @@ static void DrawVoiceInfo(){
             break;
         }
     }
-    u8 g = selvoice>>4;
-    u8 v = selvoice & 0xF;
-    MIOS32_LCD_Clear();
-    MIOS32_LCD_CursorSet(0,0);
-    if(voiceistracker){
-        MIOS32_LCD_PrintFormattedString("G%d:%s: Tracker on Prt%d:Ch%2d, editable", g+1, GetVoiceName(v), (c>>4)+1, (c&0xF)+1);
-    }else{
-        MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
+}
+
+static void DrawMenu(){
+    switch(submode){
+        case 0:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            u8 g = selvoice>>4;
+            u8 v = selvoice & 0xF;
+            if(voiceistracker){
+                MIOS32_LCD_PrintFormattedString("G%d:%s: Tracker on Prt%d:Ch%2d, editable", g+1, GetVoiceName(v), (voicetrackerchan>>4)+1, (voicetrackerchan&0xF)+1);
+            }else{
+                MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
+            }
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
+            break;
+        case 1:
+            //Channel output (stereo)
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Channel output (stereo):");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("  L    C    R   Off");
+            break;
+        case 2:
+            //Algorithm
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("      1     1   124  12   111  12   1 2 ");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("1234  234  234   3   34   234  3 4  3 4 ");
+            break;
     }
-    MIOS32_LCD_CursorSet(0,1);
-    MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
 }
 
 void Mode_Voice_Init(){
@@ -68,7 +92,9 @@ void Mode_Voice_Init(){
     selop = 3;
 }
 void Mode_Voice_GotFocus(){
-    DrawVoiceInfo();
+    submode = 0;
+    SeeIfVoiceIsTracker();
+    DrawMenu();
     //Turn on our voice button
     FrontPanel_GenesisLEDSet(selvoice >> 4, selvoice & 0xF, 1, 1);
     //Op button
@@ -97,7 +123,6 @@ void Mode_Voice_Background(){
     lastselop = selop;
     //Draw selected voice state
     if(lastselvoice != selvoice){
-        DrawVoiceInfo();
         //Clear all Genesis state lights
         ClearGenesisState_Chan();
         ClearGenesisState_DAC();
@@ -113,9 +138,35 @@ void Mode_Voice_Background(){
 void Mode_Voice_BtnGVoice(u8 gvoice, u8 state){
     if(!state) return;
     selvoice = gvoice;
+    SeeIfVoiceIsTracker();
+    DrawMenu();
 }
 void Mode_Voice_BtnSoftkey(u8 softkey, u8 state){
-
+    switch(submode){
+        case 0:
+            break;
+        case 1:
+            //Channel output (stereo)
+            switch(softkey){
+                case 0:
+                    Tracker_BtnToMIDI(FP_B_OUT, 1, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+                    break;
+                case 1:
+                    Tracker_BtnToMIDI(FP_B_OUT, 3, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+                    break;
+                case 2:
+                    Tracker_BtnToMIDI(FP_B_OUT, 2, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+                    break;
+                case 3:
+                    Tracker_BtnToMIDI(FP_B_OUT, 0, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+                    break;
+            }
+            break;
+        case 2:
+            //Algorithm
+            Tracker_BtnToMIDI(FP_B_ALG, softkey, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+            break;
+    }
 }
 void Mode_Voice_BtnSelOp(u8 op, u8 state){
     if(!state) return;
@@ -128,7 +179,29 @@ void Mode_Voice_BtnSystem(u8 button, u8 state){
 
 }
 void Mode_Voice_BtnEdit(u8 button, u8 state){
-
+    if(voiceistracker){
+        switch(button){
+            case FP_B_OUT:
+                submode = state ? 1 : 0;
+                DrawMenu();
+                break;
+            case FP_B_ALG:
+                submode = state ? 2 : 0;
+                DrawMenu();
+                break;
+            case FP_B_KON:
+                submode = state ? 3 : 0;
+                DrawMenu();
+                break;
+            case FP_B_KSR:
+                submode = state ? 4 : 0;
+                DrawMenu();
+                break;
+            default:
+                if(!state) return;
+                Tracker_BtnToMIDI(button, 0, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+        }
+    }
 }
 
 void Mode_Voice_EncDatawheel(s32 incrementer){

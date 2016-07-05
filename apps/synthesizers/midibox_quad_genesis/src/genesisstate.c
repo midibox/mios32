@@ -40,7 +40,7 @@ void DrawGenesisState_Op(u8 g, u8 chan, u8 op){
     FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 0, DETUNE_DISPLAY(genesis[g].opn2.chan[chan].op[op].detune));
     FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 1, genesis[g].opn2.chan[chan].op[op].attackrate >> 1);
     FrontPanel_LEDRingSet(FP_LEDR_DEC1R, 1, genesis[g].opn2.chan[chan].op[op].decay1rate >> 1);
-    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 1, genesis[g].opn2.chan[chan].op[op].decaylevel);
+    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 1, 15 - genesis[g].opn2.chan[chan].op[op].decaylevel);
     FrontPanel_LEDRingSet(FP_LEDR_DEC2R, 1, genesis[g].opn2.chan[chan].op[op].decay2rate >> 1);
     FrontPanel_LEDRingSet(FP_LEDR_RELRATE, 1, genesis[g].opn2.chan[chan].op[op].releaserate);
     FrontPanel_LEDSet(FP_LED_KSR, genesis[g].opn2.chan[chan].op[op].ratescale);
