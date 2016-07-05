@@ -559,7 +559,9 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
   } header;
   union {
     umm_ptr free;
-    unsigned char data[portBYTE_ALIGNMENT];
+    unsigned char data[sizeof(umm_ptr)]; //The size of this array used to be
+    //portBYTE_ALIGNMENT (i.e. 8), but this caused the block size to be 12
+    //bytes, which is probably not desired behavior.
   } body;
 } UMM_H_ATTPACKSUF umm_block;
 
@@ -610,6 +612,18 @@ UMM_H_ATTPACKPRE typedef struct umm_block_t {
   #define UMM_NUMBLOCKS (umm_numblocks)
 
 #endif
+
+//For monitoring memory use; this value is only written to, not used, by the
+//umm routines
+//By the way, blocks are actually 12 bytes in this implementation!
+//(sizeof(umm_ptr) == 4 plus portBYTE_ALIGNMENT == 8)
+//I think this is wrong... First of all, I don't know of anything on the ARM32
+//which needs to be aligned to any more than 4 bytes. Second, even if we wanted
+//to align all malloc'd pointers to 8 bytes, since the blocks are 12 bytes, half
+//of them are going to be aligned, and half aren't!
+volatile unsigned int umm_numusedblocks; //Evidently if this is short, the heap itself doesn't get aligned to 4 bytes, and everything dies
+//Also, evidently writing to this as the last line of a subroutine, and reading
+//from it as the first line of the parent code, the value used is the old value?
 
 // ----------------------------------------------------------------------------
 
@@ -862,6 +876,9 @@ void umm_free( void *ptr ) {
   c = (ptr-(void *)(&(umm_heap[0])))/sizeof(umm_block);
 
   DBG_LOG_DEBUG( "Freeing block %6d\n", c );
+  
+  //Monitor memory use: how many blocks are we freeing?
+  umm_numusedblocks -= (UMM_NBLOCK(c) - c);
 
   // Now let's assimilate this block with the next one if possible.
 
@@ -1025,6 +1042,8 @@ void *umm_malloc( size_t size ) {
       UMM_NBLOCK(0) = 1;
       UMM_NFREE(0)  = 1;
       cf            = 1;
+      umm_numusedblocks = 2; //One for the empty block at the start of the heap,
+      //one for the empty block at the end
     }
 
     DBG_LOG_DEBUG( "Allocating %6d blocks starting at %6d - new     \n", blocks, cf );
@@ -1037,6 +1056,9 @@ void *umm_malloc( size_t size ) {
     UMM_PBLOCK(cf+blocks)    = cf;
   }
 
+  //Monitor memory use: how many blocks are we taking up?
+  umm_numusedblocks += blocks;
+  
   // Release the critical section...
   //
   UMM_CRITICAL_EXIT();
@@ -1054,6 +1076,9 @@ void *umm_realloc( void *ptr, size_t size ) {
   unsigned short int c;
 
   size_t curSize;
+  
+  //For monitoring memory use
+  unsigned int new_numusedblocks;
 
   // This code looks after the case of a NULL value for ptr. The ANSI C
   // standard says that if ptr is NULL and size is non-zero, then we've
@@ -1099,6 +1124,12 @@ void *umm_realloc( void *ptr, size_t size ) {
   // Figure out how big this block is...
 
   blockSize = (UMM_NBLOCK(c) - c);
+
+  //Monitor memory use: Figure out the total change in number of blocks to be
+  //allocated, assuming the realloc succeeds. We have to calculate the new
+  //value here, because this function calls malloc and/or free and those will
+  //mess up the block count.              v new v   v old v
+  new_numusedblocks = umm_numusedblocks + blocks - blockSize;
 
   // Figure out how many bytes are in this block
     
@@ -1194,10 +1225,20 @@ void *umm_realloc( void *ptr, size_t size ) {
     umm_free( oldptr );
   }
 
+  //Monitoring memory use:
+  if(ptr != NULL){
+    //Succeed, store the new size (calculated above):
+    umm_numusedblocks = new_numusedblocks;
+  }else{
+    //New malloc failed, so free already took away and un-counted the used
+    //memory (old size)
+  }
+  
   // Release the critical section...
   //
   UMM_CRITICAL_EXIT();
 
+  
   return( ptr );
 }
 
