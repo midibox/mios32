@@ -150,6 +150,7 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
         if(cmd->addr == 0x28){
             //Key on
             chan = cmd->data & 0x07;
+            if((chan & 3) == 3){ cmd->cmd = 0xFF; return; }
             if(chan < 0x03) chan += 1; //Move channels 0,1,2 up to 1,2,3
             CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
@@ -170,11 +171,13 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             board = head->channel[0].map_chip;
         }else{
             //Operator or channel/voice write
-            chan = (cmd->addr & 0x03) + addrhi + (addrhi << 1) + 1; //Add 3 for channels 3,4,5
+            chan = cmd->addr & 0x03;
+            if(chan == 3){ cmd->cmd = 0xFF; return; }
+            chan += addrhi + (addrhi << 1) + 1; //Now 1,2,3,4,5,6
             CHECK_MUTE_NODATA(chan);
             board = head->channel[chan].map_chip;
             chan = head->channel[chan].map_voice;
-            if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
+            chan += (chan >= 3); //Now 0,1,2,4,5,6
             addrhi = (chan & 0x04) >> 2;
             chan &= 0x03;
             cmd->addr = (cmd->addr & 0xFC) | chan;
