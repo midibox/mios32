@@ -18,11 +18,11 @@
 #include "frontpanel.h"
 
 
-static inline u8 Tracker_Encode(u8 v, s32 incrementer, u8 bits){
+static inline u8 Tracker_Clip(u8 v, s32 incrementer, u8 bits){
     s32 nv = (s32)v + incrementer;
     if(nv < 0) nv = 0;
     if(nv >= (1 << bits)) nv = (1 << bits) - 1;
-    return (u8)GENMDM_ENCODE(nv,bits);
+    return (u8)nv;
 }
 
 void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 midiport, u8 midichan){
@@ -35,6 +35,7 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
     u8 g = selvoice >> 4;
     u8 v = selvoice & 0xF;
     u8 chan;
+    u8 input, bits;
     if(v >= 1 && v <= 6){
         //FM
         chan = v - 1;
@@ -46,56 +47,106 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
                 selop = encoder - FP_E_OP1LVL;
                 pkg.cc_number = 16 + selop;
                 incrementer = 0 - incrementer;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].totallevel, incrementer, 7);
+                input = genesis[g].opn2.chan[chan].op[selop].totallevel;
+                bits = 7;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 127 - input);
                 break;
             case FP_E_HARM:
                 pkg.cc_number = 20 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].fmult, incrementer, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].fmult;
+                bits = 4;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_DETUNE:
                 pkg.cc_number = 24 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].detune, incrementer, 3);
+                input = genesis[g].opn2.chan[chan].op[selop].detune;
+                bits = 3;
+                if(input == 5 && incrementer > 0){
+                    input = incrementer - 1;
+                }else if(input == 0 && incrementer < 0){
+                    input = 4 - incrementer;
+                }else if(input == 7 && incrementer < 0){
+                    return;
+                }else if(input == 3 && incrementer > 0){
+                    return;
+                }else if(input >= 4){
+                    input -= incrementer;
+                }else{
+                    input += incrementer;
+                }
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (input >= 4) ? (4 - (s16)input) : input);
                 break;
             case FP_E_ATTACK:
                 pkg.cc_number = 43 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].attackrate, incrementer, 5);
+                input = genesis[g].opn2.chan[chan].op[selop].attackrate;
+                bits = 5;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_DEC1R:
                 pkg.cc_number = 47 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].decay1rate, incrementer, 5);
+                input = genesis[g].opn2.chan[chan].op[selop].decay1rate;
+                bits = 5;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_DECLVL:
                 incrementer = 0 - incrementer;
                 pkg.cc_number = 55 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].decaylevel, incrementer, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].decaylevel;
+                bits = 4;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 15 - input);
                 break;
             case FP_E_DEC2R:
                 pkg.cc_number = 51 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].decay2rate, incrementer, 5);
+                input = genesis[g].opn2.chan[chan].op[selop].decay2rate;
+                bits = 5;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_RELRATE:
                 pkg.cc_number = 59 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].releaserate, incrementer, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].releaserate;
+                bits = 4;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_LFOFDEP:
                 pkg.cc_number = 75;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].lfofreqd, incrementer, 3);
+                input = genesis[g].opn2.chan[chan].lfofreqd;
+                bits = 3;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_LFOADEP:
                 pkg.cc_number = 76;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].lfoampd, incrementer, 2);
+                input = genesis[g].opn2.chan[chan].lfoampd;
+                bits = 2;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_FEEDBACK:
                 pkg.cc_number = 15;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].feedback, incrementer, 3);
+                input = genesis[g].opn2.chan[chan].feedback;
+                bits = 3;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_CSMFREQ:
-                //TODO
-                break;
+                return;//TODO
+                //break;
             case FP_E_LFOFREQ:
                 pkg.cc_number = 1;
-                pkg.value = Tracker_Encode(genesis[g].opn2.lfo_freq, incrementer, 3);
+                input = genesis[g].opn2.lfo_freq;
+                bits = 3;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
+            default:
+                return;
         }
     }else if(v >= 8 && v <= 10){
         //SQ
@@ -105,13 +156,14 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
         return; //Changes are handled by note and velocity
     }else if(v == 0){
         //OPN2 Chip
-        //TODO
+        return; //TODO
     }else if(v == 7){
         //DAC
-        //TODO
+        return; //TODO
     }else{
         return;
     }
+    pkg.value = GENMDM_ENCODE(input,bits);
     VGM_MidiToGenesis(pkg, g, v, 0, 0);
     MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
     pkg.type = 2; //UART
@@ -128,48 +180,57 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
     u8 g = selvoice >> 4;
     u8 v = selvoice & 0xF;
     u8 chan;
+    u8 input, bits;
     if(v >= 1 && v <= 6){
         //FM
         chan = v - 1;
         switch(button){
             case FP_B_OUT:
                 pkg.cc_number = 77;
-                pkg.value = Tracker_Encode(value & 3, 0, 2);
+                input = value & 3;
+                bits = 2;
                 break;
             case FP_B_ALG:
                 pkg.cc_number = 14;
-                pkg.value = Tracker_Encode(value & 7, 0, 3);
+                input = value & 7;
+                bits = 3;
                 break;
             case FP_B_KSR:
                 pkg.cc_number = 39 + selop;
-                pkg.value = Tracker_Encode(value & 3, 0, 2);
+                input = value & 3;
+                bits = 2;
                 break;
             case FP_B_SSGON:
                 pkg.cc_number = 90 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x8, 0, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x8;
+                bits = 4;
                 break;
             case FP_B_SSGINIT:
                 pkg.cc_number = 90 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x4, 0, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x4;
+                bits = 4;
                 break;
             case FP_B_SSGTGL:
                 pkg.cc_number = 90 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x2, 0, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x2;
+                bits = 4;
                 break;
             case FP_B_SSGHOLD:
                 pkg.cc_number = 90 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x1, 0, 4);
+                input = genesis[g].opn2.chan[chan].op[selop].ssgreg ^ 0x1;
+                bits = 4;
                 break;
             case FP_B_LFOAM:
                 pkg.cc_number = 70 + selop;
-                pkg.value = Tracker_Encode(genesis[g].opn2.chan[chan].op[selop].amplfo ^ 0x1, 0, 1);
+                input = genesis[g].opn2.chan[chan].op[selop].amplfo ^ 0x1;
+                bits = 1;
                 break;
             case FP_B_CH3MODE:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             case FP_B_CH3FAST:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             default:
                 return;
         }
@@ -183,17 +244,17 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
         //OPN2 Chip
         switch(button){
             case FP_B_UGLY:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             case FP_B_DACOVR:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             case FP_B_LFO:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             case FP_B_EG:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             default:
                 return;
         }
@@ -201,14 +262,16 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
         //DAC
         switch(button){
             case FP_B_DACEN:
-                //TODO
-                break;
+                return; //TODO
+                //break;
             default:
                 return;
         }
     }else{
         return;
     }
+    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
+    pkg.value = (u8)GENMDM_ENCODE(input,bits);
     VGM_MidiToGenesis(pkg, g, v, 0, 0);
     MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
     pkg.type = 2; //UART

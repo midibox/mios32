@@ -89,6 +89,11 @@ void Interface_Background(){
                 FrontPanel_VGMMatrixPoint(v, g, 0);
             }
         }
+        //Clear main LED display
+        FrontPanel_DrawDigit(FP_LED_DIG_MAIN_1, ' ');
+        FrontPanel_DrawDigit(FP_LED_DIG_MAIN_2, ' ');
+        FrontPanel_DrawDigit(FP_LED_DIG_MAIN_3, ' ');
+        FrontPanel_DrawDigit(FP_LED_DIG_MAIN_4, ' ');
         //Turn off the old mode light
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 0);
         //Change modes

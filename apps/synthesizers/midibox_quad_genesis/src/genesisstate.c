@@ -52,16 +52,16 @@ void DrawGenesisState_Op(u8 g, u8 chan, u8 op){
     if(genesis[g].opn2.ch3_mode != 0 && chan == 2){
         if(op == 0){
             FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.ch3op1_block);
-            FrontPanel_DrawFreqNumber(((u16)genesis[g].opn2.ch3op1_fnum_high << 8) | genesis[g].opn2.ch3op1_fnum_low);
+            FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.ch3op1_fnum_high << 8) | genesis[g].opn2.ch3op1_fnum_low);
         }else if(op == 1){
             FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.ch3op2_block);
-            FrontPanel_DrawFreqNumber(((u16)genesis[g].opn2.ch3op2_fnum_high << 8) | genesis[g].opn2.ch3op2_fnum_low);
+            FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.ch3op2_fnum_high << 8) | genesis[g].opn2.ch3op2_fnum_low);
         }else if(op == 2){
             FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.ch3op3_block);
-            FrontPanel_DrawFreqNumber(((u16)genesis[g].opn2.ch3op3_fnum_high << 8) | genesis[g].opn2.ch3op3_fnum_low);
+            FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.ch3op3_fnum_high << 8) | genesis[g].opn2.ch3op3_fnum_low);
         }else{
             FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.chan[2].block);
-            FrontPanel_DrawFreqNumber(((u16)genesis[g].opn2.chan[2].fnum_high << 8) | genesis[g].opn2.chan[2].fnum_low);
+            FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.chan[2].fnum_high << 8) | genesis[g].opn2.chan[2].fnum_low);
         }
     }
 }
@@ -97,7 +97,7 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
     }
     if(!(genesis[g].opn2.ch3_mode != 0 && chan == 2)){
         FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.chan[chan].block);
-        FrontPanel_DrawFreqNumber(((u16)genesis[g].opn2.chan[chan].fnum_high << 8) | genesis[g].opn2.chan[chan].fnum_low);
+        FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.chan[chan].fnum_high << 8) | genesis[g].opn2.chan[chan].fnum_low);
     }
     FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, 1, genesis[g].opn2.chan[chan].lfofreqd);
     FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, 1, genesis[g].opn2.chan[chan].lfoampd);
