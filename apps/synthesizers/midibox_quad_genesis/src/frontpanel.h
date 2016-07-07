@@ -310,14 +310,14 @@ extern void FrontPanel_ButtonChange(u32 btn, u32 value);
 extern void FrontPanel_EncoderChange(u32 encoder, u32 incrementer);
 
 
-extern void FrontPanel_LEDSet(u32 led, u8 value);
+extern void FrontPanel_LEDSet(u32 led, u8 value); //Special case: if led is the index of a digit, this draws the decimal point
 extern void FrontPanel_GenesisLEDSet(u8 genesis, u8 voice, u8 color, u8 value);
 extern void FrontPanel_DrawAlgorithm(u8 algorithm);
 extern void FrontPanel_DrawDACValue(u16 bits);
 extern void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value);
 extern void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value); //Mode: 0 line, 1 fill, else clear
 extern void FrontPanel_DrawDigit(u8 digit, char value);
-extern void FrontPanel_DrawFreqNumber(u16 number);
+extern void FrontPanel_DrawNumber(u8 firstdigit, s16 number);
 extern void FrontPanel_DrawLoad(u8 type, u8 value);
 
 

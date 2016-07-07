@@ -807,7 +807,7 @@ void SyEng_Init(){
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[3].program = prog;
-    sprintf(prog->name, "Revenge Mr.X");
+    sprintf(prog->name, "VGM Playback");
     prog->usage = (usage_bits_t){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
                                  .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
@@ -825,7 +825,7 @@ void SyEng_Init(){
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
-    DEBUG2 = VGM_SourceStream_Start(source, "REVENGEX.vgm");
+    DEBUG2 = VGM_SourceStream_Start(source, "GOODEND2.VGM");
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();

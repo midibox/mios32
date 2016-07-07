@@ -16,6 +16,7 @@
 #include "genesisstate.h"
 #include "syeng.h"
 #include "tracker.h"
+#include "genesis.h"
 
 u8 submode;
 u8 selvoice;
@@ -54,12 +55,12 @@ static void SeeIfVoiceIsTracker(){
 }
 
 static void DrawMenu(){
+    u8 g = selvoice>>4;
+    u8 v = selvoice & 0xF;
     switch(submode){
         case 0:
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
-            u8 g = selvoice>>4;
-            u8 v = selvoice & 0xF;
             if(voiceistracker){
                 MIOS32_LCD_PrintFormattedString("G%d:%s: Tracker on Prt%d:Ch%2d, editable", g+1, GetVoiceName(v), (voicetrackerchan>>4)+1, (voicetrackerchan&0xF)+1);
             }else{
@@ -83,6 +84,25 @@ static void DrawMenu(){
             MIOS32_LCD_PrintString("      1     1   124  12   111  12   1 2 ");
             MIOS32_LCD_CursorSet(0,1);
             MIOS32_LCD_PrintString("1234  234  234   3   34   234  3 4  3 4 ");
+            break;
+        case 3:
+            //Key On
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("TODO"); //TODO
+            break;
+        case 4:
+            //KSR
+            if(v == 0 || v >= 7) return;
+            --v;
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("  0    1    2    3   Key Scale Rate:");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString(" 1/2  1/1  2/1  4/1  Add'l rate/octave");
+            u8 ksr = genesis[g].opn2.chan[v].op[selop].ratescale;
+            MIOS32_LCD_CursorSet(5*ksr,1);
+            MIOS32_LCD_PrintChar('~');
             break;
     }
 }
@@ -137,6 +157,7 @@ void Mode_Voice_Background(){
 
 void Mode_Voice_BtnGVoice(u8 gvoice, u8 state){
     if(!state) return;
+    if(submode) return;
     selvoice = gvoice;
     SeeIfVoiceIsTracker();
     DrawMenu();
@@ -166,6 +187,24 @@ void Mode_Voice_BtnSoftkey(u8 softkey, u8 state){
             //Algorithm
             Tracker_BtnToMIDI(FP_B_ALG, softkey, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
             break;
+        case 3:
+            //TODO
+            break;
+        case 4:
+            //KSR
+            if(softkey >= 4) return;
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintChar(' ');
+            MIOS32_LCD_CursorSet(5,1);
+            MIOS32_LCD_PrintChar(' ');
+            MIOS32_LCD_CursorSet(10,1);
+            MIOS32_LCD_PrintChar(' ');
+            MIOS32_LCD_CursorSet(15,1);
+            MIOS32_LCD_PrintChar(' ');
+            MIOS32_LCD_CursorSet(5*softkey,1);
+            MIOS32_LCD_PrintChar('~');
+            Tracker_BtnToMIDI(FP_B_KSR, softkey, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+            break;
     }
 }
 void Mode_Voice_BtnSelOp(u8 op, u8 state){
@@ -179,7 +218,8 @@ void Mode_Voice_BtnSystem(u8 button, u8 state){
 
 }
 void Mode_Voice_BtnEdit(u8 button, u8 state){
-    if(voiceistracker){
+    u8 v = selvoice & 0xF;
+    if(voiceistracker && v >= 1 && v <= 6){
         switch(button){
             case FP_B_OUT:
                 submode = state ? 1 : 0;
