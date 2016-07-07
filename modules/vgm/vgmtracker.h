@@ -23,7 +23,7 @@
 #define GENMDM_DECODE(value,bits) ((value) >> (7-(bits)))
 #else
 //Take the least significant bits of value
-#define GENMDM_ENCODE(value,bits) (value)
+#define GENMDM_ENCODE(value,bits) ((value) | ((u8)(bits) >> 9)) //Just value, but otherwise warning bits is unused
 #define GENMDM_DECODE(value,bits) ((value) & ((1<<(bits))-1))
 #endif
 
