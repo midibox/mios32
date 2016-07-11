@@ -67,7 +67,8 @@ static void DrawMenu(){
                 MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
             }
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
+            //MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
+            MIOS32_LCD_PrintFormattedString("Use %d", syngenesis[g].channels[v].use);
             break;
         case 1:
             //Channel output (stereo)

@@ -22,6 +22,7 @@
 
 // MBHP_Genesis
 #define GENESIS_COUNT 4
+#define GENESIS_STARTUP_FILTER 1
 
 // VGM timers
 #define MIOS32_DONT_USE_TIMER

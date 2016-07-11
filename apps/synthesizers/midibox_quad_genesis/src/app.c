@@ -150,6 +150,7 @@ void APP_Tick(void){
     static u16 prescaler = 0;
     BLM_X_BtnHandler((void*)&FrontPanel_ButtonChange);
     SyEng_Tick();
+    GenesisState_Tick();
     Interface_Tick();
     ++prescaler;
     if(prescaler == 100){
