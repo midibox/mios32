@@ -38,6 +38,44 @@ void VGM_Tracker_Enqueue(VgmChipWriteCmd cmd, u8 fixfreq){
     VGM_HeadQueue_Enqueue(qhead, cmd, fixfreq);
 }
 
+void VGM_ResetChipVoice(u8 g, u8 v){
+    u8 chan = v <= 7 ? v-1 : v-8;
+    u8 psgcmd = (g << 4);
+    u8 opn2globcmd = psgcmd | 2;
+    u8 opn2cmd = opn2globcmd | (v >= 4 && v <= 6);
+    if(v == 0){
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x21, .data = 0x00 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x22, .data = 0x00 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2C, .data = 0x00 }, 0);
+    }else if(v <= 6){
+        //Key off
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+        u8 subchan = chan % 3;
+        u8 i = 0x80 | subchan;
+        //Set release rate to full so EG states return to 0 while we're writing the other stuff
+        for(; i<0x90; i+=4){
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = i, .data = 0xFF }, 0);
+        }
+        //Set all channel registers to 0, except output
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = 0xA4 | subchan, .data = 0x00, .data2 = 0x00 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = 0xB0 | subchan, .data = 0x00 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = 0xB4 | subchan, .data = 0xC0 }, 0);
+        i = 0x30 | subchan;
+        //Set all operator registers to 0
+        for(; i<0xA0; i+=4){
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = i, .data = 0x00 }, 0);
+        }
+    }else if(v == 7){
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2B, .data = 0x00 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2A, .data = 0x80 }, 0);
+    }else if(v <= 10){
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = psgcmd, .data = (chan<<5)|0x8F, .data2 = 0x3F }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = psgcmd, .data = (chan<<5)|0x9F }, 0);
+    }else if(v == 11){
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = psgcmd, .data = 0xE0 }, 0);
+        VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = psgcmd, .data = 0xFF }, 0);
+    }
+}
 
 void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op, u8 keyonmask){
     DBG("VGM_MidiToGenesis(event %X, cc %d, value %d, g%d, v%d)", midi_package.event, midi_package.cc_number, midi_package.value, g, v);
