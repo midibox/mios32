@@ -17,6 +17,42 @@
 #include <vgm.h>
 #include "frontpanel.h"
 
+typedef struct {
+    u8 lastdac;
+    u8 timer;
+    u16 dacvu:9;
+    u8 playing:1;
+    u8 dummy:6;
+} DAC_State_t;
+
+DAC_State_t dacstates[GENESIS_COUNT];
+
+void GenesisState_Tick(){
+    u8 g, dac, de, playing;
+    for(g=0; g<GENESIS_COUNT; ++g){
+        dac = genesis[g].opn2.dac_high;
+        de = genesis[g].opn2.dac_enable;
+        playing = de && (dac != dacstates[g].lastdac);
+        dacstates[g].playing = playing;
+        if(playing){
+            if(dac >= 0xC0 || dac < 0x40) dacstates[g].dacvu = 0x1FF;
+            else if(dac >= 0xA0 || dac < 0x60) dacstates[g].dacvu = 0x0FF;
+            else if(dac >= 0x90 || dac < 0x70) dacstates[g].dacvu = 0x07F;
+            else dacstates[g].dacvu = 0x03F;
+            dacstates[g].timer = 0;
+        }else if(!de){
+            dacstates[g].dacvu = 0;
+        }else{
+            ++dacstates[g].timer;
+            if(dacstates[g].timer > 50){
+                dacstates[g].dacvu >>= 1;
+                dacstates[g].timer = 0;
+            }
+        }
+        dacstates[g].lastdac = genesis[g].opn2.dac_high;
+    }
+}
+
 void DrawGenesisActivity(u8 g){
     //FM voices
     if(g >= GENESIS_COUNT) return;
@@ -28,6 +64,8 @@ void DrawGenesisActivity(u8 g){
         }
         FrontPanel_GenesisLEDSet(g, v+1, 0, k);
     }
+    //DAC
+    FrontPanel_GenesisLEDSet(g, 7, 0, dacstates[g].playing);
     //PSG voices
     for(v=0; v<4; v++){
         FrontPanel_GenesisLEDSet(g, v+8, 0, genesis[g].psg.voice[v].atten != 0xF);
@@ -129,28 +167,7 @@ void ClearGenesisState_Chan(){
     FrontPanel_LEDSet(FP_LED_OUTR, 0);
 }
 void DrawGenesisState_DAC(u8 g){
-    static u8 lastdac = 0x80;
-    static u16 dacvu = 0;
-    static u32 timer = 0;
-    //DAC
-    u8 dac = genesis[g].opn2.dac_high;
-    u8 dacplaying = (genesis[g].opn2.dac_enable && dac != lastdac);
-    FrontPanel_GenesisLEDSet(g, 7, 0, dacplaying);
-    u32 now = VGM_Player_GetVGMTime();
-    if(dacplaying){
-        if(dac >= 0xC0 || dac < 0x40) dacvu = 0x1FF;
-        else if(dac >= 0xA0 || dac < 0x60) dacvu = 0x0FF;
-        else if(dac >= 0x90 || dac < 0x70) dacvu = 0x07F;
-        else dacvu = 0x03F;
-        timer = now;
-    }else{
-        if(now - timer > 1500){
-            dacvu >>= 1;
-            timer = now;
-        }
-    }
-    FrontPanel_DrawDACValue(dacvu);
-    lastdac = genesis[g].opn2.dac_high;
+    FrontPanel_DrawDACValue(dacstates[g].dacvu);
     FrontPanel_LEDSet(FP_LED_DACEN, genesis[g].opn2.dac_enable);
 }
 void ClearGenesisState_DAC(){
@@ -169,7 +186,6 @@ void DrawGenesisState_OPN2(u8 g){
     FrontPanel_LEDSet(FP_LED_DACOVR, genesis[g].opn2.dac_override);
     FrontPanel_LEDSet(FP_LED_LFO, genesis[g].opn2.lfo_enabled);
     FrontPanel_LEDSet(FP_LED_EG, !genesis[g].opn2.test_noeg);
-    FrontPanel_LEDSet(FP_LED_DACEN, genesis[g].opn2.dac_enable);
 }
 void ClearGenesisState_OPN2(){
     FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0xFF, 0);
@@ -183,7 +199,6 @@ void ClearGenesisState_OPN2(){
     FrontPanel_LEDSet(FP_LED_DACOVR, 0);
     FrontPanel_LEDSet(FP_LED_LFO, 0);
     FrontPanel_LEDSet(FP_LED_EG, 0);
-    FrontPanel_LEDSet(FP_LED_DACEN, 0);
 }
 void DrawGenesisState_PSG(u8 g, u8 voice){
     g &= 3;
@@ -224,11 +239,9 @@ void DrawGenesisState_All(u8 g, u8 voice, u8 op){
     if(voice == 0){
         DrawGenesisState_OPN2(g);
     }else if(voice <= 6){
-        DrawGenesisState_OPN2(g);
         DrawGenesisState_Chan(g, voice-1);
         DrawGenesisState_Op(g, voice-1, op);
     }else if(voice == 7){
-        DrawGenesisState_OPN2(g);
         DrawGenesisState_DAC(g);
     }else if(voice <= 11){
         DrawGenesisState_PSG(g, voice-8);

@@ -143,4 +143,6 @@ extern void SyEng_Tick();
 extern void SyEng_Note_On(mios32_midi_package_t pkg);
 extern void SyEng_Note_Off(mios32_midi_package_t pkg);
 
+extern void SyEng_ClearVoice(u8 g, u8 v);
+
 #endif /* _SYENG_H */

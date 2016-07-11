@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+extern void GenesisState_Tick();
+
 extern void DrawGenesisActivity(u8 g);
 
 extern void DrawGenesisState_Op(u8 g, u8 chan, u8 op);
