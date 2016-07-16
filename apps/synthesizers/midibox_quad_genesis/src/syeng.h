@@ -52,26 +52,17 @@ typedef union {
 } usage_bits_t;
 
 typedef union {
-    u8 ALL;
+    u16 ALL;
     struct {
-        u8 pi_using:6;
+        u8 pi_using;
         u8 use:2; //3 for tracker mode, 2 for in use, 1 for standby, 0 for none
+        u8 lfo:1;
+        u8 beingcleared:1;
+        u8 dummy:4;
     };
 } syngenesis_usage_t;
 
 typedef struct {
-    union{
-        u8 lfobits;
-        struct{
-            u8 fm1_lfo:1;
-            u8 fm2_lfo:1;
-            u8 fm3_lfo:1;
-            u8 fm4_lfo:1;
-            u8 fm5_lfo:1;
-            u8 fm6_lfo:1;
-            u8 dummy:2;
-        };
-    };
     union{
         u8 optionbits;
         struct{
@@ -79,9 +70,10 @@ typedef struct {
             u8 lfofixed:1;
             u8 lfofixedspeed:3;
             u8 noisefreqsq3:1;
-            u8 dummy2:2;
+            u8 dummy:2;
         };
     };
+    u8 dummy2;
     u16 dummy3;
     syngenesis_usage_t channels[12];
 } syngenesis_t;
@@ -103,6 +95,8 @@ typedef struct {
     u8 valid:1;
     u8 playing:1;
     u8 playinginit:1;
+    u8 waitingforclear:1;
+    u8 dummy:4;
     u8 sourcechannel;
     u8 note;
     u8 dummy2;
@@ -117,9 +111,6 @@ typedef struct {
 
 extern synproginstance_t proginstances[MBQG_NUM_PROGINSTANCES];
 
-#if (MBQG_NUM_PROGINSTANCES > 64)
-#error "Too many proginstances (6 bit index)!"
-#endif
 
 typedef struct {
     u8 trackermode:1;
@@ -136,6 +127,8 @@ typedef struct {
 extern synchannel_t channels[16*MBQG_NUM_PORTS];
 
 ////////////////////////////////////////////////////////////////////////////////
+
+extern u8 voiceclearfull;
 
 extern void SyEng_Init();
 extern void SyEng_Tick();

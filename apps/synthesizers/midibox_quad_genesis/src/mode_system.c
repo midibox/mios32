@@ -15,6 +15,7 @@
 #include <vgm.h>
 #include <genesis.h>
 #include "frontpanel.h"
+#include "syeng.h"
 
 u8 submode;
 
@@ -36,7 +37,7 @@ static void DrawMenu(){
             MIOS32_LCD_Clear();
             DrawUsage();
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintFormattedString("Fltr");
+            MIOS32_LCD_PrintFormattedString("Fltr Opts");
             break;
         case 1:
             MIOS32_LCD_Clear();
@@ -46,6 +47,13 @@ static void DrawMenu(){
             MIOS32_LCD_PrintFormattedString("%s  %s", 
                     (genesis[0].board.cap_opn2 ? "On " : "Off"), 
                     (genesis[0].board.cap_psg  ? "On " : "Off"));
+            break;
+        case 2:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Options   VClr");
+            MIOS32_LCD_CursorSet(10,1);
+            MIOS32_LCD_PrintFormattedString("%s", voiceclearfull ? "Full" : "KOff");
             break;
         default:
             MIOS32_LCD_Clear();
@@ -88,6 +96,10 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                     submode = 1;
                     DrawMenu();
                     break;
+                case 1:
+                    submode = 2;
+                    DrawMenu();
+                    break;
             }
             break;
         case 1:
@@ -103,6 +115,14 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                     Genesis_WriteBoardBits(0);
                     MIOS32_LCD_CursorSet(31,1);
                     MIOS32_LCD_PrintFormattedString(genesis[0].board.cap_psg ? "On " : "Off");
+                    break;
+            }
+            break;
+        case 2:
+            switch(softkey){
+                case 2:
+                    voiceclearfull = !voiceclearfull;
+                    DrawMenu();
                     break;
             }
             break;
