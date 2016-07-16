@@ -58,6 +58,7 @@ void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq){
     vhq->busy = 1;
     if(vhq->depth == VGM_QUEUE_LENGTH){
         vhq->busy = 0;
+        DBG("VGM_HeadQueue_Enqueue dropping command %02X %02X %02X %02X!", cmd.cmd, cmd.addr, cmd.data, cmd.data2);
         return; //drop the command
     }
     if((cmd.cmd & 0x0F) == 0){
@@ -67,6 +68,7 @@ void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq){
             //We will make a 2-write command
             if(vhq->depth == VGM_QUEUE_LENGTH-1){
                 vhq->busy = 0;
+                DBG("VGM_HeadQueue_Enqueue dropping command %02X %02X %02X %02X!", cmd.cmd, cmd.addr, cmd.data, cmd.data2);
                 return; //drop the command
             }
             //Fix PSG frequency
@@ -89,6 +91,7 @@ void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq){
             //We will make a 2-write command
             if(vhq->depth == VGM_QUEUE_LENGTH-1){
                 vhq->busy = 0;
+                DBG("VGM_HeadQueue_Enqueue dropping command %02X %02X %02X %02X!", cmd.cmd, cmd.addr, cmd.data, cmd.data2);
                 return; //drop the command
             }
             //Fix OPN2 frequency

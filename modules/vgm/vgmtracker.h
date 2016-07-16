@@ -31,7 +31,8 @@
 extern void VGM_Tracker_Init();
 extern void VGM_Tracker_Enqueue(VgmChipWriteCmd cmd, u8 fixfreq);
 
-extern void VGM_ResetChipVoice(u8 g, u8 v);
+extern void VGM_ResetChipVoiceAsync(u8 g, u8 v);
+extern void VGM_PartialResetChipVoiceAsync(u8 g, u8 v);
 
 extern void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op, u8 keyonmask);
 

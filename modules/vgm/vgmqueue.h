@@ -17,7 +17,9 @@
 #include "vgmsource.h"
 #include "vgmhead.h"
 
-#define VGM_QUEUE_LENGTH 64
+//TODO allow queues for different purposes to have different lengths, memory
+//allocated at runtime rather than in the struct
+#define VGM_QUEUE_LENGTH 256
 
 typedef union {
     u8 ALL[4+(VGM_QUEUE_LENGTH*sizeof(VgmChipWriteCmd))];

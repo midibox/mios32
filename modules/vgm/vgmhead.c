@@ -33,14 +33,11 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     head->ticks = 0; //will get changed at restart
     u8 i;
     for(i=0; i<12; ++i){
-        head->channel[i].mute = 0;
-        head->channel[i].map_chip = 0;
+        head->channel[i].ALL = 0;
         if(i>=1 && i<=6){
             head->channel[i].map_voice = i-1;
         }else if(i>=8 && i<=0xA){
             head->channel[i].map_voice = i-8;
-        }else{
-            head->channel[i].map_voice = 0;
         }
     }
     head->opn2mult = (((source->opn2clock << 9) / (genesis_clock_opn2 >> 3)) * freqmult) >> 12; 
