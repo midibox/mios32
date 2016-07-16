@@ -19,56 +19,154 @@
 
 #define UNUSED_RECENCY 0x01000000ul //about 362 seconds ago
 
+static const u8 use_scores[4] = {0, 1, 8, 100};
+
+#define VOICECLEARVGMCMDS 45
+static const u8 voiceclearvgm[VOICECLEARVGMCMDS*4] = {
+    //Key off
+    0x52, 0x28, 0x00, 0x00,
+    //Set release rate to full so EG states return to 0 while we're writing the other stuff
+    0x52, 0x80, 0xFF, 0x00,
+    0x52, 0x84, 0xFF, 0x00,
+    0x52, 0x88, 0xFF, 0x00,
+    0x52, 0x8C, 0xFF, 0x00,
+    //Turn on SSG mode so EG returns to 0 faster
+    0x52, 0x90, 0x08, 0x00,
+    0x52, 0x94, 0x08, 0x00,
+    0x52, 0x98, 0x08, 0x00,
+    0x52, 0x9C, 0x08, 0x00,
+    //Set key scale rate to maximum so EG returns to 0 faster
+    0x52, 0x50, 0xC0, 0x00,
+    0x52, 0x54, 0xC0, 0x00,
+    0x52, 0x58, 0xC0, 0x00,
+    0x52, 0x5C, 0xC0, 0x00,
+    //Set all channel registers to 0, except output
+    0x52, 0xA4, 0x00, 0x00,
+    0x52, 0xB0, 0x00, 0x00,
+    0x52, 0xB4, 0xC0, 0x00,
+    //Set all operator registers to 0
+    0x52, 0x30, 0x00, 0x00,
+    0x52, 0x34, 0x00, 0x00,
+    0x52, 0x38, 0x00, 0x00,
+    0x52, 0x3C, 0x00, 0x00,
+    0x52, 0x40, 0x00, 0x00,
+    0x52, 0x44, 0x00, 0x00,
+    0x52, 0x48, 0x00, 0x00,
+    0x52, 0x4C, 0x00, 0x00,
+    0x52, 0x60, 0x00, 0x00,
+    0x52, 0x64, 0x00, 0x00,
+    0x52, 0x68, 0x00, 0x00,
+    0x52, 0x6C, 0x00, 0x00,
+    0x52, 0x70, 0x00, 0x00,
+    0x52, 0x74, 0x00, 0x00,
+    0x52, 0x78, 0x00, 0x00,
+    0x52, 0x7C, 0x00, 0x00,
+    //Wait a short time (~6 ms)
+    0x61, 0x00, 0x00, 0x01,
+    //Turn off KSR, SSG-EG, and reset release rates to zero
+    0x52, 0x50, 0x00, 0x00,
+    0x52, 0x54, 0x00, 0x00,
+    0x52, 0x58, 0x00, 0x00,
+    0x52, 0x5C, 0x00, 0x00,
+    0x52, 0x90, 0x00, 0x00,
+    0x52, 0x94, 0x00, 0x00,
+    0x52, 0x98, 0x00, 0x00,
+    0x52, 0x9C, 0x00, 0x00,
+    0x52, 0x80, 0x00, 0x00,
+    0x52, 0x84, 0x00, 0x00,
+    0x52, 0x88, 0x00, 0x00,
+    0x52, 0x8C, 0x00, 0x00
+};
+
+
+typedef struct voiceclearlink_s {
+    VgmHead* head;
+    struct voiceclearlink_s* link;
+} voiceclearlink;
+
 syngenesis_t syngenesis[GENESIS_COUNT];
 synproginstance_t proginstances[MBQG_NUM_PROGINSTANCES];
 synchannel_t channels[16*MBQG_NUM_PORTS];
+u8 voiceclearfull;
+VgmSource* voiceclearsource;
+voiceclearlink* voiceclearlist;
 
-static const u8 use_scores[4] = {0, 1, 8, 100};
-
-//TODO reset voice/genesis states when releasing
 //TODO divide chips that use globals by the types of globals used, so multiple
 //voices using the same effect e.g. "ugly" can play together
-//TODO don't allocate to voices that are in tracker mode!
+
+static void VoiceReset(u8 g, u8 v){
+    if(voiceclearfull){
+        if(v >= 1 && v <= 6){
+            DBG("Setting up g %d v %d to be cleared via VGM", g, v);
+            syngenesis[g].channels[v].beingcleared = 1;
+            voiceclearlink* link = vgmh2_malloc(sizeof(voiceclearlink));
+            VgmHead* head = VGM_Head_Create(voiceclearsource, 0x1000, 0x1000);
+            link->head = head;
+            head->channel[1].map_chip = g;
+            head->channel[1].map_voice = v-1;
+            //Insert at head of queue
+            //MIOS32_IRQ_Disable();
+            link->link = voiceclearlist;
+            voiceclearlist = link;
+            //MIOS32_IRQ_Enable();
+            //Start playing
+            VGM_Head_Restart(head, VGM_Player_GetVGMTime());
+            head->playing = 1;
+        }else{
+            VGM_ResetChipVoiceAsync(g, v);
+        }
+    }else{
+        VGM_PartialResetChipVoiceAsync(g, v);
+    }
+}
 
 static void ReleaseAllPI(synproginstance_t* pi){
-    u8 i, v;
+    u8 i, g, v;
     VgmHead_Channel pimap;
     syngenesis_t* sg;
     for(i=0; i<12; ++i){
         pimap = pi->mapping[i];
         if(pimap.nodata) continue;
-        sg = &syngenesis[pimap.map_chip];
+        g = pimap.map_chip;
+        sg = &syngenesis[g];
         if(i == 0){
             //We were using OPN2 globals, so there can't be anything else
             //allocated on this OPN2 besides this PI
             //DBG("--ReleaseAllPI: clearing whole OPN2 %d", pimap.map_chip);
-            sg->lfobits = 0;
             sg->optionbits = 0;
-            for(v=0; v<8; ++v) sg->channels[v].ALL = 0;
+            for(v=0; v<8; ++v){
+                sg->channels[v].ALL = 0;
+                VoiceReset(g, v);
+            }
             //Skip to PSG section
             i = 7;
             continue;
         }
         if(i >= 1 && i <= 6){
             //FM voice
-            v = pimap.map_voice;
-            sg->channels[v+1].ALL = 0;
-            sg->lfobits &= ~(1 << v);
-            if(sg->lfobits == 0){
+            v = pimap.map_voice+1;
+            sg->channels[v].ALL = 0;
+            VoiceReset(g, v);
+            //See if this chip has any voice using LFO
+            for(v=1; v<7; ++v) if(sg->channels[v].lfo) break;
+            if(v == 7){ //No LFO used
                 sg->lfovaries = 0;
                 sg->lfofixed = 0;
             }
         }else if(i == 7){
             //DAC
             sg->channels[7].ALL = 0;
+            VoiceReset(g, 7);
         }else if(i >= 8 && i <= 10){
             //SQ voice
-            v = pimap.map_voice;
-            sg->channels[v+8].ALL = 0;
+            v = pimap.map_voice+8;
+            sg->channels[v].ALL = 0;
+            VoiceReset(g, v);
         }else{
             //Noise
             sg->channels[11].ALL = 0;
             sg->noisefreqsq3 = 0;
+            VoiceReset(g, 11);
         }
         //DBG("--ReleaseAllPI: clearing voice %d", i);
     }
@@ -99,7 +197,6 @@ void SyEng_ClearVoice(u8 g, u8 v){
         return;
     }else{
         ClearPI(&proginstances[syngenesis[g].channels[v].pi_using]);
-        VGM_ResetChipVoice(g, v);
     }
     syngenesis[g].channels[v].use = 0;
 }
@@ -153,7 +250,7 @@ static s8 FindOPN2ClearLFO(){
         for(v=1; v<6; ++v){
             use = syngenesis[g].channels[v].use;
             if(!use) full = 0;
-            if(syngenesis[g].lfobits & (1 << (v-1))){
+            if(syngenesis[g].channels[v].lfo){
                 //Only for voices using the LFO
                 score += use_scores[use];
                 full = 0;
@@ -172,7 +269,7 @@ static s8 FindOPN2ClearLFO(){
     if(bestg >= 0){
         //Kick out voices using the LFO
         for(v=1; v<6; ++v){
-            if(syngenesis[bestg].lfobits & (1 << (v-1))){
+            if(syngenesis[bestg].channels[v].lfo){
                 SyEng_ClearVoice(bestg, v);
             }
         }
@@ -181,7 +278,7 @@ static s8 FindOPN2ClearLFO(){
 }
 
 static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
-    DBG("--Assigning PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
+    //DBG("--Assigning PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
     syngenesis_usage_t* sgusage = &syngenesis[g].channels[vdest];
     SyEng_ClearVoice(g, vdest);
     //Assign voices
@@ -198,9 +295,7 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
     }
     sgusage->use = 2;
     sgusage->pi_using = piindex;
-    if(vlfo && proper){
-        syngenesis[g].lfobits |= 1 << (vdest-1);
-    }
+    sgusage->lfo = vlfo && proper;
     //Map PI
     pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
 }
@@ -582,7 +677,6 @@ void SyEng_Init(){
     u8 i, j;
     //Initialize syngenesis
     for(i=0; i<GENESIS_COUNT; ++i){
-        syngenesis[i].lfobits = 0;
         syngenesis[i].optionbits = 0;
         for(j=0; j<12; ++j){
             syngenesis[i].channels[j].ALL = 0;
@@ -598,6 +692,13 @@ void SyEng_Init(){
         channels[i].trackermode = 0;
         channels[i].program = NULL;
     }
+    //Initialize OPN2 voice clearing
+    voiceclearsource = VGM_SourceRAM_Create();
+    ((VgmSourceRAM*)voiceclearsource->data)->numcmds = VOICECLEARVGMCMDS;
+    ((VgmSourceRAM*)voiceclearsource->data)->cmds = (VgmChipWriteCmd*)voiceclearvgm;
+    voiceclearlist = NULL;
+    //Other
+    voiceclearfull = 1;
     ////////////////////////////////////////////////////////////////////////////
     //////////////////////////// OPN2 GRAND PIANO //////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -677,7 +778,7 @@ void SyEng_Init(){
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[5].program = prog;
+    channels[2].program = prog;
     sprintf(prog->name, "3Voice Chord");
     prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -697,35 +798,36 @@ void SyEng_Init(){
     i=0;
     //Voice 2
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3D, .data=0x01 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x49, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5D, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6D, .data=0x02 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8D, .data=0xA6 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB1, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB5, .data=0xC0 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x45, .data=0x7F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5D, .data=0x1F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6D, .data=0x02 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8D, .data=0xFF };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB1, .data=0x00 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB5, .data=0xC0 };
     //Voice 4
     data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3C, .data=0x01 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x48, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5C, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6C, .data=0x02 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8C, .data=0xA6 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB0, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB4, .data=0xC0 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x44, .data=0x7F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4C, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5C, .data=0x1F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6C, .data=0x02 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7C, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8C, .data=0xFF };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB0, .data=0x00 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB4, .data=0xC0 };
     //Voice 5
     data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3D, .data=0x01 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x49, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5D, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6D, .data=0x02 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8D, .data=0xA6 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB1, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB5, .data=0xC0 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x45, .data=0x7F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5D, .data=0x1F };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6D, .data=0x02 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7D, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8D, .data=0xFF };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB1, .data=0x00 };
+    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB5, .data=0xC0 };
     //
+    for(; i<27; ++i) data[i] = (VgmChipWriteCmd){.all=0};
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -762,7 +864,7 @@ void SyEng_Init(){
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[4].program = prog;
+    channels[5].program = prog;
     sprintf(prog->name, "SMB1 Coin");
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -824,7 +926,7 @@ void SyEng_Init(){
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[2].program = prog;
+    channels[4].program = prog;
     sprintf(prog->name, "Noise Test");
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -889,7 +991,7 @@ void SyEng_Init(){
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
-    DEBUG2 = VGM_SourceStream_Start(source, "LASTSOUL.VGM");
+    DEBUG2 = VGM_SourceStream_Start(source, "MOONBICH.VGM");
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -910,13 +1012,66 @@ void SyEng_Init(){
     prog->noteoffsource = source;
 }
 
+static u8 IsAnyVoiceBeingCleared(synproginstance_t* pi){
+    u8 c;
+    for(c=1; c<7; ++c){
+        VgmHead_Channel ch = pi->mapping[c];
+        if(ch.nodata) continue;
+        if(syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared) return 1;
+    }
+    return 0;
+}
+
 void SyEng_Tick(){
     u8 i;
+    //Clear voiceclear VGMs
+    //MIOS32_IRQ_Disable();
+    voiceclearlink* link = voiceclearlist;
+    voiceclearlink** backlink = &voiceclearlist;
+    voiceclearlink* oldlink;
+    while(link != NULL){
+        if(link->head->isdone){
+            //Mark the voice as clear
+            VgmHead_Channel ch = link->head->channel[1];
+            DBG("Clearing VGM for g %d v %d is done", ch.map_chip, ch.map_voice+1);
+            syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared = 0;
+            //Delete the head
+            VGM_Head_Delete(link->head);
+            //Delete the link
+            *backlink = link->link;
+            oldlink = link;
+            link = link->link;
+            vgmh2_free(oldlink);
+        }else{
+            //Traverse the linked list
+            backlink = &link->link;
+            link = link->link;
+        }
+    }
+    //MIOS32_IRQ_Enable();
+    //Clear program heads, change init to noteon
     synproginstance_t* pi;
     synprogram_t* prog;
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
         pi = &proginstances[i];
         if(!pi->valid) continue;
+        if(pi->waitingforclear){
+            //Is it cleared yet?
+            if(IsAnyVoiceBeingCleared(pi)) continue;
+            //Done, start playing init VGM
+            pi->waitingforclear = 0;
+            prog = channels[pi->sourcechannel].program;
+            if(prog == NULL){
+                DBG("ERROR program disappeared while playing, could not start playing init after clearing!");
+                continue;
+            }
+            DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
+            pi->head = VGM_Head_Create(prog->initsource, VGM_getFreqMultiplier((s8)pi->note - (s8)prog->rootnote), 0x1000);
+            CopyPIMappingToHead(pi, pi->head);
+            VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
+            pi->head->playing = 1;
+            continue;
+        }
         if(pi->head == NULL) continue;
         if(pi->head->isdone){
             //DBG("Stopping playing VGM which isdone");
@@ -929,7 +1084,7 @@ void SyEng_Tick(){
                 continue;
             }
             //Switch from init to noteon VGM
-            //DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
+            DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
             pi->playinginit = 0;
             pi->head = VGM_Head_Create(prog->noteonsource, VGM_getFreqMultiplier((s8)pi->note - (s8)prog->rootnote), 0x1000);
             CopyPIMappingToHead(pi, pi->head);
@@ -999,8 +1154,7 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
             pi->head = NULL;
         }
         //DBG("--Creating noteon head");
-        u32 fmultiplier = VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote);
-        pi->head = VGM_Head_Create(prog->noteonsource, fmultiplier, 0x1000);
+        pi->head = VGM_Head_Create(prog->noteonsource, VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote), 0x1000);
         //DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
         CopyPIMappingToHead(pi, pi->head);
         VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
@@ -1015,6 +1169,11 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
         DBG("--Clearing existing PI resources");
         ClearPI(pi);
     }
+    if(pi->head != NULL){
+        //Stop playing whatever it was playing
+        VGM_Head_Delete(pi->head);
+        pi->head = NULL;
+    }
     //Find best allocation
     //DBG("--Allocating resources for new PI");
     s32 ret = AllocatePI(bestrated, prog->usage);
@@ -1022,24 +1181,24 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
         DBG("--Could not allocate resources for PI (voices full)! code = %d", ret);
         return;
     }
-    //Start the init VGM
-    if(pi->head != NULL){
-        //Stop playing whatever it was playing
-        VGM_Head_Delete(pi->head);
-        pi->head = NULL;
-    }
-    //DBG("--Creating init head");
+    //Set up the PI for the new program
     pi->sourcechannel = pkg.chn;
     pi->valid = 1;
     pi->playing = 1;
     pi->playinginit = 1;
-    u32 fmultiplier = VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote);
-    pi->head = VGM_Head_Create(prog->initsource, fmultiplier, 0x1000);
+    pi->recency = VGM_Player_GetVGMTime();
+    //See if we're waiting for voices to be cleared
+    if(IsAnyVoiceBeingCleared(pi)){
+        pi->waitingforclear = 1;
+        return; //Init will be played in SyEng_Tick
+    }
+    //Start the init VGM
+    //DBG("--Creating init head");
+    pi->head = VGM_Head_Create(prog->initsource, VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote), 0x1000);
     //DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
     CopyPIMappingToHead(pi, pi->head);
     VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
     pi->head->playing = 1;
-    pi->recency = VGM_Player_GetVGMTime();
     //DBG("--Done");
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
