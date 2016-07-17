@@ -36,5 +36,6 @@ extern void VGM_PartialResetChipVoiceAsync(u8 g, u8 v);
 
 extern void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op, u8 keyonmask);
 
+extern u8 trackerkeyonmodes[6*GENESIS_COUNT]; //Each mode stored in 2 bits: 0 normal, 1 off, 2 on, 3 ch3 separate
 
 #endif /* _VGMTRACKER_H */
