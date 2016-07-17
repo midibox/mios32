@@ -48,6 +48,7 @@ u8  seq_cv_clkout_pulsewidth[SEQ_CV_NUM_CLKOUT];
 
 static u8 gates;
 static u8 gate_inversion_mask;
+static u8 sus_key_mask;
 
 static u8 seq_cv_clkout_pulse_ctr[SEQ_CV_NUM_CLKOUT];
 
@@ -65,6 +66,7 @@ s32 SEQ_CV_Init(u32 mode)
 
   gates = 0;
   gate_inversion_mask = 0x00;
+  sus_key_mask = 0xff;
 
   // initialize J5 pins
   // they will be enabled after MBSEQ_HW.V4 has been read
@@ -293,6 +295,44 @@ s32 SEQ_CV_GateInversionAllSet(u8 mask)
 u8 SEQ_CV_GateInversionAllGet(void)
 {
   return gate_inversion_mask;
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// SusKey
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CV_SusKeySet(u8 gate, u8 sus_key)
+{
+  if( gate >= SEQ_CV_NUM )
+    return -1; // invalid gate selected
+
+  if( sus_key )
+    sus_key_mask |= (1 << gate);
+  else
+    sus_key_mask &= ~(1 << gate);
+
+  return 0; // no error
+}
+
+u8 SEQ_CV_SusKeyGet(u8 gate)
+{
+  if( gate >= SEQ_CV_NUM )
+    return 0; // invalid gate selected
+
+  return (sus_key_mask & (1 << gate)) ? 1 : 0;
+}
+
+
+s32 SEQ_CV_SusKeyAllSet(u8 mask)
+{
+  sus_key_mask = mask;
+  return 0; // no error
+}
+
+u8 SEQ_CV_SusKeyAllGet(void)
+{
+  return sus_key_mask;
 }
 
 
@@ -561,6 +601,7 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	u16 velocity_cv = cv_notestack_items[aout_chn_note][0].tag << 9;
 
 	// change voltages
+	AOUT_PinSlewRateEnableSet(aout_chn_note, ((cv_notestack[aout_chn_note].len >= 2) && (sus_key_mask & (1 << aout_chn_note))) ? 1 : 0);
 	AOUT_PinSet(aout_chn_note, note_cv);
 	if( aout_chn_vel >= 0 )
 	  AOUT_PinSet(aout_chn_vel, velocity_cv);
@@ -589,8 +630,10 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 
     // aout_chn could be >= 8, but this doesn't matter... AOUT_PinSet() checks for number of available channels
     // this could be useful for future extensions (e.g. higher number of AOUT Channels)
-    if( aout_chn >= 0 )
+    if( aout_chn >= 0 ) {
+      AOUT_PinSlewRateEnableSet(aout_chn, 1);
       AOUT_PinSet(aout_chn, package.value << 9);
+    }
 
     // Gate is always set (useful for controlling pitch of an analog synth where gate is connected as well)
     gates |= (1 << gate_pin);
@@ -633,6 +676,7 @@ s32 SEQ_CV_ResetAllChannels(void)
 		   &cv_notestack_items[cv][0],
 		   SEQ_CV_NOTESTACK_SIZE);
 
+    AOUT_PinSlewRateEnableSet(cv, 1);
     AOUT_PinSet(cv, 0x0000);
     AOUT_PinPitchSet(cv, 0x0000);
   }
