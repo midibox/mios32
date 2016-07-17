@@ -21,6 +21,35 @@ static VgmSource* qsource;
 static VgmHead* qhead;
 
 s8 trackervoicekeys[10*GENESIS_COUNT];
+u8 trackerkeyonmodes[6*GENESIS_COUNT];
+
+u8 GetKeyCommand(u8 on, u8 g, u8 chan, u8 ch3_op){
+    ch3_op = (ch3_op-1) & 3; //Actual op if != 0, 3 if == 0
+    u8 k=0, n, b;
+    for(n=0; n<4; ++n){
+        k >>= 1;
+        switch((trackerkeyonmodes[(6*g)+chan] >> (2*n)) & 3){
+            case 0:
+                if(ch3_op == 3) b = on; //normal voices or ch3 normal
+                else b = genesis[g].opn2.chan[chan].op[n].kon;
+                break;
+            case 1:
+                b = 0;
+                break;
+            case 2:
+                b = 1;
+                break;
+            default:
+                if(n == ch3_op) b = on;
+                else b = genesis[g].opn2.chan[chan].op[n].kon;
+                break;
+        }
+        k |= (b << 3);
+    }
+    k <<= 4;
+    k |= ((chan < 3) ? chan : chan+1);
+    return k;
+}
 
 void VGM_Tracker_Init(){
     qsource = VGM_SourceQueue_Create();
@@ -194,6 +223,12 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
                 VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x27, 
                         .data = genesis[g].opn2.timerctrlreg }, 0);
                 break;
+            case 119: //new
+                //Ch3 CSM frequency
+                genesis[g].opn2.timera_high = (genesis[g].opn2.timera_high & 1) | (value << 1);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x24, 
+                        .data = genesis[g].opn2.timera_high }, 0);
+                break;
             case 94:
                 //Test Register 0x21 Lowest Four Bits
                 genesis[g].opn2.testreg21 = (genesis[g].opn2.testreg21 & 0xF0) | (GENMDM_DECODE(value,4));
@@ -360,10 +395,10 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
         }
     }else if(midi_package.event == 0x8 || (midi_package.event == 0x9 && midi_package.velocity == 0)){
         //Note Off
-        if(isopn2 && (v != 3 || !ch3_op)){
+        if(isopn2){
             //Key off
             if(midi_package.note == trackervoicekeys[voicekeyidx]){
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = GetKeyCommand(0, g, chan, 0) }, 0);
                 trackervoicekeys[voicekeyidx] = -1;
             }
         }else if(ispsg){
@@ -374,16 +409,16 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             }
         }else if(ch3_op){
             //OPN2 ch3 additional frequency
-            //TODO key off individual operators?
+            //This sends a command identical to the current state if this ch3_op shouldn't be keying anything off
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = GetKeyCommand(0, g, 2, ch3_op) }, 0);
         }
     }else if(midi_package.event == 0x9){
         //Note On
         if(isopn2){
             //TODO under what conditions is velocity mapped to TL?
-            //TODO key on individual operators if in Ch3 special/CSM mode?
             if(trackervoicekeys[voicekeyidx] >= 0){
                 //Send note off first
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = ((chan < 3) ? chan : chan+1) }, 0);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = GetKeyCommand(0, g, chan, 0) }, 0);
             }
             trackervoicekeys[voicekeyidx] = midi_package.note;
             u8 subchan = (chan < 3) ? chan : chan+1;
@@ -394,7 +429,7 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             //Key on
             cmd.cmd &= 0xFE; //Switch to low bank
             cmd.addr = 0x28;
-            cmd.data = 0xF0 + subchan;
+            cmd.data = GetKeyCommand(1, g, chan, 0);
             VGM_HeadQueue_Enqueue(qhead, cmd, 0);
         }else if(ispsg && v != 11){
             //PSG square channel
@@ -429,11 +464,15 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = (g << 4), .data = 0xF0|(15-(midi_package.velocity >> 3)) }, 0);
         }else if(ch3_op){
             //OPN2 ch3 additional frequency
-            //TODO key on individual operators?
+            if(((trackerkeyonmodes[(6*g)+2] >> (2*(ch3_op-1))) & 3) == 3 && genesis[g].opn2.chan[2].op[ch3_op-1].kon){
+                //Key off first
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = GetKeyCommand(0, g, 2, ch3_op) }, 0);
+            }
             VgmChipWriteCmd cmd = VGM_getOPN2Frequency(midi_package.note, 0, genesis_clock_opn2); //TODO cents
             cmd.cmd = (g << 4) | 2;
-            cmd.addr = 0xAC | (ch3_op - 1);
+            cmd.addr = 0xAC | (ch3_op % 3);
             VGM_HeadQueue_Enqueue(qhead, cmd, 0);
+            VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x28, .data = GetKeyCommand(1, g, 2, ch3_op) }, 0);
         }
     }
 }
