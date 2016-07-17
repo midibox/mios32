@@ -60,7 +60,7 @@ static const u8 OPN2GlobalRegs[16] = {
 
 static const u8 OPN2Ch3Regs[8] = {
     //0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE, 0xAF
-        14,   10,   12, 0xFF,   15,   11,   13, 0xFF
+        13,    9,   11, 0xFF,   14,   10,   12, 0xFF
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -322,13 +322,17 @@ void Genesis_Reset(u8 board){
     board &= 0x03;
     //Clear internal state
     u8 i;
-    for(i=0; i<242; i++){
+    for(i=0; i<sizeof(genesis_t); i++){
         genesis[board].ALL[i] = 0;
     }
     for(i=0; i<6; i++){
-        genesis[board].opn2.chan[i].lfooutreg = 0xE0; //Output bits initialized to 1
+        genesis[board].opn2.chan[i].lfooutreg = 0xC0; //Output bits initialized to 1
     }
     genesis[board].board.test_dir = 1;
+    #ifdef GENESIS_STARTUP_FILTER
+    genesis[board].board.cap_psg = 1;
+    genesis[board].board.cap_opn2 = 1;
+    #endif
     //Do chip reset
     genesis[board].board.reset = 0;
     Genesis_WriteBoardBits(board);
