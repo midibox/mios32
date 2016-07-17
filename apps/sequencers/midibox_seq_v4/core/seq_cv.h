@@ -81,6 +81,11 @@ extern u8 SEQ_CV_GateInversionGet(u8 gate);
 extern s32 SEQ_CV_GateInversionAllSet(u8 mask);
 extern u8 SEQ_CV_GateInversionAllGet(void);
 
+extern s32 SEQ_CV_SusKeySet(u8 gate, u8 sus_key);
+extern u8 SEQ_CV_SusKeyGet(u8 gate);
+extern s32 SEQ_CV_SusKeyAllSet(u8 mask);
+extern u8 SEQ_CV_SusKeyAllGet(void);
+
 extern s32 SEQ_CV_Update(void);
 
 extern s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package);

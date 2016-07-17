@@ -164,6 +164,7 @@ typedef struct {
   s32  incrementer;
   s16  pitch;
   u8   slewrate;
+  u8   slewrate_enable;
   u8   pitchrange;
 } aout_channel_t;
 
@@ -279,6 +280,7 @@ s32 AOUT_Init(u32 mode)
     c->target_value = 0;
     c->incrementer = 0;
     c->slewrate = 0;
+    c->slewrate_enable = 1;
     c->pitchrange = 2; // semitones
     c->pitch = 0; // pitch offset
   }
@@ -704,7 +706,7 @@ s32 AOUT_PinSet(u8 pin, u16 value)
 
     c->target_value = value;
 
-    if( c->slewrate == 0 || value == c->value ) {
+    if( c->slewrate_enable == 0 || c->slewrate == 0 || value == c->value ) {
       c->incrementer = 0;
       c->value = value;
     } else {
@@ -793,6 +795,39 @@ s32 AOUT_PinSlewRateGet(u8 pin)
     return -1; // pin not available
 
   return aout_channel[pin].slewrate;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function allows to enable/disable the slewrate (e.g. for fingered portamento)
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \param[in] enable the slew
+//! \return -1 if pin not available
+//! \return 0 on success
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinSlewRateEnableSet(u8 pin, u8 enable)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  aout_channel[pin].slewrate_enable = enable;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function returns the slew rate enable state
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \return -1 if pin not available
+//! \return >= 0 if pin available (8bit output value)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_PinSlewRateEnableGet(u8 pin)
+{
+  if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return -1; // pin not available
+
+  return aout_channel[pin].slewrate_enable;
 }
 
 

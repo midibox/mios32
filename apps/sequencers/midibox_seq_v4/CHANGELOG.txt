@@ -38,6 +38,9 @@ MIDIboxSEQ V4.091
    o New option page item #10 "Initial Gate Trigger Layer" 
      (empty or trigger on each 4th step)
 
+   o AOUT: added suskey function (AKA fingered portamento: slew rate only
+     enabled if more than 2 keys are played)
+
    o removed obsolete (non-working) pattern based scale control
 
 
@@ -2274,9 +2277,6 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 ----------------------------------------------------------
 Drum track: select trigger layer, then push parameter button A or B: parameter values not displayed
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/?do=findComment&comment=173700
-----------------------------------------------------------
-"Fingered portamento" for AOUTs
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=173892
 ----------------------------------------------------------
 Add "tune" knob which sends C-3 to all MIDI and AOUTs
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045

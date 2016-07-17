@@ -123,6 +123,9 @@ extern s32 AOUT_PinGet(u8 pin);
 extern s32 AOUT_PinSlewRateSet(u8 pin, u8 value);
 extern s32 AOUT_PinSlewRateGet(u8 pin);
 
+extern s32 AOUT_PinSlewRateEnableSet(u8 pin, u8 enable);
+extern s32 AOUT_PinSlewRateEnableGet(u8 pin);
+
 extern s32 AOUT_PinPitchRangeSet(u8 pin, u8 value);
 extern s32 AOUT_PinPitchRangeGet(u8 pin);
 

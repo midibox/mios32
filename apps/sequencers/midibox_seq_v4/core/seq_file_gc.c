@@ -353,6 +353,8 @@ s32 SEQ_FILE_GC_Read(void)
 	    }
 	  } else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	    SEQ_CV_GateInversionAllSet(value);
+	  } else if( strcmp(parameter, "CV_SusKey") == 0 ) {
+	    SEQ_CV_SusKeyAllSet(value);
 	  } else if( strcmp(parameter, "CV_ClkPulsewidth") == 0 ) {
 	    SEQ_CV_ClkPulseWidthSet(0, value); // Legacy Value - replaced by CV_ExtClk
 	  } else if( strcmp(parameter, "CV_ClkDivider") == 0 ) {
@@ -558,6 +560,9 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   }
 
   sprintf(line_buffer, "CV_GateInv 0x%02x\n", (u8)SEQ_CV_GateInversionAllGet());
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "CV_SusKey 0x%02x\n", (u8)SEQ_CV_SusKeyAllGet());
   FLUSH_BUFFER;
 
   {
