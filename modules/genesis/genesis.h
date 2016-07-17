@@ -234,13 +234,13 @@ typedef union {
         union {
             u8 timerctrlreg;
             struct {
-                u8 timera_load:1;   //Timer A load
-                u8 timerb_load:1;   //Timer B load
-                u8 timera_enable:1; //Timer A enable
-                u8 timerb_enable:1; //Timer B enable
-                u8 timera_reset:1;  //Timer A reset
-                u8 timerb_reset:1;  //Timer B reset
-                u8 ch3_mode:2;      //Channel 3 mode: 00 normal, 01 or 11 4-frequency, 10 CSM mode
+                u8 timera_run:1;   //Timer A run/stop
+                u8 timerb_run:1;   //Timer B run/stop
+                u8 timera_irqen:1; //Timer A enable IRQ/flag
+                u8 timerb_irqen:1; //Timer B enable IRQ/flag
+                u8 timera_irqrs:1; //Timer A reset IRQ/flag
+                u8 timerb_irqrs:1; //Timer B reset IRQ/flag
+                u8 ch3_mode:2;     //Channel 3 mode: 00 normal, 01 or 11 4-frequency, 10 CSM mode
             };
         };
         
