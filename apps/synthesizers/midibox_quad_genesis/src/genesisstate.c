@@ -133,7 +133,14 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
         FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 1, (127 - genesis[g].opn2.chan[chan].op[op].totallevel) >> 3);
         FrontPanel_LEDSet(FP_LED_KEYON_1 + op, genesis[g].opn2.chan[chan].op[op].kon);
     }
-    if(!(genesis[g].opn2.ch3_mode != 0 && chan == 2)){
+    if(chan == 2){
+        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
+        FrontPanel_LEDSet(FP_LED_CH3_NORMAL, genesis[g].opn2.ch3_mode == 0);
+        FrontPanel_LEDSet(FP_LED_CH3_4FREQ, genesis[g].opn2.ch3_mode & 1);
+        FrontPanel_LEDSet(FP_LED_CH3_CSM, genesis[g].opn2.ch3_mode == 2);
+        FrontPanel_LEDSet(FP_LED_CH3FAST, genesis[g].opn2.test_tmrspd);
+    }
+    if(genesis[g].opn2.ch3_mode == 0 || chan != 2){
         FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.chan[chan].block);
         FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.chan[chan].fnum_high << 8) | genesis[g].opn2.chan[chan].fnum_low);
     }
@@ -151,7 +158,14 @@ void ClearGenesisState_Chan(){
         FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 0xFF, 0);
         FrontPanel_LEDSet(FP_LED_KEYON_1 + op, 0);
     }
-    //if(!(genesis[g].opn2.ch3_mode != 0 && chan == 2)){
+    //if(chan == 2){
+        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0xFF, 0);
+        FrontPanel_LEDSet(FP_LED_CH3_NORMAL, 0);
+        FrontPanel_LEDSet(FP_LED_CH3_4FREQ, 0);
+        FrontPanel_LEDSet(FP_LED_CH3_CSM, 0);
+        FrontPanel_LEDSet(FP_LED_CH3FAST, 0);
+    //}
+    //if(genesis[g].opn2.ch3_mode == 0 || chan != 2){
         FrontPanel_DrawDigit(FP_LED_DIG_OCT, ' ');
         FrontPanel_DrawDigit(FP_LED_DIG_FREQ_1, ' ');
         FrontPanel_DrawDigit(FP_LED_DIG_FREQ_2, ' ');
@@ -175,26 +189,14 @@ void ClearGenesisState_DAC(){
     FrontPanel_LEDSet(FP_LED_DACEN, 0);
 }
 void DrawGenesisState_OPN2(u8 g){
-    FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
     FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 1, genesis[g].opn2.lfo_freq);
-    FrontPanel_LEDSet(FP_LED_CH3_NORMAL, genesis[g].opn2.ch3_mode == 0);
-    FrontPanel_LEDSet(FP_LED_CH3_4FREQ, genesis[g].opn2.ch3_mode & 1);
-    FrontPanel_LEDSet(FP_LED_CH3_CSM, genesis[g].opn2.ch3_mode == 2);
-    FrontPanel_LEDSet(FP_LED_CH3FAST, genesis[g].opn2.test_tmrspd);
-    FrontPanel_LEDSet(FP_LED_UGLY, genesis[g].opn2.test_ugly);
     FrontPanel_LEDSet(FP_LED_UGLY, genesis[g].opn2.test_ugly);
     FrontPanel_LEDSet(FP_LED_DACOVR, genesis[g].opn2.dac_override);
     FrontPanel_LEDSet(FP_LED_LFO, genesis[g].opn2.lfo_enabled);
     FrontPanel_LEDSet(FP_LED_EG, !genesis[g].opn2.test_noeg);
 }
 void ClearGenesisState_OPN2(){
-    FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0xFF, 0);
     FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 0xFF, 0);
-    FrontPanel_LEDSet(FP_LED_CH3_NORMAL, 0);
-    FrontPanel_LEDSet(FP_LED_CH3_4FREQ, 0);
-    FrontPanel_LEDSet(FP_LED_CH3_CSM, 0);
-    FrontPanel_LEDSet(FP_LED_CH3FAST, 0);
-    FrontPanel_LEDSet(FP_LED_UGLY, 0);
     FrontPanel_LEDSet(FP_LED_UGLY, 0);
     FrontPanel_LEDSet(FP_LED_DACOVR, 0);
     FrontPanel_LEDSet(FP_LED_LFO, 0);

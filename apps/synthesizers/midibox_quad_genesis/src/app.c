@@ -198,7 +198,8 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
         u8 trackervoice = channels[midi_package.chn].trackervoice;
         u8 g = trackervoice >> 4;
         u8 v = trackervoice & 0xF;
-        VGM_MidiToGenesis(midi_package, g, v, 0, 0); //TODO
+        u8 ch3_op = (v >= 0xC) ? v - 0xC : 0;
+        VGM_MidiToGenesis(midi_package, g, v, ch3_op, 0); //TODO
         return;
     }
     if(midi_package.event == 0x8 || (midi_package.event == 0x9 && midi_package.velocity == 0)){

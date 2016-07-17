@@ -38,6 +38,9 @@ const char* GetVoiceName(u8 subvoice){
         case 9: return "SQ2";
         case 10: return "SQ3";
         case 11: return "Noise";
+        case 12: return "FM3O1";
+        case 13: return "FM3O2";
+        case 14: return "FM3O3";
         default: return "Error";
     }
 }
@@ -220,28 +223,30 @@ void Mode_Voice_BtnSystem(u8 button, u8 state){
 }
 void Mode_Voice_BtnEdit(u8 button, u8 state){
     u8 v = selvoice & 0xF;
-    if(voiceistracker && v >= 1 && v <= 6){
-        switch(button){
-            case FP_B_OUT:
-                submode = state ? 1 : 0;
-                DrawMenu();
-                break;
-            case FP_B_ALG:
-                submode = state ? 2 : 0;
-                DrawMenu();
-                break;
-            case FP_B_KON:
-                submode = state ? 3 : 0;
-                DrawMenu();
-                break;
-            case FP_B_KSR:
-                submode = state ? 4 : 0;
-                DrawMenu();
-                break;
-            default:
-                if(!state) return;
-                Tracker_BtnToMIDI(button, 0, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
+    if(voiceistracker){
+        if(v >= 1 && v <= 6){
+            switch(button){
+                case FP_B_OUT:
+                    submode = state ? 1 : 0;
+                    DrawMenu();
+                    return;
+                case FP_B_ALG:
+                    submode = state ? 2 : 0;
+                    DrawMenu();
+                    return;
+                case FP_B_KON:
+                    submode = state ? 3 : 0;
+                    DrawMenu();
+                    return;
+                case FP_B_KSR:
+                    submode = state ? 4 : 0;
+                    DrawMenu();
+                    return;
+            }
         }
+        //All other cases:
+        if(!state) return;
+        Tracker_BtnToMIDI(button, 0, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
     }
 }
 
