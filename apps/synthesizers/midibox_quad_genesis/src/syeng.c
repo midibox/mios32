@@ -192,8 +192,6 @@ void SyEng_ClearVoice(u8 g, u8 v){
     if(use == 0) return;
     if(use == 3){
         //Tracker voice
-        //TODO what to do when a tracker voice is cleared?
-        DBG("ERROR synth engine trying to clear a voice being used by the tracker engine!");
         return;
     }else{
         ClearPI(&proginstances[syngenesis[g].channels[v].pi_using]);

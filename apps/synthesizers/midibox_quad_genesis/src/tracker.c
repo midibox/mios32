@@ -26,7 +26,7 @@ static inline u8 Tracker_Clip(u8 v, s32 incrementer, u8 bits){
 }
 
 void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 midiport, u8 midichan){
-    //DBG("Tracker_EncToMIDI(enc %d, inc %d, voice %d, op %d, port %d, chan %d)", encoder, incrementer, selvoice, selop, midiport, midichan);
+    DBG("Tracker_EncToMIDI(enc %d, inc %d, voice %d, op %d, port %d, chan %d)", encoder, incrementer, selvoice, selop, midiport, midichan);
     mios32_midi_package_t pkg;
     pkg.type = 1; //USB
     pkg.cable = midiport;
@@ -138,13 +138,6 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
             case FP_E_CSMFREQ:
                 return;//TODO
                 //break;
-            case FP_E_LFOFREQ:
-                pkg.cc_number = 1;
-                input = genesis[g].opn2.lfo_freq;
-                bits = 3;
-                input = Tracker_Clip(input, incrementer, bits);
-                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
-                break;
             default:
                 return;
         }
@@ -156,10 +149,20 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
         return; //Changes are handled by note and velocity
     }else if(v == 0){
         //OPN2 Chip
-        return; //TODO
+        switch(encoder){
+            case FP_E_LFOFREQ:
+                pkg.cc_number = 1;
+                input = genesis[g].opn2.lfo_freq;
+                bits = 3;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
+                break;
+            default:
+                return;
+        }
     }else if(v == 7){
         //DAC
-        return; //TODO
+        return;
     }else{
         return;
     }
@@ -171,7 +174,7 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
 }
 
 void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, u8 midichan){
-    //DBG("Tracker_BtnToMIDI(btn %d, value %d, voice %d, op %d, port %d, chan %d)", button, value, selvoice, selop, midiport, midichan);
+    DBG("Tracker_BtnToMIDI(btn %d, value %d, voice %d, op %d, port %d, chan %d)", button, value, selvoice, selop, midiport, midichan);
     mios32_midi_package_t pkg;
     pkg.type = 1; //USB
     pkg.cable = midiport;
@@ -226,11 +229,35 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
                 bits = 1;
                 break;
             case FP_B_CH3MODE:
-                return; //TODO
-                //break;
+                if(v != 3) return;
+                value = (genesis[g].opn2.ch3_mode + 1) & 3;
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, value);
+                //Command 1
+                pkg.cc_number = 80;
+                input = value & 1;
+                bits = 1;
+                pkg.value = (u8)GENMDM_ENCODE(input,bits);
+                VGM_MidiToGenesis(pkg, g, v, 0, 0);
+                MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
+                pkg.type = 2; //UART
+                MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
+                pkg.type = 1; //USB
+                //Command 2
+                pkg.cc_number = 99;
+                input = value >> 1;
+                bits = 1;
+                pkg.value = (u8)GENMDM_ENCODE(input,bits);
+                VGM_MidiToGenesis(pkg, g, v, 0, 0);
+                MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
+                pkg.type = 2; //UART
+                MIOS32_MIDI_SendPackage_NonBlocking(pkg.type << 4 | pkg.cable, pkg);
+                return;
             case FP_B_CH3FAST:
-                return; //TODO
-                //break;
+                if(v != 3) return;
+                pkg.cc_number = 94;
+                input = (genesis[g].opn2.testreg21 ^ 0x4) & 0xF;
+                bits = 4;
+                break;
             default:
                 return;
         }
@@ -244,17 +271,25 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
         //OPN2 Chip
         switch(button){
             case FP_B_UGLY:
-                return; //TODO
-                //break;
+                pkg.cc_number = 95;
+                input = (genesis[g].opn2.testreg21 ^ 0x10) >> 4;
+                bits = 4;
+                break;
             case FP_B_DACOVR:
-                return; //TODO
-                //break;
+                pkg.cc_number = 97;
+                input = (genesis[g].opn2.testreg21 ^ 0x20) >> 4;
+                bits = 4;
+                break;
             case FP_B_LFO:
-                return; //TODO
-                //break;
+                pkg.cc_number = 74;
+                input = !genesis[g].opn2.lfo_enabled;
+                bits = 1;
+                break;
             case FP_B_EG:
-                return; //TODO
-                //break;
+                pkg.cc_number = 95;
+                input = (genesis[g].opn2.testreg21 ^ 0x20) >> 4;
+                bits = 4;
+                break;
             default:
                 return;
         }
@@ -262,8 +297,10 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
         //DAC
         switch(button){
             case FP_B_DACEN:
-                return; //TODO
-                //break;
+                pkg.cc_number = 78;
+                input = !genesis[g].opn2.dac_enable;
+                bits = 1;
+                break;
             default:
                 return;
         }

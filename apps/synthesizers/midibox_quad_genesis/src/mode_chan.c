@@ -48,6 +48,13 @@ static void DrawMenu(){
             MIOS32_LCD_PrintFormattedString("Select voice to control with Prt%d:Ch%2d", (selchan >> 4)+1, (selchan & 0xF)+1);
             break;
         case 2:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Which operator? (Ch3 4Freq/CSM)");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("  1    2    3  4/All");
+            break;
+        case 3:
             FrontPanel_LEDSet(FP_LED_NEW, 1);
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
@@ -97,35 +104,40 @@ void Mode_Chan_BtnGVoice(u8 gvoice, u8 state){
     switch(submode){
         case 0:
             if(v == 0){
-                FrontPanel_GenesisLEDSet(t >> 4, t & 0xF, 0, 0);
+                FrontPanel_GenesisLEDSet(t >> 4, (t & 0xF) < 0xC ? (t & 0xF) : 3 , 0, 0);
                 FrontPanel_GenesisLEDSet((selchan >> 4), 0, 1, 0);
                 selchan = (g << 4) | (selchan & 0xF);
                 FrontPanel_GenesisLEDSet(g, 0, 1, 1);
                 if(channels[selchan].trackermode){
                     t = channels[selchan].trackervoice;
-                    FrontPanel_GenesisLEDSet(t >> 4, t & 0xF, 0, 1);
+                    FrontPanel_GenesisLEDSet(t >> 4, (t & 0xF) < 0xC ? (t & 0xF) : 3, 0, 1);
                 }
                 DrawMenu();
             }else if(v >= 8 && v <= 11){
                 v -= 8;
-                FrontPanel_GenesisLEDSet(t >> 4, t & 0xF, 0, 0);
+                FrontPanel_GenesisLEDSet(t >> 4, (t & 0xF) < 0xC ? (t & 0xF) : 3, 0, 0);
                 FrontPanel_GenesisLEDSet((selchan >> 2) & 3, (selchan & 3)+8, 1, 0);
                 selchan = (selchan & 0xF0) | (g << 2) | v;
                 FrontPanel_GenesisLEDSet(g, v+8, 1, 1);
                 if(channels[selchan].trackermode){
                     t = channels[selchan].trackervoice;
-                    FrontPanel_GenesisLEDSet(t >> 4, t & 0xF, 0, 1);
+                    FrontPanel_GenesisLEDSet(t >> 4, (t & 0xF) < 0xC ? (t & 0xF) : 3, 0, 1);
                 }
                 DrawMenu();
             }
             break;
         case 1:
-            SyEng_ClearVoice(g, v);
-            syngenesis[g].channels[v].use = 3;
-            channels[selchan].trackervoice = (g << 4) | v;
-            channels[selchan].trackermode = 1;
-            FrontPanel_GenesisLEDSet(g, v, 0, 1);
-            submode = 0;
+            if(v == 3 && syngenesis[g].channels[3].use == 3){
+                cursor = g;
+                submode = 2;
+            }else{
+                SyEng_ClearVoice(g, v);
+                syngenesis[g].channels[v].use = 3;
+                channels[selchan].trackervoice = (g << 4) | v;
+                channels[selchan].trackermode = 1;
+                FrontPanel_GenesisLEDSet(g, v, 0, 1);
+                submode = 0;
+            }
             DrawMenu();
             break;
     }
@@ -139,7 +151,43 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     if(!channels[selchan].trackermode) return;
                     channels[selchan].trackermode = 0;
                     u8 v = channels[selchan].trackervoice;
-                    FrontPanel_GenesisLEDSet(v >> 4, v & 0xF, 0, 0);
+                    u8 g = v >> 4;
+                    v &= 0xF;
+                    u8 c, t;
+                    if(v == 3){
+                        //Is there any other channel controlling Ch3 main?
+                        for(c=0; c<16*MBQG_NUM_PORTS; ++c){
+                            if(channels[c].trackermode && channels[c].trackervoice == 3){
+                                break;
+                            }
+                        }
+                        if(c == 16*MBQG_NUM_PORTS){ //there was none
+                            syngenesis[g].channels[3].use = 0;
+                            //Also clear trackermode from voices controlling Ch3 operator frequencies
+                            for(c=0; c<16*MBQG_NUM_PORTS; ++c){
+                                if(channels[c].trackermode){
+                                    t = channels[c].trackervoice;
+                                    if((t >> 4) == g && (t & 0xF) >= 0xC){
+                                        channels[c].trackermode = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }else if(v >= 0xC){
+                        //don't clear use
+                        v = 3; //turn off ch3 LED
+                    }else{
+                        //Is there any other channel controlling Ch3 main?
+                        for(c=0; c<16*MBQG_NUM_PORTS; ++c){
+                            if(channels[c].trackermode && channels[c].trackervoice == v){
+                                break;
+                            }
+                        }
+                        if(c == 16*MBQG_NUM_PORTS){ //there was none
+                            syngenesis[g].channels[v].use = 0;
+                        }
+                    }
+                    FrontPanel_GenesisLEDSet(g, v, 0, 0);
                     DrawMenu();
                     break;
                 case 2:
@@ -150,6 +198,21 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
             }
             break;
         case 2:
+            if(softkey == 3){
+                SyEng_ClearVoice(cursor, 3);
+                syngenesis[cursor].channels[3].use = 3;
+                channels[selchan].trackervoice = (cursor << 4) | 3;
+            }else if(softkey <= 2){
+                channels[selchan].trackervoice = (cursor << 4) | (0xC + softkey);
+            }else{
+                return;
+            }
+            channels[selchan].trackermode = 1;
+            FrontPanel_GenesisLEDSet(cursor, 3, 0, 1);
+            submode = 0;
+            DrawMenu();
+            break;
+        case 3:
             switch(softkey){
                 case 0:
                     newprogtype = !newprogtype;
@@ -239,7 +302,7 @@ void Mode_Chan_BtnEdit(u8 button, u8 state){
 
 void Mode_Chan_EncDatawheel(s32 incrementer){
     switch(submode){
-        case 2:
+        case 3:
             if((incrementer < 0 && (s32)newprogname[cursor] + incrementer >= 0x20) || (incrementer > 0 && (s32)newprogname[cursor] + incrementer <= 0xFF)){
                 newprogname[cursor] = (u8)((s32)newprogname[cursor] + incrementer);
                 MIOS32_LCD_CursorSet(13+cursor,0);
