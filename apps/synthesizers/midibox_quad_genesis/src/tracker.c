@@ -136,8 +136,13 @@ void Tracker_EncToMIDI(u8 encoder, s32 incrementer, u8 selvoice, u8 selop, u8 mi
                 FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
                 break;
             case FP_E_CSMFREQ:
-                return;//TODO
-                //break;
+                if(v != 3) return;
+                pkg.cc_number = 119;
+                input = genesis[g].opn2.timera_high >> 1;
+                bits = 7;
+                input = Tracker_Clip(input, incrementer, bits);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, input);
+                break;
             default:
                 return;
         }
@@ -254,9 +259,9 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
                 return;
             case FP_B_CH3FAST:
                 if(v != 3) return;
-                pkg.cc_number = 94;
-                input = (genesis[g].opn2.testreg21 ^ 0x4) & 0xF;
-                bits = 4;
+                pkg.cc_number = 98;
+                input = (genesis[g].opn2.timerctrlreg ^ 0x1) & 0x3F;
+                bits = 6;
                 break;
             default:
                 return;

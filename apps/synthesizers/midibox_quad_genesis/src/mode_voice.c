@@ -17,6 +17,7 @@
 #include "syeng.h"
 #include "tracker.h"
 #include "genesis.h"
+#include <vgm.h>
 
 u8 submode;
 u8 selvoice;
@@ -45,6 +46,16 @@ const char* GetVoiceName(u8 subvoice){
     }
 }
 
+const char* GetKonModeName(u8 konmode){
+    switch(konmode){
+        case 0: return "Normal   ";
+        case 1: return "Const Off";
+        case 2: return "Const On ";
+        case 3: return "FM3 4Freq";
+        default: return "Error    ";
+    }
+}
+
 static void SeeIfVoiceIsTracker(){
     u8 c;
     voiceistracker = 0;
@@ -70,7 +81,6 @@ static void DrawMenu(){
                 MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
             }
             MIOS32_LCD_CursorSet(0,1);
-            //MIOS32_LCD_PrintString("Change voice's mapping in Chan mode");
             MIOS32_LCD_PrintFormattedString("Use %d", syngenesis[g].channels[v].use);
             break;
         case 1:
@@ -93,7 +103,12 @@ static void DrawMenu(){
             //Key On
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintString("TODO"); //TODO
+            MIOS32_LCD_PrintString("   Op 1      Op 2      Op 3      Op 4   ");
+            u8 k;
+            for(k=0; k<4; ++k){
+                MIOS32_LCD_CursorSet(10*k,1);
+                MIOS32_LCD_PrintString(GetKonModeName((trackerkeyonmodes[(selvoice>>4)*6+(selvoice & 0xF)-1] >> (2*k)) & 3));
+            }
             break;
         case 4:
             //KSR
@@ -192,7 +207,14 @@ void Mode_Voice_BtnSoftkey(u8 softkey, u8 state){
             Tracker_BtnToMIDI(FP_B_ALG, softkey, selvoice, selop, voicetrackerchan >> 4, voicetrackerchan & 0xF);
             break;
         case 3:
-            //TODO
+            //KOn
+            if(!state) return;
+            softkey &= 0xFE;
+            u8 i = (selvoice>>4)*6+(selvoice & 0xF)-1;
+            u8 j = (trackerkeyonmodes[i] >> softkey) & 3;
+            j = (j+1)&3;
+            trackerkeyonmodes[i] = (trackerkeyonmodes[i] & ~(3 << softkey)) | (j << softkey);
+            DrawMenu();
             break;
         case 4:
             //KSR
