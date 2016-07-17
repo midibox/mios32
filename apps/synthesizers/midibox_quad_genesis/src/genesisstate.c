@@ -60,7 +60,7 @@ void DrawGenesisActivity(u8 g){
     for(v=0; v<6; v++){
         k = 0;
         for(o=0; o<4; o++){
-            k |= genesis[g].opn2.chan[v].op[0].kon;
+            k |= genesis[g].opn2.chan[v].op[o].kon;
         }
         FrontPanel_GenesisLEDSet(g, v+1, 0, k);
     }
@@ -138,7 +138,7 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
         FrontPanel_LEDSet(FP_LED_CH3_NORMAL, genesis[g].opn2.ch3_mode == 0);
         FrontPanel_LEDSet(FP_LED_CH3_4FREQ, genesis[g].opn2.ch3_mode & 1);
         FrontPanel_LEDSet(FP_LED_CH3_CSM, genesis[g].opn2.ch3_mode == 2);
-        FrontPanel_LEDSet(FP_LED_CH3FAST, genesis[g].opn2.test_tmrspd);
+        FrontPanel_LEDSet(FP_LED_CH3FAST, genesis[g].opn2.timera_run);
     }
     if(genesis[g].opn2.ch3_mode == 0 || chan != 2){
         FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.chan[chan].block);
