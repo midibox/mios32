@@ -2351,3 +2351,9 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 - save Robotizer settings
   http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175585
 
+- from http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175591
+1) Enable the option to create a file (on disk) to map "real synthesizer names" to combinations of out-port and channel.
+
+2) In the track events page, offer the option to additionally select by synthesizer name (an abbreviation of 6-8 characters would be enough). When selecting a synthesizer name (or when loading a session), it could then select the according out-port and channel (and display it).
+
+This would help tremendously, if people remap synthesizers to other out ports, if setups grow, etc. I currently have a printed out lookup-table glued next to the synths, so i can find on which wire/channel a synth is :-).
