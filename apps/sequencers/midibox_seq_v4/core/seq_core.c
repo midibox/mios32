@@ -990,7 +990,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  if( !mute_this_step && !seq_record_options.FWD_MIDI && track_record_enabled ) { // if not already skipped (e.g. MANUAL mode)
 	    mute_this_step = t->state.REC_DONT_OVERWRITE_NEXT_STEP;
 
-	    if( seq_core_state.FIRST_CLK && seq_record_options.AUTO_START )
+	    if( seq_core_state.FIRST_CLK && seq_record_options.AUTO_START && seq_record_options.FWD_MIDI )
 	      mute_this_step = 1; // mute initial step which is going to be recorded
 	  }
 

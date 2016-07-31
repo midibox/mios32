@@ -483,7 +483,9 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
     } break;
 
     case CC:
-    case PitchBend: {
+    case PitchBend:
+    case PolyPressure:
+    case Aftertouch: {
       rec_event = 1;
     } break;
 

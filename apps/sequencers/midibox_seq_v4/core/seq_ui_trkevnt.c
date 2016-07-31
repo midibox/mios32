@@ -136,6 +136,7 @@ static const layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_Drum,     1,          64,        2,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     2,          32,        1,         128,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        2,         128,      8 },
+  { SEQ_EVENT_MODE_Drum,     2,          64,        2,         128,      8 },
   { SEQ_EVENT_MODE_Drum,     2,          64,        1,         256,      8 },
   { SEQ_EVENT_MODE_Drum,     1,          64,        1,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        1,         128,      8 },
@@ -1209,7 +1210,12 @@ static s32 LCD_Handler(u8 high_prio)
 	if( ui_selected_item == ITEM_LAYER_A_SELECT && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  SEQ_LCD_PrintString(SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, 0)));
+	  seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 0);
+	  if( asg == SEQ_PAR_Type_CC ) {
+	    SEQ_LCD_PrintString("TODO"); // CC not supported for drum tracks, print bullshit
+	  } else {
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+	  }
 	}
 
 	/////////////////////////////////////////////////////////////////////////
@@ -1217,7 +1223,12 @@ static s32 LCD_Handler(u8 high_prio)
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
 	  if( layer_config[selected_layer_config].par_layers >= 2 ) {
-	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, 1)));
+	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 1);
+	    if( asg == SEQ_PAR_Type_CC ) {
+	      SEQ_LCD_PrintString("TODO"); // CC not supported for drum tracks, print bullshit
+	    } else {
+	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+	    }
 	  } else {
 	    if( ui_selected_item == ITEM_LAYER_B_SELECT )
 	      SEQ_LCD_PrintString("---- "); // not a bug, but a feature - highlight, that layer not configurable
