@@ -11,6 +11,8 @@ MIDIboxSEQ V4.091
 
    o new parameter type "Chord2" provides an alternative set of 32 chords
 
+   o new parameter type "Aftertouch" allows to send and record channel pressure events
+
    o CPU load display has been re-adjusted for LPC17 and STM32F4
 
    o hwcfg/wilba*/MBSEQ_HW.V4: default F1-F4 assignments changed to:
@@ -33,15 +35,24 @@ MIDIboxSEQ V4.091
    o new button/LED combo: JAM_LIVE and JAM_STEP: they switch to the JAM
      page and select Live resp. Step recording mode
 
+   o BLM16x16+X keyboard can now record into any track
+
    o Transpose page now allows selection based on Scale
 
    o New option page item #10 "Initial Gate Trigger Layer" 
      (empty or trigger on each 4th step)
 
+   o Event configuration page: new drum track configuration 2*64/2*128
+
    o AOUT: added suskey function (AKA fingered portamento: slew rate only
      enabled if more than 2 keys are played)
+     This function can be enabled in the CV Configuration page
 
    o removed obsolete (non-working) pattern based scale control
+
+   o fixed LED behaviour in Step View page (corrected display if page is deselected)
+
+   o various minor bugfixes & improvements
 
 
 MIDIboxSEQ V4.090
@@ -2066,12 +2077,6 @@ TK: low priority
 
 ---------------------------------------------------------
 
->> -AOUT Gates do not make "Legato" correctly. --> Needed to detail...
-
-TK: TODO... (will be some work that hasn't been done yet)
-
----------------------------------------------------------
-
 >> -Changing ALL Length is odd ... more explaining to do ....
 
 >> -When changing the Length value of ALL notes it would be nice that only the actual inserted (Gate ON) Notes would chnage it's value. The issue I find is like this:
@@ -2275,9 +2280,6 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 Add command which copies the current pattern configurations into multiple pattern slots (e.g. current patterns -> A1/A2/A3/...)
 http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/#comment-173653
 ----------------------------------------------------------
-Drum track: select trigger layer, then push parameter button A or B: parameter values not displayed
-http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-mode/?do=findComment&comment=173700
-----------------------------------------------------------
 Add "tune" knob which sends C-3 to all MIDI and AOUTs
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174045
 ----------------------------------------------------------
@@ -2285,9 +2287,6 @@ Synced mute/unmute: the countdown should be displayed correctly if in song mode 
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
 ----------------------------------------------------------
 Jam page: Metronome count-in on recording
-http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
-----------------------------------------------------------
-Record button enhancement: enable/disable recording function if already in Jam page
 http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=findComment&comment=174078
 ----------------------------------------------------------
 Check Edit pattern handling in Recording page
@@ -2309,26 +2308,9 @@ http://midibox.org/forums/topic/19937-mbseqv4-beginners-user-manual-draft/?do=fi
 Muting a track cuts off all playing notes on that track, but muting an individual note layer doesn't do the same for the note that's currently playing in that layer -> hanging notes.
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174360
 ----------------------------------------------------------
-
-One little thing I found: On the STEP VIEW page the running cursor position LED changes to a slower mode to accommodate the much denser step display (compared to the EDIT screen). If STEP VIEW button is set to toggle and you exit the STEP VIEW page with the STEP VIEW button, the change from normal and slow running cursor mode works ok. But if you exit the STEP VIEW page with any other button than STEP VIEW, the running cursor mode stays in the slow mode, and won't change until you press STEP VIEW. However, in all cases the STEP VIEW indicator LED does go out when exiting the STEP VIEW page, even if the cursor mode doesn't change.
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174448
-----------------------------------------------------------
-Another thing: If Rec is 'on', AStart is 'on', and Fwd is 'off', and you press PLAY, the first step of the active track won't sound.
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174449
-----------------------------------------------------------
 Song Mode: when a new pattern is selected, it would be helpful to sync the appr. tracks to the measures, e.g. to reset the LFO
 Add option for this behaviour.
 http://midibox.org/forums/topic/20066-question-on-lfos/
-----------------------------------------------------------
-BLM16x16+X only records to track 1 in Jam mode
-http://midibox.org/forums/topic/20062-jam-mode-with-blm-16x16x/
-----------------------------------------------------------
-Provide 2*64/2*128 for drum tracks
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174943
-----------------------------------------------------------
-UI allows CC par layer selection for drum tracks, but this isn't supported
-Don't display CC selection
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=174943
 ----------------------------------------------------------
 Remove Bank Selections for pattern groups
 http://midibox.org/forums/topic/20128-save-all-saves-group-4-to-group-2help/#comment-175407
@@ -2365,3 +2347,7 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 
 - Interpolate Pitch Bend values (+ more, such as CC?)
   http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175313
+
+- save Robotizer settings
+  http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=175585
+

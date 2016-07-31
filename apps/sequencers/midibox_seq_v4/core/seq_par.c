@@ -59,6 +59,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Nth1 ", // 12
   "Nth2 ", // 13
   "Chrd2", // 14
+  "AfTch", // 15
 };
 
 static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order for the UI selection
@@ -70,6 +71,7 @@ static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order
   SEQ_PAR_Type_Length,
   SEQ_PAR_Type_CC,
   SEQ_PAR_Type_PitchBend,
+  SEQ_PAR_Type_Aftertouch,
   SEQ_PAR_Type_ProgramChange,
   SEQ_PAR_Type_Probability,
   SEQ_PAR_Type_Delay,
@@ -95,6 +97,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Nth1
   0,    // Nth2
   0x40, // Chord2: A/2
+  0,    // Aftertouch: 0
 };
 
 

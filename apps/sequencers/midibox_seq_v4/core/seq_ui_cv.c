@@ -32,17 +32,18 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       10
+#define NUM_OF_ITEMS       11
 #define ITEM_CV            0
 #define ITEM_CURVE         1
 #define ITEM_SLEWRATE      2
-#define ITEM_PITCHRANGE    3
-#define ITEM_GATE          4
-#define ITEM_CALIBRATION   5
-#define ITEM_CLK_SEL       6
-#define ITEM_CLK_PPQN      7
-#define ITEM_CLK_WIDTH     8
-#define ITEM_MODULE        9
+#define ITEM_SUSKEY        3
+#define ITEM_PITCHRANGE    4
+#define ITEM_GATE          5
+#define ITEM_CALIBRATION   6
+#define ITEM_CLK_SEL       7
+#define ITEM_CLK_PPQN      8
+#define ITEM_CLK_WIDTH     9
+#define ITEM_MODULE        10
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -68,7 +69,8 @@ static s32 LED_Handler(u16 *gp_leds)
   switch( ui_selected_item ) {
     case ITEM_CV:          *gp_leds = 0x0001; break;
     case ITEM_CURVE:       *gp_leds = 0x0002; break;
-    case ITEM_SLEWRATE:    *gp_leds = 0x000c; break;
+    case ITEM_SLEWRATE:    *gp_leds = 0x0004; break;
+    case ITEM_SUSKEY:      *gp_leds = 0x0008; break;
     case ITEM_PITCHRANGE:  *gp_leds = 0x0010; break;
     case ITEM_GATE:        *gp_leds = 0x0020; break;
     case ITEM_CALIBRATION: *gp_leds = 0x00c0; break;
@@ -102,8 +104,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP3:
-    case SEQ_UI_ENCODER_GP4:
       ui_selected_item = ITEM_SLEWRATE;
+      break;
+
+    case SEQ_UI_ENCODER_GP4:
+      ui_selected_item = ITEM_SUSKEY;
       break;
 
     case SEQ_UI_ENCODER_GP5:
@@ -171,6 +176,20 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0;
     }
 
+    case ITEM_SUSKEY: {
+      u8 suskey = SEQ_CV_SusKeyGet(selected_cv);
+      if( incrementer == 0 || SEQ_UI_Var8_Inc(&suskey, 0, 1, incrementer) >= 0 ) {
+	if( incrementer == 0 ) {
+	  suskey = suskey ? 0 : 1;
+	}
+	SEQ_CV_SusKeySet(selected_cv, suskey);
+
+	ui_store_file_required = 1;
+	return 1;
+      }
+      return 0;
+    }
+
     case ITEM_PITCHRANGE: {
       u8 range = SEQ_CV_PitchRangeGet(selected_cv);
       if( SEQ_UI_Var8_Inc(&range, 0, 127, incrementer) >= 0 ) {
@@ -183,8 +202,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_GATE: {
       u8 inv = SEQ_CV_GateInversionGet(selected_cv);
-      if( SEQ_UI_Var8_Inc(&inv, 0, 1, incrementer) >= 0 ) {
+      if( incrementer == 0 || SEQ_UI_Var8_Inc(&inv, 0, 1, incrementer) >= 0 ) {
+	if( incrementer == 0 ) {
+	  inv = inv ? 0 : 1;
+	}
 	SEQ_CV_GateInversionSet(selected_cv, inv);
+
 	ui_store_file_required = 1;
 	return 1;
       }
@@ -315,22 +338,22 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  //  CV  Curve SlewRate PRng  Gate  Calibr.  Clk   Rate    Width             Module 
-  //   1  V/Oct    0 mS    2   Pos.    off     1   24 PPQN   1 mS             AOUT_NG
+  //  CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width             Module 
+  //   1 V/Oct  0 mS  on    2  Pos.    off      1   24 PPQN   1mS             AOUT_NG
 
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString(" CV  Curve SlewRate PRng  Gate  Calibr.  Clk   Rate    Width             Module ");
+  SEQ_LCD_PrintString(" CV Curve SlewR SusK PRng Gate  Calibr.  Clk   Rate    Width             Module ");
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_CV && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(5);
+    SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString(" %2d  ", selected_cv+1);
+    SEQ_LCD_PrintFormattedString(" %2d ", selected_cv+1);
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -342,23 +365,30 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_SLEWRATE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(9);
+    SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintFormattedString(" %3d mS  ", SEQ_CV_SlewRateGet(selected_cv));
+    SEQ_LCD_PrintFormattedString("%3dmS ", SEQ_CV_SlewRateGet(selected_cv));
+  }
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_SUSKEY && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString(SEQ_CV_SusKeyGet(selected_cv) ? " on  " : " off ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_PITCHRANGE && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d   ", SEQ_CV_PitchRangeGet(selected_cv));
+    SEQ_LCD_PrintFormattedString("%3d  ", SEQ_CV_PitchRangeGet(selected_cv));
   }
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_GATE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintFormattedString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg.  " : "Pos.  ");
+    SEQ_LCD_PrintString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg.  " : "Pos.  ");
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -390,12 +420,12 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_CLK_WIDTH && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(6);
+    SEQ_LCD_PrintSpaces(5);
   } else {
-    SEQ_LCD_PrintFormattedString("%3d mS", SEQ_CV_ClkPulseWidthGet(selected_clkout));
+    SEQ_LCD_PrintFormattedString("%3dmS", SEQ_CV_ClkPulseWidthGet(selected_clkout));
   }
 
-  SEQ_LCD_PrintSpaces(12);
+  SEQ_LCD_PrintSpaces(13);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_MODULE && ui_cursor_flash ) {

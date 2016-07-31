@@ -3107,8 +3107,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
   u8 played_step = seq_core_trk[visible_track].step;
 
   if( seq_core_slaveclk_mute != SEQ_CORE_SLAVECLK_MUTE_Enabled ) { // Off and OffOnNextMeasure
-    if( seq_ui_button_state.STEP_VIEW ) {
-      // if STEP_VIEW button pressed: pos marker correlated to zoom ratio
+    if( ui_page == SEQ_UI_PAGE_STEPSEL ) {
+      // in STEPSEL page: pos marker correlated to zoom ratio
       if( sequencer_running )
 	pos_marker_mask = 1 << (played_step / (SEQ_TRG_NumStepsGet(visible_track)/16));
     } else {

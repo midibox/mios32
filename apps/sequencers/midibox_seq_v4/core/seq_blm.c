@@ -910,7 +910,11 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 #endif
   }
 
+#ifdef MBSEQV4L
   u8 should_be_recorded = seq_record_state.ENABLED && (seq_record_state.ARMED_TRACKS & (1 << visible_track));
+#else
+  u8 should_be_recorded = seq_record_state.ENABLED; // Armed tracks not properly supported by MBSEQV4 (w/o L)
+#endif
 
   if( depressed ) {
     // play off event - but only if depressed button matches with last one that played the note

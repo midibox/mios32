@@ -170,6 +170,29 @@ s32 SEQ_MORPH_EventProgramChange(u8 track, u8 step, seq_layer_evnt_t *e, u8 inst
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Modifies an Aftertouch event according to morph values
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_MORPH_EventAftertouch(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+
+  // check if morphing enabled
+  if( !tcc->morph_mode )
+    return 0; // no morphing
+  // currently only a single mode is supported...
+
+  u16 morph_step = step + tcc->morph_dst;
+  if( morph_step > 255 ) // aligned with display output in seq_ui_trkmorph.c
+    morph_step = 255;
+
+  // morph value
+  e->midi_package.evnt1 = SEQ_MORPH_ScaleValue(morph_value, e->midi_package.evnt1, SEQ_PAR_Get(track, morph_step, par_layer, instrument));
+
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Help function to scale a value between min and max boundary
 /////////////////////////////////////////////////////////////////////////////
 static u8 SEQ_MORPH_ScaleValue(u8 value, u8 min, u8 max)

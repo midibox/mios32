@@ -40,6 +40,7 @@ extern s32 SEQ_MORPH_EventNote(u8 track, u8 step, seq_layer_evnt_t *e, u8 instru
 extern s32 SEQ_MORPH_EventCC(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
 extern s32 SEQ_MORPH_EventPitchBend(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
 extern s32 SEQ_MORPH_EventProgramChange(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
+extern s32 SEQ_MORPH_EventAftertouch(u8 track, u8 step, seq_layer_evnt_t *e, u8 instrument, s8 par_layer);
 
 
 /////////////////////////////////////////////////////////////////////////////

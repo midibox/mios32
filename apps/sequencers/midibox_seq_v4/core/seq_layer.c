@@ -120,6 +120,7 @@ static const u8 seq_layer_preset_table_drum_notes[16] = {
 /////////////////////////////////////////////////////////////////////////////
 static u8 pb_last_value[SEQ_CORE_NUM_TRACKS];
 static u8 pc_last_value[SEQ_CORE_NUM_TRACKS];
+static u8 at_last_value[SEQ_CORE_NUM_TRACKS];
 static u8 cc_last_value[SEQ_CORE_NUM_TRACKS][16];
 
 static u8 track_pc_last_value[SEQ_CORE_NUM_TRACKS];
@@ -169,6 +170,7 @@ s32 SEQ_LAYER_ResetLatchedValues(void)
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
     pb_last_value[track] = 0xff; // invalid value - PB value will be send in any case
     pc_last_value[track] = 0xff; // invalid value - PC value will be send in any case
+    at_last_value[track] = 0xff; // invalid value - AT value will be send in any case
 
     int i;
     for(i=0; i<16; ++i)
@@ -644,6 +646,40 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 
 	} break;
 
+        case SEQ_PAR_Type_Aftertouch: {
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
+
+	  // don't send aftertouch if value hasn't changed
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == at_last_value[track] )
+	      break;
+	    at_last_value[track] = value;
+	  }
+
+	  if( (tcc->event_mode != SEQ_EVENT_MODE_CC || gate) &&
+	      (insert_empty_notes || !(layer_muted & (1 << par_layer))) ) {
+	    p->type     = Aftertouch;
+	    p->cable    = track;
+	    p->event    = Aftertouch;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = value;
+	    p->evnt2    = 0x00; // don't care
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventAftertouch(track, step, e, instrument, par_layer);
+
+	    if( handle_vu_meter )
+	      seq_layer_vu_meter[par_layer] = p->evnt1 | 0x80;
+	  }
+
+	} break;
+
       }
 
       if( num_events >= 16 )
@@ -909,6 +945,42 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	    }
 	  }
 	} break;
+
+        case SEQ_PAR_Type_Aftertouch: {
+	  if( layer_event.midi_package.event == Aftertouch ) {
+	    // extra MBSEQ V4L: write into whole 16th step in step record mode
+	    if(
+#ifndef MBSEQV4L
+	       0
+#else
+	       (seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning()) && tcc->clkdiv.value == 0x03
+#endif
+	       ) {
+	      int i;
+	      for(i=0; i<4; ++i)
+		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.evnt1);
+	    } else {
+	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt1);
+	      return par_layer;
+	    }
+	  } else if( layer_event.midi_package.event == PolyPressure ) {
+	    // extra MBSEQ V4L: write into whole 16th step in step record mode
+	    if(
+#ifndef MBSEQV4L
+	       0
+#else
+	       (seq_record_options.STEP_RECORD || !SEQ_BPM_IsRunning()) && tcc->clkdiv.value == 0x03
+#endif
+	       ) {
+	      int i;
+	      for(i=0; i<4; ++i)
+		SEQ_PAR_Set(track, step*4+i, par_layer, instrument, layer_event.midi_package.evnt2);
+	    } else {
+	      SEQ_PAR_Set(track, step, par_layer, instrument, layer_event.midi_package.evnt2);
+	      return par_layer;
+	    }
+	  }
+	} break;
       }
     }
   }
@@ -953,10 +1025,19 @@ s32 SEQ_LAYER_DirectSendEvent(u8 track, u8 par_layer)
   } break;
 
   case SEQ_PAR_Type_ProgramChange: {
-    u8 value = (pc_last_value[track] < 0x80) ? pc_last_value[track] : 0x40;
+    u8 value = (pc_last_value[track] < 0x80) ? pc_last_value[track] : 0;
 
     p.type      = ProgramChange;
     p.event     = ProgramChange;
+    p.evnt1     = value;
+    p.evnt2     = 0x00; // don't care
+  } break;
+
+  case SEQ_PAR_Type_Aftertouch: {
+    u8 value = (at_last_value[track] < 0x80) ? at_last_value[track] : 0;
+
+    p.type      = Aftertouch;
+    p.event     = Aftertouch;
     p.evnt1     = value;
     p.evnt2     = 0x00; // don't care
   } break;
