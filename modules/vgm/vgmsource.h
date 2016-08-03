@@ -25,8 +25,7 @@ typedef union {
     struct{
         u8 type;
         u8 dummy1;
-        u8 dummy2;
-        u8 dummy3;
+        u16 mutes;
         u32 opn2clock;
         u32 psgclock;
         u32 loopaddr;

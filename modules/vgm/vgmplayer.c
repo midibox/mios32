@@ -23,9 +23,11 @@ typedef struct {
 } vgmp_chipdata;
 
 static vgmp_chipdata chipdata[GENESIS_COUNT];
+u8 VGM_Player_docapture;
+static u8 nextchiptocapture;
+static u32 lasttimecaptured;
 
-
-u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
+u16 VgmPlayer_WorkCallback(){
     ////////////////////////////////////////////////////////////////////////
     // PLAY VGMS
     ////////////////////////////////////////////////////////////////////////
@@ -33,6 +35,7 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
     MIOS32_BOARD_LED_Set(0b1111, 0b0010);
     VgmHead* h;
     u32 minwait = 0xFFFFFFFF; s32 s; u32 u;
+    u32 vgm_time = TIM5->CNT;
     VgmChipWriteCmd cmd;
     u8 wrotetochip, chip, subcmd;
     //Scan all VGMs for delays
@@ -73,7 +76,7 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                         wrotetochip = 1;
                     }else if(subcmd == 0){
                         //PSG write
-                        u = hr_time - chipdata[chip].psg_lastwritetime;
+                        u = TIM2->CNT - chipdata[chip].psg_lastwritetime;
                         if(u < VGMP_PSGBUSYDELAY){
                             u = VGMP_PSGBUSYDELAY - u;
                             if(u < minwait){
@@ -82,12 +85,12 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                         }else{
                             Genesis_PSGWrite(chip, cmd.data);
                             VGM_Head_cmdNext(h, vgm_time);
-                            chipdata[chip].psg_lastwritetime = hr_time;
+                            chipdata[chip].psg_lastwritetime = TIM2->CNT;
                             wrotetochip = 1;
                         }
                     }else{
                         //OPN2 write
-                        u = hr_time - chipdata[chip].opn2_lastwritetime;
+                        u = TIM2->CNT - chipdata[chip].opn2_lastwritetime;
                         if(u < VGMP_OPN2BUSYDELAY){
                             u = VGMP_OPN2BUSYDELAY - u;
                             if(u < minwait){
@@ -98,9 +101,9 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
                             VGM_Head_cmdNext(h, vgm_time);
                             //Don't delay after 0x2x commands
                             if(cmd.addr >= 0x20 && cmd.addr < 0x2F && cmd.addr != 0x28){
-                                chipdata[chip].opn2_lastwritetime = hr_time - VGMP_OPN2BUSYDELAY;
+                                chipdata[chip].opn2_lastwritetime = TIM2->CNT - VGMP_OPN2BUSYDELAY;
                             }else{
-                                chipdata[chip].opn2_lastwritetime = hr_time;
+                                chipdata[chip].opn2_lastwritetime = TIM2->CNT;
                             }
                             wrotetochip = 1;
                         }
@@ -114,6 +117,15 @@ u16 VgmPlayer_WorkCallback(u32 hr_time, u32 vgm_time){
         //TODO loop instead of returning and re-timing
         minwait = 100;
     }else if(minwait > VGMP_MAXDELAY){
+        if(VGM_Player_docapture 
+                && (TIM2->CNT - lasttimecaptured >= 30000)
+                && (TIM2->CNT - chipdata[nextchiptocapture].opn2_lastwritetime >= VGMP_OPN2BUSYDELAY)){
+            //If we have plenty of time, capture some operator states
+            Genesis_CaptureOPN2OpStates(nextchiptocapture);
+            lasttimecaptured = TIM2->CNT;
+            nextchiptocapture++;
+            if(nextchiptocapture >= GENESIS_COUNT) nextchiptocapture = 0;
+        }
         minwait = VGMP_MAXDELAY;
     }
     //minwait = 1000;
@@ -127,7 +139,7 @@ void TIM3_IRQHandler(void){
         TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
         TIM_Cmd(TIM3, DISABLE);
         VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CHIP);
-        u16 nextdelay = VgmPlayer_WorkCallback(TIM2->CNT, TIM5->CNT);
+        u16 nextdelay = VgmPlayer_WorkCallback();
         VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CHIP);
         TIM3->CNT = 0;
         TIM3->ARR = nextdelay;
@@ -176,6 +188,10 @@ void VGM_Player_Init(){
     TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE); //Enable interrupts
     MIOS32_IRQ_Install(TIM3_IRQn, MIOS32_IRQ_PRIO_INSANE); //highest priority!
     TIM_Cmd(TIM3, ENABLE); //Start counting!
+    //Init capture
+    VGM_Player_docapture = 0;
+    nextchiptocapture = 0;
+    lasttimecaptured = TIM2->CNT;
 }
 
 

@@ -19,6 +19,7 @@
 #include "vgmplayer.h"
 #include "vgmqueue.h"
 #include "vgmram.h"
+#include "vgmsdtask.h"
 #include "vgmsource.h"
 #include "vgmstream.h"
 #include "vgmtracker.h"

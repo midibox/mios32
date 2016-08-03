@@ -32,8 +32,11 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     head->source = source;
     head->ticks = 0; //will get changed at restart
     u8 i;
+    u16 mutes = source->mutes;
     for(i=0; i<12; ++i){
         head->channel[i].ALL = 0;
+        head->channel[i].mute = mutes & 1;
+        mutes >>= 1;
         if(i>=1 && i<=6){
             head->channel[i].map_voice = i-1;
         }else if(i>=8 && i<=0xA){
@@ -71,7 +74,7 @@ s32 VGM_Head_Delete(VgmHead* head){
     if(head == NULL) return -1;
     s32 ret = -1;
     MIOS32_IRQ_Disable();
-    u32 i;
+    u8 i;
     for(i=0; i<vgm_numheads; ++i){
         if(vgm_heads[i] == head){
             for(; i<vgm_numheads-1; ++i){
@@ -120,7 +123,8 @@ void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){
     }
 }
 
-#define CHECK_MUTE_NODATA(c) do{ if(head->channel[(c)].mute || head->channel[(c)].nodata) { cmd->cmd = 0xFF; return; }} while(0)
+#define CHECK_NODATA(c) do{ if(head->channel[(c)].nodata) { cmd->cmd = 0xFF; return; }} while(0)
+#define CHECK_MUTE(c) do{ if(head->channel[(c)].mute) { cmd->cmd = 0xFF; return; }} while(0)
 
 void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
     u8 chan = 0xFF, board = 0xFF;
@@ -131,7 +135,11 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             chan = ((cmd->data & 0x60) >> 5);
             head->psglastchannel = chan;
             chan += 8;
-            CHECK_MUTE_NODATA(chan);
+            CHECK_NODATA(chan);
+            if(cmd->data & 0x10){
+                //It's a volume write, we should mute
+                CHECK_MUTE(chan);
+            }
             board = head->channel[chan].map_chip;
             if(chan != 0xB){
                 chan = head->channel[chan].map_voice;
@@ -139,7 +147,7 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             }
         }else{
             chan = head->psglastchannel + 8;
-            CHECK_MUTE_NODATA(chan);
+            CHECK_NODATA(chan);
             board = head->channel[chan].map_chip;
         }
     }else{
@@ -149,29 +157,31 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             chan = cmd->data & 0x07;
             if((chan & 3) == 3){ cmd->cmd = 0xFF; return; }
             if(chan < 0x03) chan += 1; //Move channels 0,1,2 up to 1,2,3
-            CHECK_MUTE_NODATA(chan);
+            CHECK_NODATA(chan);
+            CHECK_MUTE(chan);
             board = head->channel[chan].map_chip;
             chan = head->channel[chan].map_voice;
             if(chan >= 0x03) chan += 1; //Move 3,4,5 up to 4,5,6
             cmd->data = (cmd->data & 0xF8) | chan;
         }else if(cmd->addr == 0x2A || cmd->addr == 0x2B){
             //DAC write
-            CHECK_MUTE_NODATA(7);
+            CHECK_NODATA(7);
+            if(cmd->addr == 0x2A) CHECK_MUTE(7); //Only mute DAC data, not DAC enable!
             board = head->channel[7].map_chip;
         }else if((cmd->addr <= 0xAE && cmd->addr >= 0xA8) || (cmd->addr <= 0x27 && cmd->addr >= 0x24)){
             //Ch3 frequency write or options/timers write
-            CHECK_MUTE_NODATA(3);
+            CHECK_NODATA(3);
             board = head->channel[3].map_chip;
         }else if(cmd->addr <= 0x2F || cmd->addr >= 0xB8){
             //Other chip write
-            CHECK_MUTE_NODATA(0);
+            CHECK_NODATA(0);
             board = head->channel[0].map_chip;
         }else{
             //Operator or channel/voice write
             chan = cmd->addr & 0x03;
             if(chan == 3){ cmd->cmd = 0xFF; return; }
             chan += addrhi + (addrhi << 1) + 1; //Now 1,2,3,4,5,6
-            CHECK_MUTE_NODATA(chan);
+            CHECK_NODATA(chan);
             board = head->channel[chan].map_chip;
             chan = head->channel[chan].map_voice;
             chan += (chan >= 3); //Now 0,1,2,4,5,6
