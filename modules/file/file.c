@@ -1050,6 +1050,139 @@ s32 FILE_GetFiles(char *path, char *ext_filter, char *file_list, u8 num_of_items
   return (status < 0) ? status : num_files;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//! Returns a directory next to the given directory
+//! if dirname == NULL, the first directory will be returned in next_dirname
+//! \param[in] path directory in which we want to search for subdirectories
+//! \param[in] dirname current subdirectory (if NULL, the first directory will be returned)
+//! \param[out] next_dirname the next subdirectory if return status is 1; an empty
+//! string if return status is 0; no change on error
+//! \return < 0 on errors (error codes are documented in file.h)
+//! \return 1 if next directory has been found
+//! \return 0 if no additional directory
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_FindNextDir(char *path, char *dirname, char *next_dirname){
+    s32 status = 0;
+  DIR di;
+  FILINFO de;
+
+  if( !volume_available ) {
+    #if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_FindNextDir] ERROR: volume doesn't exist!\n");
+    #endif
+    return FILE_ERR_NO_VOLUME;
+  }
+
+  if( f_opendir(&di, path) != FR_OK ) {
+    #if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_FindNextDir] ERROR: opening %s directory - please create it!\n", path);
+    #endif
+    return FILE_ERR_NO_DIR;
+  }
+
+  u8 take_next = 0;
+  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+    if( de.fname[0] && de.fname[0] != '.' &&
+        (de.fattrib & AM_DIR) && !(de.fattrib & AM_HID) ) {
+
+      #if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("--> %s\n", de.fname);
+      #endif
+      
+      //Are we done? First/next file?
+      if( take_next || dirname == NULL ) {
+        memcpy((char *)next_dirname, (char *)&de.fname[0], 9);
+        return 1; // dir found
+      }
+      
+      //Compare names
+      char *p = (char *)&de.fname[0];
+      int i;
+      u8 dirname_matches = 1;
+      char *p_check = dirname;
+      for(i=0; i<8; ++i, p++) {
+        if( *p != *p_check++ ) {
+          dirname_matches = 0;
+          break;
+        }
+        if(!*p) break; //Both names end here
+      }
+      if( dirname_matches ) take_next = 1;
+    }
+  }
+
+  next_dirname[0] = 0; // set terminator (empty string)
+  return 0; // dir not found
+}
+/////////////////////////////////////////////////////////////////////////////
+//! Returns the previous directory next to the given directory
+//! if dirname == NULL, the last directory will be returned
+//! \param[in] path directory in which we want to search for subdirectories
+//! \param[in] dirname current subdirectory (if NULL, will return the last subdirectory)
+//! \param[out] prev_dirname the previous subdirectory if return status is 1; an empty
+//! string if return status is 0; no change on error
+//! \return < 0 on errors (error codes are documented in file.h)
+//! \return 1 if previous directory has been found
+//! \return 0 if no additional directory
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_FindPreviousDir(char *path, char *dirname, char *prev_dirname)
+{
+  s32 status = 0;
+  DIR di;
+  FILINFO de;
+
+  if( !volume_available ) {
+    #if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_FindPreviousDir] ERROR: volume doesn't exist!\n");
+    #endif
+    return FILE_ERR_NO_VOLUME;
+  }
+
+  if( f_opendir(&di, path) != FR_OK ) {
+    #if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_FindPreviousDir] ERROR: opening %s directory - please create it!\n", path);
+    #endif
+    return FILE_ERR_NO_DIR;
+  }
+
+  prev_dirname[0] = 0;
+  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+    if( de.fname[0] && de.fname[0] != '.' &&
+	      (de.fattrib & AM_DIR) && !(de.fattrib & AM_HID) ) {
+
+      #if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("--> %s\n", de.fname);
+      #endif
+      
+      if(dirname != NULL){
+        char *p = (char *)&de.fname[0];
+        int i;
+        u8 dirname_matches = 1;
+        char *p_check = dirname;
+        for(i=0; i<8; ++i, p++) {
+	        if( *p != *p_check++ ) {
+	          dirname_matches = 0;
+	          break;
+	        }
+          if(!*p) break; //Both names end here
+        }
+        if( dirname_matches ) {
+	        return prev_dirname[0] ? 1 : 0; // We're done, was the last dirname valid?
+        }
+      }
+
+      // copy dirname into prev_dirname for next iteration
+      memcpy((char *)prev_dirname, (char *)&de.fname[0], 9);
+    }
+  }
+
+  // last file?
+  if( dirname == NULL && prev_dirname[0] != 0 )
+    return 1;
+
+  prev_dirname[0] = 0; // set terminator (empty string)
+  return 0; // file not found
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a file next to the given filename with the given extension
@@ -1079,7 +1212,7 @@ s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_f
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[FILE_FindNextFile] ERROR: opening %s directory - please create it!\n", path);
 #endif
-    status = FILE_ERR_NO_DIR;
+    return FILE_ERR_NO_DIR;
   }
 
   u8 take_next = 0;
@@ -1127,7 +1260,7 @@ s32 FILE_FindNextFile(char *path, char *filename, char *ext_filter, char *next_f
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns a previous file of the given filename with the given extension
-//! if filename == NULL, no first file will be returned in prev_filename
+//! if filename == NULL, the last file will be returned in prev_filename
 //! \param[in] path directory in which we want to search
 //! \param[in] filename current file (if NULL, the last file will be returned)
 //! \param[in] ext_filter optional extension filter (if NULL: no extension)
@@ -1153,7 +1286,7 @@ s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, char *pr
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[FILE_FindPreviousFile] ERROR: opening %s directory - please create it!\n", path);
 #endif
-    status = FILE_ERR_NO_DIR;
+    return FILE_ERR_NO_DIR;
   }
 
   prev_filename[0] = 0;
