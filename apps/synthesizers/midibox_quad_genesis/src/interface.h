@@ -29,10 +29,15 @@ extern "C" {
 #define MODE_SAMPLE 6
 extern u8 interfacemode;
 
+#define SUBSCREEN_FILEBROWSER 1
+#define SUBSCREEN_NAMEEDITOR 2
+extern u8 subscreen;
+
 // Event hooks
 extern void Interface_Init();
 extern void Interface_Tick();
 extern void Interface_Background();
+extern void Interface_ChangeToMode(u8 ifmode);
 
 // Button hooks
 extern void Interface_BtnGVoice(u8 gvoice, u8 state);

@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+#include <vgm.h>
+#include "syeng.h"
 
 extern void Mode_Vgm_Init();
 extern void Mode_Vgm_GotFocus();
@@ -33,6 +35,9 @@ extern void Mode_Vgm_BtnEdit(u8 button, u8 state);
 
 extern void Mode_Vgm_EncDatawheel(s32 incrementer);
 extern void Mode_Vgm_EncEdit(u8 encoder, s32 incrementer);
+
+
+extern VgmSource* selvgm;
 
 
 #ifdef __cplusplus

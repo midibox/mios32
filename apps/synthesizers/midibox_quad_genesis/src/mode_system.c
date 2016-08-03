@@ -17,8 +17,10 @@
 #include "frontpanel.h"
 #include "syeng.h"
 
-u8 submode;
+static u8 submode;
 
+static u8 counter;
+static const u8 button_lut[10] = {44, 44, 45, 45, 37, 38, 37, 38, 53, 51};
 
 static void DrawUsage(){
     vgm_meminfo_t m = VGM_PerfMon_GetMemInfo();
@@ -53,7 +55,14 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("Options   VClr");
             MIOS32_LCD_CursorSet(10,1);
-            MIOS32_LCD_PrintFormattedString("%s", voiceclearfull ? "Full" : "KOff");
+            MIOS32_LCD_PrintString(voiceclearfull ? "Full" : "KOff");
+            break;
+        case 3:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Demo mode unlocked!");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("(Coming Soon)");
             break;
         default:
             MIOS32_LCD_Clear();
@@ -67,6 +76,7 @@ void Mode_System_Init(){
 }
 void Mode_System_GotFocus(){
     submode = 0;
+    counter = 0;
     DrawMenu();
 }
 
@@ -143,10 +153,26 @@ void Mode_System_BtnSystem(u8 button, u8 state){
     if(button == FP_B_MENU){
         submode = 0;
         DrawMenu();
+        return;
+    }
+    switch(submode){
+        case 2:
+            if(button == button_lut[counter]){
+                if(counter == 9){
+                    submode = 3;
+                    DrawMenu();
+                    return;
+                }else{
+                    ++counter;
+                }
+            }else{
+                counter = 0;
+            }
+            break;
     }
 }
 void Mode_System_BtnEdit(u8 button, u8 state){
-
+    Mode_System_BtnSystem(button, state);
 }
 
 void Mode_System_EncDatawheel(s32 incrementer){

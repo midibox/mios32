@@ -50,4 +50,7 @@
 
 #define FRONTPANEL_REVERSE_ROWS 1
 
+// Miscellaneous
+#define PRINT_SUPPORT_BINARY 1
+
 #endif /* _MIOS32_CONFIG_H */

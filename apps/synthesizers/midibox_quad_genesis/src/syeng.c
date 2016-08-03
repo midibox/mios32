@@ -88,8 +88,8 @@ syngenesis_t syngenesis[GENESIS_COUNT];
 synproginstance_t proginstances[MBQG_NUM_PROGINSTANCES];
 synchannel_t channels[16*MBQG_NUM_PORTS];
 u8 voiceclearfull;
-VgmSource* voiceclearsource;
-voiceclearlink* voiceclearlist;
+static VgmSource* voiceclearsource;
+static voiceclearlink* voiceclearlist;
 
 //TODO divide chips that use globals by the types of globals used, so multiple
 //voices using the same effect e.g. "ugly" can play together
@@ -132,7 +132,6 @@ static void ReleaseAllPI(synproginstance_t* pi){
         if(i == 0){
             //We were using OPN2 globals, so there can't be anything else
             //allocated on this OPN2 besides this PI
-            //DBG("--ReleaseAllPI: clearing whole OPN2 %d", pimap.map_chip);
             sg->optionbits = 0;
             for(v=0; v<8; ++v){
                 sg->channels[v].ALL = 0;
@@ -168,7 +167,6 @@ static void ReleaseAllPI(synproginstance_t* pi){
             sg->noisefreqsq3 = 0;
             VoiceReset(g, 11);
         }
-        //DBG("--ReleaseAllPI: clearing voice %d", i);
     }
 }
 
@@ -209,7 +207,6 @@ static void StandbyPI(synproginstance_t* pi){
         sg = &syngenesis[pimap.map_chip];
         if(i == 0){
             //We were using OPN2 globals
-            //DBG("--StandbyPI: setting all voices to standby");
             for(v=0; v<8; ++v){
                 sg->channels[v].use = 1;
             }
@@ -232,7 +229,6 @@ static void StandbyPI(synproginstance_t* pi){
             //Noise
             sg->channels[11].use = 1;
         }
-        //DBG("--StandbyPI: voice %d standing by", i);
     }
 }
 
@@ -665,9 +661,11 @@ static s32 AllocatePI(u8 piindex, usage_bits_t pusage){
 
 
 static void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
-    u8 i;
+    u8 i, m;
     for(i=0; i<12; ++i){
-        head->channel[i] = pi->mapping[i];
+        m = head->channel[i].mute;
+        head->channel[i].ALL = pi->mapping[i].ALL;
+        head->channel[i].mute = m;
     }
 }
 
@@ -776,7 +774,7 @@ void SyEng_Init(){
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[2].program = prog;
+    channels[5].program = prog;
     sprintf(prog->name, "3Voice Chord");
     prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -862,7 +860,7 @@ void SyEng_Init(){
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[5].program = prog;
+    channels[2].program = prog;
     sprintf(prog->name, "SMB1 Coin");
     prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
                                  .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
@@ -870,6 +868,8 @@ void SyEng_Init(){
                                  .sq1=0, .sq2=1, .sq3=0, .noise=0, .noisefreqsq3=0};
     prog->rootnote = 60;
     //Create init VGM file
+    prog->initsource = NULL;
+    /*
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
@@ -881,6 +881,7 @@ void SyEng_Init(){
     data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111 }; //Attenuate SQ2
     //
     prog->initsource = source;
+    */
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
@@ -913,6 +914,8 @@ void SyEng_Init(){
     data[17] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
     prog->noteonsource = source;
     //Create note-off VGM file
+    prog->noteoffsource = NULL;
+    /*
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
@@ -920,6 +923,7 @@ void SyEng_Init(){
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
     prog->noteoffsource = source;
+    */
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -978,6 +982,8 @@ void SyEng_Init(){
                                  .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
     prog->rootnote = 76;
     //Create init VGM file
+    prog->initsource = NULL;
+    /*
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     vsr->numcmds = 1;
@@ -987,6 +993,7 @@ void SyEng_Init(){
     //Some BS which we don't care about
     data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
     prog->initsource = source;
+    */
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
     DEBUG2 = VGM_SourceStream_Start(source, "MOONBICH.VGM");
@@ -1018,6 +1025,15 @@ static u8 IsAnyVoiceBeingCleared(synproginstance_t* pi){
         if(syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared) return 1;
     }
     return 0;
+}
+
+static void StartPlayingProgVGM(synproginstance_t* pi, VgmSource* source, u8 rootnote){
+    pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
+    CopyPIMappingToHead(pi, pi->head);
+    u32 vgmtime = VGM_Player_GetVGMTime();
+    VGM_Head_Restart(pi->head, vgmtime);
+    pi->head->playing = 1;
+    pi->recency = vgmtime;
 }
 
 void SyEng_Tick(){
@@ -1063,31 +1079,38 @@ void SyEng_Tick(){
                 DBG("ERROR program disappeared while playing, could not start playing init after clearing!");
                 continue;
             }
-            DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
-            pi->head = VGM_Head_Create(prog->initsource, VGM_getFreqMultiplier((s8)pi->note - (s8)prog->rootnote), 0x1000);
-            CopyPIMappingToHead(pi, pi->head);
-            VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-            pi->head->playing = 1;
+            if(prog->initsource != NULL){
+                DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
+                StartPlayingProgVGM(pi, prog->initsource, prog->rootnote);
+            }else{
+                pi->playinginit = 0;
+                if(prog->noteonsource != NULL){
+                    DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
+                    StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+                }else{
+                    DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
+                }
+            }
             continue;
         }
         if(pi->head == NULL) continue;
         if(pi->head->isdone){
-            //DBG("Stopping playing VGM which isdone");
             VGM_Head_Delete(pi->head);
             pi->head = NULL;
             if(!pi->playinginit) continue;
+            pi->playinginit = 0;
             prog = channels[pi->sourcechannel].program;
             if(prog == NULL){
                 DBG("ERROR program disappeared while playing, could not switch from init to noteon!");
                 continue;
             }
             //Switch from init to noteon VGM
-            DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
-            pi->playinginit = 0;
-            pi->head = VGM_Head_Create(prog->noteonsource, VGM_getFreqMultiplier((s8)pi->note - (s8)prog->rootnote), 0x1000);
-            CopyPIMappingToHead(pi, pi->head);
-            VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-            pi->head->playing = 1;
+            if(prog->noteonsource != NULL){
+                DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
+                StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+            }else{
+                DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
+            }
         }
     }
 }
@@ -1141,25 +1164,20 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     }
     pi = &proginstances[bestrated];
     pi->note = pkg.note;
-    //DBG("Note on %d ch %d, replacing PI %d rating %d", pkg.note, pkg.chn, bestrated, bestrating);
     //Do we already have the right mapping allocated?
     if(pi->valid && pi->sourcechannel == pkg.chn){
         //Skip the init VGM, start the note on VGM
         if(pi->head != NULL){
             //Stop playing whatever it was playing
-            //DBG("--Stopping PI head");
             VGM_Head_Delete(pi->head);
             pi->head = NULL;
         }
-        //DBG("--Creating noteon head");
-        pi->head = VGM_Head_Create(prog->noteonsource, VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote), 0x1000);
-        //DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
-        CopyPIMappingToHead(pi, pi->head);
-        VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-        pi->head->playing = 1;
+        if(prog->noteonsource != NULL){
+            StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+        }else{
+            DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
+        }
         pi->playing = 1;
-        pi->recency = VGM_Player_GetVGMTime();
-        //DBG("--Done");
         return;
     }
     //If we took away from another channel which was playing, release its resources
@@ -1173,7 +1191,6 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
         pi->head = NULL;
     }
     //Find best allocation
-    //DBG("--Allocating resources for new PI");
     s32 ret = AllocatePI(bestrated, prog->usage);
     if(ret < 0){
         DBG("--Could not allocate resources for PI (voices full)! code = %d", ret);
@@ -1182,22 +1199,25 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     //Set up the PI for the new program
     pi->sourcechannel = pkg.chn;
     pi->valid = 1;
-    pi->playing = 1;
     pi->playinginit = 1;
-    pi->recency = VGM_Player_GetVGMTime();
+    pi->playing = 1;
     //See if we're waiting for voices to be cleared
     if(IsAnyVoiceBeingCleared(pi)){
         pi->waitingforclear = 1;
         return; //Init will be played in SyEng_Tick
     }
-    //Start the init VGM
-    //DBG("--Creating init head");
-    pi->head = VGM_Head_Create(prog->initsource, VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote), 0x1000);
-    //DBG("--Note %d root %d fmult %d, result mults OPN2 %d PSG %d", pkg.note, prog->rootnote, fmultiplier, pi->head->opn2mult, pi->head->psgmult);
-    CopyPIMappingToHead(pi, pi->head);
-    VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-    pi->head->playing = 1;
-    //DBG("--Done");
+    //Otherwise, start the init VGM
+    if(prog->initsource != NULL){
+        StartPlayingProgVGM(pi, prog->initsource, prog->rootnote);
+    }else{
+        pi->playinginit = 0;
+        if(prog->noteonsource != NULL){
+            DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
+            StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+        }else{
+            DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
+        }
+    }
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
     synproginstance_t* pi;
@@ -1213,29 +1233,24 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
         DBG("Note off %d ch %d, but no PI playing this note", pkg.note, pkg.chn);
         return; //no corresponding note on
     }
-    //DBG("Note off %d ch %d, being played by PI %d", pkg.note, pkg.chn, i);
     //Found corresponding note on
-    if(pi->head != NULL){
-        //Stop playing note-on VGM
-        //DBG("--Stopping noteon head");
-        VGM_Head_Delete(pi->head);
-        pi->head = NULL;
-    }
     synprogram_t* prog = channels[pkg.chn].program;
     if(prog == NULL){
         DBG("--ERROR program disappeared while playing, could not switch to noteoff!");
         return;
     }
-    //Start playing note-off VGM
-    //DBG("--Creating noteoff head");
-    pi->head = VGM_Head_Create(prog->noteoffsource, VGM_getFreqMultiplier((s8)pkg.note - (s8)prog->rootnote), 0x1000);
-    CopyPIMappingToHead(pi, pi->head);
-    VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-    pi->head->playing = 1;
+    if(prog->noteoffsource != NULL){
+        //Stop playing note-on VGM only if there's a noteoff to play
+        if(pi->head != NULL){
+            VGM_Head_Delete(pi->head);
+            pi->head = NULL;
+        }
+        //Start playing note-off VGM
+        StartPlayingProgVGM(pi, prog->noteoffsource, prog->rootnote);
+    }else{
+        DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
+    }
     //Mark pi as not playing, release resources
-    //DBG("--Standing by PI resources");
     StandbyPI(pi);
     pi->playing = 0;
-    pi->recency = VGM_Player_GetVGMTime();
-    //DBG("--Done");
 }

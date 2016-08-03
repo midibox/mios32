@@ -13,15 +13,16 @@
 #include <mios32.h>
 #include "mode_chan.h"
 
-#include "mode_voice.h"
-#include "syeng.h"
 #include "frontpanel.h"
+#include "interface.h"
+#include "syeng.h"
+#include "mode_prog.h"
+#include "mode_voice.h"
+#include "nameeditor.h"
 
-u8 selchan;
-u8 submode;
-u8 cursor;
-u8 newprogname[13];
-u8 newprogtype;
+static u8 selchan;
+static u8 submode;
+static u8 cursor;
 
 static void DrawMenu(){
     switch(submode){
@@ -36,7 +37,7 @@ static void DrawMenu(){
                 u8 v = channels[selchan].trackervoice;
                 MIOS32_LCD_PrintFormattedString(" Free     ~Trkr G%d:%s", (v >> 4)+1, GetVoiceName(v & 0xF));
             }else{
-                MIOS32_LCD_PrintString("~Free      Trkr");
+                MIOS32_LCD_PrintString("~Free      Trkr     Edit");
                 synprogram_t* prog = channels[selchan].program;
                 MIOS32_LCD_CursorSet(20,0);
                 MIOS32_LCD_PrintFormattedString("Prog: %s", prog == NULL ? "<none>" : prog->name);
@@ -54,23 +55,15 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(0,1);
             MIOS32_LCD_PrintString("  1    2    3  4/All");
             break;
-        case 3:
-            FrontPanel_LEDSet(FP_LED_NEW, 1);
-            MIOS32_LCD_Clear();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("New program: %s", newprogname);
-            MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintFormattedString("%s", newprogtype ? "Drum" : "Inst");
-            MIOS32_LCD_CursorSet(13+cursor,1);
-            MIOS32_LCD_PrintChar('^');
-            MIOS32_LCD_CursorSet(27,1);
-            MIOS32_LCD_PrintString("<    >   Aa");
-            break;
         default:
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintFormattedString("Chan invalid submode %d!", submode);
     }
+}
+
+void NameEditorDone(){
+    Interface_ChangeToMode(MODE_PROG);
 }
 
 void Mode_Chan_Init(){
@@ -195,6 +188,10 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     submode = 1;
                     DrawMenu();
                     break;
+                case 4:
+                    selprogram = channels[selchan].program;
+                    Interface_ChangeToMode(MODE_PROG);
+                    break;
             }
             break;
         case 2:
@@ -212,43 +209,6 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
             submode = 0;
             DrawMenu();
             break;
-        case 3:
-            switch(softkey){
-                case 0:
-                    newprogtype = !newprogtype;
-                    DrawMenu();
-                    break;
-                case 5:
-                    if(cursor == 0) return;
-                    u8 i;
-                    for(i=cursor; i<12; ++i){
-                        if(newprogname[i] > 0x20) break;
-                    }
-                    if(i == 12) newprogname[cursor] = 0;
-                    --cursor;
-                    DrawMenu();
-                    break;
-                case 6:
-                    if(cursor >= 11) return;
-                    ++cursor;
-                    if(newprogname[cursor] == 0) newprogname[cursor] = newprogname[cursor-1];
-                    DrawMenu();
-                    break;
-                case 7:
-                    if(newprogname[cursor] >= 'A' && newprogname[cursor] <= 'Z'){
-                        newprogname[cursor] += 'a' - 'A';
-                    }else if(newprogname[cursor] >= 'a' && newprogname[cursor] <= 'z'){
-                        newprogname[cursor] -= 'a' - 'A';
-                    }else if(newprogname[cursor] >= 'a'){
-                        newprogname[cursor] = 'n';
-                    }else{
-                        newprogname[cursor] = 'N';
-                    }
-                    MIOS32_LCD_CursorSet(13+cursor,0);
-                    MIOS32_LCD_PrintChar(newprogname[cursor]);
-                    break;
-            }
-            break;
     }
 }
 void Mode_Chan_BtnSelOp(u8 op, u8 state){
@@ -258,6 +218,11 @@ void Mode_Chan_BtnOpMute(u8 op, u8 state){
 
 }
 void Mode_Chan_BtnSystem(u8 button, u8 state){
+    switch(subscreen){
+        case SUBSCREEN_NAMEEDITOR:
+            NameEditor_BtnSystem(button, state);
+            return;
+    }
     if(!state) return;
     if(button == FP_B_MENU){
         submode = 0;
@@ -278,15 +243,17 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                         MIOS32_LCD_CursorSet(0,0);
                         MIOS32_LCD_PrintFormattedString("Delete prog first!");
                     }else{
-                        submode = 1;
-                        newprogtype = 0;
-                        u8 i;
-                        for(i=0; i<13; ++i){
-                            newprogname[i] = 0;
-                        }
-                        newprogname[0] = 'A';
-                        cursor = 0;
-                        DrawMenu();
+                        synprogram_t* prog = vgmh2_malloc(sizeof(synprogram_t));
+                        channels[selchan].program = prog;
+                        prog->usage.all = 0;
+                        prog->initsource = NULL;
+                        prog->noteonsource = NULL;
+                        prog->noteoffsource = NULL;
+                        prog->rootnote = 60;
+                        prog->name[0] = 'A';
+                        prog->name[1] = 0;
+                        selprogram = prog;
+                        NameEditor_Start(selprogram->name, 12, "New program", &NameEditorDone);
                     }
                     break;
                 case FP_B_DELETE:
@@ -301,15 +268,7 @@ void Mode_Chan_BtnEdit(u8 button, u8 state){
 }
 
 void Mode_Chan_EncDatawheel(s32 incrementer){
-    switch(submode){
-        case 3:
-            if((incrementer < 0 && (s32)newprogname[cursor] + incrementer >= 0x20) || (incrementer > 0 && (s32)newprogname[cursor] + incrementer <= 0xFF)){
-                newprogname[cursor] = (u8)((s32)newprogname[cursor] + incrementer);
-                MIOS32_LCD_CursorSet(13+cursor,0);
-                MIOS32_LCD_PrintChar(newprogname[cursor]);
-            }
-            break;
-    }
+    
 }
 void Mode_Chan_EncEdit(u8 encoder, s32 incrementer){
 

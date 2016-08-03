@@ -27,9 +27,56 @@ typedef struct {
 
 DAC_State_t dacstates[GENESIS_COUNT];
 
+u8 opstates[24*GENESIS_COUNT];
+u8 chanstates[6*GENESIS_COUNT];
+
+static const u8 sortoflog[0x20] = {
+    //=CEILING(LOG(A3+1,1.5)*29.8,1,0)
+    0, 51, 81, 102, 119, 132, 144, 153, 162, 170, 177, 183, 189, 194, 200, 204, 209, 213, 217, 221, 224, 228, 231, 234, 237, 240, 243, 245, 248, 250, 253, 255
+};
+
 void GenesisState_Tick(){
-    u8 g, dac, de, playing;
+    u8 g, dac, de, playing, chan, op, a, alg;
+    s8 s, chs;
+    u8* p;
     for(g=0; g<GENESIS_COUNT; ++g){
+        //Operator and channel VU meters
+        for(chan=0; chan<6; ++chan){
+            chs = 0;
+            alg = genesis[g].opn2.chan[chan].algorithm;
+            for(op=0; op<4; ++op){
+                s = genesis[g].opn2.chan[chan].op[op].test_statehigh;
+                if(     (op == 3) ||
+                        (op == 2 && alg >= 5) ||
+                        (op == 1 && alg >= 4) ||
+                        (op == 0 && alg == 7)){
+                    chs += s;
+                }
+                if(s < 0) s = -s;
+                if(s >= 0x20) s = 0x1F;
+                a = sortoflog[s];
+                p = &opstates[(24*g)+(4*chan)+op];
+                if(a > *p){
+                    *p = a;
+                }else if(*p >= 1){
+                    *p -= 1;
+                }else{
+                    *p = 0;
+                }
+            }
+            if(chs < 0) chs = -chs;
+            if(chs >= 0x20) chs = 0x1F;
+            a = sortoflog[chs];
+            p = &chanstates[(6*g)+chan];
+            if(a > *p){
+                *p = a;
+            }else if(*p >= 1){
+                *p -= 1;
+            }else{
+                *p = 0;
+            }
+        }
+        //DAC VU meter
         dac = genesis[g].opn2.dac_high;
         de = genesis[g].opn2.dac_enable;
         playing = de && (dac != dacstates[g].lastdac);
@@ -50,6 +97,21 @@ void GenesisState_Tick(){
             }
         }
         dacstates[g].lastdac = genesis[g].opn2.dac_high;
+    }
+}
+
+void DrawOpVUMeter(u8 g, u8 chan, u8 op){
+    FrontPanel_VGMMatrixVUMeter(op+10, opstates[(24*g)+(4*chan)+op] >> 5);
+}
+void DrawChanVUMeter(u8 g, u8 chan){
+    FrontPanel_VGMMatrixVUMeter(chan+3, chanstates[(6*g)+chan] >> 5);
+}
+void DrawDACVUMeter(u8 g){
+    u8 i;
+    u16 temp = dacstates[g].dacvu >> 2;
+    for(i=0; i<7; ++i){
+        FrontPanel_VGMMatrixPoint(6-i, 9, temp & 1);
+        temp >>= 1;
     }
 }
 

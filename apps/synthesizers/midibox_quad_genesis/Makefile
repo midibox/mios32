@@ -14,6 +14,7 @@ LCD       =     $(MIOS32_LCD)
 
 # add plain C files here
 THUMB_SOURCE    =   src/app.c \
+                    src/filebrowser.c \
                     src/frontpanel.c \
                     src/interface.c \
                     src/genesisstate.c \
@@ -24,6 +25,7 @@ THUMB_SOURCE    =   src/app.c \
                     src/mode_vgm.c \
                     src/mode_mdltr.c \
                     src/mode_sample.c \
+                    src/nameeditor.c \
                     src/syeng.c \
                     src/tracker.c
 
