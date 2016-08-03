@@ -134,6 +134,7 @@ void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
 VgmSource* VGM_SourceRAM_Create(){
     VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_RAM;
+    source->mutes = 0;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
     source->loopaddr = 0xFFFFFFFF;

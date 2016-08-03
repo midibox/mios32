@@ -402,6 +402,7 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
 VgmSource* VGM_SourceStream_Create(){
     VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_STREAM;
+    source->mutes = 0;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
     source->loopaddr = 0xFFFFFFFF;

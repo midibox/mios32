@@ -32,5 +32,7 @@ static inline u32 VGM_Player_GetVGMTime() { return TIM5->CNT; }
 // Call at startup
 extern void VGM_Player_Init();
 
+extern u8 VGM_Player_docapture;
+
 
 #endif /* _VGMPLAYER_H */
