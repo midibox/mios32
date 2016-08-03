@@ -78,8 +78,12 @@ static int prints(char **out, const char *string, int width, int pad)
 	return pc;
 }
 
+#ifdef PRINT_SUPPORT_BINARY
+#define PRINT_BUF_LEN 33
+#else
 /* the following should be enough for 32 bit int */
 #define PRINT_BUF_LEN 12
+#endif
 
 static int printi(char **out, int i, int b, int sg, int width, int pad, int letbase)
 {
@@ -169,6 +173,12 @@ static int print( char **out, const char *format, va_list args )
 				pc += printi (out, va_arg( args, int ), 10, 0, width, pad, 'a');
 				continue;
 			}
+			#ifdef PRINT_SUPPORT_BINARY
+			if( *format == 'b' ) {
+				pc += printi (out, va_arg( args, int ), 2, 0, width, pad, 'A');
+				continue;
+			}
+			#endif
 			if( *format == 'c' ) {
 				/* char are converted to int then pushed on the stack */
 				scr[0] = (char)va_arg( args, int );
