@@ -42,6 +42,7 @@ genesis_t genesis[GENESIS_COUNT];
 u32 genesis_clock_opn2;
 u32 genesis_clock_psg;
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -247,14 +248,8 @@ void Genesis_PSGWrite(u8 board, u8 data){
     MIOS32_IRQ_Enable(); //Turn on interrupts
 }
 
-u8 Genesis_CheckOPN2Busy(u8 board){
+u8 Genesis_GetOPN2Status(u8 board){
     board &= 0x03;
-    if(genesis[board].opn2.test_readdat){
-        //Switch back to read status mode
-        genesis[board].opn2.test_readdat = 0;
-        Genesis_OPN2Write(board, 0, 0x21, genesis[board].opn2.testreg21);
-        //Don't wait for busy
-    }
     MIOS32_IRQ_Disable(); //Turn off interrupts
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs (in case not already)
     u32 porte = GPIOE->ODR;
@@ -269,7 +264,18 @@ u8 Genesis_CheckOPN2Busy(u8 board){
     u8 res = ((GPIOE->IDR >> 8) & 0xFF); //Read OPN2 data
     GPIOC->ODR |= 0x00006000; //Write /CS and /RD high
     MIOS32_IRQ_Enable(); //Turn on interrupts
-    return ((res & 0x80) > 0);
+    return res;
+}
+
+u8 Genesis_CheckOPN2Busy(u8 board){
+    board &= 0x03;
+    if(genesis[board].opn2.test_readdat){
+        //Switch back to read status mode
+        genesis[board].opn2.test_readdat = 0;
+        Genesis_OPN2Write(board, 0, 0x21, genesis[board].opn2.testreg21);
+        //Don't wait for busy
+    }
+    return ((Genesis_GetOPN2Status(board) & 0x80) > 0);
 }
 
 u8 Genesis_CheckPSGBusy(u8 board){
@@ -354,7 +360,60 @@ void Genesis_Reset(u8 board){
     Genesis_PSGWrite(board, 0b11111111); MIOS32_DELAY_Wait_uS(20);
 }
 
-
-
-
+void Genesis_CaptureOPN2OpStates(u8 board){
+    board &= 3;
+    u8 last_21 = genesis[board].opn2.testreg21;
+    u8 last_2C = genesis[board].opn2.testreg2C;
+    Genesis_OPN2Write(board, 0, 0x21, 0b01000000);
+    Genesis_OPN2Write(board, 0, 0x2C, 0b10000000);
+    //Set up read
+    MIOS32_IRQ_Disable(); //Turn off interrupts
+    GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs (in case not already)
+    u32 porte = GPIOE->ODR;
+    porte &= 0xFFFF000B; //Mask out the things we will set
+    u32 a = board;
+    a <<= 6; //Move into place; A2 = 0 for OPN2 read, A1 = -, A0 = -
+    a |= 0x20; //A2 = 1 for board bits read, A1 = -, A0 = -
+    porte |= a; //Write to our temp copy
+    GPIOE->ODR = porte; //Write address bits
+    GENESIS_SHORTWAIT;
+    GPIOC->ODR &= 0xFFFF9FFF; //Write /CS and /RD low
+    //Wait for falling edge of sync pulse on TEST pin
+    for(a=0; a<4000; ++a){
+        if(GPIOE->IDR & 0x00004000) break; //TEST bit is high
+    }
+    if(a >= 4000) goto done; //Sync pulse never turned on, don't hang the synth
+    for(a=0; a<4000; ++a){
+        if(!(GPIOE->IDR & 0x00004000)) break; //TEST bit is low
+    }
+    if(a >= 4000) goto done; //Sync pulse never turned off, don't hang the synth
+    //Wait half an internal cycle, so we're sampling in the middle; plus four more cycles
+    //to synchronize with Ch1 Op1
+    u32 starttime = TIM2->CNT;
+    u32 waittill = 16 + (4*32);
+    while(TIM2->CNT - starttime < waittill);
+    GPIOE->ODR &= ~(0x00000020); //Change A2 to 0 to CS the OPN2 instead of the ODR
+    //Start the timer for real
+    starttime = TIM2->CNT;
+    u8 i, dat, chan = 0, op = 0;
+    for(i=0; i<24; ++i){
+        //Wait exactly one OPN2 internal cycle
+        waittill = (i+1) * 32; //63 Number of TIM2 counts per OPN2 internal clock, 84MHz / (8 MHz/6)
+        while(TIM2->CNT - starttime < waittill);
+        dat = ((GPIOE->IDR >> 8) & 0xFF); //Read OPN2 data
+        genesis[board].opn2.chan[chan].op[op].test_statehigh = dat & 0x3F;
+        ++chan;
+        if(chan == 6){
+            chan = 0;
+            if(op == 0) op = 2;
+            else if(op == 2) op = 1;
+            else if(op == 1) op = 3;
+        }
+    }
+    done:
+    GPIOC->ODR |= 0x00006000; //Write /CS and /RD high
+    MIOS32_IRQ_Enable(); //Turn on interrupts
+    Genesis_OPN2Write(board, 0, 0x21, last_21);
+    Genesis_OPN2Write(board, 0, 0x2C, last_2C);
+}
 

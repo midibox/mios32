@@ -131,12 +131,13 @@ typedef union {
             };
         };
         
-        //Byte 7: 0x28 (sort of), Key On state
+        //Byte 7: 0x28 (sort of), Key On state and test data
         union {
             u8 keyonreg;
             struct {
                 u8 kon:1;
-                u8 dummy10:7;
+                s8 test_statehigh:6; //The 6 MSBs of the operator state
+                u8 dummy10:1;
             };
         };
         
@@ -201,7 +202,7 @@ typedef union {
                 u8 test_ugly:1;     //Test register 0x21 bit 4: inverts MSB of operators, produces fun ugly (but pitched) sounds
                 u8 test_noeg:1;     //Test register 0x21 bit 5: freezes EG (disables EG phase counter writebacks)
                 u8 test_readdat:1;  //Test register 0x21 bit 6: enable reading test data (channel/operator) instead of status flags
-                u8 test_readmsb:1;  //Test register 0x21 bit 7: select LSB or MSB of read test data
+                u8 test_readlsb:1;  //Test register 0x21 bit 7: select LSB (1) or MSB (0) of read test data
             };
         };
         
@@ -277,10 +278,10 @@ typedef union {
             struct {
                 u8 dummyc:3;        //Test register 0x2C bits 2 downto 0: ignored by OPN2, confirmed from die shot
                 u8 dac_low:1;       //Test register 0x2C bit 3: Bit 0 of Channel 6 DAC value
-                u8 test_readop:1;   //Test register 0x2C bit 4: Read 14-bit operator output instead of 9-bit channel output
+                u8 test_readchan:1; //Test register 0x2C bit 4: Read 9-bit channel output (1) instead of 14-bit operator output (0)
                 u8 dac_override:1;  //Test register 0x2C bit 5: Play DAC output over all channels (maybe except Channel 5?)
                 u8 test_pinctrl:1;  //Test register 0x2C bit 6: select function of TEST pin input, unknown function
-                u8 test_pindir:1;   //Test register 0x2C bit 7: Set the TEST pin to be an input rather than an output
+                u8 test_pinout:1;   //Test register 0x2C bit 7: Set the TEST pin to be an output (1) instead of input (0)
             };
         };
         
@@ -422,6 +423,7 @@ extern genesis_t genesis[GENESIS_COUNT];
 extern u32 genesis_clock_opn2;
 extern u32 genesis_clock_psg;
 
+
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -435,6 +437,10 @@ extern void Genesis_OPN2Write(u8 board, u8 addrhi, u8 address, u8 data);
 
 // Write a value to a PSG.
 extern void Genesis_PSGWrite(u8 board, u8 data);
+
+// Read data back from the OPN2 (usually the status, unless you've been playing
+// with the test registers).
+extern u8 Genesis_GetOPN2Status(u8 board);
 
 // Check whether an OPN2 is busy. This is relatively costly in time (a couple
 // microseconds).
@@ -451,6 +457,8 @@ extern void Genesis_Reset(u8 board);
 // after e.g. changing filter capacitor settings.
 extern void Genesis_WriteBoardBits(u8 board);
 
+// Experimental features, TIM2 must be running at 84 MHz or this will hang
+extern void Genesis_CaptureOPN2OpStates(u8 board);
 
 
 #ifdef __cplusplus
