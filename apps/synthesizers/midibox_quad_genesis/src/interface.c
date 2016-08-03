@@ -28,12 +28,16 @@
 #include "mode_mdltr.h"
 #include "mode_sample.h"
 
+#include "filebrowser.h"
+#include "nameeditor.h"
 
 u8 interfacemode;
-s8 wantmodechange;
+u8 subscreen;
+static s8 wantmodechange;
 
 
 void Interface_Init(){
+    Filebrowser_Init();
     Mode_System_Init();
     Mode_Voice_Init();
     Mode_Chan_Init();
@@ -42,6 +46,7 @@ void Interface_Init(){
     Mode_Mdltr_Init();
     Mode_Sample_Init();
     interfacemode = MODE_SYSTEM;
+    subscreen = 0;
     wantmodechange = -1;
     FrontPanel_LEDSet(FP_LED_SYSTEM, 1);
     Mode_System_GotFocus();
@@ -57,6 +62,9 @@ void Interface_Tick(){
         case MODE_SAMPLE: Mode_Sample_Tick(); break;
         default: DBG("Interface_Tick mode error %d!", interfacemode);
     }
+}
+void Interface_ChangeToMode(u8 ifmode){
+    wantmodechange = ifmode;
 }
 void Interface_Background(){
     MIOS32_IRQ_Disable();
@@ -85,9 +93,7 @@ void Interface_Background(){
         }
         //Clear VGM Matrix
         for(g=0; g<14; ++g){
-            for(v=0; v<7; ++v){
-                FrontPanel_VGMMatrixPoint(v, g, 0);
-            }
+            FrontPanel_VGMMatrixVUMeter(g, 0);
         }
         //Clear main LED display
         FrontPanel_DrawDigit(FP_LED_DIG_MAIN_1, ' ');
@@ -98,6 +104,7 @@ void Interface_Background(){
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 0);
         //Change modes
         interfacemode = wantmodechange;
+        VGM_Player_docapture = (interfacemode == MODE_VOICE);
         //Turn on the new mode light
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 1);
         switch(interfacemode){
@@ -138,6 +145,14 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
     }
 }
 void Interface_BtnSoftkey(u8 softkey, u8 state){
+    switch(subscreen){
+        case SUBSCREEN_FILEBROWSER:
+            Filebrowser_BtnSoftkey(softkey, state);
+            return;
+        case SUBSCREEN_NAMEEDITOR:
+            NameEditor_BtnSoftkey(softkey, state);
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_BtnSoftkey(softkey, state); break;
         case MODE_VOICE: Mode_Voice_BtnSoftkey(softkey, state); break;
@@ -174,6 +189,14 @@ void Interface_BtnOpMute(u8 op, u8 state){
     }
 }
 void Interface_BtnSystem(u8 button, u8 state){
+    switch(subscreen){
+        case SUBSCREEN_FILEBROWSER:
+            Filebrowser_BtnSystem(button, state);
+            return;
+        case SUBSCREEN_NAMEEDITOR:
+            NameEditor_BtnSystem(button, state);
+            return;
+    }
     if(button >= FP_B_SYSTEM && button <= FP_B_SAMPLE){
         if(state){
             wantmodechange = button - FP_B_SYSTEM;
@@ -205,6 +228,14 @@ void Interface_BtnEdit(u8 button, u8 state){
 }
 
 void Interface_EncDatawheel(s32 incrementer){
+    switch(subscreen){
+        case SUBSCREEN_FILEBROWSER:
+            Filebrowser_EncDatawheel(incrementer);
+            return;
+        case SUBSCREEN_NAMEEDITOR:
+            NameEditor_EncDatawheel(incrementer);
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_EncDatawheel(incrementer); break;
         case MODE_VOICE: Mode_Voice_EncDatawheel(incrementer); break;

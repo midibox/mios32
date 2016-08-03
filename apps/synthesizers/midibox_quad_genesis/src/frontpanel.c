@@ -815,6 +815,14 @@ void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value){
     LED_T l = FP_LEDS[FP_LED_VGMMTX_1 + col];
     MATRIX_LED_SET(l.row + row, l.sr, l.pin, value);
 }
+void FrontPanel_VGMMatrixVUMeter(u8 col, u8 value){
+    if(col >= 14) return;
+    LED_T l = FP_LEDS[FP_LED_VGMMTX_1 + col];
+    u8 row;
+    for(row=0; row<7; ++row){
+        MATRIX_LED_SET(l.row + row, l.sr, l.pin, (value + row >= 7));
+    }
+}
 void FrontPanel_DrawDigit(u8 digit, char value){
     if(digit < FP_LED_DIG_MAIN_1 || digit > FP_LED_DIG_OCT) return;
     LED_T l = FP_LEDS[digit];

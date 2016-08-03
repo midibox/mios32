@@ -19,11 +19,12 @@
 #include "genesis.h"
 #include <vgm.h>
 
-u8 submode;
-u8 selvoice;
-u8 selop;
-u8 voiceistracker;
-u8 voicetrackerchan;
+static u8 submode;
+static u8 selvoice;
+static u8 selop;
+static u8 voiceistracker;
+static u8 voicetrackerchan;
+static u8 vumetermode;
 
 const char* GetVoiceName(u8 subvoice){
     switch(subvoice){
@@ -81,7 +82,7 @@ static void DrawMenu(){
                 MIOS32_LCD_PrintFormattedString("G%d:%s: Free mode, state read-only", g+1, GetVoiceName(v));
             }
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintFormattedString("Use %d", syngenesis[g].channels[v].use);
+            MIOS32_LCD_PrintFormattedString("Meter %s", vumetermode ? "Ops" : "PSG");
             break;
         case 1:
             //Channel output (stereo)
@@ -129,6 +130,7 @@ static void DrawMenu(){
 void Mode_Voice_Init(){
     selvoice = 1;
     selop = 3;
+    vumetermode = 0;
 }
 void Mode_Voice_GotFocus(){
     submode = 0;
@@ -143,7 +145,7 @@ void Mode_Voice_GotFocus(){
 }
 
 void Mode_Voice_Tick(){
-
+    
 }
 void Mode_Voice_Background(){
     static u8 lastselvoice = 0, lastselop = 0;
@@ -152,6 +154,7 @@ void Mode_Voice_Background(){
     for(i=0; i<GENESIS_COUNT; ++i){
         DrawGenesisActivity(i);
     }
+    //Transition displayed voice and op states
     if(lastselop != selop || lastselvoice != selvoice){
         ClearGenesisState_Op();
         FrontPanel_LEDSet(FP_LED_SELOP_1 + lastselop, 0);
@@ -160,9 +163,7 @@ void Mode_Voice_Background(){
         }
     }
     lastselop = selop;
-    //Draw selected voice state
     if(lastselvoice != selvoice){
-        //Clear all Genesis state lights
         ClearGenesisState_Chan();
         ClearGenesisState_DAC();
         ClearGenesisState_OPN2();
@@ -171,7 +172,25 @@ void Mode_Voice_Background(){
         FrontPanel_GenesisLEDSet(selvoice >> 4, selvoice & 0xF, 1, 1);
         lastselvoice = selvoice;
     }
-    DrawGenesisState_All(selvoice >> 4, selvoice & 0xF, selop);
+    //Draw voice state
+    u8 g = selvoice >> 4;
+    u8 v = selvoice & 0xF;
+    DrawGenesisState_All(g, v, selop);
+    //Draw op VU meters
+    if(v >= 1 && v <= 6 && vumetermode){
+        for(i=0; i<4; ++i){
+            DrawOpVUMeter(g, v-1, i);
+        }
+    }else{
+        for(i=0; i<4; ++i){
+            FrontPanel_VGMMatrixVUMeter(i+10, (15 - genesis[g].psg.voice[i].atten) >> 1);
+        }
+    }
+    //Draw chan VU meters
+    for(i=0; i<6; ++i){
+        DrawChanVUMeter(g, i);
+    }
+    DrawDACVUMeter(g);
 }
 
 void Mode_Voice_BtnGVoice(u8 gvoice, u8 state){
@@ -184,6 +203,14 @@ void Mode_Voice_BtnGVoice(u8 gvoice, u8 state){
 void Mode_Voice_BtnSoftkey(u8 softkey, u8 state){
     switch(submode){
         case 0:
+            if(!state) return;
+            switch(softkey){
+                case 0:
+                case 1:
+                    vumetermode = !vumetermode;
+                    DrawMenu();
+                    return;
+            }
             break;
         case 1:
             //Channel output (stereo)
@@ -241,7 +268,18 @@ void Mode_Voice_BtnOpMute(u8 op, u8 state){
 
 }
 void Mode_Voice_BtnSystem(u8 button, u8 state){
-
+    if(!state) return;
+    /*
+    if(button == FP_B_CAPTURE){
+        u8 i;
+        for(i=0; i<6; ++i){
+            DBG("Chan %d %03d %03d %03d %03d", i+1, genesis[0].opn2.chan[i].op[0].test_statehigh,
+                                                    genesis[0].opn2.chan[i].op[1].test_statehigh,
+                                                    genesis[0].opn2.chan[i].op[2].test_statehigh,
+                                                    genesis[0].opn2.chan[i].op[3].test_statehigh);
+        }
+    }
+    */
 }
 void Mode_Voice_BtnEdit(u8 button, u8 state){
     u8 v = selvoice & 0xF;

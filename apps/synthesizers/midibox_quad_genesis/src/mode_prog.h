@@ -17,6 +17,7 @@
 extern "C" {
 #endif
 
+#include "syeng.h"
 
 extern void Mode_Prog_Init();
 extern void Mode_Prog_GotFocus();
@@ -34,6 +35,7 @@ extern void Mode_Prog_BtnEdit(u8 button, u8 state);
 extern void Mode_Prog_EncDatawheel(s32 incrementer);
 extern void Mode_Prog_EncEdit(u8 encoder, s32 incrementer);
 
+extern synprogram_t* selprogram;
 
 #ifdef __cplusplus
 }
