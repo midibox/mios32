@@ -101,6 +101,7 @@ s32 VGM_Head_Delete(VgmHead* head){
 void VGM_Head_Restart(VgmHead* head, u32 vgm_time){
     if(head == NULL) return;
     head->ticks = vgm_time;
+    head->isdone = 0;
     if(head->source->type == VGM_SOURCE_TYPE_RAM){
         VGM_HeadRAM_Restart(head);
         VGM_HeadRAM_cmdNext(head, vgm_time);
