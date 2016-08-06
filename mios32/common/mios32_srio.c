@@ -63,8 +63,8 @@ u8 mios32_srio_dout_page_ctr;
 static u8 num_sr;
 
 // for debouncing
-static u8 debounce_time;
-static u8 debounce_ctr;
+static u16 debounce_time;
+static u16 debounce_ctr;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -196,7 +196,7 @@ s32 MIOS32_SRIO_DoutPageGet(void)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Returns the debounce counter reload value of the DIN SR registers
-//! \return debounce counter reload value (0 if disabled, otherwise 1..255)
+//! \return debounce counter reload value (0 if disabled, otherwise 1..65535)
 /////////////////////////////////////////////////////////////////////////////
 u32 MIOS32_SRIO_DebounceGet(void)
 {
@@ -227,11 +227,11 @@ u32 MIOS32_SRIO_DebounceGet(void)
 //! record pin changes from digital sensors which are switching very fast, 
 //! then debouncing should be ommited.
 //!
-//! \param[in] debounce_time delay in mS (1..255)<BR>
+//! \param[in] debounce_time delay in mS (1..65535)<BR>
 //!            0 disables debouncing (default)
 //! \return < 0 on errors
 /////////////////////////////////////////////////////////////////////////////
-s32 MIOS32_SRIO_DebounceSet(u8 _debounce_time)
+s32 MIOS32_SRIO_DebounceSet(u16 _debounce_time)
 {
   debounce_time = _debounce_time;
 

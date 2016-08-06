@@ -3332,9 +3332,9 @@ s32 parseSrio(u32 line, char *cmd, char *brkt)
     ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "debounce_cycles") == 0 ) {
       int value = get_dec(value_str);
-      if( value < 0 || value > 255 ) {
+      if( value < 0 || value > 65535 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid debounce value for %s ... %s=%s (1..255)\n", line, cmd, parameter, value_str);
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid debounce value for %s ... %s=%s (1..65535)\n", line, cmd, parameter, value_str);
 #endif
 	return -1; // invalid parameter
       }
