@@ -133,6 +133,7 @@ void Mode_Voice_Init(){
     vumetermode = 0;
 }
 void Mode_Voice_GotFocus(){
+    VGM_Player_docapture = 1;
     submode = 0;
     SeeIfVoiceIsTracker();
     DrawMenu();
@@ -150,9 +151,11 @@ void Mode_Voice_Tick(){
 void Mode_Voice_Background(){
     static u8 lastselvoice = 0, lastselop = 0;
     //Draw Genesis voice activiy
-    u8 i;
-    for(i=0; i<GENESIS_COUNT; ++i){
-        DrawGenesisActivity(i);
+    u8 g, v, i;
+    for(g=0; g<GENESIS_COUNT; ++g){
+        for(v=0; v<12; ++v){
+            DrawGenesisActivity(g, v, g, v);
+        }
     }
     //Transition displayed voice and op states
     if(lastselop != selop || lastselvoice != selvoice){
@@ -173,8 +176,8 @@ void Mode_Voice_Background(){
         lastselvoice = selvoice;
     }
     //Draw voice state
-    u8 g = selvoice >> 4;
-    u8 v = selvoice & 0xF;
+    g = selvoice >> 4;
+    v = selvoice & 0xF;
     DrawGenesisState_All(g, v, selop);
     //Draw op VU meters
     if(v >= 1 && v <= 6 && vumetermode){
@@ -188,7 +191,7 @@ void Mode_Voice_Background(){
     }
     //Draw chan VU meters
     for(i=0; i<6; ++i){
-        DrawChanVUMeter(g, i);
+        DrawChanVUMeter(g, i, i);
     }
     DrawDACVUMeter(g);
 }

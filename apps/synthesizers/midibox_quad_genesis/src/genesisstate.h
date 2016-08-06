@@ -19,7 +19,7 @@ extern "C" {
 
 extern void GenesisState_Tick();
 
-extern void DrawGenesisActivity(u8 g);
+extern void DrawGenesisActivity(u8 g, u8 v, u8 drawong, u8 drawonv);
 
 extern void DrawGenesisState_Op(u8 g, u8 chan, u8 op);
 extern void DrawGenesisState_Chan(u8 g, u8 chan);
@@ -28,8 +28,8 @@ extern void DrawGenesisState_OPN2(u8 g);
 extern void DrawGenesisState_PSG(u8 g, u8 voice);
 extern void DrawGenesisState_All(u8 g, u8 voice, u8 op);
 
-extern void DrawOpVUMeter(u8 g, u8 chan, u8 op);
-extern void DrawChanVUMeter(u8 g, u8 chan);
+extern void DrawOpVUMeter(u8 g, u8 v, u8 op);
+extern void DrawChanVUMeter(u8 g, u8 v, u8 drawonv);
 extern void DrawDACVUMeter(u8 g);
 
 extern void ClearGenesisState_Op();

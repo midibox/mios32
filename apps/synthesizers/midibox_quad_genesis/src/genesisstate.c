@@ -100,11 +100,11 @@ void GenesisState_Tick(){
     }
 }
 
-void DrawOpVUMeter(u8 g, u8 chan, u8 op){
-    FrontPanel_VGMMatrixVUMeter(op+10, opstates[(24*g)+(4*chan)+op] >> 5);
+void DrawOpVUMeter(u8 g, u8 v, u8 op){
+    FrontPanel_VGMMatrixVUMeter(op+10, opstates[(24*g)+(4*v)+op] >> 5);
 }
-void DrawChanVUMeter(u8 g, u8 chan){
-    FrontPanel_VGMMatrixVUMeter(chan+3, chanstates[(6*g)+chan] >> 5);
+void DrawChanVUMeter(u8 g, u8 v, u8 drawonv){
+    FrontPanel_VGMMatrixVUMeter(drawonv+3, chanstates[(6*g)+v] >> 5);
 }
 void DrawDACVUMeter(u8 g){
     u8 i;
@@ -115,22 +115,24 @@ void DrawDACVUMeter(u8 g){
     }
 }
 
-void DrawGenesisActivity(u8 g){
-    //FM voices
-    if(g >= GENESIS_COUNT) return;
-    u8 v, o, k;
-    for(v=0; v<6; v++){
+void DrawGenesisActivity(u8 g, u8 v, u8 drawong, u8 drawonv){
+    if(g >= GENESIS_COUNT || v >= 12) return;
+    u8 o, k;
+    if(v == 0){
+        FrontPanel_GenesisLEDSet(drawong, 0, 0, (genesis[g].opn2.testreg21 | genesis[g].opn2.testreg2C) > 0);
+    }else if(v >= 1 && v <= 6){
+        //FM voices
         k = 0;
         for(o=0; o<4; o++){
-            k |= genesis[g].opn2.chan[v].op[o].kon;
+            k |= genesis[g].opn2.chan[v-1].op[o].kon;
         }
-        FrontPanel_GenesisLEDSet(g, v+1, 0, k);
-    }
-    //DAC
-    FrontPanel_GenesisLEDSet(g, 7, 0, dacstates[g].playing);
-    //PSG voices
-    for(v=0; v<4; v++){
-        FrontPanel_GenesisLEDSet(g, v+8, 0, genesis[g].psg.voice[v].atten != 0xF);
+        FrontPanel_GenesisLEDSet(drawong, drawonv, 0, k);
+    }else if(v == 7){
+        //DAC
+        FrontPanel_GenesisLEDSet(drawong, 7, 0, dacstates[g].playing);
+    }else{
+        //PSG voices
+        FrontPanel_GenesisLEDSet(drawong, drawonv, 0, genesis[g].psg.voice[v-8].atten != 0xF);
     }
 }
 

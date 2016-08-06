@@ -36,9 +36,8 @@ extern void Mode_Vgm_BtnEdit(u8 button, u8 state);
 extern void Mode_Vgm_EncDatawheel(s32 incrementer);
 extern void Mode_Vgm_EncEdit(u8 encoder, s32 incrementer);
 
-
-extern VgmSource* selvgm;
-
+extern void Mode_Vgm_SelectVgm(VgmSource* newselvgm);
+extern void Mode_Vgm_InvalidateVgm(VgmSource* maybeselvgm);
 
 #ifdef __cplusplus
 }

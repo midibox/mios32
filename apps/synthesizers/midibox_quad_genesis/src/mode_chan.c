@@ -18,6 +18,7 @@
 #include "syeng.h"
 #include "mode_prog.h"
 #include "mode_voice.h"
+#include "mode_vgm.h"
 #include "nameeditor.h"
 
 static u8 selchan;
@@ -190,6 +191,7 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     break;
                 case 4:
                     selprogram = channels[selchan].program;
+                    Mode_Vgm_InvalidateVgm(NULL);
                     Interface_ChangeToMode(MODE_PROG);
                     break;
             }
@@ -253,6 +255,7 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                         prog->name[0] = 'A';
                         prog->name[1] = 0;
                         selprogram = prog;
+                        Mode_Vgm_InvalidateVgm(NULL);
                         NameEditor_Start(selprogram->name, 12, "New program", &NameEditorDone);
                     }
                     break;
