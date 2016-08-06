@@ -27,9 +27,6 @@
 #include "syeng.h"
 #include "tracker.h"
 
-u8 DEBUG;
-u8 DEBUG2;
-
 static const u8 charset_mbvgm[8*8] = {
   //Unused character 0
   0,0,0,0,0,0,0,0,
@@ -123,7 +120,6 @@ void APP_Background(void){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("ERRORERRORERRORERRORERRORERRORERRORERROR");
         }
-        DEBUG = res;
         for(res = 0; res < 1000; ++res){
             MIOS32_DELAY_Wait_uS(1000);
         }

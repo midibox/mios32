@@ -79,7 +79,7 @@ static void FilebrowserDone(char* filename){
     }
     *ss = VGM_SourceStream_Create();
     VGM_SourceStream_Start(*ss, filename);
-    selvgm = *ss;
+    Mode_Vgm_SelectVgm(*ss);
     Interface_ChangeToMode(MODE_VGM);
 }
 
@@ -136,13 +136,13 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                 case FP_B_ENTER:
                     switch(cursor){
                         case 5:
-                            selvgm = selprogram->initsource;
+                            Mode_Vgm_SelectVgm(selprogram->initsource);
                             break;
                         case 6:
-                            selvgm = selprogram->noteonsource;
+                            Mode_Vgm_SelectVgm(selprogram->noteonsource);
                             break;
                         case 7:
-                            selvgm = selprogram->noteoffsource;
+                            Mode_Vgm_SelectVgm(selprogram->noteoffsource);
                             break;
                         default:
                             return;
@@ -165,8 +165,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                     if(cursor >= 5 && cursor <= 7){
                         VgmSource** ss = SelSource(selprogram, cursor-5);
                         if(*ss != NULL){
-                            //TODO 
-                            if(*ss == selvgm) selvgm = NULL;
+                            Mode_Vgm_InvalidateVgm(*ss);
                             VGM_Source_Delete(*ss);
                             *ss = NULL;
                         }

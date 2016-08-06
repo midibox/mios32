@@ -104,7 +104,7 @@ void Interface_Background(){
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 0);
         //Change modes
         interfacemode = wantmodechange;
-        VGM_Player_docapture = (interfacemode == MODE_VOICE);
+        VGM_Player_docapture = 0;
         //Turn on the new mode light
         FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 1);
         switch(interfacemode){

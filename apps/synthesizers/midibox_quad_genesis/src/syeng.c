@@ -16,6 +16,7 @@
 #include <genesis.h>
 #include <vgm.h>
 #include "app.h" //XXX
+#include "demoprograms.h"
 
 #define UNUSED_RECENCY 0x01000000ul //about 362 seconds ago
 
@@ -669,6 +670,62 @@ static void CopyPIMappingToHead(synproginstance_t* pi, VgmHead* head){
     }
 }
 
+static u8 IsAnyVoiceBeingCleared(synproginstance_t* pi){
+    u8 c;
+    if(pi->isstatic) return 0;
+    for(c=1; c<7; ++c){
+        VgmHead_Channel ch = pi->mapping[c];
+        if(ch.nodata) continue;
+        if(syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared) return 1;
+    }
+    return 0;
+}
+
+static u8 FindBestPIToReplace(u8 chn, u8 note){
+    //Look for an existing proginstance that's the best fit to replace
+    //In order from best to worst:
+    //0: Same channel, same note (playing or not playing doesn't matter)
+    //1: Same channel, not playing
+    //2: Invalid
+    //3: Other channel, not playing
+    //4: Same channel, playing
+    //5: Other channel, playing
+    u8 bestrating = 0xFF;
+    u8 bestrated = 0xFF;
+    u32 recency, maxrecency = 0, now = VGM_Player_GetVGMTime();
+    u8 rating, i;
+    synproginstance_t* pi;
+    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
+        pi = &proginstances[i];
+        if(!pi->valid){
+            rating = 2;
+        }else{
+            if(pi->sourcechannel == chn){
+                if(pi->note == note){
+                    rating = 0;
+                }else if(pi->playing){
+                    rating = 4;
+                }else{
+                    rating = 1;
+                }
+            }else{
+                if(pi->playing){
+                    rating = 5;
+                }else{
+                    rating = 3;
+                }
+            }
+        }
+        recency = now - pi->recency;
+        if(rating < bestrating || (rating == bestrating && recency > maxrecency)){
+            bestrating = rating;
+            bestrated = i;
+            maxrecency = recency;
+        }
+    }
+    return bestrated;
+}
+
 void SyEng_Init(){
     u8 i, j;
     //Initialize syngenesis
@@ -695,346 +752,9 @@ void SyEng_Init(){
     voiceclearlist = NULL;
     //Other
     voiceclearfull = 1;
-    ////////////////////////////////////////////////////////////////////////////
-    //////////////////////////// OPN2 GRAND PIANO //////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    synprogram_t* prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[1].program = prog;
-    sprintf(prog->name, "Grand Piano");
-    prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
-    prog->rootnote = 72;
-    //Create init VGM file
-    VgmSource* source = VGM_SourceRAM_Create();
-    VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-    vsr->numcmds = 30;
-    VgmChipWriteCmd* data = vgmh2_malloc(30*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
-    //
-    i=0;
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x30, .data=0x71 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x34, .data=0x0D };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x38, .data=0x33 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3C, .data=0x01 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x40, .data=0x23 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x44, .data=0x2D };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x48, .data=0x26 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x50, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x54, .data=0x99 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x58, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5C, .data=0x94 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x60, .data=0x05 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x64, .data=0x05 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x68, .data=0x05 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6C, .data=0x07 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x70, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x74, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x78, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x80, .data=0x11 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x84, .data=0x11 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x88, .data=0x11 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8C, .data=0xA6 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x90, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x94, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x98, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x9C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB0, .data=0x32 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB4, .data=0xC0 };
-    //
-    prog->initsource = source;
-    //Create note-on VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-    vsr->numcmds = 2;
-    data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
-        data[0].cmd  = 0x52;
-        data[0].addr = 0xA4;
-    //data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xA4, .data=0x22, .data2=0x69 };
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
-    prog->noteonsource = source;
-    //Create note-off VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
-    prog->noteoffsource = source;
-    ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[5].program = prog;
-    sprintf(prog->name, "3Voice Chord");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
-    prog->rootnote = 60;
-    //Create init VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-
-    vsr->numcmds = 27;
-    data = vgmh2_malloc(27*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
-    //
-    i=0;
-    //Voice 2
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3D, .data=0x01 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x45, .data=0x7F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5D, .data=0x1F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6D, .data=0x02 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8D, .data=0xFF };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB1, .data=0x00 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB5, .data=0xC0 };
-    //Voice 4
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3C, .data=0x01 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x44, .data=0x7F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5C, .data=0x1F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6C, .data=0x02 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7C, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8C, .data=0xFF };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB0, .data=0x00 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB4, .data=0xC0 };
-    //Voice 5
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x3D, .data=0x01 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x45, .data=0x7F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x4D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x5D, .data=0x1F };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x6D, .data=0x02 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x7D, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0x8D, .data=0xFF };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB1, .data=0x00 };
-    //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB5, .data=0xC0 };
-    //
-    for(; i<27; ++i) data[i] = (VgmChipWriteCmd){.all=0};
-    prog->initsource = source;
-    //Create note-on VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-    vsr->numcmds = 6;
-    data = vgmh2_malloc(6*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
-        data[0].cmd  = 0x52;
-        data[0].addr = 0xA5;
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF1, .data2=0}; //Key on Ch2
-    data[2] = VGM_getOPN2Frequency(64, 0, 8000000); //E
-        data[2].cmd  = 0x53;
-        data[2].addr = 0xA4;
-    data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF4, .data2=0}; //Key on Ch4
-    data[4] = VGM_getOPN2Frequency(67, 0, 8000000); //G
-        data[4].cmd  = 0x53;
-        data[4].addr = 0xA5;
-    data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF5, .data2=0}; //Key on Ch5
-    prog->noteonsource = source;
-    //Create note-off VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
-    vsr->numcmds = 3;
-    data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off Ch2
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch2
-    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch2
-    prog->noteoffsource = source;
-    ////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////// PSG MARIO COIN ///////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[2].program = prog;
-    sprintf(prog->name, "SMB1 Coin");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=1, .sq3=0, .noise=0, .noisefreqsq3=0};
-    prog->rootnote = 60;
-    //Create init VGM file
-    prog->initsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //
-    i=0;
-    //SQ2
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111 }; //Attenuate SQ2
-    //
-    prog->initsource = source;
-    */
-    //Create note-on VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 18;
-    data = vgmh2_malloc(18*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
-        data[0].cmd  = 0x50;
-        data[0].addr = 0x00;
-        data[0].data |= 0b10100000;
-    data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110000, .data2=0}; //Turn on SQ2
-    data[2] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0B}; //Wait
-    data[3] = VGM_getPSGFrequency(65, 0, 3579545); //F
-        data[3].cmd  = 0x50;
-        data[3].addr = 0x00;
-        data[3].data |= 0b10100000;
-    data[4] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
-    data[5] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110010, .data2=0}; //Attenuate
-    data[6] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
-    data[7] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110100, .data2=0}; //Attenuate
-    data[8] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0C}; //Wait
-    data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110110, .data2=0}; //Attenuate
-    data[10] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
-    data[11] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111000, .data2=0}; //Attenuate
-    data[12] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
-    data[13] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111010, .data2=0}; //Attenuate
-    data[14] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
-    data[15] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111100, .data2=0}; //Attenuate
-    data[16] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
-    data[17] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
-    prog->noteonsource = source;
-    //Create note-off VGM file
-    prog->noteoffsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
-    prog->noteoffsource = source;
-    */
-    ////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[4].program = prog;
-    sprintf(prog->name, "Noise Test");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=1, .noise=1, .noisefreqsq3=1};
-    prog->rootnote = 42;
-    //Create init VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 3;
-    data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //
-    i=0;
-    //SQ2
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11100111 }; //Pulse wave, SQ3
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111 }; //Attenuate noise
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
-    //
-    prog->initsource = source;
-    //Create note-on VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 2;
-    data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
-        data[0].cmd   = 0x50;
-        data[0].addr  = 0x00;
-        data[0].data  = 0b11000000;
-        data[0].data2 = 0b00001000;
-    data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11110000, .data2=0}; //Turn on noise
-    prog->noteonsource = source;
-    //Create note-off VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
-    prog->noteoffsource = source;
-    ////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////// VGM PLAYBACK ///////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////
-    prog = vgmh2_malloc(sizeof(synprogram_t));
-    channels[3].program = prog;
-    sprintf(prog->name, "VGM Playback");
-    prog->usage = (usage_bits_t){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
-    prog->rootnote = 76;
-    //Create init VGM file
-    prog->initsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    i=0;
-    //Some BS which we don't care about
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
-    prog->initsource = source;
-    */
-    //Create note-on VGM file
-    source = VGM_SourceStream_Create();
-    DEBUG2 = VGM_SourceStream_Start(source, "MOONBICH.VGM");
-    prog->noteonsource = source;
-    //Create note-off VGM file
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 10;
-    data = vgmh2_malloc(10*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off
-    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x02, .data2=0}; //Key off
-    data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off
-    data[4] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off
-    data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x06, .data2=0}; //Key off
-    data[6] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10011111, .data2=0}; //Turn off
-    data[7] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
-    data[8] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111, .data2=0}; //Turn off
-    data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off
-    prog->noteoffsource = source;
+    DemoPrograms_Init();
 }
 
-static u8 IsAnyVoiceBeingCleared(synproginstance_t* pi){
-    u8 c;
-    for(c=1; c<7; ++c){
-        VgmHead_Channel ch = pi->mapping[c];
-        if(ch.nodata) continue;
-        if(syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared) return 1;
-    }
-    return 0;
-}
-
-static void StartPlayingProgVGM(synproginstance_t* pi, VgmSource* source, u8 rootnote){
-    pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
-    CopyPIMappingToHead(pi, pi->head);
-    u32 vgmtime = VGM_Player_GetVGMTime();
-    VGM_Head_Restart(pi->head, vgmtime);
-    pi->head->playing = 1;
-    pi->recency = vgmtime;
-}
 
 void SyEng_Tick(){
     u8 i;
@@ -1069,6 +789,7 @@ void SyEng_Tick(){
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
         pi = &proginstances[i];
         if(!pi->valid) continue;
+        if(pi->isstatic) continue;
         if(pi->waitingforclear){
             //Is it cleared yet?
             if(IsAnyVoiceBeingCleared(pi)) continue;
@@ -1081,12 +802,12 @@ void SyEng_Tick(){
             }
             if(prog->initsource != NULL){
                 DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
-                StartPlayingProgVGM(pi, prog->initsource, prog->rootnote);
+                SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote);
             }else{
                 pi->playinginit = 0;
                 if(prog->noteonsource != NULL){
                     DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
-                    StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+                    SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
                 }else{
                     DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
                 }
@@ -1107,7 +828,7 @@ void SyEng_Tick(){
             //Switch from init to noteon VGM
             if(prog->noteonsource != NULL){
                 DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
-                StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
             }else{
                 DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
             }
@@ -1115,73 +836,11 @@ void SyEng_Tick(){
     }
 }
 
-void SyEng_Note_On(mios32_midi_package_t pkg){
-    synprogram_t* prog = channels[pkg.chn].program;
-    if(prog == NULL){
-        DBG("Note on %d ch %d, no program on this channel", pkg.note, pkg.chn);
-        return;
-    }
-    //Look for an existing proginstance that's the best fit to replace
-    //In order from best to worst:
-    //0: Same channel, same note (playing or not playing doesn't matter)
-    //1: Same channel, not playing
-    //2: Invalid
-    //3: Other channel, not playing
-    //4: Same channel, playing
-    //5: Other channel, playing
-    u8 bestrating = 0xFF;
-    u8 bestrated = 0xFF;
-    u32 recency, maxrecency = 0, now = VGM_Player_GetVGMTime();
-    u8 rating, i;
-    synproginstance_t* pi;
-    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
-        pi = &proginstances[i];
-        if(!pi->valid){
-            rating = 2;
-        }else{
-            if(pi->sourcechannel == pkg.chn){
-                if(pi->note == pkg.note){
-                    rating = 0;
-                }else if(pi->playing){
-                    rating = 4;
-                }else{
-                    rating = 1;
-                }
-            }else{
-                if(pi->playing){
-                    rating = 5;
-                }else{
-                    rating = 3;
-                }
-            }
-        }
-        recency = now - pi->recency;
-        if(rating < bestrating || (rating == bestrating && recency > maxrecency)){
-            bestrating = rating;
-            bestrated = i;
-            maxrecency = recency;
-        }
-    }
-    pi = &proginstances[bestrated];
-    pi->note = pkg.note;
-    //Do we already have the right mapping allocated?
-    if(pi->valid && pi->sourcechannel == pkg.chn){
-        //Skip the init VGM, start the note on VGM
-        if(pi->head != NULL){
-            //Stop playing whatever it was playing
-            VGM_Head_Delete(pi->head);
-            pi->head = NULL;
-        }
-        if(prog->noteonsource != NULL){
-            StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
-        }else{
-            DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
-        }
-        pi->playing = 1;
-        return;
-    }
+u8 SyEng_GetStaticPI(usage_bits_t usage){
+    u8 piindex = FindBestPIToReplace(0xFF, 0xFF);
+    synproginstance_t* pi = &proginstances[piindex];
     //If we took away from another channel which was playing, release its resources
-    if(pi->valid && pi->playing == 1){
+    if(pi->valid && (pi->playing == 1 || pi->isstatic)){
         DBG("--Clearing existing PI resources");
         ClearPI(pi);
     }
@@ -1191,16 +850,103 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
         pi->head = NULL;
     }
     //Find best allocation
-    s32 ret = AllocatePI(bestrated, prog->usage);
+    s32 ret = AllocatePI(piindex, usage);
+    if(ret < 0){
+        DBG("--Could not allocate resources for PI (voices full)! code = %d", ret);
+        return 0xFF;
+    }
+    //Set up the PI
+    pi->valid = 1;
+    pi->isstatic = 1;
+    pi->sourcechannel = 0xFF;
+    pi->note = 60;
+    return piindex;
+}
+
+void SyEng_ReleaseStaticPI(u8 piindex){
+    synproginstance_t* pi = &proginstances[piindex];
+    if(!pi->isstatic) return;
+    if(pi->head != NULL){
+        //Stop playing whatever it was playing
+        VGM_Head_Delete(pi->head);
+        pi->head = NULL;
+    }
+    pi->isstatic = 0;
+    ClearPI(pi);
+}
+
+void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote){
+    pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
+    CopyPIMappingToHead(pi, pi->head);
+    u32 vgmtime = VGM_Player_GetVGMTime();
+    VGM_Head_Restart(pi->head, vgmtime);
+    pi->head->playing = 1;
+    pi->recency = vgmtime;
+}
+
+void SyEng_SilencePI(synproginstance_t* pi){
+    u8 i;
+    VgmHead_Channel* c;
+    for(i=0; i<12; ++i){
+        c = &pi->mapping[i];
+        if(c->nodata) continue;
+        //Key off
+        if(i >= 1 && i <= 6){
+            VGM_Tracker_Enqueue((VgmChipWriteCmd){.cmd = (c->map_chip << 4)|2, .addr = 0x28, .data = (c->map_voice >= 3 ? c->map_voice+1 : c->map_voice), .data2 = 0}, 0);
+        }else if(i >= 8 && i <= 10){
+            VGM_Tracker_Enqueue((VgmChipWriteCmd){.cmd = (c->map_chip << 4), .addr = 0, .data = 0x9F|(c->map_voice << 5), .data2 = 0}, 0);
+        }else if(i == 11){
+            VGM_Tracker_Enqueue((VgmChipWriteCmd){.cmd = (c->map_chip << 4), .addr = 0, .data = 0xFF, .data2 = 0}, 0);
+        }
+    }
+}
+
+static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
+    if(prog == NULL){
+        DBG("Note on %d ch %d, no program on this channel", note, chn);
+        return;
+    }
+    u8 piindex = FindBestPIToReplace(chn, note);
+    synproginstance_t* pi = &proginstances[piindex];
+    pi->note = note;
+    //Do we already have the right mapping allocated?
+    if(pi->valid && !pi->isstatic && pi->sourcechannel == chn){
+        //Skip the init VGM, start the note on VGM
+        if(pi->head != NULL){
+            //Stop playing whatever it was playing
+            VGM_Head_Delete(pi->head);
+            pi->head = NULL;
+        }
+        if(prog->noteonsource != NULL){
+            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
+        }else{
+            DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
+        }
+        pi->playing = 1;
+        return;
+    }
+    //If we took away from another channel which was playing, release its resources
+    if(pi->valid && (pi->playing == 1 || pi->isstatic)){
+        DBG("--Clearing existing PI resources");
+        ClearPI(pi);
+    }
+    if(pi->head != NULL){
+        //Stop playing whatever it was playing
+        VGM_Head_Delete(pi->head);
+        pi->head = NULL;
+    }
+    //Find best allocation
+    s32 ret = AllocatePI(piindex, prog->usage);
     if(ret < 0){
         DBG("--Could not allocate resources for PI (voices full)! code = %d", ret);
         return;
     }
     //Set up the PI for the new program
-    pi->sourcechannel = pkg.chn;
     pi->valid = 1;
+    pi->isstatic = 0;
     pi->playinginit = 1;
     pi->playing = 1;
+    pi->sourcechannel = chn;
     //See if we're waiting for voices to be cleared
     if(IsAnyVoiceBeingCleared(pi)){
         pi->waitingforclear = 1;
@@ -1208,33 +954,34 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
     }
     //Otherwise, start the init VGM
     if(prog->initsource != NULL){
-        StartPlayingProgVGM(pi, prog->initsource, prog->rootnote);
+        SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote);
     }else{
         pi->playinginit = 0;
         if(prog->noteonsource != NULL){
             DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
-            StartPlayingProgVGM(pi, prog->noteonsource, prog->rootnote);
+            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
         }else{
             DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
         }
     }
 }
-void SyEng_Note_Off(mios32_midi_package_t pkg){
+static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
     synproginstance_t* pi;
     u8 i;
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
         pi = &proginstances[i];
         if(!pi->valid) continue;
-        if(pi->sourcechannel != pkg.chn) continue;
-        if(pi->note != pkg.note || !pi->playing) continue;
+        if(pi->isstatic) continue;
+        if(pi->sourcechannel != chn) continue;
+        if(!pi->playing) continue;
+        if(pi->note != note) continue;
         break;
     }
     if(i == MBQG_NUM_PROGINSTANCES){
-        DBG("Note off %d ch %d, but no PI playing this note", pkg.note, pkg.chn);
+        DBG("Note off %d ch %d, but no PI playing this note", note, chn);
         return; //no corresponding note on
     }
     //Found corresponding note on
-    synprogram_t* prog = channels[pkg.chn].program;
     if(prog == NULL){
         DBG("--ERROR program disappeared while playing, could not switch to noteoff!");
         return;
@@ -1246,7 +993,7 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
             pi->head = NULL;
         }
         //Start playing note-off VGM
-        StartPlayingProgVGM(pi, prog->noteoffsource, prog->rootnote);
+        SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog->rootnote);
     }else{
         DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
     }
@@ -1254,3 +1001,11 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
     StandbyPI(pi);
     pi->playing = 0;
 }
+
+void SyEng_Note_On(mios32_midi_package_t pkg){
+    StartProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);
+}
+void SyEng_Note_Off(mios32_midi_package_t pkg){
+    StopProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);
+}
+

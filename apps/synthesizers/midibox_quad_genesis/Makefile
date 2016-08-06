@@ -14,6 +14,7 @@ LCD       =     $(MIOS32_LCD)
 
 # add plain C files here
 THUMB_SOURCE    =   src/app.c \
+                    src/demoprograms.c \
                     src/filebrowser.c \
                     src/frontpanel.c \
                     src/interface.c \

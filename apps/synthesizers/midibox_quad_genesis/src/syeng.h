@@ -93,10 +93,11 @@ typedef struct {
 
 typedef struct {
     u8 valid:1;
+    u8 isstatic:1;
     u8 playing:1;
     u8 playinginit:1;
     u8 waitingforclear:1;
-    u8 dummy:4;
+    u8 dummy:3;
     u8 sourcechannel;
     u8 note;
     u8 dummy2;
@@ -137,5 +138,10 @@ extern void SyEng_Note_On(mios32_midi_package_t pkg);
 extern void SyEng_Note_Off(mios32_midi_package_t pkg);
 
 extern void SyEng_ClearVoice(u8 g, u8 v);
+
+extern u8 SyEng_GetStaticPI(usage_bits_t usage);
+extern void SyEng_ReleaseStaticPI(u8 piindex);
+extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote);
+extern void SyEng_SilencePI(synproginstance_t* pi);
 
 #endif /* _SYENG_H */
