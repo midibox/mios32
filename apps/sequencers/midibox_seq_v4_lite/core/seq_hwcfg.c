@@ -140,8 +140,8 @@ seq_hwcfg_enc_t seq_hwcfg_enc = {
 
 
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
-  .enabled = 0,
-  .dout_gp_mapping = 1,
+  .enabled = 1,
+  .dout_gp_mapping = 2,
 };
 
 
@@ -165,8 +165,9 @@ seq_hwcfg_step_digits_t seq_hwcfg_step_digits = {
 
 seq_hwcfg_tpd_t seq_hwcfg_tpd = {
   .enabled = 0,
-  .columns_sr = 0,
-  .rows_sr = 0,
+  .columns_sr = {0, 0},
+  .rows_sr_green = {0, 0},
+  .rows_sr_red = {0, 0},
 };
 
 seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
@@ -186,6 +187,7 @@ u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
 u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 u8 seq_hwcfg_clk_sr = 0;
+u8 seq_hwcfg_j5_enabled = 0;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -217,8 +219,12 @@ s32 SEQ_HWCFG_Init(u32 mode)
   for(i=0; i<SEQ_HWCFG_NUM_SR_CV_GATES; ++i)
     seq_hwcfg_cv_gate_sr[i] = 0;
 
-  // initial debounce delay for BLM_X
+  // MBSEQV4L: pre-configure SRIO based frontpanel
   blm_x_config_t config = BLM_X_ConfigGet();
+  config.rowsel_dout_sr = 1;
+  config.rowsel_inv_mask = 0x00;
+  config.led_first_dout_sr = 2;
+  config.btn_first_din_sr = 1;
   config.debounce_delay = 20; // mS
   BLM_X_ConfigSet(config);
 

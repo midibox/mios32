@@ -3193,7 +3193,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
 
-  if( seq_hwcfg_blm8x8.enabled && seq_hwcfg_blm8x8.dout_gp_mapping ) {
+  if( seq_hwcfg_blm8x8.enabled && seq_hwcfg_blm8x8.dout_gp_mapping == 1 ) {
     // for wilba's frontpanel
 
     // BLM_X DOUT -> GP LED mapping

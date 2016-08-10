@@ -708,9 +708,14 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     if( pin == (8*(seq_hwcfg_button.gp_din_l_sr-1) + i) )
       return SEQ_UI_Button_GP(pin_value, i + 0);
 
-  for(i=0; i<8; ++i)
-    if( pin == (8*(seq_hwcfg_button.gp_din_r_sr-1) + i) )
-      return SEQ_UI_Button_GP(pin_value, i + 8);
+  for(i=0; i<8; ++i) {
+    if( pin == (8*(seq_hwcfg_button.gp_din_r_sr-1) + i) ) {
+      if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 )
+	return SEQ_UI_Button_GP(pin_value, (7-i) + 8);
+      else
+	return SEQ_UI_Button_GP(pin_value, i + 8);
+    }
+  }
 
   if( pin == seq_hwcfg_button.bar1 )
     return SEQ_UI_Button_Bar(pin_value, 0);
@@ -1148,6 +1153,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
       SEQ_LED_SRSet(1, left_half  ? mask_full : 0xff);
       SEQ_LED_SRSet(2, left_half  ? mask_full : 0xff);
+
       SEQ_LED_SRSet(5, right_half ? mask_full : 0x00);
       SEQ_LED_SRSet(6, right_half ? mask_full : 0x00);
 
@@ -1165,6 +1171,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 
       SEQ_LED_SRSet(1, !left_half  ? mask_full : 0x00);
       SEQ_LED_SRSet(2, !left_half  ? mask_full : 0x00);
+
       SEQ_LED_SRSet(5, !right_half ? mask_full : 0xff);
       SEQ_LED_SRSet(6, !right_half ? mask_full : 0xff);
 
@@ -1254,19 +1261,15 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
   // transfer to GP LEDs
-  if( seq_hwcfg_led.pos_dout_l_sr ) {
-    if( seq_hwcfg_led.pos_dout_l_sr )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_page_gp_leds >> 0) & 0xff);
-    else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
-  }
+  if( seq_hwcfg_led.pos_dout_l_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, (ui_page_gp_leds >> 0) & 0xff);
+  else
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_l_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 0) & 0xff);
 
-  if( seq_hwcfg_led.pos_dout_r_sr ) {
-    if( seq_hwcfg_led.pos_dout_r_sr )
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, (ui_page_gp_leds >> 8) & 0xff);
-    else
-      SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
-  }
+  if( seq_hwcfg_led.pos_dout_r_sr )
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, (ui_page_gp_leds >> 8) & 0xff);
+  else
+    SEQ_LED_SRSet(seq_hwcfg_led.gp_dout_r_sr-1, ((ui_page_gp_leds ^ pos_marker_mask) >> 8) & 0xff);
 
 
   // POS LEDs tap tempo overlay
