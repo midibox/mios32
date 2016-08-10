@@ -441,7 +441,6 @@ seq_hwcfg_blm_t seq_hwcfg_blm = {
 seq_hwcfg_blm8x8_t seq_hwcfg_blm8x8 = {
   .enabled = 0,
   .dout_gp_mapping = 1,
-  .din_gp_mapping = 0,
 };
 
 

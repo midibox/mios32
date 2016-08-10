@@ -107,9 +107,6 @@ void APP_Init(void)
   MIOS32_MIDI_DefaultPortSet(0xc0);
 #endif
 
-  // initialize hardware soft-config
-  SEQ_HWCFG_Init(0);
-
 #ifndef MBSEQV4L
   // initialize CLCDs
   SEQ_LCD_Init(0);
@@ -122,6 +119,9 @@ void APP_Init(void)
   BLM_CHEAPO_Init(0);
 #endif
   BLM_X_Init();
+
+  // initialize hardware soft-config
+  SEQ_HWCFG_Init(0);
 
   SEQ_TPD_Init(0);
 
@@ -426,8 +426,19 @@ void APP_BLM_X_NotifyToggle(u32 pin, u32 pin_value)
   SEQ_LCD_LOGO_ScreenSaver_Disable();
 #endif
 
-  // forward to UI button handler
-  SEQ_UI_Button_Handler(pin + 184, pin_value);
+  // extra: fake DIN pin as long as SD Card not read (dirty workaround to simplify usage of V4L)
+  if( !SEQ_FILE_HW_Valid() ) {
+    if( pin >= 32 ) {
+      // ignore for GP pins since they will be reversed again in SEQ_UI_Button_Handler()... really dirty workaround ;-)
+      // actually shows, that it would be much better to simplify the HW than adding SW based options
+      if( pin < 48 || pin >= 56 ) {
+	pin = (pin & 0xf8) | (7-(pin & 7));
+      }
+    }
+    SEQ_UI_Button_Handler(pin, pin_value);
+  } else {
+    SEQ_UI_Button_Handler(pin + 184, pin_value);
+  }
 }
 
 

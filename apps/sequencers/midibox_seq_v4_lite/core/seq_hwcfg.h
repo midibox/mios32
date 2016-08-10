@@ -135,8 +135,8 @@ typedef struct {
 } seq_hwcfg_enc_t;
 
 typedef struct {
-  u8 enabled;
-  u8 dout_gp_mapping;
+  u8 enabled:1;
+  u8 dout_gp_mapping:2;
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {
@@ -158,8 +158,9 @@ typedef struct {
 
 typedef struct {
   u8 enabled;
-  u8 columns_sr;
-  u8 rows_sr;
+  u8 columns_sr[2];
+  u8 rows_sr_green[2];
+  u8 rows_sr_red[2];
 } seq_hwcfg_tpd_t;
 
 typedef struct {
@@ -207,5 +208,6 @@ extern u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 extern u8 seq_hwcfg_dout_gate_1ms;
 extern u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];
 extern u8 seq_hwcfg_clk_sr;
+extern u8 seq_hwcfg_j5_enabled;
 
 #endif /* _SEQ_HWCFG_H */

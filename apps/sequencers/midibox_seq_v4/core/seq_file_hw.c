@@ -190,6 +190,64 @@ static s32 get_dec(char *word)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// help function which parses a shift register number (allows M1..8 to assign SR24..31)
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_sr(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  u8 blm8x8_selected = 0;
+  if( word[0] == 'M' ) {
+    blm8x8_selected = 1;
+    ++word;
+  }
+
+  char *next;
+  long l = strtol(word, &next, 0);
+
+  if( word == next )
+    return -1;
+
+  if( blm8x8_selected ) {
+    l = 24 + l-1;
+  }
+
+  return l; // value is valid
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// help function which returns the MIDI OUT port
+// returns >= 0 if value is valid
+// returns -1 if value is invalid
+/////////////////////////////////////////////////////////////////////////////
+static s32 get_port_out(char *word)
+{
+  if( word == NULL )
+    return -1;
+
+  mios32_midi_port_t port = 0xff;
+  int port_ix;
+  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
+    // terminate port name at first space
+    char port_name[10];
+    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
+    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+    
+    if( strcmp(word, port_name) == 0 ) {
+      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+      break;
+    }
+  }
+
+  return (port != 0xff) ? port : get_dec(word);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // reads the hardware config file content
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
@@ -835,8 +893,8 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strcasecmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcasecmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+	  s32 sr = get_sr(word);
+	  if( sr < 0 || sr > 32 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -879,8 +937,8 @@ s32 SEQ_FILE_HW_Read(void)
 	  parameter += 8;
 
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+	  s32 sr = get_sr(word);
+	  if( sr < 0 || sr > 32 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in GP_DOUT_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1206,7 +1264,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	} else if( strcasecmp(parameter, "TRACK_CC_PORT") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	  s32 port = get_port_out(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1243,7 +1301,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	} else if( strcasecmp(parameter, "RS_OPTIMISATION") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = SEQ_MIDI_PORT_OutPortFromNameGet(word);
+	  s32 port = get_port_out(word);
 
 	  if( port < 0 || port >= 0x100 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1313,8 +1371,8 @@ s32 SEQ_FILE_HW_Read(void)
 		     (hlp=atoi(parameter+10)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_CV_GATES ) {
 
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+	  s32 sr = get_sr(word);
+	  if( sr < 0 || sr > 32 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1325,8 +1383,8 @@ s32 SEQ_FILE_HW_Read(void)
 
 	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+	  s32 sr = get_sr(word);
+	  if( sr < 0 || sr > 32 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1339,8 +1397,8 @@ s32 SEQ_FILE_HW_Read(void)
 		     (hlp=atoi(parameter+12)) >= 1 && hlp <= SEQ_HWCFG_NUM_SR_DOUT_GATES ) {
 
 	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+	  s32 sr = get_sr(word);
+	  if( sr < 0 || sr > 32 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif

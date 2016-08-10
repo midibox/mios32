@@ -20,6 +20,8 @@
 #include <blm_x.h>
 
 #include "seq_led.h"
+#include "seq_hwcfg.h"
+#include "seq_file_hw.h"
 
 #ifdef MBSEQV4L
 #include <blm_cheapo.h>
@@ -47,15 +49,31 @@ s32 SEQ_LED_Init(u32 mode)
 s32 SEQ_LED_PinSet(u32 pin, u32 value)
 {
 #ifdef MBSEQV4L
-  if( pin < 64 )
-    return BLM_CHEAPO_DOUT_PinSet(pin, value);
+  if( pin < 64 ) {
+    BLM_CHEAPO_DOUT_PinSet(pin, value);
+
+    // extra: directly mirror to SRIO DOUT as long as SD Card not read (dirty workaround to simplify usage of V4L)
+    if( SEQ_FILE_HW_Valid() ) {
+      return 0;
+    } else {
+      pin += 184;
+    }
+  }
 #else
   if( pin < 184 )
     return MIOS32_DOUT_PinSet(pin, value);
 #endif
 
-  if( pin >= 184 && pin < 248 )
+  if( pin >= 184 && pin < 248 ) {
+    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && !SEQ_FILE_HW_Valid() ) {
+      // MBSEQ V4L SRIO Board
+      if( pin >= 216 ) {
+	pin = (pin & 0xf8) | (7 - (pin&7));
+      }
+    }
+
     return BLM_X_LEDSet(pin-184, 0, value);
+  }
 
   return -1; // pin not available
 }
@@ -71,15 +89,30 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
     return -1; // SR disabled
 
 #ifdef MBSEQV4L
-  if( sr < 8 )
-    return BLM_CHEAPO_DOUT_SRSet(sr, value);
+  if( sr < 8 ) {
+    BLM_CHEAPO_DOUT_SRSet(sr, value);
+
+    // extra: directly mirror to SRIO DOUT as long as SD Card not read (dirty workaround to simplify usage of V4L)
+    if( SEQ_FILE_HW_Valid() ) {
+      return 0;
+    } else {
+      sr += 23;
+    }
+  }
+
 #else
   if( sr < 23 )
     return MIOS32_DOUT_SRSet(sr, value);
 #endif
 
-  if( sr >= 23 && sr < 31 )
+  if( sr >= 23 && sr < 31 ) {
+    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 27 ) {
+      // MBSEQ V4L SRIO Board
+      value = mios32_dout_reverse_tab[value];
+    }
+
     return BLM_X_LEDSRSet(sr-23, 0, value);
+  }
 
   return -1; // SR not available
 }
@@ -101,8 +134,16 @@ s32 SEQ_LED_SRGet(u32 sr)
     return MIOS32_DOUT_SRGet(sr);
 #endif
 
-  if( sr >= 23 && sr < 31 )
-    return BLM_X_LEDSRGet(sr-23, 0);
+  if( sr >= 23 && sr < 31 ) {
+    u8 value = BLM_X_LEDSRGet(sr-23, 0);
+
+    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 27 ) {
+      // MBSEQ V4L SRIO Board
+      value = mios32_dout_reverse_tab[value];
+    }
+
+    return value;
+  }
 
   return 0; // SR not available... return 0
 }

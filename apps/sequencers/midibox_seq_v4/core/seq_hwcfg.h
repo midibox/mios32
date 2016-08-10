@@ -265,8 +265,7 @@ typedef struct {
 
 typedef struct {
   u8 enabled:1;
-  u8 dout_gp_mapping:1;
-  u8 din_gp_mapping:1;
+  u8 dout_gp_mapping:2;
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {

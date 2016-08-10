@@ -223,6 +223,8 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
     uploading_file = UPLOADING_FILE_NONE;
     if( strcasecmp(filename, "/mbseq_hw.v4") == 0 )
       uploading_file = UPLOADING_FILE_HW;
+    if( strcasecmp(filename, "/mbseq_hw.v4l") == 0 )
+      uploading_file = UPLOADING_FILE_HW;
     else if( strcasestr(filename, "/mbseq_c.v4") != NULL )
       uploading_file = UPLOADING_FILE_C;
     else if( strcasecmp(filename, "/mbseq_gc.v4") == 0 )
