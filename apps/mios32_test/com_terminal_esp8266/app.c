@@ -22,6 +22,13 @@
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+static s32 APP_NotifyUdpPacket(u32 ip, u16 port, u8 *payload, u32 len);
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This hook is called after startup to initialize the application
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
@@ -29,6 +36,7 @@ void APP_Init(void)
   // init ESP8266 driver
   ESP8266_Init(0);
   ESP8266_InitUart(UART2, 115200); // MIDI IN/OUT 3 port is sacrificed
+  ESP8266_UdpRxCallback_Init(APP_NotifyUdpPacket); // hook to notify received UDP packets
 
   // init terminal
   TERMINAL_Init(0);
@@ -129,4 +137,21 @@ void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 {
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This hook is called from the ESP8266 driver on incoming UDP packets
+/////////////////////////////////////////////////////////////////////////////
+static s32 APP_NotifyUdpPacket(u32 ip, u16 port, u8 *payload, u32 len)
+{
+#if 0
+    DEBUG_MSG("> From: %d.%d.%d.%d:%d\n", (ip >> 0) & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff, port);
+    MIOS32_MIDI_SendDebugHexDump(payload, len);
+#endif
+
+  // echo packet
+  ESP8266_COM_SendUdpPacket(ip, port, payload, len);
+
+  return 0; // no error
 }

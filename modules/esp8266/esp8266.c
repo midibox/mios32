@@ -28,7 +28,7 @@
 // Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-#define STRING_MAX 256
+#define LINE_BUFFER_LEN 512
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -36,8 +36,10 @@
 
 static mios32_midi_port_t dev_uart;
 
-static char com_line_buffer[STRING_MAX];
+static char com_line_buffer[LINE_BUFFER_LEN];
 static u16 com_line_ix;
+
+static s32 (*udp_rx_callback_func)(u32 ip, u16 udp, u8 *payload, u32 len);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -71,6 +73,9 @@ s32 ESP8266_Init(u32 mode)
   // from COM port
   ESP8266_TerminalModeSet(1);
 
+  // disable RX callback
+  udp_rx_callback_func = NULL;
+
   return 0; // no error
 }
 
@@ -97,6 +102,17 @@ s32 ESP8266_Periodic_mS(void)
 s32 ESP8266_TerminalModeSet(u8 terminal_mode)
 {
   return MIOS32_COM_ReceiveCallback_Init(terminal_mode ? ESP8266_COM_Parse : 0);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Initializes the RX Callback for incoming UDP packets
+/////////////////////////////////////////////////////////////////////////////
+s32 ESP8266_UdpRxCallback_Init(s32 (*callback_rx)(u32 ip, u16 port, u8 *payload, u32 len))
+{
+  udp_rx_callback_func = callback_rx;
+
+  return 0; // no error
 }
 
 
@@ -174,22 +190,62 @@ static s32 get_dec(char *word)
 /////////////////////////////////////////////////////////////////////////////
 s32 ESP8266_COM_Parse(mios32_midi_port_t port, char byte)
 {
+  static u8 receiving_slip = 0;
+
   if( !dev_uart || port != dev_uart )
     return -1; // ignore messages from other UARTs
 
-  //DEBUG_MSG("R %d (%c)\n", byte, byte);
+  //DEBUG_MSG("R 0x%02x (%c)\n", byte, byte);
 
-  if( byte == '\r' ) {
-    // ignore
-  } else if( byte == '\n' ) {
-    ESP8266_MUTEX_MIDIOUT_TAKE;
-    ESP8266_COM_ParseLine(com_line_buffer, DEBUG_MSG);
-    ESP8266_MUTEX_MIDIOUT_GIVE;
+  if( byte == 0xbf ) { // SLIP start
+    receiving_slip = 1;
     com_line_ix = 0;
-    com_line_buffer[com_line_ix] = 0;
-  } else if( com_line_ix < (STRING_MAX-1) ) {
-    com_line_buffer[com_line_ix++] = byte;
-    com_line_buffer[com_line_ix] = 0;
+  } else if( byte == 0xc0 ) { // SLIP end
+    receiving_slip = 0;
+
+    u32 ip = ((u32)com_line_buffer[0] << 0) |
+             ((u32)com_line_buffer[1] << 8) |
+             ((u32)com_line_buffer[2] << 16) |
+             ((u32)com_line_buffer[3] << 24);
+    u16 port = ((u32)com_line_buffer[4] << 0) |
+               ((u32)com_line_buffer[5] << 8);
+
+    // forward packet to hook
+    if( udp_rx_callback_func )
+      udp_rx_callback_func(ip, port, (u8 *)&com_line_buffer[6], com_line_ix-6);
+
+  } else if( receiving_slip ) {
+    if( byte == 0xdb ) {
+      receiving_slip = 2; // escape
+    } else if( receiving_slip == 2 ) {
+      if( byte == 0xdd ) {
+	if( com_line_ix < LINE_BUFFER_LEN )
+	  com_line_buffer[com_line_ix++] = 0xdb;
+      } else if( byte == 0xdc ) {
+	if( com_line_ix < LINE_BUFFER_LEN )
+	  com_line_buffer[com_line_ix++] = 0xc0;
+      } else if( byte == 0xda ) {
+	if( com_line_ix < LINE_BUFFER_LEN )
+	  com_line_buffer[com_line_ix++] = 0xbf;
+      }
+      receiving_slip = 1;
+    } else {
+      if( com_line_ix < LINE_BUFFER_LEN )
+	com_line_buffer[com_line_ix++] = byte;
+    }
+  } else {
+    if( byte == '\r' ) {
+      // ignore
+    } else if( byte == '\n' ) {
+      ESP8266_MUTEX_MIDIOUT_TAKE;
+      ESP8266_COM_ParseLine(com_line_buffer, DEBUG_MSG);
+      ESP8266_MUTEX_MIDIOUT_GIVE;
+      com_line_ix = 0;
+      com_line_buffer[com_line_ix] = 0;
+    } else if( com_line_ix < (LINE_BUFFER_LEN-1) ) {
+      com_line_buffer[com_line_ix++] = byte;
+      com_line_buffer[com_line_ix] = 0;
+    }
   }
 
   return 0; // no error
@@ -247,6 +303,89 @@ s32 ESP8266_SendCommand(const char* cmd)
   return status;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a SLIP (propritary) Start Frame
+/////////////////////////////////////////////////////////////////////////////
+static s32 ESP8266_COM_SendSlipFrameStart(void)
+{
+  return MIOS32_COM_SendChar(dev_uart, 0xbf);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a SLIP End Frame
+/////////////////////////////////////////////////////////////////////////////
+static s32 ESP8266_COM_SendSlipFrameEnd(void)
+{
+  return MIOS32_COM_SendChar(dev_uart, 0xc0);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends data with SLIP protocol
+/////////////////////////////////////////////////////////////////////////////
+static s32 ESP8266_COM_SendSlipData(u8 *payload, u32 len)
+{
+  s32 status = 0;
+
+  u32 i;
+  for(i=0; i<len; ++i, ++payload) {
+    if( *payload == 0xdb ) { // escape
+      status |= MIOS32_COM_SendChar(dev_uart, 0xdb);
+      status |= MIOS32_COM_SendChar(dev_uart, 0xdd);
+    } else if( *payload == 0xc0 ) { // frame end
+      status |= MIOS32_COM_SendChar(dev_uart, 0xdb);
+      status |= MIOS32_COM_SendChar(dev_uart, 0xdc);
+    } else if( *payload == 0xbf ) { // (non-standard) frame begin
+      status |= MIOS32_COM_SendChar(dev_uart, 0xdb);
+      status |= MIOS32_COM_SendChar(dev_uart, 0xda);
+    } else {
+      status |= MIOS32_COM_SendChar(dev_uart, *payload);
+    }
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Sends a UDP packet to the ESP8266 chip with MBHP_WIFI_BRIDGE firmware
+//! \param[in] ip the destination IP
+//! \param[in] port the destination port
+//! \param[in] payload the data
+//! \param[in] len data length
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+s32 ESP8266_COM_SendUdpPacket(u32 ip, u16 port, u8 *payload, u16 len)
+{
+  ESP8266_COM_SendSlipFrameStart();
+
+  // IP Address
+  {
+    u32 v = ip;
+    int i;
+    for(i=0; i<4; ++i, v >>= 8) {
+      u8 b = v;
+      ESP8266_COM_SendSlipData(&b, 1);
+    }
+  }
+  
+  // IP Port
+  {
+    u16 v = port;
+    int i;
+    for(i=0; i<2; ++i, v >>= 8) {
+      u8 b = v;
+      ESP8266_COM_SendSlipData(&b, 1);
+    }
+  }
+    
+  // Payload
+  ESP8266_COM_SendSlipData(payload, len);
+
+  ESP8266_COM_SendSlipFrameEnd();
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Temporary test to send a OSC message
@@ -326,7 +465,7 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
 
     u32 len = strlen(input);
 
-    if( len >= (STRING_MAX-3) ) {
+    if( len >= (LINE_BUFFER_LEN-3) ) {
       out("ERROR: string too long!\n");
     } else {
       // send to ESP8266

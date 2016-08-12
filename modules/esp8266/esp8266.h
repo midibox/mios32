@@ -46,6 +46,8 @@ extern s32 ESP8266_Periodic_mS(void);
 
 extern s32 ESP8266_TerminalModeSet(u8 terminal_mode);
 
+extern s32 ESP8266_UdpRxCallback_Init(s32 (*callback_rx)(u32 ip, u16 port, u8 *payload, u32 len));
+
 extern s32 ESP8266_InitUart(mios32_midi_port_t port, u32 baudrate);
 extern s32 ESP8266_DeInitUart(void);
 extern mios32_midi_port_t ESP8266_UartGet(void);
@@ -54,6 +56,7 @@ extern s32 ESP8266_TerminalHelp(void *_output_function);
 extern s32 ESP8266_TerminalParseLine(char *input, void *_output_function);
 
 extern s32 ESP8266_SendCommand(const char* cmd);
+extern s32 ESP8266_COM_SendUdpPacket(u32 ip, u16 port, u8 *payload, u16 len);
 
 extern s32 ESP8266_SendOscTestMessage(u8 chn, u8 cc, u8 value);
 
