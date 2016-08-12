@@ -280,15 +280,15 @@ It should print:
 ---
 
 Enter:
-   set network <network> <password>
+   !set network <network> <password>
 to specify your WIFI network credentials, e.g.:
-   set network MyWiFi MySecretPassword
+   !set network MyWiFi MySecretPassword
 
 This command only has to be executed once, the credentials will be permanently stored in flash
 
 
 Enter:
-   system
+   !system
 to get some system information which might be interesting:
 ---
 [239378.020] !system
