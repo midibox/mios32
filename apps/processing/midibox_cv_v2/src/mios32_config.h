@@ -87,4 +87,15 @@
 // can be retrieved with MIOS32_AIN_PinGet()
 #define MIOS32_DONT_SERVICE_AIN 1
 
+
+// enable ESP8266 support for OSC Server/Client
+#define OSC_SERVER_ESP8266_ENABLED 1
+
+// support direct send command
+#define ESP8266_TERMINAL_DIRECT_SEND_CMD 1
+
+// Mutex assignments
+//#define ESP8266_MUTEX_MIDIOUT_TAKE { TASKS_MUTEX_MIDIOUT_Take(); }
+//#define ESP8266_MUTEX_MIDIOUT_GIVE { TASKS_MUTEX_MIDIOUT_Give(); }
+
 #endif /* _MIOS32_CONFIG_H */
