@@ -58,8 +58,6 @@ extern s32 ESP8266_TerminalParseLine(char *input, void *_output_function);
 extern s32 ESP8266_SendCommand(const char* cmd);
 extern s32 ESP8266_COM_SendUdpPacket(u32 ip, u16 port, u8 *payload, u16 len);
 
-extern s32 ESP8266_SendOscTestMessage(u8 chn, u8 cc, u8 value);
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

@@ -30,6 +30,11 @@
 
 #define LINE_BUFFER_LEN 512
 
+#ifndef DEBUG_MSG
+# define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -38,6 +43,8 @@ static mios32_midi_port_t dev_uart;
 
 static char com_line_buffer[LINE_BUFFER_LEN];
 static u16 com_line_ix;
+
+static u32 com_timestamp_last_access;
 
 static s32 (*udp_rx_callback_func)(u32 ip, u16 udp, u8 *payload, u32 len);
 
@@ -68,6 +75,7 @@ s32 ESP8266_Init(u32 mode)
   // clear line buffers
   com_line_buffer[0] = 0;
   com_line_ix = 0;
+  com_timestamp_last_access = 0;
 
   // install the callback function which is called on incoming characters
   // from COM port
@@ -88,6 +96,16 @@ s32 ESP8266_Periodic_mS(void)
 #if ESP8266_FW_ACCESS_ENABLED
   ESP8266_FW_Periodic_mS();
 #endif
+
+  {
+    u32 timestamp = MIOS32_TIMESTAMP_Get();
+    if( com_line_ix > 0 && (timestamp - com_timestamp_last_access) > 1000 ) {
+      com_line_ix = 0;
+#if 0
+      DEBUG_MSG("[ESP8266] COM timeout detected!\n");
+#endif
+    }
+  }
 
   return 0; // no error
 }
@@ -197,6 +215,8 @@ s32 ESP8266_COM_Parse(mios32_midi_port_t port, char byte)
 
   //DEBUG_MSG("R 0x%02x (%c)\n", byte, byte);
 
+  com_timestamp_last_access = MIOS32_TIMESTAMP_Get();
+
   if( byte == 0xbf ) { // SLIP start
     receiving_slip = 1;
     com_line_ix = 0;
@@ -214,6 +234,7 @@ s32 ESP8266_COM_Parse(mios32_midi_port_t port, char byte)
     if( udp_rx_callback_func )
       udp_rx_callback_func(ip, port, (u8 *)&com_line_buffer[6], com_line_ix-6);
 
+    com_line_ix = 0;
   } else if( receiving_slip ) {
     if( byte == 0xdb ) {
       receiving_slip = 2; // escape
@@ -294,6 +315,12 @@ s32 ESP8266_SendCommand(const char* cmd)
 {
   if( !dev_uart ) {
     return -1; // no device selected
+  }
+
+  // TODO: improve MIOS32 driver so that it allows to send strings with any size...
+  if( strlen(cmd) >= MIOS32_UART_TX_BUFFER_SIZE ) {
+    DEBUG_MSG("[ESP8266] ERROR: maximum string size is %d\n", MIOS32_UART_TX_BUFFER_SIZE);
+    return -1;
   }
 
   s32 status = MIOS32_COM_SendString(dev_uart, cmd);
@@ -388,37 +415,6 @@ s32 ESP8266_COM_SendUdpPacket(u32 ip, u16 port, u8 *payload, u16 len)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-//! Temporary test to send a OSC message
-/////////////////////////////////////////////////////////////////////////////
-s32 ESP8266_SendOscTestMessage(u8 chn, u8 cc, u8 value)
-{
-  if( !dev_uart )
-    return -1; // UART not initialized
-
-  // create OSC packet
-  u8 packet[128];
-  u8 *end_ptr = packet;
-  char event_path[30];
-  sprintf(event_path, "/%d/cc_%d", chn, cc);
-  end_ptr = MIOS32_OSC_PutString(end_ptr, event_path);
-  end_ptr = MIOS32_OSC_PutString(end_ptr, ",f");
-  end_ptr = MIOS32_OSC_PutFloat(end_ptr, (float)value/127.0);
-  u32 len = (u32)(end_ptr-packet);
-
-  // send command
-  char cmd[50];
-  sprintf(cmd, "AT+CIPSEND=%d", len);
-  ESP8266_SendCommand(cmd);
-
-  MIOS32_DELAY_Wait_uS(2*1000); // TODO: wait for '>' sign, needs a proper communication handler
-
-  MIOS32_COM_SendBuffer(dev_uart, packet, len);
-
-  return 0; // no error
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 //! Returns help page for implemented terminal commands of this module
 /////////////////////////////////////////////////////////////////////////////
 s32 ESP8266_TerminalHelp(void *_output_function)
@@ -429,7 +425,6 @@ s32 ESP8266_TerminalHelp(void *_output_function)
   out("  !<...>                            directly send string to ESP8266");
 #endif
   out("  esp8266 baudrate <baudrate>       changes the baudrate used by the MIOS32 core (current: %d)", MIOS32_UART_BaudrateGet(dev_uart & 0xf));
-  out("  esp8266 reset                     resets the chip");
 #if ESP8266_FW_ACCESS_ENABLED
   out("  esp8266 bootloader_query          checks ESP8266 bootloader communication");
   out("  esp8266 bootloader_erase_flash    erases the SPI Flash");
@@ -480,10 +475,7 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
       char *cmd;
       
       if( (cmd = strtok_r(NULL, separators, &brkt)) ) {
-	if( strcasecmp(cmd, "reset") == 0 ) {
-	  out("Reseting Device");
-	  ESP8266_SendCommand("AT+RST");
-	} else if( strcasecmp(cmd, "baudrate") == 0 ) {
+	if( strcasecmp(cmd, "baudrate") == 0 ) {
 	  int baudrate;
 	  if( (parameter = strtok_r(NULL, separators, &brkt)) &&
 	      (baudrate=get_dec(parameter)) >= 0 ) {
@@ -502,8 +494,6 @@ s32 ESP8266_TerminalParseLine(char *input, void *_output_function)
 	} else if( strcmp(cmd, "bootloader_prog_flash") == 0 ) {
 	  ESP8266_FW_Exec(ESP8266_FW_EXEC_CMD_PROG_FLASH);
 #endif
-	} else if( strcmp(cmd, "osctest") == 0 ) {
-	  ESP8266_SendOscTestMessage(0, 1, 64);
 	} else {
 	  out("Unknown esp8266 command: '%s'\n", cmd);
 	}
