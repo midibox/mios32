@@ -25,7 +25,7 @@
 
 // number of UART interfaces (0..3)
 #ifndef MIOS32_UART_NUM
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 # define MIOS32_UART_NUM 4
 #else
 # define MIOS32_UART_NUM 2
