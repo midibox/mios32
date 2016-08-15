@@ -112,6 +112,7 @@ extern s32 UIP_TASK_AppCall(void);
 
 extern s32 UIP_TASK_UDP_AppCall(void);
 extern s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix);
+extern s32 UIP_TASK_UDP_ESP8266_MonitorPacket(u8 received, char* prefix, u32 ip, u16 port, u8 *payload, u32 len, u16 port_local);
 extern s32 UIP_TASK_UDP_MonitorLevelSet(u8 level);
 extern s32 UIP_TASK_UDP_MonitorLevelGet(void);
 

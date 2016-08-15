@@ -24,6 +24,11 @@
 
 #include "osc_server.h"
 #include "osc_client.h"
+
+#if OSC_SERVER_ESP8266_ENABLED
+#include <esp8266.h>
+#endif
+
 #include <app.h>
 
 /////////////////////////////////////////////////////////////////////////////
@@ -54,6 +59,9 @@ static u32 osc_remote_ip[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_IP, OSC_REMO
 static u16 osc_remote_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT, OSC_REMOTE_PORT };
 static u16 osc_local_port[OSC_SERVER_NUM_CONNECTIONS] = { OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT, OSC_LOCAL_PORT };
 
+#if OSC_SERVER_ESP8266_ENABLED
+static s32 OSC_SERVER_ESP8266_NotifyUdpPacket(u32 ip, u16 port, u8 *payload, u32 len);
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialize the OSC daemon
@@ -108,6 +116,10 @@ s32 OSC_SERVER_Init(u32 mode)
       return -1;
     }
   }
+
+#if OSC_SERVER_ESP8266_ENABLED
+  ESP8266_UdpRxCallback_Init(OSC_SERVER_ESP8266_NotifyUdpPacket); // hook to notify received UDP packets
+#endif
 
   return 0; // no error
 }
@@ -175,6 +187,15 @@ s32 OSC_SERVER_LocalPortSet(u8 con, u16 port)
     return -1; // invalid connection
 
   osc_local_port[con] = port;
+
+#if OSC_SERVER_ESP8266_ENABLED
+  if( ESP8266_UartGet() ) {
+    char cmd[80];
+    sprintf(cmd, "set udp_port %d %d\n", con+1, port);
+    ESP8266_SendCommand(cmd);
+  }
+#endif
+
 #if 0
   return OSC_SERVER_Init(0);
 #else
@@ -325,20 +346,41 @@ s32 OSC_SERVER_SendPacket(u8 con, u8 *packet, u32 len)
   UIP_TASK_MUTEX_MIDIOUT_GIVE;
 #endif
 
-  // store pointer and len in global variable, so that OSC_SERVER_AppCall() can take over
-  osc_send_packet = packet;
-  osc_send_len = len;
 
-  // force processing for a connection
-  // this will call OSC_SERVER_AppCall() with uip_poll() set
-  // note: the packet cannot be send directly from here, we have to use the uIP framework!
-  uip_udp_periodic_conn(osc_conn[con]);
+#if OSC_SERVER_ESP8266_ENABLED
+  u8 use_esp8266 = ESP8266_UartGet() != 0;
+#else
+  u8 use_esp8266 = 0;
+#endif
 
-  // send packet immediately
-  if(uip_len > 0) {
-    uip_arp_out();
-    network_device_send();
-    uip_len = 0;
+  if( use_esp8266 ) {
+#if OSC_SERVER_ESP8266_ENABLED
+    u32 ip = osc_conn[con]->ripaddr[0] | ((u32)osc_conn[con]->ripaddr[1] << 16);
+    u16 port = osc_remote_port[con];
+
+#if 0
+    DEBUG_MSG("> From: %d.%d.%d.%d:%d\n", (ip >> 0) & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff, port);
+    MIOS32_MIDI_SendDebugHexDump(packet, len);
+#endif
+
+    ESP8266_COM_SendUdpPacket(ip, port, packet, len);  
+#endif
+  } else {
+    // store pointer and len in global variable, so that OSC_SERVER_AppCall() can take over
+    osc_send_packet = packet;
+    osc_send_len = len;
+
+    // force processing for a connection
+    // this will call OSC_SERVER_AppCall() with uip_poll() set
+    // note: the packet cannot be send directly from here, we have to use the uIP framework!
+    uip_udp_periodic_conn(osc_conn[con]);
+
+    // send packet immediately
+    if(uip_len > 0) {
+      uip_arp_out();
+      network_device_send();
+      uip_len = 0;
+    }
   }
 
   // clear remote port again so that we accept packets sent from any port
@@ -751,9 +793,81 @@ static s32 OSC_SERVER_Method_EventTOSC(mios32_osc_args_t *osc_args, u32 method_a
 
 
 /////////////////////////////////////////////////////////////////////////////
+// ESP8266 receive handler
+/////////////////////////////////////////////////////////////////////////////
+#if OSC_SERVER_ESP8266_ENABLED
+static s32 OSC_SERVER_ESP8266_NotifyUdpPacket(u32 ip, u16 port, u8 *payload, u32 len)
+{
+  u8 udp_monitor_level = UIP_TASK_UDP_MonitorLevelGet();
+
+#if 0
+    DEBUG_MSG("> From: %d.%d.%d.%d:%d\n", (ip >> 0) & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff, port);
+    MIOS32_MIDI_SendDebugHexDump(payload, len);
+#endif
+
+  // check for matching port
+  int con;
+
+  u8 port_ok = 0;
+  for(con=0; con<OSC_SERVER_NUM_CONNECTIONS; ++con) {
+    if( osc_local_port[con] == port &&
+#if 1
+	(osc_remote_ip[con] == 0xffffffff ||  // check for matching IP as well if != 0xffffffff (broadcast IP)
+	 ((((osc_remote_ip[con] >> 24) ^ (ip >>  0)) & 0xff) == 0 &&
+	  (((osc_remote_ip[con] >> 16) ^ (ip >>  8)) & 0xff) == 0 &&
+	  (((osc_remote_ip[con] >>  8) ^ (ip >> 16)) & 0xff) == 0 &&
+	  (((osc_remote_ip[con] >>  0) ^ (ip >> 24)) & 0xff) == 0)
+
+	 )
+#endif
+	) {
+      port_ok = 1;
+      break;
+    }
+  }
+
+  if( !port_ok ) {
+    // forward to monitor
+    if( udp_monitor_level >= UDP_MONITOR_LEVEL_4_ALL ||
+	(udp_monitor_level >= UDP_MONITOR_LEVEL_3_ALL_GEQ_1024 && port >= 1024) )
+      UIP_TASK_UDP_ESP8266_MonitorPacket(UDP_MONITOR_RECEIVED, "UNMATCHED_PORT", ip, port, payload, len, 0);
+  } else {
+    // forward to monitor
+    if( udp_monitor_level >= UDP_MONITOR_LEVEL_1_OSC_REC )
+      UIP_TASK_UDP_ESP8266_MonitorPacket(UDP_MONITOR_RECEIVED, "OSC_RECEIVED", ip, port, payload, len, port);
+
+    // new UDP package has been received
+#if DEBUG_VERBOSE_LEVEL >= 3
+    UIP_TASK_MUTEX_MIDIOUT_TAKE;
+    DEBUG_MSG("[OSC_SERVER] Received Datagram from %d.%d.%d.%d:%d (%d bytes)\n", 
+	      (ip >> 0) & 0xff,
+	      (ip >> 8) & 0xff,
+	      (ip >> 16) & 0xff,
+	      (ip >> 24) & 0xff,
+	      port,
+	      len);
+    MIOS32_MIDI_SendDebugHexDump((u8 *)payload, len);
+    UIP_TASK_MUTEX_MIDIOUT_GIVE;
+#endif
+
+    osc_parsed_from_con = con; // used by event propagation
+    s32 status = MIOS32_OSC_ParsePacket((u8 *)payload, len, parse_root);
+    if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      UIP_TASK_MUTEX_MIDIOUT_TAKE;
+      DEBUG_MSG("[OSC_SERVER] invalid OSC packet, status %d\n", status);
+      UIP_TASK_MUTEX_MIDIOUT_GIVE;
+#endif
+    }
+  }
+
+  return 0; // no error
+}
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
 // Search Tree for OSC Methods (used by MIOS32_OSC_ParsePacket())
 /////////////////////////////////////////////////////////////////////////////
-
 
 const static mios32_osc_search_tree_t parse_mcmpp_value[] = {
   { "*", NULL, &OSC_SERVER_Method_MCMPP, 0x00000000 },

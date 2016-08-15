@@ -25,6 +25,11 @@ extern "C" {
 // for 4 independent OSC ports
 #define OSC_SERVER_NUM_CONNECTIONS 4
 
+// optional ESP8266 support
+#ifndef OSC_SERVER_ESP8266_ENABLED
+#define OSC_SERVER_ESP8266_ENABLED 0
+#endif
+
 // can be overruled in mios32_config.h
 #ifndef OSC_REMOTE_IP
 //                      192        .  168        .    1       .  101

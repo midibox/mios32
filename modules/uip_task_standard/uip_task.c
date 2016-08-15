@@ -35,6 +35,10 @@
 #include "osc_client.h"
 #include "dhcpc.h"
 
+#if OSC_SERVER_ESP8266_ENABLED
+#include <esp8266.h>
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // for optional debugging messages via MIOS32_MIDI_SendDebug*
@@ -104,6 +108,12 @@ s32 UIP_TASK_Init(u32 mode)
   services_running = 0;
 
   udp_monitor_level = UDP_MONITOR_LEVEL_0_OFF;
+
+#if OSC_SERVER_ESP8266_ENABLED
+  // init ESP8266
+  ESP8266_Init(0);
+  ESP8266_InitUart(UART2, 115200); // MIDI IN/OUT 3 port is sacrificed
+#endif
 
   return 0; // no error
 }
@@ -252,6 +262,12 @@ static void UIP_TASK_Handler(void *pvParameters)
 
     // release exclusive access to UIP functions
     MUTEX_UIP_GIVE;
+
+#if OSC_SERVER_ESP8266_ENABLED
+    // ESP8266 handling
+    ESP8266_Periodic_mS();
+#endif
+
   }
 }
 
@@ -585,6 +601,28 @@ s32 UIP_TASK_UDP_MonitorPacket(u8 received, char* prefix)
 	      len);
   }
   MIOS32_MIDI_SendDebugHexDump((u8 *)uip_appdata, len);
+  UIP_TASK_MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+s32 UIP_TASK_UDP_ESP8266_MonitorPacket(u8 received, char* prefix, u32 ip, u16 port, u8 *payload, u32 len, u16 port_local)
+{
+  UIP_TASK_MUTEX_MIDIOUT_TAKE;
+  if( received ) {
+    DEBUG_MSG("[UDP:%s] from %d.%d.%d.%d:%d to port %d (%d bytes)\n", 
+	      prefix,
+	      (ip >> 0) & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff,
+	      port, port_local,
+	      len);
+  } else {
+    DEBUG_MSG("[UDP:%s] to %d.%d.%d.%d:%d from port %d (%d bytes)\n", 
+	      prefix,
+	      (ip >> 0) & 0xff, (ip >> 8) & 0xff, (ip >> 16) & 0xff, (ip >> 24) & 0xff,
+	      port, port_local,
+	      len);
+  }
+  MIOS32_MIDI_SendDebugHexDump((u8 *)payload, len);
   UIP_TASK_MUTEX_MIDIOUT_GIVE;
 
   return 0; // no error

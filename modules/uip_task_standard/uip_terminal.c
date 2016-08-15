@@ -25,6 +25,11 @@
 #include "osc_server.h"
 #include "osc_client.h"
 
+#if OSC_SERVER_ESP8266_ENABLED
+#include <esp8266.h>
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
@@ -114,6 +119,10 @@ s32 UIP_TERMINAL_Help(void *_output_function)
   out("  set osc_mode <con> <mode>:        changes OSC Transfer Mode (0..%d)", OSC_CLIENT_NUM_TRANSFER_MODES-1);
   out("  set udpmon <0..4>:                enables UDP monitor (verbose level: %d)\n", UIP_TASK_UDP_MonitorLevelGet());
 
+#if OSC_SERVER_ESP8266_ENABLED
+  ESP8266_TerminalHelp(_output_function);
+#endif
+
   return 0; // no error
 }
 
@@ -128,6 +137,12 @@ s32 UIP_TERMINAL_ParseLine(char *input, void *_output_function)
   char *separators = " \t";
   char *brkt;
   char *parameter;
+
+
+#if OSC_SERVER_ESP8266_ENABLED
+  if( ESP8266_TerminalParseLine(input, _output_function) >= 1 )
+    return 1; // command taken
+#endif
 
   // since strtok_r works destructive (separators in *input replaced by NUL), we have to restore them
   // on an unsuccessful call (whenever this function returns < 1)
