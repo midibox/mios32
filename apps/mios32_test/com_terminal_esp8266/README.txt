@@ -275,6 +275,7 @@ It should print:
 [239252.563] Welcome to MBHP_WIFI_BRIDGE V0.1
 [239252.566] Following commands are available:
 [239252.572]   set network <network> <password>  connects to a WIFI network
+[239252.574]   set udp_port <1..4> <port>        defines a UDP port
 [239252.576]   system:                           print system info
 [239252.580]   help:                             this page
 ---
@@ -300,14 +301,11 @@ to get some system information which might be interesting:
 [239378.037] IP Mask: 255.255.255.0
 [239378.039] IP Gateway: 192.168.1.1
 [239378.042] MAC Address: 18:FE:34:D2:CE:25
+[239378.045] UDP Port #1: 8000
+[239378.049] UDP Port #2: 8002
+[239378.054] UDP Port #3: 8004
+[239378.058] UDP Port #4: 8006
 ---
-
-
-Currently the firmware just echos UDP packets received at port 10000
-
-Other applications will be able to send to any UDP port!
-
-TODO: configurable UDP receive ports
 
 TODO: optionally turn the ESP8266 into an AP
 
