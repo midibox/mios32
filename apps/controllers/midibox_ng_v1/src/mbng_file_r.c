@@ -24,6 +24,8 @@
 #include <string.h>
 #include <uip_task.h>
 #include <midi_port.h>
+#include <seq_bpm.h>
+#include <seq_midi_out.h>
 
 #include "tasks.h"
 #include "file.h"
@@ -52,7 +54,7 @@
 //! Tokenize the source file?
 /////////////////////////////////////////////////////////////////////////////
 #if defined(MIOS32_FAMILY_STM32F4xx)
-# define NGR_TOKENIZED 1 // 1 -- currently disabled until the feature is fully implemented
+# define NGR_TOKENIZED 1
 #else
 # define NGR_TOKENIZED 0
 #endif
@@ -89,17 +91,18 @@ typedef enum {
   TOKEN_LCD             = 0x03, // followed by 0-terminated string
   TOKEN_LOG             = 0x04, // followed by 0-terminated string
   TOKEN_SEND            = 0x05, // followed by port, event_type, stream_len and stream values
-  TOKEN_EXEC_META       = 0x06, // followed by multiple bytes (depending on meta type) + (TOKEN_VALUE_*)
-  TOKEN_SET             = 0x07, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_CHANGE          = 0x08, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_TRIGGER         = 0x09, // followed by 3 bytes (TOKEN_VALUE_*)
-  TOKEN_SET_RGB         = 0x0a, // followed by 5 bytes (TOKEN_VALUE_*) + id + rgb value
-  TOKEN_SET_HSV         = 0x0b, // followed by 7 bytes (TOKEN_VALUE_*) + id + hsv value
-  TOKEN_SET_LOCK        = 0x0c, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_ACTIVE      = 0x0d, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_NO_DUMP     = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MIN         = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MAX         = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SEND_SEQ        = 0x06, // followed by delay, length, port, event_type, stream_len, stream values
+  TOKEN_EXEC_META       = 0x07, // followed by multiple bytes (depending on meta type) + (TOKEN_VALUE_*)
+  TOKEN_SET             = 0x08, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_CHANGE          = 0x09, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_TRIGGER         = 0x0a, // followed by 3 bytes (TOKEN_VALUE_*)
+  TOKEN_SET_RGB         = 0x0b, // followed by 5 bytes (TOKEN_VALUE_*) + id + rgb value
+  TOKEN_SET_HSV         = 0x0c, // followed by 7 bytes (TOKEN_VALUE_*) + id + hsv value
+  TOKEN_SET_LOCK        = 0x0d, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_ACTIVE      = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_NO_DUMP     = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MIN         = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MAX         = 0x11, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
 
   TOKEN_IF              = 0x80, // +2 bytes for jump offset
   TOKEN_ELSE            = 0x81, // +2 bytes for jump offset
@@ -1326,6 +1329,253 @@ s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 
 
 /////////////////////////////////////////////////////////////////////////////
+//! help function which executes a tokenized SEND command
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 sendSeqTokenized(u16 delay, u16 len, mios32_midi_port_t port, mbng_event_type_t event_type, u8 *stream, u32 stream_size)
+{
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.chn = (stream[0]-1) & 0xf;
+  p.evnt1 = stream[1] & 0x7f;
+  p.evnt2 = stream[2] & 0x7f;
+
+  switch( event_type ) {
+  case MBNG_EVENT_TYPE_NOTE_OFF:       p.type = p.event = NoteOff; break;
+  case MBNG_EVENT_TYPE_NOTE_ON:        p.type = p.event = NoteOn; break;
+  case MBNG_EVENT_TYPE_NOTE_ON_OFF:    p.type = p.event = NoteOn; break;
+  case MBNG_EVENT_TYPE_POLY_PRESSURE:  p.type = p.event = PolyPressure; break;
+  case MBNG_EVENT_TYPE_CC:             p.type = p.event = CC; break;
+  case MBNG_EVENT_TYPE_PROGRAM_CHANGE: p.type = p.event = ProgramChange; break;
+  case MBNG_EVENT_TYPE_AFTERTOUCH:     p.type = p.event = Aftertouch; break;
+  case MBNG_EVENT_TYPE_PITCHBEND:      p.type = p.event = PitchBend; break;
+  //case MBNG_EVENT_TYPE_NRPN: // not supported
+  //case MBNG_EVENT_TYPE_SYSEX: // not supported
+  //case MBNG_EVENT_TYPE_META: // not supported
+    return 0;
+  }
+
+  MUTEX_MIDIOUT_TAKE;
+  if( !SEQ_BPM_IsRunning() ) {
+    // send immediately
+    MIOS32_MIDI_SendPackage(port, p);
+
+    if( event_type == MBNG_EVENT_TYPE_NOTE_ON_OFF ) {
+      p.velocity = 0;
+      MIOS32_MIDI_SendPackage(port, p);
+    }
+  } else {
+    u32 bpm_tick = SEQ_BPM_TickGet() + delay;
+    if( event_type == MBNG_EVENT_TYPE_NOTE_ON_OFF ) {
+      SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick, len);
+    } else if( event_type == MBNG_EVENT_TYPE_NOTE_ON ) {
+      SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_OnEvent, bpm_tick, len);
+    } else if( event_type == MBNG_EVENT_TYPE_NOTE_OFF ) {
+      SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_OffEvent, bpm_tick, len);
+    } else {
+      SEQ_MIDI_OUT_Send(port, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, len);
+    }
+  }
+  MUTEX_MIDIOUT_GIVE;
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! help function which parses a SEND_SEQ command
+/////////////////////////////////////////////////////////////////////////////
+//static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
+s32 parseSendSeq(u32 line, char *command, char **brkt, u8 tokenize_req)
+{
+#if NGR_TOKENIZED
+  u32 memo_stream_size_pos = 0;
+  if( tokenize_req ) { // store token
+    if( MBNG_FILE_R_PushToken(TOKEN_SEND_SEQ, line) < 0 )
+      return  -1;
+  }
+#endif
+
+  char *value_str;
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing delay after '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  int delay;
+  if( (delay=parseValue(line, command, value_str, tokenize_req)) < 0 || delay > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid delay value in '%s' command (expecting 0..65535)!\n", line, command);
+#endif
+    return -1;
+  }
+
+
+  if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing delay after '%s' command!\n", line, command);
+#endif
+    return -1;
+  }
+
+  int len;
+  if( (len=parseValue(line, command, value_str, tokenize_req)) < 0 || len > 65535 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid length value in '%s' command (expecting 0..65535)!\n", line, command);
+#endif
+    return -1;
+  }
+
+
+  char *event_str;
+  if( !(event_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing event type in '%s' command!", line, command);
+#endif
+    return -1;
+  }
+
+  mbng_event_type_t event_type;
+  if( (event_type=MBNG_EVENT_ItemTypeFromStrGet(event_str)) == MBNG_EVENT_TYPE_UNDEFINED ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unknown event type '%s' in '%s' command!", line, event_str, command);
+#endif
+    return -1;
+  }
+
+
+  char *port_str;
+  if( !(port_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing MIDI port in '%s' command!", line, command);
+#endif
+    return -1;
+  }
+
+  mios32_midi_port_t port;
+  {
+    int out_port = 0xff;
+    int port_ix;
+
+    for(port_ix=0; port_ix<MIDI_PORT_OutNumGet(); ++port_ix) {
+      // terminate port name at first space
+      char port_name[10];
+      strcpy(port_name, MIDI_PORT_OutNameGet(port_ix));
+      int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+    
+      if( strcasecmp(port_str, port_name) == 0 ) {
+	out_port = MIDI_PORT_OutPortGet(port_ix);
+	break;
+      }
+    }
+    
+    if( out_port == 0xff && ((out_port=parseValue(line, command, port_str, tokenize_req)) < 0 || out_port > 0xff) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid MIDI port '%s' in '%s' command!", line, port_str, command);
+#endif
+      return -1;
+    }
+
+    port = (mios32_midi_port_t)out_port;
+  }
+
+#if NGR_TOKENIZED
+  if( tokenize_req ) { // store token
+    if( MBNG_FILE_R_PushToken(event_type, line) < 0 ||
+	MBNG_FILE_R_PushToken(port, line) < 0 )
+      return -1;
+
+    memo_stream_size_pos = ngr_token_mem_end; // will be inserted at the end of this function
+    if( MBNG_FILE_R_PushToken(0, line) < 0 ) // dummy value which will be replaced
+      return -1;
+  }
+#endif
+
+
+#define STREAM_MAX_SIZE 256
+  u8 stream[STREAM_MAX_SIZE];
+  int stream_size = 0;
+
+  if( event_type == MBNG_EVENT_TYPE_SYSEX ) { // extra handling
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: SEND_SEQ doesn't support SYSEX events!", line);
+#endif
+    return -1;
+  } else {
+    int num_values = 0;
+
+    switch( event_type ) {
+    case MBNG_EVENT_TYPE_NOTE_OFF:       num_values = 3; break;
+    case MBNG_EVENT_TYPE_NOTE_ON:        num_values = 3; break;
+    case MBNG_EVENT_TYPE_NOTE_ON_OFF:    num_values = 3; break;
+    case MBNG_EVENT_TYPE_POLY_PRESSURE:  num_values = 3; break;
+    case MBNG_EVENT_TYPE_CC:             num_values = 3; break;
+    case MBNG_EVENT_TYPE_PROGRAM_CHANGE: num_values = 2; break;
+    case MBNG_EVENT_TYPE_AFTERTOUCH:     num_values = 2; break;
+    case MBNG_EVENT_TYPE_PITCHBEND:      num_values = 2; break;
+    case MBNG_EVENT_TYPE_NRPN: {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: SEND_SEQ doesn't support NRPN events!", line);
+#endif
+      return -1;
+    }
+
+    case MBNG_EVENT_TYPE_META: {
+#if DEBUG_VERBOSE_LEVEL >= 1
+      DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: use EXEC_META to send meta events!", line);
+#endif
+      return -1;
+    }
+    }
+
+    // for non-sysex
+    if( !num_values ) {
+      return -1; // ???
+    } else {
+      int i;
+      for(i=0; i<num_values; ++i) {
+	char *value_str;
+	if( !(value_str = ngr_strtok_r(NULL, separators, brkt)) ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: missing value for '%s' event in '%s' command!", line, event_str, command);
+#endif
+	  return -1;
+	}
+
+	s32 value;
+	if( (value=parseValue(line, command, value_str, tokenize_req)) < -16384 || value >= 16383 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: invalid value for '%s' event in '%s' command!", line, event_str, command);
+#endif
+	  return -1;
+	}
+      
+	stream[i] = value;
+      }
+      stream_size = num_values;
+
+#if NGR_TOKENIZED
+      if( tokenize_req && memo_stream_size_pos ) {
+	// insert of stream
+	ngr_token_mem[memo_stream_size_pos] = stream_size;
+      }
+#endif
+    }
+  }
+
+#if NGR_TOKENIZED
+  if( !tokenize_req )
+#endif
+  {
+    sendSeqTokenized(delay, len, port, event_type, stream, stream_size);
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 //! help function which parses a EXEC_META command
 /////////////////////////////////////////////////////////////////////////////
 //static // TK: removed static to avoid inlining in MBNG_FILE_R_Read - this will blow up the stack usage too much!
@@ -1980,7 +2230,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
       } else {
 	++(*nesting_level);
 
-	if( !tokenize_req && *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this IF is executed inside a non-matching block
+	if( !tokenize_req && *nesting_level >= 2 && if_state[*nesting_level-2] != 1 ) { // this IF is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
 #if NGR_TOKENIZED
@@ -2017,7 +2267,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: unexpected %s statement!\n", line, parameter);
 #endif
       } else {
-	if( !tokenize_req && *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
+	if( !tokenize_req && *nesting_level >= 2 && if_state[*nesting_level-2] != 1 ) { // this ELSIF is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
 	  if( tokenize_req || if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
@@ -2105,7 +2355,7 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	}
 #endif
 
-	if( *nesting_level >= 2 && if_state[*nesting_level-2] == 0 ) { // this ELSE is executed inside a non-matching block
+	if( *nesting_level >= 2 && if_state[*nesting_level-2] != 1 ) { // this ELSE is executed inside a non-matching block
 	  if_state[*nesting_level-1] = 0;
 	} else {
 	  if( if_state[*nesting_level-1] == 0 ) { // no matching IF condition yet?
@@ -2165,6 +2415,8 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	}
       } else if( strcasecmp(parameter, "SEND") == 0 ) {
 	parseSend(line, parameter, &brkt, tokenize_req);
+      } else if( strcasecmp(parameter, "SEND_SEQ") == 0 ) {
+	parseSendSeq(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "EXEC_META") == 0 ) {
 	parseExecMeta(line, parameter, &brkt, tokenize_req);
       } else if( strcasecmp(parameter, "EXIT") == 0 ) {
@@ -2279,7 +2531,7 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       } else {
 	++nesting_level;
 
-	if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this IF is executed inside a non-matching block
+	if( nesting_level >= 2 && if_state[nesting_level-2] != 1 ) { // this IF is executed inside a non-matching block
 	  if_state[nesting_level-1] = 0;
 	  parseTokenizedCondition(); // dummy
 	} else {
@@ -2303,12 +2555,11 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       } else {
 	ngr_token_mem_run_pos += 2; // offset not used yet!
 
-	if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this ELSIF is executed inside a non-matching block
+	if( nesting_level >= 2 && if_state[nesting_level-2] != 1 ) { // this ELSIF is executed inside a non-matching block
 	  if_state[nesting_level-1] = 0;
 	  parseTokenizedCondition(); // dummy
 	} else {
 	  if( if_state[nesting_level-1] == 0 ) { // no matching IF condition yet?
-
 	    s32 match = parseTokenizedCondition();
 	    if( match < 0 ) {
 	      return -2; // exit due to error
@@ -2332,7 +2583,7 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       } else {
 	ngr_token_mem_run_pos += 2; // offset not used yet!
 
-	if( nesting_level >= 2 && if_state[nesting_level-2] == 0 ) { // this ELSE is executed inside a non-matching block
+	if( nesting_level >= 2 && if_state[nesting_level-2] != 1 ) { // this ELSE is executed inside a non-matching block
 	  if_state[nesting_level-1] = 0;
 	} else {
 	  if( if_state[nesting_level-1] == 0 ) { // no matching IF condition yet?
@@ -2418,6 +2669,30 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
       if( if_condition_matching ) {
 	MUTEX_MIDIOUT_TAKE;
 	sendTokenized(port, event_type, stream, stream_size);
+	MUTEX_MIDIOUT_GIVE;
+      }
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case TOKEN_SEND_SEQ: {
+      s32 delay = parseTokenizedValue();
+      s32 len = parseTokenizedValue();
+      mbng_event_type_t event_type = ngr_token_mem[ngr_token_mem_run_pos++];
+      mios32_midi_port_t port = ngr_token_mem[ngr_token_mem_run_pos++];
+      u8 stream_size = ngr_token_mem[ngr_token_mem_run_pos++];
+
+#define STREAM_MAX_SIZE 256
+      u8 stream[STREAM_MAX_SIZE];
+
+      int i;
+      for(i=0; i<stream_size && ngr_token_mem_run_pos < ngr_token_mem_end; ++i) {
+	s32 value = parseTokenizedValue();
+	stream[i] = value;
+      }
+
+      if( if_condition_matching ) {
+	MUTEX_MIDIOUT_TAKE;
+	sendSeqTokenized(delay, len, port, event_type, stream, stream_size);
 	MUTEX_MIDIOUT_GIVE;
       }
     } break;

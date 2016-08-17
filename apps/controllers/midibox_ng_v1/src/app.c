@@ -411,16 +411,6 @@ void APP_Tick(void)
   // toggle the status LED (this is a sign of life)
   MIOS32_BOARD_LED_Set(0x0001, ~MIOS32_BOARD_LED_Get());
 
-//    // execute sequencer handler
-//    MUTEX_SDCARD_TAKE;
-//    SEQ_Handler();
-//    MUTEX_SDCARD_GIVE;
-
-//  // send timestamped MIDI events
-//  MUTEX_MIDIOUT_TAKE;
-//  SEQ_MIDI_OUT_Handler();
-//  MUTEX_MIDIOUT_GIVE;
-
   if( hw_enabled ) {
     // Scan Matrix button handler
     MBNG_MATRIX_ButtonHandler();
@@ -450,7 +440,12 @@ void APP_Tick(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_MIDI_Tick(void)
 {
+  // handle sequencer
   MBNG_SEQ_Handler();
+
+  MUTEX_MIDIOUT_TAKE;
+  SEQ_MIDI_OUT_Handler();
+  MUTEX_MIDIOUT_GIVE;
 }
 
 
@@ -460,9 +455,7 @@ void APP_MIDI_Tick(void)
 void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_package)
 {
   // filter SysEx which is handled by separate parser
-  if( !(midi_package.evnt0 < 0xf8 &&
-       (midi_package.cin == 0xf ||
-       (midi_package.cin >= 0x4 && midi_package.cin <= 0x7))) ) {
+  if( midi_package.cin != 0xf && !(midi_package.cin >= 0x4 && midi_package.cin <= 0x7) ) {
 
 #if DEBUG_EVENT_HANDLER_PERFORMANCE
     MIOS32_STOPWATCH_Reset();
@@ -679,8 +672,9 @@ static void APP_AINSER_NotifyChange(u32 module, u32 pin, u32 pin_value)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 )
+  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 ) {
     SEQ_BPM_NotifyMIDIRx(midi_byte);
+  }
 
   return 0; // no error, no filtering
 }

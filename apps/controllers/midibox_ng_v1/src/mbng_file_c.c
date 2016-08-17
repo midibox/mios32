@@ -692,6 +692,35 @@ s32 parseEvent(u32 line, char *cmd, char *brkt)
 	  item.stream_size = 0;
 	} break;
 
+	case MBNG_EVENT_TYPE_CLOCK: {
+	  item.stream_size = 1;
+	  item.stream[0] = 0xf8;
+
+	  item.secondary_value = 0;
+	} break;
+
+	case MBNG_EVENT_TYPE_START: {
+	  item.stream_size = 1;
+	  item.stream[0] = 0xfa;
+
+	  item.secondary_value = 0;
+	} break;
+
+	case MBNG_EVENT_TYPE_STOP: {
+	  item.stream_size = 1;
+	  item.stream[0] = 0xfc;
+
+	  item.secondary_value = 0;
+	} break;
+
+	case MBNG_EVENT_TYPE_CONT: {
+	  item.stream_size = 1;
+	  item.stream[0] = 0xfb;
+
+	  item.secondary_value = 0;
+	} break;
+
+
 	default:
 	  item.stream_size = 0;
 	}
@@ -3738,19 +3767,10 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
       int value = parseSimpleValue(line, parameter, &brkt, 0, 2);
       if( value >= 0 )
 	SEQ_BPM_ModeSet(value);
-    } else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 ) {
-      s32 enabled_ports = 0;
-      int bit;
-      for(bit=0; bit<20; ++bit) {
-	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	int enable = get_dec(word);
-	if( enable < 0 )
-	  break;
-	if( enable >= 1 )
-	  enabled_ports |= (1 << bit);
-      }
-
-      if( bit != 16 ) {
+    } else if( strcasecmp(parameter, "MidiFileClkOutPorts") == 0 || strcasecmp(parameter, "MidiClkOutPorts") == 0 ) {
+      int enabled_ports = 0;
+      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+      if( word == NULL || (enabled_ports=get_bin(word, 20, 0)) < 0 || enabled_ports > 0xfffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
@@ -3777,19 +3797,10 @@ s32 MBNG_FILE_C_Parser(u32 line, char *line_buffer, u8 *got_first_event_item)
 	MIDI_ROUTER_MIDIClockOutSet(SPIM3, (enabled_ports & 0x80000) ? 1 : 0);
       }	  
 
-    } else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 ) {
-      s32 enabled_ports = 0;
-      int bit;
-      for(bit=0; bit<20; ++bit) {
-	char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
-	int enable = get_dec(word);
-	if( enable < 0 )
-	  break;
-	if( enable >= 1 )
-	  enabled_ports |= (1 << bit);
-      }
-
-      if( bit != 16 ) {
+    } else if( strcasecmp(parameter, "MidiFileClkInPorts") == 0 || strcasecmp(parameter, "MidiClkInPorts") == 0 ) {
+      int enabled_ports = 0;
+      char *word = remove_quotes(strtok_r(NULL, separators, &brkt));
+      if( word == NULL || (enabled_ports=get_bin(word, 20, 0)) < 0 || enabled_ports > 0xfffff ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid MIDI port format for parameter '%s'\n", line, parameter);
 #endif
@@ -4155,6 +4166,12 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	  }
 	}
       } break;
+
+      case MBNG_EVENT_TYPE_CLOCK:
+      case MBNG_EVENT_TYPE_START:
+      case MBNG_EVENT_TYPE_STOP:
+      case MBNG_EVENT_TYPE_CONT:
+	break;
       }
 
       if( item.map ) {

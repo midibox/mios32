@@ -1,5 +1,19 @@
 $Id$
 
+MIDIbox NG V1.036
+~~~~~~~~~~~~~~~~~
+
+   o new .NGR script command: send_seq (see cfg/test/seq* examples)
+
+   o added new MIDI event types: Clock, Start, Stop, Cont
+
+   o added new meta events to control a MIDI clock divider:
+     MClkSetDivider, MClkDecDivider, MClkIncDivider
+
+   o added new .NGC file configuration parameters:
+     MidiClkOutPorts and MidiClkInPorts
+
+
 MIDIbox NG V1.035
 ~~~~~~~~~~~~~~~~~
 

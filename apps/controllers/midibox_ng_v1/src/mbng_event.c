@@ -1817,6 +1817,12 @@ s32 MBNG_EVENT_ItemPrint(mbng_event_item_t *item, u8 all)
       }
     } break;
 
+    case MBNG_EVENT_TYPE_CLOCK:
+    case MBNG_EVENT_TYPE_START:
+    case MBNG_EVENT_TYPE_STOP:
+    case MBNG_EVENT_TYPE_CONT: {
+    } break;
+
     case MBNG_EVENT_TYPE_SYSEX: {
       if( item->stream_size ) {
 	DEBUG_MSG("  - stream=");
@@ -2616,6 +2622,10 @@ const char *MBNG_EVENT_ItemTypeStrGet(mbng_event_item_t *item)
   case MBNG_EVENT_TYPE_SYSEX:          return "SysEx";
   case MBNG_EVENT_TYPE_NRPN:           return "NRPN";
   case MBNG_EVENT_TYPE_META:           return "Meta";
+  case MBNG_EVENT_TYPE_CLOCK:          return "Clock";
+  case MBNG_EVENT_TYPE_START:          return "Start";
+  case MBNG_EVENT_TYPE_STOP:           return "Stop";
+  case MBNG_EVENT_TYPE_CONT:           return "Cont";
   }
   return "Disabled";
 }
@@ -2637,6 +2647,10 @@ mbng_event_type_t MBNG_EVENT_ItemTypeFromStrGet(char *event_type)
   if( strcasecmp(event_type, "SysEx") == 0 )         return MBNG_EVENT_TYPE_SYSEX;
   if( strcasecmp(event_type, "NRPN") == 0 )          return MBNG_EVENT_TYPE_NRPN;
   if( strcasecmp(event_type, "Meta") == 0 )          return MBNG_EVENT_TYPE_META;
+  if( strcasecmp(event_type, "Clock") == 0 )         return MBNG_EVENT_TYPE_CLOCK;
+  if( strcasecmp(event_type, "Start") == 0 )         return MBNG_EVENT_TYPE_START;
+  if( strcasecmp(event_type, "Stop") == 0 )          return MBNG_EVENT_TYPE_STOP;
+  if( strcasecmp(event_type, "Cont") == 0 )          return MBNG_EVENT_TYPE_CONT;
 
   return MBNG_EVENT_TYPE_UNDEFINED;
 }
@@ -2985,6 +2999,9 @@ const char *MBNG_EVENT_ItemMetaTypeStrGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO:      return "MClkSetTempo";
   case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return "MClkDecTempo";
   case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return "MClkIncTempo";
+  case MBNG_EVENT_META_TYPE_MCLK_SET_DIVIDER:    return "MClkSetDivider";
+  case MBNG_EVENT_META_TYPE_MCLK_DEC_DIVIDER:    return "MClkDecDivider";
+  case MBNG_EVENT_META_TYPE_MCLK_INC_DIVIDER:    return "MClkIncDivider";
 
   case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT:     return "CvPitchBend14Bit";
   case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT:      return "CvPitchBend7Bit";
@@ -3055,13 +3072,16 @@ mbng_event_meta_type_t MBNG_EVENT_ItemMetaTypeFromStrGet(char *meta_type)
   if( strcasecmp(meta_type, "RunSection") == 0 )    return MBNG_EVENT_META_TYPE_RUN_SECTION;
   if( strcasecmp(meta_type, "RunStop") == 0 )       return MBNG_EVENT_META_TYPE_RUN_STOP;
 
-  if( strcasecmp(meta_type, "MClkPlay") == 0 )      return MBNG_EVENT_META_TYPE_MCLK_PLAY;
-  if( strcasecmp(meta_type, "MClkStop") == 0 )      return MBNG_EVENT_META_TYPE_MCLK_STOP;
-  if( strcasecmp(meta_type, "MClkPlayStop") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP;
-  if( strcasecmp(meta_type, "MClkPause") == 0 )     return MBNG_EVENT_META_TYPE_MCLK_PAUSE;
-  if( strcasecmp(meta_type, "MClkSetTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO;
-  if( strcasecmp(meta_type, "MClkDecTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO;
-  if( strcasecmp(meta_type, "MClkIncTempo") == 0 )  return MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO;
+  if( strcasecmp(meta_type, "MClkPlay") == 0 )       return MBNG_EVENT_META_TYPE_MCLK_PLAY;
+  if( strcasecmp(meta_type, "MClkStop") == 0 )       return MBNG_EVENT_META_TYPE_MCLK_STOP;
+  if( strcasecmp(meta_type, "MClkPlayStop") == 0 )   return MBNG_EVENT_META_TYPE_MCLK_PLAYSTOP;
+  if( strcasecmp(meta_type, "MClkPause") == 0 )      return MBNG_EVENT_META_TYPE_MCLK_PAUSE;
+  if( strcasecmp(meta_type, "MClkSetTempo") == 0 )   return MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO;
+  if( strcasecmp(meta_type, "MClkDecTempo") == 0 )   return MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO;
+  if( strcasecmp(meta_type, "MClkIncTempo") == 0 )   return MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO;
+  if( strcasecmp(meta_type, "MClkSetDivider") == 0 ) return MBNG_EVENT_META_TYPE_MCLK_SET_DIVIDER;
+  if( strcasecmp(meta_type, "MClkDecDivider") == 0 ) return MBNG_EVENT_META_TYPE_MCLK_DEC_DIVIDER;
+  if( strcasecmp(meta_type, "MClkIncDivider") == 0 ) return MBNG_EVENT_META_TYPE_MCLK_INC_DIVIDER;
 
   if( strcasecmp(meta_type, "CvPitchBend14Bit") == 0 )     return MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT;
   if( strcasecmp(meta_type, "CvPitchBend7Bit") == 0 )      return MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT;
@@ -3139,6 +3159,9 @@ u8 MBNG_EVENT_ItemMetaNumBytesGet(mbng_event_meta_type_t meta_type)
   case MBNG_EVENT_META_TYPE_MCLK_SET_TEMPO:      return 0;
   case MBNG_EVENT_META_TYPE_MCLK_DEC_TEMPO:      return 0;
   case MBNG_EVENT_META_TYPE_MCLK_INC_TEMPO:      return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_SET_DIVIDER:    return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_DEC_DIVIDER:    return 0;
+  case MBNG_EVENT_META_TYPE_MCLK_INC_DIVIDER:    return 0;
 
   case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT:     return 1;
   case MBNG_EVENT_META_TYPE_CV_PITCHBEND_7BIT:      return 1;
@@ -3566,6 +3589,21 @@ s32 MBNG_EVENT_ExecMeta(mbng_event_item_t *item)
       SEQ_BPM_Set((float)tempo);
     } break;
 
+    case MBNG_EVENT_META_TYPE_MCLK_SET_DIVIDER: {
+      MBNG_SEQ_ClockDividerSet(item->value);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_DEC_DIVIDER: {
+      u8 divider = MBNG_SEQ_ClockDividerGet();
+      divider = (divider > item->min) ? (divider - 1) : item->min;
+      MBNG_SEQ_ClockDividerSet(divider);
+    } break;
+
+    case MBNG_EVENT_META_TYPE_MCLK_INC_DIVIDER: {
+      u8 divider = MBNG_SEQ_ClockDividerGet();
+      divider = (divider < item->max) ? (divider + 1) : item->max;
+      MBNG_SEQ_ClockDividerSet(divider);
+    } break;
 
 
     case MBNG_EVENT_META_TYPE_CV_PITCHBEND_14BIT: {
@@ -3699,6 +3737,26 @@ s32 MBNG_EVENT_ItemSend(mbng_event_item_t *item)
 	p.evnt1 = (item->value & 0x7f);
 	p.evnt2 = (item->value >> 7) & 0x7f;
       }
+      break;
+
+    case MBNG_EVENT_TYPE_CLOCK:
+      p.type = 0xf;
+      p.evnt0 = 0xf8;
+      break;
+
+    case MBNG_EVENT_TYPE_START:
+      p.type = 0xf;
+      p.evnt0 = 0xfa;
+      break;
+
+    case MBNG_EVENT_TYPE_STOP:
+      p.type = 0xf;
+      p.evnt0 = 0xfc;
+      break;
+
+    case MBNG_EVENT_TYPE_CONT:
+      p.type = 0xf;
+      p.evnt0 = 0xfb;
       break;
 
     default:
@@ -4655,6 +4713,10 @@ s32 MBNG_EVENT_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t
 	  else
 	    MBNG_EVENT_ItemReceive(&item, nrpn_value, 1, 1);
 	}
+      } else if( event_type >= MBNG_EVENT_TYPE_CLOCK && event_type <= MBNG_EVENT_TYPE_CONT ) {
+	mbng_event_item_t item;
+	MBNG_EVENT_ItemCopy2User(pool_item, &item);
+	MBNG_EVENT_ItemReceive(&item, 0, 1, 1);
       } else {
 	// no additional event types yet...
       }
