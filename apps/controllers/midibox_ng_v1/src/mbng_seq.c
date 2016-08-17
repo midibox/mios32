@@ -17,12 +17,14 @@
 
 #include <mios32.h>
 #include <seq_bpm.h>
+#include <seq_midi_out.h>
 #include <midi_router.h>
 #include <midi_port.h>
 
 #include "tasks.h"
 #include "app.h"
 #include "mbng_seq.h"
+#include "mbng_event.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // Local prototypes
@@ -38,6 +40,9 @@ static s32 MBNG_SEQ_Tick(u32 bpm_tick);
 
 // pause mode
 static u8 seq_pause;
+
+// clock divider
+static u8 clk_divider;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -58,6 +63,8 @@ s32 MBNG_SEQ_Init(u32 mode)
   // disable pause after power-on
   MBNG_SEQ_SetPauseMode(0);
 
+  MBNG_SEQ_ClockDividerSet(6); // each note
+
   return 0; // no error
 }
 
@@ -68,6 +75,10 @@ s32 MBNG_SEQ_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SEQ_Handler(void)
 {
+  mios32_midi_package_t p;
+  p.ALL = 0;
+  p.type = 0xf;
+
   // handle BPM requests
   u8 num_loops = 0;
   u8 again = 0;
@@ -78,6 +89,9 @@ s32 MBNG_SEQ_Handler(void)
     // as long any Stop/Cont/Start/SongPos event hasn't been flagged to the sequencer
     if( SEQ_BPM_ChkReqStop() ) {
       MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
+      p.evnt0 = 0xfc;
+      MBNG_EVENT_MIDI_NotifyPackage(USB0, p);
+      SEQ_MIDI_OUT_FlushQueue();
     }
 
     if( SEQ_BPM_ChkReqCont() ) {
@@ -85,12 +99,16 @@ s32 MBNG_SEQ_Handler(void)
       MBNG_SEQ_SetPauseMode(0);
 
       MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
+      p.evnt0 = 0xfb;
+      MBNG_EVENT_MIDI_NotifyPackage(USB0, p);
     }
 
     if( SEQ_BPM_ChkReqStart() ) {
       MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
       MBNG_SEQ_Reset();
       MBNG_SEQ_SongPos(0);
+      p.evnt0 = 0xfa;
+      MBNG_EVENT_MIDI_NotifyPackage(USB0, p);
     }
 
     u16 new_song_pos;
@@ -117,6 +135,14 @@ static s32 MBNG_SEQ_Tick(u32 bpm_tick)
   // send MIDI clock depending on ppqn
   if( (bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0 ) {
     MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
+  }
+
+  if( (bpm_tick % (clk_divider*16)) == 0 ) {
+    mios32_midi_package_t p;
+    p.ALL = 0;
+    p.type = 0xf;
+    p.evnt0 = 0xf8;
+    MBNG_EVENT_MIDI_NotifyPackage(USB0, p);
   }
 
   return 0; // no error
@@ -251,6 +277,21 @@ s32 MBNG_SEQ_PlayStopButton(void)
     MBNG_SEQ_PlayButton();
   }
 
+  return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! Set/Clear clock divider
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_SEQ_ClockDividerGet(void)
+{
+  return clk_divider;
+}
+
+s32 MBNG_SEQ_ClockDividerSet(u8 divider)
+{
+  clk_divider = divider;
   return 0; // no error
 }
 

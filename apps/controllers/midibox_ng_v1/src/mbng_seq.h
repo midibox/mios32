@@ -41,6 +41,9 @@ extern s32 MBNG_SEQ_StopButton(void);
 extern s32 MBNG_SEQ_PauseButton(void);
 extern s32 MBNG_SEQ_PlayStopButton(void);
 
+extern s32 MBNG_SEQ_ClockDividerGet();
+extern s32 MBNG_SEQ_ClockDividerSet(u8 divider);
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Exported variables

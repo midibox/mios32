@@ -12,8 +12,8 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.035"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2015 T.Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox NG V1.036"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2016 T.Klose"
 
 // define a unique VID/PID for this application
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox NG"
@@ -105,7 +105,7 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 10*1024
+#define MIOS32_HEAP_SIZE 11*1024
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 
@@ -145,6 +145,9 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 // if longer SysEx strings are received, they will be forwarded directly
 // in this case, multiple strings concurrently sent to the same port won't be merged correctly anymore.
 #define MIDI_ROUTER_SYSEX_BUFFER_SIZE 16
+
+// sequencer
+#define SEQ_MIDI_OUT_MAX_EVENTS    32
 
 // Keyboard Handler
 #define KEYBOARD_NOTIFY_TOGGLE_HOOK MBNG_KB_NotifyToggle
