@@ -2315,7 +2315,8 @@ http://midibox.org/forums/topic/20066-question-on-lfos/
 Remove Bank Selections for pattern groups
 http://midibox.org/forums/topic/20128-save-all-saves-group-4-to-group-2help/#comment-175407
 ----------------------------------------------------------
-
+Turn off steps by using 8th bit
+http://midibox.org/forums/topic/20182-prgch-and-cc-layers/?do=findComment&comment=175864
 
 
 Wishlist for MIDIbox SEQ V4 Plus
