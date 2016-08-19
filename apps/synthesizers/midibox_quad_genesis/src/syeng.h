@@ -141,7 +141,7 @@ extern void SyEng_ClearVoice(u8 g, u8 v);
 
 extern u8 SyEng_GetStaticPI(usage_bits_t usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
-extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote);
+extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying);
 extern void SyEng_SilencePI(synproginstance_t* pi);
 
 #endif /* _SYENG_H */

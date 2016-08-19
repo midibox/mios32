@@ -314,4 +314,56 @@ void DrawGenesisState_All(u8 g, u8 voice, u8 op){
     }
 }
 
+void DrawCmdLine(VgmChipWriteCmd cmd, u8 row){
+    u16 outbits = 0;
+    if(cmd.cmd == 0x50){
+        //PSG write
+        outbits |= 1 << (10 + ((cmd.data >> 5) & 3));
+    }else if((cmd.cmd & 0xFE) == 0x52){
+        //OPN2 write
+        u8 chan, op, addrhi = (cmd.cmd & 1)*3;
+        if(cmd.addr <= 0x2F){
+            if(cmd.addr < 0x20 || addrhi) goto end;
+            //OPN2 global register
+            if(cmd.addr == 0x28){
+                //Key On register
+                chan = cmd.data & 0x07;
+                if((chan & 0x03) == 0x03) goto end; //Make sure not writing to 0x03 or 0x07
+                if(chan >= 0x04) chan -= 1; //Move channels 4, 5, 6 down to 3, 4, 5
+                outbits |= 1 << (3+chan);
+            }else{
+                outbits |= 1 << (2);
+            }
+        }else if(cmd.addr <= 0x9F){
+            //Operator command
+            chan = (cmd.addr & 0x03);
+            if(chan == 0x03) goto end; //No channel 4 in first half
+            chan += addrhi; //Add 3 for channels 4, 5, 6
+            op = ((cmd.addr & 0x08) >> 3) | ((cmd.addr & 0x04) >> 1); //Ops 1,2,3,4: 0x30, 0x38, 0x34, 0x3C
+            outbits |= 1 << (3+chan);
+            outbits |= 1 << (10+op);
+        }else if(cmd.addr <= 0xAE && cmd.addr >= 0xA8){
+            //Channel 3 extra frequency
+            outbits |= 1 << (5);
+        }else if(cmd.addr <= 0xB6){
+            //Channel command
+            chan = (cmd.addr & 0x03);
+            if(chan == 0x03) goto end; //No channel 4 in first half
+            chan += addrhi; //Add 3 for channels 4, 5, 6
+            outbits |= 1 << (3+chan);
+        }
+    }else if(cmd.cmd >= 0x80 && cmd.cmd <= 0x8F){
+        //OPN2 DAC write
+        outbits |= 1 << (1);
+        outbits |= 1 << (9);
+    }else if((cmd.cmd >= 0x70 && cmd.cmd <= 0x7F) | (cmd.cmd >= 0x61 && cmd.cmd <= 0x63)){
+        //Wait
+        outbits |= 1 << (1);
+    }else{
+        //Unsupported command, should not be here
+        outbits |= 1 << (0);
+    }
+end:
+    FrontPanel_VGMMatrixRow(row, outbits);
+}
 

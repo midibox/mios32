@@ -316,6 +316,7 @@ extern void FrontPanel_DrawAlgorithm(u8 algorithm);
 extern void FrontPanel_DrawDACValue(u16 bits);
 extern void FrontPanel_VGMMatrixPoint(u8 row, u8 col, u8 value);
 extern void FrontPanel_VGMMatrixVUMeter(u8 col, u8 value);
+extern void FrontPanel_VGMMatrixRow(u8 row, u16 bitmask);
 extern void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value); //Mode: 0 line, 1 fill, else clear
 extern void FrontPanel_DrawDigit(u8 digit, char value);
 extern void FrontPanel_DrawNumber(u8 firstdigit, s16 number);
