@@ -27,6 +27,45 @@ static u8 playing;
 static u8 statemode;
 static u8 selvoice;
 static u8 selop;
+static u16 vmutes;
+static u16 vsolos;
+
+
+void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
+    if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
+        SyEng_ReleaseStaticPI(vgmpreviewpi);
+        playing = 0;
+    }
+    selvgm = newselvgm;
+    vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
+    synproginstance_t* pi = &proginstances[vgmpreviewpi];
+    SyEng_PlayVGMOnPI(pi, selvgm, 60, 0);
+    vmutes = selvgm->mutes;
+    vsolos = 0;
+}
+void Mode_Vgm_InvalidateVgm(VgmSource* maybeselvgm){
+    if(maybeselvgm == NULL || maybeselvgm == selvgm){
+        if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
+            SyEng_ReleaseStaticPI(vgmpreviewpi);
+            playing = 0;
+        }
+        selvgm = NULL;
+        vgmpreviewpi = 0xFF;
+    }
+}
+void Mode_Vgm_InvalidatePI(synproginstance_t* maybestaticpi){
+    if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES && &proginstances[vgmpreviewpi] == maybestaticpi){
+        vgmpreviewpi = 0xFF;
+        playing = 0;
+    }
+}
+static void EnsurePreviewPiOK(){
+    if(vgmpreviewpi >= MBQG_NUM_PROGINSTANCES){
+        vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
+        synproginstance_t* pi = &proginstances[vgmpreviewpi];
+        SyEng_PlayVGMOnPI(pi, selvgm, 60, playing);
+    }
+}
 
 static void DrawMenu(){
     MIOS32_LCD_Clear();
@@ -60,16 +99,28 @@ static void DrawMenu(){
         case 1:
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("Mute voices");
+            MIOS32_LCD_CursorSet(36,0);
+            MIOS32_LCD_PrintString("To");
+            MIOS32_LCD_CursorSet(35,1);
+            MIOS32_LCD_PrintString("Solo");
+            break;
+        case 2:
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Solo voices");
+            MIOS32_LCD_CursorSet(36,0);
+            MIOS32_LCD_PrintString("To");
+            MIOS32_LCD_CursorSet(35,1);
+            MIOS32_LCD_PrintString("Mute");
             break;
     }
 }
-static void DrawMuteStates(){
+static void DrawMuteStates(u8 solo){
     u8 i;
-    u16 mutes = selvgm->mutes;
-    FrontPanel_LEDSet(FP_LED_RELEASE, mutes > 0);
+    u16 d = solo ? vsolos : vmutes;
+    FrontPanel_LEDSet(FP_LED_RELEASE, d > 0);
     for(i=0; i<12; ++i){
-        FrontPanel_GenesisLEDSet(0, i, 0, mutes & 1);
-        mutes >>= 1;
+        FrontPanel_GenesisLEDSet(0, i, 0, d & 1);
+        d >>= 1;
     }
 }
 static void SetMuteState(u8 voice, u8 state){
@@ -99,11 +150,28 @@ static void SetMuteState(u8 voice, u8 state){
     }
     MIOS32_IRQ_Enable();
 }
+static void RecalculateMuteStates(){
+    u16 should = (vsolos > 0) ? ~vsolos : vmutes;
+    should &= 0x0FFF;
+    if((selvgm->mutes ^ should) == 0) return; //No change
+    u8 i, s;
+    u16 d = selvgm->mutes;
+    for(i=0; i<12; ++i){
+        s = should & 1;
+        if(s ^ (d&1)){
+            SetMuteState(i, s);
+        }
+        d >>= 1;
+        should >>= 1;
+    }
+}
 
 void Mode_Vgm_Init(){
     playing = 0;
     vgmpreviewpi = 0xFF;
     statemode = 1;
+    vmutes = 0;
+    vsolos = 0;
 }
 void Mode_Vgm_GotFocus(){
     submode = 0;
@@ -186,6 +254,21 @@ void Mode_Vgm_Background(){
         DrawDACVUMeter(pi->mapping[7].map_chip);
     }else{
         VGM_Player_docapture = 0;
+        if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+            EnsurePreviewPiOK();
+            VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+            VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+            s32 a = vhr->srcaddr - 3;
+            u8 r;
+            for(r=0; r<7; ++r){
+                if(a < 0 || a >= vsr->numcmds){
+                    FrontPanel_VGMMatrixRow(r, 0);
+                }else{
+                    DrawCmdLine(vsr->cmds[a], r);
+                }
+                ++a;
+            }
+        }
     }
 }
 
@@ -193,23 +276,45 @@ void Mode_Vgm_BtnGVoice(u8 gvoice, u8 state){
     if(selvgm == NULL) return;
     if(gvoice >= 0x10) return;
     gvoice &= 0xF;
-    u8 a;
     switch(submode){
         case 0:
             if(!state) return;
             selvoice = gvoice;
             break;
         case 1:
-            if(!state) return;;
-            a = !(selvgm->mutes & (1 << gvoice));
-            SetMuteState(gvoice, a);
-            DrawMuteStates();
+            if(!state) return;
+            vmutes ^= 1 << gvoice;
+            RecalculateMuteStates();
+            DrawMuteStates(0);
+            break;
+        case 2:
+            if(!state) return;
+            vsolos ^= 1 << gvoice;
+            RecalculateMuteStates();
+            DrawMuteStates(1);
             break;
     }
 }
 void Mode_Vgm_BtnSoftkey(u8 softkey, u8 state){
     if(selvgm == NULL) return;
-
+    switch(submode){
+        case 1:
+            if(softkey != 7) return;
+            if(!state) return;
+            vsolos = ~vmutes & 0x0FFF;
+            vmutes = 0;
+            RecalculateMuteStates();
+            DrawMuteStates(0);
+            break;
+        case 2:
+            if(softkey != 7) return;
+            if(!state) return;
+            vmutes = ~vsolos & 0x0FFF;
+            vsolos = 0;
+            RecalculateMuteStates();
+            DrawMuteStates(1);
+            break;
+    }
 }
 void Mode_Vgm_BtnSelOp(u8 op, u8 state){
 
@@ -227,6 +332,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
         case FP_B_PLAY:
             if(!state) return;
             if(selprogram == NULL) return;
+            EnsurePreviewPiOK();
             if(playing){
                 FrontPanel_LEDSet(FP_LED_PLAY, 0);
                 synproginstance_t* pi = &proginstances[vgmpreviewpi];
@@ -236,18 +342,15 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
             }else{
                 FrontPanel_LEDSet(FP_LED_PLAY, 1);
                 synproginstance_t* pi = &proginstances[vgmpreviewpi];
-                if(pi->head == NULL){
-                    SyEng_PlayVGMOnPI(&proginstances[vgmpreviewpi], selvgm, 60);
-                }else{
-                    pi->head->ticks = VGM_Player_GetVGMTime();
-                    pi->head->playing = 1;
-                }
+                pi->head->ticks = VGM_Player_GetVGMTime();
+                pi->head->playing = 1;
                 playing = 1;
             }
             return;
         case FP_B_RESTART:
             if(!state) return;
             if(selprogram == NULL) return;
+            EnsurePreviewPiOK();
             synproginstance_t* pi = &proginstances[vgmpreviewpi];
             VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
             break;
@@ -260,7 +363,14 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     FrontPanel_LEDSet(FP_LED_MUTE, 1);
                     submode = 1;
                     DrawMenu();
-                    DrawMuteStates();
+                    DrawMuteStates(0);
+                    break;
+                case FP_B_SOLO:
+                    if(!state) return;
+                    FrontPanel_LEDSet(FP_LED_SOLO, 1);
+                    submode = 2;
+                    DrawMenu();
+                    DrawMuteStates(1);
                     break;
                 case FP_B_CMDS:
                     if(!state) return;
@@ -276,6 +386,23 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     FrontPanel_LEDSet(FP_LED_CMDS, 0);
                     FrontPanel_LEDSet(FP_LED_STATE, 1);
                     break;
+                case FP_B_CMDUP:
+                    if(!state) return;
+                    if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+                        EnsurePreviewPiOK();
+                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+                        if(vhr->srcaddr > 0) --vhr->srcaddr;
+                    }
+                    break;
+                case FP_B_CMDDN:
+                    if(!state) return;
+                    if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+                        EnsurePreviewPiOK();
+                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+                        VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+                        if(vhr->srcaddr < vsr->numcmds-1) ++vhr->srcaddr;
+                    }
+                    break;
             }
             break;
         case 1:
@@ -283,16 +410,47 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                 case FP_B_MUTE:
                     if(state) return;
                     FrontPanel_LEDSet(FP_LED_MUTE, 0);
+                    FrontPanel_LEDSet(FP_LED_RELEASE, 0);
+                    submode = 0;
+                    DrawMenu();
+                    break;
+                case FP_B_SOLO:
+                    if(!state) return;
+                    FrontPanel_LEDSet(FP_LED_MUTE, 0);
+                    FrontPanel_LEDSet(FP_LED_SOLO, 1);
+                    submode = 2;
+                    DrawMenu();
+                    DrawMuteStates(1);
+                    break;
+                case FP_B_RELEASE:
+                    if(!state) return;
+                    vmutes = 0;
+                    RecalculateMuteStates();
+                    DrawMuteStates(0);
+            }
+            break;
+        case 2:
+            switch(button){
+                case FP_B_MUTE:
+                    if(!state) return;
+                    FrontPanel_LEDSet(FP_LED_SOLO, 0);
+                    FrontPanel_LEDSet(FP_LED_MUTE, 1);
+                    submode = 1;
+                    DrawMenu();
+                    DrawMuteStates(0);
+                    break;
+                case FP_B_SOLO:
+                    if(state) return;
+                    FrontPanel_LEDSet(FP_LED_SOLO, 0);
+                    FrontPanel_LEDSet(FP_LED_RELEASE, 0);
                     submode = 0;
                     DrawMenu();
                     break;
                 case FP_B_RELEASE:
                     if(!state) return;
-                    u8 i;
-                    for(i=0; i<12; ++i){
-                        SetMuteState(i, 0);
-                    }
-                    DrawMuteStates();
+                    vsolos = 0;
+                    RecalculateMuteStates();
+                    DrawMuteStates(0);
             }
             break;
     }
@@ -308,24 +466,5 @@ void Mode_Vgm_EncDatawheel(s32 incrementer){
 }
 void Mode_Vgm_EncEdit(u8 encoder, s32 incrementer){
 
-}
-
-void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
-    if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
-        SyEng_ReleaseStaticPI(vgmpreviewpi);
-        playing = 0;
-    }
-    selvgm = newselvgm;
-    vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
-}
-void Mode_Vgm_InvalidateVgm(VgmSource* maybeselvgm){
-    if(maybeselvgm == NULL || maybeselvgm == selvgm){
-        if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
-            SyEng_ReleaseStaticPI(vgmpreviewpi);
-            playing = 0;
-        }
-        selvgm = NULL;
-        vgmpreviewpi = 0xFF;
-    }
 }
 

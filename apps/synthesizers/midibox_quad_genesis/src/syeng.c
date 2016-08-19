@@ -17,6 +17,7 @@
 #include <vgm.h>
 #include "app.h" //XXX
 #include "demoprograms.h"
+#include "mode_vgm.h"
 
 #define UNUSED_RECENCY 0x01000000ul //about 362 seconds ago
 
@@ -177,8 +178,13 @@ static void ClearPI(synproginstance_t* pi){
         VGM_Head_Delete(pi->head);
         pi->head = NULL;
     }
+    //If this was being used statically, invalidate it
+    if(pi->isstatic){
+        Mode_Vgm_InvalidatePI(pi);
+    }
     //Invalidate PI
     pi->valid = 0;
+    pi->isstatic = 0;
     pi->playing = 0;
     pi->playinginit = 0;
     pi->recency = VGM_Player_GetVGMTime() - UNUSED_RECENCY;
@@ -802,12 +808,12 @@ void SyEng_Tick(){
             }
             if(prog->initsource != NULL){
                 DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
-                SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote);
+                SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
             }else{
                 pi->playinginit = 0;
                 if(prog->noteonsource != NULL){
                     DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
-                    SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
+                    SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
                 }else{
                     DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
                 }
@@ -828,7 +834,7 @@ void SyEng_Tick(){
             //Switch from init to noteon VGM
             if(prog->noteonsource != NULL){
                 DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
-                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
+                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
             }else{
                 DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
             }
@@ -839,15 +845,10 @@ void SyEng_Tick(){
 u8 SyEng_GetStaticPI(usage_bits_t usage){
     u8 piindex = FindBestPIToReplace(0xFF, 0xFF);
     synproginstance_t* pi = &proginstances[piindex];
-    //If we took away from another channel which was playing, release its resources
-    if(pi->valid && (pi->playing == 1 || pi->isstatic)){
+    //If this PI was previously in use: release its resources, stop playing, reset voices
+    if(pi->valid){
         DBG("--Clearing existing PI resources");
         ClearPI(pi);
-    }
-    if(pi->head != NULL){
-        //Stop playing whatever it was playing
-        VGM_Head_Delete(pi->head);
-        pi->head = NULL;
     }
     //Find best allocation
     s32 ret = AllocatePI(piindex, usage);
@@ -875,12 +876,12 @@ void SyEng_ReleaseStaticPI(u8 piindex){
     ClearPI(pi);
 }
 
-void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote){
+void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying){
     pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
     CopyPIMappingToHead(pi, pi->head);
     u32 vgmtime = VGM_Player_GetVGMTime();
     VGM_Head_Restart(pi->head, vgmtime);
-    pi->head->playing = 1;
+    pi->head->playing = startplaying;
     pi->recency = vgmtime;
 }
 
@@ -918,22 +919,17 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
             pi->head = NULL;
         }
         if(prog->noteonsource != NULL){
-            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
+            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
         }else{
             DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
         }
         pi->playing = 1;
         return;
     }
-    //If we took away from another channel which was playing, release its resources
-    if(pi->valid && (pi->playing == 1 || pi->isstatic)){
+    //If this PI was previously in use: release its resources, stop playing, reset voices
+    if(pi->valid){
         DBG("--Clearing existing PI resources");
         ClearPI(pi);
-    }
-    if(pi->head != NULL){
-        //Stop playing whatever it was playing
-        VGM_Head_Delete(pi->head);
-        pi->head = NULL;
     }
     //Find best allocation
     s32 ret = AllocatePI(piindex, prog->usage);
@@ -954,12 +950,12 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     }
     //Otherwise, start the init VGM
     if(prog->initsource != NULL){
-        SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote);
+        SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
     }else{
         pi->playinginit = 0;
         if(prog->noteonsource != NULL){
             DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
-            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote);
+            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
         }else{
             DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
         }
@@ -993,7 +989,7 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
             pi->head = NULL;
         }
         //Start playing note-off VGM
-        SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog->rootnote);
+        SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog->rootnote, 1);
     }else{
         DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
     }

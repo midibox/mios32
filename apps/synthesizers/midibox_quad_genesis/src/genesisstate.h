@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+#include <vgm.h>
+
 extern void GenesisState_Tick();
 
 extern void DrawGenesisActivity(u8 g, u8 v, u8 drawong, u8 drawonv);
@@ -37,6 +39,8 @@ extern void ClearGenesisState_Chan();
 extern void ClearGenesisState_DAC();
 extern void ClearGenesisState_OPN2();
 extern void ClearGenesisState_PSG();
+
+extern void DrawCmdLine(VgmChipWriteCmd cmd, u8 row);
 
 #ifdef __cplusplus
 }
