@@ -367,3 +367,205 @@ end:
     FrontPanel_VGMMatrixRow(row, outbits);
 }
 
+void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
+    if(cmd.cmd == 0x50){
+        //PSG write
+        u8 voice;
+        voice = (cmd.data & 0x60) >> 5;
+        FrontPanel_GenesisLEDSet(0, 8+voice, 0, !clear);
+        if(cmd.data & 0x10){
+            //Attenuation
+            FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, clear+1, 15 - (cmd.data & 0x0F));
+        }else{
+            if(voice == 3){
+                //Noise parameters
+                u8 x = cmd.data & 0x03;
+                FrontPanel_LEDSet(FP_LED_NS_HI,  x == 0 && !clear);
+                FrontPanel_LEDSet(FP_LED_NS_MED, x == 1 && !clear);
+                FrontPanel_LEDSet(FP_LED_NS_LOW, x == 2 && !clear);
+                FrontPanel_LEDSet(FP_LED_NS_SQ3, x == 3 && !clear);
+                x = (cmd.data & 0x04) >> 2;
+                FrontPanel_LEDSet(FP_LED_NS_PLS, x == 0 && !clear);
+                FrontPanel_LEDSet(FP_LED_NS_WHT, x == 1 && !clear);
+            }else{
+                u16 f = (cmd.data & 0x0F) | ((u16)(cmd.data2 & 0x3F) << 4);
+                FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, clear << 1, ((1023 - f) >> 4) & 0xF);
+            }
+        }
+    }else if((cmd.cmd & 0xFE) == 0x52){
+        //OPN2 write
+        u8 chan, op, reg, addrhi = (cmd.cmd & 1)*3, i;
+        if(cmd.addr <= 0x2F){
+            if(cmd.addr >= 0x20 && !addrhi){
+                //OPN2 global register
+                switch(cmd.addr){
+                    case 0x28:
+                        //Key On register
+                        chan = cmd.data & 0x07;
+                        if((chan & 0x03) != 0x03){ //Make sure not writing to 0x03 or 0x07
+                            if(chan >= 0x04) chan -= 1; //Move channels 4, 5, 6 down to 3, 4, 5
+                            FrontPanel_GenesisLEDSet(0, 1+chan, 0, !clear);
+                            reg = cmd.data >> 4;
+                            for(op=0; op<4; op++){
+                                FrontPanel_LEDSet(FP_LED_KEYON_1 + op, (reg & 1) && !clear);
+                                reg >>= 1;
+                            }
+                        }
+                        break;
+                    case 0x21:
+                        //Test Register 1
+                        FrontPanel_LEDSet(FP_LED_UGLY, ((cmd.data >> 4) & 1) && !clear);
+                        FrontPanel_LEDSet(FP_LED_EG, ((cmd.data >> 5) & 1) && !clear);
+                        FrontPanel_GenesisLEDSet(0, 0, 0, !clear);
+                        break;
+                    case 0x22:
+                        //LFO Register
+                        FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 1+clear, cmd.data & 7);
+                        FrontPanel_LEDSet(FP_LED_LFO, ((cmd.data >> 3) & 1) && !clear);
+                        FrontPanel_GenesisLEDSet(0, 0, 0, !clear);
+                        break;
+                    case 0x24:
+                    case 0x25:
+                    case 0x27:
+                        //TODO data2 for TimerA frequency write?
+                        break;
+                    case 0x2A:
+                        //TODO
+                        break;
+                    case 0x2B:
+                        FrontPanel_LEDSet(FP_LED_DACEN, (cmd.data >> 7) && !clear);
+                        FrontPanel_GenesisLEDSet(0, 0, 0, !clear);
+                        break;
+                    case 0x2C:
+                        FrontPanel_LEDSet(FP_LED_DACOVR, ((cmd.data >> 5) & 1) && !clear);
+                        FrontPanel_GenesisLEDSet(0, 0, 0, !clear);
+                        break;
+                }
+            }
+        }else if(cmd.addr <= 0x9F){
+            //Operator command
+            chan = (cmd.addr & 0x03);
+            if(chan != 0x03){ //No channel 4 in first half
+                chan += addrhi; //Add 3 for channels 4, 5, 6
+                reg = (cmd.addr & 0xF0);
+                op = ((cmd.addr & 0x08) >> 3) | ((cmd.addr & 0x04) >> 1); //Ops 1,2,3,4: 0x30, 0x38, 0x34, 0x3C
+                FrontPanel_GenesisLEDSet(0, 1+chan, 0, !clear);
+                FrontPanel_LEDSet(FP_LED_OPNODE_R_1 + op, !clear);
+                switch(reg){
+                    case 0x30:
+                        FrontPanel_LEDRingSet(FP_LEDR_HARM, clear+1, cmd.data & 0x0F);
+                        i = (cmd.data >> 4) & 7;
+                        FrontPanel_LEDRingSet(FP_LEDR_DETUNE, clear << 1, DETUNE_DISPLAY(i));
+                        break;
+                    case 0x40:
+                        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, clear+1, (127 - (cmd.data & 0x7F)) >> 3);
+                        break;
+                    case 0x50:
+                        FrontPanel_LEDRingSet(FP_LEDR_ATTACK, clear+1, (cmd.data & 0x1F) >> 1);
+                        FrontPanel_LEDSet(FP_LED_KSR, cmd.data >= 0x40 && !clear);
+                        break;
+                    case 0x60:
+                        FrontPanel_LEDRingSet(FP_LEDR_DEC1R, clear+1, (cmd.data & 0x1F) >> 1);
+                        FrontPanel_LEDSet(FP_LED_LFOAM, cmd.data >= 0x80 && !clear);
+                        break;
+                    case 0x70:
+                        FrontPanel_LEDRingSet(FP_LEDR_DEC2R, clear+1, (cmd.data & 0x1F) >> 1);
+                        break;
+                    case 0x80:
+                        FrontPanel_LEDRingSet(FP_LEDR_RELRATE, clear+1, cmd.data & 0x0F);
+                        FrontPanel_LEDRingSet(FP_LEDR_DECLVL, clear+1, 15 - (cmd.data >> 4));
+                        break;
+                    case 0x90:
+                        i = (cmd.data & 0x0F);
+                        FrontPanel_LEDSet(FP_LED_SSGHOLD, (i&1) && !clear);
+                        i >>= 1;
+                        FrontPanel_LEDSet(FP_LED_SSGTGL, (i&1) && !clear);
+                        i >>= 1;
+                        FrontPanel_LEDSet(FP_LED_SSGINIT, (i&1) && !clear);
+                        i >>= 1;
+                        FrontPanel_LEDSet(FP_LED_SSGON, (i&1) && !clear);
+                        break;
+                    default:
+                        return;
+                }
+            }
+        }else if(cmd.addr <= 0xAE && cmd.addr >= 0xA8){
+            //Channel 3 extra frequency
+            if(cmd.addr == 0xAD) op = 2;
+            else if(cmd.addr == 0xAE) op = 3;
+            else if(cmd.addr == 0xAC) op = 4;
+            else return;
+            FrontPanel_GenesisLEDSet(0, 3, 0, !clear);
+            FrontPanel_LEDSet(FP_LED_OPNODE_R_1 + op, !clear);
+            if(clear){
+                FrontPanel_DrawDigit(FP_LED_DIG_OCT, ' ');
+                FrontPanel_DrawDigit(FP_LED_DIG_FREQ_1, ' ');
+                FrontPanel_DrawDigit(FP_LED_DIG_FREQ_2, ' ');
+                FrontPanel_DrawDigit(FP_LED_DIG_FREQ_3, ' ');
+                FrontPanel_DrawDigit(FP_LED_DIG_FREQ_4, ' ');
+            }else{
+                FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + ((cmd.data >> 3) & 7));
+                FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)(cmd.data & 7) << 8) | cmd.data2);
+            }
+        }else if(cmd.addr <= 0xB6){
+            //Channel command
+            chan = (cmd.addr & 0x03);
+            if(chan != 0x03){ //No channel 4 in first half
+                chan += addrhi; //Add 3 for channels 4, 5, 6
+                FrontPanel_GenesisLEDSet(0, chan+1, 0, !clear);
+                cmd.addr &= 0xFC;
+                if(cmd.addr == 0xA0){
+                    return; //Should not be
+                }else if(cmd.addr == 0xA4){
+                    //Frequency write
+                    if(clear){
+                        FrontPanel_DrawDigit(FP_LED_DIG_OCT, ' ');
+                        FrontPanel_DrawDigit(FP_LED_DIG_FREQ_1, ' ');
+                        FrontPanel_DrawDigit(FP_LED_DIG_FREQ_2, ' ');
+                        FrontPanel_DrawDigit(FP_LED_DIG_FREQ_3, ' ');
+                        FrontPanel_DrawDigit(FP_LED_DIG_FREQ_4, ' ');
+                    }else{
+                        FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + ((cmd.data >> 3) & 7));
+                        FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)(cmd.data & 7) << 8) | cmd.data2);
+                    }
+                }else if(cmd.addr == 0xB0){
+                    FrontPanel_DrawAlgorithm((cmd.data & 7) + (clear << 4));
+                    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, clear+1, (cmd.data >> 3) & 7);
+                    FrontPanel_LEDSet(FP_LED_FEEDBACK, (cmd.data & 0x38) > 0 && !clear);
+                }else if(cmd.addr == 0xB4){
+                    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, clear+1, (cmd.data & 7));
+                    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, clear+1, (cmd.data >> 4) & 3);
+                    FrontPanel_LEDSet(FP_LED_OUTR, ((cmd.data >> 6) & 1) && !clear);
+                    FrontPanel_LEDSet(FP_LED_OUTL, ((cmd.data >> 7) & 1) && !clear);
+                }
+            }
+        }
+    }else if(cmd.cmd >= 0x80 && cmd.cmd <= 0x8F){
+        //OPN2 DAC write
+        
+    }else if((cmd.cmd >= 0x70 && cmd.cmd <= 0x7F) | (cmd.cmd >= 0x61 && cmd.cmd <= 0x63)){
+        //Wait
+        
+    }else{
+        //Unsupported command, should not be here
+        
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
