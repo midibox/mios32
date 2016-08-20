@@ -29,6 +29,7 @@ static u8 selvoice;
 static u8 selop;
 static u16 vmutes;
 static u16 vsolos;
+static VgmChipWriteCmd lastcmddrawn;
 
 
 void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
@@ -178,11 +179,13 @@ void Mode_Vgm_GotFocus(){
     FrontPanel_LEDSet(FP_LED_PLAY, playing);
     FrontPanel_LEDSet(FP_LED_CMDS, !statemode);
     FrontPanel_LEDSet(FP_LED_STATE, statemode);
-    //Turn on our voice button
-    FrontPanel_GenesisLEDSet(0, selvoice, 1, 1);
-    //Op button
-    if(selvoice <= 6 && selvoice >= 1){
-        FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 1);
+    if(statemode || submode == 3){
+        //Turn on our voice button
+        FrontPanel_GenesisLEDSet(0, selvoice, 1, 1);
+        //Op button
+        if(selvoice <= 6 && selvoice >= 1){
+            FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 1);
+        }
     }
     DrawMenu();
 }
@@ -204,22 +207,13 @@ static u8 GetRealMapVoice(u8 v, u8 mv){
     }
 }
 void Mode_Vgm_Background(){
-    static u8 lastselvoice = 0, lastselop = 0;
+    static u8 lastselvoice = 0, lastselop = 0, laststatemode = 1;
     if(selvgm == NULL) return;
     if(vgmpreviewpi >= MBQG_NUM_PROGINSTANCES) return;
-    if(statemode){
-        VGM_Player_docapture = 1;
-        synproginstance_t* pi = &proginstances[vgmpreviewpi];
-        u8 v, mg, mv;
-        if(submode == 0){
-            for(v=0; v<12; ++v){
-                mg = pi->mapping[v].map_chip;
-                mv = GetRealMapVoice(v, pi->mapping[v].map_voice);
-                DrawGenesisActivity(mg, mv, 0, v);
-            }
-        }
+    u8 v;
+    if(statemode || submode == 3){
         //Transition displayed voice and op states
-        if(lastselop != selop || lastselvoice != selvoice){
+        if(lastselop != selop || lastselvoice != selvoice || laststatemode != statemode){
             ClearGenesisState_Op();
             FrontPanel_LEDSet(FP_LED_SELOP_1 + lastselop, 0);
             if(selvoice <= 6 && selvoice >= 1){
@@ -227,14 +221,47 @@ void Mode_Vgm_Background(){
             }
         }
         lastselop = selop;
-        if(lastselvoice != selvoice){
+        if(lastselvoice != selvoice || laststatemode != statemode){
             ClearGenesisState_Chan();
             ClearGenesisState_DAC();
             ClearGenesisState_OPN2();
             ClearGenesisState_PSG();
             FrontPanel_GenesisLEDSet(0, lastselvoice, 1, 0);
             FrontPanel_GenesisLEDSet(0, selvoice, 1, 1);
-            lastselvoice = selvoice;
+        }
+        lastselvoice = selvoice;
+        if(laststatemode != statemode){
+            for(v=0; v<12; ++v){
+                FrontPanel_GenesisLEDSet(0, v, 0, 0);
+            }
+            for(v=0; v<7; ++v){
+                FrontPanel_VGMMatrixRow(v, 0);
+            }
+        }
+        laststatemode = statemode;
+    }else{
+        if(laststatemode != statemode){
+            ClearGenesisState_Op();
+            ClearGenesisState_Chan();
+            ClearGenesisState_DAC();
+            ClearGenesisState_OPN2();
+            ClearGenesisState_PSG();
+            FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 0);
+            FrontPanel_GenesisLEDSet(0, selvoice, 1, 0);
+        }
+        laststatemode = statemode;
+    }
+    if(statemode){
+        VGM_Player_docapture = 1;
+        synproginstance_t* pi = &proginstances[vgmpreviewpi];
+        u8 mg, mv;
+        if(submode == 0){
+            //Activity lights
+            for(v=0; v<12; ++v){
+                mg = pi->mapping[v].map_chip;
+                mv = GetRealMapVoice(v, pi->mapping[v].map_voice);
+                DrawGenesisActivity(mg, mv, 0, v);
+            }
         }
         //Draw voice state
         mg = pi->mapping[selvoice].map_chip;
@@ -267,6 +294,26 @@ void Mode_Vgm_Background(){
                     DrawCmdLine(vsr->cmds[a], r);
                 }
                 ++a;
+            }
+            a = vhr->srcaddr;
+            if(a < 0 || a >= vsr->numcmds){
+                ClearGenesisState_Op();
+                ClearGenesisState_Chan();
+                ClearGenesisState_DAC();
+                ClearGenesisState_OPN2();
+                ClearGenesisState_PSG();
+                lastcmddrawn.all = 0;
+            }else{
+                VgmChipWriteCmd newcmd = vsr->cmds[a];
+                if(newcmd.all != lastcmddrawn.all){
+                    MIOS32_IRQ_Disable();
+                    if(lastcmddrawn.all != 0){
+                        DrawCmdContent(lastcmddrawn, 1);
+                    }
+                    DrawCmdContent(newcmd, 0);
+                    lastcmddrawn = newcmd;
+                    MIOS32_IRQ_Enable();
+                }
             }
         }
     }
@@ -317,7 +364,10 @@ void Mode_Vgm_BtnSoftkey(u8 softkey, u8 state){
     }
 }
 void Mode_Vgm_BtnSelOp(u8 op, u8 state){
-
+    if(selvgm == NULL) return;
+    if(submode != 0) return;
+    if(!state) return;
+    selop = op;
 }
 void Mode_Vgm_BtnOpMute(u8 op, u8 state){
 

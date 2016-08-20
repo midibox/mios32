@@ -41,6 +41,7 @@ extern void ClearGenesisState_OPN2();
 extern void ClearGenesisState_PSG();
 
 extern void DrawCmdLine(VgmChipWriteCmd cmd, u8 row);
+extern void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear);
 
 #ifdef __cplusplus
 }
