@@ -123,8 +123,8 @@ void Mode_Prog_BtnOpMute(u8 op, u8 state){
 }
 void Mode_Prog_BtnSystem(u8 button, u8 state){
     if(selprogram == NULL) return;
-    if(!state) return;
     if(button == FP_B_MENU){
+        if(!state) return;
         submode = 0;
         cursor = 5;
         DrawMenu();
@@ -134,6 +134,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
         case 0:
             switch(button){
                 case FP_B_ENTER:
+                    if(!state) return;
                     switch(cursor){
                         case 5:
                             Mode_Vgm_SelectVgm(selprogram->initsource);
@@ -150,6 +151,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                     Interface_ChangeToMode(MODE_VGM);
                     break;
                 case FP_B_LOAD:
+                    if(!state) return;
                     if(cursor >= 5 && cursor <= 7){
                         VgmSource** ss = SelSource(selprogram, cursor-5);
                         if(*ss != NULL){
@@ -162,6 +164,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                     }
                     break;
                 case FP_B_DELETE:
+                    if(!state) return;
                     if(cursor >= 5 && cursor <= 7){
                         VgmSource** ss = SelSource(selprogram, cursor-5);
                         if(*ss != NULL){
@@ -172,6 +175,17 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                         DrawMenu();
                     }
                     break;
+                case FP_B_RELEASE:
+                    if(state){
+                        //Flush PIs of this program
+                        SyEng_FlushProgram(selprogram);
+                        FrontPanel_LEDSet(FP_LED_RELEASE, 1);
+                        MIOS32_LCD_CursorSet(0,0);
+                        MIOS32_LCD_PrintString("Flushed     ");
+                    }else{
+                        FrontPanel_LEDSet(FP_LED_RELEASE, 0);
+                        DrawMenu();
+                    }
             }
             break;
     }

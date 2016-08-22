@@ -18,6 +18,7 @@
 #include "syeng.h"
 #include "frontpanel.h"
 #include "genesisstate.h"
+#include "cmdeditor.h"
 #include "mode_prog.h"
 
 static VgmSource* selvgm;
@@ -79,8 +80,6 @@ static void DrawMenu(){
     }
     switch(submode){
         case 0:
-            MIOS32_LCD_CursorSet(5,0);
-            MIOS32_LCD_PrintFormattedString("Ck:%d/%d", selvgm->opn2clock, selvgm->psgclock);
             MIOS32_LCD_CursorSet(0,0);
             switch(selvgm->type){
                 case VGM_SOURCE_TYPE_RAM:
@@ -313,6 +312,16 @@ void Mode_Vgm_Background(){
                     DrawCmdContent(newcmd, 0);
                     lastcmddrawn = newcmd;
                     MIOS32_IRQ_Enable();
+                    if(!playing){
+                        char* buf = vgmh2_malloc(36);
+                        GetCmdDescription(newcmd, buf);
+                        for(r=0; r<35; ++r) if(buf[r] == 0) break;
+                        for(; r<35; ++r) buf[r] = ' ';
+                        buf[35] = 0;
+                        MIOS32_LCD_CursorSet(5,0);
+                        MIOS32_LCD_PrintString(buf);
+                        vgmh2_free(buf);
+                    }
                 }
             }
         }
@@ -507,14 +516,37 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
 }
 void Mode_Vgm_BtnEdit(u8 button, u8 state){
     if(selvgm == NULL) return;
-
+    if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+        if(!state) return;
+        EnsurePreviewPiOK();
+        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+        VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+        s32 a = vhr->srcaddr;
+        if(a < 0 || a >= vsr->numcmds) return;
+        vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, button, state); //TODO handle key on and algorithm
+    }
 }
 
 void Mode_Vgm_EncDatawheel(s32 incrementer){
     if(selvgm == NULL) return;
-
+    if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+        EnsurePreviewPiOK();
+        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+        VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+        s32 a = vhr->srcaddr;
+        if(a < 0 || a >= vsr->numcmds) return;
+        vsr->cmds[a] = EditCmd(vsr->cmds[a], FP_E_DATAWHEEL, incrementer, 0xFF, 0);
+    }
 }
 void Mode_Vgm_EncEdit(u8 encoder, s32 incrementer){
-
+    if(selvgm == NULL) return;
+    if(selvgm->type == VGM_SOURCE_TYPE_RAM){
+        EnsurePreviewPiOK();
+        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+        VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+        s32 a = vhr->srcaddr;
+        if(a < 0 || a >= vsr->numcmds) return;
+        vsr->cmds[a] = EditCmd(vsr->cmds[a], encoder, incrementer, 0xFF, 0);
+    }
 }
 
