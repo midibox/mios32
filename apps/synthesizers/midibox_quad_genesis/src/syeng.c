@@ -99,7 +99,7 @@ static voiceclearlink* voiceclearlist;
 static void VoiceReset(u8 g, u8 v){
     if(voiceclearfull){
         if(v >= 1 && v <= 6){
-            DBG("Setting up g %d v %d to be cleared via VGM", g, v);
+            //DBG("Setting up g %d v %d to be cleared via VGM", g, v);
             syngenesis[g].channels[v].beingcleared = 1;
             voiceclearlink* link = vgmh2_malloc(sizeof(voiceclearlink));
             VgmHead* head = VGM_Head_Create(voiceclearsource, 0x1000, 0x1000);
@@ -773,7 +773,7 @@ void SyEng_Tick(){
         if(link->head->isdone){
             //Mark the voice as clear
             VgmHead_Channel ch = link->head->channel[1];
-            DBG("Clearing VGM for g %d v %d is done", ch.map_chip, ch.map_voice+1);
+            //DBG("Clearing VGM for g %d v %d is done", ch.map_chip, ch.map_voice+1);
             syngenesis[ch.map_chip].channels[ch.map_voice+1].beingcleared = 0;
             //Delete the head
             VGM_Head_Delete(link->head);
@@ -807,15 +807,15 @@ void SyEng_Tick(){
                 continue;
             }
             if(prog->initsource != NULL){
-                DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
+                //DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
                 SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
             }else{
                 pi->playinginit = 0;
                 if(prog->noteonsource != NULL){
-                    DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
+                    //DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
                     SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
                 }else{
-                    DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
+                    //DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
                 }
             }
             continue;
@@ -833,10 +833,10 @@ void SyEng_Tick(){
             }
             //Switch from init to noteon VGM
             if(prog->noteonsource != NULL){
-                DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
+                //DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
                 SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
             }else{
-                DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
+                //DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
             }
         }
     }
@@ -847,7 +847,7 @@ u8 SyEng_GetStaticPI(usage_bits_t usage){
     synproginstance_t* pi = &proginstances[piindex];
     //If this PI was previously in use: release its resources, stop playing, reset voices
     if(pi->valid){
-        DBG("--Clearing existing PI resources");
+        //DBG("--Clearing existing PI resources");
         ClearPI(pi);
     }
     //Find best allocation
@@ -921,14 +921,14 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
         if(prog->noteonsource != NULL){
             SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
         }else{
-            DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
+            //DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
         }
         pi->playing = 1;
         return;
     }
     //If this PI was previously in use: release its resources, stop playing, reset voices
     if(pi->valid){
-        DBG("--Clearing existing PI resources");
+        //DBG("--Clearing existing PI resources");
         ClearPI(pi);
     }
     //Find best allocation
@@ -954,10 +954,10 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     }else{
         pi->playinginit = 0;
         if(prog->noteonsource != NULL){
-            DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
+            //DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
             SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
         }else{
-            DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
+            //DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
         }
     }
 }
@@ -986,12 +986,11 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
         //Stop playing note-on VGM only if there's a noteoff to play
         if(pi->head != NULL){
             VGM_Head_Delete(pi->head);
-            pi->head = NULL;
         }
         //Start playing note-off VGM
         SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog->rootnote, 1);
     }else{
-        DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
+        //DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
     }
     //Mark pi as not playing, release resources
     StandbyPI(pi);
@@ -1003,5 +1002,17 @@ void SyEng_Note_On(mios32_midi_package_t pkg){
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
     StopProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);
+}
+
+void SyEng_FlushProgram(synprogram_t* prog){
+    u8 i, ch;
+    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
+        ch = proginstances[i].sourcechannel;
+        if(ch >= 16*MBQG_NUM_PORTS) continue;
+        if(channels[ch].trackermode) continue;
+        if(channels[ch].program == prog){
+            ClearPI(&proginstances[i]);
+        }
+    }
 }
 

@@ -282,7 +282,7 @@ void Tracker_BtnToMIDI(u8 button, u8 value, u8 selvoice, u8 selop, u8 midiport, 
                 break;
             case FP_B_DACOVR:
                 pkg.cc_number = 97;
-                input = (genesis[g].opn2.testreg21 ^ 0x20) >> 4;
+                input = (genesis[g].opn2.testreg2C ^ 0x20) >> 4;
                 bits = 4;
                 break;
             case FP_B_LFO:
