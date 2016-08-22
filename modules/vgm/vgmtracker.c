@@ -181,77 +181,30 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
             }
             u8 opaddr = ((op & 1) << 3) | ((op & 2) << 1) | vlo;
             switch(cc){
-            case 74:
-                //LFO Enable
-                genesis[g].opn2.lfo_enabled = GENMDM_DECODE(value,1);
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x22, 
-                        .data = genesis[g].opn2.lforeg }, 0);
-                break;
-            case 1:
-                //LFO Speed
-                genesis[g].opn2.lfo_freq = GENMDM_DECODE(value,3);
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x22, 
-                        .data = genesis[g].opn2.lforeg }, 0);
-                break;
             case 85:
                 //Pitch Transposition
                 //TODO
                 break;
-            case 84:
-                //Octave Division
-                //TODO and also wut?
-                break;
-            case 83:
-                //PAL/NTSC Tuning
-                //TODO
-                break;
             case 80:
                 //Voice 3 Special Mode
+                if(v != 3) return;
                 genesis[g].opn2.ch3_mode = GENMDM_DECODE(value,1);
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x27, 
-                        .data = genesis[g].opn2.timerctrlreg }, 0);
-                break;
-            case 98: //originally 92, conflicts with SSG-EG
-                //Timer Controls
-                genesis[g].opn2.timerctrlreg = (genesis[g].opn2.timerctrlreg & 0xC0) | GENMDM_DECODE(value,6);
                 VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x27, 
                         .data = genesis[g].opn2.timerctrlreg }, 0);
                 break;
             case 99: //originally 93, conflicts with SSG-EG
                 //Ch3 CSM mode (rather, bit 7 of the register)
+                if(v != 3) return;
                 genesis[g].opn2.ch3_mode = (genesis[g].opn2.ch3_mode & 1) | (GENMDM_DECODE(value,1) << 1);
                 VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x27, 
                         .data = genesis[g].opn2.timerctrlreg }, 0);
                 break;
             case 119: //new
                 //Ch3 CSM frequency
+                if(v != 3) return;
                 genesis[g].opn2.timera_high = (genesis[g].opn2.timera_high & 1) | (value << 1);
                 VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x24, 
                         .data = genesis[g].opn2.timera_high }, 0);
-                break;
-            case 94:
-                //Test Register 0x21 Lowest Four Bits
-                genesis[g].opn2.testreg21 = (genesis[g].opn2.testreg21 & 0xF0) | (GENMDM_DECODE(value,4));
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x21, 
-                        .data = genesis[g].opn2.testreg21 }, 0);
-                break;
-            case 95:
-                //Test Register 0x21 Highest Four Bits
-                genesis[g].opn2.testreg21 = (genesis[g].opn2.testreg21 & 0x0F) | (GENMDM_DECODE(value,4) << 4);
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x21, 
-                        .data = genesis[g].opn2.testreg21 }, 0);
-                break;
-            case 96:
-                //Test Register 0x2C Lowest Four Bits
-                genesis[g].opn2.testreg2C = (genesis[g].opn2.testreg2C & 0xF0) | (GENMDM_DECODE(value,4));
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2C, 
-                        .data = genesis[g].opn2.testreg2C }, 0);
-                break;
-            case 97:
-                //Test Register 0x2C Highest Four Bits
-                genesis[g].opn2.testreg2C = (genesis[g].opn2.testreg2C & 0x0F) | (GENMDM_DECODE(value,4) << 4);
-                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2C, 
-                        .data = genesis[g].opn2.testreg2C }, 0);
                 break;
             case 6:
                 //Preset Instrument Setting Store in RAM
@@ -363,6 +316,62 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
                 VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2cmd, .addr = 0x90 | opaddr, 
                         .data = genesis[g].opn2.chan[chan].op[op].ssgreg }, 0);
                 break;
+            };
+        }else if(v == 0){
+            switch(cc){
+            case 74:
+                //LFO Enable
+                genesis[g].opn2.lfo_enabled = GENMDM_DECODE(value,1);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x22, 
+                        .data = genesis[g].opn2.lforeg }, 0);
+                break;
+            case 1:
+                //LFO Speed
+                genesis[g].opn2.lfo_freq = GENMDM_DECODE(value,3);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x22, 
+                        .data = genesis[g].opn2.lforeg }, 0);
+                break;
+            case 84:
+                //Octave Division
+                //TODO and also wut?
+                break;
+            case 83:
+                //PAL/NTSC Tuning
+                //TODO
+                break;
+            case 98: //originally 92, conflicts with SSG-EG
+                //Timer Controls
+                genesis[g].opn2.timerctrlreg = (genesis[g].opn2.timerctrlreg & 0xC0) | GENMDM_DECODE(value,6);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x27, 
+                        .data = genesis[g].opn2.timerctrlreg }, 0);
+                break;
+            case 94:
+                //Test Register 0x21 Lowest Four Bits
+                genesis[g].opn2.testreg21 = (genesis[g].opn2.testreg21 & 0xF0) | (GENMDM_DECODE(value,4));
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x21, 
+                        .data = genesis[g].opn2.testreg21 }, 0);
+                break;
+            case 95:
+                //Test Register 0x21 Highest Four Bits
+                genesis[g].opn2.testreg21 = (genesis[g].opn2.testreg21 & 0x0F) | (GENMDM_DECODE(value,4) << 4);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x21, 
+                        .data = genesis[g].opn2.testreg21 }, 0);
+                break;
+            case 96:
+                //Test Register 0x2C Lowest Four Bits
+                genesis[g].opn2.testreg2C = (genesis[g].opn2.testreg2C & 0xF0) | (GENMDM_DECODE(value,4));
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2C, 
+                        .data = genesis[g].opn2.testreg2C }, 0);
+                break;
+            case 97:
+                //Test Register 0x2C Highest Four Bits
+                genesis[g].opn2.testreg2C = (genesis[g].opn2.testreg2C & 0x0F) | (GENMDM_DECODE(value,4) << 4);
+                VGM_HeadQueue_Enqueue(qhead, (VgmChipWriteCmd){ .cmd = opn2globcmd, .addr = 0x2C, 
+                        .data = genesis[g].opn2.testreg2C }, 0);
+                break;
+            }
+        }else if(v == 7){
+            switch(cc){
             case 78:
                 //DAC Enable
                 genesis[g].opn2.dac_enable = GENMDM_DECODE(value,1);
@@ -391,7 +400,7 @@ void VGM_MidiToGenesis(mios32_midi_package_t midi_package, u8 g, u8 v, u8 ch3_op
                 //Custom Wave Byte
                 //TODO
                 break;
-            };
+            }
         }
     }else if(midi_package.event == 0x8 || (midi_package.event == 0x9 && midi_package.velocity == 0)){
         //Note Off
