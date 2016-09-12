@@ -1,4 +1,4 @@
-# $Id: Makefile 1820 2013-09-01 15:44:33Z tk $
+# $Id: Makefile 2164 2015-04-20 20:40:45Z tk $
 
 ################################################################################
 # following setup taken from environment variables
@@ -18,6 +18,7 @@ THUMB_SOURCE    = core/app.c \
 		mios32/tasks.c \
 		core/seq_hwcfg.c  \
 		core/seq_ui.c  \
+		core/seq_ui_pages.c  \
 		core/seq_ui_todo.c \
 		core/seq_ui_menu.c \
 		core/seq_ui_bookmarks.c \
@@ -26,9 +27,10 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_mute.c \
 		core/seq_ui_pmute.c \
 		core/seq_ui_pattern.c \
-        core/seq_ui_pattern_remix.c \
+                core/seq_ui_pattern_remix.c \
 		core/seq_ui_song.c \
 		core/seq_ui_trkevnt.c \
+		core/seq_ui_trkinst.c \
 		core/seq_ui_trkmode.c \
 		core/seq_ui_trkdir.c \
 		core/seq_ui_trkdiv.c \
@@ -38,13 +40,15 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_ui_trkmorph.c \
 		core/seq_ui_trkrnd.c \
 		core/seq_ui_trkeuclid.c \
-		core/seq_ui_trkrec.c \
+		core/seq_ui_trkjam.c \
 		core/seq_ui_trgasg.c \
 		core/seq_ui_fx.c \
 		core/seq_ui_fx_echo.c \
 		core/seq_ui_fx_humanize.c \
+		core/seq_ui_fx_robotize.c \
 		core/seq_ui_fx_limit.c \
 		core/seq_ui_fx_lfo.c \
+		core/seq_ui_fx_dupl.c \
 		core/seq_ui_fx_scale.c \
 		core/seq_ui_manual.c \
 		core/seq_ui_util.c \
@@ -82,6 +86,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_groove.c \
 		core/seq_morph.c \
 		core/seq_humanize.c \
+		core/seq_robotize.c \
 		core/seq_lfo.c \
 		core/seq_chord.c \
 		core/seq_pattern.c \
