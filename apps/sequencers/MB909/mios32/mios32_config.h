@@ -1,4 +1,4 @@
-// $Id: mios32_config.h 1821 2013-09-08 11:09:47Z tk $
+// $Id: mios32_config.h 2216 2015-10-04 16:17:44Z tk $
 /*
  * Local MIOS32 configuration file
  *
@@ -14,8 +14,8 @@
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
-#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.079"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2013 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.090"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2015 T. Klose"
 
 // USB settings
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
@@ -25,7 +25,8 @@
 //#define MIOS32_MIDI_DEBUG_PORT USB0
 
 // function used to output debug messages (must be printf compatible!)
-#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
+extern void APP_SendDebugMessage(char *format, ...);
+#define DEBUG_MSG APP_SendDebugMessage
 
 
 // Stack size for FreeRTOS tasks as defined by the programming model
@@ -51,6 +52,8 @@
 #endif
 
 
+// increased number of SRs (MBSEQ uses 16 SRs by default, but it's possible to increase the number in MBSEQ_HW.V4)
+#define MIOS32_SRIO_NUM_SR 23
 // to save some RAM (only 128 bytes, but "Kleinvieh macht auch Mist" - especially for LPC17)
 #define MIOS32_ENC_NUM_MAX 18 //WAS 32
 
@@ -89,6 +92,9 @@
 
 // enable seq_midi_out_max_allocated and seq_midi_out_dropouts
 #define SEQ_MIDI_OUT_MALLOC_ANALYSIS 1
+
+// support delays
+#define SEQ_MIDI_OUT_SUPPORT_DELAY 1
 
 
 #if defined(MIOS32_FAMILY_STM32F10x)
