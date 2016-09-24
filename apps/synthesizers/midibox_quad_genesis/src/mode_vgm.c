@@ -21,7 +21,8 @@
 #include "cmdeditor.h"
 #include "mode_prog.h"
 
-static VgmSource* selvgm;
+VgmSource* selvgm;
+
 static u8 vgmpreviewpi;
 static u8 submode;
 static u8 playing;

@@ -187,6 +187,7 @@ static void ClearPI(synproginstance_t* pi){
     pi->isstatic = 0;
     pi->playing = 0;
     pi->playinginit = 0;
+    pi->needsnewinit = 0;
     pi->recency = VGM_Player_GetVGMTime() - UNUSED_RECENCY;
     //Release all resources
     ReleaseAllPI(pi);
@@ -826,6 +827,7 @@ void SyEng_Tick(){
             pi->head = NULL;
             if(!pi->playinginit) continue;
             pi->playinginit = 0;
+            pi->needsnewinit = 0;
             prog = channels[pi->sourcechannel].program;
             if(prog == NULL){
                 DBG("ERROR program disappeared while playing, could not switch from init to noteon!");
@@ -912,16 +914,22 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     pi->note = note;
     //Do we already have the right mapping allocated?
     if(pi->valid && !pi->isstatic && pi->sourcechannel == chn){
-        //Skip the init VGM, start the note on VGM
         if(pi->head != NULL){
             //Stop playing whatever it was playing
             VGM_Head_Delete(pi->head);
             pi->head = NULL;
         }
-        if(prog->noteonsource != NULL){
-            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+        if(pi->needsnewinit && prog->initsource != NULL){
+            //Right mapping, but have to re-initialize
+            SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
+            pi->playinginit = 1;
         }else{
-            //DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
+            //Skip the init VGM, start the note on VGM
+            if(prog->noteonsource != NULL){
+                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+            }else{
+                //DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
+            }
         }
         pi->playing = 1;
         return;
@@ -952,6 +960,7 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     if(prog->initsource != NULL){
         SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
     }else{
+        //Unless we don't have one, in which case skip to noteon
         pi->playinginit = 0;
         if(prog->noteonsource != NULL){
             //DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
@@ -967,8 +976,8 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
         pi = &proginstances[i];
         if(!pi->valid) continue;
-        if(pi->isstatic) continue;
         if(pi->sourcechannel != chn) continue;
+        if(pi->isstatic) continue;
         if(!pi->playing) continue;
         if(pi->note != note) continue;
         break;
@@ -977,7 +986,7 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
         DBG("Note off %d ch %d, but no PI playing this note", note, chn);
         return; //no corresponding note on
     }
-    //Found corresponding note on
+    //Check if we have a valid program
     if(prog == NULL){
         DBG("--ERROR program disappeared while playing, could not switch to noteoff!");
         return;
@@ -1004,14 +1013,33 @@ void SyEng_Note_Off(mios32_midi_package_t pkg){
     StopProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);
 }
 
-void SyEng_FlushProgram(synprogram_t* prog){
+void SyEng_HardFlushProgram(synprogram_t* prog){
     u8 i, ch;
+    synproginstance_t* pi;
     for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
-        ch = proginstances[i].sourcechannel;
+        pi = &proginstances[i];
+        if(!pi->valid) continue;
+        if(pi->isstatic) continue;
+        ch = pi->sourcechannel;
         if(ch >= 16*MBQG_NUM_PORTS) continue;
         if(channels[ch].trackermode) continue;
         if(channels[ch].program == prog){
-            ClearPI(&proginstances[i]);
+            ClearPI(pi);
+        }
+    }
+}
+void SyEng_SoftFlushProgram(synprogram_t* prog){
+    u8 i, ch;
+    synproginstance_t* pi;
+    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
+        pi = &proginstances[i];
+        if(!pi->valid) continue;
+        if(pi->isstatic) continue;
+        ch = pi->sourcechannel;
+        if(ch >= 16*MBQG_NUM_PORTS) continue;
+        if(channels[ch].trackermode) continue;
+        if(channels[ch].program == prog){
+            pi->needsnewinit = 1;
         }
     }
 }

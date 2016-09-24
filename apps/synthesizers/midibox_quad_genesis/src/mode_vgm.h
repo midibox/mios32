@@ -40,6 +40,8 @@ extern void Mode_Vgm_SelectVgm(VgmSource* newselvgm);
 extern void Mode_Vgm_InvalidateVgm(VgmSource* maybeselvgm);
 extern void Mode_Vgm_InvalidatePI(synproginstance_t* maybestaticpi);
 
+extern VgmSource* selvgm;
+
 #ifdef __cplusplus
 }
 #endif

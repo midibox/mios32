@@ -97,7 +97,8 @@ typedef struct {
     u8 playing:1;
     u8 playinginit:1;
     u8 waitingforclear:1;
-    u8 dummy:3;
+    u8 needsnewinit:1;
+    u8 dummy:2;
     u8 sourcechannel;
     u8 note;
     u8 dummy2;
@@ -138,7 +139,8 @@ extern void SyEng_Note_On(mios32_midi_package_t pkg);
 extern void SyEng_Note_Off(mios32_midi_package_t pkg);
 
 extern void SyEng_ClearVoice(u8 g, u8 v);
-extern void SyEng_FlushProgram(synprogram_t* prog);
+extern void SyEng_HardFlushProgram(synprogram_t* prog);
+extern void SyEng_SoftFlushProgram(synprogram_t* prog);
 
 extern u8 SyEng_GetStaticPI(usage_bits_t usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
