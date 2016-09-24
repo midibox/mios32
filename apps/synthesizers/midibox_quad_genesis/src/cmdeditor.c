@@ -17,6 +17,8 @@
 #include "syeng.h"
 #include "frontpanel.h"
 #include "genesisstate.h"
+#include "mode_vgm.h"
+#include "mode_prog.h"
 
 
 void DrawCmdLine(VgmChipWriteCmd cmd, u8 row){
@@ -650,6 +652,12 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
         //TODO sprintf(desc, "50Hz Wait [%d]", VGM_DELAY63);
     }else{
         //Unsupported command, should not be here
+    }
+    if(ret.all != cmd.all){
+        //A change was made, if we're working on an init VGM we have to soft-flush the program
+        if(selvgm == selprogram->initsource){
+            SyEng_SoftFlushProgram(selprogram);
+        }
     }
     return ret;
 }

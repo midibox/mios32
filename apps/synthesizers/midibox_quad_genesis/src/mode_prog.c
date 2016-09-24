@@ -178,7 +178,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                 case FP_B_RELEASE:
                     if(state){
                         //Flush PIs of this program
-                        SyEng_FlushProgram(selprogram);
+                        SyEng_HardFlushProgram(selprogram);
                         FrontPanel_LEDSet(FP_LED_RELEASE, 1);
                         MIOS32_LCD_CursorSet(0,0);
                         MIOS32_LCD_PrintString("Flushed     ");
