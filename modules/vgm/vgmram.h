@@ -37,6 +37,12 @@ extern void VGM_HeadRAM_Delete(void* headram);
 extern void VGM_HeadRAM_Restart(VgmHead* head);
 extern void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time);
 
+extern void VGM_HeadRAM_Forward1(VgmHead* head);
+extern void VGM_HeadRAM_Backward1(VgmHead* head);
+extern void VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr);
+extern void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay);
+extern void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt);
+
 typedef union {
     u8 ALL[8];
     struct{
@@ -47,5 +53,10 @@ typedef union {
 
 extern VgmSource* VGM_SourceRAM_Create();
 extern void VGM_SourceRAM_Delete(void* sourceram);
+
+extern void VGM_SourceRAM_UpdateUsage(VgmSource* source);
+
+extern void VGM_SourceRAM_InsertCmd(VgmSource* source, u32 addr, VgmChipWriteCmd newcmd);
+extern void VGM_SourceRAM_DeleteCmd(VgmSource* source, u32 addr);
 
 #endif /* _VGMRAM_H */

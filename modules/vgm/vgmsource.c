@@ -37,3 +37,13 @@ s32 VGM_Source_Delete(VgmSource* source){
     vgmh2_free(source);
     return 0;
 }
+
+void VGM_Source_UpdateUsage(VgmSource* source){
+    if(source->type == VGM_SOURCE_TYPE_RAM){
+        VGM_SourceRAM_UpdateUsage(source);
+    }else if(source->type == VGM_SOURCE_TYPE_STREAM){
+        VGM_SourceStream_UpdateUsage(source);
+    }else if(source->type == VGM_SOURCE_TYPE_QUEUE){
+        return;
+    }
+}

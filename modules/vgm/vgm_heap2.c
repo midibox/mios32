@@ -109,8 +109,6 @@ u16 vgmh2_assimilate_down(u16 c, u16 p_freemask){
 }
 
 //------------------------------Main functions----------------------------------
-//TODO use regular malloc functions if these fail; also check input pointers to
-//see whether they're for these functions or regular malloc
 
 void vgmh2_init(){
     //Clear heap data 4 bytes at a time
