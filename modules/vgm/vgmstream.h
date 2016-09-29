@@ -69,5 +69,6 @@ extern VgmSource* VGM_SourceStream_Create();
 extern void VGM_SourceStream_Delete(void* sourcestream);
 extern s32 VGM_SourceStream_Start(VgmSource* source, char* filename);
 static inline u8 VGM_SourceStream_getBlockByte(VgmSourceStream* vss, u32 blockaddr){ return ((blockaddr < vss->blocklen) ? (vss->block[blockaddr]) : 0); }
+extern void VGM_SourceStream_UpdateUsage(VgmSource* source);
 
 #endif /* _VGMSTREAM_H */

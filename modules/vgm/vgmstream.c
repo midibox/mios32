@@ -407,6 +407,7 @@ VgmSource* VGM_SourceStream_Create(){
     source->psgclock = 3579545;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
+    source->usage.all = 0;
     VgmSourceStream* vss = vgmh2_malloc(sizeof(VgmSourceStream));
     source->data = vss;
     vss->datalen = 0;
@@ -569,6 +570,12 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     free(buf);
     MUTEX_SDCARD_GIVE;
     return 0;
+}
+
+void VGM_SourceStream_UpdateUsage(VgmSource* source){
+    //TODO
+    DBG("ERROR VGM_SourceStream_UpdateUsage not implemented yet");
+    return;
 }
 
 
