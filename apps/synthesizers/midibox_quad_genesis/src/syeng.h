@@ -16,40 +16,6 @@
 #include <genesis.h>
 #include <vgm.h>
 
-typedef union {
-    u32 all;
-    struct {
-        //Don't change the order of these bits, they're accessed by bit mask operations
-        u8 fm1:1;
-        u8 fm2:1;
-        u8 fm3:1;
-        u8 fm4:1;
-        u8 fm5:1;
-        u8 fm6:1;
-        
-        u8 fm1_lfo:1;
-        u8 fm2_lfo:1;
-        u8 fm3_lfo:1;
-        u8 fm4_lfo:1;
-        u8 fm5_lfo:1;
-        u8 fm6_lfo:1;
-        
-        u8 dac:1;
-        u8 fm3_special:1;
-        u8 opn2_globals:1;
-        u8 lfofixed:1;
-        
-        u8 lfofixedspeed:3;
-        u8 dummy:5;
-        
-        u8 sq1:1;
-        u8 sq2:1;
-        u8 sq3:1;
-        u8 noise:1;
-        u8 noisefreqsq3:1;
-        u8 dummy2:3;
-    };
-} usage_bits_t;
 
 typedef union {
     u16 ALL;
@@ -81,7 +47,7 @@ typedef struct {
 extern syngenesis_t syngenesis[GENESIS_COUNT];
 
 typedef struct {
-    usage_bits_t usage;
+    VgmUsageBits usage;
     VgmSource* initsource;
     VgmSource* noteonsource;
     VgmSource* noteoffsource;
@@ -142,7 +108,7 @@ extern void SyEng_ClearVoice(u8 g, u8 v);
 extern void SyEng_HardFlushProgram(synprogram_t* prog);
 extern void SyEng_SoftFlushProgram(synprogram_t* prog);
 
-extern u8 SyEng_GetStaticPI(usage_bits_t usage);
+extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
 extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying);
 extern void SyEng_SilencePI(synproginstance_t* pi);

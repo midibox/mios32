@@ -302,7 +302,7 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
     pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
 }
 
-static s32 AllocatePI(u8 piindex, usage_bits_t pusage){
+static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     synproginstance_t* pi = &proginstances[piindex];
     syngenesis_t* sg;
     u8 i, g, v, use, lfog, lfovaries;
@@ -530,6 +530,10 @@ static s32 AllocatePI(u8 piindex, usage_bits_t pusage){
                                 return -8;
                             }
                             g = bestg;
+                            //Set it up to be fixed to us
+                            syngenesis[g].lfovaries = 0;
+                            syngenesis[g].lfofixed = 1;
+                            syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         }
                         //Find best voice
                         bestscore = 99;
@@ -844,7 +848,7 @@ void SyEng_Tick(){
     }
 }
 
-u8 SyEng_GetStaticPI(usage_bits_t usage){
+u8 SyEng_GetStaticPI(VgmUsageBits usage){
     u8 piindex = FindBestPIToReplace(0xFF, 0xFF);
     synproginstance_t* pi = &proginstances[piindex];
     //If this PI was previously in use: release its resources, stop playing, reset voices

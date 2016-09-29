@@ -24,11 +24,8 @@ void DemoPrograms_Init(){
     synprogram_t* prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[1].program = prog;
     sprintf(prog->name, "Grand Piano");
-    prog->usage = (usage_bits_t){.fm1=1, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
     prog->rootnote = 72;
+    prog->usage.all = 0;
     //Create init VGM file
     VgmSource* source = VGM_SourceRAM_Create();
     VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
@@ -40,36 +37,38 @@ void DemoPrograms_Init(){
     //
     u8 i=0;
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x30, .data=0x71 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x34, .data=0x0D };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x38, .data=0x33 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x34, .data=0x0D };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3C, .data=0x01 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x40, .data=0x23 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x44, .data=0x2D };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x48, .data=0x26 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x44, .data=0x2D };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4C, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x50, .data=0x5F };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x54, .data=0x99 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x58, .data=0x5F };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x54, .data=0x99 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x5C, .data=0x94 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x60, .data=0x05 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x64, .data=0x05 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x68, .data=0x05 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x64, .data=0x05 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x6C, .data=0x07 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x70, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x74, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x78, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x74, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x7C, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x80, .data=0x11 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x84, .data=0x11 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x88, .data=0x11 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x84, .data=0x11 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x8C, .data=0xA6 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x90, .data=0x00 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x94, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x98, .data=0x00 };
+    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x94, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x9C, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB0, .data=0x32 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB4, .data=0xC0 };
     //
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -81,8 +80,9 @@ void DemoPrograms_Init(){
     data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
         data[0].cmd  = 0x52;
         data[0].addr = 0xA4;
-    //data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xA4, .data=0x22, .data2=0x69 };
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -92,6 +92,8 @@ void DemoPrograms_Init(){
     data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
@@ -99,11 +101,8 @@ void DemoPrograms_Init(){
     prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[5].program = prog;
     sprintf(prog->name, "3Voice Chord");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=1, .fm3=0, .fm4=1, .fm5=1, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=0, .noise=0, .noisefreqsq3=0};
     prog->rootnote = 60;
+    prog->usage.all = 0;
     //Create init VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
@@ -147,6 +146,8 @@ void DemoPrograms_Init(){
     //data[i++] = (VgmChipWriteCmd){.cmd=0x53, .addr=0xB5, .data=0xC0 };
     //
     for(; i<27; ++i) data[i] = (VgmChipWriteCmd){.all=0};
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -167,6 +168,8 @@ void DemoPrograms_Init(){
         data[4].cmd  = 0x53;
         data[4].addr = 0xA5;
     data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF5, .data2=0}; //Key on Ch5
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -176,8 +179,10 @@ void DemoPrograms_Init(){
     data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x01, .data2=0}; //Key off Ch2
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch2
-    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch2
+    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch4
+    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch5
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
@@ -185,26 +190,10 @@ void DemoPrograms_Init(){
     prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[2].program = prog;
     sprintf(prog->name, "SMB1 Coin");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=1, .sq3=0, .noise=0, .noisefreqsq3=0};
     prog->rootnote = 60;
+    prog->usage.all = 0;
     //Create init VGM file
     prog->initsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    //
-    i=0;
-    //SQ2
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111 }; //Attenuate SQ2
-    //
-    prog->initsource = source;
-    */
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
@@ -235,29 +224,19 @@ void DemoPrograms_Init(){
     data[15] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111100, .data2=0}; //Attenuate
     data[16] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
     data[17] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     prog->noteoffsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off SQ2
-    prog->noteoffsource = source;
-    */
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[4].program = prog;
     sprintf(prog->name, "Noise Test");
-    prog->usage = (usage_bits_t){.fm1=0, .fm2=0, .fm3=0, .fm4=0, .fm5=0, .fm6=0,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=0, .fm3_special=0, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=0, .sq2=0, .sq3=1, .noise=1, .noisefreqsq3=1};
     prog->rootnote = 42;
+    prog->usage.all = 0;
     //Create init VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
@@ -271,6 +250,8 @@ void DemoPrograms_Init(){
     data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111 }; //Attenuate noise
     data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
     //
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -284,6 +265,8 @@ void DemoPrograms_Init(){
         data[0].data  = 0b11000000;
         data[0].data2 = 0b00001000;
     data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11110000, .data2=0}; //Turn on noise
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -292,6 +275,8 @@ void DemoPrograms_Init(){
     data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// VGM PLAYBACK ///////////////////////////////
@@ -299,27 +284,18 @@ void DemoPrograms_Init(){
     prog = vgmh2_malloc(sizeof(synprogram_t));
     channels[3].program = prog;
     sprintf(prog->name, "VGM Playback");
-    prog->usage = (usage_bits_t){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
     prog->rootnote = 76;
+    prog->usage.all = 0;
     //Create init VGM file
     prog->initsource = NULL;
-    /*
-    source = VGM_SourceRAM_Create();
-    vsr = (VgmSourceRAM*)source->data;
-    vsr->numcmds = 1;
-    data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
-    vsr->cmds = data;
-    i=0;
-    //Some BS which we don't care about
-    data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
-    prog->initsource = source;
-    */
     //Create note-on VGM file
     source = VGM_SourceStream_Create();
     VGM_SourceStream_Start(source, "BEATNIK.VGM");
+    source->usage = (VgmUsageBits){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
+                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                 .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                 .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
+    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -337,6 +313,8 @@ void DemoPrograms_Init(){
     data[7] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
     data[8] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111, .data2=0}; //Turn off
     data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off
+    VGM_Source_UpdateUsage(source);
+    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
 }
 
