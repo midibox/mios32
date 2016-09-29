@@ -197,8 +197,7 @@ void Mode_Vgm_GotFocus(){
         }
         //If applicable, make sure we're on a state boundary
         if(selvgm != NULL && selvgm->type == VGM_SOURCE_TYPE_RAM && vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
-            VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-            GotoNextState(selvgm, vhr, 0xFFFFFFFF, 100, 1);
+            VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100, 1);
         }
     }
     DrawMenu();
@@ -297,7 +296,7 @@ void Mode_Vgm_Background(){
     }else if(selvgm->type == VGM_SOURCE_TYPE_RAM){
         //Draw commands list
         VGM_Player_docapture = 0;
-        s32 a = vhr->srcaddr - 3;
+        s32 a = vhr->srcaddr - 4;
         u8 r;
         for(r=0; r<7; ++r){
             if(a < 0 || a >= vsr->numcmds){
@@ -338,7 +337,7 @@ void Mode_Vgm_Background(){
             }
         }
     }else if(selvgm->type == VGM_SOURCE_TYPE_RAM){
-        s32 a = vhr->srcaddr;
+        s32 a = vhr->srcaddr - 1;
         if(a < 0 || a >= vsr->numcmds){
             ClearGenesisState_Op();
             ClearGenesisState_Chan();
@@ -489,8 +488,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     //If applicable, make sure we're on a state boundary
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        GotoNextState(selvgm, vhr, 0xFFFFFFFF, 100, 1);
+                        VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100, 1);
                     }
                     FrontPanel_LEDSet(FP_LED_CMDS, 0);
                     FrontPanel_LEDSet(FP_LED_STATE, 1);
@@ -500,8 +498,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     if(statemode) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        if(vhr->srcaddr > 0) --vhr->srcaddr;
+                        VGM_HeadRAM_Backward1(proginstances[vgmpreviewpi].head);
                     }
                     break;
                 case FP_B_CMDDN:
@@ -509,25 +506,21 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     if(statemode) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
-                        if(vhr->srcaddr < vsr->numcmds-1) ++vhr->srcaddr;
+                        VGM_HeadRAM_Forward1(proginstances[vgmpreviewpi].head);
                     }
                     break;
                 case FP_B_STATEUP:
                     if(!state) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        GotoPrevState(selvgm, vhr, 0xFFFFFFFF, 100);
+                        VGM_HeadRAM_BackwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100);
                     }
                     break;
                 case FP_B_STATEDN:
                     if(!state) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        GotoNextState(selvgm, vhr, 0xFFFFFFFF, 100, 0);
+                        VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100, 0);
                     }
                     break;
                 case FP_B_NEW:
@@ -543,7 +536,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM && !statemode){
                         EnsurePreviewPiOK();
                         VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-                        VGM_SourceRAM_DeleteCmd(selvgm, vhr->srcaddr);
+                        VGM_SourceRAM_DeleteCmd(selvgm, vhr->srcaddr-1);
                         usagechange = 1;
                     }
                     break;
@@ -606,7 +599,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
 
 void InsertCommand(VgmChipWriteCmd cmd){
     VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-    VGM_SourceRAM_InsertCmd(selvgm, vhr->srcaddr, cmd);
+    VGM_SourceRAM_InsertCmd(selvgm, vhr->srcaddr-1, cmd);
     usagechange = 1;
     submode = 0;
     DrawMenu();
@@ -699,7 +692,7 @@ void Mode_Vgm_BtnEdit(u8 button, u8 state){
             EditState(selvgm, proginstances[vgmpreviewpi].head, 0xFF, 0, button, state, selvoice, selop); //TODO handle key on and algorithm
         }else{
             VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
-            s32 a = vhr->srcaddr;
+            s32 a = vhr->srcaddr-1;
             if(a < 0 || a >= vsr->numcmds) return;
             vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, button, state, 0xFF, 0xFF); //TODO handle key on and algorithm
         }
@@ -718,7 +711,7 @@ void Mode_Vgm_EncDatawheel(s32 incrementer){
             EditState(selvgm, proginstances[vgmpreviewpi].head, FP_E_DATAWHEEL, incrementer, 0xFF, 0, selvoice, selop);
         }else{
             VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
-            s32 a = vhr->srcaddr;
+            s32 a = vhr->srcaddr-1;
             if(a < 0 || a >= vsr->numcmds) return;
             vsr->cmds[a] = EditCmd(vsr->cmds[a], FP_E_DATAWHEEL, incrementer, 0xFF, 0, 0xFF, 0xFF);
         }
@@ -820,7 +813,7 @@ void Mode_Vgm_EncEdit(u8 encoder, s32 incrementer){
             EditState(selvgm, proginstances[vgmpreviewpi].head, encoder, incrementer, 0xFF, 0, selvoice, reqop);
         }else{
             VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
-            s32 a = vhr->srcaddr;
+            s32 a = vhr->srcaddr-1;
             if(a < 0 || a >= vsr->numcmds) return;
             vsr->cmds[a] = EditCmd(vsr->cmds[a], encoder, incrementer, 0xFF, 0, 0xFF, 0xFF);
         }
