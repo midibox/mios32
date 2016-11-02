@@ -2358,3 +2358,8 @@ http://midibox.org/forums/topic/19774-question-about-expected-behaviour-in-song-
 2) In the track events page, offer the option to additionally select by synthesizer name (an abbreviation of 6-8 characters would be enough). When selecting a synthesizer name (or when loading a session), it could then select the according out-port and channel (and display it).
 
 This would help tremendously, if people remap synthesizers to other out ports, if setups grow, etc. I currently have a printed out lookup-table glued next to the synths, so i can find on which wire/channel a synth is :-).
+
+- From http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176175
+-independent bipolar LFO amount to all the destinations
+
+-a Trigger layer that can be configured as a Sample&Hold for the LFO values. When you program that trigger, the LFO value at that moment is being sent out. Alternatively, the different waveforms could just get the option "triggered" (like "SINEtrg") so the value is only sent when there is a note / trigger event. 
