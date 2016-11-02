@@ -78,6 +78,11 @@ endif
 # define CPP flags
 CPPFLAGS += $(CFLAGS) -fno-rtti -fno-exceptions -Wno-write-strings
 
+# to monitor stack usage via $MIOS32_BIN_PATH/avstack.pl
+# see also
+# - http://dlbeer.co.nz/oss/avstack.html and 
+# - https://mcuoneclipse.com/2015/08/21/gnu-static-stack-usage-analysis/
+CFLAGS += -fstack-usage
 
 # convert .c/.s -> .o
 THUMB_OBJS = $(THUMB_SOURCE:.c=.o)
