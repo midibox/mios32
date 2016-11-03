@@ -42,6 +42,10 @@ extern "C" {
 #include <ff.h>
 }
 
+#if !defined(MIOS32_FAMILY_EMULATION)
+extern "C" void vPortMallocDebugInfo(void);
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -462,9 +466,14 @@ s32 TERMINAL_PrintSystem(void *_output_function)
 /////////////////////////////////////////////////////////////////////////////
 s32 TERMINAL_PrintMemoryInfo(void *_output_function)
 {
+#if defined(MIOS32_FAMILY_EMULATION)
   void (*out)(char *format, ...) = _output_function;
-
-  out("Not supported yet");
+  out("Not supported in emulation!");
+#else
+  MUTEX_MIDIOUT_TAKE;
+  vPortMallocDebugInfo();
+  MUTEX_MIDIOUT_GIVE;
+#endif
 
   return 0; // no error
 }

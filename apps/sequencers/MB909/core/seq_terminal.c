@@ -62,8 +62,9 @@
 #include "seq_statistics.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
-#include "umm_malloc.h"
 #include "uip_terminal.h"
+
+extern void vPortMallocDebugInfo(void);
 #endif
 
 
@@ -1162,11 +1163,13 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
 
 s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function)
 {
-  //void (*out)(char *format, ...) = _output_function;
-  // TODO: umm_info doesn't allow to define output function
-
-#if !defined(MIOS32_FAMILY_EMULATION)
-  umm_info( NULL, 1 );
+#if defined(MIOS32_FAMILY_EMULATION)
+  void (*out)(char *format, ...) = _output_function;
+  out("Not supported in emulation!");
+#else
+  MUTEX_MIDIOUT_TAKE;
+  vPortMallocDebugInfo();
+  MUTEX_MIDIOUT_GIVE;
 #endif
 
   return 0; // no error
