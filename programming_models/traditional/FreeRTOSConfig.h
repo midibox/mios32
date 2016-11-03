@@ -59,7 +59,7 @@
 #endif
 #define configSUPPORT_DYNAMIC_ALLOCATION        1
 #define configTOTAL_HEAP_SIZE                   ((size_t)((MIOS32_HEAP_SIZE)))
-#define configAPPLICATION_ALLOCATED_HEAP        0
+#define configAPPLICATION_ALLOCATED_HEAP        1
 
 /* Hook function related definitions. */
 #define configUSE_IDLE_HOOK                     1
