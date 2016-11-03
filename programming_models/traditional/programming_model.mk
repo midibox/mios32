@@ -25,7 +25,7 @@ THUMB_SOURCE += \
 		$(FREE_RTOS)/Source/queue.c \
 		$(FREE_RTOS)/Source/timers.c \
 		$(FREE_RTOS)/Source/portable/GCC/ARM_CM3/port.c \
-		$(FREE_RTOS)/Source/portable/MemMang/umm_malloc.c 
+		$(FREE_RTOS)/Source/portable/MemMang/heap_4.c
 
 ifeq ($(FAMILY),STM32F10x)
 THUMB_SOURCE += $(MIOS32_PATH)/programming_models/traditional/startup_stm32f10x_hd.c
