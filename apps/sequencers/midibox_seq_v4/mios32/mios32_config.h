@@ -32,17 +32,27 @@ extern void APP_SendDebugMessage(char *format, ...);
 // Stack size for FreeRTOS tasks as defined by the programming model
 // Note that each task maintains it's own stack!
 // If you want to define a different stack size for your application tasks
-// (-> xTaskCreate() function), keep in mind that it has to be divided by 4,
-// since the stack width of ARM is 32bit.
-// The FreeRTOS define "configMINIMAL_STACK_SIZE" is (MIOS32_MINIMAL_STACK_SIZE/4)
-// it can be used in applications as well, e.g.
-// xTaskCreate(TASK_Period1mS, "Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
-#define MIOS32_MINIMAL_STACK_SIZE 1100
+
+// memory allocated for tasks (observe this with avstack.pl and "memory" terminal command!)
+// add +64 for interrupts
+#define MIOS32_TASK_HOOKS_STACK_SIZE        256
+#define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE  1200 // note: avstack.pl shows 500, but actually 1000 for TERMINAL_BrowserUploadCallback have to be considered as well. 1200 should be save (1000 for callback + memory consumed by the caller)
+#define UIP_TASK_STACK_SIZE                 512
+#define MIDI_TASK_STACK_SIZE               1400
+#define PERIOD1MS_TASK_STACK_SIZE          1400
+#define PERIOD1MS_LOWPRIO_TASK_STACK_SIZE  1400
+#define PATTERN_TASK_STACK_SIZE             512
+
+// only used by idle task
+#define MIOS32_MINIMAL_STACK_SIZE           384
+
+
 // P.S.: in order to check if the stack size is sufficient, store a preset pattern in Event->Presets page
 // Sequencer could crash with hardfault on a buffer overrun
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 14*1024
+#define MIOS32_HEAP_SIZE 13*1024
+
 
 // for LPC17: simplify allocation of large arrays
 #if defined(MIOS32_FAMILY_LPC17xx)
