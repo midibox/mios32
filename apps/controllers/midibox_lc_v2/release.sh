@@ -19,29 +19,16 @@ mkdir $RELEASE_DIR
 cp README.txt $RELEASE_DIR
 #cp CHANGELOG.txt $RELEASE_DIR
 
-################################################################################
-#echo "Building for MBHP_CORE_STM32"
-
-make cleanall
-export MIOS32_FAMILY=STM32F10x
-export MIOS32_PROCESSOR=STM32F103RE
-export MIOS32_BOARD=MBHP_CORE_STM32
-export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_STM32
-make > $RELEASE_DIR/MBHP_CORE_STM32/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_STM32
-
 ###############################################################################
-echo "Building for MBHP_CORE_LPC17"
-
-make cleanall
-export MIOS32_FAMILY=LPC17xx
-export MIOS32_PROCESSOR=LPC1769
-export MIOS32_BOARD=MBHP_CORE_LPC17
-export MIOS32_LCD=universal
-mkdir -p $RELEASE_DIR/MBHP_CORE_LPC17
-make > $RELEASE_DIR/MBHP_CORE_LPC17/log.txt
-cp project.hex $RELEASE_DIR/MBHP_CORE_LPC17
+configs=( stm32f1 lpc17 stm32f4 )
+for i in "${configs[@]}"; do
+  echo "Building for $i"
+  source ../../../../source_me_${i}
+  make cleanall
+  mkdir -p $RELEASE_DIR/$MIOS32_BOARD
+  make > $RELEASE_DIR/$MIOS32_BOARD/log.txt || exit 1
+  cp project.hex $RELEASE_DIR/$MIOS32_BOARD
+done
 
 ###############################################################################
 make cleanall
