@@ -476,3 +476,39 @@ uint8_t *puc;
 	}
 }
 
+
+// TK: inserted for debugging purposes, typically used in a terminal
+#include <mios32.h>
+
+void vPortMallocDebugInfo(void)
+{
+  {
+    size_t uxAddress = (size_t)ucHeap;
+    if( ( uxAddress & portBYTE_ALIGNMENT_MASK ) != 0 ) {
+      uxAddress += ( portBYTE_ALIGNMENT - 1 );
+      uxAddress &= ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
+    }
+    BlockLink_t *pxIterator = (BlockLink_t *)uxAddress;
+
+    unsigned numBlock=0;
+    for(numBlock=0; pxIterator->xBlockSize != 0; pxIterator = (BlockLink_t *)((size_t)pxIterator + (pxIterator->xBlockSize & ~xBlockAllocatedBit)), ++numBlock) {
+      u8 *mem = (u8 *)((size_t)pxIterator + xHeapStructSize);
+      u32 size = (pxIterator->xBlockSize & ~xBlockAllocatedBit) - xHeapStructSize;
+
+      if( pxIterator->xBlockSize & xBlockAllocatedBit ) {
+	MIOS32_MIDI_SendDebugMessage("Block #%d of size %d bytes located at 0x%08x\n", numBlock+1, size, mem);
+	MIOS32_MIDI_SendDebugHexDump(mem, size);
+      } else {
+	MIOS32_MIDI_SendDebugMessage("Block #%d of size %d bytes located at 0x%08x IS FREE\n", numBlock+1, size, mem);
+      }
+    }
+  }
+
+  {
+    s32 heap_size = configTOTAL_HEAP_SIZE;
+    s32 free_heap = xPortGetMinimumEverFreeHeapSize(); // not for interest: xPortGetFreeHeapSize()
+    s32 used_heap = heap_size - free_heap;
+
+    MIOS32_MIDI_SendDebugMessage("Heap: %d of %d bytes used (%d%%), %d bytes free", used_heap, heap_size, (used_heap*100)/heap_size, free_heap);
+  }
+}
