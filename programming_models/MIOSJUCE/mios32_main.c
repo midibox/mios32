@@ -110,7 +110,7 @@ void MIOS32_Main(void) {
 #endif
 */
   // start the task which calls the application hooks
-  xTaskCreate(TASK_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_Hooks, "Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 
 
 #if ( configUSE_IDLE_HOOK == 1 )
@@ -124,7 +124,7 @@ void MIOS32_Main(void) {
     CALL A FUNCTION THAT MIGHT BLOCK. */  
     
     // emulating the idle task, this will be a thread at the lowest priority
-    xTaskCreate(vApplicationIdleHook, (signed portCHAR *)"Idle", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+    xTaskCreate(vApplicationIdleHook, "Idle", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
 
 }
 #endif

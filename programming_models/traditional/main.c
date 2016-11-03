@@ -150,9 +150,9 @@ int main(void)
 #endif
 
   // start the task which calls the application hooks
-  xTaskCreate(TASK_Hooks, (signed portCHAR *)"Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_Hooks, "Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 #if !defined(MIOS32_DONT_USE_MIDI)
-  xTaskCreate(TASK_MIDI_Hooks, (signed portCHAR *)"MIDI_Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_MIDI_Hooks, "MIDI_Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
 #endif
 
   // start the scheduler
@@ -353,6 +353,52 @@ void vApplicationMallocFailedHook(void)
 
   _abort();
 }
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Required if static allocation is enabled in FreeRTOSConfig.h
+/////////////////////////////////////////////////////////////////////////////
+#if configSUPPORT_STATIC_ALLOCATION && configUSE_IDLE_HOOK
+
+// default:
+#ifndef MIOS32_APP_BACKGROUND_STACK_SIZE
+#define MIOS32_APP_BACKGROUND_SIZE ((MIOS32_MINIMAL_STACK_SIZE)/4)
+#warning "MIOS32_APP_BACKGROUND_SIZE hasn't been defined in mios32_config.h --- using default MIOS32_MINIMAL_STACK_SIZE"
+#endif
+
+static StaticTask_t xIdleTaskTCBBuffer;
+static StackType_t xIdleStack[MIOS32_APP_BACKGROUND_SIZE];
+ 
+void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize)
+{
+  *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
+  *ppxIdleTaskStackBuffer = &xIdleStack[0];
+  *pulIdleTaskStackSize = MIOS32_APP_BACKGROUND_SIZE;
+}
+#endif
+
+#if configSUPPORT_STATIC_ALLOCATION && configUSE_TIMERS
+
+// default:
+#ifndef MIOS32_FREERTOS_TIMER_TASK_STACK_SIZE
+#define MIOS32_FREERTOS_TIMER_TASK_STACK_SIZE ((MIOS32_MINIMAL_STACK_SIZE)/4)
+#warning "MIOS32_FREERTOS_TIMER_TASK_STACK_SIZE hasn't been defined in mios32_config.h --- using default MIOS32_MINIMAL_STACK_SIZE"
+#endif
+
+static StaticTask_t xTimerTaskTCBBuffer;
+static StackType_t xTimerStack[MIOS32_FREERTOS_TIMER_TASK_STACK_SIZE];
+ 
+/* If static allocation is supported then the application must provide the
+   following callback function - which enables the application to optionally
+   provide the memory that will be used by the timer task as the task's stack
+   and TCB. */
+void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer, StackType_t **ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize)
+{
+  *ppxTimerTaskTCBBuffer = &xTimerTaskTCBBuffer;
+  *ppxTimerTaskStackBuffer = &xTimerStack[0];
+  *pulTimerTaskStackSize = MIOS32_FREERTOS_TIMER_TASK_STACK_SIZE;
+}
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
