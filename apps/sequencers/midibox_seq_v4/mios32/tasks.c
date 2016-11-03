@@ -90,11 +90,11 @@ s32 TASKS_Init(u32 mode)
   xJ16Semaphore = xSemaphoreCreateRecursiveMutex();
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 
-  // start tasks
-  xTaskCreate(TASK_MIDI,              "MIDI",         configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, NULL);
-  xTaskCreate(TASK_Period1mS,         "Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
-  xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
-  xTaskCreate(TASK_Pattern,           "Pattern",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
+  // start tasks (sizes are defined in mios32_config.h and have to be observed with the avstack.pl tool)
+  xTaskCreate(TASK_MIDI,              "MIDI",         (MIDI_TASK_STACK_SIZE)/4,              NULL, PRIORITY_TASK_MIDI, NULL);
+  xTaskCreate(TASK_Period1mS,         "Period1mS",    (PERIOD1MS_TASK_STACK_SIZE)/4,         NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", (PERIOD1MS_LOWPRIO_TASK_STACK_SIZE)/4, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
+  xTaskCreate(TASK_Pattern,           "Pattern",      (PATTERN_TASK_STACK_SIZE)/4,           NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
 
   // finally init the uIP task
   UIP_TASK_Init(0);
