@@ -35,10 +35,17 @@ extern void __libc_init_array(void);  /* calls CTORS of static objects */
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Task Priorities
+// Task Priorities and stack sizes
 /////////////////////////////////////////////////////////////////////////////
 
 #define PRIORITY_TASK_HOOKS		( tskIDLE_PRIORITY + 3 )
+
+#ifndef MIOS32_TASK_HOOKS_STACK_SIZE
+#define MIOS32_TASK_HOOKS_STACK_SIZE (configMINIMAL_STACK_SIZE*4)
+#endif
+#ifndef MIOS32_TASK_MIDI_HOOKS_STACK_SIZE
+#define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE (configMINIMAL_STACK_SIZE*4)
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -162,9 +169,9 @@ int main(void)
 #endif
 
   // start the task which calls the application hooks
-  xTaskCreate(TASK_Hooks, "Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_Hooks, "Hooks", (MIOS32_TASK_HOOKS_STACK_SIZE)/4, NULL, PRIORITY_TASK_HOOKS, NULL);
 #if !defined(MIOS32_DONT_USE_MIDI)
-  xTaskCreate(TASK_MIDI_Hooks, "MIDI_Hooks", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_HOOKS, NULL);
+  xTaskCreate(TASK_MIDI_Hooks, "MIDI_Hooks", (MIOS32_TASK_MIDI_HOOKS_STACK_SIZE)/4, NULL, PRIORITY_TASK_HOOKS, NULL);
 #endif
 
   // start the scheduler
