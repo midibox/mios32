@@ -121,8 +121,10 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 #if 0
 #define configUSE_TRACE_FACILITY                1
 #define configGENERATE_RUN_TIME_STATS           0
+#if configGENERATE_RUN_TIME_STATS
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+#endif
 #endif
 
 // for LPC17: simplify allocation of large arrays

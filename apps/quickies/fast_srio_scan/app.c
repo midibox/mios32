@@ -102,7 +102,7 @@ void APP_Init(void)
 			   SRIO_Handler);
 
   // start task
-  xTaskCreate(TASK_DIN_Handler, (signed portCHAR *)"DIN_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_HANDLER, NULL);
+  xTaskCreate(TASK_DIN_Handler, "DIN_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DIN_HANDLER, NULL);
 
 }
 

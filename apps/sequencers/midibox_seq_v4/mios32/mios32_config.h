@@ -36,7 +36,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 // since the stack width of ARM is 32bit.
 // The FreeRTOS define "configMINIMAL_STACK_SIZE" is (MIOS32_MINIMAL_STACK_SIZE/4)
 // it can be used in applications as well, e.g.
-// xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+// xTaskCreate(TASK_Period1mS, "Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
 #define MIOS32_MINIMAL_STACK_SIZE 1100
 // P.S.: in order to check if the stack size is sufficient, store a preset pattern in Event->Presets page
 // Sequencer could crash with hardfault on a buffer overrun
@@ -63,8 +63,10 @@ extern void APP_SendDebugMessage(char *format, ...);
 // see documentation under http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
 #define configUSE_TRACE_FACILITY                0
 #define configGENERATE_RUN_TIME_STATS           0
+#if configGENERATE_RUN_TIME_STATS
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+#endif
 
 
 // maximum idle counter value to be expected

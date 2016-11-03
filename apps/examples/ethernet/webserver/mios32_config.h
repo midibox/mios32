@@ -39,9 +39,10 @@
 
 // optional performance measuring
 #define configGENERATE_RUN_TIME_STATS           1
+#if configGENERATE_RUN_TIME_STATS
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
-
+#endif
 
 
 // optional task information

@@ -58,5 +58,5 @@ void VGM_SDTask_Init(){
     xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
     vgm_sdtask_disable = 0;
     vgm_sdtask_usingsdcard = 0;
-    xTaskCreate(VGM_SDTask, (signed portCHAR *)"VGM_SD", configMINIMAL_STACK_SIZE, NULL, VGM_SDTASK_PRIORITY, NULL);
+    xTaskCreate(VGM_SDTask, "VGM_SD", configMINIMAL_STACK_SIZE, NULL, VGM_SDTASK_PRIORITY, NULL);
 }

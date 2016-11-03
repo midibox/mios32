@@ -75,7 +75,7 @@ void APP_Init(void)
   BLM_ConfigSet(config);
 
   // start BLM check task
-  xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
+  xTaskCreate(TASK_BLM_Check, "BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
 
   // send welcome message to MIOS terminal
 #if DEBUG_VERBOSE_LEVEL >= 1

@@ -63,7 +63,6 @@
 #include "seq_statistics.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
-#include "umm_malloc.h"
 #include "uip_terminal.h"
 #endif
 
@@ -1191,12 +1190,9 @@ s32 SEQ_TERMINAL_PrintGrooveTemplates(void *_output_function)
 
 s32 SEQ_TERMINAL_PrintMemoryInfo(void *_output_function)
 {
-  //void (*out)(char *format, ...) = _output_function;
-  // TODO: umm_info doesn't allow to define output function
+  void (*out)(char *format, ...) = _output_function;
 
-#if !defined(MIOS32_FAMILY_EMULATION)
-  umm_info( NULL, 1 );
-#endif
+  out("Not supported yet");
 
   return 0; // no error
 }

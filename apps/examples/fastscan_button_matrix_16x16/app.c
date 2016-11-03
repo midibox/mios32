@@ -100,7 +100,7 @@ void APP_Init(void)
   keyboard_delay_slowest = INITIAL_KEYBOARD_DELAY_SLOWEST;
 
   // start matrix scan task
-  xTaskCreate(TASK_MatrixScan, (signed portCHAR *)"MatrixScan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
+  xTaskCreate(TASK_MatrixScan, "MatrixScan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
 }
 
 

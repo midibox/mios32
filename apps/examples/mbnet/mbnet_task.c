@@ -77,7 +77,7 @@ s32 MBNET_TASK_Init(u32 mode)
   xMBNETSemaphore = xSemaphoreCreateMutex();
 
   // start task
-  xTaskCreate(MBNET_TASK_Handler, (signed portCHAR *)"MBNet", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
+  xTaskCreate(MBNET_TASK_Handler, "MBNet", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
 
   return 0; // no error
 }

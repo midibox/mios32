@@ -118,7 +118,7 @@ void APP_Init(void)
   }
 
   // start task
-  xTaskCreate(TASK_MATRIX_Scan, (signed portCHAR *)"MATRIX_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
+  xTaskCreate(TASK_MATRIX_Scan, "MATRIX_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MATRIX_SCAN, NULL);
 }
 
 

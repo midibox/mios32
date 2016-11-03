@@ -104,8 +104,8 @@ void APP_Init(void)
   SYNTH_FILE_Init(0);
 
   // start task
-  xTaskCreate(TASK_Periodic_1mS, (signed portCHAR *)"Periodic_1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIODIC_1MS, NULL);
-  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+  xTaskCreate(TASK_Periodic_1mS, "Periodic_1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIODIC_1MS, NULL);
+  xTaskCreate(TASK_Period_1mS_LP, "1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
 }
 
 

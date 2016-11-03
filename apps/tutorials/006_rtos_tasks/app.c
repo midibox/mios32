@@ -49,7 +49,7 @@ void APP_Init(void)
     MIOS32_BOARD_J5_PinInit(pin, MIOS32_BOARD_PIN_MODE_INPUT_PU);
 
   // start task
-  xTaskCreate(TASK_J5_Scan, (signed portCHAR *)"J5_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_J5_SCAN, NULL);
+  xTaskCreate(TASK_J5_Scan, "J5_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_J5_SCAN, NULL);
 }
 
 

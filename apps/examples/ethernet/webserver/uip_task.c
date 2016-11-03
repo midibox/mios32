@@ -71,7 +71,7 @@ s32 UIP_TASK_Init(u32 mode)
   if( mode > 0 )
     return -1; // only mode 0 supported yet
 
-  xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
+  xTaskCreate(UIP_TASK_Handler, "uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
 
   services_running = 0;
 

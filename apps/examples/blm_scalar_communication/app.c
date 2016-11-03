@@ -83,7 +83,7 @@ void APP_Init(void)
   MIOS32_MIDI_TimeOutCallback_Init(APP_MIDI_TimeOut);
 
   // start tasks
-  xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS, "Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
 
   // send layout request to MBHP_BLM_SCALAR
   BLM_SCALAR_MASTER_SendRequest(blm, 0x00);

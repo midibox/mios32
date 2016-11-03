@@ -151,7 +151,7 @@ void APP_Init(void)
 	// start uIP task
 	UIP_TASK_Init(0);
 
-	xTaskCreate(TASK_CHASE, (signed portCHAR *)"CHASE", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_CHASE, NULL);
+	xTaskCreate(TASK_CHASE, "CHASE", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_CHASE, NULL);
 }
 
 void Check_Faders(void)

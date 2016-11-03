@@ -63,7 +63,7 @@ void APP_Init(void)
   MIOS32_SPI_RC_PinSet(MASTER_SPI, MASTER_CS_PIN, 1); // spi, rc_pin, pin_value
 
   // start task
-  xTaskCreate(TASK_SPI_Handler, (signed portCHAR *)"SPI_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SPI_HANDLER, NULL);
+  xTaskCreate(TASK_SPI_Handler, "SPI_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SPI_HANDLER, NULL);
 }
 
 

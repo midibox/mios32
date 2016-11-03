@@ -105,11 +105,11 @@ s32 TASKS_Init(u32 mode)
 #endif
 
   // start tasks
-  xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
-  xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
-  xTaskCreate(TASK_Period1S,          (signed portCHAR *)"Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
+  xTaskCreate(TASK_Period1mS,         "Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
+  xTaskCreate(TASK_Period1S,          "Period1S",     configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1S, NULL);
 #if USE_MSD
-  xTaskCreate(TASK_MSD,               (signed portCHAR *)"MSD",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
+  xTaskCreate(TASK_MSD,               "MSD",          configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MSD, &xMSDHandle);
 #endif
 
   // create semaphores

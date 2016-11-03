@@ -63,7 +63,7 @@ void APP_Init(void)
   MIOS32_MIDI_DirectRxCallback_Init(NOTIFY_MIDI_Rx);
 
   // install sequencer task
-  xTaskCreate(TASK_SEQ, (signed portCHAR *)"SEQ", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SEQ, NULL);
+  xTaskCreate(TASK_SEQ, "SEQ", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SEQ, NULL);
 }
 
 
