@@ -64,8 +64,10 @@ extern void APP_SendDebugMessage(char *format, ...);
 // see documentation under http://www.midibox.org/mios32/manual/group___f_r_e_e_r_t_o_s___u_t_i_l_s.html
 #define configUSE_TRACE_FACILITY                0
 #define configGENERATE_RUN_TIME_STATS           0
+#if configGENERATE_RUN_TIME_STATS
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+#endif
 
 
 // maximum idle counter value to be expected

@@ -41,7 +41,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 // since the stack width of ARM is 32bit.
 // The FreeRTOS define "configMINIMAL_STACK_SIZE" is (MIOS32_MINIMAL_STACK_SIZE/4)
 // it can be used in applications as well, e.g.
-// xTaskCreate(TASK_Period1mS, (signed portCHAR *)"Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+// xTaskCreate(TASK_Period1mS, "Period1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
 #define MIOS32_MINIMAL_STACK_SIZE 1100
 
 // reserved memory for FreeRTOS pvPortMalloc function

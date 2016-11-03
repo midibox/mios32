@@ -91,10 +91,10 @@ s32 TASKS_Init(u32 mode)
   // TODO: here we could check for NULL and bring MBSEQ into halt state
 
   // start tasks
-  xTaskCreate(TASK_MIDI,              (signed portCHAR *)"MIDI",         configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, NULL);
-  xTaskCreate(TASK_Period1mS,         (signed portCHAR *)"Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
-  xTaskCreate(TASK_Period1mS_LowPrio, (signed portCHAR *)"Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
-  xTaskCreate(TASK_Pattern,           (signed portCHAR *)"Pattern",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
+  xTaskCreate(TASK_MIDI,              "MIDI",         configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_MIDI, NULL);
+  xTaskCreate(TASK_Period1mS,         "Period1mS",    configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS, NULL);
+  xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
+  xTaskCreate(TASK_Pattern,           "Pattern",      configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
 
   // finally init the uIP task
   UIP_TASK_Init(0);

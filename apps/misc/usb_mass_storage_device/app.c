@@ -68,7 +68,7 @@ void APP_Init(void)
   MIOS32_SDCARD_Init(0);
 
   // start task
-  xTaskCreate(TASK_SDCard, (signed portCHAR *)"SDCard", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SDCARD, NULL);
+  xTaskCreate(TASK_SDCard, "SDCard", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SDCARD, NULL);
 
   // optional:
   // allows to send debug messages to UART0 since USB is allocated

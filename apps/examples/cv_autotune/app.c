@@ -116,7 +116,7 @@ void APP_Init(void)
   }
 
   // start task
-  xTaskCreate(TASK_Frq_Measure, (signed portCHAR *)"Frq_Measure", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_FRQ_MEASURE, NULL);
+  xTaskCreate(TASK_Frq_Measure, "Frq_Measure", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_FRQ_MEASURE, NULL);
 }
 
 

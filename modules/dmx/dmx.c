@@ -102,7 +102,7 @@ s32 DMX_Init(u32 mode)
 	dmx_current_channel=0;
 	// Create timer to send DMX universe.
 	vSemaphoreCreateBinary(xDMXSemaphore);
-  xTaskCreate(TASK_DMX, (signed portCHAR *)"DMX", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DMX, NULL);
+  xTaskCreate(TASK_DMX, "DMX", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DMX, NULL);
 	return 0;
 }
 

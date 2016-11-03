@@ -70,7 +70,7 @@ s32 UIP_TASK_Init(u32 mode)
 
   xUIPSemaphore = xSemaphoreCreateMutex();
 
-  xTaskCreate(UIP_TASK_Handler, (signed portCHAR *)"uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
+  xTaskCreate(UIP_TASK_Handler, "uIP", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_UIP, NULL);
 
   return 0; // no error
 }

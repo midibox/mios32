@@ -58,8 +58,8 @@ void APP_Init(void)
   xLCDSemaphore = xSemaphoreCreateRecursiveMutex();
 
   // start tasks
-  xTaskCreate(TASK_LCD1, (signed portCHAR *)"LCD1", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LCD1, NULL);
-  xTaskCreate(TASK_LCD2, (signed portCHAR *)"LCD2", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LCD2, NULL);
+  xTaskCreate(TASK_LCD1, "LCD1", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LCD1, NULL);
+  xTaskCreate(TASK_LCD2, "LCD2", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_LCD2, NULL);
 }
 
 

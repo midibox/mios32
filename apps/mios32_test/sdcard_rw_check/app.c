@@ -107,7 +107,7 @@ void APP_Init(void){
     phase = SDCARD_CHECK_PHASE_STARTWAIT;
     }
   // setup display task
-  xTaskCreate(TASK_Display, (signed portCHAR *)"Display", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DISPLAY, NULL);
+  xTaskCreate(TASK_Display, "Display", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_DISPLAY, NULL);
   }
 
 

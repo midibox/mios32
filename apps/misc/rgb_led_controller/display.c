@@ -244,7 +244,7 @@ s32 DISPLAY_Init(u8 mode)
 	MIOS32_IIC_TransferFinished(0);	
 
 	//init the task that handles the led changing
-	xTaskCreate(DISPLAY_LedTask, (signed portCHAR *)"LedTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &LedTaskHandle);
+	xTaskCreate(DISPLAY_LedTask, "LedTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY+3, &LedTaskHandle);
 		
 #if DEBUG_VERBOSE_LEVEL == 4
 	MIOS32_MIDI_SendDebugMessage("DISPLAY_Init: FINISHED");

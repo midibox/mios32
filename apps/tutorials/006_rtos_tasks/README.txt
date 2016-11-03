@@ -86,7 +86,7 @@ static void TASK_J5_Scan(void *pvParameters);
 Inside the APP_Init() hook we start the scan task the following way:
 -------------------------------------------------------------------------------
   // start task
-  xTaskCreate(TASK_J5_Scan, (signed portCHAR *)"J5_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_J5_SCAN, NULL);
+  xTaskCreate(TASK_J5_Scan, "J5_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_J5_SCAN, NULL);
 -------------------------------------------------------------------------------
 
 

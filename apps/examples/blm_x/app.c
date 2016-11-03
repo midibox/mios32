@@ -63,7 +63,7 @@ void APP_Init(void){
   blm_x_conf.debounce_delay = 10;
   BLM_X_ConfigSet(blm_x_conf);
   // start BLM check task
-  xTaskCreate(TASK_BLM_Check, (signed portCHAR *)"BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
+  xTaskCreate(TASK_BLM_Check, "BLM_Check", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_BLM_CHECK, NULL);
   //send init message
   MIOS32_MIDI_SendDebugMessage("BLM_X Test-Application Started");
   //display all possible LED color combinations (if matrix is big enough!)

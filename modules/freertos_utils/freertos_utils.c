@@ -10,8 +10,10 @@
 //! your mios32_config.h file:
 //! \code
 //! #define configGENERATE_RUN_TIME_STATS           1
+//! #if configGENERATE_RUN_TIME_STATS
 //! #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS  FREERTOS_UTILS_PerfCounterInit
 //! #define portGET_RUN_TIME_COUNTER_VALUE          FREERTOS_UTILS_PerfCounterGet
+//! #endif
 //! \endcode
 //!
 //! Add following include statement to your Makefile:
@@ -72,10 +74,10 @@
 // Local functions
 /////////////////////////////////////////////////////////////////////////////
 
-#if configGENERATE_RUN_TIME_STATS != 0
+#if configGENERATE_RUN_TIME_STATS
 static void PerfTimerIRQ(void);
-#endif
 static s32 FREERTOS_UTILS_PrintBuffer(char *buffer);
+#endif
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -168,6 +170,7 @@ s32 FREERTOS_UTILS_RunTimeStats(void)
 /////////////////////////////////////////////////////////////////////////////
 // Sends individual SysEx strings to MIOS terminal which are separated by \n
 /////////////////////////////////////////////////////////////////////////////
+#if configGENERATE_RUN_TIME_STATS
 static s32 FREERTOS_UTILS_PrintBuffer(char *buffer)
 {
   s32 status = 0;
@@ -192,6 +195,7 @@ static s32 FREERTOS_UTILS_PrintBuffer(char *buffer)
 
   return status;
 }
+#endif
 
 //! \}
 

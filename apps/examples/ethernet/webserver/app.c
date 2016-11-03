@@ -58,7 +58,7 @@ void APP_Init(void)
   
   // Init filesystem and start SD Card monitoring thread
   FS_Init(0);
-  xTaskCreate(TASK_Period1S, (signed portCHAR *)"Period1S", configMINIMAL_STACK_SIZE, NULL, ( tskIDLE_PRIORITY + 4 ), NULL);
+  xTaskCreate(TASK_Period1S, "Period1S", configMINIMAL_STACK_SIZE, NULL, ( tskIDLE_PRIORITY + 4 ), NULL);
   
   // start uIP task
   UIP_TASK_Init(0); 

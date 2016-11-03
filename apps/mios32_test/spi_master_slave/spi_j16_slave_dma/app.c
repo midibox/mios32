@@ -61,7 +61,7 @@ void APP_Init(void)
   MIOS32_SPI_TransferModeInit(SLAVE_SPI, MIOS32_SPI_MODE_SLAVE_CLK1_PHASE1, MIOS32_SPI_PRESCALER_128);
 
   // start task
-  xTaskCreate(TASK_SPI_Handler, (signed portCHAR *)"SPI_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SPI_HANDLER, NULL);
+  xTaskCreate(TASK_SPI_Handler, "SPI_Handler", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_SPI_HANDLER, NULL);
 }
 
 

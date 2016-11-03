@@ -138,7 +138,7 @@ void APP_Init(void)
   MIOS32_SRIO_ScanStart(APP_SRIO_ServiceFinish);
 
   // start tasks
-  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+  xTaskCreate(TASK_Period_1mS, "1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
 }
 
 /////////////////////////////////////////////////////////////////////////////

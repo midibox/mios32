@@ -48,7 +48,7 @@ void APP_Init(void)
   AINSER_Init(0);
 
   // start task
-  xTaskCreate(TASK_AINSER_Scan, (signed portCHAR *)"AINSER_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_AINSER_SCAN, NULL);
+  xTaskCreate(TASK_AINSER_Scan, "AINSER_Scan", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_AINSER_SCAN, NULL);
 }
 
 
