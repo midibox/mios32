@@ -60,6 +60,8 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "Nth2 ", // 13
   "Chrd2", // 14
   "AfTch", // 15
+  "Root ", // 16
+  "Scale", // 17
 };
 
 static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order for the UI selection
@@ -79,6 +81,8 @@ static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order
   SEQ_PAR_Type_Roll2,
   SEQ_PAR_Type_Nth1,
   SEQ_PAR_Type_Nth2,
+  SEQ_PAR_Type_Root,
+  SEQ_PAR_Type_Scale,
 };
 
 static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
@@ -98,6 +102,8 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Nth2
   0x40, // Chord2: A/2
   0,    // Aftertouch: 0
+  0,    // Root: C
+  0,    // Scale: 0
 };
 
 
@@ -429,6 +435,38 @@ s32 SEQ_PAR_Nth2ValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
   return 0; // no nth2
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the Root value if assigned to any parameter layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PAR_RootValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  s8 par_layer;
+
+  if( (par_layer=tcc->link_par_layer_root) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
+    return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
+
+  return 0; // no root
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// returns the Scale if assigned to any parameter layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_PAR_ScaleValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted)
+{
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
+  s8 par_layer;
+
+  if( (par_layer=tcc->link_par_layer_scale) >= 0 &&
+      !(layer_muted & (1 << par_layer)) ) {
+    return SEQ_PAR_Get(track, step, par_layer, par_instrument);
+  }
+
+  return 0; // no scale
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // This function returns the string to a parameter assignment type

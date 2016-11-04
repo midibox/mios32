@@ -50,9 +50,11 @@ typedef enum {
   SEQ_PAR_Type_Nth2=13,
   SEQ_PAR_Type_Chord2=14,
   SEQ_PAR_Type_Aftertouch=15,
+  SEQ_PAR_Type_Root=16,
+  SEQ_PAR_Type_Scale=17,
 } seq_par_layer_type_t;
 
-#define SEQ_PAR_NUM_TYPES 16
+#define SEQ_PAR_NUM_TYPES 18
 
 
 // NOTE: numbers have to be aligned with the strings in SEQ_LCD_PrintNthMode!
@@ -94,6 +96,8 @@ extern s32 SEQ_PAR_RollModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_m
 extern s32 SEQ_PAR_Roll2ModeGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
 extern s32 SEQ_PAR_Nth1ValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
 extern s32 SEQ_PAR_Nth2ValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_RootValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
+extern s32 SEQ_PAR_ScaleValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
 
 extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
 extern s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, char *str_buffer);

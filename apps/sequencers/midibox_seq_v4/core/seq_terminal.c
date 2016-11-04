@@ -987,7 +987,7 @@ s32 SEQ_TERMINAL_PrintSystem(void *_output_function)
   }
 
   u8 scale, root_selection, root;
-  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+  SEQ_CORE_FTS_GetScaleAndRoot(0, 0, 0, NULL, &scale, &root_selection, &root);
   char root_note_str[20];
   stringNote(root_note_str, root + 0x3c);
   out("Current Root Note (via %s): %s\n",

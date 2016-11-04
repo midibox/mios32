@@ -1219,7 +1219,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
 		u8 scale, root_selection, root;
-		SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+		SEQ_CORE_FTS_GetScaleAndRoot(track, t->step, instrument, tcc, &scale, &root_selection, &root);
 		SEQ_SCALE_Note(p, scale, root);
 	      }
 
@@ -1385,7 +1385,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  if( !no_fx && !robotize_flags.NOFX ) {
 		    u8 local_gatelength = 95; // echo only with reduced gatelength to avoid killed notes
 
-		    SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength, robotize_flags);
+		    SEQ_CORE_Echo(track, instrument, t, tcc, *p, bpm_tick + t->bpm_tick_delay, local_gatelength, robotize_flags);
 		  }
 		}
 
@@ -1498,7 +1498,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		  // apply Post-FX
 		  if( !no_fx && !robotize_flags.NOFX) {
 		    if( ( (tcc->echo_repeats & 0x3f) && ( !(tcc->echo_repeats & 0x40) || robotize_flags.ECHO ) && gatelength ) )
-		      SEQ_CORE_Echo(t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength, robotize_flags);
+		      SEQ_CORE_Echo(track, instrument, t, tcc, *p, bpm_tick + t->bpm_tick_delay, gatelength, robotize_flags);
 		  }
 		}
 	      }
@@ -1856,17 +1856,34 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
 
 /////////////////////////////////////////////////////////////////////////////
 // Returns the selected scale and root note selection depending on
-// global/group specific settings
+// global/group specific settings or local track if the appr. parameter 
+// layers are available
 // scale and root note are for interest while playing the sequence -> SEQ_CORE
 // scale and root selection are for interest when editing the settings -> SEQ_UI_OPT
 // Both modules are calling this function to ensure consistency
+// 
+// if *tcc is NULL, the function will always return the global settings
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root)
+s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 track, u8 step, u8 instrument, seq_cc_trk_t *tcc, u8 *scale, u8 *root_selection, u8 *root)
 {
-  // global scale/root selection
-  *scale = seq_core_global_scale;
-  *root_selection = seq_core_global_scale_root_selection;
-  *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
+  if( tcc && tcc->link_par_layer_scale ) {
+    *scale = SEQ_PAR_Get(track, step, tcc->link_par_layer_scale, instrument);
+    if( *scale ) {
+      *scale -= 1;
+    } else {
+      *scale = seq_core_global_scale;
+    }
+  } else {
+    *scale = seq_core_global_scale;
+  }
+
+  if( tcc && tcc->link_par_layer_root ) {
+    *root_selection = 0;
+    *root = SEQ_PAR_Get(track, step, tcc->link_par_layer_root, instrument);
+  } else {
+    *root_selection = seq_core_global_scale_root_selection;
+    *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
+  }
 
   return 0; // no error
 }
@@ -2003,7 +2020,7 @@ u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value)
 /////////////////////////////////////////////////////////////////////////////
 // Echo Fx
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags)
+s32 SEQ_CORE_Echo(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags)
 {
   // thanks to MIDI queuing mechanism, this is a no-brainer :)
 
@@ -2039,7 +2056,7 @@ s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p,
 
   // for the case that force-to-scale is activated
   u8 scale, root_selection, root;
-  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+  SEQ_CORE_FTS_GetScaleAndRoot(track, t->step, instrument, tcc, &scale, &root_selection, &root);
 
   u32 echo_offset = fb_ticks;
   u8 echo_repeats = tcc->echo_repeats;

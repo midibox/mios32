@@ -280,6 +280,8 @@ typedef struct {
   s8 link_par_layer_roll2;       // parameter layer which stores roll2 value (-1 if not assigned)
   s8 link_par_layer_nth1;        // parameter layer which stores nth1 value (-1 if not assigned)
   s8 link_par_layer_nth2;        // parameter layer which stores nth2 value (-1 if not assigned)
+  s8 link_par_layer_root;        // parameter layer which stores root value (-1 if not assigned)
+  s8 link_par_layer_scale;       // parameter layer which stores scale value (-1 if not assigned)
 } seq_cc_trk_t;
 
 

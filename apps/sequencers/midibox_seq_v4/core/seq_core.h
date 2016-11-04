@@ -234,7 +234,7 @@ extern s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_trac
 
 extern s32 SEQ_CORE_Handler(void);
 
-extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 *scale, u8 *root_selection, u8 *root);
+extern s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 track, u8 step, u8 instrument, seq_cc_trk_t *tcc, u8 *scale, u8 *root_selection, u8 *root);
 
 extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
 extern u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value);
@@ -243,7 +243,7 @@ extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
 extern s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 extern s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
 
-extern s32 SEQ_CORE_Echo(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags);
+extern s32 SEQ_CORE_Echo(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags);
 
 extern s32 SEQ_CORE_ResetTrkPosAll(void);
 extern s32 SEQ_CORE_SetTrkPos(u8 track, u8 value, u8 scale_value);

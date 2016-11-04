@@ -181,12 +181,14 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 /////////////////////////////////////////////////////////////////////////////
 static s32 LCD_Handler(u8 high_prio)
 {
-  const char keys_str[13][5] = { // note: this array is also used to determine halfnotes, don't touch it (or some code needs to be adapted below)
-    "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
+  const char keys_str[12][5] = {
+    " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
   };
 
   if( high_prio )
     return 0; // there are no high-priority updates
+
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   // layout:
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
@@ -209,12 +211,12 @@ static s32 LCD_Handler(u8 high_prio)
   // determine the selected scale and root note selection depending on
   // global/group specific settings
   u8 scale, root_selection, root;
-  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+  SEQ_CORE_FTS_GetScaleAndRoot(visible_track, ui_selected_step, ui_selected_instrument, NULL, &scale, &root_selection, &root);
 
   if( ui_selected_item == ITEM_SCALE_ROOT && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(4);
   } else {
-    SEQ_LCD_PrintFormattedString((char *)keys_str[root_selection]);
+    SEQ_LCD_PrintRootValue(root_selection);
   }
   SEQ_LCD_PrintSpaces(2);
 
@@ -235,11 +237,11 @@ static s32 LCD_Handler(u8 high_prio)
 
     for(i=0; i<12; ++i) {
       u8 key_ix = (root + i) % 12;
-      char *key_str = (char *)&keys_str[key_ix+1][0];
+      char *key_str = (char *)&keys_str[key_ix][0];
       u8 halftone = key_str[2] == '#';
 
       u8 scaled_note = SEQ_SCALE_NoteValueGet(key_ix, scale, root);
-      char *scaled_key_str = (char *)&keys_str[(scaled_note % 12)+1][0];
+      char *scaled_key_str = (char *)&keys_str[scaled_note % 12][0];
 
       if( (halftone && y == 0) || (!halftone && y == 1) ) {
 	int j;
