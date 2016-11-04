@@ -199,6 +199,7 @@ s32 SEQ_BLM_Init(u32 mode)
 static s32 SEQ_BLM_LED_UpdateGridMode(void)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 num_rows = BLM_SCALAR_MASTER_NumRowsGet(0);
 
@@ -260,7 +261,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
     BLM_SCALAR_MASTER_RotateViewSet(0, 1);
 
     // branch depending on parameter layer type
-    if( (seq_par_layer_type_t)seq_cc_trk[visible_track].lay_const[ui_selected_par_layer] != SEQ_PAR_Type_Note ) {
+    if( (seq_par_layer_type_t)tcc->lay_const[ui_selected_par_layer] != SEQ_PAR_Type_Note ) {
       u8 instrument = 0;
       int step = 16*ui_selected_step_view;
 
@@ -288,22 +289,23 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 	}
       }
     } else {
-      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : seq_cc_trk[visible_track].mode.FORCE_SCALE;
-      u8 scale, root_selection, root;
-      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
-      if( root_selection == 0 )
-	root = 0; // force root to C (don't use KEYB based root)
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->mode.FORCE_SCALE;
 
       u8 instrument = 0;
       int step = 16*ui_selected_step_view;
       int i;
       for(i=0; i<BLM_SCALAR_MASTER_NUM_COLUMNS; ++i, ++step) {
+	u8 scale, root_selection, root;
+	SEQ_CORE_FTS_GetScaleAndRoot(visible_track, step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
+	if( root_selection == 0 )
+	  root = 0; // force root to C (don't use KEYB based root)
+
 	u16 pattern = 0;
 	if( SEQ_TRG_GateGet(visible_track, step, 0) ) {
 	  int note = blm_root_key + (use_scale ? root : 0);
 
 	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-	  u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
+	  u8 *layer_type = (u8 *)&tcc->lay_const[0];
 	  int note_ix;
 	  for(note_ix=0; note_ix<num_rows; ++note_ix) {
 	    u8 next_note;
@@ -404,6 +406,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depressed)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 num_rows = BLM_SCALAR_MASTER_NumRowsGet(0);
 
@@ -437,7 +440,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
     // TODO: consider ui_selected_trg_layer?
 
     // branch depending on parameter layer type
-    if( (seq_par_layer_type_t)seq_cc_trk[visible_track].lay_const[ui_selected_par_layer] != SEQ_PAR_Type_Note ) {
+    if( (seq_par_layer_type_t)tcc->lay_const[ui_selected_par_layer] != SEQ_PAR_Type_Note ) {
       if( button_row < 16 ) {
 	ui_selected_step = 16*ui_selected_step_view + button_column;
 	u8 par = 1;;
@@ -448,19 +451,19 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	}
 	SEQ_PAR_Set(visible_track, ui_selected_step, ui_selected_par_layer, instrument, par);
 
-	if( seq_cc_trk[visible_track].event_mode == SEQ_EVENT_MODE_CC ) {
+	if( tcc->event_mode == SEQ_EVENT_MODE_CC ) {
 	  // enable gate in any case (or should we disable it if CC value is 0 or button pressed twice?)
 	  SEQ_TRG_GateSet(visible_track, ui_selected_step, instrument, 1);
 	}
       }
     } else {
-      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : seq_cc_trk[visible_track].mode.FORCE_SCALE;
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->mode.FORCE_SCALE;
 
       u8 note_start;
       u8 note_next;
       if( use_scale ) {
 	u8 scale, root_selection, root;
-	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	SEQ_CORE_FTS_GetScaleAndRoot(visible_track, ui_selected_step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
 	if( root_selection == 0 )
 	  root = 0; // force root to C (don't use KEYB based root)
 
@@ -478,7 +481,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
       }
 
       u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-      u8 *layer_type = (u8 *)&seq_cc_trk[visible_track].lay_const[0];
+      u8 *layer_type = (u8 *)&tcc->lay_const[0];
       ui_selected_step = 16*ui_selected_step_view + button_column;
       if( !SEQ_TRG_GateGet(visible_track, ui_selected_step, instrument) ) {
 	// set note on first layer
@@ -768,6 +771,7 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 {
   int i;
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
   u8 sequencer_running = SEQ_BPM_IsRunning();
   u8 num_rows = BLM_SCALAR_MASTER_NumRowsGet(0);
 
@@ -871,7 +875,6 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
     }
 
     u8 transposer_note = 0x3c; // C-3
-    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
     if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
       transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
 
@@ -889,6 +892,7 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 depressed)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
+  seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
   u8 play_note = 0;
   u8 num_rows = BLM_SCALAR_MASTER_NumRowsGet(0);
@@ -942,13 +946,12 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 
       if( use_scale ) {
 	u8 scale, root_selection, root;
-	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	SEQ_CORE_FTS_GetScaleAndRoot(visible_track, ui_selected_step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
 	if( root_selection == 0 )
 	  root = 0; // force root to C (don't use KEYB based root)
 
 	// determine matching note range in scale
 	note_start = 0x3c; // C-3
-	seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
 	if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
 	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
 
@@ -1004,8 +1007,8 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
     
     // set new port/channel/note/velocity
     if( play_note ) {
-      blm_keyboard_port[button_column] = seq_cc_trk[visible_track].midi_port;
-      blm_keyboard_chn[button_column] = seq_cc_trk[visible_track].midi_chn;
+      blm_keyboard_port[button_column] = tcc->midi_port;
+      blm_keyboard_chn[button_column] = tcc->midi_chn;
       blm_keyboard_note[button_column] = note_start;
       blm_keyboard_velocity[button_column] = velocity;
     }

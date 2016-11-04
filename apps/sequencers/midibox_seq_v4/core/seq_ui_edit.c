@@ -1362,6 +1362,16 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
     new_value = 0;
   else if( new_value >= 128 )
     new_value = 127;
+
+  // extra: limit value for root note
+  // could be made more generic in future, e.g. each parameter layer type provides a max value
+  {
+    seq_par_layer_type_t par_layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
+
+    if( par_layer_type == SEQ_PAR_Type_Root && new_value >= 13 ) {
+      new_value = 12;
+    }
+  }
 	    
   // extra for more comfortable editing of multi-note tracks:
   // if assigned parameter layer is Note or Chord, and currently 0, re-start at C-3 resp. A/2

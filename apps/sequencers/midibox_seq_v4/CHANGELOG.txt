@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.092
+~~~~~~~~~~~~~~~~~
+
+   o new parameter layers for track specific root note and scale
+
+
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~
 

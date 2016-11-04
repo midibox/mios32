@@ -380,7 +380,7 @@ static s32 UpdateScaledSemitoneTab(void)
   semi %= 12;
 
   u8 scale, root_selection, root;
-  SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+  SEQ_CORE_FTS_GetScaleAndRoot(visible_track, ui_selected_step, ui_selected_instrument, &seq_cc_trk[visible_track], &scale, &root_selection, &root);
   if( root_selection == 0 )
     root = 0; // force root to C (don't use KEYB based root)
   u8 note = 0x3c; // C-3

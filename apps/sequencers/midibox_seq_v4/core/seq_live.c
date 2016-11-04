@@ -150,7 +150,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
 	 )
 	) {
       u8 scale, root_selection, root;
-      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+      SEQ_CORE_FTS_GetScaleAndRoot(track, t->step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
       SEQ_SCALE_Note(&e.midi_package, scale, root);
     }
     SEQ_CORE_Limit(t, tcc, &e); // should be the last Fx in the chain!
@@ -164,7 +164,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
 	 )
 	) {
       u8 scale, root_selection, root;
-      SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+      SEQ_CORE_FTS_GetScaleAndRoot(track, t->step, ui_selected_instrument, tcc, &scale, &root_selection, &root);
       SEQ_SCALE_Note(&e.midi_package, scale, root);
     }
   }
@@ -192,7 +192,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
   if( seq_live_options.FX ) {
     if( SEQ_BPM_IsRunning() )
       if ( !robotize_flags.NOFX )
-	SEQ_CORE_Echo(t, tcc, e.midi_package, (bpm_tick == 0xffffffff) ? SEQ_BPM_TickGet() : bpm_tick, e.len, robotize_flags);
+	SEQ_CORE_Echo(track, ui_selected_instrument, t, tcc, e.midi_package, (bpm_tick == 0xffffffff) ? SEQ_BPM_TickGet() : bpm_tick, e.len, robotize_flags);
   }
 
   return 0; // no error

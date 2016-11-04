@@ -637,6 +637,32 @@ s32 SEQ_LCD_PrintNthValue(u8 nth_value)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// prints the Root value (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintRootValue(u8 root_value)
+{
+  const char keys_str[13][5] = { // note: this array is also used to determine halfnotes, don't touch it (or some code needs to be adapted below)
+    "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
+  };
+
+  return SEQ_LCD_PrintFormattedString((char *)keys_str[root_value % 13]);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// prints the Scale value (4 characters)
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LCD_PrintScaleValue(u8 scale_value)
+{
+  if( scale_value == 0 ) {
+    return SEQ_LCD_PrintFormattedString("Glb ");
+  }
+
+  return SEQ_LCD_PrintFormattedString("%3d ", scale_value-1);
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // prints event type of MIDI package with given number of chars
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintEvent(mios32_midi_package_t package, u8 num_chars)
@@ -764,6 +790,14 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
     SEQ_LCD_PrintNthValue(par_value);
     break;
 
+  case SEQ_PAR_Type_Root:
+    SEQ_LCD_PrintRootValue(par_value);
+    break;
+
+  case SEQ_PAR_Type_Scale:
+    SEQ_LCD_PrintScaleValue(par_value);
+    break;
+
   default:
     SEQ_LCD_PrintString("????");
     break;
@@ -777,6 +811,7 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 step_view, int print_edit_value)
 {
+  seq_cc_trk_t *tcc = &seq_cc_trk[track];
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, par_layer);
   u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
   seq_layer_evnt_t layer_event;
@@ -796,7 +831,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     if( seq_cc_trk[track].mode.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 ) {
       if( layer_event.midi_package.note ) {
 	u8 scale, root_selection, root;
-	SEQ_CORE_FTS_GetScaleAndRoot(&scale, &root_selection, &root);
+	SEQ_CORE_FTS_GetScaleAndRoot(track, step, instrument, tcc, &scale, &root_selection, &root);
 	SEQ_SCALE_Note(&layer_event.midi_package, scale, root);
       }      
     }
@@ -895,6 +930,14 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Nth2:
     SEQ_LCD_PrintNthValue(SEQ_PAR_Nth2ValueGet(track, step, instrument, 0x0000));
+    break;
+
+  case SEQ_PAR_Type_Root:
+    SEQ_LCD_PrintRootValue(SEQ_PAR_RootValueGet(track, step, instrument, 0x0000));
+    break;
+
+  case SEQ_PAR_Type_Scale:
+    SEQ_LCD_PrintScaleValue(SEQ_PAR_ScaleValueGet(track, step, instrument, 0x0000));
     break;
 
   default:
