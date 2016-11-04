@@ -642,7 +642,7 @@ s32 SEQ_LCD_PrintNthValue(u8 nth_value)
 s32 SEQ_LCD_PrintRootValue(u8 root_value)
 {
   const char keys_str[13][5] = { // note: this array is also used to determine halfnotes, don't touch it (or some code needs to be adapted below)
-    "Keyb", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
+    "Glb ", " C  ", " C# ", " D  ", " D# ", " E  ", " F  ", " F# ", " G  ", " G# ", " A  ", " A# ", " B  "
   };
 
   return SEQ_LCD_PrintFormattedString((char *)keys_str[root_value % 13]);
