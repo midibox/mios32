@@ -1148,7 +1148,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    }
 
             // transpose notes/CCs
-            SEQ_CORE_Transpose(t, tcc, p);
+            SEQ_CORE_Transpose(track, instrument, t, tcc, p);
 
             // glide trigger
             if( e->len > 0 && tcc->event_mode != SEQ_EVENT_MODE_Drum ) {
@@ -1773,7 +1773,7 @@ static s32 SEQ_CORE_NextStep(seq_core_trk_t *t, seq_cc_trk_t *tcc, u8 no_progres
 /////////////////////////////////////////////////////////////////////////////
 // Transposes if midi_package contains a Note Event
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
+s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p)
 {
   u8 is_cc = p->type != NoteOn && p->type != NoteOff; // CC, Pitchbender, Programchange
 
@@ -1801,8 +1801,7 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
     }
 
     inc_semi += tr_note - 0x3c; // C-3 is the base note
-  }
-  else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
+  } else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
     int key_num = (note >> 2) & 0x3;
     int arp_oct = (note >> 4) & 0x7;
 
@@ -1830,6 +1829,27 @@ s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package
     if( !note ) { // disable note and exit
       p->velocity = 0;
       return -1; // note has been disabled
+    }
+  } else {
+    // neither transpose nor arpeggiator mode: transpose based on root note if specified in parameter layer
+    if( !is_cc && tcc->link_par_layer_root ) {
+      u8 root = SEQ_PAR_Get(track, t->step, tcc->link_par_layer_root, instrument);
+      if( !root ) {
+	root = seq_core_global_scale_root_selection;
+      }
+
+      if( root ) {
+	inc_semi += root - 1;
+      } else {
+	int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD);
+
+	if( tr_note < 0 ) {
+	  p->velocity = 0; // disable note and exit
+	  return -1; // note has been disabled
+	}
+
+	inc_semi += tr_note - 0x3c; // C-3 is the base note
+      }
     }
   }
 

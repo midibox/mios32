@@ -126,9 +126,10 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
   seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
-  // transpose
-  //SEQ_CORE_Transpose(t, tcc, &e.midi_package);
-  // conflict if same keyboard is assigned to transposer
+  // transpose if no transposer/arpeggiator enabled (to avoid conflicts)
+  if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Transpose && tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator ) {
+    SEQ_CORE_Transpose(track, ui_selected_instrument, t, tcc, &e.midi_package);
+  }
 
   //initialize robotize flags
   seq_robotize_flags_t robotize_flags;

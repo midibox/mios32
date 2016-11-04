@@ -240,7 +240,7 @@ extern const char *SEQ_CORE_Echo_GetDelayModeName(u8 delay_mode);
 extern u8 SEQ_CORE_Echo_MapUserToInternal(u8 user_value);
 extern u8 SEQ_CORE_Echo_MapInternalToUser(u8 internal_value);
 
-extern s32 SEQ_CORE_Transpose(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
+extern s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t *p);
 extern s32 SEQ_CORE_Limit(seq_core_trk_t *t, seq_cc_trk_t *tcc, seq_layer_evnt_t *e);
 
 extern s32 SEQ_CORE_Echo(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t p, u32 bpm_tick, u32 gatelength, seq_robotize_flags_t robotize_flags);
