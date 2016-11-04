@@ -11,6 +11,21 @@ MIDIboxSEQ V4.092
 
    o new parameter layers for track specific root note and scale
 
+     Root selection strategy: if Root is assigned to any parameter 
+     layer of a track, the layer can either select the global root 
+     selection ("Glb") or set the root note for each step explicitely.
+
+     The global root selection is configured in the FX->Scale page,
+     it's either "Keyb" (for MIDI keyboard entry) or C, C#, ... B
+
+     The local root selection is C, C#, ... B
+
+     Notes and Chords will be transposed accordingly if the track is in
+     Normal mode (and not in Transpose or Arpeggiator mode)
+
+     Similar for Scale: it can override the globally configured scale
+     of the FX->Scale page for each step.
+     
 
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~

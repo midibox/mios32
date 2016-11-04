@@ -1832,7 +1832,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
     }
   } else {
     // neither transpose nor arpeggiator mode: transpose based on root note if specified in parameter layer
-    if( !is_cc && tcc->link_par_layer_root ) {
+    if( !is_cc && tcc->link_par_layer_root >= 0 ) {
       u8 root = SEQ_PAR_Get(track, t->step, tcc->link_par_layer_root, instrument);
       if( !root ) {
 	root = seq_core_global_scale_root_selection;
@@ -1886,7 +1886,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 track, u8 step, u8 instrument, seq_cc_trk_t *tcc, u8 *scale, u8 *root_selection, u8 *root)
 {
-  if( tcc && tcc->link_par_layer_scale ) {
+  if( tcc && tcc->link_par_layer_scale >= 0 ) {
     *scale = SEQ_PAR_Get(track, step, tcc->link_par_layer_scale, instrument);
     if( *scale ) {
       *scale -= 1;
@@ -1897,11 +1897,15 @@ s32 SEQ_CORE_FTS_GetScaleAndRoot(u8 track, u8 step, u8 instrument, seq_cc_trk_t 
     *scale = seq_core_global_scale;
   }
 
-  if( tcc && tcc->link_par_layer_root ) {
-    *root_selection = 0;
+  *root_selection = seq_core_global_scale_root_selection;
+  if( tcc && tcc->link_par_layer_root >= 0 ) {
     *root = SEQ_PAR_Get(track, step, tcc->link_par_layer_root, instrument);
+    if( *root ) {
+      *root -= 1;
+    } else {
+      *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
+    }
   } else {
-    *root_selection = seq_core_global_scale_root_selection;
     *root = (*root_selection == 0) ? seq_core_keyb_scale_root : (*root_selection-1);
   }
 
