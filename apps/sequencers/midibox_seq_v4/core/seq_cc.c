@@ -181,6 +181,14 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
 	tcc->par_assignment_drum[1] = value;
 	SEQ_CC_LinkUpdate(track);
 	break;
+      case SEQ_CC_PAR_ASG_DRUM_LAYER_C:
+	tcc->par_assignment_drum[2] = value;
+	SEQ_CC_LinkUpdate(track);
+	break;
+      case SEQ_CC_PAR_ASG_DRUM_LAYER_D:
+	tcc->par_assignment_drum[3] = value;
+	SEQ_CC_LinkUpdate(track);
+	break;
 
       case SEQ_CC_STEPS_REPEAT: tcc->steps_repeat = value; break;
       case SEQ_CC_STEPS_SKIP: tcc->steps_skip = value; break;
@@ -374,6 +382,8 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
 
     case SEQ_CC_PAR_ASG_DRUM_LAYER_A: return tcc->par_assignment_drum[0];
     case SEQ_CC_PAR_ASG_DRUM_LAYER_B: return tcc->par_assignment_drum[1];
+    case SEQ_CC_PAR_ASG_DRUM_LAYER_C: return tcc->par_assignment_drum[2];
+    case SEQ_CC_PAR_ASG_DRUM_LAYER_D: return tcc->par_assignment_drum[3];
 
     case SEQ_CC_STEPS_REPEAT: return tcc->steps_repeat;
     case SEQ_CC_STEPS_SKIP: return tcc->steps_skip;

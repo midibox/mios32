@@ -26,6 +26,8 @@ MIDIboxSEQ V4.092
      Similar for Scale: it can override the globally configured scale
      of the FX->Scale page for each step.
      
+   o new drum configuration: 4*16/2*64
+
 
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~

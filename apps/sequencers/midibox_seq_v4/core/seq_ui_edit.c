@@ -1015,7 +1015,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 ) {
 	u8 par_value = PassiveEditValid()
 	  ? edit_passive_value
-	  : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+	  : SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
 
 	u8 chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : 0;
 	u8 chord_ix = par_value & 0x1f;

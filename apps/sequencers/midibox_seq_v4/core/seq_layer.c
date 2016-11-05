@@ -1156,12 +1156,18 @@ s32 SEQ_LAYER_CopyPreset(u8 track, u8 only_layers, u8 all_triggers_cleared, u8 i
 	  if( SEQ_PAR_NumLayersGet(track) > 1 ) {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_Roll);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_C, SEQ_PAR_Type_Probability);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_D, SEQ_PAR_Type_Nth1);
 	  } else if( SEQ_TRG_NumLayersGet(track) > 1 ) {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Roll);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_C, SEQ_PAR_Type_None);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_D, SEQ_PAR_Type_None);
 	  } else {
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A, SEQ_PAR_Type_Velocity);
 	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_B, SEQ_PAR_Type_None);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_C, SEQ_PAR_Type_None);
+	    SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_D, SEQ_PAR_Type_None);
 	  }
 
 	  // Constant Layer Values
