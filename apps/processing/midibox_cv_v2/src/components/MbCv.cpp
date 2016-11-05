@@ -1157,6 +1157,43 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+// to request current effective value of NRPN parameter (e.g. used by RGB LEDs)
+// *value ranges from -1.0 to 1.0
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCv::getNRPNEffectiveValue(u16 nrpnNumber, float *value)
+{
+    // quick hack to check if this makes sense...
+    if( (nrpnNumber & 0xf80) == 0x100 ) { // LFO1
+        *value = (float)mbCvLfo[0].lfoOut / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xf80) == 0x180 ) { // LFO2
+        *value = (float)mbCvLfo[1].lfoOut / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xf80) == 0x200 ) { // ENV1
+        *value = (float)mbCvEnv1[0].envOut / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xf80) == 0x280 ) { // ENV2
+        *value = (float)mbCvEnv2[0].envOut / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xff0) == 0x300 ) { // MOD1 Depth
+        *value = (float)mbCvMod.modOut[0] / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xff0) == 0x310 ) { // MOD2 Depth
+        *value = (float)mbCvMod.modOut[1] / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xff0) == 0x320 ) { // MOD3 Depth
+        *value = (float)mbCvMod.modOut[2] / 32768.0;
+        return true;
+    } else if( (nrpnNumber & 0xff0) == 0x330 ) { // MOD4 Depth
+        *value = (float)mbCvMod.modOut[3] / 32768.0;
+        return true;
+    }
+
+    return false; // parameter not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
 // returns NRPN informations depending on first 10 bits
 // MSBs already decoded in MbCvEnvironment
 // returns false if parameter not mapped

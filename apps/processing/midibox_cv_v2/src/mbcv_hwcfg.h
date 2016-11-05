@@ -16,6 +16,7 @@
 
 #include <MbCvStructs.h>
 #include "mbcv_lre.h"
+#include "mbcv_rgb.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +57,11 @@ typedef struct {
   u8 ledring_pattern_sr2;
 } mbcv_hwcfg_lre_t;
 
+typedef struct {
+  u8              pos;
+  mbcv_rgb_mode_t mode;
+} mbcv_hwcfg_ws2812_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -71,6 +77,7 @@ extern s32 MBCV_HWCFG_Init(u32 mode);
 extern mbcv_hwcfg_button_t mbcv_hwcfg_button;
 extern mbcv_hwcfg_dout_t mbcv_hwcfg_dout;
 extern mbcv_hwcfg_lre_t mbcv_hwcfg_lre[MBCV_LRE_NUM];
+extern mbcv_hwcfg_ws2812_t mbcv_hwcfg_ws2812[MBCV_RGB_LED_NUM];
 
 #ifdef __cplusplus
 }

@@ -24,7 +24,6 @@
 
 #include <file.h>
 
-// include source of the SCS
 #include <scs.h>
 #include <scs_lcd.h>
 #include "scs_config.h"
@@ -42,6 +41,7 @@
 #include "mbcv_map.h"
 #include "mbcv_button.h"
 #include "mbcv_lre.h"
+#include "mbcv_rgb.h"
 #include "mbcv_file.h"
 #include "mbcv_file_p.h"
 #include "mbcv_file_b.h"
@@ -168,6 +168,7 @@ extern "C" void APP_Init(void)
   MBCV_PATCH_Init(0);
   MBCV_BUTTON_Init(0);
   MBCV_LRE_Init(0);
+  MBCV_RGB_Init(0);
   UIP_TASK_Init(0);
 
   SCS_Init(0);
@@ -425,8 +426,9 @@ void APP_TASK_Period_1mS_LP(void)
   // MIDI In/Out monitor
   MIDI_PORT_Period1mS();
 
-  // LED rings
+  // LED rings and RGB LEDs
   MBCV_LRE_UpdateAllLedRings();
+  MBCV_RGB_UpdateAllLeds();
 
   // output and reset current stopwatch max value each second
   if( MIOS32_TIMESTAMP_GetDelay(performance_print_timestamp) > 1000 ) {

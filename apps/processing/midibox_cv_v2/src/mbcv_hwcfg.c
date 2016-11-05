@@ -100,6 +100,9 @@ mbcv_hwcfg_lre_t mbcv_hwcfg_lre[MBCV_LRE_NUM] = {
   },
 };
 
+// will be initialized in MBCV_HWCFG_Init()
+mbcv_hwcfg_ws2812_t mbcv_hwcfg_ws2812[MBCV_RGB_LED_NUM];
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Initialisation
@@ -119,6 +122,15 @@ s32 MBCV_HWCFG_Init(u32 mode)
     enc_config.cfg.speed = NORMAL;
     enc_config.cfg.speed_par = 0;
     MIOS32_ENC_ConfigSet(i, enc_config);
+  }
+
+  // clear all LED entries
+  {
+    mbcv_hwcfg_ws2812_t *ws2812 = &mbcv_hwcfg_ws2812[0];
+    for(i=0; i<MBCV_RGB_LED_NUM; ++i, ++ws2812) {
+      ws2812->pos = i;
+      ws2812->mode = MBCV_RGB_MODE_DISABLED;
+    }
   }
 
   return 0; // no error

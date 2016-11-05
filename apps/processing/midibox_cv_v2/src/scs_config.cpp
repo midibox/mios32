@@ -1402,11 +1402,16 @@ s32 SCS_CONFIG_Init(u32 mode)
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Access functions for MBCV_BUTTON
+// Access functions for MBCV_BUTTON and MBCV_RGB
 s32 SCS_CONFIG_CvSet(u8 cv)
 {
   selectedCv = cv;
   return 0; // no error
+}
+
+u8 SCS_CONFIG_CvGet(void)
+{
+  return selectedCv;
 }
 
 s32 SCS_CONFIG_LfoSet(u8 lfo)
