@@ -18,7 +18,7 @@ LCD "%C@(1:1:1)  LC"
 #   0x11 : Logic Control XT
 #   0x14 : Mackie Control
 #   0x15 : Mackie Control XT
-SYSEX_VAR dev=0x10
+SYSEX_VAR dev=0x14
 
 # Receive Device Query -> send Host Connection Query
 EVENT_RECEIVER id=  1  fwd_id=SENDER:1 \
@@ -356,6 +356,27 @@ EVENT_LED_MATRIX id=24 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 73  syxdum
 # status digits
 EVENT_LED_MATRIX id=39 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 75  syxdump_pos=11:1
 EVENT_LED_MATRIX id=40 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 74  syxdump_pos=11:0
+
+
+# Following example shows how LC digits could be displayed on a LCD with the events above
+# notes:
+# - replace the EVENT_LED_MATRIX configurations above by the new ones with lcd definitions
+# - change lcd positions by locations which are not used by other text messages yet!
+#
+# EVENT_LED_MATRIX id=33 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 64  syxdump_pos=10:0  fwd_to_lcd=1  lcd_pos=1:14:1 label="%L"
+# EVENT_LED_MATRIX id=34 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 65  syxdump_pos=10:1  fwd_to_lcd=1  lcd_pos=1:13:1 label="%L"
+# EVENT_LED_MATRIX id=17 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 66  syxdump_pos=10:2  fwd_to_lcd=1  lcd_pos=1:11:1 label=".%L"
+# EVENT_LED_MATRIX id=18 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 67  syxdump_pos=10:3  fwd_to_lcd=1  lcd_pos=1:10:1 label="%L"
+# EVENT_LED_MATRIX id=19 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 68  syxdump_pos=10:4  fwd_to_lcd=1  lcd_pos=1:8:1  label=":%L"
+# EVENT_LED_MATRIX id=20 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 69  syxdump_pos=10:5  fwd_to_lcd=1  lcd_pos=1:7:1  label="%L"
+# EVENT_LED_MATRIX id=21 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 70  syxdump_pos=10:6  fwd_to_lcd=1  lcd_pos=1:5:1  label=":%L"
+# EVENT_LED_MATRIX id=22 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 71  syxdump_pos=10:7  fwd_to_lcd=1  lcd_pos=1:4:1  label="%L"
+# EVENT_LED_MATRIX id=23 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 72  syxdump_pos=10:8  fwd_to_lcd=1  lcd_pos=1:2:1  label=":%L"
+# EVENT_LED_MATRIX id=24 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 73  syxdump_pos=10:9  fwd_to_lcd=1  lcd_pos=1:1:1  label="%L"
+# 
+# # status digits
+# EVENT_LED_MATRIX id=39 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 75  syxdump_pos=11:1  fwd_to_lcd=1  lcd_pos=1:2:2  label="%L"
+# EVENT_LED_MATRIX id=40 led_matrix_pattern=LcDigit  type=CC chn= 1 cc= 74  syxdump_pos=11:0  fwd_to_lcd=1  lcd_pos=1:1:2  label="%L"
 
 
 ################################################################################

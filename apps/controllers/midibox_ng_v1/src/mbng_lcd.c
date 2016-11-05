@@ -583,6 +583,15 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, char *out_buffer, u32 max_b
 	    MBNG_LCD_PRINT_FORMATTED_STRING(format, (int)item->value + item->offset);
 	  } break;
 
+	  case 'L': { // logic digits
+	    u8 value = (int)item->value + item->offset;
+	    value = (value & 0x3f);
+	    if( value < 0x20 )
+	      value += 0x40;
+	    
+	    MBNG_LCD_PRINT_CHAR(value);
+	  } break;
+
 	  case 's': { // just print empty string - allows to optimize memory usage for labels, e.g. "%20s"
 	    MBNG_LCD_PRINT_FORMATTED_STRING(format, "");
 	  } break;

@@ -13,6 +13,9 @@ MIDIbox NG V1.036
    o added new .NGC file configuration parameters:
      MidiClkOutPorts and MidiClkInPorts
 
+   o new LCD format character '%L' allows to display logic control digits
+     (MTC and status digits)
+
 
 MIDIbox NG V1.035
 ~~~~~~~~~~~~~~~~~
