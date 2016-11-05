@@ -1163,29 +1163,30 @@ bool MbCv::getNRPN(u16 nrpnNumber, u16 *value)
 /////////////////////////////////////////////////////////////////////////////
 bool MbCv::getNRPNEffectiveValue(u16 nrpnNumber, float *value)
 {
+    u32 par = nrpnNumber & 0x3ff;
     // quick hack to check if this makes sense...
-    if( (nrpnNumber & 0xf80) == 0x100 ) { // LFO1
+    if( (par & 0x3f0) == 0x100 ) { // LFO1
         *value = (float)mbCvLfo[0].lfoOut / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xf80) == 0x180 ) { // LFO2
+    } else if( (par & 0x3f0) == 0x180 ) { // LFO2
         *value = (float)mbCvLfo[1].lfoOut / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xf80) == 0x200 ) { // ENV1
+    } else if( (par & 0x3f0) == 0x200 ) { // ENV1
         *value = (float)mbCvEnv1[0].envOut / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xf80) == 0x280 ) { // ENV2
+    } else if( (par & 0x3f0) == 0x280 ) { // ENV2
         *value = (float)mbCvEnv2[0].envOut / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xff0) == 0x300 ) { // MOD1 Depth
+    } else if( (par & 0x3f0) == 0x300 ) { // MOD1 Depth
         *value = (float)mbCvMod.modOut[0] / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xff0) == 0x310 ) { // MOD2 Depth
+    } else if( (par & 0x3f0) == 0x310 ) { // MOD2 Depth
         *value = (float)mbCvMod.modOut[1] / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xff0) == 0x320 ) { // MOD3 Depth
+    } else if( (par & 0x3f0) == 0x320 ) { // MOD3 Depth
         *value = (float)mbCvMod.modOut[2] / 32768.0;
         return true;
-    } else if( (nrpnNumber & 0xff0) == 0x330 ) { // MOD4 Depth
+    } else if( (par & 0x3f0) == 0x330 ) { // MOD4 Depth
         *value = (float)mbCvMod.modOut[3] / 32768.0;
         return true;
     }

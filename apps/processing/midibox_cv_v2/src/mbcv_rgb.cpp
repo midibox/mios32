@@ -100,7 +100,13 @@ s32 MBCV_RGB_UpdateLed(u32 led)
   // set colour
   switch( ws2812->mode ) {
   case MBCV_RGB_MODE_CHANNEL_HUE: {
-    WS2812_LED_SetHSV(led_pos, (float)SCS_CONFIG_CvGet() * (360.0/(float)CV_SE_NUM), saturation, value);
+#if 0
+    float hue = (float)SCS_CONFIG_CvGet() * (360.0/(float)CV_SE_NUM);
+#else
+    float hue = (float)MBCV_LRE_BankGet() * (360.0/(float)CV_SE_NUM); // quickfix: should depend on bank so that it corresponds with the encoder function
+#endif
+
+    WS2812_LED_SetHSV(led_pos, hue, saturation, value);
   } break;
 
   default: // e.g. MBCV_RGB_MODE_DISABLED

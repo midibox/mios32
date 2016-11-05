@@ -24,6 +24,7 @@
 #include "mbcv_lre.h"
 #include "mbcv_rgb.h"
 #include "mbcv_hwcfg.h"
+#include "scs_config.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -782,6 +783,12 @@ s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
 
       env->setNRPN(e->nrpn, new_value);
       env->midiSendNRPNToActivePort(e->nrpn, new_value);
+
+      // change CV channel
+      u8 cv = e->nrpn >> 10;
+      if( cv < CV_SE_NUM ) {
+	SCS_CONFIG_CvSet(cv);
+      }
     }
       
     MbCvNrpnInfoT info;
