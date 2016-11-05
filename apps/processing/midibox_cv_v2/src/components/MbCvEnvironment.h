@@ -116,11 +116,15 @@ public:
     bool setNRPN(u16 nrpnNumber, u16 value);
     bool getNRPN(u16 nrpnNumber, u16 *value);
     bool getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
-    
+
+    // to request current effective value of NRPN parameter (e.g. used by RGB LEDs)
+    bool getNRPNEffectiveValue(u16 nrpnNumber, float *value);
+
     // global NRPNs
     bool setGlobalNRPN(u16 nrpnNumber, u16 value);
     bool getGlobalNRPN(u16 nrpnNumber, u16 *value);
     bool getGlobalNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
+    bool getGlobalNRPNEffectiveValue(u16 nrpnNumber, float *value);
 
     // set/get knob values
     u8   getKnobValue(u8 knob);

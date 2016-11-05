@@ -775,6 +775,27 @@ bool MbCvEnvironment::getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// to request current value of NRPN parameter (e.g. used by RGB LEDs)
+// *value ranges from -1.0 to 1.0
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getNRPNEffectiveValue(u16 nrpnNumber, float *value)
+{
+    u16 select = nrpnNumber >> 10;
+
+    // channel access
+    if( select == 0xf ) {
+        return getGlobalNRPNEffectiveValue(nrpnNumber, value);
+    } else if( select < CV_SE_NUM ) { // direct channel selection
+        return mbCv[select].getNRPNEffectiveValue(nrpnNumber, value);
+    }
+
+    return false; // parameter not mapped
+}
+
+
+
+/////////////////////////////////////////////////////////////////////////////
 // NRPNs
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1018,6 +1039,16 @@ bool MbCvEnvironment::getGlobalNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info)
         }
     }
 
+    return false; // parameter not mapped
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// to request current effective value of NRPN parameter (e.g. used by RGB LEDs)
+// *value ranges from -1.0 to 1.0
+// returns false if parameter not mapped
+/////////////////////////////////////////////////////////////////////////////
+bool MbCvEnvironment::getGlobalNRPNEffectiveValue(u16 nrpnNumber, float *value)
+{
     return false; // parameter not mapped
 }
 

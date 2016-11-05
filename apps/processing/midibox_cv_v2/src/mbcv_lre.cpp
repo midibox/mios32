@@ -22,6 +22,7 @@
 #include <MbCvEnvironment.h>
 
 #include "mbcv_lre.h"
+#include "mbcv_rgb.h"
 #include "mbcv_hwcfg.h"
 
 
@@ -754,6 +755,7 @@ s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
     u16 nrpnValue;
     if( !env->getNRPN(e->nrpn, &nrpnValue) ) {
       MBCV_LRE_UpdateLedRing(enc);
+      MBCV_RGB_UpdateLed(enc);
       return 0; // no valid NRPN value mapped
     }
 
@@ -789,6 +791,7 @@ s32 MBCV_LRE_NotifyChange(u32 enc, s32 incrementer)
   }
 
   MBCV_LRE_UpdateLedRing(enc);
+  MBCV_RGB_UpdateLed(enc);
 
   return 0; // no error
 }

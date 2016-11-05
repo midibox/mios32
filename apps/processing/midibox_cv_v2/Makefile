@@ -23,6 +23,7 @@ THUMB_CPP_SOURCE  = src/app.cpp \
 		    src/mbcv_patch.cpp \
 		    src/mbcv_map.cpp \
 		    src/mbcv_lre.cpp \
+		    src/mbcv_rgb.cpp \
 		    src/mbcv_button.cpp \
 	 	    src/mbcv_file.cpp \
 	 	    src/mbcv_file_hw.cpp \
@@ -113,6 +114,9 @@ include $(MIOS32_PATH)/modules/random/random.mk
 
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk
+
+# WS2812 RGB LED strip driver
+include $(MIOS32_PATH)/modules/ws2812/ws2812.mk
 
 # Notestack functions
 include $(MIOS32_PATH)/modules/notestack/notestack.mk

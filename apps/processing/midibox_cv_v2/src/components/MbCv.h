@@ -92,6 +92,9 @@ public:
     bool getNRPN(u16 nrpnNumber, u16 *value);
     bool getNRPNInfo(u16 nrpnNumber, MbCvNrpnInfoT *info);
 
+    // to request current effective value of NRPN parameter (e.g. used by RGB LEDs)
+    bool getNRPNEffectiveValue(u16 nrpnNumber, float *value);
+
 };
 
 #endif /* _MB_CV_H */

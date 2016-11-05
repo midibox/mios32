@@ -78,7 +78,7 @@ LRE2_LEDRING_PATTERN_DOUT_SR2  10
 # encoder assignments
 # SR = 0: encoder disabled
 # SR = 1..16: DIN assignment
-# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3
+# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3, DETENTED4, DETENTED5
 
 #           SR  Pin  Type 
 LRE1_ENC1    3    0  NON_DETENTED

@@ -31,10 +31,10 @@
 extern s32 SCS_CONFIG_Init(u32 mode);
 
 extern s32 SCS_CONFIG_CvSet(u8 cv);
+extern u8  SCS_CONFIG_CvGet();
 extern s32 SCS_CONFIG_LfoSet(u8 lfo);
 extern s32 SCS_CONFIG_EnvSet(u8 env);
 extern s32 SCS_CONFIG_ScopeSet(u8 scope);
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Export global variables

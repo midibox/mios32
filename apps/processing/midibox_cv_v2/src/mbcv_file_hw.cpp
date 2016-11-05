@@ -345,6 +345,10 @@ s32 MBCV_FILE_HW_Read(void)
 	      enc_type = DETENTED2;
 	    } else if( strcmp(word, "DETENTED3") == 0 ) {
 	      enc_type = DETENTED3;
+	    } else if( strcmp(word, "DETENTED4") == 0 ) {
+	      enc_type = DETENTED4;
+	    } else if( strcmp(word, "DETENTED5") == 0 ) {
+	      enc_type = DETENTED5;
 	    } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in LRE%d_ENC%s definition: invalid type '%s'!", lre+1, parameter, word);
@@ -422,6 +426,55 @@ s32 MBCV_FILE_HW_Read(void)
 #endif
 	      }
 	    }
+	  }
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// WS2812
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "WS2812", 6) == 0 ) {
+	  parameter += 6;
+	  if( strncmp(parameter, "_LED", 4) == 0 ) {
+	    parameter += 4;
+	    s32 led = get_dec(parameter);
+	    if( led < 1 || led > MBCV_RGB_LED_NUM ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in WS2812_LED%s definition: expecting LED1..LED%d!", parameter, MBCV_RGB_LED_NUM);
+#endif
+	      continue;
+	    }
+	    --led; // counting from 0
+
+	    char *word = strtok_r(NULL, separators, &brkt);
+	    s32 pos = get_dec(word);
+	    if( pos < 0 || pos > MBCV_RGB_LED_NUM ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in WS2812_LED%s definition: invalid position '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+
+	    word = strtok_r(NULL, separators, &brkt);
+	    mbcv_rgb_mode_t mode = MBCV_RGB_MODE_DISABLED;
+	    if( strcmp(word, "DISABLED") == 0 ) {
+	      mode = MBCV_RGB_MODE_DISABLED;
+	    } else if( strcmp(word, "CHANNEL_HUE") == 0 ) {
+	      mode = MBCV_RGB_MODE_CHANNEL_HUE;
+	    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in WS2812%d_LED%s definition: invalid mode '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+
+	    mbcv_hwcfg_ws2812_t *ws2812 = &mbcv_hwcfg_ws2812[led];
+	    ws2812->pos = pos;
+	    ws2812->mode = mode;
+
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR unknown config 'WS2812_%s'!", parameter);
+#endif
 	  }
 
 
