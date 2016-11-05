@@ -114,6 +114,9 @@ extern char mbng_patch_max72xx_spi_rc_pin;
 // UMM heap located in default section (means for LPC17: not in AHB memory, because we are using it for the event pool)
 #define UMM_HEAP_SECTION
 
+// TK: changed for FreeRTOS v9 (UMM_HEAP_SECTION is obsolete)
+#define MIOS32_FREERTOS_HEAP_SECTION
+
 // stack sizes which are used by various tasks (see APP_Init() in app.c)
 #define APP_BIG_STACK_SIZE     (2048)
 #define APP_REDUCED_STACK_SIZE (1024)

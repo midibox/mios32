@@ -56,14 +56,17 @@ static void TASK_MIDI_Hooks(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Local variables
+// FreeRTOS Heap
 /////////////////////////////////////////////////////////////////////////////
+
 #if configAPPLICATION_ALLOCATED_HEAP
-# if defined(MIOS32_FAMILY_LPC17xx)
-    __attribute__ ((section (".bss_ahb"))) uint8_t ucHeap[configTOTAL_HEAP_SIZE];
+# if defined(MIOS32_FAMILY_LPC17xx) && !defined(MIOS32_FREERTOS_HEAP_SECTION)
+#  define MIOS32_FREERTOS_HEAP_SECTION __attribute__ ((section (".bss_ahb")))
 # else
-    uint8_t ucHeap[configTOTAL_HEAP_SIZE];
+#  define MIOS32_FREERTOS_HEAP_SECTION
 # endif
+
+uint8_t MIOS32_FREERTOS_HEAP_SECTION ucHeap[configTOTAL_HEAP_SIZE];
 #endif
 
 
