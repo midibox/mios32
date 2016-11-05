@@ -98,4 +98,7 @@
 //#define ESP8266_MUTEX_MIDIOUT_TAKE { TASKS_MUTEX_MIDIOUT_Take(); }
 //#define ESP8266_MUTEX_MIDIOUT_GIVE { TASKS_MUTEX_MIDIOUT_Give(); }
 
+// we only need 32 WS2812 LEDs (align this with 
+#define WS2812_NUM_LEDS 32
+
 #endif /* _MIOS32_CONFIG_H */
