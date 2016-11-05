@@ -40,7 +40,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 
 // memory allocated for tasks (observe this with avstack.pl and "memory" terminal command!)
 // add +64 for interrupts
-#define MIOS32_TASK_HOOKS_STACK_SIZE        256
+#define MIOS32_TASK_HOOKS_STACK_SIZE       1000
 #define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE  1200 // note: avstack.pl shows 500, but actually 1000 for TERMINAL_BrowserUploadCallback have to be considered as well. 1200 should be save (1000 for callback + memory consumed by the caller)
 #define UIP_TASK_STACK_SIZE                 512
 #define MIDI_TASK_STACK_SIZE               1400

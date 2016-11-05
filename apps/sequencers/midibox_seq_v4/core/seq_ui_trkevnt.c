@@ -119,6 +119,8 @@ static s32 DoImport(void);
 static u8 selected_layer_config;
 static u8 selected_layer_config_track;
 
+static u8 selected_drum_par_layer = 0;
+
 static u8 edit_cc_number;
 static u8 edit_layer_type;
 
@@ -133,6 +135,7 @@ static const layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_CC,      16,          64,        8,          64,      1 },
   { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      1 },
   { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      1 },
+  { SEQ_EVENT_MODE_Drum,     4,          16,        2,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     1,          64,        2,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     2,          32,        1,         128,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        2,         128,      8 },
@@ -644,18 +647,32 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_drums-1, incrementer);
 	} break;
 	case ITEM_LAYER_A_SELECT: {
-	  if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_A, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
-	    SEQ_LAYER_CopyParLayerPreset(visible_track, 0);
-	    return 1;
+	  if( layer_config[selected_layer_config].par_layers > 2 ) {
+	    return SEQ_UI_Var8_Inc(&selected_drum_par_layer, 0, layer_config[selected_layer_config].par_layers-1, incrementer);
+	  } else {
+	    selected_drum_par_layer = 0;
+	    if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_A, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
+	      SEQ_LAYER_CopyParLayerPreset(visible_track, 0);
+	      return 1;
+	    }
+	    return 0;
 	  }
-	  return 0;
 	} break;
 	case ITEM_LAYER_B_SELECT: {
-	  if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_B, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
-	    SEQ_LAYER_CopyParLayerPreset(visible_track, 1);
-	    return 1;
+	  if( layer_config[selected_layer_config].par_layers > 2 ) {
+	    if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_A + selected_drum_par_layer, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
+	      SEQ_LAYER_CopyParLayerPreset(visible_track, selected_drum_par_layer);
+	      return 1;
+	    }
+	    return 0;
+	  } else {
+	    selected_drum_par_layer = 1;
+	    if( SEQ_UI_CC_Inc(SEQ_CC_PAR_ASG_DRUM_LAYER_B, 0, SEQ_PAR_NUM_TYPES-1, incrementer) ) {
+	      SEQ_LAYER_CopyParLayerPreset(visible_track, 1);
+	      return 1;
+	    }
+	    return 0;
 	  }
-	  return 0;
 	} break;
 
 	case ITEM_DRUM_NOTE: {
@@ -1121,8 +1138,12 @@ static s32 LCD_Handler(u8 high_prio)
       if( selected_layer_config != GetLayerConfig(visible_track) ) {
 	SEQ_LCD_PrintString("    Please initialize the track         ");
       } else if( event_mode == SEQ_EVENT_MODE_Drum ) {
-	SEQ_LCD_PrintString("LayA ");
-	SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
+	if( layer_config[selected_layer_config].par_layers > 2 ) {
+	  SEQ_LCD_PrintString("Layer Asg. ");
+	} else {
+	  SEQ_LCD_PrintString("LayA ");
+	  SEQ_LCD_PrintString((layer_config[selected_layer_config].par_layers >= 2) ? "LayB " : "     ");
+	}
 	if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) && !SEQ_CC_TrackHasVelocityParLayer(visible_track) ) {
 	  SEQ_LCD_PrintString(" Drum Note VelN VelA PRE-    ");
 	} else if( SEQ_CC_TrackHasAccentTrgLayer(visible_track) ) {
@@ -1210,33 +1231,54 @@ static s32 LCD_Handler(u8 high_prio)
 	if( ui_selected_item == ITEM_LAYER_A_SELECT && ui_cursor_flash ) {
 	  SEQ_LCD_PrintSpaces(5);
 	} else {
-	  seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 0);
-	  if( asg == SEQ_PAR_Type_CC ) {
-	    SEQ_LCD_PrintString("TODO"); // CC not supported for drum tracks, print bullshit
+	  if( layer_config[selected_layer_config].par_layers > 2 ) {
+	    SEQ_LCD_PrintSpaces(2);
+	    SEQ_LCD_PrintChar('A' + selected_drum_par_layer);
+	    SEQ_LCD_PrintSpaces(2);
 	  } else {
-	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 0);
+	    if( asg == SEQ_PAR_Type_CC ) {
+	      SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
+	    } else {
+	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+	    }
 	  }
 	}
 
 	/////////////////////////////////////////////////////////////////////////
-	if( ui_selected_item == ITEM_LAYER_B_SELECT && ui_cursor_flash ) {
-	  SEQ_LCD_PrintSpaces(5);
-	} else {
-	  if( layer_config[selected_layer_config].par_layers >= 2 ) {
-	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 1);
+	if( layer_config[selected_layer_config].par_layers > 2 ) {
+	  if( ui_selected_item == ITEM_LAYER_B_SELECT && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(6);
+	  } else {
+	    SEQ_LCD_PrintSpaces(1);
+
+	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, selected_drum_par_layer);
 	    if( asg == SEQ_PAR_Type_CC ) {
-	      SEQ_LCD_PrintString("TODO"); // CC not supported for drum tracks, print bullshit
+	      SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
 	    } else {
 	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 	    }
-	  } else {
-	    if( ui_selected_item == ITEM_LAYER_B_SELECT )
-	      SEQ_LCD_PrintString("---- "); // not a bug, but a feature - highlight, that layer not configurable
-	    else
-	      SEQ_LCD_PrintSpaces(5);
 	  }
+	} else {
+	  if( ui_selected_item == ITEM_LAYER_B_SELECT && ui_cursor_flash ) {
+	    SEQ_LCD_PrintSpaces(5);
+	  } else {
+	    if( layer_config[selected_layer_config].par_layers >= 2 ) {
+	      seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 1);
+	      if( asg == SEQ_PAR_Type_CC ) {
+		SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
+	      } else {
+		SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+	      }
+	    } else {
+	      if( ui_selected_item == ITEM_LAYER_B_SELECT )
+		SEQ_LCD_PrintString(" --- "); // not a bug, but a feature - highlight, that layer not configurable
+	      else
+		SEQ_LCD_PrintSpaces(5);
+	    }
+	  }
+	  SEQ_LCD_PrintSpaces(1);
 	}
-	SEQ_LCD_PrintSpaces(1);
 
 	/////////////////////////////////////////////////////////////////////////
 	if( ui_selected_item == ITEM_DRUM_SELECT && ui_cursor_flash ) {

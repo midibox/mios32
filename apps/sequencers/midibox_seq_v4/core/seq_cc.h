@@ -125,7 +125,8 @@
 
 #define SEQ_CC_PAR_ASG_DRUM_LAYER_A 0x58
 #define SEQ_CC_PAR_ASG_DRUM_LAYER_B 0x59
-// free: 0x5a..0x5b
+#define SEQ_CC_PAR_ASG_DRUM_LAYER_C 0x5a
+#define SEQ_CC_PAR_ASG_DRUM_LAYER_D 0x5b
 
 #define SEQ_CC_STEPS_REPEAT      0x5c
 #define SEQ_CC_STEPS_SKIP        0x5d
@@ -225,7 +226,7 @@ typedef struct {
   u8       humanize_value;    // humanize intensity
   seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V
 
-  u8       par_assignment_drum[2]; // only used in drum mode
+  u8       par_assignment_drum[4]; // only used in drum mode
 
   // new in MBSEQ V4
   u8       echo_repeats;       // repeats (0..15) - flag #6 will disable echo

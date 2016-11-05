@@ -188,7 +188,7 @@ seq_par_layer_type_t SEQ_PAR_AssignmentGet(u8 track, u8 par_layer)
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   if( tcc->event_mode == SEQ_EVENT_MODE_Drum )
-    return (par_layer >= 2) ? SEQ_PAR_Type_None : tcc->par_assignment_drum[par_layer];
+    return (par_layer >= 4) ? SEQ_PAR_Type_None : tcc->par_assignment_drum[par_layer];
   else
     return (par_layer >= 16) ? SEQ_PAR_Type_None : tcc->lay_const[0*16 + par_layer];
 }

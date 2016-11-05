@@ -274,9 +274,8 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    8: Delay
         |           |         |    9: Roll
 0x39/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer B
---------+-----------+---------+------------------------------------------------
-0x3a/ 58| -         |    -    | reserved
-0x3b/ 59| -         |    -    | reserved
+0x3a/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer C
+0x3b/ 57|   0 - 9   |       0 | Assignment for Drum Parameter Layer D
 --------+-----------+---------+------------------------------------------------
 0x3c/ 60|   0 - 15  |       0 | Steps Repeat (0..16)
 0x3d/ 61|   0 - 15  |       0 | Steps Skip (0..16)

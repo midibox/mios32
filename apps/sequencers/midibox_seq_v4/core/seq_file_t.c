@@ -345,6 +345,10 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    if( flags.CFG ) tcc->par_assignment_drum[0] = value;
 	  } else if( strcmp(parameter, "DrumParAsgnB") == 0 ) {
 	    if( flags.CFG ) tcc->par_assignment_drum[1] = value;
+	  } else if( strcmp(parameter, "DrumParAsgnC") == 0 ) {
+	    if( flags.CFG ) tcc->par_assignment_drum[2] = value;
+	  } else if( strcmp(parameter, "DrumParAsgnD") == 0 ) {
+	    if( flags.CFG ) tcc->par_assignment_drum[3] = value;
 	  } else if( strcmp(parameter, "EchoDisabled") == 0 ) {
 	    if( flags.CFG ) { if( value == 0 ) { tcc->echo_repeats &= ~0x40; } else { tcc->echo_repeats |= 0x40; } }
 	  } else if( strcmp(parameter, "EchoRepeats") == 0 ) {
@@ -679,6 +683,12 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "DrumParAsgnB %d (%s)\n", tcc->par_assignment_drum[1], SEQ_PAR_TypeStr(tcc->par_assignment_drum[1]));
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "DrumParAsgnC %d (%s)\n", tcc->par_assignment_drum[2], SEQ_PAR_TypeStr(tcc->par_assignment_drum[2]));
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "DrumParAsgnD %d (%s)\n", tcc->par_assignment_drum[3], SEQ_PAR_TypeStr(tcc->par_assignment_drum[3]));
   FLUSH_BUFFER;
 
 
