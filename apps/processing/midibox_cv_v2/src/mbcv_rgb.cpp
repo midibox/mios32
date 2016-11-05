@@ -89,7 +89,7 @@ s32 MBCV_RGB_UpdateLed(u32 led)
   {
     float effective;
     if( env->getNRPNEffectiveValue(e->nrpn, &effective) ) {
-      saturation += effective * 0.25; // add only 25%
+      saturation += effective * 0.50; // add only 50%
       if( saturation < 0.0 )
 	saturation = 0.0;
       else if( saturation > 1.0 )
