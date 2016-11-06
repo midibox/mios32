@@ -777,15 +777,18 @@ s32 MBNG_MATRIX_GetRow(void)
       if( button_debounce_ctr[matrix] )
 	break;
 
-      // add them to existing notifications
-      button_row_changed[matrix][row] |= (changed << 0);
+      // only set new values if previous changes have been taken over
+      if( !button_row_changed[matrix][row] ) {
+	// add them to existing notifications
+	button_row_changed[matrix][row] |= (changed << 0);
 
-      // store new value
-      button_row[matrix][row] = sr_value;
+	// store new value
+	button_row[matrix][row] = sr_value;
 
-      // reload debounce counter if any pin has changed
-      if( changed )
-	button_debounce_ctr[matrix] = debounce_reload;
+	// reload debounce counter if any pin has changed
+	if( changed )
+	  button_debounce_ctr[matrix] = debounce_reload;
+      }
     }
   }
 
