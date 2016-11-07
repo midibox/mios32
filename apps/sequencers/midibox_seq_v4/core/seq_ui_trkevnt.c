@@ -136,6 +136,8 @@ static const layer_config_t layer_config[] = {
   { SEQ_EVENT_MODE_CC,       8,         128,        8,         128,      1 },
   { SEQ_EVENT_MODE_CC,       4,         256,        8,         256,      1 },
   { SEQ_EVENT_MODE_Drum,     4,          16,        2,          64,     16 },
+  { SEQ_EVENT_MODE_Drum,     4,          16,        1,         128,     16 },
+  { SEQ_EVENT_MODE_Drum,     4,          16,        1,         256,      8 },
   { SEQ_EVENT_MODE_Drum,     1,          64,        2,          64,     16 },
   { SEQ_EVENT_MODE_Drum,     2,          32,        1,         128,     16 },
   { SEQ_EVENT_MODE_Drum,     1,         128,        2,         128,      8 },

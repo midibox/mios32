@@ -876,7 +876,7 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
 
     u8 transposer_note = 0x3c; // C-3
     if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
-      transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+      transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->mode.FIRST_NOTE); // hold mode, last note
 
     if( transposer_note >= 0x3c && transposer_note <= 0x4b )
       blm_scalar_master_leds_extrarow_green = 1 << (transposer_note - 0x3c);
@@ -953,7 +953,7 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 	// determine matching note range in scale
 	note_start = 0x3c; // C-3
 	if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
-	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1); // hold mode
+	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->mode.FIRST_NOTE); // hold mode
 
 	note_start += (blm_root_key - 0x3c);
 	if( note_start < 0 ) note_start = 0;

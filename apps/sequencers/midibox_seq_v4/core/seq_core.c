@@ -840,7 +840,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || (!tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN && !t->state.STRETCHED_GL)) ) {
+      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || (!tcc->mode.SUSTAIN && !t->state.ROBOSUSTAINED && !t->state.STRETCHED_GL)) ) {
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
@@ -1214,7 +1214,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		}
 	      }
 
-	      tcc->mode.ROBOSUSTAIN = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
+	      t->state.ROBOSUSTAINED = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
 
 	      // force to scale
 	      if( tcc->mode.FORCE_SCALE ) {
@@ -1240,7 +1240,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( t->state.SUSTAINED )
 		gen_off_events = 1;
 
-	      if( tcc->mode.SUSTAIN || tcc->mode.ROBOSUSTAIN || e->len >= 96 )
+	      if( tcc->mode.SUSTAIN || t->state.ROBOSUSTAINED || e->len >= 96 )
 		gen_sustained_events = 1;
 	      else {
 		// generate common On event with given length
@@ -1391,7 +1391,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
-		if( !tcc->mode.SUSTAIN && !tcc->mode.ROBOSUSTAIN ) {
+		if( !tcc->mode.SUSTAIN && !t->state.ROBOSUSTAINED ) {
 		  t->state.STRETCHED_GL = 1;
 		  // store glide note number in 128 bit array for later checks
 		  t->glide_notes[p->note / 32] |= (1 << (p->note % 32));
@@ -1793,7 +1793,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
   // in transpose or arp playmode we allow to transpose notes and CCs
   if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ||
       (!is_cc && seq_core_global_transpose_enabled) ) {
-    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD);
+    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD, tcc->mode.FIRST_NOTE);
 
     if( tr_note < 0 ) {
       p->velocity = 0; // disable note and exit
@@ -1841,7 +1841,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
       if( root ) {
 	inc_semi += root - 1;
       } else {
-	int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD);
+	int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD, tcc->mode.FIRST_NOTE);
 
 	if( tr_note < 0 ) {
 	  p->velocity = 0; // disable note and exit
