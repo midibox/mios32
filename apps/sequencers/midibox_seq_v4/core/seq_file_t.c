@@ -523,13 +523,14 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->mode.playmode, str_buffer);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "TrackModeFlags %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s)\n", 
+  sprintf(line_buffer, "TrackModeFlags %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s, FirstNote: %s)\n", 
 	  tcc->mode.flags,
 	  tcc->mode.UNSORTED ? "on" : "off",
 	  tcc->mode.HOLD ? "on" : "off",
 	  tcc->mode.RESTART ? "on" : "off",
 	  tcc->mode.FORCE_SCALE ? "on" : "off",
-	  tcc->mode.SUSTAIN ? "on" : "off");
+	  tcc->mode.SUSTAIN ? "on" : "off",
+	  tcc->mode.FIRST_NOTE ? "on" : "off");
   FLUSH_BUFFER;
 
   char tmp_buffer[5];

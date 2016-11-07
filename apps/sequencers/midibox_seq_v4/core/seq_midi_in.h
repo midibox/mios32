@@ -103,7 +103,7 @@ extern s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t mi
 extern s32 SEQ_MIDI_IN_ResetSingleTransArpStacks(u8 bus);
 extern s32 SEQ_MIDI_IN_BusReceive(u8 bus, mios32_midi_package_t midi_package, u8 from_loopback_port);
 
-extern s32 SEQ_MIDI_IN_TransposerNoteGet(u8 bus, u8 hold);
+extern s32 SEQ_MIDI_IN_TransposerNoteGet(u8 bus, u8 hold, u8 first_note);
 extern s32 SEQ_MIDI_IN_ArpNoteGet(u8 bus, u8 hold, u8 sorted, u8 key_num);
 
 /////////////////////////////////////////////////////////////////////////////

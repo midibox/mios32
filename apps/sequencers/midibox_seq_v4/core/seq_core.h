@@ -74,6 +74,7 @@ typedef union {
     u16 REC_DONT_OVERWRITE_NEXT_STEP:1; // if a recorded step has been shifted forward
     u16 SYNC_MEASURE:1; // temporary request for synch to measure (used during pattern switching)
     u16 SUSTAINED:1;    // sustained note
+    u16 ROBOSUSTAINED:1;  // events are temporarily sustained by the robotizer
     u16 STRETCHED_GL:1; // stretched gatelength
     u16 MANUAL_STEP_REQ:1; // manual_step should be copied to step
     u16 CANCEL_SUSTAIN_REQ:1; // cancel ongoing sustain
@@ -172,7 +173,7 @@ typedef union {
     u8 RESTART:1;      // track restart on key press
     u8 FORCE_SCALE:1;  // note values are forced to scale
     u8 SUSTAIN:1;      // events are sustained because SUSTAIN is set as active on the track
-    u8 ROBOSUSTAIN:1;      // events are temporarily sustained by the robotizer
+    u8 FIRST_NOTE:1;   // transposer takes the first played note instead of the last one
   };
 } seq_core_trkmode_flags_t;
 

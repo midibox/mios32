@@ -134,6 +134,7 @@ NRPN LSB|   Range   | Default | Description
         |           |         |    bit 2: Restart on/off
         |           |         |    bit 3: Force Scale on/off
         |           |         |    bit 4: Sustain on/off
+        |           |         |    bit 5: First Note on/off
 --------+-----------+---------+------------------------------------------------
 0x22/ 34|   0 - 3   |       0 | Track Event Mode
         |           |         |    0: Note

@@ -25,15 +25,16 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       8
+#define NUM_OF_ITEMS       9
 #define ITEM_GXTY          0
 #define ITEM_MODE          1
 #define ITEM_BUS           2
-#define ITEM_HOLD          3
-#define ITEM_SORT          4
-#define ITEM_RESTART       5
-#define ITEM_FORCE_SCALE   6
-#define ITEM_SUSTAIN       7
+#define ITEM_FIRST_NOTE    3
+#define ITEM_HOLD          4
+#define ITEM_SORT          5
+#define ITEM_RESTART       6
+#define ITEM_FORCE_SCALE   7
+#define ITEM_SUSTAIN       8
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -52,9 +53,10 @@ static s32 LED_Handler(u16 *gp_leds)
       }
       break;
     case ITEM_BUS:         *gp_leds = 0x0080; break;
-    case ITEM_HOLD:        *gp_leds = 0x0100; break;
-    case ITEM_SORT:        *gp_leds = 0x0200; break;
-    case ITEM_RESTART:     *gp_leds = 0x0c00; break;
+    case ITEM_FIRST_NOTE:  *gp_leds = 0x0100; break;
+    case ITEM_HOLD:        *gp_leds = 0x0200; break;
+    case ITEM_SORT:        *gp_leds = 0x0400; break;
+    case ITEM_RESTART:     *gp_leds = 0x0800; break;
     case ITEM_FORCE_SCALE: *gp_leds = 0x3000; break;
     case ITEM_SUSTAIN:     *gp_leds = 0xc000; break;
   }
@@ -96,14 +98,17 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP9:
-      ui_selected_item = ITEM_HOLD;
+      ui_selected_item = ITEM_FIRST_NOTE;
       break;
 
     case SEQ_UI_ENCODER_GP10:
-      ui_selected_item = ITEM_SORT;
+      ui_selected_item = ITEM_HOLD;
       break;
 
     case SEQ_UI_ENCODER_GP11:
+      ui_selected_item = ITEM_SORT;
+      break;
+
     case SEQ_UI_ENCODER_GP12:
       ui_selected_item = ITEM_RESTART;
       break;
@@ -129,6 +134,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_BUS:
       return SEQ_UI_CC_Inc(SEQ_CC_BUSASG, 0, 3, incrementer);
+
+    case ITEM_FIRST_NOTE:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<5)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<5), (incrementer >= 0) ? (1<<5) : 0);
 
     case ITEM_HOLD:
       if( !incrementer ) // toggle flag
@@ -214,8 +224,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. off     Transpose              Bus Hold Sort  Restart  ForceScale  Sustain 
-  // G1T1   >Normal<  Arpeggiator         1   on   on     on        on         on   
+  // Trk. off     Transpose              Bus Note  Hold Sort ReSt. ForceScale Sustain
+  // G1T1   >Normal<  Arpeggiator         1  First  on   on   on       on       on   
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -273,7 +283,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(35, 0);
-  SEQ_LCD_PrintString(" Bus Hold Sort  Restart  ForceScale  Sustain ");
+  SEQ_LCD_PrintString(" Bus Note  Hold Sort ReSt. ForceScale Sustain");
   SEQ_LCD_CursorSet(35, 1);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -282,7 +292,15 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintFormattedString("  %d", SEQ_CC_Get(visible_track, SEQ_CC_BUSASG) + 1);
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_FIRST_NOTE && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(5);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 5)) ? "First" : "Last ");
+  }
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_HOLD && ui_cursor_flash ) {
@@ -298,7 +316,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 0)) ? "off" : "on "); // SORT is inverted!
   }
-  SEQ_LCD_PrintSpaces(4);
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_RESTART && ui_cursor_flash ) {
@@ -306,7 +324,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 2)) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(7);
+  SEQ_LCD_PrintSpaces(6);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_FORCE_SCALE && ui_cursor_flash ) {
@@ -314,7 +332,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 3)) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(8);
+  SEQ_LCD_PrintSpaces(6);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_SUSTAIN && ui_cursor_flash ) {
@@ -322,7 +340,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 4)) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(3);
+  SEQ_LCD_PrintSpaces(2);
 
   return 0; // no error
 }

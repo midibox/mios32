@@ -144,8 +144,9 @@ static notestack_item_t section_changer_notestack_items[SECTION_CHANGER_NOTESTAC
 static notestack_t patch_changer_notestack[SECTION_CHANGER_NOTESTACK_NUM];
 static notestack_item_t patch_changer_notestack_items[SECTION_CHANGER_NOTESTACK_NUM][SEQ_MIDI_IN_NOTESTACK_SIZE];
 
-// last note which has been played
-static u8 transposer_hold_note[SEQ_MIDI_IN_NUM_BUSSES];
+// first and last note which has been played
+static u8 transposer_hold_first_note[SEQ_MIDI_IN_NUM_BUSSES];
+static u8 transposer_hold_last_note[SEQ_MIDI_IN_NUM_BUSSES];
 
 // last arp notes which have been played
 static notestack_item_t arp_sorted_hold[SEQ_MIDI_IN_NUM_BUSSES][4];
@@ -325,7 +326,8 @@ s32 SEQ_MIDI_IN_ResetSingleTransArpStacks(u8 bus)
 		 &bus_notestack_items[bus][BUS_NOTESTACK_ARP_UNSORTED][0],
 		 SEQ_MIDI_IN_NOTESTACK_SIZE);
 
-  transposer_hold_note[bus] = 0x3c; // C-3
+  transposer_hold_first_note[bus] = 0x3c; // C-3
+  transposer_hold_last_note[bus] = 0x3c; // C-3
 
   int i;
   for(i=0; i<4; ++i)
@@ -722,7 +724,9 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
   n = &bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER];
   if( velocity ) { // Note On
     NOTESTACK_Push(n, note, velocity);
-    transposer_hold_note[bus] = n->note_items[0].note;
+    if( bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].len == 1 )
+      transposer_hold_first_note[bus] = n->note_items[0].note;
+    transposer_hold_last_note[bus] = n->note_items[0].note;
 
     // will only be used for Bus1 and if enabled in OPT menu
     if( bus == 0
@@ -734,7 +738,7 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
     }
   } else { // Note Off
     if( NOTESTACK_Pop(n, note) > 0 && n->len ) {
-      transposer_hold_note[bus] = n->note_items[0].note;
+      transposer_hold_last_note[bus] = n->note_items[0].note;
     }
   }
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -1093,12 +1097,20 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlPC(u8 value)
 // Returns the note for transpose mode
 // if -1, the stack is empty
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_MIDI_IN_TransposerNoteGet(u8 bus, u8 hold)
+s32 SEQ_MIDI_IN_TransposerNoteGet(u8 bus, u8 hold, u8 first_note)
 {
-  if( hold )
-    return transposer_hold_note[bus];
+  u8 len = bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].len;
+  if( first_note ) {
+    if( hold )
+      return transposer_hold_first_note[bus];
 
-  return bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].len ? bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].note_items[0].note : -1;
+    return len ? bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].note_items[len-1].note : -1;
+  } else {
+    if( hold )
+      return transposer_hold_last_note[bus];
+
+    return len ? bus_notestack[bus][BUS_NOTESTACK_TRANSPOSER].note_items[0].note : -1;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
