@@ -981,11 +981,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  }
 
 	  // calculate number of cycles to next step
-#if 0
-	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
-#else
-	  t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
-#endif
+	  if( tcc->groove_style.sync_to_track ) {
+	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, t->step + 1);
+	  } else {
+	    t->timestamp_next_step = t->timestamp_next_step_ref + SEQ_GROOVE_DelayGet(track, seq_core_state.ref_step + 1);
+	  }
 
 	  if( !mute_this_step && !seq_record_options.FWD_MIDI && track_record_enabled ) { // if not already skipped (e.g. MANUAL mode)
 	    mute_this_step = t->state.REC_DONT_OVERWRITE_NEXT_STEP;
@@ -1199,11 +1199,11 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      // Note Event
 
 	      // groove it
-#if 0
-	      SEQ_GROOVE_Event(track, t->step, e);
-#else
-	      SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
-#endif
+	      if( tcc->groove_style.sync_to_track ) {
+		SEQ_GROOVE_Event(track, t->step, e);
+	      } else {
+		SEQ_GROOVE_Event(track, seq_core_state.ref_step, e);
+	      }
 
 	      // apply Pre-FX before force-to-scale
 	      if( !no_fx ) {

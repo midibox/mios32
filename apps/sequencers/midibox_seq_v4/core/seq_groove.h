@@ -28,6 +28,14 @@
 // Global Types
 /////////////////////////////////////////////////////////////////////////////
 
+typedef union {
+  u8 ALL;
+  struct {
+    u8  style:6;
+    u8  sync_to_track:1;
+  };
+} seq_groove_style_t;
+
 typedef struct {
   char name[13];
   u8   num_steps;

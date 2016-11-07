@@ -17,6 +17,7 @@
 #include "seq_trg.h"
 #include "seq_layer.h"
 #include "seq_lfo.h"
+#include "seq_groove.h"
 #include "seq_core.h"
 
 
@@ -221,7 +222,7 @@ typedef struct {
   u8       morph_mode:4;      // morph mode
   u8       humanize_mode:4;   // humanize mode
   u8       morph_dst;         // morph destination step
-  u8       groove_style;      // groove style
+  seq_groove_style_t groove_style; // groove style
   u8       groove_value;      // groove intensity
   u8       humanize_value;    // humanize intensity
   seq_trg_assignments_t trg_assignments; // trigger assignments to gate/skip/acc/gilde/roll/R.G/R.V

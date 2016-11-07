@@ -50,6 +50,10 @@ MIDIboxSEQ V4.092
      o Play/Stop: allows to assign the PLAY button to a CC
      o Record: allows to assign the RECORD button to a CC
 
+   o new option in Groove page: Sync
+     Allows to sync the groove to the global reference step (RefS)
+     or to the local track step
+
 
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~
