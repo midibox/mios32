@@ -19,6 +19,7 @@
 #include "tasks.h"
 
 #include <notestack.h>
+#include <seq_bpm.h>
 
 #include "seq_ui.h"
 #include "seq_midi_in.h"
@@ -236,6 +237,8 @@ const char *SEQ_MIDI_IN_ExtCtrlStr(u8 ext_ctrl)
     "Bank G3",
     "Bank G4",
     "All Notes Off",
+    "Play/Stop",
+    "Record",
     "NRPNs",
     "PrgChange Mode",
     "Mutes(first CC)",
@@ -988,6 +991,25 @@ static s32 SEQ_MIDI_IN_Receive_ExtCtrlCC(u8 cc, u8 value)
 	if( value == 0 ) {
 	  SEQ_MIDI_IN_ResetAllStacks();
 	  SEQ_CV_ResetAllChannels();
+	}
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_PLAY: {
+	if( value ) {
+	  if( SEQ_BPM_IsRunning() ) {
+	    SEQ_UI_Button_Stop(0); // depressed
+	    SEQ_UI_Button_Stop(1); // pressed
+	  } else {
+	    SEQ_UI_Button_Play(0); // depressed
+	    SEQ_UI_Button_Play(1); // pressed
+	  }
+	}
+      } break;
+
+      case SEQ_MIDI_IN_EXT_CTRL_RECORD: {
+	if( value ) {
+	  SEQ_UI_Button_Record(0); // depressed
+	  SEQ_UI_Button_Record(1); // pressed
 	}
       } break;
       }

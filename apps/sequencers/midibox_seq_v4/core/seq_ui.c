@@ -407,6 +407,14 @@ void SEQ_UI_Msg_Track(char *line2)
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
+void SEQ_UI_Msg_Step(char *line2)
+{
+  char buffer[40];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  sprintf(buffer, "Step G%dT%d #%d", 1 + (visible_track / 4), 1 + (visible_track % 4), ui_selected_step + 1);
+  SEQ_UI_Msg(((ui_selected_step % 16) < 8) ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
 void SEQ_UI_Msg_Layer(char *line2)
 {
   char buffer[20];
@@ -804,7 +812,7 @@ static s32 SEQ_UI_Button_Metronome(s32 depressed)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_Record(s32 depressed)
+s32 SEQ_UI_Button_Record(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
@@ -1088,80 +1096,52 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 }
 
 
-// callback function for delayed Clear Mixer function
-static void SEQ_UI_Button_Clear_Mixer(u32 dummy)
-{
-  SEQ_UI_MIXER_Clear();
-  SEQ_UI_Msg_MixerMap("cleared");
-}
-
-// callback function for delayed Clear SongPos function
-static void SEQ_UI_Button_Clear_SongPos(u32 dummy)
-{
-  SEQ_UI_SONG_Clear();
-  SEQ_UI_Msg_SongPos("cleared");
-}
-
-// callback function for delayed Clear LivePattern function
-static void SEQ_UI_Button_Clear_LivePattern(u32 dummy)
-{
-  SEQ_UI_UTIL_ClearLivePattern();
-  SEQ_UI_Msg_LivePattern("cleared");
-}
-
-// callback function for clear track
-static void SEQ_UI_Button_Clear_Track(u32 dummy)
-{
-  SEQ_UI_UTIL_ClearButton(0); // button pressed
-  SEQ_UI_UTIL_ClearButton(1); // button depressed
-  if( seq_ui_button_state.SELECT_PRESSED )
-    SEQ_UI_Msg_Layer("cleared");
-  else
-    SEQ_UI_Msg_Track("cleared");
-}
-
 static s32 SEQ_UI_Button_Clear(s32 depressed)
 {
-#if 0
-  u32 clear_delay = 2000;
-#else
-  u32 clear_delay = 50; // TK: I prefer a much faster clear
-#endif
   seq_ui_button_state.CLEAR = depressed ? 0 : 1;
 
   if( ui_page == SEQ_UI_PAGE_MIXER ) {
-    if( depressed )
-      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer);
-    else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Mixer, clear_delay, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Mixer Map");
+    if( !depressed ) {
+      SEQ_UI_MIXER_Clear();
+      SEQ_UI_Msg_MixerMap("cleared");
     }
-    return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
-    if( depressed )
-      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos);
-    else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_SongPos, clear_delay, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear SongPos");
+    if( !depressed ) {
+      SEQ_UI_SONG_Clear();
+      SEQ_UI_Msg_SongPos("cleared");
     }
-    return 1;
   } else if( SEQ_UI_TRKJAM_PatternRecordSelected() ) {
-    if( depressed )
-      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern);
-    else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_LivePattern, clear_delay, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Pattern");
+    if( !depressed ) {
+      SEQ_UI_UTIL_ClearLivePattern();
+      SEQ_UI_Msg_LivePattern("cleared");
     }
-    return 1;
+  } else if( ui_page == SEQ_UI_PAGE_TRKJAM ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_ClearStep(SEQ_UI_VisibleTrackGet(), ui_selected_step, ui_selected_instrument);
+
+      if( seq_record_state.ENABLED && !seq_record_options.STEP_RECORD ) {
+	SEQ_UI_Msg(((ui_selected_step % 16) < 8) ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 1000, "Hold key to", "clear steps");
+      } else {
+	SEQ_UI_Msg_Step("cleared");
+      }
+
+      // print edit screen for 2 seconds
+      ui_hold_msg_ctr = 2000;
+      ui_hold_msg_ctr_drum_edit = 0; // ensure that drum triggers are displayed
+      seq_ui_display_update_req = 1;
+    }
   } else {
-    if( depressed )
-      SEQ_UI_UnInstallDelayedActionCallback(SEQ_UI_Button_Clear_Track);
-    else {
-      SEQ_UI_InstallDelayedActionCallback(SEQ_UI_Button_Clear_Track, clear_delay, 0);
-      SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION, clear_delay+1, "", "to clear Track");
+    if( !depressed ) {
+      SEQ_UI_UTIL_ClearButton(0); // button pressed
+      SEQ_UI_UTIL_ClearButton(1); // button depressed
+      if( seq_ui_button_state.SELECT_PRESSED )
+	SEQ_UI_Msg_Layer("cleared");
+      else
+	SEQ_UI_Msg_Track("cleared");
     }
-    return 1;
   }
+
+  return 1;
 }
 
 
@@ -2062,17 +2042,21 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
 
   // Clear track check
   if( depressed ) {
-		// if footswitch time passed between pressed and depressed is less than fs_time_delay miliseconds, clear track.
-    if( ( MIOS32_TIMESTAMP_GetDelay(fs_time_control) < fs_time_delay ) && ( fs_time_control != 0 ) )
-    {
-			SEQ_UI_Button_Clear_Track(0);
+    // if footswitch time passed between pressed and depressed is less than fs_time_delay miliseconds, clear track.
+    if( ( MIOS32_TIMESTAMP_GetDelay(fs_time_control) < fs_time_delay ) && ( fs_time_control != 0 ) ) {
+      SEQ_UI_UTIL_ClearButton(0); // button pressed
+      SEQ_UI_UTIL_ClearButton(1); // button depressed
+      if( seq_ui_button_state.SELECT_PRESSED )
+	SEQ_UI_Msg_Layer("cleared");
+      else
+	SEQ_UI_Msg_Track("cleared");
     }
   } else {
-		// store pressed timestamp
-		fs_time_control = MIOS32_TIMESTAMP_Get();
+    // store pressed timestamp
+    fs_time_control = MIOS32_TIMESTAMP_Get();
   }
 
-	// PUNCH_IN, PUNCH_OUT
+  // PUNCH_IN, PUNCH_OUT
   if( depressed ) {
     // disable recording
     SEQ_RECORD_Enable(0, 1);

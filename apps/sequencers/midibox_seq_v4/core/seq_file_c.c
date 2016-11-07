@@ -655,6 +655,14 @@ s32 SEQ_FILE_C_Read(char *session)
 		s32 value = get_dec_range(word, parameter, 0, 255);
 		if( value >= 0 )
 		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS] = value;
+	      } else if( strcmp(parameter+8+7, "CcPlay") == 0 ) {
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PLAY] = value;
+	      } else if( strcmp(parameter+8+7, "CcRecord") == 0 ) {
+		s32 value = get_dec_range(word, parameter, 0, 255);
+		if( value >= 0 )
+		  seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_RECORD] = value;
 	      } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 		DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
@@ -1057,6 +1065,8 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MIDI_IN_ExtCtrlPcMode %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PC_MODE]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcMutes %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_MUTES]); FLUSH_BUFFER;
   sprintf(line_buffer, "MIDI_IN_ExtCtrlCcSteps %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_STEPS]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcPlay %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_PLAY]); FLUSH_BUFFER;
+  sprintf(line_buffer, "MIDI_IN_ExtCtrlCcRecord %d\n", (u8)seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_RECORD]); FLUSH_BUFFER;
 
   sprintf(line_buffer, "MIDI_OUT_MClock_Ports 0x%08x\n", (u32)seq_midi_router_mclk_out); FLUSH_BUFFER;
 

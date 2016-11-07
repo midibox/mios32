@@ -91,7 +91,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0x40, // Chord1: A/2
   100,  // Velocity
   71,   // Length
-  64,   // CC // NEW: overruled via seq_core_options.INIT_CC !!!
+  0x80, // CC // NEW: overruled via seq_core_options.INIT_CC !!!
   64,   // PitchBender
   0,    // Probability (reversed: 100%)
   0,    // Delay
@@ -104,6 +104,27 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Aftertouch: 0
   0,    // Root: C
   0,    // Scale: 0
+};
+
+static const u8 seq_par_max_value[SEQ_PAR_NUM_TYPES] = {
+  0x7f, // None
+  0x7f, // Note: C-3
+  0x7f, // Chord1: A/2
+  0x7f, // Velocity
+  101,  // Length
+  0x80, // CC
+  0x80, // PitchBender
+  0x7f, // Probability (reversed: 100%)
+  0x7f, // Delay
+  0x7f, // Roll
+  0x7f, // Roll2
+  0x80, // PrgCh
+  0x7f, // Nth1
+  0x7f, // Nth2
+  0x7f, // Chord2: A/2
+  0x80, // Aftertouch: 0
+  0x7f, // Root: C
+  0x7f, // Scale: 0
 };
 
 
@@ -544,4 +565,11 @@ u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+// Returns maximum value of given parameter assignment type
+/////////////////////////////////////////////////////////////////////////////
+u8 SEQ_PAR_MaxValueGet(seq_par_layer_type_t par_type)
+{
+  return seq_par_max_value[par_type];
+}
 

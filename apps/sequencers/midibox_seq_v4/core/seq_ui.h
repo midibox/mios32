@@ -257,6 +257,7 @@ extern s32 SEQ_UI_REMOTE_MIDI_Keyboard(u8 key, u8 depressed);
 
 extern s32 SEQ_UI_Button_Play(s32 depressed);
 extern s32 SEQ_UI_Button_Stop(s32 depressed);
+extern s32 SEQ_UI_Button_Record(s32 depressed);
 
 extern s32 SEQ_UI_LED_Handler(void);
 extern s32 SEQ_UI_LED_Handler_Periodic();
@@ -374,6 +375,7 @@ extern s32 SEQ_UI_UTIL_MoveButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_ScrollButton(s32 depressed);
 
 extern s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track);
+extern s32 SEQ_UI_UTIL_ClearStep(u8 track, u8 step, u8 instrument);
 
 extern s32 SEQ_UI_UTIL_CopyLivePattern(void);
 extern s32 SEQ_UI_UTIL_PasteLivePattern(void);

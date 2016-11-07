@@ -298,7 +298,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_INIT_CC: {
       u8 value = seq_core_options.INIT_CC;
-      if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
+      if( SEQ_UI_Var8_Inc(&value, 0, 128, incrementer) >= 0 ) {
 	seq_core_options.INIT_CC = value;
 	ui_store_file_required = 1;
 	return 1;
@@ -587,7 +587,11 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(3);
     } else {
-      SEQ_LCD_PrintFormattedString("%3d", seq_core_options.INIT_CC);
+      if( seq_core_options.INIT_CC >= 0x80 ) {
+	SEQ_LCD_PrintString("---");
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", seq_core_options.INIT_CC);
+      }
     }
     SEQ_LCD_PrintSpaces(40-3-len);
   } break;

@@ -535,7 +535,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  u8 value = SEQ_PAR_Get(track, step, par_layer, instrument);
 
 	  if( !insert_empty_notes ) {
-	    // new: don't send CC if assigned to invalid CC number (not recorded yet)
+	    // new: don't send CC if assigned to invalid CC number
 	    // new: don't send if CC is assigned to LFO extra CC function
 	    if( cc_number >= 0x80 ||
 		(tcc->lfo_waveform && tcc->lfo_cc == cc_number) )

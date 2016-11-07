@@ -28,6 +28,24 @@ MIDIboxSEQ V4.092
      
    o new drum configuration: 4*16/2*64
 
+   o individual steps of CC, PitchBender, Program Change and Aftertouch
+     layers can now be disabled so that they won't play.
+     Turn the encoder to the rightmost position (value 128)
+
+     Also the init value has been changed: for these layers, the steps
+     are now disabled by default.
+     For CCs please change the init value by yourself in the UTIL->OPT
+     page (option #12: Initial CC value)
+
+   o new behaviour of CLEAR button in recording mode:
+     it clears the selected step only (not the entire pattern).
+     During live recording it will clear the "played" steps so long the
+     button is pressed.
+
+   o new CC functions which can be configured in MIDI->ExtCtrl.:
+     o Play/Stop: allows to assign the PLAY button to a CC
+     o Record: allows to assign the RECORD button to a CC
+
 
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~
