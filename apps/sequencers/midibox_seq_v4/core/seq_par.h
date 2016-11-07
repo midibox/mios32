@@ -105,6 +105,7 @@ extern u8 SEQ_PAR_MappedTypeGet(u8 par_type);
 extern u8 SEQ_PAR_UnMappedTypeGet(u8 mapped_par_type);
 
 extern u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer);
+extern u8 SEQ_PAR_MaxValueGet(seq_par_layer_type_t par_type);
 
 
 /////////////////////////////////////////////////////////////////////////////

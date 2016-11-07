@@ -1360,16 +1360,13 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   s32 new_value = (forced_value >= 0) ? forced_value : (old_value + incrementer);
   if( new_value < 0 )
     new_value = 0;
-  else if( new_value >= 128 )
-    new_value = 127;
-
-  // extra: limit value for root note
-  // could be made more generic in future, e.g. each parameter layer type provides a max value
-  {
+  else {
+    // limit depending on max value
     seq_par_layer_type_t par_layer_type = SEQ_PAR_AssignmentGet(track, ui_selected_par_layer);
+    u8 max = SEQ_PAR_MaxValueGet(par_layer_type);
 
-    if( par_layer_type == SEQ_PAR_Type_Root && new_value >= 13 ) {
-      new_value = 12;
+    if( new_value >= max ) {
+      new_value = max;
     }
   }
 	    

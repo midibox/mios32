@@ -673,6 +673,16 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
   if( track >= SEQ_CORE_NUM_TRACKS )
     return -4; // unsupported track
 
+#ifndef MBSEQV4L
+  // new: if CLEAR key pressed, clear the step
+  if( seq_ui_button_state.CLEAR ) {
+    SEQ_UI_UTIL_ClearStep(track, new_step, ui_selected_instrument);
+    ui_selected_step = new_step;
+    ui_selected_step_view = ui_selected_step/16;
+    return 0; // no error
+  }
+#endif
+
   seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
@@ -712,6 +722,12 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
 
 	  SEQ_TRG_GateSet(track, new_step, instrument, gate);
 	  SEQ_TRG_AccentSet(track, new_step, instrument, accent);
+
+#ifndef MBSEQV4L
+	  // UI: display recorded step
+	  ui_selected_step = new_step;
+	  ui_selected_step_view = ui_selected_step/16;
+#endif
 	}
       }
     } else {
@@ -738,6 +754,12 @@ s32 SEQ_RECORD_NewStep(u8 track, u8 prev_step, u8 new_step, u32 bpm_tick)
       // disable gate of new step
       SEQ_TRG_GateSet(track, new_step, instrument, gate);
       SEQ_TRG_AccentSet(track, new_step, instrument, accent);
+
+#ifndef MBSEQV4L
+      // UI: display recorded step
+      ui_selected_step = new_step;
+      ui_selected_step_view = ui_selected_step/16;
+#endif
 
       // copy notes of previous step to new step
       u8 num_p_layers = SEQ_PAR_NumLayersGet(track);

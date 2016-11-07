@@ -770,6 +770,33 @@ s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// CLEAR a specific step
+// return 1 if successfull
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_ClearStep(u8 track, u8 step, u8 instrument)
+{
+  {
+    int num_par_layers = SEQ_TRG_NumLayersGet(track);
+    int par_layer;
+    for(par_layer=0; par_layer<num_par_layers; ++par_layer) {
+      u8 init_value = SEQ_PAR_InitValueGet(SEQ_PAR_AssignmentGet(track, par_layer), par_layer);
+      SEQ_PAR_Set(track, step, par_layer, instrument, init_value);
+    }
+  }
+
+  {
+    int num_trg_layers = SEQ_TRG_NumLayersGet(track);
+    int trg_layer;
+    for(trg_layer=0; trg_layer<num_trg_layers; ++trg_layer) {
+      SEQ_TRG_Set(track, step, trg_layer, instrument, 0);
+    }
+  }
+
+  return 1;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // clear a track
 /////////////////////////////////////////////////////////////////////////////
 static s32 CLEAR_Track(u8 track)

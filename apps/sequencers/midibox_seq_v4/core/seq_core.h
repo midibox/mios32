@@ -32,6 +32,7 @@
 typedef union {
   u32 ALL;
   struct {
+    u32 INIT_CC:8;
     u32 SYNCHED_PATTERN_CHANGE:1;
     u32 PASTE_CLR_ALL:1;
     u32 RATOPC:1;
@@ -39,7 +40,6 @@ typedef union {
     u32 SYNCHED_UNMUTE:1;
     u32 PATTERN_MIXER_MAP_COUPLING:1;
     u32 MIXER_LIVE_SEND:1;
-    u32 INIT_CC:7;
     u32 INIT_WITH_TRIGGERS:1;
     u32 LIVE_LAYER_MUTE_STEPS:3; // 0=off, 1=permanent, 2..4 steps
   };

@@ -39,22 +39,24 @@
 #define SEQ_MIDI_IN_EXT_CTRL_BANK_G3       11
 #define SEQ_MIDI_IN_EXT_CTRL_BANK_G4       12
 #define SEQ_MIDI_IN_EXT_CTRL_ALL_NOTES_OFF 13
+#define SEQ_MIDI_IN_EXT_CTRL_PLAY          14
+#define SEQ_MIDI_IN_EXT_CTRL_RECORD        15
 
 // number of external controllers which listen to CC (at the beginning of the list)
-#define SEQ_MIDI_IN_EXT_CTRL_NUM_IX_CC     14
+#define SEQ_MIDI_IN_EXT_CTRL_NUM_IX_CC     16
 
 // not listen to CC
-#define SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED  14
-#define SEQ_MIDI_IN_EXT_CTRL_PC_MODE       15
+#define SEQ_MIDI_IN_EXT_CTRL_NRPN_ENABLED  16
+#define SEQ_MIDI_IN_EXT_CTRL_PC_MODE       17
 
 // extra CC handling (we listen to 16 CCs)
-#define SEQ_MIDI_IN_EXT_CTRL_MUTES         16
+#define SEQ_MIDI_IN_EXT_CTRL_MUTES         18
 
 // extra CC handling (we listen to 16 CCs)
-#define SEQ_MIDI_IN_EXT_CTRL_STEPS         17
+#define SEQ_MIDI_IN_EXT_CTRL_STEPS         19
 
 // total number of external controllers
-#define SEQ_MIDI_IN_EXT_CTRL_NUM           18
+#define SEQ_MIDI_IN_EXT_CTRL_NUM           20
 
 
 // program change modes
