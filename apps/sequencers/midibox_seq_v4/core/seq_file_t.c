@@ -320,9 +320,11 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	  } else if( strcmp(parameter, "HumanizeIntensity") == 0 ) {
 	    if( flags.CFG ) tcc->humanize_value = value;
 	  } else if( strcmp(parameter, "GrooveStyle") == 0 ) {
-	    if( flags.CFG ) tcc->groove_style = value;
+	    if( flags.CFG ) tcc->groove_style.style = value;
 	  } else if( strcmp(parameter, "GrooveIntensity") == 0 ) {
 	    if( flags.CFG ) tcc->groove_value = value;
+	  } else if( strcmp(parameter, "GrooveSyncToTrack") == 0 ) {
+	    if( flags.CFG ) tcc->groove_style.sync_to_track = value;
 	  } else if( strcmp(parameter, "TriggerAsngGate") == 0 ) {
 	    if( flags.CFG ) tcc->trg_assignments.gate = value;
 	  } else if( strcmp(parameter, "TriggerAsngAccent") == 0 ) {
@@ -644,10 +646,13 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   FLUSH_BUFFER;
 
 
-  sprintf(line_buffer, "GrooveStyle %d\n", tcc->groove_style);
+  sprintf(line_buffer, "GrooveStyle %d\n", tcc->groove_style.style);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "GrooveIntensity %d\n", tcc->groove_value);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "GrooveSyncToTrack %d\n", tcc->groove_style.sync_to_track);
   FLUSH_BUFFER;
 
 

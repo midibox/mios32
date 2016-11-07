@@ -254,7 +254,7 @@ char *SEQ_GROOVE_NameGet(u8 groove)
 s32 SEQ_GROOVE_DelayGet(u8 track, u8 step)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  u8 groove = tcc->groove_style;
+  u8 groove = tcc->groove_style.style;
 
   // check if within allowed range
   if( !groove || groove >= (SEQ_GROOVE_NUM_PRESETS+SEQ_GROOVE_NUM_TEMPLATES) )
@@ -287,7 +287,7 @@ s32 SEQ_GROOVE_DelayGet(u8 track, u8 step)
 s32 SEQ_GROOVE_Event(u8 track, u8 step, seq_layer_evnt_t *e)
 {
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  u8 groove = tcc->groove_style;
+  u8 groove = tcc->groove_style.style;
 
   // check if within allowed range
   if( !groove || groove >= (SEQ_GROOVE_NUM_PRESETS+SEQ_GROOVE_NUM_TEMPLATES) )
