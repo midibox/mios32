@@ -26,7 +26,7 @@ MIDIboxSEQ V4.092
      Similar for Scale: it can override the globally configured scale
      of the FX->Scale page for each step.
      
-   o new drum configurations: 4*16/2*64, 4*16/1*128, 4*16/1*256
+   o new drum configurations: 4*16/2*64, 4*16/2*128, 4*16/1*256
 
    o new track mode configuration option: "Note"
      Allows to specify, if the transposer should take the last or first
