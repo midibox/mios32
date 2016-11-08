@@ -584,11 +584,22 @@ static s32 SEQ_UI_Button_RecLive(s32 depressed)
   return SEQ_UI_PAGES_Set(SEQ_UI_PAGE_REC_LIVE);
 }
 
+
 static s32 SEQ_UI_Button_RecPoly(s32 depressed)
 {
   if( depressed ) return -1; // ignore when button depressed
 
   seq_record_options.POLY_RECORD ^= 1;
+
+  return 0; // no error
+}
+
+s32 SEQ_UI_Button_Record(s32 depressed)
+{
+  if( depressed ) return -1; // ignore when button depressed
+
+  // enable/disable recording
+  SEQ_RECORD_Enable(seq_record_state.ENABLED ? 0 : 1, 1);
 
   return 0; // no error
 }
