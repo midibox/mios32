@@ -475,8 +475,10 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 void SEQ_TASK_Period1mS(void)
 {
 #if MEASURE_IDLE_CTR == 0
-  // pattern switching
-  SEQ_PATTERN_Handler();
+  // pattern switching if not in sync mode
+  if( !seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+    SEQ_PATTERN_Handler();
+  }
 
   // update high-prio LED functions
   SEQ_UI_LED_Handler_Periodic();
