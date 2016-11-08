@@ -41,7 +41,6 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define MIDI_TASK_STACK_SIZE               1400
 #define PERIOD1MS_TASK_STACK_SIZE          1400
 #define PERIOD1MS_LOWPRIO_TASK_STACK_SIZE  1400
-#define PATTERN_TASK_STACK_SIZE             512
 
 // only used by idle task
 #define MIOS32_MINIMAL_STACK_SIZE           384

@@ -165,8 +165,6 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
 #if CHECK_PATTERN_REQ_LOAD_TIMINGS
 	DEBUG_MSG("[%d] Forward Delay %d", SEQ_BPM_TickGet(), delay_ticks);
 #endif
-	// resume low-prio pattern handler
-	SEQ_TASK_PatternResume();
       }
       MUTEX_MIDIOUT_GIVE;
     }

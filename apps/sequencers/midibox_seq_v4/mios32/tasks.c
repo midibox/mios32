@@ -56,7 +56,6 @@ xSemaphoreHandle xJ16Semaphore;
 #define PRIORITY_TASK_MIDI		 ( tskIDLE_PRIORITY + 4 )
 #define PRIORITY_TASK_PERIOD1MS		 ( tskIDLE_PRIORITY + 2 )
 #define PRIORITY_TASK_PERIOD1MS_LOW_PRIO ( tskIDLE_PRIORITY + 2 )
-#define PRIORITY_TASK_PATTERN            ( tskIDLE_PRIORITY + 2 )
 
 // priority of uIP task defined in uip_task.c (-> using 3)
 
@@ -67,14 +66,11 @@ xSemaphoreHandle xJ16Semaphore;
 static void TASK_MIDI(void *pvParameters);
 static void TASK_Period1mS(void *pvParameters);
 static void TASK_Period1mS_LowPrio(void *pvParameters);
-static void TASK_Pattern(void *pvParameters);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
-
-static xTaskHandle xPatternHandle;
 
  
 /////////////////////////////////////////////////////////////////////////////
@@ -94,7 +90,6 @@ s32 TASKS_Init(u32 mode)
   xTaskCreate(TASK_MIDI,              "MIDI",         (MIDI_TASK_STACK_SIZE)/4,              NULL, PRIORITY_TASK_MIDI, NULL);
   xTaskCreate(TASK_Period1mS,         "Period1mS",    (PERIOD1MS_TASK_STACK_SIZE)/4,         NULL, PRIORITY_TASK_PERIOD1MS, NULL);
   xTaskCreate(TASK_Period1mS_LowPrio, "Period1mS_LP", (PERIOD1MS_LOWPRIO_TASK_STACK_SIZE)/4, NULL, PRIORITY_TASK_PERIOD1MS_LOW_PRIO, NULL);
-  xTaskCreate(TASK_Pattern,           "Pattern",      (PATTERN_TASK_STACK_SIZE)/4,           NULL, PRIORITY_TASK_PATTERN, &xPatternHandle);
 
   // finally init the uIP task
   UIP_TASK_Init(0);
@@ -177,27 +172,6 @@ static void TASK_Period1mS_LowPrio(void *pvParameters)
       SEQ_TASK_Period1S();
     }
   }
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This task is triggered from SEQ_PATTERN_Change to transport the new patch
-// into RAM
-/////////////////////////////////////////////////////////////////////////////
-static void TASK_Pattern(void *pvParameters)
-{
-  do {
-    // suspend task - will be resumed from SEQ_PATTERN_Change()
-    vTaskSuspend(NULL);
-
-    SEQ_TASK_Pattern();
-  } while( 1 );
-}
-
-// use this function to resume the task
-void SEQ_TASK_PatternResume(void)
-{
-  vTaskResume(xPatternHandle);
 }
 
 
