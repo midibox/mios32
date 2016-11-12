@@ -351,13 +351,8 @@ static void MIOS32_SRIO_DMA_Callback(void)
   int i;
   for(i=0; i<num_sr; ++i) {
     u8 change_mask = mios32_srio_din[i] ^ mios32_srio_din_buffer[i]; // these are the changed pins
-
-    // only do this for DINs where the change flag has been cleared.
-    // this ensures that pin values won't be overwritten if they haven't been handled yet
-    if( !mios32_srio_din_changed[i] ) {
-      mios32_srio_din_changed[i] |= change_mask;
-      mios32_srio_din[i] = mios32_srio_din_buffer[i];
-    }
+    mios32_srio_din_changed[i] |= change_mask;
+    mios32_srio_din[i] = mios32_srio_din_buffer[i];
   }
 
   // call user specific hook if requested
