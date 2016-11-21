@@ -476,7 +476,7 @@ void SEQ_TASK_Period1mS(void)
 {
 #if MEASURE_IDLE_CTR == 0
   // pattern switching if not in sync mode
-  if( !seq_core_options.SYNCHED_PATTERN_CHANGE ) {
+  if( !seq_core_options.SYNCHED_PATTERN_CHANGE || SEQ_SONG_ActiveGet() ) {
     SEQ_PATTERN_Handler();
   }
 
@@ -792,15 +792,6 @@ void SEQ_TASK_MIDI(void)
 
   MUTEX_MIDIOUT_GIVE;
 #endif
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
-// This task is triggered whenever a pattern has to be loaded
-/////////////////////////////////////////////////////////////////////////////
-void SEQ_TASK_Pattern(void)
-{
-  SEQ_PATTERN_Handler();
 }
 
 
