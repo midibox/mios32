@@ -978,6 +978,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   item->enabled_ports = 0x01011; // OSC1, UART1 and USB1
   item->fwd_id = 0;
   item->fwd_value = 0xffff;
+  item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
   item->hw_id  = id;
   item->cond.ALL = 0;
   item->value  = 0;
@@ -1020,7 +1021,6 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
-    item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_1;
     item->custom_flags.ENC.enc_mode = MBNG_EVENT_ENC_MODE_ABSOLUTE;
     item->custom_flags.ENC.enc_speed_mode = MBNG_EVENT_ENC_SPEED_MODE_AUTO;
   }; break;
