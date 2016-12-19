@@ -2366,6 +2366,19 @@ http://midibox.org/forums/topic/20128-save-all-saves-group-4-to-group-2help/#com
 ----------------------------------------------------------
 Turn off steps by using 8th bit
 http://midibox.org/forums/topic/20182-prgch-and-cc-layers/?do=findComment&comment=175864
+----------------------------------------------------------
+BLM: zoom control
+----------------------------------------------------------
+I'd like to request an item for the wishlist to help with Song composition.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176837
+----------------------------------------------------------
+there is a bug in Transpose that can be reproduced by setting force to scale to Arabian for a track and hitting G# or A# in the Transposition menu. verified on two machines in 4.091 and the latest beta.
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176980
+----------------------------------------------------------
+Support for Jog Shuttle
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=177037
+----------------------------------------------------------
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus
