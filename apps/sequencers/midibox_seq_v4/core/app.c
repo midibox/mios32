@@ -29,6 +29,7 @@
 #endif
 #include <blm_x.h>
 #include <blm_scalar_master.h>
+#include <ws2812.h>
 
 #include "tasks.h"
 
@@ -119,6 +120,8 @@ void APP_Init(void)
   BLM_CHEAPO_Init(0);
 #endif
   BLM_X_Init();
+
+  WS2812_Init(0);
 
   // initialize hardware soft-config
   SEQ_HWCFG_Init(0);

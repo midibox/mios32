@@ -22,6 +22,7 @@
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include <blm_scalar_master.h>
+#include <ws2812.h>
 
 #include "tasks.h"
 #include "seq_ui.h"
@@ -3137,6 +3138,15 @@ s32 SEQ_UI_LED_Handler_Periodic()
     SEQ_LED_SRSet(seq_hwcfg_led.tracks_dout_l_sr-1, (ui_selected_tracks >> 0) & 0xff);
   if( seq_hwcfg_led.tracks_dout_r_sr )
     SEQ_LED_SRSet(seq_hwcfg_led.tracks_dout_r_sr-1, (ui_selected_tracks >> 8) & 0xff);
+
+  // Temporary: WS2812 LEDs output step, hue depends on track selection
+  {
+    int i;
+    for(i=0; i<WS2812_NUM_LEDS; ++i) {
+      u8 on = sequencer_running && (seq_core_trk[visible_track].step == i);
+      WS2812_LED_SetHSV(i,(360/16)*visible_track, 1.0, on ? 1.0 : 0.0);
+    }
+  }
 
   if( seq_hwcfg_blm.enabled ) {
     // Red LEDs (position marker)

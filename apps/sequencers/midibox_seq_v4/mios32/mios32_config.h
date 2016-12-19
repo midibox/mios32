@@ -163,6 +163,14 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define BLM_X_DEBOUNCE_MODE       1
 
 
+// WS2816 LEDs (only supported by STM32F4)
+#if defined(MIOS32_FAMILY_STM32F4xx)
+# define WS2812_NUM_LEDS 64
+#else
+# define WS2812_NUM_LEDS 0
+#endif
+
+
 // BLM_SCALAR master driver: enable this switch if the application supports OSC (based on osc_server module)
 #define BLM_SCALAR_MASTER_OSC_SUPPORT 1
 
