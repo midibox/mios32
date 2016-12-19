@@ -2369,6 +2369,9 @@ http://midibox.org/forums/topic/20182-prgch-and-cc-layers/?do=findComment&commen
 ----------------------------------------------------------
 BLM: zoom control
 ----------------------------------------------------------
+Another small suggestion for the chord handling is as follows:
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176731
+----------------------------------------------------------
 I'd like to request an item for the wishlist to help with Song composition.
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176837
 ----------------------------------------------------------
