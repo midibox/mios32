@@ -258,9 +258,9 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 		memcpy(seq_core_trk[track].name, word+1, 80);
 	    }
 	  } else if( strcmp(parameter, "TrackMode") == 0 ) {
-	    if( flags.CFG ) tcc->mode.playmode = value;
+	    if( flags.CFG ) tcc->playmode = value;
 	  } else if( strcmp(parameter, "TrackModeFlags") == 0 ) {
-	    if( flags.CFG ) tcc->mode.flags = value;
+	    if( flags.CFG ) tcc->trkmode_flags.ALL = value;
 	  } else if( strcmp(parameter, "MIDI_Port") == 0 ) {
 	    if( flags.CHN ) tcc->midi_port = value;
 	  } else if( strcmp(parameter, "MIDI_Channel") == 0 ) {
@@ -515,24 +515,24 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
   sprintf(line_buffer, "Name '%s'\n", seq_core_trk[track].name);
   FLUSH_BUFFER;
 
-  switch( tcc->mode.playmode ) {
+  switch( tcc->playmode ) {
     case SEQ_CORE_TRKMODE_Off: sprintf(str_buffer, "off"); break;
     case SEQ_CORE_TRKMODE_Normal: sprintf(str_buffer, "Normal"); break;
     case SEQ_CORE_TRKMODE_Transpose: sprintf(str_buffer, "Transpose"); break;
     case SEQ_CORE_TRKMODE_Arpeggiator: sprintf(str_buffer, "Arpeggiator"); break;
     default: sprintf(str_buffer, "unknown"); break;
   }
-  sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->mode.playmode, str_buffer);
+  sprintf(line_buffer, "TrackMode %d (%s)\n", tcc->playmode, str_buffer);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "TrackModeFlags %d (Unsorted: %s, Hold: %s, Restart: %s, Force Scale: %s, Sustain: %s, FirstNote: %s)\n", 
-	  tcc->mode.flags,
-	  tcc->mode.UNSORTED ? "on" : "off",
-	  tcc->mode.HOLD ? "on" : "off",
-	  tcc->mode.RESTART ? "on" : "off",
-	  tcc->mode.FORCE_SCALE ? "on" : "off",
-	  tcc->mode.SUSTAIN ? "on" : "off",
-	  tcc->mode.FIRST_NOTE ? "on" : "off");
+	  tcc->trkmode_flags.ALL,
+	  tcc->trkmode_flags.UNSORTED ? "on" : "off",
+	  tcc->trkmode_flags.HOLD ? "on" : "off",
+	  tcc->trkmode_flags.RESTART ? "on" : "off",
+	  tcc->trkmode_flags.FORCE_SCALE ? "on" : "off",
+	  tcc->trkmode_flags.SUSTAIN ? "on" : "off",
+	  tcc->trkmode_flags.FIRST_NOTE ? "on" : "off");
   FLUSH_BUFFER;
 
   char tmp_buffer[5];

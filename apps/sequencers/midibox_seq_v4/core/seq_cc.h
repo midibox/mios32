@@ -195,7 +195,8 @@ typedef struct {
   u8 lay_const[3*16];           // 3*16 constant parameters
 
   seq_core_shared_t shared;   // shared mode parameters (each track holds another value)
-  seq_core_trkmode_flags_t mode; // track mode and flags
+  seq_core_trk_playmode_t playmode; // the play mode
+  seq_core_trkmode_flags_t trkmode_flags; // various flags
   seq_event_mode_t event_mode:4;  // event mode
   seq_core_busasg_t busasg;     // T&A bus port (0..3)
   u8       midi_pc; // PC change
