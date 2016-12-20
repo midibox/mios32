@@ -78,6 +78,7 @@ typedef union {
     u16 STRETCHED_GL:1; // stretched gatelength
     u16 MANUAL_STEP_REQ:1; // manual_step should be copied to step
     u16 CANCEL_SUSTAIN_REQ:1; // cancel ongoing sustain
+    u16 TRIGGER_NEXT_STEP_REQ:1; // to continue with next step in STEP_TRG mode; flag is set by transposer
   };
 } seq_core_trk_state_t;
 
@@ -169,6 +170,7 @@ typedef union {
     u8 FORCE_SCALE:1;  // note values are forced to scale
     u8 SUSTAIN:1;      // events are sustained because SUSTAIN is set as active on the track
     u8 FIRST_NOTE:1;   // transposer takes the first played note instead of the last one
+    u8 STEP_TRG:1;     // next step has to be triggered from transposer (e.g. via loopback track or external keyboard)
   };
 } seq_core_trkmode_flags_t;
 
@@ -246,6 +248,8 @@ extern s32 SEQ_CORE_SetTrkPos(u8 track, u8 value, u8 scale_value);
 
 extern s32 SEQ_CORE_ManualTrigger(u8 step);
 extern s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks);
+
+extern s32 SEQ_CORE_StepTriggerReq(u8 bus);
 
 extern s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p);
 

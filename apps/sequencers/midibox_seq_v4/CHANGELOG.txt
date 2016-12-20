@@ -32,6 +32,14 @@ MIDIboxSEQ V4.092
      Allows to specify, if the transposer should take the last or first
      played note (previously it always played the last note)
 
+   o new track mode configuration option: "STrg" (Step Trigger)
+     In this mode, the step progression will be controlled from the transposer
+     bus, hence it can either be triggered from a loopback track or from an 
+     external MIDI device (MIDI keyboard, sequencer, etc.)
+     Note that each track can be assigned to a dedicated transpose bus
+     (4 busses are available), this allows to control 4 independent step progressions
+     for all 16 tracks.
+
    o individual steps of CC, PitchBender, Program Change and Aftertouch
      layers can now be disabled so that they won't play.
      Turn the encoder to the rightmost position (value 128)
