@@ -44,6 +44,24 @@ CLK_DOUT_SR 2
 
 
 ##################################################
+# Optional 8x16 button matrix
+##################################################
+
+# define the DOUT shift register which selects the button row
+# 0: off, 1-16: the shift register number
+BM_SELECT_DOUT_SR  0
+
+# define the DIN shift registers for the button columns
+# 0: off, 1-16: the shift register number
+
+# ROW1 will provide M1..M8
+BM_SCAN_ROW1_DIN_SR 0
+
+# ROW2 will provide M9..M16
+BM_SCAN_ROW2_DIN_SR 0
+
+
+##################################################
 # Optional LRE8x2 modules (encoders and LED rings)
 # Up to two modules can be chained, makes up to
 # 32 encoders and 32 LEDrings
@@ -123,6 +141,15 @@ LRE2_ENC16  10    6  NON_DETENTED
 # SR = 1..16:  directly triggered from DIN pin
 ##################################################
 
+# SCS (if not connected to J10)
+#                 SR  Pin
+BUTTON_SCS_EXIT   M8   6
+BUTTON_SCS_SHIFT  M7   6
+BUTTON_SCS_SOFT1  M4   5
+BUTTON_SCS_SOFT2  M4   6
+BUTTON_SCS_SOFT3  M4   7
+BUTTON_SCS_SOFT4  M5   7
+
 # select CV channel
 #            SR  Pin
 BUTTON_CV1    0   0
@@ -169,5 +196,39 @@ BUTTON_SCOPE2    2   5
 BUTTON_SCOPE3    2   6
 BUTTON_SCOPE4    2   7
 
+#                    SR  Pin
+BUTTON_KEYBOARD_C1    0   0
+BUTTON_KEYBOARD_C1S   0   0
+BUTTON_KEYBOARD_D1    0   0
+BUTTON_KEYBOARD_D1S   0   0
+BUTTON_KEYBOARD_E1    0   0
+BUTTON_KEYBOARD_F1    0   0
+BUTTON_KEYBOARD_F1S   0   0
+BUTTON_KEYBOARD_G1    0   0
+BUTTON_KEYBOARD_G1S   0   0
+BUTTON_KEYBOARD_A1    0   0
+BUTTON_KEYBOARD_A1S   0   0
+BUTTON_KEYBOARD_B1    0   0
+BUTTON_KEYBOARD_C2    0   0
+BUTTON_KEYBOARD_C2S   0   0
+BUTTON_KEYBOARD_D2    0   0
+BUTTON_KEYBOARD_D2S   0   0
+BUTTON_KEYBOARD_E2    0   0
+
 
 # more button functions are available on request
+
+
+##################################################
+# Additional Encoder assignments
+# SR = 0: encoder disabled
+# SR = 1..16: DIN assignment
+# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3, DETENTED4, DETENTED5
+##################################################
+
+# encoder assignments
+
+#           SR  Pin  Type 
+ENC_SCS      0    0  DETENTED3
+ENC_GP1      0    0  DETENTED3
+ENC_GP2      0    0  DETENTED3

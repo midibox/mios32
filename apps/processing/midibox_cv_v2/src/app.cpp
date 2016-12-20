@@ -40,6 +40,7 @@
 #include "mbcv_patch.h"
 #include "mbcv_map.h"
 #include "mbcv_button.h"
+#include "mbcv_enc.h"
 #include "mbcv_lre.h"
 #include "mbcv_rgb.h"
 #include "mbcv_file.h"
@@ -167,6 +168,7 @@ extern "C" void APP_Init(void)
   MIDI_ROUTER_Init(0);
   MBCV_PATCH_Init(0);
   MBCV_BUTTON_Init(0);
+  MBCV_ENC_Init(0);
   MBCV_LRE_Init(0);
   MBCV_RGB_Init(0);
   UIP_TASK_Init(0);
@@ -235,6 +237,9 @@ extern "C" void APP_Tick(void)
   // PWM modulate the status LED (this is a sign of life)
   u32 timestamp = MIOS32_TIMESTAMP_Get();
   MIOS32_BOARD_LED_Set(1, (timestamp % 20) <= ((timestamp / 100) % 10));
+
+  // Button Matrix Handler
+  MBCV_BUTTON_MATRIX_Handler();
 }
 
 
@@ -294,6 +299,9 @@ extern "C" void APP_SRIO_ServicePrepare(void)
 
   // update encoders/buttons of SCS
   SCS_EncButtonUpdate_Tick();
+
+  // Button Matrix
+  MBCV_BUTTON_MATRIX_PrepareCol();
 }
 
 
@@ -303,6 +311,9 @@ extern "C" void APP_SRIO_ServicePrepare(void)
 extern "C" void APP_SRIO_ServiceFinish(void)
 {
 #if MIOS32_DONT_SERVICE_SRIO_SCAN
+  // Button Matrix
+  MBCV_BUTTON_MATRIX_GetRow();
+
   // update encoder states
   MIOS32_ENC_UpdateStates();
 
@@ -335,9 +346,10 @@ extern "C" void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
   // pass encoder event to SCS handler
   if( encoder == SCS_ENC_MENU_ID ) // == 0 (assigned by SCS)
     SCS_ENC_MENU_NotifyChange(incrementer);
-  else {
-    // -> ENC Handler
-    MBCV_LRE_NotifyChange(encoder-1, incrementer);
+  else if( encoder <= MBCV_ENC_NUM ) {
+    MBCV_ENC_NotifyChange(encoder-1, incrementer);
+  } else {
+    MBCV_LRE_NotifyChange(encoder-1-MBCV_ENC_NUM, incrementer);
   }
 }
 

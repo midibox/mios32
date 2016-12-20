@@ -29,7 +29,7 @@ AOUT_IF AOUT_NG
 # - ...
 # - gate of CV8 will be available at output D0
 
-GATE_CV_DOUT_SR 3
+GATE_CV_DOUT_SR 1
 
 
 # shift register number of the clock and start/stop signal (DIN Sync)
@@ -40,7 +40,25 @@ GATE_CV_DOUT_SR 3
 # - ...
 # - clock7 will be available at output D0
 
-CLK_DOUT_SR 4
+CLK_DOUT_SR 2
+
+
+##################################################
+# Optional 8x16 button matrix
+##################################################
+
+# define the DOUT shift register which selects the button row
+# 0: off, 1-16: the shift register number
+BM_SELECT_DOUT_SR  4
+
+# define the DIN shift registers for the button columns
+# 0: off, 1-16: the shift register number
+
+# ROW1 will provide M1..M8
+BM_SCAN_ROW1_DIN_SR 6
+
+# ROW2 will provide M9..M16
+BM_SCAN_ROW2_DIN_SR 0
 
 
 ##################################################
@@ -167,7 +185,17 @@ WS2812_LED32   0      CHANNEL_HUE
 # Button assignments to DIN pins
 # SR = 0: Button disabled
 # SR = 1..16:  directly triggered from DIN pin
+# SR = M1..16: triggered from button matrix pin
 ##################################################
+
+# SCS (if not connected to J10)
+#                 SR  Pin
+BUTTON_SCS_EXIT   M8   6
+BUTTON_SCS_SHIFT  M7   6
+BUTTON_SCS_SOFT1  M4   5
+BUTTON_SCS_SOFT2  M4   6
+BUTTON_SCS_SOFT3  M4   7
+BUTTON_SCS_SOFT4  M5   7
 
 # select CV channel
 #            SR  Pin
@@ -215,5 +243,43 @@ BUTTON_SCOPE2    0   0
 BUTTON_SCOPE3    0   0
 BUTTON_SCOPE4    0   0
 
+#                    SR  Pin
+BUTTON_KEYBOARD_C1   M1   4
+BUTTON_KEYBOARD_C1S  M1   5
+BUTTON_KEYBOARD_D1   M2   5
+BUTTON_KEYBOARD_D1S  M2   6
+BUTTON_KEYBOARD_E1   M2   4
+BUTTON_KEYBOARD_F1   M3   5
+BUTTON_KEYBOARD_F1S  M4   4
+BUTTON_KEYBOARD_G1   M3   4
+BUTTON_KEYBOARD_G1S  M5   4
+BUTTON_KEYBOARD_A1   M6   4
+BUTTON_KEYBOARD_A1S  M5   5
+BUTTON_KEYBOARD_B1   M6   5
+BUTTON_KEYBOARD_C2   M6   6
+BUTTON_KEYBOARD_C2S  M7   5
+BUTTON_KEYBOARD_D2   M7   4
+BUTTON_KEYBOARD_D2S  M8   5
+BUTTON_KEYBOARD_E2   M8   4
+
 
 # more button functions are available on request
+
+
+##################################################
+# Additional Encoder assignments
+# SR = 0: encoder disabled
+# SR = 1..16: DIN assignment
+# Types: NON_DETENTED, DETENTED1, DETENTED2, DETENTED3, DETENTED4, DETENTED5
+##################################################
+
+# encoder assignments
+
+#           SR  Pin  Type 
+ENC_SCS      5    5  DETENTED3
+ENC_GP1      5    0  DETENTED3
+ENC_GP2      5    3  DETENTED3
+
+# note: SCS and GP2 encoder pins swapped in frontpanel layout
+# GP1 has the correct assignments
+
