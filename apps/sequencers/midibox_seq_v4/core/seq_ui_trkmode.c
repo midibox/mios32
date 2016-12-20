@@ -25,7 +25,7 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       9
+#define NUM_OF_ITEMS       10
 #define ITEM_GXTY          0
 #define ITEM_MODE          1
 #define ITEM_BUS           2
@@ -33,8 +33,9 @@
 #define ITEM_HOLD          4
 #define ITEM_SORT          5
 #define ITEM_RESTART       6
-#define ITEM_FORCE_SCALE   7
-#define ITEM_SUSTAIN       8
+#define ITEM_STEP_TRG      7
+#define ITEM_FORCE_SCALE   8
+#define ITEM_SUSTAIN       9
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -57,7 +58,8 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_HOLD:        *gp_leds = 0x0200; break;
     case ITEM_SORT:        *gp_leds = 0x0400; break;
     case ITEM_RESTART:     *gp_leds = 0x0800; break;
-    case ITEM_FORCE_SCALE: *gp_leds = 0x3000; break;
+    case ITEM_STEP_TRG:    *gp_leds = 0x1000; break;
+    case ITEM_FORCE_SCALE: *gp_leds = 0x2000; break;
     case ITEM_SUSTAIN:     *gp_leds = 0xc000; break;
   }
 
@@ -114,6 +116,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP13:
+      ui_selected_item = ITEM_STEP_TRG;
+      break;
+
     case SEQ_UI_ENCODER_GP14:
       ui_selected_item = ITEM_FORCE_SCALE;
       break;
@@ -154,6 +159,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( !incrementer ) // toggle flag
 	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<2)) ? -1 : 1;
       return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<2), (incrementer >= 0) ? (1<<2) : 0);
+
+    case ITEM_STEP_TRG:
+      if( !incrementer ) // toggle flag
+	incrementer = (SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1<<6)) ? -1 : 1;
+      return SEQ_UI_CC_SetFlags(SEQ_CC_MODE_FLAGS, (1<<6), (incrementer >= 0) ? (1<<6) : 0);
 
     case ITEM_FORCE_SCALE:
       if( !incrementer ) // toggle flag
@@ -224,8 +234,8 @@ static s32 LCD_Handler(u8 high_prio)
   // 00000000001111111111222222222233333333330000000000111111111122222222223333333333
   // 01234567890123456789012345678901234567890123456789012345678901234567890123456789
   // <--------------------------------------><-------------------------------------->
-  // Trk. off     Transpose              Bus Note  Hold Sort ReSt. ForceScale Sustain
-  // G1T1   >Normal<  Arpeggiator         1  First  on   on   on       on       on   
+  // Trk. off     Transpose              Bus Note  Hold Sort ReSt. STrg  FTS  Sustain
+  // G1T1   >Normal<  Arpeggiator         1  First  on   on   on    on   on     on
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
@@ -283,7 +293,7 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(35, 0);
-  SEQ_LCD_PrintString(" Bus Note  Hold Sort ReSt. ForceScale Sustain");
+  SEQ_LCD_PrintString(" Bus Note  Hold Sort ReSt. STrg  FTS  Sustain");
   SEQ_LCD_CursorSet(35, 1);
 
   ///////////////////////////////////////////////////////////////////////////
@@ -324,7 +334,15 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 2)) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintSpaces(3);
+
+  ///////////////////////////////////////////////////////////////////////////
+  if( ui_selected_item == ITEM_STEP_TRG && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(3);
+  } else {
+    SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 6)) ? "on " : "off");
+  }
+  SEQ_LCD_PrintSpaces(2);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_FORCE_SCALE && ui_cursor_flash ) {
@@ -332,7 +350,7 @@ static s32 LCD_Handler(u8 high_prio)
   } else {
     SEQ_LCD_PrintString((SEQ_CC_Get(visible_track, SEQ_CC_MODE_FLAGS) & (1 << 3)) ? "on " : "off");
   }
-  SEQ_LCD_PrintSpaces(6);
+  SEQ_LCD_PrintSpaces(4);
 
   ///////////////////////////////////////////////////////////////////////////
   if( ui_selected_item == ITEM_SUSTAIN && ui_cursor_flash ) {

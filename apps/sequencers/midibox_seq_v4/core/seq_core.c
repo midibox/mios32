@@ -863,6 +863,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       u8 mute_this_step = 0;
       u8 next_step_event = t->state.FIRST_CLK || bpm_tick >= t->timestamp_next_step;
 
+      // step trigger: only play the new step if transposer has a note
+      if( tcc->trkmode_flags.STEP_TRG ) {
+	if( !t->state.TRIGGER_NEXT_STEP_REQ ) {
+	  next_step_event = 0;
+	}
+      }
+      t->state.TRIGGER_NEXT_STEP_REQ = 0;
+
       if( next_step_event ) {
 
 	{
@@ -2182,6 +2190,24 @@ s32 SEQ_CORE_ManualSynchToMeasure(u16 tracks)
 
   MIOS32_IRQ_Enable();
 
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Used by the transposer to request the next step in "step trigger" mode
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_CORE_StepTriggerReq(u8 bus)
+{
+  u8 track;
+  seq_core_trk_t *t = &seq_core_trk[0];
+  seq_cc_trk_t *tcc = &seq_cc_trk[0];
+
+  for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track, ++t, ++tcc) {
+    if( tcc->busasg.bus == bus ) {
+      t->state.TRIGGER_NEXT_STEP_REQ = 1;
+    }
+  }
+  
   return 0; // no error
 }
 
