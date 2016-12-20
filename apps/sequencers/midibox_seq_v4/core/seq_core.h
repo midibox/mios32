@@ -163,11 +163,6 @@ typedef union {
 typedef union {
   u8 ALL;
   struct {
-    u8 playmode:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
-    u8 flags:6;        // combines all flags (for CC access)
-  };
-  struct {
-    u8 playmode_dummy:2;     // see seq_core_trk_playmode_t (limited to 2 bits here)
     u8 UNSORTED:1;     // sort mode for arpeggiator
     u8 HOLD:1;         // hold mode for transposer/arpeggiator
     u8 RESTART:1;      // track restart on key press

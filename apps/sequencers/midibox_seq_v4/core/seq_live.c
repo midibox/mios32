@@ -127,7 +127,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 
   // transpose if no transposer/arpeggiator enabled (to avoid conflicts)
-  if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Transpose && tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator ) {
+  if( tcc->playmode != SEQ_CORE_TRKMODE_Transpose && tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator ) {
     SEQ_CORE_Transpose(track, ui_selected_instrument, t, tcc, &e.midi_package);
   }
 
@@ -146,7 +146,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
     if( apply_force_to_scale &&
 	(seq_live_options.FORCE_SCALE
 #ifdef MBSEQV4L
-	 || tcc->mode.FORCE_SCALE
+	 || tcc->trkmode_flags.FORCE_SCALE
 #endif
 	 )
 	) {
@@ -160,7 +160,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
     if( apply_force_to_scale &&
 	(seq_live_options.FORCE_SCALE
 #ifdef MBSEQV4L
-	 || tcc->mode.FORCE_SCALE
+	 || tcc->trkmode_flags.FORCE_SCALE
 #endif
 	 )
 	) {

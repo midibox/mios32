@@ -289,7 +289,7 @@ static s32 SEQ_BLM_LED_UpdateGridMode(void)
 	}
       }
     } else {
-      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->mode.FORCE_SCALE;
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->trkmode_flags.FORCE_SCALE;
 
       u8 instrument = 0;
       int step = 16*ui_selected_step_view;
@@ -457,7 +457,7 @@ static s32 SEQ_BLM_BUTTON_GP_GridMode(u8 button_row, u8 button_column, u8 depres
 	}
       }
     } else {
-      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->mode.FORCE_SCALE;
+      u8 use_scale = seq_blm_options.ALWAYS_USE_FTS ? 1 : tcc->trkmode_flags.FORCE_SCALE;
 
       u8 note_start;
       u8 note_next;
@@ -875,8 +875,8 @@ static s32 SEQ_BLM_LED_UpdateKeyboardMode(void)
     }
 
     u8 transposer_note = 0x3c; // C-3
-    if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
-      transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->mode.FIRST_NOTE); // hold mode, last note
+    if( tcc->playmode != SEQ_CORE_TRKMODE_Normal )
+      transposer_note = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->trkmode_flags.FIRST_NOTE); // hold mode, last note
 
     if( transposer_note >= 0x3c && transposer_note <= 0x4b )
       blm_scalar_master_leds_extrarow_green = 1 << (transposer_note - 0x3c);
@@ -952,8 +952,8 @@ static s32 SEQ_BLM_BUTTON_GP_KeyboardMode(u8 button_row, u8 button_column, u8 de
 
 	// determine matching note range in scale
 	note_start = 0x3c; // C-3
-	if( tcc->mode.playmode != SEQ_CORE_TRKMODE_Normal )
-	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->mode.FIRST_NOTE); // hold mode
+	if( tcc->playmode != SEQ_CORE_TRKMODE_Normal )
+	  note_start = SEQ_MIDI_IN_TransposerNoteGet(0, 1, tcc->trkmode_flags.FIRST_NOTE); // hold mode
 
 	note_start += (blm_root_key - 0x3c);
 	if( note_start < 0 ) note_start = 0;

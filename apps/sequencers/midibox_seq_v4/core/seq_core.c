@@ -840,7 +840,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       }
 
       // sustained note: play off event if sustain mode has been disabled and no stretched gatelength
-      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || (!tcc->mode.SUSTAIN && !t->state.ROBOSUSTAINED && !t->state.STRETCHED_GL)) ) {
+      if( t->state.SUSTAINED && (t->state.CANCEL_SUSTAIN_REQ || (!tcc->trkmode_flags.SUSTAIN && !t->state.ROBOSUSTAINED && !t->state.STRETCHED_GL)) ) {
 	int i;
 
 	// important: play Note Off before new Note On to avoid that glide is triggered on the synth
@@ -877,7 +877,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    t->timestamp_next_step_ref += t->step_length;
 
 	  // increment step if not in arpeggiator mode or arp position == 0
-	  u8 inc_step = tcc->mode.playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos;
+	  u8 inc_step = tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator || !t->arp_pos;
 
 	  // wrap step position around length - especially required for "section selection" later,
 	  // which can set t->step beyond tcc->length+1
@@ -1019,7 +1019,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	    (!track_soloed && (seq_core_trk_muted & (1 << track))) || // Track Mute function
 	    seq_core_slaveclk_mute || // Slave Clock Mute Function
 	    SEQ_MIDI_PORT_OutMuteGet(tcc->midi_port) || // Port Mute Function
-	    tcc->mode.playmode == SEQ_CORE_TRKMODE_Off || // track disabled
+	    tcc->playmode == SEQ_CORE_TRKMODE_Off || // track disabled
 	    (round && mute_nonloopback_tracks) || // all non-loopback tracks should be muted
 	    midply_solo || // MIDI player in exclusive mode
 	    mute_this_step ) { // Record Mode, new step and FWD_MIDI off
@@ -1217,7 +1217,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      t->state.ROBOSUSTAINED = ( robotize_flags.SUSTAIN ) ? 1 : 0 ;// set robosustain flag
 
 	      // force to scale
-	      if( tcc->mode.FORCE_SCALE ) {
+	      if( tcc->trkmode_flags.FORCE_SCALE ) {
 		u8 scale, root_selection, root;
 		SEQ_CORE_FTS_GetScaleAndRoot(track, t->step, instrument, tcc, &scale, &root_selection, &root);
 		SEQ_SCALE_Note(p, scale, root);
@@ -1240,7 +1240,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( t->state.SUSTAINED )
 		gen_off_events = 1;
 
-	      if( tcc->mode.SUSTAIN || t->state.ROBOSUSTAINED || e->len >= 96 )
+	      if( tcc->trkmode_flags.SUSTAIN || t->state.ROBOSUSTAINED || e->len >= 96 )
 		gen_sustained_events = 1;
 	      else {
 		// generate common On event with given length
@@ -1391,7 +1391,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 
 		// notify stretched gatelength if not in sustain mode
 		t->state.SUSTAINED = 1;
-		if( !tcc->mode.SUSTAIN && !t->state.ROBOSUSTAINED ) {
+		if( !tcc->trkmode_flags.SUSTAIN && !t->state.ROBOSUSTAINED ) {
 		  t->state.STRETCHED_GL = 1;
 		  // store glide note number in 128 bit array for later checks
 		  t->glide_notes[p->note / 32] |= (1 << (p->note % 32));
@@ -1791,9 +1791,9 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
     inc_semi -= 16;
 
   // in transpose or arp playmode we allow to transpose notes and CCs
-  if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Transpose ||
+  if( tcc->playmode == SEQ_CORE_TRKMODE_Transpose ||
       (!is_cc && seq_core_global_transpose_enabled) ) {
-    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD, tcc->mode.FIRST_NOTE);
+    int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->trkmode_flags.HOLD, tcc->trkmode_flags.FIRST_NOTE);
 
     if( tr_note < 0 ) {
       p->velocity = 0; // disable note and exit
@@ -1801,7 +1801,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
     }
 
     inc_semi += tr_note - 0x3c; // C-3 is the base note
-  } else if( tcc->mode.playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
+  } else if( tcc->playmode == SEQ_CORE_TRKMODE_Arpeggiator ) {
     int key_num = (note >> 2) & 0x3;
     int arp_oct = (note >> 4) & 0x7;
 
@@ -1812,7 +1812,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
       inc_oct += arp_oct - 4;
     }
 
-    int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->busasg.bus, tcc->mode.HOLD, !tcc->mode.UNSORTED, key_num);
+    int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->busasg.bus, tcc->trkmode_flags.HOLD, !tcc->trkmode_flags.UNSORTED, key_num);
 
     if( arp_note & 0x80 ) {
       t->arp_pos = 0;
@@ -1841,7 +1841,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
       if( root ) {
 	inc_semi += root - 1;
       } else {
-	int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->mode.HOLD, tcc->mode.FIRST_NOTE);
+	int tr_note = SEQ_MIDI_IN_TransposerNoteGet(tcc->busasg.bus, tcc->trkmode_flags.HOLD, tcc->trkmode_flags.FIRST_NOTE);
 
 	if( tr_note < 0 ) {
 	  p->velocity = 0; // disable note and exit
@@ -2130,7 +2130,7 @@ s32 SEQ_CORE_Echo(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc,
     }
 
     // force to scale
-    if( tcc->mode.FORCE_SCALE ) {
+    if( tcc->trkmode_flags.FORCE_SCALE ) {
       SEQ_SCALE_Note(&p, scale, root);
     }
 

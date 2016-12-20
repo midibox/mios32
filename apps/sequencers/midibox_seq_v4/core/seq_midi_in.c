@@ -757,7 +757,7 @@ static s32 SEQ_MIDI_IN_Receive_Note(u8 bus, u8 note, u8 velocity)
       portENTER_CRITICAL();
       u8 track;
       for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-	if( seq_cc_trk[track].mode.RESTART ) {
+	if( seq_cc_trk[track].trkmode_flags.RESTART ) {
 	  seq_core_trk[track].state.POS_RESET = 1;
 	}
       portEXIT_CRITICAL();

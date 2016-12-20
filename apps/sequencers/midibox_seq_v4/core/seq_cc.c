@@ -115,8 +115,8 @@ s32 SEQ_CC_Set(u8 track, u8 cc, u8 value)
       SEQ_CC_LinkUpdate(track);
   } else {
     switch( cc ) {
-      case SEQ_CC_MODE: tcc->mode.playmode = value; break;
-      case SEQ_CC_MODE_FLAGS: tcc->mode.flags = value; break;
+      case SEQ_CC_MODE: tcc->playmode = value; break;
+      case SEQ_CC_MODE_FLAGS: tcc->trkmode_flags.ALL = value; break;
   
       case SEQ_CC_MIDI_EVENT_MODE: 
 	tcc->event_mode = value; 
@@ -335,8 +335,8 @@ s32 SEQ_CC_Get(u8 track, u8 cc)
   }
 
   switch( cc ) {
-    case SEQ_CC_MODE: return tcc->mode.playmode;
-    case SEQ_CC_MODE_FLAGS: return tcc->mode.flags;
+    case SEQ_CC_MODE: return tcc->playmode;
+    case SEQ_CC_MODE_FLAGS: return tcc->trkmode_flags.ALL;
     case SEQ_CC_MIDI_EVENT_MODE: return tcc->event_mode;
     case SEQ_CC_MIDI_CHANNEL: return tcc->midi_chn;
     case SEQ_CC_MIDI_PORT: return tcc->midi_port;
