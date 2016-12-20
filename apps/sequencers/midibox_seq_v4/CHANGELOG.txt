@@ -54,6 +54,8 @@ MIDIboxSEQ V4.092
      Allows to sync the groove to the global reference step (RefS)
      or to the local track step
 
+   o fixed G# transpose
+
 
 MIDIboxSEQ V4.091
 ~~~~~~~~~~~~~~~~~

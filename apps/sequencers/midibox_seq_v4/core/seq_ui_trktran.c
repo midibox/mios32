@@ -118,7 +118,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	if( value != 0xff ) {
 	  value &= 0x7f;
 	  // since value ranges from -8..+7, we've to wrap at 8
-	  if( value > 8 ) {
+	  if( value >= 8 ) {
 	    value -= 12;
 
 	    // octave transition?
