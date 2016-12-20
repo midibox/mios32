@@ -29,6 +29,15 @@
 #define SR_CFG(sr, pin)  (((sr-1)<<3)+pin)
 
 mbcv_hwcfg_button_t mbcv_hwcfg_button = {
+  .scs_exit = SR_CFG(0, 0),
+  .scs_shift = SR_CFG(0, 0),
+  .scs_soft = {
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+   },
+
   .cv = {
     SR_CFG(0, 0),
     SR_CFG(0, 0),
@@ -73,6 +82,22 @@ mbcv_hwcfg_button_t mbcv_hwcfg_button = {
     SR_CFG(2, 6),
     SR_CFG(2, 7),
    },
+
+  .keyboard = {
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+    SR_CFG(0, 0),
+   },
 };
 
 
@@ -98,6 +123,11 @@ mbcv_hwcfg_lre_t mbcv_hwcfg_lre[MBCV_LRE_NUM] = {
     .ledring_pattern_sr1 = 9,
     .ledring_pattern_sr2 = 10,
   },
+};
+
+mbcv_hwcfg_bm_t mbcv_hwcfg_bm = {
+  .dout_select_sr = 0,
+  .din_scan_sr = {0, 0}
 };
 
 // will be initialized in MBCV_HWCFG_Init()

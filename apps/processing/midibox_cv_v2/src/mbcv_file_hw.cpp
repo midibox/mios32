@@ -30,6 +30,7 @@
 
 #include "mbcv_hwcfg.h"
 #include "mbcv_map.h"
+#include "mbcv_enc.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -238,14 +239,28 @@ s32 MBCV_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 
-	  // M1..M8 -> SR 24..31
-	  s32 sr = get_dec(word);
-	  if( sr < 0 || sr > 16 ) {
+	  // M1..M16 -> SR 16..31
+          s32 sr = -1;
+          if( word[0] == 'M' ) {
+            ++word;
+            s32 m = get_dec(word);
+
+            if( m < 1 || m > 16 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[MBCV_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
+              DEBUG_MSG("[MBCV_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
-	    continue;
-	  }
+              continue;
+            }
+            sr = 16 + m;
+          } else {
+            sr = get_dec(word);
+            if( sr < 0 || sr > 32 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+              DEBUG_MSG("[MBCV_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
+#endif
+              continue;
+            }
+          }
 
 	  word = strtok_r(NULL, separators, &brkt);
 	  s32 pin = get_dec(word);
@@ -262,7 +277,22 @@ s32 MBCV_FILE_HW_Read(void)
 	  DEBUG_MSG("[MBCV_FILE_HW] Button %s: SR %d Pin %d (DIN: 0x%02x)", line_buffer, sr, pin, din_value);
 #endif
 
-	  if( strcmp(parameter, "LFO1") == 0 ) {
+	  if( strcmp(parameter, "SCS_EXIT") == 0 ) {
+	    mbcv_hwcfg_button.scs_exit = din_value;
+	  } else if( strcmp(parameter, "SCS_SHIFT") == 0 ) {
+	    mbcv_hwcfg_button.scs_shift = din_value;
+	  } else if( strcmp(parameter, "SCS_SOFT1") == 0 ) {
+	    mbcv_hwcfg_button.scs_soft[0] = din_value;
+	  } else if( strcmp(parameter, "SCS_SOFT2") == 0 ) {
+	    mbcv_hwcfg_button.scs_soft[1] = din_value;
+	  } else if( strcmp(parameter, "SCS_SOFT3") == 0 ) {
+	    mbcv_hwcfg_button.scs_soft[2] = din_value;
+	  } else if( strcmp(parameter, "SCS_SOFT4") == 0 ) {
+	    mbcv_hwcfg_button.scs_soft[3] = din_value;
+#if SCS_NUM_MENU_ITEMS != 4
+# error "Please adapt the SCS_SOFT* assignments here!"
+#endif
+	  } else if( strcmp(parameter, "LFO1") == 0 ) {
 	    mbcv_hwcfg_button.lfo1 = din_value;
 	  } else if( strcmp(parameter, "LFO2") == 0 ) {
 	    mbcv_hwcfg_button.lfo2 = din_value;
@@ -282,6 +312,31 @@ s32 MBCV_FILE_HW_Read(void)
 	  } else if( strncmp(parameter, "SCOPE", 5) == 0 && // SCOPE%d
 		     (hlp=atoi(parameter+5)) >= 1 && hlp <= CV_SCOPE_NUM ) {
 	    mbcv_hwcfg_button.scope[hlp-1] = din_value;
+	  } else if( strncmp(parameter, "KEYBOARD_", 9) == 0 ) {
+	    parameter += 9;
+
+#if MBCV_BUTTON_KEYBOARD_KEYS_NUM != 17
+# error "Please adapt keys here!"
+#endif
+	    const char *keys[MBCV_BUTTON_KEYBOARD_KEYS_NUM] = {
+	      "C1", "C1S", "D1", "D1S", "E1", "F1", "F1S", "G1", "G1S", "A1", "A1S", "B1",
+	      "C2", "C2S", "D2", "D2S", "E2",
+	    };
+
+	    u8 key_found = 0;
+	    for(int i=0; i<MBCV_BUTTON_KEYBOARD_KEYS_NUM; ++i) {
+	      if( strcmp(parameter, keys[i]) == 0 ) {
+		key_found = 1;
+		mbcv_hwcfg_button.keyboard[i] = din_value;
+		break;
+	      }
+	    }
+
+	    if( !key_found ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR: unknown button function 'BUTTON_KEYBOARD_%s'!", parameter);
+#endif
+	    }
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[MBCV_FILE_HW] ERROR: unknown button function 'BUTTON_%s'!", parameter);
@@ -360,15 +415,15 @@ s32 MBCV_FILE_HW_Read(void)
 	    DEBUG_MSG("[MBCV_FILE_HW] LRE%d_ENC%d: SR %d Pin %d Type %d", lre+1, enc+1, sr, pin, enc_type);
 #endif
 
-	    // LRE encoders are starting at +1, since the first encoder is allocated by SCS
+	    // LRE encoders are starting at +1+MBCV_ENC_NUM, since the first encoders are allocated by SCS and GP functions
 	    mios32_enc_config_t enc_config;
-	    enc_config = MIOS32_ENC_ConfigGet(16*lre + enc+1);
+	    enc_config = MIOS32_ENC_ConfigGet(16*lre + enc+1+MBCV_ENC_NUM);
 	    enc_config.cfg.type = enc_type;
 	    enc_config.cfg.sr = sr;
 	    enc_config.cfg.pos = pin;
 	    enc_config.cfg.speed = NORMAL;
 	    enc_config.cfg.speed_par = 0;
-	    MIOS32_ENC_ConfigSet(16*lre + enc+1, enc_config);
+	    MIOS32_ENC_ConfigSet(16*lre + enc+1+MBCV_ENC_NUM, enc_config);
 
 	  } else {
 	    char *word = strtok_r(NULL, separators, &brkt);
@@ -479,6 +534,86 @@ s32 MBCV_FILE_HW_Read(void)
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
+	// ENC assignments
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strncmp(parameter, "ENC_", 4) == 0 ) {
+	  parameter += 4;
+
+	  int enc = -1;
+	  if( strcmp(parameter, "SCS") == 0 ) {
+	    enc = 0;
+	  } else if( strcmp(parameter, "GP1") == 0 ) {
+	    enc = 1;
+	  } else if( strcmp(parameter, "GP2") == 0 ) {
+	    enc = 2;
+	  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_HW] ERROR unknown encoder function 'ENC_%s'!", parameter);
+#endif
+	  }
+
+	  if( enc >= 0 ) {
+	    char *word = strtok_r(NULL, separators, &brkt);
+	    s32 sr = get_dec(word);
+	    if( sr < 0 || sr > MIOS32_SRIO_NUM_SR ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in ENC_%s definition: invalid first value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+
+	    word = strtok_r(NULL, separators, &brkt);
+	    s32 pin = get_dec(word);
+	    if( pin < 0 || pin >= 8 ) { // should we check for odd pin values (1/3/5/7) as well?
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in ENC_%s definition: invalid pin value '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+
+	    word = strtok_r(NULL, separators, &brkt);
+	    mios32_enc_type_t enc_type = DISABLED;
+	    if( word == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in ENC_%s definition: missing encoder type!", parameter);
+#endif
+	      continue;
+	    } else if( strcmp(word, "NON_DETENTED") == 0 ) {
+	      enc_type = NON_DETENTED;
+	    } else if( strcmp(word, "DETENTED1") == 0 ) {
+	      enc_type = DETENTED1;
+	    } else if( strcmp(word, "DETENTED2") == 0 ) {
+	      enc_type = DETENTED2;
+	    } else if( strcmp(word, "DETENTED3") == 0 ) {
+	      enc_type = DETENTED3;
+	    } else if( strcmp(word, "DETENTED4") == 0 ) {
+	      enc_type = DETENTED4;
+	    } else if( strcmp(word, "DETENTED5") == 0 ) {
+	      enc_type = DETENTED5;
+	    } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[MBCV_FILE_HW] ERROR in ENC_%s definition: invalid type '%s'!", parameter, word);
+#endif
+	      continue;
+	    }
+
+#if DEBUG_VERBOSE_LEVEL >= 3
+	    DEBUG_MSG("[MBCV_FILE_HW] ENC_%s: SR %d Pin %d Type %d", parameter, sr, pin, enc_type);
+#endif
+
+	    // GP encoders are starting at +1, since the first encoder is allocated by SCS
+	    mios32_enc_config_t enc_config;
+	    enc_config = MIOS32_ENC_ConfigGet(enc+1);
+	    enc_config.cfg.type = enc_type;
+	    enc_config.cfg.sr = sr;
+	    enc_config.cfg.pos = pin;
+	    enc_config.cfg.speed = NORMAL;
+	    enc_config.cfg.speed_par = 0;
+	    MIOS32_ENC_ConfigSet(enc+1, enc_config);
+	  }
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
 	// DOUT assignments
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strcmp(parameter, "GATE_CV_DOUT_SR") == 0 ) {
@@ -502,6 +637,47 @@ s32 MBCV_FILE_HW_Read(void)
 	    continue;
 	  }
 	  mbcv_hwcfg_dout.clk_sr = sr;
+
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	// Button Matrix
+	////////////////////////////////////////////////////////////////////////////////////////////
+	} else if( strcmp(parameter, "BM_SELECT_DOUT_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_HW] ERROR: invalid SR number: %s %s", parameter, word);
+#endif
+	    continue;
+	  }
+	  mbcv_hwcfg_bm.dout_select_sr = sr;
+	} else if( strcmp(parameter, "BM_SCAN_ROW1_DIN_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_HW] ERROR: invalid SR number: %s %s", parameter, word);
+#endif
+	    continue;
+	  }
+	  mbcv_hwcfg_bm.din_scan_sr[0] = sr;
+#if MBCV_BUTTON_MATRIX_ROWS >= 16
+	} else if( strcmp(parameter, "BM_SCAN_ROW2_DIN_SR") == 0 ) {
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 sr = get_dec(word);
+	  if( sr < 0 || sr > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[MBCV_FILE_HW] ERROR: invalid SR number: %s %s", parameter, word);
+#endif
+	    continue;
+	  }
+	  mbcv_hwcfg_bm.din_scan_sr[1] = sr;
+#endif
+
+#if MBCV_BUTTON_MATRIX_ROWS >= 24
+# error "Please add additional BLM_SCAN_ROWx_DIN_SR here!"
+#endif
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////
