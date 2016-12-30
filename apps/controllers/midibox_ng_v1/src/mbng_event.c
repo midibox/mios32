@@ -1012,12 +1012,14 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED: {
+    item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED; // revert default pattern assignment so that the matrix LEDs can be controlled directly by default
   }; break;
 
   case MBNG_EVENT_CONTROLLER_BUTTON_MATRIX: {
   }; break;
 
   case MBNG_EVENT_CONTROLLER_LED_MATRIX: {
+    item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED; // revert default pattern assignment so that the matrix LEDs can be controlled directly by default
   }; break;
 
   case MBNG_EVENT_CONTROLLER_ENC: {
@@ -1043,6 +1045,7 @@ s32 MBNG_EVENT_ItemInit(mbng_event_item_t *item, mbng_event_item_id_t id)
   }; break;
 
   case MBNG_EVENT_CONTROLLER_RGBLED: {
+    item->flags.led_matrix_pattern = MBNG_EVENT_LED_MATRIX_PATTERN_UNDEFINED; // revert default pattern assignment so that the matrix LEDs can be controlled directly by default
     item->hsv.h = 200;
     item->hsv.s = 100;
     item->hsv.v = 20;
