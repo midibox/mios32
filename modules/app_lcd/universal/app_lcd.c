@@ -249,7 +249,9 @@ inline static s32 APP_LCD_ExtPort_UpdateSRs(void) {
   return 0; // no error
 #elif defined(MIOS32_FAMILY_LPC17xx)
   APP_LCD_ExtPort_PinSet(2, 0); // J28.WS
+  APP_LCD_ExtPort_PinSet(3, 0); // J28.MCLK
   APP_LCD_ExtPort_PinSet(2, 1); // J28.WS
+  APP_LCD_ExtPort_PinSet(3, 1); // J28.MCLK
   return 0; // no error
 #else
 # warning "APP_LCD_ExtPort_UpdateSRs not adapted for this MIOS32_FAMILY"
