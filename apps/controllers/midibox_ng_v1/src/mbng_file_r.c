@@ -90,19 +90,20 @@ typedef enum {
   TOKEN_DELAY_MS        = 0x02,
   TOKEN_LCD             = 0x03, // followed by 0-terminated string
   TOKEN_LOG             = 0x04, // followed by 0-terminated string
-  TOKEN_SEND            = 0x05, // followed by port, event_type, stream_len and stream values
-  TOKEN_SEND_SEQ        = 0x06, // followed by delay, length, port, event_type, stream_len, stream values
-  TOKEN_EXEC_META       = 0x07, // followed by multiple bytes (depending on meta type) + (TOKEN_VALUE_*)
-  TOKEN_SET             = 0x08, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_CHANGE          = 0x09, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_TRIGGER         = 0x0a, // followed by 3 bytes (TOKEN_VALUE_*)
-  TOKEN_SET_RGB         = 0x0b, // followed by 5 bytes (TOKEN_VALUE_*) + id + rgb value
-  TOKEN_SET_HSV         = 0x0c, // followed by 7 bytes (TOKEN_VALUE_*) + id + hsv value
-  TOKEN_SET_LOCK        = 0x0d, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_ACTIVE      = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_NO_DUMP     = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MIN         = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
-  TOKEN_SET_MAX         = 0x11, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_LOAD            = 0x05, // followed by 0-terminated string
+  TOKEN_SEND            = 0x06, // followed by port, event_type, stream_len and stream values
+  TOKEN_SEND_SEQ        = 0x07, // followed by delay, length, port, event_type, stream_len, stream values
+  TOKEN_EXEC_META       = 0x08, // followed by multiple bytes (depending on meta type) + (TOKEN_VALUE_*)
+  TOKEN_SET             = 0x09, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_CHANGE          = 0x0a, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_TRIGGER         = 0x0b, // followed by 3 bytes (TOKEN_VALUE_*)
+  TOKEN_SET_RGB         = 0x0c, // followed by 5 bytes (TOKEN_VALUE_*) + id + rgb value
+  TOKEN_SET_HSV         = 0x0d, // followed by 7 bytes (TOKEN_VALUE_*) + id + hsv value
+  TOKEN_SET_LOCK        = 0x0e, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_ACTIVE      = 0x0f, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_NO_DUMP     = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MIN         = 0x11, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_MAX         = 0x12, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
 
   TOKEN_IF              = 0x80, // +2 bytes for jump offset
   TOKEN_ELSE            = 0x81, // +2 bytes for jump offset
@@ -2178,12 +2179,20 @@ s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename, u8 toke
     return -3;
   }
 
-  // take over filename
-  strncpy(load_filename, filename, 8);
+#if NGR_TOKENIZED
+  if( tokenize_req ) {
+    MBNG_FILE_R_PushToken(TOKEN_LOAD, line);
+    MBNG_FILE_R_PushString(filename, line);
+  } else
+#endif
+  {
+    // take over filename
+    strncpy(load_filename, filename, 8);
 
 #if DEBUG_VERBOSE_LEVEL >= 2
-  DEBUG_MSG("[MBNG_FILE_R:%d] LOAD %s\n", line, load_filename);
+    DEBUG_MSG("[MBNG_FILE_R:%d] LOAD %s\n", line, load_filename);
 #endif
+  }
 
   return 1;
 }
@@ -2457,15 +2466,10 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 #endif
 	  mbng_file_r_delay_ctr = (delay >= 0 ) ? delay : 0;
       } else if( strcasecmp(parameter, "LOAD") == 0 ) {
-#if NGR_TOKENIZED
-	if( tokenize_req ) {
-	  DEBUG_MSG("[MBNG_FILE_R:%d] ERROR: the LOAD command is not supported anymore!", line); // let's see if somebody really needs this...
-	} else
-#endif
-	{
-	  if( parseLoad(line, parameter, &brkt, load_filename, tokenize_req) > 0 ) {
-	    return 1;
-	  }
+	if( parseLoad(line, parameter, &brkt, load_filename, tokenize_req) > 0 ) {
+	  if( nesting_level )
+	    *nesting_level = 0; // doesn't matter anymore
+	  return 1;
 	}
       } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -2644,6 +2648,27 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
     case TOKEN_LOG: {
       if( if_condition_matching ) {
 	MIOS32_MIDI_SendDebugString((char *)&ngr_token_mem[ngr_token_mem_run_pos]);
+      }
+
+      while( ngr_token_mem[ngr_token_mem_run_pos] != 0 && ngr_token_mem_run_pos < ngr_token_mem_end )
+	++ngr_token_mem_run_pos;
+      ++ngr_token_mem_run_pos;
+    } break;
+
+    /////////////////////////////////////////////////////////////////////////
+    case TOKEN_LOAD: {
+      if( if_condition_matching ) {
+	nesting_level = 0; // doesn't matter anymore
+
+	char *load_filename = (char *)&ngr_token_mem[ngr_token_mem_run_pos];
+	s32 status = MBNG_PATCH_Load(load_filename);
+	if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[MBNG_FILE_R] ERROR while loading patch %s\n", load_filename);
+#endif
+	}
+
+	return 1;
       }
 
       while( ngr_token_mem[ngr_token_mem_run_pos] != 0 && ngr_token_mem_run_pos < ngr_token_mem_end )
@@ -2887,16 +2912,6 @@ s32 MBNG_FILE_R_Read(char *filename, u8 cont_script, u8 tokenize_req)
     MBNG_FILE_R_Exec(0, 1); // cont_script, determine_if_offsets
   }
 #endif
-
-  if( load_filename[0] ) {
-    s32 status = MBNG_PATCH_Load(load_filename);
-
-    if( status < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-      DEBUG_MSG("[MBNG_FILE_R] ERROR while loading patch %s\n", load_filename);
-#endif
-    }
-  }
 
   return 0; // no error
 }
