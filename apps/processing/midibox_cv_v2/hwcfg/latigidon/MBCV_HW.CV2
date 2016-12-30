@@ -55,7 +55,7 @@ BM_SELECT_DOUT_SR  4
 # 0: off, 1-16: the shift register number
 
 # ROW1 will provide M1..M8
-BM_SCAN_ROW1_DIN_SR 6
+BM_SCAN_ROW1_DIN_SR 5
 
 # ROW2 will provide M9..M16
 BM_SCAN_ROW2_DIN_SR 0
@@ -276,9 +276,9 @@ BUTTON_KEYBOARD_E2   M8   4
 # encoder assignments
 
 #           SR  Pin  Type 
-ENC_SCS      5    5  DETENTED3
-ENC_GP1      5    0  DETENTED3
-ENC_GP2      5    3  DETENTED3
+ENC_SCS      6    5  DETENTED3
+ENC_GP1      6    0  DETENTED3
+ENC_GP2      6    3  DETENTED3
 
 # note: SCS and GP2 encoder pins swapped in frontpanel layout
 # GP1 has the correct assignments
