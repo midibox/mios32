@@ -28,12 +28,12 @@ MIDIboxSEQ V4.092
      
    o new drum configurations: 4*16/2*64, 4*16/2*128, 4*16/1*256
 
-   o new track mode configuration option: "Note"
+   o new configuration option in Track Mode page: "Note Last/First"
      Allows to specify, if the transposer should take the last or first
      played note (previously it always played the last note)
 
-   o new track mode configuration option: "STrg" (Step Trigger)
-     In this mode, the step progression will be controlled from the transposer
+   o new configuration option in Track Mode page: "STrg" (Step Trigger).
+     If activated, the step progression will be controlled from the transposer
      bus, hence it can either be triggered from a loopback track or from an 
      external MIDI device (MIDI keyboard, sequencer, etc.)
      Note that each track can be assigned to a dedicated transpose bus
@@ -50,11 +50,11 @@ MIDIboxSEQ V4.092
      page (option #12: Initial CC value)
 
    o new behaviour of CLEAR button in recording mode:
-     it clears the selected step only (not the entire pattern).
-     During live recording it will clear the "played" steps so long the
+     it clears only the selected step (instead of the entire pattern).
+     During live recording it will clear the "played" steps while the
      button is pressed.
 
-   o new CC functions which can be configured in MIDI->ExtCtrl.:
+   o new CC functions which can be configured in MIDI->ExtCtrl. page:
      o Play/Stop: allows to assign the PLAY button to a CC
      o Record: allows to assign the RECORD button to a CC
 
@@ -2280,9 +2280,6 @@ http://midibox.org/forums/topic/19034-novation-launchpad-blm-features-discussion
 - copy/paste using the top row of step view buttons: ALT+step button copies that measure, keep holding ALT and press another step button to paste the copied steps into the second step view.  Keep holding ALT and press a third, 4th, 5th, etc. step button to paste the copied steps into additional step views.  Release ALT without pressing a second step button to cancel out without pasting.
 - bugfix for drum track switching
 ----------------------------------------------------------
-Trigger steps from another track:
-http://midibox.org/forums/topic/19410-step-trigger/?p=169253
-----------------------------------------------------------
 FTS for Random Generator
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?p=169562
 ----------------------------------------------------------
@@ -2384,9 +2381,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 ----------------------------------------------------------
 I'd like to request an item for the wishlist to help with Song composition.
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176837
-----------------------------------------------------------
-there is a bug in Transpose that can be reproduced by setting force to scale to Arabian for a track and hitting G# or A# in the Transposition menu. verified on two machines in 4.091 and the latest beta.
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=176980
 ----------------------------------------------------------
 Support for Jog Shuttle
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=177037
