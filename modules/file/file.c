@@ -903,6 +903,9 @@ s32 FILE_FileExists(char *filepath)
     return FILE_ERR_NO_VOLUME;
   }
 
+  if( !filepath || !filepath[0] )
+    return 0; // empty file name - handle like if it doesn't exist
+
   if( f_open(&file_read, filepath, FA_OPEN_EXISTING | FA_READ) != FR_OK )
     return 0; // file doesn't exist
   //f_close(&file_read); // never close read files to avoid "invalid object"
@@ -923,6 +926,9 @@ s32 FILE_DirExists(char *path)
 #endif
     return FILE_ERR_NO_VOLUME;
   }
+
+  if( !path || !path[0] )
+    return 0; // empty directory name - handle like if it doesn't exist
 
   return (file_dfs_errno=f_opendir(&dir, path)) == FR_OK;
 }
