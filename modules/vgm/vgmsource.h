@@ -19,6 +19,18 @@
 typedef union {
     u32 all;
     struct {
+        u8 cmd; //0x00 PSG write, data in data only; 0x02, 0x03 OPN2 writes port 0, 1
+        //Plus 0x10 per board
+        //0xFF for null command
+        u8 addr;
+        u8 data;
+        u8 data2;
+    };
+} VgmChipWriteCmd;
+
+typedef union {
+    u32 all;
+    struct {
         //Don't change the order of these bits, they're accessed by bit mask operations
         u8 fm1:1;
         u8 fm2:1;
@@ -37,17 +49,18 @@ typedef union {
         u8 dac:1;
         u8 fm3_special:1;
         u8 opn2_globals:1;
-        u8 lfofixed:1;
+        u8 dummy:1;
         
-        u8 lfofixedspeed:3;
-        u8 dummy:5;
+        u8 lfomode:2; //0: untouched | 1: set to constant lfofixedspeed | 2 or 3: messed with
+        u8 lfofixedspeed:3; //Must be 0 if lfomode is 0 (untouched)
+        u8 dummy2:3;
         
         u8 sq1:1;
         u8 sq2:1;
         u8 sq3:1;
         u8 noise:1;
         u8 noisefreqsq3:1;
-        u8 dummy2:3;
+        u8 dummy3:3;
     };
 } VgmUsageBits;
 
@@ -71,6 +84,7 @@ typedef union {
     };
 } VgmSource;
 
+extern void VGM_Cmd_UpdateUsage(VgmUsageBits* usage, VgmChipWriteCmd cmd);
 
 extern s32 VGM_Source_Delete(VgmSource* source);
 
