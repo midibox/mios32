@@ -18,6 +18,7 @@
 #include "syeng.h"
 
 static u8 submode;
+static u8 test_character;
 
 static u8 counter;
 static const u8 button_lut[10] = {44, 44, 45, 45, 37, 38, 37, 38, 53, 51};
@@ -53,9 +54,10 @@ static void DrawMenu(){
         case 2:
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintString("Options   VClr");
+            MIOS32_LCD_PrintString("Options   VClr  Test");
             MIOS32_LCD_CursorSet(10,1);
             MIOS32_LCD_PrintString(voiceclearfull ? "Full" : "KOff");
+            MIOS32_LCD_PrintString("  LCD");
             break;
         case 3:
             MIOS32_LCD_Clear();
@@ -63,6 +65,12 @@ static void DrawMenu(){
             MIOS32_LCD_PrintString("Demo mode unlocked!");
             MIOS32_LCD_CursorSet(0,1);
             MIOS32_LCD_PrintString("(Coming Soon)");
+            break;
+        case 4:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintFormattedString("Character %d: ", test_character);
+            MIOS32_LCD_PrintChar(test_character);
             break;
         default:
             MIOS32_LCD_Clear();
@@ -73,6 +81,7 @@ static void DrawMenu(){
 
 void Mode_System_Init(){
     submode = 0;
+    test_character = 0;
 }
 void Mode_System_GotFocus(){
     submode = 0;
@@ -134,6 +143,10 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                     voiceclearfull = !voiceclearfull;
                     DrawMenu();
                     break;
+                case 3:
+                    submode = 4;
+                    DrawMenu();
+                    break;
             }
             break;
         default:
@@ -176,7 +189,12 @@ void Mode_System_BtnEdit(u8 button, u8 state){
 }
 
 void Mode_System_EncDatawheel(s32 incrementer){
-
+    switch(submode){
+        case 4:
+            test_character += incrementer;
+            DrawMenu();
+            break;
+    }
 }
 void Mode_System_EncEdit(u8 encoder, s32 incrementer){
 
