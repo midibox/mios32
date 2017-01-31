@@ -32,8 +32,7 @@ typedef struct {
     union{
         u8 optionbits;
         struct{
-            u8 lfovaries:1;
-            u8 lfofixed:1;
+            u8 lfomode:2; //0: untouched | 1: set to constant lfofixedspeed | 2 or 3: messed with
             u8 lfofixedspeed:3;
             u8 noisefreqsq3:1;
             u8 dummy:2;
@@ -107,6 +106,7 @@ extern void SyEng_Note_Off(mios32_midi_package_t pkg);
 extern void SyEng_ClearVoice(u8 g, u8 v);
 extern void SyEng_HardFlushProgram(synprogram_t* prog);
 extern void SyEng_SoftFlushProgram(synprogram_t* prog);
+extern void SyEng_RecalcProgramUsage(synprogram_t* prog);
 
 extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);

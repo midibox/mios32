@@ -77,8 +77,52 @@ static void FilebrowserDone(char* filename){
         DrawMenu();
         return;
     }
+    //Create source and get VGM file metadata
     *ss = VGM_SourceStream_Create();
-    VGM_SourceStream_Start(*ss, filename);
+    VgmFileMetadata md;
+    s32 res = VGM_ScanFile(filename, &md);
+    if(res < 0){
+        VGM_Source_Delete(*ss);
+        *ss = NULL;
+        submode = 0;
+        DrawMenu();
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintFormattedString("VGM File metadata scan failed! %d", res);
+        return;
+    }
+    //Check that we have enough RAM
+    u32 ramneeded = md.totalblocksize >> 3; //One RAM block is 8 bytes
+    vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
+    if(ramneeded + (u32)meminfo.main_used >= (u32)meminfo.main_total){
+        VGM_Source_Delete(*ss);
+        *ss = NULL;
+        submode = 0;
+        DrawMenu();
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintString("Not enough main RAM for DAC datablocks!");
+        return;
+    }
+    //Try to load
+    res = VGM_SourceStream_Start(*ss, &md);
+    if(res == -50){
+        VGM_Source_Delete(*ss);
+        *ss = NULL;
+        submode = 0;
+        DrawMenu();
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintString("Ran out of main RAM!");
+        return;
+    }else if(res < 0){
+        VGM_Source_Delete(*ss);
+        *ss = NULL;
+        submode = 0;
+        DrawMenu();
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintFormattedString("Datablock load failed! %d", res);
+        return;
+    }
+    //Load successful!
+    SyEng_RecalcProgramUsage(selprogram);
     Mode_Vgm_SelectVgm(*ss);
     Interface_ChangeToMode(MODE_VGM);
 }
@@ -159,7 +203,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                             MIOS32_LCD_PrintString("Delete VGM before loading a new one!");
                         }else{
                             FrontPanel_LEDSet(FP_LED_LOAD, 1);
-                            Filebrowser_Start("/VGM", "VGM", 1, &FilebrowserDone);
+                            Filebrowser_Start(NULL, "VGM", 1, &FilebrowserDone);
                         }
                     }
                     break;

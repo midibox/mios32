@@ -68,7 +68,6 @@ void DemoPrograms_Init(){
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0xB4, .data=0xC0 };
     //
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -82,7 +81,6 @@ void DemoPrograms_Init(){
         data[0].addr = 0xA4;
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -93,8 +91,8 @@ void DemoPrograms_Init(){
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
+    SyEng_RecalcProgramUsage(prog);
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -147,7 +145,6 @@ void DemoPrograms_Init(){
     //
     for(; i<27; ++i) data[i] = (VgmChipWriteCmd){.all=0};
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -169,7 +166,6 @@ void DemoPrograms_Init(){
         data[4].addr = 0xA5;
     data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF5, .data2=0}; //Key on Ch5
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -182,8 +178,8 @@ void DemoPrograms_Init(){
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x04, .data2=0}; //Key off Ch4
     data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch5
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
+    SyEng_RecalcProgramUsage(prog);
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -225,10 +221,10 @@ void DemoPrograms_Init(){
     data[16] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x18}; //Wait
     data[17] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10111111, .data2=0}; //Turn off
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     prog->noteoffsource = NULL;
+    SyEng_RecalcProgramUsage(prog);
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -251,7 +247,6 @@ void DemoPrograms_Init(){
     data[i++] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111 }; //Attenuate SQ3
     //
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->initsource = source;
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
@@ -266,7 +261,6 @@ void DemoPrograms_Init(){
         data[0].data2 = 0b00001000;
     data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11110000, .data2=0}; //Turn on noise
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteonsource = source;
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
@@ -276,8 +270,8 @@ void DemoPrograms_Init(){
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
+    SyEng_RecalcProgramUsage(prog);
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// VGM PLAYBACK ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -289,14 +283,22 @@ void DemoPrograms_Init(){
     //Create init VGM file
     prog->initsource = NULL;
     //Create note-on VGM file
+    prog->noteonsource = NULL;
     source = VGM_SourceStream_Create();
-    VGM_SourceStream_Start(source, "BEATNIK.VGM");
-    source->usage = (VgmUsageBits){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
-                                 .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
-                                 .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
-                                 .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
-    prog->usage.all |= source->usage.all;
-    prog->noteonsource = source;
+    VgmFileMetadata md;
+    s32 res = VGM_ScanFile("/GENESIS/SOR1/BEATNIK.VGM", &md);
+    if(res >= 0){
+        res = VGM_SourceStream_Start(source, &md);
+        if(res >= 0){
+            /*
+            source->usage = (VgmUsageBits){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,
+                                         .fm1_lfo=0, .fm2_lfo=0, .fm3_lfo=0, .fm4_lfo=0, .fm5_lfo=0, .fm6_lfo=0,
+                                         .dac=1, .fm3_special=1, .opn2_globals=0, .lfofixed=0, .lfofixedspeed=0,
+                                         .sq1=1, .sq2=1, .sq3=1, .noise=1, .noisefreqsq3=1};
+            */
+            prog->noteonsource = source;
+        }
+    }
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
@@ -314,7 +316,7 @@ void DemoPrograms_Init(){
     data[8] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11011111, .data2=0}; //Turn off
     data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off
     VGM_Source_UpdateUsage(source);
-    prog->usage.all |= source->usage.all;
     prog->noteoffsource = source;
+    SyEng_RecalcProgramUsage(prog);
 }
 

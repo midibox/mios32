@@ -34,7 +34,7 @@ static u8 innameeditor;
 static void DrawMenu(){
     //-----=====-----=====-----=====-----=====
     //In /vgm/SEGA/
-    //Up   >Dir 12345678  >File 12345678.vgm
+    //Up   >Dir 12345678< >File 12345678.vgm<
     //-----=====-----=====-----=====-----=====
     if(waserror || !FILE_VolumeAvailable()){
         MIOS32_LCD_Clear();
@@ -53,7 +53,9 @@ static void DrawMenu(){
     MIOS32_LCD_CursorSet(21,1);
     MIOS32_LCD_PrintFormattedString("File %s", curname[0] == 0 ? (saving ? "[new]" : "[none]") : curname);
     MIOS32_LCD_CursorSet(cursor ? 20 : 5, 1);
-    MIOS32_LCD_PrintChar('~');
+    MIOS32_LCD_PrintChar(0x7E);
+    MIOS32_LCD_CursorSet(cursor ? 38 : 18, 1);
+    MIOS32_LCD_PrintChar(0x7F);
 }
 
 static inline void GotFile(){
@@ -71,6 +73,7 @@ static inline void GotDir(){
     if(ret < 0) waserror = 1;
     ret = FILE_FindNextDir(curpath, NULL, cursubdir);
     if(ret < 0) waserror = 1;
+    cursor = (cursubdir[0] == 0); //If there's no subdirectories, point cursor to files
     DrawMenu();
 }
 
@@ -112,8 +115,44 @@ void Filebrowser_Start(const char* initpath, const char* extension, u8 save, voi
         ret = -69;
         goto Error;
     }
-    strcpy(curpath, initpath);
+    /*
+    extn[0] = 0;
+    DBG("FILE_FileExists(\"\") == %d", FILE_FileExists(extn));
+    DBG("FILE_DirExists(\"\") == %d", FILE_DirExists(extn));
+    */
+    //
     strcpy(extn, extension);
+    if(initpath == NULL){
+        //Was the last thing in curpath a directory (dialog was quit from)?
+        if(FILE_DirExists(curpath) == 1 && curpath[0] != 0){
+            //Leave everything as is
+            goto Done;
+        }
+        //Was the last thing in curpath a file (we selected a file)?
+        if(FILE_FileExists(curpath) == 1){
+            //Chop off the filename and put that into curname
+            u8 i = strlen(curpath)-1;
+            while(curpath[i] != '/') --i;
+            if(i != 0) curpath[i] = 0; //Get rid of slash unless it's root
+            ++i;
+            u8 j = 0;
+            while(curpath[i] != 0){
+                curname[j] = curpath[i];
+                curpath[i] = 0;
+                ++j;
+                ++i;
+            }
+            curname[j] = 0;
+            cursor = 1;
+            goto Done;
+        }
+        //Otherwise, just start over from root
+        curpath[0] = '/';
+        curpath[1] = 0;
+    }else{
+        strcpy(curpath, initpath);
+    }
+    //Initialize new path, get first file and directory
     ret = FILE_FindNextFile(curpath, NULL, extn, curname);
     if(ret == FILE_ERR_NO_DIR){
         ret = FILE_MakeDir(curpath);
@@ -123,6 +162,7 @@ void Filebrowser_Start(const char* initpath, const char* extension, u8 save, voi
     if(ret < 0) goto Error;
     ret = FILE_FindNextDir(curpath, NULL, cursubdir);
     if(ret < 0) goto Error;
+    cursor = (cursubdir[0] == 0); //If there's no subdirectories, point cursor to files
     goto Done;
 Error:
     waserror = 1;
@@ -144,16 +184,23 @@ void Filebrowser_BtnSoftkey(u8 softkey, u8 state){
         return;
     }
     if(softkey == 0){
-        //Chop off the end of the current path
+        if(curpath[1] == 0) return; //We're at root, don't go up
+        //Chop off the filename and put that into cursubdir
         u8 i = strlen(curpath)-1;
-        while(curpath[i] != '/') curpath[i--] = 0;
-        if(curpath[i] == '/' && i != 0){
+        while(curpath[i] != '/') --i;
+        if(i != 0) curpath[i] = 0; //Get rid of slash unless it's root
+        ++i;
+        u8 j = 0;
+        while(curpath[i] != 0){
+            cursubdir[j] = curpath[i];
             curpath[i] = 0;
+            ++j;
+            ++i;
         }
+        cursubdir[j] = 0;
         s32 ret = FILE_FindNextFile(curpath, NULL, extn, curname);
         if(ret < 0) waserror = 1;
-        ret = FILE_FindNextDir(curpath, NULL, cursubdir);
-        if(ret < 0) waserror = 1;
+        cursor = 0;
         DrawMenu();
     }else if(softkey <= 3){
         cursor = 0;

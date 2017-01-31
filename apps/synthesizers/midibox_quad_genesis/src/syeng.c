@@ -151,8 +151,7 @@ static void ReleaseAllPI(synproginstance_t* pi){
             //See if this chip has any voice using LFO
             for(v=1; v<7; ++v) if(sg->channels[v].lfo) break;
             if(v == 7){ //No LFO used
-                sg->lfovaries = 0;
-                sg->lfofixed = 0;
+                sg->lfomode = 0;
             }
         }else if(i == 7){
             //DAC
@@ -269,9 +268,9 @@ static s8 FindOPN2ClearLFO(){
         }
     }
     if(bestg >= 0){
-        //Kick out voices using the LFO
+        //Kick out voices using the LFO, or if none of them fit, all
         for(v=1; v<6; ++v){
-            if(syngenesis[bestg].channels[v].lfo){
+            if(syngenesis[bestg].channels[v].lfo || bestscore >= 99){
                 SyEng_ClearVoice(bestg, v);
             }
         }
@@ -305,7 +304,7 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
 static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     synproginstance_t* pi = &proginstances[piindex];
     syngenesis_t* sg;
-    u8 i, g, v, use, lfog, lfovaries;
+    u8 i, g, v, use, lfog;
     s8 bestg, bestv;
     u16 score, bestscore;
     u32 recency, maxrecency, now = VGM_Player_GetVGMTime();
@@ -345,27 +344,23 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
             AssignVoiceToGenesis(piindex, pi, bestg, v, v, 1);
         }
         //Set up additional bits in chip allocation record
-        sg->lfovaries = 1;
-        sg->lfofixed = 0;
+        sg->lfomode = 2;
     }else{
-        if((pusage.all & 0x00000FC0) && !pusage.lfofixed){ //Any LFO used and not fixed
-            lfovaries = 1;
+        if(pusage.lfomode >= 2){ //Any LFO used and not fixed
             bestg = FindOPN2ClearLFO();
             if(bestg < 0){
                 ReleaseAllPI(pi);
                 return -2;
             }
             lfog = bestg;
-            syngenesis[lfog].lfovaries = 1;
-            syngenesis[lfog].lfofixed = 0;
+            syngenesis[lfog].lfomode = 2;
         }else{
-            lfovaries = 0;
             lfog = 0;
         }
         //Assign Ch6 if DAC used
         if(pusage.dac){
             if(pusage.fm6_lfo){
-                if(lfovaries){
+                if(pusage.lfomode >= 2){
                     //LFO non-fixed; has to get assigned to lfog:6
                     AssignVoiceToGenesis(piindex, pi, lfog, 6, 6, 1);
                     AssignVoiceToGenesis(piindex, pi, lfog, 7, 7, 0);
@@ -373,7 +368,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                     //LFO fixed; can we find an OPN2 with DAC open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
                         sg = &syngenesis[lfog];
-                        if(sg->lfofixed && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[6].use == 0){
+                        if(sg->lfomode == 1 && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[6].use == 0){
                             break;
                         }
                     }
@@ -386,8 +381,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                         }
                         g = bestg;
                         //Set it up to be fixed to us
-                        syngenesis[g].lfovaries = 0;
-                        syngenesis[g].lfofixed = 1;
+                        syngenesis[g].lfomode = 1;
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign DAC to it, possibly overriding what was there
                     }
@@ -427,14 +421,14 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
         //Assign FM3 if FM3 Special mode
         if(pusage.fm3_special){
             if(pusage.fm3_lfo){
-                if(lfovaries){
+                if(pusage.lfomode >= 2){
                     //LFO non-fixed; has to get assigned to lfog:3
                     AssignVoiceToGenesis(piindex, pi, lfog, 3, 3, 1);
                 }else{
                     //LFO fixed; can we find an OPN2 with FM3 open with the same LFO fixed?
                     for(g=0; g<GENESIS_COUNT; ++g){
                         sg = &syngenesis[lfog];
-                        if(sg->lfofixed && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[3].use == 0){
+                        if(sg->lfomode == 1 && sg->lfofixedspeed == pusage.lfofixedspeed && sg->channels[3].use == 0){
                             break;
                         }
                     }
@@ -447,8 +441,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                         }
                         g = bestg;
                         //Set it up to be fixed to us
-                        syngenesis[g].lfovaries = 0;
-                        syngenesis[g].lfofixed = 1;
+                        syngenesis[g].lfomode = 1;
                         syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         //Assign FM3 to it, possibly overriding what was there
                     }
@@ -483,7 +476,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
         for(i=1; i<=6; ++i){
             if(pusage.all & (1 << (i-1))){ //Voice in use
                 if(pusage.all & (1 << (i+5))){ //LFO in use
-                    if(lfovaries){
+                    if(pusage.lfomode >= 2){
                         //Have to use lfog, find best voice
                         bestscore = 99;
                         maxrecency = 0;
@@ -510,7 +503,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                         bestscore = 99;
                         for(g=0; g<GENESIS_COUNT; ++g){
                             sg = &syngenesis[g];
-                            if(!sg->lfofixed || sg->lfofixedspeed != pusage.lfofixedspeed) continue;
+                            if(!(sg->lfomode == 1) || sg->lfofixedspeed != pusage.lfofixedspeed) continue;
                             //If we have a chip with the right LFO Fixed, check the voices
                             score = 0xFF;
                             for(v=1; v<=6; ++v){
@@ -531,8 +524,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                             }
                             g = bestg;
                             //Set it up to be fixed to us
-                            syngenesis[g].lfovaries = 0;
-                            syngenesis[g].lfofixed = 1;
+                            syngenesis[g].lfomode = 1;
                             syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         }
                         //Find best voice
@@ -1046,5 +1038,21 @@ void SyEng_SoftFlushProgram(synprogram_t* prog){
             pi->needsnewinit = 1;
         }
     }
+}
+void recalcprogramusage_internal(VgmUsageBits* dest, VgmSource* vgs){
+    if(vgs == NULL) return;
+    VgmUsageBits* src = &vgs->usage;
+    if(dest->lfomode == 1 && src->lfomode == 1){
+        if(dest->lfofixedspeed != src->lfofixedspeed){
+            dest->lfomode = 3;
+        }
+    }
+    dest->all |= src->all;
+}
+void SyEng_RecalcProgramUsage(synprogram_t* prog){
+    prog->usage.all = 0;
+    recalcprogramusage_internal(&prog->usage, prog->initsource);
+    recalcprogramusage_internal(&prog->usage, prog->noteonsource);
+    recalcprogramusage_internal(&prog->usage, prog->noteoffsource);
 }
 
