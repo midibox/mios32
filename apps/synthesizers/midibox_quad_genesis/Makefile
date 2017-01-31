@@ -41,7 +41,7 @@ ARM_SOURCE      =
 ARM_AS_SOURCE   =
 
 C_INCLUDE = 	-I src
-A_INCLUDE = 	-I src
+A_INCLUDE = 	-I . # previously -I src
 
 LIBS = 		
 
