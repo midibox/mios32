@@ -21,18 +21,6 @@
 #define VGM_DELAY63 882
 
 
-typedef union {
-    u32 all;
-    struct {
-        u8 cmd; //0x00 PSG write, data in data only; 0x02, 0x03 OPN2 writes port 0, 1
-        //Plus 0x10 per board
-        //0xFF for null command
-        u8 addr;
-        u8 data;
-        u8 data2;
-    };
-} VgmChipWriteCmd;
-
 /*
 Channels are:
 0 OPN2 globals

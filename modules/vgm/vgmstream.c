@@ -106,9 +106,7 @@ void VGM_HeadStream_unBuffer(VgmHeadStream* vhs, u8 len){
 }
 
 VgmHeadStream* VGM_HeadStream_Create(VgmSource* source){
-    VgmSourceStream* vss = (VgmSourceStream*)source->data;
     VgmHeadStream* vhs = vgmh2_malloc(sizeof(VgmHeadStream));
-    vhs->file = vss->file;
     vhs->srcaddr = 0;
     vhs->srcblockaddr = 0;
     vhs->subbufferlen = 0;
@@ -352,14 +350,14 @@ u8 VGM_HeadStream_getByte(VgmSourceStream* vss, VgmHeadStream* vhs, u32 addr){
     //Have to load something right now
     u8 leds = MIOS32_BOARD_LED_Get();
     MIOS32_BOARD_LED_Set(0b1111, 0b0100);
-    s32 res = FILE_ReadReOpen(&(vhs->file));
+    s32 res = FILE_ReadReOpen(&vss->file);
     if(res < 0) return 0;
     res = FILE_ReadSeek(addr);
     if(res < 0) return 0;
     res = FILE_ReadBuffer(vhs->buffer1, VGM_SOURCESTREAM_BUFSIZE);
     if(res < 0) return 0;
     vhs->buffer1addr = addr;
-    FILE_ReadClose(&(vhs->file));
+    FILE_ReadClose(&vss->file);
     //Set up to load the next buffer next
     vhs->wantbuffer = 2;
     vhs->wantbufferaddr = addr + VGM_SOURCESTREAM_BUFSIZE;
@@ -367,10 +365,12 @@ u8 VGM_HeadStream_getByte(VgmSourceStream* vss, VgmHeadStream* vhs, u32 addr){
     MIOS32_BOARD_LED_Set(0b1111, leds);
     return vhs->buffer1[0];
     */
+    DBG("VGM_HeadStream_getByte() buffer underflow!");
     return 0x66; //error, stop stream
 }
 void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
+    VgmSourceStream* vss = (VgmSourceStream*)head->source->data;
     u8* bufferto = NULL;
     u32* addrto = NULL;
     if(vhs->wantbuffer == 1){
@@ -386,10 +386,10 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
         VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CARD);
         vgm_sdtask_usingsdcard = 1;
         MUTEX_SDCARD_TAKE;
-        FILE_ReadReOpen(&(vhs->file));
+        FILE_ReadReOpen(&vss->file);
         FILE_ReadSeek(vhs->wantbufferaddr);
         FILE_ReadBuffer(bufferto, VGM_SOURCESTREAM_BUFSIZE);
-        FILE_ReadClose(&(vhs->file));
+        FILE_ReadClose(&vss->file);
         MUTEX_SDCARD_GIVE;
         vgm_sdtask_usingsdcard = 0;
         VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CARD);
@@ -423,18 +423,234 @@ void VGM_SourceStream_Delete(void* sourcestream){
     }
     vgmh2_free(vss);
 }
-//Only for use of VGM_SourceStream_Start
-static void CheckAdvanceBuffer(u32 a, u32* bufstart, u8* buf){
-    if(a - *bufstart >= VGM_SOURCESTREAM_BUFSIZE){
-        FILE_ReadSeek(a); 
-        FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE); 
-        *bufstart = a;
+
+
+static void BufferRead(u8* cmdbuf, u32 bytes, u32* a, u32* bufstart, u8* buf){
+    u32 b = 0;
+    while(1){
+        while(*a - *bufstart < VGM_SOURCESTREAM_BUFSIZE){
+            cmdbuf[b++] = buf[(*a)++ - *bufstart];
+            if(b >= bytes) return;
+        }
+        FILE_ReadSeek(*a);
+        FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+        *bufstart = *a;
     }
 }
+static void BufferSkip(u32 bytes, u32* a, u32* bufstart, u8* buf){
+    *a += bytes;
+    if(*a - *bufstart >= VGM_SOURCESTREAM_BUFSIZE){
+        FILE_ReadSeek(*a);
+        FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE); 
+        *bufstart = *a;
+    }
+}
+static inline u32 ReadLittleEndianU32(u8* buf, u32 addr){
+    return (u32)buf[addr+0] 
+        | ((u32)buf[addr+1] << 8) 
+        | ((u32)buf[addr+2] << 16) 
+        | ((u32)buf[addr+3] << 24);
+}
+s32 VGM_ScanFile(char* filename, VgmFileMetadata* md){
+    //Init
+    md->filesize = 0;
+    md->numcmds = 0;
+    md->numcmdsram = 0;
+    md->numblocks = 0;
+    md->totalblocksize = 0;
+    md->usage.all = 0;
+    md->vgmdatastartaddr = 0;
+    md->loopaddr = 0;
+    md->loopsamples = 0;
+    md->psgclock = 0;
+    md->opn2clock = 0;
+    //Open file
+    MUTEX_SDCARD_TAKE;
+    s32 res = FILE_ReadOpen(&md->file, filename);
+    if(res < 0) goto Error_Opening;
+    md->filesize = FILE_ReadGetCurrentSize();
+    if(md->filesize <= 0x40){
+        DBG("File too small to have VGM header!");
+        goto Error_Filesize;
+    }
+    u8* buf = malloc(0x40); //DMA target, have to use normal malloc
+    res = FILE_ReadBuffer(buf, 0x40);
+    if(res < 0) goto Error_withBufferOpen;
+    if(buf[0] != 'V' || buf[1] != 'g' || buf[2] != 'm' || buf[3] != ' '){
+        DBG("File doesn't have magic \"Vgm \" tag!");
+        goto Error_withBufferOpen;
+    }
+    //Read header data
+    u8 ver_lo = buf[8];
+    u8 ver_hi = buf[9];
+    md->psgclock = ReadLittleEndianU32(buf, 0x0C);
+    md->loopaddr = ReadLittleEndianU32(buf, 0x1C) + 0x1C;
+    md->loopsamples = ReadLittleEndianU32(buf, 0x20);
+    md->opn2clock = ReadLittleEndianU32(buf, 0x2C);;
+    u32 a;
+    if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
+        a = 0x40;
+    }else{
+        a = ReadLittleEndianU32(buf, 0x34) + 0x34;
+    }
+    md->vgmdatastartaddr = a;
+    free(buf);
+    //Scan entire file for data blocks and usage
+    u32 bufstart = a;
+    u8 type, len;
+    u32 thisblocksize;
+    u8 cmdbuf[4];
+    VgmChipWriteCmd cmd;
+    buf = malloc(VGM_SOURCESTREAM_BUFSIZE); //DMA target, have to use normal malloc
+    FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+    while(a < md->filesize){
+        BufferRead(&type, 1, &a, &bufstart, buf);
+        ++md->numcmds;
+        if(type == 0x67){
+            //Data block
+            ++md->numblocks;
+            BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
+            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            thisblocksize = ReadLittleEndianU32(cmdbuf, 0);
+            //DBG("Block size is %02X %02X %02X %02X or %d", cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], thisblocksize);
+            md->totalblocksize += thisblocksize;
+            BufferSkip(thisblocksize, &a, &bufstart, buf);
+        }else if(type == 0x66){
+            //End of stream
+            break;
+        }else if(type == 0x50){
+            //PSG write
+            BufferRead(cmdbuf, 1, &a, &bufstart, buf);
+            cmd.cmd = type;
+            cmd.data = cmdbuf[0];
+            VGM_Cmd_UpdateUsage(&md->usage, cmd);
+            if(cmd.data & 0x80) ++md->numcmdsram; //Don't count second halves of freq writes
+        }else if((type & 0xFE) == 0x52){
+            //OPN2 write
+            BufferRead(cmdbuf, 2, &a, &bufstart, buf);
+            cmd.cmd = type;
+            cmd.addr = cmdbuf[0];
+            cmd.data = cmdbuf[1];
+            VGM_Cmd_UpdateUsage(&md->usage, cmd);
+            if((cmd.addr & 0xF4) != 0xA0) ++md->numcmdsram; //Don't count second halves of freq writes
+        }else if(type >= 0x80 && type <= 0x8F){
+            //DAC and wait
+            cmd.cmd = type;
+            VGM_Cmd_UpdateUsage(&md->usage, cmd);
+            ++md->numcmdsram;
+        }else if((type >= 0x70 && type <= 0x7F) || type == 0x62 || type == 0x63){
+            //Short wait, 60 Hz wait, or 50 Hz wait
+            ++md->numcmdsram;
+        }else if(type == 0x61){
+            //Long wait
+            BufferSkip(2, &a, &bufstart, buf);
+            ++md->numcmdsram;
+        }else{
+            len = VGM_HeadStream_getCommandLen(type);
+            BufferSkip(len, &a, &bufstart, buf);
+        }
+    }
+    if(type != 0x66){
+        DBG("VGM_ScanFile ran off end of file!");
+        res = -51;
+    }
+Error_withBufferOpen:
+    free(buf);
+Error_Filesize:
+    FILE_ReadClose(&md->file);
+Error_Opening:
+    MUTEX_SDCARD_GIVE;
+    if(res < 0){
+        DBG("VGM_ScanFile error %d on %s", res, filename);
+    }else{
+        DBG("VGM_ScanFile successful on %s (%d bytes):", filename, md->filesize);
+        DBG("--%d cmds, %d cmds for RAM, %d blocks, %d total block size", 
+            md->numcmds, md->numcmdsram, md->numblocks, md->totalblocksize);
+        DBG("--VGM data starts at 0x%X, loop at 0x%X, loop %d samples",
+            md->vgmdatastartaddr, md->loopaddr, md->loopsamples);
+        DBG("--PSG clock %d, OPN2 clock %d", md->psgclock, md->opn2clock);
+        DBG("--[Key:  ---QN321---SpdLf-037654321654321]");
+        DBG("--Usage: %32b", md->usage.all);
+    }
+    return res;
+}
+s32 VGM_SourceStream_Start(VgmSource* source, VgmFileMetadata* md){
+    VgmSourceStream* vss = (VgmSourceStream*)source->data;
+    //Copy data from metadata to source/sourcestream
+    source->psgclock = md->psgclock;
+    source->opn2clock = md->opn2clock;
+    source->loopaddr = md->loopaddr;
+    source->loopsamples = md->loopsamples;
+    source->usage.all = md->usage.all;
+    vss->file = md->file;
+    vss->datalen = md->filesize;
+    vss->vgmdatastartaddr = md->vgmdatastartaddr;
+    vss->blocklen = md->totalblocksize;
+    if(!vss->blocklen) return 0; //No blocks, done!
+    //Allocate memory for block
+    vss->block = malloc(vss->blocklen);
+    if(vss->block == NULL) return -50;
+    //Open file
+    MUTEX_SDCARD_TAKE;
+    s32 res = FILE_ReadReOpen(&vss->file);
+    if(res < 0) goto Error_Opening;
+    //Load data blocks from file
+    u32 blockaddr = 0;
+    u32 a = vss->vgmdatastartaddr;
+    u32 bufstart = a;
+    u16 blockcount = 0;
+    u8 type, len;
+    u32 thisblocksize;
+    u8 cmdbuf[4];
+    u8* buf = malloc(VGM_SOURCESTREAM_BUFSIZE); //DMA target, have to use normal malloc
+    FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+    while(a < md->filesize){
+        BufferRead(&type, 1, &a, &bufstart, buf);
+        if(type == 0x67){
+            //Data block
+            BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
+            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            thisblocksize = ReadLittleEndianU32(cmdbuf, 0);
+            //Load actual block
+            FILE_ReadSeek(a);
+            FILE_ReadBuffer((u8*)(vss->block + blockaddr), thisblocksize);
+            blockaddr += thisblocksize;
+            //See if we're done
+            ++blockcount;
+            if(blockcount >= md->numblocks) break;
+            //Restore our buffer
+            a += thisblocksize;
+            FILE_ReadSeek(a);
+            FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
+            bufstart = a;
+        }else if(type == 0x66){
+            //End of stream
+            break;
+        }else{
+            len = VGM_HeadStream_getCommandLen(type);
+            BufferSkip(len, &a, &bufstart, buf);
+        }
+    }
+    if(blockcount < md->numblocks){
+        DBG("VGM_SourceStream_Start error: couldn't find enough blocks!");
+        res = -51;
+    }else if(blockaddr < md->totalblocksize){
+        DBG("VGM_SourceStream_Start error: loaded blocks not long enough!");
+        res = -52;
+    }
+    DBG("Loaded %d of %d block bytes", blockaddr, vss->blocklen);
+    free(buf);
+    FILE_ReadClose(&vss->file);
+Error_Opening:
+    MUTEX_SDCARD_GIVE;
+    return res;
+}
+
+#if 0
 s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
     VgmSourceStream* vss = (VgmSourceStream*)source->data;
     MUTEX_SDCARD_TAKE;
-    s32 res = FILE_ReadOpen(&(vss->file), filename);
+    s32 res = FILE_ReadOpen(&vss->file, filename);
     if(res < 0) { MUTEX_SDCARD_GIVE; return res; }
     vss->datalen = FILE_ReadGetCurrentSize();
     //Read header
@@ -566,11 +782,12 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
         DBG("Loaded 0x%X block bytes", blockaddr);
     #endif
     //Clean up
-    FILE_ReadClose(&(vss->file));
+    FILE_ReadClose(&vss->file);
     free(buf);
     MUTEX_SDCARD_GIVE;
     return 0;
 }
+#endif
 
 void VGM_SourceStream_UpdateUsage(VgmSource* source){
     //TODO

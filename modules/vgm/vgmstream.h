@@ -25,10 +25,8 @@
 #define VGM_HEADSTREAM_SUBBUFFER_MAXLEN 16
 
 typedef union {
-    u8 ALL[32+sizeof(file_t)+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
+    u8 ALL[32+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
     struct{
-        file_t file;
-        
         u32 srcaddr;
         u32 srcblockaddr;
         
@@ -58,6 +56,28 @@ typedef union {
     };
 } VgmSourceStream;
 
+typedef union {
+    u8 ALL[sizeof(file_t)+44];
+    struct{
+        file_t file;
+        u32 filesize;
+        
+        u32 numcmds;
+        u32 numcmdsram;
+        u32 numblocks;
+        u32 totalblocksize;
+        
+        VgmUsageBits usage;
+        
+        u32 vgmdatastartaddr;
+        u32 loopaddr;
+        u32 loopsamples;
+        
+        u32 psgclock;
+        u32 opn2clock;
+    };
+} VgmFileMetadata;
+
 extern VgmHeadStream* VGM_HeadStream_Create(VgmSource* source);
 extern void VGM_HeadStream_Delete(void* headstream);
 extern void VGM_HeadStream_Restart(VgmHead* head);
@@ -65,9 +85,11 @@ extern u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time);
 extern u8 VGM_HeadStream_getByte(VgmSourceStream* vss, VgmHeadStream* vhs, u32 addr);
 extern void VGM_HeadStream_BackgroundBuffer(VgmHead* head);
 
+extern s32 VGM_ScanFile(char* filename, VgmFileMetadata* md);
+
 extern VgmSource* VGM_SourceStream_Create();
 extern void VGM_SourceStream_Delete(void* sourcestream);
-extern s32 VGM_SourceStream_Start(VgmSource* source, char* filename);
+extern s32 VGM_SourceStream_Start(VgmSource* source, VgmFileMetadata* md);
 static inline u8 VGM_SourceStream_getBlockByte(VgmSourceStream* vss, u32 blockaddr){ return ((blockaddr < vss->blocklen) ? (vss->block[blockaddr]) : 0); }
 extern void VGM_SourceStream_UpdateUsage(VgmSource* source);
 
