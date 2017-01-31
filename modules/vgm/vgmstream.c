@@ -405,6 +405,7 @@ VgmSource* VGM_SourceStream_Create(){
     source->mutes = 0;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
+    source->psgfreq0to1 = 1;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
     source->usage.all = 0;
@@ -463,6 +464,7 @@ s32 VGM_ScanFile(char* filename, VgmFileMetadata* md){
     md->loopaddr = 0;
     md->loopsamples = 0;
     md->psgclock = 0;
+    md->psgfreq0to1 = 1;
     md->opn2clock = 0;
     //Open file
     MUTEX_SDCARD_TAKE;
@@ -486,7 +488,9 @@ s32 VGM_ScanFile(char* filename, VgmFileMetadata* md){
     md->psgclock = ReadLittleEndianU32(buf, 0x0C);
     md->loopaddr = ReadLittleEndianU32(buf, 0x1C) + 0x1C;
     md->loopsamples = ReadLittleEndianU32(buf, 0x20);
-    md->opn2clock = ReadLittleEndianU32(buf, 0x2C);;
+    md->opn2clock = ReadLittleEndianU32(buf, 0x2C);
+    md->psgfreq0to1 = (~buf[0x2B]) & 1;
+    if(md->opn2clock == 0) md->psgfreq0to1 = 0; //If there's no OPN2, it's probably a SMS
     u32 a;
     if(ver_hi < 1 || (ver_hi == 1 && ver_lo < 0x50)){
         a = 0x40;
@@ -579,6 +583,7 @@ s32 VGM_SourceStream_Start(VgmSource* source, VgmFileMetadata* md){
     //Copy data from metadata to source/sourcestream
     source->psgclock = md->psgclock;
     source->opn2clock = md->opn2clock;
+    source->psgfreq0to1 = md->psgfreq0to1;
     source->loopaddr = md->loopaddr;
     source->loopsamples = md->loopsamples;
     source->usage.all = md->usage.all;

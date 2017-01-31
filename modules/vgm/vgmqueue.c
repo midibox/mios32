@@ -121,6 +121,7 @@ VgmSource* VGM_SourceQueue_Create(){
     source->mutes = 0;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
+    source->psgfreq0to1 = 1;
     source->loopaddr = 0;
     source->loopsamples = 0xFFFFFFFF;
     source->usage.all = 0;

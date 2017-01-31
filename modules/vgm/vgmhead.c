@@ -47,7 +47,8 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     // ((7670454 << 8) / 500000); //0x1000;
     head->psgmult = (((source->psgclock << 10) / (genesis_clock_psg >> 2)) * freqmult) >> 12;
     // 0x1000;
-    head->psgfreq0to1 = 1;
+    head->psgfreq0to1 = source->psgfreq0to1;
+    DBG("Creating head with psgfreq0to1 = %d", head->psgfreq0to1);
     head->tempomult = tempomult;
     head->iswait = 1;
     head->iswrite = 0;
