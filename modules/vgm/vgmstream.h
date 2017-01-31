@@ -73,7 +73,8 @@ typedef union {
         u32 loopaddr;
         u32 loopsamples;
         
-        u32 psgclock;
+        u32 psgclock:31;
+        u8 psgfreq0to1:1;
         u32 opn2clock;
     };
 } VgmFileMetadata;

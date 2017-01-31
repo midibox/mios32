@@ -142,6 +142,7 @@ VgmSource* VGM_SourceRAM_Create(){
     source->mutes = 0;
     source->opn2clock = 7670454;
     source->psgclock = 3579545;
+    source->psgfreq0to1 = 1;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
     source->usage.all = 0;

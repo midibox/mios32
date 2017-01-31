@@ -13,8 +13,8 @@
 
 #include "vgmperfmon.h"
 #include "vgmplayer.h"
-#include <umm_malloc.h>
 #include "vgm_heap2.h"
+#include "FreeRTOS.h"
 
 static u32 timers[VGM_PERFMON_NUM_TASKS];
 static u8 percents[VGM_PERFMON_NUM_TASKS];
@@ -45,8 +45,8 @@ u8 VGM_PerfMon_GetTaskCPU(u8 task){
 
 vgm_meminfo_t VGM_PerfMon_GetMemInfo(){
     vgm_meminfo_t ret;
-    ret.main_total = umm_numblocks;
-    ret.main_used = umm_numusedblocks;
+    ret.main_total = configTOTAL_HEAP_SIZE >> 3;
+    ret.main_used = xPortGetFreeHeapSize() >> 3;
     ret.vgmh2_total = VGMH2_NUMBLOCKS;
     ret.vgmh2_used = vgmh2_numusedblocks;
     return ret;

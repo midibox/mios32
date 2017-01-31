@@ -73,7 +73,8 @@ typedef union {
     u8 ALL[28];
     struct{
         u8 type;
-        u8 dummy1;
+        u8 psgfreq0to1:1;
+        u8 dummy1:7;
         u16 mutes;
         u32 opn2clock;
         u32 psgclock;
