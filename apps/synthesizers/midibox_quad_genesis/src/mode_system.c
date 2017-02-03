@@ -197,5 +197,5 @@ void Mode_System_EncDatawheel(s32 incrementer){
     }
 }
 void Mode_System_EncEdit(u8 encoder, s32 incrementer){
-
+    
 }
