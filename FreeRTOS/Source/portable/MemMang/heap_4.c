@@ -477,10 +477,164 @@ uint8_t *puc;
 }
 
 
+// realloc() implementation by Sauraen
+#include <string.h>
+void* pvPortRealloc(void* pv, size_t xWantedSize){
+    uint8_t* puc = (uint8_t*)pv;
+    //Initial tests
+    if(pv == NULL) return pvPortMalloc(xWantedSize);
+    if(xWantedSize == 0){
+        vPortFree(pv);
+        return NULL;
+    }
+    //Modify our xWantedSize to include the size of the BlockLink_t structure
+    size_t origWantedSize = xWantedSize;
+    xWantedSize += xHeapStructSize;
+	if((xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00){
+		/* Byte alignment required. */
+		xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
+		configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+	}
+	if((xWantedSize & xBlockAllocatedBit) != 0){
+	    //Asking for too much memory
+	    vPortFree(pv);
+        return NULL;
+	}
+	//Set up our pointers
+	puc -= xHeapStructSize; //Point to BlockLink_t structure
+    BlockLink_t* pxCur = (void*)puc; //Get pointer as BlockLink_t
+    //Enter critical section
+    vTaskSuspendAll();
+    //Check that the block is actually allocated
+    if((pxCur->xBlockSize & xBlockAllocatedBit) == 0 || pxCur->pxNextFreeBlock != NULL){
+        //We were passed a bad pointer, or the heap is corrupted
+        configASSERT(0);
+        xTaskResumeAll();
+        return NULL;
+    }
+    //Get current block size
+    size_t cursize = pxCur->xBlockSize & ~xBlockAllocatedBit;
+    if(xWantedSize == cursize){
+        //No change
+        xTaskResumeAll();
+        return pv;
+    }
+    //Traverse the free list until we find the last free block before our
+    //block and the first one after--needed for both expanding and shrinking
+    BlockLink_t *pxTemp, *pxPrevPrevFree, *pxPrevFree, *pxNextFree;
+    size_t backspace = 0, forwardspace = 0;
+    pxPrevFree = &xStart;
+    pxPrevPrevFree = pxPrevFree;
+    for(pxTemp = &xStart; pxTemp->pxNextFreeBlock < pxCur; pxTemp = pxTemp->pxNextFreeBlock){
+        pxPrevPrevFree = pxPrevFree;
+        pxPrevFree = pxTemp->pxNextFreeBlock;
+    }
+    pxNextFree = pxTemp->pxNextFreeBlock;
+    //Is the next free block immediately adjacent to our block?
+    pxTemp = (BlockLink_t*)(puc + cursize);
+    if(pxTemp < pxNextFree){
+        //No
+    }else if(pxTemp > pxNextFree){
+        //This block overlaps with free block next, error
+        configASSERT(0);
+        xTaskResumeAll();
+        return NULL;
+    }else{
+        //Yes
+        forwardspace = pxNextFree->xBlockSize;
+    }
+    //Grow or shrink our block?
+    if(xWantedSize > cursize){
+        //Is the previous free block immediately adjacent to our block?
+        pxTemp = (BlockLink_t*)((uint8_t*)pxPrevFree + pxPrevFree->xBlockSize);
+        if(pxTemp < pxCur || pxPrevFree == &xStart){
+            //No
+        }else if(pxTemp > pxCur){
+            //Free block behind overlaps this block, error
+            configASSERT(0);
+            xTaskResumeAll();
+            return NULL;
+        }else{
+            //Yes
+            backspace = pxPrevFree->xBlockSize;
+        }
+        //With both of these together, will we have enough?
+        if(xWantedSize > cursize + backspace + forwardspace){
+            //No--try allocating a new memory block and copying the data
+            xTaskResumeAll(); //None of this is critical section
+            void* newBlock = malloc(origWantedSize);
+            if(newBlock == NULL){
+                //Too bad, still not enough space
+                vPortFree(pv);
+                return NULL;
+            }
+            //Copy payload
+            memcpy(newBlock, pv, cursize - xHeapStructSize);
+            //Return new pointer
+            vPortFree(pv);
+            return newBlock;
+        }
+        //Will we have enough space to only grow forwards?
+        if(xWantedSize > cursize + forwardspace){
+            //No--have to move backwards, so we might as well go all the way
+            void* newpv = ((uint8_t*)pxPrevFree + xHeapStructSize);
+            memmove(newpv, pv, cursize);
+            pxCur = pxPrevFree;
+            pv = newpv;
+            pxCur->pxNextFreeBlock = NULL;
+            cursize += backspace;
+            xFreeBytesRemaining -= backspace;
+            pxPrevFree = pxPrevPrevFree;
+        }
+        if(forwardspace > 0){
+            //Going to assimmilate this free block, so point to the one after that
+            pxNextFree = pxNextFree->pxNextFreeBlock;
+            xFreeBytesRemaining -= forwardspace;
+        }
+        //Would there be enough left after our block to make a free block
+        //with a reasonable size (double the size of the struct)?
+        if(cursize + forwardspace - xWantedSize >= (xHeapStructSize << 1)){
+            //Yes
+            pxCur->xBlockSize = xWantedSize | xBlockAllocatedBit;
+            //Create new free block afterwards
+            pxTemp = (BlockLink_t*)((uint8_t*)pxCur + xWantedSize);
+            pxTemp->pxNextFreeBlock = pxNextFree;
+            pxPrevFree->pxNextFreeBlock = pxTemp;
+            pxTemp->xBlockSize = cursize + forwardspace - xWantedSize;
+            xFreeBytesRemaining += pxTemp->xBlockSize;
+        }else{
+            //No, just take all the free space
+            pxCur->xBlockSize = (cursize + forwardspace) | xBlockAllocatedBit;
+            pxPrevFree->pxNextFreeBlock = pxNextFree;
+        }
+    }else if((forwardspace > 0) || ((cursize - xWantedSize) >= (xHeapStructSize << 1))){
+        //Trying to shrink it, and there's either already a free block
+        //ahead of it, or we're shrinking it by enough to make a new free block
+        pxCur->xBlockSize = xWantedSize | xBlockAllocatedBit;
+        if(forwardspace > 0){
+            //Going to assimmilate this free block, so point to the one after that
+            pxNextFree = pxNextFree->pxNextFreeBlock;
+        }
+        //Create new free block afterwards
+        pxTemp = (BlockLink_t*)((uint8_t*)pxCur + xWantedSize);
+        pxTemp->pxNextFreeBlock = pxNextFree;
+        pxTemp->xBlockSize = cursize + forwardspace - xWantedSize;
+        pxPrevFree->pxNextFreeBlock = pxTemp;
+        xFreeBytesRemaining += cursize - xWantedSize;
+    }//Otherwise, trying to shrink it by a very small amount--don't bother
+    
+    //All done--pv was already adjusted in the one case where it needed to be
+    if(xFreeBytesRemaining < xMinimumEverFreeBytesRemaining){
+        xMinimumEverFreeBytesRemaining = xFreeBytesRemaining;
+    }
+    xTaskResumeAll();
+    return pv;
+}
+
+
 // TK: inserted for debugging purposes, typically used in a terminal
 #include <mios32.h>
-
-void vPortMallocDebugInfo(void)
+void vPortMallocDebugInfo( void )
 {
   {
     size_t uxAddress = (size_t)ucHeap;
@@ -506,9 +660,11 @@ void vPortMallocDebugInfo(void)
 
   {
     s32 heap_size = configTOTAL_HEAP_SIZE;
-    s32 free_heap = xPortGetMinimumEverFreeHeapSize(); // not for interest: xPortGetFreeHeapSize()
+    s32 free_heap = xPortGetFreeHeapSize();
+    s32 ever_free_heap = xPortGetMinimumEverFreeHeapSize();
     s32 used_heap = heap_size - free_heap;
 
-    MIOS32_MIDI_SendDebugMessage("Heap: %d of %d bytes used (%d%%), %d bytes free", used_heap, heap_size, (used_heap*100)/heap_size, free_heap);
+    MIOS32_MIDI_SendDebugMessage("Heap: %d of %d bytes used (%d%%), %d bytes free, %d bytes minimum ever free", used_heap, heap_size, (used_heap*100)/heap_size, free_heap, ever_free_heap);
   }
 }
+
