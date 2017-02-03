@@ -38,6 +38,12 @@ extern "C" void *realloc(void *p, size_t size)
 }
 #endif
 //............................................................................
+// Added by Sauraen--that ^ is not realloc, it destroys your data!
+extern "C" void *realloc(void *p, size_t size)
+{
+  return pvPortRealloc(p, size);
+}
+//............................................................................
 extern "C" void free(void *p)
 {
   vPortFree(p);
