@@ -46,7 +46,7 @@ u8 VGM_PerfMon_GetTaskCPU(u8 task){
 vgm_meminfo_t VGM_PerfMon_GetMemInfo(){
     vgm_meminfo_t ret;
     ret.main_total = configTOTAL_HEAP_SIZE >> 3;
-    ret.main_used = xPortGetFreeHeapSize() >> 3;
+    ret.main_used = ret.main_total - (xPortGetFreeHeapSize() >> 3);
     ret.vgmh2_total = VGMH2_NUMBLOCKS;
     ret.vgmh2_used = vgmh2_numusedblocks;
     return ret;

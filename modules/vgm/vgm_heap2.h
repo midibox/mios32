@@ -39,5 +39,4 @@ extern void vgmh2_free(void* ptr);
 
 extern volatile u16 vgmh2_numusedblocks;
 
-
 #endif /* _VGM_HEAP2_H */
