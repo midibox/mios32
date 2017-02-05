@@ -29,7 +29,7 @@ void DemoPrograms_Init(){
     //Create init VGM file
     VgmSource* source = VGM_SourceRAM_Create();
     VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
     vsr->numcmds = 30;
     VgmChipWriteCmd* data = vgmh2_malloc(30*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
@@ -72,11 +72,11 @@ void DemoPrograms_Init(){
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
     vsr->numcmds = 2;
     data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
-    data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
+    data[0] = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2); //Middle C
         data[0].cmd  = 0x52;
         data[0].addr = 0xA4;
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
@@ -85,14 +85,14 @@ void DemoPrograms_Init(){
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
     vsr->numcmds = 1;
     data = vgmh2_malloc(1*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x00, .data2=0}; //Key off Ch1
     VGM_Source_UpdateUsage(source);
     prog->noteoffsource = source;
-    SyEng_RecalcProgramUsage(prog);
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////// OPN2 3-VOICE CHORDS ////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -104,7 +104,7 @@ void DemoPrograms_Init(){
     //Create init VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
 
     vsr->numcmds = 27;
     data = vgmh2_malloc(27*sizeof(VgmChipWriteCmd));
@@ -149,19 +149,19 @@ void DemoPrograms_Init(){
     //Create note-on VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
     vsr->numcmds = 6;
     data = vgmh2_malloc(6*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
-    data[0] = VGM_getOPN2Frequency(60, 0, 8000000); //Middle C
+    data[0] = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2); //Middle C
         data[0].cmd  = 0x52;
         data[0].addr = 0xA5;
     data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF1, .data2=0}; //Key on Ch2
-    data[2] = VGM_getOPN2Frequency(64, 0, 8000000); //E
+    data[2] = VGM_getOPN2Frequency(64, 0, genesis_clock_opn2); //E
         data[2].cmd  = 0x53;
         data[2].addr = 0xA4;
     data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF4, .data2=0}; //Key on Ch4
-    data[4] = VGM_getOPN2Frequency(67, 0, 8000000); //G
+    data[4] = VGM_getOPN2Frequency(67, 0, genesis_clock_opn2); //G
         data[4].cmd  = 0x53;
         data[4].addr = 0xA5;
     data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF5, .data2=0}; //Key on Ch5
@@ -170,7 +170,7 @@ void DemoPrograms_Init(){
     //Create note-off VGM file
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
-    source->opn2clock = 8000000;
+    source->opn2clock = genesis_clock_opn2;
     vsr->numcmds = 3;
     data = vgmh2_malloc(3*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
@@ -179,7 +179,7 @@ void DemoPrograms_Init(){
     data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0x05, .data2=0}; //Key off Ch5
     VGM_Source_UpdateUsage(source);
     prog->noteoffsource = source;
-    SyEng_RecalcProgramUsage(prog);
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG MARIO COIN ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -196,13 +196,13 @@ void DemoPrograms_Init(){
     vsr->numcmds = 18;
     data = vgmh2_malloc(18*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
-    data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
+    data[0] = VGM_getPSGFrequency(60, 0, genesis_clock_psg); //Middle C
         data[0].cmd  = 0x50;
         data[0].addr = 0x00;
         data[0].data |= 0b10100000;
     data[1] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b10110000, .data2=0}; //Turn on SQ2
     data[2] = (VgmChipWriteCmd){.cmd=0x61, .addr=0x00, .data=0x00, .data2=0x0B}; //Wait
-    data[3] = VGM_getPSGFrequency(65, 0, 3579545); //F
+    data[3] = VGM_getPSGFrequency(65, 0, genesis_clock_psg); //F
         data[3].cmd  = 0x50;
         data[3].addr = 0x00;
         data[3].data |= 0b10100000;
@@ -224,7 +224,7 @@ void DemoPrograms_Init(){
     prog->noteonsource = source;
     //Create note-off VGM file
     prog->noteoffsource = NULL;
-    SyEng_RecalcProgramUsage(prog);
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
     ////////////////////////////////////////////////////////////////////////////
     ///////////////////////////// PSG PULSE WAVE ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -254,7 +254,7 @@ void DemoPrograms_Init(){
     vsr->numcmds = 2;
     data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
-    //data[0] = VGM_getPSGFrequency(60, 0, 3579545); //Middle C
+    //data[0] = VGM_getPSGFrequency(60, 0, genesis_clock_psg); //Middle C
         data[0].cmd   = 0x50;
         data[0].addr  = 0x00;
         data[0].data  = 0b11000000;
@@ -271,7 +271,7 @@ void DemoPrograms_Init(){
     data[0] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off noise
     VGM_Source_UpdateUsage(source);
     prog->noteoffsource = source;
-    SyEng_RecalcProgramUsage(prog);
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
     ////////////////////////////////////////////////////////////////////////////
     /////////////////////////////// VGM PLAYBACK ///////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
@@ -317,6 +317,6 @@ void DemoPrograms_Init(){
     data[9] = (VgmChipWriteCmd){.cmd=0x50, .addr=0x00, .data=0b11111111, .data2=0}; //Turn off
     VGM_Source_UpdateUsage(source);
     prog->noteoffsource = source;
-    SyEng_RecalcProgramUsage(prog);
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
 }
 

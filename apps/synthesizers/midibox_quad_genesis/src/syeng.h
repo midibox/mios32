@@ -106,7 +106,7 @@ extern void SyEng_Note_Off(mios32_midi_package_t pkg);
 extern void SyEng_ClearVoice(u8 g, u8 v);
 extern void SyEng_HardFlushProgram(synprogram_t* prog);
 extern void SyEng_SoftFlushProgram(synprogram_t* prog);
-extern void SyEng_RecalcProgramUsage(synprogram_t* prog);
+extern void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged);
 
 extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);

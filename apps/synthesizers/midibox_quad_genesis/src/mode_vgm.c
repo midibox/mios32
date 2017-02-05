@@ -36,7 +36,11 @@ static VgmChipWriteCmd lastcmddrawn;
 
 
 void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
+    u32 oldaddr = 0;
     if(vgmpreviewpi < MBQG_NUM_PROGINSTANCES){
+        if(selvgm == newselvgm){
+            oldaddr = ((VgmHeadRAM*)proginstances[vgmpreviewpi].head->data)->srcaddr;
+        }
         SyEng_ReleaseStaticPI(vgmpreviewpi);
         playing = 0;
     }
@@ -44,6 +48,7 @@ void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
     vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
     synproginstance_t* pi = &proginstances[vgmpreviewpi];
     SyEng_PlayVGMOnPI(pi, selvgm, 60, 0);
+    ((VgmHeadRAM*)pi->head->data)->srcaddr = oldaddr;
     vmutes = selvgm->mutes;
     vsolos = 0;
 }
@@ -121,6 +126,19 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("Touch edit control of command to insert");
             break;
+        case 4:
+            //Algorithm
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("      1     1   124  12   111  12   1 2 ");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("1234  234  234   3   34   234  3 4  3 4 ");
+            break;
+        case 5:
+            //Key On
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString(" Op1  Op2  Op3  Op4");
     }
 }
 static void DrawMuteStates(u8 solo){
@@ -174,6 +192,15 @@ static void RecalculateMuteStates(){
         should >>= 1;
     }
 }
+void InsertCommand(VgmChipWriteCmd cmd){
+    VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+    u32 oldaddr = vhr->srcaddr;
+    VGM_SourceRAM_InsertCmd(selvgm, vhr->srcaddr-1, cmd);
+    vhr->srcaddr = oldaddr;
+    usagechange = 1;
+    submode = 0;
+    DrawMenu();
+}
 
 void Mode_Vgm_Init(){
     playing = 0;
@@ -220,13 +247,13 @@ static u8 GetRealMapVoice(u8 v, u8 mv){
     }
 }
 void Mode_Vgm_Background(){
-    static u8 lastselvoice = 0, lastselop = 0, laststatemode = 1;
+    static u8 lastselvoice = 0, lastselop = 0, laststatemode = 1, lastsubmode = 0;
     if(selvgm == NULL) return;
     if(vgmpreviewpi >= MBQG_NUM_PROGINSTANCES) return;
     if(usagechange){
         MIOS32_IRQ_Disable();
         usagechange = 0;
-        UpdateProgramUsage(selprogram, selvgm);
+        SyEng_RecalcSourceAndProgramUsage(selprogram, selvgm);
         MIOS32_IRQ_Enable();
     }
     VgmHeadRAM* vhr = NULL;
@@ -238,8 +265,8 @@ void Mode_Vgm_Background(){
     }
     u8 v;
     //Clear when transitioning between modes or selected voices
-    if(statemode){
-        if(lastselop != selop || lastselvoice != selvoice || laststatemode != statemode){
+    if(statemode || submode == 3){
+        if(lastselop != selop || lastselvoice != selvoice || laststatemode != statemode || lastsubmode != submode){
             ClearGenesisState_Op();
             FrontPanel_LEDSet(FP_LED_SELOP_1 + lastselop, 0);
             if(selvoice <= 6 && selvoice >= 1){
@@ -247,7 +274,7 @@ void Mode_Vgm_Background(){
             }
         }
         lastselop = selop;
-        if(lastselvoice != selvoice || laststatemode != statemode){
+        if(lastselvoice != selvoice || laststatemode != statemode || lastsubmode != submode){
             ClearGenesisState_Chan();
             ClearGenesisState_DAC();
             ClearGenesisState_OPN2();
@@ -256,7 +283,7 @@ void Mode_Vgm_Background(){
             FrontPanel_GenesisLEDSet(0, selvoice, 1, 1);
         }
         lastselvoice = selvoice;
-        if(laststatemode != statemode){
+        if(laststatemode != statemode || lastsubmode != submode){
             for(v=0; v<12; ++v){
                 FrontPanel_GenesisLEDSet(0, v, 0, 0);
             }
@@ -265,8 +292,9 @@ void Mode_Vgm_Background(){
             }
         }
         laststatemode = statemode;
+        lastsubmode = submode;
     }else{
-        if(laststatemode != statemode || submode == 3){
+        if(laststatemode != statemode || lastsubmode != submode){
             ClearGenesisState_Op();
             ClearGenesisState_Chan();
             ClearGenesisState_DAC();
@@ -276,6 +304,7 @@ void Mode_Vgm_Background(){
             FrontPanel_GenesisLEDSet(0, selvoice, 1, 0);
         }
         laststatemode = statemode;
+        lastsubmode = submode;
     }
     //Draw on commands matrix
     if(statemode && selvgm->type == VGM_SOURCE_TYPE_STREAM){
@@ -377,6 +406,8 @@ void Mode_Vgm_BtnGVoice(u8 gvoice, u8 state){
     gvoice &= 0xF;
     switch(submode){
         case 0:
+            if(!statemode) return;
+        case 3:
             if(!state) return;
             selvoice = gvoice;
             break;
@@ -413,13 +444,39 @@ void Mode_Vgm_BtnSoftkey(u8 softkey, u8 state){
             RecalculateMuteStates();
             DrawMuteStates(1);
             break;
+        case 4:
+            if(!state) return;
+            if(statemode){
+                EditState(selvgm, proginstances[vgmpreviewpi].head, 0xFF, 0, FP_B_ALG, softkey, selvoice, selop);
+            }else{
+                VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+                VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+                s32 a = vhr->srcaddr-1;
+                if(a < 0 || a >= vsr->numcmds) return;
+                vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, FP_B_ALG, softkey, 0xFF, 0xFF);
+            }
+            break;
+        case 5:
+            if(!state) return;
+            if(softkey >= 4) return;
+            if(statemode){
+                EditState(selvgm, proginstances[vgmpreviewpi].head, 0xFF, 0, FP_B_KON, (1 << softkey), selvoice, selop);
+            }else{
+                VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
+                VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+                s32 a = vhr->srcaddr-1;
+                if(a < 0 || a >= vsr->numcmds) return;
+                vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, FP_B_KON, (1 << softkey), 0xFF, 0xFF);
+            }
+            break;
     }
 }
 void Mode_Vgm_BtnSelOp(u8 op, u8 state){
     if(selvgm == NULL) return;
-    if(submode != 0) return;
     if(!state) return;
-    selop = op;
+    if(statemode || submode == 3){
+        selop = op;
+    }
 }
 void Mode_Vgm_BtnOpMute(u8 op, u8 state){
 
@@ -455,7 +512,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
             EnsurePreviewPiOK();
             synproginstance_t* pi = &proginstances[vgmpreviewpi];
             VGM_Head_Restart(pi->head, VGM_Player_GetVGMTime());
-            break;
+            return;
     }
     switch(submode){
         case 0:
@@ -592,25 +649,24 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
             }
             break;
         case 3:
-            
+            switch(button){
+                case FP_B_TIME:
+                    if(!state) return;
+                    InsertCommand((VgmChipWriteCmd){.cmd=0x61, .addr=0, .data=1, .data2=0});
+                    break;
+            }
             break;
     }
 }
 
-void InsertCommand(VgmChipWriteCmd cmd){
-    VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-    VGM_SourceRAM_InsertCmd(selvgm, vhr->srcaddr-1, cmd);
-    usagechange = 1;
-    submode = 0;
-    DrawMenu();
-}
 
 void Mode_Vgm_BtnEdit(u8 button, u8 state){
     if(selvgm == NULL) return;
     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
-        if(!state) return;
         EnsurePreviewPiOK();
         if(submode == 3 && !statemode){
+            if(!state) return;
+            //Insert new command
             VgmChipWriteCmd cmd;
             u8 hi = (selvoice >= 4);
             u8 low = (selvoice - 1) % 3;
@@ -688,13 +744,22 @@ void Mode_Vgm_BtnEdit(u8 button, u8 state){
             return;
         }
         VgmHeadRAM* vhr = (VgmHeadRAM*)proginstances[vgmpreviewpi].head->data;
-        if(statemode){
-            EditState(selvgm, proginstances[vgmpreviewpi].head, 0xFF, 0, button, state, selvoice, selop); //TODO handle key on and algorithm
+        if(button == FP_B_ALG){
+            submode = 4 * state;
+            DrawMenu();
+        }else if(button == FP_B_KON){
+            submode = 5 * state;
+            DrawMenu();
         }else{
-            VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
-            s32 a = vhr->srcaddr-1;
-            if(a < 0 || a >= vsr->numcmds) return;
-            vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, button, state, 0xFF, 0xFF); //TODO handle key on and algorithm
+            if(!state) return;
+            if(statemode){
+                EditState(selvgm, proginstances[vgmpreviewpi].head, 0xFF, 0, button, state, selvoice, selop);
+            }else{
+                VgmSourceRAM* vsr = (VgmSourceRAM*)selvgm->data;
+                s32 a = vhr->srcaddr-1;
+                if(a < 0 || a >= vsr->numcmds) return;
+                vsr->cmds[a] = EditCmd(vsr->cmds[a], 0xFF, 0, button, state, 0xFF, 0xFF);
+            }
         }
     }
 }
