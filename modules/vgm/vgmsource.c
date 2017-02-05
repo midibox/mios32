@@ -113,6 +113,11 @@ void VGM_Source_UpdateUsage(VgmSource* source){
     }else if(source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_SourceStream_UpdateUsage(source);
     }else if(source->type == VGM_SOURCE_TYPE_QUEUE){
-        return;
+        VGM_SourceQueue_UpdateUsage(source);
     }
+}
+
+void VGM_Cmd_DebugPrintUsage(VgmUsageBits usage){
+    DBG("[Key:  ---QN321---SpdLf-037654321654321]");
+    DBG("Usage: %32b", usage.all);
 }

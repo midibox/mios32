@@ -131,3 +131,6 @@ VgmSource* VGM_SourceQueue_Create(){
 void VGM_SourceQueue_Delete(void* sourcequeue){
     //do nothing, there's nothing allocated
 }
+void VGM_SourceQueue_UpdateUsage(VgmSource* source){
+    //do nothing, queue doesn't use usage
+}

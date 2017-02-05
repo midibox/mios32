@@ -573,8 +573,7 @@ Error_Opening:
         DBG("--VGM data starts at 0x%X, loop at 0x%X, loop %d samples",
             md->vgmdatastartaddr, md->loopaddr, md->loopsamples);
         DBG("--PSG clock %d, OPN2 clock %d", md->psgclock, md->opn2clock);
-        DBG("--[Key:  ---QN321---SpdLf-037654321654321]");
-        DBG("--Usage: %32b", md->usage.all);
+        VGM_Cmd_DebugPrintUsage(md->usage);
     }
     return res;
 }
@@ -795,9 +794,8 @@ s32 VGM_SourceStream_Start(VgmSource* source, char* filename){
 #endif
 
 void VGM_SourceStream_UpdateUsage(VgmSource* source){
-    //TODO
-    DBG("ERROR VGM_SourceStream_UpdateUsage not implemented yet");
-    return;
+    //This doesn't rescan the file--we assume if we haven't changed the file,
+    //the usage hasn't changed!
 }
 
 

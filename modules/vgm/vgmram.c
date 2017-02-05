@@ -167,8 +167,7 @@ void VGM_SourceRAM_UpdateUsage(VgmSource* source){
     for(a=0; a<vsr->numcmds; ++a){
         VGM_Cmd_UpdateUsage(&source->usage, vsr->cmds[a]);
     }
-    DBG("[Key:  ---QN321---SpdLf-037654321654321]");
-    DBG("Usage: %32b", source->usage.all);
+    VGM_Cmd_DebugPrintUsage(source->usage);
 }
 
 void VGM_SourceRAM_InsertCmd(VgmSource* source, u32 addr, VgmChipWriteCmd newcmd){

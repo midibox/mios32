@@ -41,5 +41,6 @@ extern void VGM_HeadQueue_Enqueue(VgmHead* head, VgmChipWriteCmd cmd, u8 fixfreq
 
 extern VgmSource* VGM_SourceQueue_Create();
 extern void VGM_SourceQueue_Delete(void* sourcequeue);
+extern void VGM_SourceQueue_UpdateUsage(VgmSource* source);
 
 #endif /* _VGMQUEUE_H */
