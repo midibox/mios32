@@ -842,15 +842,17 @@ void FrontPanel_DrawDigit(u8 digit, char value){
     }
 }
 void FrontPanel_DrawNumber(u8 firstdigit, s16 number){
-    u8 dig, blank = 0;
+    u8 dig, blank = 0, end = 1;
     u8 neg = 0;
     if(number < 0){
         neg = 1;
         number = 0 - number;
     }
-    if(firstdigit != FP_LED_DIG_MAIN_1 && firstdigit != FP_LED_DIG_FREQ_1) return;
-    firstdigit += 3;
-    for(dig=0; dig<4; ++dig){
+    if(firstdigit == FP_LED_DIG_MAIN_1 || firstdigit == FP_LED_DIG_FREQ_1){
+        firstdigit += 3;
+        end = 4;
+    }
+    for(dig=0; dig<end; ++dig){
         if(blank){
             FrontPanel_DrawDigit(firstdigit - dig, neg ? '-' : ' ');
             neg = 0;
@@ -863,9 +865,41 @@ void FrontPanel_DrawNumber(u8 firstdigit, s16 number){
     if(neg){
         //Minus sign hasn't been drawn yet because we ran out of digits
         //Draw decimal points instead
-        for(dig=0; dig<4; ++dig){
+        for(dig=0; dig<end; ++dig){
             FrontPanel_LEDSet(firstdigit - dig, 1);
         }
+    }
+}
+void FrontPanel_DrawNumberHex(u8 firstdigit, u16 number){
+    u8 dig, /*blank = 0,*/ end = 1, d;
+    if(firstdigit == FP_LED_DIG_MAIN_1 || firstdigit == FP_LED_DIG_FREQ_1){
+        firstdigit += 3;
+        end = 4;
+    }
+    for(dig=0; dig<end; ++dig){
+        /*if(blank){
+            FrontPanel_DrawDigit(firstdigit - dig, ' ');
+        }else{*/
+            d = (number & 0x000F);
+            if(d <= 9){
+                d = '0' + d;
+            }else{
+                d = 'A' + d - 10;
+            }
+            FrontPanel_DrawDigit(firstdigit - dig, d);
+        /*}*/
+        number >>= 4;
+        /*if(number == 0) blank = 1;*/
+    }
+}
+void FrontPanel_ClearDisplay(u8 firstdigit){
+    u8 dig, end = 1;
+    if(firstdigit == FP_LED_DIG_MAIN_1 || firstdigit == FP_LED_DIG_FREQ_1){
+        firstdigit += 3;
+        end = 4;
+    }
+    for(dig=0; dig<end; ++dig){
+        FrontPanel_DrawDigit(firstdigit - dig, ' ');
     }
 }
 void FrontPanel_DrawLoad(u8 type, u8 value){

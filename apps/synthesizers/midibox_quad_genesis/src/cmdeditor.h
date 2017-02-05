@@ -24,6 +24,4 @@ extern VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer,
 
 extern u8 EditState(VgmSource* vgs, VgmHead* vh, u8 encoder, s32 incrementer, u8 button, u8 state, u8 voice, u8 op);
 
-extern void UpdateProgramUsage(synprogram_t* prog, VgmSource* vgs);
-
 #endif /* _CMDEDITOR_H */

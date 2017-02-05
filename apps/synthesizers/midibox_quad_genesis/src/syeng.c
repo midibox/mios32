@@ -299,6 +299,18 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
     sgusage->lfo = vlfo && proper;
     //Map PI
     pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
+    if(vlfo && proper){
+        sgusage->lfo = 1;
+        //Send LFO commands from this head to the same chip as this channel is on
+        pi->mapping[0] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = 0, .option = 0};
+        //TODO potential bug:
+        /*
+        If we have a VGM with two voices in LFO Fixed mode, and the first gets
+        assigned to one OPN2 and the second to another, we can only send the
+        actual LFO commands to one of those OPN2s, so one OPN2 will never actually
+        get the command to turn on its LFO.
+        */
+    }
 }
 
 static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
@@ -659,6 +671,18 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
             //Use this voice
             AssignVoiceToGenesis(piindex, pi, bestg, i, bestv, 0);
         }
+    }
+    VgmHead_Channel m;
+    DBG("AllocatePI:");
+    for(v=0; v<0xB; ++v){
+        m = pi->mapping[v];
+        DBG("--Voice %X nodata=%d, mute=%d --> chip=%d, voice=%d, option=%d",
+                v, m.nodata, m.mute, m.map_chip, m.map_voice, m.option);
+    }
+    for(g=0; g<GENESIS_COUNT; ++g){
+        sg = &syngenesis[g];
+        DBG("==Chip %d: lfomode=%d, lfofixedspeed=%d, noisefreqsq3=%d",
+                g, sg->lfomode, sg->lfofixedspeed, sg->noisefreqsq3);
     }
     return 1;
 }
@@ -1049,10 +1073,24 @@ void recalcprogramusage_internal(VgmUsageBits* dest, VgmSource* vgs){
     }
     dest->all |= src->all;
 }
-void SyEng_RecalcProgramUsage(synprogram_t* prog){
-    prog->usage.all = 0;
-    recalcprogramusage_internal(&prog->usage, prog->initsource);
-    recalcprogramusage_internal(&prog->usage, prog->noteonsource);
-    recalcprogramusage_internal(&prog->usage, prog->noteoffsource);
+void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged){
+    if(srcchanged != NULL){
+        VGM_Source_UpdateUsage(srcchanged);
+    }
+    VgmUsageBits usage = (VgmUsageBits){.all = 0};
+    recalcprogramusage_internal(&usage, prog->initsource);
+    recalcprogramusage_internal(&usage, prog->noteonsource);
+    recalcprogramusage_internal(&usage, prog->noteoffsource);
+    if(usage.all != prog->usage.all){
+        DBG("Program usage changed from");
+        VGM_Cmd_DebugPrintUsage(prog->usage);
+        DBG("to");
+        VGM_Cmd_DebugPrintUsage(usage);
+        prog->usage.all = usage.all;
+        SyEng_HardFlushProgram(prog);
+        if(selvgm == srcchanged && srcchanged != NULL){
+            Mode_Vgm_SelectVgm(selvgm); //Force mode_vgm to get a new previewpi
+        }
+    }
 }
 
