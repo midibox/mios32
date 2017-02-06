@@ -329,7 +329,7 @@ s32 SEQ_UI_UTIL_Clear(void)
   u16 force_scale = 0;
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    if( seq_cc_trk[track].mode.FORCE_SCALE )
+    if( seq_cc_trk[track].trkmode_flags.FORCE_SCALE )
       force_scale |= (1 << track);
 
   // copy preset
@@ -346,7 +346,7 @@ s32 SEQ_UI_UTIL_Clear(void)
     }
 
     // extra for MBSEQ V4L: restore scale selections (we handle it like a global option)
-    seq_cc_trk[track].mode.FORCE_SCALE = (force_scale & track_mask) ? 1 : 0;
+    seq_cc_trk[track].trkmode_flags.FORCE_SCALE = (force_scale & track_mask) ? 1 : 0;
   }
 
   return 0; // no error

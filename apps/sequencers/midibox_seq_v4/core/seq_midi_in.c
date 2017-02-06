@@ -171,11 +171,11 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   // stored in global config:
   for(bus=0; bus<SEQ_MIDI_IN_NUM_BUSSES; ++bus) {
     seq_midi_in_channel[bus] = bus+1; // Channel #1 (0 disables MIDI IN)
+    seq_midi_in_options[bus].ALL = 0; // disable all options
     seq_midi_in_options[bus].MODE_PLAY = (bus == 0); // first bus in Play mode by default (for recording)
     seq_midi_in_port[bus] = DEFAULT; // All ports
     seq_midi_in_lower[bus] = 0x00; // lowest note
     seq_midi_in_upper[bus] = 0x7f; // highest note
-    seq_midi_in_options[bus].ALL = 0; // disable all options
     
   }
 
