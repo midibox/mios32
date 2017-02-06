@@ -272,6 +272,11 @@ void Mode_Voice_BtnOpMute(u8 op, u8 state){
 }
 void Mode_Voice_BtnSystem(u8 button, u8 state){
     if(!state) return;
+    switch(button){
+        case FP_B_CTRL:
+            SyEng_PrintEngineDebugInfo();
+            break;
+    }
     /*
     if(button == FP_B_CAPTURE){
         u8 i;
