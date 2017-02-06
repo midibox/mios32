@@ -424,7 +424,7 @@ u16 SEQ_UI_PAGES_GP_LED_Handler(void)
       if( ui_selected_tracks & (1 << 0) )
 	note_track = 0;
 
-      if( !seq_cc_trk[note_track].mode.FORCE_SCALE )
+      if( !seq_cc_trk[note_track].trkmode_flags.FORCE_SCALE )
 	ui_selected_scale = 0;
       else {
 	u8 *preset = (u8 *)&seq_ui_pages_scale_presets[1];
@@ -818,7 +818,7 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 	// disable force-to-scale for both note tracks (makes sense, since the scale itself is global as well)
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8)
-	  seq_cc_trk[track].mode.FORCE_SCALE = 0;
+	  seq_cc_trk[track].trkmode_flags.FORCE_SCALE = 0;
       } else {
 	// select scale
 	seq_core_global_scale = seq_ui_pages_scale_presets[ui_selected_scale];
@@ -826,7 +826,7 @@ s32 SEQ_UI_PAGES_GP_Button_Handler(u8 button, u8 depressed)
 	// enable force-to-scale for both note tracks (makes sense, since the scale itself is global as well)
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; track+=8)
-	  seq_cc_trk[track].mode.FORCE_SCALE = 1;
+	  seq_cc_trk[track].trkmode_flags.FORCE_SCALE = 1;
       }
     }
 

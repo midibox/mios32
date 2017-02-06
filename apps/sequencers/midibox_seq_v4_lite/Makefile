@@ -110,6 +110,9 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 # AOUT Driver
 include $(MIOS32_PATH)/modules/aout/aout.mk
 
+# WS2812 RGB LED strip driver
+include $(MIOS32_PATH)/modules/ws2812/ws2812.mk
+
 # generic sequencer modules
 include $(MIOS32_PATH)/modules/sequencer/sequencer.mk
 
