@@ -132,18 +132,12 @@ static void ReleaseAllPI(synproginstance_t* pi){
         g = pimap.map_chip;
         sg = &syngenesis[g];
         if(i == 0){
-            //We were using OPN2 globals, so there can't be anything else
-            //allocated on this OPN2 besides this PI
-            sg->optionbits = 0;
-            for(v=0; v<8; ++v){
-                sg->channels[v].ALL = 0;
-                VoiceReset(g, v);
-            }
-            //Skip to PSG section
-            i = 7;
-            continue;
-        }
-        if(i >= 1 && i <= 6){
+            /*
+            TODO: When to clear OPN2 globals data when deleting a PI which was
+            using them? For LFO or other globals, other PIs / voices may be
+            using them, so clearing them would be bad.
+            */
+        }else if(i >= 1 && i <= 6){
             //FM voice
             v = pimap.map_voice+1;
             sg->channels[v].ALL = 0;
@@ -269,17 +263,24 @@ static s8 FindOPN2ClearLFO(){
     }
     if(bestg >= 0){
         //Kick out voices using the LFO, or if none of them fit, all
+        if(bestscore >= 99){
+            DBG("FindOPN2ClearLFO kicking all voices out of OPN2 %d", bestg);
+        }else{
+            DBG("FindOPN2ClearLFO kicking LFO-using voices out of OPN2 %d", bestg);
+        }
         for(v=1; v<6; ++v){
             if(syngenesis[bestg].channels[v].lfo || bestscore >= 99){
                 SyEng_ClearVoice(bestg, v);
             }
         }
+    }else{
+        DBG("FindOPN2ClearLFO returning g %d", bestg);
     }
     return bestg;
 }
 
 static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vsource, u8 vdest, u8 vlfo){
-    //DBG("--Assigning PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
+    DBG("--AssignVoiceToGenesis PI %d voice %d to genesis %d voice %d, vlfo=%d", piindex, vsource, g, vdest, vlfo);
     syngenesis_usage_t* sgusage = &syngenesis[g].channels[vdest];
     SyEng_ClearVoice(g, vdest);
     //Assign voices
@@ -294,9 +295,8 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
         proper = 0;
         map_voice = 0;
     }
-    sgusage->use = 2;
+    sgusage->use = 2; //pi->isstatic ? 3 : 2;
     sgusage->pi_using = piindex;
-    sgusage->lfo = vlfo && proper;
     //Map PI
     pi->mapping[vsource] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = map_voice, .option = vlfo};
     if(vlfo && proper){
@@ -310,6 +310,57 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
         actual LFO commands to one of those OPN2s, so one OPN2 will never actually
         get the command to turn on its LFO.
         */
+    }else{
+        sgusage->lfo = 0;
+    }
+}
+
+static void FindBestVoice(s8* bestg, s8* bestv, u32 now, s8 forceg, u8 vstart, u8 vend, u8 sumoverv){
+    u16 score, totalscore, bestscore = 0x7FFF;
+    u32 recency, totalrecency, maxrecency = 0;
+    u8 g, v, use;
+    u8 gstart = (forceg < 0) ? 0 : forceg;
+    u8 gend = (forceg < 0) ? GENESIS_COUNT : forceg+1;
+    syngenesis_usage_t* sgu; synproginstance_t* pi;
+    *bestg = -1;
+    *bestv = -1;
+    for(g=gstart; g<gend; ++g){
+        totalscore = 0;
+        totalrecency = 0;
+        for(v=vstart; v<=vend; ++v){
+            sgu = &syngenesis[g].channels[v];
+            use = sgu->use;
+            score = use_scores[use] << 1;
+            if(vstart == 1 && vend == 6 && (v == 3 || v == 6)) ++score; //If choosing from all 6, penalize 3+6
+            if(use >= 1 && sgu->pi_using < MBQG_NUM_PROGINSTANCES){
+                pi = &proginstances[sgu->pi_using];
+                recency = pi->recency;
+                if(pi->isstatic){
+                    score = 100;
+                }
+            }else{
+                recency = UNUSED_RECENCY;
+            }
+            if(sumoverv){
+                totalscore += score;
+                totalrecency += recency;
+            }else{
+                if(score < bestscore || (score == bestscore && recency > maxrecency)){
+                    bestscore = score;
+                    *bestv = v;
+                    *bestg = g;
+                    maxrecency = recency;
+                }
+            }
+        }
+        if(sumoverv){
+            if(totalscore < bestscore || (totalscore == bestscore && totalrecency > maxrecency)){
+                bestscore = totalscore;
+                *bestv = vstart;
+                *bestg = g;
+                maxrecency = totalrecency;
+            }
+        }
     }
 }
 
@@ -318,8 +369,8 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     syngenesis_t* sg;
     u8 i, g, v, use, lfog;
     s8 bestg, bestv;
-    u16 score, bestscore;
-    u32 recency, maxrecency, now = VGM_Player_GetVGMTime();
+    u16 score;
+    u32 now = VGM_Player_GetVGMTime();
     //Initialize channels to have no data
     for(i=0; i<12; ++i){
         pi->mapping[i] = (VgmHead_Channel){.nodata = 1, .mute = 0, .map_chip = 0, .map_voice = 0, .option = 0};
@@ -329,23 +380,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     ////////////////////////////////////////////////////////////////////////////
     if(pusage.opn2_globals){
         //We need an entire OPN2; find the best one to replace
-        bestscore = 99;
-        maxrecency = 0;
-        bestg = -1;
-        for(g=0; g<GENESIS_COUNT; ++g){
-            score = 0;
-            recency = 0;
-            for(v=0; v<8; ++v){
-                use = syngenesis[g].channels[v].use;
-                score += use_scores[use];
-                recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
-            }
-            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                bestscore = score;
-                bestg = g;
-                maxrecency = recency;
-            }
-        }
+        FindBestVoice(&bestg, &bestv, now, -1, 0, 7, 1);
         if(bestg < 0){
             ReleaseAllPI(pi);
             return -1;
@@ -403,23 +438,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
             }else{
                 //DAC without LFO
                 //Find the best to replace
-                bestscore = 99;
-                maxrecency = 0;
-                bestg = -1;
-                for(g=0; g<GENESIS_COUNT; ++g){
-                    score = 0;
-                    recency = 0;
-                    for(v=6; v<8; ++v){
-                        use = syngenesis[g].channels[v].use;
-                        score += use_scores[use];
-                        recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
-                    }
-                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                        bestscore = score;
-                        bestg = g;
-                        maxrecency = recency;
-                    }
-                }
+                FindBestVoice(&bestg, &bestv, now, -1, 6, 7, 1);
                 if(bestg < 0){
                     ReleaseAllPI(pi);
                     return -4;
@@ -462,19 +481,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
             }else{
                 //FM3 without LFO
                 //Find the best to replace
-                bestscore = 99;
-                maxrecency = 0;
-                bestg = -1;
-                for(g=0; g<GENESIS_COUNT; ++g){
-                    use = syngenesis[g].channels[3].use;
-                    score = use_scores[use];
-                    recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[3].pi_using].recency) : UNUSED_RECENCY;
-                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                        bestscore = score;
-                        bestg = g;
-                        maxrecency = recency;
-                    }
-                }
+                FindBestVoice(&bestg, &bestv, now, -1, 3, 3, 0);
                 if(bestg < 0){
                     ReleaseAllPI(pi);
                     return -6;
@@ -490,20 +497,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                 if(pusage.all & (1 << (i+5))){ //LFO in use
                     if(pusage.lfomode >= 2){
                         //Have to use lfog, find best voice
-                        bestscore = 99;
-                        maxrecency = 0;
-                        bestv = -1;
-                        for(v=1; v<=6; ++v){
-                            use = syngenesis[lfog].channels[v].use;
-                            score = use_scores[use] << 1;
-                            recency = (use >= 1) ? (now - proginstances[syngenesis[lfog].channels[v].pi_using].recency) : UNUSED_RECENCY;
-                            if(v == 3 || v == 6) ++score;
-                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                                bestscore = score;
-                                bestv = v;
-                                maxrecency = recency;
-                            }
-                        }
+                        FindBestVoice(&bestg, &bestv, now, lfog, 1, 6, 0);
                         if(bestv < 0){
                             ReleaseAllPI(pi);
                             return -7;
@@ -512,7 +506,6 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                         AssignVoiceToGenesis(piindex, pi, lfog, i, bestv, 1);
                     }else{
                         //LFO fixed: First is there a chip with LFO Fixed correct and a free voice?
-                        bestscore = 99;
                         for(g=0; g<GENESIS_COUNT; ++g){
                             sg = &syngenesis[g];
                             if(!(sg->lfomode == 1) || sg->lfofixedspeed != pusage.lfofixedspeed) continue;
@@ -540,20 +533,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                             syngenesis[g].lfofixedspeed = pusage.lfofixedspeed;
                         }
                         //Find best voice
-                        bestscore = 99;
-                        maxrecency = 0;
-                        bestv = -1;
-                        for(v=1; v<=6; ++v){
-                            use = syngenesis[g].channels[v].use;
-                            score = use_scores[use] << 1;
-                            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
-                            if(v == 3 || v == 6) ++score;
-                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                                bestscore = score;
-                                bestv = v;
-                                maxrecency = recency;
-                            }
-                        }
+                        FindBestVoice(&bestg, &bestv, now, g, 1, 6, 0);
                         if(bestv < 0){
                             ReleaseAllPI(pi);
                             return -9;
@@ -563,24 +543,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
                     }
                 }else{
                     //No LFO, find best voice anywhere
-                    bestscore = 99;
-                    maxrecency = 0;
-                    bestg = -1;
-                    bestv = -1;
-                    for(g=0; g<GENESIS_COUNT; ++g){
-                        for(v=1; v<=6; ++v){
-                            use = syngenesis[g].channels[v].use;
-                            score = use_scores[use] << 1;
-                            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
-                            if(v == 3 || v == 6) ++score;
-                            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                                bestscore = score;
-                                bestv = v;
-                                bestg = g;
-                                maxrecency = recency;
-                            }
-                        }
-                    }
+                    FindBestVoice(&bestg, &bestv, now, -1, 1, 6, 0);
                     if(bestg < 0){ // || bestv < 0
                         ReleaseAllPI(pi);
                         return -10;
@@ -593,22 +556,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     }
     if(pusage.noisefreqsq3){
         //Need SQ3 and NS together
-        bestscore = 99;
-        maxrecency = 0;
-        bestg = -1;
-        for(g=0; g<GENESIS_COUNT; ++g){
-            use = syngenesis[g].channels[10].use;
-            score = use_scores[use];
-            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[10].pi_using].recency) : UNUSED_RECENCY;
-            use = syngenesis[g].channels[11].use;
-            score += use_scores[use];
-            recency += (use >= 1) ? (now - proginstances[syngenesis[g].channels[11].pi_using].recency) : UNUSED_RECENCY;
-            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                bestscore = score;
-                bestg = g;
-                maxrecency = recency;
-            }
-        }
+        FindBestVoice(&bestg, &bestv, now, -1, 10, 11, 1);
         if(bestg < 0){
             ReleaseAllPI(pi);
             return -11;
@@ -622,19 +570,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     }
     if(pusage.noise){
         //Need NS
-        bestscore = 99;
-        maxrecency = 0;
-        bestg = -1;
-        for(g=0; g<GENESIS_COUNT; ++g){
-            use = syngenesis[g].channels[11].use;
-            score = use_scores[use];
-            recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[11].pi_using].recency) : UNUSED_RECENCY;
-            if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                bestscore = score;
-                bestg = g;
-                maxrecency = recency;
-            }
-        }
+        FindBestVoice(&bestg, &bestv, now, -1, 11, 11, 0);
         if(bestg < 0){
             ReleaseAllPI(pi);
             return -12;
@@ -646,24 +582,7 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
     for(i=8; i<=10; ++i){
         if(pusage.all & (0x01000000 << (i-8))){ //Voice in use
             //Find best voice anywhere
-            bestscore = 99;
-            maxrecency = 0;
-            bestg = -1;
-            bestv = -1;
-            for(g=0; g<GENESIS_COUNT; ++g){
-                for(v=8; v<=10; ++v){
-                    use = syngenesis[g].channels[v].use;
-                    score = use_scores[use] << 1;
-                    recency = (use >= 1) ? (now - proginstances[syngenesis[g].channels[v].pi_using].recency) : UNUSED_RECENCY;
-                    if(v == 10) ++score;
-                    if(score < bestscore || (score == bestscore && recency > maxrecency)){
-                        bestscore = score;
-                        bestv = v;
-                        bestg = g;
-                        maxrecency = recency;
-                    }
-                }
-            }
+            FindBestVoice(&bestg, &bestv, now, -1, 8, 10, 0);
             if(bestg < 0){
                 ReleaseAllPI(pi);
                 return -13;
@@ -673,16 +592,13 @@ static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
         }
     }
     VgmHead_Channel m;
-    DBG("AllocatePI:");
+    DBG("AllocatePI results:");
     for(v=0; v<0xB; ++v){
         m = pi->mapping[v];
-        DBG("--Voice %X nodata=%d, mute=%d --> chip=%d, voice=%d, option=%d",
-                v, m.nodata, m.mute, m.map_chip, m.map_voice, m.option);
-    }
-    for(g=0; g<GENESIS_COUNT; ++g){
-        sg = &syngenesis[g];
-        DBG("==Chip %d: lfomode=%d, lfofixedspeed=%d, noisefreqsq3=%d",
-                g, sg->lfomode, sg->lfofixedspeed, sg->noisefreqsq3);
+        if(!m.nodata){
+            DBG("--Voice %X --> chip=%d voice=%d, option=%d, mute=%d",
+                    v, m.map_chip, m.map_voice, m.option, m.mute);
+        }
     }
     return 1;
 }
@@ -717,6 +633,7 @@ static u8 FindBestPIToReplace(u8 chn, u8 note){
     //3: Other channel, not playing
     //4: Same channel, playing
     //5: Other channel, playing
+    //6: Static
     u8 bestrating = 0xFF;
     u8 bestrated = 0xFF;
     u32 recency, maxrecency = 0, now = VGM_Player_GetVGMTime();
@@ -726,6 +643,8 @@ static u8 FindBestPIToReplace(u8 chn, u8 note){
         pi = &proginstances[i];
         if(!pi->valid){
             rating = 2;
+        }else if(pi->isstatic){
+            rating = 6;
         }else{
             if(pi->sourcechannel == chn){
                 if(pi->note == note){
@@ -872,6 +791,7 @@ u8 SyEng_GetStaticPI(VgmUsageBits usage){
         //DBG("--Clearing existing PI resources");
         ClearPI(pi);
     }
+    pi->isstatic = 1;
     //Find best allocation
     s32 ret = AllocatePI(piindex, usage);
     if(ret < 0){
@@ -880,7 +800,6 @@ u8 SyEng_GetStaticPI(VgmUsageBits usage){
     }
     //Set up the PI
     pi->valid = 1;
-    pi->isstatic = 1;
     pi->sourcechannel = 0xFF;
     pi->note = 60;
     return piindex;
@@ -1082,9 +1001,7 @@ void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged
     recalcprogramusage_internal(&usage, prog->noteonsource);
     recalcprogramusage_internal(&usage, prog->noteoffsource);
     if(usage.all != prog->usage.all){
-        DBG("Program usage changed from");
-        VGM_Cmd_DebugPrintUsage(prog->usage);
-        DBG("to");
+        DBG("Program usage changed to");
         VGM_Cmd_DebugPrintUsage(usage);
         prog->usage.all = usage.all;
         SyEng_HardFlushProgram(prog);
@@ -1094,3 +1011,59 @@ void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged
     }
 }
 
+void SyEng_PrintEngineDebugInfo(){
+    u8 i, g, v;
+    DBG("==== CHANNELS ====");
+    synprogram_t* prog;
+    for(i=0; i<16*MBQG_NUM_PORTS; ++i){
+        if(channels[i].trackermode){
+            DBG("Chn %d Tracker to g %d v %d", i, channels[i].trackervoice >> 4, channels[i].trackervoice & 0xF);
+        }else if(channels[i].program != NULL){
+            prog = channels[i].program;
+            DBG("Chn %d program %s usage", i, prog->name);
+            VGM_Cmd_DebugPrintUsage(prog->usage);
+        }
+    }
+    DBG("==== PIs ====");
+    synproginstance_t* pi;
+    VgmHead_Channel ch;
+    char* buf = vgmh2_malloc(64);
+    char* buf2 = vgmh2_malloc(64);
+    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
+        pi = &proginstances[i];
+        if(pi->valid){
+            DBG("PI %d static %d playing %d sourcechannel %d note %d recency %d head %d",
+                    i, pi->isstatic, pi->playing, pi->sourcechannel, pi->note, pi->recency,
+                    pi->head != NULL);
+            DBG("Mapping: 0 1 2 3 4 5 6 7 8 9 A B");
+            sprintf(buf, "Chip:                           ");
+            sprintf(buf2, "Voice:                          ");
+            for(v=0; v<0xC; ++v){
+                ch = pi->mapping[v];
+                if(!ch.nodata){
+                    buf[9+(2*v)] = '0' + ch.map_chip;
+                    buf2[9+(2*v)] = (ch.map_voice > 9) ? ('A' + ch.map_voice - 10) : ('0' + ch.map_voice);
+                }
+            }
+            DBG(buf);
+            DBG(buf2);
+        }
+    }
+    vgmh2_free(buf);
+    vgmh2_free(buf2);
+    DBG("==== SYNGENESISES ====");
+    syngenesis_t* sg;
+    syngenesis_usage_t* sgu;
+    for(g=0; g<GENESIS_COUNT; ++g){
+        sg = &syngenesis[g];
+        DBG("G %d: lfomode %d lfofixedspeed %d noisefreqsq3 %d",
+                g, sg->lfomode, sg->lfofixedspeed, sg->noisefreqsq3);
+        for(v=0; v<0xC; ++v){
+            sgu = &sg->channels[v];
+            if(sgu->use > 0){
+                DBG("--V %d: use %d, pi_using %d, lfo %d",
+                        v, sgu->use, sgu->pi_using, sgu->lfo);
+            }
+        }
+    }
+}

@@ -113,4 +113,6 @@ extern void SyEng_ReleaseStaticPI(u8 piindex);
 extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying);
 extern void SyEng_SilencePI(synproginstance_t* pi);
 
+extern void SyEng_PrintEngineDebugInfo();
+
 #endif /* _SYENG_H */

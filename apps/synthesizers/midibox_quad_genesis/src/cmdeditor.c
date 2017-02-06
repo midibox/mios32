@@ -532,7 +532,6 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                             couldbeusagechange = 1;
                         }else if(encoder == FP_E_LFOFREQ){
                             ret.data = (cmd.data & 0xF8) | CmdEditor_Clip(cmd.data & 7, incrementer, 3);
-                            if(((cmd.data & 0x07) == 0) ^ ((ret.data & 0x07) == 0)) couldbeusagechange = 1;
                         }
                         break;
                     case 0x24:
