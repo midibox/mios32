@@ -13,6 +13,7 @@
 #include <mios32.h>
 #include "mode_prog.h"
 
+#include "cmdeditor.h"
 #include "frontpanel.h"
 #include "interface.h"
 #include "syeng.h"
@@ -37,72 +38,6 @@ static VgmSource** SelSource(synprogram_t* prog, u8 num){
     }
 }
 
-static void CreateNewVGM(u8 type, VgmUsageBits usage){
-    if(type >= 3) return;
-    VgmSource* vs = VGM_SourceRAM_Create();
-    VgmSource** ss = SelSource(selprogram, type);
-    *ss = vs;
-    u32 a = 0, u;
-    u8 i;
-    VgmChipWriteCmd cmd;
-    switch(type){
-        case 0:
-            //TODO
-            break;
-        case 1:
-            //Key on
-            u = usage.all;
-            for(i=0; i<6; ++i){
-                if(u & 0x00000001){
-                    cmd = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2);
-                    cmd.cmd  = 0x52 + (i >= 3);
-                    cmd.addr = 0xA4 + (i % 3);
-                    VGM_SourceRAM_InsertCmd(vs, a++, cmd);
-                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                            .cmd=0x52, .addr=0x28, .data=0xF0|(i>=3 ? i+1 : i), .data2=0});
-                }
-                u >>= 1;
-            }
-            u = usage.all >> 24;
-            for(i=0; i<3; ++i){
-                if(u & 0x00000001){
-                    cmd = VGM_getPSGFrequency(60, 0, genesis_clock_psg);
-                    cmd.cmd  = 0x50;
-                    cmd.addr = 0x00;
-                    cmd.data |= 0b10000000 | (i << 5);
-                    VGM_SourceRAM_InsertCmd(vs, a++, cmd);
-                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                            .cmd=0x50, .addr=0x00, .data = 0b10010000 | (i << 5), .data2=0});
-                }
-                u >>= 1;
-            }
-            if(u & 0x00000001){
-                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                        .cmd=0x50, .addr=0x00, .data = 0b11110000, .data2=0});
-            }
-            break;
-        case 2:
-            //Key off
-            u = usage.all;
-            for(i=0; i<6; ++i){
-                if(u & 0x00000001){
-                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                            .cmd=0x52, .addr=0x28, .data=(i>=3 ? i+1 : i), .data2=0});
-                }
-                u >>= 1;
-            }
-            u = usage.all >> 24;
-            for(i=0; i<4; ++i){
-                if(u & 0x00000001){
-                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                            .cmd=0x50, .addr=0x00, .data = 0b10011111 | (i << 5), .data2=0});
-                }
-                u >>= 1;
-            }
-            break;
-    }
-    SyEng_RecalcSourceAndProgramUsage(selprogram, vs);
-}
 
 static void DrawUsage(VgmUsageBits usage){
     u32 u = usage.all;
@@ -347,11 +282,8 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                     if(!state) return;
                     if(cursor >= 5 && cursor <= 7){
                         VgmSource** ss = SelSource(selprogram, cursor-5);
-                        if(*ss != NULL){
-                            Mode_Vgm_InvalidateVgm(*ss);
-                            VGM_Source_Delete(*ss);
-                            *ss = NULL;
-                        }
+                        SyEng_DeleteSource(*ss);
+                        *ss = NULL;
                         DrawMenu();
                     }
                     break;
@@ -371,9 +303,11 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
         case 1:
             switch(button){
                 case FP_B_ENTER:
-                    CreateNewVGM(cursor-5, newvgmusage);
                     submode = 0;
+                    VgmSource* vs = CreateNewVGM(cursor-5, newvgmusage);
                     VgmSource** ss = SelSource(selprogram, cursor-5);
+                    *ss = vs;
+                    SyEng_RecalcSourceAndProgramUsage(selprogram, vs);
                     Mode_Vgm_SelectVgm(*ss);
                     Interface_ChangeToMode(MODE_VGM);
                     break;

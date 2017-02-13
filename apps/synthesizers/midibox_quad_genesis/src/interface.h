@@ -31,6 +31,7 @@ extern u8 interfacemode;
 
 #define SUBSCREEN_FILEBROWSER 1
 #define SUBSCREEN_NAMEEDITOR 2
+#define SUBSCREEN_CAPTURER 3
 extern u8 subscreen;
 
 // Event hooks

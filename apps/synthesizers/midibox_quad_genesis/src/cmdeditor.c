@@ -21,8 +21,8 @@
 #include "mode_prog.h"
 
 
-void DrawCmdLine(VgmChipWriteCmd cmd, u8 row){
-    u16 outbits = 0;
+void DrawCmdLine(VgmChipWriteCmd cmd, u8 row, u8 ctrlled){
+    u16 outbits = ctrlled;
     if(cmd.cmd == 0x50){
         //PSG write
         outbits |= 1 << (10 + ((cmd.data >> 5) & 3));
@@ -754,11 +754,10 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
     return ret;
 }
 
-u8 EditState(VgmSource* vgs, VgmHead* vh, u8 encoder, s32 incrementer, u8 button, u8 state, u8 voice, u8 op){
+u8 EditState(VgmSource* vgs, VgmHead* head, u8 encoder, s32 incrementer, u8 button, u8 state, u8 voice, u8 op){
     VgmSourceRAM* vsr = (VgmSourceRAM*)vgs->data;
-    VgmHeadRAM* vhr = (VgmHeadRAM*)vh->data;
     VgmChipWriteCmd cmd, modcmd;
-    u32 a = vhr->srcaddr;
+    u32 a = head->srcaddr;
     while(1){
         cmd = vsr->cmds[a];
         modcmd = EditCmd(cmd, encoder, incrementer, button, state, voice, op);
@@ -773,13 +772,78 @@ u8 EditState(VgmSource* vgs, VgmHead* vh, u8 encoder, s32 incrementer, u8 button
             }else{
                 return 1; //Don't actually send the command to the chip
             }
-            VGM_Head_doMapping(vh, &modcmd); //Map the command to the chip according to the previewpi's head's mapping
+            VGM_Head_doMapping(head, &modcmd); //Map the command to the chip according to the previewpi's head's mapping
             VGM_Tracker_Enqueue(modcmd, 0);
             return 1;
         }
         if(a == 0) return 0;
         --a;
     }
+}
+
+VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
+    if(type >= 3) return NULL;
+    VgmSource* vs = VGM_SourceRAM_Create();
+    u32 a = 0, u;
+    u8 i;
+    VgmChipWriteCmd cmd;
+    switch(type){
+        case 0:
+            //TODO
+            break;
+        case 1:
+            //Key on
+            u = usage.all;
+            for(i=0; i<6; ++i){
+                if(u & 0x00000001){
+                    cmd = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2);
+                    cmd.cmd  = 0x52 + (i >= 3);
+                    cmd.addr = 0xA4 + (i % 3);
+                    VGM_SourceRAM_InsertCmd(vs, a++, cmd);
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                            .cmd=0x52, .addr=0x28, .data=0xF0|(i>=3 ? i+1 : i), .data2=0});
+                }
+                u >>= 1;
+            }
+            u = usage.all >> 24;
+            for(i=0; i<3; ++i){
+                if(u & 0x00000001){
+                    cmd = VGM_getPSGFrequency(60, 0, genesis_clock_psg);
+                    cmd.cmd  = 0x50;
+                    cmd.addr = 0x00;
+                    cmd.data |= 0b10000000 | (i << 5);
+                    VGM_SourceRAM_InsertCmd(vs, a++, cmd);
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                            .cmd=0x50, .addr=0x00, .data = 0b10010000 | (i << 5), .data2=0});
+                }
+                u >>= 1;
+            }
+            if(u & 0x00000001){
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                        .cmd=0x50, .addr=0x00, .data = 0b11110000, .data2=0});
+            }
+            break;
+        case 2:
+            //Key off
+            u = usage.all;
+            for(i=0; i<6; ++i){
+                if(u & 0x00000001){
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                            .cmd=0x52, .addr=0x28, .data=(i>=3 ? i+1 : i), .data2=0});
+                }
+                u >>= 1;
+            }
+            u = usage.all >> 24;
+            for(i=0; i<4; ++i){
+                if(u & 0x00000001){
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                            .cmd=0x50, .addr=0x00, .data = 0b10011111 | (i << 5), .data2=0});
+                }
+                u >>= 1;
+            }
+            break;
+    }
+    return vs;
 }
 
 

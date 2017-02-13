@@ -21,7 +21,7 @@
 #include "mode_vgm.h"
 #include "nameeditor.h"
 
-static u8 selchan;
+u8 selchan;
 static u8 submode;
 static u8 cursor;
 
@@ -260,7 +260,8 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                     }
                     break;
                 case FP_B_DELETE:
-                    //TODO
+                    SyEng_DeleteProgram(selchan);
+                    DrawMenu();
                     break;
             }
             break;

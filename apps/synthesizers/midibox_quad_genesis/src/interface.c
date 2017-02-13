@@ -28,6 +28,7 @@
 #include "mode_mdltr.h"
 #include "mode_sample.h"
 
+#include "capturer.h"
 #include "filebrowser.h"
 #include "nameeditor.h"
 
@@ -37,7 +38,6 @@ static s8 wantmodechange;
 
 
 void Interface_Init(){
-    Filebrowser_Init();
     Mode_System_Init();
     Mode_Voice_Init();
     Mode_Chan_Init();
@@ -45,6 +45,7 @@ void Interface_Init(){
     Mode_Vgm_Init();
     Mode_Mdltr_Init();
     Mode_Sample_Init();
+    Filebrowser_Init();
     interfacemode = MODE_SYSTEM;
     subscreen = 0;
     wantmodechange = -1;
@@ -133,6 +134,11 @@ void Interface_Background(){
 }
 
 void Interface_BtnGVoice(u8 gvoice, u8 state){
+    switch(subscreen){
+        case SUBSCREEN_CAPTURER:
+            Capturer_BtnGVoice(gvoice, state);
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_BtnGVoice(gvoice, state); break;
         case MODE_VOICE: Mode_Voice_BtnGVoice(gvoice, state); break;
@@ -195,6 +201,9 @@ void Interface_BtnSystem(u8 button, u8 state){
             return;
         case SUBSCREEN_NAMEEDITOR:
             NameEditor_BtnSystem(button, state);
+            return;
+        case SUBSCREEN_CAPTURER:
+            Capturer_BtnSystem(button, state);
             return;
     }
     if(button >= FP_B_SYSTEM && button <= FP_B_SAMPLE){

@@ -35,6 +35,9 @@ extern void Mode_Chan_EncDatawheel(s32 incrementer);
 extern void Mode_Chan_EncEdit(u8 encoder, s32 incrementer);
 
 
+extern u8 selchan;
+
+
 #ifdef __cplusplus
 }
 #endif
