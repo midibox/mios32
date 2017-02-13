@@ -108,6 +108,9 @@ extern void SyEng_HardFlushProgram(synprogram_t* prog);
 extern void SyEng_SoftFlushProgram(synprogram_t* prog);
 extern void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged);
 
+extern void SyEng_DeleteSource(VgmSource* src);
+extern void SyEng_DeleteProgram(u8 chan);
+
 extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
 extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying);

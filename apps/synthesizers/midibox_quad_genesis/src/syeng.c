@@ -1011,6 +1011,31 @@ void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* srcchanged
     }
 }
 
+void SyEng_DeleteSource(VgmSource* src){
+    if(src == NULL) return;
+    Mode_Vgm_InvalidateVgm(src);
+    u8 i;
+    synproginstance_t* pi;
+    for(i=0; i<MBQG_NUM_PROGINSTANCES; ++i){
+        pi = &proginstances[i];
+        if(pi->head != NULL){
+            if(pi->head->source == src){
+                ClearPI(pi);
+            }
+        }
+    }
+    VGM_Source_Delete(src);
+}
+void SyEng_DeleteProgram(u8 chan){
+    synprogram_t* prog = channels[chan].program;
+    if(prog == NULL) return;
+    SyEng_DeleteSource(prog->initsource);
+    SyEng_DeleteSource(prog->noteonsource);
+    SyEng_DeleteSource(prog->noteoffsource);
+    vgmh2_free(prog);
+    channels[chan].program = NULL;
+}
+
 void SyEng_PrintEngineDebugInfo(){
     u8 i, g, v;
     DBG("==== CHANNELS ====");
