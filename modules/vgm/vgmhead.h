@@ -45,6 +45,7 @@ typedef union {
         VgmSource* source;
         void* data;
         u32 ticks;
+        u32 srcaddr;
         VgmChipWriteCmd writecmd;
         VgmHead_Channel channel[12]; //0 OPN2, 1-6 voices, 7 DAC, 8-A sq, B noise
         u32 opn2mult;

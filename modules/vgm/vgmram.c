@@ -21,7 +21,6 @@
 VgmHeadRAM* VGM_HeadRAM_Create(VgmSource* source){
     //VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
     VgmHeadRAM* vhr = vgmh2_malloc(sizeof(VgmHeadRAM));
-    vhr->srcaddr = 0;
     return vhr;
 }
 void VGM_HeadRAM_Delete(void* headram){
@@ -29,8 +28,7 @@ void VGM_HeadRAM_Delete(void* headram){
     vgmh2_free(vhr);
 }
 void VGM_HeadRAM_Restart(VgmHead* head){
-    VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
-    vhr->srcaddr = 0;
+    head->srcaddr = head->source->markstart;
     head->isdone = 0;
 }
 void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
@@ -65,20 +63,25 @@ void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
         //Otherwise there wasn't actually a second command...?
     }
     //Read new command
-    if(vhr->srcaddr >= vsr->numcmds){
+    if(head->srcaddr > head->source->markend){
+        //Done with marked region
+        head->isdone = 1;
+        head->srcaddr = head->source->markend+1;
+        return;
+    }else if(head->srcaddr >= vsr->numcmds){
         //End of data
         if(head->source->loopaddr < vsr->numcmds){
             //Jump to loop point
-            vhr->srcaddr = head->source->loopaddr;
+            head->srcaddr = head->source->loopaddr;
         }else{
             //Behaves like endless stream of 65535-tick waits
             head->isdone = 1;
-            vhr->srcaddr = vsr->numcmds+1;
+            head->srcaddr = vsr->numcmds+1;
             return;
         }
     }
-    vhr->bufferedcmd = vsr->cmds[vhr->srcaddr];
-    ++vhr->srcaddr;
+    vhr->bufferedcmd = vsr->cmds[head->srcaddr];
+    ++head->srcaddr;
     //Parse command
     u8 type = vhr->bufferedcmd.cmd;
     if(type == 0x50){
@@ -145,6 +148,8 @@ VgmSource* VGM_SourceRAM_Create(){
     source->psgfreq0to1 = 1;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
+    source->markstart = 0;
+    source->markend = 0xFFFFFFFF;
     source->usage.all = 0;
     VgmSourceRAM* vsr = vgmh2_malloc(sizeof(VgmSourceRAM));
     source->data = vsr;
@@ -190,14 +195,14 @@ void VGM_SourceRAM_InsertCmd(VgmSource* source, u32 addr, VgmChipWriteCmd newcmd
     vsr->cmds[addr] = newcmd;
     //Change length
     ++vsr->numcmds;
+    if(source->markstart >= addr) source->markstart++;
+    if(source->markend >= addr) source->markend++;
     //Move any heads playing this forward by one command
     VgmHead* head;
-    VgmHeadRAM* vhr;
     for(a=0; a<VGM_HEAD_MAXNUM; ++a){
         head = vgm_heads[a];
         if(head != NULL && head->source == source){
-            vhr = (VgmHeadRAM*)head->data;
-            if(vhr->srcaddr >= addr) ++vhr->srcaddr;
+            if(head->srcaddr >= addr) ++head->srcaddr;
         }
     }
     MIOS32_IRQ_Enable();
@@ -212,16 +217,16 @@ void VGM_SourceRAM_DeleteCmd(VgmSource* source, u32 addr){
     }
     //Change length
     --vsr->numcmds;
+    if(source->markstart >= addr) source->markstart--;
+    if(source->markend >= addr) source->markend--;
     //Deallocate extra memory
     vsr->cmds = vgmh2_realloc(vsr->cmds, vsr->numcmds*sizeof(VgmChipWriteCmd));
     //Move any heads playing this backward by one command
     VgmHead* head;
-    VgmHeadRAM* vhr;
     for(a=0; a<VGM_HEAD_MAXNUM; ++a){
         head = vgm_heads[a];
         if(head != NULL && head->source == source){
-            vhr = (VgmHeadRAM*)head->data;
-            if(vhr->srcaddr > addr) --vhr->srcaddr;
+            if(head->srcaddr > addr) --head->srcaddr;
         }
     }
     MIOS32_IRQ_Enable();
@@ -261,18 +266,18 @@ void VGM_HeadRAM_Forward1(VgmHead* head){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     //Are we already off the end?
-    if(vhr->srcaddr > vsr->numcmds) return;
+    if(head->srcaddr > vsr->numcmds) return;
     //Play the PREVIOUS command (the one buffered)
-    if(vhr->srcaddr > 0){
-        PlayCommandNow(head, vsr, vhr, vsr->cmds[vhr->srcaddr-1]);
+    if(head->srcaddr > 0){
+        PlayCommandNow(head, vsr, vhr, vsr->cmds[head->srcaddr-1]);
     }
     //Drop whatever was in the buffer
     head->firstoftwo = 0;
     //If we would now be going off the end, don't loop back
-    if(vhr->srcaddr == vsr->numcmds){
+    if(head->srcaddr == vsr->numcmds){
         //Don't loop back
         head->isdone = 1;
-        vhr->srcaddr = vsr->numcmds + 1;
+        head->srcaddr = vsr->numcmds + 1;
         return;
     }
     //Otherwise, prepare the next command
@@ -283,20 +288,20 @@ void VGM_HeadRAM_Backward1(VgmHead* head){
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     //Drop the second half of a command, if buffered
     head->firstoftwo = 0;
-    if(vhr->srcaddr <= 1){
+    if(head->srcaddr <= 1){
         //Don't go backwards from the beginning
         return;
     }
     //Go back two commands
-    vhr->srcaddr -= 2;
+    head->srcaddr -= 2;
     head->isdone = 0;
-    VgmChipWriteCmd curcmd = vsr->cmds[vhr->srcaddr];
+    VgmChipWriteCmd curcmd = vsr->cmds[head->srcaddr];
     //Find the most recent command before this one, which this one overwrote the state of
     s32 a; u8 flag = 0;
     VgmChipWriteCmd oldcmd;
     if(curcmd.cmd >= 0x80 && curcmd.cmd <= 0x8F) curcmd.cmd = 0x52; //Get rid of wait part of DAC write
     if(curcmd.cmd == 0x50){
-        for(a=vhr->srcaddr-1; a>=0; --a){
+        for(a=head->srcaddr-1; a>=0; --a){
             oldcmd = vsr->cmds[a];
             //Has to be PSG Write command
             if(oldcmd.cmd != 0x50) continue;
@@ -323,7 +328,7 @@ void VGM_HeadRAM_Backward1(VgmHead* head){
             PlayCommandNow(head, vsr, vhr, curcmd);
         }
     }else if((curcmd.cmd & 0xFE) == 0x52){
-        for(a=vhr->srcaddr-1; a>=0; --a){
+        for(a=head->srcaddr-1; a>=0; --a){
             oldcmd = vsr->cmds[a];
             if(oldcmd.cmd >= 0x80 && oldcmd.cmd <= 0x8F) oldcmd.cmd = 0x52; //Get rid of wait part of DAC write
             //Has to be OPN2 Write command with the same addrhi
@@ -356,12 +361,11 @@ void VGM_HeadRAM_Backward1(VgmHead* head){
 }
 void VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
-    VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
-    while(newaddr < (vhr->srcaddr-1)){
+    while(newaddr < (head->srcaddr-1)){
         VGM_HeadRAM_Backward1(head);
     }
     if(newaddr > vsr->numcmds) newaddr = vsr->numcmds;
-    while(newaddr > (vhr->srcaddr-1)){
+    while(newaddr > (head->srcaddr-1)){
         VGM_HeadRAM_Forward1(head);
     }
 }
@@ -384,10 +388,9 @@ static u32 GetWaitTime(VgmChipWriteCmd cmd){
 
 void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
-    VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     VgmChipWriteCmd cmd;
-    if(vhr->srcaddr >= vsr->numcmds) return;
-    if(vhr->srcaddr == 0) VGM_HeadRAM_cmdNext(head, VGM_Player_GetVGMTime());
+    if(head->srcaddr >= vsr->numcmds) return;
+    if(head->srcaddr == 0) VGM_HeadRAM_cmdNext(head, VGM_Player_GetVGMTime());
     u8 state = 0;
     /*
     State 0: skipping time commands we were pointing to
@@ -396,8 +399,8 @@ void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     */
     if(allowstay) state = 1;
     u32 totalt = 0, thist;
-    while(vhr->srcaddr <= vsr->numcmds){
-        cmd = vsr->cmds[vhr->srcaddr-1];
+    while(head->srcaddr <= vsr->numcmds){
+        cmd = vsr->cmds[head->srcaddr-1];
         thist = GetWaitTime(cmd);
         if(state == 0){
             if(thist == 0 || (cmd.cmd >= 0x80 && cmd.cmd <= 0x8F)){
@@ -415,7 +418,6 @@ void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
 
 void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
-    VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     VgmChipWriteCmd cmd;
     head->isdone = 0;
     u8 state = 0;
@@ -424,8 +426,8 @@ void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
     State 1: skipping long time commands
     */
     u32 totalt = 0, thist;
-    while(vhr->srcaddr > 1){
-        cmd = vsr->cmds[vhr->srcaddr-2];
+    while(head->srcaddr > 1){
+        cmd = vsr->cmds[head->srcaddr-2];
         thist = GetWaitTime(cmd);
         if(state == 0){
             totalt += thist;

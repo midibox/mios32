@@ -80,16 +80,16 @@ u8 VGM_HeadStream_getCommandLen(u8 type){
         return 0;
     }
 }
-u8 VGM_HeadStream_bufferNextCommand(VgmHeadStream* vhs, VgmSourceStream* vss){
+u8 VGM_HeadStream_bufferNextCommand(VgmHead* head, VgmHeadStream* vhs, VgmSourceStream* vss){
     if(vhs->subbufferlen == VGM_HEADSTREAM_SUBBUFFER_MAXLEN) return 0;
-    u8 type = VGM_HeadStream_getByte(vss, vhs, vhs->srcaddr);
+    u8 type = VGM_HeadStream_getByte(vss, vhs, head->srcaddr);
     u8 len = VGM_HeadStream_getCommandLen(type);
     if(len + 1 + vhs->subbufferlen <= VGM_HEADSTREAM_SUBBUFFER_MAXLEN){
-        ++vhs->srcaddr;
+        ++head->srcaddr;
         vhs->subbuffer[vhs->subbufferlen++] = type;
         u8 i;
         for(i=0; i<len; ++i){
-            vhs->subbuffer[vhs->subbufferlen++] = VGM_HeadStream_getByte(vss, vhs, vhs->srcaddr++);
+            vhs->subbuffer[vhs->subbufferlen++] = VGM_HeadStream_getByte(vss, vhs, head->srcaddr++);
         }
         return 1;
     }else{
@@ -107,7 +107,6 @@ void VGM_HeadStream_unBuffer(VgmHeadStream* vhs, u8 len){
 
 VgmHeadStream* VGM_HeadStream_Create(VgmSource* source){
     VgmHeadStream* vhs = vgmh2_malloc(sizeof(VgmHeadStream));
-    vhs->srcaddr = 0;
     vhs->srcblockaddr = 0;
     vhs->subbufferlen = 0;
     vhs->buffer1 = malloc(VGM_SOURCESTREAM_BUFSIZE); //Buffers accessed using DMA,
@@ -127,12 +126,14 @@ void VGM_HeadStream_Delete(void* headstream){
 void VGM_HeadStream_Restart(VgmHead* head){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
     VgmSourceStream* vss = (VgmSourceStream*)head->source->data;
-    vhs->srcaddr = vss->vgmdatastartaddr;
+    head->srcaddr = (head->source->markstart < vss->vgmdatastartaddr) 
+            ? vss->vgmdatastartaddr : head->source->markstart;
     vhs->srcblockaddr = 0;
     vhs->buffer1addr = 0xFFFFFFFF;
     vhs->buffer2addr = 0xFFFFFFFF;
-    vhs->wantbufferaddr = vhs->srcaddr;
+    vhs->wantbufferaddr = head->srcaddr;
     vhs->wantbuffer = 1;
+    DBG("HeadStream_Restart srcaddr=%d", head->srcaddr);
 }
 u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
@@ -140,24 +141,24 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
     u8 type, cmdlen;
     head->iswait = head->iswrite = 0;
     u8 dontunbuffer;
-    while(!(head->iswait || head->iswrite)){
+    while(!(head->iswait || head->iswrite || head->isdone)){
         //Check if we will have to skip a data block (buffer miss)
         if(vhs->subbufferlen != 0 && vhs->subbuffer[0] == 0x67){ //There's a command buffered, and it's data block
             //Load the block parameters and skip
             u32 l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
                 | ((u32)vhs->subbuffer[5] << 16) | ((u32)vhs->subbuffer[6] << 24);
-            vhs->srcaddr += l;
+            head->srcaddr += l;
             VGM_HeadStream_unBuffer(vhs, 7); //Remove this command from subbuffer
             //Set up the stream where the block ends
-            vhs->wantbufferaddr = vhs->srcaddr;
+            vhs->wantbufferaddr = head->srcaddr;
             vhs->wantbuffer = 1;
             head->iswait = 1; //Act as a wait for 0 (or negative) time
             return 0; //Report that the command couldn't be loaded
         }else if(vhs->subbufferlen == 0){
             //Check if we're about to run out of buffer
-            if(vhs->srcaddr >= vhs->buffer1addr && vhs->srcaddr < (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
+            if(head->srcaddr >= vhs->buffer1addr && head->srcaddr < (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
                 //We're in buffer1
-                if((vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE - vhs->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
+                if((vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE - head->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
                         && vhs->buffer2addr != (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE)){
                     //About to run out of buffer1, and buffer2 isn't ready
                     vhs->wantbufferaddr = (vhs->buffer1addr + VGM_SOURCESTREAM_BUFSIZE);
@@ -165,9 +166,9 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                     head->iswait = 1; //Act as a wait for 0 (or negative) time
                     return 0; //Report that the command couldn't be loaded
                 }
-            }else if(vhs->srcaddr >= vhs->buffer2addr && vhs->srcaddr < (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
+            }else if(head->srcaddr >= vhs->buffer2addr && head->srcaddr < (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
                 //We're in buffer2
-                if((vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE - vhs->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
+                if((vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE - head->srcaddr) < VGM_HEADSTREAM_SUBBUFFER_MAXLEN 
                         && vhs->buffer1addr != (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE)){
                     //About to run out of buffer2, and buffer1 isn't ready
                     vhs->wantbufferaddr = (vhs->buffer2addr + VGM_SOURCESTREAM_BUFSIZE);
@@ -177,14 +178,18 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                 }
             }else{
                 //We're not in either buffer
-                vhs->wantbufferaddr = vhs->srcaddr;
+                vhs->wantbufferaddr = head->srcaddr;
                 vhs->wantbuffer = 1; //in case you didn't know already
                 head->iswait = 1; //Act as a wait for 0 (or negative) time
                 return 0; //Report that the command couldn't be loaded
             }
         }
+        if(head->srcaddr > head->source->markend){
+            head->isdone = 1;
+            break;
+        }
         if(vhs->subbufferlen == 0){
-            VGM_HeadStream_bufferNextCommand(vhs, vss); //Should never return 0
+            VGM_HeadStream_bufferNextCommand(head, vhs, vss); //Should never return 0
         }
         type = vhs->subbuffer[0];
         cmdlen = VGM_HeadStream_getCommandLen(type);
@@ -198,7 +203,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                 //It's a main write, not attenuation, and not noise
                 u8 bufferpos, newtype;
                 bufferpos = vhs->subbufferlen;
-                while(VGM_HeadStream_bufferNextCommand(vhs, vss)){
+                while(VGM_HeadStream_bufferNextCommand(head, vhs, vss)){
                     newtype = vhs->subbuffer[bufferpos];
                     if(newtype == type){
                         //Next command is another PSG write
@@ -226,7 +231,7 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
                 //Frequency MSB write, read to find frequency LSB write command
                 u8 bufferpos, newtype;
                 bufferpos = vhs->subbufferlen;
-                while(VGM_HeadStream_bufferNextCommand(vhs, vss)){
+                while(VGM_HeadStream_bufferNextCommand(head, vhs, vss)){
                     newtype = vhs->subbuffer[bufferpos];
                     if(newtype == type){
                         //Next command is another OPN2 write to the same addrhi
@@ -292,10 +297,10 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
             //End of data
             if(head->source->loopaddr >= vss->vgmdatastartaddr && head->source->loopaddr < vss->datalen){
                 //Jump to loop point
-                vhs->srcaddr = head->source->loopaddr;
+                head->srcaddr = head->source->loopaddr;
                 VGM_HeadStream_unBuffer(vhs, 1); //Remove this command from subbuffer
                 //Set up to stream from here
-                vhs->wantbufferaddr = vhs->srcaddr;
+                vhs->wantbufferaddr = head->srcaddr;
                 vhs->wantbuffer = 1;
                 head->iswait = 1; //Act as a wait for 0 (or negative) time
                 return 0; //Report that the command couldn't be loaded
@@ -309,10 +314,10 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
             //a = vhs->subbuffer[2]; //== 0, format other than uncompressed YM2612 PCM not supported
             u32 l = vhs->subbuffer[3] | ((u32)vhs->subbuffer[4] << 8) 
                     | ((u32)vhs->subbuffer[5] << 16) | ((u32)vhs->subbuffer[6] << 24);
-            vhs->srcaddr += l;
+            head->srcaddr += l;
             VGM_HeadStream_unBuffer(vhs, 7); //Remove this command from subbuffer
             //Set up the stream where the block ends
-            vhs->wantbufferaddr = vhs->srcaddr;
+            vhs->wantbufferaddr = head->srcaddr;
             vhs->wantbuffer = 1;
             head->iswait = 1; //Act as a wait for 0 (or negative) time
             return 0; //Report that the command couldn't be loaded
@@ -408,6 +413,8 @@ VgmSource* VGM_SourceStream_Create(){
     source->psgfreq0to1 = 1;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
+    source->markstart = 0;
+    source->markend = 0xFFFFFFFF;
     source->usage.all = 0;
     VgmSourceStream* vss = vgmh2_malloc(sizeof(VgmSourceStream));
     source->data = vss;

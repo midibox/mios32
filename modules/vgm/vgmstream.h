@@ -25,9 +25,8 @@
 #define VGM_HEADSTREAM_SUBBUFFER_MAXLEN 16
 
 typedef union {
-    u8 ALL[32+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
+    u8 ALL[28+VGM_HEADSTREAM_SUBBUFFER_MAXLEN];
     struct{
-        u32 srcaddr;
         u32 srcblockaddr;
         
         u8* buffer1;

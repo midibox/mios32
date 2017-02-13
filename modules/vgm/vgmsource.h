@@ -70,7 +70,7 @@ typedef union {
 #define VGM_SOURCE_TYPE_QUEUE 3
 
 typedef union {
-    u8 ALL[28];
+    u8 ALL[36];
     struct{
         u8 type;
         u8 psgfreq0to1:1;
@@ -80,6 +80,8 @@ typedef union {
         u32 psgclock;
         u32 loopaddr;
         u32 loopsamples;
+        u32 markstart; //First command to play
+        u32 markend; //Last command to play, inclusive
         VgmUsageBits usage;
         void* data;
     };

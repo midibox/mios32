@@ -31,6 +31,7 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     head->playing = 0;
     head->source = source;
     head->ticks = 0; //will get changed at restart
+    head->srcaddr = 0;
     u8 i;
     u16 mutes = source->mutes;
     for(i=0; i<12; ++i){

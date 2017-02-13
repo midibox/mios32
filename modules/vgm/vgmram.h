@@ -27,7 +27,6 @@
 typedef union {
     u8 ALL[4];
     struct{
-        u32 srcaddr;
         VgmChipWriteCmd bufferedcmd;
     };
 } VgmHeadRAM;
