@@ -124,6 +124,8 @@ VgmSource* VGM_SourceQueue_Create(){
     source->psgfreq0to1 = 1;
     source->loopaddr = 0;
     source->loopsamples = 0xFFFFFFFF;
+    source->markstart = 0;
+    source->markend = 0xFFFFFFFF;
     source->usage.all = 0;
     source->data = NULL;
     return source;
