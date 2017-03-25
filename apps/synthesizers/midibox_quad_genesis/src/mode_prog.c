@@ -27,17 +27,6 @@ static u8 submode;
 static u8 cursor;
 static VgmUsageBits newvgmusage;
 
-static VgmSource** SelSource(synprogram_t* prog, u8 num){
-    switch(num){
-        case 0: return &prog->initsource;
-        case 1: return &prog->noteonsource;
-        case 2: return &prog->noteoffsource;
-        default:
-            DBG("SelSource error!");
-            return &prog->noteonsource;
-    }
-}
-
 
 static void DrawUsage(VgmUsageBits usage){
     u32 u = usage.all;

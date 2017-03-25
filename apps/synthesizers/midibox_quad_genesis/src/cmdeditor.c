@@ -813,8 +813,11 @@ VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
                     cmd.addr = 0x00;
                     cmd.data |= 0b10000000 | (i << 5);
                     VGM_SourceRAM_InsertCmd(vs, a++, cmd);
-                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
-                            .cmd=0x50, .addr=0x00, .data = 0b10010000 | (i << 5), .data2=0});
+                    if(i != 2 || !usage.noisefreqsq3){
+                        //Don't key on sq3 if it's just being used to chonge noise frequency
+                        VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                                .cmd=0x50, .addr=0x00, .data = 0b10010000 | (i << 5), .data2=0});
+                    }
                 }
                 u >>= 1;
             }
@@ -843,6 +846,7 @@ VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
             }
             break;
     }
+    VGM_Source_UpdateUsage(vs);
     return vs;
 }
 

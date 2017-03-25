@@ -93,6 +93,8 @@ u8 voiceclearfull;
 static VgmSource* voiceclearsource;
 static voiceclearlink* voiceclearlist;
 
+
+
 //TODO divide chips that use globals by the types of globals used, so multiple
 //voices using the same effect e.g. "ugly" can play together
 
@@ -672,6 +674,17 @@ static u8 FindBestPIToReplace(u8 chn, u8 note){
     return bestrated;
 }
 
+VgmSource** SelSource(synprogram_t* prog, u8 num){
+    switch(num){
+        case 0: return &prog->initsource;
+        case 1: return &prog->noteonsource;
+        case 2: return &prog->noteoffsource;
+        default:
+            DBG("SelSource error!");
+            return &prog->noteonsource;
+    }
+}
+
 void SyEng_Init(){
     u8 i, j;
     //Initialize syngenesis
@@ -822,6 +835,7 @@ void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8
     CopyPIMappingToHead(pi, pi->head);
     u32 vgmtime = VGM_Player_GetVGMTime();
     VGM_Head_Restart(pi->head, vgmtime);
+    DBG("PlayVGMOnPi after restart, iswait %d iswrite %d isdone %d firstoftwo %d, cmd %08X", pi->head->iswait, pi->head->iswrite, pi->head->isdone, pi->head->firstoftwo, pi->head->writecmd.all);
     pi->head->playing = startplaying;
     pi->recency = vgmtime;
 }
@@ -1040,13 +1054,30 @@ void SyEng_PrintEngineDebugInfo(){
     u8 i, g, v;
     DBG("==== CHANNELS ====");
     synprogram_t* prog;
+    VgmSource* src;
     for(i=0; i<16*MBQG_NUM_PORTS; ++i){
         if(channels[i].trackermode){
             DBG("Chn %d Tracker to g %d v %d", i, channels[i].trackervoice >> 4, channels[i].trackervoice & 0xF);
         }else if(channels[i].program != NULL){
             prog = channels[i].program;
-            DBG("Chn %d program %s usage", i, prog->name);
+            DBG("Chn %d program %s", i, prog->name);
             VGM_Cmd_DebugPrintUsage(prog->usage);
+            for(v=0; v<3; ++v){
+                src = *SelSource(prog, v);
+                if(src == NULL){
+                    DBG("--%d: NULL");
+                }else{
+                    DBG("--%d: type %d, opn2clock %d, psgclock %d, psgfreq0to1 %d,", v, src->type, src->opn2clock, src->psgclock, src->psgfreq0to1);
+                    DBG("----loopaddr %d, loopsamples %d, markstart %d, markend %d", src->loopaddr, src->loopsamples, src->markstart, src->markend);
+                    if(src->type == 1){
+                        VgmSourceRAM* vsr = (VgmSourceRAM*)src->data;
+                        DBG("----VgmSourceRAM: numcmds %d", vsr->numcmds);
+                    }else if(src->type == 2){
+                        VgmSourceStream* vss = (VgmSourceStream*)src->data;
+                        DBG("----VgmSourceStream: datalen %d, vgmdatastartaddr %d, blocklen %d", vss->datalen, vss->vgmdatastartaddr, vss->blocklen);
+                    }
+                }
+            }
         }
     }
     DBG("==== PIs ====");
