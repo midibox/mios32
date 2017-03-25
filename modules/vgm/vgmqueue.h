@@ -20,6 +20,7 @@
 //TODO allow queues for different purposes to have different lengths, memory
 //allocated at runtime rather than in the struct
 #define VGM_QUEUE_LENGTH 256
+#define VGM_QUEUE_RECHECKPERIOD 100
 
 typedef union {
     u8 ALL[4+(VGM_QUEUE_LENGTH*sizeof(VgmChipWriteCmd))];

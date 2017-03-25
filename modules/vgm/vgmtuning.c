@@ -41,9 +41,6 @@ void VGM_fixOPN2Frequency(VgmChipWriteCmd* writecmd, u32 opn2mult){
 void VGM_fixPSGFrequency(VgmChipWriteCmd* writecmd, u32 psgmult, u8 psgfreq0to1){
     if(psgmult == 0) psgmult = 1;
     u32 freq = (writecmd->data & 0x0F) | ((writecmd->data2 & 0x3F) << 4);
-    if((writecmd->data & 0xF0) == 0xA0){
-        DBG("PSG freq 0x%03x", freq); //TODO XXX FIXME
-    }
     if(freq == 0 && psgfreq0to1){
         freq = 1;
     }else if(freq == 0x3FF && !psgfreq0to1){
