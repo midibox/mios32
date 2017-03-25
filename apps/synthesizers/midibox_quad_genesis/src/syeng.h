@@ -97,6 +97,8 @@ extern synchannel_t channels[16*MBQG_NUM_PORTS];
 
 extern u8 voiceclearfull;
 
+extern VgmSource** SelSource(synprogram_t* prog, u8 num);
+
 extern void SyEng_Init();
 extern void SyEng_Tick();
 

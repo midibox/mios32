@@ -12,12 +12,15 @@
 
 #include <mios32.h>
 #include "mode_voice.h"
+
+#include <genesis.h>
+#include <vgm.h>
+
 #include "frontpanel.h"
 #include "genesisstate.h"
 #include "syeng.h"
 #include "tracker.h"
-#include "genesis.h"
-#include <vgm.h>
+#include "capturer.h"
 
 static u8 submode;
 static u8 selvoice;
@@ -276,18 +279,10 @@ void Mode_Voice_BtnSystem(u8 button, u8 state){
         case FP_B_CTRL:
             SyEng_PrintEngineDebugInfo();
             break;
+        case FP_B_CAPTURE:
+            Capturer_Start(selvoice);
+            break;
     }
-    /*
-    if(button == FP_B_CAPTURE){
-        u8 i;
-        for(i=0; i<6; ++i){
-            DBG("Chan %d %03d %03d %03d %03d", i+1, genesis[0].opn2.chan[i].op[0].test_statehigh,
-                                                    genesis[0].opn2.chan[i].op[1].test_statehigh,
-                                                    genesis[0].opn2.chan[i].op[2].test_statehigh,
-                                                    genesis[0].opn2.chan[i].op[3].test_statehigh);
-        }
-    }
-    */
 }
 void Mode_Voice_BtnEdit(u8 button, u8 state){
     u8 v = selvoice & 0xF;
