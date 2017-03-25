@@ -12,8 +12,10 @@
 
 
 #include "vgmqueue.h"
+#include "vgmplayer.h"
 #include "vgmtuning.h"
 #include "vgm_heap2.h"
+#include <genesis.h>
 
 VgmHeadQueue* VGM_HeadQueue_Create(VgmSource* source){
     VgmHeadQueue* vhq = vgmh2_malloc(sizeof(VgmHeadQueue));
@@ -27,7 +29,8 @@ void VGM_HeadQueue_Delete(void* headqueue){
     vgmh2_free(vhq);
 }
 void VGM_HeadQueue_Restart(VgmHead* head){
-    //do nothing, there's no concept of this
+    //just set up first command, there's no concept of restarting
+    VGM_HeadQueue_cmdNext(head, VGM_Player_GetVGMTime());
 }
 void VGM_HeadQueue_cmdNext(VgmHead* head, u32 vgm_time){
     VgmHeadQueue* vhq = (VgmHeadQueue*)head->data;
@@ -41,7 +44,7 @@ void VGM_HeadQueue_cmdNext(VgmHead* head, u32 vgm_time){
         //No commands, come back later
         head->iswait = 1;
         head->iswrite = 0;
-        head->ticks = vgm_time + 10;
+        head->ticks = vgm_time + VGM_QUEUE_RECHECKPERIOD;
     }else{
         //Command ready
         head->iswait = 0;
@@ -119,8 +122,8 @@ VgmSource* VGM_SourceQueue_Create(){
     VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_QUEUE;
     source->mutes = 0;
-    source->opn2clock = 7670454;
-    source->psgclock = 3579545;
+    source->opn2clock = genesis_clock_opn2;
+    source->psgclock = genesis_clock_psg;
     source->psgfreq0to1 = 1;
     source->loopaddr = 0;
     source->loopsamples = 0xFFFFFFFF;

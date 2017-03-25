@@ -105,13 +105,10 @@ void VGM_Head_Restart(VgmHead* head, u32 vgm_time){
     head->isdone = 0;
     if(head->source->type == VGM_SOURCE_TYPE_RAM){
         VGM_HeadRAM_Restart(head);
-        VGM_HeadRAM_cmdNext(head, vgm_time);
     }else if(head->source->type == VGM_SOURCE_TYPE_STREAM){
         VGM_HeadStream_Restart(head);
-        VGM_HeadStream_cmdNext(head, vgm_time);
     }else if(head->source->type == VGM_SOURCE_TYPE_QUEUE){
         VGM_HeadQueue_Restart(head);
-        VGM_HeadQueue_cmdNext(head, vgm_time);
     }
 }
 void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){

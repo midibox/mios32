@@ -14,8 +14,10 @@
 #include "vgmstream.h"
 #include "vgmsdtask.h"
 #include "vgmperfmon.h"
+#include "vgmplayer.h"
 #include "vgmtuning.h"
 #include "vgm_heap2.h"
+#include <genesis.h>
 
 
 u8 VGM_HeadStream_getCommandLen(u8 type){
@@ -134,6 +136,7 @@ void VGM_HeadStream_Restart(VgmHead* head){
     vhs->wantbufferaddr = head->srcaddr;
     vhs->wantbuffer = 1;
     DBG("HeadStream_Restart srcaddr=%d", head->srcaddr);
+    VGM_HeadStream_cmdNext(head, VGM_Player_GetVGMTime());
 }
 u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
     VgmHeadStream* vhs = (VgmHeadStream*)head->data;
@@ -408,8 +411,8 @@ VgmSource* VGM_SourceStream_Create(){
     VgmSource* source = vgmh2_malloc(sizeof(VgmSource));
     source->type = VGM_SOURCE_TYPE_STREAM;
     source->mutes = 0;
-    source->opn2clock = 7670454;
-    source->psgclock = 3579545;
+    source->opn2clock = genesis_clock_opn2;
+    source->psgclock = genesis_clock_psg;
     source->psgfreq0to1 = 1;
     source->loopaddr = 0xFFFFFFFF;
     source->loopsamples = 0;
