@@ -22,6 +22,7 @@
 #include "syeng.h"
 
 static u8 cvoice;
+static void (*callback_f)();
 
 static void DrawMenu(){
     FrontPanel_GenesisLEDSet((selchan>>4), 0, 1, 1);
@@ -36,9 +37,10 @@ static void DrawMenu(){
     }
 }
 
-void Capturer_Start(u8 origvoice){
+void Capturer_Start(u8 origvoice, void (*callback)()){
     subscreen = SUBSCREEN_CAPTURER;
     cvoice = origvoice;
+    callback_f = callback;
     //Clear voice LEDs
     u8 g, v;
     for(g=0; g<GENESIS_COUNT; ++g){
@@ -136,7 +138,12 @@ void Capturer_BtnSystem(u8 button, u8 state){
         prog->noteoffsource = CreateNewVGM(2, usage);
         //Update usage
         SyEng_RecalcSourceAndProgramUsage(prog, NULL);
+        //Clear voice selection LEDs
+        FrontPanel_GenesisLEDSet((selchan>>4), 0, 1, 0);
+        FrontPanel_GenesisLEDSet(((selchan>>2)&3), (selchan&3)+8, 1, 0);
+        //Done
         subscreen = 0;
+        callback_f();
         return;
     }
 }

@@ -17,7 +17,7 @@
 extern "C" {
 #endif
 
-extern void Capturer_Start(u8 origvoice);
+extern void Capturer_Start(u8 origvoice, void (*callback)());
 
 extern void Capturer_BtnSystem(u8 button, u8 state);
 extern void Capturer_BtnGVoice(u8 gvoice, u8 state);
