@@ -147,6 +147,11 @@ void Mode_Voice_GotFocus(){
         FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 1);
     }
 }
+static void CapturerDone(){
+    Mode_Voice_GotFocus();
+    MIOS32_LCD_CursorSet(0,0);
+    MIOS32_LCD_PrintString("-Captured-  ");
+}
 
 void Mode_Voice_Tick(){
     
@@ -280,7 +285,7 @@ void Mode_Voice_BtnSystem(u8 button, u8 state){
             SyEng_PrintEngineDebugInfo();
             break;
         case FP_B_CAPTURE:
-            Capturer_Start(selvoice);
+            Capturer_Start(selvoice, &CapturerDone);
             break;
     }
 }
