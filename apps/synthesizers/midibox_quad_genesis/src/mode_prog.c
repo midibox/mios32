@@ -28,31 +28,6 @@ static u8 cursor;
 static VgmUsageBits newvgmusage;
 
 
-static void DrawUsage(VgmUsageBits usage){
-    u32 u = usage.all;
-    u8 i;
-    for(i=0; i<6; ++i){
-        FrontPanel_GenesisLEDSet(0, i+1, 0, (u & 0x00000001)); //FM
-        u >>= 1;
-    }
-    for(i=0; i<6; ++i){
-        FrontPanel_GenesisLEDSet(1, i+1, 0, (u & 0x00000001)); //LFO
-        u >>= 1;
-    }
-    FrontPanel_GenesisLEDSet(0, 7, 0, (u & 0x00000001)); //DAC
-    u >>= 1;
-    FrontPanel_LEDSet(FP_LED_CH3_4FREQ, (u & 0x00000001)); //FM3 special
-    FrontPanel_LEDSet(FP_LED_CH3_CSM, (u & 0x00000001));
-    u >>= 1;
-    FrontPanel_GenesisLEDSet(0, 0, 0, (u & 0x00000001)); //FM globals
-    u >>= 10; //Skip LFO globals
-    for(i=0; i<4; ++i){
-        FrontPanel_GenesisLEDSet(0, i+8, 0, (u & 0x00000001)); //SQ, NS
-        u >>= 1;
-    }
-    FrontPanel_LEDSet(FP_LED_NS_SQ3, (u & 0x00000001)); //SQ3/NS
-}
-
 static void DrawMenu(){
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
@@ -160,7 +135,7 @@ void Mode_Prog_Init(){
 }
 void Mode_Prog_GotFocus(){
     DrawMenu();
-    if(submode == 1) DrawUsage(newvgmusage);
+    if(submode == 1) DrawUsageOnVoices(newvgmusage, 0);
 }
 
 void Mode_Prog_Tick(){
@@ -187,12 +162,12 @@ void Mode_Prog_BtnGVoice(u8 gvoice, u8 state){
                 }else if(v <= 0xB){
                     newvgmusage.all ^= (1 << (v+16));
                 }
-                DrawUsage(newvgmusage);
+                DrawUsageOnVoices(newvgmusage, 0);
             }else if(g == 1){
                 if(v >= 1 && v <= 6){
                     newvgmusage.all ^= (1 << (v+5));
                     newvgmusage.all &= 0xFFFFF03F | ((newvgmusage.all & 0x0000003F) << 6);
-                    DrawUsage(newvgmusage);
+                    DrawUsageOnVoices(newvgmusage, 0);
                 }
             }
             break;
@@ -225,7 +200,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
         submode = 0;
         cursor = 5;
         DrawMenu();
-        DrawUsage((VgmUsageBits){.all=0});
+        DrawUsageOnVoices((VgmUsageBits){.all=0}, 0);
         return;
     }
     switch(submode){
@@ -263,7 +238,7 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                             submode = 1;
                             newvgmusage.all = selprogram->usage.all;
                             DrawMenu();
-                            DrawUsage(newvgmusage);
+                            DrawUsageOnVoices(newvgmusage, 0);
                         }
                     }
                     break;
@@ -312,11 +287,11 @@ void Mode_Prog_BtnEdit(u8 button, u8 state){
             switch(button){
                 case FP_B_CH3MODE:
                     newvgmusage.fm3_special ^= 1;
-                    DrawUsage(newvgmusage);
+                    DrawUsageOnVoices(newvgmusage, 0);
                     break;
                 case FP_B_NSFREQ:
                     newvgmusage.noisefreqsq3 ^= 1;
-                    DrawUsage(newvgmusage);
+                    DrawUsageOnVoices(newvgmusage, 0);
                     break;
             }
             break;

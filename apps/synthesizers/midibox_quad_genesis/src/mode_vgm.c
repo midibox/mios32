@@ -19,6 +19,7 @@
 #include "frontpanel.h"
 #include "genesisstate.h"
 #include "cmdeditor.h"
+#include "capturer.h"
 #include "mode_prog.h"
 
 VgmSource* selvgm;
@@ -34,6 +35,32 @@ static u16 vmutes;
 static u16 vsolos;
 static VgmChipWriteCmd lastcmddrawn;
 
+void SetUpSelvoice(VgmUsageBits usage){
+    u32 u = usage.all;
+    u8 i;
+    for(i=0; i<6; ++i){
+        if(u & 1){
+            selvoice = i+1;
+            return;
+        }
+    }
+    if(usage.dac){
+        selvoice = 7;
+        return;
+    }
+    if(usage.opn2_globals){
+        selvoice = 0;
+        return;
+    }
+    u = usage.all >> 16;
+    for(i=0; i<4; ++i){
+        if(u & 1){
+            selvoice = i+8;
+            return;
+        }
+    }
+    selvoice = 1;
+}
 
 void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
     s32 oldaddr = -1;
@@ -51,6 +78,7 @@ void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
     if(oldaddr >= 0) pi->head->srcaddr = oldaddr;
     vmutes = selvgm->mutes;
     vsolos = 0;
+    SetUpSelvoice(selvgm->usage);
 }
 void Mode_Vgm_InvalidateVgm(VgmSource* maybeselvgm){
     if(maybeselvgm == NULL || maybeselvgm == selvgm){
@@ -80,7 +108,6 @@ void Mode_Vgm_SignalVgmUsageChange(){
 }
 
 static void DrawMenu(){
-    lastcmddrawn.all = 0;
     MIOS32_LCD_Clear();
     if(selvgm == NULL){
         MIOS32_LCD_CursorSet(0,0);
@@ -215,6 +242,8 @@ void Mode_Vgm_Init(){
     vmutes = 0;
     vsolos = 0;
     usagechange = 0;
+    selvoice = 1;
+    selop = 0;
 }
 void Mode_Vgm_GotFocus(){
     submode = 0;
@@ -234,6 +263,13 @@ void Mode_Vgm_GotFocus(){
         }
     }
     DrawMenu();
+}
+static void CapturerDone(u8 success){
+    Mode_Vgm_GotFocus();
+    if(success){
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintString("-Captured-  ");
+    }
 }
 
 void Mode_Vgm_Tick(){
@@ -357,9 +393,11 @@ void Mode_Vgm_Background(){
     if(statemode){
         //Draw voice state
         u8 mg, mv;
-        mg = pi->mapping[selvoice].map_chip;
-        mv = GetRealMapVoice(selvoice, pi->mapping[selvoice].map_voice);
-        DrawGenesisState_All(mg, mv, selop);
+        if(!pi->mapping[selvoice].nodata){
+            mg = pi->mapping[selvoice].map_chip;
+            mv = GetRealMapVoice(selvoice, pi->mapping[selvoice].map_voice);
+            DrawGenesisState_All(mg, mv, selop);
+        }
         //Activity lights
         if(submode == 0){
             for(v=0; v<12; ++v){
@@ -405,6 +443,8 @@ void Mode_Vgm_Background(){
             }
         }
     }
+    //Draw usage
+    DrawUsageOnVoices(selvgm->usage, 2);
 }
 
 void Mode_Vgm_BtnGVoice(u8 gvoice, u8 state){
@@ -490,6 +530,7 @@ void Mode_Vgm_BtnOpMute(u8 op, u8 state){
 }
 void Mode_Vgm_BtnSystem(u8 button, u8 state){
     if(selvgm == NULL) return;
+    VgmHead* head;
     switch(button){
         case FP_B_MENU:
             submode = 0;
@@ -566,8 +607,9 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     if(statemode) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VGM_HeadRAM_Backward1(proginstances[vgmpreviewpi].head);
-                        DrawMenu();
+                        if(VGM_HeadRAM_Backward1(proginstances[vgmpreviewpi].head) >= 0){
+                            DrawMenu();
+                        }
                     }
                     break;
                 case FP_B_CMDDN:
@@ -575,24 +617,29 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     if(statemode) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VGM_HeadRAM_Forward1(proginstances[vgmpreviewpi].head);
-                        DrawMenu();
+                        if(VGM_HeadRAM_Forward1(proginstances[vgmpreviewpi].head) >= 0){
+                            DrawMenu();
+                        }
                     }
                     break;
                 case FP_B_STATEUP:
                     if(!state) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VGM_HeadRAM_BackwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100);
-                        DrawMenu();
+                        if(VGM_HeadRAM_BackwardState(proginstances[vgmpreviewpi].head, 
+                                0xFFFFFFFF, 100) >= 0){
+                            DrawMenu();
+                        }
                     }
                     break;
                 case FP_B_STATEDN:
                     if(!state) return;
                     if(selvgm->type == VGM_SOURCE_TYPE_RAM){
                         EnsurePreviewPiOK();
-                        VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 0xFFFFFFFF, 100, 0);
-                        DrawMenu();
+                        if(VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 
+                                0xFFFFFFFF, 100, 0) >= 0){
+                            DrawMenu();
+                        }
                     }
                     break;
                 case FP_B_NEW:
@@ -615,29 +662,35 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                     break;
                 case FP_B_MARKST:
                     if(!state) return;
-                    {
-                        EnsurePreviewPiOK();
-                        VgmHead* head = proginstances[vgmpreviewpi].head;
-                        if(selvgm->markstart == head->srcaddr || head->srcaddr >= selvgm->markend){
-                            selvgm->markstart = 0;
-                        }else{
-                            selvgm->markstart = head->srcaddr;
-                        }
-                        DrawMenu();
+                    EnsurePreviewPiOK();
+                    head = proginstances[vgmpreviewpi].head;
+                    if(selvgm->markstart == head->srcaddr || head->srcaddr >= selvgm->markend){
+                        selvgm->markstart = 0;
+                    }else{
+                        selvgm->markstart = head->srcaddr;
                     }
+                    DrawMenu();
                     break;
                 case FP_B_MARKEND:
                     if(!state) return;
-                    {
-                        EnsurePreviewPiOK();
-                        VgmHead* head = proginstances[vgmpreviewpi].head;
-                        if(selvgm->markend == head->srcaddr || head->srcaddr <= selvgm->markstart){
-                            selvgm->markend = 0xFFFFFFFF;
-                        }else{
-                            selvgm->markend = head->srcaddr;
-                        }
-                        DrawMenu();
+                    EnsurePreviewPiOK();
+                    head = proginstances[vgmpreviewpi].head;
+                    if(selvgm->markend == head->srcaddr || head->srcaddr <= selvgm->markstart){
+                        selvgm->markend = 0xFFFFFFFF;
+                    }else{
+                        selvgm->markend = head->srcaddr;
                     }
+                    DrawMenu();
+                    break;
+                case FP_B_CAPTURE:
+                    if(!state) return;
+                    EnsurePreviewPiOK();
+                    synproginstance_t* pi = &proginstances[vgmpreviewpi];
+                    if(pi->mapping[selvoice].nodata) return;
+                    u8 mg, mv;
+                    mg = pi->mapping[selvoice].map_chip;
+                    mv = GetRealMapVoice(selvoice, pi->mapping[selvoice].map_voice);
+                    Capturer_Start((mg << 4) | mv, &CapturerDone);
                     break;
             }
             break;

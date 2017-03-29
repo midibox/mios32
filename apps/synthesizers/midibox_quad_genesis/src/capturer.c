@@ -22,14 +22,14 @@
 #include "syeng.h"
 
 static u8 cvoice;
-static void (*callback_f)();
+static void (*callback_f)(u8 success);
 
 static void DrawMenu(){
     FrontPanel_GenesisLEDSet((selchan>>4), 0, 1, 1);
     FrontPanel_GenesisLEDSet(((selchan>>2)&3), (selchan&3)+8, 1, 1);
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("Capture voice to port %d chn %d", (selchan>>4)+1, (selchan&0xF)+1);
+    MIOS32_LCD_PrintFormattedString("Capture voice 0x%02X to port %d chn %d", cvoice, (selchan>>4)+1, (selchan&0xF)+1);
     u8 v = cvoice & 0x0F;
     if(v == 0 || v == 7 || v > 11){
         MIOS32_LCD_CursorSet(0,1);
@@ -37,7 +37,7 @@ static void DrawMenu(){
     }
 }
 
-void Capturer_Start(u8 origvoice, void (*callback)()){
+void Capturer_Start(u8 origvoice, void (*callback)(u8 success)){
     subscreen = SUBSCREEN_CAPTURER;
     cvoice = origvoice;
     callback_f = callback;
@@ -55,7 +55,12 @@ void Capturer_Start(u8 origvoice, void (*callback)()){
 void Capturer_BtnSystem(u8 button, u8 state){
     if(!state) return;
     if(button == FP_B_MENU){
+        //Clear voice selection LEDs
+        FrontPanel_GenesisLEDSet((selchan>>4), 0, 1, 0);
+        FrontPanel_GenesisLEDSet(((selchan>>2)&3), (selchan&3)+8, 1, 0);
+        //Done
         subscreen = 0;
+        callback_f(0);
         return;
     }else if(button == FP_B_CAPTURE || button == FP_B_ENTER){
         //Compute usage
@@ -143,7 +148,7 @@ void Capturer_BtnSystem(u8 button, u8 state){
         FrontPanel_GenesisLEDSet(((selchan>>2)&3), (selchan&3)+8, 1, 0);
         //Done
         subscreen = 0;
-        callback_f();
+        callback_f(1);
         return;
     }
 }

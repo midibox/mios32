@@ -21,6 +21,36 @@
 #include "mode_prog.h"
 
 
+void DrawUsageOnVoices(VgmUsageBits usage, u8 r){
+    u32 u = usage.all;
+    u8 i;
+    for(i=0; i<6; ++i){
+        FrontPanel_GenesisLEDSet(r, i+1, 0, (u & 0x00000001)); //FM
+        u >>= 1;
+    }
+    for(i=0; i<6; ++i){
+        FrontPanel_GenesisLEDSet(r+1, i+1, 0, (u & 0x00000001)); //LFO
+        u >>= 1;
+    }
+    FrontPanel_GenesisLEDSet(r, 7, 0, (u & 0x00000001)); //DAC
+    u >>= 1;
+    if(r == 0){
+        FrontPanel_LEDSet(FP_LED_CH3_4FREQ, (u & 0x00000001)); //FM3 special
+        FrontPanel_LEDSet(FP_LED_CH3_CSM, (u & 0x00000001));
+    }
+    u >>= 1;
+    FrontPanel_GenesisLEDSet(r, 0, 0, (u & 0x00000001)); //FM globals
+    u >>= 10; //Skip LFO globals
+    for(i=0; i<4; ++i){
+        FrontPanel_GenesisLEDSet(r, i+8, 0, (u & 0x00000001)); //SQ, NS
+        u >>= 1;
+    }
+    if(r == 0){
+        FrontPanel_LEDSet(FP_LED_NS_SQ3, (u & 0x00000001)); //SQ3/NS
+    }
+}
+
+
 void DrawCmdLine(VgmChipWriteCmd cmd, u8 row, u8 ctrlled){
     u16 outbits = ctrlled;
     if(cmd.cmd == 0x50){
@@ -849,7 +879,6 @@ VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
     VGM_Source_UpdateUsage(vs);
     return vs;
 }
-
 
 
 
