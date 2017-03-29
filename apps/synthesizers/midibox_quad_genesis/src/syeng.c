@@ -200,7 +200,7 @@ void SyEng_ClearVoice(u8 g, u8 v){
     syngenesis[g].channels[v].use = 0;
 }
 
-static void StandbyPI(synproginstance_t* pi){
+static void SetPIMappedVoicesUse(synproginstance_t* pi, u8 use){
     u8 i, v;
     VgmHead_Channel pimap;
     syngenesis_t* sg;
@@ -209,28 +209,32 @@ static void StandbyPI(synproginstance_t* pi){
         if(pimap.nodata) continue;
         sg = &syngenesis[pimap.map_chip];
         if(i == 0){
-            //We were using OPN2 globals
-            for(v=0; v<8; ++v){
-                sg->channels[v].use = 1;
+            if(pimap.option){
+                //Only using globals for LFO
+                //Don't touch use, since multiple voices may be using it
+            }else{
+                //We were using OPN2 globals
+                for(v=0; v<8; ++v){
+                    sg->channels[v].use = use;
+                }
+                //Skip to PSG section
+                i = 7;
+                continue;
             }
-            //Skip to PSG section
-            i = 7;
-            continue;
-        }
-        if(i >= 1 && i <= 6){
+        }else if(i >= 1 && i <= 6){
             //FM voice
             v = pimap.map_voice;
-            sg->channels[v+1].use = 1;
+            sg->channels[v+1].use = use;
         }else if(i == 7){
             //DAC
-            sg->channels[7].use = 1;
+            sg->channels[7].use = use;
         }else if(i >= 8 && i <= 10){
             //SQ voice
             v = pimap.map_voice;
-            sg->channels[v+8].use = 1;
+            sg->channels[v+8].use = use;
         }else{
             //Noise
-            sg->channels[11].use = 1;
+            sg->channels[11].use = use;
         }
     }
 }
@@ -246,7 +250,7 @@ static s8 FindOPN2ClearLFO(){
         full = 1;
         for(v=1; v<6; ++v){
             use = syngenesis[g].channels[v].use;
-            if(!use) full = 0;
+            if(use <= 1) full = 0;
             if(syngenesis[g].channels[v].lfo){
                 //Only for voices using the LFO
                 score += use_scores[use];
@@ -304,7 +308,7 @@ static void AssignVoiceToGenesis(u8 piindex, synproginstance_t* pi, u8 g, u8 vso
     if(vlfo && proper){
         sgusage->lfo = 1;
         //Send LFO commands from this head to the same chip as this channel is on
-        pi->mapping[0] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = 0, .option = 0};
+        pi->mapping[0] = (VgmHead_Channel){.nodata = 0, .mute = 0, .map_chip = g, .map_voice = 0, .option = 1};
         //TODO potential bug:
         /*
         If we have a VGM with two voices in LFO Fixed mode, and the first gets
@@ -364,6 +368,7 @@ static void FindBestVoice(s8* bestg, s8* bestv, u32 now, s8 forceg, u8 vstart, u
             }
         }
     }
+    DBG("FindBestVoice asked forceg %d voices %d-%d sumoverv %d, result G%d V%d", forceg, vstart, vend, sumoverv, *bestg, *bestv);
 }
 
 static s32 AllocatePI(u8 piindex, VgmUsageBits pusage){
@@ -831,11 +836,12 @@ void SyEng_ReleaseStaticPI(u8 piindex){
 }
 
 void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying){
+    SetPIMappedVoicesUse(pi, pi->isstatic ? 3 : 2);
     pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
     CopyPIMappingToHead(pi, pi->head);
     u32 vgmtime = VGM_Player_GetVGMTime();
     VGM_Head_Restart(pi->head, vgmtime);
-    DBG("PlayVGMOnPi after restart, iswait %d iswrite %d isdone %d firstoftwo %d, cmd %08X", pi->head->iswait, pi->head->iswrite, pi->head->isdone, pi->head->firstoftwo, pi->head->writecmd.all);
+    //DBG("PlayVGMOnPi after restart, iswait %d iswrite %d isdone %d firstoftwo %d, cmd %08X", pi->head->iswait, pi->head->iswrite, pi->head->isdone, pi->head->firstoftwo, pi->head->writecmd.all);
     pi->head->playing = startplaying;
     pi->recency = vgmtime;
 }
@@ -955,7 +961,7 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
         //DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
     }
     //Mark pi as not playing, release resources
-    StandbyPI(pi);
+    SetPIMappedVoicesUse(pi, 1);
     pi->playing = 0;
 }
 
@@ -1051,6 +1057,10 @@ void SyEng_DeleteProgram(u8 chan){
 
 void SyEng_PrintEngineDebugInfo(){
     u8 i, g, v;
+    DBG("=====================================================");
+    DBG("============ SyEng_PrintEngineDebugInfo =============");
+    DBG("=====================================================");
+    /*
     DBG("==== CHANNELS ====");
     synprogram_t* prog;
     VgmSource* src;
@@ -1079,6 +1089,8 @@ void SyEng_PrintEngineDebugInfo(){
             }
         }
     }
+    */
+    /*
     DBG("==== PIs ====");
     synproginstance_t* pi;
     VgmHead_Channel ch;
@@ -1106,6 +1118,7 @@ void SyEng_PrintEngineDebugInfo(){
     }
     vgmh2_free(buf);
     vgmh2_free(buf2);
+    */
     DBG("==== SYNGENESISES ====");
     syngenesis_t* sg;
     syngenesis_usage_t* sgu;

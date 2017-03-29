@@ -147,10 +147,12 @@ void Mode_Voice_GotFocus(){
         FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 1);
     }
 }
-static void CapturerDone(){
+static void CapturerDone(u8 success){
     Mode_Voice_GotFocus();
-    MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintString("-Captured-  ");
+    if(success){
+        MIOS32_LCD_CursorSet(0,0);
+        MIOS32_LCD_PrintString("-Captured-  ");
+    }
 }
 
 void Mode_Voice_Tick(){
