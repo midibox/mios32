@@ -277,13 +277,13 @@ static void PlayCommandNow(VgmHead* head, VgmSourceRAM* vsr, VgmHeadRAM* vhr, Vg
     VGM_Tracker_Enqueue(cmd, 0);
 }
 
-void VGM_HeadRAM_Forward1(VgmHead* head){
+s32 VGM_HeadRAM_Forward1(VgmHead* head){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     //Are we already off the end?
     if(head->srcaddr >= vsr->numcmds){
         DBG("VGM_HeadRAM_Forward1 tried to go forward off the end (%d)!", vsr->numcmds);
-        return;
+        return -1;
     }
     //Play the current command, which should be buffered in head->writecmd
     PlayCommandNow(head, vsr, vhr, vsr->cmds[head->srcaddr]);
@@ -293,19 +293,20 @@ void VGM_HeadRAM_Forward1(VgmHead* head){
     if(head->srcaddr == vsr->numcmds){
         //Don't loop back
         head->isdone = 1;
-        return;
+        return 0;
     }
     //Otherwise, prepare the next command
     vhr->bufferedcmd = vsr->cmds[head->srcaddr];
     VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    return 0;
 }
-void VGM_HeadRAM_Backward1(VgmHead* head){
+s32 VGM_HeadRAM_Backward1(VgmHead* head){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     if(head->srcaddr == 0){
         //Don't go backwards from the beginning
         DBG("VGM_HeadRAM_Backward1 tried to go backward from 0!");
-        return;
+        return -1;
     }
     //Back one command
     --head->srcaddr;
@@ -374,12 +375,13 @@ void VGM_HeadRAM_Backward1(VgmHead* head){
     //Prepare the next command
     vhr->bufferedcmd = vsr->cmds[head->srcaddr];
     VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    return 0;
 }
-void VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
+s32 VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
     if(newaddr > vsr->numcmds){
         DBG("VGM_HeadRAM: Trying to seek to 0x%X but sequence is only 0x%X long!", newaddr, vsr->numcmds);
-        newaddr = vsr->numcmds;
+        return -1;
     }
     while(head->srcaddr > newaddr){
         VGM_HeadRAM_Backward1(head);
@@ -387,6 +389,7 @@ void VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
     while(head->srcaddr < newaddr){
         VGM_HeadRAM_Forward1(head);
     }
+    return 0;
 }
 
 static u32 GetWaitTime(VgmChipWriteCmd cmd){
@@ -405,8 +408,11 @@ static u32 GetWaitTime(VgmChipWriteCmd cmd){
     }
 }
 
-void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
+s32 VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
+    if(head->srcaddr >= vsr->numcmds){
+        return -1;
+    }
     VgmChipWriteCmd cmd;
     u8 state = 0;
     /*
@@ -416,6 +422,7 @@ void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     */
     if(allowstay) state = 1;
     u32 totalt = 0, thist;
+    u32 origsrcaddr = head->srcaddr;
     while(head->srcaddr < vsr->numcmds){
         cmd = vsr->cmds[head->srcaddr];
         thist = GetWaitTime(cmd);
@@ -427,14 +434,22 @@ void VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
             }
         }else{
             totalt += thist;
-            if(thist >= maxdt || totalt >= maxt) return;
+            if(thist >= maxdt || totalt >= maxt) break;
         }
         VGM_HeadRAM_Forward1(head);
     }
+    if(origsrcaddr == head->srcaddr){
+        return -2;
+    }else{
+        return 0;
+    }
 }
 
-void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
+s32 VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
+    if(head->srcaddr == 0){
+        return -1;
+    }
     VgmChipWriteCmd cmd;
     u8 state = 0;
     /*
@@ -442,6 +457,7 @@ void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
     State 1: skipping long time commands
     */
     u32 totalt = 0, thist;
+    u32 origsrcaddr = head->srcaddr;
     while(head->srcaddr > 0){
         cmd = vsr->cmds[head->srcaddr-1];
         thist = GetWaitTime(cmd);
@@ -453,10 +469,15 @@ void VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
         }else{
             if(thist == 0 || (cmd.cmd >= 0x80 && cmd.cmd <= 0x8F)){
                 //It's a chip write command
-                return;
+                break;
             }
         }
         VGM_HeadRAM_Backward1(head);
+    }
+    if(origsrcaddr == head->srcaddr){
+        return -2;
+    }else{
+        return 0;
     }
 }
 
