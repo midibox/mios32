@@ -29,7 +29,7 @@ static void DrawMenu(){
     FrontPanel_GenesisLEDSet(((selchan>>2)&3), (selchan&3)+8, 1, 1);
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("Capture voice 0x%02X to port %d chn %d", cvoice, (selchan>>4)+1, (selchan&0xF)+1);
+    MIOS32_LCD_PrintFormattedString("Capture voice to port %d chn %d", (selchan>>4)+1, (selchan&0xF)+1);
     u8 v = cvoice & 0x0F;
     if(v == 0 || v == 7 || v > 11){
         MIOS32_LCD_CursorSet(0,1);
@@ -75,6 +75,9 @@ void Capturer_BtnSystem(u8 button, u8 state){
                 usage.all |= (1 << (v+5));
                 usinglfo = 1;
             }
+            if(v == 3 && genesis[g].opn2.ch3_mode != 0){
+                usage.fm3_special = 1;
+            }
         }else if(v >= 8 && v <= 10){
             usage.all |= (1 << (16+v));
         }else if(v == 11){
@@ -113,6 +116,16 @@ void Capturer_BtnSystem(u8 button, u8 state){
                 VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52,
                     .addr = 0x22, .data = genesis[g].opn2.lforeg, .data2=0});
             }
+            if(usage.fm3_special){
+                if(genesis[g].opn2.ch3_mode == 2){
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52,
+                        .addr = 0x24, .data = genesis[g].opn2.timera_high, .data2=0});
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52,
+                        .addr = 0x25, .data = genesis[g].opn2.timeralowreg, .data2=0});
+                }
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52,
+                    .addr = 0x27, .data = genesis[g].opn2.timerctrlreg, .data2=0});
+            }
             //Operator parameters
             u8 op, reg;
             for(reg=0; reg<7; ++reg){
@@ -138,7 +151,26 @@ void Capturer_BtnSystem(u8 button, u8 state){
             VGM_Source_UpdateUsage(vs);
         }
         //Create note-on VGM
-        prog->noteonsource = CreateNewVGM(1, usage);
+        if(usage.fm3_special){
+            //Capture current operator frequencies
+            VgmSource* vs = VGM_SourceRAM_Create();
+            prog->noteonsource = vs;
+            u32 a = 0;
+            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52, .addr = 0xAD, 
+                    .data = genesis[g].opn2.ch3op1_fhireg, .data2=genesis[g].opn2.ch3op1_fnum_low});
+            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52, .addr = 0xAE, 
+                    .data = genesis[g].opn2.ch3op2_fhireg, .data2=genesis[g].opn2.ch3op2_fnum_low});
+            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52, .addr = 0xAC, 
+                    .data = genesis[g].opn2.ch3op3_fhireg, .data2=genesis[g].opn2.ch3op3_fnum_low});
+            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52, .addr = 0xA6, 
+                    .data = genesis[g].opn2.chan[2].fhireg, .data2=genesis[g].opn2.chan[2].fnum_low});
+            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=0x52, .addr = 0x28, 
+                    .data = 0xF2, .data2=0});
+            VGM_Source_UpdateUsage(vs);
+        }else{
+            //Normal init VGM, middle C key on
+            prog->noteonsource = CreateNewVGM(1, usage);
+        }
         //Create note-off VGM
         prog->noteoffsource = CreateNewVGM(2, usage);
         //Update usage

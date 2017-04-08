@@ -242,9 +242,9 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
             }
         }else if(cmd.addr <= 0xAE && cmd.addr >= 0xA8){
             //Channel 3 extra frequency
-            if(cmd.addr == 0xAD) op = 2;
-            else if(cmd.addr == 0xAE) op = 3;
-            else if(cmd.addr == 0xAC) op = 4;
+            if(cmd.addr == 0xAD) op = 0;
+            else if(cmd.addr == 0xAE) op = 1;
+            else if(cmd.addr == 0xAC) op = 2;
             else return;
             FrontPanel_GenesisLEDSet(0, 3, 0, !clear);
             FrontPanel_LEDSet(FP_LED_OPNODE_R_1 + op, !clear);
@@ -443,9 +443,9 @@ void GetCmdDescription(VgmChipWriteCmd cmd, char* desc){
             }
         }else if(cmd.addr <= 0xAE && cmd.addr >= 0xA8){
             //Channel 3 extra frequency
-            if(cmd.addr == 0xAD) op = 2;
-            else if(cmd.addr == 0xAE) op = 3;
-            else if(cmd.addr == 0xAC) op = 4;
+            if(cmd.addr == 0xAD) op = 0;
+            else if(cmd.addr == 0xAE) op = 1;
+            else if(cmd.addr == 0xAC) op = 2;
             else return;
             sprintf(desc, "FM3 Op%d Block:%d, Freq:%d", op+1, (cmd.data >> 3) & 7, ((u16)(cmd.data & 7) << 8) | cmd.data2);
         }else if(cmd.addr <= 0xB6){

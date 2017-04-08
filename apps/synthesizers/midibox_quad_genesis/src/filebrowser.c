@@ -27,9 +27,11 @@ static char* curname;
 static char* cursubdir;
 static char extn[4];
 static u8 waserror;
-static u8 saving;
+static u8 save_mode;
 static u8 cursor;
 static u8 innameeditor;
+static u8 submode;
+static u8 yespos;
 
 static void DrawMenu(){
     //-----=====-----=====-----=====-----=====
@@ -47,21 +49,38 @@ static void DrawMenu(){
     }
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("In %s%c", curpath, curpath[1] == 0 ? ' ' : '/');
-    MIOS32_LCD_CursorSet(0,1);
-    MIOS32_LCD_PrintFormattedString("Up    Dir %s", cursubdir[0] == 0 ? (saving ? "[new]" : "[no dir]") : cursubdir);
-    MIOS32_LCD_CursorSet(21,1);
-    MIOS32_LCD_PrintFormattedString("File %s", curname[0] == 0 ? (saving ? "[new]" : "[none]") : curname);
-    MIOS32_LCD_CursorSet(cursor ? 20 : 5, 1);
-    MIOS32_LCD_PrintChar(0x7E);
-    MIOS32_LCD_CursorSet(cursor ? 38 : 18, 1);
-    MIOS32_LCD_PrintChar(0x7F);
+    switch(submode){
+        case 0:
+            MIOS32_LCD_PrintFormattedString("In %s%c", curpath, curpath[1] == 0 ? ' ' : '/');
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintFormattedString("Up    Dir %s", cursubdir[0] == 0 ? (save_mode ? "[new]" : "[no dir]") : cursubdir);
+            MIOS32_LCD_CursorSet(21,1);
+            MIOS32_LCD_PrintFormattedString("File %s", curname[0] == 0 ? (save_mode ? "[new]" : "[none]") : curname);
+            MIOS32_LCD_CursorSet(cursor ? 20 : 5, 1);
+            MIOS32_LCD_PrintChar(0x7E);
+            MIOS32_LCD_CursorSet(cursor ? 38 : 18, 1);
+            MIOS32_LCD_PrintChar(0x7F);
+            break;
+        case 1:
+            MIOS32_LCD_PrintString("Overwrite file? (Enter=No)");
+            MIOS32_LCD_CursorSet(1,1);
+            MIOS32_LCD_PrintString("No   No   No   No   No   No   No   No");
+            MIOS32_LCD_CursorSet(5*yespos+1, 1);
+            MIOS32_LCD_PrintString("Yes");
+            break;
+    }
 }
 
 static inline void GotFile(){
-    sprintf((char*)(curpath[1] == 0 ? curpath : curpath + strlen(curpath)), "/%s", curname);
-    subscreen = 0;
-    callback_f(curpath);
+    if(save_mode == 1){
+        submode = 1;
+        yespos = (u8)(VGM_Player_GetVGMTime() & 0x00000007);
+        DrawMenu();
+    }else{
+        sprintf((char*)(curpath[1] == 0 ? curpath : curpath + strlen(curpath)), "/%s", curname);
+        subscreen = 0;
+        callback_f(curpath);
+    }
 }
 static inline void GotDir(){
     sprintf((char*)(curpath[1] == 0 ? curpath : curpath + strlen(curpath)), "/%s", cursubdir);
@@ -84,6 +103,7 @@ static void NameEditorFinished(){
         //Add extension
         sprintf(curname + strlen(curname), ".%s", extn);
         //Use file
+        save_mode = 2;
         GotFile();
         return;
     }else{
@@ -105,10 +125,11 @@ void Filebrowser_Init(){
 void Filebrowser_Start(const char* initpath, const char* extension, u8 save, void (*callback)(char* filename)){
     subscreen = SUBSCREEN_FILEBROWSER;
     callback_f = callback;
-    saving = save;
+    save_mode = save;
     cursor = 0;
     waserror = 0;
     innameeditor = 0;
+    submode = 0;
     s32 ret = 0;
     MUTEX_SDCARD_TAKE;
     if(!FILE_VolumeAvailable()){
@@ -183,6 +204,16 @@ void Filebrowser_BtnSoftkey(u8 softkey, u8 state){
         DrawMenu();
         return;
     }
+    if(submode == 1){
+        if(softkey == yespos){
+            save_mode = 2;
+            GotFile();
+        }else{
+            submode = 0;
+            DrawMenu();
+        }
+        return;
+    }
     if(softkey == 0){
         if(curpath[1] == 0) return; //We're at root, don't go up
         //Chop off the filename and put that into cursubdir
@@ -216,6 +247,11 @@ void Filebrowser_BtnSystem(u8 button, u8 state){
         return;
     }
     if(!state) return;
+    if(submode == 1){
+        submode = 0;
+        DrawMenu();
+        return;
+    }
     if(button == FP_B_MENU){
         subscreen = 0;
         callback_f(NULL);
@@ -230,7 +266,7 @@ void Filebrowser_BtnSystem(u8 button, u8 state){
         if(cursor){
             //Press Enter on file
             if(curname[0] == 0){
-                if(saving){
+                if(save_mode){
                     //Prompt for new file
                     innameeditor = 1;
                     curname[0] = 'A';
@@ -247,7 +283,7 @@ void Filebrowser_BtnSystem(u8 button, u8 state){
         }else{
             //Press Enter on directory
             if(cursubdir[0] == 0){
-                if(saving){
+                if(save_mode){
                     //Prompt for new subdirectory
                     innameeditor = 1;
                     cursubdir[0] = 'A';

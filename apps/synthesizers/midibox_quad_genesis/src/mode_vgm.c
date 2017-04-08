@@ -332,6 +332,8 @@ void Mode_Vgm_Background(){
             for(v=0; v<7; ++v){
                 FrontPanel_VGMMatrixRow(v, 0);
             }
+            FrontPanel_LEDSet(FP_LED_CTRL_R, 0);
+            FrontPanel_LEDSet(FP_LED_TIME_R, 0);
         }
         laststatemode = statemode;
         lastsubmode = submode;
@@ -342,6 +344,8 @@ void Mode_Vgm_Background(){
             ClearGenesisState_DAC();
             ClearGenesisState_OPN2();
             ClearGenesisState_PSG();
+            FrontPanel_LEDSet(FP_LED_CTRL_R, 0);
+            FrontPanel_LEDSet(FP_LED_TIME_R, 0);
             FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 0);
             FrontPanel_GenesisLEDSet(0, selvoice, 1, 0);
         }
@@ -373,7 +377,6 @@ void Mode_Vgm_Background(){
             if(a < 0 || a >= vsr->numcmds){
                 FrontPanel_VGMMatrixRow(r, 0);
             }else{
-                
                 DrawCmdLine(vsr->cmds[a], r, (a == selvgm->markstart || a == selvgm->markend));
             }
             ++a;
@@ -418,6 +421,8 @@ void Mode_Vgm_Background(){
             ClearGenesisState_DAC();
             ClearGenesisState_OPN2();
             ClearGenesisState_PSG();
+            FrontPanel_LEDSet(FP_LED_CTRL_R, 0);
+            FrontPanel_LEDSet(FP_LED_TIME_R, 0);
             lastcmddrawn.all = 0;
         }else{
             VgmChipWriteCmd newcmd = vsr->cmds[a];

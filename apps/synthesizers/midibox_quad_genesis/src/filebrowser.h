@@ -18,6 +18,7 @@ extern "C" {
 #endif
 
 extern void Filebrowser_Init();
+//save: 0 for load, 1 for save (warn overwrite), 2 for save (don't warn overwrite)
 extern void Filebrowser_Start(const char* initpath, const char* extension, u8 save, void (*callback)(char* filename));
 
 extern void Filebrowser_BtnSoftkey(u8 softkey, u8 state);
