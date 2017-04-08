@@ -35,7 +35,7 @@ typedef union {
         u8 mute:1;
         u8 map_chip:2;
         u8 map_voice:3; //Either 0-5 or 0-2; channels 0, 7, and B ignore
-        u8 option:1; //For OPN2 voices, flag for using LFO; for PSG Noise, flag for using SQ3
+        u8 option:1; //For OPN2 voices, flag for using LFO; for PSG Noise, flag for using SQ3; for OPN2 chip, flag that chip globals only being used for LFO
     };
 } VgmHead_Channel;
 
