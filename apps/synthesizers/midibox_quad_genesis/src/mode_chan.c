@@ -38,10 +38,16 @@ static void DrawMenu(){
                 u8 v = channels[selchan].trackervoice;
                 MIOS32_LCD_PrintFormattedString(" Free     ~Trkr G%d:%s", (v >> 4)+1, GetVoiceName(v & 0xF));
             }else{
-                MIOS32_LCD_PrintString("~Free      Trkr     Edit");
                 synprogram_t* prog = channels[selchan].program;
-                MIOS32_LCD_CursorSet(20,0);
-                MIOS32_LCD_PrintFormattedString("Prog: %s", prog == NULL ? "<none>" : prog->name);
+                if(prog == NULL){
+                    MIOS32_LCD_PrintString("~Free      Trkr");
+                    MIOS32_LCD_CursorSet(20,0);
+                    MIOS32_LCD_PrintFormattedString("Prog: <none>");
+                }else{
+                    MIOS32_LCD_PrintString("~Free               Edit");
+                    MIOS32_LCD_CursorSet(20,0);
+                    MIOS32_LCD_PrintFormattedString("Prog: %s", prog->name);
+                }
             }
             break;
         case 1:
@@ -136,6 +142,12 @@ void Mode_Chan_BtnGVoice(u8 gvoice, u8 state){
             break;
     }
 }
+void EditProgram(){
+    if(channels[selchan].program == NULL) return;
+    selprogram = channels[selchan].program;
+    Mode_Vgm_InvalidateVgm(NULL);
+    Interface_ChangeToMode(MODE_PROG);
+}
 void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
     if(!state) return;
     switch(submode){
@@ -190,9 +202,7 @@ void Mode_Chan_BtnSoftkey(u8 softkey, u8 state){
                     DrawMenu();
                     break;
                 case 4:
-                    selprogram = channels[selchan].program;
-                    Mode_Vgm_InvalidateVgm(NULL);
-                    Interface_ChangeToMode(MODE_PROG);
+                    EditProgram();
                     break;
             }
             break;
@@ -220,11 +230,6 @@ void Mode_Chan_BtnOpMute(u8 op, u8 state){
 
 }
 void Mode_Chan_BtnSystem(u8 button, u8 state){
-    switch(subscreen){
-        case SUBSCREEN_NAMEEDITOR:
-            NameEditor_BtnSystem(button, state);
-            return;
-    }
     if(!state) return;
     if(button == FP_B_MENU){
         submode = 0;
@@ -262,6 +267,9 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                 case FP_B_DELETE:
                     SyEng_DeleteProgram(selchan);
                     DrawMenu();
+                    break;
+                case FP_B_ENTER:
+                    EditProgram();
                     break;
             }
             break;

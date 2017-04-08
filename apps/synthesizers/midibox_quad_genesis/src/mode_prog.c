@@ -68,7 +68,7 @@ static void DrawMenu(){
     }
 }
 
-static void FilebrowserDone(char* filename){
+static void FilebrowserDoneLoading(char* filename){
     FrontPanel_LEDSet(FP_LED_LOAD, 0);
     if(filename == NULL || cursor < 5 || cursor > 7){
         DrawMenu();
@@ -127,6 +127,23 @@ static void FilebrowserDone(char* filename){
     SyEng_RecalcSourceAndProgramUsage(selprogram, NULL);
     Mode_Vgm_SelectVgm(*ss);
     Interface_ChangeToMode(MODE_VGM);
+}
+
+static void FilebrowserDoneSaving(char* filename){
+    FrontPanel_LEDSet(FP_LED_SAVE, 0);
+    if(filename == NULL || cursor < 5 || cursor > 7){
+        DrawMenu();
+        return;
+    }
+    VgmSource** ss = SelSource(selprogram, cursor-5);
+    if(*ss == NULL){
+        DrawMenu();
+        return;
+    }
+    //TODO
+    DrawMenu();
+    MIOS32_LCD_CursorSet(0,0);
+    MIOS32_LCD_PrintFormattedString("Saved       ");
 }
 
 void Mode_Prog_Init(){
@@ -223,7 +240,20 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                             MIOS32_LCD_PrintString("Delete VGM before loading a new one!");
                         }else{
                             FrontPanel_LEDSet(FP_LED_LOAD, 1);
-                            Filebrowser_Start(NULL, "VGM", 1, &FilebrowserDone);
+                            Filebrowser_Start(NULL, "VGM", 0, &FilebrowserDoneLoading);
+                        }
+                    }
+                    break;
+                case FP_B_SAVE:
+                    if(!state) return;
+                    if(cursor >= 5 && cursor <= 7){
+                        VgmSource** ss = SelSource(selprogram, cursor-5);
+                        if(*ss == NULL){
+                            MIOS32_LCD_CursorSet(0,0);
+                            MIOS32_LCD_PrintString("No VGM to save!");
+                        }else{
+                            FrontPanel_LEDSet(FP_LED_SAVE, 1);
+                            Filebrowser_Start(NULL, "VGM", 1, &FilebrowserDoneSaving);
                         }
                     }
                     break;
