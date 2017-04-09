@@ -89,6 +89,7 @@ typedef union {
 
 extern void VGM_Cmd_UpdateUsage(VgmUsageBits* usage, VgmChipWriteCmd cmd);
 extern void VGM_Cmd_DebugPrintUsage(VgmUsageBits usage);
+extern u8 VGM_Cmd_GetCmdLen(u8 type); //Number of bytes past the type
 
 extern s32 VGM_Source_Delete(VgmSource* source);
 

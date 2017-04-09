@@ -19,6 +19,68 @@
 #include "vgm_heap2.h"
 
 
+u8 VGM_Cmd_GetCmdLen(u8 type){
+    if((type & 0xFE) == 0x52){
+        //OPN2 write
+        return 2;
+    }else if(type == 0x50){
+        //PSG write
+        return 1;
+    }else if(type >= 0x70 && type <= 0x8F){
+        //Short wait or OPN2 DAC write
+        return 0;
+    }else if(type == 0x61){
+        //Long wait
+        return 2;
+    }else if(type == 0x64){
+        //Override wait lengths
+        return 3;
+    }else if(type >= 0x62 && type <= 0x66){
+        //60 Hz wait, 50 Hz wait, Nop [unofficial], End of data
+        return 0;
+    }else if(type == 0x67){
+        //Data block
+        return 6;
+    }else if(type == 0xE0){
+        //Seek in data block
+        return 4;
+    }else if(type == 0x90){
+        //Setup Stream Control not supported
+        return 4;
+    }else if(type == 0x91){
+        //Set Stream Data not supported
+        return 4;
+    }else if(type == 0x92){
+        //Set Stream Frequency not supported
+        return 5;
+    }else if(type == 0x93){
+        //Start Stream not supported
+        return 10;
+    }else if(type == 0x94){
+        //Stop Stream not supported
+        return 1;
+    }else if(type == 0x95){
+        //Start Stream fast not supported
+        return 4;
+    }else if(type == 0x68){
+        //PCM RAM write, not supported
+        return 11;
+    }else if(type >= 0x30 && type <= 0x3F){
+        //Single-byte command
+        return 1;
+    }else if((type >= 0x40 && type <= 0x4E) || (type >= 0xA0 && type <= 0xBF)){
+        //Double-byte command
+        return 2;
+    }else if(type >= 0xC0 && type <= 0xDF){
+        //Triple-byte command
+        return 3;
+    }else if(type >= 0xE1 && type <= 0xFF){
+        //Quadruple-byte command
+        return 4;
+    }else{
+        return 0;
+    }
+}
 
 void VGM_Cmd_UpdateUsage(VgmUsageBits* usage, VgmChipWriteCmd cmd){
     if(cmd.cmd == 0x50){

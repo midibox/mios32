@@ -3,7 +3,7 @@
  *
  * ==========================================================================
  *
- *  Copyright (C) 2016 Sauraen (sauraen@gmail.com)
+ *  Copyright (C) 2017 Sauraen (sauraen@gmail.com)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
  * 
