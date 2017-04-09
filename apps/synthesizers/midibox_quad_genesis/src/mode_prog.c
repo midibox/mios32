@@ -82,7 +82,7 @@ static void FilebrowserDoneLoading(char* filename){
     //Create source and get VGM file metadata
     *ss = VGM_SourceStream_Create();
     VgmFileMetadata md;
-    s32 res = VGM_ScanFile(filename, &md);
+    s32 res = VGM_File_ScanFile(filename, &md);
     if(res < 0){
         VGM_Source_Delete(*ss);
         *ss = NULL;
@@ -105,7 +105,7 @@ static void FilebrowserDoneLoading(char* filename){
         return;
     }
     //Try to load
-    res = VGM_SourceStream_Start(*ss, &md);
+    res = VGM_File_StartStream(*ss, &md);
     if(res == -50){
         VGM_Source_Delete(*ss);
         *ss = NULL;
@@ -140,10 +140,14 @@ static void FilebrowserDoneSaving(char* filename){
         DrawMenu();
         return;
     }
-    //TODO
+    s32 res = VGM_File_SaveRAM(*ss, filename);
     DrawMenu();
     MIOS32_LCD_CursorSet(0,0);
-    MIOS32_LCD_PrintFormattedString("Saved       ");
+    if(res < 0){
+        MIOS32_LCD_PrintFormattedString("Error %d saving", res);
+    }else{
+        MIOS32_LCD_PrintString("Saved       ");
+    }
 }
 
 void Mode_Prog_Init(){
@@ -238,10 +242,10 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                         if(*ss != NULL){
                             MIOS32_LCD_CursorSet(0,0);
                             MIOS32_LCD_PrintString("Delete VGM before loading a new one!");
-                        }else{
-                            FrontPanel_LEDSet(FP_LED_LOAD, 1);
-                            Filebrowser_Start(NULL, "VGM", 0, &FilebrowserDoneLoading);
+                            return;
                         }
+                        FrontPanel_LEDSet(FP_LED_LOAD, 1);
+                        Filebrowser_Start(NULL, "VGM", 0, &FilebrowserDoneLoading);
                     }
                     break;
                 case FP_B_SAVE:
@@ -251,10 +255,15 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                         if(*ss == NULL){
                             MIOS32_LCD_CursorSet(0,0);
                             MIOS32_LCD_PrintString("No VGM to save!");
-                        }else{
-                            FrontPanel_LEDSet(FP_LED_SAVE, 1);
-                            Filebrowser_Start(NULL, "VGM", 1, &FilebrowserDoneSaving);
+                            return;
                         }
+                        if((*ss)->type != VGM_SOURCE_TYPE_RAM){
+                            MIOS32_LCD_CursorSet(0,0);
+                            MIOS32_LCD_PrintString("Can't save streamed VGM!");
+                            return;
+                        }
+                        FrontPanel_LEDSet(FP_LED_SAVE, 1);
+                        Filebrowser_Start(NULL, "VGM", 1, &FilebrowserDoneSaving);
                     }
                     break;
                 case FP_B_NEW:
@@ -264,12 +273,12 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
                         if(*ss != NULL){
                             MIOS32_LCD_CursorSet(0,0);
                             MIOS32_LCD_PrintString("Delete VGM before creating a new one!");
-                        }else{
-                            submode = 1;
-                            newvgmusage.all = selprogram->usage.all;
-                            DrawMenu();
-                            DrawUsageOnVoices(newvgmusage, 0);
+                            return;
                         }
+                        submode = 1;
+                        newvgmusage.all = selprogram->usage.all;
+                        DrawMenu();
+                        DrawUsageOnVoices(newvgmusage, 0);
                     }
                     break;
                 case FP_B_DELETE:

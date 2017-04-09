@@ -286,9 +286,9 @@ void DemoPrograms_Init(){
     prog->noteonsource = NULL;
     source = VGM_SourceStream_Create();
     VgmFileMetadata md;
-    s32 res = VGM_ScanFile("/GENESIS/SOR1/BEATNIK.VGM", &md);
+    s32 res = VGM_File_ScanFile("/GENESIS/SOR1/BEATNIK.VGM", &md);
     if(res >= 0){
-        res = VGM_SourceStream_Start(source, &md);
+        res = VGM_File_StartStream(source, &md);
         if(res >= 0){
             /*
             source->usage = (VgmUsageBits){.fm1=1, .fm2=1, .fm3=1, .fm4=1, .fm5=1, .fm6=1,

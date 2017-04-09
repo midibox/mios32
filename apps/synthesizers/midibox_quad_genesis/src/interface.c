@@ -88,8 +88,8 @@ void Interface_Background(){
         for(g=0; g<4; ++g){
             FrontPanel_LEDSet(FP_LED_SELOP_1 + g, 0);
         }
-        //Clear all non-system buttons
-        for(g=FP_LED_MUTE; g<=FP_LED_STATE; ++g){
+        //Clear all system buttons
+        for(g=FP_LED_SYSTEM; g<=FP_LED_STATE; ++g){
             FrontPanel_LEDSet(g, 0);
         }
         //Clear VGM Matrix
@@ -101,8 +101,6 @@ void Interface_Background(){
         FrontPanel_DrawDigit(FP_LED_DIG_MAIN_2, ' ');
         FrontPanel_DrawDigit(FP_LED_DIG_MAIN_3, ' ');
         FrontPanel_DrawDigit(FP_LED_DIG_MAIN_4, ' ');
-        //Turn off the old mode light
-        FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 0);
         //Change modes
         interfacemode = wantmodechange;
         VGM_Player_docapture = 0;
