@@ -1056,7 +1056,7 @@ void SyEng_DeleteProgram(u8 chan){
 }
 
 void SyEng_PrintEngineDebugInfo(){
-    u8 i, g, v;
+    u8 /*i,*/ g, v;
     DBG("=====================================================");
     DBG("============ SyEng_PrintEngineDebugInfo =============");
     DBG("=====================================================");

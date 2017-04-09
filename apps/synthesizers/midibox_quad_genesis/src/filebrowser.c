@@ -97,6 +97,7 @@ static inline void GotDir(){
 }
 
 static void NameEditorFinished(){
+    subscreen = SUBSCREEN_FILEBROWSER; //nameeditor reset this
     innameeditor = 0;
     if(cursor){
         //Was editing file name
