@@ -14,6 +14,7 @@
 #define _VGM_H
 
 #include <mios32.h>
+#include "vgmfile.h"
 #include "vgmhead.h"
 #include "vgmperfmon.h"
 #include "vgmplayer.h"
