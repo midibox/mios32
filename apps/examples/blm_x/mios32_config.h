@@ -5,7 +5,7 @@
  * available switches are listed in $MIOS32_PATH/modules/mios32/MIOS32_CONFIG.txt
  *
  */
- 
+
 #define MIOS32_LCD_BOOT_MSG_LINE1 "BLM_X Module Test"
 #define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2009 M. Maechler"
 
@@ -16,8 +16,8 @@
 
 
 #define BLM_X_NUM_ROWS 4
-#define BLM_X_BTN_NUM_COLS 8
-#define BLM_X_LED_NUM_COLS 8
+#define BLM_X_BTN_NUM_COLS 16
+#define BLM_X_LED_NUM_COLS 16
 #define BLM_X_LED_NUM_COLORS 3
 
 #define BLM_X_ROWSEL_DOUT_SR	1
@@ -32,5 +32,3 @@
 
 
 #endif /* _MIOS32_CONFIG_H */
-
-
