@@ -340,6 +340,7 @@ VgmSource* VGM_SourceStream_Create(){
     source->usage.all = 0;
     VgmSourceStream* vss = vgmh2_malloc(sizeof(VgmSourceStream));
     source->data = vss;
+    vss->filepath = NULL;
     vss->datalen = 0;
     vss->vgmdatastartaddr = 0;
     vss->block = NULL;
@@ -348,6 +349,9 @@ VgmSource* VGM_SourceStream_Create(){
 }
 void VGM_SourceStream_Delete(void* sourcestream){
     VgmSourceStream* vss = (VgmSourceStream*)sourcestream;
+    if(vss->filepath != NULL){
+        vgmh2_free(vss->filepath);
+    }
     if(vss->block != NULL){
         free(vss->block);
     }
