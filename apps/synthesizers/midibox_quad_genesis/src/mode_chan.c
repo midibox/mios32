@@ -13,6 +13,7 @@
 #include <mios32.h>
 #include "mode_chan.h"
 
+#include "filebrowser.h"
 #include "frontpanel.h"
 #include "interface.h"
 #include "syeng.h"
@@ -20,10 +21,17 @@
 #include "mode_voice.h"
 #include "mode_vgm.h"
 #include "nameeditor.h"
+#include <string.h>
 
 u8 selchan;
 static u8 submode;
 static u8 cursor;
+
+static const char* const vgmtypelabels[] = {
+    "INIT",
+    "KON",
+    "KOFF"
+};
 
 static void DrawMenu(){
     switch(submode){
@@ -71,6 +79,81 @@ static void DrawMenu(){
 
 void NameEditorDone(){
     Interface_ChangeToMode(MODE_PROG);
+}
+
+static void FilebrowserDoneLoading(char* filepath){
+    
+}
+
+static void FilebrowserDoneSaving(char* filepath){
+    if(filepath == NULL){
+        DrawMenu();
+        return;
+    }
+    synprogram_t* prog = channels[selchan].program;
+    if(prog == NULL){
+        DrawMenu();
+        return;
+    }
+    //Get and extend path
+    char* tempbuf = vgmh2_malloc(256);
+    u8 sl = strlen(filepath);
+    memcpy(tempbuf, filepath, sl);
+    char* filenamestart = tempbuf + sl;
+    *filenamestart = 0;
+    while(*filenamestart != '.') --filenamestart;
+    *filenamestart = '/';
+    ++filenamestart;
+    //Start program file
+    if(FILE_FileExists(filepath)){
+        FILE_Remove(filepath);
+    }
+    MUTEX_SDCARD_TAKE;
+    FILE_WriteOpen(filepath, 1);
+    FILE_WriteBuffer((u8*)"MBQG Program", 12);
+    FILE_WriteWord(0);
+    FILE_WriteByte(prog->rootnote);
+    FILE_WriteBuffer((u8*)prog->name, 13);
+    u8 v;
+    VgmSource** ss;
+    char* filenameend;
+    for(v=0; v<3; ++v){
+        ss = SelSource(prog, v);
+        if(*ss == NULL){
+            FILE_WriteByte(0);
+            continue;
+        }
+        if((*ss)->type == VGM_SOURCE_TYPE_RAM){
+            sl = strlen(vgmtypelabels[v]);
+            memcpy(filenamestart, vgmtypelabels[v], sl);
+            filenameend = filenamestart + sl;
+            memcpy(filenameend, ".VGM", 4);
+            filenameend += 4;
+            *filenameend = 0;
+            sl = filenameend - tempbuf;
+            FILE_WriteByte(sl);
+            FILE_WriteBuffer((u8*)tempbuf, sl);
+        }else if((*ss)->type == VGM_SOURCE_TYPE_STREAM){
+            VgmSourceStream* vss = (VgmSourceStream*)(*ss)->data;
+            if(vss->filepath == NULL){
+                DBG("Program saving error, unstarted stream!");
+                FILE_WriteByte(0);
+            }else{
+                sl = strlen(vss->filepath);
+                FILE_WriteByte(sl);
+                FILE_WriteBuffer((u8*)vss->filepath, sl);
+            }
+        }else{
+            DBG("Program saving error, unknown source type %d!", (*ss)->type);
+            FILE_WriteByte(0);
+        }
+    }
+    FILE_WriteClose();
+    MUTEX_SDCARD_GIVE;
+    vgmh2_free(tempbuf);
+    DrawMenu();
+    MIOS32_LCD_CursorSet(0,0);
+    MIOS32_LCD_PrintString("Saved       ");
 }
 
 void Mode_Chan_Init(){
@@ -240,10 +323,20 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
         case 0:
             switch(button){
                 case FP_B_LOAD:
-                    //TODO
+                    if(channels[selchan].program != NULL){
+                        MIOS32_LCD_CursorSet(0,0);
+                        MIOS32_LCD_PrintFormattedString("Delete prog first!");
+                    }else{
+                        Filebrowser_Start(NULL, "PGM", 0, &FilebrowserDoneLoading);
+                    }
                     break;
                 case FP_B_SAVE:
-                    //TODO
+                    if(channels[selchan].program == NULL){
+                        MIOS32_LCD_CursorSet(0,0);
+                        MIOS32_LCD_PrintFormattedString("No prog to save!");
+                    }else{
+                        Filebrowser_Start(NULL, "PGM", 1, &FilebrowserDoneSaving);
+                    }
                     break;
                 case FP_B_NEW:
                     if(channels[selchan].program != NULL){
