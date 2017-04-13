@@ -6,7 +6,7 @@
  *  Copyright (C) 2009 Matthias Mächler (maechler@mm-computing.ch, thismaechler@gmx.ch)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
- * 
+ *
  * ==========================================================================
  */
 
@@ -59,7 +59,7 @@ extern "C" {
 
 
 // DOUT shift register to which the cathodes of the LEDs are connected (row selectors).
-// if less than 5 rows are defined, the higher nibble of the SR outputs will be always 
+// if less than 5 rows are defined, the higher nibble of the SR outputs will be always
 // identical to the lower nibble.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
@@ -107,6 +107,11 @@ extern "C" {
 // 2: individual debouncing of all buttons
 #ifndef BLM_X_DEBOUNCE_MODE
 #define BLM_X_DEBOUNCE_MODE 0
+#endif
+
+// debounce delay (num scan cycles; [scan cycle duration] = [num rows] * [interval betw. BLM_X_GetRow calls]  )
+#ifndef BLM_X_DEBOUNCE_DELAY
+#define BLM_X_DEBOUNCE_DELAY 1
 #endif
 
 // 0: colors will be mapped to serial registers grouped by color (see section "Serial registers")

@@ -25,9 +25,9 @@ Serial registers
 You will need one DOUT serial-register for the select-lines. If there are less than
 5 rows, the first nibble will be mirrored to the second one (pin 0-3 == pin 4-7).
 
-For the buttons you will need [ceil(BLM_X_BTN_NUM_COLS / 8)] DIN SR's. 
+For the buttons you will need [ceil(BLM_X_BTN_NUM_COLS / 8)] DIN SR's.
 
-For the LED's you will need [ceil(BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8)] DOUT SR's. 
+For the LED's you will need [ceil(BLM_X_LED_NUM_COLS * BLM_X_LED_NUM_COLORS / 8)] DOUT SR's.
 
 In color-mode 0 ,the colors will be mapped to the registers grouped by colors (standard mode):
   [LED-col 0, color 0][LED-col 1, color 0][LED-col 2, color 0]....[LED-col 0, color1][LED-col 1, color1]...
@@ -35,8 +35,8 @@ In color-mode 1 ,the colors will be mapped to the registers grouped by LED-colum
   [LED-col 0, color 0][LED-col 0, color 1][LED-col 0, color 2]....[LED-col 1, color0][LED-col 1, color1]...
 Choose the mode that fits your plans to wire the LED-matrix on the hardware side.
 
-If you want to work directly on the virtual SR's (bypass LED-set / -get functions), you may prefer to 
-choose BLM_X_LED_NUM_COLS values like 4,8,12,16 etc. and color-mode 0. If you set LED states only by 
+If you want to work directly on the virtual SR's (bypass LED-set / -get functions), you may prefer to
+choose BLM_X_LED_NUM_COLS values like 4,8,12,16 etc. and color-mode 0. If you set LED states only by
 module functions, you don't have to care about this on the software side.
 
 Note that serial register assignment / color mode can be re-configured by software ( BLM_X_ConfigSet(..) ).
@@ -46,9 +46,9 @@ Debouncing
 ----------
 Debounce-modes 1 and 2 are available: mode 1 uses a single counter, which decrements each scan-cycle
 (BLM_X_NUM_ROWS rows scanned), and will be set to debounce_delay again each time a button-state was
-changed. Until the counter is 0, all button changes will be ignored. 
-Debounce-mode 2 uses individual counters for each button, which consumes a bit more memory and 
-performance. 
+changed. Until the counter is 0, all button changes will be ignored.
+Debounce-mode 2 uses individual counters for each button, which consumes a bit more memory and
+performance.
 You can disable debouncing completly by setting BLM_X_DEBOUNCE_MODE = 0
 
 Debounce-delay can be configured by software ( BLM_X_ConfigSet(..) ), and will be set to 0 by default.
@@ -73,7 +73,7 @@ The module can be configured by overriding defines. The values shown here are de
 #define BLM_X_LED_NUM_COLORS 3
 
 // DOUT shift register to which the cathodes of the LEDs are connected (row selectors).
-// If less than 5 rows are defined, the higher nibble of the SR outputs will be always 
+// If less than 5 rows are defined, the higher nibble of the SR outputs will be always
 // identical to the lower nibble. Note that SR's are counted from 1.
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
@@ -98,7 +98,7 @@ The module can be configured by overriding defines. The values shown here are de
 #define BLM_X_BTN_FIRST_DIN_SR  1
 
 // Set an inversion mask for the row selection shift registers if sink drivers (transistors)
-// have been added to the cathode lines. 
+// have been added to the cathode lines.
 // Note: with no sink drivers connected, the LED's brightnes may be affected by the number
 // of active LED's in the same row.
 // Settings: 0x00 - no sink drivers
@@ -115,11 +115,15 @@ The module can be configured by overriding defines. The values shown here are de
 // 2: individual debouncing of all buttons
 #define BLM_X_DEBOUNCE_MODE 0
 
+// debounce delay (num scan cycles; [scan cycle duration] = [num rows] * [interval betw. BLM_X_GetRow calls]  )
+#define BLM_X_DEBOUNCE_DELAY 1
+
+
 // 0: colors will be mapped to serial registers grouped by color (see section "Serial registers")
 // 1: colors will be mapped to serial registers grouped by LED-columns (see section "Serial registers")
 //
 // This option can be re-configured by software ( BLM_X_ConfigSet(..) )
-BLM_X_COLOR_MODE 0
+#define BLM_X_COLOR_MODE 0
 
 
 Module Functions
@@ -131,19 +135,19 @@ Initializes the module. Returns 0 on success, -1 on error (e.g. bad configuratio
 
 s32 BLM_X_PrepareRow(void);
 Prepares the next row in the matrix (sets row-selector DOUT - values and LED DOUT values
-for the row). 
+for the row).
 This hook should be called in APP_SRIO_ServicePrepare() in your application.
 
 
 s32 BLM_X_GetRow(void);
 Reads the the values of the buttons DIN registers for the currently selected row, and
-writes it to the internal button-state registers. 
+writes it to the internal button-state registers.
 This hook should be called in APP_SRIO_ServiceFinish() in your application.
 
 
 s32 BLM_X_BtnHandler(void *notify_hook)
-This hook checks the internal button-state registers for changes and calls 
-notify_hook(u32 btn, u32 value) for each changed button. 
+This hook checks the internal button-state registers for changes and calls
+notify_hook(u32 btn, u32 value) for each changed button.
 This hook should be called regulary by your application, e.g. in a separate task.
 
 
@@ -200,7 +204,7 @@ Gets the blm_x configuration structure. See also BLM_X_ConfigSet for description
 
 Performance
 -----------
-The whole SRIO service takes ca. 
+The whole SRIO service takes ca.
 - ca. 280uS without the BLM-X module hooks
 - ca.290uS with 4 rows, 4 cols, 3 colors, debounce mode 2 (LEDs & buttons)
 - ca. 320uS with 8 rows, 16 cols, 3 colors, debounce mode 2 (LEDs & buttons)
@@ -208,4 +212,3 @@ The whole SRIO service takes ca.
 Most of this additional time is consumed by heavy debouncing (mode 2). Without any
 debouncing (not required in most applications, 4 rows == 4mS scan cycle), this
 additional time will be dramatically lower.
-
