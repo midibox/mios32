@@ -44,9 +44,11 @@ typedef union {
 } VgmHeadStream;
 
 typedef union {
-    u8 ALL[16+sizeof(file_t)];
+    u8 ALL[20+sizeof(file_t)];
     struct{
         file_t file;
+        char* filepath;
+        
         u32 datalen;
         u32 vgmdatastartaddr;
         
