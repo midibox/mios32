@@ -12,7 +12,7 @@
  *  Copyright (C) 2009 Matthias Mächler (maechler@mm-computing.ch, thismaechler@gmx.ch)
  *  Licensed for personal non-commercial use only.
  *  All other rights reserved.
- * 
+ *
  * ==========================================================================
  */
 
@@ -74,10 +74,10 @@ s32 BLM_X_Init(void){
       debounce_ctr[r][i] = 0;
 #endif
 #endif
-#if (BLM_X_LED_FIRST_DOUT_SR > 0)  
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
     // initialize LED-rows
     for(i=0; i<BLM_X_NUM_LED_SR; ++i)
-      BLM_X_LED_rows[r][i] = 0x00;  
+      BLM_X_LED_rows[r][i] = 0x00;
 #endif
   }
   // clear debounce counter for debounce-mode 1
@@ -90,7 +90,7 @@ s32 BLM_X_Init(void){
   blm_x_config.btn_first_din_sr = BLM_X_BTN_FIRST_DIN_SR;
   blm_x_config.rowsel_inv_mask = BLM_X_ROWSEL_INV_MASK;
   blm_x_config.color_mode = BLM_X_COLOR_MODE;
-  blm_x_config.debounce_delay = 0;
+  blm_x_config.debounce_delay = BLM_X_DEBOUNCE_DELAY;
   // init current row
   current_row = 0;
   return 0;
@@ -119,7 +119,7 @@ s32 BLM_X_PrepareRow(void){
   dout_value ^= blm_x_config.rowsel_inv_mask;
   // output on CATHODES register
   MIOS32_DOUT_SRSet(blm_x_config.rowsel_dout_sr - 1, dout_value);
-#if (BLM_X_LED_FIRST_DOUT_SR > 0)  
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
   // output value of LED rows depending on current row
   for(i = 0;i < BLM_X_NUM_LED_SR;i++)
     MIOS32_DOUT_SRSet(blm_x_config.led_first_dout_sr - 1 + i, BLM_X_LED_rows[current_row][i]);
@@ -143,7 +143,7 @@ s32 BLM_X_GetRow(void){
   scanned_row = current_row ? (current_row -1) : (BLM_X_NUM_ROWS - 1);
   // ensure that change won't be propagated to normal DIN handler
   for(sr = 0; sr < BLM_X_NUM_BTN_SR; sr++)
-    MIOS32_DIN_SRChangedGetAndClear(blm_x_config.btn_first_din_sr - 1 + sr, 0xff);  
+    MIOS32_DIN_SRChangedGetAndClear(blm_x_config.btn_first_din_sr - 1 + sr, 0xff);
 #if (BLM_X_DEBOUNCE_MODE < 2)
 #if (BLM_X_DEBOUNCE_MODE == 1)
   // cheap debounce handling. ignore any changes if debounce_ctr > 0
@@ -164,7 +164,7 @@ s32 BLM_X_GetRow(void){
       btn_rows[scanned_row][sr] = sr_value;
       MIOS32_IRQ_Enable();
       //*** end atomic block ***
-    } 
+    }
 #if (BLM_X_DEBOUNCE_MODE == 1)
   }
   else
@@ -186,8 +186,7 @@ s32 BLM_X_GetRow(void){
         MIOS32_IRQ_Disable();
         // set change-notification-bit. if a second change happens before the last change was notified (clear
         // changed flags), the change flag will be unset (two changes -> original value)
-        if( ( btn_rows_changed[scanned_row][sr] ^= 
-        (sr_value & pin_mask) ^ (btn_rows[scanned_row][sr] & pin_mask) ) & pin_mask )
+        if( ( btn_rows_changed[scanned_row][sr] ^= (sr_value & pin_mask) ^ (btn_rows[scanned_row][sr] & pin_mask) ) & pin_mask )
           debounce_ctr[scanned_row][sr*8 + pin] = blm_x_config.debounce_delay;//restart debounce delay
         //set the new value bit
         if(sr_value & pin_mask)
@@ -198,7 +197,7 @@ s32 BLM_X_GetRow(void){
         //*** end atomic block ***
       }
     }
-  }   
+  }
 #endif
   return 0;
 #else
@@ -209,7 +208,7 @@ s32 BLM_X_GetRow(void){
 
 /////////////////////////////////////////////////////////////////////////////
 // This function should be called from a task to check for button changes
-// periodically. Events (change from 0->1 or from 1->0) will be notified 
+// periodically. Events (change from 0->1 or from 1->0) will be notified
 // via the given callback function <notify_hook> with following parameters:
 //   <notifcation-hook>(u32 btn, u32 value)
 // IN: -
@@ -271,8 +270,8 @@ s32 BLM_X_BtnGet(u32 btn){
   return -1;//buttons disabled
 #endif
 }
-  
-  
+
+
 /////////////////////////////////////////////////////////////////////////////
 // returns the buttons serial-register value for a row / SR
 // IN: button row in <row>, row-SR in <sr>
@@ -295,7 +294,7 @@ u8 BLM_X_BtnSRGet(u8 row, u8 sr){
 // OUT: returns < 0 if LED/color not available
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
-#if (BLM_X_LED_FIRST_DOUT_SR > 0)  
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
   u32 row,sr,pin;
   // check if LED/color available
   if( led >= BLM_X_NUM_ROWS * BLM_X_LED_NUM_COLS || color > BLM_X_LED_NUM_COLORS )
@@ -317,7 +316,7 @@ s32 BLM_X_LEDSet(u32 led, u32 color, u32 value){
   return -1;//LED's disabled
 #endif
 }
-  
+
 /////////////////////////////////////////////////////////////////////////////
 // sets all colors of a LED
 // IN: LED number in <led>, color in <color_mask> (each bit represents a color, LSB = color 0)
@@ -347,7 +346,7 @@ s32 BLM_X_LEDColorSet(u32 led, u32 color_mask){
   return 0;
 #else
   return -1;//LED's disabled
-#endif  
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -381,7 +380,7 @@ u32 BLM_X_LEDColorGet(u32 led){
   return color;
 #else
   return 0;//LED's disabled
-#endif  
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -408,7 +407,7 @@ s32 BLM_X_LEDGet(u32 led, u32 color){
   return -1;//LED's disabled
 #endif
 }
-  
+
 /////////////////////////////////////////////////////////////////////////////
 // returns the LED serial-register value for a row / SR
 // IN: LED row in <row>, row-SR in <sr>
@@ -431,7 +430,7 @@ u8 BLM_X_LEDSRGet(u8 row, u8 sr){
 // OUT: < 0 on error (SR not available), 0 on success
 /////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
-#if (BLM_X_LED_FIRST_DOUT_SR > 0)  
+#if (BLM_X_LED_FIRST_DOUT_SR > 0)
   if (row > BLM_X_NUM_ROWS -1 || sr > BLM_X_NUM_LED_SR - 1)
     return -1;
   BLM_X_LED_rows[row][sr] = sr_value;
@@ -440,7 +439,7 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
   return -1;//LED's disabled
 #endif
 }
-  
+
 /////////////////////////////////////////////////////////////////////////////
 // sets the blm_x soft configurations
 // IN: config, struct with members:
@@ -451,7 +450,7 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 //    .color_mode
 //    .debounce_delay
 // OUT: returns < 0 on error, 0 on success
-/////////////////////////////////////////////////////////////////////////////  
+/////////////////////////////////////////////////////////////////////////////
 s32 BLM_X_ConfigSet(blm_x_config_t config){
   blm_x_config = config;
   return 0;
@@ -467,7 +466,7 @@ s32 BLM_X_ConfigSet(blm_x_config_t config){
 //    .rowsel_inv_mask
 //    .color_mode
 //    .debounce_delay
-/////////////////////////////////////////////////////////////////////////////  
+/////////////////////////////////////////////////////////////////////////////
 blm_x_config_t BLM_X_ConfigGet(void){
   return blm_x_config;
 }
