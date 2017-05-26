@@ -2382,7 +2382,11 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     portENTER_CRITICAL(); // should be atomic
     SEQ_CORE_Scrub(incrementer);
     portEXIT_CRITICAL();
-  } else if( !seq_ui_button_state.MENU_PRESSED && ui_encoder_callback != NULL ) {
+  } else if( seq_ui_button_state.MENU_PRESSED ) {
+    // encoder selects menu page like GP button
+    if( encoder >= 1 && encoder <= 16 )
+      SEQ_UI_PageSet(SEQ_UI_PAGES_MenuShortcutPageGet(encoder-1));
+  } else if( ui_encoder_callback != NULL ) {
     ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
     ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
   }
