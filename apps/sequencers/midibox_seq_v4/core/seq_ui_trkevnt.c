@@ -817,8 +817,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	if( depressed )
 	  SEQ_UI_UnInstallDelayedActionCallback(InitReq);
 	else {
-	  SEQ_UI_InstallDelayedActionCallback(InitReq, 2000, 0);
-	  SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 2001, "", "to initialize Track!");
+	  if( seq_ui_button_state.ENC_BTN_FWD_PRESSED ) {
+	    InitReq(0);
+	  } else {
+	    SEQ_UI_InstallDelayedActionCallback(InitReq, 2000, 0);
+	    SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 2001, "", "to initialize Track!");
+	  }
 	}
 	return 1; // value has been changed
       }
