@@ -473,7 +473,7 @@ static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
     // forward to menu page
     if( ui_button_callback != NULL ) {
       ui_button_callback(gp, depressed);
-      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0;
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
     }
   }
 
@@ -2071,6 +2071,14 @@ static s32 SEQ_UI_Button_FootSwitch(s32 depressed)
 }
 
 
+static s32 SEQ_UI_Button_EncBtnFwd(s32 depressed)
+{
+  seq_ui_button_state.ENC_BTN_FWD_PRESSED = depressed == 0;
+
+  return 0; // no error
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Button handler
 /////////////////////////////////////////////////////////////////////////////
@@ -2254,6 +2262,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Fx(pin_value);
   if( pin == seq_hwcfg_button.footswitch )
     return SEQ_UI_Button_FootSwitch(pin_value);
+  if( pin == seq_hwcfg_button.enc_btn_fwd )
+    return SEQ_UI_Button_EncBtnFwd(pin_value);
   if( pin == seq_hwcfg_button.pattern_remix )
     return SEQ_UI_Button_Pattern_Remix(pin_value);
 
@@ -2387,8 +2397,16 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
     if( encoder >= 1 && encoder <= 16 )
       SEQ_UI_PageSet(SEQ_UI_PAGES_MenuShortcutPageGet(encoder-1));
   } else if( ui_encoder_callback != NULL ) {
-    ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
-    ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
+    if( seq_ui_button_state.ENC_BTN_FWD_PRESSED ) {
+      // encoder emulates a GP button
+      ui_button_callback(encoder-1, 0);
+      ui_button_callback(encoder-1, 1);
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
+    } else {
+      // common handling
+      ui_encoder_callback((encoder == 0) ? SEQ_UI_ENCODER_Datawheel : (encoder-1), incrementer);
+      ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
+    }
   }
 
   // request display update

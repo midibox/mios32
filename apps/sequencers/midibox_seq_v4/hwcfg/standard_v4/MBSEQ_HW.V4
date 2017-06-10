@@ -648,6 +648,8 @@ BUTTON_SAVE_ALL   0   0
 #                 SR  Pin
 BUTTON_FOOTSWITCH  0   0
 
+#                 SR  Pin
+BUTTON_ENC_BTN_FWD 0   0
 
 #                      SR  Pin
 BUTTON_TRACK_MODE       0   0

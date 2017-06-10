@@ -131,6 +131,7 @@ typedef struct {
   u8 unmute_all_tracks_and_layers;
 
   u8 footswitch;
+  u8 enc_btn_fwd;
   u8 pattern_remix;
 } seq_hwcfg_button_t;
 

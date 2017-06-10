@@ -559,6 +559,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.fx = din_value;
 	  } else if( strcasecmp(parameter, "FOOTSWITCH") == 0 ) {
 	    seq_hwcfg_button.footswitch = din_value;
+	  } else if( strcasecmp(parameter, "ENC_BTN_FWD") == 0 ) {
+	    seq_hwcfg_button.enc_btn_fwd = din_value;
           } else if( strcasecmp(parameter, "PATTERN_RMX") == 0 ) {
             seq_hwcfg_button.pattern_remix = din_value;
           } else if( strcasecmp(parameter, "MUTE_ALL_TRACKS") == 0 ) {

@@ -77,6 +77,7 @@ typedef union {
     u32 TAP_TEMPO:1;
     u32 UP:1;
     u32 DOWN:1;
+    u32 ENC_BTN_FWD_PRESSED:1;
   };
 } seq_ui_button_state_t;
 

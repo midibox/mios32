@@ -218,6 +218,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .unmute_all_tracks_and_layers  = ((( 0   -1)<<3)+    0),
 
   .footswitch      = ((( 0   -1)<<3)+    0),
+  .enc_btn_fwd     = ((( 0   -1)<<3)+    0),
   .pattern_remix   = ((( 0   -1)<<3)+    0),
 };
 
