@@ -2399,8 +2399,12 @@ s32 SEQ_UI_Encoder_Handler(u32 encoder, s32 incrementer)
   } else if( ui_encoder_callback != NULL ) {
     if( seq_ui_button_state.ENC_BTN_FWD_PRESSED ) {
       // encoder emulates a GP button
-      ui_button_callback(encoder-1, 0);
-      ui_button_callback(encoder-1, 1);
+      if( ui_button_callback ) {
+	ui_button_callback(encoder-1, 0);
+      }
+      if( ui_button_callback ) { // previous call could remove the callback!
+	ui_button_callback(encoder-1, 1);
+      }
       ui_cursor_flash_ctr = ui_cursor_flash_overrun_ctr = 0; // ensure that value is visible when it has been changed
     } else {
       // common handling
