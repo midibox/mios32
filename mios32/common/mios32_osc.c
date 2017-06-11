@@ -470,7 +470,8 @@ mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer)
 /////////////////////////////////////////////////////////////////////////////
 u8 *MIOS32_OSC_PutMIDI(u8 *buffer, mios32_midi_package_t p)
 {
-  u32 word = (p.evnt0 << 24) | (p.evnt1 << 16) | (p.evnt2 << 8);
+  u8 port_id = 0; // should we take this from p.cable?
+  u32 word = (port_id << 24) | (p.evnt0 << 16) | (p.evnt1 << 8) | (p.evnt2 << 0); // see also http://opensoundcontrol.org/spec-1_0
   return MIOS32_OSC_PutWord(buffer, word);
 }
 
