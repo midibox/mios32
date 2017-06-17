@@ -62,6 +62,7 @@ static const char seq_par_type_names[SEQ_PAR_NUM_TYPES][6] = {
   "AfTch", // 15
   "Root ", // 16
   "Scale", // 17
+  "Chrd3", // 18
 };
 
 static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order for the UI selection
@@ -69,6 +70,7 @@ static const u8 seq_par_map[SEQ_PAR_NUM_TYPES] = { // allows to change the order
   SEQ_PAR_Type_Note,
   SEQ_PAR_Type_Chord1,
   SEQ_PAR_Type_Chord2,
+  SEQ_PAR_Type_Chord3,
   SEQ_PAR_Type_Velocity,
   SEQ_PAR_Type_Length,
   SEQ_PAR_Type_CC,
@@ -104,6 +106,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Aftertouch: 0
   0,    // Root: C
   0,    // Scale: 0
+  0x01, // Chord3: 1
 };
 
 static const u8 seq_par_max_value[SEQ_PAR_NUM_TYPES] = {
@@ -121,10 +124,11 @@ static const u8 seq_par_max_value[SEQ_PAR_NUM_TYPES] = {
   0x80, // PrgCh
   0x7f, // Nth1
   0x7f, // Nth2
-  0x7f, // Chord2: A/2
-  0x80, // Aftertouch: 0
-  0x7f, // Root: C
-  0x7f, // Scale: 0
+  0x7f, // Chord2
+  0x80, // Aftertouch
+  0x7f, // Root
+  0x7f, // Scale
+  0x7f, // Chord3
 };
 
 
@@ -554,7 +558,7 @@ u8 SEQ_PAR_InitValueGet(seq_par_layer_type_t par_type, u8 par_layer)
   if( par_type >= SEQ_PAR_NUM_TYPES )
     return 0;
 
-  if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2) )
+  if( par_layer > 0 && (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 || par_type == SEQ_PAR_Type_Chord3) )
     return 0x00; // Note/Chords are 0 by default if not in Layer A
 
   // new: variable init value

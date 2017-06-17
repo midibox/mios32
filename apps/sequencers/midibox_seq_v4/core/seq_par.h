@@ -52,9 +52,10 @@ typedef enum {
   SEQ_PAR_Type_Aftertouch=15,
   SEQ_PAR_Type_Root=16,
   SEQ_PAR_Type_Scale=17,
+  SEQ_PAR_Type_Chord3=18,
 } seq_par_layer_type_t;
 
-#define SEQ_PAR_NUM_TYPES 18
+#define SEQ_PAR_NUM_TYPES 19
 
 
 // NOTE: numbers have to be aligned with the strings in SEQ_LCD_PrintNthMode!

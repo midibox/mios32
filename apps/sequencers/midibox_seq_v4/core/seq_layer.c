@@ -467,7 +467,8 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	} break;
 
         case SEQ_PAR_Type_Chord1:
-        case SEQ_PAR_Type_Chord2: {
+        case SEQ_PAR_Type_Chord2:
+        case SEQ_PAR_Type_Chord3: {
 	  u8 chord_value = SEQ_PAR_Get(track, step, par_layer, instrument);
 	  int i;
 
@@ -507,7 +508,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      if( num_events >= 16 )
 		break;
 
-	      u8 chord_set = (*layer_type_ptr == SEQ_PAR_Type_Chord2) ? 1 : 0;
+	      u8 chord_set = (*layer_type_ptr == SEQ_PAR_Type_Chord2) ? 1 : (((*layer_type_ptr == SEQ_PAR_Type_Chord3) ? 2 : 0));
 	      s32 note = SEQ_CHORD_NoteGet(i, chord_set, chord_value);
 
 	      if( !insert_empty_notes && (layer_muted & (1 << par_layer)) )
@@ -762,7 +763,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
     if( seq_record_options.POLY_RECORD && layer_event.midi_package.event == NoteOn ) {
       for(par_layer=0; par_layer<num_p_layers; ++par_layer) {
 	seq_par_layer_type_t par_type = tcc->lay_const[0*16 + par_layer];
-	if( (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2) && 
+	if( (par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 || par_type == SEQ_PAR_Type_Chord3) && 
 	    SEQ_PAR_Get(track, step, par_layer, instrument) == layer_event.midi_package.note ) {
 
 	  // set gate and take over new velocity/length (poly mode: last vel/length will be taken for all)
@@ -799,7 +800,8 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 
         case SEQ_PAR_Type_Note:
         case SEQ_PAR_Type_Chord1:
-        case SEQ_PAR_Type_Chord2: {
+        case SEQ_PAR_Type_Chord2:
+        case SEQ_PAR_Type_Chord3: {
 	  if( layer_event.midi_package.event == NoteOn ) {
 
 	    // in poly mode: skip if note number doesn't match with poly counter
@@ -814,7 +816,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	      u8 remaining_par_layer;
 	      for(remaining_par_layer=par_layer+1; remaining_par_layer<num_p_layers; ++remaining_par_layer) {
 		seq_par_layer_type_t par_type = tcc->lay_const[0*16 + remaining_par_layer];
-		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 )
+		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 || par_type == SEQ_PAR_Type_Chord3 )
 		  SEQ_PAR_Set(track, step, remaining_par_layer, instrument, 0x00);
 	      }
 	    }
@@ -842,7 +844,7 @@ s32 SEQ_LAYER_RecEvent(u8 track, u16 step, seq_layer_evnt_t layer_event)
 	      u8 remaining_par_layer;
 	      for(remaining_par_layer=par_layer+1; remaining_par_layer<num_p_layers; ++remaining_par_layer) {
 		seq_par_layer_type_t par_type = tcc->lay_const[0*16 + remaining_par_layer];
-		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 ) {
+		if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 || par_type == SEQ_PAR_Type_Chord3 ) {
 		  ++t->rec_poly_ctr; // switch to next note
 		  break;
 		}

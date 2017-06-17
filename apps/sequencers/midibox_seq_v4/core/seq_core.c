@@ -2242,7 +2242,7 @@ s32 SEQ_CORE_NotifyIncomingMIDIEvent(u8 track, mios32_midi_package_t p)
     int num_p_layers = SEQ_PAR_NumLayersGet(track);
     u16 mask = 1;
     for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr, mask <<= 1) {
-      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord1 || *layer_type_ptr == SEQ_PAR_Type_Chord2 ) {
+      if( *layer_type_ptr == SEQ_PAR_Type_Note || *layer_type_ptr == SEQ_PAR_Type_Chord1 || *layer_type_ptr == SEQ_PAR_Type_Chord2 || *layer_type_ptr == SEQ_PAR_Type_Chord3 ) {
 	// hm... should we also play a note off for active notes?
 	// and should we mute the sequencer notes as long as no Note Off has been played?
 	// problem: we would have to track all actively played MIDI notes, this consumes a lot of memory
