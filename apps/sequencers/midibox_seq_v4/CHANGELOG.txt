@@ -2392,6 +2392,9 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Support for Jog Shuttle
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=177037
 ----------------------------------------------------------
+PC Send behaviour: option to avoid that already selected PC will be re-sent
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178642
+----------------------------------------------------------
 
 
 
