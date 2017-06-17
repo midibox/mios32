@@ -751,6 +751,18 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
     }
   } break;
 	  
+  case SEQ_PAR_Type_Chord3: {
+    if( par_value ) {
+      if( par_value < 100 ) {
+	SEQ_LCD_PrintFormattedString("Ch%2d", par_value);
+      } else {
+	SEQ_LCD_PrintFormattedString("C%3d", par_value);
+      }
+    } else {
+      SEQ_LCD_PrintString("----");
+    }
+  } break;
+	  
   case SEQ_PAR_Type_Length:
     SEQ_LCD_PrintGatelength(par_value);
     break;
@@ -828,7 +840,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    if( seq_cc_trk[track].trkmode_flags.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 ) {
+    if( seq_cc_trk[track].trkmode_flags.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 && layer_type != SEQ_PAR_Type_Chord3 ) {
       if( layer_event.midi_package.note ) {
 	u8 scale, root_selection, root;
 	SEQ_CORE_FTS_GetScaleAndRoot(track, step, instrument, tcc, &scale, &root_selection, &root);
@@ -867,19 +879,28 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   } break;
 
   case SEQ_PAR_Type_Chord1:
-  case SEQ_PAR_Type_Chord2: {
+  case SEQ_PAR_Type_Chord2:
+  case SEQ_PAR_Type_Chord3: {
     u8 par_value;
-    // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord[12]
+    // more or less dirty - a velocity layer can force SEQ_PAR_Type_Chord[123]
     if( SEQ_PAR_AssignmentGet(track, par_layer) == SEQ_PAR_Type_Velocity )
       par_value = SEQ_PAR_ChordGet(track, step, instrument, 0x0000);
     else
       par_value = (print_edit_value >= 0) ? print_edit_value : SEQ_PAR_Get(track, step, par_layer, instrument);
 
     if( par_value && (print_edit_value >= 0 || SEQ_TRG_GateGet(track, step, instrument)) ) {
-      u8 chord_ix = par_value & 0x1f;
-      u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
-      u8 chord_oct = par_value >> 5;
-      SEQ_LCD_PrintFormattedString("%c/%d", chord_char, chord_oct);
+      if( layer_type == SEQ_PAR_Type_Chord3 ) {
+	if( par_value < 100 ) {
+	  SEQ_LCD_PrintFormattedString("Ch%2d", par_value);
+	} else {
+	  SEQ_LCD_PrintFormattedString("C%3d", par_value);
+	}
+      } else {
+	u8 chord_ix = par_value & 0x1f;
+	u8 chord_char = ((chord_ix >= 0x10) ? 'a' : 'A') + (chord_ix & 0xf);
+	u8 chord_oct = par_value >> 5;
+	SEQ_LCD_PrintFormattedString("%c/%d", chord_char, chord_oct);
+      }
       SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
     } else {
       SEQ_LCD_PrintString("----");
