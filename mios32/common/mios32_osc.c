@@ -453,11 +453,12 @@ mios32_midi_package_t MIOS32_OSC_GetMIDI(u8 *buffer)
 {
   mios32_midi_package_t p;
 
-  p.cable = 0;
-  p.type = *(buffer+0) >> 4;
-  p.evnt0 = *(buffer+0);
+  // see also http://opensoundcontrol.org/spec-1_0
+  p.cable = 0; // should we take port_id to select the cable?
+  p.type = *(buffer+2) >> 4;
+  p.evnt0 = *(buffer+2);
   p.evnt1 = *(buffer+1);
-  p.evnt2 = *(buffer+2);
+  p.evnt2 = *(buffer+0);
   return p;
 }
 
