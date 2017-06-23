@@ -890,10 +890,12 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
     if( par_value && (print_edit_value >= 0 || SEQ_TRG_GateGet(track, step, instrument)) ) {
       if( layer_type == SEQ_PAR_Type_Chord3 ) {
-	if( par_value < 100 ) {
-	  SEQ_LCD_PrintFormattedString("Ch%2d", par_value);
+	if( par_value < 10 ) {
+	  SEQ_LCD_PrintFormattedString("Ch%d", par_value);
+	} else if( par_value < 100 ) {
+	  SEQ_LCD_PrintFormattedString("C%2d", par_value);
 	} else {
-	  SEQ_LCD_PrintFormattedString("C%3d", par_value);
+	  SEQ_LCD_PrintFormattedString("%3d", par_value);
 	}
       } else {
 	u8 chord_ix = par_value & 0x1f;
