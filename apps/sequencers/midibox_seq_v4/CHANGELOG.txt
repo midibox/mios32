@@ -2395,6 +2395,12 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 PC Send behaviour: option to avoid that already selected PC will be re-sent
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178642
 ----------------------------------------------------------
+- BUG: in the arpeggiator, while playing a *+- step and I delete that step, a note is stuck and will never stop.
+----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178870
+- There would be more performance tricks as in the BPM menue with the "fire preset function" like:
+  Selecting loops by holding a start and stop-step button (as already thought for BLM)
+  Being able to shift notes without hearing the scrolling (holding a button while scrolling, leaving the button and you hear it) & the same for other edits
 
 
 
