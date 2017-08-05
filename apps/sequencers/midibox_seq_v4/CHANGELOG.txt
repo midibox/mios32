@@ -2401,7 +2401,15 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 - There would be more performance tricks as in the BPM menue with the "fire preset function" like:
   Selecting loops by holding a start and stop-step button (as already thought for BLM)
   Being able to shift notes without hearing the scrolling (holding a button while scrolling, leaving the button and you hear it) & the same for other edits
-
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=177967
+BLM: I have a 4L and have been using the juice BLM as a faster more accurate way to input notes.  It would be really handy to have a horizontal zoom feature. If the bar display at the bottom were clickable. No boxes =100% zoom and the grid is in its normal current mode displaying 16 1/4 notes. One box lit and you get 200% zoom and you get 16 1/16 notes of the section of the bar you have selected displayed. Selecting two consecutive boxes for 150% zoom to get 16 1/8 notes on the grid of the two adjoining boxes of the bar selected. Maybe there is already a way to do this but all I have been able to come up with in the manual and forums is using a full seq version 4 to set note length with the jog wheel or possibly manually recording in the sequence either from software or another midi device.
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=178908
+How are we going with shifting views on on the y axis? It's okay to view just 16 notes, but I find it restricts the usage, especially when using a "polyphonic" track. 
+----------------------------------------------------------
+http://midibox.org/forums/topic/19701-blm-feature-requests/?do=findComment&comment=178908
+Perhaps an additional idea: currently the encoder moves just one note up or down when a polyphonic track is enabled. Could the step encoder instead shift the whole shape by semitones? 
 
 
 Wishlist for MIDIbox SEQ V4 Plus
