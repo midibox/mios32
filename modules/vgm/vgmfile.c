@@ -17,23 +17,38 @@
 #include "vgmstream.h"
 #include "vgm_heap2.h"
 #include <string.h>
+#include "FreeRTOS.h"
 
 
-static void BufferRead(u8* cmdbuf, u32 bytes, u32* a, u32* bufstart, u8* buf){
+static u8 DontMakeStreamHang(file_t* usingfile){
+    //Temporarily give up SD card to let streaming task use it
+    //IMPORTANT: destroys seek position, must FILE_ReadSeek() after
+    if(!vgm_sdtask_usingsdcard) return 0; //It isn't waiting
+    FILE_ReadClose(usingfile);
+    MUTEX_SDCARD_GIVE;
+    vTaskDelay(0); //Yield the current thread, SD card thread should take over
+    MUTEX_SDCARD_TAKE;
+    FILE_ReadReOpen(usingfile);
+    return 1;
+}
+
+static void BufferRead(file_t* usingfile, u8* cmdbuf, u32 bytes, u32* a, u32* bufstart, u8* buf){
     u32 b = 0;
     while(1){
         while(*a - *bufstart < VGM_SOURCESTREAM_BUFSIZE){
             cmdbuf[b++] = buf[(*a)++ - *bufstart];
             if(b >= bytes) return;
         }
+        DontMakeStreamHang(usingfile);
         FILE_ReadSeek(*a);
         FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
         *bufstart = *a;
     }
 }
-static void BufferSkip(u32 bytes, u32* a, u32* bufstart, u8* buf){
+static void BufferSkip(file_t* usingfile, u32 bytes, u32* a, u32* bufstart, u8* buf){
     *a += bytes;
     if(*a - *bufstart >= VGM_SOURCESTREAM_BUFSIZE){
+        DontMakeStreamHang(usingfile);
         FILE_ReadSeek(*a);
         FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE); 
         *bufstart = *a;
@@ -45,8 +60,6 @@ static inline u32 ReadLittleEndianU32(u8* buf, u32 addr){
         | ((u32)buf[addr+2] << 16) 
         | ((u32)buf[addr+3] << 24);
 }
-
-
 
 s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md){
     //Init
@@ -72,6 +85,7 @@ s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md){
         goto Error_Filesize;
     }
     u8* buf = malloc(0x40); //DMA target, have to use normal malloc
+    DontMakeStreamHang(&md->file);
     res = FILE_ReadBuffer(buf, 0x40);
     if(res < 0) goto Error_withBufferOpen;
     if(buf[0] != 'V' || buf[1] != 'g' || buf[2] != 'm' || buf[3] != ' '){
@@ -102,16 +116,17 @@ s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md){
     u8 cmdbuf[4];
     VgmChipWriteCmd cmd;
     buf = malloc(VGM_SOURCESTREAM_BUFSIZE); //DMA target, have to use normal malloc
+    DontMakeStreamHang(&md->file);
     FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
     bufstart = a;
     while(a < md->filesize){
-        BufferRead(&type, 1, &a, &bufstart, buf);
+        BufferRead(&md->file, &type, 1, &a, &bufstart, buf);
         ++md->numcmds;
         if(type == 0x67){
             //Data block
             ++md->numblocks;
-            BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
-            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            BufferSkip(&md->file, 2, &a, &bufstart, buf); //Skip 0x66 0x00
+            BufferRead(&md->file, cmdbuf, 4, &a, &bufstart, buf);
             thisblocksize = ReadLittleEndianU32(cmdbuf, 0);
             if(thisblocksize + a >= md->filesize){
                 DBG("VGM_File_LoadRAM error: block %d bytes @%d, file only %d bytes!", thisblocksize, a, md->filesize);
@@ -119,25 +134,25 @@ s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md){
                 break;
             }
             md->totalblocksize += thisblocksize;
-            BufferSkip(thisblocksize, &a, &bufstart, buf);
+            BufferSkip(&md->file, thisblocksize, &a, &bufstart, buf);
         }else if(type == 0x66){
             //End of stream
             break;
         }else if(type == 0x50){
             //PSG write
-            BufferRead(cmdbuf, 1, &a, &bufstart, buf);
+            BufferRead(&md->file, cmdbuf, 1, &a, &bufstart, buf);
             cmd.cmd = type;
             cmd.data = cmdbuf[0];
             VGM_Cmd_UpdateUsage(&md->usage, cmd);
-            if(cmd.data & 0x80) ++md->numcmdsram; //Don't count second halves of freq writes
+            if(!VGM_Cmd_IsSecondHalfTwoByte(cmd)) ++md->numcmdsram; //Don't count second halves of freq writes
         }else if((type & 0xFE) == 0x52){
             //OPN2 write
-            BufferRead(cmdbuf, 2, &a, &bufstart, buf);
+            BufferRead(&md->file, cmdbuf, 2, &a, &bufstart, buf);
             cmd.cmd = type;
             cmd.addr = cmdbuf[0];
             cmd.data = cmdbuf[1];
             VGM_Cmd_UpdateUsage(&md->usage, cmd);
-            if((cmd.addr & 0xF4) != 0xA0) ++md->numcmdsram; //Don't count second halves of freq writes
+            if(!VGM_Cmd_IsSecondHalfTwoByte(cmd)) ++md->numcmdsram; //Don't count second halves of freq writes
         }else if(type >= 0x80 && type <= 0x8F){
             //DAC and wait
             cmd.cmd = type;
@@ -148,11 +163,11 @@ s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md){
             ++md->numcmdsram;
         }else if(type == 0x61){
             //Long wait
-            BufferSkip(2, &a, &bufstart, buf);
+            BufferSkip(&md->file, 2, &a, &bufstart, buf);
             ++md->numcmdsram;
         }else{
             len = VGM_Cmd_GetCmdLen(type);
-            BufferSkip(len, &a, &bufstart, buf);
+            BufferSkip(&md->file, len, &a, &bufstart, buf);
         }
     }
     if(type != 0x66){
@@ -217,14 +232,15 @@ s32 VGM_File_StartStream(VgmSource* sourcestream, char* filepath, VgmFileMetadat
     u32 thisblocksize;
     u8 cmdbuf[4];
     u8* buf = malloc(VGM_SOURCESTREAM_BUFSIZE); //DMA target, have to use normal malloc
+    DontMakeStreamHang(&vss->file);
     FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
     bufstart = a;
     while(a < md->filesize){
-        BufferRead(&type, 1, &a, &bufstart, buf);
+        BufferRead(&vss->file, &type, 1, &a, &bufstart, buf);
         if(type == 0x67){
             //Data block
-            BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
-            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            BufferSkip(&vss->file, 2, &a, &bufstart, buf); //Skip 0x66 0x00
+            BufferRead(&vss->file, cmdbuf, 4, &a, &bufstart, buf);
             thisblocksize = ReadLittleEndianU32(cmdbuf, 0);
             if(thisblocksize + a >= md->filesize){
                 DBG("VGM_File_LoadRAM error: block %d bytes @%d, file only %d bytes!", thisblocksize, a, md->filesize);
@@ -232,6 +248,7 @@ s32 VGM_File_StartStream(VgmSource* sourcestream, char* filepath, VgmFileMetadat
                 break;
             }
             //Load actual block
+            DontMakeStreamHang(&vss->file);
             FILE_ReadSeek(a);
             FILE_ReadBuffer((u8*)(vss->block + blockaddr), thisblocksize);
             blockaddr += thisblocksize;
@@ -240,6 +257,7 @@ s32 VGM_File_StartStream(VgmSource* sourcestream, char* filepath, VgmFileMetadat
             if(blockcount >= md->numblocks) break;
             //Restore our buffer
             a += thisblocksize;
+            DontMakeStreamHang(&vss->file);
             FILE_ReadSeek(a);
             FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
             bufstart = a;
@@ -248,7 +266,7 @@ s32 VGM_File_StartStream(VgmSource* sourcestream, char* filepath, VgmFileMetadat
             break;
         }else{
             len = VGM_Cmd_GetCmdLen(type);
-            BufferSkip(len, &a, &bufstart, buf);
+            BufferSkip(&vss->file, len, &a, &bufstart, buf);
         }
     }
     if(blockcount < md->numblocks){
@@ -311,14 +329,15 @@ s32 VGM_File_LoadRAM(VgmSource* sourceram, VgmFileMetadata* md){
         blockaddr = 0;
         a = md->vgmdatastartaddr;
         blockcount = 0;
+        DontMakeStreamHang(&md->file);
         FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
         bufstart = a;
         while(a < md->filesize){
-            BufferRead(&type, 1, &a, &bufstart, buf);
+            BufferRead(&md->file, &type, 1, &a, &bufstart, buf);
             if(type == 0x67){
                 //Data block
-                BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
-                BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+                BufferSkip(&md->file, 2, &a, &bufstart, buf); //Skip 0x66 0x00
+                BufferRead(&md->file, cmdbuf, 4, &a, &bufstart, buf);
                 blocksize = ReadLittleEndianU32(cmdbuf, 0);
                 if(blocksize + a >= md->filesize){
                     DBG("VGM_File_LoadRAM error: block %d bytes @%d, file only %d bytes!", blocksize, a, md->filesize);
@@ -342,7 +361,7 @@ s32 VGM_File_LoadRAM(VgmSource* sourceram, VgmFileMetadata* md){
                 break;
             }else{
                 len = VGM_Cmd_GetCmdLen(type);
-                BufferSkip(len, &a, &bufstart, buf);
+                BufferSkip(&md->file, len, &a, &bufstart, buf);
             }
         }
         if(blockcount < md->numblocks){
@@ -359,72 +378,54 @@ s32 VGM_File_LoadRAM(VgmSource* sourceram, VgmFileMetadata* md){
     a = md->vgmdatastartaddr;
     c = 0;
     blockaddr = 0;
-    s32 lastpsgfreqwrite = -1, lastopn2freqwrite = -1;
+    s32 firsthalfc = -1;
+    DontMakeStreamHang(&md->file);
     FILE_ReadSeek(a); FILE_ReadBuffer(buf, VGM_SOURCESTREAM_BUFSIZE);
     bufstart = a;
+    VgmChipWriteCmd cmd;
     while(a < md->filesize && c < vsr->numcmds){
-        BufferRead(&type, 1, &a, &bufstart, buf);
+        BufferRead(&md->file, &type, 1, &a, &bufstart, buf);
         if(type == 0x67){
             //Data block
-            BufferSkip(2, &a, &bufstart, buf); //Skip 0x66 0x00
-            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            BufferSkip(&md->file, 2, &a, &bufstart, buf); //Skip 0x66 0x00
+            BufferRead(&md->file, cmdbuf, 4, &a, &bufstart, buf);
             blocksize = ReadLittleEndianU32(cmdbuf, 0);
-            BufferSkip(blocksize, &a, &bufstart, buf);
+            BufferSkip(&md->file, blocksize, &a, &bufstart, buf);
         }else if(type == 0xE0){
             //Seek in block
-            BufferRead(cmdbuf, 4, &a, &bufstart, buf);
+            BufferRead(&md->file, cmdbuf, 4, &a, &bufstart, buf);
             u32 temp = ReadLittleEndianU32(cmdbuf, 0);
             blockaddr = temp;
         }else if(type == 0x66){
             //End of stream
             break;
-        }else if(type == 0x50){
-            //PSG write
-            BufferRead(cmdbuf, 1, &a, &bufstart, buf);
-            if(!(cmdbuf[0] & 0x80)){
-                //Second half of freq write
-                if(lastpsgfreqwrite < 0){
-                    DBG("VGM_File_LoadRAM error: second half of PSG freq write with no first half!");
-                }else{
-                    vsr->cmds[lastpsgfreqwrite].data2 = cmdbuf[0];
-                    lastpsgfreqwrite = -1;
-                }
+        }else if(type == 0x50 || (type & 0xFE) == 0x52){
+            //Chip write
+            cmd.all = 0;
+            cmd.cmd = type;
+            if(type == 0x50){
+                BufferRead(&md->file, cmdbuf, 1, &a, &bufstart, buf);
+                cmd.data = cmdbuf[0];
             }else{
-                vsr->cmds[c].all = 0;
-                vsr->cmds[c].cmd = type;
-                vsr->cmds[c].data = cmdbuf[0];
-                if(!(cmdbuf[0] & 0x10) && (cmdbuf[0] < 0xE0)){
-                    //First half of freq write
-                    if(lastpsgfreqwrite >= 0){
-                        DBG("VGM_File_LoadRAM error: two first-half-PSG-freq-writes in a row!");
-                    }
-                    lastpsgfreqwrite = c;
-                }
-                ++c;
+                BufferRead(&md->file, cmdbuf, 2, &a, &bufstart, buf);
+                cmd.addr = cmdbuf[0];
+                cmd.data = cmdbuf[1];
             }
-        }else if((type & 0xFE) == 0x52){
-            //OPN2 write
-            BufferRead(cmdbuf, 2, &a, &bufstart, buf);
-            if((cmdbuf[0] & 0xF4) == 0xA0){
-                //Second half of freq write
-                if(lastopn2freqwrite < 0){
-                    DBG("VGM_File_LoadRAM error: second half of OPN2 freq write with no first half!");
+            if(VGM_Cmd_IsSecondHalfTwoByte(cmd)){
+                if(firsthalfc < 0){
+                    DBG("VGM_File_LoadRAM error: second half write with no first half!");
                 }else{
-                    vsr->cmds[lastopn2freqwrite].data2 = cmdbuf[0];
-                    lastopn2freqwrite = -1;
+                    vsr->cmds[firsthalfc].data2 = cmd.data;
+                    firsthalfc = -1;
                 }
             }else{
-                vsr->cmds[c].all = 0;
-                vsr->cmds[c].cmd = type;
-                vsr->cmds[c].addr = cmdbuf[0];
-                vsr->cmds[c].data = cmdbuf[1];
-                if((cmdbuf[0] & 0xF4) == 0xA4){
-                    //First half of freq write
-                    if(lastopn2freqwrite >= 0){
-                        DBG("VGM_File_LoadRAM error: two first-half-OPN2-freq-writes in a row!");
+                if(VGM_Cmd_IsTwoByte(cmd)){
+                    if(firsthalfc >= 0){
+                        DBG("VGM_File_LoadRAM error: two first-half-writes in a row!");
                     }
-                    lastopn2freqwrite = c;
+                    firsthalfc = c;
                 }
+                vsr->cmds[c].all = cmd.all;
                 ++c;
             }
         }else if(type >= 0x80 && type <= 0x8F){
@@ -448,7 +449,7 @@ s32 VGM_File_LoadRAM(VgmSource* sourceram, VgmFileMetadata* md){
             ++c;
         }else if(type == 0x61){
             //Long wait
-            BufferRead(cmdbuf, 2, &a, &bufstart, buf);
+            BufferRead(&md->file, cmdbuf, 2, &a, &bufstart, buf);
             vsr->cmds[c].all = 0;
             vsr->cmds[c].cmd = type;
             vsr->cmds[c].data = cmdbuf[0];
@@ -456,7 +457,7 @@ s32 VGM_File_LoadRAM(VgmSource* sourceram, VgmFileMetadata* md){
             ++c;
         }else{
             len = VGM_Cmd_GetCmdLen(type);
-            BufferSkip(len, &a, &bufstart, buf);
+            BufferSkip(&md->file, len, &a, &bufstart, buf);
         }
     }
     if(c < vsr->numcmds){
@@ -487,22 +488,16 @@ s32 VGM_File_SaveRAM(VgmSource* sourceram, char* filename){
     u8 type;
     VgmChipWriteCmd cmd;
     for(i=0; i<vsr->numcmds; ++i){
-        cmd = vsr->cmds[i];
+        cmd.all = vsr->cmds[i].all;
         type = cmd.cmd;
         if(type == 0x50){
             //PSG write
             datalen += 2;
-            if((cmd.data & 0x80) && !(cmd.data & 0x10) && (cmd.data < 0xE0)){
-                //It's a main write, not attenuation, and not noise--i.e. frequency
-                datalen += 2;
-            }
+            if(VGM_Cmd_IsTwoByte(cmd)) datalen += 2;
         }else if((type & 0xFE) == 0x52){
             //OPN2 write
             datalen += 3;
-            if((cmd.addr & 0xF4) == 0xA4){
-                //Frequency MSB write
-                datalen += 3;
-            }
+            if(VGM_Cmd_IsTwoByte(cmd)) datalen += 3;
         }else if(type >= 0x80 && type <= 0x8F){
             //OPN2 DAC write
             ++datalen;
@@ -536,7 +531,7 @@ s32 VGM_File_SaveRAM(VgmSource* sourceram, char* filename){
     //===============================Open file==================================
     if((res = FILE_UpdateFreeBytes()) < 0) return res;
     if(FILE_VolumeBytesFree() < datalen + 0x40) return FILE_ERR_WRITECOUNT;
-    MUTEX_SDCARD_TAKE;
+    MUTEX_SDCARD_TAKE; //TODO implement DontMakeStreamHang() with seeks
     FILE_WriteOpen(filename, 1);
     //==============================Write header================================
     //"Vgm "
@@ -593,52 +588,47 @@ s32 VGM_File_SaveRAM(VgmSource* sourceram, char* filename){
     }
     //=============================Write VGM data===============================
     DBG("--Writing VGM data");
+    VgmChipWriteCmd cmd1, cmd2;
     for(i=0; i<vsr->numcmds; ++i){
         cmd = vsr->cmds[i];
         type = cmd.cmd;
-        if(type == 0x50){
-            //PSG write
-            FILE_WriteByte(type);
-            FILE_WriteByte(cmd.data);
-            if((cmd.data & 0x80) && !(cmd.data & 0x10) && (cmd.data < 0xE0)){
-                //It's a main write, not attenuation, and not noise--i.e. frequency
-                FILE_WriteByte(type);
-                FILE_WriteByte(cmd.data2);
+        if(VGM_Cmd_UnpackTwoByte(cmd, &cmd1, &cmd2)){
+            if(type == 0x50){
+                FILE_WriteByte(cmd1.cmd);
+                FILE_WriteByte(cmd1.data);
+                FILE_WriteByte(cmd2.cmd);
+                FILE_WriteByte(cmd2.data);
+            }else if((type & 0xFE) == 0x52){
+                FILE_WriteByte(cmd1.cmd);
+                FILE_WriteByte(cmd1.addr);
+                FILE_WriteByte(cmd1.data);
+                FILE_WriteByte(cmd2.cmd);
+                FILE_WriteByte(cmd2.addr);
+                FILE_WriteByte(cmd2.data);
+            }else{
+                DBG("Error: Two-write command is not chip write?");
             }
-        }else if((type & 0xFE) == 0x52){
-            //OPN2 write
-            FILE_WriteByte(type);
-            FILE_WriteByte(cmd.addr);
-            FILE_WriteByte(cmd.data);
-            if((cmd.addr & 0xF4) == 0xA4){
-                //Frequency MSB write
-                FILE_WriteByte(type);
-                FILE_WriteByte(cmd.addr & 0xFB);
-                FILE_WriteByte(cmd.data2);
-            }
-        }else if(type >= 0x80 && type <= 0x8F){
-            //OPN2 DAC write--data already taken care of
-            FILE_WriteByte(type);
-        }else if(type >= 0x70 && type <= 0x7F){
-            //Short wait
-            FILE_WriteByte(type);
-            t += type - 0x6F;
-        }else if(type == 0x61){
-            //Long wait
-            FILE_WriteByte(type);
-            FILE_WriteByte(cmd.data);
-            FILE_WriteByte(cmd.data);
-            t += cmd.data | ((u32)cmd.data2 << 8);
-        }else if(type == 0x62){
-            //60 Hz wait
-            FILE_WriteByte(type);
-            t += VGM_DELAY62;
-        }else if(type == 0x63){
-            //50 Hz wait
-            FILE_WriteByte(type);
-            t += VGM_DELAY63;
         }else{
-            //Unsupported command, should not be here
+            if(type == 0x50){
+                //PSG write
+                FILE_WriteByte(type);
+                FILE_WriteByte(cmd.data);
+            }else if((type & 0xFE) == 0x52){
+                //OPN2 write
+                FILE_WriteByte(type);
+                FILE_WriteByte(cmd.addr);
+                FILE_WriteByte(cmd.data);
+            }else if(type == 0x61){
+                //Long wait
+                FILE_WriteByte(type);
+                FILE_WriteByte(cmd.data);
+                FILE_WriteByte(cmd.data2);
+            }else if(type == 0x62 || type == 0x63 || (type >= 0x70 && type <= 0x8F)){
+                //60 Hz wait, 50 Hz wait, short wait, or OPN2 DAC write--data already taken care of
+                FILE_WriteByte(type);
+            }else{
+                //Unsupported command, should not be here
+            }
         }
     }
     FILE_WriteByte(0x66); //End of Data

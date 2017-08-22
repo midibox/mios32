@@ -55,7 +55,7 @@ void VGM_Tracker_Init(){
     qsource = VGM_SourceQueue_Create();
     qsource->opn2clock = genesis_clock_opn2;
     qsource->psgclock = genesis_clock_psg;
-    qhead = VGM_Head_Create(qsource, 0x1000, 0x1000);
+    qhead = VGM_Head_Create(qsource, 0x1000, 0x1000, 0);
     qhead->playing = 1;
     u8 i;
     for(i=0; i<10*GENESIS_COUNT; ++i){

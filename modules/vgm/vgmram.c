@@ -30,73 +30,19 @@ void VGM_HeadRAM_Delete(void* headram){
     vgmh2_free(vhr);
 }
 
-void VGM_HeadRAM_SetUpBufferedCmd(VgmHead* head, VgmHeadRAM* vhr){
-    head->firstoftwo = 0;
-    head->iswait = 0;
-    head->iswrite = 0;
-    //Parse command
-    u8 type = vhr->bufferedcmd.cmd;
-    if(type == 0x50){
-        //PSG write
-        head->iswrite = 1;
-        if((vhr->bufferedcmd.data & 0x80) && !(vhr->bufferedcmd.data & 0x10) && (vhr->bufferedcmd.data < 0xE0)){
-            //It's a main write, not attenuation, and not noise--i.e. frequency
-            VGM_fixPSGFrequency(&(vhr->bufferedcmd), head->psgmult, head->psgfreq0to1);
-            head->firstoftwo = 1;
-        }
-        head->writecmd = vhr->bufferedcmd;
-        head->writecmd.cmd = 0x00;
-        VGM_Head_doMapping(head, &(head->writecmd));
-    }else if((type & 0xFE) == 0x52){
-        //OPN2 write
-        head->iswrite = 1;
-        if((vhr->bufferedcmd.addr & 0xF4) == 0xA4){
-            //Frequency MSB write
-            VGM_fixOPN2Frequency(&(vhr->bufferedcmd), head->opn2mult);
-            head->firstoftwo = 1;
-        }
-        head->writecmd = vhr->bufferedcmd;
-        head->writecmd.cmd = (type & 0x01) | 0x02;
-        VGM_Head_doMapping(head, &(head->writecmd));
-    }else if(type >= 0x80 && type <= 0x8F){
-        //OPN2 DAC write
-        head->iswrite = 1;
-        head->writecmd.cmd = 0x02;
-        head->writecmd.addr = 0x2A;
-        head->writecmd.data = vhr->bufferedcmd.data;
-        if(type != 0x80){
-            //Wait next
-            head->firstoftwo = 1;
-        }
-        VGM_Head_doMapping(head, &(head->writecmd));
-    }else if(type >= 0x70 && type <= 0x7F){
-        //Short wait
-        head->iswait = 1;
-        head->ticks += type - 0x6F;
-    }else if(type == 0x61){
-        //Long wait
-        head->iswait = 1;
-        head->ticks += vhr->bufferedcmd.data | ((u32)vhr->bufferedcmd.data2 << 8);
-    }else if(type == 0x62){
-        //60 Hz wait
-        head->iswait = 1;
-        head->ticks += VGM_DELAY62;
-    }else if(type == 0x63){
-        //50 Hz wait
-        head->iswait = 1;
-        head->ticks += VGM_DELAY63;
-    }else{
-        //Unsupported command, should not be here
-        head->iswait = 1;
-    }
+void VGM_HeadRAM_InternalCmdNext(VgmHead* head, VgmSourceRAM* vsr, VgmHeadRAM* vhr){
+    VgmChipWriteCmd cmd = vsr->cmds[head->srcaddr];
+    VGM_Head_doTransformations(head, &cmd);
+    head->firstoftwo = VGM_Cmd_UnpackTwoByte(cmd, &cmd, &(vhr->bufferedcmd));
+    VGM_Head_setWritecmd(head, cmd);
+    VGM_Head_doMapping(head, &(head->writecmd));
 }
 void VGM_HeadRAM_Restart(VgmHead* head){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
     VgmHeadRAM* vhr = (VgmHeadRAM*)head->data;
     head->srcaddr = head->source->markstart;
     head->isdone = 0;
-    vhr->bufferedcmd = vsr->cmds[head->srcaddr];
-    VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    VGM_HeadRAM_InternalCmdNext(head, vsr, vhr);
 }
 void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
     if(head->isdone) return;
@@ -106,28 +52,9 @@ void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
     head->iswrite = 0;
     if(head->firstoftwo){
         head->firstoftwo = 0;
-        if(vhr->bufferedcmd.cmd == 0x50){
-            //Second PSG frequency write
-            head->writecmd.cmd = 0x00;
-            head->writecmd.data = vhr->bufferedcmd.data2;
-            head->iswrite = 1;
-            VGM_Head_doMapping(head, &(head->writecmd));
-            return;
-        }else if((vhr->bufferedcmd.cmd & 0xFE) == 0x52){
-            //Second OPN2 frequency write
-            head->writecmd.cmd = 0x02 | (vhr->bufferedcmd.cmd & 0x01);
-            head->writecmd.addr = vhr->bufferedcmd.addr & 0xFB; //A4 -> A0
-            head->writecmd.data = vhr->bufferedcmd.data2;
-            head->iswrite = 1;            
-            VGM_Head_doMapping(head, &(head->writecmd));
-            return;
-        }else if((vhr->bufferedcmd.cmd & 0xF0) == 0x80){
-            //Wait after a sample
-            head->iswait = 1;
-            head->ticks += vhr->bufferedcmd.cmd - 0x80;
-            return;
-        }
-        //Otherwise there wasn't actually a second command...?
+        VGM_Head_setWritecmd(head, vhr->bufferedcmd);
+        VGM_Head_doMapping(head, &(head->writecmd));
+        return;
     }
     //Read new command
     ++head->srcaddr;
@@ -148,8 +75,7 @@ void VGM_HeadRAM_cmdNext(VgmHead* head, u32 vgm_time){
             return;
         }
     }
-    vhr->bufferedcmd = vsr->cmds[head->srcaddr];
-    VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    VGM_HeadRAM_InternalCmdNext(head, vsr, vhr);
 }
 
 VgmSource* VGM_SourceRAM_Create(){
@@ -247,33 +173,14 @@ void VGM_SourceRAM_DeleteCmd(VgmSource* source, u32 addr){
     MIOS32_IRQ_Enable();
 }
 
+//Turn DAC and Wait command into regular OPN2 chip write to DAC
+#define FixDACWrite(ARG) do{if((ARG).cmd >= 0x80 && (ARG).cmd <= 0x8F) {(ARG).cmd = 0x52; (ARG).addr = 0x2A;} } while(0)
+
 static void PlayCommandNow(VgmHead* head, VgmSourceRAM* vsr, VgmHeadRAM* vhr, VgmChipWriteCmd cmd){
-    u8 type = cmd.cmd;
-    if(type == 0x50){
-        //PSG write
-        if((cmd.data & 0x80) && !(cmd.data & 0x10) && (cmd.data < 0xE0)){
-            //It's a main write, not attenuation, and not noise--i.e. frequency
-            VGM_fixPSGFrequency(&cmd, head->psgmult, head->psgfreq0to1);
-        }
-        cmd.cmd = 0x00;
-        VGM_Head_doMapping(head, &cmd);
-    }else if((type & 0xFE) == 0x52){
-        //OPN2 write
-        if((cmd.addr & 0xF4) == 0xA4){
-            //Frequency MSB write
-            VGM_fixOPN2Frequency(&(cmd), head->opn2mult);
-        }
-        cmd.cmd = (type & 0x01) | 0x02;
-        VGM_Head_doMapping(head, &cmd);
-    }else if(type >= 0x80 && type <= 0x8F){
-        //OPN2 DAC write
-        cmd.cmd = 0x02;
-        cmd.addr = 0x2A;
-        cmd.data = cmd.data;
-        VGM_Head_doMapping(head, &cmd);
-    }else{
-        return;
-    }
+    if(!VGM_Cmd_IsWrite(cmd)) return;
+    VGM_Head_doTransformations(head, &cmd);
+    FixDACWrite(cmd);
+    VGM_Head_doMapping(head, &cmd);
     VGM_Tracker_Enqueue(cmd, 0);
 }
 
@@ -296,8 +203,7 @@ s32 VGM_HeadRAM_Forward1(VgmHead* head){
         return 0;
     }
     //Otherwise, prepare the next command
-    vhr->bufferedcmd = vsr->cmds[head->srcaddr];
-    VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    VGM_HeadRAM_InternalCmdNext(head, vsr, vhr);
     return 0;
 }
 s32 VGM_HeadRAM_Backward1(VgmHead* head){
@@ -311,11 +217,12 @@ s32 VGM_HeadRAM_Backward1(VgmHead* head){
     //Back one command
     --head->srcaddr;
     head->isdone = 0;
-    VgmChipWriteCmd curcmd = vsr->cmds[head->srcaddr];
+    VgmChipWriteCmd curcmd;
+    curcmd.all = vsr->cmds[head->srcaddr].all;
     //Find the most recent command before this one, which this one overwrote the state of
     s32 a; u8 flag = 0;
     VgmChipWriteCmd oldcmd;
-    if(curcmd.cmd >= 0x80 && curcmd.cmd <= 0x8F) curcmd.cmd = 0x52; //Turn DAC sample into regular DAC write
+    FixDACWrite(curcmd);
     if(curcmd.cmd == 0x50){
         for(a=(s32)head->srcaddr-1; a>=0; --a){
             oldcmd = vsr->cmds[a];
@@ -346,7 +253,7 @@ s32 VGM_HeadRAM_Backward1(VgmHead* head){
     }else if((curcmd.cmd & 0xFE) == 0x52){
         for(a=(s32)head->srcaddr-1; a>=0; --a){
             oldcmd = vsr->cmds[a];
-            if(oldcmd.cmd >= 0x80 && oldcmd.cmd <= 0x8F) oldcmd.cmd = 0x52; //Turn DAC sample into regular DAC write
+            FixDACWrite(oldcmd);
             //Has to be OPN2 Write command with the same addrhi
             if(oldcmd.cmd != curcmd.cmd) continue;
             //Has to be the same address
@@ -373,8 +280,7 @@ s32 VGM_HeadRAM_Backward1(VgmHead* head){
         }
     }
     //Prepare the next command
-    vhr->bufferedcmd = vsr->cmds[head->srcaddr];
-    VGM_HeadRAM_SetUpBufferedCmd(head, vhr);
+    VGM_HeadRAM_InternalCmdNext(head, vsr, vhr);
     return 0;
 }
 s32 VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
@@ -392,21 +298,6 @@ s32 VGM_HeadRAM_SeekTo(VgmHead* head, u32 newaddr){
     return 0;
 }
 
-static u32 GetWaitTime(VgmChipWriteCmd cmd){
-    if(cmd.cmd >= 0x80 && cmd.cmd <= 0x8F){
-        return cmd.cmd - 0x80;
-    }else if(cmd.cmd >= 0x70 && cmd.cmd <= 0x7F){
-        return cmd.cmd - 0x6F;
-    }else if(cmd.cmd == 0x61){
-        return (cmd.data | ((u32)cmd.data2 << 8));
-    }else if(cmd.cmd == 0x62){
-        return VGM_DELAY62;
-    }else if(cmd.cmd == 0x63){
-        return VGM_DELAY63;
-    }else{
-        return 0;
-    }
-}
 
 s32 VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     VgmSourceRAM* vsr = (VgmSourceRAM*)head->source->data;
@@ -425,7 +316,7 @@ s32 VGM_HeadRAM_ForwardState(VgmHead* head, u32 maxt, u32 maxdt, u8 allowstay){
     u32 origsrcaddr = head->srcaddr;
     while(head->srcaddr < vsr->numcmds){
         cmd = vsr->cmds[head->srcaddr];
-        thist = GetWaitTime(cmd);
+        thist = VGM_Cmd_GetWaitValue(cmd);
         if(state == 0){
             if(thist == 0 || (cmd.cmd >= 0x80 && cmd.cmd <= 0x8F)){
                 //It's a chip write command
@@ -460,7 +351,7 @@ s32 VGM_HeadRAM_BackwardState(VgmHead* head, u32 maxt, u32 maxdt){
     u32 origsrcaddr = head->srcaddr;
     while(head->srcaddr > 0){
         cmd = vsr->cmds[head->srcaddr-1];
-        thist = GetWaitTime(cmd);
+        thist = VGM_Cmd_GetWaitValue(cmd);
         if(state == 0){
             totalt += thist;
             if(thist >= maxdt || totalt >= maxt){

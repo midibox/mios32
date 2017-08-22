@@ -135,63 +135,50 @@ u8 VGM_HeadStream_cmdNext(VgmHead* head, u32 vgm_time){
         type = vhs->subbuffer[0];
         cmdlen = VGM_Cmd_GetCmdLen(type);
         dontunbuffer = 0;
-        if(type == 0x50){
-            //PSG write
-            head->iswrite = 1;
-            head->writecmd.cmd = 0x00;
-            head->writecmd.data = vhs->subbuffer[1];
-            if((head->writecmd.data & 0x80) && !(head->writecmd.data & 0x10) && (head->writecmd.data < 0xE0)){
-                //It's a main write, not attenuation, and not noise
+        if(type == 0x50 || type == 0x52 || type == 0x53){
+            VgmChipWriteCmd first, second, res;
+            first.cmd = type;
+            if(type >= 0x52){
+                first.addr = vhs->subbuffer[1];
+                first.data = vhs->subbuffer[2];
+            }else{
+                first.data = vhs->subbuffer[1];
+            }
+            if(VGM_Cmd_IsTwoByte(first)){
                 u8 bufferpos, newtype;
                 bufferpos = vhs->subbufferlen;
+                res.all = 0xFFFFFFFF;
                 while(VGM_HeadStream_bufferNextCommand(head, vhs, vss)){
                     newtype = vhs->subbuffer[bufferpos];
                     if(newtype == type){
-                        //Next command is another PSG write
-                        head->writecmd.data2 = vhs->subbuffer[bufferpos+1]; //Load command
-                        if(!(head->writecmd.data2 & 0x80)){
-                            //Second command is a frequency MSB write
-                            VGM_fixPSGFrequency(&(head->writecmd), head->psgmult, head->psgfreq0to1);
-                            //Reconstruct next command
-                            vhs->subbuffer[bufferpos+1] = head->writecmd.data2;
+                        //Next command is a candidate for the corresponding write,
+                        //and we're sure we've loaded enough bytes
+                        second.cmd = type;
+                        if(type >= 0x52){
+                            second.addr = vhs->subbuffer[bufferpos+1];
+                            second.data = vhs->subbuffer[bufferpos+2];
+                        }else{
+                            second.data = vhs->subbuffer[bufferpos+1];
                         }
-                        //If it's another main write, don't modify anything, and stop
+                        res = VGM_Cmd_TryMakeTwoByte(first, second);
+                        //Originally we stopped the loop after finding a different
+                        //voice's frequency write also; now we ignore that and keep looking
+                        if(res.all == 0xFFFFFFFF) continue;
+                        VGM_Head_doTransformations(head, &res);
+                        if(type >= 0x52){
+                            vhs->subbuffer[bufferpos+2] = res.data2;
+                        }else{
+                            vhs->subbuffer[bufferpos+1] = res.data2;
+                        }
                         break;
                     }
                     bufferpos = vhs->subbufferlen;
                 }
+            }else{
+                res.all = first.all;
+                VGM_Head_doTransformations(head, &res);
             }
-            VGM_Head_doMapping(head, &(head->writecmd));
-        }else if((type & 0xFE) == 0x52){
-            //OPN2 write
-            head->iswrite = 1;
-            head->writecmd.cmd = (type & 0x01) | 0x02;
-            head->writecmd.addr = vhs->subbuffer[1];
-            head->writecmd.data = vhs->subbuffer[2];
-            if((head->writecmd.addr & 0xF4) == 0xA4){
-                //Frequency MSB write, read to find frequency LSB write command
-                u8 bufferpos, newtype;
-                bufferpos = vhs->subbufferlen;
-                while(VGM_HeadStream_bufferNextCommand(head, vhs, vss)){
-                    newtype = vhs->subbuffer[bufferpos];
-                    if(newtype == type){
-                        //Next command is another OPN2 write to the same addrhi
-                        if((head->writecmd.addr & 0xFB) == (vhs->subbuffer[bufferpos+1] & 0xFB)){
-                            //Second command is a frequency write to same channel
-                            if(!(vhs->subbuffer[bufferpos+1] & 0x04)){
-                                //It's a frequency LSB write
-                                head->writecmd.data2 = vhs->subbuffer[bufferpos+2];
-                                VGM_fixOPN2Frequency(&(head->writecmd), head->opn2mult);
-                                //Reconstruct next command
-                                vhs->subbuffer[bufferpos+2] = head->writecmd.data2;
-                            }
-                            //If it's a frequency MSB command, don't modify anything, and stop
-                            break;
-                        }
-                    }
-                    bufferpos = vhs->subbufferlen;
-                }
-            }
+            VGM_Head_setWritecmd(head, res);
             VGM_Head_doMapping(head, &(head->writecmd));
         }else if(type >= 0x80 && type <= 0x8F){
             //OPN2 DAC write
@@ -308,19 +295,24 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
         addrto = &(vhs->buffer2addr);
     }
     if(bufferto != NULL){
+        vgm_sdtask_usingsdcard = 1;
+        MUTEX_SDCARD_TAKE;
+        
         u8 leds = MIOS32_BOARD_LED_Get();
         MIOS32_BOARD_LED_Set(0b1111, 0b0100);
         VGM_PerfMon_ClockIn(VGM_PERFMON_TASK_CARD);
-        vgm_sdtask_usingsdcard = 1;
-        MUTEX_SDCARD_TAKE;
+        
         FILE_ReadReOpen(&vss->file);
         FILE_ReadSeek(vhs->wantbufferaddr);
         FILE_ReadBuffer(bufferto, VGM_SOURCESTREAM_BUFSIZE);
         FILE_ReadClose(&vss->file);
-        MUTEX_SDCARD_GIVE;
-        vgm_sdtask_usingsdcard = 0;
+        
         VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CARD);
         MIOS32_BOARD_LED_Set(0b1111, leds);
+        
+        MUTEX_SDCARD_GIVE;
+        vgm_sdtask_usingsdcard = 0;
+        
         vhs->wantbuffer = 0;
         *addrto = vhs->wantbufferaddr;
     }
