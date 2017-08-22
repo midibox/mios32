@@ -53,6 +53,10 @@ typedef struct {
     char name[13];
     u8 rootnote;
     u16 dummy2;
+    union{
+        u32 tlbaseoffs;
+        u8 tlbaseoff[4];
+    };
 } synprogram_t;
 
 
@@ -66,7 +70,7 @@ typedef struct {
     u8 dummy:2;
     u8 sourcechannel;
     u8 note;
-    u8 dummy2;
+    u8 vel;
     u32 recency;
     VgmHead_Channel mapping[12];
     VgmHead* head;
@@ -115,7 +119,7 @@ extern void SyEng_DeleteProgram(u8 chan);
 
 extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
-extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying);
+extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, synprogram_t* prog, u8 startplaying);
 extern void SyEng_SilencePI(synproginstance_t* pi);
 
 extern void SyEng_PrintEngineDebugInfo();

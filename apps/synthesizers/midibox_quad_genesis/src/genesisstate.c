@@ -137,13 +137,13 @@ void DrawGenesisActivity(u8 g, u8 v, u8 drawong, u8 drawonv){
 }
 
 void DrawGenesisState_Op(u8 g, u8 chan, u8 op){
-    FrontPanel_LEDRingSet(FP_LEDR_HARM, 1, genesis[g].opn2.chan[chan].op[op].fmult);
-    FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 0, DETUNE_DISPLAY(genesis[g].opn2.chan[chan].op[op].detune));
-    FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 1, genesis[g].opn2.chan[chan].op[op].attackrate >> 1);
-    FrontPanel_LEDRingSet(FP_LEDR_DEC1R, 1, genesis[g].opn2.chan[chan].op[op].decay1rate >> 1);
-    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 1, 15 - genesis[g].opn2.chan[chan].op[op].decaylevel);
-    FrontPanel_LEDRingSet(FP_LEDR_DEC2R, 1, genesis[g].opn2.chan[chan].op[op].decay2rate >> 1);
-    FrontPanel_LEDRingSet(FP_LEDR_RELRATE, 1, genesis[g].opn2.chan[chan].op[op].releaserate);
+    FrontPanel_LEDRingSet(FP_LEDR_HARM, 2, genesis[g].opn2.chan[chan].op[op].fmult);
+    FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 1, DETUNE_DISPLAY(genesis[g].opn2.chan[chan].op[op].detune));
+    FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 2, genesis[g].opn2.chan[chan].op[op].attackrate >> 1);
+    FrontPanel_LEDRingSet(FP_LEDR_DEC1R, 2, genesis[g].opn2.chan[chan].op[op].decay1rate >> 1);
+    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 2, 15 - genesis[g].opn2.chan[chan].op[op].decaylevel);
+    FrontPanel_LEDRingSet(FP_LEDR_DEC2R, 2, genesis[g].opn2.chan[chan].op[op].decay2rate >> 1);
+    FrontPanel_LEDRingSet(FP_LEDR_RELRATE, 2, genesis[g].opn2.chan[chan].op[op].releaserate);
     FrontPanel_LEDSet(FP_LED_KSR, genesis[g].opn2.chan[chan].op[op].ratescale);
     FrontPanel_LEDSet(FP_LED_SSGON, genesis[g].opn2.chan[chan].op[op].ssg_enable);
     FrontPanel_LEDSet(FP_LED_SSGINIT, genesis[g].opn2.chan[chan].op[op].ssg_init);
@@ -167,13 +167,13 @@ void DrawGenesisState_Op(u8 g, u8 chan, u8 op){
     }
 }
 void ClearGenesisState_Op(){
-    FrontPanel_LEDRingSet(FP_LEDR_HARM, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_DEC1R, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_DEC2R, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_RELRATE, 0xFF, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_HARM, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_DETUNE, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_ATTACK, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_DEC1R, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_DECLVL, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_DEC2R, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_RELRATE, 0, 0);
     FrontPanel_LEDSet(FP_LED_KSR, 0);
     FrontPanel_LEDSet(FP_LED_SSGON, 0);
     FrontPanel_LEDSet(FP_LED_SSGINIT, 0);
@@ -193,11 +193,11 @@ void ClearGenesisState_Op(){
 void DrawGenesisState_Chan(u8 g, u8 chan){
     u8 op;
     for(op=0; op<4; ++op){
-        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 1, (127 - genesis[g].opn2.chan[chan].op[op].totallevel) >> 3);
+        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 2, (127 - genesis[g].opn2.chan[chan].op[op].totallevel) >> 3);
         FrontPanel_LEDSet(FP_LED_KEYON_1 + op, genesis[g].opn2.chan[chan].op[op].kon);
     }
     if(chan == 2){
-        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
+        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 2, genesis[g].opn2.timera_high >> 4);
         FrontPanel_LEDSet(FP_LED_CH3_NORMAL, genesis[g].opn2.ch3_mode == 0);
         FrontPanel_LEDSet(FP_LED_CH3_4FREQ, genesis[g].opn2.ch3_mode & 1);
         FrontPanel_LEDSet(FP_LED_CH3_CSM, genesis[g].opn2.ch3_mode == 2);
@@ -207,9 +207,9 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
         FrontPanel_DrawDigit(FP_LED_DIG_OCT, '0' + genesis[g].opn2.chan[chan].block);
         FrontPanel_DrawNumber(FP_LED_DIG_FREQ_1, ((u16)genesis[g].opn2.chan[chan].fnum_high << 8) | genesis[g].opn2.chan[chan].fnum_low);
     }
-    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, 1, genesis[g].opn2.chan[chan].lfofreqd);
-    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, 1, genesis[g].opn2.chan[chan].lfoampd);
-    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, 1, genesis[g].opn2.chan[chan].feedback);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, 2, genesis[g].opn2.chan[chan].lfofreqd);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, 2, genesis[g].opn2.chan[chan].lfoampd);
+    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, 2, genesis[g].opn2.chan[chan].feedback);
     FrontPanel_LEDSet(FP_LED_FEEDBACK, genesis[g].opn2.chan[chan].feedback > 0);
     FrontPanel_DrawAlgorithm(genesis[g].opn2.chan[chan].algorithm);
     FrontPanel_LEDSet(FP_LED_OUTL, genesis[g].opn2.chan[chan].out_l);
@@ -218,11 +218,11 @@ void DrawGenesisState_Chan(u8 g, u8 chan){
 void ClearGenesisState_Chan(){
     u8 op;
     for(op=0; op<4; ++op){
-        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 0xFF, 0);
+        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, 0, 0);
         FrontPanel_LEDSet(FP_LED_KEYON_1 + op, 0);
     }
     //if(chan == 2){
-        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0xFF, 0);
+        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 0, 0);
         FrontPanel_LEDSet(FP_LED_CH3_NORMAL, 0);
         FrontPanel_LEDSet(FP_LED_CH3_4FREQ, 0);
         FrontPanel_LEDSet(FP_LED_CH3_CSM, 0);
@@ -235,9 +235,9 @@ void ClearGenesisState_Chan(){
         FrontPanel_DrawDigit(FP_LED_DIG_FREQ_3, ' ');
         FrontPanel_DrawDigit(FP_LED_DIG_FREQ_4, ' ');
     //}
-    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, 0xFF, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, 0, 0);
     FrontPanel_LEDSet(FP_LED_FEEDBACK, 0);
     FrontPanel_DrawAlgorithm(0xFF);
     FrontPanel_LEDSet(FP_LED_OUTL, 0);
@@ -252,14 +252,14 @@ void ClearGenesisState_DAC(){
     FrontPanel_LEDSet(FP_LED_DACEN, 0);
 }
 void DrawGenesisState_OPN2(u8 g){
-    FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 1, genesis[g].opn2.lfo_freq);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 2, genesis[g].opn2.lfo_freq);
     FrontPanel_LEDSet(FP_LED_UGLY, genesis[g].opn2.test_ugly);
     FrontPanel_LEDSet(FP_LED_DACOVR, genesis[g].opn2.dac_override);
     FrontPanel_LEDSet(FP_LED_LFO, genesis[g].opn2.lfo_enabled);
     FrontPanel_LEDSet(FP_LED_EG, !genesis[g].opn2.test_noeg);
 }
 void ClearGenesisState_OPN2(){
-    FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 0xFF, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 0, 0);
     FrontPanel_LEDSet(FP_LED_UGLY, 0);
     FrontPanel_LEDSet(FP_LED_DACOVR, 0);
     FrontPanel_LEDSet(FP_LED_LFO, 0);
@@ -268,7 +268,7 @@ void ClearGenesisState_OPN2(){
 void DrawGenesisState_PSG(u8 g, u8 voice){
     g &= 3;
     voice &= 3;
-    FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, 1, 15 - genesis[g].psg.voice[voice].atten);
+    FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, 2, 15 - genesis[g].psg.voice[voice].atten);
     if(voice == 3){
         //Noise channel
         FrontPanel_LEDSet(FP_LED_NS_HI,  genesis[g].psg.noise.rate == 0);
@@ -277,7 +277,7 @@ void DrawGenesisState_PSG(u8 g, u8 voice){
         FrontPanel_LEDSet(FP_LED_NS_SQ3, genesis[g].psg.noise.rate == 3);
         FrontPanel_LEDSet(FP_LED_NS_PLS, genesis[g].psg.noise.type == 0);
         FrontPanel_LEDSet(FP_LED_NS_WHT, genesis[g].psg.noise.type == 1);
-        FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0xFF, 0);
+        FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0, 0);
     }else{
         FrontPanel_LEDSet(FP_LED_NS_HI,  0);
         FrontPanel_LEDSet(FP_LED_NS_MED, 0);
@@ -285,12 +285,12 @@ void DrawGenesisState_PSG(u8 g, u8 voice){
         FrontPanel_LEDSet(FP_LED_NS_SQ3, 0);
         FrontPanel_LEDSet(FP_LED_NS_PLS, 0);
         FrontPanel_LEDSet(FP_LED_NS_WHT, 0);
-        FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0, ((1023 - genesis[g].psg.square[voice].freq) >> 4) & 0xF);
+        FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 1, ((1023 - genesis[g].psg.square[voice].freq) >> 4) & 0xF);
     }
 }
 void ClearGenesisState_PSG(){
-    FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, 0xFF, 0);
-    FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0xFF, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, 0, 0);
+    FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, 0, 0);
     FrontPanel_LEDSet(FP_LED_NS_HI,  0);
     FrontPanel_LEDSet(FP_LED_NS_MED, 0);
     FrontPanel_LEDSet(FP_LED_NS_LOW, 0);

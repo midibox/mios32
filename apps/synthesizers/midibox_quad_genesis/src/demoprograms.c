@@ -25,13 +25,14 @@ void DemoPrograms_Init(){
     channels[1].program = prog;
     sprintf(prog->name, "Grand Piano");
     prog->rootnote = 72;
+    prog->tlbaseoffs = 0x200C0C0C;
     prog->usage.all = 0;
     //Create init VGM file
     VgmSource* source = VGM_SourceRAM_Create();
     VgmSourceRAM* vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = genesis_clock_opn2;
-    vsr->numcmds = 30;
-    VgmChipWriteCmd* data = vgmh2_malloc(30*sizeof(VgmChipWriteCmd));
+    vsr->numcmds = 26;
+    VgmChipWriteCmd* data = vgmh2_malloc(26*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
     //data[0] = (VgmChipWriteCmd){.cmd = 0x02, .addr = 0x5C, .data = 0x1F, .data2 = 0}; //Set Ch1:Op4 attack rate to full
     //
@@ -40,10 +41,6 @@ void DemoPrograms_Init(){
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x38, .data=0x33 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x34, .data=0x0D };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x3C, .data=0x01 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x40, .data=0x23 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x48, .data=0x26 };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x44, .data=0x2D };
-    data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4C, .data=0x00 };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x50, .data=0x5F };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x58, .data=0x5F };
     data[i++] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x54, .data=0x99 };
@@ -73,13 +70,17 @@ void DemoPrograms_Init(){
     source = VGM_SourceRAM_Create();
     vsr = (VgmSourceRAM*)source->data;
     source->opn2clock = genesis_clock_opn2;
-    vsr->numcmds = 2;
-    data = vgmh2_malloc(2*sizeof(VgmChipWriteCmd));
+    vsr->numcmds = 6;
+    data = vgmh2_malloc(6*sizeof(VgmChipWriteCmd));
     vsr->cmds = data;
-    data[0] = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2); //Middle C
-        data[0].cmd  = 0x52;
-        data[0].addr = 0xA4;
-    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
+    data[0] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x40, .data=0x23 };
+    data[1] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x48, .data=0x26 };
+    data[2] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x44, .data=0x2D };
+    data[3] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x4C, .data=0x00 };
+    data[4] = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2); //Middle C
+        data[4].cmd  = 0x52;
+        data[4].addr = 0xA4;
+    data[5] = (VgmChipWriteCmd){.cmd=0x52, .addr=0x28, .data=0xF0, .data2=0}; //Key on Ch1
     VGM_Source_UpdateUsage(source);
     prog->noteonsource = source;
     //Create note-off VGM file
@@ -100,6 +101,7 @@ void DemoPrograms_Init(){
     channels[5].program = prog;
     sprintf(prog->name, "3Voice Chord");
     prog->rootnote = 60;
+    prog->tlbaseoffs = 0;
     prog->usage.all = 0;
     //Create init VGM file
     source = VGM_SourceRAM_Create();
@@ -187,6 +189,7 @@ void DemoPrograms_Init(){
     channels[2].program = prog;
     sprintf(prog->name, "SMB1 Coin");
     prog->rootnote = 60;
+    prog->tlbaseoffs = 0x20000000;
     prog->usage.all = 0;
     //Create init VGM file
     prog->initsource = NULL;
@@ -232,6 +235,7 @@ void DemoPrograms_Init(){
     channels[4].program = prog;
     sprintf(prog->name, "Noise Test");
     prog->rootnote = 42;
+    prog->tlbaseoffs = 0x20000000;
     prog->usage.all = 0;
     //Create init VGM file
     source = VGM_SourceRAM_Create();
@@ -279,6 +283,7 @@ void DemoPrograms_Init(){
     channels[3].program = prog;
     sprintf(prog->name, "VGM Playback");
     prog->rootnote = 76;
+    prog->tlbaseoffs = 0;
     prog->usage.all = 0;
     //Create init VGM file
     prog->initsource = NULL;
@@ -286,7 +291,7 @@ void DemoPrograms_Init(){
     prog->noteonsource = NULL;
     source = VGM_SourceStream_Create();
     VgmFileMetadata md;
-#define preloadvgmpath "/GENESIS/SOR1/BEATNIK.VGM"
+#define preloadvgmpath "/GENESIS/SOR1/GOODEND.VGM"
     s32 res = VGM_File_ScanFile(preloadvgmpath, &md);
     if(res >= 0){
         res = VGM_File_StartStream(source, preloadvgmpath, &md);

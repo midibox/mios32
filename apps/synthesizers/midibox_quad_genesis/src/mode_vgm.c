@@ -74,7 +74,7 @@ void Mode_Vgm_SelectVgm(VgmSource* newselvgm){
     selvgm = newselvgm;
     vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
     synproginstance_t* pi = &proginstances[vgmpreviewpi];
-    SyEng_PlayVGMOnPI(pi, selvgm, 60, 0);
+    SyEng_PlayVGMOnPI(pi, selvgm, NULL, 0);
     if(oldaddr >= 0) pi->head->srcaddr = oldaddr;
     vmutes = selvgm->mutes;
     vsolos = 0;
@@ -100,7 +100,7 @@ static void EnsurePreviewPiOK(){
     if(vgmpreviewpi >= MBQG_NUM_PROGINSTANCES){
         vgmpreviewpi = SyEng_GetStaticPI(selprogram->usage);
         synproginstance_t* pi = &proginstances[vgmpreviewpi];
-        SyEng_PlayVGMOnPI(pi, selvgm, 60, playing);
+        SyEng_PlayVGMOnPI(pi, selvgm, NULL, playing);
     }
 }
 void Mode_Vgm_SignalVgmUsageChange(){
@@ -247,6 +247,7 @@ void Mode_Vgm_Init(){
 }
 void Mode_Vgm_GotFocus(){
     submode = 0;
+    FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
     FrontPanel_LEDSet(FP_LED_PLAY, playing);
     FrontPanel_LEDSet(FP_LED_CMDS, !statemode);
     FrontPanel_LEDSet(FP_LED_STATE, statemode);
@@ -314,6 +315,7 @@ void Mode_Vgm_Background(){
             if(selvoice <= 6 && selvoice >= 1){
                 FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 1);
             }
+            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
         }
         lastselop = selop;
         if(lastselvoice != selvoice || laststatemode != statemode || lastsubmode != submode){
@@ -348,6 +350,7 @@ void Mode_Vgm_Background(){
             FrontPanel_LEDSet(FP_LED_TIME_R, 0);
             FrontPanel_LEDSet(FP_LED_SELOP_1 + selop, 0);
             FrontPanel_GenesisLEDSet(0, selvoice, 1, 0);
+            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
         }
         laststatemode = statemode;
         lastsubmode = submode;
@@ -614,6 +617,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                         EnsurePreviewPiOK();
                         if(VGM_HeadRAM_Backward1(proginstances[vgmpreviewpi].head) >= 0){
                             DrawMenu();
+                            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
                         }
                     }
                     break;
@@ -624,6 +628,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                         EnsurePreviewPiOK();
                         if(VGM_HeadRAM_Forward1(proginstances[vgmpreviewpi].head) >= 0){
                             DrawMenu();
+                            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
                         }
                     }
                     break;
@@ -634,6 +639,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                         if(VGM_HeadRAM_BackwardState(proginstances[vgmpreviewpi].head, 
                                 0xFFFFFFFF, 100) >= 0){
                             DrawMenu();
+                            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
                         }
                     }
                     break;
@@ -644,6 +650,7 @@ void Mode_Vgm_BtnSystem(u8 button, u8 state){
                         if(VGM_HeadRAM_ForwardState(proginstances[vgmpreviewpi].head, 
                                 0xFFFFFFFF, 100, 0) >= 0){
                             DrawMenu();
+                            FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
                         }
                     }
                     break;

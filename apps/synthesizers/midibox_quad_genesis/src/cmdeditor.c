@@ -21,6 +21,9 @@
 #include "mode_prog.h"
 
 
+static const u8 init_reg_vals[8] = {0x01, 0x20, 0x5F, 0x00, 0x00, 0x0B, 0x00, 0x00};
+
+
 void DrawUsageOnVoices(VgmUsageBits usage, u8 r){
     u32 u = usage.all;
     u8 i;
@@ -68,7 +71,7 @@ void DrawCmdLine(VgmChipWriteCmd cmd, u8 row, u8 ctrlled){
                 if((chan & 0x03) == 0x03) goto end; //Make sure not writing to 0x03 or 0x07
                 if(chan >= 0x04) chan -= 1; //Move channels 4, 5, 6 down to 3, 4, 5
                 outbits |= 1 << (3+chan);
-            }else if(cmd.addr == 0x24 || cmd.addr == 0x25 || cmd.addr == 0x27){
+            }else if(cmd.addr >= 0x24 && cmd.addr <= 0x27){
                 outbits |= 1 << (5);
             }else if(cmd.addr == 0x2A || cmd.addr == 0x2B){
                 outbits |= 1 << (9);
@@ -109,6 +112,7 @@ end:
 }
 
 void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
+    u8 notclear = !clear;
     if(cmd.cmd == 0x50){
         //PSG write
         u8 voice;
@@ -116,7 +120,7 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
         FrontPanel_GenesisLEDSet(0, 8+voice, 0, !clear);
         if(cmd.data & 0x10){
             //Attenuation
-            FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, clear+1, 15 - (cmd.data & 0x0F));
+            FrontPanel_LEDRingSet(FP_LEDR_PSGVOL, notclear<<1, 15 - (cmd.data & 0x0F));
         }else{
             if(voice == 3){
                 //Noise parameters
@@ -130,7 +134,7 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
                 FrontPanel_LEDSet(FP_LED_NS_WHT, x == 1 && !clear);
             }else{
                 u16 f = (cmd.data & 0x0F) | ((u16)(cmd.data2 & 0x3F) << 4);
-                FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, clear << 1, ((1023 - f) >> 4) & 0xF);
+                FrontPanel_LEDRingSet(FP_LEDR_PSGFREQ, notclear, ((1023 - f) >> 4) & 0xF);
             }
         }
     }else if((cmd.cmd & 0xFE) == 0x52){
@@ -161,14 +165,12 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
                         break;
                     case 0x22:
                         //LFO Register
-                        FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, 1+clear, cmd.data & 7);
+                        FrontPanel_LEDRingSet(FP_LEDR_LFOFREQ, notclear<<1, cmd.data & 7);
                         FrontPanel_LEDSet(FP_LED_LFO, ((cmd.data >> 3) & 1) && !clear);
                         FrontPanel_GenesisLEDSet(0, 0, 0, !clear);
                         break;
                     case 0x24:
-                    case 0x25:
-                        //TODO data2 for TimerA frequency write?
-                        //FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
+                        FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, notclear<<1, cmd.data >> 4);
                         break;
                     case 0x27:
                         i = cmd.data >> 6;
@@ -204,27 +206,27 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
                 FrontPanel_LEDSet(FP_LED_OPNODE_R_1 + op, !clear);
                 switch(reg){
                     case 0x30:
-                        FrontPanel_LEDRingSet(FP_LEDR_HARM, clear+1, cmd.data & 0x0F);
+                        FrontPanel_LEDRingSet(FP_LEDR_HARM, notclear<<1, cmd.data & 0x0F);
                         i = (cmd.data >> 4) & 7;
-                        FrontPanel_LEDRingSet(FP_LEDR_DETUNE, clear << 1, DETUNE_DISPLAY(i));
+                        FrontPanel_LEDRingSet(FP_LEDR_DETUNE, notclear, DETUNE_DISPLAY(i));
                         break;
                     case 0x40:
-                        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, clear+1, (127 - (cmd.data & 0x7F)) >> 3);
+                        FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + op, notclear<<1, (127 - (cmd.data & 0x7F)) >> 3);
                         break;
                     case 0x50:
-                        FrontPanel_LEDRingSet(FP_LEDR_ATTACK, clear+1, (cmd.data & 0x1F) >> 1);
+                        FrontPanel_LEDRingSet(FP_LEDR_ATTACK, notclear<<1, (cmd.data & 0x1F) >> 1);
                         FrontPanel_LEDSet(FP_LED_KSR, cmd.data >= 0x40 && !clear);
                         break;
                     case 0x60:
-                        FrontPanel_LEDRingSet(FP_LEDR_DEC1R, clear+1, (cmd.data & 0x1F) >> 1);
+                        FrontPanel_LEDRingSet(FP_LEDR_DEC1R, notclear<<1, (cmd.data & 0x1F) >> 1);
                         FrontPanel_LEDSet(FP_LED_LFOAM, cmd.data >= 0x80 && !clear);
                         break;
                     case 0x70:
-                        FrontPanel_LEDRingSet(FP_LEDR_DEC2R, clear+1, (cmd.data & 0x1F) >> 1);
+                        FrontPanel_LEDRingSet(FP_LEDR_DEC2R, notclear<<1, (cmd.data & 0x1F) >> 1);
                         break;
                     case 0x80:
-                        FrontPanel_LEDRingSet(FP_LEDR_RELRATE, clear+1, cmd.data & 0x0F);
-                        FrontPanel_LEDRingSet(FP_LEDR_DECLVL, clear+1, 15 - (cmd.data >> 4));
+                        FrontPanel_LEDRingSet(FP_LEDR_RELRATE, notclear<<1, cmd.data & 0x0F);
+                        FrontPanel_LEDRingSet(FP_LEDR_DECLVL, notclear<<1, 15 - (cmd.data >> 4));
                         break;
                     case 0x90:
                         i = (cmd.data & 0x0F);
@@ -275,11 +277,11 @@ void DrawCmdContent(VgmChipWriteCmd cmd, u8 clear){
                     }
                 }else if(reg == 0xB0){
                     FrontPanel_DrawAlgorithm((cmd.data & 7) + (clear << 4));
-                    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, clear+1, (cmd.data >> 3) & 7);
+                    FrontPanel_LEDRingSet(FP_LEDR_FEEDBACK, notclear<<1, (cmd.data >> 3) & 7);
                     FrontPanel_LEDSet(FP_LED_FEEDBACK, (cmd.data & 0x38) > 0 && !clear);
                 }else if(reg == 0xB4){
-                    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, clear+1, (cmd.data & 7));
-                    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, clear+1, (cmd.data >> 4) & 3);
+                    FrontPanel_LEDRingSet(FP_LEDR_LFOFDEP, notclear<<1, (cmd.data & 7));
+                    FrontPanel_LEDRingSet(FP_LEDR_LFOADEP, notclear<<1, (cmd.data >> 4) & 3);
                     FrontPanel_LEDSet(FP_LED_OUTR, ((cmd.data >> 6) & 1) && !clear);
                     FrontPanel_LEDSet(FP_LED_OUTL, ((cmd.data >> 7) & 1) && !clear);
                 }
@@ -380,9 +382,10 @@ void GetCmdDescription(VgmChipWriteCmd cmd, char* desc){
                         sprintf(desc, "Lfo Enab:%d, Freq:%d", (cmd.data >> 3) & 1, cmd.data & 7);
                         break;
                     case 0x24:
+                        sprintf(desc, "CSM Freq:%d", ((u16)cmd.data << 2) | (cmd.data2 & 0x03));
+                        break;
                     case 0x25:
-                        //TODO data2 for TimerA frequency write?
-                        //FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
+                        sprintf(desc, "Error: TimerA lsbs?");
                         break;
                     case 0x27:
                         i = cmd.data >> 6;
@@ -483,16 +486,24 @@ void GetCmdDescription(VgmChipWriteCmd cmd, char* desc){
         sprintf(desc, "Unsuppoted cmd:0x%02X, addr:0x%02X, data:0x%02X, data2:0x%02X", cmd.cmd, cmd.addr, cmd.data, cmd.data2);
     }
 }
+
 static inline u8 CmdEditor_Clip(u8 v, s32 incrementer, u8 bits){
     s32 nv = (s32)v + incrementer;
     if(nv < 0) nv = 0;
     if(nv >= (1 << bits)) nv = (1 << bits) - 1;
     return (u8)nv;
 }
+static inline u16 CmdEditor_Clip16(u16 v, s32 incrementer, u8 bits){
+    s32 nv = (s32)v + incrementer;
+    if(nv < 0) nv = 0;
+    if(nv >= (1 << bits)) nv = (1 << bits) - 1;
+    return (u16)nv;
+}
 
 VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 button, u8 state, u8 reqvoice, u8 reqop){
     VgmChipWriteCmd ret = {.all = cmd.all};
     u8 couldbeusagechange = 0;
+    u8 d; u16 f;
     if(cmd.cmd == 0x50){
         //PSG write
         u8 voice = (cmd.data & 0x60) >> 5;
@@ -500,27 +511,32 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
         if(cmd.data & 0x10){
             //Attenuation
             if(encoder == FP_E_PSGVOL){
-                ret.data = (cmd.data & 0xF0) | CmdEditor_Clip(cmd.data & 0x0F, 0-incrementer, 4);
+                d = CmdEditor_Clip(cmd.data & 0x0F, 0-incrementer, 4);
+                ret.data = (cmd.data & 0xF0) | d;
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 15-d);
             }
         }else{
             if(voice == 3){
                 //Noise parameters
                 if(button == FP_B_NSFREQ){
-                    u8 d = (cmd.data+1) & 0x03;
+                    d = (cmd.data+1) & 0x03;
                     ret.data = (cmd.data & 0xFC) | d;
                     if(d == 0 || d == 3) couldbeusagechange = 1;
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                 }else if(button == FP_B_NSTYPE){
                     ret.data = cmd.data ^ 0x04;
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (cmd.data >> 2) & 1);
                 }
             }else{
                 if(encoder == FP_E_PSGFREQ){
-                    u16 f = (cmd.data & 0x0F) | ((u16)(cmd.data2 & 0x3F) << 4);
+                    f = (cmd.data & 0x0F) | ((u16)(cmd.data2 & 0x3F) << 4);
                     s32 temp = (s32)f + incrementer;
                     if(temp < 0) temp = 0;
                     if(temp >= 0x400) temp = 0x3FF;
                     f = temp;
                     ret.data = (cmd.data & 0xF0) | (f & 0x000F);
                     ret.data2 = (ret.data2 & 0xC0) | (f >> 4);
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, f);
                 }
             }
         }
@@ -541,6 +557,9 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         }
                         if(button == FP_B_KON){
                             ret.data = cmd.data ^ (state << 4);
+                            for(op=0; op<4; ++op){
+                                FrontPanel_DrawDigit(FP_LED_DIG_MAIN_1+op, ((ret.data >> (4+op)) & 1) ? 'O' : '-');
+                            }
                         }
                         break;
                     case 0x21:
@@ -549,9 +568,11 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         if(button == FP_B_UGLY){
                             ret.data = cmd.data ^ 0x10;
                             couldbeusagechange = 1;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (ret.data >> 4) & 1);
                         }else if(button == FP_B_EG){
                             ret.data = cmd.data ^ 0x20;
                             couldbeusagechange = 1;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (cmd.data >> 5) & 1);
                         }
                         break;
                     case 0x22:
@@ -560,22 +581,35 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         if(button == FP_B_LFO){
                             ret.data = cmd.data ^ 0x08;
                             couldbeusagechange = 1;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (cmd.data >> 2) & 1);
                         }else if(encoder == FP_E_LFOFREQ){
-                            ret.data = (cmd.data & 0xF8) | CmdEditor_Clip(cmd.data & 7, incrementer, 3);
+                            d = CmdEditor_Clip(cmd.data & 7, incrementer, 3);
+                            ret.data = (cmd.data & 0xF8) | d;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                         }
                         break;
                     case 0x24:
+                        if(reqvoice < 0xFF && reqvoice != 3) return cmd;
+                        if(encoder == FP_E_CSMFREQ){
+                            f = CmdEditor_Clip16(((u16)cmd.data << 2) | (cmd.data2 & 3), incrementer, 10);
+                            ret.data = f >> 2;
+                            ret.data2 = f & 3;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, f);
+                        }
+                        break;
                     case 0x25:
                         if(reqvoice < 0xFF && reqvoice != 3) return cmd;
-                        //TODO data2 for TimerA frequency write?
-                        //FrontPanel_LEDRingSet(FP_LEDR_CSMFREQ, 1, genesis[g].opn2.timera_high >> 4);
+                        DBG("TimerA lsbs?");
+                        FrontPanel_DrawDigit(FP_LED_DIG_MAIN_4, '?');
                         break;
                     case 0x27:
                         if(reqvoice < 0xFF && reqvoice != 3) return cmd;
                         if(button == FP_B_CH3MODE){
                             ret.data = cmd.data + 0x40;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data >> 6);
                         }else if(button == FP_B_CH3FAST){
                             ret.data = cmd.data ^ 0x01;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data & 1);
                         }
                         if((cmd.data == 0) ^ (ret.data == 0)) couldbeusagechange = 1;
                         break;
@@ -583,6 +617,7 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         if(reqvoice < 0xFF && reqvoice != 7) return cmd;
                         if(encoder != FP_E_DATAWHEEL){
                             ret.data = CmdEditor_Clip(cmd.data, incrementer, 8);
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data);
                         }
                         break;
                     case 0x2B:
@@ -590,6 +625,7 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         if(button == FP_B_DACEN){
                             ret.data = cmd.data ^ 0x80;
                             couldbeusagechange = 1;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data >> 7);
                         }
                         break;
                     case 0x2C:
@@ -597,6 +633,7 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                         if(button == FP_B_DACOVR){
                             ret.data = cmd.data ^ 0x20;
                             couldbeusagechange = 1;
+                            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (ret.data >> 5) & 1);
                         }
                         break;
                 }
@@ -615,54 +652,71 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
             switch(reg){
                 case 0x30:
                     if(encoder == FP_E_HARM){
-                        ret.data = (cmd.data & 0xF0) | CmdEditor_Clip(cmd.data & 0x0F, incrementer, 4);
+                        d = CmdEditor_Clip(cmd.data & 0x0F, incrementer, 4);
+                        ret.data = (cmd.data & 0xF0) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                     }else if(encoder == FP_E_DETUNE){
-                        u8 i = (cmd.data >> 4) & 7;
-                        if(i == 5 && incrementer > 0){
-                            i = incrementer - 1;
-                        }else if(i == 0 && incrementer < 0){
-                            i = 4 - incrementer;
-                        }else if(i == 7 && incrementer < 0){
-                            return ret;
-                        }else if(i == 3 && incrementer > 0){
-                            return ret;
-                        }else if(i >= 4){
-                            i -= incrementer;
+                        d = (cmd.data >> 4) & 7;
+                        if(d == 5 && incrementer > 0){
+                            d = incrementer - 1;
+                        }else if(d == 0 && incrementer < 0){
+                            d = 4 - incrementer;
+                        }else if(d == 7 && incrementer < 0){
+                            return cmd;
+                        }else if(d == 3 && incrementer > 0){
+                            return cmd;
+                        }else if(d >= 4){
+                            d -= incrementer;
                         }else{
-                            i += incrementer;
+                            d += incrementer;
                         }
-                        ret.data = (i << 4) | (cmd.data & 0x0F);
+                        ret.data = (d << 4) | (cmd.data & 0x0F);
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, (d >= 4) ? (4 - (s16)d) : d);
                     }
                     break;
                 case 0x40:
                     if(encoder == (FP_E_OP1LVL + op)){
-                        ret.data = (cmd.data & 0x80) | CmdEditor_Clip(cmd.data & 0x7F, 0-incrementer, 7);
+                        d = CmdEditor_Clip(cmd.data & 0x7F, 0-incrementer, 7);
+                        ret.data = (cmd.data & 0x80) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 0x7F-d);
                     }
                     break;
                 case 0x50:
                     if(encoder == FP_E_ATTACK){
-                        ret.data = (cmd.data & 0xE0) | CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        d = CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        ret.data = (cmd.data & 0xE0) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                     }else if(button == FP_B_KSR){
                         ret.data = cmd.data + 0x40;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data >> 6);
                     }
                     break;
                 case 0x60:
                     if(encoder == FP_E_DEC1R){
-                        ret.data = (cmd.data & 0xE0) | CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        d = CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        ret.data = (cmd.data & 0xE0) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                     }else if(button == FP_B_LFOAM){
                         ret.data = cmd.data ^ 0x80;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data >> 7);
                     }
                     break;
                 case 0x70:
                     if(encoder == FP_E_DEC2R){
-                        ret.data = (cmd.data & 0xE0) | CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        d = CmdEditor_Clip(cmd.data & 0x1F, incrementer, 5);
+                        ret.data = (cmd.data & 0xE0) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                     }
                     break;
                 case 0x80:
                     if(encoder == FP_E_RELRATE){
-                        ret.data = (cmd.data & 0xF0) | CmdEditor_Clip(cmd.data & 0x0F, incrementer, 4);
+                        d = CmdEditor_Clip(cmd.data & 0x0F, incrementer, 4);
+                        ret.data = (cmd.data & 0xF0) | d;
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                     }else if(encoder == FP_E_DECLVL){
-                        ret.data = (cmd.data & 0x0F) | (CmdEditor_Clip(cmd.data >> 4, 0-incrementer, 4) << 4);
+                        d = CmdEditor_Clip(cmd.data >> 4, 0-incrementer, 4);
+                        ret.data = (cmd.data & 0x0F) | (d << 4);
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 15-d);
                     }
                     break;
                 case 0x90:
@@ -675,22 +729,31 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
                     }else if(button == FP_B_SSGHOLD){
                         ret.data = cmd.data ^ 0x01;
                     }
+                    if(ret.data > cmd.data){ //Hack for "turned anything on"
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 1);
+                    }else if(ret.data < cmd.data){ //Turned anything off
+                        FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, 0);
+                    }
                     break;
             }
         }else if(cmd.addr <= 0xAE && cmd.addr >= 0xA8){
             //Channel 3 extra frequency
             if(reqvoice < 0xFF && reqvoice != 3) return cmd;
             if(cmd.addr > 0xAE || cmd.addr < 0xAC) return cmd;
+            if(reqop < 0xFF){
+                if(!((cmd.addr == 0xAD && reqop == 0)
+                   ||(cmd.addr == 0xAE && reqop == 1)
+                   ||(cmd.addr == 0xAC && reqop == 2))) return cmd;
+            }
             if(encoder == FP_E_OCTAVE){
-                ret.data = (cmd.data & 0xC7) | (CmdEditor_Clip((cmd.data >> 3) & 0x07, incrementer, 3) << 3);
+                d = CmdEditor_Clip((cmd.data >> 3) & 0x07, incrementer, 3);
+                ret.data = (cmd.data & 0xC7) | (d << 3);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
             }else if(encoder == FP_E_FREQ){
-                u16 f = ((u16)(cmd.data & 7) << 8) | cmd.data2;
-                s32 temp = (s32)f + incrementer;
-                if(temp < 0) temp = 0;
-                if(temp >= 0x800) temp = 0x7FF;
-                f = temp;
+                f = CmdEditor_Clip16(((u16)(cmd.data & 7) << 8) | cmd.data2, incrementer, 12);
                 ret.data = (cmd.data & 0xF8) | (f >> 8);
                 ret.data2 = f & 0x00FF;
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, f);
             }
         }else if(cmd.addr <= 0xB6){
             //Channel command
@@ -703,37 +766,44 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
             reg = cmd.addr & 0xFC;
             if(reg == 0xA4){
                 //Frequency write
+                if(reqop < 0xFF && reqop != 3) return cmd; //If op required for frequency write,
+                //we're editing fm3_special, and in that case only edit op 3 command
                 if(encoder == FP_E_OCTAVE){
-                    ret.data = (cmd.data & 0xC7) | (CmdEditor_Clip((cmd.data >> 3) & 0x07, incrementer, 3) << 3);
+                    d = CmdEditor_Clip((cmd.data >> 3) & 0x07, incrementer, 3);
+                    ret.data = (cmd.data & 0xC7) | (d << 3);
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                 }else if(encoder == FP_E_FREQ){
-                    u16 f = ((u16)(cmd.data & 7) << 8) | cmd.data2;
-                    s32 temp = (s32)f + incrementer;
-                    if(temp < 0) temp = 0;
-                    if(temp >= 0x800) temp = 0x7FF;
-                    f = temp;
+                    f = CmdEditor_Clip16(((u16)(cmd.data & 7) << 8) | cmd.data2, incrementer, 12);
                     ret.data = (cmd.data & 0xF8) | (f >> 8);
                     ret.data2 = f & 0x00FF;
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, f);
                 }
             }else if(reg == 0xB0){
                 if(button == FP_B_ALG){
                     ret.data = (cmd.data & 0xF8) | (state & 7);
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, state);
                 }else if(encoder == FP_E_FEEDBACK){
-                    ret.data = (cmd.data & 0xC7) | (CmdEditor_Clip((cmd.data >> 3)&7, incrementer, 3) << 3);
+                    d = CmdEditor_Clip((cmd.data >> 3)&7, incrementer, 3);
+                    ret.data = (cmd.data & 0xC7) | (d << 3);
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                 }
             }else if(reg == 0xB4){
-                u8 oldv, newv;
+                u8 oldv;
                 if(encoder == FP_E_LFOFDEP){
                     oldv = cmd.data & 7;
-                    newv = CmdEditor_Clip(oldv, incrementer, 3);
-                    if((oldv == 0) ^ (newv == 0)) couldbeusagechange = 1;
-                    ret.data = (cmd.data & 0xF8) | newv;
+                    d = CmdEditor_Clip(oldv, incrementer, 3);
+                    if((oldv == 0) ^ (d == 0)) couldbeusagechange = 1;
+                    ret.data = (cmd.data & 0xF8) | d;
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                 }else if(encoder == FP_E_LFOADEP){
                     oldv = (cmd.data >> 4)&3;
-                    newv = CmdEditor_Clip(oldv, incrementer, 2);
-                    if((oldv == 0) ^ (newv == 0)) couldbeusagechange = 1;
-                    ret.data = (cmd.data & 0xCF) | (newv << 4);
+                    d = CmdEditor_Clip(oldv, incrementer, 2);
+                    if((oldv == 0) ^ (d == 0)) couldbeusagechange = 1;
+                    ret.data = (cmd.data & 0xCF) | (d << 4);
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
                 }else if(button == FP_B_OUT){
                     ret.data = cmd.data + 0x40;
+                    FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data >> 6);
                 }
             }
         }
@@ -742,13 +812,18 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
         if(cmd.addr != 0x2A) return cmd;
         if(encoder == FP_E_DATAWHEEL){
             ret.data = CmdEditor_Clip(cmd.data, incrementer, 8);
+            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, ret.data);
         }else if(encoder == FP_E_OCTAVE){
-            ret.cmd = 0x80 | CmdEditor_Clip(cmd.cmd & 0x0F, incrementer, 4);
+            d = CmdEditor_Clip(cmd.cmd & 0x0F, incrementer, 4);
+            ret.cmd = 0x80 | d;
+            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
         }
     }else if(cmd.cmd >= 0x70 && cmd.cmd <= 0x7F){
         //Short wait
         if(encoder == FP_E_OCTAVE){
-            ret.cmd = 0x80 | CmdEditor_Clip(cmd.cmd & 0x0F, incrementer, 4);
+            d = CmdEditor_Clip(cmd.cmd & 0x0F, incrementer, 4);
+            ret.cmd = 0x80 | d;
+            FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, d);
         }
     }else if(cmd.cmd == 0x61){
         //Long wait
@@ -766,6 +841,7 @@ VgmChipWriteCmd EditCmd(VgmChipWriteCmd cmd, u8 encoder, s32 incrementer, u8 but
         if(t > 0xFFFF) t = 0xFFFF;
         ret.data = (t & 0x000000FF);
         ret.data2 = (t & 0x0000FF00) >> 8;
+        FrontPanel_DrawNumberHex(FP_LED_DIG_MAIN_1, (u16)t);
     }else if(cmd.cmd == 0x62 || cmd.cmd == 0x63){
         //60 Hz or 50 Hz wait--no editing possible
     }else{
@@ -788,6 +864,10 @@ u8 EditState(VgmSource* vgs, VgmHead* head, u8 encoder, s32 incrementer, u8 butt
     VgmSourceRAM* vsr = (VgmSourceRAM*)vgs->data;
     VgmChipWriteCmd cmd, modcmd;
     u32 a = head->srcaddr;
+    u8 fm3_special = head->channel[3].nodata ? 0 : (genesis[head->channel[3].map_chip].opn2.ch3_mode > 0);
+    if(!fm3_special && (encoder == FP_E_OCTAVE || encoder == FP_E_FREQ)){
+        op = 0xFF; //Allow editing octave/freq on any op if we're not fm3_special
+    }
     while(1){
         cmd = vsr->cmds[a];
         modcmd = EditCmd(cmd, encoder, incrementer, button, state, voice, op);
@@ -815,17 +895,87 @@ VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
     if(type >= 3) return NULL;
     VgmSource* vs = VGM_SourceRAM_Create();
     u32 a = 0, u;
-    u8 i;
+    u8 i, reg, op, regcnt, regval;
     VgmChipWriteCmd cmd;
     switch(type){
         case 0:
-            //TODO
+            //Init
+            u = usage.all;
+            //OPN2 globals
+            if(usage.opn2_globals){
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                    .cmd=0x52, .addr=0x21, .data = 0x00, .data2=0});
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                    .cmd=0x52, .addr=0x2C, .data = 0x00, .data2=0});
+            }
+            //LFO enable
+            if(usage.lfomode){
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                    .cmd=0x52, .addr=0x22, .data = 0x08 | usage.lfofixedspeed, .data2=0});
+            }
+            //Ch3 special
+            if(usage.fm3_special){
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                    .cmd=0x52, .addr=0x27, .data = 0x40, .data2=0});
+                VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                    .cmd=0x52, .addr=0x24, .data = 0x00, .data2=0});
+            }
+            //OPN2 channels
+            for(i=0; i<6; ++i){
+                if(u & 0x00000001){
+                    //Operators
+                    for(regcnt=0; regcnt<7; ++regcnt){
+                        reg = (regcnt + 3) << 4;
+                        for(op=0; op<4; ++op){
+                            regval = init_reg_vals[regcnt];
+                            if(regcnt == 1 && op == 3){
+                                regval = 0x08;
+                            }
+                            VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                                .cmd = 0x52 | (i >= 3), 
+                                .addr = reg | (i % 3) | ((op & 1) << 3) | ((op & 2) << 1), 
+                                .data=regval, .data2=0});
+                        }
+                    }
+                    //Channel registers
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                        .cmd = 0x52 | (i >= 3), .addr = 0xB0 | (i % 3), .data=0, .data2=0});
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                        .cmd = 0x52 | (i >= 3), .addr = 0xB4 | (i % 3), .data=0xC0, .data2=0});
+                }
+                u >>= 1;
+            }
+            //PSG channels
+            if(usage.noise){
+                if(usage.noisefreqsq3){
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                        .cmd=0x50, .addr=0x00, .data = 0b11100111, .data2=0}); //Noise setup
+                }else{
+                    VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
+                        .cmd=0x50, .addr=0x00, .data = 0b11100100, .data2=0});
+                }
+            }
             break;
         case 1:
             //Key on
             u = usage.all;
             for(i=0; i<6; ++i){
                 if(u & 0x00000001){
+                    if(i == 2 && usage.fm3_special){
+                        //Other operator frequencies
+                        cmd = VGM_getOPN2Frequency(72, 0, genesis_clock_opn2);
+                        cmd.cmd  = 0x52;
+                        cmd.addr = 0xAD;
+                        VGM_SourceRAM_InsertCmd(vs, a++, cmd);
+                        cmd = VGM_getOPN2Frequency(67, 0, genesis_clock_opn2);
+                        cmd.cmd  = 0x52;
+                        cmd.addr = 0xAE;
+                        VGM_SourceRAM_InsertCmd(vs, a++, cmd);
+                        cmd = VGM_getOPN2Frequency(64, 0, genesis_clock_opn2);
+                        cmd.cmd  = 0x52;
+                        cmd.addr = 0xAC;
+                        VGM_SourceRAM_InsertCmd(vs, a++, cmd);
+                    }
                     cmd = VGM_getOPN2Frequency(60, 0, genesis_clock_opn2);
                     cmd.cmd  = 0x52 + (i >= 3);
                     cmd.addr = 0xA4 + (i % 3);
@@ -851,7 +1001,7 @@ VgmSource* CreateNewVGM(u8 type, VgmUsageBits usage){
                 }
                 u >>= 1;
             }
-            if(u & 0x00000001){
+            if(usage.noise){
                 VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){
                         .cmd=0x50, .addr=0x00, .data = 0b11110000, .data2=0});
             }

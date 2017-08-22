@@ -185,7 +185,7 @@ void Mode_System_Background(){
                     break;
                 case 4:
                     for(i=0; i<18; i++){
-                        FrontPanel_LEDRingSet(i, 0, (i&1) ? 
+                        FrontPanel_LEDRingSet(i, 1, (i&1) ? 
                                 (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
                     }
                     FrontPanel_GenesisLEDSet((vegascounter >> 6) & 3, 
@@ -199,7 +199,7 @@ void Mode_System_Background(){
                     break;
                 case 5:
                     for(i=0; i<18; i++){
-                        FrontPanel_LEDRingSet(i, 0, !(i&1) ? 
+                        FrontPanel_LEDRingSet(i, 1, !(i&1) ? 
                                 (15 - ((vegascounter >> 6) & 0xF)) : ((vegascounter >> 6) & 0xF));
                     }
                     FrontPanel_GenesisLEDSet(3 - ((vegascounter >> 6) & 3), 
@@ -218,7 +218,7 @@ void Mode_System_Background(){
                     break;
                 case 6:
                     for(i=0; i<18; i++){
-                        FrontPanel_LEDRingSet(i, 1, ((vegascounter >> 6) & 0xF));
+                        FrontPanel_LEDRingSet(i, 2, ((vegascounter >> 6) & 0xF));
                     }
                     i = ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (vegascounter & 1)
                             ^ ((vegascounter & 0xF) == 0 || (vegascounter & 0xF) == 7);
@@ -231,7 +231,7 @@ void Mode_System_Background(){
                     break;
                 case 7:
                     for(i=0; i<18; i++){
-                        FrontPanel_LEDRingSet(i, 1, 15 - ((vegascounter >> 6) & 0xF));
+                        FrontPanel_LEDRingSet(i, 3, 15 - ((vegascounter >> 6) & 0xF));
                     }
                     i = ((vegascounter >> 8) & 1) ^ ((vegascounter >> 6) & 1) ^ (vegascounter & 1)
                             ^ ((vegascounter & 0xF) == 0 || (vegascounter & 0xF) == 7);
