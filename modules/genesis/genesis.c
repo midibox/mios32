@@ -364,8 +364,8 @@ void Genesis_CaptureOPN2OpStates(u8 board){
     board &= 3;
     u8 last_21 = genesis[board].opn2.testreg21;
     u8 last_2C = genesis[board].opn2.testreg2C;
-    Genesis_OPN2Write(board, 0, 0x21, 0b01000000);
-    Genesis_OPN2Write(board, 0, 0x2C, 0b10000000);
+    Genesis_OPN2Write(board, 0, 0x21, (last_21 & 0b00111110) | 0b01000000);
+    Genesis_OPN2Write(board, 0, 0x2C, (last_2C & 0b00101111) | 0b10000000);
     //Set up read
     MIOS32_IRQ_Disable(); //Turn off interrupts
     GPIOE->MODER &= 0x0000FFFF; //Set data pins to inputs (in case not already)
