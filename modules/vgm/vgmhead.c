@@ -17,6 +17,7 @@
 #include "vgmstream.h"
 #include <genesis.h>
 #include "vgm_heap2.h"
+#include "vgmtuning.h"
 
 VgmHead* vgm_heads[VGM_HEAD_MAXNUM];
 u32 vgm_numheads;
@@ -25,7 +26,7 @@ void VGM_Head_Init(){
     vgm_numheads = 0;
 }
 
-VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
+VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult, u32 tloffs){
     if(source == NULL) return NULL;
     VgmHead* head = vgmh2_malloc(sizeof(VgmHead));
     head->playing = 0;
@@ -50,6 +51,7 @@ VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult){
     // 0x1000;
     head->psgfreq0to1 = source->psgfreq0to1;
     head->tempomult = tempomult;
+    head->tloffs = tloffs;
     head->iswait = 1;
     head->iswrite = 0;
     head->isdone = 0;
@@ -128,7 +130,12 @@ void VGM_Head_cmdNext(VgmHead* head, u32 vgm_time){
 void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
     u8 chan = 0xFF, board = 0xFF;
     u8 addrhi = (cmd->cmd & 0x01);
-    if(cmd->cmd == 0x00){
+    u8 type = (cmd->cmd & 0x0E);
+    u8 uppertype = cmd->cmd >> 4;
+    if(uppertype != 0 && uppertype != 5){
+        cmd->cmd = 0xFF; return;
+    }
+    if(type == 0){
         //PSG write command
         if(cmd->data & 0x80){
             chan = ((cmd->data & 0x60) >> 5);
@@ -149,7 +156,7 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             CHECK_NODATA(chan);
             board = head->channel[chan].map_chip;
         }
-    }else{
+    }else if(type == 2){
         //OPN2 write command
         if(cmd->addr == 0x28){
             //Key on
@@ -187,9 +194,53 @@ void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd){
             addrhi = (chan & 0x04) >> 2;
             chan &= 0x03;
             cmd->addr = (cmd->addr & 0xFC) | chan;
-            cmd->cmd = (cmd->cmd & 0xFE) | addrhi;
+        }
+    }else{
+        cmd->cmd = 0xFF; return;
+    }
+    cmd->cmd = (board << 4) | type | addrhi;
+}
+
+void VGM_Head_doTransformations(VgmHead* head, VgmChipWriteCmd* cmd){
+    if(cmd->cmd == 0x50){
+        //PSG write
+        if(!(cmd->data & 0x80)) return; //Freq second byte
+        if(cmd->data & 0x10){
+            //Attenuation
+            u8 tl = cmd->data & 0x0F;
+            if(tl == 0x0F) return; //Don't change off commands
+            tl = tl + (head->tloff[3] >> 3);
+            if(tl > 0x0E) tl = 0x0E;
+            cmd->data = (cmd->data & 0xF0) | tl;
+        }else{
+            //Not attenuation
+            if(cmd->data < 0xE0){
+                //Not noise--i.e. frequency
+                VGM_fixPSGFrequency(cmd, head->psgmult, head->psgfreq0to1);
+            }
+        }
+    }else if((cmd->cmd & 0xFE) == 0x52){
+        //OPN2 write
+        if((cmd->addr & 0xF4) == 0xA4){
+            //Frequency MSB write
+            VGM_fixOPN2Frequency(cmd, head->opn2mult);
+        }else if((cmd->addr & 0xF0) == 0x40){
+            u8 tl = cmd->data & 0x7F;
+            u8 op = ((cmd->addr & 0x08) >> 3) | ((cmd->addr & 0x04) >> 1);
+            tl = tl + head->tloff[op];
+            if(tl > 0x7F) tl = 0x7F;
+            cmd->data = (cmd->data & 0x80) | tl;
         }
     }
-    cmd->cmd |= board << 4;
 }
+
+void VGM_Head_setWritecmd(VgmHead* head, VgmChipWriteCmd cmd){
+    head->writecmd.all = cmd.all;
+    head->iswrite = VGM_Cmd_IsWrite(cmd);
+    u32 wait = VGM_Cmd_GetWaitValue(cmd);
+    head->iswait = (wait > 0);
+    head->ticks += wait;
+}
+
+
 

@@ -40,7 +40,7 @@ typedef union {
 } VgmHead_Channel;
 
 typedef union {
-    u8 ALL[44];
+    u8 ALL[48];
     struct{
         VgmSource* source;
         void* data;
@@ -51,6 +51,10 @@ typedef union {
         u32 opn2mult;
         u32 psgmult;
         u32 tempomult;
+        union{
+            u32 tloffs;
+            u8 tloff[4];
+        };
         u8 playing:1;
         u8 iswait:1;
         u8 iswrite:1;
@@ -65,7 +69,7 @@ typedef union {
 
 extern void VGM_Head_Init();
 
-extern VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult);
+extern VgmHead* VGM_Head_Create(VgmSource* source, u32 freqmult, u32 tempomult, u32 tloffs);
 extern s32 VGM_Head_Delete(VgmHead* head); //Remove from queue and free
 
 extern void VGM_Head_Restart(VgmHead* head, u32 vgm_time);
@@ -76,6 +80,8 @@ static inline s32 VGM_Head_cmdGetWaitRemaining(VgmHead* head, u32 vgm_time) {ret
 static inline u8 VGM_Head_cmdIsChipWrite(VgmHead* head) {return head->iswrite && !head->isdone;}
 //static inline VgmChipWriteCmd VGM_Head_cmdGetChipWrite() {return head->writecmd;}
 extern void VGM_Head_doMapping(VgmHead* head, VgmChipWriteCmd* cmd);
+extern void VGM_Head_doTransformations(VgmHead* head, VgmChipWriteCmd* cmd);
+extern void VGM_Head_setWritecmd(VgmHead* head, VgmChipWriteCmd cmd);
 
 #define VGM_HEAD_MAXNUM 64
 extern VgmHead* vgm_heads[VGM_HEAD_MAXNUM];

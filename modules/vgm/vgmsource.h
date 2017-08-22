@@ -87,12 +87,25 @@ typedef union {
     };
 } VgmSource;
 
+
+
+extern u8 VGM_Cmd_GetCmdLen(u8 type); //Number of bytes past the type
+extern u32 VGM_Cmd_GetWaitValue(VgmChipWriteCmd cmd);
+extern u8 VGM_Cmd_IsWrite(VgmChipWriteCmd cmd);
+extern u8 VGM_Cmd_IsTwoByte(VgmChipWriteCmd cmd);
+extern u8 VGM_Cmd_IsSecondHalfTwoByte(VgmChipWriteCmd cmd);
+
+//Returns .all=0xFFFFFFFF if second is not the corresponding command to first
+extern VgmChipWriteCmd VGM_Cmd_TryMakeTwoByte(VgmChipWriteCmd first, VgmChipWriteCmd second);
+
+//Returns 1 if it is indeed a two write command, 0 if it is a normal command. Works on both RAM type and Board type commands.
+extern u8 VGM_Cmd_UnpackTwoByte(VgmChipWriteCmd in, VgmChipWriteCmd* out1, VgmChipWriteCmd* out2);
+
+
 extern void VGM_Cmd_UpdateUsage(VgmUsageBits* usage, VgmChipWriteCmd cmd);
 extern void VGM_Cmd_DebugPrintUsage(VgmUsageBits usage);
-extern u8 VGM_Cmd_GetCmdLen(u8 type); //Number of bytes past the type
+extern void VGM_Source_UpdateUsage(VgmSource* source);
 
 extern s32 VGM_Source_Delete(VgmSource* source);
-
-extern void VGM_Source_UpdateUsage(VgmSource* source);
 
 #endif /* _VGMSOURCE_H */
