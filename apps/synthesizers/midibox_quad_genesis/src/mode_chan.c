@@ -350,6 +350,7 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                         prog->noteonsource = NULL;
                         prog->noteoffsource = NULL;
                         prog->rootnote = 60;
+                        prog->tlbaseoffs = 0;
                         prog->name[0] = 'A';
                         prog->name[1] = 0;
                         selprogram = prog;

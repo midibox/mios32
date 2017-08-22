@@ -43,7 +43,7 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(15,0);
             MIOS32_LCD_PrintString("Root VGMs: Init KOn KOff ");
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintString("Name");
+            MIOS32_LCD_PrintString("Name  Vel");
             MIOS32_LCD_CursorSet(16,1);
             MIOS32_LCD_PrintFormattedString("%d", selprogram->rootnote);
             MIOS32_LCD_CursorSet(25,1);
@@ -65,6 +65,16 @@ static void DrawMenu(){
             MIOS32_LCD_PrintString(" VGM:");
             MIOS32_LCD_CursorSet(0,1);
             MIOS32_LCD_PrintString("Row1 usage, Row2 LFO");
+            break;
+        case 2:
+            MIOS32_LCD_PrintString("Modify op TLs for vel=0 (vel=127:normal)");
+            MIOS32_LCD_CursorSet(0,1);
+            MIOS32_LCD_PrintString("(Op 4 also does PSG voices)");
+            u8 i;
+            for(i=0; i<4; ++i){
+                FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + i, 3, selprogram->tlbaseoff[i] >> 3);
+            }
+            break;
     }
 }
 
@@ -80,6 +90,11 @@ static void FilebrowserDoneLoading(char* filename){
         return;
     }
     //Get VGM file metadata
+    MIOS32_LCD_Clear();
+    MIOS32_LCD_CursorSet(0,0);
+    MIOS32_LCD_PrintString("Loading...");
+    MIOS32_LCD_CursorSet(0,1);
+    MIOS32_LCD_PrintString("(Streaming other VGMs should continue)");
     VgmFileMetadata md;
     s32 res = VGM_File_ScanFile(filename, &md);
     if(res < 0){
@@ -178,6 +193,7 @@ void Mode_Prog_Init(){
     cursor = 5;
 }
 void Mode_Prog_GotFocus(){
+    if(submode != 1) submode = 0;
     DrawMenu();
     if(submode == 1) DrawUsageOnVoices(newvgmusage, 0);
 }
@@ -201,6 +217,7 @@ void Mode_Prog_BtnGVoice(u8 gvoice, u8 state){
                 }else if(v <= 6){
                     newvgmusage.all ^= (1 << (v-1));
                     newvgmusage.all &= 0xFFFFF03F | ((newvgmusage.all & 0x0000003F) << 6);
+                    newvgmusage.lfomode = ((newvgmusage.all & 0x00000FC0) != 0);
                 }else if(v == 7){
                     newvgmusage.dac ^= 1;
                 }else if(v <= 0xB){
@@ -211,6 +228,7 @@ void Mode_Prog_BtnGVoice(u8 gvoice, u8 state){
                 if(v >= 1 && v <= 6){
                     newvgmusage.all ^= (1 << (v+5));
                     newvgmusage.all &= 0xFFFFF03F | ((newvgmusage.all & 0x0000003F) << 6);
+                    newvgmusage.lfomode = ((newvgmusage.all & 0x00000FC0) != 0);
                     DrawUsageOnVoices(newvgmusage, 0);
                 }
             }
@@ -227,6 +245,9 @@ void Mode_Prog_BtnSoftkey(u8 softkey, u8 state){
                 DrawMenu();
             }else if(softkey == 0){
                 NameEditor_Start(selprogram->name, 12, "Program", &DrawMenu);
+            }else if(softkey == 1){
+                submode = 2;
+                DrawMenu();
             }
             break;
     }
@@ -245,6 +266,11 @@ void Mode_Prog_BtnSystem(u8 button, u8 state){
         cursor = 5;
         DrawMenu();
         DrawUsageOnVoices((VgmUsageBits){.all=0}, 0);
+        u8 i;
+        for(i=0; i<4; ++i){
+            FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + i, 0, 0);
+        }
+        FrontPanel_ClearDisplay(FP_LED_DIG_MAIN_1);
         return;
     }
     switch(submode){
@@ -375,5 +401,18 @@ void Mode_Prog_EncDatawheel(s32 incrementer){
     }
 }
 void Mode_Prog_EncEdit(u8 encoder, s32 incrementer){
-
+    switch(submode){
+        case 2:
+            if(encoder >= FP_E_OP1LVL && encoder <= FP_E_OP4LVL){
+                u8 e = encoder - FP_E_OP1LVL;
+                s16 val = selprogram->tlbaseoff[e];
+                val -= incrementer;
+                if(val < 0) val = 0;
+                if(val > 0x7F) val = 0x7F;
+                selprogram->tlbaseoff[e] = (u8)val;
+                FrontPanel_LEDRingSet(FP_LEDR_OP1LVL + e, 3, (u8)val >> 3);
+                FrontPanel_DrawNumber(FP_LED_DIG_MAIN_1, -val);
+            }
+            break;
+    }
 }

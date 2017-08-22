@@ -46,6 +46,7 @@ void Interface_Init(){
     Mode_Mdltr_Init();
     Mode_Sample_Init();
     Filebrowser_Init();
+    Capturer_Init();
     interfacemode = MODE_SYSTEM;
     subscreen = 0;
     wantmodechange = -1;
@@ -133,8 +134,12 @@ void Interface_Background(){
 
 void Interface_BtnGVoice(u8 gvoice, u8 state){
     switch(subscreen){
+        case 0:
+            break;
         case SUBSCREEN_CAPTURER:
             Capturer_BtnGVoice(gvoice, state);
+            return;
+        default:
             return;
     }
     switch(interfacemode){
@@ -150,11 +155,18 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
 }
 void Interface_BtnSoftkey(u8 softkey, u8 state){
     switch(subscreen){
+        case 0:
+            break;
+        case SUBSCREEN_CAPTURER:
+            Capturer_BtnSoftkey(softkey, state);
+            return;
         case SUBSCREEN_FILEBROWSER:
             Filebrowser_BtnSoftkey(softkey, state);
             return;
         case SUBSCREEN_NAMEEDITOR:
             NameEditor_BtnSoftkey(softkey, state);
+            return;
+        default:
             return;
     }
     switch(interfacemode){
@@ -169,6 +181,12 @@ void Interface_BtnSoftkey(u8 softkey, u8 state){
     }
 }
 void Interface_BtnSelOp(u8 op, u8 state){
+    switch(subscreen){
+        case 0:
+            break;
+        default:
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_BtnSelOp(op, state); break;
         case MODE_VOICE: Mode_Voice_BtnSelOp(op, state); break;
@@ -181,6 +199,12 @@ void Interface_BtnSelOp(u8 op, u8 state){
     }
 }
 void Interface_BtnOpMute(u8 op, u8 state){
+    switch(subscreen){
+        case 0:
+            break;
+        default:
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_BtnOpMute(op, state); break;
         case MODE_VOICE: Mode_Voice_BtnOpMute(op, state); break;
@@ -194,6 +218,8 @@ void Interface_BtnOpMute(u8 op, u8 state){
 }
 void Interface_BtnSystem(u8 button, u8 state){
     switch(subscreen){
+        case 0:
+            break;
         case SUBSCREEN_FILEBROWSER:
             Filebrowser_BtnSystem(button, state);
             return;
@@ -202,6 +228,8 @@ void Interface_BtnSystem(u8 button, u8 state){
             return;
         case SUBSCREEN_CAPTURER:
             Capturer_BtnSystem(button, state);
+            return;
+        default:
             return;
     }
     if(button >= FP_B_SYSTEM && button <= FP_B_SAMPLE){
@@ -222,6 +250,12 @@ void Interface_BtnSystem(u8 button, u8 state){
     }
 }
 void Interface_BtnEdit(u8 button, u8 state){
+    switch(subscreen){
+        case 0:
+            break;
+        default:
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_BtnEdit(button, state); break;
         case MODE_VOICE: Mode_Voice_BtnEdit(button, state); break;
@@ -236,11 +270,15 @@ void Interface_BtnEdit(u8 button, u8 state){
 
 void Interface_EncDatawheel(s32 incrementer){
     switch(subscreen){
+        case 0:
+            break;
         case SUBSCREEN_FILEBROWSER:
             Filebrowser_EncDatawheel(incrementer);
             return;
         case SUBSCREEN_NAMEEDITOR:
             NameEditor_EncDatawheel(incrementer);
+            return;
+        default:
             return;
     }
     switch(interfacemode){
@@ -255,6 +293,12 @@ void Interface_EncDatawheel(s32 incrementer){
     }
 }
 void Interface_EncEdit(u8 encoder, s32 incrementer){
+    switch(subscreen){
+        case 0:
+            break;
+        default:
+            return;
+    }
     switch(interfacemode){
         case MODE_SYSTEM: Mode_System_EncEdit(encoder, incrementer); break;
         case MODE_VOICE: Mode_Voice_EncEdit(encoder, incrementer); break;

@@ -104,7 +104,7 @@ static void VoiceReset(u8 g, u8 v){
             //DBG("Setting up g %d v %d to be cleared via VGM", g, v);
             syngenesis[g].channels[v].beingcleared = 1;
             voiceclearlink* link = vgmh2_malloc(sizeof(voiceclearlink));
-            VgmHead* head = VGM_Head_Create(voiceclearsource, 0x1000, 0x1000);
+            VgmHead* head = VGM_Head_Create(voiceclearsource, 0x1000, 0x1000, 0);
             link->head = head;
             head->channel[1].map_chip = g;
             head->channel[1].map_voice = v-1;
@@ -766,12 +766,12 @@ void SyEng_Tick(){
             }
             if(prog->initsource != NULL){
                 //DBG("PI %d ch %d note %d done clearing, starting init VGM", i, pi->sourcechannel, pi->note);
-                SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
+                SyEng_PlayVGMOnPI(pi, prog->initsource, prog, 1);
             }else{
                 pi->playinginit = 0;
                 if(prog->noteonsource != NULL){
                     //DBG("PI %d ch %d note %d done clearing, no init VGM, starting noteon VGM", i, pi->sourcechannel, pi->note);
-                    SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+                    SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog, 1);
                 }else{
                     //DBG("PI %d ch %d note %d done clearing, but has no init or noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
                 }
@@ -793,7 +793,7 @@ void SyEng_Tick(){
             //Switch from init to noteon VGM
             if(prog->noteonsource != NULL){
                 //DBG("PI %d ch %d note %d switching from init to noteon VGM", i, pi->sourcechannel, pi->note);
-                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog, 1);
             }else{
                 //DBG("PI %d ch %d note %d done playing init, but has no noteon VGM, doing nothing", i, pi->sourcechannel, pi->note);
             }
@@ -835,9 +835,19 @@ void SyEng_ReleaseStaticPI(u8 piindex){
     ClearPI(pi);
 }
 
-void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, u8 rootnote, u8 startplaying){
+void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, synprogram_t* prog, u8 startplaying){
+    u8 rootnote = 60;
+    u32 tloffs = 0;
+    if(prog != NULL){
+        rootnote = prog->rootnote;
+        u8 i, t;
+        for(i=0; i<4; ++i){
+            t = (u32)(prog->tlbaseoff[i]) * (u32)(127 - pi->vel) / 127;
+            tloffs = tloffs | ((u32)t << (i << 3));
+        }
+    }
     SetPIMappedVoicesUse(pi, pi->isstatic ? 3 : 2);
-    pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000);
+    pi->head = VGM_Head_Create(source, VGM_getFreqMultiplier((s8)pi->note - (s8)rootnote), 0x1000, tloffs);
     CopyPIMappingToHead(pi, pi->head);
     u32 vgmtime = VGM_Player_GetVGMTime();
     VGM_Head_Restart(pi->head, vgmtime);
@@ -863,7 +873,7 @@ void SyEng_SilencePI(synproginstance_t* pi){
     }
 }
 
-static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
+static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note, u8 vel){
     if(prog == NULL){
         DBG("Note on %d ch %d, no program on this channel", note, chn);
         return;
@@ -871,6 +881,7 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     u8 piindex = FindBestPIToReplace(chn, note);
     synproginstance_t* pi = &proginstances[piindex];
     pi->note = note;
+    pi->vel = vel;
     //Do we already have the right mapping allocated?
     if(pi->valid && !pi->isstatic && pi->sourcechannel == chn){
         if(pi->head != NULL){
@@ -880,12 +891,12 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
         }
         if(pi->needsnewinit && prog->initsource != NULL){
             //Right mapping, but have to re-initialize
-            SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
+            SyEng_PlayVGMOnPI(pi, prog->initsource, prog, 1);
             pi->playinginit = 1;
         }else{
             //Skip the init VGM, start the note on VGM
             if(prog->noteonsource != NULL){
-                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+                SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog, 1);
             }else{
                 //DBG("PI ch %d note %d doesn't need init, but has no noteon VGM, doing nothing", pi->sourcechannel, pi->note);
             }
@@ -917,13 +928,13 @@ static void StartProgramNote(synprogram_t* prog, u8 chn, u8 note){
     }
     //Otherwise, start the init VGM
     if(prog->initsource != NULL){
-        SyEng_PlayVGMOnPI(pi, prog->initsource, prog->rootnote, 1);
+        SyEng_PlayVGMOnPI(pi, prog->initsource, prog, 1);
     }else{
         //Unless we don't have one, in which case skip to noteon
         pi->playinginit = 0;
         if(prog->noteonsource != NULL){
             //DBG("PI ch %d note %d skipping missing init VGM, starting noteon", pi->sourcechannel, pi->note);
-            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog->rootnote, 1);
+            SyEng_PlayVGMOnPI(pi, prog->noteonsource, prog, 1);
         }else{
             //DBG("PI ch %d note %d doesn't have init or noteon VGMs, doing nothing", pi->sourcechannel, pi->note);
         }
@@ -956,7 +967,7 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
             VGM_Head_Delete(pi->head);
         }
         //Start playing note-off VGM
-        SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog->rootnote, 1);
+        SyEng_PlayVGMOnPI(pi, prog->noteoffsource, prog, 1);
     }else{
         //DBG("PI ch %d note %d doesn't have noteoff VGM, doing nothing", pi->sourcechannel, pi->note);
     }
@@ -966,7 +977,7 @@ static void StopProgramNote(synprogram_t* prog, u8 chn, u8 note){
 }
 
 void SyEng_Note_On(mios32_midi_package_t pkg){
-    StartProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);
+    StartProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note, pkg.velocity);
 }
 void SyEng_Note_Off(mios32_midi_package_t pkg){
     StopProgramNote(channels[pkg.chn].program, pkg.chn, pkg.note);

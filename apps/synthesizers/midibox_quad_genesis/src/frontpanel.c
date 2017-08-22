@@ -734,6 +734,19 @@ void FrontPanel_LEDSet(u32 led, u8 value){
     MATRIX_LED_SET(l.row, l.sr, l.pin, value);
 }
 
+static inline u8 GetLightMode(u8 mode, u8 d, u8 value){
+    switch(mode){
+        case 1:
+            return (d == value);
+        case 2:
+            return (d <= value);
+        case 3:
+            return (d == 0) || (16 - d <= value);
+        default:
+            return 0;
+    }
+}
+
 void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
     if(ring >= FP_LEDR_COUNT) return;
     u8 d = 0;
@@ -755,9 +768,7 @@ void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
         }
         LED_T l;
         for(d=0; d<max; ++d){
-            if(mode == 0) light = (d == value);
-            else if(mode == 1) light = (d <= value);
-            else light = 0;
+            light = GetLightMode(mode, d, value);
             l = FP_LEDS[startled + d];
             MATRIX_LED_SET(l.row, l.sr, l.pin, light);
         }
@@ -765,16 +776,12 @@ void FrontPanel_LEDRingSet(u8 ring, u8 mode, u8 value){
         value += ledring.offset;
         s8 r; 
         for(r=0; r<8; r++){
-            if(mode == 0) light = (d == value);
-            else if(mode == 1) light = (d <= value);
-            else light = 0;
+            light = GetLightMode(mode, d, value);
             MATRIX_LED_SET(r, ledring.losr, ledring.lopin, light);
             ++d;
         }
         for(r=7; r>=0; r--){
-            if(mode == 0) light = (d == value);
-            else if(mode == 1) light = (d <= value);
-            else light = 0;
+            light = GetLightMode(mode, d, value);
             MATRIX_LED_SET(r, ledring.hisr, ledring.hipin, light);
             ++d;
         }

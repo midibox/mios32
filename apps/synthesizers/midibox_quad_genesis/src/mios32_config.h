@@ -14,7 +14,7 @@
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox Quad Genesis"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2016 Sauraen"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2017 Sauraen"
 
 // USB settings
 #define MIOS32_USB_PRODUCT_STR  "MIDIbox Quad Genesis"

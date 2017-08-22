@@ -22,6 +22,7 @@
 #include "syeng.h"
 
 static u8 cvoice;
+static u8 vel_enabled;
 static void (*callback_f)(u8 success);
 
 static void DrawMenu(){
@@ -35,8 +36,14 @@ static void DrawMenu(){
         MIOS32_LCD_CursorSet(0,1);
         MIOS32_LCD_PrintString("Warning: nothing to capture");
     }
+    MIOS32_LCD_CursorSet(32,1);
+    MIOS32_LCD_PrintString("Vel ");
+    MIOS32_LCD_PrintString(vel_enabled ? "On" : "Off");
 }
 
+void Capturer_Init(){
+    vel_enabled = 1;
+}
 void Capturer_Start(u8 origvoice, void (*callback)(u8 success)){
     subscreen = SUBSCREEN_CAPTURER;
     cvoice = origvoice;
@@ -52,6 +59,13 @@ void Capturer_Start(u8 origvoice, void (*callback)(u8 success)){
     DrawMenu();
 }
 
+void Capturer_BtnSoftkey(u8 softkey, u8 state){
+    if(!state) return;
+    if(softkey >= 6){
+        vel_enabled = !vel_enabled;
+        DrawMenu();
+    }
+}
 void Capturer_BtnSystem(u8 button, u8 state){
     if(!state) return;
     if(button == FP_B_MENU){
@@ -102,6 +116,7 @@ void Capturer_BtnSystem(u8 button, u8 state){
         prog->noteonsource = NULL;
         prog->noteoffsource = NULL;
         prog->rootnote = 60;
+        prog->tlbaseoffs = vel_enabled ? 0x200C0C0C : 0;
         sprintf(prog->name, "Captured");
         //Create init VGM
         if(v >= 1 && v <= 6){
@@ -129,6 +144,7 @@ void Capturer_BtnSystem(u8 button, u8 state){
             //Operator parameters
             u8 op, reg;
             for(reg=0; reg<7; ++reg){
+                if(reg == 1 && vel_enabled) continue; //Skip TL commands if velocity enabled
                 for(op=0; op<4; ++op){
                     VGM_SourceRAM_InsertCmd(vs, a++, (VgmChipWriteCmd){ .cmd=addrhicmd,
                             .addr = (0x30 + (reg << 4)) | addrlocmd | ((op & 1) << 3) | ((op & 2) << 1),
@@ -169,7 +185,20 @@ void Capturer_BtnSystem(u8 button, u8 state){
             VGM_Source_UpdateUsage(vs);
         }else{
             //Normal init VGM, middle C key on
-            prog->noteonsource = CreateNewVGM(1, usage);
+            VgmSource* vs = CreateNewVGM(1, usage);
+            prog->noteonsource = vs;
+            if(v >= 1 && v <= 6 && vel_enabled){
+                //Op TL commands
+                u8 addrhicmd = (v >= 4) ? 0x53 : 0x52;
+                u8 addrlocmd = (v-1) % 3;
+                u8 op;
+                for(op=0; op<4; ++op){
+                    VGM_SourceRAM_InsertCmd(vs, op, (VgmChipWriteCmd){ .cmd=addrhicmd,
+                            .addr = 0x40 | addrlocmd | ((op & 1) << 3) | ((op & 2) << 1),
+                            .data = genesis[g].opn2.chan[v-1].op[op].tlreg, .data2=0});
+                }
+                VGM_Source_UpdateUsage(vs);
+            }
         }
         //Create note-off VGM
         prog->noteoffsource = CreateNewVGM(2, usage);
