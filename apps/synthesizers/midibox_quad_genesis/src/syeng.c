@@ -15,9 +15,9 @@
 
 #include <genesis.h>
 #include <vgm.h>
-#include "app.h" //XXX
 #include "demoprograms.h"
 #include "mode_vgm.h"
+#include <string.h>
 
 #define UNUSED_RECENCY 0x01000000ul //about 362 seconds ago
 
@@ -1064,6 +1064,163 @@ void SyEng_DeleteProgram(u8 chan){
     SyEng_DeleteSource(prog->noteoffsource);
     vgmh2_free(prog);
     channels[chan].program = NULL;
+}
+
+/*
+MIDIbox Quad Genesis Program File Format
+- 16 bytes u8: ignored ("MBQG Program" and four 0s)
+- 1 byte u8: Program type: 0 for instrument, 1 for percussion
+- 1 byte u8: prog->rootnote
+- 4 bytes u8: prog->tlbaseoff[0 through 3]
+- 13 bytes u8: prog->name, 12 characters plus 0
+- For init, key on, and key off VGM files in that order:
+--- 1 byte u8: n, number of characters in pathname, 0 if there is no VGM in this slot
+--- n bytes u8: full path to VGM file
+On loading, referenced VGM files will be loaded as RAM if memory permits, and
+otherwise streamed.
+For a program file stored to /SOME/PATH/PROGNAME.xyz, RAM-type VGM files will be
+stored in /SOME/PATH/PROGNAME/INIT.VGM, and same for KON.VGM and KOFF.VGM.
+Streamed VGM files are stored with the full path to the streamed file, and the 
+actual streamed file is not touched by the save operation.
+*/
+
+static const char* const vgmtypelabels[] = {
+    "INIT",
+    "KON",
+    "KOFF"
+};
+
+s32 SyEng_LoadProgram(char* filepath, synprogram_t* prog){
+    if(filepath == NULL || prog == NULL) return -1;
+    //Read header
+    MUTEX_SDCARD_TAKE;
+    file_t file;
+    s32 ret = FILE_ReadOpen(&file, filepath);
+    if(ret < 0) return ret;
+    FILE_ReadSeek(16);
+    u8 b;
+    FILE_ReadByte(&b);
+    if(b != 0){
+        DBG("Loading percussion program not implemented yet!");
+        return -50;
+    }
+    FILE_ReadByte(&prog->rootnote);
+    FILE_ReadWord(&prog->tlbaseoffs);
+    FILE_ReadBuffer((u8*)&prog->name, 13);
+    prog->name[12] = 0;
+    prog->usage.all = 0;
+    //Read VGM paths
+    char* tempbuf = vgmh2_malloc(256);
+    u8 v, l;
+    VgmSource** ss;
+    for(v=0; v<3; ++v){
+        ss = SelSource(prog, v);
+        *ss = NULL;
+        FILE_ReadByte(&l);
+        FILE_ReadBuffer((u8*)tempbuf, l);
+        tempbuf[l] = 0;
+        DBG("Program %s: loading VGM file %s", prog->name, tempbuf);
+        //Load file
+        FILE_ReadClose(&file);
+        MUTEX_SDCARD_GIVE;
+        ret = VGM_File_Load(tempbuf, ss, NULL);
+        if(ret < 0){
+            DBG("Error %d loading VGM file", ret);
+        }
+        if(v != 2){
+            MUTEX_SDCARD_TAKE;
+            FILE_ReadReOpen(&file);
+        }
+    }
+    vgmh2_free(tempbuf);
+    //Update program usage
+    SyEng_RecalcSourceAndProgramUsage(prog, NULL);
+    return 0;
+}
+
+inline u8 TurnProgPathIntoVGMPath(char* tempbuf, char* filenamestart, u8 v){
+    u8 sl = strlen(vgmtypelabels[v]);
+    memcpy(filenamestart, vgmtypelabels[v], sl);
+    char* filenameend = filenamestart + sl;
+    memcpy(filenameend, ".VGM", 4);
+    filenameend += 4;
+    *filenameend = 0;
+    return filenameend - tempbuf;
+}
+
+s32 SyEng_SaveProgram(synprogram_t* prog, char* filepath){
+    if(prog == NULL || filepath == NULL || strlen(filepath) == 0) return -1;
+    s32 ret = 0;
+    //Get and extend path
+    //--Assume filepath contains /SOME/PATH/PROGNAME.XYZ
+    char* tempbuf = vgmh2_malloc(256);
+    u8 sl = strlen(filepath);
+    memcpy(tempbuf, filepath, sl);
+    char* filenamestart = tempbuf + sl;
+    *filenamestart = 0;
+    while(*filenamestart != '.') --filenamestart;
+    *filenamestart = '/';
+    ++filenamestart;
+    //--tempbuf now contains /SOME/PATH/PROGNAME/XYZ and filenamestart points to X
+    //Start program file
+    if(FILE_FileExists(filepath)){
+        FILE_Remove(filepath);
+    }
+    MUTEX_SDCARD_TAKE;
+    FILE_WriteOpen(filepath, 1);
+    //Program file main
+    FILE_WriteBuffer((u8*)"MBQG Program", 12);
+    FILE_WriteWord(0);
+    FILE_WriteByte(0);
+    FILE_WriteByte(prog->rootnote);
+    FILE_WriteWord(prog->tlbaseoffs);
+    FILE_WriteBuffer((u8*)prog->name, 13);
+    //Program file VGM paths
+    u8 v;
+    VgmSource** ss;
+    for(v=0; v<3; ++v){
+        ss = SelSource(prog, v);
+        if(*ss == NULL){
+            FILE_WriteByte(0);
+            continue;
+        }
+        if((*ss)->type == VGM_SOURCE_TYPE_RAM){
+            sl = TurnProgPathIntoVGMPath(tempbuf, filenamestart, v);
+            FILE_WriteByte(sl);
+            FILE_WriteBuffer((u8*)tempbuf, sl);
+        }else if((*ss)->type == VGM_SOURCE_TYPE_STREAM){
+            VgmSourceStream* vss = (VgmSourceStream*)(*ss)->data;
+            if(vss->filepath == NULL){
+                DBG("Program saving error, unstarted stream!");
+                ret = -2;
+                FILE_WriteByte(0);
+            }else{
+                sl = strlen(vss->filepath);
+                FILE_WriteByte(sl);
+                FILE_WriteBuffer((u8*)vss->filepath, sl);
+            }
+        }else{
+            DBG("Program saving error, unknown source type %d!", (*ss)->type);
+            ret = -3;
+            FILE_WriteByte(0);
+        }
+    }
+    FILE_WriteClose();
+    MUTEX_SDCARD_GIVE;
+    //Save RAM VGMs
+    for(v=0; v<3; ++v){
+        ss = SelSource(prog, v);
+        if(*ss == NULL) continue;
+        if((*ss)->type != VGM_SOURCE_TYPE_RAM) continue;
+        TurnProgPathIntoVGMPath(tempbuf, filenamestart, v);
+        DBG("Saving %s VGM to %s", vgmtypelabels[v], tempbuf);
+        ret = VGM_File_SaveRAM(*ss, tempbuf);
+        if(ret < 0){
+            DBG("Error %d saving VGM");
+        }
+    }
+    vgmh2_free(tempbuf);
+    return ret;
 }
 
 void SyEng_PrintEngineDebugInfo(){
