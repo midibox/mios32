@@ -117,6 +117,9 @@ extern void SyEng_RecalcSourceAndProgramUsage(synprogram_t* prog, VgmSource* src
 extern void SyEng_DeleteSource(VgmSource* src);
 extern void SyEng_DeleteProgram(u8 chan);
 
+extern s32  SyEng_LoadProgram(char* filepath, synprogram_t* prog); //prog should be allocated but empty
+extern s32  SyEng_SaveProgram(synprogram_t* prog, char* filepath);
+
 extern u8 SyEng_GetStaticPI(VgmUsageBits usage);
 extern void SyEng_ReleaseStaticPI(u8 piindex);
 extern void SyEng_PlayVGMOnPI(synproginstance_t* pi, VgmSource* source, synprogram_t* prog, u8 startplaying);

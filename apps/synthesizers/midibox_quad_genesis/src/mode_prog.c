@@ -89,82 +89,26 @@ static void FilebrowserDoneLoading(char* filename){
         DrawMenu();
         return;
     }
-    //Get VGM file metadata
     MIOS32_LCD_Clear();
     MIOS32_LCD_CursorSet(0,0);
     MIOS32_LCD_PrintString("Loading...");
     MIOS32_LCD_CursorSet(0,1);
     MIOS32_LCD_PrintString("(Streaming other VGMs should continue)");
-    VgmFileMetadata md;
-    s32 res = VGM_File_ScanFile(filename, &md);
-    if(res < 0){
+    char* resultMsg = vgmh2_malloc(64);
+    s32 ret = VGM_File_Load(filename, ss, resultMsg);
+    if(ret < 0){
+        DBG("Failed with status %d", ret);
         submode = 0;
         DrawMenu();
         MIOS32_LCD_CursorSet(0,0);
-        MIOS32_LCD_PrintFormattedString("VGM File metadata scan failed! %d", res);
-        return;
-    }
-    //Check RAM needed
-    vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
-    if((md.totalblocksize >> 3) + (u32)meminfo.main_used >= (u32)meminfo.main_total){
-        //Can't load blocks so can't load as either RAM or stream
-        submode = 0;
-        DrawMenu();
-        MIOS32_LCD_CursorSet(0,0);
-        MIOS32_LCD_PrintString("Not enough main RAM for DAC datablocks!");
-        return;
-    }
-    //Can we load the whole VGM to RAM?
-    u32 remainingblocks = (u32)(meminfo.vgmh2_total - meminfo.vgmh2_used) 
-            + (u32)(meminfo.main_total - meminfo.main_used) - (md.totalblocksize >> 3);
-    u32 vgmramblocks = md.numcmdsram >> 1;
-    if(vgmramblocks <= (remainingblocks >> 4) || vgmramblocks <= 8){
-        //Load to RAM
-        *ss = VGM_SourceRAM_Create();
-        res = VGM_File_LoadRAM(*ss, &md);
-        if(res == -50){
-            VGM_Source_Delete(*ss);
-            *ss = NULL;
-            submode = 0;
-            DrawMenu();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintString("Out of memory!");
-            return;
-        }else if(res < 0){
-            VGM_Source_Delete(*ss);
-            *ss = NULL;
-            submode = 0;
-            DrawMenu();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("VGM load to RAM failed! %d", res);
-            return;
-        }
+        MIOS32_LCD_PrintString(resultMsg);
     }else{
-        //Load as stream
-        *ss = VGM_SourceStream_Create();
-        res = VGM_File_StartStream(*ss, filename, &md);
-        if(res == -50){
-            VGM_Source_Delete(*ss);
-            *ss = NULL;
-            submode = 0;
-            DrawMenu();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintString("Ran out of main RAM!");
-            return;
-        }else if(res < 0){
-            VGM_Source_Delete(*ss);
-            *ss = NULL;
-            submode = 0;
-            DrawMenu();
-            MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintFormattedString("Datablock load failed! %d", res);
-            return;
-        }
+        //Load successful!
+        SyEng_RecalcSourceAndProgramUsage(selprogram, NULL);
+        Mode_Vgm_SelectVgm(*ss);
+        Interface_ChangeToMode(MODE_VGM);
     }
-    //Load successful!
-    SyEng_RecalcSourceAndProgramUsage(selprogram, NULL);
-    Mode_Vgm_SelectVgm(*ss);
-    Interface_ChangeToMode(MODE_VGM);
+    vgmh2_free(resultMsg);
 }
 
 static void FilebrowserDoneSaving(char* filename){
