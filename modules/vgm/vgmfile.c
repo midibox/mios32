@@ -20,6 +20,80 @@
 #include "FreeRTOS.h"
 
 
+
+
+s32 VGM_File_Load(char* filename, VgmSource** ss, char* resultMsg){
+    //Get VGM file metadata
+    VgmFileMetadata md;
+    s32 res = VGM_File_ScanFile(filename, &md);
+    if(res < 0){
+        if(resultMsg != NULL){
+            sprintf(resultMsg, "VGM File metadata scan failed! %d", res);
+        }
+        return -50;
+    }
+    //Check RAM needed
+    vgm_meminfo_t meminfo = VGM_PerfMon_GetMemInfo();
+    if((md.totalblocksize >> 3) + (u32)meminfo.main_used >= (u32)meminfo.main_total){
+        //Can't load blocks so can't load as either RAM or stream
+        if(resultMsg != NULL){
+            sprintf(resultMsg, "Not enough main RAM for DAC datablocks!");
+        }
+        return -51;
+    }
+    //Can we load the whole VGM to RAM?
+    u32 remainingblocks = (u32)(meminfo.vgmh2_total - meminfo.vgmh2_used) 
+            + (u32)(meminfo.main_total - meminfo.main_used) - (md.totalblocksize >> 3);
+    u32 vgmramblocks = md.numcmdsram >> 1;
+    if(vgmramblocks <= (remainingblocks >> 4) || vgmramblocks <= 8){
+        //Load to RAM
+        *ss = VGM_SourceRAM_Create();
+        res = VGM_File_LoadRAM(*ss, &md);
+        if(res == -50){
+            VGM_Source_Delete(*ss);
+            *ss = NULL;
+            if(resultMsg != NULL){
+                sprintf(resultMsg, "Out of memory!");
+            }
+            return -52;
+        }else if(res < 0){
+            VGM_Source_Delete(*ss);
+            *ss = NULL;
+            if(resultMsg != NULL){
+                sprintf(resultMsg, "VGM load to RAM failed! %d", res);
+            }
+            return -53;
+        }
+        if(resultMsg != NULL){
+            sprintf(resultMsg, "Loaded to RAM");
+        }
+    }else{
+        //Load as stream
+        *ss = VGM_SourceStream_Create();
+        res = VGM_File_StartStream(*ss, filename, &md);
+        if(res == -50){
+            VGM_Source_Delete(*ss);
+            *ss = NULL;
+            if(resultMsg != NULL){
+                sprintf(resultMsg, "Ran out of main RAM!");
+            }
+            return -54;
+        }else if(res < 0){
+            VGM_Source_Delete(*ss);
+            *ss = NULL;
+            if(resultMsg != NULL){
+                sprintf(resultMsg, "Datablock load failed! %d", res);
+            }
+            return -55;
+        }
+        if(resultMsg != NULL){
+            sprintf(resultMsg, "Loaded as stream");
+        }
+    }
+    return 0;
+}
+
+
 static u8 DontMakeStreamHang(file_t* usingfile){
     //Temporarily give up SD card to let streaming task use it
     //IMPORTANT: destroys seek position, must FILE_ReadSeek() after

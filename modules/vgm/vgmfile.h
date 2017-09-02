@@ -15,6 +15,7 @@
 
 #include <mios32.h>
 #include "vgmhead.h"
+#include "vgmperfmon.h"
 #include "vgmram.h"
 #include "vgmsource.h"
 #include "vgmstream.h"
@@ -44,6 +45,8 @@ typedef union {
     };
 } VgmFileMetadata;
 
+//resultMsg can be NULL if you don't care about the message
+extern s32 VGM_File_Load(char* filename, VgmSource** ss, char* resultMsg);
 
 extern s32 VGM_File_ScanFile(char* filename, VgmFileMetadata* md);
 
