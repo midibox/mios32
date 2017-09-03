@@ -278,13 +278,14 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
         DrawMenu();
         return;
     }
+    u8 dir = 0;
     switch(submode){
         case 0:
             switch(button){
                 case FP_B_LOAD:
                     if(channels[selchan].program != NULL){
                         MIOS32_LCD_CursorSet(0,0);
-                        MIOS32_LCD_PrintFormattedString("Delete prog first!");
+                        MIOS32_LCD_PrintString("Delete prog first!");
                     }else{
                         Filebrowser_Start(NULL, "PGM", 0, &FilebrowserDoneLoading);
                     }
@@ -292,7 +293,7 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                 case FP_B_SAVE:
                     if(channels[selchan].program == NULL){
                         MIOS32_LCD_CursorSet(0,0);
-                        MIOS32_LCD_PrintFormattedString("No prog to save!");
+                        MIOS32_LCD_PrintString("No prog to save!");
                     }else{
                         Filebrowser_Start(NULL, "PGM", 1, &FilebrowserDoneSaving);
                     }
@@ -300,7 +301,7 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                 case FP_B_NEW:
                     if(channels[selchan].program != NULL){
                         MIOS32_LCD_CursorSet(0,0);
-                        MIOS32_LCD_PrintFormattedString("Delete prog first!");
+                        MIOS32_LCD_PrintString("Delete prog first!");
                     }else{
                         synprogram_t* prog = vgmh2_malloc(sizeof(synprogram_t));
                         channels[selchan].program = prog;
@@ -323,6 +324,45 @@ void Mode_Chan_BtnSystem(u8 button, u8 state){
                     break;
                 case FP_B_ENTER:
                     EditProgram();
+                    break;
+                case FP_B_MOVEUP:
+                    dir = 1; //No typo--continues below
+                case FP_B_MOVEDN:
+                    if(channels[selchan].trackermode) return;
+                    if(channels[selchan].program == NULL) return;
+                    s16 i;
+                    for(i=selchan; dir ? (i>=0) : (i<16*MBQG_NUM_PORTS); dir ? --i : ++i){
+                        if(channels[i].trackermode) continue;
+                        if(channels[i].program != NULL) continue;
+                        break;
+                    }
+                    if(i < 0 || i >= 16*MBQG_NUM_PORTS) return; //No place for it
+                    //Got a place to move it
+                    SyEng_HardFlushProgram(channels[selchan].program);
+                    vTaskSuspendAll();
+                    u8 p;
+                    synproginstance_t* pi;
+                    for(p=0; p<MBQG_NUM_PROGINSTANCES; ++p){
+                        pi = &proginstances[p];
+                        if(pi->sourcechannel == selchan){
+                            pi->sourcechannel = i;
+                        }
+                    }
+                    channels[i].program = channels[selchan].program;
+                    channels[selchan].program = NULL;
+                    xTaskResumeAll();
+                    //Turn off old channel LEDs
+                    FrontPanel_GenesisLEDSet((selchan >> 4), 0, 1, 0);
+                    FrontPanel_GenesisLEDSet((selchan >> 2) & 3, (selchan & 3)+8, 1, 0);
+                    //Change to new channel
+                    selchan = i;
+                    //Turn on new channel LEDs
+                    FrontPanel_GenesisLEDSet((selchan >> 4), 0, 1, 1);
+                    FrontPanel_GenesisLEDSet((selchan >> 2) & 3, (selchan & 3)+8, 1, 1);
+                    //Update LCD
+                    DrawMenu();
+                    MIOS32_LCD_CursorSet(0,0);
+                    MIOS32_LCD_PrintFormattedString("Moved prog to Prt%d:Ch%2d  ", (selchan >> 4), (selchan & 0xF)+1);
                     break;
             }
             break;

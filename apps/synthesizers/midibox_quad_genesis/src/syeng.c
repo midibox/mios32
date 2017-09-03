@@ -1096,12 +1096,16 @@ s32 SyEng_LoadProgram(char* filepath, synprogram_t* prog){
     MUTEX_SDCARD_TAKE;
     file_t file;
     s32 ret = FILE_ReadOpen(&file, filepath);
-    if(ret < 0) return ret;
+    if(ret < 0){
+        MUTEX_SDCARD_GIVE;
+        return ret;
+    }
     FILE_ReadSeek(16);
     u8 b;
     FILE_ReadByte(&b);
     if(b != 0){
         DBG("Loading percussion program not implemented yet!");
+        MUTEX_SDCARD_GIVE;
         return -50;
     }
     FILE_ReadByte(&prog->rootnote);
@@ -1117,6 +1121,7 @@ s32 SyEng_LoadProgram(char* filepath, synprogram_t* prog){
         ss = SelSource(prog, v);
         *ss = NULL;
         FILE_ReadByte(&l);
+        if(l == 0) continue; //Null
         FILE_ReadBuffer((u8*)tempbuf, l);
         tempbuf[l] = 0;
         DBG("Program %s: loading VGM file %s", prog->name, tempbuf);
@@ -1127,15 +1132,15 @@ s32 SyEng_LoadProgram(char* filepath, synprogram_t* prog){
         if(ret < 0){
             DBG("Error %d loading VGM file", ret);
         }
-        if(v != 2){
-            MUTEX_SDCARD_TAKE;
-            FILE_ReadReOpen(&file);
-        }
+        MUTEX_SDCARD_TAKE;
+        FILE_ReadReOpen(&file);
     }
+    FILE_ReadClose(&file);
+    MUTEX_SDCARD_GIVE;
     vgmh2_free(tempbuf);
     //Update program usage
     SyEng_RecalcSourceAndProgramUsage(prog, NULL);
-    return 0;
+    return ret;
 }
 
 inline u8 TurnProgPathIntoVGMPath(char* tempbuf, char* filenamestart, u8 v){
@@ -1152,21 +1157,26 @@ s32 SyEng_SaveProgram(synprogram_t* prog, char* filepath){
     if(prog == NULL || filepath == NULL || strlen(filepath) == 0) return -1;
     s32 ret = 0;
     //Get and extend path
-    //--Assume filepath contains /SOME/PATH/PROGNAME.XYZ
+    //--Assume filepath contains /SOME/PATH/PROGNAME.PGM
     char* tempbuf = vgmh2_malloc(256);
     u8 sl = strlen(filepath);
     memcpy(tempbuf, filepath, sl);
     char* filenamestart = tempbuf + sl;
     *filenamestart = 0;
     while(*filenamestart != '.') --filenamestart;
+    *filenamestart = 0;
+    //--tempbuf now contains /SOME/PATH/PROGNAME
+    MUTEX_SDCARD_TAKE;
+    if(!FILE_DirExists(tempbuf)){
+        FILE_MakeDir(tempbuf);
+    }
     *filenamestart = '/';
     ++filenamestart;
-    //--tempbuf now contains /SOME/PATH/PROGNAME/XYZ and filenamestart points to X
+    //--tempbuf now contains /SOME/PATH/PROGNAME/PGM and filenamestart points to PGM
     //Start program file
     if(FILE_FileExists(filepath)){
         FILE_Remove(filepath);
     }
-    MUTEX_SDCARD_TAKE;
     FILE_WriteOpen(filepath, 1);
     //Program file main
     FILE_WriteBuffer((u8*)"MBQG Program", 12);
