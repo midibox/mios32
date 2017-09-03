@@ -22,7 +22,8 @@
 
 extern xSemaphoreHandle xSDCardSemaphore;
 #define MUTEX_SDCARD_TAKE { while( xSemaphoreTakeRecursive(xSDCardSemaphore, (portTickType)1) != pdTRUE ); }
-#define MUTEX_SDCARD_GIVE { xSemaphoreGiveRecursive(xSDCardSemaphore); }
+#define MUTEX_SDCARD_GIVE { xSemaphoreGiveRecursive(xSDCardSemaphore); vTaskDelay(0); }
+#define MUTEX_SDCARD_GIVE_NOYIELD { xSemaphoreGiveRecursive(xSDCardSemaphore); }
 
 extern u8 vgm_sdtask_disable;
 extern u8 vgm_sdtask_usingsdcard;

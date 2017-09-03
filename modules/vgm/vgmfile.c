@@ -100,7 +100,7 @@ static u8 DontMakeStreamHang(file_t* usingfile){
     if(!vgm_sdtask_usingsdcard) return 0; //It isn't waiting
     FILE_ReadClose(usingfile);
     MUTEX_SDCARD_GIVE;
-    vTaskDelay(0); //Yield the current thread, SD card thread should take over
+    //SD card thread should take over
     MUTEX_SDCARD_TAKE;
     FILE_ReadReOpen(usingfile);
     return 1;
@@ -553,10 +553,15 @@ s32 VGM_File_SaveRAM(VgmSource* sourceram, char* filename){
     DBG("VGM_File_SaveRAM file %s", filename);
     VgmSourceRAM* vsr = (VgmSourceRAM*)sourceram->data;
     s32 res;
+    MUTEX_SDCARD_TAKE;
     if(FILE_FileExists(filename)){
         DBG("--Deleting existing file");
-        if((res = FILE_Remove(filename)) < 0) return res;
+        if((res = FILE_Remove(filename)) < 0){
+            MUTEX_SDCARD_GIVE;
+            return res;
+        }
     }
+    MUTEX_SDCARD_GIVE;
     //===============================Scan data==================================
     u32 datalen = 0, blocklen = 0, t = 0, i;
     u8 type;
@@ -603,10 +608,19 @@ s32 VGM_File_SaveRAM(VgmSource* sourceram, char* filename){
     }
     DBG("--Data length %d (plus header), block length %d, total time %d", datalen, blocklen, t);
     //===============================Open file==================================
-    if((res = FILE_UpdateFreeBytes()) < 0) return res;
-    if(FILE_VolumeBytesFree() < datalen + 0x40) return FILE_ERR_WRITECOUNT;
     MUTEX_SDCARD_TAKE; //TODO implement DontMakeStreamHang() with seeks
-    FILE_WriteOpen(filename, 1);
+    if((res = FILE_UpdateFreeBytes()) < 0){
+        MUTEX_SDCARD_GIVE;
+        return res;
+    }
+    if(FILE_VolumeBytesFree() < datalen + 0x40){
+        MUTEX_SDCARD_GIVE;
+        return FILE_ERR_WRITECOUNT;
+    }
+    if((res = FILE_WriteOpen(filename, 1)) < 0){
+        MUTEX_SDCARD_GIVE;
+        return res;
+    }
     //==============================Write header================================
     //"Vgm "
     FILE_WriteBuffer((u8*)"Vgm ", 4);

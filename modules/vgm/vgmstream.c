@@ -310,7 +310,7 @@ void VGM_HeadStream_BackgroundBuffer(VgmHead* head){
         VGM_PerfMon_ClockOut(VGM_PERFMON_TASK_CARD);
         MIOS32_BOARD_LED_Set(0b1111, leds);
         
-        MUTEX_SDCARD_GIVE;
+        MUTEX_SDCARD_GIVE_NOYIELD;
         vgm_sdtask_usingsdcard = 0;
         
         vhs->wantbuffer = 0;
