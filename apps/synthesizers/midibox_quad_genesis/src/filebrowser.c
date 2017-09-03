@@ -84,6 +84,7 @@ static inline void GotFile(){
 }
 static inline void GotDir(){
     sprintf((char*)(curpath[1] == 0 ? curpath : curpath + strlen(curpath)), "/%s", cursubdir);
+    MUTEX_SDCARD_TAKE;
     if(!FILE_DirExists(curpath)){
         if(FILE_MakeDir(curpath) < 0) waserror = 1;
     }
@@ -91,6 +92,7 @@ static inline void GotDir(){
     s32 ret = FILE_FindNextFile(curpath, NULL, extn, curname);
     if(ret < 0) waserror = 1;
     ret = FILE_FindNextDir(curpath, NULL, cursubdir);
+    MUTEX_SDCARD_GIVE;
     if(ret < 0) waserror = 1;
     cursor = (cursubdir[0] == 0); //If there's no subdirectories, point cursor to files
     DrawMenu();
@@ -230,7 +232,9 @@ void Filebrowser_BtnSoftkey(u8 softkey, u8 state){
             ++i;
         }
         cursubdir[j] = 0;
+        MUTEX_SDCARD_TAKE;
         s32 ret = FILE_FindNextFile(curpath, NULL, extn, curname);
+        MUTEX_SDCARD_GIVE;
         if(ret < 0) waserror = 1;
         cursor = 0;
         DrawMenu();
