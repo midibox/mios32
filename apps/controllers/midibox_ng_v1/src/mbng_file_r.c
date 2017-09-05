@@ -2183,6 +2183,7 @@ s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename, u8 toke
   if( tokenize_req ) {
     MBNG_FILE_R_PushToken(TOKEN_LOAD, line);
     MBNG_FILE_R_PushString(filename, line);
+    return 0;
   } else
 #endif
   {
@@ -2192,9 +2193,9 @@ s32 parseLoad(u32 line, char *command, char **brkt, char *load_filename, u8 toke
 #if DEBUG_VERBOSE_LEVEL >= 2
     DEBUG_MSG("[MBNG_FILE_R:%d] LOAD %s\n", line, load_filename);
 #endif
+    return 1;
   }
 
-  return 1;
 }
 
 
