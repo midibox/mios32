@@ -823,6 +823,7 @@ s32 SEQ_LCD_PrintLayerValue(u8 track, u8 par_layer, u8 par_value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 step_view, int print_edit_value)
 {
+  seq_core_trk_t *t = &seq_core_trk[track];
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(track, par_layer);
   u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
@@ -831,7 +832,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   // TODO: tmp. solution to print chord velocity correctly
   if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
-    layer_type = SEQ_PAR_Type_Chord1;
+    layer_type = tcc->lay_const[0];
 
   switch( layer_type ) {
   case SEQ_PAR_Type_None:
@@ -840,6 +841,9 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
+    // transpose notes/CCs
+    SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
+    
     if( seq_cc_trk[track].trkmode_flags.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 && layer_type != SEQ_PAR_Type_Chord3 ) {
       if( layer_event.midi_package.note ) {
 	u8 scale, root_selection, root;

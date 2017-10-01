@@ -12,6 +12,8 @@ MIDIboxSEQ V4.093
    o new parameter type "Chord3" provides an alternative set of 108 chords.
      Thanks to EsotericLabs for providing the chord table!
 
+   o notes in edit screen are displayed transposed now
+
 
 MIDIboxSEQ V4.092
 ~~~~~~~~~~~~~~~~~
