@@ -29,6 +29,7 @@
 #include "seq_live.h"
 #include "seq_ui.h"
 #include "seq_morph.h"
+#include "seq_random.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -321,6 +322,13 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  else
 	    velocity = tcc->lay_const[1*16 + drum];
 	}
+      }
+
+      if( !insert_empty_notes ) {
+	u8 rnd_probability;
+	if( (rnd_probability=SEQ_PAR_ProbabilityGet(track, step, drum, layer_muted)) < 100 &&
+	    SEQ_RANDOM_Gen_Range(0, 99) >= rnd_probability )
+	  velocity = 0;
       }
 
       if( handle_vu_meter && velocity ) {
