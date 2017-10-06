@@ -16,6 +16,11 @@ MIDIboxSEQ V4.093
 
    o drum tracks: random probability layer now working as intended
 
+   o layers are now initialized for 6 notes polyphony by default (8 layers, 128 steps)
+
+   o optionally pattern changes don't re-send the PC/bank settings.
+     This option can be configured in the UTILITY->Options menu (item #4/18)
+
 
 MIDIboxSEQ V4.092
 ~~~~~~~~~~~~~~~~~
@@ -2395,11 +2400,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 ----------------------------------------------------------
 Support for Jog Shuttle
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=177037
-----------------------------------------------------------
-PC Send behaviour: option to avoid that already selected PC will be re-sent
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178642
-----------------------------------------------------------
-- BUG: in the arpeggiator, while playing a *+- step and I delete that step, a note is stuck and will never stop.
 ----------------------------------------------------------
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178870
 - There would be more performance tricks as in the BPM menue with the "fire preset function" like:

@@ -2662,9 +2662,9 @@ s32 SEQ_UI_LCD_Handler(void)
     //                     <-------------------------------------->
     //                     0123456789012345678901234567890123456789
     if( seq_ui_backup_req )
-      SEQ_LCD_PrintString("Copy Files - be patient!!!");
+      SEQ_LCD_PrintString("Copy Files - please wait!!!");
     else if( seq_ui_format_req )
-      SEQ_LCD_PrintString("Creating Files - be patient!!!");
+      SEQ_LCD_PrintString("Creating Files - please wait!!!");
     else
       SEQ_LCD_PrintString("Don't know what I'm doing! :-/");
 

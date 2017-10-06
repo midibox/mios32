@@ -278,7 +278,9 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
   }
 
   // reset latched PB/CC values (because assignments could change)
-  SEQ_LAYER_ResetLatchedValues();
+  if( !seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC ) {
+    SEQ_LAYER_ResetLatchedValues();
+  }
 
   // send program change & bank selects
   {
