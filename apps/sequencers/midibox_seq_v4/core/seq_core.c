@@ -1818,6 +1818,7 @@ s32 SEQ_CORE_Transpose(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t 
       key_num = t->arp_pos;
     } else {
       inc_oct += arp_oct - 4;
+      t->arp_pos = 0; // ensure that no multi arp event is played anymore
     }
 
     int arp_note = SEQ_MIDI_IN_ArpNoteGet(tcc->busasg.bus, tcc->trkmode_flags.HOLD, !tcc->trkmode_flags.UNSORTED, key_num);

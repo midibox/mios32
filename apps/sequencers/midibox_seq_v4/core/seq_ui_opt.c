@@ -40,25 +40,26 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define ITEM_STEPS_MEASURE   0
-#define ITEM_STEPS_PATTERN   1
-#define ITEM_SYNC_CHANGE     2
-#define ITEM_RATOPC          3
-#define ITEM_PATTERN_MIXER_MAP_COUPLING 4
-#define ITEM_SYNC_MUTE       5
-#define ITEM_SYNC_UNMUTE     6
-#define ITEM_PASTE_CLR_ALL   7
-#define ITEM_RESTORE_TRACK_SELECTIONS 8
-#define ITEM_LIVE_LAYER_MUTE 9
-#define ITEM_INIT_WITH_TRIGGERS 10
-#define ITEM_INIT_CC         11
-#define ITEM_TPD_MODE        12
-#define ITEM_BLM_ALWAYS_USE_FTS 13
-#define ITEM_BLM_FADERS      14
-#define ITEM_MIXER_CC1234    15
-#define ITEM_SCREEN_SAVER    16
+#define ITEM_STEPS_MEASURE              0
+#define ITEM_STEPS_PATTERN              1
+#define ITEM_SYNC_CHANGE                2
+#define ITEM_PATTERN_RESEND_PC          3
+#define ITEM_RATOPC                     4
+#define ITEM_PATTERN_MIXER_MAP_COUPLING 5
+#define ITEM_SYNC_MUTE                  6
+#define ITEM_SYNC_UNMUTE                7
+#define ITEM_PASTE_CLR_ALL              8
+#define ITEM_RESTORE_TRACK_SELECTIONS   9
+#define ITEM_LIVE_LAYER_MUTE           10
+#define ITEM_INIT_WITH_TRIGGERS        11
+#define ITEM_INIT_CC                   12
+#define ITEM_TPD_MODE                  13
+#define ITEM_BLM_ALWAYS_USE_FTS        14
+#define ITEM_BLM_FADERS                15
+#define ITEM_MIXER_CC1234              16
+#define ITEM_SCREEN_SAVER              17
 
-#define NUM_OF_ITEMS         17
+#define NUM_OF_ITEMS                   18
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -75,6 +76,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Pattern Change Synchronisation",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Pattern Change re-sends Program Change",
     NULL, // enabled/disabled
   },
 
@@ -233,6 +239,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
       else
 	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+
+    case ITEM_PATTERN_RESEND_PC:
+      if( incrementer )
+	seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC = incrementer > 0 ? 1 : 0;
+      else
+	seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC ^= 1;
       ui_store_file_required = 1;
       return 1;
 
@@ -528,6 +542,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_SYNC_CHANGE: {
     enabled_value = seq_core_options.SYNCHED_PATTERN_CHANGE;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_PATTERN_RESEND_PC: {
+    enabled_value = seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC ? 0 : 1;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////

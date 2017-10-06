@@ -841,8 +841,10 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    // transpose notes/CCs
-    SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
+    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator ) {
+      // transpose notes/CCs
+      SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
+    }
     
     if( seq_cc_trk[track].trkmode_flags.FORCE_SCALE && layer_type != SEQ_PAR_Type_Chord1 && layer_type != SEQ_PAR_Type_Chord2 && layer_type != SEQ_PAR_Type_Chord3 ) {
       if( layer_event.midi_package.note ) {

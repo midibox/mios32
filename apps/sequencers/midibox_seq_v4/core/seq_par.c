@@ -139,9 +139,10 @@ s32 SEQ_PAR_Init(u32 mode)
 {
 #ifndef MBSEQV4L
   // init parameter layer values
+  // Note: keep in sync with SEQ_TRG_Init() !!!
   u8 track;
   for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track)
-    SEQ_PAR_TrackInit(track, 256, 4, 1); // track, steps, parameter layers, instruments
+    SEQ_PAR_TrackInit(track, 128, 8, 1); // track, steps, parameter layers, instruments
 #else
   // extra for MBSEQ V4L:
   // G1T1/2/3 and G3T1/2/3 use 64 steps and 16 layers (for Notes)

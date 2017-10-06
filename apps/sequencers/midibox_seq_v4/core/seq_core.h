@@ -34,6 +34,7 @@ typedef union {
   struct {
     u32 INIT_CC:8;
     u32 SYNCHED_PATTERN_CHANGE:1;
+    u32 PATTERN_CHANGE_DONT_RESET_LATCHED_PC:1;
     u32 PASTE_CLR_ALL:1;
     u32 RATOPC:1;
     u32 SYNCHED_MUTE:1;
