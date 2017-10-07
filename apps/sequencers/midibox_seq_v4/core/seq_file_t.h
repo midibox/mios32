@@ -44,7 +44,7 @@ extern s32 SEQ_FILE_T_Init(u32 mode);
 
 extern s32 SEQ_FILE_T_Valid(void);
 
-extern s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags);
+extern s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags, u8 restore_pattern_name);
 extern s32 SEQ_FILE_T_Write(char *filepath, u8 track);
 extern s32 SEQ_FILE_T_Debug(u8 track);
 

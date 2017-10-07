@@ -72,12 +72,6 @@ static u32 pc_time_control = 0; // timestamp of last operation
 static mios32_sys_time_t pattern_remix_timer;
 
 /////////////////////////////////////////////////////////////////////////////
-// Local Prototypes
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_PATTERN_Copy(void);
-s32 SEQ_UI_PATTERN_Paste(void);
-
-/////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
 /////////////////////////////////////////////////////////////////////////////
 static s32 LED_Handler(u16 *gp_leds)
@@ -438,21 +432,34 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
         case SEQ_UI_BUTTON_GP3:
           // Copy Pattern
-					// We are going to use the multicopy procedure
-					SEQ_UI_PATTERN_Copy();
 
-					// coping mixer
-					SEQ_UI_MIXER_Copy();
+	  // copy the pattern name
+	  if (remix_mode == 1) {
+	    sprintf(pattern_name_copypaste, pattern_name);
+	  } else {
+	    sprintf(pattern_name_copypaste, seq_pattern_name[0]);
+	  }
+
+	  
+	  // We are going to use the multicopy procedure
+	  SEQ_UI_PATTERN_MultiCopy(0);
+
+	  // coping mixer
+	  SEQ_UI_MIXER_Copy();
 
           break;
 
         case SEQ_UI_BUTTON_GP4:
           // Paste Pattern
-					// We are going to use the multicopy procedure
-					SEQ_UI_PATTERN_Paste();
 
-					// paste mixer
-					SEQ_UI_MIXER_Paste();
+	  // We are going to use the multicopy procedure
+	  SEQ_UI_PATTERN_MultiPaste(0);
+
+	  // paste the pattern name
+	  sprintf(seq_pattern_name[0], pattern_name_copypaste);
+
+	  // paste mixer
+	  SEQ_UI_MIXER_Paste();
 			
           break;
 
@@ -1299,119 +1306,5 @@ s32 SEQ_UI_PATTERN_RMX_Init(u32 mode)
   for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group)
     selected_pattern[group] = seq_pattern[group];
 
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Copy Pattern
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_PATTERN_Copy(void)
-{
-  s32 status = 0;
-  char path[30];
-	
-	// copy the pattern name
-	if (remix_mode == 1) {
-		sprintf(pattern_name_copypaste, pattern_name);
-	} else {
-		sprintf(pattern_name_copypaste, seq_pattern_name[0]);
-	}
-	
-  // create directory if it doesn't exist
-  strcpy(path, "/PRESETS");
-  MUTEX_SDCARD_TAKE;
-  status = FILE_MakeDir(path);
-  status = FILE_DirExists(path);
-  MUTEX_SDCARD_GIVE;
-	
-  if( status < 0 ) {
-    SEQ_UI_SDCardErrMsg(2000, status);
-    return -3;
-  }
-	
-  if( status == 0 ) {
-    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "/PRESETS directory", "cannot be created!");
-    return -4;
-  }
-	
-  // copy all selected patterns to preset directory
-  u8 track, track_id;
-  for(track=0, track_id=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-		++track_id;
-		sprintf(path, "/PRESETS/COPY%d.v4t", track_id);
-			
-		//char str[30];
-		//sprintf(str, "Exporting G%dT%d to:", (track/4)+1, (track%4)+1);
-		//SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
-			
-		MUTEX_SDCARD_TAKE;
-		status=SEQ_FILE_T_Write(path, track);
-		MUTEX_SDCARD_GIVE;
-			
-		if( status < 0 ) {
-			SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Error during Export!", "see MIOS Terminal!");
-			return -6;
-		}
-  }
-	
-	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Pattern copy OK!", "");
-	
-  return 0; // no error
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// Paste Pattern
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_UI_PATTERN_Paste(void)
-{
-  s32 status = 0;
-  char path[30];
-	
-	// paste the pattern name
-	sprintf(seq_pattern_name[0], pattern_name_copypaste);
-	
-  // paste multi copy presets into selected tracks
-  u8 track, track_id;
-  for(track=0, track_id=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
-		++track_id;
-		sprintf(path, "/PRESETS/COPY%d.v4t", track_id);
-			
-		//char str[30];
-		//sprintf(str, "Importing to G%dT%d:", (track/4)+1, (track%4)+1);
-		//SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
-			
-		// mute track to avoid random effects while loading the file
-		MIOS32_IRQ_Disable(); // this operation should be atomic!
-		u8 muted = seq_core_trk_muted & (1 << track);
-		if( !muted )
-			seq_core_trk_muted |= (1 << track);
-		MIOS32_IRQ_Enable();
-			
-		static seq_file_t_import_flags_t import_flags;
-		import_flags.ALL = 0xff;
-			
-		// read file
-		MUTEX_SDCARD_TAKE;
-		status = SEQ_FILE_T_Read(path, track, import_flags);
-		MUTEX_SDCARD_GIVE;
-			
-		// unmute track if it wasn't muted before
-		MIOS32_IRQ_Disable(); // this operation should be atomic!
-		if( !muted )
-			seq_core_trk_muted &= ~(1 << track);
-		MIOS32_IRQ_Enable();
-			
-		if( status == FILE_ERR_OPEN_READ ) {
-			char str[30];
-			sprintf(str, "File for G%dT%d missing:", (track/4)+1, (track%4)+1);
-			SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, str, path);
-		} else if( status < 0 ) {
-			SEQ_UI_SDCardErrMsg(2000, status);
-		}
-		
-  }
-	
-	SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "Pattern paste OK!", "");
-	
   return 0; // no error
 }
