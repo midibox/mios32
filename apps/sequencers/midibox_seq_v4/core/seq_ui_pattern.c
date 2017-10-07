@@ -505,10 +505,13 @@ s32 SEQ_UI_PATTERN_MultiPaste(u8 only_selected)
       }
     }
 
+#if 0
+    // save pattern disabled
     if( status >= 0 && !only_selected && (track % 4) == 0 ) {
       u8 group = track/4;
       status = SEQ_FILE_B_PatternWrite(seq_file_session_name, seq_pattern[group].bank, seq_pattern[group].pattern, group, 0);
     }
+#endif
   }
 
   if( !track_id ) {
@@ -522,6 +525,39 @@ s32 SEQ_UI_PATTERN_MultiPaste(u8 only_selected)
     for(group=0; group<SEQ_CORE_NUM_GROUPS; ++group) {
       selected_pattern[group] = seq_pattern[group];
     }
+  }
+
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Paste Pattern
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_PATTERN_MultiClear(u8 only_selected)
+{
+  // clear (selected) tracks
+  u8 track, track_id;
+  for(track=0, track_id=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
+    if( !only_selected || (ui_selected_tracks & (1 << track)) ) {
+      ++track_id;
+
+      // copy preset
+      u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
+      u8 all_triggers_cleared = 0;
+      u8 init_assignments = 0;
+      SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
+
+      // clear all triggers
+      memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
+
+      // cancel sustain if there are no steps played by the track anymore.
+      SEQ_CORE_CancelSustainedNotes(track);      
+    }
+  }
+
+  if( !track_id ) {
+    SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "No Track selected", "for Multi-Clear!");
+    return -1;
   }
 
   return 0; // no error
