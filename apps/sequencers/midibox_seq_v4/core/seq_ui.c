@@ -917,7 +917,7 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
     SEQ_UI_Msg_LivePattern("copied");
     return 1;
   } else {
-    if( seq_ui_button_state.MENU_PRESSED ) { // legacy, now also accessible in PATTERN page
+    if( seq_ui_button_state.MENU_PRESSED ) {
       if( depressed ) return 1;
       SEQ_UI_PATTERN_MultiCopy(1);
       return 1;
@@ -982,7 +982,7 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
     SEQ_UI_Msg_LivePattern("pasted");
     return 1;
   } else {
-    if( seq_ui_button_state.MENU_PRESSED ) { // legacy, now also accessible in PATTERN page
+    if( seq_ui_button_state.MENU_PRESSED ) {
       if( depressed ) return 1;
       SEQ_UI_PATTERN_MultiPaste(1);
       return 1;
@@ -1032,6 +1032,11 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
       SEQ_UI_MIXER_Clear();
       SEQ_UI_Msg_MixerMap("cleared");
     }
+  } else if( ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
+    if( depressed ) return -1;
+    if( SEQ_UI_PATTERN_MultiClear(0) >= 0 )
+      SEQ_UI_Msg_Patterns("cleared");
+    return 1;
   } else if( ui_page == SEQ_UI_PAGE_SONG ) {
     if( !depressed ) {
       SEQ_UI_SONG_Clear();
@@ -1058,6 +1063,12 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
       seq_ui_display_update_req = 1;
     }
   } else {
+    if( seq_ui_button_state.MENU_PRESSED ) {
+      if( depressed ) return 1;
+      SEQ_UI_PATTERN_MultiClear(1);
+      return 1;
+    }
+
     if( !depressed ) {
       SEQ_UI_UTIL_ClearButton(0); // button pressed
       SEQ_UI_UTIL_ClearButton(1); // button depressed

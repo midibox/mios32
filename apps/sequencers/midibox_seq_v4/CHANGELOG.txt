@@ -9,7 +9,7 @@ Wishlist for future features
 MIDIboxSEQ V4.094
 ~~~~~~~~~~~~~~~~~
 
-   o implemented COPY, PASTE and COPY+PASTE in PATTERN page
+   o implemented COPY, PASTE, COPY+PASTE and CLEAR in PATTERN page
 
 
 MIDIboxSEQ V4.093
