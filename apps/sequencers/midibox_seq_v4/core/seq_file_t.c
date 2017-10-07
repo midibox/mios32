@@ -36,6 +36,7 @@
 #include "seq_trg.h"
 #include "seq_layer.h"
 #include "seq_core.h"
+#include "seq_pattern.h"
 #include "seq_midi_port.h"
 
 
@@ -85,7 +86,7 @@ static s32 get_dec(char *word)
 // reads the track preset file
 // returns < 0 on errors (error codes are documented in seq_file.h)
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
+s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags, u8 restore_pattern_name)
 {
   s32 status = 0;
   file_t file;
@@ -138,6 +139,9 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	  s32 value = 0;
 
 	  if( strcmp(parameter, "Name") == 0 ) {
+	    // parsing for string...
+	    word = brkt;
+	  } else if( strcmp(parameter, "PatternName") == 0 ) {
 	    // parsing for string...
 	    word = brkt;
 	  } else if( strcmp(parameter, "MIDI_Port") == 0 || strcmp(parameter, "FxMIDI_Port") == 0 ) {
@@ -256,6 +260,23 @@ s32 SEQ_FILE_T_Read(char *filepath, u8 track, seq_file_t_import_flags_t flags)
 	    } else {
 	      if( flags.NAME )
 		memcpy(seq_core_trk[track].name, word+1, 80);
+	    }
+	  } else if( strcmp(parameter, "PatternName") == 0 ) {
+	    if( word[0] != '\'' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in PatternName parameter: expecting ' at begin of string!\n");
+#endif
+	    } else if( strlen(word) < 20 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in PatternName parameter: expecting 20 characters!\n");
+#endif
+	    } else if( word[21] != '\'' ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[SEQ_FILE_T] ERROR in PatternName parameter: expecting ' at end of string!\n");
+#endif
+	    } else {
+	      if( restore_pattern_name )
+		memcpy(seq_pattern_name[track/4], word+1, 20);
 	    }
 	  } else if( strcmp(parameter, "TrackMode") == 0 ) {
 	    if( flags.CFG ) tcc->playmode = value;
@@ -481,6 +502,9 @@ static s32 SEQ_FILE_T_Write_Hlp(u8 write_to_file, u8 track)
     FLUSH_BUFFER;
   }
 
+
+  sprintf(line_buffer, "PatternName '%s'\n", seq_pattern_name[track/4]);
+  FLUSH_BUFFER;  
 
   sprintf(line_buffer, "ParInstruments %d\n", SEQ_PAR_NumInstrumentsGet(track));
   FLUSH_BUFFER;  

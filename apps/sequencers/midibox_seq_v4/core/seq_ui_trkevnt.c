@@ -1657,7 +1657,7 @@ static s32 DoImport(void)
 
   // read file
   MUTEX_SDCARD_TAKE;
-  status = SEQ_FILE_T_Read(path, visible_track, import_flags);
+  status = SEQ_FILE_T_Read(path, visible_track, import_flags, 0);
   MUTEX_SDCARD_GIVE;
 
   // unmute track if it wasn't muted before

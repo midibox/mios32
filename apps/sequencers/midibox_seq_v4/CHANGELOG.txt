@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.094
+~~~~~~~~~~~~~~~~~
+
+   o implemented COPY, PASTE and COPY+PASTE in PATTERN page
+
+
 MIDIboxSEQ V4.093
 ~~~~~~~~~~~~~~~~~
 
