@@ -4450,7 +4450,7 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 		enc,
 		enc_config.cfg.sr,
 		enc_config.cfg.pos,
-		enc_config.cfg.pos+1,
+		(enc_config.cfg.pos & 1) ? (enc_config.cfg.pos-1) : (enc_config.cfg.pos+1),
 		enc_type);
 	FLUSH_BUFFER;
       }
