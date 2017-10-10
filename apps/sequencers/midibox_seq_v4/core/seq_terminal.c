@@ -693,6 +693,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	    } else if( !new_session && SEQ_FILE_SaveAllFiles() < 0 ) {
 	      out("Failed to store session on SD Card: /SESSIONS/%s\n", seq_file_session_name);
 	    } else {
+
+	      FILE_MakeDir(SEQ_FILE_SESSION_PATH);
 	      FILE_MakeDir(path); // create directory
 	      status = FILE_DirExists(path);
 	      if( status < 1 ) {
