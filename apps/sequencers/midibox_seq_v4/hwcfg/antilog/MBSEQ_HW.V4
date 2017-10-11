@@ -247,9 +247,10 @@ BLM8X8_DOUT_ANODES_INV_MASK 0xff
 BLM8X8_DOUT_LED_SR      2
 
 # 0: no mapping of 8x8 LEDs
-# 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
-# 2: enable GP LED -> matrix mapping for Antilog PCB
-BLM8X8_DOUT_GP_MAPPING  2
+# 1: select GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
+# 2: select LED mapping for MBSEQ V4L SRIO board
+# 3: select GP LED -> matrix mapping for Antilog PCB
+BLM8X8_DOUT_GP_MAPPING  3
 
 # 8x8 matrix for misc. button functions
 BLM8X8_DIN_SR  2

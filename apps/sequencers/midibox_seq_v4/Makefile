@@ -114,6 +114,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_terminal.c \
 		core/seq_statistics.c \
 		core/seq_led.c \
+		core/seq_blm8x8.c \
 		core/seq_tpd.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
@@ -154,9 +155,6 @@ include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # BLM
 include $(MIOS32_PATH)/modules/blm/blm.mk
-
-# BLM_X
-include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
 # BLM_SCALAR_MASTER
 include $(MIOS32_PATH)/modules/blm_scalar_master/blm_scalar_master.mk

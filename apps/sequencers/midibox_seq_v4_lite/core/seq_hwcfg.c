@@ -20,7 +20,7 @@
 
 #include <mios32.h>
 
-#include <blm_x.h>
+#include <seq_blm8x8.h>
 #include "seq_hwcfg.h"
 
 
@@ -220,13 +220,13 @@ s32 SEQ_HWCFG_Init(u32 mode)
     seq_hwcfg_cv_gate_sr[i] = 0;
 
   // MBSEQV4L: pre-configure SRIO based frontpanel
-  blm_x_config_t config = BLM_X_ConfigGet();
+  seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(0);
   config.rowsel_dout_sr = 1;
   config.rowsel_inv_mask = 0x00;
-  config.led_first_dout_sr = 2;
-  config.btn_first_din_sr = 1;
+  config.led_dout_sr = 2;
+  config.button_din_sr = 1;
   config.debounce_delay = 20; // mS
-  BLM_X_ConfigSet(config);
+  SEQ_BLM8X8_ConfigSet(0, config);
 
   return 0; // no error
 }
