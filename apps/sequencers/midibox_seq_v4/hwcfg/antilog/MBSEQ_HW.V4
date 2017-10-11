@@ -1,6 +1,5 @@
 ##################################################
-# Setup File for Wilba's Frontpanel + Ilmenators TPD
-# see also http://www.midibox.org/dokuwiki/doku.php?id=tpd_pcb
+# Setup File for Antilog Frontpanel
 # $Id$
 ##################################################
 
@@ -147,7 +146,7 @@ MENU_SHORTCUT 16 SYSEX
 ##################################################
 
 # maximum number of connected shift registers in a DIN or DOUT chain (1..23)
-SRIO_NUM_SR    23
+SRIO_NUM_SR    16
 
 # number of first and second DOUT shift register used for GP LEDs
 GP_DOUT_L_SR    0
@@ -225,7 +224,7 @@ BLM_DIN_R_SR  0
 
 
 ##################################################
-# Additional 8x8 BLM as used for Wilba's Frontpanel
+# Additional 8x8 BLM as used for Antilog Frontpanel
 ##################################################
 
 # set to 1 to enable 8x8 BLM driver
@@ -237,11 +236,11 @@ BLM8X8_DOUT_CATHODES_SR  1
 
 # set an inversion mask for the DOUT shift registers if sink drivers (transistors)
 # have been added to the cathode lines
-BLM8X8_DOUT_CATHODES_INV_MASK 0x00
+BLM8X8_DOUT_CATHODES_INV_MASK 0xff
 
 # set an inversion mask for the DOUT shift registers if source drivers (transistors)
 # have been added to the anode lines
-BLM8X8_DOUT_ANODES_INV_MASK 0x00
+BLM8X8_DOUT_ANODES_INV_MASK 0xff
 
 # to which shift register are the LED anode lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
@@ -250,7 +249,7 @@ BLM8X8_DOUT_LED_SR      2
 # 0: no mapping of 8x8 LEDs
 # 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
 # 2: enable GP LED -> matrix mapping for Antilog PCB
-BLM8X8_DOUT_GP_MAPPING  1
+BLM8X8_DOUT_GP_MAPPING  2
 
 # 8x8 matrix for misc. button functions
 BLM8X8_DIN_SR  2
@@ -264,19 +263,19 @@ BLM8X8_DIN_SR  2
 # 0: BPM digits disabled
 # 1: BPM digits with common cathode
 # 2: BPM digits with common anode
-BPM_DIGITS_ENABLED 1
+BPM_DIGITS_ENABLED 0
 
 # define the DOUT shift register to which the segments are connected (0=disabled)
-BPM_DIGITS_SEGMENTS_SR 3
+BPM_DIGITS_SEGMENTS_SR 0
 
 # define the DOUT SR and pin to which the common pins are connected
 # we are counting from right to left
 # Example: 140.5 BPM: (COMMON1 = .5, COMMON2=0., COMMON3=4, COMMON4=1)
 #                       SR  Pin
-BPM_DIGITS_COMMON1_PIN   4   0
-BPM_DIGITS_COMMON2_PIN   4   1
-BPM_DIGITS_COMMON3_PIN   4   2
-BPM_DIGITS_COMMON4_PIN   4   3
+BPM_DIGITS_COMMON1_PIN   0   0
+BPM_DIGITS_COMMON2_PIN   0   0
+BPM_DIGITS_COMMON3_PIN   0   0
+BPM_DIGITS_COMMON4_PIN   0   0
 
 
 ##################################################
@@ -287,18 +286,18 @@ BPM_DIGITS_COMMON4_PIN   4   3
 # 0: STEP digits disabled
 # 1: STEP digits with common cathode
 # 2: STEP digits with common anode
-STEP_DIGITS_ENABLED 1
+STEP_DIGITS_ENABLED 0
 
 # define the DOUT shift register to which the segments are connected (0=disabled)
-STEP_DIGITS_SEGMENTS_SR 3
+STEP_DIGITS_SEGMENTS_SR 0
 
 # define the DOUT SR and pin to which the common pins are connected
 # we are counting from right to left
 # Example: Step 123: (COMMON1 = 3, COMMON2=2, COMMON3=1)
 #                       SR  Pin
-STEP_DIGITS_COMMON1_PIN   4   4
-STEP_DIGITS_COMMON2_PIN   4   5
-STEP_DIGITS_COMMON3_PIN   4   6
+STEP_DIGITS_COMMON1_PIN   0   0
+STEP_DIGITS_COMMON2_PIN   0   0
+STEP_DIGITS_COMMON3_PIN   0   0
 
 
 ##################################################
@@ -310,25 +309,25 @@ STEP_DIGITS_COMMON3_PIN   4   6
 # 0: TPD disabled
 # 1: TPD enabled - columns are cathodes, rows are anodes
 # 2: TPD enabled - columns are anodes, rows are cathodes
-TPD_ENABLED 2
+TPD_ENABLED 0
 
 # define the DOUT shift register to which the columns are connected (0=disabled)
-TPD_COLUMNS_SR_L 10
+TPD_COLUMNS_SR_L 0
 
 # for a 16x16 TPD: define the SR to which the right columns are connected (0=disabled, use only 8x8 TPD)
-TPD_COLUMNS_SR_R 7
+TPD_COLUMNS_SR_R 0
 
 # define the DOUT shift register to which the green LED rows are connected (0=disabled)
-TPD_ROWS_SR_GREEN_L 8
+TPD_ROWS_SR_GREEN_L 0
 
 # define the DOUT shift register to which the right green LED rows are connected (0=disabled, use only 8x8 TPD)
-TPD_ROWS_SR_GREEN_R 5
+TPD_ROWS_SR_GREEN_R 0
 
 # define the DOUT shift register to which the red LED rows are connected (0=disabled)
-TPD_ROWS_SR_RED_L 9
+TPD_ROWS_SR_RED_L 0
 
 # define the DOUT shift register to which the right red LED rows are connected (0=disabled, use only 8x8 TPD)
-TPD_ROWS_SR_RED_R 6
+TPD_ROWS_SR_RED_R 0
 
 
 ##################################################
@@ -396,18 +395,18 @@ J5_ENABLED 1
 ##################################################
 
 #           SR  Pin
-LED_TRACK1  M7   2
-LED_TRACK2  M7   1
-LED_TRACK3  M5   2
-LED_TRACK4  M5   1
+LED_TRACK1   0   0
+LED_TRACK2   0   0
+LED_TRACK3   0   0
+LED_TRACK4   0   0
 
 #                SR  Pin
-LED_PAR_LAYER_A  M4   2
-LED_PAR_LAYER_B  M4   1
-LED_PAR_LAYER_C  M4   0
+LED_PAR_LAYER_A   0   0
+LED_PAR_LAYER_B   0   0
+LED_PAR_LAYER_C   0   0
 
 #           SR  Pin
-LED_BEAT    M1   1
+LED_BEAT     0   0
 LED_MEASURE  0   0
 
 #                    SR  Pin
@@ -415,34 +414,34 @@ LED_MIDI_IN_COMBINED  0   0
 LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
-LED_EDIT    M5   3
-LED_MUTE    M6   3
-LED_PATTERN M6   2
-LED_SONG    M7   3
+LED_EDIT     0   0
+LED_MUTE     0   0
+LED_PATTERN  0   0
+LED_SONG     0   0
 
 #           SR  Pin
-LED_SOLO    M6   1
-LED_FAST    M6   0
+LED_SOLO     0   0
+LED_FAST     0   0
 LED_FAST2    0   0
-LED_ALL     M7   0
+LED_ALL      0   0
 
 #           SR  Pin
-LED_GROUP1  M8   3
-LED_GROUP2  M8   2
-LED_GROUP3  M8   1
-LED_GROUP4  M8   0
+LED_GROUP1   0   0
+LED_GROUP2   0   0
+LED_GROUP3   0   0
+LED_GROUP4   0   0
 
 #                SR  Pin
-LED_TRG_LAYER_A  M2   2
-LED_TRG_LAYER_B  M2   1
-LED_TRG_LAYER_C  M2   0
+LED_TRG_LAYER_A   0   0
+LED_TRG_LAYER_B   0   0
+LED_TRG_LAYER_C   0   0
 
 #          SR  Pin
-LED_PLAY   M1   3
-LED_STOP   M3   3
-LED_PAUSE  M2   3
-LED_REW    M3   2
-LED_FWD    M1   2
+LED_PLAY    0   0
+LED_STOP    0   0
+LED_PAUSE   0   0
+LED_REW     0   0
+LED_FWD     0   0
 LED_LOOP    0   0
 LED_FOLLOW  0   0
 
@@ -466,7 +465,7 @@ LED_MOVE        0   0
 LED_SCROLL      0   0
 
 #                  SR  Pin
-LED_STEP_VIEW      M3   1
+LED_STEP_VIEW       0   0
 LED_PAR_LAYER_SEL   0   0
 LED_TRG_LAYER_SEL   0   0
 LED_TRACK_SEL       0   0
@@ -740,28 +739,28 @@ BUTTON_BEH_ALL_WITH_TRIGGERS 0
 ##################################################
 
 #              SR  Pin  Type
-ENC_DATAWHEEL   6   2   DETENTED3
+ENC_DATAWHEEL   7   7   DETENTED3
 
 # the speed value for the datawheel which is used when the "FAST" button is activated:
 ENC_DATAWHEEL_FAST_SPEED 3
 
 #        SR  Pin  Type
-ENC_GP1   1   6   DETENTED3
-ENC_GP2   1   4   DETENTED3
-ENC_GP3   1   2   DETENTED3
-ENC_GP4   1   0   DETENTED3
-ENC_GP5   3   6   DETENTED3
-ENC_GP6   3   4   DETENTED3
-ENC_GP7   3   2   DETENTED3
-ENC_GP8   3   0   DETENTED3
-ENC_GP9   4   6   DETENTED3
-ENC_GP10  4   4   DETENTED3
-ENC_GP11  4   2   DETENTED3
-ENC_GP12  4   0   DETENTED3
-ENC_GP13  5   6   DETENTED3
-ENC_GP14  5   4   DETENTED3
-ENC_GP15  5   2   DETENTED3
-ENC_GP16  5   0   DETENTED3
+ENC_GP1   1   1   DETENTED3
+ENC_GP2   1   3   DETENTED3
+ENC_GP3   1   5   DETENTED3
+ENC_GP4   1   7   DETENTED3
+ENC_GP5   3   1   DETENTED3
+ENC_GP6   3   3   DETENTED3
+ENC_GP7   3   5   DETENTED3
+ENC_GP8   3   7   DETENTED3
+ENC_GP9   4   1   DETENTED3
+ENC_GP10  4   3   DETENTED3
+ENC_GP11  4   5   DETENTED3
+ENC_GP12  4   7   DETENTED3
+ENC_GP13  6   1   DETENTED3
+ENC_GP14  6   3   DETENTED3
+ENC_GP15  6   5   DETENTED3
+ENC_GP16  6   7   DETENTED3
 
 # the speed value for GP encoders which is used when the "FAST" button is activated:
 ENC_GP_FAST_SPEED 3
@@ -772,7 +771,7 @@ ENC_AUTO_FAST        1
 
 # optional BPM encoder
 #              SR  Pin  Type
-ENC_BPM         7   0   DETENTED3
+ENC_BPM         0   0   DETENTED3
 
 # the speed value for the BPM encoder which is used when the "FAST" function is activated
 ENC_BPM_FAST_SPEED 3

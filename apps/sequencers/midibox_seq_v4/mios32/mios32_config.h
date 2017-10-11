@@ -160,6 +160,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define BLM_X_LED_FIRST_DOUT_SR   255 // dummy, will be changed in seq_file_hw.c
 #define BLM_X_BTN_FIRST_DIN_SR    255 // dummy, will be changed in seq_file_hw.c
 #define BLM_X_ROWSEL_INV_MASK     0   // dummy, will be changed in seq_file_hw.c
+#define BLM_X_COL_INV_MASK        0   // dummy, will be changed in seq_file_hw.c
 #define BLM_X_DEBOUNCE_MODE       1
 
 

@@ -238,12 +238,17 @@ BLM8X8_DOUT_CATHODES_SR  1
 # have been added to the cathode lines
 BLM8X8_DOUT_CATHODES_INV_MASK 0x00
 
+# set an inversion mask for the DOUT shift registers if source drivers (transistors)
+# have been added to the anode lines
+BLM8X8_DOUT_ANODES_INV_MASK 0x00
+
 # to which shift register are the LED anode lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
 BLM8X8_DOUT_LED_SR      2
 
 # 0: no mapping of 8x8 LEDs
 # 1: enable GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
+# 2: enable GP LED -> matrix mapping for Antilog PCB
 BLM8X8_DOUT_GP_MAPPING  1
 
 # 8x8 matrix for misc. button functions

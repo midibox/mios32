@@ -1068,6 +1068,10 @@ s32 SEQ_FILE_HW_Read(void)
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.rowsel_inv_mask = value;
 	    BLM_X_ConfigSet(config);
+	  } else if( strcasecmp(parameter, "DOUT_ANODES_INV_MASK") == 0 ) {
+	    blm_x_config_t config = BLM_X_ConfigGet();
+	    config.col_inv_mask = value;
+	    BLM_X_ConfigSet(config);
 	  } else if( strcasecmp(parameter, "DOUT_LED_SR") == 0 ) {
 	    blm_x_config_t config = BLM_X_ConfigGet();
 	    config.led_first_dout_sr = value;
