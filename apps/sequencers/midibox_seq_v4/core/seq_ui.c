@@ -139,6 +139,9 @@ static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
+static u16 ui_select_leds_green;
+static u16 ui_select_leds_red;
+
 #define UI_MSG_MAX_CHAR 31
 static char ui_msg[2][UI_MSG_MAX_CHAR];
 static u16 ui_msg_ctr;
@@ -197,6 +200,10 @@ s32 SEQ_UI_Init(u32 mode)
 
   // visible GP pattern
   ui_gp_leds = 0x0000;
+
+  // select LEDs
+  ui_select_leds_green = 0x0000;
+  ui_select_leds_red = 0x0000;
 
   // misc
   seq_ui_backup_req = 0;
@@ -3150,46 +3157,141 @@ s32 SEQ_UI_LED_Handler_Periodic()
   }
 
 
-  if( seq_hwcfg_blm8x8.enabled && seq_hwcfg_blm8x8.dout_gp_mapping == 1 ) {
-    // for wilba's frontpanel
+  if( seq_hwcfg_blm8x8.enabled ) {
+    if( seq_hwcfg_blm8x8.dout_gp_mapping == 1 ) {
+      // for wilba's frontpanel
 
-    // BLM_X DOUT -> GP LED mapping
-    // 0 = 15,16	1 = 13,14	2 = 11,12	3 = 9,10
-    // 4 = 1,2	5 = 3,4		6 = 5,6		7 = 7,8
+      // BLM_X DOUT -> GP LED mapping
+      // 0 = 15,16	1 = 13,14	2 = 11,12	3 = 9,10
+      // 4 = 1,2	5 = 3,4		6 = 5,6		7 = 7,8
 
-    // bit 7: first green (i.e. GP1-G)
-    // bit 6: first red (i.e. GP1-R)
-    // bit 5: second green (i.e. GP2-G)
-    // bit 4: second red (i.e. GP2-R)
+      // bit 7: first green (i.e. GP1-G)
+      // bit 6: first red (i.e. GP1-R)
+      // bit 5: second green (i.e. GP2-G)
+      // bit 4: second red (i.e. GP2-R)
 
-    // this mapping routine takes ca. 5 uS
-    // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
+      // this mapping routine takes ca. 5 uS
+      // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
 
-    u16 modified_gp_leds = ui_gp_leds;
+      u16 modified_gp_leds = ui_gp_leds;
 #if 1
-    // extra: red LED is lit exclusively for higher contrast
-    modified_gp_leds &= ~pos_marker_mask;
+      // extra: red LED is lit exclusively for higher contrast
+      modified_gp_leds &= ~pos_marker_mask;
 #endif
 
-    int sr;
-    const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
-    u16 gp_mask = 1 << 0;
-    for(sr=0; sr<8; ++sr) {
-      u8 pattern = 0;
+      int sr;
+      const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
+      u16 gp_mask = 1 << 0;
+      for(sr=0; sr<8; ++sr) {
+	u8 pattern = 0;
 
-      if( modified_gp_leds & gp_mask )
-	pattern |= 0x80;
-      if( pos_marker_mask & gp_mask )
-	pattern |= 0x40;
-      gp_mask <<= 1;
-      if( modified_gp_leds & gp_mask )
-	pattern |= 0x20;
-      if( pos_marker_mask & gp_mask )
-	pattern |= 0x10;
-      gp_mask <<= 1;
+	if( modified_gp_leds & gp_mask )
+	  pattern |= 0x80;
+	if( pos_marker_mask & gp_mask )
+	  pattern |= 0x40;
+	gp_mask <<= 1;
+	if( modified_gp_leds & gp_mask )
+	  pattern |= 0x20;
+	if( pos_marker_mask & gp_mask )
+	  pattern |= 0x10;
+	gp_mask <<= 1;
 
-      u8 mapped_sr = blm_x_sr_map[sr];
-      BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
+	u8 mapped_sr = blm_x_sr_map[sr];
+	BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
+      }
+    } else if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 ) {
+      // for Antilog frontpanel
+
+      // BLM_X DOUT -> GP LED mapping
+      // left/right half offsets; green,red
+      // 0 = 8,9        1 = 11,10       2 = 13,12       3 = 15,14
+      // 4 = 40,41      2 = 43,42       3 = 45,44       4 = 47,46
+
+      u16 modified_gp_leds = ui_gp_leds;
+#if 1
+      // extra: red LED is lit exclusively for higher contrast
+      modified_gp_leds &= ~pos_marker_mask;
+#endif
+
+      // GP row, first quarter
+      {
+	u8 value = 0;
+
+	if( modified_gp_leds & (1 << 0) ) value |= (1 << 0);
+	if( pos_marker_mask  & (1 << 0) ) value |= (1 << 1);
+
+	if( modified_gp_leds & (1 << 1) ) value |= (1 << 3);
+	if( pos_marker_mask  & (1 << 1) ) value |= (1 << 2);
+
+	if( modified_gp_leds & (1 << 2) ) value |= (1 << 5);
+	if( pos_marker_mask  & (1 << 2) ) value |= (1 << 4);
+
+	if( modified_gp_leds & (1 << 3) ) value |= (1 << 7);
+	if( pos_marker_mask  & (1 << 3) ) value |= (1 << 6);
+
+	BLM_X_LED_rows[1][0] = value;
+      }
+
+      // GP row, second quarter
+      {
+	u8 value = 0;
+
+	if( modified_gp_leds & (1 << 4) ) value |= (1 << 0);
+	if( pos_marker_mask  & (1 << 4) ) value |= (1 << 1);
+
+	if( modified_gp_leds & (1 << 5) ) value |= (1 << 3);
+	if( pos_marker_mask  & (1 << 5) ) value |= (1 << 2);
+
+	if( modified_gp_leds & (1 << 6) ) value |= (1 << 5);
+	if( pos_marker_mask  & (1 << 6) ) value |= (1 << 4);
+
+	if( modified_gp_leds & (1 << 7) ) value |= (1 << 7);
+	if( pos_marker_mask  & (1 << 7) ) value |= (1 << 6);
+
+	BLM_X_LED_rows[5][0] = value;
+      }
+
+
+      // BLM_X DOUT -> Select LED mapping
+      // like above, just next SR
+
+      // Select row, first quarter
+      {
+	u8 value = 0;
+
+	if( ui_select_leds_green & (1 << 0) ) value |= (1 << 0);
+	if( ui_select_leds_red   & (1 << 0) ) value |= (1 << 1);
+
+	if( ui_select_leds_green & (1 << 1) ) value |= (1 << 3);
+	if( ui_select_leds_red   & (1 << 1) ) value |= (1 << 2);
+
+	if( ui_select_leds_green & (1 << 2) ) value |= (1 << 5);
+	if( ui_select_leds_red   & (1 << 2) ) value |= (1 << 4);
+
+	if( ui_select_leds_green & (1 << 3) ) value |= (1 << 7);
+	if( ui_select_leds_red   & (1 << 3) ) value |= (1 << 6);
+
+	BLM_X_LED_rows[2][0] = value;
+      }
+
+      // Select row, second quarter
+      {
+	u8 value = 0;
+
+	if( ui_select_leds_green & (1 << 4) ) value |= (1 << 0);
+	if( ui_select_leds_red   & (1 << 4) ) value |= (1 << 1);
+
+	if( ui_select_leds_green & (1 << 5) ) value |= (1 << 3);
+	if( ui_select_leds_red   & (1 << 5) ) value |= (1 << 2);
+
+	if( ui_select_leds_green & (1 << 6) ) value |= (1 << 5);
+	if( ui_select_leds_red   & (1 << 6) ) value |= (1 << 4);
+
+	if( ui_select_leds_green & (1 << 7) ) value |= (1 << 7);
+	if( ui_select_leds_red   & (1 << 7) ) value |= (1 << 6);
+
+	BLM_X_LED_rows[6][0] = value;
+      }
     }
   }
 
