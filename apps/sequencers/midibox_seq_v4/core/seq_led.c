@@ -17,9 +17,8 @@
 
 #include <mios32.h>
 
-#include <blm_x.h>
-
 #include "seq_led.h"
+#include "seq_blm8x8.h"
 #include "seq_hwcfg.h"
 #include "seq_file_hw.h"
 
@@ -72,7 +71,7 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
       }
     }
 
-    return BLM_X_LEDSet(pin-184, 0, value);
+    return SEQ_BLM8X8_LEDSet(0, pin-184, value);
   }
 
   return -1; // pin not available
@@ -111,7 +110,7 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
       value = mios32_dout_reverse_tab[value];
     }
 
-    return BLM_X_LEDSRSet(sr-23, 0, value);
+    return SEQ_BLM8X8_LEDSRSet(0, sr-23, value);
   }
 
   return -1; // SR not available
@@ -135,7 +134,7 @@ s32 SEQ_LED_SRGet(u32 sr)
 #endif
 
   if( sr >= 23 && sr < 31 ) {
-    u8 value = BLM_X_LEDSRGet(sr-23, 0);
+    u8 value = SEQ_BLM8X8_LEDSRGet(0, sr-23);
 
     if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 27 ) {
       // MBSEQ V4L SRIO Board

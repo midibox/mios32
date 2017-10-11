@@ -18,7 +18,6 @@
 #include <mios32.h>
 #include <string.h>
 #include <blm.h>
-#include <blm_x.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include <blm_scalar_master.h>
@@ -31,6 +30,7 @@
 #include "seq_hwcfg.h"
 #include "seq_lcd.h"
 #include "seq_led.h"
+#include "seq_blm8x8.h"
 #include "seq_midply.h"
 #include "seq_mixer.h"
 #include "seq_live.h"
@@ -3197,9 +3197,9 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	gp_mask <<= 1;
 
 	u8 mapped_sr = blm_x_sr_map[sr];
-	BLM_X_LED_rows[mapped_sr][0] = (BLM_X_LED_rows[mapped_sr][0] & 0x0f) | pattern;
+	seq_blm8x8_led_row[0][mapped_sr] = (seq_blm8x8_led_row[0][mapped_sr] & 0x0f) | pattern;
       }
-    } else if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 ) {
+    } else if( seq_hwcfg_blm8x8.dout_gp_mapping == 3 ) {
       // for Antilog frontpanel
 
       // BLM_X DOUT -> GP LED mapping
@@ -3229,7 +3229,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	if( modified_gp_leds & (1 << 3) ) value |= (1 << 7);
 	if( pos_marker_mask  & (1 << 3) ) value |= (1 << 6);
 
-	BLM_X_LED_rows[1][0] = value;
+	seq_blm8x8_led_row[0][1] = value;
       }
 
       // GP row, second quarter
@@ -3248,7 +3248,45 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	if( modified_gp_leds & (1 << 7) ) value |= (1 << 7);
 	if( pos_marker_mask  & (1 << 7) ) value |= (1 << 6);
 
-	BLM_X_LED_rows[5][0] = value;
+	seq_blm8x8_led_row[0][5] = value;
+      }
+
+      // GP row, third quarter
+      {
+	u8 value = 0;
+
+	if( modified_gp_leds & (1 << 8) ) value |= (1 << 0);
+	if( pos_marker_mask  & (1 << 8) ) value |= (1 << 1);
+
+	if( modified_gp_leds & (1 << 9) ) value |= (1 << 3);
+	if( pos_marker_mask  & (1 << 9) ) value |= (1 << 2);
+
+	if( modified_gp_leds & (1 << 10) ) value |= (1 << 5);
+	if( pos_marker_mask  & (1 << 10) ) value |= (1 << 4);
+
+	if( modified_gp_leds & (1 << 11) ) value |= (1 << 7);
+	if( pos_marker_mask  & (1 << 11) ) value |= (1 << 6);
+
+	seq_blm8x8_led_row[1][1] = value;
+      }
+
+      // GP row, fourth quarter
+      {
+	u8 value = 0;
+
+	if( modified_gp_leds & (1 << 12) ) value |= (1 << 0);
+	if( pos_marker_mask  & (1 << 12) ) value |= (1 << 1);
+
+	if( modified_gp_leds & (1 << 13) ) value |= (1 << 3);
+	if( pos_marker_mask  & (1 << 13) ) value |= (1 << 2);
+
+	if( modified_gp_leds & (1 << 14) ) value |= (1 << 5);
+	if( pos_marker_mask  & (1 << 14) ) value |= (1 << 4);
+
+	if( modified_gp_leds & (1 << 15) ) value |= (1 << 7);
+	if( pos_marker_mask  & (1 << 15) ) value |= (1 << 6);
+
+	seq_blm8x8_led_row[1][5] = value;
       }
 
 
@@ -3271,7 +3309,7 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	if( ui_select_leds_green & (1 << 3) ) value |= (1 << 7);
 	if( ui_select_leds_red   & (1 << 3) ) value |= (1 << 6);
 
-	BLM_X_LED_rows[2][0] = value;
+	seq_blm8x8_led_row[0][2] = value;
       }
 
       // Select row, second quarter
@@ -3290,7 +3328,45 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	if( ui_select_leds_green & (1 << 7) ) value |= (1 << 7);
 	if( ui_select_leds_red   & (1 << 7) ) value |= (1 << 6);
 
-	BLM_X_LED_rows[6][0] = value;
+	seq_blm8x8_led_row[0][6] = value;
+      }
+
+      // Select row, third quarter
+      {
+	u8 value = 0;
+
+	if( ui_select_leds_green & (1 << 8) ) value |= (1 << 0);
+	if( ui_select_leds_red   & (1 << 8) ) value |= (1 << 1);
+
+	if( ui_select_leds_green & (1 << 9) ) value |= (1 << 3);
+	if( ui_select_leds_red   & (1 << 9) ) value |= (1 << 2);
+
+	if( ui_select_leds_green & (1 << 10) ) value |= (1 << 5);
+	if( ui_select_leds_red   & (1 << 10) ) value |= (1 << 4);
+
+	if( ui_select_leds_green & (1 << 11) ) value |= (1 << 7);
+	if( ui_select_leds_red   & (1 << 11) ) value |= (1 << 6);
+
+	seq_blm8x8_led_row[1][2] = value;
+      }
+
+      // Select row, fourth quarter
+      {
+	u8 value = 0;
+
+	if( ui_select_leds_green & (1 << 12) ) value |= (1 << 0);
+	if( ui_select_leds_red   & (1 << 12) ) value |= (1 << 1);
+
+	if( ui_select_leds_green & (1 << 13) ) value |= (1 << 3);
+	if( ui_select_leds_red   & (1 << 13) ) value |= (1 << 2);
+
+	if( ui_select_leds_green & (1 << 14) ) value |= (1 << 5);
+	if( ui_select_leds_red   & (1 << 14) ) value |= (1 << 4);
+
+	if( ui_select_leds_green & (1 << 15) ) value |= (1 << 7);
+	if( ui_select_leds_red   & (1 << 15) ) value |= (1 << 6);
+
+	seq_blm8x8_led_row[1][6] = value;
       }
     }
   }

@@ -23,10 +23,10 @@
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include <blm_cheapo.h>
-#include <blm_x.h>
 
 #include "tasks.h"
 #include "seq_led.h"
+#include "seq_blm8x8.h"
 #include "seq_ui.h"
 #include "seq_ui_pages.h"
 #include "seq_hwcfg.h"

@@ -26,7 +26,6 @@
 #include <string.h>
 #include <aout.h>
 #include <blm_cheapo.h>
-#include <blm_x.h>
 #include <seq_cv.h>
 
 #include "file.h"
@@ -34,6 +33,7 @@
 #include "seq_file_hw.h"
 
 #include "seq_hwcfg.h"
+#include "seq_blm8x8.h"
 
 #include "seq_ui.h"
 #include "seq_midi_port.h"
@@ -724,26 +724,32 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] BLM8X8_%s: %d", parameter, value);
 #endif
 
+	  int blm = 0; // TODO: multiple BLMs
+
 	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_blm8x8.enabled = value;
 	  } else if( strcasecmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
-	    blm_x_config_t config = BLM_X_ConfigGet();
+	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
 	    config.rowsel_dout_sr = value;
-	    BLM_X_ConfigSet(config);
+	    SEQ_BLM8X8_ConfigSet(blm, config);
 	  } else if( strcasecmp(parameter, "DOUT_CATHODES_INV_MASK") == 0 ) {
-	    blm_x_config_t config = BLM_X_ConfigGet();
+	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
 	    config.rowsel_inv_mask = value;
-	    BLM_X_ConfigSet(config);
+	    SEQ_BLM8X8_ConfigSet(blm, config);
+	  } else if( strcasecmp(parameter, "DOUT_ANODES_INV_MASK") == 0 ) {
+	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
+	    config.col_inv_mask = value;
+	    SEQ_BLM8X8_ConfigSet(blm, config);
 	  } else if( strcasecmp(parameter, "DOUT_LED_SR") == 0 ) {
-	    blm_x_config_t config = BLM_X_ConfigGet();
-	    config.led_first_dout_sr = value;
-	    BLM_X_ConfigSet(config);
+	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
+	    config.led_dout_sr = value;
+	    SEQ_BLM8X8_ConfigSet(blm, config);
 	  } else if( strcasecmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
 	    seq_hwcfg_blm8x8.dout_gp_mapping = value;
 	  } else if( strcasecmp(parameter, "DIN_SR") == 0 ) {
-	    blm_x_config_t config = BLM_X_ConfigGet();
-	    config.btn_first_din_sr = value;
-	    BLM_X_ConfigSet(config);
+	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
+	    config.button_din_sr = value;
+	    SEQ_BLM8X8_ConfigSet(blm, config);
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR: unknown BLM8X8_* name '%s'!", parameter);
@@ -1008,10 +1014,16 @@ s32 SEQ_FILE_HW_Read(void)
 	  MIOS32_SRIO_DebounceSet(delay);
 	  BLM_CHEAPO_DebounceSet(delay);
 
-	  // BLM_X based DINs
-	  blm_x_config_t config = BLM_X_ConfigGet();
-	  config.debounce_delay = delay;
-	  BLM_X_ConfigSet(config);
+	  // SEQ_BLM8X8 based DINs
+	  {
+	    int blm;
+
+	    for(blm=0; blm<SEQ_BLM8X8_NUM; ++blm) {
+	      seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
+	      config.debounce_delay = delay;
+	      SEQ_BLM8X8_ConfigSet(blm, config);
+	    }
+	  }
 
 	} else if( strcasecmp(parameter, "AOUT_INTERFACE_TYPE") == 0 ) {
 	  // only for compatibility reasons - AOUT interface is stored in MBSEQ_GC.V4L now!

@@ -20,7 +20,7 @@
 
 #include <mios32.h>
 
-#include <blm_x.h>
+#include <seq_blm8x8.h>
 #include "seq_hwcfg.h"
 
 
@@ -540,10 +540,16 @@ s32 SEQ_HWCFG_Init(u32 mode)
   for(i=0; i<SEQ_HWCFG_NUM_SR_CV_GATES; ++i)
     seq_hwcfg_cv_gate_sr[i] = 0;
 
-  // initial debounce delay for BLM_X
-  blm_x_config_t config = BLM_X_ConfigGet();
-  config.debounce_delay = 20; // mS
-  BLM_X_ConfigSet(config);
+  // initial debounce delay for BLM8x8
+  {
+    int blm;
+
+    for(blm=0; blm<SEQ_BLM8X8_NUM; ++blm) {
+      seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
+      config.debounce_delay = 20; // mS
+      SEQ_BLM8X8_ConfigSet(blm, config);
+    }
+  }
 
   return 0; // no error
 }

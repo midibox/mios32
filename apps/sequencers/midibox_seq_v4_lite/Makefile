@@ -26,6 +26,7 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		core/seq_ui_pages.c \
 		core/seq_ui_util.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_led.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_blm8x8.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_tpd.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_cv.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_midi_port.c \
@@ -121,9 +122,6 @@ include $(MIOS32_PATH)/modules/notestack/notestack.mk
 
 # BLM_CHEAPO driver
 include $(MIOS32_PATH)/modules/blm_cheapo/blm_cheapo.mk
-
-# BLM_X
-include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
 
 # BLM_SCALAR_MASTER
 include $(MIOS32_PATH)/modules/blm_scalar_master/blm_scalar_master.mk
