@@ -102,6 +102,17 @@ extern "C" {
 #define BLM_X_ROWSEL_INV_MASK  0x00
 #endif
 
+// set an inversion mask for the shift registers connected to the anodes
+// Settings: 0x00 - no source drivers
+//           0xff - source drivers connected to D7..D0
+//           0x0f - source drivers connected to D3..D0
+//           0xf0 - source drivers connected to D7..D4
+//
+// This option can be re-configured by software ( BLM_X_ConfigSet(..) )
+#ifndef BLM_X_COL_INV_MASK
+#define BLM_X_COL_INV_MASK  0x00
+#endif
+
 // 0: no debouncing
 // 1: cheap debouncing (all buttons the same time)
 // 2: individual debouncing of all buttons
@@ -148,6 +159,7 @@ typedef struct {
   u8 led_first_dout_sr;
   u8 btn_first_din_sr;
   u8 rowsel_inv_mask;
+  u8 col_inv_mask;
   u8 color_mode;
   u8 debounce_delay;
   } blm_x_config_t;
