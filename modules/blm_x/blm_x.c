@@ -89,6 +89,7 @@ s32 BLM_X_Init(void){
   blm_x_config.led_first_dout_sr = BLM_X_LED_FIRST_DOUT_SR;
   blm_x_config.btn_first_din_sr = BLM_X_BTN_FIRST_DIN_SR;
   blm_x_config.rowsel_inv_mask = BLM_X_ROWSEL_INV_MASK;
+  blm_x_config.col_inv_mask = BLM_X_COL_INV_MASK;
   blm_x_config.color_mode = BLM_X_COLOR_MODE;
   blm_x_config.debounce_delay = BLM_X_DEBOUNCE_DELAY;
   // init current row
@@ -121,8 +122,12 @@ s32 BLM_X_PrepareRow(void){
   MIOS32_DOUT_SRSet(blm_x_config.rowsel_dout_sr - 1, dout_value);
 #if (BLM_X_LED_FIRST_DOUT_SR > 0)
   // output value of LED rows depending on current row
-  for(i = 0;i < BLM_X_NUM_LED_SR;i++)
-    MIOS32_DOUT_SRSet(blm_x_config.led_first_dout_sr - 1 + i, BLM_X_LED_rows[current_row][i]);
+  for(i = 0;i < BLM_X_NUM_LED_SR;i++) {
+    // apply inversion mask (required when source drivers are connected to the anode lines)
+    dout_value = BLM_X_LED_rows[current_row][i];
+    dout_value ^= blm_x_config.col_inv_mask;
+    MIOS32_DOUT_SRSet(blm_x_config.led_first_dout_sr - 1 + i, dout_value);
+  }
 #endif
   return 0;
 }
@@ -447,6 +452,7 @@ s32 BLM_X_LEDSRSet(u8 row, u8 sr, u8 sr_value){
 //    .led_first_dout_sr
 //    .led_first_din_sr
 //    .rowsel_inv_mask
+//    .col_inv_mask
 //    .color_mode
 //    .debounce_delay
 // OUT: returns < 0 on error, 0 on success
@@ -464,6 +470,7 @@ s32 BLM_X_ConfigSet(blm_x_config_t config){
 //    .led_first_dout_sr
 //    .led_first_din_sr
 //    .rowsel_inv_mask
+//    .col_inv_mask
 //    .color_mode
 //    .debounce_delay
 /////////////////////////////////////////////////////////////////////////////
