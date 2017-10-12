@@ -18,6 +18,7 @@
 #include <mios32.h>
 
 #include "seq_blm8x8.h"
+#include "seq_hwcfg.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,12 +122,17 @@ s32 SEQ_BLM8X8_GetRow(void)
       u8 sr = config->button_din_sr - 1;
 
       // ensure that change won't be propagated to normal DIN handler
-      MIOS32_DIN_SRChangedGetAndClear(sr, 0xff);
+      u8 sr_value = MIOS32_DIN_SRGet(sr);
+      if( blm == 2 && seq_hwcfg_blm8x8.dout_gp_mapping == 3 ) {
+	// only first 4 bits are used by matrix
+	MIOS32_DIN_SRChangedGetAndClear(sr, 0x0f);
+	sr_value |= 0xf0;
+      } else {
+	MIOS32_DIN_SRChangedGetAndClear(sr, 0xff);
+      }
 
       // cheap debounce handling. ignore any changes if debounce_ctr > 0
       if( !seq_blm8x8_debounce_ctr ) {
-	u8 sr_value = MIOS32_DIN_SRGet(sr);
-
 	// *** set change notification and new value. should not be interrupted ***
 	MIOS32_IRQ_Disable();
 

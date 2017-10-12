@@ -47,10 +47,10 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "STEPSEL",      "StpS.", "Step Selection    ",  3, (void *)&SEQ_UI_STEPSEL_Init },
   { "TRGSEL",       "TrgS.", "Trigger Selection ",  4, (void *)&SEQ_UI_TRGSEL_Init },
   { "PARSEL",       "ParS.", "Param. Selection  ",  5, (void *)&SEQ_UI_PARSEL_Init },
-  { "TRACKSEL",     "TrkS.", "Track Selection   ",  6, (void *)&SEQ_UI_TRACKSEL_Init },
-  { "BPM_PRESETS",  "BpmP.", "BPM Presets       ",  7, (void *)&SEQ_UI_BPM_PRESETS_Init },
+  { "INSEL",        "InsS.", "Inst. Selection   ",  6, (void *)&SEQ_UI_INSSEL_Init },
+  { "TRACKSEL",     "TrkS.", "Track Selection   ",  7, (void *)&SEQ_UI_TRACKSEL_Init },
+  { "BPM_PRESETS",  "BpmP.", "BPM Presets       ",  8, (void *)&SEQ_UI_BPM_PRESETS_Init },
 
-  { "RES1",         "Res1 ", "Reserved page #1  ",  8, (void *)&SEQ_UI_TODO_Init },
   { "RES2",         "Res2 ", "Reserved page #2  ",  9, (void *)&SEQ_UI_TODO_Init },
   { "RES3",         "Res3 ", "Reserved page #3  ", 10, (void *)&SEQ_UI_TODO_Init },
   { "RES4",         "Res4 ", "Reserved page #4  ", 11, (void *)&SEQ_UI_TODO_Init },

@@ -422,7 +422,7 @@ void APP_BLM_NotifyToggle(u32 pin, u32 pin_value)
 void APP_SEQ_BLM8X8_NotifyToggle(u8 blm, u32 pin, u32 pin_value)
 {
   if( app_din_testmode ) {
-    DEBUG_MSG("[DIN_TESTMODE] BLM8x8%c Pin M%d D%d %s\n", 'A'+blm, (pin>>3)+1, pin&7, pin_value ? "depressed" : "pressed");
+    DEBUG_MSG("[DIN_TESTMODE] BLM8x8 Pin M%d%c D%d %s\n", (pin>>3)+1, 'A'+blm, pin&7, pin_value ? "depressed" : "pressed");
   }
 
 #ifndef MBSEQV4L
@@ -440,7 +440,7 @@ void APP_SEQ_BLM8X8_NotifyToggle(u8 blm, u32 pin, u32 pin_value)
     }
     SEQ_UI_Button_Handler(pin, pin_value);
   } else {
-    SEQ_UI_Button_Handler(pin + 184, pin_value);
+    SEQ_UI_Button_Handler(blm*64 + pin + 256, pin_value);
   }
 }
 

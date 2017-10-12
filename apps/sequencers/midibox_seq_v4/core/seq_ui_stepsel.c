@@ -135,7 +135,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 //   0 if value hasn't been changed
 //  -1 if invalid or unsupported button
 /////////////////////////////////////////////////////////////////////////////
-static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
+s32 SEQ_UI_STEPSEL_Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
@@ -318,7 +318,7 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_STEPSEL_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallButtonCallback(SEQ_UI_STEPSEL_Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);

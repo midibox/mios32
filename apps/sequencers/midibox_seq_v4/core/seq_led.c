@@ -55,26 +55,27 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
     if( SEQ_FILE_HW_Valid() ) {
       return 0;
     } else {
-      pin += 184;
+      pin += 256;
     }
   }
 #else
-  if( pin < 184 )
+  if( pin < 256 )
     return MIOS32_DOUT_PinSet(pin, value);
 #endif
 
-  if( pin >= 184 && pin < 248 ) {
-    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && !SEQ_FILE_HW_Valid() ) {
-      // MBSEQ V4L SRIO Board
-      if( pin >= 216 ) {
-	pin = (pin & 0xf8) | (7 - (pin&7));
-      }
-    }
+  u8 sr = (pin-256) / 8;
 
-    return SEQ_BLM8X8_LEDSet(0, pin-184, value);
+  if( sr >= (SEQ_BLM8X8_NUM*8) )
+    return -1; // SR disabled
+
+  if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && !SEQ_FILE_HW_Valid() ) {
+    // MBSEQ V4L SRIO Board
+    if( sr >= 4 && sr <= 7 ) {
+      pin = (pin & 0xf8) | (7 - (pin&7));
+    }
   }
 
-  return -1; // pin not available
+  return SEQ_BLM8X8_LEDSet(sr / 8, pin % 64, value);
 }
 
 
@@ -84,7 +85,7 @@ s32 SEQ_LED_PinSet(u32 pin, u32 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRSet(u32 sr, u8 value)
 {
-  if( sr >= 128 )
+  if( sr >= (32 + SEQ_BLM8X8_NUM*8) )
     return -1; // SR disabled
 
 #ifdef MBSEQV4L
@@ -95,25 +96,23 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
     if( SEQ_FILE_HW_Valid() ) {
       return 0;
     } else {
-      sr += 23;
+      sr += 32;
     }
   }
 
 #else
-  if( sr < 23 )
+  if( sr < 32 )
     return MIOS32_DOUT_SRSet(sr, value);
 #endif
 
-  if( sr >= 23 && sr < 31 ) {
-    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 27 ) {
-      // MBSEQ V4L SRIO Board
-      value = mios32_dout_reverse_tab[value];
-    }
+  sr -= 32;
 
-    return SEQ_BLM8X8_LEDSRSet(0, sr-23, value);
+  if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 4 && sr <= 7 ) {
+    // MBSEQ V4L SRIO Board
+    value = mios32_dout_reverse_tab[value];
   }
 
-  return -1; // SR not available
+  return SEQ_BLM8X8_LEDSRSet(sr / 8, sr % 8, value);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -122,29 +121,27 @@ s32 SEQ_LED_SRSet(u32 sr, u8 value)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LED_SRGet(u32 sr)
 {
-  if( sr >= 128 )
-    return 0; // SR disabled
+  if( sr >= (32 + SEQ_BLM8X8_NUM*8) )
+    return 0; // SR not available... return 0
 
 #ifdef MBSEQV4L
   if( sr < 8 )
     return BLM_CHEAPO_DOUT_SRGet(sr);
 #else
-  if( sr < 23 )
+  if( sr < 32 )
     return MIOS32_DOUT_SRGet(sr);
 #endif
 
-  if( sr >= 23 && sr < 31 ) {
-    u8 value = SEQ_BLM8X8_LEDSRGet(0, sr-23);
+  sr -= 32;
 
-    if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 27 ) {
-      // MBSEQ V4L SRIO Board
-      value = mios32_dout_reverse_tab[value];
-    }
+  u8 value = SEQ_BLM8X8_LEDSRGet(sr / 8, sr % 8);
 
-    return value;
+  if( seq_hwcfg_blm8x8.dout_gp_mapping == 2 && sr >= 4 && sr <= 7 ) {
+    // MBSEQ V4L SRIO Board
+    value = mios32_dout_reverse_tab[value];
   }
 
-  return 0; // SR not available... return 0
+  return value;
 }
 
 

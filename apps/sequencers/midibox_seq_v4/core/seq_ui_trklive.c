@@ -1,4 +1,4 @@
-// $Id: seq_ui_pmute.c 759 2009-10-25 22:10:11Z tk $
+// $Id$
 /*
  * Live Play Page
  *

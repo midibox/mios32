@@ -34,8 +34,9 @@ static s32 LED_Handler(u16 *gp_leds)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
 
-  if( event_mode == SEQ_EVENT_MODE_Drum )
+  if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available )
     *gp_leds = 1 << ui_selected_instrument;
   else
     *gp_leds = 1 << ui_selected_trg_layer;
@@ -55,11 +56,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 {
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
 
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
     // select new layer/instrument
 
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
       if( encoder >= SEQ_TRG_NumInstrumentsGet(visible_track) )
 	return -1;
       ui_selected_instrument = encoder;
@@ -69,7 +71,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       ui_selected_trg_layer = encoder;
     }
 
-    if( seq_hwcfg_button_beh.par_layer ) {
+    if( seq_hwcfg_button_beh.trg_layer ) {
       // if toggle function active: jump back to previous menu
       // this is especially useful for the emulated MBSEQ, where we can only click on a single button
       // (trigger gets deactivated when clicking on GP button or moving encoder)
@@ -79,7 +81,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     return 1; // value changed
   } else if( encoder == SEQ_UI_ENCODER_Datawheel ) {
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
       return SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, SEQ_TRG_NumInstrumentsGet(visible_track)-1, incrementer);
     } else {
       return SEQ_UI_Var8_Inc(&ui_selected_trg_layer, 0, SEQ_TRG_NumLayersGet(visible_track)-1, incrementer);
@@ -97,7 +99,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 //   0 if value hasn't been changed
 //  -1 if invalid or unsupported button
 /////////////////////////////////////////////////////////////////////////////
-static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
+s32 SEQ_UI_TRGSEL_Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( depressed ) return 0; // ignore when button depressed
 
@@ -153,26 +155,29 @@ static s32 LCD_Handler(u8 high_prio)
 
   u8 visible_track = SEQ_UI_VisibleTrackGet();
   u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
 
-  if( high_prio && event_mode == SEQ_EVENT_MODE_Drum ) {
-    ///////////////////////////////////////////////////////////////////////////
-    // frequently update VU meters
+  if( high_prio ) {
+    if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
+      ///////////////////////////////////////////////////////////////////////////
+      // frequently update VU meters
 
-    SEQ_LCD_CursorSet(0, 1);
+      SEQ_LCD_CursorSet(0, 1);
 
-    u8 drum;
-    u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
-    for(drum=0; drum<num_instruments; ++drum) {
-      if( seq_core_trk[visible_track].layer_muted & (1 << drum) )
-	SEQ_LCD_PrintString("Mute ");
-      else
-	SEQ_LCD_PrintHBar((seq_layer_vu_meter[drum] >> 3) & 0xf);
+      u8 drum;
+      u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
+      for(drum=0; drum<num_instruments; ++drum) {
+	if( seq_core_trk[visible_track].layer_muted & (1 << drum) )
+	  SEQ_LCD_PrintString("Mute ");
+	else
+	  SEQ_LCD_PrintHBar((seq_layer_vu_meter[drum] >> 3) & 0xf);
+      }
     }
 
     return 0; // no error
   }
 
-  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+  if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
     u8 num_instruments = SEQ_TRG_NumInstrumentsGet(visible_track);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -231,7 +236,7 @@ static s32 LCD_Handler(u8 high_prio)
 s32 SEQ_UI_TRGSEL_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallButtonCallback(SEQ_UI_TRGSEL_Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);

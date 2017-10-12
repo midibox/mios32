@@ -111,6 +111,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .mute    = ((( 4  -1)<<3)+    1),
   .pattern = ((( 4  -1)<<3)+    2),
   .song    = ((( 4  -1)<<3)+    3),
+  .phrase  = ((( 0  -1)<<3)+    0),
 
   //         SR   ignore    Pin
   .solo  = ((( 4   -1)<<3)+    4),
@@ -152,6 +153,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .utility       = (((14   -1)<<3)+    1),
   .step_view     = (((13   -1)<<3)+    7),
   .par_layer_sel = ((( 2   -1)<<3)+    2),
+  .ins_sel       = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 2   -1)<<3)+    3),
   .track_sel     = ((( 2   -1)<<3)+    4),
 
@@ -172,6 +174,7 @@ seq_hwcfg_button_t seq_hwcfg_button = {
   .utility       = ((( 2   -1)<<3)+    1),
   .step_view     = ((( 2   -1)<<3)+    2),
   .par_layer_sel = ((( 0   -1)<<3)+    0),
+  .ins_sel       = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 2   -1)<<3)+    3),
   .track_sel     = ((( 2   -1)<<3)+    4),
 
@@ -233,12 +236,14 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .loop = 1,
   .follow = 1,
   .bookmark = 1,
+  .mute = 1,
 #if defined(MIOS32_FAMILY_EMULATION) && !defined(MIOS32_BOARD_IPAD)
   .scrub = 1,
   .menu = 1,
   .step_view = 1,
   .trg_layer = 1,
   .par_layer = 1,
+  .ins_sel = 1,
   .track_sel = 1,
   .tempo_preset = 1,
 #else
@@ -247,6 +252,7 @@ seq_hwcfg_button_beh_t seq_hwcfg_button_beh = {
   .step_view = 0,
   .trg_layer = 0,
   .par_layer = 0,
+  .ins_sel = 0,
   .track_sel = 0,
   .tempo_preset = 0,
 #endif
@@ -295,6 +301,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   .mute    = ((( 2   -1)<<3)+    1),
   .pattern = ((( 2   -1)<<3)+    2),
   .song    = ((( 2   -1)<<3)+    3),
+  .phrase  = ((( 0   -1)<<3)+    0),
 
   //         SR    ignore    Pin
   .solo  = ((( 2   -1)<<3)+    4),
@@ -345,6 +352,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //               SR    ignore    Pin
   .step_view     = (((14   -1)<<3)+    5),
   .par_layer_sel = (((14   -1)<<3)+    1),
+  .ins_sel       = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = (((14   -1)<<3)+    2),
   .track_sel     = (((14   -1)<<3)+    3),
 
@@ -388,6 +396,7 @@ seq_hwcfg_led_t seq_hwcfg_led = {
   //               SR    ignore    Pin
   .step_view     = ((( 0   -1)<<3)+    0),
   .par_layer_sel = ((( 0   -1)<<3)+    0),
+  .ins_sel       = ((( 0   -1)<<3)+    0),
   .trg_layer_sel = ((( 0   -1)<<3)+    0),
   .track_sel     = ((( 0   -1)<<3)+    0),
 

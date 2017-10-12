@@ -1,4 +1,4 @@
-// $Id: seq_ui_pmute.c 607 2009-06-19 21:43:41Z tk $
+// $Id$
 /*
  * MIDI Monitor Page
  *
