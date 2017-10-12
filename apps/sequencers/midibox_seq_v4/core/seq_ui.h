@@ -49,6 +49,7 @@ typedef union {
     u32 STEP_VIEW:1;
     u32 PAR_LAYER_SEL:1;
     u32 TRG_LAYER_SEL:1;
+    u32 INS_SEL:1;
     u32 TRACK_SEL:1;
     u32 TEMPO_PRESET:1;
     u32 BOOKMARK:1;
@@ -62,6 +63,7 @@ typedef union {
     u32 MUTE_PRESSED:1;
     u32 PATTERN_PRESSED:1;
     u32 SONG_PRESSED:1;
+    u32 PHRASE_PRESSED:1;
     u32 FAST_ENCODERS:1;
     u32 FAST2_ENCODERS:1;
     u32 SOLO:1;
@@ -174,6 +176,19 @@ typedef enum {
   SEQ_UI_EDIT_DATAWHEEL_MODE_CHANGE_TRGLAYER
 } seq_ui_edit_datawheel_mode_t;
 #define SEQ_UI_EDIT_DATAWHEEL_MODE_NUM 5
+
+typedef enum {
+  SEQ_UI_SEL_VIEW_NONE = 0,
+  SEQ_UI_SEL_VIEW_BOOKMARKS,
+  SEQ_UI_SEL_VIEW_STEPS,
+  SEQ_UI_SEL_VIEW_TRACKS,
+  SEQ_UI_SEL_VIEW_PAR,
+  SEQ_UI_SEL_VIEW_TRG,
+  SEQ_UI_SEL_VIEW_INS,
+  SEQ_UI_SEL_VIEW_MUTE,
+  SEQ_UI_SEL_VIEW_PHRASE
+} seq_ui_sel_view_t;
+
 
 typedef union {
   u8 ALL;
@@ -315,6 +330,7 @@ extern s32 SEQ_UI_FX_Init(u32 mode);
 extern s32 SEQ_UI_STEPSEL_Init(u32 mode);
 extern s32 SEQ_UI_TRGSEL_Init(u32 mode);
 extern s32 SEQ_UI_PARSEL_Init(u32 mode);
+extern s32 SEQ_UI_INSSEL_Init(u32 mode);
 extern s32 SEQ_UI_TRACKSEL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_PRESETS_Init(u32 mode);
 extern s32 SEQ_UI_EDIT_Init(u32 mode);
@@ -424,6 +440,10 @@ extern s32 SEQ_UI_Bookmark_Store(u8 bookmark);
 extern s32 SEQ_UI_Bookmark_Restore(u8 bookmark);
 
 extern s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_STEPSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_PARSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_TRGSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_INSSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -443,6 +463,8 @@ extern u8 ui_selected_instrument;
 extern u8 ui_selected_step_view;
 extern u8 ui_selected_step;
 extern u8 ui_selected_item;
+extern u8 ui_selected_bookmark;
+extern u8 ui_selected_phrase;
 extern u16 ui_selected_gp_buttons;
 
 extern u16 ui_hold_msg_ctr;
@@ -453,6 +475,10 @@ extern seq_ui_page_t ui_selected_page;
 extern seq_ui_page_t ui_stepview_prev_page;
 extern seq_ui_page_t ui_trglayer_prev_page;
 extern seq_ui_page_t ui_parlayer_prev_page;
+extern seq_ui_page_t ui_inssel_prev_page;
+extern seq_ui_page_t ui_tracksel_prev_page;
+extern seq_ui_page_t ui_bookmarks_prev_page;
+extern seq_ui_page_t ui_mute_prev_page;
 
 extern volatile u8 ui_cursor_flash;
 extern volatile u8 ui_cursor_flash_overrun_ctr;
@@ -481,6 +507,8 @@ extern char ui_global_dir_list[80];
 
 extern seq_ui_edit_view_t seq_ui_edit_view;
 extern seq_ui_edit_datawheel_mode_t seq_ui_edit_datawheel_mode;
+
+extern seq_ui_sel_view_t seq_ui_sel_view;
 
 extern seq_ui_options_t seq_ui_options;
 

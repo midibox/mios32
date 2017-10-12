@@ -211,7 +211,7 @@ static s32 get_sr(char *word)
     return -1;
 
   if( blm8x8_selected ) {
-    l = 24 + l-1;
+    l = 32 + l;
   }
 
   return l; // value is valid
@@ -304,24 +304,27 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 
-	  // M1..M8 -> SR 24..31
+	  // M1..M8 or M1A..M8A -> SR 32..39
+	  // M1B..M8B -> SR40..47
+	  // M1C..M8C -> SR48..55
 	  s32 sr = -1;
 	  u8 blm8x8_selected = 0;
 	  if( word[0] == 'M' ) {
 	    blm8x8_selected = 1;
 	    ++word;
-	    s32 m = get_dec(word);
+	    s32 m = word[0] - '0';
+	    s32 blm = word[1] ? (word[1]-'A') : 0;
 
-	    if( m < 1 || m > 8 ) {
+	    if( m < 1 || m > 8 || blm < 0 || blm >= SEQ_BLM8X8_NUM ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
 	      continue;
 	    }
-	    sr = 24 + m-1;
+	    sr = 32 + blm*8 + m;
 	  } else {
 	    sr = get_dec(word);
-	    if( sr < 0 || sr > 32 ) {
+	    if( sr < 0 || sr >= (32 + SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -338,12 +341,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  u8 din_value = ((sr-1)<<3) | pin;
+	  u16 din_value = ((sr-1)<<3) | pin;
 
 	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
-	  // then map DIN SR 17..24 to 24..31
+	  // then map DIN SR 17..24 to 32..39
 	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && din_value >= 128 && din_value < 192 ) {
-	    din_value += 56;
+	    din_value += 128;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -434,24 +437,27 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 
-	  // M1..M8 -> SR 24..31
+	  // M1..M8 or M1A..M8A -> SR 32..39
+	  // M1B..M8B -> SR40..47
+	  // M1C..M8C -> SR48..55
 	  s32 sr = -1;
 	  u8 blm8x8_selected = 0;
 	  if( word[0] == 'M' ) {
 	    blm8x8_selected = 1;
 	    ++word;
-	    s32 m = get_dec(word);
+	    s32 m = word[0] - '0';
+	    s32 blm = word[1] ? (word[1]-'A') : 0;
 
-	    if( m < 1 || m > 8 ) {
+	    if( m < 1 || m > 8 || blm < 0 || blm >= SEQ_BLM8X8_NUM ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
 	      continue;
 	    }
-	    sr = 24 + m-1;
+	    sr = 32 + blm*8 + m;
 	  } else {
 	    sr = get_dec(word);
-	    if( sr < 0 || sr > 32 ) {
+	    if( sr < 0 || sr >= (32 + SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -468,12 +474,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  u8 dout_value = ((sr-1)<<3) | pin;
+	  u16 dout_value = ((sr-1)<<3) | pin;
 
 	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
-	  // then map DOUT SR 17..24 to 24..31
+	  // then map DOUT SR 17..24 to 32..39
 	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && dout_value >= 128 && dout_value < 192 ) {
-	    dout_value += 56;
+	    dout_value += 128;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -633,7 +639,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "GP_DIN_L_SR") == 0 || strcasecmp(parameter, "GP_DIN_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -651,7 +657,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "SRIO_NUM_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 num_sr = get_dec(word);
-	  if( num_sr < 1 || num_sr > 32 ) {
+	  if( num_sr < 1 || num_sr > MIOS32_SRIO_NUM_SR ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in SRIO_NUM_SR definition: invalid value '%s'!", word);
 #endif
@@ -675,7 +681,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "GP_DOUT_L_SR") == 0 || strcasecmp(parameter, "GP_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -693,7 +699,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "POS_DOUT_L_SR") == 0 || strcasecmp(parameter, "POS_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -792,7 +798,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	      continue;
 	    }
-	    u8 dout_value = ((value-1)<<3) | pin;
+	    u16 dout_value = ((value-1)<<3) | pin;
 
 	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common1_pin = dout_value;
@@ -844,7 +850,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	      continue;
 	    }
-	    u8 dout_value = ((value-1)<<3) | pin;
+	    u16 dout_value = ((value-1)<<3) | pin;
 
 	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_step_digits.common1_pin = dout_value;
@@ -1052,7 +1058,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1064,7 +1070,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1078,7 +1084,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif

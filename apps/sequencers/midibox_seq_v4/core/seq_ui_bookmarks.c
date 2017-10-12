@@ -31,7 +31,6 @@
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
 
-static u8 last_bookmark = 0;
 static u8 store_state;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -48,7 +47,7 @@ static s32 LED_Handler(u16 *gp_leds)
   if( ui_cursor_flash ) // if flashing flag active: no LED flag set
     return 0;
 
-  *gp_leds = (1 << last_bookmark);
+  *gp_leds = (1 << ui_selected_bookmark);
 
   return 0; // no error
 }
@@ -69,8 +68,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #else
   if( encoder <= SEQ_UI_ENCODER_GP16 ) {
 #endif
-    last_bookmark = encoder;
-    SEQ_UI_Bookmark_Restore(last_bookmark);
+    ui_selected_bookmark = encoder;
+    SEQ_UI_Bookmark_Restore(ui_selected_bookmark);
     return 1;
   }
 
@@ -98,11 +97,11 @@ s32 SEQ_UI_BOOKMARKS_Button_Handler(seq_ui_button_t button, s32 depressed)
     if( depressed ) {
       SEQ_UI_UnInstallDelayedActionCallback(Button_StoreRequest);
       if( store_state == 1 ) { // depressed within 1 second: select bookmark
-	SEQ_UI_Bookmark_Restore(last_bookmark);
+	SEQ_UI_Bookmark_Restore(ui_selected_bookmark);
       }
       return 0;
     }
-    last_bookmark = button;
+    ui_selected_bookmark = button;
     store_state = 1;
     SEQ_UI_InstallDelayedActionCallback(Button_StoreRequest, 500, 0);
 
@@ -153,7 +152,7 @@ static s32 LCD_Handler(u8 high_prio)
       break; // just to ensure...
     seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[i];
 
-    if( ui_cursor_flash && (i == last_bookmark) )
+    if( ui_cursor_flash && (i == ui_selected_bookmark) )
       SEQ_LCD_PrintSpaces(5);
     else
       SEQ_LCD_PrintStringPadded(bm->name, 5);
@@ -186,16 +185,16 @@ s32 SEQ_UI_BOOKMARKS_Init(u32 mode)
 static void Button_StoreRequest(u32 state)
 {
   if( store_state == 1 ) {
-    SEQ_UI_Msg(last_bookmark >= 8 ? SEQ_UI_MSG_DELAYED_ACTION_R : SEQ_UI_MSG_DELAYED_ACTION, 2001,
+    SEQ_UI_Msg(ui_selected_bookmark >= 8 ? SEQ_UI_MSG_DELAYED_ACTION_R : SEQ_UI_MSG_DELAYED_ACTION, 2001,
 	       "Hold Button", "to store Bookmark!");
     SEQ_UI_InstallDelayedActionCallback(Button_StoreRequest, 2000, 0);
     store_state = 2;
   } else {
     store_state = 0;
     // store into selected slot
-    SEQ_UI_Bookmark_Store(last_bookmark);
+    SEQ_UI_Bookmark_Store(ui_selected_bookmark);
 
-    SEQ_UI_Msg(last_bookmark >= 8 ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 2000,
+    SEQ_UI_Msg(ui_selected_bookmark >= 8 ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 2000,
 	       "Storing", "Bookmark!");      
 #if !defined(MIOS32_FAMILY_EMULATION)
     // this yield ensures, that the display will be updated before storing the file
@@ -203,16 +202,16 @@ static void Button_StoreRequest(u32 state)
 #endif
     // and store file
     MUTEX_SDCARD_TAKE;
-    s32 error = SEQ_FILE_BM_Write(seq_file_session_name, (last_bookmark < 8) ? 1 : 0);
+    s32 error = SEQ_FILE_BM_Write(seq_file_session_name, (ui_selected_bookmark < 8) ? 1 : 0);
     MUTEX_SDCARD_GIVE;
     if( error < 0 )
       SEQ_UI_SDCardErrMsg(2000, error);
     else {
       // return to bookmarked page
-      SEQ_UI_PageSet((seq_ui_page_t)seq_ui_bookmarks[last_bookmark].page);
+      SEQ_UI_PageSet((seq_ui_page_t)seq_ui_bookmarks[ui_selected_bookmark].page);
 
       // and print message
-      SEQ_UI_Msg(last_bookmark >= 8 ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 2000,
+      SEQ_UI_Msg(ui_selected_bookmark >= 8 ? SEQ_UI_MSG_USER_R : SEQ_UI_MSG_USER, 2000,
 		 "Bookmark", "stored!");      
     }
   }

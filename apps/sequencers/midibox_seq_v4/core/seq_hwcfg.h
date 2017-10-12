@@ -44,95 +44,97 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u8 down;
-  u8 up;
-  u8 left;
-  u8 right;
+  u16 down;
+  u16 up;
+  u16 left;
+  u16 right;
 
-  u8 scrub;
-  u8 metronome;
-  u8 record;
-  u8 jam_live;
-  u8 jam_step;
-  u8 live;
+  u16 scrub;
+  u16 metronome;
+  u16 record;
+  u16 jam_live;
+  u16 jam_step;
+  u16 live;
 
-  u8 stop;
-  u8 pause;
-  u8 play;
-  u8 rew;
-  u8 fwd;
-  u8 loop;
-  u8 follow;
+  u16 stop;
+  u16 pause;
+  u16 play;
+  u16 rew;
+  u16 fwd;
+  u16 loop;
+  u16 follow;
 
-  u8 menu;
-  u8 select;
-  u8 exit;
-  u8 bookmark;
+  u16 menu;
+  u16 select;
+  u16 exit;
+  u16 bookmark;
 
-  u8 track[SEQ_HWCFG_NUM_TRACK];
+  u16 track[SEQ_HWCFG_NUM_TRACK];
 
-  u8 direct_track[SEQ_HWCFG_NUM_DIRECT_TRACK];
+  u16 direct_track[SEQ_HWCFG_NUM_DIRECT_TRACK];
 
-  u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
+  u16 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
 
-  u8 direct_bookmark[SEQ_HWCFG_NUM_DIRECT_BOOKMARK];
+  u16 direct_bookmark[SEQ_HWCFG_NUM_DIRECT_BOOKMARK];
 
-  u8 edit;
-  u8 mute;
-  u8 pattern;
-  u8 song;
+  u16 edit;
+  u16 mute;
+  u16 pattern;
+  u16 song;
+  u16 phrase;
 
-  u8 solo;
-  u8 fast;
-  u8 fast2;
-  u8 all;
+  u16 solo;
+  u16 fast;
+  u16 fast2;
+  u16 all;
 
-  u8 gp[SEQ_HWCFG_NUM_GP];
+  u16 gp[SEQ_HWCFG_NUM_GP];
 
-  u8 group[SEQ_HWCFG_NUM_GROUP];
+  u16 group[SEQ_HWCFG_NUM_GROUP];
 
-  u8 trg_layer[SEQ_HWCFG_NUM_TRG_LAYER];
+  u16 trg_layer[SEQ_HWCFG_NUM_TRG_LAYER];
 
-  u8 utility;
-  u8 step_view;
-  u8 trg_layer_sel;
-  u8 par_layer_sel;
-  u8 track_sel;
+  u16 utility;
+  u16 step_view;
+  u16 trg_layer_sel;
+  u16 par_layer_sel;
+  u16 ins_sel;
+  u16 track_sel;
 
-  u8 tap_tempo;
-  u8 tempo_preset;
-  u8 ext_restart;
+  u16 tap_tempo;
+  u16 tempo_preset;
+  u16 ext_restart;
 
-  u8 copy;
-  u8 paste;
-  u8 clear;
-  u8 undo;
-  u8 move;
-  u8 scroll;
+  u16 copy;
+  u16 paste;
+  u16 clear;
+  u16 undo;
+  u16 move;
+  u16 scroll;
 
-  u8 mixer;
+  u16 mixer;
 
-  u8 save;
-  u8 save_all;
+  u16 save;
+  u16 save_all;
 
-  u8 track_mode;
-  u8 track_groove;
-  u8 track_length;
-  u8 track_direction;
-  u8 track_morph;
-  u8 track_transpose;
-  u8 fx;
+  u16 track_mode;
+  u16 track_groove;
+  u16 track_length;
+  u16 track_direction;
+  u16 track_morph;
+  u16 track_transpose;
+  u16 fx;
 
-  u8 mute_all_tracks;
-  u8 mute_track_layers;
-  u8 mute_all_tracks_and_layers;
-  u8 unmute_all_tracks;
-  u8 unmute_track_layers;
-  u8 unmute_all_tracks_and_layers;
+  u16 mute_all_tracks;
+  u16 mute_track_layers;
+  u16 mute_all_tracks_and_layers;
+  u16 unmute_all_tracks;
+  u16 unmute_track_layers;
+  u16 unmute_all_tracks_and_layers;
 
-  u8 footswitch;
-  u8 enc_btn_fwd;
-  u8 pattern_remix;
+  u16 footswitch;
+  u16 enc_btn_fwd;
+  u16 pattern_remix;
 } seq_hwcfg_button_t;
 
 
@@ -148,102 +150,106 @@ typedef struct {
   u32 scrub:1;
   u32 menu:1;
   u32 bookmark:1;
+  u32 mute:1;
   u32 step_view:1;
   u32 trg_layer:1;
   u32 par_layer:1;
+  u32 ins_sel:1;
   u32 track_sel:1;
   u32 tempo_preset:1;
 } seq_hwcfg_button_beh_t;
 
 
 typedef struct {
-  u8 gp_dout_l_sr;
-  u8 gp_dout_r_sr;
-  u8 gp_dout_l2_sr;
-  u8 gp_dout_r2_sr;
-  u8 tracks_dout_l_sr;
-  u8 tracks_dout_r_sr;
+  u16 gp_dout_l_sr;
+  u16 gp_dout_r_sr;
+  u16 gp_dout_l2_sr;
+  u16 gp_dout_r2_sr;
+  u16 tracks_dout_l_sr;
+  u16 tracks_dout_r_sr;
 
-  u8 track[SEQ_HWCFG_NUM_TRACK];
+  u16 track[SEQ_HWCFG_NUM_TRACK];
 
-  u8 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
+  u16 par_layer[SEQ_HWCFG_NUM_PAR_LAYER];
 
-  u8 beat;
-  u8 measure;
+  u16 beat;
+  u16 measure;
 
-  u8 midi_in_combined;
-  u8 midi_out_combined;
+  u16 midi_in_combined;
+  u16 midi_out_combined;
 
-  u8 edit;
-  u8 mute;
-  u8 pattern;
-  u8 song;
+  u16 edit;
+  u16 mute;
+  u16 pattern;
+  u16 song;
+  u16 phrase;
 
-  u8 solo;
-  u8 fast;
-  u8 fast2;
-  u8 all;
+  u16 solo;
+  u16 fast;
+  u16 fast2;
+  u16 all;
 
-  u8 group[SEQ_HWCFG_NUM_GROUP];
+  u16 group[SEQ_HWCFG_NUM_GROUP];
 
-  u8 trg_layer[SEQ_HWCFG_NUM_TRG_LAYER];
+  u16 trg_layer[SEQ_HWCFG_NUM_TRG_LAYER];
 
-  u8 play;
-  u8 stop;
-  u8 pause;
-  u8 rew;
-  u8 fwd;
-  u8 loop;
-  u8 follow;
+  u16 play;
+  u16 stop;
+  u16 pause;
+  u16 rew;
+  u16 fwd;
+  u16 loop;
+  u16 follow;
 
-  u8 exit;
-  u8 select;
-  u8 menu;
-  u8 bookmark;
-  u8 scrub;
-  u8 metronome;
+  u16 exit;
+  u16 select;
+  u16 menu;
+  u16 bookmark;
+  u16 scrub;
+  u16 metronome;
 
-  u8 utility;
-  u8 copy;
-  u8 paste;
-  u8 clear;
-  u8 undo;
-  u8 move;
-  u8 scroll;
+  u16 utility;
+  u16 copy;
+  u16 paste;
+  u16 clear;
+  u16 undo;
+  u16 move;
+  u16 scroll;
 
-  u8 record;
-  u8 live;
-  u8 jam_live;
-  u8 jam_step;
+  u16 record;
+  u16 live;
+  u16 jam_live;
+  u16 jam_step;
 
-  u8 step_view;
-  u8 trg_layer_sel;
-  u8 par_layer_sel;
-  u8 track_sel;
+  u16 step_view;
+  u16 trg_layer_sel;
+  u16 par_layer_sel;
+  u16 ins_sel;
+  u16 track_sel;
 
-  u8 tap_tempo;
-  u8 tempo_preset;
-  u8 ext_restart;
+  u16 tap_tempo;
+  u16 tempo_preset;
+  u16 ext_restart;
 
-  u8 down;
-  u8 up;
+  u16 down;
+  u16 up;
 
-  u8 mixer;
+  u16 mixer;
 
-  u8 track_mode;
-  u8 track_groove;
-  u8 track_length;
-  u8 track_direction;
-  u8 track_transpose;
-  u8 track_morph;
-  u8 fx;
+  u16 track_mode;
+  u16 track_groove;
+  u16 track_length;
+  u16 track_direction;
+  u16 track_transpose;
+  u16 track_morph;
+  u16 fx;
 
-  u8 mute_all_tracks;
-  u8 mute_track_layers;
-  u8 mute_all_tracks_and_layers;
-  u8 unmute_all_tracks;
-  u8 unmute_track_layers;
-  u8 unmute_all_tracks_and_layers;
+  u16 mute_all_tracks;
+  u16 mute_track_layers;
+  u16 mute_all_tracks_and_layers;
+  u16 unmute_all_tracks;
+  u16 unmute_track_layers;
+  u16 unmute_all_tracks_and_layers;
 } seq_hwcfg_led_t;
 
 
@@ -270,12 +276,12 @@ typedef struct {
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {
-  u8 enabled;
-  u8 segments_sr;
-  u8 common1_pin;
-  u8 common2_pin;
-  u8 common3_pin;
-  u8 common4_pin;
+  u8  enabled;
+  u8  segments_sr;
+  u16 common1_pin;
+  u16 common2_pin;
+  u16 common3_pin;
+  u16 common4_pin;
 } seq_hwcfg_bpm_digits_t;
 
 typedef struct {

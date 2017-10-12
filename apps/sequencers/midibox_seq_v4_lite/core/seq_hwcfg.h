@@ -28,105 +28,105 @@
 /////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-  u8 gp_din_l_sr;
-  u8 gp_din_r_sr;
+  u16 gp_din_l_sr;
+  u16 gp_din_r_sr;
 
-  u8 bar1;
-  u8 bar2;
-  u8 bar3;
-  u8 bar4;
+  u16 bar1;
+  u16 bar2;
+  u16 bar3;
+  u16 bar4;
 
-  u8 seq1;
-  u8 seq2;
+  u16 seq1;
+  u16 seq2;
 
-  u8 load;
-  u8 save;
+  u16 load;
+  u16 save;
 
-  u8 copy;
-  u8 paste;
-  u8 clear;
-  u8 undo;
+  u16 copy;
+  u16 paste;
+  u16 clear;
+  u16 undo;
 
-  u8 master;
-  u8 tap_tempo;
-  u8 stop;
-  u8 play;
+  u16 master;
+  u16 tap_tempo;
+  u16 stop;
+  u16 play;
 
-  u8 pause;
-  u8 metronome;
-  u8 ext_restart;
+  u16 pause;
+  u16 metronome;
+  u16 ext_restart;
 
-  u8 trigger;
-  u8 length;
-  u8 progression;
-  u8 groove;
-  u8 echo;
-  u8 humanizer;
-  u8 lfo;
-  u8 scale;
+  u16 trigger;
+  u16 length;
+  u16 progression;
+  u16 groove;
+  u16 echo;
+  u16 humanizer;
+  u16 lfo;
+  u16 scale;
 
-  u8 mute;
-  u8 midichn;
+  u16 mute;
+  u16 midichn;
 
-  u8 rec_arm;
-  u8 rec_step;
-  u8 rec_live;
-  u8 rec_poly;
-  u8 inout_fwd;
-  u8 transpose;
+  u16 rec_arm;
+  u16 rec_step;
+  u16 rec_live;
+  u16 rec_poly;
+  u16 inout_fwd;
+  u16 transpose;
 } seq_hwcfg_button_t;
 
 
 typedef struct {
-  u8 gp_dout_l_sr;
-  u8 gp_dout_r_sr;
+  u8  gp_dout_l_sr;
+  u8  gp_dout_r_sr;
 
-  u8 pos_dout_l_sr;
-  u8 pos_dout_r_sr;
+  u8  pos_dout_l_sr;
+  u8  pos_dout_r_sr;
 
-  u8 bar1;
-  u8 bar2;
-  u8 bar3;
-  u8 bar4;
+  u16 bar1;
+  u16 bar2;
+  u16 bar3;
+  u16 bar4;
 
-  u8 seq1;
-  u8 seq2;
+  u16 seq1;
+  u16 seq2;
 
-  u8 load;
-  u8 save;
+  u16 load;
+  u16 save;
 
-  u8 copy;
-  u8 paste;
-  u8 clear;
-  u8 undo;
+  u16 copy;
+  u16 paste;
+  u16 clear;
+  u16 undo;
 
-  u8 master;
-  u8 tap_tempo;
-  u8 stop;
-  u8 play;
+  u16 master;
+  u16 tap_tempo;
+  u16 stop;
+  u16 play;
 
-  u8 pause;
-  u8 metronome;
-  u8 ext_restart;
+  u16 pause;
+  u16 metronome;
+  u16 ext_restart;
 
-  u8 trigger;
-  u8 length;
-  u8 progression;
-  u8 groove;
-  u8 echo;
-  u8 humanizer;
-  u8 lfo;
-  u8 scale;
+  u16 trigger;
+  u16 length;
+  u16 progression;
+  u16 groove;
+  u16 echo;
+  u16 humanizer;
+  u16 lfo;
+  u16 scale;
 
-  u8 mute;
-  u8 midichn;
+  u16 mute;
+  u16 midichn;
 
-  u8 rec_arm;
-  u8 rec_step;
-  u8 rec_live;
-  u8 rec_poly;
-  u8 inout_fwd;
-  u8 transpose;
+  u16 rec_arm;
+  u16 rec_step;
+  u16 rec_live;
+  u16 rec_poly;
+  u16 inout_fwd;
+  u16 transpose;
 } seq_hwcfg_led_t;
 
 
@@ -140,20 +140,20 @@ typedef struct {
 } seq_hwcfg_blm8x8_t;
 
 typedef struct {
-  u8 enabled;
-  u8 segments_sr;
-  u8 common1_pin;
-  u8 common2_pin;
-  u8 common3_pin;
-  u8 common4_pin;
+  u8  enabled;
+  u8  segments_sr;
+  u16 common1_pin;
+  u16 common2_pin;
+  u16 common3_pin;
+  u16 common4_pin;
 } seq_hwcfg_bpm_digits_t;
 
 typedef struct {
-  u8 enabled;
-  u8 segments_sr;
-  u8 common1_pin;
-  u8 common2_pin;
-  u8 common3_pin;
+  u8  enabled;
+  u8  segments_sr;
+  u16 common1_pin;
+  u16 common2_pin;
+  u16 common3_pin;
 } seq_hwcfg_step_digits_t;
 
 typedef struct {

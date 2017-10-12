@@ -256,6 +256,21 @@ BLM8X8_DOUT_GP_MAPPING  3
 BLM8X8_DIN_SR  2
 
 
+# second Matrix
+BLM8X8B_DOUT_CATHODES_SR        3
+BLM8X8B_DOUT_CATHODES_INV_MASK  0xff
+BLM8X8B_DOUT_ANODES_INV_MASK    0xff
+BLM8X8B_DOUT_LED_SR             4
+BLM8X8B_DIN_SR                  5
+
+# third Matrix
+BLM8X8C_DOUT_CATHODES_SR        5
+BLM8X8C_DOUT_CATHODES_INV_MASK  0x00
+BLM8X8C_DOUT_ANODES_INV_MASK    0x00
+BLM8X8C_DOUT_LED_SR             6
+BLM8X8C_DIN_SR                  7
+
+
 ##################################################
 # Optional BPM digits
 ##################################################
@@ -407,24 +422,25 @@ LED_PAR_LAYER_B   0   0
 LED_PAR_LAYER_C   0   0
 
 #           SR  Pin
-LED_BEAT     0   0
-LED_MEASURE  0   0
+LED_BEAT    M5A  4
+LED_MEASURE M5A  5
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
 LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
-LED_EDIT     0   0
-LED_MUTE     0   0
-LED_PATTERN  0   0
-LED_SONG     0   0
+LED_EDIT    M8B  0
+LED_MUTE    M7C  3
+LED_PATTERN M8B  3
+LED_SONG    M8B  5
+LED_PHRASE  M7C  2
 
 #           SR  Pin
-LED_SOLO     0   0
-LED_FAST     0   0
+LED_SOLO    M2C  1
+LED_FAST    M8A  3
 LED_FAST2    0   0
-LED_ALL      0   0
+LED_ALL     M8A  5
 
 #           SR  Pin
 LED_GROUP1   0   0
@@ -438,38 +454,39 @@ LED_TRG_LAYER_B   0   0
 LED_TRG_LAYER_C   0   0
 
 #          SR  Pin
-LED_PLAY    0   0
-LED_STOP    0   0
-LED_PAUSE   0   0
-LED_REW     0   0
-LED_FWD     0   0
-LED_LOOP    0   0
+LED_PLAY   M5C  0
+LED_STOP   M4C  0
+LED_PAUSE  M6C  0
+LED_REW    M2C  0
+LED_FWD    M3C  0
+LED_LOOP   M4C  1
 LED_FOLLOW  0   0
 
 #              SR  Pin
-LED_EXIT        0   0
-LED_SELECT      0   0
-LED_MENU        0   0
-LED_BOOKMARK    0   0
+LED_EXIT       M4B  5
+LED_SELECT     M8A  7
+LED_MENU       M4B  7
+LED_BOOKMARK   M1C  2
 LED_SCRUB       0   0
-LED_METRONOME   0   0
-LED_RECORD      0   0
+LED_METRONOME  M3C  1
+LED_RECORD     M5C  1
 LED_JAM_LIVE    0   0
 LED_JAM_STEP    0   0
-LED_LIVE        0   0
-LED_UTILITY     0   0
-LED_COPY        0   0
-LED_PASTE       0   0
-LED_CLEAR       0   0
+LED_LIVE       M6C  1
+LED_UTILITY    M8B  7
+LED_COPY       M4A  0
+LED_PASTE      M4A  3
+LED_CLEAR      M4A  5
 LED_UNDO        0   0
-LED_MOVE        0   0
-LED_SCROLL      0   0
+LED_MOVE       M4A  7
+LED_SCROLL     M8A  0
 
 #                  SR  Pin
-LED_STEP_VIEW       0   0
-LED_PAR_LAYER_SEL   0   0
-LED_TRG_LAYER_SEL   0   0
-LED_TRACK_SEL       0   0
+LED_STEP_VIEW      M1C  3
+LED_PAR_LAYER_SEL  M1C  5
+LED_TRG_LAYER_SEL  M7C  5
+LED_INS_SEL        M7C  4
+LED_TRACK_SEL      M1C  4
 
 #                  SR  Pin
 LED_TAP_TEMPO       0   0
@@ -477,8 +494,8 @@ LED_TEMPO_PRESET    0   0
 LED_EXT_RESTART     0   0
 
 #         SR  Pin
-LED_DOWN   0   0
-LED_UP     0   0
+LED_DOWN  M4B  0
+LED_UP    M4B  3
 
 #             SR  Pin
 LED_MIXER      0   0
@@ -504,142 +521,136 @@ LED_UNMUTE_ALL_TRACKS_AND_LAYERS  0   0
 ##################################################
 # Button assignments to DIN pins
 # SR = 0: Button disabled
-# SR = 1..23:  directly triggered from DIN pin
-# SR = M1..M8: triggered from a 8x8 button matrix
+# SR = 1..32:  directly triggered from DIN pin
+# SR = M1A..M8A: triggered from the first 8x8 button matrix
+# SR = M1B..M8B: triggered from the second 8x8 button matrix
+# SR = M1B..M8B: triggered from the third 8x8 button matrix
 ##################################################
 
 #            SR  Pin
-BUTTON_DOWN  M4   2
-BUTTON_UP    M4   3
+BUTTON_DOWN  M4B  0
+BUTTON_UP    M4B  1
 BUTTON_LEFT   0   0
 BUTTON_RIGHT  0   0
 
 #                SR  Pin
-BUTTON_SCRUB     M4   4
-BUTTON_METRONOME M4   5
+BUTTON_SCRUB      0   0
+BUTTON_METRONOME M3C  1
 BUTTON_TAP_TEMPO  0   0
 BUTTON_JAM_LIVE   0   0
 BUTTON_JAM_STEP   0   0
 
 #             SR  Pin
-BUTTON_STOP   M3   5
-BUTTON_PAUSE  M2   4
-BUTTON_PLAY   M2   5
-BUTTON_REW    M3   4
-BUTTON_FWD    M1   4
-BUTTON_LOOP    0   0
+BUTTON_STOP   M4C  0
+BUTTON_PAUSE  M6C  0
+BUTTON_PLAY   M5C  0
+BUTTON_REW    M2C  0
+BUTTON_FWD    M3C  0
+BUTTON_LOOP   M4C  1
 BUTTON_FOLLOW  0   0
 
 #              SR  Pin
-BUTTON_MENU    M7   5
-BUTTON_SELECT  M8   4
-BUTTON_EXIT    M8   5
+BUTTON_MENU    M4B  3
+BUTTON_SELECT  M8A  7
+BUTTON_EXIT    M4B  2
 
 #              SR  Pin
-BUTTON_TRACK1  M7   6
-BUTTON_TRACK2  M7   7
-BUTTON_TRACK3  M5   6
-BUTTON_TRACK4  M5   7
+BUTTON_TRACK1   0   0
+BUTTON_TRACK2   0   0
+BUTTON_TRACK3   0   0
+BUTTON_TRACK4   0   0
 
 #                  SR  Pin
-BUTTON_PAR_LAYER_A M4   6
-BUTTON_PAR_LAYER_B M4   7
-BUTTON_PAR_LAYER_C M3   6
+BUTTON_PAR_LAYER_A  0   0
+BUTTON_PAR_LAYER_B  0   0
+BUTTON_PAR_LAYER_C  0   0
 
 #               SR  Pin
-BUTTON_EDIT     M5   3
-BUTTON_MUTE     M6   2
-BUTTON_PATTERN  M6   3
-BUTTON_SONG     M7   2
+BUTTON_EDIT     M8B  4
+BUTTON_MUTE     M7C  1
+BUTTON_PATTERN  M8B  5
+BUTTON_SONG     M8B  6
+BUTTON_PHRASE   M7C  0
 
 #            SR  Pin
-BUTTON_SOLO  M6   4
-BUTTON_FAST  M6   5
+BUTTON_SOLO  M2C  1
+BUTTON_FAST  M8A  5
 BUTTON_FAST2  0   0
-BUTTON_ALL   M7   4
+BUTTON_ALL   M8A  6
 
 #            SR  Pin
-BUTTON_GP1   M5   0
-BUTTON_GP2   M5   1
-BUTTON_GP3   M6   0
-BUTTON_GP4   M6   1
-BUTTON_GP5   M7   0
-BUTTON_GP6   M7   1
-BUTTON_GP7   M8   0
-BUTTON_GP8   M8   1
-BUTTON_GP9   M4   0
-BUTTON_GP10  M4   1
-BUTTON_GP11  M3   0
-BUTTON_GP12  M3   1
-BUTTON_GP13  M2   0
-BUTTON_GP14  M2   1
-BUTTON_GP15  M1   0
-BUTTON_GP16  M1   1
+BUTTON_GP1   M2A  0
+BUTTON_GP2   M2A  1
+BUTTON_GP3   M2A  2
+BUTTON_GP4   M2A  3
+BUTTON_GP5   M6A  4
+BUTTON_GP6   M6A  5
+BUTTON_GP7   M6A  6
+BUTTON_GP8   M6A  7
+BUTTON_GP9   M2B  0
+BUTTON_GP10  M2B  1
+BUTTON_GP11  M2B  2
+BUTTON_GP12  M2B  3
+BUTTON_GP13  M6B  4
+BUTTON_GP14  M6B  5
+BUTTON_GP15  M6B  6
+BUTTON_GP16  M6B  7
 
 #              SR  Pin
-BUTTON_GROUP1  M8   6
-BUTTON_GROUP2  M8   7
-BUTTON_GROUP3  M6   6
-BUTTON_GROUP4  M6   7
+BUTTON_GROUP1   0   0
+BUTTON_GROUP2   0   0
+BUTTON_GROUP3   0   0
+BUTTON_GROUP4   0   0
 
 # alternative (individual) track selection buttons
 # LEDs have to be assigned to TRACKS_DOUT_L_SR and TRACKS_DOUT_R_SR
+# For Antilog design: these are the selection buttons, TRACKS_DOUT_* ignored (we use predefined BLM8X8_DOUT_GP_MAPPING 3)
 #                     SR  Pin
-BUTTON_DIRECT_TRACK1   0   0
-BUTTON_DIRECT_TRACK2   0   0
-BUTTON_DIRECT_TRACK3   0   0
-BUTTON_DIRECT_TRACK4   0   0
-BUTTON_DIRECT_TRACK5   0   0
-BUTTON_DIRECT_TRACK6   0   0
-BUTTON_DIRECT_TRACK7   0   0
-BUTTON_DIRECT_TRACK8   0   0
-BUTTON_DIRECT_TRACK9   0   0
-BUTTON_DIRECT_TRACK10  0   0
-BUTTON_DIRECT_TRACK11  0   0
-BUTTON_DIRECT_TRACK12  0   0
-BUTTON_DIRECT_TRACK13  0   0
-BUTTON_DIRECT_TRACK14  0   0
-BUTTON_DIRECT_TRACK15  0   0
-BUTTON_DIRECT_TRACK16  0   0
+BUTTON_DIRECT_TRACK1  M3A  0
+BUTTON_DIRECT_TRACK2  M3A  1
+BUTTON_DIRECT_TRACK3  M3A  2
+BUTTON_DIRECT_TRACK4  M3A  3
+BUTTON_DIRECT_TRACK5  M7A  4
+BUTTON_DIRECT_TRACK6  M7A  5
+BUTTON_DIRECT_TRACK7  M7A  6
+BUTTON_DIRECT_TRACK8  M7A  7
+BUTTON_DIRECT_TRACK9  M3B  0
+BUTTON_DIRECT_TRACK10 M3B  1
+BUTTON_DIRECT_TRACK11 M3B  2
+BUTTON_DIRECT_TRACK12 M3B  3
+BUTTON_DIRECT_TRACK13 M7B  4
+BUTTON_DIRECT_TRACK14 M7B  5
+BUTTON_DIRECT_TRACK15 M7B  6
+BUTTON_DIRECT_TRACK16 M7B  7
 
 #                   SR  Pin
-BUTTON_TRG_LAYER_A  M2   6
-BUTTON_TRG_LAYER_B  M2   7
-BUTTON_TRG_LAYER_C  M1   6
-
-
-# Following button functions are usually assigned to Fx
-# buttons, or to dedicated (labeled) buttons
-# In Wilba's frontpanel layout:
-# F1 is located at SR M3 Pin 3
-# F2 is located at SR M2 Pin 2
-# F3 is located at SR M2 Pin 3
-# F4 is located at SR M1 Pin 2
-# and there are dedicated buttons for Copy/Paste/Clear/Utility/StepView
+BUTTON_TRG_LAYER_A   0   0
+BUTTON_TRG_LAYER_B   0   0
+BUTTON_TRG_LAYER_C   0   0
 
 #                    SR  Pin
-BUTTON_TRACK_SEL     M3   3
-BUTTON_LIVE          M2   2
-BUTTON_RECORD        M2   3
-BUTTON_SAVE_ALL      M1   2
-
+BUTTON_TRACK_SEL     M1C  2
+BUTTON_LIVE          M6C  1
+BUTTON_RECORD        M5C  1
+BUTTON_SAVE_ALL      0    0
 
 #                    SR  Pin
-BUTTON_PAR_LAYER_SEL  0   0
-BUTTON_TRG_LAYER_SEL  0   0
+BUTTON_PAR_LAYER_SEL M1C  3
+BUTTON_TRG_LAYER_SEL M7C  3
+BUTTON_INS_SEL       M7C  2
 
 #               SR  Pin
-BUTTON_UTILITY  M3   2
-BUTTON_COPY     M7   3
-BUTTON_PASTE    M8   2
-BUTTON_CLEAR    M8   3
+BUTTON_UTILITY  M8B  7
+BUTTON_COPY     M4A  0
+BUTTON_PASTE    M4A  1
+BUTTON_CLEAR    M4A  2
 BUTTON_UNDO      0   0
-BUTTON_MOVE      0   0
-BUTTON_SCROLL    0   0
-BUTTON_BOOKMARK  0   0
+BUTTON_MOVE     M4A  3
+BUTTON_SCROLL   M8A  4
+BUTTON_BOOKMARK M1C  0
 
 #                 SR  Pin
-BUTTON_STEP_VIEW  M5   5
+BUTTON_STEP_VIEW  M1C  1
 
 #                 SR  Pin
 BUTTON_EXT_RESTART 0   0
@@ -716,10 +727,12 @@ BUTTON_BEH_LOOP         1
 BUTTON_BEH_FOLLOW       1
 BUTTON_BEH_SCRUB        0
 BUTTON_BEH_MENU         0
-BUTTON_BEH_BOOKMARK     1
+BUTTON_BEH_MUTE         0
+BUTTON_BEH_BOOKMARK     0
 BUTTON_BEH_STEP_VIEW    0
 BUTTON_BEH_TRG_LAYER    0
 BUTTON_BEH_PAR_LAYER    0
+BUTTON_BEH_INS_SEL      0
 BUTTON_BEH_TRACK_SEL    0
 BUTTON_BEH_TEMPO_PRESET 0
 

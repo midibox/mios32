@@ -419,6 +419,7 @@ LED_EDIT    M5   3
 LED_MUTE    M6   3
 LED_PATTERN M6   2
 LED_SONG    M7   3
+LED_PHRASE   0   0
 
 #           SR  Pin
 LED_SOLO    M6   1
@@ -469,6 +470,7 @@ LED_SCROLL      0   0
 LED_STEP_VIEW      M3   1
 LED_PAR_LAYER_SEL   0   0
 LED_TRG_LAYER_SEL   0   0
+LED_INS_SEL         0   0
 LED_TRACK_SEL       0   0
 
 #                  SR  Pin
@@ -551,6 +553,7 @@ BUTTON_EDIT     M5   3
 BUTTON_MUTE     M6   2
 BUTTON_PATTERN  M6   3
 BUTTON_SONG     M7   2
+BUTTON_PHRASE    0   0
 
 #            SR  Pin
 BUTTON_SOLO  M6   4
@@ -627,6 +630,7 @@ BUTTON_SAVE_ALL      M1   2
 #                    SR  Pin
 BUTTON_PAR_LAYER_SEL  0   0
 BUTTON_TRG_LAYER_SEL  0   0
+BUTTON_INS_SEL        0   0
 
 #               SR  Pin
 BUTTON_UTILITY  M3   2
@@ -716,6 +720,7 @@ BUTTON_BEH_LOOP         1
 BUTTON_BEH_FOLLOW       1
 BUTTON_BEH_SCRUB        0
 BUTTON_BEH_MENU         0
+BUTTON_BEH_MUTE         1
 BUTTON_BEH_BOOKMARK     1
 BUTTON_BEH_STEP_VIEW    0
 BUTTON_BEH_TRG_LAYER    0

@@ -1,4 +1,4 @@
-// $Id: seq_ui_fx_limit.c 1142 2011-02-17 23:19:36Z tk $
+// $Id$
 /*
  * Duplicate Note Fx page
  *

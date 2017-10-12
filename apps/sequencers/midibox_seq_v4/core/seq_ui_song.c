@@ -663,9 +663,9 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 
     switch( ui_selected_item ) {
     case ITEM_POS:
-      ui_song_edit_pos = (u8)button << 3;
+      ui_selected_phrase = (u8)button;
+      ui_song_edit_pos = ui_selected_phrase << 3;
   
-
       // send to external
       SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PHRASE, ui_song_edit_pos >> 3, 0);
 

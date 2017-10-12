@@ -213,7 +213,7 @@ static s32 get_sr(char *word)
     return -1;
 
   if( blm8x8_selected ) {
-    l = 24 + l-1;
+    l = 32 + l;
   }
 
   return l; // value is valid
@@ -362,6 +362,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button_beh.follow = flag;
 	  } else if( strcasecmp(parameter, "MENU") == 0 ) {
 	    seq_hwcfg_button_beh.menu = flag;
+	  } else if( strcasecmp(parameter, "MUTE") == 0 ) {
+	    seq_hwcfg_button_beh.mute = flag;
 	  } else if( strcasecmp(parameter, "BOOKMARK") == 0 ) {
 	    seq_hwcfg_button_beh.bookmark = flag;
 	  } else if( strcasecmp(parameter, "STEP_VIEW") == 0 ) {
@@ -370,6 +372,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button_beh.trg_layer = flag;
 	  } else if( strcasecmp(parameter, "PAR_LAYER") == 0 ) {
 	    seq_hwcfg_button_beh.par_layer = flag;
+	  } else if( strcasecmp(parameter, "INS_SEL") == 0 ) {
+	    seq_hwcfg_button_beh.ins_sel = flag;
 	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_button_beh.track_sel = flag;
 	  } else if( strcasecmp(parameter, "TEMPO_PRESET") == 0 ) {
@@ -391,24 +395,27 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 
-	  // M1..M8 -> SR 24..31
+	  // M1..M8 or M1A..M8A -> SR 32..39
+	  // M1B..M8B -> SR40..47
+	  // M1C..M8C -> SR48..55
 	  s32 sr = -1;
 	  u8 blm8x8_selected = 0;
 	  if( word[0] == 'M' ) {
 	    blm8x8_selected = 1;
 	    ++word;
-	    s32 m = get_dec(word);
+	    s32 m = word[0] - '0';
+	    s32 blm = word[1] ? (word[1]-'A') : 0;
 
-	    if( m < 1 || m > 8 ) {
+	    if( m < 1 || m > 8 || blm < 0 || blm >= SEQ_BLM8X8_NUM ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
 	      continue;
 	    }
-	    sr = 24 + m-1;
+	    sr = 32 + blm*8 + m;
 	  } else {
 	    sr = get_dec(word);
-	    if( sr < 0 || sr > 32 ) {
+	    if( sr < 0 || sr >= (32 + SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -425,12 +432,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  u8 din_value = ((sr-1)<<3) | pin;
+	  u16 din_value = ((sr-1)<<3) | pin;
 
 	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
-	  // then map DIN SR 17..24 to 24..31
+	  // then map DIN SR 17..24 to 32..39
 	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && din_value >= 128 && din_value < 192 ) {
-	    din_value += 56;
+	    din_value += 128;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -493,6 +500,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.pattern = din_value;
 	  } else if( strcasecmp(parameter, "SONG") == 0 ) {
 	    seq_hwcfg_button.song = din_value;
+	  } else if( strcasecmp(parameter, "PHRASE") == 0 ) {
+	    seq_hwcfg_button.phrase = din_value;
 	  } else if( strcasecmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_button.solo = din_value;
 	  } else if( strcasecmp(parameter, "FAST2") == 0 ) {
@@ -516,6 +525,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_button.trg_layer_sel = din_value;
 	  } else if( strcasecmp(parameter, "PAR_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_button.par_layer_sel = din_value;
+	  } else if( strcasecmp(parameter, "INS_SEL") == 0 ) {
+	    seq_hwcfg_button.ins_sel = din_value;
 	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_button.track_sel = din_value;
 	  } else if( strcasecmp(parameter, "TAP_TEMPO") == 0 ) {
@@ -612,24 +623,27 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 
-	  // M1..M8 -> SR 24..31
+	  // M1..M8 or M1A..M8A -> SR 32..39
+	  // M1B..M8B -> SR40..47
+	  // M1C..M8C -> SR48..55
 	  s32 sr = -1;
 	  u8 blm8x8_selected = 0;
 	  if( word[0] == 'M' ) {
 	    blm8x8_selected = 1;
 	    ++word;
-	    s32 m = get_dec(word);
+	    s32 m = word[0] - '0';
+	    s32 blm = word[1] ? (word[1]-'A') : 0;
 
-	    if( m < 1 || m > 8 ) {
+	    if( m < 1 || m > 8 || blm < 0 || blm >= SEQ_BLM8X8_NUM ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value 'M%s'!", parameter, word);
 #endif
 	      continue;
 	    }
-	    sr = 24 + m-1;
+	    sr = 32 + blm*8 + m;
 	  } else {
 	    sr = get_dec(word);
-	    if( sr < 0 || sr > 32 ) {
+	    if( sr < 0 || sr >= (32 + SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in LED_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -646,12 +660,12 @@ s32 SEQ_FILE_HW_Read(void)
 	    continue;
 	  }
 
-	  u8 dout_value = ((sr-1)<<3) | pin;
+	  u16 dout_value = ((sr-1)<<3) | pin;
 
 	  // compatibility with old configurations: if SRIO_NUM_SR hasn't been set to 23 (so that it's still 16)
-	  // then map DOUT SR 17..24 to 24..31
+	  // then map DOUT SR 17..24 to 32..39
 	  if( !blm8x8_selected && MIOS32_SRIO_ScanNumGet() <= 16 && dout_value >= 128 && dout_value < 192 ) {
-	    dout_value += 56;
+	    dout_value += 128;
 	  }
 
 #if DEBUG_VERBOSE_LEVEL >= 3
@@ -680,6 +694,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.pattern = dout_value;
 	  } else if( strcasecmp(parameter, "SONG") == 0 ) {
 	    seq_hwcfg_led.song = dout_value;
+	  } else if( strcasecmp(parameter, "PHRASE") == 0 ) {
+	    seq_hwcfg_led.phrase = dout_value;
 	  } else if( strcasecmp(parameter, "SOLO") == 0 ) {
 	    seq_hwcfg_led.solo = dout_value;
 	  } else if( strcasecmp(parameter, "FAST2") == 0 ) {
@@ -748,6 +764,8 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_hwcfg_led.trg_layer_sel = dout_value;
 	  } else if( strcasecmp(parameter, "PAR_LAYER_SEL") == 0 ) {
 	    seq_hwcfg_led.par_layer_sel = dout_value;
+	  } else if( strcasecmp(parameter, "INS_SEL") == 0 ) {
+	    seq_hwcfg_led.ins_sel = dout_value;
 	  } else if( strcasecmp(parameter, "TRACK_SEL") == 0 ) {
 	    seq_hwcfg_led.track_sel = dout_value;
 	  } else if( strcasecmp(parameter, "TAP_TEMPO") == 0 ) {
@@ -897,7 +915,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "TRACKS_DOUT_L_SR") == 0 || strcasecmp(parameter, "TRACKS_DOUT_R_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -941,7 +959,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in GP_DOUT_%s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1043,8 +1061,18 @@ s32 SEQ_FILE_HW_Read(void)
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// BLM8X8_
 	////////////////////////////////////////////////////////////////////////////////////////////
-	} else if( strncasecmp(parameter, "BLM8X8_", 7) == 0 ) {
-	  parameter += 7;
+	} else if( strncasecmp(parameter, "BLM8X8_", 7) == 0 ||
+		   strncasecmp(parameter, "BLM8X8A_", 8) == 0 ||
+		   strncasecmp(parameter, "BLM8X8B_", 8) == 0 ||
+		   strncasecmp(parameter, "BLM8X8C_", 8) == 0 ) {
+	  int blm = 0;
+	  if( parameter[6] >= 'A' && parameter[6] <= 'C' ) {
+	    blm = parameter[6] - 'A';
+	    parameter += 8;
+	  } else {
+	    parameter += 7;
+	  }
+
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 value = get_dec(word);
@@ -1059,9 +1087,7 @@ s32 SEQ_FILE_HW_Read(void)
 	  DEBUG_MSG("[SEQ_FILE_HW] BLM8X8_%s: %d", parameter, value);
 #endif
 
-	  int blm = 0; // TODO: multiple BLMs
-
-	  if( strcasecmp(parameter, "ENABLED") == 0 ) {
+	  if( blm == 0 && strcasecmp(parameter, "ENABLED") == 0 ) {
 	    seq_hwcfg_blm8x8.enabled = value;
 	  } else if( strcasecmp(parameter, "DOUT_CATHODES_SR") == 0 ) {
 	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
@@ -1079,7 +1105,7 @@ s32 SEQ_FILE_HW_Read(void)
 	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
 	    config.led_dout_sr = value;
 	    SEQ_BLM8X8_ConfigSet(blm, config);
-	  } else if( strcasecmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
+	  } else if( blm == 0 && strcasecmp(parameter, "DOUT_GP_MAPPING") == 0 ) {
 	    seq_hwcfg_blm8x8.dout_gp_mapping = value;
 	  } else if( strcasecmp(parameter, "DIN_SR") == 0 ) {
 	    seq_blm8x8_config_t config = SEQ_BLM8X8_ConfigGet(blm);
@@ -1127,7 +1153,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	      continue;
 	    }
-	    u8 dout_value = ((value-1)<<3) | pin;
+	    u16 dout_value = ((value-1)<<3) | pin;
 
 	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_bpm_digits.common1_pin = dout_value;
@@ -1179,7 +1205,7 @@ s32 SEQ_FILE_HW_Read(void)
 #endif
 	      continue;
 	    }
-	    u8 dout_value = ((value-1)<<3) | pin;
+	    u16 dout_value = ((value-1)<<3) | pin;
 
 	    if( strcasecmp(parameter, "COMMON1_PIN") == 0 ) {
 	      seq_hwcfg_step_digits.common1_pin = dout_value;
@@ -1387,7 +1413,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1399,7 +1425,7 @@ s32 SEQ_FILE_HW_Read(void)
 	} else if( strcasecmp(parameter, "CLK_SR") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif
@@ -1413,7 +1439,7 @@ s32 SEQ_FILE_HW_Read(void)
 
 	  char *word = strtok_r(NULL, separators, &brkt);
 	  s32 sr = get_sr(word);
-	  if( sr < 0 || sr > 32 ) {
+	  if( sr < 0 || sr > (32+SEQ_BLM8X8_NUM*8) ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
 	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid SR value '%s'!", parameter, word);
 #endif

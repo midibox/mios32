@@ -68,6 +68,8 @@ u8 ui_selected_instrument;
 u8 ui_selected_step_view;
 u8 ui_selected_step;
 u8 ui_selected_item;
+u8 ui_selected_bookmark;
+u8 ui_selected_phrase;
 u16 ui_selected_gp_buttons;
 
 u8 ui_selected_item;
@@ -80,6 +82,10 @@ seq_ui_page_t ui_selected_page;
 seq_ui_page_t ui_stepview_prev_page;
 seq_ui_page_t ui_trglayer_prev_page;
 seq_ui_page_t ui_parlayer_prev_page;
+seq_ui_page_t ui_inssel_prev_page;
+seq_ui_page_t ui_tracksel_prev_page;
+seq_ui_page_t ui_bookmarks_prev_page;
+seq_ui_page_t ui_mute_prev_page;
 
 volatile u8 ui_cursor_flash;
 volatile u8 ui_cursor_flash_overrun_ctr;
@@ -108,6 +114,8 @@ seq_ui_options_t seq_ui_options;
 char ui_global_dir_list[80];
 
 seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
+
+seq_ui_sel_view_t seq_ui_sel_view;
 
 mios32_sys_time_t seq_play_timer;
 
@@ -139,17 +147,12 @@ static u32 ui_delayed_action_parameter;
 
 static u16 ui_gp_leds;
 
-static u16 ui_select_leds_green;
-static u16 ui_select_leds_red;
-
 #define UI_MSG_MAX_CHAR 31
 static char ui_msg[2][UI_MSG_MAX_CHAR];
 static u16 ui_msg_ctr;
 static seq_ui_msg_type_t ui_msg_type;
 
 static u16 ui_delayed_action_ctr;
-
-static seq_ui_page_t ui_page_before_bookmark;
 
 static u8 seq_ui_track_setup_visible_track;
 static seq_ui_track_setup_t seq_ui_track_setup[SEQ_CORE_NUM_TRACKS];
@@ -181,6 +184,8 @@ s32 SEQ_UI_Init(u32 mode)
   ui_selected_step_view = 0;
   ui_selected_step = 0;
   ui_selected_item = 0;
+  ui_selected_bookmark = 0;
+  ui_selected_phrase = 0;
   ui_selected_gp_buttons = 0;
 
   seq_ui_options.ALL = 0;
@@ -198,12 +203,10 @@ s32 SEQ_UI_Init(u32 mode)
 
   ui_song_edit_pos = 0;
 
+  seq_ui_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   // visible GP pattern
   ui_gp_leds = 0x0000;
-
-  // select LEDs
-  ui_select_leds_green = 0x0000;
-  ui_select_leds_red = 0x0000;
 
   // misc
   seq_ui_backup_req = 0;
@@ -217,7 +220,7 @@ s32 SEQ_UI_Init(u32 mode)
   SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT);
 
   // finally init bookmarks
-  ui_page_before_bookmark = SEQ_UI_PAGE_EDIT;
+  ui_bookmarks_prev_page = SEQ_UI_PAGE_EDIT;
   for(i=0; i<SEQ_UI_BOOKMARKS_NUM; ++i) {
     char buffer[10];
     seq_ui_bookmark_t *bm = (seq_ui_bookmark_t *)&seq_ui_bookmarks[i];
@@ -1182,6 +1185,9 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 
 static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 {
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_BOOKMARKS;
+
   if( seq_hwcfg_button_beh.bookmark ) {
     if( depressed ) return -1; // ignore when button depressed
     if( !seq_ui_button_state.BOOKMARK ) // due to page change: button going to be set, clear other toggle buttons
@@ -1198,11 +1204,11 @@ static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 
   if( seq_ui_button_state.BOOKMARK ) {
     if( ui_page != SEQ_UI_PAGE_BOOKMARKS )
-      ui_page_before_bookmark = ui_page;
+      ui_bookmarks_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_BOOKMARKS);
   } else {
     if( ui_page == SEQ_UI_PAGE_BOOKMARKS )
-      SEQ_UI_PageSet(ui_page_before_bookmark);
+      SEQ_UI_PageSet(ui_bookmarks_prev_page);
   }
 
   return 0; // no error
@@ -1212,7 +1218,7 @@ static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 static s32 SEQ_UI_Button_DirectBookmark(s32 depressed, u32 bookmark_button)
 {
   if( !depressed )
-    ui_page_before_bookmark = ui_page;
+    ui_bookmarks_prev_page = ui_page;
 
   return SEQ_UI_BOOKMARKS_Button_Handler(bookmark_button, depressed);
 }
@@ -1289,11 +1295,33 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
 
 static s32 SEQ_UI_Button_Mute(s32 depressed)
 {
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_MUTE;
+
   seq_ui_button_state.MUTE_PRESSED = depressed ? 0 : 1;
 
+#if 0
+  // doesn't really work since MUTE button also selects layer mutes when pressed
+  //
+  if( seq_hwcfg_button_beh.mute ) {
+    if( depressed ) return -1; // ignore when button depressed
+
+    ui_mute_prev_page = ui_page;
+    SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
+  } else {
+    if( seq_ui_button_state.MUTE_PRESSED ) {
+      ui_mute_prev_page = ui_page;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
+    } else {
+      if( ui_page == SEQ_UI_PAGE_MUTE )
+	SEQ_UI_PageSet(ui_mute_prev_page);
+    }
+  }
+#else
   if( depressed ) return -1; // ignore when button depressed
 
   SEQ_UI_PageSet(SEQ_UI_PAGE_MUTE);
+#endif
 
   return 0; // no error
 }
@@ -1311,25 +1339,38 @@ static s32 SEQ_UI_Button_Pattern(s32 depressed)
 
 static s32 SEQ_UI_Button_Pattern_Remix(s32 depressed)
 {
-	
-	if ( ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
+  if ( ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
 #ifndef MIOS32_FAMILY_EMULATION
-		// to avoid race conditions using the same button(any other way of solving that?)
-		vTaskDelay(60);
+    // to avoid race conditions using the same button(any other way of solving that?)
+    vTaskDelay(60);
 #endif
-		// a trick to use the same button with 2 functionalitys
-		ui_button_callback(SEQ_UI_BUTTON_Edit, depressed);
-	} else {
-		SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN_RMX);
-	}
- 
-	return 0; // no error
+    // a trick to use the same button with 2 functionalitys
+    ui_button_callback(SEQ_UI_BUTTON_Edit, depressed);
+  } else {
+    SEQ_UI_PageSet(SEQ_UI_PAGE_PATTERN_RMX);
+  }
+
+  return 0; // no error
 	
 }
 
 static s32 SEQ_UI_Button_Song(s32 depressed)
 {
   seq_ui_button_state.SONG_PRESSED = depressed ? 0 : 1;
+
+  if( depressed ) return -1; // ignore when button depressed
+
+  SEQ_UI_PageSet(SEQ_UI_PAGE_SONG);
+
+  return 0; // no error
+}
+
+static s32 SEQ_UI_Button_Phrase(s32 depressed)
+{
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_PHRASE;
+
+  seq_ui_button_state.PHRASE_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
 
@@ -1353,6 +1394,8 @@ static s32 SEQ_UI_Button_Solo(s32 depressed)
   // which overrules the legacy SOLO function
   if( !seq_ui_button_state.SOLO )
     seq_core_trk_soloed = 0;
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, "Solo", seq_ui_button_state.SOLO ? " on " : " off");
 
   return 0; // no error
 }
@@ -1410,6 +1453,9 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
   //  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_stepsel
   
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_STEPS;
+
   if( seq_hwcfg_button_beh.step_view ) {
     if( depressed ) return -1; // ignore when button depressed
     if( !seq_ui_button_state.STEP_VIEW ) // due to page change: button going to be set, clear other toggle buttons
@@ -1480,7 +1526,8 @@ static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 {
-  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
 
   if( seq_hwcfg_button_beh.track_sel ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1492,11 +1539,11 @@ static s32 SEQ_UI_Button_TrackSel(s32 depressed)
   }
 
   if( seq_ui_button_state.TRACK_SEL ) {
-    prev_page = ui_page;
+    ui_tracksel_prev_page = ui_page;
     SEQ_UI_PageSet(SEQ_UI_PAGE_TRACKSEL);
   } else {
     if( ui_page == SEQ_UI_PAGE_TRACKSEL )
-      SEQ_UI_PageSet(prev_page);
+      SEQ_UI_PageSet(ui_tracksel_prev_page);
   }
 
   return 0; // no error
@@ -1564,26 +1611,81 @@ static s32 SEQ_UI_Button_Track(s32 depressed, u32 track_button)
   return 0; // no error
 }
 
-static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 track_button)
+static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 {
   static u16 button_state = 0xffff; // all 16 buttons depressed
 
-  if( track_button >= 16 ) return -2; // max. 16 direct track buttons
+  if( sel_button >= 16 ) return -2; // max. 16 direct track buttons
 
   if( depressed ) {
-    button_state |= (1 << track_button);
+    button_state |= (1 << sel_button);
     return 0; // no error
   }
 
-  button_state &= ~(1 << track_button);
+  button_state &= ~(1 << sel_button);
 
-  if( button_state == (~(1 << track_button) & 0xffff) ) {
-    // if only one select button pressed: radio-button function (1 of 16)
-    ui_selected_tracks = 1 << track_button;
-    ui_selected_group = track_button / 4;
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+
+  if( selbuttons_available ) {
+    // for selection buttons of Antilog PCB
+      switch( seq_ui_sel_view ) {
+      case SEQ_UI_SEL_VIEW_BOOKMARKS:
+	SEQ_UI_BOOKMARKS_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	break;
+      case SEQ_UI_SEL_VIEW_STEPS:
+	SEQ_UI_STEPSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	break;
+      case SEQ_UI_SEL_VIEW_TRACKS: {
+	if( button_state == (~(1 << sel_button) & 0xffff) ) {
+	  // if only one select button pressed: radio-button function (1 of 16)
+	  ui_selected_tracks = 1 << sel_button;
+	  ui_selected_group = sel_button / 4;
+	} else {
+	  // if more than one select button pressed: toggle function (16 of 16)
+	  ui_selected_tracks ^= 1 << sel_button;
+	}
+      } break;
+      case SEQ_UI_SEL_VIEW_PAR:
+	SEQ_UI_PARSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	break;
+      case SEQ_UI_SEL_VIEW_TRG:
+	SEQ_UI_TRGSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	break;
+      case SEQ_UI_SEL_VIEW_INS:
+	SEQ_UI_INSSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	break;
+      case SEQ_UI_SEL_VIEW_MUTE: {
+	u16 mask = 1 << sel_button;
+	u16 *mute_flags = seq_ui_button_state.MUTE_PRESSED ? &seq_core_trk[visible_track].layer_muted : &seq_core_trk_muted;
+	portENTER_CRITICAL();
+	if( *mute_flags & mask ) {
+	  *mute_flags &= ~mask;
+	} else {
+	  *mute_flags |= mask;
+	}
+	portEXIT_CRITICAL();
+      } break;
+      case SEQ_UI_SEL_VIEW_PHRASE: {
+	ui_selected_phrase = sel_button;
+	ui_song_edit_pos = ui_selected_phrase << 3;
+
+	// set song position and fetch patterns
+	SEQ_SONG_PosSet(ui_song_edit_pos);
+	SEQ_SONG_FetchPos(0, 0);
+	ui_song_edit_pos = SEQ_SONG_PosGet();
+      } break;
+      }    
   } else {
-    // if more than one select button pressed: toggle function (16 of 16)
-    ui_selected_tracks ^= 1 << track_button;
+    // common behaviour
+    if( button_state == (~(1 << sel_button) & 0xffff) ) {
+      // if only one select button pressed: radio-button function (1 of 16)
+      ui_selected_tracks = 1 << sel_button;
+      ui_selected_group = sel_button / 4;
+    } else {
+      // if more than one select button pressed: toggle function (16 of 16)
+      ui_selected_tracks ^= 1 << sel_button;
+    }
   }
 
   // set/clear encoder fast function if required
@@ -1596,6 +1698,9 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
 {
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_parsel.c
+
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_PAR;
 
   if( seq_hwcfg_button_beh.par_layer ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1710,6 +1815,9 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_trgsel.c
 
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRG;
+
   if( seq_hwcfg_button_beh.trg_layer ) {
     if( depressed ) return -1; // ignore when button depressed
     if( !seq_ui_button_state.TRG_LAYER_SEL ) // due to page change: button going to be set, clear other toggle buttons
@@ -1806,6 +1914,36 @@ static s32 SEQ_UI_Button_TrgLayer(s32 depressed, u32 trg_layer)
   return 0; // no error
 }
 
+
+static s32 SEQ_UI_Button_InsSel(s32 depressed)
+{
+  // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
+  // also used by seq_ui_insel.c
+
+  if( !depressed )
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_INS;
+
+  if( seq_hwcfg_button_beh.ins_sel ) {
+    if( depressed ) return -1; // ignore when button depressed
+    if( !seq_ui_button_state.INS_SEL ) // due to page change: button going to be set, clear other toggle buttons
+      seq_ui_button_state.PAGE_CHANGE_BUTTON_FLAGS = 0;
+    seq_ui_button_state.INS_SEL ^= 1; // toggle TRGSEL status (will also be released once GP button has been pressed)
+  } else {
+    seq_ui_button_state.INS_SEL = depressed ? 0 : 1;
+  }
+
+  if( seq_ui_button_state.INS_SEL ) {
+    if( ui_page != SEQ_UI_PAGE_INSSEL ) {
+      ui_inssel_prev_page = ui_page;
+      SEQ_UI_PageSet(SEQ_UI_PAGE_INSSEL);
+    }
+  } else {
+    if( ui_page == SEQ_UI_PAGE_INSSEL )
+      SEQ_UI_PageSet(ui_inssel_prev_page);
+  }
+
+  return 0; // no error
+}
 
 static s32 SEQ_UI_Button_Mixer(s32 depressed)
 {
@@ -2091,6 +2229,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
       return SEQ_UI_Button_TrgLayer(pin_value, i);
   if( pin == seq_hwcfg_button.trg_layer_sel )
     return SEQ_UI_Button_TrgLayerSel(pin_value);
+  if( pin == seq_hwcfg_button.ins_sel )
+    return SEQ_UI_Button_InsSel(pin_value);
 
   if( pin == seq_hwcfg_button.left )
     return SEQ_UI_Button_Left(pin_value);
@@ -2169,6 +2309,8 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     return SEQ_UI_Button_Pattern(pin_value);
   if( pin == seq_hwcfg_button.song )
     return SEQ_UI_Button_Song(pin_value);
+  if( pin == seq_hwcfg_button.phrase )
+    return SEQ_UI_Button_Phrase(pin_value);
 
   if( pin == seq_hwcfg_button.solo )
     return SEQ_UI_Button_Solo(pin_value);
@@ -2834,7 +2976,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
   }
 
-  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACKS);
   
   // parameter layer LEDs
   // in song page: layer buttons are used to select the cursor position
@@ -2847,7 +2989,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
   }
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_PAR);
   
   // group LEDs
   // in song page: track and group buttons are used to select the cursor position
@@ -2867,16 +3009,20 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[1], (ui_selected_trg_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[2], (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
-  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRG);
+
+  // instrument layer LEDs
+  SEQ_LED_PinSet(seq_hwcfg_led.ins_sel, ui_page == SEQ_UI_PAGE_INSSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_INS);
   
   // remaining LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
-  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE || seq_ui_sel_view == SEQ_UI_SEL_VIEW_MUTE);
   SEQ_LED_PinSet(seq_hwcfg_led.pattern, ui_page == SEQ_UI_PAGE_PATTERN);
   if( SEQ_SONG_ActiveGet() )
     SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
   else
     SEQ_LED_PinSet(seq_hwcfg_led.song, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
+  SEQ_LED_PinSet(seq_hwcfg_led.phrase, seq_ui_button_state.PHRASE_PRESSED || seq_ui_sel_view == SEQ_UI_SEL_VIEW_PHRASE);
   SEQ_LED_PinSet(seq_hwcfg_led.mixer, ui_page == SEQ_UI_PAGE_MIXER);
 
   SEQ_LED_PinSet(seq_hwcfg_led.track_mode, ui_page == SEQ_UI_PAGE_TRKMODE);
@@ -2904,11 +3050,11 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.loop, seq_core_state.LOOP);
   SEQ_LED_PinSet(seq_hwcfg_led.follow, seq_core_state.FOLLOW);
   
-  SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL);
+  SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_STEPS);
 
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
-  SEQ_LED_PinSet(seq_hwcfg_led.bookmark, ui_page == SEQ_UI_PAGE_BOOKMARKS);
+  SEQ_LED_PinSet(seq_hwcfg_led.bookmark, ui_page == SEQ_UI_PAGE_BOOKMARKS || seq_ui_sel_view == SEQ_UI_SEL_VIEW_BOOKMARKS);
 
   // handle double functions
   if( seq_ui_button_state.MENU_PRESSED ) {
@@ -3156,7 +3302,6 @@ s32 SEQ_UI_LED_Handler_Periodic()
     }
   }
 
-
   if( seq_hwcfg_blm8x8.enabled ) {
     if( seq_hwcfg_blm8x8.dout_gp_mapping == 1 ) {
       // for wilba's frontpanel
@@ -3201,6 +3346,10 @@ s32 SEQ_UI_LED_Handler_Periodic()
       }
     } else if( seq_hwcfg_blm8x8.dout_gp_mapping == 3 ) {
       // for Antilog frontpanel
+
+      // default view
+      if( seq_ui_sel_view == SEQ_UI_SEL_VIEW_NONE )
+	seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
 
       // BLM_X DOUT -> GP LED mapping
       // left/right half offsets; green,red
@@ -3293,21 +3442,73 @@ s32 SEQ_UI_LED_Handler_Periodic()
       // BLM_X DOUT -> Select LED mapping
       // like above, just next SR
 
+      u16 select_leds_green = 0x0000;
+      u16 select_leds_red   = 0x0000;
+
+      switch( seq_ui_sel_view ) {
+      case SEQ_UI_SEL_VIEW_BOOKMARKS:
+	select_leds_green = 1 << ui_selected_bookmark;
+	break;
+      case SEQ_UI_SEL_VIEW_STEPS: {
+	int num_steps = SEQ_TRG_NumStepsGet(visible_track);
+
+	if( num_steps > 128 )
+	  select_leds_green = 1 << ui_selected_step_view;
+	else if( num_steps > 64 )
+	  select_leds_green = 3 << (2*ui_selected_step_view);
+	else
+	  select_leds_green = 15 << (4*ui_selected_step_view);
+
+	if( sequencer_running ) {
+	  u8 played_step_view = (seq_core_trk[visible_track].step / 16);
+	  if( num_steps > 128 )
+	    select_leds_red = 1 << played_step_view;
+	  else if( num_steps > 64 )
+	    select_leds_red = 3 << (2*played_step_view);
+	  else
+	    select_leds_red = 15 << (4*played_step_view);
+	}
+      } break;
+      case SEQ_UI_SEL_VIEW_TRACKS:
+	select_leds_green = ui_selected_tracks;
+	break;
+      case SEQ_UI_SEL_VIEW_PAR:
+	select_leds_green = 1 << ui_selected_par_layer;
+	break;
+      case SEQ_UI_SEL_VIEW_TRG:
+	select_leds_green = 1 << ui_selected_trg_layer;
+	break;
+      case SEQ_UI_SEL_VIEW_INS:
+	select_leds_green = 1 << ui_selected_instrument;
+	break;
+      case SEQ_UI_SEL_VIEW_MUTE:
+	if( seq_ui_button_state.MUTE_PRESSED ) {
+	  select_leds_green = seq_core_trk[visible_track].layer_muted | seq_core_trk[visible_track].layer_muted_from_midi;
+	} else {
+	  select_leds_green = seq_core_trk_muted;
+	}
+	break;
+      case SEQ_UI_SEL_VIEW_PHRASE:
+	select_leds_green = 1 << ui_selected_phrase;
+	break;
+      }
+
+
       // Select row, first quarter
       {
 	u8 value = 0;
 
-	if( ui_select_leds_green & (1 << 0) ) value |= (1 << 0);
-	if( ui_select_leds_red   & (1 << 0) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 0) ) value |= (1 << 0);
+	if( select_leds_red   & (1 << 0) ) value |= (1 << 1);
 
-	if( ui_select_leds_green & (1 << 1) ) value |= (1 << 3);
-	if( ui_select_leds_red   & (1 << 1) ) value |= (1 << 2);
+	if( select_leds_green & (1 << 1) ) value |= (1 << 3);
+	if( select_leds_red   & (1 << 1) ) value |= (1 << 2);
 
-	if( ui_select_leds_green & (1 << 2) ) value |= (1 << 5);
-	if( ui_select_leds_red   & (1 << 2) ) value |= (1 << 4);
+	if( select_leds_green & (1 << 2) ) value |= (1 << 5);
+	if( select_leds_red   & (1 << 2) ) value |= (1 << 4);
 
-	if( ui_select_leds_green & (1 << 3) ) value |= (1 << 7);
-	if( ui_select_leds_red   & (1 << 3) ) value |= (1 << 6);
+	if( select_leds_green & (1 << 3) ) value |= (1 << 7);
+	if( select_leds_red   & (1 << 3) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][2] = value;
       }
@@ -3316,17 +3517,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( ui_select_leds_green & (1 << 4) ) value |= (1 << 0);
-	if( ui_select_leds_red   & (1 << 4) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 4) ) value |= (1 << 0);
+	if( select_leds_red   & (1 << 4) ) value |= (1 << 1);
 
-	if( ui_select_leds_green & (1 << 5) ) value |= (1 << 3);
-	if( ui_select_leds_red   & (1 << 5) ) value |= (1 << 2);
+	if( select_leds_green & (1 << 5) ) value |= (1 << 3);
+	if( select_leds_red   & (1 << 5) ) value |= (1 << 2);
 
-	if( ui_select_leds_green & (1 << 6) ) value |= (1 << 5);
-	if( ui_select_leds_red   & (1 << 6) ) value |= (1 << 4);
+	if( select_leds_green & (1 << 6) ) value |= (1 << 5);
+	if( select_leds_red   & (1 << 6) ) value |= (1 << 4);
 
-	if( ui_select_leds_green & (1 << 7) ) value |= (1 << 7);
-	if( ui_select_leds_red   & (1 << 7) ) value |= (1 << 6);
+	if( select_leds_green & (1 << 7) ) value |= (1 << 7);
+	if( select_leds_red   & (1 << 7) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][6] = value;
       }
@@ -3335,17 +3536,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( ui_select_leds_green & (1 << 8) ) value |= (1 << 0);
-	if( ui_select_leds_red   & (1 << 8) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 8) ) value |= (1 << 0);
+	if( select_leds_red   & (1 << 8) ) value |= (1 << 1);
 
-	if( ui_select_leds_green & (1 << 9) ) value |= (1 << 3);
-	if( ui_select_leds_red   & (1 << 9) ) value |= (1 << 2);
+	if( select_leds_green & (1 << 9) ) value |= (1 << 3);
+	if( select_leds_red   & (1 << 9) ) value |= (1 << 2);
 
-	if( ui_select_leds_green & (1 << 10) ) value |= (1 << 5);
-	if( ui_select_leds_red   & (1 << 10) ) value |= (1 << 4);
+	if( select_leds_green & (1 << 10) ) value |= (1 << 5);
+	if( select_leds_red   & (1 << 10) ) value |= (1 << 4);
 
-	if( ui_select_leds_green & (1 << 11) ) value |= (1 << 7);
-	if( ui_select_leds_red   & (1 << 11) ) value |= (1 << 6);
+	if( select_leds_green & (1 << 11) ) value |= (1 << 7);
+	if( select_leds_red   & (1 << 11) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][2] = value;
       }
@@ -3354,17 +3555,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( ui_select_leds_green & (1 << 12) ) value |= (1 << 0);
-	if( ui_select_leds_red   & (1 << 12) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 12) ) value |= (1 << 0);
+	if( select_leds_red   & (1 << 12) ) value |= (1 << 1);
 
-	if( ui_select_leds_green & (1 << 13) ) value |= (1 << 3);
-	if( ui_select_leds_red   & (1 << 13) ) value |= (1 << 2);
+	if( select_leds_green & (1 << 13) ) value |= (1 << 3);
+	if( select_leds_red   & (1 << 13) ) value |= (1 << 2);
 
-	if( ui_select_leds_green & (1 << 14) ) value |= (1 << 5);
-	if( ui_select_leds_red   & (1 << 14) ) value |= (1 << 4);
+	if( select_leds_green & (1 << 14) ) value |= (1 << 5);
+	if( select_leds_red   & (1 << 14) ) value |= (1 << 4);
 
-	if( ui_select_leds_green & (1 << 15) ) value |= (1 << 7);
-	if( ui_select_leds_red   & (1 << 15) ) value |= (1 << 6);
+	if( select_leds_green & (1 << 15) ) value |= (1 << 7);
+	if( select_leds_red   & (1 << 15) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][6] = value;
       }
@@ -4102,7 +4303,7 @@ s32 SEQ_UI_Bookmark_Store(u8 bookmark)
   bm->flags.METRONOME = seq_core_state.METRONOME;
   bm->flags.LOOP = seq_core_state.LOOP;
   bm->flags.FOLLOW = seq_core_state.FOLLOW;
-  bm->page = (u8)ui_page_before_bookmark;
+  bm->page = (u8)ui_bookmarks_prev_page;
   bm->group = ui_selected_group;
   bm->par_layer = ui_selected_par_layer;
   bm->trg_layer = ui_selected_trg_layer;
