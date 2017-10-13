@@ -82,7 +82,7 @@ extern void APP_SendDebugMessage(char *format, ...);
 #if defined(MIOS32_FAMILY_LPC17xx)
 #define MAX_IDLE_CTR 628000 // LPC1769@120 MHz
 #elif defined(MIOS32_FAMILY_STM32F4xx)
-#define MAX_IDLE_CTR 962000 // STM32F407VG@160 MHz
+#define MAX_IDLE_CTR 956000 // STM32F407VG@160 MHz
 #else
 #define MAX_IDLE_CTR 192000 // STM32F103RE@80 MHz
 #endif

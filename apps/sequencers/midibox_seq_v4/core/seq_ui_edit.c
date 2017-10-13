@@ -58,6 +58,8 @@ static u8 edit_passive_step;       // to store the step of the edit value
 static u8 edit_passive_par_layer;  // to store the layer of the edit value
 static u8 edit_passive_instrument; // to store the instrument of the edit value
 
+static u8 edit_ramp;
+
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -97,7 +99,7 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
     }
   } else {
 
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS && midi_learn_mode == MIDI_LEARN_MODE_OFF && !seq_record_state.ENABLED ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && (seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) && midi_learn_mode == MIDI_LEARN_MODE_OFF && !seq_record_state.ENABLED ) {
       *gp_leds = ui_cursor_flash ? 0x0000 : selected_steps;
     } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL ) {
       *gp_leds = selected_steps;
@@ -179,7 +181,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_EDIT_DATAWHEEL_MODE_SCROLL_VIEW:
       if( SEQ_UI_Var8_Inc(&ui_selected_step_view, 0, (num_steps-1)/16, incrementer) >= 1 ) {
-	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS && !seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	  // select step within view
 	  ui_selected_step = (ui_selected_step_view << 4) | (ui_selected_step & 0xf);
 	}
@@ -375,8 +377,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     } else {
       changed_step = ui_selected_step;
     }
-
-    u8 edit_ramp = 0;
+    
+    edit_ramp = 0;
     if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
 
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
@@ -386,7 +388,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	PassiveEditEnter();
       } else {
 	// take over new step if "ALL" button not pressed to support "ramp" editing
-	if( !seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	if( !seq_ui_button_state.CHANGE_ALL_STEPS && !seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	  ui_selected_step = changed_step;
 	} else {
 	  if( ui_selected_step != changed_step )
@@ -419,7 +421,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       incrementer *= 4;
 
     // first change the selected value
-    if( seq_ui_button_state.CHANGE_ALL_STEPS && (edit_ramp || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) ) {
+    if( (seq_ui_button_state.CHANGE_ALL_STEPS && edit_ramp) || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
       u16 num_steps = SEQ_PAR_NumStepsGet(visible_track);
       u16 par_step = changed_step;
       u16 trg_step = changed_step;
@@ -447,10 +449,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	u16 par_step;
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
-	  if( !seq_ui_button_state.CHANGE_ALL_STEPS || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
+	  if( !(seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
 	    change_gate = trg_step == changed_step;
 	    u8 dont_change_gate = par_step != changed_step;
-	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	      s32 local_forced_value = edit_ramp ? -1 : forced_value;
 
 	      s32 edit_ramp_num_steps = 0;
@@ -515,7 +517,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 #endif
 
     if( !seq_ui_button_state.EDIT_PRESSED &&
-	((seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && seq_ui_button_state.CHANGE_ALL_STEPS) ||
+	((seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS && (seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE)) ||
 	 seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL) ) {
       if( depressed ) return 0; // ignore when button depressed
 
@@ -585,7 +587,7 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     // a) ALL function active, but ALL button not pressed: invert complete trigger layer
     // b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
     // c) ALL function not active: toggle step
-    if( seq_hwcfg_button_beh.all_with_triggers && seq_ui_button_state.CHANGE_ALL_STEPS ) {
+    if( seq_hwcfg_button_beh.all_with_triggers && (seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) ) {
       if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	// b) ALL function active and ALL button pressed: toggle step, set remaining steps to same new value
 	u16 step = ui_selected_step;
@@ -952,7 +954,17 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     } break;
 
     default: {
-      print_instrument = 1;
+      if( seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
+	if( edit_ramp ) {
+	  SEQ_LCD_PrintString("VALUE RAMP     ");
+	} else {
+	  SEQ_LCD_PrintString("ALL VALUES     ");
+	}
+      } else if( seq_ui_button_state.CHANGE_ALL_STEPS ) {
+	SEQ_LCD_PrintString("RELATIVE VALUES");
+      } else {
+	print_instrument = 1;
+      }
     }
     }
   }
@@ -1316,6 +1328,7 @@ s32 SEQ_UI_EDIT_Init(u32 mode)
   ui_hold_msg_ctr_drum_edit = 0;
 
   edit_passive_mode = 0;
+  edit_ramp = 0;
 
   if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPSEL )
     seq_ui_edit_view = SEQ_UI_EDIT_VIEW_STEPS;

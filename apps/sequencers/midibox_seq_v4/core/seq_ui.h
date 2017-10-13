@@ -444,6 +444,7 @@ extern s32 SEQ_UI_STEPSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
 extern s32 SEQ_UI_PARSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
 extern s32 SEQ_UI_TRGSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
 extern s32 SEQ_UI_INSSEL_Button_Handler(seq_ui_button_t button, s32 depressed);
+extern s32 SEQ_UI_SONG_Button_Handler(seq_ui_button_t button, s32 depressed);
 
 
 /////////////////////////////////////////////////////////////////////////////

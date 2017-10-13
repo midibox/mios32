@@ -217,7 +217,7 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(4);
   } else {
     if( !root_selection ) {
-      SEQ_LCD_PrintString("Keyb ");
+      SEQ_LCD_PrintString("Keyb");
     } else {
       SEQ_LCD_PrintRootValue(root_selection);
     }

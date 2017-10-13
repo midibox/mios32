@@ -11,6 +11,11 @@ MIDIboxSEQ V4.094
 
    o implemented COPY, PASTE, COPY+PASTE and CLEAR in PATTERN page
 
+   o support for Antilog PCB.
+     The appr. HW configuration file can be found under hwcfg/antilog/MBSEQ_HW.V4
+
+   o improved ALL button behaviour
+
 
 MIDIboxSEQ V4.093
 ~~~~~~~~~~~~~~~~~
