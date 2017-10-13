@@ -1185,8 +1185,9 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 
 static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 {
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_BOOKMARKS;
+  }
 
   if( seq_hwcfg_button_beh.bookmark ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1295,8 +1296,9 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
 
 static s32 SEQ_UI_Button_Mute(s32 depressed)
 {
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_MUTE;
+  }
 
   seq_ui_button_state.MUTE_PRESSED = depressed ? 0 : 1;
 
@@ -1328,6 +1330,10 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 
 static s32 SEQ_UI_Button_Pattern(s32 depressed)
 {
+  if( !depressed ) { // to simplify track (resp. group) selection
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
+  }
+
   seq_ui_button_state.PATTERN_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
@@ -1356,6 +1362,10 @@ static s32 SEQ_UI_Button_Pattern_Remix(s32 depressed)
 
 static s32 SEQ_UI_Button_Song(s32 depressed)
 {
+  if( !depressed ) { // to simplify phrase selection
+    seq_ui_sel_view = SEQ_UI_SEL_VIEW_PHRASE;
+  }
+
   seq_ui_button_state.SONG_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
@@ -1367,8 +1377,9 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
 
 static s32 SEQ_UI_Button_Phrase(s32 depressed)
 {
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_PHRASE;
+  }
 
   seq_ui_button_state.PHRASE_PRESSED = depressed ? 0 : 1;
 
@@ -1453,8 +1464,10 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
   //  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_stepsel
   
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_STEPS;
+    if( ui_page == SEQ_UI_PAGE_MUTE || SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  }
 
   if( seq_hwcfg_button_beh.step_view ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1526,8 +1539,9 @@ static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 {
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
+  }
 
   if( seq_hwcfg_button_beh.track_sel ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1667,13 +1681,17 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	portEXIT_CRITICAL();
       } break;
       case SEQ_UI_SEL_VIEW_PHRASE: {
-	ui_selected_phrase = sel_button;
-	ui_song_edit_pos = ui_selected_phrase << 3;
+	if( seq_ui_button_state.PHRASE_PRESSED || (ui_page == SEQ_UI_PAGE_SONG && ui_selected_item >= 1) ) { // TODO: has to be aligned with #define in seq_ui_song.c
+	  SEQ_UI_SONG_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	} else {
+	  ui_selected_phrase = sel_button;
+	  ui_song_edit_pos = ui_selected_phrase << 3;
 
-	// set song position and fetch patterns
-	SEQ_SONG_PosSet(ui_song_edit_pos);
-	SEQ_SONG_FetchPos(0, 0);
-	ui_song_edit_pos = SEQ_SONG_PosGet();
+	  // set song position and fetch patterns
+	  SEQ_SONG_PosSet(ui_song_edit_pos);
+	  SEQ_SONG_FetchPos(0, 0);
+	  ui_song_edit_pos = SEQ_SONG_PosGet();
+	}
       } break;
       }    
   } else {
@@ -1699,8 +1717,10 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_parsel.c
 
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_PAR;
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  }
 
   if( seq_hwcfg_button_beh.par_layer ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1815,8 +1835,10 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_trgsel.c
 
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRG;
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  }
 
   if( seq_hwcfg_button_beh.trg_layer ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -1920,8 +1942,10 @@ static s32 SEQ_UI_Button_InsSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_insel.c
 
-  if( !depressed )
+  if( !depressed ) {
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_INS;
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  }
 
   if( seq_hwcfg_button_beh.ins_sel ) {
     if( depressed ) return -1; // ignore when button depressed
@@ -3470,7 +3494,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	}
       } break;
       case SEQ_UI_SEL_VIEW_TRACKS:
-	select_leds_green = ui_selected_tracks;
+	select_leds_green = 0xf << (4*ui_selected_group);
+	select_leds_red = ui_selected_tracks;
 	break;
       case SEQ_UI_SEL_VIEW_PAR:
 	select_leds_green = 1 << ui_selected_par_layer;

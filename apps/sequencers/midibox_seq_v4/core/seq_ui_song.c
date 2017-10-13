@@ -58,8 +58,8 @@
 
 
 #define SONG_UTIL_PAGE_NONE        0
-#define SONG_UTIL_PAGE_SELECT      1
-#define SONG_UTIL_PAGE_NEW_PATTERN 2
+#define SONG_UTIL_PAGE_SELECT      1 // TODO: has to be aligned with SEQ_UI_Button_DirectTrack() function in seq_ui.c
+#define SONG_UTIL_PAGE_NEW_PATTERN 2 // TODO: has to be aligned with SEQ_UI_Button_DirectTrack() function in seq_ui.c
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ static s32 LED_Handler(u16 *gp_leds)
 
   ///////////////////////////////////////////////////////////////////////////
   case SONG_UTIL_PAGE_NEW_PATTERN: {
-    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED || seq_ui_button_state.PHRASE_PRESSED ) {
       *gp_leds = 0x0000;
     } else {
       *gp_leds = song_util_page_new_pattern__led_pattern;
@@ -383,7 +383,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   ///////////////////////////////////////////////////////////////////////////
   case SONG_UTIL_PAGE_NEW_PATTERN: {
-    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED || seq_ui_button_state.PHRASE_PRESSED ) {
       return 0;
     }
 
@@ -391,6 +391,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     if( encoder <= SEQ_UI_ENCODER_GP16 ) {
       u8 slot = (u8)encoder;
       createNewPatterns(slot);
+      ui_selected_phrase = slot;
       song_util_page = SONG_UTIL_PAGE_NONE;
       return 1;
     }
@@ -640,7 +641,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 //   0 if value hasn't been changed
 //  -1 if invalid or unsupported button
 /////////////////////////////////////////////////////////////////////////////
-static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
+s32 SEQ_UI_SONG_Button_Handler(seq_ui_button_t button, s32 depressed)
 {
   if( SEQ_FILE_FormattingRequired() )
     return 0; // no button action as long as files not available
@@ -854,7 +855,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return -1;
 
     case SEQ_UI_BUTTON_Select:
-      if( !seq_ui_button_state.SONG_PRESSED ) { // NOTE: in future only controlled with the SONG button anymore!
+      if( !seq_ui_button_state.SONG_PRESSED && !seq_ui_button_state.PHRASE_PRESSED ) { // NOTE: in future only controlled with the SONG button anymore!
 	switch( song_util_page ) {
 	case SONG_UTIL_PAGE_NONE: {
 	  if( !depressed )
@@ -912,9 +913,9 @@ static s32 LCD_Handler(u8 high_prio)
     // note: in future, only the SONG button will switch to the configuration page anymore
     // currently we provide the same function for the SELECT button for legacy reasons
     if( !seq_ui_button_state.SELECT_PRESSED ) {
-      if( seq_ui_button_state.SONG_PRESSED && song_util_page == SONG_UTIL_PAGE_NONE ) {
+      if( (seq_ui_button_state.SONG_PRESSED || seq_ui_button_state.PHRASE_PRESSED) && song_util_page == SONG_UTIL_PAGE_NONE ) {
 	song_util_page = SONG_UTIL_PAGE_SELECT;
-      } else if( !seq_ui_button_state.SONG_PRESSED && song_util_page != SONG_UTIL_PAGE_NEW_PATTERN ) {
+      } else if( !(seq_ui_button_state.SONG_PRESSED || seq_ui_button_state.PHRASE_PRESSED) && song_util_page != SONG_UTIL_PAGE_NEW_PATTERN ) {
 	song_util_page = SONG_UTIL_PAGE_NONE;
       }
     }
@@ -1360,7 +1361,7 @@ static s32 LCD_Handler(u8 high_prio)
     // Please select Phrase Slot (* indicates, that the slot is already allocated)     
     //   A    B    C    D    E    F    G    H    I    J    K    L    M    N    O    P  
 
-    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED ) {
+    if( seq_ui_button_state.SELECT_PRESSED || seq_ui_button_state.SONG_PRESSED || seq_ui_button_state.PHRASE_PRESSED ) {
       SEQ_LCD_CursorSet(0, 0);
       SEQ_LCD_PrintString("This function will store your current   Mutes, Mixer Map and Patterns into      ");
       SEQ_LCD_CursorSet(0, 1);
@@ -1407,7 +1408,7 @@ static s32 EXIT_Handler(void)
 s32 SEQ_UI_SONG_Init(u32 mode)
 {
   // install callback routines
-  SEQ_UI_InstallButtonCallback(Button_Handler);
+  SEQ_UI_InstallButtonCallback(SEQ_UI_SONG_Button_Handler);
   SEQ_UI_InstallEncoderCallback(Encoder_Handler);
   SEQ_UI_InstallLEDCallback(LED_Handler);
   SEQ_UI_InstallLCDCallback(LCD_Handler);
@@ -1551,11 +1552,11 @@ static s32 createNewPatterns(u8 slot)
     SEQ_SONG_StepEntrySet(ui_song_edit_pos+2, s);
   }
 
-  // 4th Step: Jump to previous step
+  // 4th Step: Jump to same step (halt)
   {
     seq_song_step_t s = SEQ_SONG_StepEntryGet(ui_song_edit_pos+3);
     s.action = SEQ_SONG_ACTION_JmpPos;
-    s.action_value = ui_song_edit_pos+2;
+    s.action_value = ui_song_edit_pos+3;
     s.pattern_g1 = 0;
     s.pattern_g2 = 0;
     s.pattern_g3 = 0;
