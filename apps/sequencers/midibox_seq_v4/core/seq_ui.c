@@ -3492,6 +3492,9 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	  else
 	    select_leds_red = 15 << (4*played_step_view);
 	}
+
+	// ensure that green LEDs are off if overlapped by red LEDs
+	select_leds_green &= ~select_leds_red;
       } break;
       case SEQ_UI_SEL_VIEW_TRACKS:
 	select_leds_green = 0xf << (4*ui_selected_group);

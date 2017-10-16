@@ -2471,3 +2471,6 @@ This would help tremendously, if people remap synthesizers to other out ports, i
 -independent bipolar LFO amount to all the destinations
 
 -a Trigger layer that can be configured as a Sample&Hold for the LFO values. When you program that trigger, the LFO value at that moment is being sent out. Alternatively, the different waveforms could just get the option "triggered" (like "SINEtrg") so the value is only sent when there is a note / trigger event. 
+
+
+- record 16 channels simultaneously: http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=179441
