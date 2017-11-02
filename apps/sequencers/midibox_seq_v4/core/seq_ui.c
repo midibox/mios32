@@ -1671,6 +1671,15 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	portENTER_CRITICAL();
 	if( *mute_flags & mask ) {
 	  *mute_flags &= ~mask;
+
+	  if( seq_ui_button_state.MUTE_PRESSED ) {
+	    // simplified usage: select the par layer
+	    ui_selected_par_layer = sel_button;
+	  } else {
+	    // simplified usage: select the track
+	    ui_selected_tracks = 1 << sel_button;
+	    ui_selected_group = sel_button/4;
+	  }
 	} else {
 	  *mute_flags |= mask;
 	}

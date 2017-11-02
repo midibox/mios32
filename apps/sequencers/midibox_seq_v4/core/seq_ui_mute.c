@@ -186,9 +186,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	} break;
 	}
       } else {
-	if( seq_ui_button_state.MUTE_PRESSED )
+	u8 par_layer_mute = 0;
+	if( seq_ui_button_state.MUTE_PRESSED ) {
+	  par_layer_mute = 1;
 	  muted = (u16 *)&seq_core_trk[visible_track].layer_muted;
-	else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
+	} else if( SEQ_BPM_IsRunning() ) { // Synched Mutes only when sequencer is running
 	  if( !(*muted & mask) && seq_core_options.SYNCHED_MUTE && !seq_ui_button_state.FAST_ENCODERS ) { // Fast button will disable synched mute
 	    muted = (u16 *)&seq_core_trk_synched_mute;
 	  } else if( (*muted & mask) && seq_core_options.SYNCHED_UNMUTE && !seq_ui_button_state.FAST_ENCODERS ) { // Fast button will disable synched unmute
@@ -199,13 +201,24 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  seq_core_trk_synched_mute = 0;
 	  seq_core_trk_synched_unmute = 0;
 	}
-	  
+
 	if( incrementer < 0 )
 	  *muted |= mask;
 	else if( incrementer > 0 )
 	  *muted &= ~mask;
 	else
 	  *muted ^= mask;
+
+	if( (*muted & mask) == 0 ) {
+	  if( par_layer_mute ) {
+	    // simplified usage: select the par layer
+	    ui_selected_par_layer = encoder;
+	  } else {
+	    // simplified usage: select the track
+	    ui_selected_tracks = 1 << encoder;
+	    ui_selected_group = encoder/4;
+	  }
+	}
       }
 
       portEXIT_CRITICAL();
