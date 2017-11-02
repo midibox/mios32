@@ -841,7 +841,20 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator ) {
+    if( layer_event.midi_package.note == 0 || layer_event.midi_package.velocity == 0 ) {
+      SEQ_LCD_PrintString("----");
+      break;
+    }
+
+    if( print_edit_value >= 0 ) {
+      if( layer_type == SEQ_PAR_Type_Note ) {
+	layer_event.midi_package.note = print_edit_value;
+      } else if( layer_type == SEQ_PAR_Type_Velocity ) {
+	layer_event.midi_package.velocity = print_edit_value;
+      }
+    }
+
+    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator && layer_event.midi_package.note > 0 && layer_event.midi_package.velocity > 0 ) {
       // transpose notes/CCs
       SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
 
@@ -854,25 +867,24 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
       }
     }
     
-    u8 note = (print_edit_value >= 0) ? print_edit_value : layer_event.midi_package.note;
     if( step_view ) {
       if( layer_event.midi_package.note &&
 	  (print_edit_value >= 0 || (layer_event.midi_package.velocity && SEQ_TRG_GateGet(track, step, instrument))) ) {
 	if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
-	  SEQ_LCD_PrintArp(note);
+	  SEQ_LCD_PrintArp(layer_event.midi_package.note);
 	else
-	  SEQ_LCD_PrintNote(note);
+	  SEQ_LCD_PrintNote(layer_event.midi_package.note);
 	SEQ_LCD_PrintVBar(layer_event.midi_package.velocity >> 4);
       } else {
 	SEQ_LCD_PrintString("----");
       }
     } else {
       if( layer_type == SEQ_PAR_Type_Note ) {
-	if( note ) {
+	if( layer_event.midi_package.note ) {
 	  if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
-	    SEQ_LCD_PrintArp(note);
+	    SEQ_LCD_PrintArp(layer_event.midi_package.note);
 	  else
-	    SEQ_LCD_PrintNote(note);
+	    SEQ_LCD_PrintNote(layer_event.midi_package.note);
 	  SEQ_LCD_PrintChar(' ');
 	} else {
 	  SEQ_LCD_PrintString("----");
