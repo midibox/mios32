@@ -79,8 +79,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   switch( encoder ) {
     case SEQ_UI_ENCODER_GP1:
-    case SEQ_UI_ENCODER_GP2:
-      return -1; // not mapped
+    case SEQ_UI_ENCODER_GP2: {
+      ui_selected_group = 0; // select group
+      return 1;
+    } break;
 
     case SEQ_UI_ENCODER_GP3:
     case SEQ_UI_ENCODER_GP4:
@@ -88,8 +90,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP5:
-    case SEQ_UI_ENCODER_GP6:
-      return -1; // not mapped
+    case SEQ_UI_ENCODER_GP6: {
+      ui_selected_group = 1; // select group
+      return 1;
+    } break;
 
     case SEQ_UI_ENCODER_GP7:
     case SEQ_UI_ENCODER_GP8:
@@ -97,8 +101,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP9:
-    case SEQ_UI_ENCODER_GP10:
-      return -1; // not mapped
+    case SEQ_UI_ENCODER_GP10: {
+      ui_selected_group = 2; // select group
+      return 1;
+    } break;
 
     case SEQ_UI_ENCODER_GP11:
     case SEQ_UI_ENCODER_GP12:
@@ -106,8 +112,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP13:
-    case SEQ_UI_ENCODER_GP14:
-      return -1; // not mapped
+    case SEQ_UI_ENCODER_GP14: {
+      ui_selected_group = 3; // select group
+      return 1;
+    } break;
 
     case SEQ_UI_ENCODER_GP15:
     case SEQ_UI_ENCODER_GP16:
