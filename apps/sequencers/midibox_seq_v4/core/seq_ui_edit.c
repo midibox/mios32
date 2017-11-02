@@ -885,11 +885,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   SEQ_LAYER_GetEvntOfLayer(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument, &layer_event);
 
   seq_par_layer_type_t layer_type = SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer);
-
-  // TODO: tmp. solution to print chord velocity correctly
-  if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[visible_track].link_par_layer_chord == 0) )
-    layer_type = SEQ_PAR_Type_Chord1;
-
+  seq_par_layer_type_t master_layer_type = SEQ_PAR_AssignmentGet(visible_track, 0); // 1st par layer is master (e.g. relevant for chords)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
@@ -1024,12 +1020,24 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       if( SEQ_CC_Get(visible_track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator ) {
 	u8 par_value = PassiveEditValid() ? edit_passive_value : layer_event.midi_package.note;
 	SEQ_LCD_PrintArp(par_value);
-      } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3 ) {
-	u8 par_value = PassiveEditValid()
-	  ? edit_passive_value
-	  : SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+      } else if( layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3 ||
+		 (layer_type == SEQ_PAR_Type_Velocity && (master_layer_type == SEQ_PAR_Type_Chord1 || master_layer_type == SEQ_PAR_Type_Chord2 || master_layer_type == SEQ_PAR_Type_Chord3)) ) {
+	u8 par_value;
+	u8 chord_set;
 
-	u8 chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
+	if( layer_type != SEQ_PAR_Type_Velocity ) {
+	  par_value = PassiveEditValid()
+	    ? edit_passive_value
+	    : SEQ_PAR_Get(visible_track, ui_selected_step, ui_selected_par_layer, ui_selected_instrument);
+
+	  chord_set = (layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
+	} else {
+	  par_value = PassiveEditValid()
+	    ? edit_passive_value
+	    : SEQ_PAR_Get(visible_track, ui_selected_step, 0, ui_selected_instrument);
+
+	  chord_set = (master_layer_type == SEQ_PAR_Type_Chord2) ? 1 : ((master_layer_type == SEQ_PAR_Type_Chord3) ? 2 : 0);
+	}
 
 	if( layer_type == SEQ_PAR_Type_Chord3 ) {
 	  SEQ_LCD_PrintString(SEQ_CHORD_NameGet(chord_set, par_value));
