@@ -1330,10 +1330,6 @@ static s32 SEQ_UI_Button_Mute(s32 depressed)
 
 static s32 SEQ_UI_Button_Pattern(s32 depressed)
 {
-  if( !depressed ) { // to simplify track (resp. group) selection
-    seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
-  }
-
   seq_ui_button_state.PATTERN_PRESSED = depressed ? 0 : 1;
 
   if( depressed ) return -1; // ignore when button depressed
