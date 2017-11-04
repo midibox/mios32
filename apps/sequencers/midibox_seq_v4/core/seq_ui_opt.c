@@ -36,35 +36,6 @@
 #include "seq_blm.h"
 #include "seq_lcd_logo.h"
 
-#if 0
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 pos = get_dec(word);
-	  if( pos < 1 || pos > 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: invalid value '%s'!", word);
-#endif
-	    continue;
-	  }
-
-	  word = strtok_r(NULL, separators, &brkt);
-	  if( word == NULL ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: expecting page name for GP%d!", pos);
-#endif
-	    continue;
-	  }
-
-	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
-	  if( page == SEQ_UI_PAGE_NONE ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: page name '%s' defined for GP%d doesn't exist!", word, pos);
-#endif
-	    continue;
-	  }
-	  
-	  SEQ_UI_PAGES_MenuShortcutPageSet(pos-1, page);
-
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
