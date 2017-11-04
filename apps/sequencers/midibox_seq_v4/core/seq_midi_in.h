@@ -81,6 +81,14 @@ typedef union {
   };
 } seq_midi_in_options_t;
 
+typedef union {
+  u8 ALL;
+  struct {
+    u8 value:7;     // key or CC value
+    u8 cc_or_key:1; // 0: remote key, 1: remote CC
+  };
+} seq_midi_in_remote_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -120,6 +128,8 @@ extern u8 seq_midi_in_ext_ctrl_channel;
 extern mios32_midi_port_t seq_midi_in_ext_ctrl_port;
 extern mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
 extern u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
+
+extern seq_midi_in_remote_t seq_midi_in_remote;
 
 extern u8 seq_midi_in_sect_channel;
 extern mios32_midi_port_t seq_midi_in_sect_port;

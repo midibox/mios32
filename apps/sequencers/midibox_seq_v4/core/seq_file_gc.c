@@ -290,6 +290,46 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_metronome_note_m = value;
 	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
+	  } else if( strcmp(parameter, "MidiRemoteKey") == 0 ) {
+	    seq_midi_in_remote.value = value;
+	  } else if( strcmp(parameter, "MidiRemoteCCorKey") == 0 ) {
+	    seq_midi_in_remote.cc_or_key = value;
+	  } else if( strcmp(parameter, "TrackCCMode") == 0 ) {
+	    seq_ui_track_cc.mode = value;
+	  } else if( strcmp(parameter, "TrackCCPort") == 0 ) {
+	    seq_ui_track_cc.port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "TrackCCChannel") == 0 ) {
+	    seq_ui_track_cc.chn = value;
+	  } else if( strcmp(parameter, "TrackCCNumber") == 0 ) {
+	    seq_ui_track_cc.cc = value;
+	  } else if( strcmp(parameter, "MidiOutRSOpt") == 0 ) {
+	    mios32_midi_port_t port = (mios32_midi_port_t)value;
+	    if( value < UART0 || value > UART3 ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid MIDI port 0x%02x (%u) for parameter '%s'\n", value, value, parameter);
+	    } else {
+	      word = strtok_r(NULL, separators, &brkt);
+	      if( (value=get_dec(word)) < 0 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid RS mode for parameter '%s'\n", parameter);
+	      } else {
+		MIOS32_MIDI_RS_OptimisationSet(port, value);
+	      }
+	    }
+	  } else if( strcmp(parameter, "MenuShortcuts") == 0 ) {
+	    int i;
+	    for(i=0; i<16; ++i) {
+	      u8 valid = 1;
+	      if( i > 0 ) {
+		word = strtok_r(NULL, separators, &brkt);
+		if( (value=get_dec(word)) < 0 ) {
+		  DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid menu page number for parameter '%s'\n", parameter);
+		  valid = 0;
+		}
+	      }
+	      if( valid && SEQ_UI_PAGES_MenuShortcutPageSet(i, (seq_ui_page_t)value) < 0 ) {
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR unsupported menu page number for parameter '%s'\n", parameter);
+	      }
+	    }
+
 	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
 	    seq_record_quantize = value; // only for legacy reasons - quantisation moved to local configuration file seq_file_c.c
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
@@ -329,12 +369,12 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "CV_PinMode") == 0 ) {
 	    u32 cv = value;
 	    if( cv >= SEQ_CV_NUM ) {
-	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong CV channel %u for parameter '%s'\n", value);
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong CV channel %u for parameter '%s'\n", value, parameter);
 	    } else {
 	      word = strtok_r(NULL, separators, &brkt);
 	      u32 curve = get_dec(word);
 	      if( curve >= SEQ_CV_NUM_CURVES ) {
-		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong curve %u for parameter '%s', CV channel %u\n", curve, cv);
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong curve %u for parameter '%s', CV channel %u\n", curve, parameter, cv);
 	      } else {
 		word = strtok_r(NULL, separators, &brkt);
 		u32 slewrate = get_dec(word);
@@ -362,12 +402,12 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "CV_ExtClk") == 0 ) {
 	    u32 clkout = value;
 	    if( clkout >= SEQ_CV_NUM_CLKOUT ) {
-	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong clock output %u for parameter '%s'\n", value);
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong clock output %u for parameter '%s'\n", value, parameter);
 	    } else {
 	      word = strtok_r(NULL, separators, &brkt);
 	      u32 divider = get_dec(word);
 	      if( divider >= 65536 ) {
-		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong divider value %u for parameter '%s', clock output %u\n", divider, clkout);
+		DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong divider value %u for parameter '%s', clock output %u\n", divider, parameter, clkout);
 	      } else {
 		word = strtok_r(NULL, separators, &brkt);
 		u32 pulsewidth = get_dec(word);
@@ -496,7 +536,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 #define FLUSH_BUFFER if( !write_to_file ) { DEBUG_MSG(line_buffer); } else { status |= FILE_WriteBuffer((u8 *)line_buffer, strlen(line_buffer)); }
 
   // write global config values
-  sprintf(line_buffer, "MetronomePort %d\n", (u8)seq_core_metronome_port);
+  sprintf(line_buffer, "MetronomePort 0x%02x\n", (u8)seq_core_metronome_port);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "MetronomeChannel %d\n", (u8)seq_core_metronome_chn);
@@ -507,6 +547,55 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
   FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MidiRemoteKey %d\n", (u8)seq_midi_in_remote.value);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "MidiRemoteCCorKey %d\n", (u8)seq_midi_in_remote.cc_or_key);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TrackCCMode %d\n", (u8)seq_ui_track_cc.mode);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TrackCCPort 0x%02x\n", (u8)seq_ui_track_cc.port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TrackCCChannel %d\n", (u8)seq_ui_track_cc.chn);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "TrackCCNumber %d\n", (u8)seq_ui_track_cc.cc);
+  FLUSH_BUFFER;
+
+  {
+    mios32_midi_port_t port;
+    for(port=UART0; port<=UART3; ++port) {
+      s32 enabled = MIOS32_MIDI_RS_OptimisationGet(port);
+      if( enabled >= 0 ) {
+	sprintf(line_buffer, "MidiOutRSOpt 0x%02x %d\n", (u8)port, enabled);
+	FLUSH_BUFFER;
+      }
+    }
+  }
+
+  sprintf(line_buffer, "MenuShortcuts %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(0),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(1),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(2),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(3),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(4),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(5),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(6),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(7),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(8),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(9),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(10),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(11),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(12),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(13),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(14),
+	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(15)
+	  );
+  FLUSH_BUFFER;    
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
   FLUSH_BUFFER;
@@ -542,7 +631,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "RemoteMode %d\n", (u8)seq_midi_sysex_remote_mode);
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "RemotePort %d\n", (u8)seq_midi_sysex_remote_port);
+  sprintf(line_buffer, "RemotePort 0x%02x\n", (u8)seq_midi_sysex_remote_port);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "RemoteID %d\n", (u8)seq_midi_sysex_remote_id);
@@ -577,7 +666,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "TpdMode %d\n", SEQ_TPD_ModeGet());
   FLUSH_BUFFER;
 
-  sprintf(line_buffer, "BLM_SCALAR_Port %d\n", (u8)BLM_SCALAR_MASTER_MIDI_PortGet(0));
+  sprintf(line_buffer, "BLM_SCALAR_Port 0x%02x\n", (u8)BLM_SCALAR_MASTER_MIDI_PortGet(0));
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "BLM_SCALAR_AlwaysUseFts %d\n", (u8)seq_blm_options.ALWAYS_USE_FTS);

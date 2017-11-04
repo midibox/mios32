@@ -256,6 +256,13 @@ typedef struct seq_ui_bookmark_t {
   // storing mutes is already an exception, because they can be controlled via phrases as well.
 } seq_ui_bookmark_t;
 
+typedef struct {
+  u8 mode;
+  mios32_midi_port_t port;
+  u8 chn;
+  u8 cc;
+} seq_ui_track_cc_t;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Prototypes
@@ -516,5 +523,7 @@ extern seq_ui_options_t seq_ui_options;
 extern seq_ui_bookmark_t seq_ui_bookmarks[SEQ_UI_BOOKMARKS_NUM];
 
 extern mios32_sys_time_t seq_play_timer;
+
+extern seq_ui_track_cc_t seq_ui_track_cc;
 
 #endif /* _SEQ_UI_H */
