@@ -481,19 +481,6 @@ seq_hwcfg_tpd_t seq_hwcfg_tpd = {
 };
 
 
-seq_hwcfg_midi_remote_t seq_hwcfg_midi_remote = {
-  .key = 96, // C-7, on some MIDI monitors displayed as C-6
-  .cc = 0, // disabled
-};
-
-seq_hwcfg_track_cc_t seq_hwcfg_track_cc = {
-  .mode = 0,
-  .port = USB1,
-  .chn = 0,
-  .cc = 100,
-};
-
-
 u8 seq_hwcfg_dout_gate_sr[SEQ_HWCFG_NUM_SR_DOUT_GATES];
 u8 seq_hwcfg_dout_gate_1ms = 0;
 u8 seq_hwcfg_cv_gate_sr[SEQ_HWCFG_NUM_SR_CV_GATES];

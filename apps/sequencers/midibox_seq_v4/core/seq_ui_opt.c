@@ -28,6 +28,7 @@
 
 #include "seq_core.h"
 #include "seq_cc.h"
+#include "seq_midi_in.h"
 #include "seq_midi_port.h"
 #include "seq_midi_sysex.h"
 #include "seq_mixer.h"
@@ -35,31 +36,64 @@
 #include "seq_blm.h"
 #include "seq_lcd_logo.h"
 
+#if 0
+	  char *word = strtok_r(NULL, separators, &brkt);
+	  s32 pos = get_dec(word);
+	  if( pos < 1 || pos > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: invalid value '%s'!", word);
+#endif
+	    continue;
+	  }
+
+	  word = strtok_r(NULL, separators, &brkt);
+	  if( word == NULL ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: expecting page name for GP%d!", pos);
+#endif
+	    continue;
+	  }
+
+	  seq_ui_page_t page = SEQ_UI_PAGES_CfgNameSearch(word);
+	  if( page == SEQ_UI_PAGE_NONE ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in MENU_SHORTCUT definition: page name '%s' defined for GP%d doesn't exist!", word, pos);
+#endif
+	    continue;
+	  }
+	  
+	  SEQ_UI_PAGES_MenuShortcutPageSet(pos-1, page);
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define ITEM_STEPS_MEASURE              0
-#define ITEM_STEPS_PATTERN              1
-#define ITEM_SYNC_CHANGE                2
-#define ITEM_PATTERN_RESEND_PC          3
-#define ITEM_RATOPC                     4
-#define ITEM_PATTERN_MIXER_MAP_COUPLING 5
-#define ITEM_SYNC_MUTE                  6
-#define ITEM_SYNC_UNMUTE                7
-#define ITEM_PASTE_CLR_ALL              8
-#define ITEM_RESTORE_TRACK_SELECTIONS   9
-#define ITEM_LIVE_LAYER_MUTE           10
-#define ITEM_INIT_WITH_TRIGGERS        11
-#define ITEM_INIT_CC                   12
-#define ITEM_TPD_MODE                  13
-#define ITEM_BLM_ALWAYS_USE_FTS        14
-#define ITEM_BLM_FADERS                15
-#define ITEM_MIXER_CC1234              16
-#define ITEM_SCREEN_SAVER              17
+#define ITEM_STEPS_MEASURE                 0
+#define ITEM_STEPS_PATTERN                 1
+#define ITEM_SYNC_CHANGE                   2
+#define ITEM_PATTERN_RESEND_PC             3
+#define ITEM_RATOPC                        4
+#define ITEM_PATTERN_MIXER_MAP_COUPLING    5
+#define ITEM_SYNC_MUTE                     6
+#define ITEM_SYNC_UNMUTE                   7
+#define ITEM_PASTE_CLR_ALL                 8
+#define ITEM_RESTORE_TRACK_SELECTIONS      9
+#define ITEM_MIDI_REMOTE                  10
+#define ITEM_TRACK_CC                     11
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  12
+#define ITEM_LIVE_LAYER_MUTE              13
+#define ITEM_INIT_WITH_TRIGGERS           14
+#define ITEM_INIT_CC                      15
+#define ITEM_TPD_MODE                     16
+#define ITEM_BLM_ALWAYS_USE_FTS           17
+#define ITEM_BLM_FADERS                   18
+#define ITEM_MIXER_CC1234                 19
+#define ITEM_MENU_SHORTCUTS               20
+#define ITEM_SCREEN_SAVER                 21
 
-#define NUM_OF_ITEMS                   18
+#define NUM_OF_ITEMS                      22
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -115,6 +149,21 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   },
 
   {//<-------------------------------------->
+    "Frontpanel MIDI Remote Control",
+    "via: ",
+  },
+
+  {//<-------------------------------------->
+    "Sending selected Track as CC to a DAW",
+    NULL,
+  },
+
+  {//<-------------------------------------->
+    "MIDI OUT Runtime Status Optimization",
+    NULL,
+  },
+
+  {//<-------------------------------------->
     "If Live function, matching received",
     "MIDI Events will: ",
   },
@@ -131,7 +180,7 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Track Position Display (TPD) Mode",
-    ""
+    NULL,
   },
 
   {//<-------------------------------------->
@@ -141,12 +190,17 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "BLM16x16+X Fader Assignments",
-    ""
+    NULL,
   },
 
   {//<-------------------------------------->
     "Mixer CCs which should be sent after PC",
-    ""
+    NULL,
+  },
+
+  {//<-------------------------------------->
+    "MENU button page assignments",
+    "GP Button #",
   },
 
   {//<-------------------------------------->
@@ -162,6 +216,8 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 static u8 local_selected_item = 0; // stays stable when menu is exit
 
 static u8 selected_blm_fader = 0;
+static u8 selected_menu_assignment_button = 0;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local LED handler function
@@ -236,7 +292,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_SYNC_CHANGE:
       if( incrementer )
-	seq_core_options.SYNCHED_PATTERN_CHANGE = incrementer > 0 ? 1 : 0;
+	seq_core_options.SYNCHED_PATTERN_CHANGE = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.SYNCHED_PATTERN_CHANGE ^= 1;
       ui_store_file_required = 1;
@@ -244,7 +300,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_PATTERN_RESEND_PC:
       if( incrementer )
-	seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC = incrementer > 0 ? 1 : 0;
+	seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC ^= 1;
       ui_store_file_required = 1;
@@ -252,7 +308,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_PATTERN_MIXER_MAP_COUPLING:
       if( incrementer )
-	seq_core_options.PATTERN_MIXER_MAP_COUPLING = incrementer > 0 ? 1 : 0;
+	seq_core_options.PATTERN_MIXER_MAP_COUPLING = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.PATTERN_MIXER_MAP_COUPLING ^= 1;
       ui_store_file_required = 1;
@@ -260,7 +316,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_PASTE_CLR_ALL:
       if( incrementer )
-	seq_core_options.PASTE_CLR_ALL = incrementer > 0 ? 1 : 0;
+	seq_core_options.PASTE_CLR_ALL = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.PASTE_CLR_ALL ^= 1;
       ui_store_file_required = 1;
@@ -268,7 +324,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_RATOPC:
       if( incrementer )
-	seq_core_options.RATOPC = incrementer > 0 ? 1 : 0;
+	seq_core_options.RATOPC = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.RATOPC ^= 1;
       ui_store_file_required = 1;
@@ -276,7 +332,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_SYNC_MUTE: {
       if( incrementer )
-	seq_core_options.SYNCHED_MUTE = incrementer > 0 ? 1 : 0;
+	seq_core_options.SYNCHED_MUTE = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.SYNCHED_MUTE ^= 1;
       ui_store_file_required = 1;
@@ -285,7 +341,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_SYNC_UNMUTE: {
       if( incrementer )
-	seq_core_options.SYNCHED_UNMUTE = incrementer > 0 ? 1 : 0;
+	seq_core_options.SYNCHED_UNMUTE = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.SYNCHED_UNMUTE ^= 1;
       ui_store_file_required = 1;
@@ -294,7 +350,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_RESTORE_TRACK_SELECTIONS: {
       if( incrementer )
-	seq_ui_options.RESTORE_TRACK_SELECTIONS = incrementer > 0 ? 1 : 0;
+	seq_ui_options.RESTORE_TRACK_SELECTIONS = (incrementer > 0) ? 1 : 0;
       else
 	seq_ui_options.RESTORE_TRACK_SELECTIONS ^= 1;
       ui_store_file_required = 1;
@@ -303,7 +359,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_INIT_WITH_TRIGGERS: {
       if( incrementer )
-	seq_core_options.INIT_WITH_TRIGGERS = incrementer > 0 ? 1 : 0;
+	seq_core_options.INIT_WITH_TRIGGERS = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.INIT_WITH_TRIGGERS ^= 1;
       ui_store_file_required = 1;
@@ -317,6 +373,98 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	ui_store_file_required = 1;
 	return 1;
       }
+      return 0;
+    } break;
+
+    case ITEM_MIDI_REMOTE: {
+      if( encoder == SEQ_UI_ENCODER_GP10 ) {
+	if( incrementer )
+	  seq_midi_in_remote.cc_or_key = ((incrementer > 0)) ? 1 : 0;
+	else
+	  seq_midi_in_remote.cc_or_key ^= 1;
+	ui_store_file_required = 1;
+	return 1;
+      } else if( encoder == SEQ_UI_ENCODER_GP11 ) {
+	u8 value = seq_midi_in_remote.value;
+	if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
+	  seq_midi_in_remote.value = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+      }
+
+      return 0;
+    } break;
+
+    case ITEM_TRACK_CC: {
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10:
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12: {
+	u8 value = seq_ui_track_cc.mode;
+	if( SEQ_UI_Var8_Inc(&value, 0, 2, incrementer) >= 0 ) {
+	  seq_ui_track_cc.mode = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14: {
+	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_ui_track_cc.port);
+	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	  seq_ui_track_cc.port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      case SEQ_UI_ENCODER_GP15: {
+	u8 value = seq_ui_track_cc.chn;
+	if( SEQ_UI_Var8_Inc(&value, 0, 15, incrementer) >= 0 ) {
+	  seq_ui_track_cc.chn = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      case SEQ_UI_ENCODER_GP16: {
+	u8 value = seq_ui_track_cc.cc;
+	if( SEQ_UI_Var8_Inc(&value, 0, 127, incrementer) >= 0 ) {
+	  seq_ui_track_cc.cc = value;
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      }
+
+      return -1;
+    } break;
+
+    case ITEM_RUNTIME_STATUS_OPTIMIZATION: {
+      mios32_midi_port_t port = DEFAULT;
+
+      if( encoder == SEQ_UI_ENCODER_GP10 ) {
+	port = UART0;
+      } else if( encoder == SEQ_UI_ENCODER_GP12 ) {
+	port = UART1;
+      } else if( encoder == SEQ_UI_ENCODER_GP14 ) {
+	port = UART2;
+      } else if( encoder == SEQ_UI_ENCODER_GP16 ) {
+	port = UART3;
+      }
+
+      if( port != DEFAULT ) {
+	if( incrementer )
+	  MIOS32_MIDI_RS_OptimisationSet(port, (incrementer > 0) ? 1 : 0);
+	else
+	  MIOS32_MIDI_RS_OptimisationSet(port, (MIOS32_MIDI_RS_OptimisationGet(port) > 0) ? 0 : 1);
+	ui_store_file_required = 1;
+	return 1;
+      }
+
       return 0;
     } break;
 
@@ -342,7 +490,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case ITEM_BLM_ALWAYS_USE_FTS: {
       if( incrementer )
-	seq_blm_options.ALWAYS_USE_FTS = incrementer > 0 ? 1 : 0;
+	seq_blm_options.ALWAYS_USE_FTS = (incrementer > 0) ? 1 : 0;
       else
 	seq_blm_options.ALWAYS_USE_FTS ^= 1;
       ui_store_file_required = 1;
@@ -410,6 +558,33 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_MENU_SHORTCUTS: {
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10:
+      case SEQ_UI_ENCODER_GP11: {
+	if( SEQ_UI_Var8_Inc(&selected_menu_assignment_button, 0, 15, incrementer) >= 0 ) {
+	  return 1;
+	}
+	return 0;
+      } break;
+      case SEQ_UI_ENCODER_GP12:
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14:
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16: {
+	u8 value = (u8)SEQ_UI_PAGES_MenuShortcutPageGet(selected_menu_assignment_button);
+	if( SEQ_UI_Var8_Inc(&value, 0, SEQ_UI_PAGES-1, incrementer) >= 0 ) {
+	  SEQ_UI_PAGES_MenuShortcutPageSet(selected_menu_assignment_button, value);
+	  ui_store_file_required = 1;
+	  return 1;
+	}
+	return 0;
+      } break;
+      }
+      return -1;
     } break;
 
     case ITEM_SCREEN_SAVER: {
@@ -585,6 +760,69 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(40-14);
   } break;
 
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_MIDI_REMOTE: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(8);
+    } else {
+      if( seq_midi_in_remote.cc_or_key ) {
+	SEQ_LCD_PrintFormattedString("CC   #%3d", seq_midi_in_remote.value);
+      } else {
+	SEQ_LCD_PrintString("Key   ");
+	SEQ_LCD_PrintNote(seq_midi_in_remote.value);
+      }
+
+    }
+    SEQ_LCD_PrintSpaces(40-8-5);
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_TRACK_CC: {
+    u8 valid = 0;
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      if( seq_ui_track_cc.mode == 1 ) {
+	SEQ_LCD_PrintString("Single CC with Track: ");
+	valid = 1;
+      } else if( seq_ui_track_cc.mode == 2 ) {
+	SEQ_LCD_PrintString("CC..CC+15 per Track:  ");
+	valid = 1;
+      } else {
+	SEQ_LCD_PrintString("Function disabled     ");
+      }
+
+      if( !valid ) {
+	SEQ_LCD_PrintSpaces(40-22);
+      } else {
+	SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_ui_track_cc.port)));
+	SEQ_LCD_PrintFormattedString(" Chn#%2d CC#%3d", seq_ui_track_cc.chn+1, seq_ui_track_cc.cc);
+      }
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_RUNTIME_STATUS_OPTIMIZATION: {
+    int i;
+
+    for(i=0; i<4; ++i) {
+      SEQ_LCD_PrintFormattedString("OUT%d: ", i+1);
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(4);
+      } else {
+	s32 enabled = MIOS32_MIDI_RS_OptimisationGet(UART0 + i);
+	if( enabled < 0 ) {
+	  SEQ_LCD_PrintString("--- ");
+	} else {
+	  SEQ_LCD_PrintString(enabled >= 1 ? "on  " : "off ");
+	}
+      }
+    }
+  } break;
+
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_RESTORE_TRACK_SELECTIONS: {
     enabled_value = seq_ui_options.RESTORE_TRACK_SELECTIONS;
@@ -636,8 +874,6 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_TPD_MODE: {
-    SEQ_LCD_PrintString(str);
-
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(40);
     } else {
@@ -706,8 +942,6 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_MIXER_CC1234: {
-    SEQ_LCD_PrintString(str);
-
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(40);
     } else {
@@ -717,6 +951,27 @@ static s32 LCD_Handler(u8 high_prio)
 				   (seq_mixer_cc1234_before_pc & 0x4) ? " no" : "yes",
 				   (seq_mixer_cc1234_before_pc & 0x8) ? " no" : "yes");
     }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_MENU_SHORTCUTS: {
+    SEQ_LCD_PrintString(str);
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(4);
+    } else {
+      SEQ_LCD_PrintFormattedString("%2d  ", selected_menu_assignment_button+1);
+    }
+
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(25);
+    } else {
+      seq_ui_page_t page = SEQ_UI_PAGES_MenuShortcutPageGet(selected_menu_assignment_button);
+      SEQ_LCD_PrintString(SEQ_UI_PAGES_MenuShortcutNameGet(selected_menu_assignment_button));
+      SEQ_LCD_PrintString(": ");
+      SEQ_LCD_PrintStringPadded((char *)SEQ_UI_PAGES_PageNameGet(page), 18);
+    }
+
   } break;
 
   ///////////////////////////////////////////////////////////////////////////

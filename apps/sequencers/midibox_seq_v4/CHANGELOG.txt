@@ -23,6 +23,14 @@ MIDIboxSEQ V4.094
 
    o EDIT page: improved handling for chord layers
 
+   o moved some configuration settings which were previously part of the
+     MBSEQ_HW.V4 file to the Options page, so that they can be changed without
+     a file editor:
+     - MIDI remote key (or CC)
+     - Track Selection CC
+     - MIDI OUT Runtime Status Optimisation
+     - MENU button assignments
+
 
 MIDIboxSEQ V4.093
 ~~~~~~~~~~~~~~~~~

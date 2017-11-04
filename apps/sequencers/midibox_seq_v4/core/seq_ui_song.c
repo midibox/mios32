@@ -90,7 +90,6 @@ static seq_song_step_t copypaste_buffer;
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-static s32 Button_Handler(seq_ui_button_t button, s32 depressed);
 static s32 checkChangePattern(u8 group, u8 bank, u8 pattern);
 static s32 takeoverCurrentPatterns(void);
 static s32 createNewPatterns(u8 slot);

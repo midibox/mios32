@@ -119,6 +119,17 @@ seq_ui_sel_view_t seq_ui_sel_view;
 
 mios32_sys_time_t seq_play_timer;
 
+// track cc modes
+// 0: no CC sent on track changes
+// 1: send a single CC which contains the track number as value
+// 2: send CC..CC+15 depending on track number with value 127
+seq_ui_track_cc_t seq_ui_track_cc = {
+  .mode = 0,
+  .port = USB1,
+  .chn = 0,
+  .cc = 100,
+};
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Local types
@@ -3750,15 +3761,15 @@ s32 SEQ_UI_CheckSelections(void)
   }
 
   // send selected track via MIDI if it has been changed
-  if( seq_hwcfg_track_cc.mode && seq_ui_sent_cc_track != visible_track ) {
+  if( seq_ui_track_cc.mode && seq_ui_sent_cc_track != visible_track ) {
     seq_ui_sent_cc_track = visible_track;
 
-    switch( seq_hwcfg_track_cc.mode ) {
+    switch( seq_ui_track_cc.mode ) {
     case 1: {
-      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, seq_hwcfg_track_cc.cc, visible_track);
+      MIOS32_MIDI_SendCC(seq_ui_track_cc.port, seq_ui_track_cc.chn, seq_ui_track_cc.cc, visible_track);
     } break;
     case 2: {
-      MIOS32_MIDI_SendCC(seq_hwcfg_track_cc.port, seq_hwcfg_track_cc.chn, (seq_hwcfg_track_cc.cc + visible_track) & 0x7f, 0x7f);
+      MIOS32_MIDI_SendCC(seq_ui_track_cc.port, seq_ui_track_cc.chn, (seq_ui_track_cc.cc + visible_track) & 0x7f, 0x7f);
     } break;
     }
   }

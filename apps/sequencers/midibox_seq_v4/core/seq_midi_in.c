@@ -119,6 +119,9 @@ mios32_midi_port_t seq_midi_in_ext_ctrl_out_port;
 // external controller assignments
 u8 seq_midi_in_ext_ctrl_asg[SEQ_MIDI_IN_EXT_CTRL_NUM];
 
+// remote control of frontpanel functions via keyboard or CCs
+seq_midi_in_remote_t seq_midi_in_remote;
+
 // for Sections:
 // 0 disables MIDI In, 1..16 define the MIDI channel which should be used
 u8 seq_midi_in_sect_channel;
@@ -209,6 +212,9 @@ s32 SEQ_MIDI_IN_Init(u32 mode)
   int i;
   for(i=0; i<4; ++i)
     seq_midi_in_sect_note[i] = 0x30 + 12*i;
+
+  seq_midi_in_remote.ALL = 0;
+  seq_midi_in_remote.value = 96; // C-6 (some MIDI monitors display C-5)
 
   remote_active = 0;
   last_bus_received_from_loopback = 0x00;
@@ -429,7 +435,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
       if( midi_package.event == NoteOn ) {
 	if( midi_package.velocity == 0 ) {
 	  if( remote_active ) {
-	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    if( !seq_midi_in_remote.cc_or_key && seq_midi_in_remote.value && midi_package.note == seq_midi_in_remote.value ) {
 	      remote_active = 0;
 
 	      MUTEX_MIDIOUT_TAKE;
@@ -450,7 +456,7 @@ s32 SEQ_MIDI_IN_Receive(mios32_midi_port_t port, mios32_midi_package_t midi_pack
 	    SEQ_UI_REMOTE_MIDI_Keyboard(midi_package.note, 0);
 	    return 0; // stop processing
 	  } else {
-	    if( seq_hwcfg_midi_remote.key && midi_package.note == seq_hwcfg_midi_remote.key ) {
+	    if( !seq_midi_in_remote.cc_or_key && seq_midi_in_remote.value && midi_package.note == seq_midi_in_remote.value ) {
 	      MUTEX_MIDIOUT_TAKE;
 	      DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access activated");
 	      MUTEX_MIDIOUT_GIVE;
@@ -691,7 +697,7 @@ s32 SEQ_MIDI_IN_BusReceive(u8 bus, mios32_midi_package_t midi_package, u8 from_l
       status = SEQ_CC_MIDI_Set(midi_package.chn, midi_package.cc_number, midi_package.value);
     else {
       // MIDI Remote Function?
-      if( seq_hwcfg_midi_remote.cc && seq_hwcfg_midi_remote.cc == midi_package.cc_number ) {
+      if( seq_midi_in_remote.cc_or_key && seq_midi_in_remote.value && seq_midi_in_remote.value == midi_package.cc_number ) {
 	remote_active = midi_package.value >= 0x40;
 	MUTEX_MIDIOUT_TAKE;
 	DEBUG_MSG("[SEQ_MIDI_IN] MIDI remote access %sactivated", remote_active ? "" : "de");
