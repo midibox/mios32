@@ -270,7 +270,9 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	break;
 
       case SEQ_UI_ENCODER_GP8:
-	ui_selected_item = ITEM_SEL_BANK;
+	if( seq_ui_options.MODIFY_PATTERN_BANKS ) {
+	  ui_selected_item = ITEM_SEL_BANK;
+	}
 	break;
 
       case SEQ_UI_ENCODER_GP9:
@@ -835,7 +837,9 @@ s32 SEQ_UI_SONG_Button_Handler(seq_ui_button_t button, s32 depressed)
 
     case SEQ_UI_BUTTON_GP8:
       if( depressed ) return 0; // ignore when button depressed
-      ui_selected_item = ITEM_SEL_BANK;
+      if( seq_ui_options.MODIFY_PATTERN_BANKS ) {
+	ui_selected_item = ITEM_SEL_BANK;
+      }
       return 1;
 
     case SEQ_UI_BUTTON_GP9:
@@ -1040,7 +1044,13 @@ static s32 LCD_Handler(u8 high_prio)
         if( s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16 )
   	SEQ_LCD_PrintSpaces(24);
         else
-  	SEQ_LCD_PrintString(" G1   G2   G3   G4  Sel.");
+  	SEQ_LCD_PrintString(" G1   G2   G3   G4  ");
+
+	if( seq_ui_options.MODIFY_PATTERN_BANKS ) {
+	  SEQ_LCD_PrintString("Sel.");
+	} else {
+	  SEQ_LCD_PrintSpaces(4);
+	}
     }
     
     SEQ_LCD_PrintString(SEQ_SONG_ActiveGet() ? " Song Mode " : "Phrase Mode");
@@ -1250,8 +1260,9 @@ static s32 LCD_Handler(u8 high_prio)
     }
   
     ///////////////////////////////////////////////////////////////////////////
-    if( (s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16) ||
-        (ui_selected_item == ITEM_SEL_BANK && ui_cursor_flash) ) {
+    if( !seq_ui_options.MODIFY_PATTERN_BANKS ||
+	(s.action < SEQ_SONG_ACTION_Loop1 || s.action > SEQ_SONG_ACTION_Loop16) ||
+	(ui_selected_item == ITEM_SEL_BANK && ui_cursor_flash) ) {
       SEQ_LCD_PrintSpaces(4);
     } else {
       SEQ_LCD_PrintFormattedString(sel_bank ? "Bnk " : "Pat ", 0);

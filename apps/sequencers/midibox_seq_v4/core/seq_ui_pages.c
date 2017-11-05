@@ -92,7 +92,6 @@ static const seq_ui_page_entry_t ui_menu_pages[SEQ_UI_PAGES] = {
   { "BPM",          "BPM  ", "BPM Selection     ", 41, (void *)&SEQ_UI_BPM_Init },
   { "OPTIONS",      "Opt. ", "Options           ", 42, (void *)&SEQ_UI_OPT_Init },
   { "SAVE",         "Save ", "Save Pattern      ", 43, (void *)&SEQ_UI_SAVE_Init },
-  { "METRONOME",    "Metr.", "Metronome         ", 44, (void *)&SEQ_UI_METRONOME_Init },
   { "MIDI",         "MIDI ", "MIDI Configuration", 45, (void *)&SEQ_UI_MIDI_Init },
   { "MIDIMON",      "MMon ", "MIDI Monitor      ", 46, (void *)&SEQ_UI_MIDIMON_Init },
   { "SYSEX",        "SysEx", "SysEx             ", 47, (void *)&SEQ_UI_SYSEX_Init },

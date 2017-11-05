@@ -290,6 +290,10 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_core_metronome_note_m = value;
 	  } else if( strcmp(parameter, "MetronomeNoteB") == 0 ) {
 	    seq_core_metronome_note_b = value;
+	  } else if( strcmp(parameter, "ShadowOutPort") == 0 ) {
+	    seq_core_shadow_out_port = (mios32_midi_port_t)value;
+	  } else if( strcmp(parameter, "ShadowOutChannel") == 0 ) {
+	    seq_core_shadow_out_chn = value;
 	  } else if( strcmp(parameter, "MidiRemoteKey") == 0 ) {
 	    seq_midi_in_remote.value = value;
 	  } else if( strcmp(parameter, "MidiRemoteCCorKey") == 0 ) {
@@ -357,6 +361,10 @@ s32 SEQ_FILE_GC_Read(void)
 	  } else if( strcmp(parameter, "UiRestoreTrackSelections") == 0 ) {
 #ifndef MBSEQV4L
 	    seq_ui_options.RESTORE_TRACK_SELECTIONS = value;
+#endif
+	  } else if( strcmp(parameter, "UiModifyPatternBanks") == 0 ) {
+#ifndef MBSEQV4L
+	    seq_ui_options.MODIFY_PATTERN_BANKS = value;
 #endif
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
@@ -552,6 +560,12 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MetronomeNoteB %d\n", (u8)seq_core_metronome_note_b);
   FLUSH_BUFFER;
 
+  sprintf(line_buffer, "ShadowOutPort 0x%02x\n", (u8)seq_core_shadow_out_port);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "ShadowOutChannel %d\n", (u8)seq_core_shadow_out_chn);
+  FLUSH_BUFFER;
+
   sprintf(line_buffer, "MidiRemoteKey %d\n", (u8)seq_midi_in_remote.value);
   FLUSH_BUFFER;
 
@@ -633,6 +647,11 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
 #ifndef MBSEQV4L
   sprintf(line_buffer, "UiRestoreTrackSelections %d\n", seq_ui_options.RESTORE_TRACK_SELECTIONS);
+  FLUSH_BUFFER;
+#endif
+
+#ifndef MBSEQV4L
+  sprintf(line_buffer, "UiModifyPatternBanks %d\n", seq_ui_options.MODIFY_PATTERN_BANKS);
   FLUSH_BUFFER;
 #endif
 

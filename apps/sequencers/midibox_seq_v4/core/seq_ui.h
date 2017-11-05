@@ -195,6 +195,7 @@ typedef union {
 
   struct {
     u8 RESTORE_TRACK_SELECTIONS:1;
+    u8 MODIFY_PATTERN_BANKS:1;
   };
 } seq_ui_options_t;
 
@@ -371,7 +372,6 @@ extern s32 SEQ_UI_UTIL_Init(u32 mode);
 extern s32 SEQ_UI_BPM_Init(u32 mode);
 extern s32 SEQ_UI_OPT_Init(u32 mode);
 extern s32 SEQ_UI_SAVE_Init(u32 mode);
-extern s32 SEQ_UI_METRONOME_Init(u32 mode);
 extern s32 SEQ_UI_MIDI_Init(u32 mode);
 extern s32 SEQ_UI_MIDPLY_Init(u32 mode);
 extern s32 SEQ_UI_MIDIMON_Init(u32 mode);

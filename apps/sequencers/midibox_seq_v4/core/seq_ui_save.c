@@ -65,7 +65,12 @@ static s32 LED_Handler(u16 *gp_leds)
         *gp_leds = (1 << save_pattern[ui_selected_group].group) | (1 << (save_pattern[ui_selected_group].num+8));
         break;
 #else
-      case ITEM_PATTERN:       *gp_leds = 0x0040; break;
+      case ITEM_PATTERN:
+	if( seq_ui_options.MODIFY_PATTERN_BANKS )
+	  *gp_leds = 0x0040;
+	else
+	  *gp_leds = 0x0060;
+	break;
 #endif
       case ITEM_SAVE:          *gp_leds = 0x0080; break;
     }
@@ -152,7 +157,10 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return -1; // not mapped
 
     case SEQ_UI_ENCODER_GP6:
-      ui_selected_item = ITEM_BANK;
+      if( seq_ui_options.MODIFY_PATTERN_BANKS )
+	ui_selected_item = ITEM_BANK;
+      else
+	ui_selected_item = ITEM_PATTERN;
       break;
 
     case SEQ_UI_ENCODER_GP7:
@@ -245,7 +253,10 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
       return -1; // not mapped
 
     case SEQ_UI_BUTTON_GP6:
-      ui_selected_item = ITEM_BANK;
+      if( seq_ui_options.MODIFY_PATTERN_BANKS )
+	ui_selected_item = ITEM_BANK;
+      else
+	ui_selected_item = ITEM_PATTERN;
       break;
 
     case SEQ_UI_BUTTON_GP7:

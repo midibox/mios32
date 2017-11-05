@@ -185,7 +185,7 @@ static s32 SEQ_LIVE_PlayEventInternal(u8 track, seq_layer_evnt_t e, u8 original_
   } else {
     // Note On (the Note Off will be prepared as well in SEQ_CORE_ScheduleEvent)
     u32 scheduled_tick = bpm_tick + t->bpm_tick_delay;
-    SEQ_CORE_ScheduleEvent(t, tcc, e.midi_package, SEQ_MIDI_OUT_OnOffEvent, scheduled_tick, e.len, 0, robotize_flags);
+    SEQ_CORE_ScheduleEvent(track, t, tcc, e.midi_package, SEQ_MIDI_OUT_OnOffEvent, scheduled_tick, e.len, 0, robotize_flags);
   }
 
 

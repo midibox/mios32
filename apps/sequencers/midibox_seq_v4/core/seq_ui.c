@@ -1020,6 +1020,8 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
 
     return status;
   }
+
+  return 1;
 }
 
 static s32 SEQ_UI_Button_Paste(s32 depressed)
@@ -1123,6 +1125,8 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
 
     return status;
   }
+
+  return 1;
 }
 
 
