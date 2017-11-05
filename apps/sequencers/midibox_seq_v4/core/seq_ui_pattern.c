@@ -134,7 +134,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
   // change bank/pattern number(s)
   seq_pattern_t *pattern = &selected_pattern[ui_selected_group];
-  if( encoder & 1 ) {
+  if( !seq_ui_options.MODIFY_PATTERN_BANKS || (encoder & 1) ) {
     u8 tmp = pattern->pattern;
     u8 max_patterns = SEQ_FILE_B_NumPatterns(pattern->bank);
     // TODO: print error message if bank not valid (max_patterns = 0)

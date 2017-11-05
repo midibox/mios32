@@ -51,20 +51,23 @@
 #define ITEM_SYNC_UNMUTE                   7
 #define ITEM_PASTE_CLR_ALL                 8
 #define ITEM_RESTORE_TRACK_SELECTIONS      9
-#define ITEM_MIDI_REMOTE                  10
-#define ITEM_TRACK_CC                     11
-#define ITEM_RUNTIME_STATUS_OPTIMIZATION  12
-#define ITEM_LIVE_LAYER_MUTE              13
-#define ITEM_INIT_WITH_TRIGGERS           14
-#define ITEM_INIT_CC                      15
-#define ITEM_TPD_MODE                     16
-#define ITEM_BLM_ALWAYS_USE_FTS           17
-#define ITEM_BLM_FADERS                   18
-#define ITEM_MIXER_CC1234                 19
-#define ITEM_MENU_SHORTCUTS               20
-#define ITEM_SCREEN_SAVER                 21
+#define ITEM_MODIFY_PATTERN_BANKS         10
+#define ITEM_METRONOME                    11
+#define ITEM_SHADOW_OUT                   12
+#define ITEM_MIDI_REMOTE                  13
+#define ITEM_TRACK_CC                     14
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  15
+#define ITEM_LIVE_LAYER_MUTE              16
+#define ITEM_INIT_WITH_TRIGGERS           17
+#define ITEM_INIT_CC                      18
+#define ITEM_TPD_MODE                     19
+#define ITEM_BLM_ALWAYS_USE_FTS           20
+#define ITEM_BLM_FADERS                   21
+#define ITEM_MIXER_CC1234                 22
+#define ITEM_MENU_SHORTCUTS               23
+#define ITEM_SCREEN_SAVER                 24
 
-#define NUM_OF_ITEMS                      22
+#define NUM_OF_ITEMS                      25
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -117,6 +120,21 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Selections restored on Track Change",
     NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Allow to change pattern banks",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Metronome Port Chn. Meas.Note  BeatNote",
+    NULL,
+  },
+
+  {//<-------------------------------------->
+    "ShadowOut Port Chn.",
+    NULL,
   },
 
   {//<-------------------------------------->
@@ -328,6 +346,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 1;
     } break;
 
+    case ITEM_MODIFY_PATTERN_BANKS: {
+      if( incrementer )
+	seq_ui_options.MODIFY_PATTERN_BANKS = (incrementer > 0) ? 1 : 0;
+      else
+	seq_ui_options.MODIFY_PATTERN_BANKS ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
     case ITEM_INIT_WITH_TRIGGERS: {
       if( incrementer )
 	seq_core_options.INIT_WITH_TRIGGERS = (incrementer > 0) ? 1 : 0;
@@ -345,6 +372,82 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_METRONOME: {
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10: {
+	if( incrementer )
+	  seq_core_state.METRONOME = ((incrementer > 0)) ? 1 : 0;
+	else
+	  seq_core_state.METRONOME ^= 1;
+	ui_store_file_required = 1;
+	return 1;
+      } break;
+
+      case SEQ_UI_ENCODER_GP11: {
+	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_core_metronome_port);
+	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	  seq_core_metronome_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP12: {
+	if( SEQ_UI_Var8_Inc(&seq_core_metronome_chn, 0, 16, incrementer) >= 0 ) {
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14: {
+	if( SEQ_UI_Var8_Inc(&seq_core_metronome_note_m, 0, 127, incrementer) >= 0 ) {
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16: {
+	if( SEQ_UI_Var8_Inc(&seq_core_metronome_note_b, 0, 127, incrementer) >= 0 ) {
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+      }
+
+      return -1;
+    } break;
+
+    case ITEM_SHADOW_OUT: {
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP11: {
+	u8 port_ix = SEQ_MIDI_PORT_OutIxGet(seq_core_shadow_out_port);
+	if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_OutNumGet()-1, incrementer) >= 0 ) {
+	  seq_core_shadow_out_port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP12: {
+	if( SEQ_UI_Var8_Inc(&seq_core_shadow_out_chn, 0, 16, incrementer) >= 0 ) {
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+      }
+
+      return -1;
     } break;
 
     case ITEM_MIDI_REMOTE: {
@@ -733,6 +836,50 @@ static s32 LCD_Handler(u8 high_prio)
 
 
   ///////////////////////////////////////////////////////////////////////////
+  case ITEM_METRONOME: {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      SEQ_LCD_PrintSpaces(3);
+      SEQ_LCD_PrintString(seq_core_state.METRONOME ? "on " : "off");
+      SEQ_LCD_PrintSpaces(4);
+
+      SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_core_metronome_port)));
+      SEQ_LCD_PrintSpaces(1);
+
+      if( !seq_core_metronome_chn )
+	SEQ_LCD_PrintString("---");
+      else
+	SEQ_LCD_PrintFormattedString("#%2d", seq_core_metronome_chn);
+      SEQ_LCD_PrintSpaces(5);
+
+      SEQ_LCD_PrintNote(seq_core_metronome_note_m);
+      SEQ_LCD_PrintSpaces(7);
+
+      SEQ_LCD_PrintNote(seq_core_metronome_note_b);
+      SEQ_LCD_PrintSpaces(4);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_SHADOW_OUT: {
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(40);
+    } else {
+      SEQ_LCD_PrintSpaces(10);
+
+      SEQ_LCD_PrintString(SEQ_MIDI_PORT_OutNameGet(SEQ_MIDI_PORT_OutIxGet(seq_core_shadow_out_port)));
+      SEQ_LCD_PrintSpaces(1);
+
+      if( !seq_core_shadow_out_chn )
+	SEQ_LCD_PrintString("---");
+      else
+	SEQ_LCD_PrintFormattedString("#%2d", seq_core_shadow_out_chn);
+      SEQ_LCD_PrintSpaces(25);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
   case ITEM_MIDI_REMOTE: {
     SEQ_LCD_PrintString(str);
 
@@ -797,6 +944,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_RESTORE_TRACK_SELECTIONS: {
     enabled_value = seq_ui_options.RESTORE_TRACK_SELECTIONS;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_MODIFY_PATTERN_BANKS: {
+    enabled_value = seq_ui_options.MODIFY_PATTERN_BANKS;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////

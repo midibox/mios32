@@ -108,6 +108,9 @@ u8 seq_core_metronome_chn;
 u8 seq_core_metronome_note_m;
 u8 seq_core_metronome_note_b;
 
+mios32_midi_port_t seq_core_shadow_out_port;
+u8 seq_core_shadow_out_chn;
+
 seq_core_state_t seq_core_state;
 seq_core_trk_t seq_core_trk[SEQ_CORE_NUM_TRACKS];
 
@@ -159,6 +162,11 @@ s32 SEQ_CORE_Init(u32 mode)
     seq_core_metronome_chn = 10;
     seq_core_metronome_note_m = 0x25; // C#1
     seq_core_metronome_note_b = 0x25; // C#1
+  }
+
+  if( mode == 0 ) {
+    seq_core_shadow_out_port = DEFAULT;
+    seq_core_shadow_out_chn = 0; // means: off
   }
 
   seq_core_bpm_preset_num = 13; // 140.0
@@ -265,13 +273,15 @@ s32 SEQ_CORE_Init(u32 mode)
 // This function schedules a MIDI event by considering the "normal" and "Fx"
 // MIDI port
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo, seq_robotize_flags_t robotize_flags)
+s32 SEQ_CORE_ScheduleEvent(u8 track, seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_package_t midi_package, seq_midi_out_event_type_t event_type, u32 timestamp, u32 len, u8 is_echo, seq_robotize_flags_t robotize_flags)
 {
   s32 status = 0;
   mios32_midi_port_t fx_midi_port = tcc->fx_midi_port ? tcc->fx_midi_port : tcc->midi_port;
 
+  u8 shadow_enabled = seq_core_shadow_out_chn && SEQ_UI_VisibleTrackGet() == track;
+
   //check that there are more than 0 additional channels, that it's not just one channel and FX starting on current channel, check disable flag, check for robotizer
-  if( ! ( tcc->fx_midi_num_chn & 0x3f ) || ( ( tcc->fx_midi_num_chn & 0x3f ) == 1 && tcc->fx_midi_chn == midi_package.chn  ) || ( ( tcc->fx_midi_num_chn & 0x40 ) && ! robotize_flags.DUPLICATE ) ) {
+  if( ! ( tcc->fx_midi_num_chn & 0x3f ) || ( ( tcc->fx_midi_num_chn & 0x3f ) == 1 && tcc->fx_midi_chn == midi_package.chn  ) || ( ( tcc->fx_midi_num_chn & 0x40 ) && !robotize_flags.DUPLICATE ) ) {
     status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
 
     if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
@@ -355,6 +365,11 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
       // original channel
       status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, event_type, timestamp, len);
 
+      if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+	midi_package.velocity = 0;
+	status |= SEQ_MIDI_OUT_Send(tcc->midi_port, midi_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
+      }
+
       if( tcc->fx_midi_mode.fwd_non_notes ) {
 	// all other channels
 	int ix;
@@ -362,6 +377,22 @@ s32 SEQ_CORE_ScheduleEvent(seq_core_trk_t *t, seq_cc_trk_t *tcc, mios32_midi_pac
 	  midi_package.chn = (tcc->fx_midi_chn + ix) % 16;
 	  status |= SEQ_MIDI_OUT_Send(fx_midi_port, midi_package, event_type, timestamp, len);
 	}
+      }
+    }
+  }
+
+  // duplicate to shadow out?
+  if( shadow_enabled ) {
+    mios32_midi_package_t shadow_package = midi_package;
+    shadow_package.chn = seq_core_shadow_out_chn - 1;
+
+    // duplicate to shadow channel
+    if( shadow_enabled ) {
+      status |= SEQ_MIDI_OUT_Send(seq_core_shadow_out_port, shadow_package, event_type, timestamp, len);
+
+      if( event_type == SEQ_MIDI_OUT_OnEvent ) { // schedule off event at same port
+	shadow_package.velocity = 0;
+	status |= SEQ_MIDI_OUT_Send(seq_core_shadow_out_port, shadow_package, SEQ_MIDI_OUT_OffEvent, 0xffffffff, 0);
       }
     }
   }
@@ -835,7 +866,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	  if( loopback_port )
 	    SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, p, 1); // forward to MIDI IN handler immediately
 	  else
-	    SEQ_CORE_ScheduleEvent(t, tcc, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0, 0, robotize_flags);
+	    SEQ_CORE_ScheduleEvent(track, t, tcc, p, SEQ_MIDI_OUT_CCEvent, bpm_tick, 0, 0, robotize_flags);
 	}
       }
 
@@ -1352,7 +1383,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 	      if( loopback_port )
 		SEQ_MIDI_IN_BusReceive(tcc->midi_port & 0x0f, *p, 1); // forward to MIDI IN handler immediately
 	      else
-		SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0, 0, robotize_flags);
+		SEQ_CORE_ScheduleEvent(track, t, tcc, *p, SEQ_MIDI_OUT_CCEvent, bpm_tick + t->bpm_tick_delay, 0, 0, robotize_flags);
 	      t->vu_meter = 0x7f; // for visualisation in mute menu
 	    } else {
 	      // skip in record mode if the same note is already played
@@ -1387,7 +1418,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		    scheduled_tick += 1;
 
 		  // Note On (the Note Off will be prepared as well in SEQ_CORE_ScheduleEvent)
-		  SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0, robotize_flags);
+		  SEQ_CORE_ScheduleEvent(track, t, tcc, *p, SEQ_MIDI_OUT_OnEvent, scheduled_tick, 0, 0, robotize_flags);
 
 		  // apply Post-FX
 		  if( !no_fx && !robotize_flags.NOFX ) {
@@ -1455,7 +1486,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       	      
 		      int i;
 		      for(i=triggers-1; i>=0; --i)
-			SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags);
+			SEQ_CORE_ScheduleEvent(track, t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags);
 		    } else {
 		      // force gatelength depending on number of triggers
 		      if( triggers < 6 ) {
@@ -1480,14 +1511,14 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      if( roll_mode & 0x40 ) { // upwards
 			int i;
 			for(i=triggers-1; i>=0; --i) {
-			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength ,0, robotize_flags);
+			  SEQ_CORE_ScheduleEvent(track, t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength ,0, robotize_flags);
 			  u16 velocity = roll_attenuation * p_multi.velocity;
 			  p_multi.velocity = velocity >> 8;
 			}
 		      } else { // downwards
 			int i;
 			for(i=0; i<triggers; ++i) {
-			  SEQ_CORE_ScheduleEvent(t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags);
+			  SEQ_CORE_ScheduleEvent(track, t, tcc, p_multi, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay + i*gatelength, half_gatelength, 0, robotize_flags);
 			  if( roll_mode ) {
 			    u16 velocity = roll_attenuation * p_multi.velocity;
 			    p_multi.velocity = velocity >> 8;
@@ -1500,7 +1531,7 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
 		      gatelength = 1;
 		    else // scale length (0..95) over next clock counter to consider the selected clock divider
 		      gatelength = (gatelength * t->step_length) / 96;
-		    SEQ_CORE_ScheduleEvent(t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength, 0, robotize_flags);
+		    SEQ_CORE_ScheduleEvent(track, t, tcc, *p, SEQ_MIDI_OUT_OnOffEvent, bpm_tick + t->bpm_tick_delay, gatelength, 0, robotize_flags);
 		  }
 
 		  // apply Post-FX
@@ -2143,7 +2174,7 @@ s32 SEQ_CORE_Echo(u8 track, u8 instrument, seq_core_trk_t *t, seq_cc_trk_t *tcc,
       SEQ_SCALE_Note(&p, scale, root);
     }
 
-    SEQ_CORE_ScheduleEvent(t, tcc, p, event_type, bpm_tick + echo_offset, gatelength, 1, robotize_flags);
+    SEQ_CORE_ScheduleEvent(track, t, tcc, p, event_type, bpm_tick + echo_offset, gatelength, 1, robotize_flags);
   }
 
   return 0; // no error

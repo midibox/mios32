@@ -37,6 +37,17 @@ MIDIboxSEQ V4.094
      - MIDI OUT Runtime Status Optimisation
      - MENU button assignments
 
+   o support for "Shadow Out", which will forward the MIDI events of the currently selected
+     track to a specified MIDI port and channel (e.g. can be used to visualize played notes
+     with an external device). Select the port/channel in the OPTIONS page.
+
+   o Metronome page removed. Please configure the metronome function in the Options page.
+
+   o Pattern banks can't be modified by default anymore, because they are typically
+     assigned to group 1/2/3/4, changed bank assignments can confused users
+     to much. If somebody still finds this feature useful: it can be enabled in the
+     Options page
+
 
 MIDIboxSEQ V4.093
 ~~~~~~~~~~~~~~~~~
@@ -2415,9 +2426,6 @@ http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findCo
 Song Mode: when a new pattern is selected, it would be helpful to sync the appr. tracks to the measures, e.g. to reset the LFO
 Add option for this behaviour.
 http://midibox.org/forums/topic/20066-question-on-lfos/
-----------------------------------------------------------
-Remove Bank Selections for pattern groups
-http://midibox.org/forums/topic/20128-save-all-saves-group-4-to-group-2help/#comment-175407
 ----------------------------------------------------------
 Turn off steps by using 8th bit
 http://midibox.org/forums/topic/20182-prgch-and-cc-layers/?do=findComment&comment=175864
