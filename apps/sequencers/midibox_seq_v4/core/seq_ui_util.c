@@ -55,6 +55,14 @@
 #endif
 
 
+typedef enum {
+  PASTE_CLEAR_MODE_SELECT = 0,
+  PASTE_CLEAR_MODE_TRACK,
+  PASTE_CLEAR_MODE_PAR_LAYER,
+  PASTE_CLEAR_MODE_TRG_LAYER,
+  PASTE_CLEAR_MODE_INS_LAYER,
+} paste_clear_mode_t;
+
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
 /////////////////////////////////////////////////////////////////////////////
@@ -85,6 +93,7 @@ static u8 copypaste_trg_layers;
 static u16 copypaste_trg_steps;
 static u8 copypaste_num_instruments;
 static u8 copypaste_selected_par_layer;
+static u8 copypaste_selected_trg_layer;
 static u8 copypaste_selected_instrument;
 
 #if UNDO_ENABLED
@@ -110,8 +119,8 @@ static u16 move_trg_layer[2];
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
 static s32 COPY_Track(u8 track);
-static s32 PASTE_Track(u8 track);
-static s32 CLEAR_Track(u8 track);
+static s32 PASTE_Track(u8 track, paste_clear_mode_t paste_clear_mode);
+static s32 CLEAR_Track(u8 track, paste_clear_mode_t paste_clear_mode);
 static s32 UNDO_Track(void);
 
 static s32 MOVE_StoreStep(u8 track, u16 step, u8 buffer, u8 clr_triggers);
@@ -301,7 +310,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	in_menu_msg &= 0x7f;
 	ui_hold_msg_ctr = 1000;
 	// paste steps
-	PASTE_Track(visible_track);
+	PASTE_Track(visible_track, PASTE_CLEAR_MODE_SELECT);
       } else {
 	if( in_menu_msg & 0x80 )
 	  return 0; // ignore as long as other message is displayed
@@ -333,7 +342,7 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	u8 track;
 	for(track=0; track<SEQ_CORE_NUM_TRACKS; ++track) {
 	  if( ui_selected_tracks & (1 << track) )
-	    CLEAR_Track(track);
+	    CLEAR_Track(track, PASTE_CLEAR_MODE_SELECT);
 	}
 
 	// print message
@@ -594,6 +603,7 @@ static s32 COPY_Track(u8 track)
   copypaste_trg_steps = SEQ_TRG_NumStepsGet(track);
   copypaste_num_instruments = SEQ_PAR_NumInstrumentsGet(track);
   copypaste_selected_par_layer = ui_selected_par_layer;
+  copypaste_selected_trg_layer = ui_selected_trg_layer;
   copypaste_selected_instrument = ui_selected_instrument;
 
   // notify that copy&paste buffer is filled
@@ -606,7 +616,7 @@ static s32 COPY_Track(u8 track)
 /////////////////////////////////////////////////////////////////////////////
 // Paste a track with selectable offset (stored in ui_selected_step)
 /////////////////////////////////////////////////////////////////////////////
-static s32 PASTE_Track(u8 track)
+static s32 PASTE_Track(u8 track, paste_clear_mode_t paste_clear_mode)
 {
   int instrument;
   int layer;
@@ -614,7 +624,16 @@ static s32 PASTE_Track(u8 track)
 
   // branch to clear function if copy&paste buffer not filled
   if( !copypaste_buffer_filled )
-    return CLEAR_Track(track);
+    return CLEAR_Track(track, paste_clear_mode);
+
+  if( paste_clear_mode == PASTE_CLEAR_MODE_SELECT ) {
+    if( seq_ui_button_state.SELECT_PRESSED ) {
+      u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+      paste_clear_mode = (event_mode == SEQ_EVENT_MODE_Drum) ? PASTE_CLEAR_MODE_INS_LAYER : PASTE_CLEAR_MODE_PAR_LAYER;
+    } else {
+      paste_clear_mode = PASTE_CLEAR_MODE_TRACK;
+    }
+  }
 
   // determine begin/end boundary
   int step_begin = copypaste_begin;
@@ -633,57 +652,9 @@ static s32 PASTE_Track(u8 track)
   int num_trg_layers = SEQ_TRG_NumLayersGet(track);
   int num_trg_steps = SEQ_TRG_NumStepsGet(track);
 
-  // paste only layer?
-  if( seq_ui_button_state.SELECT_PRESSED ) {
-    u8 event_mode = SEQ_CC_Get(SEQ_UI_VisibleTrackGet(), SEQ_CC_MIDI_EVENT_MODE);
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      for(layer=0; layer<num_trg_layers && layer<copypaste_trg_layers; ++layer) {
-	int step_offset = ui_selected_step;
-	for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
-	  if( step_offset < num_trg_steps ) {
-	    u8 step8_ix = (copypaste_selected_instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
-	    u8 step_mask = (1 << (step&7));
-	    SEQ_TRG_Set(track, step_offset, layer, ui_selected_instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
-	  }
-	}
-      }
-    } else {
-      u8 instrument = 0;
-      int step_offset = ui_selected_step;
-      for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
-	if( step_offset < num_par_steps ) {
-	  u16 step_ix = (instrument * copypaste_par_layers * copypaste_par_steps) + copypaste_selected_par_layer * copypaste_par_steps + step;
-	  SEQ_PAR_Set(track, step_offset, ui_selected_par_layer, instrument, copypaste_par_layer[step_ix]);
-	}
-      }
-
-      // copy parameter type
-      seq_par_layer_type_t par_type = copypaste_cc[SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer];
-      SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, (u8)par_type);
-      SEQ_CC_LinkUpdate(track);
-
-      // some additional operations depending on parameter type
-      if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 ) {
-	// set gates (don't clear already enabled gates)
-	u8 trg_gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
-	if( trg_gate_assignment >= 1 ) {
-	  trg_gate_assignment -= 1;
-
-	  int step_offset = ui_selected_step;
-	  for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
-	    if( step_offset < num_trg_steps ) {
-	      u8 step8_ix = (instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + trg_gate_assignment * (copypaste_trg_steps/8) + (step/8);
-	      u8 step_mask = (1 << (step&7));
-	      if( copypaste_trg_layer[step8_ix] & step_mask ) {
-		SEQ_TRG_GateSet(track, step_offset, instrument, 1);
-	      }
-	    }
-	  }
-	}
-      }
-    }
-  } else {
-
+  // branch depending on paste/clear mode
+  switch( paste_clear_mode ) {
+  case PASTE_CLEAR_MODE_TRACK: {
     //seq_event_mode_t prev_event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
 
     // take over mode - but only if it has been changed so that new partitioning is required!
@@ -736,6 +707,86 @@ static s32 PASTE_Track(u8 track)
 
     // copy track name
     memcpy((u8 *)seq_core_trk[track].name, (u8 *)copypaste_trk_name, 81);
+  } break;
+
+  case PASTE_CLEAR_MODE_PAR_LAYER: {
+    int step_offset = ui_selected_step;
+    for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
+      if( step_offset < num_par_steps ) {
+	u16 step_ix = (ui_selected_instrument * copypaste_par_layers * copypaste_par_steps) + copypaste_selected_par_layer * copypaste_par_steps + step;
+	SEQ_PAR_Set(track, step_offset, ui_selected_par_layer, ui_selected_instrument, copypaste_par_layer[step_ix]);
+      }
+    }
+
+    // copy parameter type
+    seq_par_layer_type_t par_type = copypaste_cc[SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer];
+    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, (u8)par_type);
+    SEQ_CC_LinkUpdate(track);
+
+    // some additional operations depending on parameter type
+    if( par_type == SEQ_PAR_Type_Note || par_type == SEQ_PAR_Type_Chord1 || par_type == SEQ_PAR_Type_Chord2 || par_type == SEQ_PAR_Type_Chord3 ) {
+      // set gates (don't clear already enabled gates)
+      u8 trg_gate_assignment = copypaste_cc[SEQ_CC_ASG_GATE];
+      if( trg_gate_assignment >= 1 ) {
+	trg_gate_assignment -= 1;
+
+	int step_offset = ui_selected_step;
+	for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+	  if( step_offset < num_trg_steps ) {
+	    u8 step8_ix = (ui_selected_instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + trg_gate_assignment * (copypaste_trg_steps/8) + (step/8);
+	    u8 step_mask = (1 << (step&7));
+	    if( copypaste_trg_layer[step8_ix] & step_mask ) {
+	      SEQ_TRG_GateSet(track, step_offset, ui_selected_instrument, 1);
+	    }
+	  }
+	}
+      }
+    }
+  } break;
+
+  case PASTE_CLEAR_MODE_TRG_LAYER: {
+    int step_offset = ui_selected_step;
+    for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+      if( step_offset < num_trg_steps ) {
+	u8 step8_ix = (copypaste_selected_instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + ui_selected_trg_layer * (copypaste_trg_steps/8) + (step/8);
+	u8 step_mask = (1 << (step&7));
+	SEQ_TRG_Set(track, step_offset, ui_selected_trg_layer, ui_selected_instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+      }
+    }
+  } break;
+
+  case PASTE_CLEAR_MODE_INS_LAYER: {
+    // parameter layer
+    for(layer=0; layer<num_par_layers && layer<copypaste_par_layers; ++layer) {
+      int step_offset = ui_selected_step;
+      for(step=step_begin; step<=step_end && step<copypaste_par_steps; ++step, ++step_offset) {
+	if( step_offset < num_par_steps ) {
+	  u16 step_ix = (ui_selected_instrument * copypaste_par_layers * copypaste_par_steps) + layer * copypaste_par_steps + step;
+	  SEQ_PAR_Set(track, step_offset, layer, ui_selected_instrument, copypaste_par_layer[step_ix]);
+	}
+      }
+    }
+
+    // copy parameter type
+    seq_par_layer_type_t par_type = copypaste_cc[SEQ_CC_LAY_CONST_A1 + copypaste_selected_par_layer];
+    SEQ_CC_Set(track, SEQ_CC_LAY_CONST_A1 + ui_selected_par_layer, (u8)par_type);
+    SEQ_CC_LinkUpdate(track);
+
+    // trigger layer
+    for(layer=0; layer<num_trg_layers && layer<copypaste_trg_layers; ++layer) {
+      int step_offset = ui_selected_step;
+      for(step=step_begin; step<=step_end && step<copypaste_trg_steps; ++step, ++step_offset) {
+	if( step_offset < num_trg_steps ) {
+	  u8 step8_ix = (copypaste_selected_instrument * copypaste_trg_layers * (copypaste_trg_steps/8)) + layer * (copypaste_trg_steps/8) + (step/8);
+	  u8 step_mask = (1 << (step&7));
+	  SEQ_TRG_Set(track, step_offset, layer, ui_selected_instrument, (copypaste_trg_layer[step8_ix] & step_mask) ? 1 : 0);
+	}
+      }
+    }
+  } break;
+
+  default:
+    DEBUG_MSG("[PASTE_Track] unsupported paste_clear_mode=%d\n", paste_clear_mode);
   }
 
   // cancel sustain if there are no steps played by the track anymore.
@@ -760,7 +811,7 @@ s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track)
   copypaste_begin = 0;
   copypaste_end = length - 1;
   SEQ_UI_SelectedStepSet(length);
-  PASTE_Track(track);
+  PASTE_Track(track, PASTE_CLEAR_MODE_SELECT);
 
   copypaste_end = 2*length - 1;
   SEQ_CC_Set(track, SEQ_CC_LENGTH, copypaste_end);
@@ -799,25 +850,20 @@ s32 SEQ_UI_UTIL_ClearStep(u8 track, u8 step, u8 instrument)
 /////////////////////////////////////////////////////////////////////////////
 // clear a track
 /////////////////////////////////////////////////////////////////////////////
-static s32 CLEAR_Track(u8 track)
+static s32 CLEAR_Track(u8 track, paste_clear_mode_t paste_clear_mode)
 {
-  // clear only layer?
-  if( seq_ui_button_state.SELECT_PRESSED ) {
-    u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
-    if( event_mode == SEQ_EVENT_MODE_Drum ) {
-      int num_trg_layers = SEQ_TRG_NumLayersGet(track);
-      int num_trg_steps = SEQ_TRG_NumStepsGet(track);
-      int layer, step;
-      for(layer=0; layer<num_trg_layers; ++layer) {
-	for(step=0; step<num_trg_steps; ++step) {
-	  SEQ_TRG_Set(track, step, layer, ui_selected_instrument, 0);
-	}
-      }
+  if( paste_clear_mode == PASTE_CLEAR_MODE_SELECT ) {
+    if( seq_ui_button_state.SELECT_PRESSED ) {
+      u8 event_mode = SEQ_CC_Get(track, SEQ_CC_MIDI_EVENT_MODE);
+      paste_clear_mode = (event_mode == SEQ_EVENT_MODE_Drum) ? PASTE_CLEAR_MODE_INS_LAYER : PASTE_CLEAR_MODE_PAR_LAYER;
     } else {
-      SEQ_LAYER_CopyParLayerPreset(track, ui_selected_par_layer);
+      paste_clear_mode = PASTE_CLEAR_MODE_TRACK;
     }
-  } else {
-    // copy preset
+  }
+
+  // branch depending on paste/clear mode
+  switch( paste_clear_mode ) {
+  case PASTE_CLEAR_MODE_TRACK: {
     u8 only_layers = seq_core_options.PASTE_CLR_ALL ? 0 : 1;
     u8 all_triggers_cleared = 0;
     u8 init_assignments = 0;
@@ -825,6 +871,32 @@ static s32 CLEAR_Track(u8 track)
 
     // clear all triggers
     memset((u8 *)&seq_trg_layer_value[track], 0, SEQ_TRG_MAX_BYTES);
+  } break;
+
+  case PASTE_CLEAR_MODE_PAR_LAYER: {
+    SEQ_LAYER_CopyParLayerPreset(track, ui_selected_par_layer);
+  } break;
+
+  case PASTE_CLEAR_MODE_TRG_LAYER: {
+    int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+    int step;
+    for(step=0; step<num_trg_steps; ++step) {
+      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, 0);
+    }
+  } break;
+
+  case PASTE_CLEAR_MODE_INS_LAYER: {
+    SEQ_LAYER_CopyParLayerPreset(track, ui_selected_par_layer);
+
+    int num_trg_steps = SEQ_TRG_NumStepsGet(track);
+    int step;
+    for(step=0; step<num_trg_steps; ++step) {
+      SEQ_TRG_Set(track, step, ui_selected_trg_layer, ui_selected_instrument, 0);
+    }
+  } break;
+
+  default:
+    DEBUG_MSG("[CLEAR_Track] unsupported paste_clear_mode=%d\n", paste_clear_mode);
   }
 
   // cancel sustain if there are no steps played by the track anymore.
@@ -1042,6 +1114,102 @@ s32 SEQ_UI_UTIL_ClearLivePattern(void)
   pattern->accent = 0;
 
   return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Copy/Paste/Clear Parameter Layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_CopyParLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  return COPY_Track(visible_track);
+}
+
+s32 SEQ_UI_UTIL_PasteParLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // currently only supports to paste from first step
+  SEQ_UI_SelectedStepSet(0); // set new visible step/view
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return PASTE_Track(visible_track, PASTE_CLEAR_MODE_PAR_LAYER);
+}
+
+s32 SEQ_UI_UTIL_ClearParLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return CLEAR_Track(visible_track, PASTE_CLEAR_MODE_PAR_LAYER);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Copy/Paste/Clear Trigger Layer
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_CopyTrgLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  return COPY_Track(visible_track);
+}
+
+s32 SEQ_UI_UTIL_PasteTrgLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // currently only supports to paste from first step
+  SEQ_UI_SelectedStepSet(0); // set new visible step/view
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return PASTE_Track(visible_track, PASTE_CLEAR_MODE_TRG_LAYER);
+}
+
+s32 SEQ_UI_UTIL_ClearTrgLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // currently only supports to paste from first step
+  SEQ_UI_SelectedStepSet(0); // set new visible step/view
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return CLEAR_Track(visible_track, PASTE_CLEAR_MODE_TRG_LAYER);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// Copy/Paste/Clear Instrument
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_UI_UTIL_CopyInsLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  return COPY_Track(visible_track);
+}
+
+s32 SEQ_UI_UTIL_PasteInsLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return PASTE_Track(visible_track, PASTE_CLEAR_MODE_INS_LAYER);
+}
+
+s32 SEQ_UI_UTIL_ClearInsLayer(void)
+{
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  // update undo buffer
+  SEQ_UI_UTIL_UndoUpdate(visible_track);
+
+  return CLEAR_Track(visible_track, PASTE_CLEAR_MODE_INS_LAYER);
 }
 
 /////////////////////////////////////////////////////////////////////////////

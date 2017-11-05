@@ -218,32 +218,32 @@ static s32 get_sr(char *word)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// help function which returns the MIDI OUT port
-// returns >= 0 if value is valid
-// returns -1 if value is invalid
-/////////////////////////////////////////////////////////////////////////////
-static s32 get_port_out(char *word)
-{
-  if( word == NULL )
-    return -1;
-
-  mios32_midi_port_t port = 0xff;
-  int port_ix;
-  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
-    // terminate port name at first space
-    char port_name[10];
-    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
-    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
-    
-    if( strcmp(word, port_name) == 0 ) {
-      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
-      break;
-    }
-  }
-
-  return (port != 0xff) ? port : get_dec(word);
-}
+///////////////////////////////////////////////////////////////////////////////
+//// help function which returns the MIDI OUT port
+//// returns >= 0 if value is valid
+//// returns -1 if value is invalid
+///////////////////////////////////////////////////////////////////////////////
+//static s32 get_port_out(char *word)
+//{
+//  if( word == NULL )
+//    return -1;
+//
+//  mios32_midi_port_t port = 0xff;
+//  int port_ix;
+//  for(port_ix=0; port_ix<SEQ_MIDI_PORT_OutNumGet(); ++port_ix) {
+//    // terminate port name at first space
+//    char port_name[10];
+//    strcpy(port_name, SEQ_MIDI_PORT_OutNameGet(port_ix));
+//    int i; for(i=0; i<strlen(port_name); ++i) if( port_name[i] == ' ' ) port_name[i] = 0;
+//    
+//    if( strcmp(word, port_name) == 0 ) {
+//      port = SEQ_MIDI_PORT_OutPortGet(port_ix);
+//      break;
+//    }
+//  }
+//
+//  return (port != 0xff) ? port : get_dec(word);
+//}
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -907,105 +907,32 @@ s32 SEQ_FILE_HW_Read(void)
 	// misc
 	////////////////////////////////////////////////////////////////////////////////////////////
 	} else if( strcasecmp(parameter, "MIDI_REMOTE_KEY") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 key = get_dec(word);
-	  if( key < 0 || key >= 128 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid remote key '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_midi_remote.key = key;
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "MIDI_REMOTE_CC") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 cc = get_dec(word);
-	  if( cc < 0 || cc >= 128 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid remote CC '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_midi_remote.cc = cc;
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "TRACK_CC_MODE") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 mode = get_dec(word);
-	  if( mode < 0 || mode > 2 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC mode '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_track_cc.mode = mode;
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "TRACK_CC_PORT") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_port_out(word);
-
-	  if( port < 0 || port >= 0x100 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid port number '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_track_cc.port = port;
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "TRACK_CC_CHANNEL") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 chn = get_dec(word);
-	  if( chn < 1 || chn > 16 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC channel '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_track_cc.chn = chn-1; // counting from 1 for user, from 0 for app
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "TRACK_CC_NUMBER") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 cc = get_dec(word);
-	  if( cc < 0 || cc >= 128 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid Track CC number '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  seq_hwcfg_track_cc.cc = cc;
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "RS_OPTIMISATION") == 0 ) {
-	  char *word = strtok_r(NULL, separators, &brkt);
-	  s32 port = get_port_out(word);
-
-	  if( port < 0 || port >= 0x100 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid port number '%s'!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  word = strtok_r(NULL, separators, &brkt);
-	  s32 enable = get_dec(word);
-	  if( enable != 0 && enable != 1 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    DEBUG_MSG("[SEQ_FILE_HW] ERROR in %s definition: invalid enable flag '%s', expecting 1 or 0!", parameter, word);
-#endif
-	    continue;
-	  }
-
-	  s32 status;
-	  if( (status=MIOS32_MIDI_RS_OptimisationSet(port, enable)) < 0 ) {
-#if DEBUG_VERBOSE_LEVEL >= 1
-	    if( port != 0x23 ) // this port is only available for LPC17, not for STM32
-	      DEBUG_MSG("[SEQ_FILE_HW] RS_OPTIMISATION 0x%02x %d failed with status %d!", port, enable, status);
-#endif
-	  }
+	  // obsolete -- ignore
+	  // now configurable in MBSEQ_GC.V4 file
 
 	} else if( strcasecmp(parameter, "DEBOUNCE_DELAY") == 0 ) {
 	  char *word = strtok_r(NULL, separators, &brkt);

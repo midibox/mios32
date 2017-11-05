@@ -294,6 +294,7 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_midi_in_remote.value = value;
 	  } else if( strcmp(parameter, "MidiRemoteCCorKey") == 0 ) {
 	    seq_midi_in_remote.cc_or_key = value;
+#ifndef MBSEQV4L
 	  } else if( strcmp(parameter, "TrackCCMode") == 0 ) {
 	    seq_ui_track_cc.mode = value;
 	  } else if( strcmp(parameter, "TrackCCPort") == 0 ) {
@@ -302,6 +303,7 @@ s32 SEQ_FILE_GC_Read(void)
 	    seq_ui_track_cc.chn = value;
 	  } else if( strcmp(parameter, "TrackCCNumber") == 0 ) {
 	    seq_ui_track_cc.cc = value;
+#endif
 	  } else if( strcmp(parameter, "MidiOutRSOpt") == 0 ) {
 	    mios32_midi_port_t port = (mios32_midi_port_t)value;
 	    if( value < UART0 || value > UART3 ) {
@@ -314,6 +316,7 @@ s32 SEQ_FILE_GC_Read(void)
 		MIOS32_MIDI_RS_OptimisationSet(port, value);
 	      }
 	    }
+#ifndef MBSEQV4L
 	  } else if( strcmp(parameter, "MenuShortcuts") == 0 ) {
 	    int i;
 	    for(i=0; i<16; ++i) {
@@ -330,6 +333,7 @@ s32 SEQ_FILE_GC_Read(void)
 	      }
 	    }
 
+#endif
 	  } else if( strcmp(parameter, "RecQuantisation") == 0 ) {
 	    seq_record_quantize = value; // only for legacy reasons - quantisation moved to local configuration file seq_file_c.c
 	  } else if( strcmp(parameter, "PasteClrAll") == 0 ) {
@@ -554,6 +558,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
   sprintf(line_buffer, "MidiRemoteCCorKey %d\n", (u8)seq_midi_in_remote.cc_or_key);
   FLUSH_BUFFER;
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "TrackCCMode %d\n", (u8)seq_ui_track_cc.mode);
   FLUSH_BUFFER;
 
@@ -565,6 +570,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
   sprintf(line_buffer, "TrackCCNumber %d\n", (u8)seq_ui_track_cc.cc);
   FLUSH_BUFFER;
+#endif
 
   {
     mios32_midi_port_t port;
@@ -577,6 +583,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     }
   }
 
+#ifndef MBSEQV4L
   sprintf(line_buffer, "MenuShortcuts %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(0),
 	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(1),
@@ -596,6 +603,7 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 	  (int)SEQ_UI_PAGES_MenuShortcutPageGet(15)
 	  );
   FLUSH_BUFFER;    
+#endif
 
   sprintf(line_buffer, "PasteClrAll %d\n", seq_core_options.PASTE_CLR_ALL);
   FLUSH_BUFFER;

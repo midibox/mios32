@@ -429,6 +429,42 @@ void SEQ_UI_Msg_Track(char *line2)
   SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
 }
 
+void SEQ_UI_Msg_ParLayer(char *line2)
+{
+  char buffer[40];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  sprintf(buffer, "Parameter Layer G%dT%d %c:%s", 1 + (visible_track / 4), 1 + (visible_track % 4), 'A'+ui_selected_par_layer, SEQ_PAR_TypeStr(SEQ_PAR_AssignmentGet(visible_track, ui_selected_par_layer)));
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+void SEQ_UI_Msg_TrgLayer(char *line2)
+{
+  char buffer[40];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+
+  sprintf(buffer, "Trigger Layer G%dT%d %c:%s", 1 + (visible_track / 4), 1 + (visible_track % 4), 'A'+ui_selected_trg_layer, SEQ_TRG_TypeStr(SEQ_TRG_AssignmentGet(visible_track, ui_selected_trg_layer)));
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
+void SEQ_UI_Msg_InsLayer(char *line2)
+{
+  char buffer[40];
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
+  char name[6];
+  if( event_mode == SEQ_EVENT_MODE_Drum ) {
+    memcpy(name, seq_core_trk[visible_track].name + ui_selected_instrument*5, 5);
+    name[5] = 0;
+  } else {
+    sprintf(name, "INS%d ", ui_selected_instrument+1);
+  }
+
+  sprintf(buffer, "Instrument G%dT%d %s", 1 + (visible_track / 4), 1 + (visible_track % 4), name);
+
+  SEQ_UI_Msg(SEQ_UI_MSG_USER, 1000, buffer, line2);
+}
+
 void SEQ_UI_Msg_Step(char *line2)
 {
   char buffer[40];
@@ -922,6 +958,29 @@ static s32 SEQ_UI_Button_Copy(s32 depressed)
     SEQ_UI_MIXER_Copy();
     SEQ_UI_Msg_MixerMap("copied");
     return 1;
+  } else if( ui_page == SEQ_UI_PAGE_PARSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_CopyParLayer();
+      SEQ_UI_Msg_ParLayer("copied");
+    }
+  } else if( ui_page == SEQ_UI_PAGE_TRGSEL ) {
+    if( !depressed ) {
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+      u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+      if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
+	SEQ_UI_UTIL_CopyInsLayer();
+	SEQ_UI_Msg_InsLayer("copied");
+      } else {
+	SEQ_UI_UTIL_CopyTrgLayer();
+	SEQ_UI_Msg_TrgLayer("copied");
+      }
+    }
+  } else if( ui_page == SEQ_UI_PAGE_INSSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_CopyInsLayer();
+      SEQ_UI_Msg_InsLayer("copied");
+    }
   } else if( ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
     if( depressed ) return -1;
     if( SEQ_UI_PATTERN_MultiCopy(0) >= 0 )
@@ -974,6 +1033,29 @@ static s32 SEQ_UI_Button_Paste(s32 depressed)
     SEQ_UI_MIXER_Paste();
     SEQ_UI_Msg_MixerMap("pasted");
     return 1;
+  } else if( ui_page == SEQ_UI_PAGE_PARSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_PasteParLayer();
+      SEQ_UI_Msg_ParLayer("pasted");
+    }
+  } else if( ui_page == SEQ_UI_PAGE_TRGSEL ) {
+    if( !depressed ) {
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+      u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+      if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
+	SEQ_UI_UTIL_PasteInsLayer();
+	SEQ_UI_Msg_InsLayer("pasted");
+      } else {
+	SEQ_UI_UTIL_PasteTrgLayer();
+	SEQ_UI_Msg_TrgLayer("pasted");
+      }
+    }
+  } else if( ui_page == SEQ_UI_PAGE_INSSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_PasteInsLayer();
+      SEQ_UI_Msg_InsLayer("pasted");
+    }
   } else if( ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
     if( depressed ) return -1;
     if( seq_ui_button_state.COPY ) {
@@ -1052,6 +1134,29 @@ static s32 SEQ_UI_Button_Clear(s32 depressed)
     if( !depressed ) {
       SEQ_UI_MIXER_Clear();
       SEQ_UI_Msg_MixerMap("cleared");
+    }
+  } else if( ui_page == SEQ_UI_PAGE_PARSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_ClearParLayer();
+      SEQ_UI_Msg_ParLayer("cleared");
+    }
+  } else if( ui_page == SEQ_UI_PAGE_TRGSEL ) {
+    if( !depressed ) {
+      u8 visible_track = SEQ_UI_VisibleTrackGet();
+      u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+      u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+      if( event_mode == SEQ_EVENT_MODE_Drum && !selbuttons_available ) {
+	SEQ_UI_UTIL_ClearInsLayer();
+	SEQ_UI_Msg_InsLayer("cleared");
+      } else {
+	SEQ_UI_UTIL_ClearTrgLayer();
+	SEQ_UI_Msg_TrgLayer("cleared");
+      }
+    }
+  } else if( ui_page == SEQ_UI_PAGE_INSSEL ) {
+    if( !depressed ) {
+      SEQ_UI_UTIL_ClearInsLayer();
+      SEQ_UI_Msg_InsLayer("cleared");
     }
   } else if( ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_PATTERN_RMX ) {
     if( depressed ) return -1;
