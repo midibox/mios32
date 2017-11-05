@@ -5,66 +5,6 @@
 
 
 ##################################################
-# MIDI Remote Keyboard Function
-##################################################
-
-# The note number which activates the remote function
-# 96 = C-7 (by some MIDI monitors displayed as C-8)
-# 0 disables the remote keyboard function
-MIDI_REMOTE_KEY 96
-
-# The CC number which activates the remote function
-# (e.g. to control it with a footswitch)
-# Allowed numbers: 1-127 for CC#1..CC#127
-# 0 disables the function (default)
-MIDI_REMOTE_CC 0
-
-
-##################################################
-# Track Selection CC
-# Allows to synchronize track selections with a DAW
-##################################################
-
-# select the mode:
-# 0: no CC sent on track changes
-# 1: send a single CC which contains the track number as value
-# 2: send CC..CC+15 depending on track number with value 127
-TRACK_CC_MODE 0
-
-# over which port should the CC be sent?
-# specifiy: USB1..USB4, OUT1..OUT4, IIC1..IIC4, AOUT (haha ;-), OSC1..OSC4
-TRACK_CC_PORT USB1
-
-# over which MIDI channel should the CC be sent (1..16)?
-TRACK_CC_CHANNEL 1
-
-# which CC number should be sent (if TRACK_CC_MODE == 2: the first CC)
-TRACK_CC_NUMBER 100
-
-
-##################################################
-# Running status optimisation
-# Enabled by default, should be disabled if a MIDI
-# device connected to a MIDI port doesn't fully
-# comply to the MIDI specification.
-# Expects two parameters: port number and 0/1 to
-# disable/enable the optimisation.
-##################################################
-
-# OUT1 (MIDI1 port of MBHP_CORE_LPC17 module)
-RS_OPTIMISATION OUT1 1
-
-# OUT2 (MIDI2 port of MBHP_CORE_LPC17 module)
-RS_OPTIMISATION OUT2 1
-
-# OUT3 (MIDI3 port of MBHP_CORE_LPC17 module)
-RS_OPTIMISATION OUT3 1
-
-# OUT4 (MIDI4 port of MBHP_CORE_LPC17 module)
-RS_OPTIMISATION OUT4 1
-
-
-##################################################
 # Shift Register Setup
 ##################################################
 

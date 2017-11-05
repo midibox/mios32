@@ -9,10 +9,16 @@ Wishlist for future features
 MIDIboxSEQ V4.094
 ~~~~~~~~~~~~~~~~~
 
-   o implemented COPY, PASTE, COPY+PASTE and CLEAR in PATTERN page
-
    o support for Antilog Frontpanel.
      The appr. HW configuration file can be found under hwcfg/antilog/MBSEQ_HW.V4
+
+   o enhanced COPY/PASTE/CLEAR functions for following pages:
+     - PATTERN page: copy/paste/clears all patterns.
+                     Special function: by pressing COPY+PASTE the patterns will be pasted into the next slots
+     - PARSEL page: copy/paste/clears the currently selected parameter layer only
+     - TRGSEL page: copy/paste/clears the currently selected trigger layer only
+     - INSSEL page: copy/paste/clears the currently selected instrument only
+                    (useful for drums: corresponding trigger any parameter layers are cleared)
 
    o improved ALL button behaviour
 
@@ -2446,13 +2452,6 @@ In the Mute menu, the encoders just duplicate the buttons while the wheel doesn'
 ----------------------------------------------------------
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
 The spot erase feature is still a little tricky to use I think. Now, in Live Recording mode, when you hold a key, it gets deleted. It's really easy to accidentally delete notes when recording fast  patterns (with sloppy timing). Also, it means that you always first add a note to delete it again in the second pass. I think it would be better to only delete notes when you press the delete button and a key. EG: Sequencer playing, Live recording on. Hold Clear. Nothing happens. Still holding Clear, press A1, A1 gets deleted until you release either A1 or Clear.
-----------------------------------------------------------
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
-Still on the subject of Clearing, it would also be great to be able to selectively clear whole Trigger/ Parameter layers, so that when you hold Clear, something akin to the Mute screen *while Mute button held* comes up, where you can mute individual PL. So you could eg. clear individual drum lines at once.
-----------------------------------------------------------
-http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
-I also wonder if it wouldn't be better if the PL would get reset on clearing the TL. If you programmed a Roll or an Nth Parameter previously, it can be rather confusing to still find this in place after recording new note information.
-----------------------------------------------------------
 ----------------------------------------------------------
 
 

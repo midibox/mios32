@@ -405,6 +405,18 @@ extern s32 SEQ_UI_UTIL_ScrollButton(s32 depressed);
 extern s32 SEQ_UI_UTIL_PasteDuplicateSteps(u8 track);
 extern s32 SEQ_UI_UTIL_ClearStep(u8 track, u8 step, u8 instrument);
 
+extern s32 SEQ_UI_UTIL_CopyParLayer(void);
+extern s32 SEQ_UI_UTIL_PasteParLayer(void);
+extern s32 SEQ_UI_UTIL_ClearParLayer(void);
+
+extern s32 SEQ_UI_UTIL_CopyTrgLayer(void);
+extern s32 SEQ_UI_UTIL_PasteTrgLayer(void);
+extern s32 SEQ_UI_UTIL_ClearTrgLayer(void);
+
+extern s32 SEQ_UI_UTIL_CopyInsLayer(void);
+extern s32 SEQ_UI_UTIL_PasteInsLayer(void);
+extern s32 SEQ_UI_UTIL_ClearInsLayer(void);
+
 extern s32 SEQ_UI_UTIL_CopyLivePattern(void);
 extern s32 SEQ_UI_UTIL_PasteLivePattern(void);
 extern s32 SEQ_UI_UTIL_ClearLivePattern(void);
