@@ -22,10 +22,12 @@ MIDIboxSEQ V4.094
 
    o improved ALL button behaviour
 
+   o New worflow for PATTERN page:
+     GP 1/2, 5/6, 9/10, 13/14 allow to select group as well
+     (especially interesting for Antilog Frontpanel: Selection buttons can be used for mutes)
+
    o New worflow for MUTE page:
-     - GP 1/2, 5/6, 9/10, 13/14 allow to select group as well
-       (especially interesting for Antilog Frontpanel: Selection buttons can be used for mutes)
-     - whenever a track or parameter layer is unmuted, it will be automatically selected
+     Whenever a track or parameter layer is unmuted, it will be automatically selected
 
    o EDIT page: improved handling for chord layers
 
