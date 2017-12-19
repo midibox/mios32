@@ -6,6 +6,12 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.094b
+~~~~~~~~~~~~~~~~~~
+
+   o fixed LED handling for common frontpanels (e.g. MUTE LED stayed active regardless of selected view)
+
+
 MIDIboxSEQ V4.094
 ~~~~~~~~~~~~~~~~~
 
