@@ -3104,6 +3104,9 @@ s32 SEQ_UI_LED_Handler(void)
   if( !SEQ_FILE_HW_ConfigLocked() )
     return -1;
 
+  // for special LED handling of Antilog Frontpanel
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+
   // track LEDs
   // in pattern page: track buttons are used as group buttons
   if( ui_page == SEQ_UI_PAGE_PATTERN ) {
@@ -3125,7 +3128,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.track[3], (selected_tracks & (1 << 3)));
   }
 
-  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACKS);
+  SEQ_LED_PinSet(seq_hwcfg_led.track_sel, ui_page == SEQ_UI_PAGE_TRACKSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRACKS));
   
   // parameter layer LEDs
   // in song page: layer buttons are used to select the cursor position
@@ -3138,7 +3141,7 @@ s32 SEQ_UI_LED_Handler(void)
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[1], (ui_selected_par_layer == 1));
     SEQ_LED_PinSet(seq_hwcfg_led.par_layer[2], (ui_selected_par_layer >= 2) || seq_ui_button_state.PAR_LAYER_SEL);
   }
-  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_PAR);
+  SEQ_LED_PinSet(seq_hwcfg_led.par_layer_sel, ui_page == SEQ_UI_PAGE_PARSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_PAR));
   
   // group LEDs
   // in song page: track and group buttons are used to select the cursor position
@@ -3158,20 +3161,20 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[0], (ui_selected_trg_layer == 0));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[1], (ui_selected_trg_layer == 1));
   SEQ_LED_PinSet(seq_hwcfg_led.trg_layer[2], (ui_selected_trg_layer >= 2) || seq_ui_button_state.TRG_LAYER_SEL);
-  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRG);
+  SEQ_LED_PinSet(seq_hwcfg_led.trg_layer_sel, ui_page == SEQ_UI_PAGE_TRGSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_TRG));
 
   // instrument layer LEDs
-  SEQ_LED_PinSet(seq_hwcfg_led.ins_sel, ui_page == SEQ_UI_PAGE_INSSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_INS);
+  SEQ_LED_PinSet(seq_hwcfg_led.ins_sel, ui_page == SEQ_UI_PAGE_INSSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_INS));
   
   // remaining LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.edit, ui_page == SEQ_UI_PAGE_EDIT);
-  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE || seq_ui_sel_view == SEQ_UI_SEL_VIEW_MUTE);
+  SEQ_LED_PinSet(seq_hwcfg_led.mute, ui_page == SEQ_UI_PAGE_MUTE || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_MUTE));
   SEQ_LED_PinSet(seq_hwcfg_led.pattern, ui_page == SEQ_UI_PAGE_PATTERN);
   if( SEQ_SONG_ActiveGet() )
     SEQ_LED_PinSet(seq_hwcfg_led.song, 1);
   else
     SEQ_LED_PinSet(seq_hwcfg_led.song, ui_cursor_flash ? 0 : (ui_page == SEQ_UI_PAGE_SONG));
-  SEQ_LED_PinSet(seq_hwcfg_led.phrase, seq_ui_button_state.PHRASE_PRESSED || seq_ui_sel_view == SEQ_UI_SEL_VIEW_PHRASE);
+  SEQ_LED_PinSet(seq_hwcfg_led.phrase, seq_ui_button_state.PHRASE_PRESSED || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_PHRASE));
   SEQ_LED_PinSet(seq_hwcfg_led.mixer, ui_page == SEQ_UI_PAGE_MIXER);
 
   SEQ_LED_PinSet(seq_hwcfg_led.track_mode, ui_page == SEQ_UI_PAGE_TRKMODE);
@@ -3199,11 +3202,11 @@ s32 SEQ_UI_LED_Handler(void)
   SEQ_LED_PinSet(seq_hwcfg_led.loop, seq_core_state.LOOP);
   SEQ_LED_PinSet(seq_hwcfg_led.follow, seq_core_state.FOLLOW);
   
-  SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL || seq_ui_sel_view == SEQ_UI_SEL_VIEW_STEPS);
+  SEQ_LED_PinSet(seq_hwcfg_led.step_view, ui_page == SEQ_UI_PAGE_STEPSEL || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_STEPS));
 
   SEQ_LED_PinSet(seq_hwcfg_led.select, seq_ui_button_state.SELECT_PRESSED);
   SEQ_LED_PinSet(seq_hwcfg_led.menu, seq_ui_button_state.MENU_PRESSED);
-  SEQ_LED_PinSet(seq_hwcfg_led.bookmark, ui_page == SEQ_UI_PAGE_BOOKMARKS || seq_ui_sel_view == SEQ_UI_SEL_VIEW_BOOKMARKS);
+  SEQ_LED_PinSet(seq_hwcfg_led.bookmark, ui_page == SEQ_UI_PAGE_BOOKMARKS || (selbuttons_available && seq_ui_sel_view == SEQ_UI_SEL_VIEW_BOOKMARKS));
 
   // handle double functions
   if( seq_ui_button_state.MENU_PRESSED ) {
