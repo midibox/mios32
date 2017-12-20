@@ -280,7 +280,8 @@ static s32 LCD_Handler(u8 high_prio)
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 0);
-  SEQ_LCD_PrintString("About this MIDIbox:             ");
+  //SEQ_LCD_PrintString("About this MIDIbox:             ");
+  SEQ_LCD_PrintStringPadded(MIOS32_LCD_BOOT_MSG_LINE1, 31); // version information now here since it has been removed from main screen
 
   ///////////////////////////////////////////////////////////////////////////
   SEQ_LCD_CursorSet(0, 1);

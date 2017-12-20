@@ -50,6 +50,7 @@ typedef union {
   u32 ALL;
   struct {
     u16 ref_step; // u16 instead of u8 to cover overrun on 256 steps per measure
+    u16 ref_step_pattern; // independent reference step for pattern changes
     u16 ref_step_song; // reference step can be different in song mode if a guide track is used
     u16 reset_trkpos_req; // resets the track with the next step
 
