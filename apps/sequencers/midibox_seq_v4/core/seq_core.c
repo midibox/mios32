@@ -561,7 +561,7 @@ s32 SEQ_CORE_Handler(void)
 	    }
 	  } else {
 	    if( seq_core_options.SYNCHED_PATTERN_CHANGE &&
-		seq_core_state.ref_step == seq_core_steps_per_pattern ) {
+		seq_core_state.ref_step_pattern == seq_core_steps_per_pattern ) {
 	      SEQ_PATTERN_Handler();
 	    }
 	  }
@@ -666,6 +666,7 @@ s32 SEQ_CORE_Reset(u32 bpm_start)
 
   // reset reference step
   seq_core_state.ref_step = (u16)((bpm_start / 96) % ((u32)seq_core_steps_per_measure+1));
+  seq_core_state.ref_step_pattern = seq_core_state.ref_step;
   if( seq_song_guide_track ) {
     seq_core_state.ref_step_song = (u16)((bpm_start / 96) % ((u32)seq_cc_trk[seq_song_guide_track-1].length+1));
   } else {
@@ -721,10 +722,15 @@ s32 SEQ_CORE_Tick(u32 bpm_tick, s8 export_track, u8 mute_nonloopback_tracks)
       seq_core_state.FORCE_REF_STEP_RESET = 0;
       synch_to_measure_req = 1;
       seq_core_state.ref_step = 0;
+      seq_core_state.ref_step_pattern = 0;
       seq_core_state.ref_step_song = 0;
     } else {
       if( ++seq_core_state.ref_step > seq_core_steps_per_measure ) {
 	seq_core_state.ref_step = 0;
+      }
+
+      if( ++seq_core_state.ref_step_pattern > seq_core_steps_per_pattern ) {
+	seq_core_state.ref_step_pattern = 0;
       }
 
       if( seq_song_guide_track ) {

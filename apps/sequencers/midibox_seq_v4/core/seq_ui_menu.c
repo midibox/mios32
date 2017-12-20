@@ -617,8 +617,12 @@ static s32 LCD_Handler(u8 high_prio)
 
     if( high_prio ) {
       ///////////////////////////////////////////////////////////////////////////
-      // Print Sequencer Position
-      SEQ_LCD_CursorSet(24, 0);
+      // Print Sequencer Positions
+      SEQ_LCD_CursorSet(0, 0);
+
+      SEQ_LCD_PrintFormattedString("MStp:%3d/%3d PStp:%3d/%3d",
+				   (int)seq_core_state.ref_step+1, (int)seq_core_steps_per_measure+1,
+				   (int)seq_core_state.ref_step_pattern+1, (int)seq_core_steps_per_pattern+1);
 
       u32 tick = SEQ_BPM_TickGet();
       u32 ticks_per_step = SEQ_BPM_PPQN_Get() / 4;
@@ -626,7 +630,7 @@ static s32 LCD_Handler(u8 high_prio)
       u32 measure = (tick / ticks_per_measure) + 1;
       u32 step = ((tick % ticks_per_measure) / ticks_per_step) + 1;
       u32 microstep = tick % ticks_per_step;
-      SEQ_LCD_PrintFormattedString("%8u.%3d.%3d", measure, step, microstep);
+      SEQ_LCD_PrintFormattedString("%7u.%3d.%3d", measure, step, microstep);
 
       SEQ_LCD_CursorSet(40+31, 0);
       float bpm = SEQ_BPM_EffectiveGet();
@@ -636,10 +640,12 @@ static s32 LCD_Handler(u8 high_prio)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 0);
+#if 0
     SEQ_LCD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
     int fill_spaces = 25 - strlen(MIOS32_LCD_BOOT_MSG_LINE1);
     if( fill_spaces > 0 )
       SEQ_LCD_PrintSpaces(fill_spaces);
+#endif
 
     SEQ_LCD_CursorSet(40, 0);
     SEQ_LCD_PrintFormattedString("%s/%s", SEQ_FILE_SESSION_PATH, seq_file_session_name);

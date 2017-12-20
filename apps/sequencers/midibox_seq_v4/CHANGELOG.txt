@@ -6,6 +6,14 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.095
+~~~~~~~~~~~~~~~~~
+
+   o reference step for pattern changes now works indpendent from reference step used for sync-to-measure
+
+   o experimental (might be optional in future): show measure and pattern step position in main screen
+
+
 MIDIboxSEQ V4.094b
 ~~~~~~~~~~~~~~~~~~
 
