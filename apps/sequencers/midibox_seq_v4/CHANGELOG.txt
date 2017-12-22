@@ -11,6 +11,9 @@ MIDIboxSEQ V4.095
 
    o reference step for pattern changes now works indpendent from reference step used for sync-to-measure
 
+   o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
+     the pattern change synchronisation option.
+
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
 
