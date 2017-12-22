@@ -167,7 +167,8 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 #endif
       }
 
-      SEQ_PATTERN_Change(group, selected_pattern[group], 0);
+      // with SELECT pattern change will be done immediately, regardless if synchronized pattern change is activated
+      SEQ_PATTERN_Change(group, selected_pattern[group], seq_ui_button_state.SELECT_PRESSED);
     }
   }
   if( is_critical )
@@ -238,7 +239,8 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_PATTERN_G1 + group, selected_pattern[group].pattern, 0);
 	SEQ_MIDI_IN_ExtCtrlSend(SEQ_MIDI_IN_EXT_CTRL_BANK_G1 + group, selected_pattern[group].bank, 0);
 
-	SEQ_PATTERN_Change(group, selected_pattern[group], 0);
+	// with SELECT pattern change will be done immediately, regardless if synchronized pattern change is activated
+	SEQ_PATTERN_Change(group, selected_pattern[group], seq_ui_button_state.SELECT_PRESSED);
       }
     }
 
@@ -352,7 +354,8 @@ static s32 LCD_Handler(u8 high_prio)
 
       SEQ_LCD_PrintSpaces(1);
       SEQ_LCD_PrintPatternCategory(seq_pattern[group], seq_pattern_name[group]);
-      SEQ_LCD_PrintSpaces(1);
+
+      SEQ_LCD_PrintChar(seq_ui_button_state.SELECT_PRESSED ? '>' : ' '); // to show that changes will be taken over immediately
 
 
       // shortly show current pattern
@@ -368,7 +371,7 @@ static s32 LCD_Handler(u8 high_prio)
 	  selected_pattern[group].bank != seq_pattern[group].bank )
 	SEQ_LCD_PrintChar('*');
       else
-	SEQ_LCD_PrintChar(' ');
+	SEQ_LCD_PrintChar(seq_ui_button_state.SELECT_PRESSED ? '<' : ' '); // to show that changes will be taken over immediately
 
       if( !(group % 1) ) {
 	SEQ_LCD_CursorSet(20*group+19, 1);
