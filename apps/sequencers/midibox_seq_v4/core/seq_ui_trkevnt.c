@@ -1243,11 +1243,15 @@ static s32 LCD_Handler(u8 high_prio)
 	    SEQ_LCD_PrintSpaces(2);
 	  } else {
 	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 0);
+#ifdef MBSEQV4P
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+#else
 	    if( asg == SEQ_PAR_Type_CC ) {
-	      SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
+	      SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	    } else {
 	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 	    }
+#endif
 	  }
 	}
 
@@ -1259,11 +1263,15 @@ static s32 LCD_Handler(u8 high_prio)
 	    SEQ_LCD_PrintSpaces(1);
 
 	    seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, selected_drum_par_layer);
+#ifdef MBSEQV4P
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+#else
 	    if( asg == SEQ_PAR_Type_CC ) {
-	      SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
+	      SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	    } else {
 	      SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 	    }
+#endif
 	  }
 	} else {
 	  if( ui_selected_item == ITEM_LAYER_B_SELECT && ui_cursor_flash ) {
@@ -1271,11 +1279,15 @@ static s32 LCD_Handler(u8 high_prio)
 	  } else {
 	    if( layer_config[selected_layer_config].par_layers >= 2 ) {
 	      seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(visible_track, 1);
+#ifdef MBSEQV4P
+	    SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
+#else
 	      if( asg == SEQ_PAR_Type_CC ) {
-		SEQ_LCD_PrintString("TODO "); // CC not supported for drum tracks, print bullshit
+		SEQ_LCD_PrintString("NoV4+"); // CC not supported for drum tracks
 	      } else {
 		SEQ_LCD_PrintString(SEQ_PAR_TypeStr(asg));
 	      }
+#endif
 	    } else {
 	      if( ui_selected_item == ITEM_LAYER_B_SELECT )
 		SEQ_LCD_PrintString(" --- "); // not a bug, but a feature - highlight, that layer not configurable

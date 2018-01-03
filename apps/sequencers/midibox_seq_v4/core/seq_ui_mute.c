@@ -404,7 +404,7 @@ static s32 LCD_Handler(u8 high_prio)
 	      SEQ_LCD_PrintTrackDrum(visible_track, track, (char *)seq_core_trk[visible_track].name);
 	    else {
 	      char str_buffer[6];
-	      SEQ_PAR_AssignedTypeStr(visible_track, track, str_buffer);
+	      SEQ_PAR_AssignedTypeStr(visible_track, track, ui_selected_instrument, str_buffer);
 	      SEQ_LCD_PrintString(str_buffer);
 	    }
 	  }

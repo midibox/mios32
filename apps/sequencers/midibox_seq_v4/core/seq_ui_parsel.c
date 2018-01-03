@@ -145,7 +145,7 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintSpaces(5);
     else {
       char str_buffer[6];
-      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_PAR_AssignedTypeStr(visible_track, i, ui_selected_instrument, str_buffer);
       SEQ_LCD_PrintString(str_buffer);
     }
 
