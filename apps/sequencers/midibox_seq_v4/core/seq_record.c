@@ -591,7 +591,6 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	  // Drum mode or no note: play only the single event
 	  SEQ_LIVE_PlayEvent(track, midi_package);
 	} else {
-	  seq_layer_evnt_t layer_events[16];
 	  u8 record_step = ui_selected_step;
 #ifdef MBSEQV4L
 	  // extra MBSEQ V4L if CC track: read 16th step in step record mode
@@ -600,7 +599,13 @@ s32 SEQ_RECORD_Receive(mios32_midi_package_t midi_package, u8 track)
 	    record_step *= 4;
 #endif
 
+#ifdef MBSEQV4P
+	  seq_layer_evnt_t layer_events[80];
+	  s32 number_of_events = SEQ_LAYER_GetEventsPlus(track, record_step, layer_events, 0);
+#else
+	  seq_layer_evnt_t layer_events[16];
 	  s32 number_of_events = SEQ_LAYER_GetEvents(track, record_step, layer_events, 0);
+#endif
 	  if( number_of_events > 0 ) {
 	    int i;
 	    seq_layer_evnt_t *e = &layer_events[0];

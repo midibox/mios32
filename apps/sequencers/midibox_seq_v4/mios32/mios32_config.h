@@ -10,15 +10,28 @@
 #ifndef _MIOS32_CONFIG_H
 #define _MIOS32_CONFIG_H
 
+// V4+ switch depends on used processor
+#if defined(MIOS32_FAMILY_STM32F4xx)
+# define MBSEQV4P
+#endif
+
 
 // The boot message which is print during startup and returned on a SysEx query
 #define MIOS32_LCD_BOOT_MSG_DELAY 0 // we delay the boot and print a message inside the app
 //                                <---------------------->
+#ifdef MBSEQV4P
+#define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4+.095"
+#else
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.095"
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2017 T. Klose"
+#endif
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2018 T. Klose"
 
 // USB settings
-#define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
+#ifdef MBSEQV4P
+# define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4+"
+#else
+# define MIOS32_USB_PRODUCT_STR  "MIDIbox SEQ V4"
+#endif
 #define MIOS32_USB_MIDI_NUM_PORTS 4
 
 // port used for debugging via MIDI
@@ -38,7 +51,11 @@ extern void APP_SendDebugMessage(char *format, ...);
 #define MIOS32_TASK_HOOKS_STACK_SIZE       1000
 #define MIOS32_TASK_MIDI_HOOKS_STACK_SIZE  1200 // note: avstack.pl shows 500, but actually 1000 for TERMINAL_BrowserUploadCallback have to be considered as well. 1200 should be save (1000 for callback + memory consumed by the caller)
 #define UIP_TASK_STACK_SIZE                1000
-#define MIDI_TASK_STACK_SIZE               1400
+#ifdef MBSEQV4P
+# define MIDI_TASK_STACK_SIZE              1400
+#else
+# define MIDI_TASK_STACK_SIZE              1600
+#endif
 #define PERIOD1MS_TASK_STACK_SIZE          1400
 #define PERIOD1MS_LOWPRIO_TASK_STACK_SIZE  1400
 
@@ -50,8 +67,11 @@ extern void APP_SendDebugMessage(char *format, ...);
 // Sequencer could crash with hardfault on a buffer overrun
 
 // reserved memory for FreeRTOS pvPortMalloc function
-#define MIOS32_HEAP_SIZE 13*1024
-
+#ifdef MBSEQV4P
+# define MIOS32_HEAP_SIZE 14*1024
+#else
+# define MIOS32_HEAP_SIZE 13*1024
+#endif
 
 // for LPC17: simplify allocation of large arrays
 #if defined(MIOS32_FAMILY_LPC17xx)

@@ -101,7 +101,7 @@ extern s32 SEQ_PAR_RootValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_
 extern s32 SEQ_PAR_ScaleValueGet(u8 track, u8 step, u8 par_instrument, u16 layer_muted);
 
 extern char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type);
-extern s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, char *str_buffer);
+extern s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, u8 instrument, char *str_buffer);
 extern u8 SEQ_PAR_MappedTypeGet(u8 par_type);
 extern u8 SEQ_PAR_UnMappedTypeGet(u8 mapped_par_type);
 

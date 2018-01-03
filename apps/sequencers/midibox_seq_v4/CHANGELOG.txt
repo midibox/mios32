@@ -9,6 +9,16 @@ Wishlist for future features
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~
 
+   o introduced first "MBSEQV4+" function.
+     MIDIbox SEQ V4+ is a special firmware variant for the STM32F4 core.
+     It offers additional memory and/or CPU hungry functions which can't be implemented
+     for STM32F1 or LPC17 due to resource limitations.
+     These special functions are marked with "V4+" in future.
+
+   o V4+: implemented CC layers for drum tracks.
+     The CC numbers are statically assigned: the first assigned layer will play CC#16..32, the second
+     assigned layer CC#33..48, etc. depending on the drum instrument.
+
    o reference step for pattern changes now works indpendent from reference step used for sync-to-measure
 
    o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of

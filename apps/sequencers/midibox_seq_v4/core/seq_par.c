@@ -511,13 +511,26 @@ char *SEQ_PAR_TypeStr(seq_par_layer_type_t par_type)
 // (5 characters + terminator)
 // if layer is not assigned, it returns "None "
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, char *str_buffer)
+s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, u8 instrument, char *str_buffer)
 {
   seq_par_layer_type_t asg = SEQ_PAR_AssignmentGet(track, par_layer);
 
   if( asg == SEQ_PAR_Type_CC ) {
-    u8 cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1 + par_layer);
-    if( cc_number >= 0x80 ) {
+    seq_cc_trk_t *tcc = &seq_cc_trk[track];
+    u8 cc_number;
+    if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+#ifdef MBSEQV4P
+      cc_number = SEQ_LAYER_GetDrumCCNumber(track, par_layer, instrument);
+#else
+      cc_number = 0xff;
+#endif
+    } else {
+      cc_number = SEQ_CC_Get(track, SEQ_CC_LAY_CONST_B1 + par_layer);
+    }
+
+    if( cc_number == 0xff ) {
+      strcpy(str_buffer, "n/a  ");
+    } else if( cc_number >= 0x80 ) {
       strcpy(str_buffer, "COff ");
     } else {
       sprintf(str_buffer, "#%03d ", cc_number);

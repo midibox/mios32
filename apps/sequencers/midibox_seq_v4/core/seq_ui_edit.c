@@ -786,7 +786,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     int i;
     for(i=1; i<num_p_layers; ++i) {
       char str_buffer[6];
-      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_PAR_AssignedTypeStr(visible_track, i, ui_selected_instrument, str_buffer);
       SEQ_LCD_PrintString(str_buffer);
     }
 
@@ -856,7 +856,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     for(i=0; i<num_p_layers; ++i) {
       char str_buffer[6];
-      SEQ_PAR_AssignedTypeStr(visible_track, i, str_buffer);
+      SEQ_PAR_AssignedTypeStr(visible_track, i, ui_selected_instrument, str_buffer);
       SEQ_LCD_PrintString(str_buffer);
     }
 
@@ -985,7 +985,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
   {
     char str_buffer[6];
-    SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer, str_buffer);
+    SEQ_PAR_AssignedTypeStr(visible_track, ui_selected_par_layer, ui_selected_instrument, str_buffer);
     SEQ_LCD_PrintString(str_buffer);
     SEQ_LCD_PrintSpaces(2);
   }
