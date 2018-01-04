@@ -40,6 +40,12 @@
 // to display activity of selected track in trigger/parameter selection page
 u8 seq_layer_vu_meter[16];
 
+#ifdef MBSEQV4P
+// Drum CC configuration
+u8 seq_layer_drum_cc[16][4]; // up to 4 parameter layers per drum
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // Local definitions and arrays
 /////////////////////////////////////////////////////////////////////////////
@@ -160,6 +166,16 @@ s32 SEQ_LAYER_Init(u32 mode)
     SEQ_LAYER_CopyPreset(track, only_layers, all_triggers_cleared, init_assignments);
   }
 
+#ifdef MBSEQV4P
+  // initial Drum CC assignments
+  u8 drum;
+  for(drum=0; drum<16; ++drum) {
+    u8 par_layer;
+    for(par_layer=0; par_layer<4; ++par_layer) {
+      seq_layer_drum_cc[drum][par_layer] = 16 + par_layer*16 + drum;
+    }
+  }
+#endif
 
   SEQ_CHORD_Init(0);
 
@@ -262,7 +278,7 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 
   seq_cc_trk_t *tcc = &seq_cc_trk[track];
 #ifdef MBSEQV4P
-  seq_layer_evnt_t layer_events[80];
+  seq_layer_evnt_t layer_events[83];
   number_of_events = SEQ_LAYER_GetEventsPlus(track, step, layer_events, 1);
 #else
   seq_layer_evnt_t layer_events[16];
@@ -303,32 +319,6 @@ s32 SEQ_LAYER_GetEvntOfLayer(u8 track, u16 step, u8 layer, u8 instrument, seq_la
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Returns the CC number for drums
-// Currently statically assigned, #16+drum for first assigned layer, #32+drum for second assigned layer, etc...
-/////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LAYER_GetDrumCCNumber(u8 track, u8 search_par_layer, u8 instrument)
-{
-  seq_cc_trk_t *tcc = &seq_cc_trk[track];
-  u8 *layer_type_ptr = (u8 *)&tcc->par_assignment_drum[0];
-  u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
-  int par_layer;
-  u8 cc_offset = 0;
-  for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
-
-    if( *layer_type_ptr != SEQ_PAR_Type_CC )
-      continue;
-
-    cc_offset += 16; // first assigned layer will start at 16
-    if( par_layer == search_par_layer ) {
-      return cc_offset + instrument;
-    }
-  }
-
-  return 0x80; // disabled
-}
-
-
-/////////////////////////////////////////////////////////////////////////////
 // Returns all events of a selected step
 // Note: MBSEQV4P supports CCs on drum tracks, therefore we've to support
 // +64 events which can be generated at once
@@ -336,7 +326,7 @@ s32 SEQ_LAYER_GetDrumCCNumber(u8 track, u8 search_par_layer, u8 instrument)
 // the function a dedicated name for this case
 /////////////////////////////////////////////////////////////////////////////
 #ifdef MBSEQV4P
-s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[80], u8 insert_empty_notes)
+s32 SEQ_LAYER_GetEventsPlus(u8 track, u16 step, seq_layer_evnt_t layer_events[83], u8 insert_empty_notes)
 #else
 s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u8 insert_empty_notes)
 #endif
@@ -397,55 +387,166 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
     }
 
 #ifdef MBSEQV4P
-    // CCs only supported by V4+
+    // CC, PitchBend, etc only supported by V4+
     u8 num_p_layers = SEQ_PAR_NumLayersGet(track);
+    u8 pb_sent = 0;
+    u8 at_sent = 0;
+    u8 pc_sent = 0;
+
     for(drum=0; drum<num_instruments; ++drum) {
       u8 *layer_type_ptr = (u8 *)&tcc->par_assignment_drum[0];
       int par_layer;
       for(par_layer=0; par_layer<num_p_layers; ++par_layer, ++layer_type_ptr) {
 
-	if( *layer_type_ptr != SEQ_PAR_Type_CC )
-	  continue;
+	switch( *layer_type_ptr ) {
+	case SEQ_PAR_Type_CC: {
+	  u8 cc_number = seq_layer_drum_cc[drum][par_layer];
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
 
-	u8 cc_number = SEQ_LAYER_GetDrumCCNumber(track, par_layer, drum);
-	u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
+	  if( !insert_empty_notes ) {
+	    // new: don't send CC if assigned to invalid CC number
+	    // new: don't send if CC is assigned to LFO extra CC function
+	    if( cc_number >= 0x80 ||
+		(tcc->lfo_waveform && tcc->lfo_cc == cc_number) )
+	      break;
 
-	if( !insert_empty_notes ) {
-	  // new: don't send CC if assigned to invalid CC number
-	  // new: don't send if CC is assigned to LFO extra CC function
-	  if( cc_number >= 0x80 ||
-	      (tcc->lfo_waveform && tcc->lfo_cc == cc_number) )
-	    continue;
-
-	  // don't send CC if value hasn't changed (== invalid value)
-	  // but only if LFO not assigned to CC layer
-	  if( !tcc->lfo_enable_flags.CC &&
-	      ( value >= 0x80 || value == cc_last_value[track][drum][par_layer]) ) {
-	    continue;
+	    // don't send CC if value hasn't changed (== invalid value)
+	    // but only if LFO not assigned to CC layer
+	    if( !tcc->lfo_enable_flags.CC &&
+		( value >= 0x80 || value == cc_last_value[track][drum][par_layer]) ) {
+	      break;
+	    }
+	    cc_last_value[track][drum][par_layer] = value;
 	  }
-	  cc_last_value[track][drum][par_layer] = value;
-	}
 
-	if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	  if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	    seq_layer_evnt_t *e = &layer_events[num_events];
+	    mios32_midi_package_t *p = &e->midi_package;
+
+	    p->type     = CC;
+	    p->cable    = track;
+	    p->event    = CC;
+	    p->chn      = tcc->midi_chn;
+	    p->cc_number = cc_number;
+	    p->value    = value;
+	    e->len      = -1;
+	    e->layer_tag = drum;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventCC(track, step, e, drum, par_layer);
+	  }
+	} break;
+
+        case SEQ_PAR_Type_PitchBend: {
+	  if( pb_sent ) // send only once!
+	    break;
+	  pb_sent = 1;
+
 	  seq_layer_evnt_t *e = &layer_events[num_events];
 	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
 
-	  p->type     = CC;
-	  p->cable    = track;
-	  p->event    = CC;
-	  p->chn      = tcc->midi_chn;
-	  p->cc_number = cc_number;
-	  p->value    = value;
-	  e->len      = -1;
-	  e->layer_tag = drum;
-	  ++num_events;
+	  // don't send pitchbender if value hasn't changed
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == pb_last_value[track] )
+	      break;
+	    pb_last_value[track] = value;
+	  }
 
-	  // morph it
-	  if( !insert_empty_notes && tcc->morph_mode )
-	    SEQ_MORPH_EventCC(track, step, e, drum, par_layer);
+	  if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	    p->type     = PitchBend;
+	    p->cable    = track;
+	    p->event    = PitchBend;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = (value == 0x40) ? 0x00 : value; // LSB
+	    p->evnt2    = value; // MSB
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventPitchBend(track, step, e, drum, par_layer);
+	  }
+
+	} break;
+
+        case SEQ_PAR_Type_ProgramChange: {
+	  if( pc_sent ) // send only once!
+	    break;
+	  pc_sent = 1;
+
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
+
+	  // don't send program change if value hasn't changed
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == pc_last_value[track] )
+	      break;
+	    pc_last_value[track] = value;
+	  }
+
+	  if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	    p->type     = ProgramChange;
+	    p->cable    = track;
+	    p->event    = ProgramChange;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = value;
+	    p->evnt2    = 0x00; // don't care
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventProgramChange(track, step, e, drum, par_layer);
+	  }
+
+	} break;
+
+        case SEQ_PAR_Type_Aftertouch: {
+	  if( at_sent ) // send only once!
+	    break;
+	  at_sent = 1;
+
+	  seq_layer_evnt_t *e = &layer_events[num_events];
+	  mios32_midi_package_t *p = &e->midi_package;
+	  u8 value = SEQ_PAR_Get(track, step, par_layer, drum);
+
+	  // don't send aftertouch if value hasn't changed
+	  if( !insert_empty_notes ) {
+	    if( value >= 0x80 || value == at_last_value[track] )
+	      break;
+	    at_last_value[track] = value;
+	  }
+
+	  if( insert_empty_notes || !(layer_muted & (1 << drum)) ) {
+	    p->type     = Aftertouch;
+	    p->cable    = track;
+	    p->event    = Aftertouch;
+	    p->chn      = tcc->midi_chn;
+	    p->evnt1    = value;
+	    p->evnt2    = 0x00; // don't care
+	    e->len      = -1;
+	    e->layer_tag = par_layer;
+	    ++num_events;
+
+	    // morph it
+	    if( !insert_empty_notes && tcc->morph_mode )
+	      SEQ_MORPH_EventAftertouch(track, step, e, drum, par_layer);
+	  }
+
+	} break;
+
 	}
+
+	if( num_events >= 83 )
+	  break;
       }
-    }    
+    }
 #endif
 
   } else {

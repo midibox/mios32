@@ -520,7 +520,7 @@ s32 SEQ_PAR_AssignedTypeStr(u8 track, u8 par_layer, u8 instrument, char *str_buf
     u8 cc_number;
     if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
 #ifdef MBSEQV4P
-      cc_number = SEQ_LAYER_GetDrumCCNumber(track, par_layer, instrument);
+      cc_number = seq_layer_drum_cc[instrument][par_layer];
 #else
       cc_number = 0xff;
 #endif
