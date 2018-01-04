@@ -40,6 +40,7 @@
 #include "seq_midi_port.h"
 #include "seq_blm.h"
 #include "seq_pattern.h"
+#include "seq_layer.h"
 #include "seq_core.h"
 #include "seq_record.h"
 #include "seq_live.h"
@@ -784,6 +785,30 @@ s32 SEQ_FILE_C_Read(char *session)
 		n->dst_chn = values[4];
 	      }
 	    }
+	  } else if( strcmp(parameter, "DrumCC") == 0 ) {
+	    // for Non-V4+: silently ignore
+#ifdef MBSEQV4P
+	    s32 drum = get_dec_range(word, parameter, 1, 16);
+	    if( drum >= 1 && drum <= 16 ) {
+	      drum -= 1; // counting from 0
+
+	      int i;
+	      for(i=0; i<4; ++i) {
+		word = strtok_r(NULL, separators, &brkt);
+		int v = get_dec(word);
+		if( v < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR DrumCC: less items than expected (expect %d, got %d)!\n",
+			    4, i);
+#endif
+		  break;
+		} else {
+		  if( v > 255 ) v = 255;
+		  seq_layer_drum_cc[drum][i] = v;
+		}
+	      }
+	    }
+#endif
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
@@ -1126,6 +1151,21 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
       FLUSH_BUFFER;
     }
   }
+
+#ifdef MBSEQV4P
+  {
+    int drum;
+    for(drum=0; drum<16; ++drum) {
+      sprintf(line_buffer, "DrumCC %d 0x%02x 0x%02x 0x%02x 0x%02x\n",
+	      drum+1,
+	      seq_layer_drum_cc[drum][0],
+	      seq_layer_drum_cc[drum][1],
+	      seq_layer_drum_cc[drum][2],
+	      seq_layer_drum_cc[drum][3]);
+      FLUSH_BUFFER;
+    }
+  }
+#endif
 
   return status;
 }

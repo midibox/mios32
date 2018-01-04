@@ -60,14 +60,15 @@
 #define ITEM_LIVE_LAYER_MUTE              16
 #define ITEM_INIT_WITH_TRIGGERS           17
 #define ITEM_INIT_CC                      18
-#define ITEM_TPD_MODE                     19
-#define ITEM_BLM_ALWAYS_USE_FTS           20
-#define ITEM_BLM_FADERS                   21
-#define ITEM_MIXER_CC1234                 22
-#define ITEM_MENU_SHORTCUTS               23
-#define ITEM_SCREEN_SAVER                 24
+#define ITEM_DRUM_CC                      19
+#define ITEM_TPD_MODE                     20
+#define ITEM_BLM_ALWAYS_USE_FTS           21
+#define ITEM_BLM_FADERS                   22
+#define ITEM_MIXER_CC1234                 23
+#define ITEM_MENU_SHORTCUTS               24
+#define ITEM_SCREEN_SAVER                 25
 
-#define NUM_OF_ITEMS                      25
+#define NUM_OF_ITEMS                      26
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -165,6 +166,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Initial CC value for Clear and Init",
     "is: ",
+  },
+
+  {//<-------------------------------------->
+    "Session specific Drum CC Assignments",
+    "",
   },
 
   {//<-------------------------------------->
@@ -372,6 +378,46 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_DRUM_CC: {
+#ifdef MBSEQV4P
+      switch( encoder ) {
+      case SEQ_UI_ENCODER_GP9:
+      case SEQ_UI_ENCODER_GP10:
+      case SEQ_UI_ENCODER_GP11:
+      case SEQ_UI_ENCODER_GP12: {
+	if( SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, 15, incrementer) >= 0 ) {
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP13:
+      case SEQ_UI_ENCODER_GP14: {
+	if( ui_selected_par_layer >= 4 ) {
+	  ui_selected_par_layer = 3; // max. 4 layers supported
+	  return 1;
+	}
+
+	if( SEQ_UI_Var8_Inc(&ui_selected_par_layer, 0, 3, incrementer) >= 0 ) {
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+
+      case SEQ_UI_ENCODER_GP15:
+      case SEQ_UI_ENCODER_GP16: {
+	if( SEQ_UI_Var8_Inc(&seq_layer_drum_cc[ui_selected_instrument][ui_selected_par_layer], 0, 128, incrementer) >= 0 ) {
+	  ui_store_file_required = 1;
+	  return 1; // value changed
+	}
+	return 0; // no change
+      } break;
+      }
+#endif
+
+      return -1;
     } break;
 
     case ITEM_METRONOME: {
@@ -974,6 +1020,55 @@ static s32 LCD_Handler(u8 high_prio)
       }
     }
     SEQ_LCD_PrintSpaces(40-3-len);
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_DRUM_CC: {
+#ifndef MBSEQV4P
+    SEQ_LCD_PrintStringPadded("Only supported by V4+ Firmware!", 40);
+#else
+    SEQ_LCD_PrintString("Drum #");
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(2);
+    } else {
+      SEQ_LCD_PrintFormattedString("%2d", ui_selected_instrument+1);
+    }
+
+    u8 visible_track = SEQ_UI_VisibleTrackGet();
+    seq_cc_trk_t *tcc = &seq_cc_trk[visible_track];
+    if( tcc->event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintString(" (");
+      if( ui_cursor_flash ) {
+	SEQ_LCD_PrintSpaces(5);
+      } else {
+	SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+      }
+      SEQ_LCD_PrintString(")");
+    } else {
+      SEQ_LCD_PrintSpaces(8);
+    }
+
+    SEQ_LCD_PrintString("    PLayer:");
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintChar(' ');
+    } else {
+      SEQ_LCD_PrintChar('A' + ui_selected_par_layer);
+    }
+
+    SEQ_LCD_PrintString("  CC:#");
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(3);
+    } else {
+      u8 cc = seq_layer_drum_cc[ui_selected_instrument][ui_selected_par_layer];
+      if( cc >= 128 ) {
+	SEQ_LCD_PrintString("---");
+      } else {
+	SEQ_LCD_PrintFormattedString("%3d", cc);
+      }
+    }
+
+    SEQ_LCD_PrintSpaces(3);
+#endif
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
