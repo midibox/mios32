@@ -122,28 +122,30 @@ s32 SEQ_UI_EDIT_LED_Handler(u16 *gp_leds)
 	else
 	  *gp_leds |= (1 << (ui_selected_par_layer+5));
 
-      } else if( event_mode != SEQ_EVENT_MODE_Drum &&
-	  (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+      } else if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
 
 	u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
 	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
 	  // maximum 7 parameter layers due to "Step" item!
-	  if( num_t_layers >= 7 )
-	    num_t_layers = 7;
+	  // if drum: only 6 parameter layers due to additional "Drum" item!
+	  u8 max_t_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? 6 : 7;
+	  if( num_t_layers >= max_t_layers )
+	    num_t_layers = max_t_layers;
 	} else {
 	  // single trigger layer (gate)
 	  num_t_layers = 1;
 	}
 
+	u8 t_layer_offset = (event_mode == SEQ_EVENT_MODE_Drum) ? 2 : 1;
 	int i;
 	for(i=0; i<num_t_layers; ++i)
 	  if( SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) )
-	    *gp_leds |= (1 << (i+1));
+	    *gp_leds |= (1 << (i+t_layer_offset));
 
 	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
 	  *gp_leds |= (1 << (ui_selected_par_layer+8));
 	} else {
-	  *gp_leds |= (1 << (ui_selected_par_layer+2));
+	  *gp_leds |= (1 << (ui_selected_par_layer+t_layer_offset+1));
 	}
       } else {
 	*gp_leds =
@@ -330,40 +332,60 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
     }
 
-    if( event_mode != SEQ_EVENT_MODE_Drum &&
-      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+      u16 num_instruments = SEQ_PAR_NumInstrumentsGet(visible_track);
       u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
+      u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
+      u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
 
-      if( encoder == SEQ_UI_ENCODER_GP1 ) {
-	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 )
+      seq_ui_encoder_t drum_encoder;
+      seq_ui_encoder_t step_encoder;
+      seq_ui_encoder_t gate_encoder;
+      u8 trg_encoder_offset;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	drum_encoder = SEQ_UI_ENCODER_GP1;
+	step_encoder = SEQ_UI_ENCODER_GP2;
+	gate_encoder = SEQ_UI_ENCODER_GP3;
+	trg_encoder_offset = 2;
+      } else {
+	drum_encoder = 0xff; // no drum selection
+	step_encoder = SEQ_UI_ENCODER_GP1;
+	gate_encoder = SEQ_UI_ENCODER_GP2;
+	trg_encoder_offset = 1;
+      }
+
+      if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+	if( num_t_layers > (8-trg_encoder_offset) )
+	    num_t_layers = 8-trg_encoder_offset;
+      }
+
+      if( encoder == drum_encoder ) {
+	if( SEQ_UI_Var8_Inc(&ui_selected_instrument, 0, num_instruments-1, incrementer) >= 1 )
 	  return 1;
 	else
 	  return 0;
-      } else if( encoder == SEQ_UI_ENCODER_GP2 ||
-		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && encoder <= SEQ_UI_ENCODER_GP8) ) {
-	u8 sel = (u8)encoder-1;
+      } else if( encoder == step_encoder ) {
+	if( SEQ_UI_Var8_Inc(&ui_selected_step, 0, num_steps-1, incrementer) >= 1 ) {
+	  ui_selected_step_view = ui_selected_step / 16;
+	  return 1;
+	} else
+	  return 0;
+      } else if( encoder == gate_encoder ||
+		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && encoder < trg_encoder_offset+num_t_layers) ) {
+	u8 sel = (u8)encoder-trg_encoder_offset;
 	SEQ_TRG_Set(visible_track, ui_selected_step, sel, ui_selected_instrument, incrementer > 0 ? 1 : 0);
 	SEQ_CORE_CancelSustainedNotes(visible_track); // cancel sustain if there are no notes played by the track anymore
 	return 1;
       } else if( encoder <= SEQ_UI_ENCODER_GP16 ) {
-
 	if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
-	  if( encoder <= SEQ_UI_ENCODER_GP8 ) {
-	    u8 num_t_layers = SEQ_TRG_NumLayersGet(visible_track);
-	    if( ((int)encoder-2) >= num_t_layers )
-	      return 0; // ignore
-	    ui_selected_trg_layer = encoder-2;
-	  } else {
-	    u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-	    if( ((int)encoder-8) >= num_p_layers )
-	      return 0; // ignore
-	    ui_selected_par_layer = encoder-8;
-	  }
-	} else {
-	  u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
-	  if( ((int)encoder-2) >= num_p_layers )
+	  u8 par_encoder_offset = trg_encoder_offset + num_t_layers;
+	  if( ((int)encoder-par_encoder_offset) >= num_p_layers )
 	    return 0; // ignore
-	  ui_selected_par_layer = encoder-2;
+	  ui_selected_par_layer = encoder-par_encoder_offset;
+	} else {
+	  if( ((int)encoder-trg_encoder_offset-1) >= num_p_layers )
+	    return 0; // ignore
+	  ui_selected_par_layer = encoder-trg_encoder_offset-1;
 	}
 
 	if( !incrementer ) // button selection only...
@@ -372,14 +394,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
     }
 
     u8 changed_step;
-    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
+    u8 view_steps = seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS || (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303 && event_mode == SEQ_EVENT_MODE_Drum);
+    if( view_steps ) {
       changed_step = ((encoder == SEQ_UI_ENCODER_Datawheel) ? (ui_selected_step%16) : encoder) + ui_selected_step_view*16;
     } else {
       changed_step = ui_selected_step;
     }
     
     edit_ramp = 0;
-    if( event_mode == SEQ_EVENT_MODE_Drum || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_STEPS ) {
+    if( view_steps ) {
 
       // in passive edit mode: take over the edit value if step has changed, thereafter switch to new step
       if( ui_selected_step != changed_step && edit_passive_mode ) {
@@ -561,19 +584,43 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
     }
 
 
-    if( event_mode != SEQ_EVENT_MODE_Drum &&
-      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+    if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
+      u16 num_instruments = SEQ_PAR_NumInstrumentsGet(visible_track);
+      u16 num_steps = SEQ_TRG_NumStepsGet(visible_track);
 
-      if( button == SEQ_UI_BUTTON_GP1 ) {
+      seq_ui_button_t drum_button;
+      seq_ui_button_t step_button;
+      seq_ui_button_t gate_button;
+      u8 trg_button_offset;
+      if( event_mode == SEQ_EVENT_MODE_Drum ) {
+	drum_button = SEQ_UI_BUTTON_GP1;
+	step_button = SEQ_UI_BUTTON_GP2;
+	gate_button = SEQ_UI_BUTTON_GP3;
+	trg_button_offset = 2;
+      } else {
+	drum_button = 0xff; // no drum selection
+	step_button = SEQ_UI_BUTTON_GP1;
+	gate_button = SEQ_UI_BUTTON_GP2;
+	trg_button_offset = 1;
+      }
+
+
+      if( button == drum_button ) {
+	u8 next_instrument = ui_selected_instrument + 1;
+	if( next_instrument >= num_instruments )
+	  next_instrument = 0;
+	ui_selected_instrument = next_instrument;
+	return 1; // value always changed
+      } else if( button == step_button ) {
 	int next_step = ui_selected_step + 1; // (required, since ui_selected_step is only u8, but we could have up to 256 steps)
-	if( next_step >= (SEQ_CC_Get(visible_track, SEQ_CC_LENGTH)+1) )
+	if( next_step >= num_steps )
 	  next_step = 0;
 	ui_selected_step = next_step;
 	ui_selected_step_view = ui_selected_step / 16;
 	return 1; // value always changed
-      } else if( button == SEQ_UI_BUTTON_GP2 ||
+      } else if( button == gate_button ||
 		 (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG && button <= SEQ_UI_BUTTON_GP8) ) {
-	u8 trg = SEQ_TRG_Get(visible_track, ui_selected_step, (u8)button-1, ui_selected_instrument);
+	u8 trg = SEQ_TRG_Get(visible_track, ui_selected_step, (u8)button-trg_button_offset, ui_selected_instrument);
 	return Encoder_Handler(button, trg ? -1 : 1);
       } else if( button <= SEQ_UI_BUTTON_GP16 ) {
 	return Encoder_Handler(button, 0);
@@ -736,6 +783,9 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   //        Select the steps which should be  controlled by the ALL function:        
   //   *    *    *    *    *    *    *    *    *    *    *    *    *    *    *    *  
 
+  u8 visible_track = SEQ_UI_VisibleTrackGet();
+  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+
   if( !edit_mode && seq_ui_button_state.EDIT_PRESSED ) {
     const char seq_ui_edit_datawheel_mode_str[SEQ_UI_EDIT_DATAWHEEL_MODE_NUM][11] = {
       " Cursor   ",
@@ -746,7 +796,12 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
     };
 
     SEQ_LCD_CursorSet(0, 0);
-    SEQ_LCD_PrintString("Step Trg  Layer 303                Step Datawheel:  Record   Random    Euclid   ");
+    if( event_mode != SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintString("Step Trg  Layer 303                ");
+    } else {
+      SEQ_LCD_PrintString("Step Trg  Layer Par                ");
+    }
+    SEQ_LCD_PrintString("Step Datawheel:  Record   Random    Euclid   ");
     SEQ_LCD_CursorSet(0, 1);
     SEQ_LCD_PrintString("View View View View               Select");
     SEQ_LCD_PrintString((char *)seq_ui_edit_datawheel_mode_str[seq_ui_edit_datawheel_mode]);
@@ -766,12 +821,8 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   }
 
 
-  u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 event_mode = SEQ_CC_Get(visible_track, SEQ_CC_MIDI_EVENT_MODE);
+  if( event_mode != SEQ_EVENT_MODE_Drum && seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303 ) {
 
-
-  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
-      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_303) ) {
     // we want to show vertical bars
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
 
@@ -817,12 +868,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       }
 
     SEQ_LCD_PrintSpaces(80 - (5*num_p_layers));
-
+    
     return 0;
   }
 
-  if( !edit_mode && event_mode != SEQ_EVENT_MODE_Drum &&
-      (seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG) ) {
+  if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_LAYERS || seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
 
     // we want to show vertical bars
     SEQ_LCD_InitSpecialChars(SEQ_LCD_CHARSET_VBars);
@@ -832,8 +882,10 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     if( seq_ui_edit_view == SEQ_UI_EDIT_VIEW_TRG ) {
       // maximum 7 parameter layers due to "Step" item!
-      if( num_t_layers >= 7 )
-	num_t_layers = 7;
+      // if drum: only 6 parameter layers due to additional "Drum" item!
+      u8 max_t_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? 6 : 7;
+      if( num_t_layers >= max_t_layers )
+	num_t_layers = max_t_layers;
 
       // maximum 8 parameter layers
       if( num_p_layers >= 8 )
@@ -843,12 +895,19 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
       num_t_layers = 1;
 
       // maximum 14 parameter layers due to "Step" and "Gate" item!
-      if( num_p_layers >= 14 )
-	num_p_layers = 14;
+      // drum mode: only 13 items
+      u8 max_p_layers = (event_mode == SEQ_EVENT_MODE_Drum) ? 13 : 14;
+      if( num_p_layers >= max_p_layers )
+	num_p_layers = max_p_layers;
     }
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 0);
+
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintString("Drum ");
+    }
+
     SEQ_LCD_PrintString("Step ");
     int i;
     for(i=0; i<num_t_layers; ++i)
@@ -864,6 +923,11 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 
     ///////////////////////////////////////////////////////////////////////////
     SEQ_LCD_CursorSet(0, 1);
+
+    if( event_mode == SEQ_EVENT_MODE_Drum ) {
+      SEQ_LCD_PrintTrackDrum(visible_track, ui_selected_instrument, (char *)seq_core_trk[visible_track].name);
+    }
+
     SEQ_LCD_PrintFormattedString((seq_record_state.ENABLED || midi_learn_mode == MIDI_LEARN_MODE_ON) ? "{%3d}" : " %3d ", ui_selected_step+1);
     for(i=0; i<num_t_layers; ++i)
       SEQ_LCD_PrintFormattedString("  %c  ", SEQ_TRG_Get(visible_track, ui_selected_step, i, ui_selected_instrument) ? '*' : 'o');
@@ -1082,7 +1146,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
   // Second Line
   ///////////////////////////////////////////////////////////////////////////
 
-  u8 show_drum_triggers = event_mode == SEQ_EVENT_MODE_Drum;
+  u8 show_drum_triggers = (event_mode == SEQ_EVENT_MODE_Drum) && (seq_ui_edit_view != SEQ_UI_EDIT_VIEW_303);
   if( show_drum_triggers && !(edit_mode || !ui_hold_msg_ctr) ) {
     if( ui_hold_msg_ctr ) {
       // e.g. during recording: show drum triggers for layers which can't be recorded
@@ -1092,10 +1156,7 @@ s32 SEQ_UI_EDIT_LCD_Handler(u8 high_prio, seq_ui_edit_mode_t edit_mode)
 	layer_type != SEQ_PAR_Type_Chord1 &&
 	layer_type != SEQ_PAR_Type_Chord2 &&
 	layer_type != SEQ_PAR_Type_Chord3 &&
-	layer_type != SEQ_PAR_Type_Velocity &&
-	layer_type != SEQ_PAR_Type_CC &&
-	layer_type != SEQ_PAR_Type_PitchBend &&
-	layer_type != SEQ_PAR_Type_ProgramChange;
+	layer_type != SEQ_PAR_Type_Velocity;
     }
   }
 
