@@ -16,6 +16,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include <mios32.h>
+#include <ws2812.h>
 
 #include "app.h"
 #include "mbng_patch.h"
@@ -73,6 +74,7 @@ static s32 MBNG_SYSEX_SendFooter(u8 force);
 static s32 MBNG_SYSEX_Cmd(u8 cmd_state, u8 midi_in);
 
 static s32 MBNG_SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in);
+static s32 MBNG_SYSEX_Cmd_RgbLedStrip(u8 cmd_state, u8 midi_in);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -84,6 +86,10 @@ static u8 sysex_cmd;
 
 static mios32_midi_port_t sysex_port = DEFAULT;
 
+#define NUM_LED_STRIP_ZONES 16
+static u8 sysex_rgbledstrip_ctr;
+static u8 sysex_rgbledstrip_buffer[3*NUM_LED_STRIP_ZONES];
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! constant definitions
@@ -91,6 +97,42 @@ static mios32_midi_port_t sysex_port = DEFAULT;
 
 // SysEx header of MBNG
 static const u8 sysex_header[5] = { 0xf0, 0x00, 0x00, 0x7e, 0x50 };
+
+// RGB LED Strip Zone Colors
+static const u8 sysex_rxgbledstrip_colors[NUM_LED_STRIP_ZONES][3] = {
+  { 40,  0,   0 },
+  {  0, 40,   0 },
+  {  0,  0,  40 },
+  { 40, 40,   0 },
+  {  0, 40,  40 },
+  { 40,  0,  40 },
+
+  { 60,  0,   0 },
+  { 20, 40,   0 },
+  { 20,  0,  40 },
+  { 60, 40,   0 },
+  { 20, 40,  40 },
+  { 60,  0,  40 },
+
+  { 40, 20,   0 },
+  {  0, 60,   0 },
+  {  0, 20,  40 },
+  { 40, 60,   0 },
+
+  // we've 16 zones above - enough
+#if 0
+  {  0, 60,  40 },
+  { 40, 20,  40 },
+
+  { 40,  0,  20 },
+  {  0, 40,  20 },
+  {  0,  0,  60 },
+  { 40, 40,  20 },
+  {  0, 40,  60 },
+  { 40,  0,  60 },
+#endif
+};
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -244,14 +286,19 @@ s32 MBNG_SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 {
   // enter the commands here
   switch( sysex_cmd ) {
-    case 0x0f:
-      MBNG_SYSEX_Cmd_Ping(cmd_state, midi_in);
-      break;
-    default:
-      // unknown command
-      MBNG_SYSEX_SendFooter(0);
-      MBNG_SYSEX_SendAck(sysex_port, MBNG_SYSEX_DISACK, MBNG_SYSEX_DISACK_INVALID_COMMAND);
-      MBNG_SYSEX_CmdFinished();      
+  case 0x0c:
+    MBNG_SYSEX_Cmd_RgbLedStrip(cmd_state, midi_in);
+    break;
+
+  case 0x0f:
+    MBNG_SYSEX_Cmd_Ping(cmd_state, midi_in);
+    break;
+
+  default:
+    // unknown command
+    MBNG_SYSEX_SendFooter(0);
+    MBNG_SYSEX_SendAck(sysex_port, MBNG_SYSEX_DISACK, MBNG_SYSEX_DISACK_INVALID_COMMAND);
+    MBNG_SYSEX_CmdFinished();      
   }
 
   return 0; // no error
@@ -260,26 +307,112 @@ s32 MBNG_SYSEX_Cmd(u8 cmd_state, u8 midi_in)
 
 /////////////////////////////////////////////////////////////////////////////
 //! Command 0F: Ping (just send back acknowledge)
+//! Usage: f0 00 00 7e 50 0f f7
 /////////////////////////////////////////////////////////////////////////////
 s32 MBNG_SYSEX_Cmd_Ping(u8 cmd_state, u8 midi_in)
 {
   switch( cmd_state ) {
 
-    case MBNG_SYSEX_CMD_STATE_BEGIN:
-      // nothing to do
-      break;
+  case MBNG_SYSEX_CMD_STATE_BEGIN:
+    // nothing to do
+    break;
 
-    case MBNG_SYSEX_CMD_STATE_CONT:
-      // nothing to do
-      break;
+  case MBNG_SYSEX_CMD_STATE_CONT:
+    // nothing to do
+    break;
 
-    default: // MBNG_SYSEX_CMD_STATE_END
-      MBNG_SYSEX_SendFooter(0);
+  default: // MBNG_SYSEX_CMD_STATE_END
+    // send acknowledge
+    MBNG_SYSEX_SendFooter(0);
+    MBNG_SYSEX_SendAck(sysex_port, MBNG_SYSEX_ACK, 0x00);
+    break;
+  }
 
-      // send acknowledge
-      MBNG_SYSEX_SendAck(sysex_port, MBNG_SYSEX_ACK, 0x00);
+  return 0; // no error
+}
 
-      break;
+
+/////////////////////////////////////////////////////////////////////////////
+//! Command 0C: Control RGB LED Strip
+//! Usage:
+//!
+//! 6 zones, not overlapping
+//!   f0 00 00 7e 50 0c  00 00 03  01 04 07  02 08 0b  03 0c 0f  04 10 13  05 14 17  f7
+//!
+//! 6 zones, overlapping
+//!   f0 00 00 7e 50 0c  00 00 04  01 04 08  02 08 0c  03 0c 10  04 10 14  05 14 17  f7
+/////////////////////////////////////////////////////////////////////////////
+s32 MBNG_SYSEX_Cmd_RgbLedStrip(u8 cmd_state, u8 midi_in)
+{
+  switch( cmd_state ) {
+
+  case MBNG_SYSEX_CMD_STATE_BEGIN:
+    // reset buffer index
+    sysex_rgbledstrip_ctr = 0;
+    break;
+
+  case MBNG_SYSEX_CMD_STATE_CONT:
+    // add incoming byte to receive buffer
+    if( sysex_rgbledstrip_ctr < sizeof(sysex_rgbledstrip_buffer) )
+      sysex_rgbledstrip_buffer[sysex_rgbledstrip_ctr++] = midi_in;
+    break;
+
+  default: { // MBNG_SYSEX_CMD_STATE_END
+    // process receive buffer
+    //MIOS32_MIDI_SendDebugHexDump(sysex_rgbledstrip_buffer, sysex_rgbledstrip_ctr);
+    u8 status = MBNG_SYSEX_ACK; // assign MBNG_SYSEX_DISACK if unexpected byte received
+    u8 status_pos = 0x7f; // contains the position of the first detected error
+
+    if( sysex_rgbledstrip_ctr ) {
+      // clear RGB LEDs
+      u8 led, color;
+      for(led=0; led<WS2812_NUM_LEDS; ++led) {
+	for(color=0; color<3; ++color) {
+	  WS2812_LED_SetRGB(led, color, 0);
+	}
+      }
+
+      int pos;
+      for(pos=0; pos<sysex_rgbledstrip_ctr; pos += 3) {
+	if( (pos+2) >= sysex_rgbledstrip_ctr ) {
+	  status = MBNG_SYSEX_DISACK; // some bytes are missing, expect 3 bytes for each zone
+	  if( status_pos != 0x7f ) // only capture first error
+	    status_pos = pos;
+	  continue;
+	} else {
+	  u8 zone      = sysex_rgbledstrip_buffer[pos+0];
+	  u8 key_lower = sysex_rgbledstrip_buffer[pos+1];
+	  u8 key_upper = sysex_rgbledstrip_buffer[pos+2];
+
+	  if( zone >= NUM_LED_STRIP_ZONES ) {
+	    status = MBNG_SYSEX_DISACK; // invalid zone
+	    if( status_pos != 0x7f ) // only capture first error
+	      status_pos = pos;
+	    continue;
+	  }
+
+	  // pick up the colors for the appr. zone
+	  u8 *rgb = (u8 *)&sysex_rxgbledstrip_colors[zone];
+
+	  // mix them to the RGB colors
+	  for(led=key_lower; led<=key_upper; ++led) {
+	    for(color=0; color<3; ++color) {
+	      s32 value = WS2812_LED_GetRGB(led, color);
+	      value += rgb[color];
+	      if( value > 255 ) // saturate
+		value = 255;
+	      WS2812_LED_SetRGB(led, color, value);
+	    }
+	  }
+	}
+      }
+    }
+
+    // send acknowledge (
+    MBNG_SYSEX_SendFooter(0);
+    MBNG_SYSEX_SendAck(sysex_port, status, status_pos);
+
+  } break;
   }
 
   return 0; // no error
