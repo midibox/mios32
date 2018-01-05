@@ -41,6 +41,10 @@
 //! Hence, for the MBHP_CORE_STM32F4 module, an external 5V PSU is recommended,
 //! which is either only used for the LED strip, or for the entire module.
 //! 
+//! 
+//! Update 2018-01-05: reset phase has been enhanced from ca. 50 uS to 300 uS
+//! See also http://midibox.org/forums/topic/19752-rgb-hue-sweep/?page=2
+//! 
 //! \{
 /* ==========================================================================
  *
@@ -93,7 +97,7 @@
 #define WS2812_DMA_CHN          DMA_Channel_2
 
 
-#define WS2812_BUFFER_SIZE ((WS2812_NUM_LEDS+2)*24) // +2*24 to insert the RESET frame
+#define WS2812_BUFFER_SIZE ((WS2812_NUM_LEDS+10)*24) // +10*24 to insert the RESET frame of 10*24*1.25 = 300 uS
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
