@@ -19,6 +19,8 @@ MIDIboxSEQ V4.095
      The CC numbers are statically assigned for all tracks of the session.
      They can be changed in the Options page (item 20/26)
 
+   o trigger/layer edit views now also supported for drum tracks
+
    o reference step for pattern changes now works indpendent from reference step used for sync-to-measure
 
    o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
