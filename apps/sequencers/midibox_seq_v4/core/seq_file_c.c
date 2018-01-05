@@ -498,23 +498,33 @@ s32 SEQ_FILE_C_Read(char *session)
 	    s32 bus = get_dec_range(word, parameter, 0, SEQ_MIDI_IN_NUM_BUSSES-1);
 	    if( bus >= 0 && bus < SEQ_MIDI_IN_NUM_BUSSES ) {
 	      word = strtok_r(NULL, separators, &brkt);
-	      int v = get_dec(word);
-	      if( v >= 0 ) {
-		if( strcmp(parameter+9, "Channel") == 0 )
-		  seq_midi_in_channel[bus] = v;
-		else if( strcmp(parameter+9, "Port") == 0 )
-		  seq_midi_in_port[bus] = v;
-		else if( strcmp(parameter+9, "Lower") == 0 )
+
+	      if( strcmp(parameter+9, "Port") == 0 ) {
+		s32 port = SEQ_MIDI_PORT_InPortFromNameGet(word);
+		if( port < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR in %s definition: invalid IN port '%s'!", parameter, word);
+#endif
+		} else {
+		  seq_midi_in_port[bus] = port;
+		}
+	      } else {
+		int v = get_dec(word);
+		if( v >= 0 ) {
+		  if( strcmp(parameter+9, "Channel") == 0 )
+		    seq_midi_in_channel[bus] = v;
+		} else if( strcmp(parameter+9, "Lower") == 0 )
 		  seq_midi_in_lower[bus] = v;
 		else if( strcmp(parameter+9, "Upper") == 0 )
 		  seq_midi_in_upper[bus] = v;
 		else if( strcmp(parameter+9, "Options") == 0 )
 		  seq_midi_in_options[bus].ALL = v;
-	      }
-	    } else {
+		else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
 #endif
+		}
+	      }
 	    }
 	  } else if( strncmp(parameter, "MIDI_IN_", 8) == 0 ) {
 	    if( strcmp(parameter+8, "MClock_Ports") == 0 ) {

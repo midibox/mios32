@@ -676,6 +676,11 @@ static s32 PASTE_Track(u8 track, paste_clear_mode_t paste_clear_mode)
       int i;
       for(i=0; i<48; ++i)
 	SEQ_CC_Set(track, i, copypaste_cc[i]);
+
+      // and we have to copy the drum parameter layer assignments
+      for(i=0; i<4; ++i) {
+	SEQ_CC_Set(track, SEQ_CC_PAR_ASG_DRUM_LAYER_A+i, copypaste_cc[SEQ_CC_PAR_ASG_DRUM_LAYER_A+i]);
+      }
     }
 
     // copy layers from buffer
