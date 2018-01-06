@@ -226,11 +226,11 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 
     default: { // MBNG_EVENT_ENC_MODE_ABSOLUTE
       s32 ix_updated;
-      s32 prev_value = item.value;
+      s16 prev_value = item.value;
       if( (ix_updated=MBNG_EVENT_MapItemValueInc(item.map, &item, event_incrementer, 0)) >= 0 ) {
 	dont_send = (prev_value == item.value) && !ix_updated;
       } else {
-	s32 value = item.value;
+	s16 value = item.value;
 	if( item.min <= item.max ) {
 	  value += event_incrementer;
 	  if( value < item.min )
@@ -242,7 +242,7 @@ s32 MBNG_ENC_NotifyChange(u32 encoder, s32 incrementer)
 	  value -= event_incrementer;
 	  if( value < item.max )
 	    value = item.max;
-	  else if( value > item.min )
+	  else if( value > (s32)item.min )
 	    value = item.min;
 	}
 

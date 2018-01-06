@@ -16,6 +16,13 @@ MIDIbox NG V1.036
    o new LCD format character '%L' allows to display logic control digits
      (MTC and status digits)
 
+   o added new .NGR commands SET_KB_TRANSPOSE and SET_KB_VELOCITY_MAP.
+     The configuration example can be found under cfg/tests/kb_6.ng*
+
+   o encoder absolute mode: negative ranges are now handled correctly
+
+   o .NGR LCD command: %d outputs the ^value
+
 
 MIDIbox NG V1.035
 ~~~~~~~~~~~~~~~~~
