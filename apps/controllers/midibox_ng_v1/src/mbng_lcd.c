@@ -575,16 +575,19 @@ s32 MBNG_LCD_PrintItemLabel(mbng_event_item_t *item, char *out_buffer, u32 max_b
 	  char *format_type = &format[format_len-1];
 
 	  switch( *format_type ) {
-	  case 'd': // value in various formats
-	  case 'x':
+	  case 'd': {
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, (s16)item->value + item->offset);
+	  } break;
+
+	  case 'x': // value in various unsigned formats
 	  case 'X':
 	  case 'u':
 	  case 'c': {
-	    MBNG_LCD_PRINT_FORMATTED_STRING(format, (int)item->value + item->offset);
+	    MBNG_LCD_PRINT_FORMATTED_STRING(format, item->value + item->offset);
 	  } break;
 
 	  case 'L': { // logic digits
-	    u8 value = (int)item->value + item->offset;
+	    u8 value = (s16)item->value + item->offset;
 	    value = (value & 0x3f);
 	    if( value < 0x20 )
 	      value += 0x40;

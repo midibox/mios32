@@ -104,6 +104,8 @@ typedef enum {
   TOKEN_SET_NO_DUMP     = 0x10, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
   TOKEN_SET_MIN         = 0x11, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
   TOKEN_SET_MAX         = 0x12, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_KB_TRANSPOSE = 0x13, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
+  TOKEN_SET_KB_VELOCITY_MAP = 0x14, // followed by 3 bytes (TOKEN_VALUE_*) + operation (x bytes)
 
   TOKEN_IF              = 0x80, // +2 bytes for jump offset
   TOKEN_ELSE            = 0x81, // +2 bytes for jump offset
@@ -1779,6 +1781,18 @@ static s32 execSET_MAX(mbng_event_item_t *item, s32 value)
   return MBNG_EVENT_ItemModify(item);
 }
 
+static s32 execSET_KB_TRANSPOSE(mbng_event_item_t *item, s32 value)
+{
+  item->custom_flags.KB.kb_transpose = value;
+  return MBNG_EVENT_ItemModify(item);
+}
+
+static s32 execSET_KB_VELOCITY_MAP(mbng_event_item_t *item, s32 value)
+{
+  item->custom_flags.KB.kb_velocity_map = value;
+  return MBNG_EVENT_ItemModify(item);
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 //! help function which SETs a value based on a token
@@ -2403,7 +2417,10 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	    mbng_event_item_t item;
 	    MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	    item.label = str;
+	    item.value = vars.value;
+	    MUTEX_LCD_TAKE;
 	    MBNG_LCD_PrintItemLabel(&item, NULL, 0);
+	    MUTEX_LCD_GIVE;
 	  }
 	}
       } else if( strcasecmp(parameter, "LOG") == 0 ) {
@@ -2458,6 +2475,10 @@ s32 MBNG_FILE_R_Parser(u32 line, char *line_buffer, u8 *if_state, u8 *nesting_le
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_MIN, execSET_MIN, NULL);
       } else if( strcasecmp(parameter, "SET_MAX") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_MAX, execSET_MAX, NULL);
+      } else if( strcasecmp(parameter, "SET_KB_TRANSPOSE") == 0 ) {
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_KB_TRANSPOSE, execSET_KB_TRANSPOSE, NULL);
+      } else if( strcasecmp(parameter, "SET_KB_VELOCITY_MAP") == 0 ) {
+	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_SET_KB_VELOCITY_MAP, execSET_KB_VELOCITY_MAP, NULL);
       } else if( strcasecmp(parameter, "TRIGGER") == 0 ) {
 	parseCommand(line, parameter, &brkt, tokenize_req, TOKEN_TRIGGER, execTRIGGER, NULL);
       } else if( strcasecmp(parameter, "DELAY_MS") == 0 ) {
@@ -2635,6 +2656,7 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
 	mbng_event_item_t item;
 	MBNG_EVENT_ItemInit(&item, MBNG_EVENT_CONTROLLER_DISABLED);
 	item.label = (char *)&ngr_token_mem[ngr_token_mem_run_pos];
+	item.value = vars.value;
 	MUTEX_LCD_TAKE;
 	MBNG_LCD_PrintItemLabel(&item, NULL, 0);
 	MUTEX_LCD_GIVE;
@@ -2763,6 +2785,8 @@ s32 MBNG_FILE_R_Exec(u8 cont_script, u8 determine_if_offsets)
     case TOKEN_SET_NO_DUMP: execToken(command_token, if_condition_matching, execSET_NO_DUMP, NULL); break;
     case TOKEN_SET_MIN:     execToken(command_token, if_condition_matching, execSET_MIN, NULL); break;
     case TOKEN_SET_MAX:     execToken(command_token, if_condition_matching, execSET_MAX, NULL); break;
+    case TOKEN_SET_KB_TRANSPOSE: execToken(command_token, if_condition_matching, execSET_KB_TRANSPOSE, NULL); break;
+    case TOKEN_SET_KB_VELOCITY_MAP: execToken(command_token, if_condition_matching, execSET_KB_VELOCITY_MAP, NULL); break;
 
     /////////////////////////////////////////////////////////////////////////
     default:
