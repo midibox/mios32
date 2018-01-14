@@ -9,7 +9,7 @@ SRIO num_sr=2
 # keyboard configuration
 KEYBOARD n=1   rows=8  dout_sr1=1  dout_sr2=2  din_sr1=1  din_sr2=2 \
                din_inverted=0  break_inverted=0  din_key_offset=32 \
-               scan_velocity=1  scan_optimized=0  note_offset=28 \
+               scan_velocity=1  scan_optimized=0  make_debounced=1  break_is_make=0  note_offset=28 \
                delay_fastest=5  delay_fastest_black_keys=0  delay_slowest=100
 
 

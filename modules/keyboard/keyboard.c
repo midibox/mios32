@@ -837,10 +837,22 @@ static int KEYBOARD_GetVelocity(u16 delay, u16 delay_slowest, u16 delay_fastest)
 {
   int velocity = 127;
 
+#if 0
+  // see http://midibox.org/forums/topic/20693-midibox_ng-event-noteon-lost/?do=findComment&comment=180231
+  u16 prev_delay = delay;
+  if( delay < 2*delay_fastest ) {
+    delay = ((delay_slowest - delay_fastest) / (delay_fastest*delay_fastest)) * (delay*delay) - 2 * ((delay_slowest - delay_fastest)/delay_fastest) * delay + delay_slowest;
+  } else {
+    delay = delay_slowest;
+  }
+  DEBUG_MSG("KB Delay %d -> %d\n", prev_delay, delay);
+#endif
+
   if( delay > delay_fastest ) {
     // determine velocity depending on delay
     // lineary scaling - here we could also apply a curve table
     velocity = 127 - (((delay - delay_fastest) * 127) / (delay_slowest - delay_fastest));
+
     // saturate to ensure that range 1..127 won't be exceeded
     if( velocity < 1 )
       velocity = 1;
