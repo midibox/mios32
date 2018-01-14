@@ -2348,6 +2348,7 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
   int din_inverted = 0;
   int break_inverted = 0;
   int make_debounced = 0;
+  int break_is_make = 0;
   int din_key_offset = 32;
   int scan_velocity = 1;
   int scan_optimized = 0;
@@ -2442,6 +2443,15 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
       }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
+    } else if( strcasecmp(parameter, "break_is_make") == 0 ) {
+      if( (break_is_make=get_dec(value_str)) < 0 || break_is_make > 1 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[MBNG_FILE_C:%d] ERROR: invalid value for %s n=%d ... %s=%s (only 0 or 1 allowed)\n", line, cmd, num, parameter, value_str);
+#endif
+	return -1; // invalid parameter
+      }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     } else if( strcasecmp(parameter, "din_key_offset") == 0 ) {
       if( (din_key_offset=get_dec(value_str)) < 0 || din_key_offset > 127 ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
@@ -2527,10 +2537,15 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
 	kc->din_inverted != din_inverted ||
 	kc->break_inverted != break_inverted ||
 	kc->make_debounced != make_debounced ||
+	kc->break_is_make != break_is_make ||
 	kc->din_key_offset != din_key_offset ||
 	kc->scan_velocity != scan_velocity ||
 	kc->scan_optimized != scan_optimized ||
-	kc->note_offset != note_offset ) {
+	kc->note_offset != note_offset ||
+	kc->delay_fastest != delay_fastest ||
+        kc->delay_fastest_black_keys != delay_fastest_black_keys ||
+	kc->delay_slowest != delay_slowest
+	) {
       // (no need to check for delay values
 
       // send OFF events for played notes
@@ -2545,6 +2560,7 @@ s32 parseKeyboard(u32 line, char *cmd, char *brkt)
       kc->din_inverted = din_inverted;
       kc->break_inverted = break_inverted;
       kc->make_debounced = make_debounced;
+      kc->break_is_make = break_is_make;
       kc->din_key_offset = din_key_offset;
       kc->scan_velocity = scan_velocity;
       kc->scan_optimized = scan_optimized;
@@ -4742,8 +4758,8 @@ static s32 MBNG_FILE_C_Write_Hlp(u8 write_to_file)
 	      kc->din_key_offset);
       FLUSH_BUFFER;
 
-      sprintf(line_buffer, "               make_debounced=%d \\\n",
-	      kc->make_debounced);
+      sprintf(line_buffer, "               make_debounced=%d  break_is_make=%d \\\n",
+	      kc->make_debounced, kc->break_is_make);
       FLUSH_BUFFER;
 
       sprintf(line_buffer, "               scan_velocity=%d  scan_optimized=%d  note_offset=%d \\\n",
