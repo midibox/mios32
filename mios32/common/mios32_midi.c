@@ -1072,7 +1072,7 @@ s32 MIOS32_MIDI_ReceivePackage(mios32_midi_port_t port, mios32_midi_package_t pa
   } else {
     // service SysEx timeout counter
     if( package.evnt0 == 0xf0 || // for package.type == 0xf
-	(package.type >= 4 && package.type <= 7) ) {
+    ((package.type >= 4 && package.type <= 7) && package.evnt0 != 0xf6) ) { // no timeout on tune request
       // cheap timeout mechanism - see comments above the sysex_timeout_ctr declaration
       if( !sysex_timeout_ctr_flags.ALL ) {
 	switch( port & 0xf0 ) {
@@ -1140,12 +1140,12 @@ s32 MIOS32_MIDI_ReceivePackage(mios32_midi_port_t port, mios32_midi_package_t pa
       break;
 
     case 0x5:   // Single-byte System Common Message or SysEx ends with following single byte. 
-      if( package.evnt0 >= 0xf8 ) {
+      if( (package.evnt0 >= 0xf8) || (package.evnt0 == 0xf6) ) {
 	if( callback_package != NULL )
 	  callback_package(port, package); // -> forwarded as event
 	break;
       }
-      // no >= 0xf8 event: continue!
+      // no >= 0xf8 or == 0xf6 event: continue!
 
     case 0x6:   // SysEx ends with following two bytes.
     case 0x7: { // SysEx ends with following three bytes.
