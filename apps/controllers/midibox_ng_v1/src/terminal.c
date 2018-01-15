@@ -758,11 +758,9 @@ s32 TERMINAL_PrintSdCardInfo(void *_output_function)
     sprintf(str_buffer, "Invalid FAT");
   } else {
     out("Retrieving SD Card informations - please wait!\n");
-    MUTEX_MIDIOUT_GIVE;
     MUTEX_SDCARD_TAKE;
     FILE_UpdateFreeBytes();
     MUTEX_SDCARD_GIVE;
-    MUTEX_MIDIOUT_TAKE;
 
     sprintf(str_buffer, "'%s': %u of %u MB free", 
 	    FILE_VolumeLabel(),

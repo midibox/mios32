@@ -30,6 +30,8 @@
 #include "uip_terminal.h"
 
 #include "seq_core.h"
+#include "seq_midi_router.h"
+#include "seq_midply.h"
 #include "seq_song.h"
 #include "seq_cc.h"
 #include "seq_layer.h"
@@ -60,7 +62,7 @@
 
 
 #define NUM_LIST_DISPLAYED_ITEMS NUM_OF_ITEMS
-#define NUM_LIST_ITEMS         11
+#define NUM_LIST_ITEMS         12
 #define LIST_ITEM_SYSTEM       0
 #define LIST_ITEM_GLOBALS      1
 #define LIST_ITEM_CONFIG       2
@@ -72,6 +74,7 @@
 #define LIST_ITEM_BOOKMARKS    8
 #define LIST_ITEM_SD_CARD      9
 #define LIST_ITEM_NETWORK      10
+#define LIST_ITEM_RESET        11
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,7 +94,8 @@ static char list_entries[NUM_LIST_ITEMS*LIST_ENTRY_WIDTH] =
   "Grooves  "
   "Bookmarks"
   "SD Card  "
-  "Network  ";
+  "Network  "
+  "Reset    ";
 
 static u8 list_view_offset = 0; // only changed once after startup
 
@@ -101,6 +105,8 @@ static u8 list_view_offset = 0; // only changed once after startup
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 SEQ_UI_INFO_UpdateList(void);
+
+static void Button_ResetRequest(u32 state);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -152,7 +158,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 /////////////////////////////////////////////////////////////////////////////
 static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 {
-  if( depressed ) return 0; // ignore when button depressed
+  if( depressed ) {
+    if( button <= SEQ_UI_BUTTON_GP8 )
+      SEQ_UI_UnInstallDelayedActionCallback(Button_ResetRequest);
+    return 0;  // ignore when button depressed
+  }
 
   if( button <= SEQ_UI_BUTTON_GP8 || button == SEQ_UI_BUTTON_Select ) {
     if( button != SEQ_UI_BUTTON_Select )
@@ -218,6 +228,12 @@ static s32 Button_Handler(seq_ui_button_t button, s32 depressed)
 	UIP_TERMINAL_PrintNetwork(DEBUG_MSG);
 #endif
 	break;
+
+      //////////////////////////////////////////////////////////////////////////////////////////////
+      case LIST_ITEM_RESET:
+	SEQ_UI_InstallDelayedActionCallback(Button_ResetRequest, 5000, 0);
+	SEQ_UI_Msg(SEQ_UI_MSG_DELAYED_ACTION_R, 5001, "", "to reset MIOS32!");
+	return 1;
 
       //////////////////////////////////////////////////////////////////////////////////////////////
       default:
@@ -371,3 +387,14 @@ static s32 SEQ_UI_INFO_UpdateList(void)
 
   return 0; // no error
 }
+
+
+static void Button_ResetRequest(u32 state)
+{
+  portENTER_CRITICAL();
+  SEQ_LCD_Clear();
+  SEQ_LCD_Update(1);
+  MIOS32_SYS_Reset();
+  portEXIT_CRITICAL(); // will never be reached...
+}
+
