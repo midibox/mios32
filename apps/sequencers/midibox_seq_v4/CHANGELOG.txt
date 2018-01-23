@@ -2492,6 +2492,10 @@ In the Mute menu, the encoders just duplicate the buttons while the wheel doesn'
 http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=178721
 The spot erase feature is still a little tricky to use I think. Now, in Live Recording mode, when you hold a key, it gets deleted. It's really easy to accidentally delete notes when recording fast  patterns (with sloppy timing). Also, it means that you always first add a note to delete it again in the second pass. I think it would be better to only delete notes when you press the delete button and a key. EG: Sequencer playing, Live recording on. Hold Clear. Nothing happens. Still holding Clear, press A1, A1 gets deleted until you release either A1 or Clear.
 ----------------------------------------------------------
+http://midibox.org/forums/topic/13137-midibox-seq-v4-release-feedback/?do=findComment&comment=180296
+Auto-fill steps while in DRUM track mode,
+Let's say you press GP3 button (fill start) for two seconds, that would invoke FILL mode ( "FILL" flashing above the steps), without (or not?) releasing GP3 press GP11 (fill end) to set the end of the steps to be auto filled: steps 3 to 11. 
+
 
 
 Wishlist for MIDIbox SEQ V4 Plus

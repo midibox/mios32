@@ -511,17 +511,22 @@ s32 SEQ_FILE_C_Read(char *session)
 	      } else {
 		int v = get_dec(word);
 		if( v >= 0 ) {
-		  if( strcmp(parameter+9, "Channel") == 0 )
+		  if( strcmp(parameter+9, "Channel") == 0 ) {
 		    seq_midi_in_channel[bus] = v;
-		} else if( strcmp(parameter+9, "Lower") == 0 )
-		  seq_midi_in_lower[bus] = v;
-		else if( strcmp(parameter+9, "Upper") == 0 )
-		  seq_midi_in_upper[bus] = v;
-		else if( strcmp(parameter+9, "Options") == 0 )
-		  seq_midi_in_options[bus].ALL = v;
-		else {
+		  } else if( strcmp(parameter+9, "Lower") == 0 ) {
+		    seq_midi_in_lower[bus] = v;
+		  } else if( strcmp(parameter+9, "Upper") == 0 ) {
+		    seq_midi_in_upper[bus] = v;
+		  } else if( strcmp(parameter+9, "Options") == 0 ) {
+		    seq_midi_in_options[bus].ALL = v;
+		  } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-		  DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+		    DEBUG_MSG("[SEQ_FILE_C] ERROR: unknown parameter: %s", line_buffer);
+#endif
+		  }
+		} else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR: invalid value: %s", line_buffer);
 #endif
 		}
 	      }
