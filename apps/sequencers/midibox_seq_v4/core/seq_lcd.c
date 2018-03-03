@@ -830,6 +830,8 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   seq_layer_evnt_t layer_event;
   SEQ_LAYER_GetEvntOfLayer(track, step, par_layer, instrument, &layer_event);
 
+  u8 print_without_gate = seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES;
+
   // TODO: tmp. solution to print chord velocity correctly
   if( layer_type == SEQ_PAR_Type_Velocity && (seq_cc_trk[track].link_par_layer_chord == 0) )
     layer_type = tcc->lay_const[0];
@@ -841,7 +843,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
 
   case SEQ_PAR_Type_Note:
   case SEQ_PAR_Type_Velocity: {
-    if( layer_event.midi_package.note == 0 || layer_event.midi_package.velocity == 0 ) {
+    if( layer_event.midi_package.note == 0 || (!print_without_gate && layer_event.midi_package.velocity == 0) ) {
       SEQ_LCD_PrintString("----");
       break;
     }
@@ -854,7 +856,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
       }
     }
 
-    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator && layer_event.midi_package.note > 0 && layer_event.midi_package.velocity > 0 ) {
+    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator && layer_event.midi_package.note > 0 && (print_without_gate || layer_event.midi_package.velocity > 0) ) {
       // transpose notes/CCs
       SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
 
@@ -869,7 +871,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     
     if( step_view ) {
       if( layer_event.midi_package.note &&
-	  (print_edit_value >= 0 || (layer_event.midi_package.velocity && SEQ_TRG_GateGet(track, step, instrument))) ) {
+	  (print_edit_value >= 0 || print_without_gate || (layer_event.midi_package.velocity && SEQ_TRG_GateGet(track, step, instrument))) ) {
 	if( SEQ_CC_Get(track, SEQ_CC_MODE) == SEQ_CORE_TRKMODE_Arpeggiator )
 	  SEQ_LCD_PrintArp(layer_event.midi_package.note);
 	else
@@ -906,7 +908,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
     else
       par_value = (print_edit_value >= 0) ? print_edit_value : SEQ_PAR_Get(track, step, par_layer, instrument);
 
-    if( par_value && (print_edit_value >= 0 || SEQ_TRG_GateGet(track, step, instrument)) ) {
+    if( par_value && (print_edit_value >= 0 || print_without_gate || SEQ_TRG_GateGet(track, step, instrument)) ) {
       if( layer_type == SEQ_PAR_Type_Chord3 ) {
 	if( par_value < 10 ) {
 	  SEQ_LCD_PrintFormattedString("Ch%d", par_value);
@@ -935,7 +937,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
   case SEQ_PAR_Type_ProgramChange:
   case SEQ_PAR_Type_PitchBend:
   case SEQ_PAR_Type_Aftertouch: {
-    if( event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
+    if( !print_without_gate && event_mode == SEQ_EVENT_MODE_CC && !SEQ_TRG_GateGet(track, step, instrument) ) {
       SEQ_LCD_PrintString("----");
     } else {
       //u8 value = (layer_type == SEQ_PAR_Type_ProgramChange) ? layer_event.midi_package.evnt1 : layer_event.midi_package.value;

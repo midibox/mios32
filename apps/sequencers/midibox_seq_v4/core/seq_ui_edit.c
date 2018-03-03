@@ -475,6 +475,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
 	  if( !(seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
 	    change_gate = trg_step == changed_step;
+
 	    u8 dont_change_gate = par_step != changed_step;
 	    if( change_gate || seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE ) {
 	      s32 local_forced_value = edit_ramp ? -1 : forced_value;
@@ -1482,7 +1483,9 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
     if( event_mode == SEQ_EVENT_MODE_CC && layer_type == SEQ_PAR_Type_CC ) {
       // in this mode gates are used to disable CC
       // if a CC value has been changed, set gate
-      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
+      if( !seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES ) {
+	SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
+      }
     }
   }
 
@@ -1495,9 +1498,11 @@ static s32 ChangeSingleEncValue(u8 track, u16 par_step, u16 trg_step, s32 increm
   if( !dont_change_gate &&
       (layer_type == SEQ_PAR_Type_Note || layer_type == SEQ_PAR_Type_Chord1 || layer_type == SEQ_PAR_Type_Chord2 || layer_type == SEQ_PAR_Type_Chord3 || layer_type == SEQ_PAR_Type_Velocity) ) {
     // (de)activate gate depending on value
-    if( new_value )
-      SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
-    else {
+    if( new_value ) {
+      if( !seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES ) {
+	SEQ_TRG_GateSet(track, trg_step, ui_selected_instrument, 1);
+      }
+    } else {
       // due to another issue reported by Gridracer:
       // if the track plays multiple notes, only clear gate if all notes are 0
       u8 num_p_layers = SEQ_PAR_NumLayersGet(visible_track);
