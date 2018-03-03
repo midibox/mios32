@@ -69,6 +69,7 @@ typedef enum {
 } midi_learn_mode_t;
 
 static midi_learn_mode_t midi_learn_mode = MIDI_LEARN_MODE_OFF;
+static u8 midi_learn_mode_used;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -550,6 +551,10 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 
     // enable/disable MIDI Learn mode
     midi_learn_mode = depressed ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
+    if( midi_learn_mode_used && midi_learn_mode == MIDI_LEARN_MODE_OFF ) {
+      midi_learn_mode_used = 0;
+      SEQ_RECORD_AllNotesOff();
+    }
 
     if( depressed )
       return 0; // ignore when button depressed
@@ -684,6 +689,10 @@ s32 SEQ_UI_EDIT_Button_Handler(seq_ui_button_t button, s32 depressed)
 	// toggle MIDI learn
 	if( !depressed )
 	  midi_learn_mode = (midi_learn_mode == MIDI_LEARN_MODE_ON) ? MIDI_LEARN_MODE_OFF : MIDI_LEARN_MODE_ON;
+	    if( midi_learn_mode_used && midi_learn_mode == MIDI_LEARN_MODE_OFF ) {
+	      midi_learn_mode_used = 0;
+	      SEQ_RECORD_AllNotesOff();
+	    }
 	return 1; // value always changed
 
       case SEQ_UI_BUTTON_Right: {
@@ -1295,6 +1304,7 @@ static s32 MIDI_IN_Handler(mios32_midi_port_t port, mios32_midi_package_t p)
     // quick & dirty for evaluation purposes
     seq_record_options_t prev_seq_record_options = seq_record_options;
     u8 reset_timestamps = p.type == NoteOn && p.velocity > 0;
+    midi_learn_mode_used = 1;
 
     seq_record_options.ALL = 0;
     seq_record_options.STEP_RECORD = 1;
