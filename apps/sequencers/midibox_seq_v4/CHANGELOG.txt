@@ -26,6 +26,8 @@ MIDIboxSEQ V4.095
    o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
      the pattern change synchronisation option.
 
+   o Bugfix for permanently cleared notes if live recording is used after previous step recording
+
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
 

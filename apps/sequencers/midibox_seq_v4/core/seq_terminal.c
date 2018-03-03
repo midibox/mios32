@@ -785,6 +785,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	}
 	MUTEX_SDCARD_GIVE;
       }
+    } else if( strcmp(parameter, "dbg_record") == 0 ) {
+      SEQ_RECORD_DebugActiveNotes();
     } else if( strcmp(parameter, "session") == 0 ) {
       out("Current session: %s", seq_file_session_name);
     } else if( strcmp(parameter, "sessions") == 0 ) {
@@ -899,6 +901,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  delete <name>:  deletes a session");
   out("  session:        prints the current session name");
   out("  sessions:       prints all available sessions");
+  out("  dbg_record:     prints active notes which are recorded");
 #ifndef MBSEQV4L
   out("  screen_saver:   enables the screen saver immediately");
 #endif

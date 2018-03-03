@@ -144,6 +144,38 @@ s32 SEQ_RECORD_AllNotesOff(void)
 
 
 /////////////////////////////////////////////////////////////////////////////
+// should be called whenever the MIDI channel or port is changed
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_RECORD_DebugActiveNotes(void)
+{
+  const char note_tab[12][3] = { "c-", "c#", "d-", "d#", "e-", "f-", "f#", "g-", "g#", "a-", "a#", "b-" };
+
+  int i;
+  u8 any_active_note = 0;
+  for(i=0; i<128; ++i) {
+    if( seq_record_played_notes[i/32] & (1 << (i%32)) ) {
+      any_active_note = 1;
+
+      u8 octave = i / 12;
+      u8 note = i % 12;
+
+      DEBUG_MSG("[SEQ_RECORD] Active Note: %c%c%c (#%d)\n",
+		note_tab[note][0] + (octave >= 2 ? ('A'-'a') : 0),
+		note_tab[note][1],
+		(octave == 0) ? '2' : ((octave == 1) ? '1' : ('0' + (octave-2))),
+		i);
+    }
+  }
+
+  if( !any_active_note ) {
+    DEBUG_MSG("[SEQ_RECORD] no active note\n");
+  }
+
+  return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
 // This function enables recording and takes over active live notes
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_RECORD_Enable(u8 enable, u8 reset_timestamps)
