@@ -26,6 +26,10 @@ MIDIboxSEQ V4.095
    o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
      the pattern change synchronisation option.
 
+   o OPTIONS page: new option "print and modify steps without gate.
+     If enabled: note values will always be print regardless if they are played or not.
+     Changing a note value won't automatically enable the gate
+
    o Bugfix for permanently cleared notes if live recording is used after previous step recording
 
    o experimental (might be optional in future): show measure and pattern step position in main screen

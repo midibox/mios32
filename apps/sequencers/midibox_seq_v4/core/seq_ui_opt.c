@@ -52,23 +52,24 @@
 #define ITEM_PASTE_CLR_ALL                 8
 #define ITEM_RESTORE_TRACK_SELECTIONS      9
 #define ITEM_MODIFY_PATTERN_BANKS         10
-#define ITEM_METRONOME                    11
-#define ITEM_SHADOW_OUT                   12
-#define ITEM_MIDI_REMOTE                  13
-#define ITEM_TRACK_CC                     14
-#define ITEM_RUNTIME_STATUS_OPTIMIZATION  15
-#define ITEM_LIVE_LAYER_MUTE              16
-#define ITEM_INIT_WITH_TRIGGERS           17
-#define ITEM_INIT_CC                      18
-#define ITEM_DRUM_CC                      19
-#define ITEM_TPD_MODE                     20
-#define ITEM_BLM_ALWAYS_USE_FTS           21
-#define ITEM_BLM_FADERS                   22
-#define ITEM_MIXER_CC1234                 23
-#define ITEM_MENU_SHORTCUTS               24
-#define ITEM_SCREEN_SAVER                 25
+#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 11
+#define ITEM_METRONOME                    12
+#define ITEM_SHADOW_OUT                   13
+#define ITEM_MIDI_REMOTE                  14
+#define ITEM_TRACK_CC                     15
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  16
+#define ITEM_LIVE_LAYER_MUTE              17
+#define ITEM_INIT_WITH_TRIGGERS           18
+#define ITEM_INIT_CC                      19
+#define ITEM_DRUM_CC                      20
+#define ITEM_TPD_MODE                     21
+#define ITEM_BLM_ALWAYS_USE_FTS           22
+#define ITEM_BLM_FADERS                   23
+#define ITEM_MIXER_CC1234                 24
+#define ITEM_MENU_SHORTCUTS               25
+#define ITEM_SCREEN_SAVER                 26
 
-#define NUM_OF_ITEMS                      26
+#define NUM_OF_ITEMS                      27
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -125,6 +126,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Allow to change pattern banks",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Print/Modify Steps w/o changing Gates",
     NULL, // enabled/disabled
   },
 
@@ -357,6 +363,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_ui_options.MODIFY_PATTERN_BANKS = (incrementer > 0) ? 1 : 0;
       else
 	seq_ui_options.MODIFY_PATTERN_BANKS ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_PRINT_AND_MODIFY_WITHOUT_GATES: {
+      if( incrementer )
+	seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES = (incrementer > 0) ? 1 : 0;
+      else
+	seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -995,6 +1010,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_MODIFY_PATTERN_BANKS: {
     enabled_value = seq_ui_options.MODIFY_PATTERN_BANKS;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_PRINT_AND_MODIFY_WITHOUT_GATES: {
+    enabled_value = seq_ui_options.PRINT_AND_MODIFY_WITHOUT_GATES;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
