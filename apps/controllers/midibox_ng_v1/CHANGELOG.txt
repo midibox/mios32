@@ -788,5 +788,3 @@ Add "delete" option to SCS disk page
 KEYBOARD: allow individual delay settings for all keys
 --------------------------------------------------------------------------------
 Display timecode on LCD: http://midibox.org/forums/topic/17498-midibox-ng-release-feedback/?p=170513
-
-
