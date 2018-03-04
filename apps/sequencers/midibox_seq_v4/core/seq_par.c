@@ -99,7 +99,7 @@ static const u8 seq_par_default_value[SEQ_PAR_NUM_TYPES] = {
   0,    // Delay
   0,    // Roll
   0,    // Roll2
-  0,    // PrgCh
+  0x80, // PrgCh // NEW: disabled by default
   0,    // Nth1
   0,    // Nth2
   0x40, // Chord2: A/2

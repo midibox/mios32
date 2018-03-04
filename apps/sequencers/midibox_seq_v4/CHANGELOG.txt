@@ -32,6 +32,8 @@ MIDIboxSEQ V4.095
 
    o Bugfix for permanently cleared notes if live recording is used after previous step recording
 
+   o ProgramChange Layer: steps now disabled by default when the track is cleared
+
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
 
