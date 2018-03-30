@@ -26,9 +26,16 @@ MIDIboxSEQ V4.095
    o PATTERN page: pattern is switched immediately if SELECT button is pressed, regardless of
      the pattern change synchronisation option.
 
-   o OPTIONS page: new option "print and modify steps without gate.
+   o OPTIONS page: new option "Print and Modify Steps w/o changing Gate".
      If enabled: note values will always be print regardless if they are played or not.
      Changing a note value won't automatically enable the gate
+
+   o OPTIONS page: new option "Print Notes with transposed value".
+     Enabled by default (due to change in V4.093), can be optionally disabled now.
+
+   o AOUT: Channel 9..12/13..15 now set the gate pins #1/3/4/6 as documented (previously it was #1/2/3/4 due to a code translation error)
+     New: gate pins #2/4/5/8 are now set whenever the velocity is >100.
+     This way the pins can be used as an accent trigger
 
    o Bugfix for permanently cleared notes if live recording is used after previous step recording
 
