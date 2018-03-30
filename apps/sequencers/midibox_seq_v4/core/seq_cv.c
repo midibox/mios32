@@ -551,8 +551,8 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 
   if( package.event == NoteOn ) {
     // if channel 1..8: set only note value on CV OUT #1..8, triggers Gate #1..8
-    // if channel 9..12: set note/velocity on each pin pair (CV OUT #1/2, #3/4, #5/6, #7/8), triggers Gate #1+2, #3+4, #5+6, #7+8
-    // if channel 13..15: set velocity/note on each pin pair (CV OUT #1/2, #3/4, #5/6), triggers Gate #1+2, #3+4, #5+6
+    // if channel 9..12: set note/velocity on each pin pair (CV OUT #1/2, #3/4, #5/6, #7/8), triggers Gate #1/3/4/6 and Gate 2/4/5/8 if velocity > 100
+    // if channel 13..15: set velocity/note on each pin pair (CV OUT #1/2, #3/4, #5/6), triggers Gate #1/2/3/4 and Gate 5/6/7/8 if velocity > 100
     // if channel 16: trigger the extension pins (DOUT)
 
     if( package.chn == Chn16 ) {
@@ -567,20 +567,23 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 #endif
       }
     } else {
-      int aout_chn_note, aout_chn_vel, gate_pin;
+      int aout_chn_note, aout_chn_vel, gate_pin_normal, gate_pin_velocity_gt100;
 
       if( package.chn <= Chn8 ) {
 	aout_chn_note = package.chn;
 	aout_chn_vel = -1;
-	gate_pin = package.chn;
+	gate_pin_normal = package.chn;
+	gate_pin_velocity_gt100 = -1; // not relevant
       } else if( package.chn <= Chn12 ) {
 	aout_chn_note = ((package.chn & 3) << 1);
 	aout_chn_vel = aout_chn_note + 1;
-	gate_pin = package.chn & 3;
+	gate_pin_normal = (package.chn & 3) << 1;
+	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       } else { // Chn <= 15
 	aout_chn_vel = ((package.chn & 3) << 1);
 	aout_chn_note = aout_chn_vel + 1;
-	gate_pin = package.chn & 3;
+	gate_pin_normal = (package.chn & 3) << 1;
+	gate_pin_velocity_gt100 = gate_pin_normal + 1;
       }
 
       // branch depending on Note On/Off event
@@ -606,13 +609,23 @@ s32 SEQ_CV_SendPackage(u8 cv_port, mios32_midi_package_t package)
 	if( aout_chn_vel >= 0 )
 	  AOUT_PinSet(aout_chn_vel, velocity_cv);
 
-	// set gate pin
-	if( gate_pin >= 0 )
-	  gates |= (1 << gate_pin);
+	// set gate pins
+	if( gate_pin_normal >= 0 )
+	  gates |= (1 << gate_pin_normal);
+
+	if( gate_pin_velocity_gt100 >= 0 ) {
+	  if( package.velocity > 100 )
+	    gates |= (1 << gate_pin_velocity_gt100);
+	  else
+	    gates |= (1 << gate_pin_velocity_gt100);
+	}
       } else {
-	// clear gate pin
-	if( gate_pin >= 0 )
-	  gates &= ~(1 << gate_pin);
+	// clear gate pins
+	if( gate_pin_normal >= 0 )
+	  gates &= ~(1 << gate_pin_normal);
+
+	if( gate_pin_velocity_gt100 >= 0 )
+	  gates &= ~(1 << gate_pin_velocity_gt100);
       }
     }
   } else if( package.event == CC ) {

@@ -856,7 +856,7 @@ s32 SEQ_LCD_PrintLayerEvent(u8 track, u8 step, u8 par_layer, u8 instrument, u8 s
       }
     }
 
-    if( tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator && layer_event.midi_package.note > 0 && (print_without_gate || layer_event.midi_package.velocity > 0) ) {
+    if( seq_ui_options.PRINT_TRANSPOSED_NOTES && tcc->playmode != SEQ_CORE_TRKMODE_Arpeggiator && layer_event.midi_package.note > 0 && (print_without_gate || layer_event.midi_package.velocity > 0) ) {
       // transpose notes/CCs
       SEQ_CORE_Transpose(track, instrument, t, tcc, &layer_event.midi_package);
 
