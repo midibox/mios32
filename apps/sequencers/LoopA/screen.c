@@ -795,7 +795,7 @@ void displayPageDisk(void)
 void displayPageBpm(void)
 {
    setFontSmall();
-
+   
    if (screenNewPagePanelFrameCtr_ > 0)
    {
       setFontInverted();

@@ -43,7 +43,6 @@
 
 // --  Local types ---
 
-
 // --- Global vars ---
 
 static s32 (*clipPlayEventCallback)(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick) = 0;     // fetchClipEvents() callback
