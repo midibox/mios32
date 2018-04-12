@@ -30,9 +30,11 @@
 #include "uip_terminal.h"
 #include "tasks.h"
 
+/*
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include <umm_malloc.h>
 #endif
+ */
 
 /////////////////////////////////////////////////////////////////////////////
 // Local defines
@@ -389,9 +391,11 @@ s32 TERMINAL_PrintMemoryInfo(void *_output_function)
   //void (*out)(char *format, ...) = _output_function;
   // TODO: umm_info doesn't allow to define output function
 
+   /*
 #if !defined(MIOS32_FAMILY_EMULATION)
   umm_info( NULL, 1 );
 #endif
+    */
 
   return 0; // no error
 }
