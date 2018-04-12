@@ -1,32 +1,28 @@
 // MBLoopa Core Logic
-// (c) Hawkeye 2015
+// (c) Hawkeye 2015-2018
 //
-// This unit provides the looper core data structures and the menu navigation and multi-clip support
-//
-// When recording clips, these are directly stored to a MIDI file, we cannot loop record (so what)
-// After recording a clip, it will be instantly re-scanned from SD to gather key informations,
-// like tick length, noteroll information, and so on.
-//
-// We cannot store all sequencer notes in memory, but we can pre-fetch notes for every midi-file
-// from SD-Card, so that we might be able to play eight tracks (unmuted) with no sync issues.
-// Track looping can be implemented likewise - if our SEQ Handler detects, that we are close
-// to the end of a clip, and that clip is set to loop, we can resupply the seq_midi_out buffers...
+// This unit provides the loopA core data structures and the menu navigation and multi-clip support
 //
 // In playback, all clips will start to play back, regardless of their mute state.
 // Also, all clips will loop by default (it is called loopA, anyways)
 // This emulates the behaviour of the MBSEQ.
 //
-// The Loopa itself has a beatloop minimum sync range (default 16 steps). All playback clip regions
-// will have lengths of multiples of this, when modifying start and stop positions (for looping),
-// it is made sure, that the output clip has a length of n*beatloop
-// (will be filled up with silence at the end, if necessary)
+// INTERFACE (LoopA v2 - with limited encoders/buttons)
+// ----------------------------------------------------
 //
-// Recording occurs directly to SD and can be of unlimited length. After recording, a new MID file
-// with an increased number (e.g. C_3_0004.MID -> clip 4, recording take 5) is stored and reloaded
-// and length-adjusted to n*beatloop requirements.
+// Right encoder: flips through pages aka modes (unless a command is selected, then it changes its data value)
 //
-// If the beatloop value is changed in the UI, the clip endpoints are automatically adjusted.
+// Left encoder: changes global data of mode:
+//    - in play mode, changes currently active track
+//    - in note mode, changes currently selected note
+//    - in disk mode, changes selected session number
 //
+// To modify command data (e.g. transpose), the GP button under the command must be pushed, then the
+// right encoder can change the command data. Pushing the GP button again exits command data modification mode, then
+// the right encoder can be used again to change pages aka modes.
+//
+// Pushing the right or left encoder always returns back to play mode (shortcut)
+// (v3 needs no pushable encoders, as we will have more buttons and encoders directly under the commands)
 // =================================================================================================
 
 
@@ -42,65 +38,66 @@
 #include "tasks.h"
 #include "file.h"
 #include "loopa.h"
-#include "seq.h"
 #include "mid_file.h"
 #include "hardware.h"
 #include "screen.h"
-#include "voxelspace.h"
 
 
 // --  Local types ---
-
-typedef struct
-{
-   u32  initial_file_pos;
-   u32  initial_tick;
-   u32  file_pos;
-   u32  chunk_end;
-   u32  tick;
-   u8   running_status;
-} midi_track_t;
-
-
-// --- Consts ---
-
-const int PREFETCH_TIME_MS = 100;
 
 
 // --- Global vars ---
 
 static s32 (*clipPlayEventCallback)(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick) = 0;     // fetchClipEvents() callback
 static s32 (*clipMetaEventCallback)(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick) = 0; // fetchClipEvents() callback
-static u8 meta_buffer[MID_PARSER_META_BUFFER_SIZE];
 
-u16 sessionNumber_ = 0;         // currently active session number (directory e.g. /SESSIONS/0001)
-u8 baseView_ = 0;               // if not in baseView, we are in single clipView
-u8 displayMode2d_ = 0;          // if not in 2d display mode, we are rendering voxelspace
-u8 selectedClipNumber_ = 0;     // currently active or last active clip number (1-8)
-u16 beatLoopSteps_ = 16;        // number of steps for one beatloop (adjustable)
-u8 isRecording_ = 0;            // set, if currently recording
-u8 stopRecordingRequest_ = 0;   // if set, the sequencer will stop recording at an even "beatLoopStep" interval, to create loopable clips
-s8 reloadClipNumberRequest_ = -1; // if != -1, reload the given clip number after sequencer stop (usually, a track has been recorded, then!)
+u32 tick_ = 0;                        // global seq tick
+u16 bpm_ = 120;                       // bpm
+u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
+u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
+enum LoopaPage page_ = PAGE_TRACK;    // currently active page/view
+enum Command command_ = COMMAND_NONE; // currently active command
 
-u16 seqPlayEnabledPorts_;
+u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
+u8 activeScene_ = 0;                  // currently active scene number (0-15)
+u16 beatLoopSteps_ = 16;              // number of steps for one beatloop (adjustable)
+u8 isRecording_ = 0;                  // set, if currently recording to the selected clip
+u8 oledBeatFlashState_ = 0;           // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
+
 u16 seqRecEnabledPorts_;
+s16 notePtrsOn_[128];                 // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
 
-static u32 clipFilePos_[8];     // file position within midi file (for 8 clips)
-static u32 clipFileLen_[8];     // file length of midi file (for 8 clips)
-u8 clipFileAvailable_[8];       // true, if clip midi file is available (for 8 clips)
-static file_t clipFileFi_[8];   // clip file reference handles, only valid if clipFileAvailable is true (for 8 clips)
-u16 clipMidiFileFormat_[8];     // clip midi file format (for 8 clips)
-u16 clipMidiFilePPQN_[8];       // pulses per quarter note (for 8 clips)
-midi_track_t clipMidiTrack_[8]; // max one midi track per clip mid file supported (for 8 clips)
+static u8 ffwdSilentMode_;            // for FFWD function
+static u8 seqClkLocked;               // lock BPM, so that it can't be changed from MIDI player
+static char filename_[20];            // global, for filename operations
 
-u32 clipEventNumber_[8];        // number of events in the respective clip
-u32 clipTicks_[8];              // number of available ticks in the respective clip
-u8 clipMute_[8];                // mute state of each clip
+// --- Track data (saved to session on disk) ---
+u8 trackMute_[TRACKS];                // mute state of each clip
+u8 trackMidiPort_[TRACKS];
+u8 trackMidiChannel_[TRACKS];
 
-static u8 ffwdSilentMode_;      // for FFWD function
-static u32 nextPrefetch_[8];    // next tick at which the prefetch should take place for each clip
-static u32 prefetchOffset_[8];  // already prefetched ticks for each clip
-static u8 seqClkLocked;         // lock BPM, so that it can't be changed from MIDI player
+// --- Clip data (saved to session on disk) ---
+u16 clipSteps_[TRACKS][SCENES];       // number of steps for each clip
+u32 clipQuantize_[TRACKS][SCENES];    // brings all clip notes close to the specified timing, e.g. quantize = 4 - close to 4th notes, 16th = quantize to step, ...
+s8 clipTranspose_[TRACKS][SCENES];
+s16 clipScroll_[TRACKS][SCENES];
+u8 clipStretch_[TRACKS][SCENES];      // 1: compress to 1/16th, 2: compress to 1/8th ... 16: no stretch, 32: expand 2x, 64: expand 4x, 128: expand 8x
+NoteData clipNotes_[TRACKS][SCENES][MAXNOTES];  // clip note data storage (chained list, note start time and length/velocity)
+u16 clipNotesSize_[TRACKS][SCENES];   // active number of notes currently in use for that clip
+
+// --- Copy/paste buffer
+u16 copiedClipSteps_;
+u32 copiedClipQuantize_;
+s8 copiedClipTranspose_;
+s16 copiedClipScroll_;
+u8 copiedClipStretch_;
+NoteData copiedClipNotes_[MAXNOTES];
+u16 copiedClipNotesSize_;
+
+// --- Secondary data (not on disk) ---
+u8 trackMuteToggleRequested_[TRACKS]; // 1: perform a mute/unmute toggle of the clip at the next beatstep (synced mute/unmute)
+u8 sceneChangeRequested_ = 0;         // If != activeScene_, this will be the scene we are changing to
+u16 clipActiveNote_[TRACKS][SCENES];  // currently active edited note number, when in noteroll editor
 
 // =================================================================================================
 
@@ -118,668 +115,474 @@ u16 tickToStep(u32 tick)
 
 
 /**
- * Reads <len> bytes from the .mid file into <buffer>
- * @return number of read bytes
+ * Help function: convert step number to tick number
+ * @return step
  *
  */
-u32 clipFileRead(u8 clipNumber, void *buffer, u32 len)
+u32 stepToTick(u16 step)
 {
-   s32 status;
+   return step * (SEQ_BPM_PPQN_Get() / 4);
+}
+// -------------------------------------------------------------------------------------------------
 
-   if (!clipFileAvailable_[clipNumber])
-      return FILE_ERR_NO_FILE;
 
-   MUTEX_SDCARD_TAKE;
-   if ((status=FILE_ReadReOpen(&clipFileFi_[clipNumber])) >= 0)
+/**
+ * Hard bound tick to the configured length (number of steps) of a clip
+ *
+ */
+u32 boundTickToClipSteps(u32 tick, u8 clip)
+{
+   return tick % stepToTick(clipSteps_[clip][activeScene_]);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Quantize a "tick" time event to a tick quantization measure (e.g. 384), wrap around
+ * ticks going over the clip length (clipLengthInTicks)
+ *
+ */
+u32 quantize(u32 tick, u32 quantizeMeasure, u32 clipLengthInTicks)
+{
+   if (quantizeMeasure < 3)
+      return tick; // no quantization
+
+   u32 mod = tick % quantizeMeasure;
+   u32 tickBase = tick - (tick % quantizeMeasure); // default: snap to previous measure
+
+   // note: i did not like this improvement, as notes were cut off as they were moved newly ahead of the current play position and
+   // thus were retriggered while still being held on the keyboard, but i fixed it, now not playing notes with length 0 (still being held) ;-)
+   if (mod > (quantizeMeasure >> 1))
+      tickBase = (tick - (tick % quantizeMeasure) + quantizeMeasure) % clipLengthInTicks; // snap to next measure as we are closer to this one
+
+   return tickBase;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Transform (stretch and scroll) and then quantize a note in a clip
+ *
+ */
+s32 quantizeTransform(u8 clip, u16 noteNumber)
+{
+
+   // Idea: scroll first, and modulo-map to trackstart/end boundaries
+   //       scale afterwards
+   //       apply track len afterwards
+   //       drop notes with ticks < 0 and ticks > tracklen
+
+   s32 tick = clipNotes_[clip][activeScene_][noteNumber].tick;
+   s32 quantizeMeasure = clipQuantize_[clip][activeScene_];
+   s32 clipLengthInTicks = getClipLengthInTicks(clip);
+
+   // stretch
+   tick *= clipStretch_[clip][activeScene_];
+   tick = tick >> 4; // divide by 16 (stretch base)
+
+   // only consider notes, that are within the clip length after stretching
+   if (tick >= clipLengthInTicks)
+      return -1;
+
+   // scroll
+   tick += clipScroll_[clip][activeScene_] * 24;
+
+   while (tick < 0)
+      tick += clipLengthInTicks;
+
+   tick %= clipLengthInTicks;
+
+   return quantize(tick, quantizeMeasure, clipLengthInTicks);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Get the clip length in ticks
+ */
+u32 getClipLengthInTicks(u8 clip)
+{
+   return stepToTick(clipSteps_[clip][activeScene_]);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Update a single GP Led, only change state if
+ */
+void updateGPLed(u8 number, u8 newState)
+{
+   static s8 s1 = -1, s2 = -1, s3 = -1, s4 = -1, s5 = -1, s6 = -1;
+
+   switch (number)
    {
-      status = FILE_ReadBuffer(buffer, len);
-      FILE_ReadClose(&clipFileFi_[clipNumber]);
+      case 1:
+         if (s1 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp1, newState);
+            s1 = newState;
+         }
+         break;
+
+      case 2:
+         if (s2 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp2, newState);
+            s2 = newState;
+         }
+         break;
+
+      case 3:
+         if (s3 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp3, newState);
+            s3 = newState;
+         }
+         break;
+
+      case 4:
+         if (s4 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp4, newState);
+            s4 = newState;
+         }
+         break;
+
+      case 5:
+         if (s5 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp5, newState);
+            s5 = newState;
+         }
+         break;
+
+      case 6:
+         if (s6 != newState)
+         {
+            MIOS32_DOUT_PinSet(led_gp6, newState);
+            s6 = newState;
+         }
+         break;
    }
-   MUTEX_SDCARD_GIVE;
 
-   return (status >= 0) ? len : 0;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * @return 1, if end of file reached
+ *  Update the six general purpose LED states (called periodically from app.c)
  *
  */
-s32 clipFileEOF(u8 clipNumber)
+void updateGPLeds()
 {
-   if (clipFilePos_[clipNumber] >= clipFileLen_[clipNumber] || !FILE_SDCardAvailable())
-      return 1; // end of file reached or SD card disconnected
+   MUTEX_DIGITALOUT_TAKE;
 
-   return 0;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Sets file pointer to a specific position
- * @return -1, if end of file reached
- *
- */
-s32 clipFileSeek(u8 clipNumber, u32 pos)
-{
-   s32 status;
-
-   if (!clipFileAvailable_[clipNumber])
-      return -1; // end of file reached
-
-   clipFilePos_[clipNumber] = pos;
-
-   MUTEX_SDCARD_TAKE;
-
-   if (clipFilePos_[clipNumber] >= clipFileLen_[clipNumber])
-      status = -1; // end of file reached
-   else
+   switch (page_)
    {
-      if ((status=FILE_ReadReOpen(&clipFileFi_[clipNumber])) >= 0)
-      {
-         status = FILE_ReadSeek(pos);
-         FILE_ReadClose(&clipFileFi_[clipNumber]);
-      }
+      case PAGE_TRACK:
+         updateGPLed(1, !trackMute_[0]);
+         updateGPLed(2, !trackMute_[1]);
+         updateGPLed(3, !trackMute_[2]);
+         updateGPLed(4, !trackMute_[3]);
+         updateGPLed(5, !trackMute_[4]);
+         updateGPLed(6, !trackMute_[5]);
+         break;
+
+      case PAGE_EDIT:
+         updateGPLed(1, command_ == COMMAND_CLIPLEN);
+         updateGPLed(2, command_ == COMMAND_QUANTIZE);
+         updateGPLed(3, command_ == COMMAND_TRANSPOSE);
+         updateGPLed(4, command_ == COMMAND_SCROLL);
+         updateGPLed(5, command_ == COMMAND_STRETCH);
+         updateGPLed(6, command_ == COMMAND_CLEAR);
+         break;
+
+      case PAGE_NOTES:
+         updateGPLed(1, command_ == COMMAND_POSITION);
+         updateGPLed(2, command_ == COMMAND_NOTE);
+         updateGPLed(3, command_ == COMMAND_VELOCITY);
+         updateGPLed(4, command_ == COMMAND_LENGTH);
+         updateGPLed(5, 0);
+         updateGPLed(6, command_ == COMMAND_DELETENOTE);
+         break;
+
+      case PAGE_MIDI:
+         updateGPLed(1, command_ == COMMAND_PORT);
+         updateGPLed(2, command_ == COMMAND_CHANNEL);
+         updateGPLed(3, 0);
+         updateGPLed(4, 0);
+         updateGPLed(5, 0);
+         updateGPLed(6, 0);
+         break;
+
+      case PAGE_DISK:
+         updateGPLed(1, command_ == COMMAND_SAVE);
+         updateGPLed(2, command_ == COMMAND_LOAD);
+         updateGPLed(3, command_ == COMMAND_NEW);
+         updateGPLed(4, 0);
+         updateGPLed(5, 0);
+         updateGPLed(6, 0);
+         break;
+
+      case PAGE_BPM:
+         updateGPLed(1, command_ == COMMAND_BPM);
+         updateGPLed(2, command_ == COMMAND_BPMFLASH);
+         updateGPLed(3, 0);
+         updateGPLed(4, 0);
+         updateGPLed(5, 0);
+         updateGPLed(6, 0);
+         break;
    }
 
-   MUTEX_SDCARD_GIVE;
-
-   return status;
+   MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Help function: reads a byte/hword/word from the .mid file
- *
+ * Set a different active track
  */
-static u32 clipReadWord(u8 clipNumber, u8 len)
+void setActiveTrack(u8 trackNumber)
 {
-   int word = 0;
-   int i;
+   activeTrack_ = trackNumber;
+   screenSetClipSelected(activeTrack_);
 
-   for (i=0; i<len; ++i)
-   {
-      // due to unknown endianess of the host processor, we have to read byte by byte!
-      u8 byte;
-      clipFileRead(clipNumber, &byte, 1);
-      word = (word << 8) | byte;
-   }
-
-   return word;
+   MUTEX_DIGITALOUT_TAKE;
+   MIOS32_DOUT_PinSet(led_active1, activeTrack_ == 0);
+   MIOS32_DOUT_PinSet(led_active2, activeTrack_ == 1);
+   MIOS32_DOUT_PinSet(led_active3, activeTrack_ == 2);
+   MIOS32_DOUT_PinSet(led_active4, activeTrack_ == 3);
+   MIOS32_DOUT_PinSet(led_active5, activeTrack_ == 4);
+   MIOS32_DOUT_PinSet(led_active6, activeTrack_ == 5);
+   MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
 
-
 /**
- * Help function: reads a variable-length number from the .mid file
- * based on code example in MIDI file spec
- *
+ * Set a new active scene number
  */
-static u32 clipReadVarLen(u8 clipNumber, u32* pos)
+void setActiveScene(u8 sceneNumber)
 {
-   u32 value;
-   u8 c;
+   activeScene_ = sceneNumber;
 
-   *pos += clipFileRead(clipNumber, &c, 1);
-   if ((value = c) & 0x80)
-   {
-      value &= 0x7f;
+   MUTEX_DIGITALOUT_TAKE;
+   MIOS32_DOUT_PinSet(led_scene1, activeScene_ == 0);
+   MIOS32_DOUT_PinSet(led_scene2, activeScene_ == 1);
+   MIOS32_DOUT_PinSet(led_scene3, activeScene_ == 2);
+   MIOS32_DOUT_PinSet(led_scene4, activeScene_ == 3);
+   MIOS32_DOUT_PinSet(led_scene5, activeScene_ == 4);
+   MIOS32_DOUT_PinSet(led_scene6, activeScene_ == 5);
+   MUTEX_DIGITALOUT_GIVE;
+}
+// -------------------------------------------------------------------------------------------------
 
-      do
-      {
-         *pos += clipFileRead(clipNumber, &c, 1);
-         value = (value << 7) | (c & 0x7f);
-      } while (c & 0x80);
-   }
 
-   return value;
+void setActivePage(enum LoopaPage page)
+{
+   page_ = page;
+
+   MUTEX_DIGITALOUT_TAKE;
+   MIOS32_DOUT_PinSet(led_page_1, page == PAGE_TRACK);
+   MIOS32_DOUT_PinSet(led_page_2, page == PAGE_EDIT);
+   MIOS32_DOUT_PinSet(led_page_3, page == PAGE_NOTES);
+   MIOS32_DOUT_PinSet(led_page_4, page == PAGE_MIDI);
+   MIOS32_DOUT_PinSet(led_page_5, page == PAGE_DISK);
+   MIOS32_DOUT_PinSet(led_page_6, page == PAGE_BPM);
+   MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Restarts a clip w/o reading the .mid file chunks again (saves time)
- * Resets the clip start position + prefetch positions.
- * Usually called when (re)starting a whole song.
- *
- */
-s32 clipRestart(u8 clipNumber)
-{
-   if (!clipFileAvailable_[clipNumber])
-      return FILE_ERR_NO_FILE;
-
-   DEBUG_MSG("[clipRestart] clip %d", clipNumber);
-
-   // restore saved filepos/tick values
-   midi_track_t *mt = &clipMidiTrack_[clipNumber];
-
-   mt->file_pos = mt->initial_file_pos; // XXX: Set prescanned loop-start point file position here
-   mt->tick = mt->initial_tick;
-   mt->running_status = 0x80;
-
-   nextPrefetch_[clipNumber] = 0;
-   prefetchOffset_[clipNumber] = 0;
-
-   return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-
-
-
-/**
- * Rewinds a clip after a loop, not resetting the mt->tick position and prefetch offsets,
- * to stay in sync with the current song tick position.
- * Called, when looping a clip.
- *
- */
-s32 clipRewind(u8 clipNumber)
-{
-   if (!clipFileAvailable_[clipNumber])
-      return FILE_ERR_NO_FILE;
-
-   DEBUG_MSG("[clipRewind] clip %d", clipNumber);
-
-   // restore saved filepos value
-   midi_track_t *mt = &clipMidiTrack_[clipNumber];
-
-   mt->file_pos = mt->initial_file_pos; // XXX: Set prescanned loop-start point file position here
-   mt->running_status = 0x80;
-
-   return 0; // no error;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-
-/**
- * Toggle the mute state of a clip
- * (XXX: this must beat-synced, later on)
- * (XXX: also, hanging notes must be avoided)
+ * Request (or cancel) a synced mute/unmute toggle
  *
  */
 void toggleMute(u8 clipNumber)
 {
-   u8 state = clipMute_[clipNumber];
+   if (trackMute_[clipNumber])
+      setActiveTrack(clipNumber); // if track was unmuted, set it as active track
 
-   // If old state mute=1, after state change, the led must light up, so ledstate=old mute state
-   switch (clipNumber)
-   {
-   case 0: MIOS32_DOUT_PinSet(led_clip1, state); break;
-   case 1: MIOS32_DOUT_PinSet(led_clip2, state); break;
-   case 2: MIOS32_DOUT_PinSet(led_clip3, state); break;
-   case 3: MIOS32_DOUT_PinSet(led_clip4, state); break;
-   case 4: MIOS32_DOUT_PinSet(led_clip5, state); break;
-   case 5: MIOS32_DOUT_PinSet(led_clip6, state); break;
-   case 6: MIOS32_DOUT_PinSet(led_clip7, state); break;
-   case 7: MIOS32_DOUT_PinSet(led_clip8, state); break;
-   }
-
-   // invert the mute state
-   clipMute_[clipNumber] = !state;
+   if (SEQ_BPM_IsRunning())
+      trackMuteToggleRequested_[clipNumber] = !trackMuteToggleRequested_[clipNumber];
+   else
+      trackMute_[clipNumber] = !trackMute_[clipNumber];
 }
 // -------------------------------------------------------------------------------------------------
 
 
 /**
- * Initially open the current clip .mid file of a clipNumber (associated with current sessionNumber)
- * and parse for available header/track chunks.
-
- * Multiple recordings into that clip slot will produce higher -0000.MID suffixes, the highest
- * number is loaded.
- *
- * @return 0, if no errors occured
+ * Synchronized (to beatstep) mutes and unmutes
  *
  */
-s32 clipFileOpen(u8 clipNumber)
+void performSyncedMutesAndUnmutes()
 {
-   // invalidate current file
-   clipFileAvailable_[clipNumber] = 0;
-
-   static char filepath[48];
-
-   u32 rec_num = 0;
-   MUTEX_SDCARD_TAKE;
-   while (1)
-   {
-      sprintf(filepath, "/SESSIONS/%04d/C_%d-%04d.MID", sessionNumber_, clipNumber, rec_num);
-      if (FILE_FileExists(filepath) <= 0)
-         break;
-      ++rec_num;
-   }
-   MUTEX_SDCARD_GIVE;
-
-   sprintf(filepath, "/SESSIONS/%04d/C_%d-%04d.MID", sessionNumber_, clipNumber, rec_num-1);
-
-   MUTEX_SDCARD_TAKE;
-   s32 status = FILE_ReadOpen(&clipFileFi_[clipNumber], filepath);
-   FILE_ReadClose(&clipFileFi_[clipNumber]); // close again - file will be reopened by read handler
-   MUTEX_SDCARD_GIVE;
-
-   if (status != 0)
-   {
-      DEBUG_MSG("[clipFileOpen] failed to open file %s, status: %d\n", filepath, status);
-      return status;
-   }
-
-   // File is available
-
-   clipFilePos_[clipNumber] = 0;
-   clipFileLen_[clipNumber] = clipFileFi_[clipNumber].fsize;
-   clipFileAvailable_[clipNumber] = 1;
-
-   DEBUG_MSG("[clipFileOpen] opened '%s' of length %u\n", filepath, clipFileLen_[clipNumber]);
-
-   // Parse header...
-   u8 chunk_type[4];
-   u32 chunk_len;
-
-   DEBUG_MSG("[clipFileOpen] reading file\n\r");
-
-   // reset file position
-   clipFileSeek(clipNumber, 0);
-   u32 file_pos = 0;
-   u16 num_tracks = 0;
-
-   // read chunks
-   while (!clipFileEOF(clipNumber))
-   {
-      file_pos += clipFileRead(clipNumber, chunk_type, 4);
-
-      if (clipFileEOF(clipNumber))
-         break; // unexpected: end of file reached
-
-      chunk_len = clipReadWord(clipNumber, 4);
-      file_pos += 4;
-
-      DEBUG_MSG("[clipFileOpen] chunk len %u", chunk_len);
-
-
-      if (clipFileEOF(clipNumber))
-         break; // unexpected: end of file reached
-
-      if (memcmp(chunk_type, "MThd", 4) == 0)
-      {
-         DEBUG_MSG("[clipFileOpen] Found Header with size: %u\n\r", chunk_len);
-         if( chunk_len != 6 )
-         {
-            DEBUG_MSG("[clipFileOpen] invalid header size - skip!\n\r");
-         }
-         else
-         {
-            clipMidiFileFormat_[clipNumber] = (u16)clipReadWord(clipNumber, 2);
-            u16 tempTracksNum = (u16)clipReadWord(clipNumber, 2);
-            clipMidiFilePPQN_[clipNumber] = (u16)clipReadWord(clipNumber, 2);
-            file_pos += 6;
-            DEBUG_MSG("[clipFileOpen] MIDI file format: %u\n\r", clipMidiFileFormat_[clipNumber]);
-            DEBUG_MSG("[clipFileOpen] Number of tracks: %u\n\r", tempTracksNum);
-            DEBUG_MSG("[clipFileOpen] ppqn (n per quarter note): %u\n\r", clipMidiFilePPQN_[clipNumber]);
-         }
-      }
-      else if (memcmp(chunk_type, "MTrk", 4) == 0)
-      {
-         if (num_tracks >= 1)
-         {
-            DEBUG_MSG("[clipFileOpen] Found Track with size: %u must be ignored due to MID_PARSER_MAX_TRACKS\n\r", chunk_len);
-         }
-         else
-         {
-            u32 num_bytes = 0;
-            u32 delta = (u32)clipReadVarLen(clipNumber, &num_bytes);
-            file_pos += num_bytes;
-            chunk_len -= num_bytes;
-
-            midi_track_t *mt = &clipMidiTrack_[clipNumber];
-            mt->initial_file_pos = file_pos;
-            mt->initial_tick = delta;
-            mt->file_pos = file_pos;
-            mt->chunk_end = file_pos + chunk_len - 1;
-            mt->tick = delta;
-            mt->running_status = 0x80;
-            ++num_tracks;
-
-            DEBUG_MSG("[clipFileOpen] Found Track %d with size: %u, initial_tick: %u, starting at tick: %u\n\r", num_tracks, chunk_len + num_bytes, mt->initial_tick, mt->tick);
-
-            break;
-         }
-
-         // switch to next track
-         file_pos += chunk_len;
-         clipFileSeek(clipNumber, file_pos);
-      }
-      else
-      {
-         DEBUG_MSG("[clipFileOpen] Found unknown chunk '%c%c%c%c' of size %u\n\r",
-                   chunk_type[0], chunk_type[1], chunk_type[2], chunk_type[3],
-                   chunk_len);
-
-         if (num_tracks >= 1 )
-         {
-            // Found at least one track, all is good
-            break;
-         }
-         else
-         {
-            // Invalidate file, no tracks found
-            clipFileAvailable_[clipNumber] = 0;
-            return -1;
-         }
-      }
-   }
-
-   clipFileAvailable_[clipNumber] = 1;
-
-   return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Callback method to count a loaded play event in memory.
- * Triggered by MID_PARSER_FetchEvents during loadClip
- *
- */
-static s32 countPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick)
-{
-   if (midi_package.event == NoteOff || midi_package.velocity == 0)
-      DEBUG_MSG("[countPlayEvent] @tick %u note off", tick);
-   else if (midi_package.event == NoteOn)
-      DEBUG_MSG("[countPlayEvent] @tick %u note on", tick);
-
-   clipEventNumber_[clipNumber]++;
-
-   if (tick > clipTicks_[clipNumber])
-      clipTicks_[clipNumber] = tick;
-
-   return 0;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Callback method to count a loaded play event in memory.
- * Triggered by MID_PARSER_FetchEvents during loadClip
- *
- */
-static s32 countMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick)
-{
-   clipEventNumber_[clipNumber]++;
-
-   if (tick > clipTicks_[clipNumber])
-      clipTicks_[clipNumber] = tick;
-
-   return 0;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Prefetches MIDI events from the given clip number file for a given number of MIDI ticks
- *
- * tick_offsets are scaled to clip loop ranges
- *
- * returns < 0 on errors
- * returns > 0 if tracks are still playing
- * returns 0 if song is finished
- *
- */
-s32 clipFetchEvents(u8 clipNumber, u32 tick_offset, u32 num_ticks)
-{
-   u8 stillRunning = 0;
-
-   if (clipFileAvailable_[clipNumber] == 0)
-      return 1; // fake for compatibility reasons
-
-   midi_track_t *mt = &clipMidiTrack_[clipNumber];
-
-   DEBUG_MSG("[fetch events] clip %d fpos %d endpos %d | tick_offs: %d", clipNumber, mt->file_pos, mt->chunk_end, tick_offset);
-
-   // Special case - if we are at the end of our midi file, loop back to start
-   // XXX: later on - skip to preindexed loop start point, for now, just rewind
-   if (mt->file_pos >= mt->chunk_end)
-      clipRewind(clipNumber);
-
-   while (mt->file_pos < mt->chunk_end)
-   {
-      stillRunning = 1;
-
-      // exit, if next tick is not within given timeframe
-      if (mt->tick >= tick_offset + num_ticks)
-         break;
-
-      // re-set to current file pos
-      clipFileSeek(clipNumber, mt->file_pos);
-
-      // get event
-      u8 event;
-      mt->file_pos += clipFileRead(clipNumber, &event, 1);
-
-      if (event == 0xf0)
-      {
-         // SysEx event
-         u32 length = (u32)clipReadVarLen(clipNumber, &mt->file_pos);
-         #if DEBUG_VERBOSE_LEVEL >= 3
-         DEBUG_MSG("[MID_PARSER:%d:%u] SysEx event with %u bytes\n\r", track, mt->tick, length);
-         #endif
-
-         // TODO: use optimized packages for SysEx!
-         mios32_midi_package_t midi_package;
-         midi_package.type = 0xf; // single bytes will be transmitted
-
-         // initial 0xf0
-         midi_package.evnt0 = 0xf0;
-         if (clipPlayEventCallback != NULL)
-            clipPlayEventCallback(clipNumber, midi_package, mt->tick);
-
-         // remaining bytes
-         int i;
-         for (i=0; i<length; ++i)
-         {
-            u8 evnt0;
-            mt->file_pos += clipFileRead(clipNumber, &evnt0, 1);
-            midi_package.evnt0 = evnt0;
-            if (clipPlayEventCallback != NULL)
-               clipPlayEventCallback(clipNumber, midi_package, mt->tick);
-         }
-      }
-      else if (event == 0xf7)
-      {
-         // "Escaped" event (allows to send any MIDI data)
-         u32 length = (u32)clipReadVarLen(clipNumber, &mt->file_pos);
-         #if DEBUG_VERBOSE_LEVEL >= 3
-         DEBUG_MSG("[MID_PARSER:%d:%u] Escaped event with %u bytes\n\r", track, mt->tick, length);
-         #endif
-
-         mios32_midi_package_t midi_package;
-         midi_package.type = 0xf; // single bytes will be transmitted
-         int i;
-         for (i=0; i<length; ++i)
-         {
-            u8 evnt0;
-            mt->file_pos += clipFileRead(clipNumber, &evnt0, 1);
-            midi_package.evnt0 = evnt0;
-            if (clipPlayEventCallback != NULL)
-               clipPlayEventCallback(clipNumber, midi_package, mt->tick);
-         }
-      }
-      else if (event == 0xff)
-      {
-         // Meta Event
-         u8 meta;
-         mt->file_pos += clipFileRead(clipNumber, &meta, 1); // Meta type 1 byte, e.g. 0x2f "EndOfTrack"
-         u32 length = (u32)clipReadVarLen(clipNumber, &mt->file_pos);
-
-         if (clipMetaEventCallback != NULL)
-         {
-            u32 buflen = length;
-            if (buflen > (MID_PARSER_META_BUFFER_SIZE-1))
-            {
-               buflen = MID_PARSER_META_BUFFER_SIZE - 1;
-               DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes - cut at %u bytes!\n\r", clipNumber, mt->tick, meta, length, buflen);
-            }
-            else
-            {
-               DEBUG_MSG("[MID_PARSER:%d:%u] Meta Event 0x%02x with %u bytes\n\r", clipNumber, mt->tick, meta, buflen);
-            }
-
-            if (buflen)
-            {
-               // copy bytes into buffer
-               mt->file_pos += clipFileRead(clipNumber, meta_buffer, buflen);
-
-               if (length > buflen)
-               {
-                  // no free memory: dummy reads
-                  int i;
-                  u8 dummy;
-                  for(i=buflen; i<length; ++i)
-                     mt->file_pos += clipFileRead(clipNumber, &dummy, 1);
-               }
-            }
-
-            meta_buffer[buflen] = 0; // terminate with 0 for the case that a string has been transfered
-
-            // -> forward to callback function
-            clipMetaEventCallback(clipNumber, meta, buflen, meta_buffer, mt->tick);
-         }
-      }
-      else
-      {
-         // common MIDI event
-         mios32_midi_package_t midi_package;
-
-         if (event & 0x80)
-         {
-            mt->running_status = event;
-            midi_package.evnt0 = event;
-            u8 evnt1;
-            mt->file_pos += clipFileRead(clipNumber, &evnt1, 1);
-            midi_package.evnt1 = evnt1;
-         }
-         else
-         {
-            midi_package.evnt0 = mt->running_status;
-            midi_package.evnt1 = event;
-         }
-         midi_package.type = midi_package.event;
-
-         switch (midi_package.event)
-         {
-         case NoteOff:
-         case NoteOn:
-         case PolyPressure:
-         case CC:
-         case PitchBend:
-            {
-               u8 evnt2;
-               mt->file_pos += clipFileRead(clipNumber, &evnt2, 1);
-               midi_package.evnt2 = evnt2;
-
-               if (clipPlayEventCallback != NULL)
-                  clipPlayEventCallback(clipNumber, midi_package, mt->tick);
-
-               #if DEBUG_VERBOSE_LEVEL >= 3
-               DEBUG_MSG("[MID_PARSER:%d:%u] %02x%02x%02x\n\r", clipNumber, mt->tick, midi_package.evnt0, midi_package.evnt1, midi_package.evnt2);
-               #endif
-            }
-            break;
-         case ProgramChange:
-         case Aftertouch:
-            if (clipPlayEventCallback != NULL)
-               clipPlayEventCallback(clipNumber, midi_package, mt->tick);
-
-            #if DEBUG_VERBOSE_LEVEL >= 3
-            DEBUG_MSG("[MID_PARSER:%d:%u] %02x%02x\n\r", track, mt->tick, midi_package.evnt0, midi_package.evnt1);
-            #endif
-            break;
-
-         default:
-            #if DEBUG_VERBOSE_LEVEL >= 1
-            DEBUG_MSG("[MID_PARSER:%d:%u] ooops? got 0xf0 status in MIDI event stream!\n\r", track, mt->tick);
-            #endif
-            break;
-         }
-      }
-
-      // get delta ticks to next event, if end of track hasn't been reached yet
-      if (mt->file_pos < mt->chunk_end)
-      {
-         u32 delta = (u32)clipReadVarLen(clipNumber, &mt->file_pos);
-         mt->tick += delta;
-      }
-   }
-
-   return stillRunning;
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Scan a clip and read the number of events and midi ticks contained
- *
- */
-void clipScan(u8 clipNumber)
-{
-   clipEventNumber_[clipNumber] = 0;
-   clipTicks_[clipNumber] = 0;
-
-   // Install "count-only" callback
-   clipPlayEventCallback = countPlayEvent;
-   clipMetaEventCallback = countMetaEvent;
-
-   clipFetchEvents(clipNumber, 0, 0xFFFFFFF);
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * (Re)load a session clip. It will have changed after recording.
- * The clip is also automatically unmuted, if it was muted before and has enough data.
- * If no clip was found, the local clipData will be empty
- *
- */
-void loadClip(u8 clipNumber)
-{
-   clipFileOpen(clipNumber);
-   clipScan(clipNumber);
-
-   DEBUG_MSG("loadClip(): counted %d events and %d ticks (= %d steps) for clip %d.", clipEventNumber_[clipNumber], clipTicks_[clipNumber], tickToStep(clipTicks_[clipNumber]), clipNumber);
-
-   if (clipEventNumber_[clipNumber] < 3)
-   {
-      DEBUG_MSG("loadClip(): disabling clip: not enough events (%d events)", clipEventNumber_[clipNumber]);
-      clipTicks_[clipNumber] = 0;
-      clipEventNumber_[clipNumber] = 0;
-      clipFileAvailable_[clipNumber] = 0;
-   }
-
-   screenSetClipLength(clipNumber, tickToStep(clipTicks_[clipNumber]));
-   screenSetClipPosition(clipNumber, 0);
-
-   // unmute available clip
-   clipMute_[clipNumber] = clipFileAvailable_[clipNumber];
-   toggleMute(clipNumber);
-}
-// -------------------------------------------------------------------------------------------------
-
-
-/**
- * Load new session data
- * also load all stored clips into memory
- *
- */
-void loadSession(u16 newSessionNumber)
-{
-   sessionNumber_ = newSessionNumber;
-
    u8 clip;
-   for (clip = 0; clip < 8; clip++)
-      loadClip(clip);
 
-   selectedClipNumber_ = 0;
-   screenSetClipSelected(selectedClipNumber_);
-   screenFormattedFlashMessage("Loaded Session %d", newSessionNumber);
+   for (clip = 0; clip < TRACKS; clip++)
+   {
+      if (trackMuteToggleRequested_[clip])
+      {
+         if (tickToStep(tick_) % beatLoopSteps_ == 0)
+         {
+            u8 state = trackMute_[clip];
+            trackMute_[clip] = !state;
+
+            trackMuteToggleRequested_[clip] = 0;
+         }
+      }
+   }
+};
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Synchronized (to beatstep) scene changes
+ *
+ */
+void performSyncedSceneChanges()
+{
+   if (sceneChangeRequested_ != activeScene_)
+   {
+      u8 sceneChangeInTicks = beatLoopSteps_ - (tickToStep(tick_) % beatLoopSteps_);
+
+      // flash indicate target scene (after synced scene switch)
+      if (tick_ % 16 < 8)
+      {
+         MUTEX_DIGITALOUT_TAKE;
+         MIOS32_DOUT_PinSet(led_scene1, sceneChangeRequested_ == 0);
+         MIOS32_DOUT_PinSet(led_scene2, sceneChangeRequested_ == 1);
+         MIOS32_DOUT_PinSet(led_scene3, sceneChangeRequested_ == 2);
+         MIOS32_DOUT_PinSet(led_scene4, sceneChangeRequested_ == 3);
+         MIOS32_DOUT_PinSet(led_scene5, sceneChangeRequested_ == 4);
+         MIOS32_DOUT_PinSet(led_scene6, sceneChangeRequested_ == 5);
+         MUTEX_DIGITALOUT_GIVE;
+      }
+      else
+      {
+         MUTEX_DIGITALOUT_TAKE;
+         MIOS32_DOUT_PinSet(led_scene1, 0);
+         MIOS32_DOUT_PinSet(led_scene2, 0);
+         MIOS32_DOUT_PinSet(led_scene3, 0);
+         MIOS32_DOUT_PinSet(led_scene4, 0);
+         MIOS32_DOUT_PinSet(led_scene5, 0);
+         MIOS32_DOUT_PinSet(led_scene6, 0);
+         MUTEX_DIGITALOUT_GIVE;
+      }
+
+      if (tickToStep(tick_) % beatLoopSteps_ == 0)
+      {
+         setActiveScene(sceneChangeRequested_);
+         sceneChangeRequested_ = activeScene_;
+         sceneChangeInTicks = 0;
+      }
+
+      screenSetSceneChangeInTicks(sceneChangeInTicks);
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * convert sessionNumber to global filename_
+ */
+void sessionNumberToFilename_(u16 sessionNumber)
+{
+   sprintf(filename_, "/SESSIONS/%04d.LPA", sessionNumber);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Save session to defined session number file
+ *
+ */
+void saveSession(u16 sessionNumber)
+{
+   sessionNumberToFilename_(sessionNumber);
+
+   MUTEX_SDCARD_TAKE;
+
+   s32 status;
+   if ((status = FILE_WriteOpen(filename_, 1)) < 0)
+   {
+      DEBUG_MSG("[FILE] Failed to open/create %s, status: %d\n", filename_, status);
+   }
+   else
+   {
+      FILE_WriteBuffer((u8*)"LPAV2200", 8);
+
+      status |= FILE_WriteBuffer((u8*)trackMute_, sizeof(trackMute_));
+      status |= FILE_WriteBuffer((u8*)trackMidiPort_, sizeof(trackMidiPort_));
+      status |= FILE_WriteBuffer((u8*)trackMidiChannel_, sizeof(trackMidiChannel_));
+      
+      status |= FILE_WriteBuffer((u8*)clipSteps_, sizeof(clipSteps_));
+      status |= FILE_WriteBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_WriteBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
+      status |= FILE_WriteBuffer((u8*)clipScroll_, sizeof(clipScroll_));
+      status |= FILE_WriteBuffer((u8*)clipStretch_, sizeof(clipStretch_));
+      
+      status |= FILE_WriteBuffer((u8*)clipNotes_, sizeof(clipNotes_));
+      status |= FILE_WriteBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
+      status |= FILE_WriteBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      status |= FILE_WriteClose();
+   }
+
+   if (status == 0)
+      screenFormattedFlashMessage("Saved");
+   else
+      screenFormattedFlashMessage("Save failed");
+
+   MUTEX_SDCARD_GIVE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+
+/**
+ * Load session from defined session number file
+ *
+ */
+void loadSession(u16 sessionNumber)
+{
+   sessionNumberToFilename_(sessionNumber);
+
+   MUTEX_SDCARD_TAKE;
+
+   s32 status;
+   file_t file;
+   if ((status = FILE_ReadOpen(&file, filename_)) < 0)
+   {
+      DEBUG_MSG("[FILE] Failed to open %s, status: %d\n", filename_, status);
+   }
+   else
+   {
+      char version[8];
+      FILE_ReadBuffer((u8*)version, 8);
+
+      status |= FILE_ReadBuffer((u8*)trackMute_, sizeof(trackMute_));
+      status |= FILE_ReadBuffer((u8*)trackMidiPort_, sizeof(trackMidiPort_));
+      status |= FILE_ReadBuffer((u8*)trackMidiChannel_, sizeof(trackMidiChannel_));
+
+      status |= FILE_ReadBuffer((u8*)clipSteps_, sizeof(clipSteps_));
+      status |= FILE_ReadBuffer((u8*)clipQuantize_, sizeof(clipQuantize_));
+      status |= FILE_ReadBuffer((u8*)clipTranspose_, sizeof(clipTranspose_));
+      status |= FILE_ReadBuffer((u8*)clipScroll_, sizeof(clipScroll_));
+      status |= FILE_ReadBuffer((u8*)clipStretch_, sizeof(clipStretch_));
+
+      status |= FILE_ReadBuffer((u8*)clipNotes_, sizeof(clipNotes_));
+      status |= FILE_ReadBuffer((u8*)clipNotesSize_, sizeof(clipNotesSize_));
+      status |= FILE_ReadBuffer((u8*)notePtrsOn_, sizeof(notePtrsOn_));
+
+      status |= FILE_ReadClose(&file);
+   }
+
+   if (status == 0)
+      screenFormattedFlashMessage("Loaded");
+   else
+      screenFormattedFlashMessage("Load failed");
+
+   MUTEX_SDCARD_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -791,6 +594,37 @@ void loadSession(u16 newSessionNumber)
 void loopaStartup()
 {
    screenShowLoopaLogo(1);
+   
+   // Set up fixed MIDI router
+   DEBUG_MSG("Setting up MIDI router");
+  
+   // Router: IN1 all -> OUT2 all 
+   midi_router_node_entry_t *n = &midi_router_node[0];
+   n->src_port = USB0 + ((4&0xc) << 2) + (4&3);;
+   n->src_chn = 17;
+   n->dst_port = USB0 + ((5&0xc) << 2) + (5&3);
+   n->dst_chn = 17;
+   
+   // Router: IN2 all -> OUT1 all
+   n = &midi_router_node[1];
+   n->src_port = USB0 + ((5&0xc) << 2) + (5&3);;
+   n->src_chn = 17;
+   n->dst_port = USB0 + ((4&0xc) << 2) + (4&3);
+   n->dst_chn = 17;
+   
+   // Router: IN1 all -> OUT3 all 
+   n = &midi_router_node[2];
+   n->src_port = USB0 + ((4&0xc) << 2) + (4&3);;
+   n->src_chn = 17;
+   n->dst_port = USB0 + ((6&0xc) << 2) + (6&3);
+   n->dst_chn = 17;
+   
+   // Router: IN3 all -> OUT1 all
+   n = &midi_router_node[3];
+   n->src_port = USB0 + ((6&0xc) << 2) + (6&3);;
+   n->src_chn = 17;
+   n->dst_port = USB0 + ((4&0xc) << 2) + (4&3);
+   n->dst_chn = 17;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -809,47 +643,12 @@ static s32  seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 
 static s32  seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick);
 
 
-
-/**
- * Initialize Loopa SEQ
- *
- */
-s32 seqInit()
-{
-   // play mode
-   seqClkLocked = 0;
-
-   // play over USB0 and UART0/1
-   seqPlayEnabledPorts_ = 0x01 | (0x03 << 4);
-
-   // record over USB0 and UART0/1
-   seqRecEnabledPorts_ = 0x01 | (0x03 << 4);
-
-   // reset sequencer
-   seqReset(0);
-
-   // init BPM generator
-   SEQ_BPM_Init(0);
-   SEQ_BPM_Set(120.0);
-
-   // scheduler should send packages to private hook
-   SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
-
-   // install seqPlayEvent callback for clipFetchEvents()
-   clipPlayEventCallback = seqPlayEvent;
-   clipMetaEventCallback = seqIgnoreMetaEvent;
-
-   return 0; // no error
-}
-// -------------------------------------------------------------------------------------------------
-
-
 /**
  * Get Clock Mode
  * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
  *
  */
-u8 seqClockModeGet(void)
+/*u8 seqClockModeGet(void)
 {
    if (seqClkLocked)
       return 3;
@@ -857,13 +656,14 @@ u8 seqClockModeGet(void)
    return SEQ_BPM_ModeGet();
 }
 // -------------------------------------------------------------------------------------------------
-
+*/
 
 /**
  * Set Clock Mode
  * adds a fourth mode which locks the BPM so that it can't be modified by the MIDI file
  *
  */
+/*
 s32 seqClockModeSet(u8 mode)
 {
   if (mode > 3)
@@ -883,7 +683,7 @@ s32 seqClockModeSet(u8 mode)
   return 0; // no error
 }
 // -------------------------------------------------------------------------------------------------
-
+*/
 
 /**
  * This main sequencer handler is called periodically to poll the clock/current tick
@@ -899,14 +699,14 @@ s32 seqHandler(void)
    if (SEQ_BPM_ChkReqStop())
    {
       seqPlayOffEvents();
-      MID_FILE_SetRecordMode(0);
       MIDI_ROUTER_SendMIDIClockEvent(0xfc, 0);
    }
 
-   if (SEQ_BPM_ChkReqCont())
+   /* Hawkeye new - no continuation if (SEQ_BPM_ChkReqCont())
    {
       MIDI_ROUTER_SendMIDIClockEvent(0xfb, 0);
    }
+   */
 
    if (SEQ_BPM_ChkReqStart())
    {
@@ -921,7 +721,6 @@ s32 seqHandler(void)
       seqSongPos(new_song_pos);
    }
 
-
    u32 bpm_tick;
    if (SEQ_BPM_ChkReqClk(&bpm_tick) > 0)
    {
@@ -935,28 +734,6 @@ s32 seqHandler(void)
          MIDI_ROUTER_SendMIDIClockEvent(0xfa, 0);
 
       seqTick(bpm_tick);
-
-      // Perform synchronized recording stop (tracklength a multiple of beatsteps)
-      if (stopRecordingRequest_)
-      {
-         if (tickToStep(bpm_tick) % beatLoopSteps_ == 0)
-         {
-            SEQ_BPM_Stop();          // stop sequencer
-            MIOS32_DOUT_PinSet(led_armrecord, 0);
-
-            screenFormattedFlashMessage("Stopped Recording");
-            MID_FILE_SetRecordMode(0);
-            stopRecordingRequest_ = 0;
-
-            loadClip(reloadClipNumberRequest_);
-            reloadClipNumberRequest_ = -1;
-         }
-         else
-         {
-            u8 remainSteps = 16 - (tickToStep(bpm_tick) % beatLoopSteps_);
-            screenFormattedFlashMessage("Stop Recording in %d", remainSteps);
-         }
-      }
    }
 
    return 0; // no error
@@ -1014,15 +791,8 @@ s32 seqReset(u8 play_off_events)
    // release  FFWD mode
    ffwdSilentMode_ = 0;
 
-   u8 i;
-   for (i = 0; i < 8; i++)
-      clipRestart(i);
-
-   // set initial BPM (according to MIDI file spec)
-   SEQ_BPM_PPQN_Set(384); // not specified
-   //SEQ_BPM_Set(120.0);
-   // will be done at tick 0 to avoid overwrite in record mode!
-
+   // set pulses per quarter note (internal resolution, 96 is standard)
+   SEQ_BPM_PPQN_Set(96); // 384
 
    // reset BPM tick
    SEQ_BPM_TickSet(0);
@@ -1038,9 +808,6 @@ s32 seqReset(u8 play_off_events)
  */
 static s32 seqSongPos(u16 new_song_pos)
 {
-   if (MID_FILE_RecordingEnabled())
-      return 0; // nothing to do
-
    u32 new_tick = new_song_pos * (SEQ_BPM_PPQN_Get() / 4);
 
    portENTER_CRITICAL();
@@ -1048,33 +815,11 @@ static s32 seqSongPos(u16 new_song_pos)
    // set new tick value
    SEQ_BPM_TickSet(new_tick);
 
-   DEBUG_MSG("[SEQ] Setting new song position %u (-> %u ticks)\n", new_song_pos, new_tick);
+   // DEBUG_MSG("[SEQ] Setting new song position %u (-> %u ticks)\n", new_song_pos, new_tick);
 
    // since timebase has been changed, ensure that Off-Events are played
    // (otherwise they will be played much later...)
    seqPlayOffEvents();
-
-   // restart song
-   //MID_PARSER_RestartSong();
-
-   // Rewind clips (they have been scanned for length before)
-   u8 i;
-   for (i = 0; i < 8; i++)
-      clipRestart(i);
-
-   /* XXX TODO
-   if( new_song_pos > 1 )
-   {
-      // (silently) fast forward to requested position
-      ffwdSilentMode = 1;
-      MID_PARSER_FetchEvents(0, new_tick-1);
-      ffwd_silent_mode = 0;
-   }
-
-   // when do we expect the next prefetch:
-   nextPrefetch_ = new_tick;
-   prefetchOffset_ = new_tick;
-   */
 
    portEXIT_CRITICAL();
 
@@ -1084,7 +829,7 @@ static s32 seqSongPos(u16 new_song_pos)
 
 
 /**
- * Update BEAT LEDs / Voxel space beat line / Clip positions
+ * Update BEAT LEDs / Clip positions
  *
  */
 static void seqUpdateBeatLEDs(u32 bpm_tick)
@@ -1099,14 +844,15 @@ static void seqUpdateBeatLEDs(u32 bpm_tick)
    {
       lastLEDstate = beatled;
 
+      MUTEX_DIGITALOUT_TAKE;
       switch (beatled)
       {
       case 0:
+         oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
          MIOS32_DOUT_PinSet(led_beat0, 1);
          MIOS32_DOUT_PinSet(led_beat1, 0);
          MIOS32_DOUT_PinSet(led_beat2, 0);
          MIOS32_DOUT_PinSet(led_beat3, 0);
-         voxelTickLine();
          break;
       case 1:
          MIOS32_DOUT_PinSet(led_beat0, 0);
@@ -1127,13 +873,13 @@ static void seqUpdateBeatLEDs(u32 bpm_tick)
          MIOS32_DOUT_PinSet(led_beat3, 1);
          break;
       }
+      MUTEX_DIGITALOUT_GIVE;
 
       // New step, Update clip positions
       u8 i;
-      for (i = 0; i < 8; i++)
+      for (i = 0; i < TRACKS; i++)
       {
-         DEBUG_MSG("[SetClipPos] clip: %u bpm_tick: %u clipTicks_[clip]: %u ticksPerStep: %u", i, bpm_tick, clipTicks_[i], ticksPerStep);
-         screenSetClipPosition(i, ((u32) (bpm_tick % clipTicks_[i]) / ticksPerStep));
+         screenSetClipPosition(i, ((u32) (bpm_tick / ticksPerStep) % clipSteps_[i][activeScene_]));
       }
 
       // Set global song step (non-wrapping), e.g. for recording clips
@@ -1149,51 +895,60 @@ static void seqUpdateBeatLEDs(u32 bpm_tick)
  */
 static s32 seqTick(u32 bpm_tick)
 {
+   tick_ = bpm_tick;
+
    // send MIDI clock depending on ppqn
-   if( (bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
+   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/24)) == 0)
    {
+      // TODO: Don't send MIDI clock, when receiving external clock!
+
       // DEBUG_MSG("Tick %d, SEQ BPM PPQN/24 %d", bpm_tick, SEQ_BPM_PPQN_Get()/24);
       MIDI_ROUTER_SendMIDIClockEvent(0xf8, bpm_tick);
    }
 
-
-   u8 clipNumber;
-   for (clipNumber = 0; clipNumber < 8; clipNumber++)
+   // perform synced clip mutes/unmutes (only at full steps)
+   if ((bpm_tick % (SEQ_BPM_PPQN_Get()/4)) == 0)
    {
-      if (clipFileAvailable_[clipNumber])
+      performSyncedMutesAndUnmutes();
+      performSyncedSceneChanges();
+   }
+
+   u8 clip;
+   for (clip = 0; clip < TRACKS; clip++)
+   {
+      if (!trackMute_[clip])
       {
-         // DEBUG_MSG("clip: %d bpm_tick: %d nextPrefetch: %d", clipNumber, bpm_tick, nextPrefetch_[clipNumber]);
+         u32 clipNoteTime = boundTickToClipSteps(bpm_tick, clip);
+         u16 i;
 
-         if (bpm_tick >= nextPrefetch_[clipNumber])
+         for (i=0; i < clipNotesSize_[clip][activeScene_]; i++)
          {
-            // get number of prefetch ticks depending on current BPM
-            u32 prefetch_ticks = SEQ_BPM_TicksFor_mS(PREFETCH_TIME_MS);
-
-            if (bpm_tick >= prefetchOffset_[clipNumber])
+            if (clipNotes_[clip][activeScene_][i].length > 0) // not still being held/recorded!
             {
-               DEBUG_MSG("[PREFETCH] BUFFER UNDERRUN");
-               // buffer underrun - fetch more!
-               prefetch_ticks += (bpm_tick - prefetchOffset_[clipNumber]);
-               nextPrefetch_[clipNumber] = bpm_tick; // ASAP
-            }
-            else if ((prefetchOffset_[clipNumber] - bpm_tick) < prefetch_ticks)
-            {
-               DEBUG_MSG("[PREFETCH] nearly a buffer underrun");
-               // close to a buffer underrun - fetch more!
-               prefetch_ticks *= 2;
-               nextPrefetch_[clipNumber] = bpm_tick; // ASAP
-            }
-            else
-            {
-               nextPrefetch_[clipNumber] += prefetch_ticks;
-            }
+               if (/*quantize(clipNotes_[clip][activeScene_][i].tick,
+                            clipQuantize_[clip][activeScene_],
+                            getClipLengthInTicks(clip)) == clipNoteTime */
+                     quantizeTransform(clip, i) == clipNoteTime)
+               {
+                  s16 note = clipNotes_[clip][activeScene_][i].note + clipTranspose_[clip][activeScene_];
+                  note = note < 0 ? 0 : note;
+                  note = note > 127 ? 127 : note;
 
-            DEBUG_MSG("[SEQ] Prefetch for clip %d started at tick %u (prefetching %u..%u)\n", clipNumber, bpm_tick, prefetchOffset_[clipNumber], prefetchOffset_[clipNumber]+prefetch_ticks-1);
+                  mios32_midi_package_t package;
+                  package.type = NoteOn;
+                  package.event = NoteOn;
+                  package.chn = trackMidiChannel_[clip];
+                  package.note = note;
+                  package.velocity = clipNotes_[clip][activeScene_][i].velocity;
+                  hookMIDISendPackage(clip, package); // play NOW
 
-            clipFetchEvents(clipNumber, prefetchOffset_[clipNumber], prefetch_ticks);
-            prefetchOffset_[clipNumber] += prefetch_ticks;
-
-            DEBUG_MSG("[SEQ] Prefetch for clip %d finished at tick %u\n", clipNumber, SEQ_BPM_TickGet());
+                  package.type = NoteOff;
+                  package.event = NoteOff;
+                  package.note = note;
+                  package.velocity = 0;
+                  seqPlayEvent(clip, package, bpm_tick + clipNotes_[clip][activeScene_][i].length); // always play off event (schedule later)
+               }
+            }
          }
       }
    }
@@ -1228,7 +983,7 @@ static s32 seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 t
    if (midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0))
       event_type = SEQ_MIDI_OUT_OffEvent;
 
-   // output events on "clipNumber" port
+   // output events on "clipNumber" port (which are then redirected just in time by the SEQ back to hookMIDISendPackage)
    u32 status = 0;
    status |= SEQ_MIDI_OUT_Send(clipNumber, midi_package, event_type, tick, 0);
 
@@ -1254,40 +1009,21 @@ static s32 seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 t
  */
 static s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_package_t package)
 {
-   // XXX: Map clipNumber to configured output port/channel for this clip
-
-   // DEBUG_MSG("hook clipNumber %d mute of this channel %d", clipNumber, clipMute_[clipNumber]);
-
-   if (clipNumber > 7 || (!clipMute_[clipNumber]))
+   // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
+   if (package.evnt0 >= 0xf8)
    {
-      // realtime events are already scheduled by MIDI_ROUTER_SendMIDIClockEvent()
-      if (package.evnt0 >= 0xf8)
-      {
-         MIOS32_MIDI_SendPackage(UART0, package);
-      }
-      else
-      {
-         // forward to enabled MIDI ports
-         int i;
-         u16 mask = 1;
+      MIOS32_MIDI_SendPackage(UART0, package);
+   }
+   else
+   {
+      mios32_midi_port_t port = trackMidiPort_[clipNumber];
+      MIOS32_MIDI_SendPackage(port, package);
 
-         for (i=0; i<16; ++i, mask <<= 1)
-         {
-            if (seqPlayEnabledPorts_ & mask)
-            {
-               // USB0/1/2/3, UART0/1/2/3, IIC0/1/2/3, OSC0/1/2/3
-               mios32_midi_port_t port = USB0 + ((i&0xc) << 2) + (i&3);
-               MIOS32_MIDI_SendPackage(port, package);
-            }
-         }
-      }
+      // screenFormattedFlashMessage("play %d on %x", package.note, port);
 
-      // Voxelspace note rendering
-      if (package.event == NoteOn && package.velocity > 0)
-         voxelNoteOn(package.note, package.velocity);
-
-      if (package.event == NoteOff || (package.event == NoteOn && package.velocity == 0))
-         voxelNoteOff(package.note);
+      // DEBUG: SEND TO USB0, too (can be removed)
+      port = USB0;
+      MIOS32_MIDI_SendPackage(port, package);
    }
 
    return 0; // no error
@@ -1296,20 +1032,24 @@ static s32 hookMIDISendPackage(mios32_midi_port_t clipNumber, mios32_midi_packag
 
 
 /**
- * Handle a stop request (with beatstep synced recording stop)
+ * Handle a stop request
  *
  */
 void handleStop()
 {
-   if (!isRecording_)
-   {
-      screenFormattedFlashMessage("Stopped Playing");
-      SEQ_BPM_Stop();          // stop sequencer
+   screenFormattedFlashMessage("Stopped");
 
-      MIOS32_DOUT_PinSet(led_startstop, 0);
-   }
-   else
-      stopRecordingRequest_ = 1;
+   MUTEX_DIGITALOUT_TAKE;
+   MIOS32_DOUT_PinSet(led_startstop, 0);
+   MIOS32_DOUT_PinSet(led_armrecord, 0);
+   MUTEX_DIGITALOUT_GIVE;
+
+   SEQ_BPM_Stop(); // stop sequencer
+
+   // Clear "stuck" notes, that may still be depressed while stop has been hit
+   u8 i;
+   for (i=0; i<128; i++)
+      notePtrsOn_[i] = -1;
 
    isRecording_ = 0;
 }
@@ -1336,8 +1076,9 @@ s32 seqPlayStopButton(void)
      // start sequencer
      SEQ_BPM_Start();
 
+     MUTEX_DIGITALOUT_TAKE;
      MIOS32_DOUT_PinSet(led_startstop, 1);
-     MIOS32_DOUT_PinSet(led_armrecord, 0);
+     MUTEX_DIGITALOUT_GIVE;
 
      screenFormattedFlashMessage("Play");
   }
@@ -1351,35 +1092,25 @@ s32 seqPlayStopButton(void)
  * To control the rec/stop button function
  *
  */
-s32 seqRecStopButton(void)
+s32 seqArmButton(void)
 {
-  if( SEQ_BPM_IsRunning() )
+  if (isRecording_ == 0)
   {
-     handleStop();
+     screenFormattedFlashMessage("Armed");
+     isRecording_ = 1;
+
+     MUTEX_DIGITALOUT_TAKE;
+     MIOS32_DOUT_PinSet(led_armrecord, 1);
+     MUTEX_DIGITALOUT_GIVE;
   }
   else
   {
-     // if in auto mode and BPM generator is clocked in slave mode:
-     // change to master mode
-     SEQ_BPM_CheckAutoMaster();
+     screenFormattedFlashMessage("Disarmed");
+     isRecording_ = 0;
 
-     // enter record mode
-     if (MID_FILE_SetRecordMode(1) >= 0)
-     {
-        reloadClipNumberRequest_ = selectedClipNumber_;
-        isRecording_ = 1;
-
-        // reset sequencer
-        seqReset(1);
-
-        // start sequencer
-        SEQ_BPM_Start();
-
-        MIOS32_DOUT_PinSet(led_startstop, 1);
-        MIOS32_DOUT_PinSet(led_armrecord, 1);
-
-        screenFormattedFlashMessage("Recording Clip %d", selectedClipNumber_ + 1);
-     }
+     MUTEX_DIGITALOUT_TAKE;
+     MIOS32_DOUT_PinSet(led_armrecord, 0);
+     MUTEX_DIGITALOUT_GIVE;
   }
 
   return 0; // no error
@@ -1388,7 +1119,8 @@ s32 seqRecStopButton(void)
 
 
 /**
- * Fast forward (XXX: not yet implemented)
+ * Fast forward
+ * is put on right encoder as "scrub"
  *
  */
 s32 seqFFwdButton(void)
@@ -1408,7 +1140,8 @@ s32 seqFFwdButton(void)
 
 
 /**
- * Rewind (XXX: not yet implemented)
+ * Rewind
+ * is put on right encoder as "scrub"
  *
  */
 s32 seqFRewButton(void)
@@ -1427,21 +1160,334 @@ s32 seqFRewButton(void)
 // -------------------------------------------------------------------------------------------------
 
 
+/**
+ * Initialize Loopa SEQ
+ *
+ */
+s32 seqInit()
+{
+   // play mode
+   seqClkLocked = 0;
+
+   // record over USB0 and UART0/1
+   seqRecEnabledPorts_ = 0x01 | (0x03 << 4);
+
+   // reset sequencer
+   seqReset(0);
+
+   // init BPM generator
+   SEQ_BPM_Init(0);
+   SEQ_BPM_ModeSet(SEQ_BPM_MODE_Auto);
+   SEQ_BPM_Set(120.0);
+   bpm_ = 120;
+
+   // scheduler should send packages to private hook
+   SEQ_MIDI_OUT_Callback_MIDI_SendPackage_Set(hookMIDISendPackage);
+
+   // install seqPlayEvent callback for clipFetchEvents()
+   clipPlayEventCallback = seqPlayEvent;
+   clipMetaEventCallback = seqIgnoreMetaEvent;
+
+   u8 i, j;
+   for (i = 0; i < TRACKS; i++)
+   {
+      trackMute_[i] = 0;
+      trackMidiPort_[i] = 0x20; // UART0 aka OUT1
+      trackMidiChannel_[i] = 0; // Channel 1
+      trackMuteToggleRequested_[i] = 0;
+      
+      for (j = 0; j < SCENES; j++)
+      {
+         clipQuantize_[i][j] = 1;
+         clipTranspose_[i][j] = 0;
+         clipScroll_[i][j] = 0;
+         clipStretch_[i][j] = 16;
+         clipSteps_[i][j] = 64;
+         clipNotesSize_[i][j] = 0;
+         clipActiveNote_[i][j] = 0;
+      }
+   }
+
+   for (i=0; i<128; i++)
+      notePtrsOn_[i] = -1;
+
+   // turn on LEDs for active track, scene and page
+   setActiveTrack(activeTrack_);
+   setActiveScene(activeScene_);
+   setActivePage(page_);
+
+   return 0; // no error
+}
+// -------------------------------------------------------------------------------------------------
 
 
 /**
- * SD Card Available, initialize LOOPA, load session, prepare screen and menus
+ * SD Card available, initialize LOOPA, load session, prepare screen and menus
  *
  */
 void loopaSDCardAvailable()
 {
    loadSession(1); // -> XXX: load latest session with a free clip slot instead
    seqInit();
+   trackMute_[0] = 0;
+   seqArmButton();
    screenShowLoopaLogo(0); // Disable logo, normal operations started
-
 }
 // -------------------------------------------------------------------------------------------------
 
+// -------------------------------------------------------------------------------------------------
+// --- PAGE COMMANDS -------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: change clip length
+ *
+ */
+void editLen()
+{
+   command_ = command_ == COMMAND_CLIPLEN ? COMMAND_NONE : COMMAND_CLIPLEN;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: change clip quantization
+ *
+ */
+void editQuantize()
+{
+   command_ = command_ == COMMAND_QUANTIZE ? COMMAND_NONE : COMMAND_QUANTIZE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: change clip transpose
+ *
+ */
+void editTranspose()
+{
+   command_ = command_ == COMMAND_TRANSPOSE ? COMMAND_NONE : COMMAND_TRANSPOSE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: change clip scrolling
+ *
+ */
+void editScroll()
+{
+   command_ = command_ == COMMAND_SCROLL ? COMMAND_NONE : COMMAND_SCROLL;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: change clip stretching
+ *
+ */
+void editStretch()
+{
+   command_ = command_ == COMMAND_STRETCH ? COMMAND_NONE : COMMAND_STRETCH;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Edit Clip Page: Clear clip
+ *
+ */
+void editClear()
+{
+   command_ = command_ == COMMAND_CLEAR ? COMMAND_NONE : COMMAND_CLEAR;
+
+   clipNotesSize_[activeTrack_][activeScene_] = 0;
+
+   u8 i;
+   for (i=0; i<128; i++)
+      notePtrsOn_[i] = -1;
+
+   screenFormattedFlashMessage("Clip %d cleared", activeTrack_ + 1);
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Notes: change note position
+ *
+ */
+void notesPosition()
+{
+   command_ = command_ == COMMAND_POSITION ? COMMAND_NONE : COMMAND_POSITION;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Notes: change note value
+ *
+ */
+void notesNote()
+{
+   command_ = command_ == COMMAND_NOTE ? COMMAND_NONE : COMMAND_NOTE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Notes: change note velocity
+ *
+ */
+void notesVelocity()
+{
+   command_ = command_ == COMMAND_VELOCITY ? COMMAND_NONE : COMMAND_VELOCITY;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Notes: change note length
+ *
+ */
+void notesLength()
+{
+   command_ = command_ == COMMAND_LENGTH ? COMMAND_NONE : COMMAND_LENGTH;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Notes: delete note
+ *
+ */
+void notesDeleteNote()
+{
+   command_ = command_ == COMMAND_DELETENOTE ? COMMAND_NONE : COMMAND_DELETENOTE;
+
+   u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+   if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+   {
+      // only perform changes, if we are in range (still on the same clip)
+      clipNotes_[activeTrack_][activeScene_][activeNote].velocity = 0;
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Port: change clip output MIDI port
+ *
+ */
+void midiTrackPort()
+{
+   command_ = command_ == COMMAND_PORT ? COMMAND_NONE : COMMAND_PORT;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Midi Track Channel: change clip output MIDI channel
+ *
+ */
+void midiTrackChannel()
+{
+   command_ = command_ == COMMAND_CHANNEL ? COMMAND_NONE : COMMAND_CHANNEL;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Scan if selected sessionNumber_ is available on disk
+ *
+ */
+void diskScanSessionFileAvailable()
+{
+   MUTEX_SDCARD_TAKE;
+   sessionNumberToFilename_(sessionNumber_);
+   sessionExistsOnDisk_ = FILE_FileExists(filename_) == 1 ? 1 : 0;
+   MUTEX_SDCARD_GIVE;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Main Menu: Save session command
+ *
+ */
+void diskSave()
+{
+   command_ = COMMAND_NONE;
+
+   saveSession(sessionNumber_);
+   diskScanSessionFileAvailable();
+
+   page_ = PAGE_TRACK;
+   screenNotifyPageChanged();
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Main Menu: Save session command
+ *
+ */
+void diskLoad()
+{
+   command_ = COMMAND_NONE;
+
+   loadSession(sessionNumber_);
+
+   page_ = PAGE_TRACK;
+   screenNotifyPageChanged();
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Main Menu: Save session command
+ *
+ */
+void diskNew()
+{
+   command_ = COMMAND_NONE;
+
+   seqInit();
+   page_ = PAGE_TRACK;
+   screenNotifyPageChanged();
+
+   screenFormattedFlashMessage("A fresh start... :-)");
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Main Menu: Change BPM
+ *
+ */
+void bpmBpm()
+{
+   command_ = command_ == COMMAND_BPM ? COMMAND_NONE : COMMAND_BPM;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Main Menu: enable disable display flashing to beat
+ *
+ */
+void bpmBpmflash()
+{
+   command_ = command_ == COMMAND_BPMFLASH ? COMMAND_NONE : COMMAND_BPMFLASH;
+}
+// -------------------------------------------------------------------------------------------------
+
+
+// -------------------------------------------------------------------------------------------------
+// --- EVENT DISPATCHING ---------------------------------------------------------------------------
+// -------------------------------------------------------------------------------------------------
 
 /**
  * A buttonpress has occured
@@ -1449,61 +1495,156 @@ void loopaSDCardAvailable()
  */
 void loopaButtonPressed(s32 pin)
 {
+   DEBUG_MSG("Button: %d pressed\n", pin);
+
    if (pin == sw_startstop)
    {
-      voxelClearNotes();
-      MIOS32_MIDI_SendDebugMessage("Button: start/stop\n");
       seqPlayStopButton();
    }
    else if (pin == sw_armrecord)
    {
-      voxelClearNotes();
-      voxelClearField();
-      MIOS32_MIDI_SendDebugMessage("Button: arm for record\n");
-      seqRecStopButton();
-
+      seqArmButton();
    }
-   else if (pin == sw_looprange)
+   else if (pin == sw_copy)
    {
-      MIOS32_DOUT_PinSet(led_looprange, 1);
-      MIOS32_MIDI_SendDebugMessage("Button: loop range\n");
+      copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
+      copiedClipQuantize_ = clipQuantize_[activeTrack_][activeScene_];
+      copiedClipTranspose_ = clipTranspose_[activeTrack_][activeScene_];
+      copiedClipScroll_ = clipScroll_[activeTrack_][activeScene_];
+      copiedClipStretch_ = clipStretch_[activeTrack_][activeScene_];
+      memcpy(copiedClipNotes_, clipNotes_[activeTrack_][activeScene_], sizeof(copiedClipNotes_));
+      copiedClipNotesSize_ = clipNotesSize_[activeTrack_][activeScene_];
+      screenFormattedFlashMessage("copied clip to buffer");
    }
-   else if (pin == sw_editclip)
+   else if (pin == sw_paste)
    {
-      MIOS32_DOUT_PinSet(led_editclip, 1);
-      MIOS32_MIDI_SendDebugMessage("Button: edit clip\n");
+      clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
+      clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
+      clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
+      clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
+      clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
+      memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
+      clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
+      screenFormattedFlashMessage("pasted clip from buffer");
    }
-   else if (pin == sw_clip1)
+   else if (pin == sw_gp1)
    {
-      toggleMute(0);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(0);
+            break;
+         case PAGE_EDIT:
+            editLen();
+            break;
+         case PAGE_NOTES:
+            notesPosition();
+            break;
+         case PAGE_MIDI:
+            midiTrackPort();
+            break;
+         case PAGE_DISK:
+            diskSave();
+            break;
+         case PAGE_BPM:
+            bpmBpm();
+            break;
+      }
    }
-   else if (pin == sw_clip2)
+   else if (pin == sw_gp2)
    {
-      toggleMute(1);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(1);
+            break;
+         case PAGE_EDIT:
+            editQuantize();
+            break;
+         case PAGE_NOTES:
+            notesNote();
+            break;
+         case PAGE_MIDI:
+            midiTrackChannel();
+            break;
+         case PAGE_DISK:
+            diskLoad();
+            break;
+         case PAGE_BPM:
+            bpmBpmflash();
+            break;
+      }
    }
-   else if (pin == sw_clip3)
+   else if (pin == sw_gp3)
    {
-      toggleMute(2);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(2);
+            break;
+         case PAGE_EDIT:
+            editTranspose();
+            break;
+         case PAGE_NOTES:
+            notesVelocity();
+            break;
+         case PAGE_DISK:
+            diskNew();
+            break;
+      }
    }
-   else if (pin == sw_clip4)
+   else if (pin == sw_gp4)
    {
-      toggleMute(3);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(3);
+            break;
+         case PAGE_EDIT:
+            editScroll();
+            break;
+         case PAGE_NOTES:
+            notesLength();
+            break;
+      }
    }
-   else if (pin == sw_clip5)
+   else if (pin == sw_gp5)
    {
-      toggleMute(4);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(4);
+            break;
+         case PAGE_EDIT:
+            editStretch();
+            break;
+      }
    }
-   else if (pin == sw_clip6)
+   else if (pin == sw_gp6)
    {
-      toggleMute(5);
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            toggleMute(5);
+            break;
+         case PAGE_EDIT:
+            editClear();
+            break;
+         case PAGE_NOTES:
+            notesDeleteNote();
+            break;
+      }
    }
-   else if (pin == sw_clip7)
+   else if (pin == sw_delete)
    {
-      toggleMute(6);
+      editClear(); // shortcut: clear track
+      command_ = COMMAND_NONE;
    }
-   else if (pin == sw_clip8)
+   else if (pin == sw_encoder2)
    {
-      toggleMute(7);
+      page_ = PAGE_TRACK; // shortcut back to track display
+      command_ = COMMAND_NONE;
+      screenNotifyPageChanged();
    }
 }
 // -------------------------------------------------------------------------------------------------
@@ -1515,13 +1656,321 @@ void loopaButtonPressed(s32 pin)
  */
 void loopaEncoderTurned(s32 encoder, s32 incrementer)
 {
-   if (encoder == enc_clipswitch)
-   {
-      selectedClipNumber_ += incrementer;
-      selectedClipNumber_ %= 8;
-      screenSetClipSelected(selectedClipNumber_);
+   incrementer = -incrementer;
+   DEBUG_MSG("[Encoder] %d turned, direction %d\n", encoder, incrementer);
 
-      screenFormattedFlashMessage("Clip %d - %d Events", selectedClipNumber_ + 1, clipEventNumber_[selectedClipNumber_]);
+   if (encoder == enc_scene_id)
+   {
+      if (incrementer < 0)
+      {
+         s8 newScene = sceneChangeRequested_ - 1;
+         if (newScene < 0)
+            newScene = 0;
+
+         sceneChangeRequested_ = newScene;
+
+         if (sceneChangeRequested_ == activeScene_ || !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
+            setActiveScene(newScene);
+      }
+      else
+      {
+         s8 newScene = sceneChangeRequested_ + 1;
+         if (newScene >= SCENES)
+            newScene = SCENES - 1;
+
+         sceneChangeRequested_ = newScene;
+
+         if (sceneChangeRequested_ == activeScene_ || !SEQ_BPM_IsRunning()) // if (after changing) now no change requested or not playing, switch at once
+            setActiveScene(newScene);
+      }
+   }
+
+   if (encoder == enc_track_id)
+   {
+      if (page_ == PAGE_DISK) // Disk page - left encoder changes selected session number
+      {
+         s16 newSessionNumber = sessionNumber_ + incrementer;
+         newSessionNumber = newSessionNumber < 0 ? 0 : newSessionNumber;
+         sessionNumber_ = newSessionNumber;
+
+         diskScanSessionFileAvailable();
+      }
+      else if (page_ == PAGE_NOTES) // Notes page -left encoder changes selected note
+      {
+         s16 newNote = clipActiveNote_[activeTrack_][activeScene_] += incrementer;
+         if (newNote < 0)
+            newNote = clipNotesSize_[activeTrack_][activeScene_] - 1;
+         if (newNote >= clipNotesSize_[activeTrack_][activeScene_])
+            newNote = 0;
+         clipActiveNote_[activeTrack_][activeScene_] = newNote;
+      }
+      else // all other pages - change active clip number
+      {
+         s8 newTrack = activeTrack_ + incrementer;
+         newTrack = newTrack < 0 ? 0 : newTrack;
+         setActiveTrack(newTrack >= TRACKS ? TRACKS-1 : newTrack);
+      }
+   }
+   else if (encoder == enc_page_id)
+   {
+      // switch through pages
+
+      enum LoopaPage page = page_;
+
+      if (page == PAGE_TRACK && incrementer < 0)
+         page = PAGE_TRACK;
+      else if (page >= PAGE_BPM && incrementer > 0)
+         page = PAGE_BPM;
+      else
+         page += incrementer;
+
+      if (page == PAGE_DISK)
+         diskScanSessionFileAvailable();
+
+      setActivePage(page);
+
+      screenNotifyPageChanged();
+   }
+   else if (encoder == enc_data_id)
+   {
+      if (command_ == COMMAND_BPM)
+      {
+         bpm_ += incrementer;
+         if (bpm_ < 30)
+            bpm_ = 30;
+         if (bpm_ > 300)
+            bpm_ = 300;
+
+         SEQ_BPM_Set(bpm_);
+      }
+      else if (command_ == COMMAND_CLIPLEN)
+      {
+         if (incrementer > 0)
+            clipSteps_[activeTrack_][activeScene_] *= 2;
+         else
+            clipSteps_[activeTrack_][activeScene_] /= 2;
+
+         if (clipSteps_[activeTrack_][activeScene_] < 4)
+            clipSteps_[activeTrack_][activeScene_] = 4;
+
+         if (clipSteps_[activeTrack_][activeScene_] > 128)
+            clipSteps_[activeTrack_][activeScene_] = 128;
+      }
+      else if (command_ == COMMAND_QUANTIZE)
+      {
+         if (incrementer > 0)
+            clipQuantize_[activeTrack_][activeScene_] *= 2;
+         else
+            clipQuantize_[activeTrack_][activeScene_] /= 2;
+
+         if (clipQuantize_[activeTrack_][activeScene_] < 2)
+            clipQuantize_[activeTrack_][activeScene_] = 1;  // no quantization
+
+         if (clipQuantize_[activeTrack_][activeScene_] == 2)
+            clipQuantize_[activeTrack_][activeScene_] = 3;  // 1/128th note quantization
+
+         if (clipQuantize_[activeTrack_][activeScene_] > 384)
+            clipQuantize_[activeTrack_][activeScene_] = 384;
+      }
+      else if (command_ == COMMAND_TRANSPOSE)
+      {
+         if (incrementer > 0)
+            clipTranspose_[activeTrack_][activeScene_]++;
+         else
+            clipTranspose_[activeTrack_][activeScene_]--;
+
+         if (clipTranspose_[activeTrack_][activeScene_] < -96)
+            clipTranspose_[activeTrack_][activeScene_] = -96;
+
+         if (clipTranspose_[activeTrack_][activeScene_] > 96)
+            clipTranspose_[activeTrack_][activeScene_] = 96;
+      }
+      else if (command_ == COMMAND_SCROLL)
+      {
+         clipScroll_[activeTrack_][activeScene_] += incrementer;
+
+         if (clipScroll_[activeTrack_][activeScene_] < -1024)
+            clipScroll_[activeTrack_][activeScene_] = -1024;
+
+         if (clipScroll_[activeTrack_][activeScene_] > 1024)
+            clipScroll_[activeTrack_][activeScene_] = 1024;
+      }
+      else if (command_ == COMMAND_STRETCH)
+      {
+         s16 newStretch = clipStretch_[activeTrack_][activeScene_];
+         if (incrementer > 0)
+            newStretch *= 2;
+         else
+            newStretch /= 2;
+
+         if (newStretch < 1)
+            newStretch = 1;
+
+         if (newStretch > 128)
+            newStretch = 128;
+
+         clipStretch_[activeTrack_][activeScene_] = newStretch;
+      }
+      else if (command_ == COMMAND_POSITION)
+      {
+         u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+         if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+         {
+            // only perform changes, if we are in range (still on the same clip)
+
+            s16 newTick = clipNotes_[activeTrack_][activeScene_][activeNote].tick;
+            newTick += incrementer > 0 ? 24 : -24;
+            u32 clipLength = getClipLengthInTicks(activeTrack_);
+
+            if (newTick < 0)
+               newTick += clipLength;
+
+            if (newTick >= clipLength)
+               newTick -= clipLength;
+
+            clipNotes_[activeTrack_][activeScene_][activeNote].tick = newTick;
+         }
+      }
+      else if (command_ == COMMAND_NOTE)
+      {
+         u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+         if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+         {
+            // only perform changes, if we are in range (still on the same clip)
+
+            s16 newNote = clipNotes_[activeTrack_][activeScene_][activeNote].note;
+            newNote += incrementer;
+
+            if (newNote < 1)
+               newNote = 1;
+
+            if (newNote >= 127)
+               newNote = 127;
+
+            clipNotes_[activeTrack_][activeScene_][activeNote].note = newNote;
+         }
+      }
+      else if (command_ == COMMAND_LENGTH)
+      {
+         u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+         if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+         {
+            // only perform changes, if we are in range (still on the same clip)
+
+            s16 newLength = clipNotes_[activeTrack_][activeScene_][activeNote].length;
+            newLength += incrementer * 4;
+
+            if (newLength <= 1)
+               newLength = 1;
+
+            if (newLength >= 1536)
+               newLength = 1536;
+
+            clipNotes_[activeTrack_][activeScene_][activeNote].length = newLength;
+         }
+      }
+      else if (command_ == COMMAND_VELOCITY)
+      {
+         u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+         if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+         {
+            // only perform changes, if we are in range (still on the same clip)
+
+            s16 newVel = clipNotes_[activeTrack_][activeScene_][activeNote].velocity;
+            newVel += incrementer;
+
+            if (newVel < 1)
+               newVel = 1;
+
+            if (newVel >= 127)
+               newVel = 127;
+
+            clipNotes_[activeTrack_][activeScene_][activeNote].velocity = newVel;
+         }
+      }
+      else if (command_ == COMMAND_DELETENOTE)
+      {
+         u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+         if (activeNote < clipNotesSize_[activeTrack_][activeScene_])
+         {
+            // only perform changes, if we are in range (still on the same clip)
+            clipNotes_[activeTrack_][activeScene_][activeNote].velocity = 0;
+         }
+      }
+      else if (command_ == COMMAND_PORT)
+      {
+         u8 newPort = trackMidiPort_[activeTrack_] += incrementer;
+
+         newPort = newPort < 0x20 ? 0x20: newPort;
+         newPort = newPort > 0x23 ? 0x23 : newPort;
+
+         trackMidiPort_[activeTrack_] = newPort;
+      }
+      else if (command_ == COMMAND_CHANNEL)
+      {
+         s8 newChannel = trackMidiChannel_[activeTrack_] += incrementer;
+         newChannel = newChannel > 15 ? 0 : newChannel;
+         newChannel = newChannel < 0 ? 15 : newChannel;
+
+         trackMidiChannel_[activeTrack_] = newChannel;
+      }
+
+   }
+}
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * Record midi event
+ *
+ */
+void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package)
+{
+   u16 clipNoteNumber = clipNotesSize_[activeTrack_][activeScene_];
+
+   if (isRecording_ && SEQ_BPM_IsRunning())
+   {
+      u32 clipNoteTime = boundTickToClipSteps(tick_, activeTrack_);
+
+      if (clipNoteNumber < MAXNOTES && midi_package.type == NoteOn && midi_package.velocity > 0)
+      {
+         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].tick = clipNoteTime;
+         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].length = 0; // not yet determined
+         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].note = midi_package.note;
+         clipNotes_[activeTrack_][activeScene_][clipNoteNumber].velocity = midi_package.velocity;
+
+         if (notePtrsOn_[midi_package.note] >= 0)
+            screenFormattedFlashMessage("dbg: note alrdy on");
+
+         notePtrsOn_[midi_package.note] = clipNoteNumber;
+
+         // screenFormattedFlashMessage("Note %d on - ptr %d", midi_package.note, clipNoteNumber);
+         clipNotesSize_[activeTrack_][activeScene_]++;
+      }
+      else if (midi_package.type == NoteOff || (midi_package.type == NoteOn && midi_package.velocity == 0))
+      {
+         s16 notePtr = notePtrsOn_[midi_package.note];
+
+         if (notePtr >= 0)
+         {
+            s32 len = clipNoteTime - clipNotes_[activeTrack_][activeScene_][notePtr].tick;
+
+            if (len == 0)
+               len = 1;
+
+            if (len < 0)
+               len += getClipLengthInTicks(activeTrack_);
+
+            // screenFormattedFlashMessage("o %d - p %d - l %d", midi_package.note, notePtr, len);
+            clipNotes_[activeTrack_][activeScene_][notePtr].length = len;
+         }
+         notePtrsOn_[midi_package.note] = -1;
+      }
    }
 }
 // -------------------------------------------------------------------------------------------------

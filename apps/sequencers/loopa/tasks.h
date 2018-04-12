@@ -69,6 +69,18 @@ extern "C" {
 #endif
 
 
+// Digital Out serialization
+#ifdef MIOS32_FAMILY_EMULATION
+extern void TASKS_DigitalOutSemaphoreTake(void);
+  extern void TASKS_DigitalOutSemaphoreGive(void);
+# define MUTEX_DIGITALOUT_TAKE { TASKS_DigitalOutSemaphoreTake(); }
+# define MUTEX_DIGITALOUT_GIVE { TASKS_DigitalOutSemaphoreGive(); }
+#else
+extern xSemaphoreHandle xDigitalOutSemaphore;
+# define MUTEX_DIGITALOUT_TAKE { if( xDigitalOutSemaphore ) while( xSemaphoreTakeRecursive(xDigitalOutSemaphore, (portTickType)1) != pdTRUE ); }
+# define MUTEX_DIGITALOUT_GIVE { if( xDigitalOutSemaphore ) xSemaphoreGiveRecursive(xDigitalOutSemaphore); }
+#endif
+
 
 extern s32 TASK_MSD_EnableSet(u8 enable);
 extern s32 TASK_MSD_EnableGet();

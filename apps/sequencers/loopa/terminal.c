@@ -146,25 +146,24 @@ s32 TERMINAL_Parse(mios32_midi_port_t port, char byte)
 /////////////////////////////////////////////////////////////////////////////
 s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
 {
-  if( byte == '\r' ) {
-    // ignore
-  } else if( byte == '\n' ) {
-
-    // extra for MIDIO128: ensure that recording not active to avoid conflict with write operations!
-    if( MID_FILE_RecordingEnabled() ) {
-      MID_FILE_SetRecordMode(0);
-    }
-
-    MUTEX_MIDIOUT_TAKE;
-    MUTEX_SDCARD_TAKE;
-    FILE_BrowserHandler(port, line_buffer);
-    MUTEX_SDCARD_GIVE;
-    MUTEX_MIDIOUT_GIVE;
-    line_ix = 0;
-    line_buffer[line_ix] = 0;
-  } else if( line_ix < (STRING_MAX-1) ) {
-    line_buffer[line_ix++] = byte;
-    line_buffer[line_ix] = 0;
+   if( byte == '\r' )
+   {
+      // ignore
+   }
+   else if( byte == '\n' )
+   {
+      MUTEX_MIDIOUT_TAKE;
+      MUTEX_SDCARD_TAKE;
+      FILE_BrowserHandler(port, line_buffer);
+      MUTEX_SDCARD_GIVE;
+      MUTEX_MIDIOUT_GIVE;
+      line_ix = 0;
+      line_buffer[line_ix] = 0;
+  }
+   else if( line_ix < (STRING_MAX-1) )
+   {
+      line_buffer[line_ix++] = byte;
+      line_buffer[line_ix] = 0;
   }
 
   return 0; // no error

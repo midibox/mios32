@@ -32,12 +32,11 @@
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
-#include "loopa.h"
 #include "mid_file.h"
 
 #include "loopa.h"
 #include "terminal.h"
-#include "voxelspace.h"
+#include "screen.h"
 
 
 // #define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
@@ -93,6 +92,8 @@ xSemaphoreHandle xSDCardSemaphore;
 xSemaphoreHandle xMIDIINSemaphore;
 xSemaphoreHandle xMIDIOUTSemaphore;
 
+// Mutex for digital out (e.g. GP LED) updates
+xSemaphoreHandle xDigitalOutSemaphore;
 
 static volatile msd_state_t msd_state;
 
@@ -109,68 +110,82 @@ static s32 NOTIFY_MIDI_TimeOut(mios32_midi_port_t port);
 /////////////////////////////////////////////////////////////////////////////
 void APP_Init(void)
 {
-  MIOS32_BOARD_LED_Init(0xffffffff); // initialize all LEDs
+   MIOS32_BOARD_LED_Init(0xffffffff); // initialize all LEDs
 
-  MIOS32_MIDI_SendDebugMessage("=============================================================");
-  MIOS32_MIDI_SendDebugMessage("Starting MBLoopa");
+   MIOS32_MIDI_SendDebugMessage("=============================================================");
+   MIOS32_MIDI_SendDebugMessage("Starting MBLoopa");
 
-  // enable MSD by default (has to be enabled in SHIFT menu)
-  msd_state = MSD_DISABLED;
+   // enable MSD by default (has to be enabled in SHIFT menu)
+   msd_state = MSD_DISABLED;
 
-  // hardware will be enabled once configuration has been loaded from SD Card
-  // (resp. no SD Card is available)
-  hw_enabled = 0;
+   // hardware will be enabled once configuration has been loaded from SD Card
+   // (resp. no SD Card is available)
+   hw_enabled = 0;
 
-  // create semaphores
-  xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
-  xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
-  xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+   // create semaphores
+   xSDCardSemaphore = xSemaphoreCreateRecursiveMutex();
+   xMIDIINSemaphore = xSemaphoreCreateRecursiveMutex();
+   xMIDIOUTSemaphore = xSemaphoreCreateRecursiveMutex();
+   xDigitalOutSemaphore = xSemaphoreCreateRecursiveMutex();
 
-  // install SysEx callback
-  MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
+   // install SysEx callback
+   MIOS32_MIDI_SysExCallback_Init(APP_SYSEX_Parser);
 
-  // install MIDI Rx/Tx callback functions
-  MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
-  MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
+   // install MIDI Rx/Tx callback functions
+   MIOS32_MIDI_DirectRxCallback_Init(&NOTIFY_MIDI_Rx);
+   MIOS32_MIDI_DirectTxCallback_Init(&NOTIFY_MIDI_Tx);
 
-  // install timeout callback function
-  MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
+   // install timeout callback function
+   MIOS32_MIDI_TimeOutCallback_Init(&NOTIFY_MIDI_TimeOut);
 
-  // initialize code modules
-  MIDI_PORT_Init(0);
-  MIDI_ROUTER_Init(0);
-  TERMINAL_Init(0);
-  MIDIMON_Init(0);
-  FILE_Init(0);
-  SEQ_MIDI_OUT_Init(0);
-  seqInit(0);
+   // initialize code modules
+   MIDI_PORT_Init(0);
+   MIDI_ROUTER_Init(0);
+   TERMINAL_Init(0);
+   MIDIMON_Init(0);
+   FILE_Init(0);
+   SEQ_MIDI_OUT_Init(0);
+   seqInit(0);
 
-  // install two encoders (on shift register 1)
-  mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(0);
-  enc_config.cfg.type = DETENTED3;
-  enc_config.cfg.sr = 1;
-  enc_config.cfg.pos = 0;
-  enc_config.cfg.speed = NORMAL;
-  enc_config.cfg.speed_par = 0;
-  MIOS32_ENC_ConfigSet(0, enc_config);
+   // install four encoders...
+   mios32_enc_config_t enc_config = MIOS32_ENC_ConfigGet(enc_scene_id);
+   enc_config.cfg.type = DETENTED3;
+   enc_config.cfg.sr = enc_scene / 8 + 1;
+   enc_config.cfg.pos = enc_scene % 8;
+   enc_config.cfg.speed = NORMAL;
+   enc_config.cfg.speed_par = 0;
+   MIOS32_ENC_ConfigSet(enc_scene_id, enc_config);
 
-  enc_config = MIOS32_ENC_ConfigGet(1);
-  enc_config.cfg.type = DETENTED3;
-  enc_config.cfg.sr = 1;
-  enc_config.cfg.pos = 2;
-  enc_config.cfg.speed = NORMAL;
-  enc_config.cfg.speed_par = 0;
-  MIOS32_ENC_ConfigSet(1, enc_config);
+   enc_config = MIOS32_ENC_ConfigGet(enc_track_id);
+   enc_config.cfg.type = DETENTED3;
+   enc_config.cfg.sr = enc_track / 8 + 1;
+   enc_config.cfg.pos = enc_track % 8;
+   enc_config.cfg.speed = NORMAL;
+   enc_config.cfg.speed_par = 0;
+   MIOS32_ENC_ConfigSet(enc_track_id, enc_config);
 
-  // precalc voxel field for startup demo
-  calcField();
+   enc_config = MIOS32_ENC_ConfigGet(enc_page_id);
+   enc_config.cfg.type = DETENTED3;
+   enc_config.cfg.sr = enc_page / 8 + 1;
+   enc_config.cfg.pos = enc_page % 8;
+   enc_config.cfg.speed = NORMAL;
+   enc_config.cfg.speed_par = 0;
+   MIOS32_ENC_ConfigSet(enc_page_id, enc_config);
 
-  // start tasks
-  xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
-  xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-  xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+   enc_config = MIOS32_ENC_ConfigGet(enc_data_id);
+   enc_config.cfg.type = DETENTED3;
+   enc_config.cfg.sr = enc_data / 8 + 1;
+   enc_config.cfg.pos = enc_data % 8;
+   enc_config.cfg.speed = NORMAL;
+   enc_config.cfg.speed_par = 0;
+   MIOS32_ENC_ConfigSet(enc_data_id, enc_config);
 
-  loopaStartup();
+   // start tasks
+   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+   xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+
+   loopaStartup();
 }
 
 
@@ -203,8 +218,11 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   // -> MIDI Port Handler (used for MIDI monitor function)
   MIDI_PORT_NotifyMIDIRx(port, midi_package);
 
-  // -> MIDI file recorder
-  MID_FILE_Receive(port, midi_package);
+  /// -> MIDI file recorder
+  /// MID_FILE_Receive(port, midi_package);
+
+  // Record midi event in loopa
+  loopaRecord(port, midi_package);
 
   // forward to MIDI Monitor
   // SysEx messages have to be filtered for USB0 and UART0 to avoid data corruption
@@ -212,13 +230,14 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
   u8 filter_sysex_message = (port == USB0) || (port == UART0);
   MIDIMON_Receive(port, midi_package, filter_sysex_message);
 
-
+   /*
   // Draw notes to voxel space
   if( midi_package.event == NoteOn && midi_package.velocity > 0)
      voxelNoteOn(midi_package.note, midi_package.velocity);
 
   if( midi_package.event == NoteOff || (midi_package.event == NoteOn && midi_package.velocity == 0) )
      voxelNoteOff(midi_package.note);
+     */
 }
 
 
@@ -227,16 +246,10 @@ void APP_MIDI_NotifyPackage(mios32_midi_port_t port, mios32_midi_package_t midi_
 /////////////////////////////////////////////////////////////////////////////
 s32 APP_SYSEX_Parser(mios32_midi_port_t port, u8 midi_in)
 {
-  // -> MIDI file recorder
-  MID_FILE_ReceiveSysEx(port, midi_in);
+   // -> MIDI Router
+   MIDI_ROUTER_ReceiveSysEx(port, midi_in);
 
-  // -> MIDIO
-  /// MIDIO_SYSEX_Parser(port, midi_in);
-
-  // -> MIDI Router
-  MIDI_ROUTER_ReceiveSysEx(port, midi_in);
-
-  return 0; // no error
+   return 0; // no error
 }
 
 
@@ -262,7 +275,7 @@ void APP_SRIO_ServiceFinish(void)
 /////////////////////////////////////////////////////////////////////////////
 void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 {
-   MIOS32_MIDI_SendDebugMessage("PIN %d toggled - value %d", pin, pin_value);
+   // MIOS32_MIDI_SendDebugMessage("PIN %d toggled - value %d", pin, pin_value);
 
    if (pin_value == 0)
       loopaButtonPressed(pin);
@@ -276,12 +289,10 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 void APP_ENC_NotifyChange(u32 encoder, s32 incrementer)
 {
-  MIOS32_MIDI_SendDebugMessage("Encoder %d turned - increment %d", encoder, incrementer);
+   //MIOS32_MIDI_SendDebugMessage("Encoder %d turned - increment %d", encoder, incrementer);
 
-  loopaEncoderTurned(encoder, incrementer);
-
+   loopaEncoderTurned(encoder, incrementer);
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // This hook is called when a pot has been moved
@@ -295,26 +306,25 @@ void APP_AIN_NotifyChange(u32 pin, u32 pin_value)
 /////////////////////////////////////////////////////////////////////////////
 static void TASK_Period_1mS_LP(void *pvParameters)
 {
-  u16 taskCtr = 0;
+   u16 taskCtr = 0;
 
-  while( 1 )
-  {
-    vTaskDelay(1 / portTICK_RATE_MS);
-    taskCtr++;
+   while( 1 )
+   {
+      vTaskDelay(1 / portTICK_RATE_MS);
+      taskCtr++;
 
-    // call SCS handler
-    // SCS_Tick(); Call our own
+      // call SCS handler
+      // SCS_Tick(); Call our own
 
-    // MIDI In/Out monitor
-    MIDI_PORT_Period1mS();
+      // MIDI In/Out monitor
+      MIDI_PORT_Period1mS();
 
-    if (1) // Check, if we are in Voxel Screensaver mode
-    {
-       if (taskCtr % 1 == 0)
-          voxelFrame();
-    }
-  }
-
+      if (taskCtr % 20 == 0)
+      {
+         display();
+         updateGPLeds();
+      }
+   }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -327,13 +337,13 @@ static void TASK_Period_1mS_SD(void *pvParameters)
   u16 sdcard_check_ctr = 0;
   u8 lun_available = 0;
 
-  while( 1 )
+  while (1)
   {
     vTaskDelay(1 / portTICK_RATE_MS);
 
     // each second: check if SD Card (still) available
 
-    if( msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay )
+    if (msd_state == MSD_DISABLED && ++sdcard_check_ctr >= sdcard_check_delay)
     {
        sdcard_check_ctr = 0;
 
@@ -451,9 +461,8 @@ static void TASK_Period_1mS(void *pvParameters)
      // skip delay gap if we had to wait for more than 5 ticks to avoid
      // unnecessary repeats until xLastExecutionTime reached xTaskGetTickCount() again
      portTickType xCurrentTickCount = xTaskGetTickCount();
-     if( xLastExecutionTime < (xCurrentTickCount-5) )
+     if (xLastExecutionTime < xCurrentTickCount-5)
         xLastExecutionTime = xCurrentTickCount;
-
 
      // execute sequencer handler
      MUTEX_SDCARD_TAKE;
@@ -480,7 +489,7 @@ static void TASK_Period_1mS(void *pvParameters)
 static s32 NOTIFY_MIDI_Rx(mios32_midi_port_t port, u8 midi_byte)
 {
   // filter MIDI In port which controls the MIDI clock
-  if( MIDI_ROUTER_MIDIClockInGet(port) == 1 )
+  if (MIDI_ROUTER_MIDIClockInGet(port) == 1)
     SEQ_BPM_NotifyMIDIRx(midi_byte);
 
   return 0; // no error, no filtering

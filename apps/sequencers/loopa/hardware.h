@@ -1,32 +1,86 @@
-extern u8 led_startstop;
-extern u8 led_armrecord;
-extern u8 led_clip1;
-extern u8 led_clip2;
-extern u8 led_clip3;
-extern u8 led_clip4;
-extern u8 led_clip5;
-extern u8 led_clip6;
-extern u8 led_clip7;
-extern u8 led_clip8;
-extern u8 led_looprange;
-extern u8 led_editclip;
-extern u8 led_beat0;
-extern u8 led_beat1;
-extern u8 led_beat2;
-extern u8 led_beat3;
+// --- LEDs ---
 
-extern u8 sw_startstop;
-extern u8 sw_armrecord;
-extern u8 sw_clip1;
-extern u8 sw_clip2;
-extern u8 sw_clip3;
-extern u8 sw_clip4;
-extern u8 sw_clip5;
-extern u8 sw_clip6;
-extern u8 sw_clip7;
-extern u8 sw_clip8;
-extern u8 sw_looprange;
-extern u8 sw_editclip;
+extern const u8 led_startstop;
+extern const u8 led_armrecord;
 
-extern u8 enc_clipswitch;
-extern u8 enc_menu;
+extern const u8 led_gp1;
+extern const u8 led_gp2;
+extern const u8 led_gp3;
+extern const u8 led_gp4;
+extern const u8 led_gp5;
+extern const u8 led_gp6;
+
+extern const u8 led_unmute1;
+extern const u8 led_unmute2;
+extern const u8 led_unmute3;
+extern const u8 led_unmute4;
+extern const u8 led_unmute5;
+extern const u8 led_unmute6;
+
+extern const u8 led_active1;
+extern const u8 led_active2;
+extern const u8 led_active3;
+extern const u8 led_active4;
+extern const u8 led_active5;
+extern const u8 led_active6;
+
+extern const u8 led_scene1;
+extern const u8 led_scene2;
+extern const u8 led_scene3;
+extern const u8 led_scene4;
+extern const u8 led_scene5;
+extern const u8 led_scene6;
+
+extern const u8 led_page_main;
+extern const u8 led_page_1;
+extern const u8 led_page_2;
+extern const u8 led_page_3;
+extern const u8 led_page_4;
+extern const u8 led_page_5;
+extern const u8 led_page_6;
+
+
+extern const u8 led_scene_up;
+extern const u8 led_scene_down;
+
+extern const u8 led_copy;
+extern const u8 led_paste;
+
+extern const u8 led_beat0;
+extern const u8 led_beat1;
+extern const u8 led_beat2;
+extern const u8 led_beat3;
+
+
+// --- Switches ---
+
+extern const u8 sw_startstop;
+extern const u8 sw_armrecord;
+extern const u8 sw_encoder2;
+
+extern const u8 sw_gp1;
+extern const u8 sw_gp2;
+extern const u8 sw_gp3;
+extern const u8 sw_gp4;
+extern const u8 sw_gp5;
+extern const u8 sw_gp6;
+
+extern const u8 sw_copy;
+extern const u8 sw_paste;
+extern const u8 sw_delete;
+
+
+// -- Encoders ---
+
+extern const u8 enc_scene_id;
+extern const u8 enc_scene;
+
+extern const u8 enc_track_id;
+extern const u8 enc_track;
+
+extern const u8 enc_page_id;
+extern const u8 enc_page;
+
+extern const u8 enc_data_id;
+extern const u8 enc_data;
+

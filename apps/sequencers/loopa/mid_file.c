@@ -355,7 +355,7 @@ s32 MID_FILE_SetRecordMode(u8 enable)
       u32 rec_num = 0;
       while (1)
       {
-         sprintf(record_filename, "/SESSIONS/%04d/C_%d-%04d.MID", sessionNumber_, selectedClipNumber_, rec_num);
+         sprintf(record_filename, "/SESSIONS/%04d/C_%d-%04d.MID", sessionNumber_, activeClip_, rec_num);
          if( (status=FILE_FileExists(record_filename)) <= 0 )
             break;
          ++rec_num;
@@ -371,7 +371,7 @@ s32 MID_FILE_SetRecordMode(u8 enable)
       }
       else
       {
-         screenSetClipRecording(selectedClipNumber_, 1);
+         screenSetClipRecording(activeClip_, 1);
 
          DEBUG_MSG("[MID_FILE] Recording to '%s' started\n", record_filename);
          // write file header
@@ -442,7 +442,7 @@ s32 MID_FILE_SetRecordMode(u8 enable)
          }
       }
 
-      screenSetClipRecording(selectedClipNumber_, 0);
+      screenSetClipRecording(activeClip_, 0);
       DEBUG_MSG("[MID_FILE] Recording to '%s' stopped. Track size: %d bytes\n", record_filename, record_trk_size);
    }
 
