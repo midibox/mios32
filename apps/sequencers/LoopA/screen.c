@@ -831,7 +831,7 @@ void display(void)
       // Startup/initial session loading: Render the MBLoopa Logo
 
       setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(78, 2, "MBLoopA V2");
+      printFormattedString(78, 2, "LoopA V2.01");
 
       setFontSmall(); // width per letter: 6px
       printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2018");
