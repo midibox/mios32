@@ -27,7 +27,6 @@
 
 
 #include <mios32.h>
-#include <mid_parser.h>
 #include <FreeRTOS.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
@@ -38,7 +37,6 @@
 #include "tasks.h"
 #include "file.h"
 #include "loopa.h"
-#include "mid_file.h"
 #include "hardware.h"
 #include "screen.h"
 

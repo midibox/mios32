@@ -30,7 +30,6 @@
 
 #include "hardware.h"
 #include "seq.h"
-#include "mid_file.h"
 #include "screen.h"
 #include "voxelspace.h"
 

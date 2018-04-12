@@ -29,7 +29,6 @@
 #include "terminal.h"
 #include "uip_terminal.h"
 #include "tasks.h"
-#include "mid_file.h"
 
 #if !defined(MIOS32_FAMILY_EMULATION)
 #include <umm_malloc.h>

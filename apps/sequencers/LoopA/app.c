@@ -32,7 +32,6 @@
 
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
-#include "mid_file.h"
 
 #include "loopa.h"
 #include "terminal.h"
