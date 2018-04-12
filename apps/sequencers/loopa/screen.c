@@ -7,9 +7,11 @@
 
 #include <glcd_font.h>
 #include <app_lcd.h>
+#include <seq_bpm.h>
 
+#include "tasks.h"
 #include "gfx_resources.h"
-#include "voxelspace.h"
+#include "loopa.h"
 
 
 // -------------------------------------------------------------------------------------------
@@ -21,17 +23,18 @@ u8 screen[64][128];             // Screen buffer [y][x]
 
 u8 screenShowLoopaLogo_;
 u8 screenClipNumberSelected_ = 0;
-s8 screenRecordingClipNumber_ = -1;
-u16 screenClipStepPosition_[8];
-u16 screenClipStepLength_[8];
+u16 screenClipStepPosition_[TRACKS];
 u32 screenSongStep_ = 0;
 char screenFlashMessage_[40];
 u8 screenFlashMessageFrameCtr_;
+char sceneChangeNotification_[20] = "";
+u8 screenNewPagePanelFrameCtr_ = 0;
 
 unsigned char* fontptr_ = (unsigned char*) fontsmall_pixdata;
 u16 fontchar_bytewidth_ = 3;    // bytes to copy for a line of character pixel data
 u16 fontchar_height_ = 12;      // lines to copy for a full-height character
 u16 fontline_bytewidth_ = 95*3; // bytes per font pixdata line (character layout all in one line)
+u8 fontInverted_ = 0;
 
 
 /**
@@ -77,6 +80,28 @@ void setFontSmall()
 
 
 /**
+ * Set font noninverted
+ * *
+ */
+void setFontNonInverted()
+{
+   fontInverted_ = 0;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Set font inverted
+ *
+ */
+void setFontInverted()
+{
+   fontInverted_ = 1;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
  * Display the given string at the given pixel coordinates
  * output to screen output buffer, the next display() will render it to hardware
  * provides clipping support, coordinates can be offscreen/negative for scrolling fx
@@ -110,8 +135,23 @@ void printString(int xPixCoord /* even! */, int yPixCoord, const char *str)
             for (x = 0; x <fontchar_bytewidth_; x++)
             {
                if (c_s_x >= 0 && c_s_x < 128)
-                  if (*fdata)
-                     *sdata = *fdata;  // inner loop: copy 2 pixels, if onscreen
+               {
+                  if (!fontInverted_)
+                  {
+                     if (*fdata)
+                        *sdata = *fdata;  // inner loop: copy 2 pixels, if onscreen
+                  }
+                  else
+                  {
+                     // "invert" font
+                     u8 first = *fdata >> 4;
+                     u8 second = *fdata % 16;
+
+                     first = 15-first;
+                     second = 15-second;
+                     *sdata = (first << 4) + second;
+                  }
+               }
 
                c_s_x++;
                fdata++;
@@ -137,7 +177,7 @@ void printString(int xPixCoord /* even! */, int yPixCoord, const char *str)
  */
 void printFormattedString(int xPixCoord /* even! */, int yPixCoord, const char* format, ...)
 {
-   char buffer[64]; // TODO: tmp!!! Provide a streamed COM method later!
+   char buffer[64];
    va_list args;
 
    va_start(args, format);
@@ -147,11 +187,30 @@ void printFormattedString(int xPixCoord /* even! */, int yPixCoord, const char* 
 // ----------------------------------------------------------------------------------------
 
 
+/**
+ * Display the given formatted string at the given y pixel coordinates, center x
+ * output to screen output buffer, the next display() will render it to hardware
+ * provides clipping support, coordinates can be offscreen/negative for scrolling fx
+ *
+ */
+void printCenterFormattedString(int yPixCoord, const char* format, ...)
+{
+   char buffer[64];
+   va_list args;
+
+   va_start(args, format);
+   vsprintf((char *)buffer, format, args);
+
+   int xPixCoord = 128 - (fontchar_bytewidth_ * strlen(buffer));
+   return printString(xPixCoord, yPixCoord, buffer);
+}
+// ----------------------------------------------------------------------------------------
+
 
 /**
  * Display a loopa slot time indicator
  * Format: [clipPos:clipLength]
- *         times are in steps/quarternotes
+ *         times are in steps
  *
  *         the time indicator will be rendered inverted, if this is the selected clip/active clip
  *         the display position depends on the slot number, slot #0 is upper left, slot #7 is lower right
@@ -161,32 +220,35 @@ void displayClipPosition(u8 clipNumber)
 {
    char buffer[16];
 
-   u8 loopStartChar = '<';
-   u8 loopEndChar = '=';
-
-   u16 stepLength = screenClipStepLength_[clipNumber];
+   u16 stepLength = clipSteps_[clipNumber][activeScene_];
    u16 stepPos = screenClipStepPosition_[clipNumber];
    u8 isSelected = (clipNumber == screenClipNumberSelected_);
-   u8 isRecording = (clipNumber == screenRecordingClipNumber_);
 
-   if (!isRecording)
+   u8 syncedMuteUnmuteInProgress = trackMuteToggleRequested_[clipNumber] && (tickToStep(tick_) % beatLoopSteps_) != 0;
+
+   if (!syncedMuteUnmuteInProgress)
    {
       if (stepLength == 0)
-         sprintf((char *)buffer, "           ");
-      else if (stepLength > 999)
-         sprintf((char *)buffer, "%c%04d>%4d%c", loopStartChar, stepPos, stepLength, loopEndChar);
+         sprintf((char *)buffer, "       ");
       else if (stepLength > 99)
-         sprintf((char *)buffer, " %c%03d>%3d%c ", loopStartChar, stepPos, stepLength, loopEndChar);
+         sprintf((char *)buffer, "%03d>%3d", stepPos, stepLength);
       else if (stepLength > 9)
-         sprintf((char *)buffer, "  %c%02d>%2d%c  ", loopStartChar, stepPos, stepLength, loopEndChar);
+         sprintf((char *)buffer, " %02d>%2d ", stepPos, stepLength);
+      else
+         sprintf((char *)buffer, "  %01d>%1d  ", stepPos, stepLength);
    }
    else
    {
-      sprintf((char *)buffer, ":: %05d ;;", screenSongStep_);
+      u8 remainSteps = 16 - (tickToStep(tick_) % beatLoopSteps_);
+
+      if (remainSteps > 9)
+         sprintf((char *)buffer, "  %d   ", remainSteps);
+      else
+         sprintf((char *)buffer, "   %d   ", remainSteps);
    }
 
-   u8 xPixCoord = (clipNumber % 4) * 64;
-   u8 yPixCoord = clipNumber < 4 ? 0 : 56;
+   u8 xPixCoord = clipNumber * 42;
+   u8 yPixCoord = 56;
    u8 fontHeight = 7;
    u8 fontByteWidth = 3;
    u8 fontLineByteWidth = 16*3;
@@ -278,38 +340,12 @@ void screenSetClipSelected(u8 clipNumber)
 
 
 /**
- * Set the currently recorded-to clip
- *
- */
-void screenSetClipRecording(u8 clipNumber, u8 recordingActiveFlag)
-{
-   if (recordingActiveFlag)
-      screenRecordingClipNumber_ = clipNumber;
-   else
-      screenRecordingClipNumber_ = -1;
-}
-// ----------------------------------------------------------------------------------------
-
-
-/**
- * Set the length of a clip
- *
- */
-void screenSetClipLength(u8 clipNumber, u16 stepLength)
-{
-   DEBUG_MSG("[screenSetClipLength] clip: %d steplength: %d", clipNumber, stepLength);
-   screenClipStepLength_[clipNumber] = stepLength;
-}
-// ----------------------------------------------------------------------------------------
-
-
-/**
  * Set the position info of a clip
  *
  */
 void screenSetClipPosition(u8 clipNumber, u16 stepPosition)
 {
-   DEBUG_MSG("[screenSetClipPosition] clip: %u stepPosition: %u", clipNumber, stepPosition);
+   // DEBUG_MSG("[screenSetClipPosition] clip: %u stepPosition: %u", clipNumber, stepPosition);
    screenClipStepPosition_[clipNumber] = stepPosition;
 }
 // ----------------------------------------------------------------------------------------
@@ -341,9 +377,449 @@ void screenFormattedFlashMessage(const char* format, ...)
 // ----------------------------------------------------------------------------------------
 
 
+/**
+ * Set scene change notification message (change in ticks)
+ *
+ */
+void screenSetSceneChangeInTicks(u8 ticks)
+{
+   if (ticks)
+      sprintf((char *)sceneChangeNotification_, " [...%d]", ticks);
+   else
+      strcpy(sceneChangeNotification_, "");
+}
+// ----------------------------------------------------------------------------------------
+
 
 /**
- * Display the current screen buffer
+ * Notify, that a screen page change has occured (flash a page descriptor for a while)
+ *
+ */
+void screenNotifyPageChanged()
+{
+   screenNewPagePanelFrameCtr_ = 20;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Convert note length to pixel width
+ * if ticksLength == 0 (still recording),
+ *
+ */
+u16 noteLengthPixels(u32 ticksLength)
+{
+   return tickToStep(ticksLength);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the note data of a clip
+ *
+ */
+void displayClip(u8 clip)
+{
+   u16 x;
+   u8 y;
+   u16 i;
+   u16 mult = 128/clipSteps_[clip][activeScene_];  // horizontal multiplier to make clips as wide as the screen
+
+   u16 curStep = ((u32)boundTickToClipSteps(tick_, clip) * mult) / 24;
+
+   // Render vertical 1/4th note indicators
+   for (i=0; i<clipSteps_[clip][activeScene_] / 4; i++)
+   {
+      x = i * 4 * mult;
+      if (x < 128)
+         for (y=12; y<52; y++)
+               screen[y][x] = i % 4 == 0 ? 0x60 : 0x50;
+   }
+
+   // Render vertical time indicator line (if seq is playing)
+   if (SEQ_BPM_IsRunning() && curStep < 128)
+      for (y=0; y<64; y++)
+         screen[y][curStep] = 0x88;
+
+
+   // Render note data
+   for (i=0; i < clipNotesSize_[clip][activeScene_]; i++)
+   {
+      s32 transformedStep = (s32)quantizeTransform(clip, i) * mult;
+
+      if (transformedStep >= 0) // if note starts within (potentially reconfigured) clip length
+      {
+         u16 step = transformedStep / 24;
+
+         s16 note = clipNotes_[clip][activeScene_][i].note + clipTranspose_[clip][activeScene_];
+         note = note < 0 ? 0 : note;
+         note = note > 127 ? 127 : note;
+         u8 y = (127 - note) / 2;
+
+         if (y < 64)
+         {
+            u16 len = noteLengthPixels(clipNotes_[clip][activeScene_][i].length * mult);
+
+            if (clipNotes_[clip][activeScene_][i].length == 0 && curStep > step)
+            {
+               // still recording (also check for boundary wrapping, disabled right now)
+               len = curStep - step;
+            }
+
+            for (x = step; x <= step + len; x++)
+            {
+               if (clipNotes_[clip][activeScene_][i].velocity > 0)
+               {
+                  u8 color;
+                  if (!trackMute_[clip])
+                     color = x == step ? 0xFF
+                                       : 0x99;  // The modulo only works if we are not scrolling and screen width = clip length
+                  else
+                     color = x == step ? 0x99
+                                       : 0x88;  // The modulo only works if we are not scrolling and screen width = clip length
+
+                  screen[y][x % 128] = color;
+
+                  if (page_ == PAGE_NOTES && i == clipActiveNote_[clip][activeScene_])
+                  {
+                     // render cursor for selected note
+                     u8 cursorX = x % 128;
+                     u8 cursorY = y;
+
+                     if (cursorY > 2 && cursorX < 126)
+                        screen[cursorY - 2][cursorX + 2] = 0x0F;
+
+                     if (cursorY > 2 && cursorX > 2)
+                        screen[cursorY - 2][cursorX - 2] = 0xF0;
+
+                     if (cursorY < 62 && cursorX < 126)
+                        screen[cursorY + 2][cursorX + 2] = 0x0F;
+
+                     if (cursorY < 62 && cursorX > 2)
+                        screen[cursorY + 2][cursorX - 2] = 0xF0;
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the normal loopa view (PAGE_TRACK)
+ *
+ */
+void displayPageTrack(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 8, "M");
+      printString(250, 20, "U");
+      printString(250, 32, "T");
+      printString(250, 44, "E");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   if (trackMute_[activeTrack_])
+      printCenterFormattedString(0, "[Clip %d Scene %d [muted]%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+   else
+      printCenterFormattedString(0, "[Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+
+   u8 clip;
+   for (clip = 0; clip < TRACKS; clip++)
+   {
+      if (clip == activeTrack_ || clipNotesSize_[clip] > 0 || trackMuteToggleRequested_[clip])
+         displayClipPosition(clip);  // only display clip position indicators, if it is the active clip or it has notes
+   }
+
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the edit clip page (PAGE_EDIT)
+ *
+ */
+void displayPageEdit(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 8, "E");
+      printString(250, 20, "D");
+      printString(250, 32, "I");
+      printString(250, 44, "T");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   printCenterFormattedString(0, "Edit Settings [Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+
+   command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
+   if (clipSteps_[activeTrack_][activeScene_] < 100)
+      printFormattedString(0, 54, "Len %d", clipSteps_[activeTrack_][activeScene_]);
+   else
+      printFormattedString(0, 54, "Le %d", clipSteps_[activeTrack_][activeScene_]);
+
+   command_ == COMMAND_QUANTIZE ? setFontInverted() : setFontNonInverted();
+   switch (clipQuantize_[activeTrack_][activeScene_])
+   {
+      case 3: printFormattedString(42, 54, "Q1/128"); break;
+      case 6: printFormattedString(42, 54, "Qu1/64"); break;
+      case 12: printFormattedString(42, 54, "Qu1/32"); break;
+      case 24: printFormattedString(42, 54, "Qu1/16"); break;
+      case 48: printFormattedString(42, 54, "Qu 1/8"); break;
+      case 96: printFormattedString(42, 54, "Qu 1/4"); break;
+      case 192: printFormattedString(42, 54, "Qu 1/2"); break;
+      case 384: printFormattedString(42, 54, "Qu 1/1"); break;
+      default: printFormattedString(42, 54, "Qu OFF"); break;
+   }
+
+   command_ == COMMAND_TRANSPOSE ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "Trn %d", clipTranspose_[activeTrack_][activeScene_]);
+
+   command_ == COMMAND_SCROLL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(126, 54, "Scr %d", clipScroll_[activeTrack_][activeScene_]);
+
+   command_ == COMMAND_STRETCH ? setFontInverted() : setFontNonInverted();
+   switch (clipStretch_[activeTrack_][activeScene_])
+   {
+      case 1: printFormattedString(168, 54, "Zo 1/16"); break;
+      case 2: printFormattedString(168, 54, "Zo 1/8"); break;
+      case 4: printFormattedString(168, 54, "Zo 1/4"); break;
+      case 8: printFormattedString(168, 54, "Zo 1/2"); break;
+      case 16: printFormattedString(168, 54, "Zoom 1"); break;
+      case 32: printFormattedString(168, 54, "Zoom 2"); break;
+      case 64: printFormattedString(168, 54, "Zoom 4"); break;
+      case 128: printFormattedString(168, 54, "Zoom 8"); break;
+   }
+
+   command_ == COMMAND_CLEAR ? setFontInverted() : setFontNonInverted();
+   printFormattedString(210, 54, "Clear");
+
+   setFontNonInverted();
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Numeric note to note string helper
+ *
+ */
+static void stringNote(char *label, u8 note)
+{
+   const char noteTab[12][3] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+
+   // print "---" if note number is 0
+   if (note == 0)
+      sprintf(label, "---  ");
+   else
+   {
+      u8 octave = note / 12;
+      note %= 12;
+
+      // print semitone and octave (-2): up to 4 chars
+      sprintf(label, "%s%d  ",
+              noteTab[note],
+              (int)octave-2);
+   }
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the note editor (PAGE_NOTES)
+ *
+ */
+void displayPageNotes(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 8, "N");
+      printString(250, 20, "O");
+      printString(250, 32, "T");
+      printString(250, 44, "E");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   printCenterFormattedString(0, "Note Editor [Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+
+   if (clipNotesSize_[activeTrack_][activeScene_] > 0)
+   {
+
+      u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
+
+      if (activeNote >= clipNotesSize_[activeTrack_][activeScene_]) // necessary e.g. for clip change
+         activeNote = 0;
+
+      u16 pos = (clipNotes_[activeTrack_][activeScene_][activeNote].tick) / 24;
+      u16 length = clipNotes_[activeTrack_][activeScene_][activeNote].length;
+      u8 note = clipNotes_[activeTrack_][activeScene_][activeNote].note;
+      u8 velocity = clipNotes_[activeTrack_][activeScene_][activeNote].velocity;
+
+      command_ == COMMAND_POSITION ? setFontInverted() : setFontNonInverted();
+      if (pos < 100)
+         printFormattedString(0, 54, "Pos %d", pos);
+      else
+         printFormattedString(0, 54, "Po %d", pos);
+
+      command_ == COMMAND_NOTE ? setFontInverted() : setFontNonInverted();
+
+      char noteStr[8];
+      stringNote(noteStr, note);
+      printFormattedString(42, 54, "%s", noteStr);
+
+      command_ == COMMAND_VELOCITY ? setFontInverted() : setFontNonInverted();
+      printFormattedString(84, 54, "Vel %d", velocity);
+
+      command_ == COMMAND_LENGTH ? setFontInverted() : setFontNonInverted();
+      printFormattedString(126, 54, "Len %d", length);
+
+      command_ == COMMAND_CLEAR ? setFontInverted() : setFontNonInverted();
+      printFormattedString(210, 54, "Delete");
+
+      setFontNonInverted();
+   }
+   else
+   {
+      printCenterFormattedString(54, "No notes recorded, yet");
+   }
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the track midi settings page (PAGE_MIDI)
+ *
+ */
+void displayPageMidi(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 8, "M");
+      printString(250, 20, "I");
+      printString(250, 32, "D");
+      printString(250, 44, "I");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   printCenterFormattedString(0, "MIDI Parameters [Track %d]", activeTrack_ + 1);
+
+   command_ == COMMAND_PORT ? setFontInverted() : setFontNonInverted();
+   switch (trackMidiPort_[activeTrack_])
+   {
+      case 0x20: printFormattedString(0, 54, " OUT1 "); break;
+      case 0x21: printFormattedString(0, 54, " OUT2 "); break;
+      case 0x22: printFormattedString(0, 54, " OUT3 "); break;
+      case 0x23: printFormattedString(0, 54, " OUT4 "); break;
+   }
+
+   command_ == COMMAND_CHANNEL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, " Chn %d ", trackMidiChannel_[activeTrack_] + 1);
+
+   setFontNonInverted();
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the main menu (PAGE_DISK)
+ *
+ */
+void displayPageDisk(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 8, "D");
+      printString(250, 20, "I");
+      printString(250, 32, "S");
+      printString(250, 44, "K");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   printCenterFormattedString(0, "Disk Operations", activeTrack_ + 1, activeScene_ + 1);
+
+   command_ == COMMAND_SAVE ? setFontInverted() : setFontNonInverted();
+   printFormattedString(0, 54, "Save");
+
+   command_ == COMMAND_LOAD ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, "Load");
+
+   command_ == COMMAND_NEW ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "New");
+
+
+   setFontNonInverted();
+   setFontBold();
+   printFormattedString(82, 16, "Session %d", sessionNumber_);
+
+   setFontNormal();
+   if (sessionExistsOnDisk_)
+      printFormattedString(82, 32, "(on disk)", sessionNumber_);
+   else
+      printFormattedString(106, 32, "(new)", sessionNumber_);
+
+   setFontSmall();
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the bpm settings page (PAGE_BPM)
+ *
+ */
+void displayPageBpm(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 14, "B");
+      printString(250, 26, "P");
+      printString(250, 38, "M");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   printCenterFormattedString(0, "Tempo Settings", activeTrack_ + 1, activeScene_ + 1);
+
+   command_ == COMMAND_BPM ? setFontInverted() : setFontNonInverted();
+   u16 bpm = SEQ_BPM_IsMaster() ? bpm_ : SEQ_BPM_Get();
+   printFormattedString(0, 54, "%d BPM", bpm);
+
+   setFontNonInverted();
+   displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Display the current screen buffer (once per frame, called in app.c scheduler)
  *
  */
 void display(void)
@@ -353,23 +829,49 @@ void display(void)
    if (screenShowLoopaLogo_)
    {
       // Startup/initial session loading: Render the MBLoopa Logo
-      setFontBold();
-      printFormattedString(82, 10, "MBLoopA V1");
-      setFontSmall();
-      printFormattedString(64, 32, "(C) Hawkeye, TK. 2015");
-      printFormattedString(52, 44, "MIDIbox hardware platform");
+
+      setFontBold();  // width per letter: 10px (for center calculation)
+      printFormattedString(78, 2, "MBLoopA V2");
+
+      setFontSmall(); // width per letter: 6px
+      printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2018");
+      printFormattedString(52, 32, "MIDIbox hardware platform");
+
+      setFontBold(); // width per letter: 10px;
+      printFormattedString(52, 44, "www.midiphy.com");
    }
    else
    {
-      // Render normal operations fonts/menus
+      // Display page content...
+      switch (page_)
+      {
+         case PAGE_TRACK:
+            displayPageTrack();
+            break;
 
-      // printFormattedString(0, 51, "%s %s %u:%u", screenMode, screenFile, screenPosBar, screenPosStep % 16);
+         case PAGE_EDIT:
+            displayPageEdit();
+            break;
 
-      u8 clip;
-      for (clip = 0; clip < 8; clip++)
-         displayClipPosition(clip);
+         case PAGE_NOTES:
+            displayPageNotes();
+            break;
+
+         case PAGE_MIDI:
+            displayPageMidi();
+            break;
+
+         case PAGE_DISK:
+            displayPageDisk();
+            break;
+
+         case PAGE_BPM:
+            displayPageBpm();
+            break;
+      }
    }
 
+   // Display flash notification
    if (screenFlashMessageFrameCtr_)
    {
       setFontNormal();
@@ -382,7 +884,12 @@ void display(void)
       screenFlashMessageFrameCtr_--;
    }
 
-   // Push screen buffer
+   u8 flash = 0;
+   // no flashing for now :)
+   //if (oledBeatFlashState_ > 0)
+   //   flash = oledBeatFlashState_ == 1 ? 0x44 : 0x66;
+
+   // Push screen buffer to screen
    for (j = 0; j < 64; j++)
    {
       APP_LCD_Cmd(0x15);
@@ -393,17 +900,33 @@ void display(void)
 
       APP_LCD_Cmd(0x5c);
 
-      u8 bgcol = j < 6 ? ((j << 4) + j) : 0;
+      u8 bgcol = 0;
       for (i = 0; i < 128; i++)
       {
-         APP_LCD_Data(screen[j][i]);
-         screen[j][i] = bgcol;
+         // first two pixels...
+         u8 out = screen[j][i];
+         if (flash && out == 0)
+            APP_LCD_Data(flash); // normally raise dark level slightly, but more intensively after 16 16th notes during flash
+         else
+            APP_LCD_Data(out);
+
+         screen[j][i] = bgcol; // clear written pixels
+
+         // next two pixels
          i++;
-         APP_LCD_Data(screen[j][i]);
-         screen[j][i] = bgcol;
+         out = screen[j][i];
+
+         if (flash && out == 0)
+            APP_LCD_Data(flash); // normally raise dark level slightly, but more intensively after 16 16th notes during flash
+         else
+            APP_LCD_Data(out);
+
+         screen[j][i] = bgcol; // clear written pixels
       }
    }
 
+   if (flash)
+      oledBeatFlashState_ = 0;
 }
 // ----------------------------------------------------------------------------------------
 

@@ -19,11 +19,9 @@ LCD       =     ssd1322
 
 THUMB_SOURCE    = app.c \
 	hardware.c \
-	mid_file.c \
 	terminal.c \
 	loopa.c \
-	screen.c \
-	voxelspace.c
+	screen.c 
 
 # (following source stubs not relevant for Cortex M3 derivatives)
 THUMB_AS_SOURCE =
@@ -86,3 +84,4 @@ include $(MIOS32_PATH)/modules/msd/msd.mk
 
 # common make rules
 include $(MIOS32_PATH)/include/makefile/common.mk
+

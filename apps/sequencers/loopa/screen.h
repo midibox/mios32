@@ -4,7 +4,6 @@
 
 extern u8 screen[64][128];             // Screen buffer [y][x]
 
-
 // If showLogo is true, draw the MBLoopa Logo (usually during unit startup)
 void screenShowLoopaLogo(u8 showLogo);
 
@@ -25,6 +24,12 @@ void screenSetSongStep(u32 stepPosition);
 
 // Flash a short-lived message to the center of the screen
 void screenFormattedFlashMessage(const char* format, ...);
+
+// Set scene change notification message (change in ticks)
+void screenSetSceneChangeInTicks(u8 ticks);
+
+// Notify, that a screen page change has occured (flash a page descriptor for a while)
+void screenNotifyPageChanged();
 
 // Display the current screen buffer
 void display();
