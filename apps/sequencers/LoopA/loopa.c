@@ -1,10 +1,10 @@
-// MBLoopa Core Logic
+// LoopA Core Logic
 // (c) Hawkeye 2015-2018
 //
 // This unit provides the loopA core data structures and the menu navigation and multi-clip support
 //
 // In playback, all clips will start to play back, regardless of their mute state.
-// Also, all clips will loop by default (it is called loopA, anyways)
+// Also, all clips will loop by default (it is called LoopA, anyways)
 // This emulates the behaviour of the MBSEQ.
 //
 // INTERFACE (LoopA v2 - with limited encoders/buttons)
@@ -27,7 +27,7 @@
 
 
 #include <mios32.h>
-#include <FreeRTOS.h>
+#include "loopa_datatypes.h"
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include <midi_port.h>
@@ -39,7 +39,7 @@
 #include "loopa.h"
 #include "hardware.h"
 #include "screen.h"
-
+#include "app_lcd.h"
 
 // --  Local types ---
 

@@ -2,7 +2,6 @@
 
 #include <mios32.h>
 
-#include <glcd_font.h>
 #include <app_lcd.h>
 
 #include <seq_bpm.h>
