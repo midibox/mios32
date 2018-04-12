@@ -1,0 +1,60 @@
+// $Id: mid_parser.h 1526 2012-10-29 21:26:00Z tk $
+/*
+ * Header file for MIDI file parser
+ *
+ * ==========================================================================
+ *
+ *  Copyright (C) 2008 Thorsten Klose (tk@midibox.org)
+ *  Licensed for personal non-commercial use only.
+ *  All other rights reserved.
+ *
+ * ==========================================================================
+ */
+
+#ifndef _MID_PARSER_H
+#define _MID_PARSER_H
+
+/////////////////////////////////////////////////////////////////////////////
+// Global definitions
+/////////////////////////////////////////////////////////////////////////////
+
+// can be overruled in mios32_config.h
+#ifndef MID_PARSER_MAX_TRACKS
+#define MID_PARSER_MAX_TRACKS 32
+#endif
+
+#ifndef MID_PARSER_META_BUFFER_SIZE
+#define MID_PARSER_META_BUFFER_SIZE 80
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Global Types
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+// Prototypes
+/////////////////////////////////////////////////////////////////////////////
+
+extern s32 MID_PARSER_Init(u32 mode);
+
+extern s32 MID_PARSER_InstallEventCallbacks(void *mid_parser_playevent, void *mid_parser_playmeta);
+
+extern s32 MID_PARSER_FileIsValid(void);
+
+extern s32 MID_PARSER_Read(void);
+extern s32 MID_PARSER_FetchEvents(u32 tick_offset, u32 num_ticks);
+extern s32 MID_PARSER_RestartSong(void);
+
+extern s32 MIDI_PARSER_FormatGet(void);
+extern s32 MIDI_PARSER_PPQN_Get(void);
+extern s32 MIDI_PARSER_TrackNumGet(void);
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Export global variables
+/////////////////////////////////////////////////////////////////////////////
+
+#endif /* _MID_PARSER_H */
