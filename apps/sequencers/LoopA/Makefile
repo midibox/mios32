@@ -18,6 +18,7 @@ LCD       =     ssd1322
 ################################################################################
 
 THUMB_SOURCE    = app.c \
+	app_lcd.c \
 	hardware.c \
 	terminal.c \
 	loopa.c \
@@ -57,7 +58,7 @@ CFLAGS =	$(DEBUG) $(OPTIMIZE)
 include $(MIOS32_PATH)/programming_models/traditional/programming_model.mk
 
 # application specific LCD driver (selected via makefile variable)
-include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
+#include $(MIOS32_PATH)/modules/app_lcd/$(LCD)/app_lcd.mk
 
 # MIDI Router (and port handling)
 include $(MIOS32_PATH)/modules/midi_router/midi_router.mk

@@ -21,7 +21,6 @@
 #include "tasks.h"
 #include "hardware.h"
 
-#include <glcd_font.h>
 #include <app_lcd.h>
 
 #include <midi_port.h>

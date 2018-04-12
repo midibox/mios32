@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <glcd_font.h>
 #include <app_lcd.h>
 #include <seq_bpm.h>
 
@@ -795,7 +794,7 @@ void displayPageDisk(void)
 void displayPageBpm(void)
 {
    setFontSmall();
-   
+
    if (screenNewPagePanelFrameCtr_ > 0)
    {
       setFontInverted();
