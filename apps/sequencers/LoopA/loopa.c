@@ -1515,14 +1515,21 @@ void loopaButtonPressed(s32 pin)
    }
    else if (pin == sw_paste)
    {
-      clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
-      clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
-      clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
-      clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
-      clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
-      memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
-      clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
-      screenFormattedFlashMessage("pasted clip from buffer");
+      // paste only, if we have a clip in memory
+      if (copiedClipSteps_ > 0)
+      {
+         clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
+         clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
+         clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
+         clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
+         clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
+         memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
+         clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
+         screenFormattedFlashMessage("pasted clip from buffer");
+      }
+      else
+         screenFormattedFlashMessage("no clip in buffer");
+
    }
    else if (pin == sw_gp1)
    {
@@ -1712,6 +1719,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    {
       // switch through pages
 
+      incrementer = -incrementer; // inverted encoder handling for page switching (LEDs on left side of encoder)
       enum LoopaPage page = page_;
 
       if (page == PAGE_TRACK && incrementer < 0)
