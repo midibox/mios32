@@ -474,8 +474,8 @@ void displayClip(u8 clip)
                      color = x == step ? 0xFF
                                        : 0x99;  // The modulo only works if we are not scrolling and screen width = clip length
                   else
-                     color = x == step ? 0x99
-                                       : 0x88;  // The modulo only works if we are not scrolling and screen width = clip length
+                     color = x == step ? 0x88
+                                       : 0x66;  // The modulo only works if we are not scrolling and screen width = clip length
 
                   screen[y][x % 128] = color;
 
@@ -526,9 +526,9 @@ void displayPageTrack(void)
    }
 
    if (trackMute_[activeTrack_])
-      printCenterFormattedString(0, "[Clip %d Scene %d [muted]%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+      printCenterFormattedString(0, "[Clip %d Scene %c [muted]%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
    else
-      printCenterFormattedString(0, "[Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+      printCenterFormattedString(0, "[Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
 
    u8 clip;
    for (clip = 0; clip < TRACKS; clip++)
@@ -561,7 +561,7 @@ void displayPageEdit(void)
       screenNewPagePanelFrameCtr_--;
    }
 
-   printCenterFormattedString(0, "Edit Settings [Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+   printCenterFormattedString(0, "Edit Settings [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
 
    command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
@@ -655,7 +655,7 @@ void displayPageNotes(void)
       screenNewPagePanelFrameCtr_--;
    }
 
-   printCenterFormattedString(0, "Note Editor [Clip %d Scene %d%s]", activeTrack_ + 1, activeScene_ + 1, sceneChangeNotification_);
+   printCenterFormattedString(0, "Note Editor [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
 
    if (clipNotesSize_[activeTrack_][activeScene_] > 0)
    {
@@ -760,7 +760,7 @@ void displayPageDisk(void)
       screenNewPagePanelFrameCtr_--;
    }
 
-   printCenterFormattedString(0, "Disk Operations", activeTrack_ + 1, activeScene_ + 1);
+   printCenterFormattedString(0, "Disk Operations");
 
    command_ == COMMAND_SAVE ? setFontInverted() : setFontNonInverted();
    printFormattedString(0, 54, "Save");
