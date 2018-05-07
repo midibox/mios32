@@ -461,9 +461,9 @@ s32 MIOS32_BOARD_J5_Get(void)
   u32 p1 = LPC_GPIO1->FIOPIN;
   return
     (((p0 >> (23-0)) & 0x000f) |
-     ((p0 >> (30-4)) & 0x0030) |
-     ((p1 << (6-3))  & 0x0040) |
-     ((p1 << (7-2))  & 0x0080));
+     ((p1 >> (30-4)) & 0x0030) |
+     ((p0 << (6-3))  & 0x0040) |
+     ((p0 << (7-2))  & 0x0080));
 # else
 # warning "Not prepared for this MIOS32_BOARD"
   return -2; // board not supported
