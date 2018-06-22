@@ -232,8 +232,19 @@ s32 SEQ_CV_CaliModeSet(u8 cv, aout_cali_mode_t mode)
   if( mode >= SEQ_CV_NUM_CALI_MODES )
     return -2; // invalid mode selected
 
-  return AOUT_CaliModeSet(cv, mode);
+  if( mode < AOUT_NUM_CALI_MODES ) {
+    return AOUT_CaliModeSet(cv, mode);
+  }
 
+  // set calibration value
+  AOUT_CaliModeSet(cv, mode);
+
+  s32 x = mode - AOUT_NUM_CALI_MODES;
+  u32 ref_value = x*AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+  if( ref_value > 0xffff )
+    ref_value = 0xffff;
+
+  return AOUT_CaliCfgValueSet(ref_value);
 }
 
 aout_cali_mode_t SEQ_CV_CaliModeGet(void)
@@ -241,9 +252,36 @@ aout_cali_mode_t SEQ_CV_CaliModeGet(void)
   return AOUT_CaliModeGet();
 }
 
-const char* SEQ_CV_CaliNameGet(void)
+// str must be reserved for up to 10+1 characters!
+s32 SEQ_CV_CaliNameGet(char *str, u8 cv)
 {
-  return AOUT_CaliNameGet(SEQ_CV_CaliModeGet());
+  u32 mode = (u32)SEQ_CV_CaliModeGet();
+
+  if( mode < AOUT_NUM_CALI_MODES ) {
+    sprintf(str, "  %s  ", AOUT_CaliNameGet(mode));
+  } else {
+    // calibration values
+    u16 *cali_points = SEQ_CV_CaliPointsPtrGet(cv);
+    if( cali_points == NULL ) {
+      sprintf(str, "!!ERROR!! ");
+    } else {
+      s32 x = mode - AOUT_NUM_CALI_MODES;
+      if( x >= AOUT_NUM_CALI_POINTS_X )
+	x = AOUT_NUM_CALI_POINTS_X-1;
+
+      s32 cali_point = cali_points[x] >> 4; // 16bit -> 12bit
+      s32 cali_ref = AOUT_CaliCfgValueGet() >> 4; // 16bit -> 12bit
+
+      s32 cali_diff = cali_point - cali_ref;
+      if( x >= (AOUT_NUM_CALI_POINTS_X-1) ) {
+	sprintf(str, " Max:%5d", cali_diff);
+      } else {
+	sprintf(str, " %2dV:%5d", x, cali_diff);
+      }
+    }
+  }
+
+  return 0; // no error
 }
 
 
@@ -354,6 +392,14 @@ u8 SEQ_CV_PitchRangeGet(u8 cv)
   return AOUT_PinPitchRangeGet(cv);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Pointer to calibration values
+/////////////////////////////////////////////////////////////////////////////
+u16* SEQ_CV_CaliPointsPtrGet(u8 cv)
+{
+  return AOUT_CaliPointsPtrGet(cv);
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // Get/Set DIN Clock Pulsewidth

@@ -229,6 +229,7 @@ static u32 aout_dig_update_req;
 
 static aout_cali_mode_t cali_mode;
 static u8 cali_pin;
+static u16 cali_cfg_value;
 
 static u8 suspend_mode;
 
@@ -272,6 +273,17 @@ s32 AOUT_Init(u32 mode)
   // number of devices is 0 (changed during re-configuration)
   aout_num_devices = 0;
 
+#if AOUT_NUM_CALI_POINTS_X > 0
+  // reset calibration points
+  for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin) {
+    int i;
+    for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i) {
+      u32 cali_value = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+      aout_config.cali_point[pin][i] = (cali_value < 0x10000) ? cali_value : 0xffff;
+    }
+  }
+#endif
+
   // set all AOUT pins to 0
   aout_channel_t *c = (aout_channel_t *)&aout_channel[0];
   for(pin=0; pin<AOUT_NUM_CHANNELS; ++pin, ++c) {
@@ -291,6 +303,7 @@ s32 AOUT_Init(u32 mode)
   // disable calibration mode
   cali_mode = AOUT_CALI_MODE_OFF;
   cali_pin = 0;
+  cali_cfg_value = 0x0000;
 
   // disable suspend mode
   suspend_mode = 0;
@@ -565,8 +578,9 @@ s32 AOUT_CaliModeSet(u8 pin, aout_cali_mode_t mode)
   if( pin >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
     return -1; // pin not available
 
-  if( mode >= AOUT_NUM_CALI_MODES )
-    return -2; // invalid mode selected
+  // for calibration configuration we allow >= AOUT_NUM_CALI_MODES
+  //if( mode >= AOUT_NUM_CALI_MODES )
+  //return -2; // invalid mode selected
 
   MIOS32_IRQ_Disable();
   aout_update_req |= 1 << cali_pin; // ensure that previous pin will be updated (if pin changes)
@@ -597,13 +611,30 @@ u8 AOUT_CaliPinGet(void)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+//! Sets Calibration Configuration value (only relevant if mode > AOUT_NUM_CALI_MODES)
+/////////////////////////////////////////////////////////////////////////////
+s32 AOUT_CaliCfgValueSet(u16 value)
+{
+  cali_cfg_value = value;
+  return 0; // no error
+}
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns Calibration Configuration value (only relevant if mode > AOUT_NUM_CALI_MODES)
+/////////////////////////////////////////////////////////////////////////////
+u16 AOUT_CaliCfgValueGet(void)
+{
+  return cali_cfg_value;
+}
+
+/////////////////////////////////////////////////////////////////////////////
 //! This function returns the name of a given calibration mode
 //!
 //! \param[in] mode the calibration mode
 //! \return 6 characters
 /////////////////////////////////////////////////////////////////////////////
 // located outside the function to avoid "core/seq_cv.c:168:3: warning: function returns address of local variable"
-static const char cali_desc[AOUT_NUM_CALI_MODES][7] = {
+static const char cali_desc[AOUT_NUM_CALI_MODES+1][7] = {
   " off  ",
   " Min. ",
   "Middle",
@@ -612,11 +643,12 @@ static const char cali_desc[AOUT_NUM_CALI_MODES][7] = {
   " 2.00V",
   " 4.00V",
   " 8.00V",
+  " Cfg. ", // UI has to print a calibration point here
 };
 const char* AOUT_CaliNameGet(aout_cali_mode_t mode)
 {
   if( mode >= AOUT_NUM_CALI_MODES )
-    mode = AOUT_CALI_MODE_OFF;
+    mode = AOUT_NUM_CALI_MODES; // UI has to print a calibration point here
 
   return cali_desc[(u8)mode];
 }
@@ -643,7 +675,7 @@ static u16 caliValue(u8 pin)
   case AOUT_CALI_MODE_8V: return hz_v ? hz_v_table[0x48] : (0x60 << 9);
   }
 
-  return 0x0000;
+  return cali_cfg_value; // in case UI want's to configure calibration values
 }
 
 
@@ -760,6 +792,39 @@ static s32 currentValueGet(u8 pin)
     if( aout_config.chn_inverted & (1 << pin) )
       value ^= 0xffff;
   }
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+    // interpolate based on calibration value
+    {
+      int i;
+      u16 *cali_value = &aout_config.cali_point[pin][0];
+      for(i=0; i<(AOUT_NUM_CALI_POINTS_X-1); ++i) {
+	s32 x0 = i * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	if( x0 > 0xffff )
+	  x0 = 0xffff;
+
+	s32 x1 = (i+1) * AOUT_NUM_CALI_POINTS_Y_INTERVAL;
+	if( x1 > 0xffff )
+	  x1 = 0xffff;
+
+	if( x0 <= value && x1 >= value ) {
+	  s32 y0 = cali_value[i];
+	  s32 y1 = cali_value[i+1];
+	  s32 n = value - y0;
+	  u16 result = y0 + ((y1 - y0) * n) / (x1 - x0);
+	  if( cali_mode != AOUT_CALI_MODE_OFF && pin == cali_pin ) {
+	    DEBUG_MSG("value=%04x (with x0=%04x x1=%04x y0=%04x y1=%04x) -> result=%04x\n", value, x0, x1, y0, x1, result);
+	  }
+	  return result;
+	}
+      }
+
+      if( cali_mode != AOUT_CALI_MODE_OFF && pin == cali_pin ) {
+	DEBUG_MSG("value=%04x -> max cali=%04x\n", value, cali_value[i]);
+      }
+      return cali_value[i];
+    }
+#endif
 
   return value;
 }
@@ -1016,6 +1081,24 @@ s32 AOUT_SuspendGet(void)
   return suspend_mode;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+//! Returns pointer to calibration points for direct manipulation
+//!
+//! \param[in] pin the pin number (0..AOUT_NUM_CHANNELS-1)
+//! \return < 0 on errors
+/////////////////////////////////////////////////////////////////////////////
+u16 *AOUT_CaliPointsPtrGet(u8 cv)
+{
+  if( cv >= AOUT_NUM_CHANNELS ) // don't use aout_config.num_channels here, we want to avoid access outside the array
+    return NULL; // pin not available
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+  return &aout_config.cali_point[cv][0];
+#else
+  return NULL;
+#endif
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! Updates the output channels of the connected AOUT module

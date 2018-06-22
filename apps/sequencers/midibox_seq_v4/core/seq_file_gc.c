@@ -411,6 +411,25 @@ s32 SEQ_FILE_GC_Read(void)
 		SEQ_CV_PitchRangeSet(cv, range);
 	      }
 	    }
+#if AOUT_NUM_CALI_POINTS_X > 0
+	  } else if( strcmp(parameter, "CV_Cali") == 0 ) {
+	    u32 cv = value;
+	    if( cv >= SEQ_CV_NUM ) {
+	      DEBUG_MSG("[SEQ_FILE_GC] ERROR wrong CV channel %u for parameter '%s'\n", value, parameter);
+	    } else {
+	      int i;
+	      u16 *cali_point = SEQ_CV_CaliPointsPtrGet(cv);
+	      for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i, ++cali_point) {
+		word = strtok_r(NULL, separators, &brkt);
+		u16 cali_value = 0;
+		if( word == NULL || (cali_value=get_dec(word)) < 0 ) {
+		  DEBUG_MSG("[SEQ_FILE_GC] ERROR invalid or missing calibration value(s) for CV channel %u for parameter '%s'\n", value, parameter);
+		  break;
+		}
+		*cali_point = cali_value;
+	      }
+	    }
+#endif
 	  } else if( strcmp(parameter, "CV_GateInv") == 0 ) {
 	    SEQ_CV_GateInversionAllSet(value);
 	  } else if( strcmp(parameter, "CV_SusKey") == 0 ) {
@@ -690,6 +709,19 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
     for(cv=0; cv<SEQ_CV_NUM; ++cv) {
       sprintf(line_buffer, "CV_PinMode %d %d %d %d\n", cv, SEQ_CV_CurveGet(cv), (int)SEQ_CV_SlewRateGet(cv), (int)SEQ_CV_PitchRangeGet(cv));
       FLUSH_BUFFER;
+
+#if AOUT_NUM_CALI_POINTS_X > 0
+      sprintf(line_buffer, "CV_Cali %d", cv);
+      {
+	int i;
+	u16 *cali_point = SEQ_CV_CaliPointsPtrGet(cv);
+	for(i=0; i<AOUT_NUM_CALI_POINTS_X; ++i, ++cali_point) {
+	  sprintf(line_buffer + strlen(line_buffer), " 0x%04x", *cali_point);
+	}
+      }
+      strcat(line_buffer, "\n");
+      FLUSH_BUFFER;
+#endif
     }
   }
 

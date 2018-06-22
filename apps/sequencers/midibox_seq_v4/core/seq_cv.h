@@ -31,7 +31,11 @@
 #define SEQ_CV_NUM_CURVES 3
 
 // selects calibration mode
-#define SEQ_CV_NUM_CALI_MODES AOUT_NUM_CALI_MODES
+#if AOUT_NUM_CALI_POINTS_X > 0
+# define SEQ_CV_NUM_CALI_MODES (AOUT_NUM_CALI_MODES+AOUT_NUM_CALI_POINTS_X)
+#else
+# define SEQ_CV_NUM_CALI_MODES AOUT_NUM_CALI_MODES
+#endif
 
 // size of notestack(s)
 #define SEQ_CV_NOTESTACK_SIZE 10
@@ -60,13 +64,15 @@ extern const char* SEQ_CV_CurveNameGet(u8 cv);
 
 extern s32 SEQ_CV_CaliModeSet(u8 cv, aout_cali_mode_t mode);
 extern aout_cali_mode_t SEQ_CV_CaliModeGet(void);
-extern const char* SEQ_CV_CaliNameGet(void);
+extern s32 SEQ_CV_CaliNameGet(char *str, u8 cv);
 
 extern s32 SEQ_CV_SlewRateSet(u8 cv, u8 value);
 extern s32 SEQ_CV_SlewRateGet(u8 cv);
 
 extern s32 SEQ_CV_PitchRangeSet(u8 cv, u8 range);
 extern u8 SEQ_CV_PitchRangeGet(u8 cv);
+
+extern u16* SEQ_CV_CaliPointsPtrGet(u8 cv);
 
 extern s32 SEQ_CV_ClkPulseWidthSet(u8 clkout, u8 width);
 extern u8 SEQ_CV_ClkPulseWidthGet(u8 clkout);
