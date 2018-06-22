@@ -197,9 +197,10 @@ extern void APP_SendDebugMessage(char *format, ...);
 #endif
 
 // AOUT interface: enable calibration for up to 12 octaves
+#ifdef MBSEQV4P
 #define AOUT_NUM_CALI_POINTS_X 12
 #define AOUT_NUM_CALI_POINTS_Y_INTERVAL (12*0x200)
-
+#endif
 
 // BLM_SCALAR master driver: enable this switch if the application supports OSC (based on osc_server module)
 #define BLM_SCALAR_MASTER_OSC_SUPPORT 1
