@@ -51,6 +51,16 @@ extern "C" {
 #endif
 #endif
 
+// number of calibration points per AOUT channel (disabled by default)
+#ifndef AOUT_NUM_CALI_POINTS_X
+# define AOUT_NUM_CALI_POINTS_X 0
+#endif
+
+// octave wise calibration (7bit note -> 16bit value, factor 12)
+#ifndef AOUT_NUM_CALI_POINTS_Y_INTERVAL
+# define AOUT_NUM_CALI_POINTS_Y_INTERVAL (12*0x200)
+#endif
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global Types
@@ -76,6 +86,9 @@ typedef struct {
   u32        if_option;
   u32        chn_inverted;
   u32        chn_hz_v;
+#if AOUT_NUM_CALI_POINTS_X > 0
+  u16        cali_point[AOUT_NUM_CHANNELS][AOUT_NUM_CALI_POINTS_X];
+#endif
 } aout_config_t;
 
 
@@ -140,6 +153,10 @@ extern u32 AOUT_DigitalPinsGet(void);
 
 extern s32 AOUT_SuspendSet(u8 suspend);
 extern s32 AOUT_SuspendGet(void);
+
+extern u16 *AOUT_CaliPointsPtrGet(u8 cv);
+extern s32 AOUT_CaliCfgValueSet(u16 value);
+extern u16 AOUT_CaliCfgValueGet(void);
 
 extern s32 AOUT_Update(void);
 

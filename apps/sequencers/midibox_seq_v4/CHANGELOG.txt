@@ -33,9 +33,18 @@ MIDIboxSEQ V4.095
    o OPTIONS page: new option "Print Notes with transposed value".
      Enabled by default (due to change in V4.093), can be optionally disabled now.
 
-   o AOUT: Channel 9..12/13..15 now set the gate pins #1/3/5/7 as documented (previously it was #1/2/3/4 due to a code translation error)
+   o AOUT: MIDI Channel 9..12/13..15 now set the gate pins #1/3/5/7 as documented (previously it was #1/2/3/4 due to a code translation error)
      New: gate pins #2/4/6/8 are now set whenever the velocity is >100.
      This way the pins can be used as an accent trigger
+
+   o V4+ AOUT: support for AOUT channel calibration.
+     In the CV configuration menu, turn GP ENC #7 until 0V/1V/2V/.../Max will be visible.
+     Calibrate the offset of the target value with ENC #8.
+     Each V has a dedicated calibration value which can be configured this way, the output will be interpolated accordingly.
+     Note that with exiting the CV configuration menu the calibration values are stored on SD Card in the MBSEQ_GC.V4 file
+     (-> CV_Cali <cv-counting-from-0>).
+     You could backup/set/restore the values from there if required.
+     To reset all calibration values: delete all CV_Cali items in MBSEQ_GC.V4, store the file and enter "reset" in MIOS terminal.
 
    o Bugfix for permanently cleared notes if live recording is used after previous step recording
 

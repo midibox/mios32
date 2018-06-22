@@ -32,18 +32,19 @@
 // Local definitions
 /////////////////////////////////////////////////////////////////////////////
 
-#define NUM_OF_ITEMS       11
+#define NUM_OF_ITEMS       12
 #define ITEM_CV            0
 #define ITEM_CURVE         1
 #define ITEM_SLEWRATE      2
 #define ITEM_SUSKEY        3
 #define ITEM_PITCHRANGE    4
 #define ITEM_GATE          5
-#define ITEM_CALIBRATION   6
-#define ITEM_CLK_SEL       7
-#define ITEM_CLK_PPQN      8
-#define ITEM_CLK_WIDTH     9
-#define ITEM_MODULE        10
+#define ITEM_CALIBRATION_1 6
+#define ITEM_CALIBRATION_2 7
+#define ITEM_CLK_SEL       8
+#define ITEM_CLK_PPQN      9
+#define ITEM_CLK_WIDTH     10
+#define ITEM_MODULE        11
 
 /////////////////////////////////////////////////////////////////////////////
 // Local variables
@@ -73,7 +74,13 @@ static s32 LED_Handler(u16 *gp_leds)
     case ITEM_SUSKEY:      *gp_leds = 0x0008; break;
     case ITEM_PITCHRANGE:  *gp_leds = 0x0010; break;
     case ITEM_GATE:        *gp_leds = 0x0020; break;
-    case ITEM_CALIBRATION: *gp_leds = 0x00c0; break;
+#if AOUT_NUM_CALI_POINTS_X > 0
+    case ITEM_CALIBRATION_1: *gp_leds = 0x0040; break;
+    case ITEM_CALIBRATION_2: *gp_leds = 0x0080; break;
+#else
+    case ITEM_CALIBRATION_1: *gp_leds = 0x00c0; break;
+    case ITEM_CALIBRATION_2: *gp_leds = 0x00c0; break;
+#endif
     case ITEM_CLK_SEL:     *gp_leds = 0x0100; break;
     case ITEM_CLK_PPQN:    *gp_leds = 0x0600; break;
     case ITEM_CLK_WIDTH:   *gp_leds = 0x0800; break;
@@ -120,8 +127,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       break;
 
     case SEQ_UI_ENCODER_GP7:
+      ui_selected_item = ITEM_CALIBRATION_1;
+      break;
+
     case SEQ_UI_ENCODER_GP8:
-      ui_selected_item = ITEM_CALIBRATION;
+      ui_selected_item = ITEM_CALIBRATION_2;
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -214,12 +224,45 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       return 0;
     }
 
-    case ITEM_CALIBRATION: {
+    case ITEM_CALIBRATION_1: {
       u8 mode = SEQ_CV_CaliModeGet();
       if( SEQ_UI_Var8_Inc(&mode, 0, SEQ_CV_NUM_CALI_MODES-1, incrementer) >= 0 ) {
 	SEQ_CV_CaliModeSet(selected_cv, mode);
 	ui_store_file_required = 1;
 	return 1;
+      }
+      return 0;
+    }
+
+    case ITEM_CALIBRATION_2: {
+      u8 mode = SEQ_CV_CaliModeGet();
+      if( mode >= AOUT_NUM_CALI_MODES ) {
+	// set calibration value
+	u16 *cali_points = SEQ_CV_CaliPointsPtrGet(selected_cv);
+	if( cali_points != NULL ) {
+	  s32 x = mode - AOUT_NUM_CALI_MODES;
+	  if( x >= AOUT_NUM_CALI_POINTS_X )
+	    x = AOUT_NUM_CALI_POINTS_X-1;
+	  u16 cali_value = cali_points[x] >> 4; // 16bit -> 12bit
+	  if( SEQ_UI_Var16_Inc(&cali_value, 0, 0xffff, incrementer) >= 0 ) {
+	    if( cali_value >= 0xfff )
+	      cali_value = 0xfff;
+	    else
+	      cali_value <<= 4; // 12bit -> 16bit
+	    cali_points[x] = cali_value;
+	    SEQ_CV_CaliModeSet(selected_cv, SEQ_CV_CaliModeGet()); // this will update the CV pin
+	    ui_store_file_required = 1;
+	    return 1;
+	  }
+	}
+	return 0;
+      } else {
+	// set calibration mode
+	if( SEQ_UI_Var8_Inc(&mode, 0, SEQ_CV_NUM_CALI_MODES-1, incrementer) >= 0 ) {
+	  SEQ_CV_CaliModeSet(selected_cv, mode);
+	  ui_store_file_required = 1;
+	  return 1;
+	}
       }
       return 0;
     }
@@ -388,14 +431,16 @@ static s32 LCD_Handler(u8 high_prio)
   if( ui_selected_item == ITEM_GATE && ui_cursor_flash ) {
     SEQ_LCD_PrintSpaces(6);
   } else {
-    SEQ_LCD_PrintString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg.  " : "Pos.  ");
+    SEQ_LCD_PrintString(SEQ_CV_GateInversionGet(selected_cv) ? "Neg." : "Pos.");
   }
 
   ///////////////////////////////////////////////////////////////////////////
-  if( ui_selected_item == ITEM_CALIBRATION && ui_cursor_flash ) {
-    SEQ_LCD_PrintSpaces(8);
+    if( (ui_selected_item == ITEM_CALIBRATION_1 || ui_selected_item == ITEM_CALIBRATION_2) && ui_cursor_flash ) {
+    SEQ_LCD_PrintSpaces(10);
   } else {
-    SEQ_LCD_PrintFormattedString(" %s ", SEQ_CV_CaliNameGet());
+    char str[11];
+    SEQ_CV_CaliNameGet(str, selected_cv);
+    SEQ_LCD_PrintString(str);
   }
 
   ///////////////////////////////////////////////////////////////////////////
