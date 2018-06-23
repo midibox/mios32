@@ -230,6 +230,7 @@ static u32 aout_dig_update_req;
 static aout_cali_mode_t cali_mode;
 static u8 cali_pin;
 static u16 cali_cfg_value;
+static u16 cali_wave_value;
 
 static u8 suspend_mode;
 
@@ -304,6 +305,7 @@ s32 AOUT_Init(u32 mode)
   cali_mode = AOUT_CALI_MODE_OFF;
   cali_pin = 0;
   cali_cfg_value = 0x0000;
+  cali_wave_value = 0x0000;
 
   // disable suspend mode
   suspend_mode = 0;
@@ -639,6 +641,7 @@ static const char cali_desc[AOUT_NUM_CALI_MODES+1][7] = {
   " Min. ",
   "Middle",
   " Max. ",
+  " Wave ",
   " 1.00V",
   " 2.00V",
   " 4.00V",
@@ -669,6 +672,7 @@ static u16 caliValue(u8 pin)
   case AOUT_CALI_MODE_MIN: return 0x0000;
   case AOUT_CALI_MODE_MIDDLE: return 0x8000;
   case AOUT_CALI_MODE_MAX: return 0xffff;
+  case AOUT_CALI_MODE_WAVE: return cali_wave_value;
   case AOUT_CALI_MODE_1V: return hz_v ? hz_v_table[0x24] : (0x0c << 9);
   case AOUT_CALI_MODE_2V: return hz_v ? hz_v_table[0x30] : (0x18 << 9);
   case AOUT_CALI_MODE_4V: return hz_v ? hz_v_table[0x3c] : (0x30 << 9);
@@ -796,6 +800,8 @@ static s32 currentValueGet(u8 pin)
 #if AOUT_NUM_CALI_POINTS_X > 0
     // interpolate based on calibration value
     {
+      u8 debug = cali_mode != AOUT_CALI_MODE_OFF && cali_mode != AOUT_CALI_MODE_WAVE && pin == cali_pin;
+
       int i;
       u16 *cali_value = &aout_config.cali_point[pin][0];
       for(i=0; i<(AOUT_NUM_CALI_POINTS_X-1); ++i) {
@@ -812,15 +818,19 @@ static s32 currentValueGet(u8 pin)
 	  s32 y1 = cali_value[i+1];
 	  s32 n = value - y0;
 	  u16 result = y0 + ((y1 - y0) * n) / (x1 - x0);
-	  if( cali_mode != AOUT_CALI_MODE_OFF && pin == cali_pin ) {
+	  if( debug ) {
+#ifdef DEBUG_MSG
 	    DEBUG_MSG("value=%04x (with x0=%04x x1=%04x y0=%04x y1=%04x) -> result=%04x\n", value, x0, x1, y0, x1, result);
+#endif
 	  }
 	  return result;
 	}
       }
 
-      if( cali_mode != AOUT_CALI_MODE_OFF && pin == cali_pin ) {
+      if( debug ) {
+#ifdef DEBUG_MSG
 	DEBUG_MSG("value=%04x -> max cali=%04x\n", value, cali_value[i]);
+#endif
       }
       return cali_value[i];
     }
@@ -1136,6 +1146,13 @@ s32 AOUT_Update(void)
     MIOS32_IRQ_Enable();
   }
 
+  // cali wave
+  if( cali_mode == AOUT_CALI_MODE_WAVE ) {
+    MIOS32_IRQ_Disable();
+    cali_wave_value += 256;
+    aout_update_req |= 1 << cali_pin;
+    MIOS32_IRQ_Enable();
+  }
 
   // check for AOUT channel update requests
   MIOS32_IRQ_Disable();
@@ -1550,6 +1567,8 @@ s32 AOUT_TerminalParseLine(char *input, void *_output_function)
 	      mode = AOUT_CALI_MODE_MIDDLE;
 	    else if( strcasecmp(arg, "max") == 0 )
 	      mode = AOUT_CALI_MODE_MAX;
+	    else if( strcasecmp(arg, "wave") == 0 )
+	      mode = AOUT_CALI_MODE_WAVE;
 	    else if( strcasecmp(arg, "1v") == 0 || strcasecmp(arg, "1") == 0 )
 	      mode = AOUT_CALI_MODE_1V;
 	    else if( strcasecmp(arg, "2v") == 0 || strcasecmp(arg, "2") == 0 )
@@ -1579,6 +1598,7 @@ s32 AOUT_TerminalParseLine(char *input, void *_output_function)
 	out("caliaout <channel> min:    sets the given channel (1..%d) to minimum value", AOUT_NUM_CHANNELS);
 	out("caliaout <channel> middle: sets the given channel (1..%d) to middle value", AOUT_NUM_CHANNELS);
 	out("caliaout <channel> max:    sets the given channel (1..%d) to maximum value", AOUT_NUM_CHANNELS);
+	out("caliaout <channel> wave:   outputs sawtooth waveform to display curve on an oscilloscope");
 	out("caliaout <channel> 1V:     sets the given channel (1..%d) to 1V", AOUT_NUM_CHANNELS);
 	out("caliaout <channel> 2V:     sets the given channel (1..%d) to 2V", AOUT_NUM_CHANNELS);
 	out("caliaout <channel> 4V:     sets the given channel (1..%d) to 4V", AOUT_NUM_CHANNELS);
