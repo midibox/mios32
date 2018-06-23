@@ -94,7 +94,7 @@ typedef struct {
 
 
 // following types must be aligned with AOUT_CaliModeNameGet()
-#define AOUT_NUM_CALI_MODES 8
+#define AOUT_NUM_CALI_MODES 9
 
 // calibration modes
 typedef enum {
@@ -102,6 +102,7 @@ typedef enum {
   AOUT_CALI_MODE_MIN,
   AOUT_CALI_MODE_MIDDLE,
   AOUT_CALI_MODE_MAX,
+  AOUT_CALI_MODE_WAVE,
   AOUT_CALI_MODE_1V,
   AOUT_CALI_MODE_2V,
   AOUT_CALI_MODE_4V,
