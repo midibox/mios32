@@ -27,6 +27,7 @@
 #include "mode_vgm.h"
 #include "mode_mdltr.h"
 #include "mode_sample.h"
+#include "mode_controller.h"
 
 #include "capturer.h"
 #include "filebrowser.h"
@@ -45,6 +46,7 @@ void Interface_Init(){
     Mode_Vgm_Init();
     Mode_Mdltr_Init();
     Mode_Sample_Init();
+    Mode_Controller_Init();
     Filebrowser_Init();
     Capturer_Init();
     interfacemode = MODE_SYSTEM;
@@ -62,6 +64,7 @@ void Interface_Tick(){
         case MODE_VGM: Mode_Vgm_Tick(); break;
         case MODE_MDLTR: Mode_Mdltr_Tick(); break;
         case MODE_SAMPLE: Mode_Sample_Tick(); break;
+        case MODE_CONTROLLER: Mode_Controller_Tick(); break;
         default: DBG("Interface_Tick mode error %d!", interfacemode);
     }
 }
@@ -106,7 +109,9 @@ void Interface_Background(){
         interfacemode = wantmodechange;
         VGM_Player_docapture = 0;
         //Turn on the new mode light
-        FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 1);
+        if(interfacemode < MODE_CONTROLLER){
+            FrontPanel_LEDSet(FP_LED_SYSTEM + interfacemode - MODE_SYSTEM, 1);
+        }
         switch(interfacemode){
             case MODE_SYSTEM: Mode_System_GotFocus(); break;
             case MODE_VOICE: Mode_Voice_GotFocus(); break;
@@ -115,6 +120,7 @@ void Interface_Background(){
             case MODE_VGM: Mode_Vgm_GotFocus(); break;
             case MODE_MDLTR: Mode_Mdltr_GotFocus(); break;
             case MODE_SAMPLE: Mode_Sample_GotFocus(); break;
+            case MODE_CONTROLLER: Mode_Controller_GotFocus(); break;
             default: DBG("Mode Change mode error %d!", interfacemode);
         }
         wantmodechange = -1;
@@ -128,6 +134,7 @@ void Interface_Background(){
         case MODE_VGM: Mode_Vgm_Background(); break;
         case MODE_MDLTR: Mode_Mdltr_Background(); break;
         case MODE_SAMPLE: Mode_Sample_Background(); break;
+        case MODE_CONTROLLER: Mode_Controller_Background(); break;
         default: DBG("Interface_Background mode error %d!", interfacemode);
     }
 }
@@ -150,6 +157,7 @@ void Interface_BtnGVoice(u8 gvoice, u8 state){
         case MODE_VGM: Mode_Vgm_BtnGVoice(gvoice, state); break;
         case MODE_MDLTR: Mode_Mdltr_BtnGVoice(gvoice, state); break;
         case MODE_SAMPLE: Mode_Sample_BtnGVoice(gvoice, state); break;
+        case MODE_CONTROLLER: Mode_Controller_BtnGVoice(gvoice, state); break;
         default: DBG("Interface_BtnGVoice mode error %d!", interfacemode);
     }
 }
@@ -177,6 +185,7 @@ void Interface_BtnSoftkey(u8 softkey, u8 state){
         case MODE_VGM: Mode_Vgm_BtnSoftkey(softkey, state); break;
         case MODE_MDLTR: Mode_Mdltr_BtnSoftkey(softkey, state); break;
         case MODE_SAMPLE: Mode_Sample_BtnSoftkey(softkey, state); break;
+        case MODE_CONTROLLER: Mode_Controller_BtnSoftkey(softkey, state); break;
         default: DBG("Interface_BtnSoftkey mode error %d!", interfacemode);
     }
 }
@@ -195,6 +204,7 @@ void Interface_BtnSelOp(u8 op, u8 state){
         case MODE_VGM: Mode_Vgm_BtnSelOp(op, state); break;
         case MODE_MDLTR: Mode_Mdltr_BtnSelOp(op, state); break;
         case MODE_SAMPLE: Mode_Sample_BtnSelOp(op, state); break;
+        case MODE_CONTROLLER: Mode_Controller_BtnSelOp(op, state); break;
         default: DBG("Interface_BtnSelOp mode error %d!", interfacemode);
     }
 }
@@ -213,6 +223,7 @@ void Interface_BtnOpMute(u8 op, u8 state){
         case MODE_VGM: Mode_Vgm_BtnOpMute(op, state); break;
         case MODE_MDLTR: Mode_Mdltr_BtnOpMute(op, state); break;
         case MODE_SAMPLE: Mode_Sample_BtnOpMute(op, state); break;
+        case MODE_CONTROLLER: Mode_Controller_BtnOpMute(op, state); break;
         default: DBG("Interface_BtnOpMute mode error %d!", interfacemode);
     }
 }
@@ -232,7 +243,7 @@ void Interface_BtnSystem(u8 button, u8 state){
         default:
             return;
     }
-    if(button >= FP_B_SYSTEM && button <= FP_B_SAMPLE){
+    if(button >= FP_B_SYSTEM && button <= FP_B_SAMPLE && interfacemode != MODE_CONTROLLER){
         if(state){
             wantmodechange = button - FP_B_SYSTEM;
         }
@@ -245,6 +256,7 @@ void Interface_BtnSystem(u8 button, u8 state){
             case MODE_VGM: Mode_Vgm_BtnSystem(button, state); break;
             case MODE_MDLTR: Mode_Mdltr_BtnSystem(button, state); break;
             case MODE_SAMPLE: Mode_Sample_BtnSystem(button, state); break;
+            case MODE_CONTROLLER: Mode_Controller_BtnSystem(button, state); break;
             default: DBG("Interface_BtnSystem mode error %d!", interfacemode);
         }
     }
@@ -264,6 +276,7 @@ void Interface_BtnEdit(u8 button, u8 state){
         case MODE_VGM: Mode_Vgm_BtnEdit(button, state); break;
         case MODE_MDLTR: Mode_Mdltr_BtnEdit(button, state); break;
         case MODE_SAMPLE: Mode_Sample_BtnEdit(button, state); break;
+        case MODE_CONTROLLER: Mode_Controller_BtnEdit(button, state); break;
         default: DBG("Interface_BtnEdit mode error %d!", interfacemode);
     }
 }
@@ -289,6 +302,7 @@ void Interface_EncDatawheel(s32 incrementer){
         case MODE_VGM: Mode_Vgm_EncDatawheel(incrementer); break;
         case MODE_MDLTR: Mode_Mdltr_EncDatawheel(incrementer); break;
         case MODE_SAMPLE: Mode_Sample_EncDatawheel(incrementer); break;
+        case MODE_CONTROLLER: Mode_Controller_EncDatawheel(incrementer); break;
         default: DBG("Interface_EncDatawheel mode error %d!", interfacemode);
     }
 }
@@ -307,6 +321,7 @@ void Interface_EncEdit(u8 encoder, s32 incrementer){
         case MODE_VGM: Mode_Vgm_EncEdit(encoder, incrementer); break;
         case MODE_MDLTR: Mode_Mdltr_EncEdit(encoder, incrementer); break;
         case MODE_SAMPLE: Mode_Sample_EncEdit(encoder, incrementer); break;
+        case MODE_CONTROLLER: Mode_Controller_EncEdit(encoder, incrementer); break;
         default: DBG("Interface_EncEdit mode error %d!", interfacemode);
     }
 }
