@@ -454,6 +454,7 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                 case 2:
                 case 3:
                     submode = 6;
+                    vegascounter = 0;
                     DrawMenu();
                     break;
                 case 4:
