@@ -26,10 +26,13 @@ installed the following way:
    cd ~/Downloads
    tar xfv MacOSX10.8.sdk.tar
 
-4) tell Xcode to accept older SDK versions with:
+4) Move this SDK to Xcode installation folder
+   sudo mv MacOSX10.8.sdk /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs
+
+5) tell Xcode to accept older SDK versions with:
    sudo /usr/libexec/PlistBuddy -c "Set :MinimumSDKVersion 10.8" /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist
 
-5) open Xcode - MIOS Studio should now build fine.
+6) open Xcode - MIOS Studio should now build fine.
    If you did changes in the build setup which won't work, you could revert to the original version
    provided by me with: svn revert tools/mios_studio/Builds/MacOSX/MIOS_Studio.xcodeproj/project.pbxproj
 
