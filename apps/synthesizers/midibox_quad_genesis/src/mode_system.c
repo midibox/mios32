@@ -15,8 +15,10 @@
 #include <vgm.h>
 #include <genesis.h>
 #include <blm_x.h>
+#include <jsw_rand.h>
 #include "frontpanel.h"
 #include "syeng.h"
+#include "interface.h"
 
 static u8 submode;
 static u8 test_character;
@@ -32,6 +34,93 @@ static u8 vegasstate;
 static u8 vegassub;
 static const char mbx_name[29] = "AUTHENTIC QUAD GENESIS SOUND";
 static const u8 mbx_name_len = 28;
+static s8 p_ballx, p_bally;
+static s8 p_ballvx, p_ballvy;
+static s8 p_pdll, p_pdlr;
+static u8 p_scorel, p_scorer, p_scoretmr;
+
+static void InitPong(u8 initscore){
+    u32 r = jsw_rand();
+    p_ballvx = (r & 1) ? 1 : -1;
+    p_ballvy = (r & 2) ? 1 : -1;
+    if(r & 4) p_ballx = 7; else p_ballx = 5;
+    if(r & 8) p_ballx = 6;
+    p_bally = 1 + ((r >> 4) & 3);
+    p_pdll = p_pdlr = 2;
+    if(initscore){
+        p_scorel = p_scorer = 0;
+        p_scoretmr = 0x08;
+    }
+}
+
+static void DrawPong(){
+    u8 i;
+    //Clear
+    for(i=0; i<7; ++i){
+        FrontPanel_VGMMatrixRow(i, 0);
+    }
+    if(p_scoretmr < 0x08){
+        //Ball
+        FrontPanel_VGMMatrixPoint(p_bally, p_ballx, 1);
+        FrontPanel_VGMMatrixPoint(p_bally+1, p_ballx, 1);
+        FrontPanel_VGMMatrixPoint(p_bally, p_ballx+1, 1);
+        FrontPanel_VGMMatrixPoint(p_bally+1, p_ballx+1, 1);
+        //Paddles
+        for(i=0; i<3; ++i){
+            FrontPanel_VGMMatrixPoint(p_pdll+i, 0, 1);
+            FrontPanel_VGMMatrixPoint(p_pdlr+i, 13, 1);
+        }
+    }else{
+        for(i=0; i<7; ++i){
+            if(p_scorel > i){
+                FrontPanel_VGMMatrixPoint(6-i, 0, 1);
+            }
+            if(p_scorer > i){
+                FrontPanel_VGMMatrixPoint(6-i, 13, 1);
+            }
+        }
+    }
+}
+
+static void UpdatePong(u8 aiL, u8 aiR){
+    u32 r = jsw_rand();
+    if(p_scoretmr){
+        --p_scoretmr;
+        return;
+    }
+    if(aiL && p_ballvx == -1 && p_ballx < 9){
+        if(p_bally > p_pdll + 1 && p_pdll < 4) ++p_pdll;
+        else if(p_bally < p_pdll && p_pdll > 0) --p_pdll;
+    }
+    if(aiR && p_ballvx == 1 && p_ballx > 4){
+        if(p_bally > p_pdlr + 1 && p_pdlr < 4) ++p_pdlr;
+        else if(p_bally < p_pdlr && p_pdlr > 0) --p_pdlr;
+    }
+    if(p_bally == 0) p_ballvy = 1;
+    if(p_bally == 5) p_ballvy = -1;
+    if(p_ballx == 1 && p_ballvx == -1 
+            && (p_bally - p_pdll >= -1) && (p_bally - p_pdll <= 2)){
+        p_ballvx = 1;
+        if((r & 1)) p_ballx = 0;
+    }
+    if(p_ballx == 11 && p_ballvx == 1
+            && (p_bally - p_pdlr >= -1) && (p_bally - p_pdlr <= 2)){
+        p_ballvx = -1;
+        if((r & 2)) p_ballx = 12;
+    }
+    if(p_ballx == -2){
+        ++p_scorer;
+        p_scoretmr = 0x10;
+        InitPong(0);
+    }
+    if(p_ballx == 14){
+        ++p_scorel;
+        p_scoretmr = 0x10;
+        InitPong(0);
+    }
+    p_ballx += p_ballvx;
+    p_bally += p_ballvy;
+}
 
 static void DrawUsage(){
     vgm_meminfo_t m = VGM_PerfMon_GetMemInfo();
@@ -50,7 +139,7 @@ static void DrawMenu(){
             MIOS32_LCD_Clear();
             DrawUsage();
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintFormattedString("Fltr Opts");
+            MIOS32_LCD_PrintFormattedString("Fltr Opts Ctrlr");
             break;
         case 1:
             MIOS32_LCD_Clear();
@@ -80,7 +169,7 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("Welcome to DEMO MODE! :)");
             MIOS32_LCD_CursorSet(0,1);
-            MIOS32_LCD_PrintString("LED Test  --Vegas--  --Tetris--");
+            MIOS32_LCD_PrintString("LED Test  --Vegas--  -Tetris-  --Pong--");
             break;
         case 5:
             MIOS32_LCD_Clear();
@@ -97,6 +186,11 @@ static void DrawMenu(){
             MIOS32_LCD_CursorSet(0,0);
             MIOS32_LCD_PrintString("Tetris not implemented yet");
             break;
+        case 8:
+            MIOS32_LCD_Clear();
+            MIOS32_LCD_CursorSet(0,0);
+            MIOS32_LCD_PrintString("Pong");
+            break;
         default:
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
@@ -112,8 +206,11 @@ void Mode_System_Init(){
     vegasstate = 0;
     vegascounter = 0;
     vegassub = 0;
+    jsw_seed(1337);
+    InitPong(1);
 }
 void Mode_System_GotFocus(){
+    jsw_seed(tick_prescaler ^ 420);
     submode = 0;
     counter = 0;
     DrawMenu();
@@ -271,6 +368,10 @@ void Mode_System_Background(){
                         vegastextpos = -9;
                     }
                 }
+                DrawPong();
+                if(!(vegascounter & 0x3F)){
+                    UpdatePong(1, 1);
+                }
             }
             //==================================================================
             //========================== END VEGAS =============================
@@ -278,6 +379,15 @@ void Mode_System_Background(){
             break;
         case 7:
             
+            break;
+        case 8:
+            if(vegasprescaler == tick_prescaler) return;
+            vegasprescaler = tick_prescaler;
+            ++vegascounter;
+            DrawPong();
+            if(!(vegascounter & 0x3F)){
+                UpdatePong(0, 0);
+            }
             break;
     }
 }
@@ -297,6 +407,9 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                 case 1:
                     submode = 2;
                     DrawMenu();
+                    break;
+                case 2:
+                    Interface_ChangeToMode(MODE_CONTROLLER);
                     break;
             }
             break;
@@ -347,6 +460,11 @@ void Mode_System_BtnSoftkey(u8 softkey, u8 state){
                 case 5:
                     submode = 7;
                     DrawMenu();
+                case 6:
+                case 7:
+                    submode = 8;
+                    InitPong(1);
+                    DrawMenu();
                     break;
             }
             break;
@@ -391,6 +509,22 @@ void Mode_System_BtnSystem(u8 button, u8 state){
                 }
             }else{
                 counter = 0;
+            }
+            break;
+        case 8:
+            switch(button){
+                case FP_B_MOVEUP:
+                    if(p_pdll > 0) --p_pdll;
+                    break;
+                case FP_B_MOVEDN:
+                    if(p_pdll < 4) ++p_pdll;
+                    break;
+                case FP_B_CMDUP:
+                    if(p_pdlr > 0) --p_pdlr;
+                    break;
+                case FP_B_CMDDN:
+                    if(p_pdlr < 4) ++p_pdlr;
+                    break;
             }
             break;
     }

@@ -28,6 +28,7 @@ THUMB_SOURCE    =   src/app.c \
                     src/mode_vgm.c \
                     src/mode_mdltr.c \
                     src/mode_sample.c \
+                    src/mode_controller.c \
                     src/nameeditor.c \
                     src/syeng.c \
                     src/tracker.c
@@ -84,6 +85,9 @@ include $(MIOS32_PATH)/modules/vgm/vgm.mk
 
 # BLM_X module driver
 include $(MIOS32_PATH)/modules/blm_x/blm_x.mk
+
+# Random module driver
+include $(MIOS32_PATH)/modules/random/random.mk
 
 # common make rules
 # Please keep this include statement at the end of this Makefile. Add new modules above.

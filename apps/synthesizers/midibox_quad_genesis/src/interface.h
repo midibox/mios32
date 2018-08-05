@@ -27,6 +27,7 @@ extern "C" {
 #define MODE_VGM 4
 #define MODE_MDLTR 5
 #define MODE_SAMPLE 6
+#define MODE_CONTROLLER 7
 extern u8 interfacemode;
 
 #define SUBSCREEN_FILEBROWSER 1
