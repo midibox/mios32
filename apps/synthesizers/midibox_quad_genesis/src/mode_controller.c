@@ -12,6 +12,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <vgm.h>
 #include "mode_controller.h"
 #include "frontpanel.h"
 #include "interface.h"
@@ -37,27 +38,27 @@ typedef struct {
 } encoder_opts_t;
 
 const static encoder_opts_t encoder_opts[FP_E_COUNT] = {
-    {0, 128, 0, 0,  0, LEDDD_MAIN, 1}, //0 Datawheel
-    {1,  32, 0, 0,  0, FP_LEDR_OP1LVL, 2}, //1 Sides Level
-    {1,  32, 0, 0,  0, FP_LEDR_OP2LVL, 2}, //2 Audc Level
-    {1,  32, 0, 0,  0, FP_LEDR_OP3LVL, 2}, //3 Twrs Level
-    {1,  32, 0, 0,  0, FP_LEDR_OP4LVL, 2}, //4 Spots Level
-    {1,  32, 0, 0,  0, FP_LEDR_HARM, 2}, //5 Front Level
-    {2,   7, 3, 4,  0, FP_LEDR_DETUNE, 1}, //6 Gobo 1 Rotation
-    {2,   7, 0, 4,  7, FP_LEDR_ATTACK, 1}, //7 Gobo 1
-    {2,  10, 0, 4, 14, FP_LEDR_DEC1R, 1}, //8 Gobo 2
-    {2,   8, 0, 4, 24, FP_LEDR_DECLVL, 1}, //9 Prism
-    {2,   7, 0, 5,  0, FP_LEDR_DEC2R, 1}, //10 Animation
-    {2,   9, 0, 5,  7, FP_LEDR_RELRATE, 1}, //11 Zoom
-    {1,  32, 9, 0,  0, FP_LEDR_CSMFREQ, 2}, //12 Focus
-    {0,  16, 0, 0,  0, LEDDD_OCT, 1}, //13 
-    {0, 128, 0, 0,  0, LEDDD_FREQ, 1}, //14 
-    {0,  32, 0, 0,  0, FP_LEDR_PSGFREQ, 2}, //15 
-    {1,  32, 8, 0,  0, FP_LEDR_PSGVOL, 2}, //16 Global Speed
-    {0,   8, 0, 0,  0, FP_LEDR_LFOFDEP, 1}, //17 
-    {0,   4, 0, 0,  0, FP_LEDR_LFOADEP, 1}, //18 
-    {0,   8, 0, 0,  0, FP_LEDR_LFOFREQ, 1}, //19 
-    {0,   8, 0, 0,  0, FP_LEDR_FEEDBACK, 1} //20 
+    {0, 128,  0, 0,  0, LEDDD_MAIN,      1}, //0 Datawheel
+    {1,  32,  0, 0,  0, FP_LEDR_OP1LVL,  2}, //1 Sides Level
+    {1,  32,  0, 0,  0, FP_LEDR_OP2LVL,  2}, //2 Audc Level
+    {1,  32,  0, 0,  0, FP_LEDR_OP3LVL,  2}, //3 Twrs Level
+    {1,  32,  0, 0,  0, FP_LEDR_OP4LVL,  2}, //4 Spots Level
+    {1,  32,  0, 0,  0, FP_LEDR_HARM,    2}, //5 Front Level
+    {2,   7,  3, 4,  0, FP_LEDR_DETUNE,  1}, //6 Gobo 1 Rotation
+    {2,   7,  0, 4,  7, FP_LEDR_ATTACK,  1}, //7 Gobo 1
+    {2,  10,  0, 4, 14, FP_LEDR_DEC1R,   1}, //8 Gobo 2
+    {2,   8,  0, 4, 24, FP_LEDR_DECLVL,  1}, //9 Prism
+    {2,   7,  0, 5,  0, FP_LEDR_DEC2R,   1}, //10 Animation
+    {2,   9,  0, 5,  7, FP_LEDR_RELRATE, 1}, //11 Zoom
+    {1,  64, 25, 0,  0, FP_LEDR_CSMFREQ, 4}, //12 Focus
+    {0,  16,  0, 0,  0, LEDDD_OCT,       1}, //13 
+    {0, 128,  0, 0,  0, LEDDD_FREQ,      1}, //14 
+    {0,  32,  0, 0,  0, FP_LEDR_PSGFREQ, 2}, //15 
+    {1,  32,  8, 0,  0, FP_LEDR_PSGVOL,  2}, //16 Global Speed
+    {0,   8,  0, 0,  0, FP_LEDR_LFOFDEP, 1}, //17 
+    {0,   4,  0, 0,  0, FP_LEDR_LFOADEP, 1}, //18 
+    {0,   8,  0, 0,  0, FP_LEDR_LFOFREQ, 1}, //19 
+    {0,   8,  0, 0,  0, FP_LEDR_FEEDBACK, 1} //20 
 };
 
 //Buttons
@@ -209,7 +210,6 @@ static u8 stagestate;
 static u8 stageorigstate;
 static u8 editstate;
 
-
 inline u8 GetEncoderSendValue(u8 e, s8 v){
     return 127 * (s32)v / (encoder_opts[e].nvalues - 1);
 }
@@ -321,6 +321,62 @@ void ColorChange(u8 colorbank, u8 color){
     }
 }
 
+void SaveLoadState(u8 save){
+    u8 s = (editstate == stagestate) ? stageorigstate : editstate;
+    char *filename = malloc(32);
+    sprintf(filename, "/LIGHTING");
+    MUTEX_SDCARD_TAKE;
+    if(!FILE_DirExists(filename)){
+        if(FILE_MakeDir(filename) < 0){
+            DBG("Error making directory %s\n", filename);
+            goto Error;
+        }
+    }
+    sprintf(filename, "/LIGHTING/%d.ST", s);
+    if(save){
+        if(FILE_FileExists(filename)){
+            if(FILE_Remove(filename) < 0){
+                DBG("Error deleting %s\n", filename);
+                goto Error;
+            }
+        }
+        if(FILE_WriteOpen(filename, 1) < 0){
+            DBG("Error opening %s for writing\n", filename);
+            goto Error;
+        }
+        FILE_WriteBuffer((u8*)&states[s], sizeof(state_t));
+        FILE_WriteClose();
+    }else{
+        if(!FILE_FileExists(filename)){
+            DBG("File %s does not exist\n");
+            MIOS32_LCD_CursorSet(25, 1);
+            MIOS32_LCD_PrintString("NONE");
+            goto Done;
+        }
+        file_t file;
+        if(FILE_ReadOpen(&file, filename) < 0){
+            DBG("Error opening %s for reading\n", filename);
+            goto Error;
+        }
+        if(FILE_ReadGetCurrentSize() != sizeof(state_t)){
+            DBG("File %s is wrong size\n", filename);
+            goto Error;
+        }
+        FILE_ReadBuffer((u8*)&states[s], sizeof(state_t));
+        FILE_ReadClose(&file);
+        SendFullState(s);
+    }
+    MIOS32_LCD_CursorSet(save ? 21 : 26, 1);
+    MIOS32_LCD_PrintString("OK");
+    goto Done;
+Error:
+    MIOS32_LCD_CursorSet(save ? 21 : 26, 1);
+    MIOS32_LCD_PrintString("ERR");
+Done:
+    MUTEX_SDCARD_GIVE;
+    free(filename);
+}
+
 // System ======================================================================
 
 void DrawMenu(){
@@ -357,9 +413,16 @@ void DrawMenu(){
         case 2:
             MIOS32_LCD_Clear();
             MIOS32_LCD_CursorSet(0,0);
-            MIOS32_LCD_PrintString("Prot     Resnd");
+            MIOS32_LCD_PrintString("State Prot Resnd    Save Load");
+            u8 s = (editstate == stagestate) ? stageorigstate : editstate;
             MIOS32_LCD_CursorSet(2,1);
-            MIOS32_LCD_PrintChar(states[stageorigstate].protected ? '*' : '-');
+            MIOS32_LCD_PrintFormattedString("%d", s);
+            MIOS32_LCD_CursorSet(7,1);
+            MIOS32_LCD_PrintChar(states[s].protected ? '*' : '-');
+            if(editstate != stagestate){
+                MIOS32_LCD_CursorSet(12,1);
+                MIOS32_LCD_PrintFormattedString("%d", stageorigstate);
+            }
             break;
     }
 }
@@ -401,10 +464,10 @@ void Mode_Controller_Background(){
     s8 v;
     //Draw state LED
     for(i=0; i<11; ++i){
-        FrontPanel_LEDSet(button_defs[FP_B_LOAD+i].led1, 
+        FrontPanel_LEDSet(button_defs[FP_B_LOAD+i].led1,
             editstate == stagestate ? 
                 i == stageorigstate :
-                i == editstate || (i == stageorigstate && (flash_counter & 0x40)));
+                (i == editstate || (i == stageorigstate && (flash_counter & 0x40))));
     }
     //Draw encoder states
     state_t* st = &states[editstate];
@@ -478,24 +541,36 @@ void Mode_Controller_BtnSoftkey(u8 softkey, u8 state){
         break;
     case 2:
         switch(softkey){
-        case 0:
+        case 1:
             if(!state) return;
-            u8 prot = states[stageorigstate].protected;
-            if(prot){
-                //Unprotect
-                memcpy(&states[stageorigstate], &states[11], sizeof(state_t));
-                stagestate = editstate = stageorigstate;
+            if(editstate == stagestate){
+                u8 prot = states[stageorigstate].protected;
+                if(prot){
+                    //Unprotect
+                    memcpy(&states[stageorigstate], &states[11], sizeof(state_t));
+                    stagestate = editstate = stageorigstate;
+                }else{
+                    //Protect
+                    memcpy(&states[11], &states[stageorigstate], sizeof(state_t));
+                    stagestate = editstate = 11;
+                }
+                states[stageorigstate].protected = !prot;
             }else{
-                //Protect
-                memcpy(&states[11], &states[stageorigstate], sizeof(state_t));
-                stagestate = editstate = 11;
+                states[editstate].protected = !states[editstate].protected;
             }
-            states[stageorigstate].protected = !prot;
             DrawMenu();
             return;
         case 2:
             if(!state) return;
             SendFullState(stagestate);
+            return;
+        case 4:
+            if(!state) return;
+            SaveLoadState(1);
+            return;
+        case 5:
+            if(!state) return;
+            SaveLoadState(0);
             return;
         }
         break;
