@@ -49,28 +49,29 @@
 #define ITEM_PATTERN_MIXER_MAP_COUPLING    5
 #define ITEM_SYNC_MUTE                     6
 #define ITEM_SYNC_UNMUTE                   7
-#define ITEM_PASTE_CLR_ALL                 8
-#define ITEM_RESTORE_TRACK_SELECTIONS      9
-#define ITEM_MODIFY_PATTERN_BANKS         10
-#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 11
-#define ITEM_PRINT_TRANSPOSED_NOTES       12
-#define ITEM_METRONOME                    13
-#define ITEM_SHADOW_OUT                   14
-#define ITEM_MIDI_REMOTE                  15
-#define ITEM_TRACK_CC                     16
-#define ITEM_RUNTIME_STATUS_OPTIMIZATION  17
-#define ITEM_LIVE_LAYER_MUTE              18
-#define ITEM_INIT_WITH_TRIGGERS           19
-#define ITEM_INIT_CC                      20
-#define ITEM_DRUM_CC                      21
-#define ITEM_TPD_MODE                     22
-#define ITEM_BLM_ALWAYS_USE_FTS           23
-#define ITEM_BLM_FADERS                   24
-#define ITEM_MIXER_CC1234                 25
-#define ITEM_MENU_SHORTCUTS               26
-#define ITEM_SCREEN_SAVER                 27
+#define ITEM_SELECT_UNMUTED_TRACK          8
+#define ITEM_PASTE_CLR_ALL                 9
+#define ITEM_RESTORE_TRACK_SELECTIONS     10
+#define ITEM_MODIFY_PATTERN_BANKS         11
+#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 12
+#define ITEM_PRINT_TRANSPOSED_NOTES       13
+#define ITEM_METRONOME                    14
+#define ITEM_SHADOW_OUT                   15
+#define ITEM_MIDI_REMOTE                  16
+#define ITEM_TRACK_CC                     17
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  18
+#define ITEM_LIVE_LAYER_MUTE              19
+#define ITEM_INIT_WITH_TRIGGERS           20
+#define ITEM_INIT_CC                      21
+#define ITEM_DRUM_CC                      22
+#define ITEM_TPD_MODE                     23
+#define ITEM_BLM_ALWAYS_USE_FTS           24
+#define ITEM_BLM_FADERS                   25
+#define ITEM_MIXER_CC1234                 26
+#define ITEM_MENU_SHORTCUTS               27
+#define ITEM_SCREEN_SAVER                 28
 
-#define NUM_OF_ITEMS                      28
+#define NUM_OF_ITEMS                      29
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -112,6 +113,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Synchronize UNMUTE to Measure",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Auto-Select unmuted Track",
     NULL, // enabled/disabled
   },
 
@@ -351,6 +357,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_UNMUTE = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.SYNCHED_UNMUTE ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_SELECT_UNMUTED_TRACK: {
+      if( incrementer )
+	seq_ui_options.SELECT_UNMUTED_TRACK = (incrementer > 0) ? 1 : 0;
+      else
+	seq_ui_options.SELECT_UNMUTED_TRACK ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -898,6 +913,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_SYNC_UNMUTE: {
     enabled_value = seq_core_options.SYNCHED_UNMUTE;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_SELECT_UNMUTED_TRACK: {
+    enabled_value = seq_ui_options.SELECT_UNMUTED_TRACK;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
