@@ -200,6 +200,7 @@ s32 SEQ_UI_Init(u32 mode)
 
   seq_ui_options.ALL = 0;
   seq_ui_options.PRINT_TRANSPOSED_NOTES = 1;
+  seq_ui_options.SELECT_UNMUTED_TRACK = 1;
 
   ui_hold_msg_ctr = 0;
   ui_msg_ctr = 0;

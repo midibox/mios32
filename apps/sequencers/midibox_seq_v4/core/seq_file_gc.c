@@ -374,6 +374,10 @@ s32 SEQ_FILE_GC_Read(void)
 #ifndef MBSEQV4L
 	    seq_ui_options.PRINT_TRANSPOSED_NOTES = value;
 #endif
+	  } else if( strcmp(parameter, "UiSelectUnmutedTrack") == 0 ) {
+#ifndef MBSEQV4L
+	    seq_ui_options.SELECT_UNMUTED_TRACK = value;
+#endif
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
 	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
@@ -689,6 +693,11 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
 #ifndef MBSEQV4L
   sprintf(line_buffer, "UiPrintTransposedNotes %d\n", seq_ui_options.PRINT_TRANSPOSED_NOTES);
+  FLUSH_BUFFER;
+#endif
+
+#ifndef MBSEQV4L
+  sprintf(line_buffer, "UiSelectUnmutedTrack %d\n", seq_ui_options.SELECT_UNMUTED_TRACK);
   FLUSH_BUFFER;
 #endif
 

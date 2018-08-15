@@ -209,14 +209,16 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	else
 	  *muted ^= mask;
 
-	if( (*muted & mask) == 0 ) {
-	  if( par_layer_mute ) {
-	    // simplified usage: select the par layer
-	    ui_selected_par_layer = encoder;
-	  } else {
-	    // simplified usage: select the track
-	    ui_selected_tracks = 1 << encoder;
-	    ui_selected_group = encoder/4;
+	if( seq_ui_options.SELECT_UNMUTED_TRACK ) {
+	  if( (*muted & mask) == 0 ) {
+	    if( par_layer_mute ) {
+	      // simplified usage: select the par layer
+	      ui_selected_par_layer = encoder;
+	    } else {
+	      // simplified usage: select the track
+	      ui_selected_tracks = 1 << encoder;
+	      ui_selected_group = encoder/4;
+	    }
 	  }
 	}
       }

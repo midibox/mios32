@@ -198,6 +198,7 @@ typedef union {
     u8 MODIFY_PATTERN_BANKS:1;
     u8 PRINT_AND_MODIFY_WITHOUT_GATES:1;
     u8 PRINT_TRANSPOSED_NOTES:1;
+    u8 SELECT_UNMUTED_TRACK:1;
   };
 } seq_ui_options_t;
 
