@@ -663,7 +663,7 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
 	case '%': math_token = TOKEN_MATH_REMAIN; break;
 	case '&': math_token = TOKEN_MATH_AND; break;
 	case '|': math_token = TOKEN_MATH_OR; break;
-	case '^': math_token = TOKEN_MATH_XOR; break;
+	case '^': if( i != 0 ) math_token = TOKEN_MATH_XOR; break; // support ^value etc.
 	}
 
 	if( math_token != TOKEN_NOP ) {
@@ -688,7 +688,7 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
       }
     }
 
-    //DEBUG_MSG("Calc: %s %c %s\n", lOperand, operator, rOperand);
+    //DEBUG_MSG("Calc: %s 0x%02x %s\n", lOperand, math_token, rOperand);
 
     // get left side value (recursively)
     s32 lValue = parseValue(line, command, trim(lOperand), tokenize_req);
@@ -724,7 +724,6 @@ static s32 parseValue(u32 line, char *command, char *value_str, u8 tokenize_req)
 #endif
     return -1000000000;
   }
-
 
   if( value_str[0] == '^' ) {
     if( strcasecmp((char *)&value_str[1], "SECTION") == 0 ) {
@@ -1221,10 +1220,10 @@ s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 #endif
 	  return -1;
 	} else {
-	  *stream_pos = 0xff; // meta indicator
-	  ++stream_pos;
+	  *(stream_pos++) = 0xff; // meta indicator
 	  ++stream_size;
-	  *stream_pos = (u8)sysex_var;
+	  *(stream_pos++) = (u8)sysex_var;
+	  ++stream_size;
 	}
 #if NGR_TOKENIZED
 	if( tokenize_req ) {
@@ -1235,6 +1234,36 @@ s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 	    return -1;
 	}
 #endif
+      } if( *stream_str == '"' ) {
+	// parse string
+	// consider that it has been tokenized disable break and parse until terminating quote
+	{
+	  size_t len = strlen(stream_str);
+	  if( &stream_str[len] != brkt_local ) {
+	    stream_str[len] = ' ';
+	  }
+	}
+
+	while( *(++stream_str) != '"' && *stream_str != 0 ) {
+	  // escaped character (only way to send a '"' or '\' itself)
+	  if( *stream_str == '\\' ) {
+	    if( *(++stream_str) == 0 )
+	      break;
+	  }
+
+	  *(stream_pos++) = *stream_str;
+	  ++stream_size;
+	}
+
+	if( *stream_str == '\"' ) {
+	  ++stream_str;
+	}
+
+	while( *stream_str == ' ' || *stream_str == '\t' ) {
+	  ++stream_str;
+	}
+
+	brkt_local = stream_str;
       } else {
 	int value;
 	if( (value=parseValue(line, command, stream_str, tokenize_req)) < 0 || value > 0xff ) {
@@ -1243,11 +1272,10 @@ s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 #endif
 	  return -1;
 	} else {
-	  *stream_pos = (u8)value;
+	  *(stream_pos++) = (u8)value;
+	  ++stream_size;
 	}
       }
-      ++stream_pos;
-      ++stream_size;
     }
 
     if( !stream_size ) {
