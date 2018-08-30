@@ -1,5 +1,22 @@
 $Id$
 
+MIDIbox NG V1.037
+~~~~~~~~~~~~~~~~~
+
+   o .NGR: the "send SysEx" command can now also parse ASCII strings.
+     This is a comfortable way to send terminal commands to other MIDIboxes.
+     E.g. assumed that a MIDIbox SEQ is connected to MIDI OUT1, you could send:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "reset" 0x0a 0xf7
+     to reset the MIDIbox, or:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "new sesn42" 0x0a 0xf7
+     to create a new session, or:
+       send sysex OUT1 0xf0 0x00 0x00 0x7e 0x32 0x00 0x0d 0x00 "lcd Hello!" 0x0a 0xf7
+     to display a message on screen.
+
+     Transformation of values to ASCII isn't supported yet.
+     If it's a single digit, you could try ..."lcd Value: " [0x30 + ^value]
+
+
 MIDIbox NG V1.036
 ~~~~~~~~~~~~~~~~~
 

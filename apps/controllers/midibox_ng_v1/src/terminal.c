@@ -47,7 +47,8 @@ extern void vPortMallocDebugInfo(void);
 //! Local defines
 /////////////////////////////////////////////////////////////////////////////
 
-#define STRING_MAX 100 // recommended size for file transfers via FILE_BrowserHandler()
+//#define STRING_MAX 100 // recommended size for file transfers via FILE_BrowserHandler()
+#define STRING_MAX 255 // for larger terminal commands
 
 
 /////////////////////////////////////////////////////////////////////////////
