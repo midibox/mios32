@@ -398,6 +398,7 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
     } else if( strcmp(parameter, "tpd") == 0 ) {
       SEQ_TPD_PrintString(brkt); // easter egg ;-)
     } else if( strcmp(parameter, "lcd") == 0 ) {
+      SEQ_LCD_LOGO_ScreenSaver_Disable(); // ensure that screen saver disabled
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "From MIOS Terminal:", brkt); // could be useful?
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
