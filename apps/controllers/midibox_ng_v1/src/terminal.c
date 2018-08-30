@@ -48,8 +48,11 @@ extern void vPortMallocDebugInfo(void);
 /////////////////////////////////////////////////////////////////////////////
 
 //#define STRING_MAX 100 // recommended size for file transfers via FILE_BrowserHandler()
-#define STRING_MAX 255 // for larger terminal commands
-
+#if defined(MIOS32_FAMILY_LPC17xx)
+# define STRING_MAX 100 // still limited
+#else
+# define STRING_MAX 255 // for larger terminal commands
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 //! Local variables
