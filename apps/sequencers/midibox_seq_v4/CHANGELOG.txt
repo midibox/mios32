@@ -53,6 +53,9 @@ MIDIboxSEQ V4.095
    o Whenever a track or parameter layer is unmuted, it will be automatically selected
      This option can now be disabled in the OPTIONS page (item 9/29)
 
+   o new terminal command "lcd" allows to display a temporary message from on LCD from
+     an external device via SysEx
+
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
 
