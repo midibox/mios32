@@ -397,6 +397,8 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       out("Mass Storage Device Mode not supported by this application!");
     } else if( strcmp(parameter, "tpd") == 0 ) {
       SEQ_TPD_PrintString(brkt); // easter egg ;-)
+    } else if( strcmp(parameter, "lcd") == 0 ) {
+      SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "From MIOS Terminal:", brkt); // could be useful?
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "router") == 0 ) {
@@ -873,6 +875,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  bookmarks:      print bookmarks");
   out("  router:         print MIDI router info");
   out("  tpd <string>:   print a scrolled text on the TPD");
+  out("  lcd <string>:   print a message on LCD");
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
