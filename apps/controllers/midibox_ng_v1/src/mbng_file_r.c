@@ -1253,6 +1253,14 @@ s32 parseSend(u32 line, char *command, char **brkt, u8 tokenize_req)
 
 	  *(stream_pos++) = *stream_str;
 	  ++stream_size;
+
+#if NGR_TOKENIZED
+	  if( tokenize_req ) {
+	    if( MBNG_FILE_R_PushToken(TOKEN_VALUE_CONST8, line) < 0 ||
+		MBNG_FILE_R_PushToken(*stream_str, line) < 0 )
+	      return -1;
+	  }
+#endif
 	}
 
 	if( *stream_str == '\"' ) {
