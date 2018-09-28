@@ -29,7 +29,7 @@ void APP_Init(void)
 {
   MIOS32_BOARD_LED_Init(0xffffffff); // initialize all LEDs
   
-  MIOS32_MIDI_SendDebugMessage("Starting MBLoopa");
+  MIOS32_MIDI_SendDebugMessage("Starting LoopA");
   
   // Turn on LEDs for testing
   int pin;

@@ -111,7 +111,7 @@ void APP_Init(void)
    MIOS32_BOARD_LED_Init(0xffffffff); // initialize all LEDs
 
    MIOS32_MIDI_SendDebugMessage("=============================================================");
-   MIOS32_MIDI_SendDebugMessage("Starting MBLoopa");
+   MIOS32_MIDI_SendDebugMessage("Starting LoopA");
 
    // enable MSD by default (has to be enabled in SHIFT menu)
    msd_state = MSD_DISABLED;
@@ -179,9 +179,9 @@ void APP_Init(void)
    MIOS32_ENC_ConfigSet(enc_data_id, enc_config);
 
    // start tasks
-   xTaskCreate(TASK_Period_1mS, (signed portCHAR *)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
-   xTaskCreate(TASK_Period_1mS_LP, (signed portCHAR *)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
-   xTaskCreate(TASK_Period_1mS_SD, (signed portCHAR *)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
+   xTaskCreate(TASK_Period_1mS, (const char * const)"1mS", configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS, NULL);
+   xTaskCreate(TASK_Period_1mS_LP, (const char * const)"1mS_LP", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_LP, NULL);
+   xTaskCreate(TASK_Period_1mS_SD, (const char * const)"1mS_SD", 2*configMINIMAL_STACK_SIZE, NULL, PRIORITY_TASK_PERIOD_1mS_SD, NULL);
 
    loopaStartup();
 }
@@ -277,6 +277,8 @@ void APP_DIN_NotifyToggle(u32 pin, u32 pin_value)
 
    if (pin_value == 0)
       loopaButtonPressed(pin);
+   else
+      loopaButtonReleased(pin);
 }
 
 
