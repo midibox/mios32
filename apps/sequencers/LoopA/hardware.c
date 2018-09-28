@@ -1,11 +1,11 @@
-#include <mios32.h>
+#include "commonIncludes.h"
 
 // --- LEDs ---
 
 const u8 led_startstop = 127;
 const u8 led_armrecord = 14;
 
-const u8 led_gp1 = 10;
+const u8 LED_GP1 = 10;
 const u8 led_gp2 = 17;
 const u8 led_gp3 = 24;
 const u8 led_gp4 = 30;
@@ -68,7 +68,8 @@ const u8 sw_gp4 = 30;
 const u8 sw_gp5 = 29;
 const u8 sw_gp6 = 28;
 
-
+const u8 sw_menu = 23;
+const u8 sw_shift = 13;
 const u8 sw_copy = 22;
 const u8 sw_paste = 21;
 const u8 sw_delete = 20;
@@ -111,16 +112,16 @@ const u8 enc_data = 18;
  * dout 16 = gp2 blue
  * dout 17 = gp2 green
  * dout 18 = gp2 red
- * dout 19 = beatloop blue
- * dout 20 = beatloop green
- * dout 21 = beatloop red
+ * dout 19 = shift blue
+ * dout 20 = shift green
+ * dout 21 = shift red
  * dout 22 = gp3 blue
  * dout 23 = scene switch mode: all
  * dout 24 = gp3 green
  * dout 25 = gp3 red
- * dout 26 = shift blue
- * dout 27 = shift green
- * dout 28 = shift red
+ * dout 26 = menu blue
+ * dout 27 = menu green
+ * dout 28 = menu red
  * dout 29 = gp4 blue
  * dout 30 = gp4 green
  * dout 31 = reserved
@@ -160,8 +161,8 @@ const u8 enc_data = 18;
  * gp6      = din 28
  * run/stop = din 15
  * arm      = din 14
- * beatloop = din 13
- * shift    = din 23
+ * shift    = din 13
+ * menu     = din 23
  * copy     = din 22
  * paste    = din 21
  * delete   = din 20

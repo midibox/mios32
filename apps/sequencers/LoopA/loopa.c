@@ -25,14 +25,7 @@
 // (v3 needs no pushable encoders, as we will have more buttons and encoders directly under the commands)
 // =================================================================================================
 
-
-#include <mios32.h>
-#include "loopa_datatypes.h"
-#include <seq_midi_out.h>
-#include <seq_bpm.h>
-#include <midi_port.h>
-#include <midi_router.h>
-#include <string.h>
+#include "commonIncludes.h"
 
 #include "tasks.h"
 #include "file.h"
@@ -40,8 +33,10 @@
 #include "hardware.h"
 #include "screen.h"
 #include "app_lcd.h"
+#include "voxelspace.h"
 
 // --  Local types ---
+
 
 // --- Global vars ---
 
@@ -52,7 +47,7 @@ u32 tick_ = 0;                        // global seq tick
 u16 bpm_ = 120;                       // bpm
 u16 sessionNumber_ = 0;               // currently active session number (directory e.g. /SESSIONS/0001)
 u8 sessionExistsOnDisk_ = 0;          // is the currently selected session number already saved on disk/sd card
-enum LoopaPage page_ = PAGE_TRACK;    // currently active page/view
+enum LoopaPage page_ = PAGE_MUTE;     // currently active page/view
 enum Command command_ = COMMAND_NONE; // currently active command
 
 u8 activeTrack_ = 0;                  // currently active or last active clip number (0..5)
@@ -216,7 +211,7 @@ void updateGPLed(u8 number, u8 newState)
       case 1:
          if (s1 != newState)
          {
-            MIOS32_DOUT_PinSet(led_gp1, newState);
+            MIOS32_DOUT_PinSet(LED_GP1, newState);
             s1 = newState;
          }
          break;
@@ -274,61 +269,68 @@ void updateGPLeds()
 {
    MUTEX_DIGITALOUT_TAKE;
 
-   switch (page_)
+   if (screenIsInMenu())
    {
-      case PAGE_TRACK:
-         updateGPLed(1, !trackMute_[0]);
-         updateGPLed(2, !trackMute_[1]);
-         updateGPLed(3, !trackMute_[2]);
-         updateGPLed(4, !trackMute_[3]);
-         updateGPLed(5, !trackMute_[4]);
-         updateGPLed(6, !trackMute_[5]);
-         break;
 
-      case PAGE_EDIT:
-         updateGPLed(1, command_ == COMMAND_CLIPLEN);
-         updateGPLed(2, command_ == COMMAND_QUANTIZE);
-         updateGPLed(3, command_ == COMMAND_TRANSPOSE);
-         updateGPLed(4, command_ == COMMAND_SCROLL);
-         updateGPLed(5, command_ == COMMAND_STRETCH);
-         updateGPLed(6, command_ == COMMAND_CLEAR);
-         break;
+   }
 
-      case PAGE_NOTES:
-         updateGPLed(1, command_ == COMMAND_POSITION);
-         updateGPLed(2, command_ == COMMAND_NOTE);
-         updateGPLed(3, command_ == COMMAND_VELOCITY);
-         updateGPLed(4, command_ == COMMAND_LENGTH);
-         updateGPLed(5, 0);
-         updateGPLed(6, command_ == COMMAND_DELETENOTE);
-         break;
+   else
+   {
+      switch (page_) {
+         case PAGE_MUTE:
+            updateGPLed(1, !trackMute_[0]);
+            updateGPLed(2, !trackMute_[1]);
+            updateGPLed(3, !trackMute_[2]);
+            updateGPLed(4, !trackMute_[3]);
+            updateGPLed(5, !trackMute_[4]);
+            updateGPLed(6, !trackMute_[5]);
+            break;
 
-      case PAGE_MIDI:
-         updateGPLed(1, command_ == COMMAND_PORT);
-         updateGPLed(2, command_ == COMMAND_CHANNEL);
-         updateGPLed(3, 0);
-         updateGPLed(4, 0);
-         updateGPLed(5, 0);
-         updateGPLed(6, 0);
-         break;
+         case PAGE_CLIP:
+            updateGPLed(1, command_ == COMMAND_CLIPLEN);
+            updateGPLed(2, command_ == COMMAND_QUANTIZE);
+            updateGPLed(3, command_ == COMMAND_TRANSPOSE);
+            updateGPLed(4, command_ == COMMAND_SCROLL);
+            updateGPLed(5, command_ == COMMAND_STRETCH);
+            updateGPLed(6, command_ == COMMAND_CLEAR);
+            break;
 
-      case PAGE_DISK:
-         updateGPLed(1, command_ == COMMAND_SAVE);
-         updateGPLed(2, command_ == COMMAND_LOAD);
-         updateGPLed(3, command_ == COMMAND_NEW);
-         updateGPLed(4, 0);
-         updateGPLed(5, 0);
-         updateGPLed(6, 0);
-         break;
+         case PAGE_NOTES:
+            updateGPLed(1, command_ == COMMAND_POSITION);
+            updateGPLed(2, command_ == COMMAND_NOTE);
+            updateGPLed(3, command_ == COMMAND_VELOCITY);
+            updateGPLed(4, command_ == COMMAND_LENGTH);
+            updateGPLed(5, 0);
+            updateGPLed(6, command_ == COMMAND_DELETENOTE);
+            break;
 
-      case PAGE_BPM:
-         updateGPLed(1, command_ == COMMAND_BPM);
-         updateGPLed(2, command_ == COMMAND_BPMFLASH);
-         updateGPLed(3, 0);
-         updateGPLed(4, 0);
-         updateGPLed(5, 0);
-         updateGPLed(6, 0);
-         break;
+         case PAGE_TRACK:
+            updateGPLed(1, command_ == COMMAND_PORT);
+            updateGPLed(2, command_ == COMMAND_CHANNEL);
+            updateGPLed(3, 0);
+            updateGPLed(4, 0);
+            updateGPLed(5, 0);
+            updateGPLed(6, 0);
+            break;
+
+         case PAGE_DISK:
+            updateGPLed(1, command_ == COMMAND_SAVE);
+            updateGPLed(2, command_ == COMMAND_LOAD);
+            updateGPLed(3, command_ == COMMAND_NEW);
+            updateGPLed(4, 0);
+            updateGPLed(5, 0);
+            updateGPLed(6, 0);
+            break;
+
+         case PAGE_TEMPO:
+            updateGPLed(1, command_ == COMMAND_BPM);
+            updateGPLed(2, command_ == COMMAND_BPMFLASH);
+            updateGPLed(3, 0);
+            updateGPLed(4, 0);
+            updateGPLed(5, 0);
+            updateGPLed(6, 0);
+            break;
+      }
    }
 
    MUTEX_DIGITALOUT_GIVE;
@@ -379,12 +381,12 @@ void setActivePage(enum LoopaPage page)
    page_ = page;
 
    MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(led_page_1, page == PAGE_TRACK);
-   MIOS32_DOUT_PinSet(led_page_2, page == PAGE_EDIT);
+   MIOS32_DOUT_PinSet(led_page_1, page == PAGE_MUTE);
+   MIOS32_DOUT_PinSet(led_page_2, page == PAGE_CLIP);
    MIOS32_DOUT_PinSet(led_page_3, page == PAGE_NOTES);
-   MIOS32_DOUT_PinSet(led_page_4, page == PAGE_MIDI);
+   MIOS32_DOUT_PinSet(led_page_4, page == PAGE_TRACK);
    MIOS32_DOUT_PinSet(led_page_5, page == PAGE_DISK);
-   MIOS32_DOUT_PinSet(led_page_6, page == PAGE_BPM);
+   MIOS32_DOUT_PinSet(led_page_6, page == PAGE_TEMPO);
    MUTEX_DIGITALOUT_GIVE;
 }
 // -------------------------------------------------------------------------------------------------
@@ -1421,7 +1423,7 @@ void diskSave()
    saveSession(sessionNumber_);
    diskScanSessionFileAvailable();
 
-   page_ = PAGE_TRACK;
+   page_ = PAGE_MUTE;
    screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
@@ -1437,7 +1439,7 @@ void diskLoad()
 
    loadSession(sessionNumber_);
 
-   page_ = PAGE_TRACK;
+   page_ = PAGE_MUTE;
    screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
@@ -1452,7 +1454,7 @@ void diskNew()
    command_ = COMMAND_NONE;
 
    seqInit();
-   page_ = PAGE_TRACK;
+   page_ = PAGE_MUTE;
    screenNotifyPageChanged();
 
    screenFormattedFlashMessage("A fresh start... :-)");
@@ -1502,19 +1504,54 @@ void loopaButtonPressed(s32 pin)
    {
       seqArmButton();
    }
+   else if (pin == sw_shift)
+   {
+      if (screenIsInMenu())
+      {
+         page_ = PAGE_MUTE;
+      }
+      else
+      {
+         // normal mode "shift"
+         screenShowShift(1);
+      }
+   }
+   else if (pin == sw_menu)
+   {
+      /*if (screenIsInShift())
+      {
+
+      }
+      else */
+      {
+         // normal mode "menu"
+         DEBUG_MSG("enter menu");
+         calcField();
+         screenShowMenu(1);
+      }
+   }
    else if (pin == sw_copy)
    {
-      copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
-      copiedClipQuantize_ = clipQuantize_[activeTrack_][activeScene_];
-      copiedClipTranspose_ = clipTranspose_[activeTrack_][activeScene_];
-      copiedClipScroll_ = clipScroll_[activeTrack_][activeScene_];
-      copiedClipStretch_ = clipStretch_[activeTrack_][activeScene_];
-      memcpy(copiedClipNotes_, clipNotes_[activeTrack_][activeScene_], sizeof(copiedClipNotes_));
-      copiedClipNotesSize_ = clipNotesSize_[activeTrack_][activeScene_];
-      screenFormattedFlashMessage("copied clip to buffer");
+      if (screenIsInMenu())
+      {
+         page_ = PAGE_TRACK;
+      }
+      else
+      {
+         // normal mode "copy"
+         copiedClipSteps_ = clipSteps_[activeTrack_][activeScene_];
+         copiedClipQuantize_ = clipQuantize_[activeTrack_][activeScene_];
+         copiedClipTranspose_ = clipTranspose_[activeTrack_][activeScene_];
+         copiedClipScroll_ = clipScroll_[activeTrack_][activeScene_];
+         copiedClipStretch_ = clipStretch_[activeTrack_][activeScene_];
+         memcpy(copiedClipNotes_, clipNotes_[activeTrack_][activeScene_], sizeof(copiedClipNotes_));
+         copiedClipNotesSize_ = clipNotesSize_[activeTrack_][activeScene_];
+         screenFormattedFlashMessage("copied clip to buffer");
+      }
    }
    else if (pin == sw_paste)
    {
+      voxelFrame();
       // paste only, if we have a clip in memory
       if (copiedClipSteps_ > 0)
       {
@@ -1531,26 +1568,31 @@ void loopaButtonPressed(s32 pin)
          screenFormattedFlashMessage("no clip in buffer");
 
    }
+   else if (pin == sw_delete)
+   {
+       editClear(); // shortcut: clear track
+       command_ = COMMAND_NONE;
+   }
    else if (pin == sw_gp1)
    {
       switch (page_)
       {
-         case PAGE_TRACK:
+         case PAGE_MUTE:
             toggleMute(0);
             break;
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             editLen();
             break;
          case PAGE_NOTES:
             notesPosition();
             break;
-         case PAGE_MIDI:
+         case PAGE_TRACK:
             midiTrackPort();
             break;
          case PAGE_DISK:
             diskSave();
             break;
-         case PAGE_BPM:
+         case PAGE_TEMPO:
             bpmBpm();
             break;
       }
@@ -1559,52 +1601,61 @@ void loopaButtonPressed(s32 pin)
    {
       switch (page_)
       {
-         case PAGE_TRACK:
+         case PAGE_MUTE:
             toggleMute(1);
             break;
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             editQuantize();
             break;
          case PAGE_NOTES:
             notesNote();
             break;
-         case PAGE_MIDI:
+         case PAGE_TRACK:
             midiTrackChannel();
             break;
          case PAGE_DISK:
             diskLoad();
             break;
-         case PAGE_BPM:
+         case PAGE_TEMPO:
             bpmBpmflash();
             break;
       }
    }
    else if (pin == sw_gp3)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_TRACK:
-            toggleMute(2);
-            break;
-         case PAGE_EDIT:
-            editTranspose();
-            break;
-         case PAGE_NOTES:
-            notesVelocity();
-            break;
-         case PAGE_DISK:
-            diskNew();
-            break;
+         page_ = PAGE_CLIP;
+      }
+      else
+      {
+         // Normal GP3 page handling
+
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(2);
+               break;
+            case PAGE_CLIP:
+               editTranspose();
+               break;
+            case PAGE_NOTES:
+               notesVelocity();
+               break;
+            case PAGE_DISK:
+               diskNew();
+               break;
+         }
       }
    }
    else if (pin == sw_gp4)
    {
       switch (page_)
       {
-         case PAGE_TRACK:
+         case PAGE_MUTE:
             toggleMute(3);
             break;
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             editScroll();
             break;
          case PAGE_NOTES:
@@ -1616,10 +1667,10 @@ void loopaButtonPressed(s32 pin)
    {
       switch (page_)
       {
-         case PAGE_TRACK:
+         case PAGE_MUTE:
             toggleMute(4);
             break;
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             editStretch();
             break;
       }
@@ -1628,10 +1679,10 @@ void loopaButtonPressed(s32 pin)
    {
       switch (page_)
       {
-         case PAGE_TRACK:
+         case PAGE_MUTE:
             toggleMute(5);
             break;
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             editClear();
             break;
          case PAGE_NOTES:
@@ -1639,18 +1690,34 @@ void loopaButtonPressed(s32 pin)
             break;
       }
    }
-   else if (pin == sw_delete)
-   {
-      editClear(); // shortcut: clear track
-      command_ = COMMAND_NONE;
-   }
    else if (pin == sw_encoder2)
    {
-      page_ = PAGE_TRACK; // shortcut back to track display
+      page_ = PAGE_MUTE; // shortcut back to track display
       command_ = COMMAND_NONE;
       screenNotifyPageChanged();
    }
 }
+// -------------------------------------------------------------------------------------------------
+
+
+/**
+ * A button release has occured
+ *
+ */
+void loopaButtonReleased(s32 pin)
+{
+   if (screenIsInMenu() && pin == sw_menu)
+   {
+      DEBUG_MSG("leave menu");
+      screenShowMenu(0); // Left the menu by releasing the menu button
+   }
+
+   if (screenIsInShift() && pin == sw_shift)
+   {
+      screenShowShift(0); // Left the shift overlay by releasing the shift button
+   }
+}
+
 // -------------------------------------------------------------------------------------------------
 
 
@@ -1719,13 +1786,12 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
    {
       // switch through pages
 
-      incrementer = -incrementer; // inverted encoder handling for page switching (LEDs on left side of encoder)
       enum LoopaPage page = page_;
 
-      if (page == PAGE_TRACK && incrementer < 0)
-         page = PAGE_TRACK;
-      else if (page >= PAGE_BPM && incrementer > 0)
-         page = PAGE_BPM;
+      if (page == PAGE_MUTE && incrementer < 0)
+         page = PAGE_MUTE;
+      else if (page >= PAGE_TEMPO && incrementer > 0)
+         page = PAGE_TEMPO;
       else
          page += incrementer;
 

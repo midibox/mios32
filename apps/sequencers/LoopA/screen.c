@@ -1,7 +1,10 @@
 // $Id: screen.c 1223 2011-06-23 21:26:52Z hawkeye $
 
 #include <mios32.h>
+#include "app_lcd.h"
+#include "loopa_datatypes.h"
 
+#include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -11,6 +14,7 @@
 #include "tasks.h"
 #include "gfx_resources.h"
 #include "loopa.h"
+#include "voxelspace.h"
 
 
 // -------------------------------------------------------------------------------------------
@@ -21,6 +25,9 @@
 u8 screen[64][128];             // Screen buffer [y][x]
 
 u8 screenShowLoopaLogo_;
+u8 screenShowShift_ = 0;
+u8 screenShowMenu_ = 0;
+u8 screenShowVoxel_ = 0;
 u8 screenClipNumberSelected_ = 0;
 u16 screenClipStepPosition_[TRACKS];
 u32 screenSongStep_ = 0;
@@ -74,6 +81,19 @@ void setFontSmall()
    fontchar_bytewidth_ = 3;
    fontchar_height_ = 12;
    fontline_bytewidth_ = 95 * 3;
+}
+// ----------------------------------------------------------------------------------------
+
+/**
+ * Set the small font
+ *
+ */
+void setFontKeyIcon()
+{
+    fontptr_ = (unsigned char*) keyicons_pixdata;
+    fontchar_bytewidth_ = 18;
+    fontchar_height_ = 32;
+    fontline_bytewidth_ = 600;
 }
 // ----------------------------------------------------------------------------------------
 
@@ -317,12 +337,67 @@ void displayClipPosition(u8 clipNumber)
 
 
 /**
- * If showLogo is true, draw the MBLoopa Logo (usually during unit startup)
+ * If showLogo is true, draw the LoopA Logo (usually during unit startup)
  *
  */
 void screenShowLoopaLogo(u8 showLogo)
 {
    screenShowLoopaLogo_ = showLogo;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * If showShift is true, draw the shift key overlay
+ *
+ */
+void screenShowShift(u8 showShift)
+{
+   screenShowShift_ = showShift;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * @return true, if we are currently showing the shift overlay
+ *
+ */
+u8 screenIsInShift()
+{
+   return screenShowShift_;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * If showMenu is true, draw the menu key overlay
+ *
+ */
+void screenShowMenu(u8 showMenu)
+{
+    screenShowMenu_ = showMenu;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * @return if we are currently showing the menu
+ *
+ */
+u8 screenIsInMenu()
+{
+  return screenShowMenu_;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * If showVoxel is true, draw the voxel screensaver
+ * TODO: should be able to add titles or gfx on top of underlying screensaver, e.g. for startup
+ */
+void screenShowVoxel(u8 showVoxel)
+{
+   screenShowVoxel_ = showVoxel;
 }
 // ----------------------------------------------------------------------------------------
 
@@ -510,7 +585,7 @@ void displayClip(u8 clip)
  * Display the normal loopa view (PAGE_TRACK)
  *
  */
-void displayPageTrack(void)
+void displayPageMute(void)
 {
    setFontSmall();
 
@@ -827,10 +902,10 @@ void display(void)
 
    if (screenShowLoopaLogo_)
    {
-      // Startup/initial session loading: Render the MBLoopa Logo
+      // Startup/initial session loading: Render the LoopA Logo
 
       setFontBold();  // width per letter: 10px (for center calculation)
-      printFormattedString(78, 2, "LoopA V2.01");
+      printFormattedString(78, 2, "LoopA V2.03");
 
       setFontSmall(); // width per letter: 6px
       printFormattedString(28, 20, "(C) Hawkeye, latigid on, TK. 2018");
@@ -839,16 +914,64 @@ void display(void)
       setFontBold(); // width per letter: 10px;
       printFormattedString(52, 44, "www.midiphy.com");
    }
+   else if (screenIsInMenu())
+   {
+      voxelFrame();
+      setFontKeyIcon();
+      // setFontDarkGreyAsBlack(); // TODO
+
+      int iconId;
+
+      iconId = (page_ == PAGE_TEMPO) ? 32 + KEYICON_TEMPO : 32 + KEYICON_TEMPO;
+      printFormattedString(1 * 36 + 18, 0, "%c", iconId);
+
+      iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
+      printFormattedString(2 * 36 + 18, 0, "%c", iconId);
+
+      iconId = (page_ == PAGE_FX) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
+      printFormattedString(3 * 36 + 18, 0, "%c", iconId);
+
+      iconId = (page_ == PAGE_NOTES) ? 32 + KEYICON_NOTES_INVERTED : 32 + KEYICON_NOTES;
+      printFormattedString(4 * 36 + 18, 0, "%c", iconId);
+
+
+      iconId = (page_ == PAGE_DISK) ? 32 + KEYICON_DISK_INVERTED : 32 + KEYICON_DISK;
+      printFormattedString(0 * 36, 32, "%c", iconId);
+
+      iconId = (page_ == PAGE_METRONOME) ? 32 + KEYICON_METRONOME_INVERTED : 32 + KEYICON_METRONOME;
+      printFormattedString(1 * 36, 32, "%c", iconId);
+
+      iconId = (page_ == PAGE_MUTE) ? 32 + KEYICON_MUTE_INVERTED : 32 + KEYICON_MUTE;
+      printFormattedString(2 * 36, 32, "%c", iconId);
+
+      iconId = 32 + KEYICON_MENU_INVERTED;
+      printFormattedString(3 * 36, 32, "%c", iconId);
+
+      iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
+      printFormattedString(4 * 36, 32, "%c", iconId);
+
+      iconId = (page_ == PAGE_ROUTER) ? 32 + KEYICON_ROUTER_INVERTED : 32 + KEYICON_ROUTER;
+      printFormattedString(5 * 36, 32, "%c", iconId);
+
+      iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
+      printFormattedString(6 * 36, 32, "%c", iconId);
+
+      setFontBold();
+   }
+   else if (screenShowVoxel_)
+   {
+      voxelFrame();
+   }
    else
    {
       // Display page content...
       switch (page_)
       {
-         case PAGE_TRACK:
-            displayPageTrack();
+         case PAGE_MUTE:
+            displayPageMute();
             break;
 
-         case PAGE_EDIT:
+         case PAGE_CLIP:
             displayPageEdit();
             break;
 
@@ -856,7 +979,7 @@ void display(void)
             displayPageNotes();
             break;
 
-         case PAGE_MIDI:
+         case PAGE_TRACK:
             displayPageMidi();
             break;
 
@@ -864,7 +987,7 @@ void display(void)
             displayPageDisk();
             break;
 
-         case PAGE_BPM:
+         case PAGE_TEMPO:
             displayPageBpm();
             break;
       }
@@ -955,7 +1078,7 @@ void testScreen()
         if (x < 32)
         {  // half screen pattern
 
-           if (x || 4 == 0 || y || 4 == 0)
+           if ((x | 4) == 0 || (y | 4) == 0)
            {
               APP_LCD_Data(y & 0x0f);
               APP_LCD_Data(0);

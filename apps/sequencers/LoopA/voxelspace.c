@@ -1,10 +1,12 @@
 // $Id: voxelspace.c 1223 2011-06-23 21:26:52Z hawkeye $
 
-#include <mios32.h>
+#include "commonIncludes.h"
+
+/*#include <mios32.h>
 
 #include <app_lcd.h>
 
-#include <seq_bpm.h>
+#include <seq_bpm.h> */
 #include "screen.h"
 #include "voxelspace.h"
 
@@ -129,18 +131,15 @@ void voxelFrame(void)
    u16 yfield;
    yVoxel += tempEncoderAccel;
 
-
    // Output random terrain noise, that will be blurred down
    yfield = (40 + yVoxel) % 128;
-   for (i = 0; i < 128; i++)
-   {
+   for (i = 0; i < 128; i++) {
       field[yfield][i] = rand() % (seqRunning ? 255 : 208);
    }
 
    // Output current notedraw heightline
    yfield = (29 + yVoxel) % 128;
-   for (i = 0; i < 128; i++)
-   {
+   for (i = 0; i < 128; i++) {
       if (notedraw[i] > 0)
          field[yfield][i] = notedraw[i];
       else if (tickLine)
@@ -151,7 +150,7 @@ void voxelFrame(void)
    blur();
 
    // Calculate screen buffer
-   for (j=0; j<30; j++)  // Distance from screen plane
+   for (j = 0; j < 30; j++)  // Distance from screen plane
    {
       u16 distscaler = 38 - j;
       u16 stdheight = 400 / distscaler;
@@ -160,10 +159,9 @@ void voxelFrame(void)
 
       yfield = (j + yVoxel) % 128;
 
-      for (i = 0; i < 128; i++)
-      {
+      for (i = 0; i < 128; i++) {
          // --- "Even" display pixel (0, 2, 4, 6, ...) ---
-         u16 xfield = (64 + (int)((((i<<1)-128)*distscaler)>>5)) & 127;
+         u16 xfield = (64 + (int) ((((i << 1) - 128) * distscaler) >> 5)) & 127;
          u8 h = field[yfield][xfield];
          u8 height = h / distscaler; // Scale height to distance
          u8 starty = mult1dot5[stdheight - height];
@@ -173,7 +171,7 @@ void voxelFrame(void)
             screen[k][i] = (screen[k][i] & 0x0f) + col;
 
          // --- "Odd" display pixel (1, 3, 5, 7, ...) ---
-         xfield = (64 + (int)((((i<<1)-127)*distscaler)>>5)) & 127;
+         xfield = (64 + (int) ((((i << 1) - 127) * distscaler) >> 5)) & 127;
          h = field[yfield][xfield];
 
          height = h / distscaler; // Scale height to distance
@@ -186,7 +184,7 @@ void voxelFrame(void)
    }
 
    // Push screen buffer
-   display();
+   //display();
 }
 // ----------------------------------------------------------------------------------------
 

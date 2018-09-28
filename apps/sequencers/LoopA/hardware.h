@@ -1,9 +1,11 @@
 // --- LEDs ---
 
+#include "loopa_datatypes.h"
+
 extern const u8 led_startstop;
 extern const u8 led_armrecord;
 
-extern const u8 led_gp1;
+extern const u8 LED_GP1;
 extern const u8 led_gp2;
 extern const u8 led_gp3;
 extern const u8 led_gp4;
@@ -65,6 +67,8 @@ extern const u8 sw_gp4;
 extern const u8 sw_gp5;
 extern const u8 sw_gp6;
 
+extern const u8 sw_menu;
+extern const u8 sw_shift;
 extern const u8 sw_copy;
 extern const u8 sw_paste;
 extern const u8 sw_delete;

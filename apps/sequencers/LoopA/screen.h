@@ -4,8 +4,23 @@
 
 extern u8 screen[64][128];             // Screen buffer [y][x]
 
-// If showLogo is true, draw the MBLoopa Logo (usually during unit startup)
+// If showLogo is true, draw the LoopA Logo (usually during unit startup)
 void screenShowLoopaLogo(u8 showLogo);
+
+// If showShift is true, draw the shift key overlay
+void screenShowShift(u8 showShift);
+
+// return true, if we are currently showing the shift overlay
+u8 screenIsInShift();
+
+// If showMenu is true, draw the menu key overlay
+void screenShowMenu(u8 showMenu);
+
+// return true, if we are currently showing the menu
+u8 screenIsInMenu();
+
+// If showVoxel is true, draw the voxel screensaver
+void screenShowVoxel(u8 showVoxel);
 
 // Set the currently selected clip
 void screenSetClipSelected(u8 clipNumber);
