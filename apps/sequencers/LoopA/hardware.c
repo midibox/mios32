@@ -2,29 +2,56 @@
 
 // --- LEDs ---
 
-const u8 led_startstop = 127;
-const u8 led_armrecord = 14;
+const u8 HW_LED_RED_GP1 = 11;
+const u8 HW_LED_RED_GP2 = 18;
+const u8 HW_LED_RED_GP3 = 25;
+const u8 HW_LED_RED_GP4 = 32;
+const u8 HW_LED_RED_GP5 = 38;
+const u8 HW_LED_RED_GP6 = 45;
 
-const u8 LED_GP1 = 10;
-const u8 led_gp2 = 17;
-const u8 led_gp3 = 24;
-const u8 led_gp4 = 30;
-const u8 led_gp5 = 37;
-const u8 led_gp6 = 44;
+const u8 HW_LED_GREEN_GP1 = 10;
+const u8 HW_LED_GREEN_GP2 = 17;
+const u8 HW_LED_GREEN_GP3 = 24;
+const u8 HW_LED_GREEN_GP4 = 30;
+const u8 HW_LED_GREEN_GP5 = 37;
+const u8 HW_LED_GREEN_GP6 = 44;
 
-const u8 led_unmute1 = 10;
-const u8 led_unmute2 = 17;
-const u8 led_unmute3 = 24;
-const u8 led_unmute4 = 30;
-const u8 led_unmute5 = 37;
-const u8 led_unmute6 = 44;
+const u8 HW_LED_BLUE_GP1 = 9;
+const u8 HW_LED_BLUE_GP2 = 16;
+const u8 HW_LED_BLUE_GP3 = 22;
+const u8 HW_LED_BLUE_GP4 = 29;
+const u8 HW_LED_BLUE_GP5 = 36;
+const u8 HW_LED_BLUE_GP6 = 43;
 
-const u8 led_active1 = 9;
-const u8 led_active2 = 16;
-const u8 led_active3 = 22;
-const u8 led_active4 = 29;
-const u8 led_active5 = 36;
-const u8 led_active6 = 43;
+const u8 HW_LED_RED_RUNSTOP = 8;
+const u8 HW_LED_RED_ARM = 14;
+const u8 HW_LED_RED_SHIFT = 21;
+const u8 HW_LED_RED_MENU = 28;
+const u8 HW_LED_RED_COPY = 35;
+const u8 HW_LED_RED_PASTE = 42;
+const u8 HW_LED_RED_DELETE = 51;
+
+const u8 HW_LED_GREEN_RUNSTOP = 127;
+const u8 HW_LED_GREEN_ARM = 13;
+const u8 HW_LED_GREEN_SHIFT = 20;
+const u8 HW_LED_GREEN_MENU = 27;
+const u8 HW_LED_GREEN_COPY = 34;
+const u8 HW_LED_GREEN_PASTE = 41;
+const u8 HW_LED_GREEN_DELETE = 52;
+
+const u8 HW_LED_BLUE_RUNSTOP = 4;
+const u8 HW_LED_BLUE_ARM = 12;
+const u8 HW_LED_BLUE_SHIFT = 19;
+const u8 HW_LED_BLUE_MENU = 26;
+const u8 HW_LED_BLUE_COPY = 33;
+const u8 HW_LED_BLUE_PASTE = 40;
+const u8 HW_LED_BLUE_DELETE = 46;
+
+// LOGICAL LED STATES
+const u8 LED_OFF = 0;
+const u8 LED_RED = 1;
+const u8 LED_GREEN = 2;
+const u8 LED_BLUE = 4;
 
 const u8 led_scene1 = 15;
 const u8 led_scene2 = 7;
@@ -57,7 +84,7 @@ const u8 led_beat3 = 127;
 
 // --- Switches ---
 
-const u8 sw_startstop = 15;
+const u8 sw_runstop = 15;
 const u8 sw_armrecord = 14;
 const u8 sw_encoder2 = 4;
 

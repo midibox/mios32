@@ -55,7 +55,6 @@
 
 static s32 SEQ_PlayOffEvents(void);
 static s32 SEQ_SongPos(u16 new_song_pos);
-static void SEQ_UpdateBeatLEDs(u32 bpm_tick);
 static s32 SEQ_Tick(u32 bpm_tick);
 static s32 SEQ_CheckSongFinished(u32 bpm_tick);
 
@@ -256,7 +255,6 @@ s32 SEQ_Handler(void)
       u32 bpm_tick;
       if (SEQ_BPM_ChkReqClk(&bpm_tick) > 0)
       {
-         SEQ_UpdateBeatLEDs(bpm_tick);
          if (!MID_FILE_RecordingEnabled())
          {
             // check if song is finished
@@ -532,52 +530,6 @@ s32 SEQ_PauseEnabled(void)
 }
 
 
-/////////////////////////////////////////////////////////////////////////////
-// Update BEAT LEDs / Voxel space beat line
-/////////////////////////////////////////////////////////////////////////////
-static void SEQ_UpdateBeatLEDs(u32 bpm_tick)
-{
-   static u8 lastLEDstate = 255;
-
-   screenPosStep = bpm_tick / (SEQ_BPM_PPQN_Get() / 16);
-   screenPosBar = screenPosStep / 16;
-
-   u8 beatled = (bpm_tick / (SEQ_BPM_PPQN_Get() / 4)) % 4;
-
-   if (beatled != lastLEDstate)
-   {
-      lastLEDstate = beatled;
-
-      switch (beatled)
-      {
-      case 0:
-         MIOS32_DOUT_PinSet(led_beat0, 1);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         voxelTickLine();
-         break;
-      case 1:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 1);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         break;
-      case 2:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 1);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         break;
-      case 3:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 1);
-         break;
-      }
-   }
-}
 
 
 /**

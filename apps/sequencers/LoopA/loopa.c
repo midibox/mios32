@@ -198,140 +198,261 @@ u32 getClipLengthInTicks(u8 clip)
 }
 // -------------------------------------------------------------------------------------------------
 
-
 /**
- * Update a single GP Led, only change state if
+ * Update a single LED (called from MUTEX_DIGITALOUT protected environment)
+ *
  */
-void updateGPLed(u8 number, u8 newState)
+void updateLED(u8 number, u8 newState)
 {
-   static s8 s1 = -1, s2 = -1, s3 = -1, s4 = -1, s5 = -1, s6 = -1;
+   static u8 ledstate[13];
 
    switch (number)
    {
-      case 1:
-         if (s1 != newState)
+      case LED_GP1:
+         if (newState != ledstate[LED_GP1])
          {
-            MIOS32_DOUT_PinSet(LED_GP1, newState);
-            s1 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP1, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP1, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP1, newState & LED_BLUE);
+            ledstate[LED_GP1] = newState;
          }
          break;
-
-      case 2:
-         if (s2 != newState)
+      case LED_GP2:
+         if (newState != ledstate[LED_GP2])
          {
-            MIOS32_DOUT_PinSet(led_gp2, newState);
-            s2 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP2, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP2, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP2, newState & LED_BLUE);
+            ledstate[LED_GP2] = newState;
          }
          break;
-
-      case 3:
-         if (s3 != newState)
+      case LED_GP3:
+         if (newState != ledstate[LED_GP3])
          {
-            MIOS32_DOUT_PinSet(led_gp3, newState);
-            s3 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP3, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP3, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP3, newState & LED_BLUE);
+            ledstate[LED_GP3] = newState;
          }
          break;
-
-      case 4:
-         if (s4 != newState)
+      case LED_GP4:
+         if (newState != ledstate[LED_GP4])
          {
-            MIOS32_DOUT_PinSet(led_gp4, newState);
-            s4 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP4, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP4, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP4, newState & LED_BLUE);
+            ledstate[LED_GP4] = newState;
          }
          break;
-
-      case 5:
-         if (s5 != newState)
+      case LED_GP5:
+         if (newState != ledstate[LED_GP5])
          {
-            MIOS32_DOUT_PinSet(led_gp5, newState);
-            s5 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP5, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP5, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP5, newState & LED_BLUE);
+            ledstate[LED_GP5] = newState;
          }
          break;
-
-      case 6:
-         if (s6 != newState)
+      case LED_GP6:
+         if (newState != ledstate[LED_GP6])
          {
-            MIOS32_DOUT_PinSet(led_gp6, newState);
-            s6 = newState;
+            MIOS32_DOUT_PinSet(HW_LED_RED_GP6, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_GP6, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_GP6, newState & LED_BLUE);
+            ledstate[LED_GP6] = newState;
+         }
+         break;
+      case LED_RUNSTOP:
+         if (newState != ledstate[LED_RUNSTOP])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_RUNSTOP, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_RUNSTOP, newState & LED_BLUE);
+            ledstate[LED_RUNSTOP] = newState;
+         }
+         break;
+      case LED_ARM:
+         if (newState != ledstate[LED_ARM])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_ARM, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_ARM, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_ARM, newState & LED_BLUE);
+            ledstate[LED_ARM] = newState;
+         }
+         break;
+      case LED_SHIFT:
+         if (newState != ledstate[LED_SHIFT])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_SHIFT, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_SHIFT, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_SHIFT, newState & LED_BLUE);
+            ledstate[LED_SHIFT] = newState;
+         }
+         break;
+      case LED_MENU:
+         if (newState != ledstate[LED_MENU])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_MENU, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_MENU, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_MENU, newState & LED_BLUE);
+            ledstate[LED_MENU] = newState;
+         }
+         break;
+      case LED_COPY:
+         if (newState != ledstate[LED_COPY])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_COPY, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_COPY, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_COPY, newState & LED_BLUE);
+            ledstate[LED_COPY] = newState;
+         }
+         break;
+      case LED_PASTE:
+         if (newState != ledstate[LED_PASTE])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_PASTE, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_PASTE, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_PASTE, newState & LED_BLUE);
+            ledstate[LED_PASTE] = newState;
+         }
+         break;
+      case LED_DELETE:
+         if (newState != ledstate[LED_DELETE])
+         {
+            MIOS32_DOUT_PinSet(HW_LED_RED_DELETE, newState & LED_RED);
+            MIOS32_DOUT_PinSet(HW_LED_GREEN_DELETE, newState & LED_GREEN);
+            MIOS32_DOUT_PinSet(HW_LED_BLUE_DELETE, newState & LED_BLUE);
+            ledstate[LED_DELETE] = newState;
          }
          break;
    }
-
 }
 // -------------------------------------------------------------------------------------------------
 
 
+
 /**
- *  Update the six general purpose LED states (called periodically from app.c)
+ * Update the LED states of the Matias switches (called every 20ms from app.c timer)
  *
  */
-void updateGPLeds()
+void updateLEDs()
 {
-   MUTEX_DIGITALOUT_TAKE;
+   u8 led_gp1 = LED_OFF, led_gp2 = LED_OFF, led_gp3 = LED_OFF, led_gp4 = LED_OFF, led_gp5 = LED_OFF, led_gp6 = LED_OFF;
+   u8 led_runstop = LED_OFF, led_arm = LED_OFF, led_shift = LED_OFF, led_menu = LED_OFF;
+   u8 led_copy = LED_OFF, led_paste = LED_OFF, led_delete = LED_OFF;
 
    if (screenIsInMenu())
    {
+      led_menu = LED_RED;
 
-   }
-
-   else
-   {
-      switch (page_) {
-         case PAGE_MUTE:
-            updateGPLed(1, !trackMute_[0]);
-            updateGPLed(2, !trackMute_[1]);
-            updateGPLed(3, !trackMute_[2]);
-            updateGPLed(4, !trackMute_[3]);
-            updateGPLed(5, !trackMute_[4]);
-            updateGPLed(6, !trackMute_[5]);
+      switch (page_)
+      {
+         case PAGE_MIDIMONITOR:
+            led_gp2 = LED_RED;
             break;
-
-         case PAGE_CLIP:
-            updateGPLed(1, command_ == COMMAND_CLIPLEN);
-            updateGPLed(2, command_ == COMMAND_QUANTIZE);
-            updateGPLed(3, command_ == COMMAND_TRANSPOSE);
-            updateGPLed(4, command_ == COMMAND_SCROLL);
-            updateGPLed(5, command_ == COMMAND_STRETCH);
-            updateGPLed(6, command_ == COMMAND_CLEAR);
-            break;
-
-         case PAGE_NOTES:
-            updateGPLed(1, command_ == COMMAND_POSITION);
-            updateGPLed(2, command_ == COMMAND_NOTE);
-            updateGPLed(3, command_ == COMMAND_VELOCITY);
-            updateGPLed(4, command_ == COMMAND_LENGTH);
-            updateGPLed(5, 0);
-            updateGPLed(6, command_ == COMMAND_DELETENOTE);
-            break;
-
-         case PAGE_TRACK:
-            updateGPLed(1, command_ == COMMAND_PORT);
-            updateGPLed(2, command_ == COMMAND_CHANNEL);
-            updateGPLed(3, 0);
-            updateGPLed(4, 0);
-            updateGPLed(5, 0);
-            updateGPLed(6, 0);
-            break;
-
-         case PAGE_DISK:
-            updateGPLed(1, command_ == COMMAND_SAVE);
-            updateGPLed(2, command_ == COMMAND_LOAD);
-            updateGPLed(3, command_ == COMMAND_NEW);
-            updateGPLed(4, 0);
-            updateGPLed(5, 0);
-            updateGPLed(6, 0);
-            break;
-
          case PAGE_TEMPO:
-            updateGPLed(1, command_ == COMMAND_BPM);
-            updateGPLed(2, command_ == COMMAND_BPMFLASH);
-            updateGPLed(3, 0);
-            updateGPLed(4, 0);
-            updateGPLed(5, 0);
-            updateGPLed(6, 0);
+            led_gp3 = LED_RED;
+            break;
+         case PAGE_MUTE:
+            led_gp4 = LED_RED;
+            break;
+         case PAGE_NOTES:
+            led_gp5 = LED_RED;
+            break;
+         case PAGE_ROUTER:
+            led_arm = LED_RED;
+            break;
+         case PAGE_DISK:
+            led_shift = LED_RED;
+            break;
+         case PAGE_CLIP:
+            led_copy = LED_RED;
+            break;
+         case PAGE_FX:
+            led_paste = LED_RED;
+            break;
+         case PAGE_TRACK:
+            led_delete = LED_RED;
             break;
       }
    }
+   else
+   {
+      // Normal pages, outside menu/shift
+
+      // Always indicate active track with a blue upper LED
+      led_gp1 = activeTrack_ == 0 ? LED_BLUE : LED_OFF;
+      led_gp2 = activeTrack_ == 1 ? LED_BLUE : LED_OFF;
+      led_gp3 = activeTrack_ == 2 ? LED_BLUE : LED_OFF;
+      led_gp4 = activeTrack_ == 3 ? LED_BLUE : LED_OFF;
+      led_gp5 = activeTrack_ == 4 ? LED_BLUE : LED_OFF;
+      led_gp6 = activeTrack_ == 5 ? LED_BLUE : LED_OFF;
+
+      // Page-specific additonal lighting
+      switch (page_)
+      {
+         case PAGE_MUTE:
+            led_gp1 |= trackMute_[0] ? LED_OFF : LED_GREEN;
+            led_gp2 |= trackMute_[1] ? LED_OFF : LED_GREEN;
+            led_gp3 |= trackMute_[2] ? LED_OFF : LED_GREEN;
+            led_gp4 |= trackMute_[3] ? LED_OFF : LED_GREEN;
+            led_gp5 |= trackMute_[4] ? LED_OFF : LED_GREEN;
+            led_gp6 |= trackMute_[5] ? LED_OFF : LED_GREEN;
+            break;
+
+         case PAGE_CLIP:
+            led_gp1 |= command_ == COMMAND_CLIPLEN ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_QUANTIZE ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_TRANSPOSE ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_SCROLL ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_STRETCH ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_FREEZE ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_FX:
+            break;
+
+         case PAGE_NOTES:
+            led_gp1 |= command_ == COMMAND_POSITION ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_NOTE ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_VELOCITY ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_LENGTH ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_DELETENOTE ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_TRACK:
+            led_gp1 |= command_ == COMMAND_PORT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_CHANNEL ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_DISK:
+            led_gp1 |= command_ == COMMAND_SAVE ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_LOAD ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_NEW ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_TEMPO:
+            led_gp1 |= command_ == COMMAND_BPM ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_BPMFLASH ? LED_RED : LED_OFF;
+            break;
+      }
+   }
+
+   MUTEX_DIGITALOUT_TAKE;
+
+   updateLED(LED_GP1, led_gp1);
+   updateLED(LED_GP2, led_gp2);
+   updateLED(LED_GP3, led_gp3);
+   updateLED(LED_GP4, led_gp4);
+   updateLED(LED_GP5, led_gp5);
+   updateLED(LED_GP6, led_gp6);
+   updateLED(LED_RUNSTOP, led_runstop);
+   updateLED(LED_ARM, led_arm);
+   updateLED(LED_SHIFT, led_shift);
+   updateLED(LED_MENU, led_menu);
+   updateLED(LED_COPY, led_copy);
+   updateLED(LED_PASTE, led_paste);
+   updateLED(LED_DELETE, led_delete);
 
    MUTEX_DIGITALOUT_GIVE;
 }
@@ -346,14 +467,15 @@ void setActiveTrack(u8 trackNumber)
    activeTrack_ = trackNumber;
    screenSetClipSelected(activeTrack_);
 
-   MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(led_active1, activeTrack_ == 0);
-   MIOS32_DOUT_PinSet(led_active2, activeTrack_ == 1);
-   MIOS32_DOUT_PinSet(led_active3, activeTrack_ == 2);
-   MIOS32_DOUT_PinSet(led_active4, activeTrack_ == 3);
-   MIOS32_DOUT_PinSet(led_active5, activeTrack_ == 4);
-   MIOS32_DOUT_PinSet(led_active6, activeTrack_ == 5);
+   /* MUTEX_DIGITALOUT_TAKE;
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP1, activeTrack_ == 0);
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP2, activeTrack_ == 1);
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP3, activeTrack_ == 2);
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP4, activeTrack_ == 3);
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP5, activeTrack_ == 4);
+   MIOS32_DOUT_PinSet(HW_LED_BLUE_GP6, activeTrack_ == 5);
    MUTEX_DIGITALOUT_GIVE;
+    */
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -836,43 +958,45 @@ static void seqUpdateBeatLEDs(u32 bpm_tick)
    static u8 lastLEDstate = 255;
 
    u16 ticksPerStep = SEQ_BPM_PPQN_Get() / 4;
-
    u8 beatled = (bpm_tick / ticksPerStep) % 4;
 
    if (beatled != lastLEDstate)
    {
       lastLEDstate = beatled;
 
-      MUTEX_DIGITALOUT_TAKE;
-      switch (beatled)
+      if (!screenIsInMenu() && !screenIsInShift())
       {
-      case 0:
-         oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2 : 1; // flash background (strong/normal)
-         MIOS32_DOUT_PinSet(led_beat0, 1);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         break;
-      case 1:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 1);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         break;
-      case 2:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 1);
-         MIOS32_DOUT_PinSet(led_beat3, 0);
-         break;
-      case 3:
-         MIOS32_DOUT_PinSet(led_beat0, 0);
-         MIOS32_DOUT_PinSet(led_beat1, 0);
-         MIOS32_DOUT_PinSet(led_beat2, 0);
-         MIOS32_DOUT_PinSet(led_beat3, 1);
-         break;
+         MUTEX_DIGITALOUT_TAKE;
+         switch (beatled) {
+            case 0:
+               oledBeatFlashState_ = (bpm_tick / (ticksPerStep * 4) % 4 == 0) ? 2
+                                                                              : 1; // flash background (strong/normal)
+               MIOS32_DOUT_PinSet(led_beat0, 1);
+               MIOS32_DOUT_PinSet(led_beat1, 0);
+               MIOS32_DOUT_PinSet(led_beat2, 0);
+               MIOS32_DOUT_PinSet(led_beat3, 0);
+               break;
+            case 1:
+               MIOS32_DOUT_PinSet(led_beat0, 0);
+               MIOS32_DOUT_PinSet(led_beat1, 1);
+               MIOS32_DOUT_PinSet(led_beat2, 0);
+               MIOS32_DOUT_PinSet(led_beat3, 0);
+               break;
+            case 2:
+               MIOS32_DOUT_PinSet(led_beat0, 0);
+               MIOS32_DOUT_PinSet(led_beat1, 0);
+               MIOS32_DOUT_PinSet(led_beat2, 1);
+               MIOS32_DOUT_PinSet(led_beat3, 0);
+               break;
+            case 3:
+               MIOS32_DOUT_PinSet(led_beat0, 0);
+               MIOS32_DOUT_PinSet(led_beat1, 0);
+               MIOS32_DOUT_PinSet(led_beat2, 0);
+               MIOS32_DOUT_PinSet(led_beat3, 1);
+               break;
+         }
+         MUTEX_DIGITALOUT_GIVE;
       }
-      MUTEX_DIGITALOUT_GIVE;
 
       // New step, Update clip positions
       u8 i;
@@ -1039,8 +1163,8 @@ void handleStop()
    screenFormattedFlashMessage("Stopped");
 
    MUTEX_DIGITALOUT_TAKE;
-   MIOS32_DOUT_PinSet(led_startstop, 0);
-   MIOS32_DOUT_PinSet(led_armrecord, 0);
+   MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, 0);
+   MIOS32_DOUT_PinSet(HW_LED_RED_ARM, 0);
    MUTEX_DIGITALOUT_GIVE;
 
    SEQ_BPM_Stop(); // stop sequencer
@@ -1076,7 +1200,7 @@ s32 seqPlayStopButton(void)
      SEQ_BPM_Start();
 
      MUTEX_DIGITALOUT_TAKE;
-     MIOS32_DOUT_PinSet(led_startstop, 1);
+     MIOS32_DOUT_PinSet(HW_LED_GREEN_RUNSTOP, 1);
      MUTEX_DIGITALOUT_GIVE;
 
      screenFormattedFlashMessage("Play");
@@ -1099,7 +1223,7 @@ s32 seqArmButton(void)
      isRecording_ = 1;
 
      MUTEX_DIGITALOUT_TAKE;
-     MIOS32_DOUT_PinSet(led_armrecord, 1);
+     MIOS32_DOUT_PinSet(HW_LED_RED_ARM, 1);
      MUTEX_DIGITALOUT_GIVE;
   }
   else
@@ -1108,7 +1232,7 @@ s32 seqArmButton(void)
      isRecording_ = 0;
 
      MUTEX_DIGITALOUT_TAKE;
-     MIOS32_DOUT_PinSet(led_armrecord, 0);
+     MIOS32_DOUT_PinSet(HW_LED_RED_ARM, 0);
      MUTEX_DIGITALOUT_GIVE;
   }
 
@@ -1300,7 +1424,7 @@ void editStretch()
  */
 void editClear()
 {
-   command_ = command_ == COMMAND_CLEAR ? COMMAND_NONE : COMMAND_CLEAR;
+   command_ = command_ == COMMAND_FREEZE ? COMMAND_NONE : COMMAND_FREEZE;
 
    clipNotesSize_[activeTrack_][activeScene_] = 0;
 
@@ -1496,19 +1620,33 @@ void loopaButtonPressed(s32 pin)
 {
    DEBUG_MSG("Button: %d pressed\n", pin);
 
-   if (pin == sw_startstop)
+   if (pin == sw_runstop)
    {
-      seqPlayStopButton();
+      if (screenIsInMenu())
+      {
+         page_ = PAGE_SETUP;
+      }
+      else
+      {
+         seqPlayStopButton();
+      }
    }
    else if (pin == sw_armrecord)
    {
-      seqArmButton();
+      if (screenIsInMenu())
+      {
+         page_ = PAGE_ROUTER;
+      }
+      else
+      {
+         seqArmButton();
+      }
    }
    else if (pin == sw_shift)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_MUTE;
+         page_ = PAGE_DISK;
       }
       else
       {
@@ -1534,7 +1672,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_TRACK;
+         page_ = PAGE_CLIP;
       }
       else
       {
@@ -1551,81 +1689,107 @@ void loopaButtonPressed(s32 pin)
    }
    else if (pin == sw_paste)
    {
-      voxelFrame();
-      // paste only, if we have a clip in memory
-      if (copiedClipSteps_ > 0)
+      if (screenIsInMenu())
       {
-         clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
-         clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
-         clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
-         clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
-         clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
-         memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
-         clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
-         screenFormattedFlashMessage("pasted clip from buffer");
+         page_ = PAGE_FX;
       }
       else
-         screenFormattedFlashMessage("no clip in buffer");
-
+      {
+         // paste only, if we have a clip in memory
+         if (copiedClipSteps_ > 0)
+         {
+            clipSteps_[activeTrack_][activeScene_] = copiedClipSteps_;
+            clipQuantize_[activeTrack_][activeScene_] = copiedClipQuantize_;
+            clipTranspose_[activeTrack_][activeScene_] = copiedClipTranspose_;
+            clipScroll_[activeTrack_][activeScene_] = copiedClipScroll_;
+            clipStretch_[activeTrack_][activeScene_] = copiedClipStretch_;
+            memcpy(clipNotes_[activeTrack_][activeScene_], copiedClipNotes_, sizeof(copiedClipNotes_));
+            clipNotesSize_[activeTrack_][activeScene_] = copiedClipNotesSize_;
+            screenFormattedFlashMessage("pasted clip from buffer");
+         }
+         else
+            screenFormattedFlashMessage("no clip in buffer");
+      }
    }
    else if (pin == sw_delete)
    {
-       editClear(); // shortcut: clear track
-       command_ = COMMAND_NONE;
+      if (screenIsInMenu())
+      {
+         page_ = PAGE_TRACK;
+      }
+      else
+      {
+         editClear(); // shortcut: clear track
+         command_ = COMMAND_NONE;
+      }
    }
    else if (pin == sw_gp1)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_MUTE:
-            toggleMute(0);
-            break;
-         case PAGE_CLIP:
-            editLen();
-            break;
-         case PAGE_NOTES:
-            notesPosition();
-            break;
-         case PAGE_TRACK:
-            midiTrackPort();
-            break;
-         case PAGE_DISK:
-            diskSave();
-            break;
-         case PAGE_TEMPO:
-            bpmBpm();
-            break;
+         // page_ = PAGE_SYSEX; TODO
+      }
+      else
+      {
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(0);
+               break;
+            case PAGE_CLIP:
+               editLen();
+               break;
+            case PAGE_NOTES:
+               notesPosition();
+               break;
+            case PAGE_TRACK:
+               midiTrackPort();
+               break;
+            case PAGE_DISK:
+               diskSave();
+               break;
+            case PAGE_TEMPO:
+               bpmBpm();
+               break;
+         }
       }
    }
    else if (pin == sw_gp2)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_MUTE:
-            toggleMute(1);
-            break;
-         case PAGE_CLIP:
-            editQuantize();
-            break;
-         case PAGE_NOTES:
-            notesNote();
-            break;
-         case PAGE_TRACK:
-            midiTrackChannel();
-            break;
-         case PAGE_DISK:
-            diskLoad();
-            break;
-         case PAGE_TEMPO:
-            bpmBpmflash();
-            break;
+         page_ = PAGE_MIDIMONITOR;
+      }
+      else
+      {
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(1);
+               break;
+            case PAGE_CLIP:
+               editQuantize();
+               break;
+            case PAGE_NOTES:
+               notesNote();
+               break;
+            case PAGE_TRACK:
+               midiTrackChannel();
+               break;
+            case PAGE_DISK:
+               diskLoad();
+               break;
+            case PAGE_TEMPO:
+               bpmBpmflash();
+               break;
+         }
       }
    }
    else if (pin == sw_gp3)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_CLIP;
+         page_ = PAGE_TEMPO;
       }
       else
       {
@@ -1650,44 +1814,65 @@ void loopaButtonPressed(s32 pin)
    }
    else if (pin == sw_gp4)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_MUTE:
-            toggleMute(3);
-            break;
-         case PAGE_CLIP:
-            editScroll();
-            break;
-         case PAGE_NOTES:
-            notesLength();
-            break;
+         page_ = PAGE_MUTE;
+      }
+      else
+      {
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(3);
+               break;
+            case PAGE_CLIP:
+               editScroll();
+               break;
+            case PAGE_NOTES:
+               notesLength();
+               break;
+         }
       }
    }
    else if (pin == sw_gp5)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_MUTE:
-            toggleMute(4);
-            break;
-         case PAGE_CLIP:
-            editStretch();
-            break;
+         page_ = PAGE_NOTES;
+      }
+      else
+      {
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(4);
+               break;
+            case PAGE_CLIP:
+               editStretch();
+               break;
+         }
       }
    }
    else if (pin == sw_gp6)
    {
-      switch (page_)
+      if (screenIsInMenu())
       {
-         case PAGE_MUTE:
-            toggleMute(5);
-            break;
-         case PAGE_CLIP:
-            editClear();
-            break;
-         case PAGE_NOTES:
-            notesDeleteNote();
-            break;
+         // page_ = PAGE_SONG; TODO
+      }
+      else
+      {
+         switch (page_)
+         {
+            case PAGE_MUTE:
+               toggleMute(5);
+               break;
+            case PAGE_CLIP:
+               editClear();
+               break;
+            case PAGE_NOTES:
+               notesDeleteNote();
+               break;
+         }
       }
    }
    else if (pin == sw_encoder2)
