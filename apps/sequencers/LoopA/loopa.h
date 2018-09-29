@@ -23,13 +23,14 @@ enum LoopaPage
    PAGE_FX,
    PAGE_METRONOME,
    PAGE_ROUTER,
+   PAGE_MIDIMONITOR,
    PAGE_SETUP
 };
 
 enum Command
 {
    COMMAND_NONE,
-   COMMAND_CLIPLEN, COMMAND_QUANTIZE, COMMAND_TRANSPOSE, COMMAND_SCROLL, COMMAND_STRETCH, COMMAND_CLEAR,  // PAGE_CLIP
+   COMMAND_CLIPLEN, COMMAND_QUANTIZE, COMMAND_TRANSPOSE, COMMAND_SCROLL, COMMAND_STRETCH, COMMAND_FREEZE,  // PAGE_CLIP
    COMMAND_POSITION, COMMAND_NOTE, COMMAND_VELOCITY, COMMAND_LENGTH, COMMAND_DELETENOTE, // PAGE_NOTES
    COMMAND_PORT, COMMAND_CHANNEL,                                         // PAGE_MIDI
    COMMAND_SAVE, COMMAND_LOAD, COMMAND_NEW,                               // PAGE_DISK
@@ -139,6 +140,9 @@ u32 getClipLengthInTicks(u8 clip);
 
 // Update the six general purpose LED states
 void updateGPLeds();
+
+// Update the LED states (called every 20ms from app.c timer)
+void updateLEDs();
 
 // First callback from app - render Loopa Startup logo on screen
 void loopaStartup();

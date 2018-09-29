@@ -2,29 +2,65 @@
 
 #include "loopa_datatypes.h"
 
-extern const u8 led_startstop;
-extern const u8 led_armrecord;
+// PHYSICAL HARDWARE LEDs (three colors per LED)
+extern const u8 HW_LED_RED_GP1;
+extern const u8 HW_LED_RED_GP2;
+extern const u8 HW_LED_RED_GP3;
+extern const u8 HW_LED_RED_GP4;
+extern const u8 HW_LED_RED_GP5;
+extern const u8 HW_LED_RED_GP6;
 
-extern const u8 LED_GP1;
-extern const u8 led_gp2;
-extern const u8 led_gp3;
-extern const u8 led_gp4;
-extern const u8 led_gp5;
-extern const u8 led_gp6;
+extern const u8 HW_LED_GREEN_GP1;
+extern const u8 HW_LED_GREEN_GP2;
+extern const u8 HW_LED_GREEN_GP3;
+extern const u8 HW_LED_GREEN_GP4;
+extern const u8 HW_LED_GREEN_GP5;
+extern const u8 HW_LED_GREEN_GP6;
 
-extern const u8 led_unmute1;
-extern const u8 led_unmute2;
-extern const u8 led_unmute3;
-extern const u8 led_unmute4;
-extern const u8 led_unmute5;
-extern const u8 led_unmute6;
+extern const u8 HW_LED_BLUE_GP1;
+extern const u8 HW_LED_BLUE_GP2;
+extern const u8 HW_LED_BLUE_GP3;
+extern const u8 HW_LED_BLUE_GP4;
+extern const u8 HW_LED_BLUE_GP5;
+extern const u8 HW_LED_BLUE_GP6;
 
-extern const u8 led_active1;
-extern const u8 led_active2;
-extern const u8 led_active3;
-extern const u8 led_active4;
-extern const u8 led_active5;
-extern const u8 led_active6;
+extern const u8 HW_LED_RED_RUNSTOP;
+extern const u8 HW_LED_RED_ARM;
+extern const u8 HW_LED_RED_SHIFT;
+extern const u8 HW_LED_RED_MENU;
+extern const u8 HW_LED_RED_COPY;
+extern const u8 HW_LED_RED_PASTE;
+extern const u8 HW_LED_RED_DELETE;
+
+extern const u8 HW_LED_GREEN_RUNSTOP;
+extern const u8 HW_LED_GREEN_ARM;
+extern const u8 HW_LED_GREEN_SHIFT;
+extern const u8 HW_LED_GREEN_MENU;
+extern const u8 HW_LED_GREEN_COPY;
+extern const u8 HW_LED_GREEN_PASTE;
+extern const u8 HW_LED_GREEN_DELETE;
+
+extern const u8 HW_LED_BLUE_RUNSTOP;
+extern const u8 HW_LED_BLUE_ARM;
+extern const u8 HW_LED_BLUE_SHIFT;
+extern const u8 HW_LED_BLUE_MENU;
+extern const u8 HW_LED_BLUE_COPY;
+extern const u8 HW_LED_BLUE_PASTE;
+extern const u8 HW_LED_BLUE_DELETE;
+
+// LOGICAL LED STATES
+extern const u8 LED_OFF;
+extern const u8 LED_RED;
+extern const u8 LED_GREEN;
+extern const u8 LED_BLUE;
+
+// LOGICAL LEDs (can be set to multiple colors)
+enum MatiasLEDs
+{
+   LED_GP1, LED_GP2, LED_GP3, LED_GP4, LED_GP5, LED_GP6,
+   LED_RUNSTOP, LED_ARM, LED_SHIFT, LED_MENU,
+   LED_COPY, LED_PASTE, LED_DELETE
+};
 
 extern const u8 led_scene1;
 extern const u8 led_scene2;
@@ -56,7 +92,7 @@ extern const u8 led_beat3;
 
 // --- Switches ---
 
-extern const u8 sw_startstop;
+extern const u8 sw_runstop;
 extern const u8 sw_armrecord;
 extern const u8 sw_encoder2;
 

@@ -677,7 +677,7 @@ void displayPageEdit(void)
       case 128: printFormattedString(168, 54, "Zoom 8"); break;
    }
 
-   command_ == COMMAND_CLEAR ? setFontInverted() : setFontNonInverted();
+   command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
    printFormattedString(210, 54, "Clear");
 
    setFontNonInverted();
@@ -763,7 +763,7 @@ void displayPageNotes(void)
       command_ == COMMAND_LENGTH ? setFontInverted() : setFontNonInverted();
       printFormattedString(126, 54, "Len %d", length);
 
-      command_ == COMMAND_CLEAR ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();
       printFormattedString(210, 54, "Delete");
 
       setFontNonInverted();
@@ -922,38 +922,37 @@ void display(void)
 
       int iconId;
 
-      iconId = (page_ == PAGE_TEMPO) ? 32 + KEYICON_TEMPO : 32 + KEYICON_TEMPO;
+      iconId = (page_ == PAGE_MIDIMONITOR) ? 32 + KEYICON_MIDIMONITOR_INVERTED : 32 + KEYICON_MIDIMONITOR;
       printFormattedString(1 * 36 + 18, 0, "%c", iconId);
 
-      iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
+      iconId = (page_ == PAGE_TEMPO) ? 32 + KEYICON_TEMPO_INVERTED : 32 + KEYICON_TEMPO;
       printFormattedString(2 * 36 + 18, 0, "%c", iconId);
 
-      iconId = (page_ == PAGE_FX) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
+      iconId = (page_ == PAGE_MUTE) ? 32 + KEYICON_MUTE_INVERTED : 32 + KEYICON_MUTE;
       printFormattedString(3 * 36 + 18, 0, "%c", iconId);
 
       iconId = (page_ == PAGE_NOTES) ? 32 + KEYICON_NOTES_INVERTED : 32 + KEYICON_NOTES;
       printFormattedString(4 * 36 + 18, 0, "%c", iconId);
 
-
-      iconId = (page_ == PAGE_DISK) ? 32 + KEYICON_DISK_INVERTED : 32 + KEYICON_DISK;
+      iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
       printFormattedString(0 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_METRONOME) ? 32 + KEYICON_METRONOME_INVERTED : 32 + KEYICON_METRONOME;
+      iconId = (page_ == PAGE_ROUTER) ? 32 + KEYICON_ROUTER_INVERTED : 32 + KEYICON_ROUTER;
       printFormattedString(1 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_MUTE) ? 32 + KEYICON_MUTE_INVERTED : 32 + KEYICON_MUTE;
+      iconId = (page_ == PAGE_DISK) ? 32 + KEYICON_DISK_INVERTED : 32 + KEYICON_DISK;
       printFormattedString(2 * 36, 32, "%c", iconId);
 
       iconId = 32 + KEYICON_MENU_INVERTED;
       printFormattedString(3 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
+      iconId = (page_ == PAGE_CLIP) ? 32 + KEYICON_CLIP_INVERTED : 32 + KEYICON_CLIP;
       printFormattedString(4 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_ROUTER) ? 32 + KEYICON_ROUTER_INVERTED : 32 + KEYICON_ROUTER;
+      iconId = (page_ == PAGE_FX) ? 32 + KEYICON_FX_INVERTED : 32 + KEYICON_FX;
       printFormattedString(5 * 36, 32, "%c", iconId);
 
-      iconId = (page_ == PAGE_SETUP) ? 32 + KEYICON_SETUP_INVERTED : 32 + KEYICON_SETUP;
+      iconId = (page_ == PAGE_TRACK) ? 32 + KEYICON_TRACK_INVERTED : 32 + KEYICON_TRACK;
       printFormattedString(6 * 36, 32, "%c", iconId);
 
       setFontBold();
