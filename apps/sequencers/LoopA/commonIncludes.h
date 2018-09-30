@@ -8,9 +8,11 @@
 #include "loopa_datatypes.h"
 
 #include <string.h>
+#include <stdarg.h>
 
 #include <mios32.h>
 #include <mios32_midi.h>
+#include <app_lcd.h>
 #include <seq_bpm.h>
 #include <seq_midi_out.h>
 #include <midi_port.h>

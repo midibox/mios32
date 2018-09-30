@@ -9,8 +9,8 @@ add_executable(dummyForClionHeaders
    screen.c
 	app.c        
 	app_lcd.c    
-	loopa.c      
-	seq.c        
+	loopa.c
+        ui.c
 	hardware.c   
 	screen.c     
 	terminal.c

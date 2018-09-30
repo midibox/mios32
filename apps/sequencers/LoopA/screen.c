@@ -1,21 +1,12 @@
 // $Id: screen.c 1223 2011-06-23 21:26:52Z hawkeye $
 
-#include <mios32.h>
-#include "app_lcd.h"
-#include "loopa_datatypes.h"
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-
-#include <app_lcd.h>
-#include <seq_bpm.h>
+#include "commonIncludes.h"
 
 #include "tasks.h"
 #include "gfx_resources.h"
 #include "loopa.h"
+#include "ui.h"
 #include "voxelspace.h"
-
 
 // -------------------------------------------------------------------------------------------
 // SSD 1322 Screen routines by Hawkeye
@@ -116,6 +107,35 @@ void setFontNonInverted()
 void setFontInverted()
 {
    fontInverted_ = 1;
+}
+// ----------------------------------------------------------------------------------------
+
+
+/**
+ * Invert a few lines in the screenbuffer (i.e. for highlighting an active line)
+ *
+ * @param startY
+ * @param endY
+ */
+void invertDisplayLines(u8 startY, u8 endY)
+{
+   unsigned char* sdata = (unsigned char*) screen + startY * 128;
+
+   u8 x, y;
+   for (y = startY; y < endY; y++)
+   {
+      for (x = 0; x < 128; x++)
+      {
+         u8 first = *sdata >> 4;
+         u8 second = *sdata % 16;
+
+         first = 15-first;
+         second = 15-second;
+         *sdata = (first << 4) + second;
+
+         sdata++;
+      }
+   }
 }
 // ----------------------------------------------------------------------------------------
 
@@ -621,7 +641,7 @@ void displayPageMute(void)
  * Display the edit clip page (PAGE_EDIT)
  *
  */
-void displayPageEdit(void)
+void displayPageClip(void)
 {
    setFontSmall();
 
@@ -636,7 +656,7 @@ void displayPageEdit(void)
       screenNewPagePanelFrameCtr_--;
    }
 
-   printCenterFormattedString(0, "Edit Settings [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
+   printCenterFormattedString(0, "Clip Settings [Clip %d Scene %c%s]", activeTrack_ + 1, 'A' + activeScene_, sceneChangeNotification_);
 
    command_ == COMMAND_CLIPLEN ? setFontInverted() : setFontNonInverted();
    if (clipSteps_[activeTrack_][activeScene_] < 100)
@@ -778,25 +798,24 @@ void displayPageNotes(void)
 
 
 /**
- * Display the track midi settings page (PAGE_MIDI)
+ * Display the track settings page (PAGE_TRACK)
  *
  */
-void displayPageMidi(void)
+void displayPageTrack(void)
 {
    setFontSmall();
 
    if (screenNewPagePanelFrameCtr_ > 0)
    {
       setFontInverted();
-      printString(250, 8, "M");
-      printString(250, 20, "I");
-      printString(250, 32, "D");
-      printString(250, 44, "I");
+      printString(250, 8, "T");
+      printString(250, 20, "R");
+      printString(250, 32, "K");
       setFontNonInverted();
       screenNewPagePanelFrameCtr_--;
    }
 
-   printCenterFormattedString(0, "MIDI Parameters [Track %d]", activeTrack_ + 1);
+   printCenterFormattedString(0, "Track Settings [Track %d]", activeTrack_ + 1);
 
    command_ == COMMAND_PORT ? setFontInverted() : setFontNonInverted();
    switch (trackMidiPort_[activeTrack_])
@@ -863,19 +882,20 @@ void displayPageDisk(void)
 
 
 /**
- * Display the bpm settings page (PAGE_BPM)
+ * Display the tempo settings page (PAGE_TEMPO)
  *
  */
-void displayPageBpm(void)
+void displayPageTempo(void)
 {
    setFontSmall();
 
    if (screenNewPagePanelFrameCtr_ > 0)
    {
       setFontInverted();
-      printString(250, 14, "B");
-      printString(250, 26, "P");
-      printString(250, 38, "M");
+      printString(250, 14, "T");
+      printString(250, 26, "M");
+      printString(250, 38, "P");
+      printString(250, 50, "O");
       setFontNonInverted();
       screenNewPagePanelFrameCtr_--;
    }
@@ -888,6 +908,92 @@ void displayPageBpm(void)
 
    setFontNonInverted();
    displayClip(activeTrack_);
+}
+// ----------------------------------------------------------------------------------------
+
+/**
+ * Display the MIDI router settings page (PAGE_ROUTER)
+ *
+ */
+void displayPageRouter(void)
+{
+   setFontSmall();
+
+   if (screenNewPagePanelFrameCtr_ > 0)
+   {
+      setFontInverted();
+      printString(250, 14, "R");
+      printString(250, 26, "O");
+      printString(250, 38, "U");
+      printString(250, 50, "T");
+      setFontNonInverted();
+      screenNewPagePanelFrameCtr_--;
+   }
+
+   // print routes
+   u8 i;
+   s8 idx = (s8)(routerActiveRoute_ > 0 ? routerActiveRoute_ - 1 : 0);
+   for (i = 0; i < MIDI_ROUTER_NUM_NODES; i++)
+   {
+      if (i == idx)
+      {
+         u8 y = (u8) ((i - routerActiveRoute_) * 12 + 28);
+         if (y <= 40)
+         {
+            midi_router_node_entry_t *n = &midi_router_node[i];
+            printFormattedString(0, y, "#%d", i + 1);
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_PORT)
+               setFontInverted();
+            char *port = MIDI_PORT_InNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->src_port));
+            printFormattedString(42, y, "%s", port);
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_IN_CHANNEL)
+               setFontInverted();
+            u8 chn = n->src_chn;
+            if (chn > 0 && chn < 17)
+               printFormattedString(84, y, "%d", chn);
+            else
+               printFormattedString(84, y, "%s", chn == 17 ? "All" : "---");
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_PORT)
+               setFontInverted();
+            port = MIDI_PORT_OutNameGet(MIDI_PORT_InIxGet((mios32_midi_port_t) n->dst_port));
+            printFormattedString(126, y, "%s", port);
+            setFontNonInverted();
+
+            if (i == routerActiveRoute_ && command_ == COMMAND_ROUTE_OUT_CHANNEL)
+               setFontInverted();
+            chn = n->dst_chn;
+            if (chn > 0 && chn < 17)
+               printFormattedString(168, y, "%d", chn);
+            else
+               printFormattedString(168, y, "%s", chn == 17 ? "All" : "---");
+            setFontNonInverted();
+         }
+
+         idx++;
+      }
+   }
+
+   invertDisplayLines(27, 41);
+
+   printCenterFormattedString(0, "MIDI Router");
+
+   command_ == COMMAND_ROUTE_SELECT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(0, 54, "Select");
+   command_ == COMMAND_ROUTE_IN_PORT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(42, 54, "IN P");
+   command_ == COMMAND_ROUTE_IN_CHANNEL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(84, 54, "IN Ch");
+   command_ == COMMAND_ROUTE_OUT_PORT ? setFontInverted() : setFontNonInverted();
+   printFormattedString(126, 54, "OUT P");
+   command_ == COMMAND_ROUTE_OUT_CHANNEL ? setFontInverted() : setFontNonInverted();
+   printFormattedString(168, 54, "OUT Ch");
+   setFontNonInverted();
+
 }
 // ----------------------------------------------------------------------------------------
 
@@ -971,7 +1077,7 @@ void display(void)
             break;
 
          case PAGE_CLIP:
-            displayPageEdit();
+            displayPageClip();
             break;
 
          case PAGE_NOTES:
@@ -979,7 +1085,7 @@ void display(void)
             break;
 
          case PAGE_TRACK:
-            displayPageMidi();
+            displayPageTrack();
             break;
 
          case PAGE_DISK:
@@ -987,7 +1093,11 @@ void display(void)
             break;
 
          case PAGE_TEMPO:
-            displayPageBpm();
+            displayPageTempo();
+            break;
+
+         case PAGE_ROUTER:
+            displayPageRouter();
             break;
       }
    }

@@ -11,67 +11,6 @@
 // --- Consts ---
 #define MAXNOTES 256 // per clip, * TRACKS * SCENES for total note storage
 
-#define PAGES 6
-enum LoopaPage
-{
-   PAGE_MUTE,
-   PAGE_CLIP,
-   PAGE_NOTES,
-   PAGE_TRACK,
-   PAGE_DISK,
-   PAGE_TEMPO,
-   PAGE_FX,
-   PAGE_METRONOME,
-   PAGE_ROUTER,
-   PAGE_MIDIMONITOR,
-   PAGE_SETUP
-};
-
-enum Command
-{
-   COMMAND_NONE,
-   COMMAND_CLIPLEN, COMMAND_QUANTIZE, COMMAND_TRANSPOSE, COMMAND_SCROLL, COMMAND_STRETCH, COMMAND_FREEZE,  // PAGE_CLIP
-   COMMAND_POSITION, COMMAND_NOTE, COMMAND_VELOCITY, COMMAND_LENGTH, COMMAND_DELETENOTE, // PAGE_NOTES
-   COMMAND_PORT, COMMAND_CHANNEL,                                         // PAGE_MIDI
-   COMMAND_SAVE, COMMAND_LOAD, COMMAND_NEW,                               // PAGE_DISK
-   COMMAND_BPM, COMMAND_BPMFLASH                                          // PAGE_TEMPO
-};
-
-enum KeyIcon
-{
-   KEYICON_MENU_INVERTED,
-   KEYICON_MENU,
-   KEYICON_MUTE_INVERTED,
-   KEYICON_MUTE,
-   KEYICON_CLIP_INVERTED,
-   KEYICON_CLIP,
-   KEYICON_FX_INVERTED,
-   KEYICON_FX,
-   KEYICON_TRACK_INVERTED,
-   KEYICON_TRACK,
-   KEYICON_NOTES_INVERTED,
-   KEYICON_NOTES,
-   KEYICON_DISK_INVERTED,
-   KEYICON_DISK,
-   KEYICON_METRONOME_INVERTED,
-   KEYICON_METRONOME,
-   KEYICON_TEMPO_INVERTED,
-   KEYICON_TEMPO,
-   KEYICON_ROUTER_INVERTED,
-   KEYICON_ROUTER,
-   KEYICON_SETUP_INVERTED,
-   KEYICON_SETUP,
-   KEYICON_SHIFT_INVERTED,
-   KEYICON_SHIFT,
-   KEYICON_HELP_INVERTED,
-   KEYICON_HELP,
-   KEYICON_ABOUT_INVERTED,
-   KEYICON_ABOUT,
-   KEYICON_DISPLAY_INVERTED,
-   KEYICON_DISPLAY,
-   KEYICON_MIDIMONITOR_INVERTED,
-   KEYICON_MIDIMONITOR
-};
 
 // --- Data structures ---
 
@@ -101,6 +40,10 @@ extern u8 isRecording_;          // set, if currently recording to the selected 
 extern u8 oledBeatFlashState_;   // 0: don't flash, 1: flash slightly (normal 1/4th note), 2: flash intensively (after four 1/4th notes or 16 steps)
 extern u16 seqPlayEnabledPorts_;
 extern u16 seqRecEnabledPorts_;
+extern s16 notePtrsOn_[128];     // during recording - pointers to notes that are currently "on" (and waiting for an "off", therefore length yet undetermined) (-1: note not depressed)
+
+extern char filename_[20];       // global, for filename operations
+
 
 extern u8 trackMute_[TRACKS];    // mute state of each track
 extern u8 trackMidiPort_[TRACKS];
@@ -138,14 +81,35 @@ s32 quantizeTransform(u8 clip, u16 noteNumber);
 // Get the clip length in ticks
 u32 getClipLengthInTicks(u8 clip);
 
-// Update the six general purpose LED states
-void updateGPLeds();
+// Request (or cancel) a synced mute/unmute toggle
+void toggleMute(u8 clipNumber);
 
-// Update the LED states (called every 20ms from app.c timer)
-void updateLEDs();
+// convert sessionNumber to global filename_
+void sessionNumberToFilename(u16 sessionNumber);
+
+// Save session to defined session number file
+void saveSession(u16 sessionNumber);
+
+// Load session from defined session number file
+void loadSession(u16 sessionNumber);
 
 // First callback from app - render Loopa Startup logo on screen
 void loopaStartup();
+
+
+// --- LOOPA Sequencer Section ---
+
+s32  seqPlayOffEvents(void);
+s32  seqReset(u8 play_off_events);
+s32  seqSongPos(u16 new_song_pos);
+void seqUpdateBeatLEDs(u32 bpm_tick);
+s32  seqTick(u32 bpm_tick);
+s32  hookMIDISendPackage(mios32_midi_port_t port, mios32_midi_package_t package);
+s32  seqPlayEvent(u8 clipNumber, mios32_midi_package_t midi_package, u32 tick);
+s32  seqIgnoreMetaEvent(u8 clipNumber, u8 meta, u32 len, u8 *buffer, u32 tick);
+
+// Handle a stop request
+void handleStop();
 
 // Initialize Loopa SEQ
 s32 seqInit();
@@ -153,17 +117,9 @@ s32 seqInit();
 // This main sequencer handler is called periodically to poll the clock/current tick from BPM generator
 s32 seqHandler(void);
 
+
 // SD Card Available, initialize
 void loopaSDCardAvailable();
-
-// A buttonpress has occured
-void loopaButtonPressed(s32 pin);
-
-// A button release has occured
-void loopaButtonReleased(s32 pin);
-
-// An encoder has been turned
-void loopaEncoderTurned(s32 encoder, s32 incrementer);
 
 // Record midi event
 void loopaRecord(mios32_midi_port_t port, mios32_midi_package_t midi_package);

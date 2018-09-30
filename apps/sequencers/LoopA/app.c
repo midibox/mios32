@@ -34,6 +34,7 @@
 
 #include "loopa.h"
 #include "terminal.h"
+#include "ui.h"
 #include "screen.h"
 
 
