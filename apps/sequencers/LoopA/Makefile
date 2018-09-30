@@ -23,6 +23,7 @@ THUMB_SOURCE    = app.c \
 	terminal.c \
 	loopa.c \
 	screen.c \
+	ui.c \
 	voxelspace.c
 
 # (following source stubs not relevant for Cortex M3 derivatives)
