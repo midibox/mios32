@@ -22,6 +22,7 @@ THUMB_SOURCE    = app.c \
 	hardware.c \
 	terminal.c \
 	loopa.c \
+	setup.c \
 	screen.c \
 	ui.c \
 	voxelspace.c

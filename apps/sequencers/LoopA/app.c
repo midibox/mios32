@@ -358,9 +358,6 @@ static void TASK_Period_1mS_SD(void *pvParameters)
           // stop sequencer
           SEQ_BPM_Stop();
 
-          // load all file infos
-          /// MIDIO_FILE_LoadAllFiles(1); // including HW info
-
           // immediately go to next step
           sdcard_check_ctr = sdcard_check_delay;
        }

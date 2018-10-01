@@ -7,37 +7,19 @@
 // Also, all clips will loop by default (it is called LoopA, anyways)
 // This emulates the behaviour of the MBSEQ.
 //
-// INTERFACE (LoopA v2 - with limited encoders/buttons)
-// ----------------------------------------------------
-//
-// Right encoder: flips through pages aka modes (unless a command is selected, then it changes its data value)
-//
-// Left encoder: changes global data of mode:
-//    - in play mode, changes currently active track
-//    - in note mode, changes currently selected note
-//    - in disk mode, changes selected session number
-//
-// To modify command data (e.g. transpose), the GP button under the command must be pushed, then the
-// right encoder can change the command data. Pushing the GP button again exits command data modification mode, then
-// the right encoder can be used again to change pages aka modes.
-//
-// Pushing the right or left encoder always returns back to play mode (shortcut)
-// (v3 needs no pushable encoders, as we will have more buttons and encoders directly under the commands)
 // =================================================================================================
 
 #include "commonIncludes.h"
 
-#include "tasks.h"
-#include "file.h"
 #include "loopa.h"
 #include "hardware.h"
 #include "ui.h"
 #include "screen.h"
 #include "app_lcd.h"
 #include "voxelspace.h"
+#include "setup.h"
 
 // --  Local types ---
-
 
 // --- Global vars ---
 
@@ -393,37 +375,6 @@ void loadSession(u16 sessionNumber)
 void loopaStartup()
 {
    screenShowLoopaLogo(1);
-   
-   // Set up fixed MIDI router
-   DEBUG_MSG("Setting up MIDI router");
-  
-   // Router: IN1 all -> OUT2 all 
-   midi_router_node_entry_t *n = &midi_router_node[0];
-   n->src_port = USB0 + ((4&0xc) << 2) + (4&3);
-   n->src_chn = 17;
-   n->dst_port = USB0 + ((5&0xc) << 2) + (5&3);
-   n->dst_chn = 17;
-   
-   // Router: IN2 all -> OUT1 all
-   n = &midi_router_node[1];
-   n->src_port = USB0 + ((5&0xc) << 2) + (5&3);
-   n->src_chn = 17;
-   n->dst_port = USB0 + ((4&0xc) << 2) + (4&3);
-   n->dst_chn = 17;
-   
-   // Router: IN1 all -> OUT3 all 
-   n = &midi_router_node[2];
-   n->src_port = USB0 + ((4&0xc) << 2) + (4&3);
-   n->src_chn = 17;
-   n->dst_port = USB0 + ((6&0xc) << 2) + (6&3);
-   n->dst_chn = 17;
-   
-   // Router: IN3 all -> OUT1 all
-   n = &midi_router_node[3];
-   n->src_port = USB0 + ((6&0xc) << 2) + (6&3);
-   n->src_chn = 17;
-   n->dst_port = USB0 + ((4&0xc) << 2) + (4&3);
-   n->dst_chn = 17;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -911,7 +862,9 @@ s32 seqInit()
  */
 void loopaSDCardAvailable()
 {
-   loadSession(1); // -> XXX: load latest session with a free clip slot instead
+   readSetup();
+
+   loadSession(1); // Todo: load last session (stored in setup)
    seqInit();
    trackMute_[0] = 0;
    seqArmButton();
