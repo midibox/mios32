@@ -1,8 +1,6 @@
 // LoopA Core Logic
 // (c) Hawkeye 2015-2018
 
-#define DEBUG_MSG MIOS32_MIDI_SendDebugMessage
-
 #define TRACKS 6
 #define SCENES 6
 

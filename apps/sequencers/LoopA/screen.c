@@ -771,16 +771,16 @@ void displayPageNotes(void)
       else
          printFormattedString(0, 54, "Po %d", pos);
 
-      command_ == COMMAND_NOTE ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_NOTE_KEY ? setFontInverted() : setFontNonInverted();
 
       char noteStr[8];
       stringNote(noteStr, note);
       printFormattedString(42, 54, "%s", noteStr);
 
-      command_ == COMMAND_VELOCITY ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_NOTE_VELOCITY ? setFontInverted() : setFontNonInverted();
       printFormattedString(84, 54, "Vel %d", velocity);
 
-      command_ == COMMAND_LENGTH ? setFontInverted() : setFontNonInverted();
+      command_ == COMMAND_NOTE_LENGTH ? setFontInverted() : setFontNonInverted();
       printFormattedString(126, 54, "Len %d", length);
 
       command_ == COMMAND_FREEZE ? setFontInverted() : setFontNonInverted();

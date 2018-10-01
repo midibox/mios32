@@ -6,6 +6,7 @@
 #include "ui.h"
 #include "hardware.h"
 #include "loopa.h"
+#include "setup.h"
 #include "screen.h"
 #include "voxelspace.h"
 
@@ -82,6 +83,23 @@ void setActivePage(enum LoopaPage page)
    MIOS32_DOUT_PinSet(led_page_5, page == PAGE_DISK);
    MIOS32_DOUT_PinSet(led_page_6, page == PAGE_TEMPO);
    MUTEX_DIGITALOUT_GIVE;
+
+   // Map to a proper command, that is on this page (or no command at all)
+   switch(page)
+   {
+      case PAGE_MUTE: command_ = COMMAND_NONE; break;
+      case PAGE_ROUTER: command_ = COMMAND_ROUTE_SELECT; break;
+      case PAGE_DISK: command_ = COMMAND_NONE; break;
+      case PAGE_TEMPO: command_= COMMAND_BPM; break;
+      case PAGE_CLIP: command_ = COMMAND_CLIPLEN; break;
+      case PAGE_NOTES: command_ = COMMAND_POSITION; break;
+      case PAGE_TRACK: command_ = COMMAND_PORT; break;
+      default:
+         command_ = COMMAND_NONE; break;
+   }
+
+   if (configChangesToBeWritten_)
+      writeSetup();
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -308,10 +326,10 @@ void updateLEDs()
 
          case PAGE_NOTES:
             led_gp1 |= command_ == COMMAND_POSITION ? LED_RED : LED_OFF;
-            led_gp2 |= command_ == COMMAND_NOTE ? LED_RED : LED_OFF;
-            led_gp3 |= command_ == COMMAND_VELOCITY ? LED_RED : LED_OFF;
-            led_gp4 |= command_ == COMMAND_LENGTH ? LED_RED : LED_OFF;
-            led_gp6 |= command_ == COMMAND_DELETENOTE ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_NOTE_KEY ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_NOTE_VELOCITY ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_NOTE_LENGTH ? LED_RED : LED_OFF;
+            led_gp6 |= command_ == COMMAND_NOTE_DELETE ? LED_RED : LED_OFF;
             break;
 
          case PAGE_TRACK:
@@ -328,6 +346,14 @@ void updateLEDs()
          case PAGE_TEMPO:
             led_gp1 |= command_ == COMMAND_BPM ? LED_RED : LED_OFF;
             led_gp2 |= command_ == COMMAND_BPMFLASH ? LED_RED : LED_OFF;
+            break;
+
+         case PAGE_ROUTER:
+            led_gp1 |= command_ == COMMAND_ROUTE_SELECT ? LED_RED : LED_OFF;
+            led_gp2 |= command_ == COMMAND_ROUTE_IN_PORT ? LED_RED : LED_OFF;
+            led_gp3 |= command_ == COMMAND_ROUTE_IN_CHANNEL ? LED_RED : LED_OFF;
+            led_gp4 |= command_ == COMMAND_ROUTE_OUT_PORT ? LED_RED : LED_OFF;
+            led_gp5 |= command_ == COMMAND_ROUTE_OUT_CHANNEL ? LED_RED : LED_OFF;
             break;
       }
    }
@@ -449,7 +475,7 @@ void notesPosition()
  */
 void notesNote()
 {
-   command_ = command_ == COMMAND_NOTE ? COMMAND_NONE : COMMAND_NOTE;
+   command_ = command_ == COMMAND_NOTE_KEY ? COMMAND_NONE : COMMAND_NOTE_KEY;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -460,7 +486,7 @@ void notesNote()
  */
 void notesVelocity()
 {
-   command_ = command_ == COMMAND_VELOCITY ? COMMAND_NONE : COMMAND_VELOCITY;
+   command_ = command_ == COMMAND_NOTE_VELOCITY ? COMMAND_NONE : COMMAND_NOTE_VELOCITY;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -471,7 +497,7 @@ void notesVelocity()
  */
 void notesLength()
 {
-   command_ = command_ == COMMAND_LENGTH ? COMMAND_NONE : COMMAND_LENGTH;
+   command_ = command_ == COMMAND_NOTE_LENGTH ? COMMAND_NONE : COMMAND_NOTE_LENGTH;
 }
 // -------------------------------------------------------------------------------------------------
 
@@ -482,7 +508,7 @@ void notesLength()
  */
 void notesDeleteNote()
 {
-   command_ = command_ == COMMAND_DELETENOTE ? COMMAND_NONE : COMMAND_DELETENOTE;
+   command_ = command_ == COMMAND_NOTE_DELETE ? COMMAND_NONE : COMMAND_NOTE_DELETE;
 
    u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -542,7 +568,7 @@ void diskSave()
    saveSession(sessionNumber_);
    diskScanSessionFileAvailable();
 
-   page_ = PAGE_MUTE;
+   setActivePage(PAGE_MUTE);
    screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
@@ -558,7 +584,7 @@ void diskLoad()
 
    loadSession(sessionNumber_);
 
-   page_ = PAGE_MUTE;
+   setActivePage(PAGE_MUTE);
    screenNotifyPageChanged();
 }
 // -------------------------------------------------------------------------------------------------
@@ -573,7 +599,7 @@ void diskNew()
    command_ = COMMAND_NONE;
 
    seqInit();
-   page_ = PAGE_MUTE;
+   setActivePage(PAGE_MUTE);
    screenNotifyPageChanged();
 
    screenFormattedFlashMessage("A fresh start... :-)");
@@ -673,7 +699,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_SETUP;
+         setActivePage(PAGE_SETUP);
       }
       else
       {
@@ -684,7 +710,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_ROUTER;
+         setActivePage(PAGE_ROUTER);
       }
       else
       {
@@ -695,7 +721,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_DISK;
+         setActivePage(PAGE_DISK);
       }
       else
       {
@@ -721,7 +747,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_CLIP;
+         setActivePage(PAGE_CLIP);
       }
       else
       {
@@ -740,7 +766,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_FX;
+         setActivePage(PAGE_FX);
       }
       else
       {
@@ -764,7 +790,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_TRACK;
+         setActivePage(PAGE_TRACK);
       }
       else
       {
@@ -776,7 +802,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         // page_ = PAGE_SYSEX; TODO
+         // setActivePage(PAGE_SYSEX); TODO
       }
       else
       {
@@ -809,7 +835,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_MIDIMONITOR;
+         setActivePage(PAGE_MIDIMONITOR);
       }
       else
       {
@@ -842,7 +868,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_TEMPO;
+         setActivePage(PAGE_TEMPO);
       }
       else
       {
@@ -871,7 +897,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_MUTE;
+         setActivePage(PAGE_MUTE);
       }
       else
       {
@@ -895,7 +921,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         page_ = PAGE_NOTES;
+         setActivePage(PAGE_NOTES);
       }
       else
       {
@@ -916,7 +942,7 @@ void loopaButtonPressed(s32 pin)
    {
       if (screenIsInMenu())
       {
-         // page_ = PAGE_SONG; TODO
+         // setActivePage(PAGE_SONG); TODO
       }
       else
       {
@@ -936,7 +962,7 @@ void loopaButtonPressed(s32 pin)
    }
    else if (pin == sw_encoder2)
    {
-      page_ = PAGE_MUTE; // shortcut back to track display
+      setActivePage(PAGE_MUTE); // shortcut back to track display
       command_ = COMMAND_NONE;
       screenNotifyPageChanged();
    }
@@ -1153,7 +1179,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             clipNotes_[activeTrack_][activeScene_][activeNote].tick = newTick;
          }
       }
-      else if (command_ == COMMAND_NOTE)
+      else if (command_ == COMMAND_NOTE_KEY)
       {
          u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -1173,7 +1199,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             clipNotes_[activeTrack_][activeScene_][activeNote].note = newNote;
          }
       }
-      else if (command_ == COMMAND_LENGTH)
+      else if (command_ == COMMAND_NOTE_LENGTH)
       {
          u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -1193,7 +1219,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             clipNotes_[activeTrack_][activeScene_][activeNote].length = newLength;
          }
       }
-      else if (command_ == COMMAND_VELOCITY)
+      else if (command_ == COMMAND_NOTE_VELOCITY)
       {
          u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -1213,7 +1239,7 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
             clipNotes_[activeTrack_][activeScene_][activeNote].velocity = newVel;
          }
       }
-      else if (command_ == COMMAND_DELETENOTE)
+      else if (command_ == COMMAND_NOTE_DELETE)
       {
          u16 activeNote = clipActiveNote_[activeTrack_][activeScene_];
 
@@ -1240,14 +1266,60 @@ void loopaEncoderTurned(s32 encoder, s32 incrementer)
 
          trackMidiChannel_[activeTrack_] = newChannel;
       }
+      else if (command_ == COMMAND_ROUTE_SELECT)
+      {
+         s8 newActiveRoute = routerActiveRoute_ += incrementer;
+         newActiveRoute = (s8)(newActiveRoute < 0 ? 0 : newActiveRoute);
+         routerActiveRoute_ = (u8)(newActiveRoute < MIDI_ROUTER_NUM_NODES ? newActiveRoute : (MIDI_ROUTER_NUM_NODES - 1));
+      }
       else if (command_ == COMMAND_ROUTE_IN_PORT)
       {
-         // from seq
-         //u8 port_ix = SEQ_MIDI_PORT_InIxGet(seq_midi_in_port[selected_bus]);
-         //if( SEQ_UI_Var8_Inc(&port_ix, 0, SEQ_MIDI_PORT_InNumGet()-1-4, incrementer) >= 0 ) { // don't allow selection of Bus1..Bus4
-         //   seq_midi_in_port[selected_bus] = SEQ_MIDI_PORT_InPortGet(port_ix);
-      }
+         midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
+         s8 newPortIndex = (s8)(MIDI_PORT_InIxGet((mios32_midi_port_t)n->src_port) + incrementer);
 
+         newPortIndex = (s8)(newPortIndex < 0 ? 0 : newPortIndex);
+
+         if (newPortIndex >= MIDI_PORT_InNumGet()-1-4)
+            newPortIndex = (s8)(MIDI_PORT_InNumGet()-1-4);
+
+         n->src_port = MIDI_PORT_InPortGet((u8)newPortIndex);
+         configChangesToBeWritten_ = 1;
+      }
+      else if (command_ == COMMAND_ROUTE_IN_CHANNEL)
+      {
+         midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
+         s8 newChannel = (s8)((mios32_midi_port_t)n->src_chn + incrementer);
+
+         newChannel = (s8)(newChannel < 0 ? 0 : newChannel);
+         newChannel = (s8)(newChannel > 17 ? 17 : newChannel);
+
+         n->src_chn = (u8)newChannel;
+         configChangesToBeWritten_ = 1;
+      }
+      else if (command_ == COMMAND_ROUTE_OUT_PORT)
+      {
+         midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
+         s8 newPortIndex = (s8)(MIDI_PORT_OutIxGet((mios32_midi_port_t)n->dst_port) + incrementer);
+
+         newPortIndex = (s8)(newPortIndex < 0 ? 0 : newPortIndex);
+
+         if (newPortIndex >= MIDI_PORT_OutNumGet()-1-4)
+            newPortIndex = (s8)(MIDI_PORT_OutNumGet()-1-4);
+
+         n->dst_port = MIDI_PORT_OutPortGet((u8)newPortIndex);
+         configChangesToBeWritten_ = 1;
+      }
+      else if (command_ == COMMAND_ROUTE_OUT_CHANNEL)
+      {
+         midi_router_node_entry_t *n = &midi_router_node[routerActiveRoute_];
+         s8 newChannel = (s8)((mios32_midi_port_t)n->dst_chn + incrementer);
+
+         newChannel = (s8)(newChannel < 0 ? 0 : newChannel);
+         newChannel = (s8)(newChannel > 17 ? 17 : newChannel);
+
+         n->dst_chn = (u8)newChannel;
+         configChangesToBeWritten_ = 1;
+      }
    }
 }
 // -------------------------------------------------------------------------------------------------
