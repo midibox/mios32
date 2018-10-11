@@ -114,22 +114,23 @@ s32 SEQ_TPD_LED_Update(void)
   // transfer pattern to SRs
   {
     int i;
-    u8 inversion_mask = (seq_hwcfg_tpd.enabled == 2) ? 0xff : 0x00;
+    u8 inversion_mask_row = (seq_hwcfg_tpd.enabled == 1) ? 0x00 : 0xff;  // 0x00, 0xFF, 0xFF for tpd modes 1, 2, 3
+    u8 inversion_mask_pat = (seq_hwcfg_tpd.enabled == 2) ? 0xff : 0x00;  // 0x00, 0xFF, 0x00 for tpd modes 1, 2, 3
 
     // row selection
     u8 select_pattern = ~(1 << cycle_ctr);
     for(i=0; i<2; ++i) {
       if( seq_hwcfg_tpd.columns_sr[i] )
-	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.columns_sr[i] - 1, mios32_dout_reverse_tab[select_pattern ^ inversion_mask]);
+	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.columns_sr[i] - 1, mios32_dout_reverse_tab[select_pattern ^ inversion_mask_row]);
     }
 
     // row patterns
     for(i=0; i<2; ++i) {
       if( seq_hwcfg_tpd.rows_sr_green[i] )
-	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_green[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_GREEN][cycle_ctr] ^ inversion_mask]);
+	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_green[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_GREEN][cycle_ctr] ^ inversion_mask_pat]);
       
       if( seq_hwcfg_tpd.rows_sr_red[i] )
-	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_red[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_RED][cycle_ctr] ^ inversion_mask]);
+	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_red[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_RED][cycle_ctr] ^ inversion_mask_pat]);
     }
   }
   

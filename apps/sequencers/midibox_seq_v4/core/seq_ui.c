@@ -3510,8 +3510,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 0) ) value |= (1 << 0);
-	if( pos_marker_mask  & (1 << 0) ) value |= (1 << 1);
+	if( modified_gp_leds & (1 << 0) ) value |= (1 << 1);
+	if( pos_marker_mask  & (1 << 0) ) value |= (1 << 0);
 
 	if( modified_gp_leds & (1 << 1) ) value |= (1 << 3);
 	if( pos_marker_mask  & (1 << 1) ) value |= (1 << 2);
@@ -3529,8 +3529,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 4) ) value |= (1 << 0);
-	if( pos_marker_mask  & (1 << 4) ) value |= (1 << 1);
+	if( modified_gp_leds & (1 << 4) ) value |= (1 << 1);
+	if( pos_marker_mask  & (1 << 4) ) value |= (1 << 0);
 
 	if( modified_gp_leds & (1 << 5) ) value |= (1 << 3);
 	if( pos_marker_mask  & (1 << 5) ) value |= (1 << 2);
@@ -3548,8 +3548,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 8) ) value |= (1 << 0);
-	if( pos_marker_mask  & (1 << 8) ) value |= (1 << 1);
+	if( modified_gp_leds & (1 << 8) ) value |= (1 << 1);
+	if( pos_marker_mask  & (1 << 8) ) value |= (1 << 0);
 
 	if( modified_gp_leds & (1 << 9) ) value |= (1 << 3);
 	if( pos_marker_mask  & (1 << 9) ) value |= (1 << 2);
@@ -3567,8 +3567,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 12) ) value |= (1 << 0);
-	if( pos_marker_mask  & (1 << 12) ) value |= (1 << 1);
+	if( modified_gp_leds & (1 << 12) ) value |= (1 << 1);
+	if( pos_marker_mask  & (1 << 12) ) value |= (1 << 0);
 
 	if( modified_gp_leds & (1 << 13) ) value |= (1 << 3);
 	if( pos_marker_mask  & (1 << 13) ) value |= (1 << 2);
@@ -3646,8 +3646,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 0) ) value |= (1 << 0);
-	if( select_leds_red   & (1 << 0) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 0) ) value |= (1 << 1);
+	if( select_leds_red   & (1 << 0) ) value |= (1 << 0);
 
 	if( select_leds_green & (1 << 1) ) value |= (1 << 3);
 	if( select_leds_red   & (1 << 1) ) value |= (1 << 2);
@@ -3665,8 +3665,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 4) ) value |= (1 << 0);
-	if( select_leds_red   & (1 << 4) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 4) ) value |= (1 << 1);
+	if( select_leds_red   & (1 << 4) ) value |= (1 << 0);
 
 	if( select_leds_green & (1 << 5) ) value |= (1 << 3);
 	if( select_leds_red   & (1 << 5) ) value |= (1 << 2);
@@ -3684,8 +3684,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 8) ) value |= (1 << 0);
-	if( select_leds_red   & (1 << 8) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 8) ) value |= (1 << 1);
+	if( select_leds_red   & (1 << 8) ) value |= (1 << 0);
 
 	if( select_leds_green & (1 << 9) ) value |= (1 << 3);
 	if( select_leds_red   & (1 << 9) ) value |= (1 << 2);
@@ -3703,8 +3703,8 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 12) ) value |= (1 << 0);
-	if( select_leds_red   & (1 << 12) ) value |= (1 << 1);
+	if( select_leds_green & (1 << 12) ) value |= (1 << 1);
+	if( select_leds_red   & (1 << 12) ) value |= (1 << 0);
 
 	if( select_leds_green & (1 << 13) ) value |= (1 << 3);
 	if( select_leds_red   & (1 << 13) ) value |= (1 << 2);
