@@ -1,5 +1,5 @@
 ##################################################
-# Setup File for midiphy left handed JA Frontpanel
+# Setup File for midiphy right handed JA Frontpanel
 # $Id: MBSEQ_HW.V4 2542 2017-11-04 22:41:11Z tk $
 ##################################################
 
@@ -96,7 +96,7 @@ BLM8X8_ENABLED  1
 # first "A" Matrix: left LeMEC
 # to which shift register are the select lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
-BLM8X8_DOUT_CATHODES_SR  3
+BLM8X8_DOUT_CATHODES_SR  1
 
 # set an inversion mask for the DOUT shift registers if sink drivers (transistors)
 # have been added to the cathode lines
@@ -108,7 +108,7 @@ BLM8X8_DOUT_ANODES_INV_MASK 0xff
 
 # to which shift register are the LED anode lines connected?
 # Allowed values: 0 to disable, 1..16 to assign shift register
-BLM8X8_DOUT_LED_SR      4
+BLM8X8_DOUT_LED_SR      2
 
 # 0: no mapping of 8x8 LEDs
 # 1: select GP LED -> 8x8 matrix mapping for Wilba's MB-SEQ PCB
@@ -117,22 +117,22 @@ BLM8X8_DOUT_LED_SR      4
 BLM8X8_DOUT_GP_MAPPING  3
 
 # 8x8 matrix for misc. button functions
-BLM8X8_DIN_SR  3
+BLM8X8_DIN_SR  2
 
 
 # second "B" Matrix: right LeMEC 
-BLM8X8B_DOUT_CATHODES_SR        8
+BLM8X8B_DOUT_CATHODES_SR        6
 BLM8X8B_DOUT_CATHODES_INV_MASK  0xff
 BLM8X8B_DOUT_ANODES_INV_MASK    0xff
-BLM8X8B_DOUT_LED_SR             9
-BLM8X8B_DIN_SR                  6
+BLM8X8B_DOUT_LED_SR             7
+BLM8X8B_DIN_SR                  5
 
 # third "C" Matrix, JA PCB
-BLM8X8C_DOUT_CATHODES_SR        1
+BLM8X8C_DOUT_CATHODES_SR        8
 BLM8X8C_DOUT_CATHODES_INV_MASK  0x00
 BLM8X8C_DOUT_ANODES_INV_MASK    0x00
-BLM8X8C_DOUT_LED_SR             2
-BLM8X8C_DIN_SR                  1
+BLM8X8C_DOUT_LED_SR             9
+BLM8X8C_DIN_SR                  7
 
 
 ##################################################
@@ -618,28 +618,28 @@ BUTTON_BEH_ALL_WITH_TRIGGERS 0
 ##################################################
 
 #              SR  Pin  Type
-ENC_DATAWHEEL   1   7   DETENTED3
+ENC_DATAWHEEL   7   7   DETENTED3
 
 # the speed value for the datawheel which is used when the "FAST" button is activated:
 ENC_DATAWHEEL_FAST_SPEED 3
 
 #        SR  Pin  Type
-ENC_GP1   2   1   DETENTED3
-ENC_GP2   2   3   DETENTED3
-ENC_GP3   2   5   DETENTED3
-ENC_GP4   2   7   DETENTED3
-ENC_GP5   4   1   DETENTED3
-ENC_GP6   4   3   DETENTED3
-ENC_GP7   4   5   DETENTED3
-ENC_GP8   4   7   DETENTED3
-ENC_GP9   5   1   DETENTED3
-ENC_GP10  5   3   DETENTED3
-ENC_GP11  5   5   DETENTED3
-ENC_GP12  5   7   DETENTED3
-ENC_GP13  7   1   DETENTED3
-ENC_GP14  7   3   DETENTED3
-ENC_GP15  7   5   DETENTED3
-ENC_GP16  7   7   DETENTED3
+ENC_GP1   1   1   DETENTED3
+ENC_GP2   1   3   DETENTED3
+ENC_GP3   1   5   DETENTED3
+ENC_GP4   1   7   DETENTED3
+ENC_GP5   3   1   DETENTED3
+ENC_GP6   3   3   DETENTED3
+ENC_GP7   3   5   DETENTED3
+ENC_GP8   3   7   DETENTED3
+ENC_GP9   4   1   DETENTED3
+ENC_GP10  4   3   DETENTED3
+ENC_GP11  4   5   DETENTED3
+ENC_GP12  4   7   DETENTED3
+ENC_GP13  6   1   DETENTED3
+ENC_GP14  6   3   DETENTED3
+ENC_GP15  6   5   DETENTED3
+ENC_GP16  6   7   DETENTED3
 
 # the speed value for GP encoders which is used when the "FAST" button is activated:
 ENC_GP_FAST_SPEED 3
