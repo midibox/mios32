@@ -520,7 +520,7 @@ s32 SEQ_CORE_Handler(void)
 	bpm_tick_prefetched = bpm_tick;
 
 #if LED_PERFORMANCE_MEASURING == 1
-	MIOS32_BOARD_LED_Set(0xffffffff, 1);
+	MIOS32_BOARD_LED_Set(0x00000001, 1);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
 	SEQ_STATISTICS_StopwatchReset();
@@ -531,7 +531,7 @@ s32 SEQ_CORE_Handler(void)
 	SEQ_MIDPLY_Tick(bpm_tick);
 
 #if LED_PERFORMANCE_MEASURING == 1
-	MIOS32_BOARD_LED_Set(0xffffffff, 0);
+	MIOS32_BOARD_LED_Set(0x00000001, 0);
 #endif
 #if STOPWATCH_PERFORMANCE_MEASURING == 1
 	SEQ_STATISTICS_StopwatchCapture();

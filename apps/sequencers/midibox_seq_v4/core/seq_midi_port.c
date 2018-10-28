@@ -839,7 +839,10 @@ s32 SEQ_MIDI_PORT_NotifyMIDITx(mios32_midi_port_t port, mios32_midi_package_t pa
     if( port_ix >= 0 ) {
       midi_out_package[port_ix] = package;
       midi_out_ctr[port_ix] = 20; // 2 seconds lifetime
-      seq_midi_port_out_combined_ctr = 5; // 500 mS lifetime
+
+      if( port < 0xf0 ) { // ignore Bus1..4
+	seq_midi_port_out_combined_ctr = 5; // 500 mS lifetime
+      }
     }
   }
 
@@ -905,7 +908,10 @@ s32 SEQ_MIDI_PORT_NotifyMIDIRx(mios32_midi_port_t port, mios32_midi_package_t pa
     if( port_ix >= 0 ) {
       midi_in_package[port_ix] = package;
       midi_in_ctr[port_ix] = 20; // 2 seconds lifetime
-      seq_midi_port_in_combined_ctr = 5; // 500 mS lifetime
+
+      if( port < 0xf0 ) { // ignore Bus1..4
+	seq_midi_port_in_combined_ctr = 5; // 500 mS lifetime
+      }
     }
   }
 
