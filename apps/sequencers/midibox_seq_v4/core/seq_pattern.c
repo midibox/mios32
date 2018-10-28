@@ -132,11 +132,11 @@ s32 SEQ_PATTERN_Change(u8 group, seq_pattern_t pattern, u8 force_immediate_chang
     portEXIT_CRITICAL();
 
 #if LED_PERFORMANCE_MEASURING
-    MIOS32_BOARD_LED_Set(0xffffffff, 1);
+    MIOS32_BOARD_LED_Set(0x00000001, 1);
 #endif
     SEQ_PATTERN_Load(group, pattern);
 #if LED_PERFORMANCE_MEASURING
-    MIOS32_BOARD_LED_Set(0xffffffff, 0);
+    MIOS32_BOARD_LED_Set(0x00000001, 0);
 #endif
   } else {
 
@@ -183,7 +183,7 @@ s32 SEQ_PATTERN_Handler(void)
   u8 group;
 
 #if LED_PERFORMANCE_MEASURING
-  MIOS32_BOARD_LED_Set(0xffffffff, 1);
+  MIOS32_BOARD_LED_Set(0x00000001, 1);
 #endif
 
   MUTEX_SDCARD_TAKE; // take SD Card Mutex before entering critical section, because within the section we won't get it anymore -> hangup
@@ -238,7 +238,7 @@ s32 SEQ_PATTERN_Handler(void)
   MUTEX_SDCARD_GIVE;
 
 #if LED_PERFORMANCE_MEASURING
-  MIOS32_BOARD_LED_Set(0xffffffff, 0);
+  MIOS32_BOARD_LED_Set(0x00000001, 0);
 #endif
 
   return 0; // no error

@@ -58,6 +58,8 @@ MIDIboxSEQ V4.095
 
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
+   o STM32F4 board: orange LED shows measure, red LED any received MIDI IN, blue LED any transmitted MIDI OUT
+
 
 MIDIboxSEQ V4.094b
 ~~~~~~~~~~~~~~~~~~
