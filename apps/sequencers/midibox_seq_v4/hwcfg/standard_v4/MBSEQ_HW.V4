@@ -564,6 +564,30 @@ BUTTON_DIRECT_BOOKMARK15  0   0
 BUTTON_DIRECT_BOOKMARK16  0   0
 
 
+# Encoder buttons (currently hard-coded to FAST function)
+
+#                    SR  Pin
+BUTTON_ENC_DATAWHEEL  0   0
+BUTTON_ENC_BPM        0   0
+
+BUTTON_ENC1           0   0
+BUTTON_ENC2           0   0
+BUTTON_ENC3           0   0
+BUTTON_ENC4           0   0
+BUTTON_ENC5           0   0
+BUTTON_ENC6           0   0
+BUTTON_ENC7           0   0
+BUTTON_ENC8           0   0
+BUTTON_ENC9           0   0
+BUTTON_ENC10          0   0
+BUTTON_ENC11          0   0
+BUTTON_ENC12          0   0
+BUTTON_ENC13          0   0
+BUTTON_ENC14          0   0
+BUTTON_ENC15          0   0
+BUTTON_ENC16          0   0
+
+
 ##################################################
 # Button behaviour
 # 0: active mode as long as button pressed
