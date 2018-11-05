@@ -576,6 +576,29 @@ BUTTON_DIRECT_BOOKMARK15  0   0
 BUTTON_DIRECT_BOOKMARK16  0   0
 
 
+# Encoder buttons (currently hard-coded to FAST function)
+
+#                    SR  Pin
+BUTTON_ENC_DATAWHEEL M8C  2
+BUTTON_ENC_BPM        0   0
+
+BUTTON_ENC1          M1A  0
+BUTTON_ENC2          M1A  1
+BUTTON_ENC3          M1A  2
+BUTTON_ENC4          M1A  3
+BUTTON_ENC5          M5A  4
+BUTTON_ENC6          M5A  5
+BUTTON_ENC7          M5A  6
+BUTTON_ENC8          M5A  7
+BUTTON_ENC9          M1B  0
+BUTTON_ENC10         M1B  1
+BUTTON_ENC11         M1B  2
+BUTTON_ENC12         M1B  3
+BUTTON_ENC13         M5B  4
+BUTTON_ENC14         M5B  5
+BUTTON_ENC15         M5B  6
+BUTTON_ENC16         M5B  7
+
 
 ##################################################
 # Button behaviour
@@ -653,4 +676,4 @@ ENC_AUTO_FAST        1
 ENC_BPM         0   0   DETENTED3
 
 # the speed value for the BPM encoder which is used when the "FAST" function is activated
-ENC_BPM_FAST_SPEED 3s
+ENC_BPM_FAST_SPEED 3

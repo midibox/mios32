@@ -9,6 +9,10 @@ Wishlist for future features
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~
 
+   o support for midiphy Frontpanel.
+     The appr. HW configuration file can be found under
+     hwcfg/midiphy_lh/MBSEQ_HW.V4 and hwcfg/midiphy_rh/MBSEQ_HW.V4
+
    o introduced first "MBSEQV4+" function.
      MIDIbox SEQ V4+ is a special firmware variant for the STM32F4 core.
      It offers additional memory and/or CPU hungry functions which can't be implemented
@@ -56,9 +60,11 @@ MIDIboxSEQ V4.095
    o new terminal command "lcd" allows to display a temporary message from on LCD from
      an external device via SysEx
 
-   o experimental (might be optional in future): show measure and pattern step position in main screen
+   o encoder buttons can now be assigned in the MBSEQ_HW.V4 file (currently hardcoded to FAST function)
 
-   o STM32F4 board: orange LED shows measure, red LED any received MIDI IN, blue LED any transmitted MIDI OUT
+   o STM32F4 board: orange LED shows SD Card available, red LED any received MIDI IN, blue LED any transmitted MIDI OUT
+
+   o experimental (might be optional in future): show measure and pattern step position in main screen
 
 
 MIDIboxSEQ V4.094b

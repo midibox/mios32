@@ -77,6 +77,8 @@ typedef struct {
 
   u16 direct_bookmark[SEQ_HWCFG_NUM_DIRECT_BOOKMARK];
 
+  u16 enc[SEQ_HWCFG_NUM_ENCODERS];
+
   u16 edit;
   u16 mute;
   u16 pattern;

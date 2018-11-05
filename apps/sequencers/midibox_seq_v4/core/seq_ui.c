@@ -1346,6 +1346,19 @@ static s32 SEQ_UI_Button_DirectBookmark(s32 depressed, u32 bookmark_button)
 }
 
 
+static s32 SEQ_UI_Button_Enc(s32 depressed, u32 enc_button)
+{
+  // 0=Datawheel, 1..16=GPx, 17=BPM
+
+  // current hardcoded to FAST mode
+  seq_ui_button_state.FAST_ENCODERS = depressed ? 0 : 1; 
+
+  SEQ_UI_InitEncSpeed(0); // no auto config
+
+  return 0; // no error
+}
+
+
 static s32 SEQ_UI_Button_Select(s32 depressed)
 {
   // double function: -> Bookmark if menu button pressed
@@ -2361,6 +2374,10 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
     if( pin == seq_hwcfg_button.direct_bookmark[i] )
       return SEQ_UI_Button_DirectBookmark(pin_value, i);
 
+  for(i=0; i<SEQ_HWCFG_NUM_ENCODERS; ++i)
+    if( pin == seq_hwcfg_button.enc[i] )
+      return SEQ_UI_Button_Enc(pin_value, i);
+
   if( pin == seq_hwcfg_button.track_sel )
     return SEQ_UI_Button_TrackSel(pin_value);
 
@@ -2519,10 +2536,18 @@ s32 SEQ_UI_Button_Handler(u32 pin, u32 pin_value)
   // always print debugging message
 #if 1
   MUTEX_MIDIOUT_TAKE;
-  DEBUG_MSG("[SEQ_UI_Button_Handler] Button SR:%d, Pin:%d not mapped, it has been %s.\n", 
-	    (pin >> 3) + 1,
-	    pin & 7,
-	    pin_value ? "depressed" : "pressed");
+  if( pin < 32*8 ) {
+    DEBUG_MSG("[SEQ_UI_Button_Handler] Button SR:%d, Pin:D%d not mapped, it has been %s.\n", 
+	      (pin / 8) + 1,
+	      pin % 8,
+	      pin_value ? "depressed" : "pressed");
+  } else {
+    DEBUG_MSG("[SEQ_UI_Button_Handler] Button SR:M%d%c, Pin:D%d not mapped, it has been %s.\n", 
+	      1 + (((pin-32*8) / 8) % 8),
+	      'A' + ((pin-32*8) / (8*8)),
+	      pin % 8,
+	      pin_value ? "depressed" : "pressed");
+  }
   MUTEX_MIDIOUT_GIVE;
 #endif
 
@@ -3346,7 +3371,10 @@ s32 SEQ_UI_LED_Handler_Periodic()
   SEQ_LED_PinSet(seq_hwcfg_led.measure, measure_led_on);
 
   // mirror to red status LED
-  MIOS32_BOARD_LED_Set(0x00000002, measure_led_on ? 2 : 0);
+  //MIOS32_BOARD_LED_Set(0x00000002, measure_led_on ? 2 : 0);
+  // now used for SD Card indicator
+  MIOS32_BOARD_LED_Set(0x00000002, FILE_SDCardAvailable() ? 2 : 0);
+
 
   // MIDI IN/OUT LEDs
   SEQ_LED_PinSet(seq_hwcfg_led.midi_in_combined, seq_midi_port_in_combined_ctr);

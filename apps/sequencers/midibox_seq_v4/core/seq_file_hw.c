@@ -569,11 +569,31 @@ s32 SEQ_FILE_HW_Read(void)
 	    s32 bookmark = get_dec(parameter);
 	    if( bookmark < 1 || bookmark > SEQ_HWCFG_NUM_DIRECT_BOOKMARK ) {
 #if DEBUG_VERBOSE_LEVEL >= 1
-	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_DIRECT_BOOKMARK%s definition: invalid track number '%s'!", parameter, parameter);
+	      DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_DIRECT_BOOKMARK%s definition: invalid function number '%s'!", parameter, parameter);
 #endif
 	      continue;
 	    }
 	    seq_hwcfg_button.direct_bookmark[bookmark-1] = din_value;
+	  } else if( strncasecmp(parameter, "ENC", 3) == 0 ) {
+	    parameter += 3;
+
+#if SEQ_HWCFG_NUM_ENCODERS != 18
+#error "please adapt this code to new encoder assignments"
+#endif
+	    if( strcasecmp(parameter, "_DATAWHEEL") == 0 ) {
+	      seq_hwcfg_button.enc[0] = din_value;
+	    } else if( strcasecmp(parameter, "_BPM") == 0 ) {
+	      seq_hwcfg_button.enc[17] = din_value;
+	    } else {
+	      s32 gp = get_dec(parameter);
+	      if( gp < 1 || gp > 16 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_HW] ERROR in BUTTON_ENC%s definition: invalid enc number '%s'!", parameter, parameter);
+#endif
+		continue;
+	      }
+	      seq_hwcfg_button.enc[gp] = din_value; // GPs located at index 1..16
+	    }
 	  } else if( strncasecmp(parameter, "DIRECT_TRACK", 12) == 0 ) {
 	    parameter += 12;
 
