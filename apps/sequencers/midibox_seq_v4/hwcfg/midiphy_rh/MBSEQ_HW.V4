@@ -193,16 +193,16 @@ STEP_DIGITS_COMMON3_PIN   0   0
 TPD_ENABLED 3
 
 # define the DOUT shift register to which the columns are connected (0=disabled)
-TPD_COLUMNS_SR_L 5
+TPD_COLUMNS_SR_L 3
 
 # for a 16x16 TPD: define the SR to which the right columns are connected (0=disabled, use only 8x8 TPD)
 TPD_COLUMNS_SR_R 0
 
 # define the DOUT shift register to which the green LED rows are connected (0=disabled)
-TPD_ROWS_SR_GREEN_L 6
+TPD_ROWS_SR_GREEN_L 4
 
 # define the DOUT shift register to which the right green LED rows are connected (0=disabled, use only 8x8 TPD)
-TPD_ROWS_SR_GREEN_R 7
+TPD_ROWS_SR_GREEN_R 5
 
 # define the DOUT shift register to which the red LED rows are connected (0=disabled)
 TPD_ROWS_SR_RED_L 0
@@ -287,8 +287,8 @@ LED_PAR_LAYER_B   0   0
 LED_PAR_LAYER_C   0   0
 
 #           SR  Pin
-LED_BEAT    M5B  1
-LED_MEASURE M5B  0
+LED_BEAT    M5B  0
+LED_MEASURE M5B  1
 
 #                    SR  Pin
 LED_MIDI_IN_COMBINED  0   0
@@ -297,15 +297,15 @@ LED_MIDI_OUT_COMBINED 0   0
 #           SR  Pin
 LED_EDIT    M8B  0
 LED_MUTE    M7C  3
-LED_PATTERN M8B  3
-LED_SONG    M8B  5
+LED_PATTERN M8B  2
+LED_SONG    M8B  4
 LED_PHRASE  M7C  2
 
 #           SR  Pin
 LED_SOLO    M2C  1
-LED_FAST    M8A  3
+LED_FAST    M8A  2
 LED_FAST2    0   0
-LED_ALL     M8A  5
+LED_ALL     M8A  4
 
 #           SR  Pin
 LED_GROUP1   0   0
@@ -328,9 +328,9 @@ LED_LOOP   M4C  1
 LED_FOLLOW  0   0
 
 #              SR  Pin
-LED_EXIT       M4B  5
+LED_EXIT       M4B  4
 LED_SELECT     M8A  7
-LED_MENU       M4B  7
+LED_MENU       M4B  6
 LED_BOOKMARK   M1C  2
 LED_SCRUB       0   0
 LED_METRONOME  M3C  1
@@ -338,12 +338,12 @@ LED_RECORD     M5C  1
 LED_JAM_LIVE    0   0
 LED_JAM_STEP    0   0
 LED_LIVE       M6C  1
-LED_UTILITY    M8B  7
+LED_UTILITY    M8B  6
 LED_COPY       M4A  0
-LED_PASTE      M4A  3
-LED_CLEAR      M4A  5
+LED_PASTE      M4A  2
+LED_CLEAR      M4A  4
 LED_UNDO        0   0
-LED_MOVE       M4A  7
+LED_MOVE       M4A  6
 LED_SCROLL     M8A  0
 
 #                  SR  Pin
@@ -360,7 +360,7 @@ LED_EXT_RESTART     0   0
 
 #         SR  Pin
 LED_DOWN  M4B  0
-LED_UP    M4B  3
+LED_UP    M4B  2
 
 #             SR  Pin
 LED_MIXER      0   0
