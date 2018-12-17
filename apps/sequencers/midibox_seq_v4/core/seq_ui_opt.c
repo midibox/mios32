@@ -65,13 +65,14 @@
 #define ITEM_INIT_CC                      21
 #define ITEM_DRUM_CC                      22
 #define ITEM_TPD_MODE                     23
-#define ITEM_BLM_ALWAYS_USE_FTS           24
-#define ITEM_BLM_FADERS                   25
-#define ITEM_MIXER_CC1234                 26
-#define ITEM_MENU_SHORTCUTS               27
-#define ITEM_SCREEN_SAVER                 28
+#define ITEM_SWAP_GP_LED_COLOURS          24
+#define ITEM_BLM_ALWAYS_USE_FTS           25
+#define ITEM_BLM_FADERS                   26
+#define ITEM_MIXER_CC1234                 27
+#define ITEM_MENU_SHORTCUTS               28
+#define ITEM_SCREEN_SAVER                 29
 
-#define NUM_OF_ITEMS                      29
+#define NUM_OF_ITEMS                      30
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -194,6 +195,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Track Position Display (TPD) Mode",
     NULL,
+  },
+
+  {//<-------------------------------------->
+    "Swap LED Colours:   GP   Select",
+    "",
   },
 
   {//<-------------------------------------->
@@ -651,6 +657,23 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	return 1;
       }
       return 0;
+    } break;
+
+    case ITEM_SWAP_GP_LED_COLOURS: {
+      if( encoder == SEQ_UI_ENCODER_GP13 ) {
+	if( incrementer )
+	  seq_ui_options.SWAP_GP_LED_COLOURS = (incrementer > 0) ? 1 : 0;
+	else
+	  seq_ui_options.SWAP_GP_LED_COLOURS ^= 1;
+	ui_store_file_required = 1;
+      } else if( encoder == SEQ_UI_ENCODER_GP14 ) {
+	if( incrementer )
+	  seq_ui_options.SWAP_SELECT_LED_COLOURS = (incrementer > 0) ? 1 : 0;
+	else
+	  seq_ui_options.SWAP_SELECT_LED_COLOURS ^= 1;
+	ui_store_file_required = 1;
+      }
+      return 1;
     } break;
 
     case ITEM_BLM_ALWAYS_USE_FTS: {
@@ -1170,6 +1193,19 @@ static s32 LCD_Handler(u8 high_prio)
 	mode = 0;
 
       SEQ_LCD_PrintStringPadded((char *)tpd_mode_str[mode], 40);
+    }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_SWAP_GP_LED_COLOURS: {
+    SEQ_LCD_PrintSpaces(20);
+    if( ui_cursor_flash ) {
+      SEQ_LCD_PrintSpaces(20);
+    } else {
+      SEQ_LCD_PrintString(seq_ui_options.SWAP_GP_LED_COLOURS ? "On " : "Off");
+      SEQ_LCD_PrintSpaces(2);
+      SEQ_LCD_PrintString(seq_ui_options.SWAP_SELECT_LED_COLOURS ? "On " : "Off");
+      SEQ_LCD_PrintSpaces(2 + 10);
     }
   } break;
 

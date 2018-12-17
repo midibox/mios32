@@ -3501,20 +3501,23 @@ s32 SEQ_UI_LED_Handler_Periodic()
       modified_gp_leds &= ~pos_marker_mask;
 #endif
 
+      u16 leds_colour1 = !seq_ui_options.SWAP_GP_LED_COLOURS ? modified_gp_leds : pos_marker_mask;
+      u16 leds_colour2 = !seq_ui_options.SWAP_GP_LED_COLOURS ? pos_marker_mask : modified_gp_leds;
+
       int sr;
       const u8 blm_x_sr_map[8] = {4, 5, 6, 7, 3, 2, 1, 0};
       u16 gp_mask = 1 << 0;
       for(sr=0; sr<8; ++sr) {
 	u8 pattern = 0;
 
-	if( modified_gp_leds & gp_mask )
+	if( leds_colour1 & gp_mask )
 	  pattern |= 0x80;
-	if( pos_marker_mask & gp_mask )
+	if( leds_colour2 & gp_mask )
 	  pattern |= 0x40;
 	gp_mask <<= 1;
-	if( modified_gp_leds & gp_mask )
+	if( leds_colour1 & gp_mask )
 	  pattern |= 0x20;
-	if( pos_marker_mask & gp_mask )
+	if( leds_colour2 & gp_mask )
 	  pattern |= 0x10;
 	gp_mask <<= 1;
 
@@ -3539,21 +3542,24 @@ s32 SEQ_UI_LED_Handler_Periodic()
       modified_gp_leds &= ~pos_marker_mask;
 #endif
 
+      u16 leds_colour1 = !seq_ui_options.SWAP_GP_LED_COLOURS ? modified_gp_leds : pos_marker_mask;
+      u16 leds_colour2 = !seq_ui_options.SWAP_GP_LED_COLOURS ? pos_marker_mask : modified_gp_leds;
+
       // GP row, first quarter
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 0) ) value |= (1 << 1);
-	if( pos_marker_mask  & (1 << 0) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 0) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 0) ) value |= (1 << 0);
 
-	if( modified_gp_leds & (1 << 1) ) value |= (1 << 3);
-	if( pos_marker_mask  & (1 << 1) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 1) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 1) ) value |= (1 << 2);
 
-	if( modified_gp_leds & (1 << 2) ) value |= (1 << 5);
-	if( pos_marker_mask  & (1 << 2) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 2) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 2) ) value |= (1 << 4);
 
-	if( modified_gp_leds & (1 << 3) ) value |= (1 << 7);
-	if( pos_marker_mask  & (1 << 3) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 3) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 3) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][1] = value;
       }
@@ -3562,17 +3568,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 4) ) value |= (1 << 1);
-	if( pos_marker_mask  & (1 << 4) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 4) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 4) ) value |= (1 << 0);
 
-	if( modified_gp_leds & (1 << 5) ) value |= (1 << 3);
-	if( pos_marker_mask  & (1 << 5) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 5) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 5) ) value |= (1 << 2);
 
-	if( modified_gp_leds & (1 << 6) ) value |= (1 << 5);
-	if( pos_marker_mask  & (1 << 6) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 6) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 6) ) value |= (1 << 4);
 
-	if( modified_gp_leds & (1 << 7) ) value |= (1 << 7);
-	if( pos_marker_mask  & (1 << 7) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 7) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 7) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][5] = value;
       }
@@ -3581,17 +3587,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 8) ) value |= (1 << 1);
-	if( pos_marker_mask  & (1 << 8) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 8) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 8) ) value |= (1 << 0);
 
-	if( modified_gp_leds & (1 << 9) ) value |= (1 << 3);
-	if( pos_marker_mask  & (1 << 9) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 9) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 9) ) value |= (1 << 2);
 
-	if( modified_gp_leds & (1 << 10) ) value |= (1 << 5);
-	if( pos_marker_mask  & (1 << 10) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 10) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 10) ) value |= (1 << 4);
 
-	if( modified_gp_leds & (1 << 11) ) value |= (1 << 7);
-	if( pos_marker_mask  & (1 << 11) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 11) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 11) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][1] = value;
       }
@@ -3600,17 +3606,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( modified_gp_leds & (1 << 12) ) value |= (1 << 1);
-	if( pos_marker_mask  & (1 << 12) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 12) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 12) ) value |= (1 << 0);
 
-	if( modified_gp_leds & (1 << 13) ) value |= (1 << 3);
-	if( pos_marker_mask  & (1 << 13) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 13) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 13) ) value |= (1 << 2);
 
-	if( modified_gp_leds & (1 << 14) ) value |= (1 << 5);
-	if( pos_marker_mask  & (1 << 14) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 14) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 14) ) value |= (1 << 4);
 
-	if( modified_gp_leds & (1 << 15) ) value |= (1 << 7);
-	if( pos_marker_mask  & (1 << 15) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 15) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 15) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][5] = value;
       }
@@ -3674,22 +3680,24 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	break;
       }
 
+      leds_colour1 = !seq_ui_options.SWAP_SELECT_LED_COLOURS ? select_leds_green : select_leds_red;
+      leds_colour2 = !seq_ui_options.SWAP_SELECT_LED_COLOURS ? select_leds_red : select_leds_green;
 
       // Select row, first quarter
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 0) ) value |= (1 << 1);
-	if( select_leds_red   & (1 << 0) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 0) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 0) ) value |= (1 << 0);
 
-	if( select_leds_green & (1 << 1) ) value |= (1 << 3);
-	if( select_leds_red   & (1 << 1) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 1) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 1) ) value |= (1 << 2);
 
-	if( select_leds_green & (1 << 2) ) value |= (1 << 5);
-	if( select_leds_red   & (1 << 2) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 2) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 2) ) value |= (1 << 4);
 
-	if( select_leds_green & (1 << 3) ) value |= (1 << 7);
-	if( select_leds_red   & (1 << 3) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 3) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 3) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][2] = value;
       }
@@ -3698,17 +3706,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 4) ) value |= (1 << 1);
-	if( select_leds_red   & (1 << 4) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 4) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 4) ) value |= (1 << 0);
 
-	if( select_leds_green & (1 << 5) ) value |= (1 << 3);
-	if( select_leds_red   & (1 << 5) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 5) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 5) ) value |= (1 << 2);
 
-	if( select_leds_green & (1 << 6) ) value |= (1 << 5);
-	if( select_leds_red   & (1 << 6) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 6) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 6) ) value |= (1 << 4);
 
-	if( select_leds_green & (1 << 7) ) value |= (1 << 7);
-	if( select_leds_red   & (1 << 7) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 7) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 7) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[0][6] = value;
       }
@@ -3717,17 +3725,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 8) ) value |= (1 << 1);
-	if( select_leds_red   & (1 << 8) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 8) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 8) ) value |= (1 << 0);
 
-	if( select_leds_green & (1 << 9) ) value |= (1 << 3);
-	if( select_leds_red   & (1 << 9) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 9) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 9) ) value |= (1 << 2);
 
-	if( select_leds_green & (1 << 10) ) value |= (1 << 5);
-	if( select_leds_red   & (1 << 10) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 10) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 10) ) value |= (1 << 4);
 
-	if( select_leds_green & (1 << 11) ) value |= (1 << 7);
-	if( select_leds_red   & (1 << 11) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 11) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 11) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][2] = value;
       }
@@ -3736,17 +3744,17 @@ s32 SEQ_UI_LED_Handler_Periodic()
       {
 	u8 value = 0;
 
-	if( select_leds_green & (1 << 12) ) value |= (1 << 1);
-	if( select_leds_red   & (1 << 12) ) value |= (1 << 0);
+	if( leds_colour1 & (1 << 12) ) value |= (1 << 1);
+	if( leds_colour2 & (1 << 12) ) value |= (1 << 0);
 
-	if( select_leds_green & (1 << 13) ) value |= (1 << 3);
-	if( select_leds_red   & (1 << 13) ) value |= (1 << 2);
+	if( leds_colour1 & (1 << 13) ) value |= (1 << 3);
+	if( leds_colour2 & (1 << 13) ) value |= (1 << 2);
 
-	if( select_leds_green & (1 << 14) ) value |= (1 << 5);
-	if( select_leds_red   & (1 << 14) ) value |= (1 << 4);
+	if( leds_colour1 & (1 << 14) ) value |= (1 << 5);
+	if( leds_colour2 & (1 << 14) ) value |= (1 << 4);
 
-	if( select_leds_green & (1 << 15) ) value |= (1 << 7);
-	if( select_leds_red   & (1 << 15) ) value |= (1 << 6);
+	if( leds_colour1 & (1 << 15) ) value |= (1 << 7);
+	if( leds_colour2 & (1 << 15) ) value |= (1 << 6);
 
 	seq_blm8x8_led_row[1][6] = value;
       }
