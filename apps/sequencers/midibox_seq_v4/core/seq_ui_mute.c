@@ -96,6 +96,9 @@ static s32 LED_Handler(u16 *gp_leds)
     }
   }
 
+  if( seq_ui_options.INVERT_MUTE_LEDS )
+    *gp_leds ^= 0xffff;
+
   return 0; // no error
 }
 

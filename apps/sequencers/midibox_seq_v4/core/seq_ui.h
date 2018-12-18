@@ -201,6 +201,7 @@ typedef union {
     u8 SELECT_UNMUTED_TRACK:1;
     u8 SWAP_GP_LED_COLOURS:1;
     u8 SWAP_SELECT_LED_COLOURS:1;
+    u8 INVERT_MUTE_LEDS:1;
   };
 } seq_ui_options_t;
 

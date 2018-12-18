@@ -3674,6 +3674,9 @@ s32 SEQ_UI_LED_Handler_Periodic()
 	} else {
 	  select_leds_green = seq_core_trk_muted;
 	}
+
+	if( seq_ui_options.INVERT_MUTE_LEDS )
+	  select_leds_green ^= 0xffff;
 	break;
       case SEQ_UI_SEL_VIEW_PHRASE:
 	select_leds_green = 1 << ui_selected_phrase;

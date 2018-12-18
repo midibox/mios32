@@ -66,13 +66,14 @@
 #define ITEM_DRUM_CC                      22
 #define ITEM_TPD_MODE                     23
 #define ITEM_SWAP_GP_LED_COLOURS          24
-#define ITEM_BLM_ALWAYS_USE_FTS           25
-#define ITEM_BLM_FADERS                   26
-#define ITEM_MIXER_CC1234                 27
-#define ITEM_MENU_SHORTCUTS               28
-#define ITEM_SCREEN_SAVER                 29
+#define ITEM_INVERT_MUTE_LEDS             25
+#define ITEM_BLM_ALWAYS_USE_FTS           26
+#define ITEM_BLM_FADERS                   27
+#define ITEM_MIXER_CC1234                 28
+#define ITEM_MENU_SHORTCUTS               29
+#define ITEM_SCREEN_SAVER                 30
 
-#define NUM_OF_ITEMS                      30
+#define NUM_OF_ITEMS                      31
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -200,6 +201,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   {//<-------------------------------------->
     "Swap LED Colours:   GP   Select",
     "",
+  },
+
+  {//<-------------------------------------->
+    "Invert Mute LEDs",
+    NULL,
   },
 
   {//<-------------------------------------->
@@ -673,6 +679,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  seq_ui_options.SWAP_SELECT_LED_COLOURS ^= 1;
 	ui_store_file_required = 1;
       }
+      return 1;
+    } break;
+
+    case ITEM_INVERT_MUTE_LEDS: {
+      if( incrementer )
+	seq_ui_options.INVERT_MUTE_LEDS = (incrementer > 0) ? 1 : 0;
+      else
+	seq_ui_options.INVERT_MUTE_LEDS ^= 1;
+      ui_store_file_required = 1;
       return 1;
     } break;
 
@@ -1207,6 +1222,11 @@ static s32 LCD_Handler(u8 high_prio)
       SEQ_LCD_PrintString(seq_ui_options.SWAP_SELECT_LED_COLOURS ? "On " : "Off");
       SEQ_LCD_PrintSpaces(2 + 10);
     }
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_INVERT_MUTE_LEDS: {
+    enabled_value = seq_ui_options.INVERT_MUTE_LEDS;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
