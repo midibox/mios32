@@ -386,6 +386,10 @@ s32 SEQ_FILE_GC_Read(void)
 #ifndef MBSEQV4L
 	    seq_ui_options.SWAP_SELECT_LED_COLOURS = value;
 #endif
+	  } else if( strcmp(parameter, "UiInvertMuteLeds") == 0 ) {
+#ifndef MBSEQV4L
+	    seq_ui_options.INVERT_MUTE_LEDS = value;
+#endif
 	  } else if( strcmp(parameter, "RemoteMode") == 0 ) {
 	    seq_midi_sysex_remote_mode = (value > 2) ? 0 : value;
 	  } else if( strcmp(parameter, "RemotePort") == 0 ) {
@@ -716,6 +720,11 @@ static s32 SEQ_FILE_GC_Write_Hlp(u8 write_to_file)
 
 #ifndef MBSEQV4L
   sprintf(line_buffer, "UiSwapSelectLedColours %d\n", seq_ui_options.SWAP_SELECT_LED_COLOURS);
+  FLUSH_BUFFER;
+#endif
+
+#ifndef MBSEQV4L
+  sprintf(line_buffer, "UiInvertMuteLeds %d\n", seq_ui_options.INVERT_MUTE_LEDS);
   FLUSH_BUFFER;
 #endif
 
