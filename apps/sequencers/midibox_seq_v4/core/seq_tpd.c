@@ -71,7 +71,7 @@ static s32 SEQ_TPD_ScrollTextHandler(s8 static_offset);
 s32 SEQ_TPD_Init(u32 mode)
 {
   // initial mode
-  tpd_mode = SEQ_TPD_Mode_PosAndTrack;
+  tpd_mode = SEQ_TPD_Mode_MeterAndPos;
 
   SEQ_TPD_PrintString(MIOS32_LCD_BOOT_MSG_LINE1);
 
