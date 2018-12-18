@@ -1761,15 +1761,17 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 
   if( sel_button >= 16 ) return -2; // max. 16 direct track buttons
 
+  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
+
   if( depressed ) {
     button_state |= (1 << sel_button);
-    return 0; // no error
+    if( !selbuttons_available )
+      return 0; // no error
+  } else {
+    button_state &= ~(1 << sel_button);
   }
 
-  button_state &= ~(1 << sel_button);
-
   u8 visible_track = SEQ_UI_VisibleTrackGet();
-  u8 selbuttons_available = seq_hwcfg_blm8x8.dout_gp_mapping == 3;
 
   if( selbuttons_available ) {
     // for selection buttons of Antilog PCB
@@ -1781,6 +1783,9 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	SEQ_UI_STEPSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
 	break;
       case SEQ_UI_SEL_VIEW_TRACKS: {
+	if( depressed )
+	  return 0; // no error
+
 	if( button_state == (~(1 << sel_button) & 0xffff) ) {
 	  // if only one select button pressed: radio-button function (1 of 16)
 	  ui_selected_tracks = 1 << sel_button;
@@ -1800,6 +1805,9 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	SEQ_UI_INSSEL_Button_Handler((seq_ui_button_t)sel_button, depressed);
 	break;
       case SEQ_UI_SEL_VIEW_MUTE: {
+	if( depressed )
+	  return 0; // no error
+
 	u16 mask = 1 << sel_button;
 	u16 *mute_flags = seq_ui_button_state.MUTE_PRESSED ? &seq_core_trk[visible_track].layer_muted : &seq_core_trk_muted;
 	portENTER_CRITICAL();
@@ -1820,6 +1828,9 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	portEXIT_CRITICAL();
       } break;
       case SEQ_UI_SEL_VIEW_PHRASE: {
+	if( depressed )
+	  return 0; // no error
+
 	if( seq_ui_button_state.PHRASE_PRESSED || (ui_page == SEQ_UI_PAGE_SONG && ui_selected_item >= 1) ) { // TODO: has to be aligned with #define in seq_ui_song.c
 	  SEQ_UI_SONG_Button_Handler((seq_ui_button_t)sel_button, depressed);
 	} else {
