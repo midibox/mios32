@@ -26,9 +26,13 @@ typedef enum {
   SEQ_TPD_Mode_RotatedMeterAndPos,
   SEQ_TPD_Mode_DotMeterAndPos,
   SEQ_TPD_Mode_RotatedDotMeterAndPos,
+  SEQ_TPD_Mode_Logo,
+  SEQ_TPD_Mode_LogoWithBeat,
+  SEQ_TPD_Mode_BPM,
+  SEQ_TPD_Mode_BPM_WithBeat,
 } seq_tpd_mode_t;
 
-#define SEQ_TPD_NUM_MODES 6 // for seq_ui_opt.c
+#define SEQ_TPD_NUM_MODES 10 // for seq_ui_opt.c
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -45,5 +49,8 @@ extern s32 SEQ_TPD_PrintString(char *str);
 extern s32 SEQ_TPD_LED_Update(void);
 
 extern s32 SEQ_TPD_Handler(void);
+
+extern s32 SEQ_TPD_LogoSet(u8 ix, u16 pattern);
+extern s32 SEQ_TPD_LogoGet(u8 ix);
 
 #endif 

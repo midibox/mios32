@@ -1201,6 +1201,10 @@ static s32 LCD_Handler(u8 high_prio)
 	"Green LED: Meter    Red LED: Pos   (Rot)",
 	"Green LED: DotMeter Red LED: Pos",
 	"Green LED: DotMeter Red LED: Pos   (Rot)",
+	"Green LED: Logo     Red LED: Logo",
+	"Green LED: Logo     Red LED: Beat",
+	"Green LED: BPM      Red LED: BPM",
+	"Green LED: BPM      Red LED: Beat",
       };
 
       u8 mode = SEQ_TPD_ModeGet();

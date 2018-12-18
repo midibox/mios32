@@ -41,6 +41,12 @@ MIDIboxSEQ V4.095
 
    o OPTIONS page: new option "Invert Mute LEDs"
 
+   o OPTIONS page: new TPD option "BPM" and "BPM with Beat": prints tempo value and optionally flashes to measure/beat
+
+   o OPTIONS page: new TPD option "Logo" and "Logo with Beat": prints a 16x8 logo and optionally flashes to measure/beat
+     There are individual logos for each session which can be edited in the MBSEQ_C.V4 file.
+     If you don't find "TpdLogoLine" items there (because you are using an older session) just trigger the "Save" function
+
    o AOUT: MIDI Channel 9..12/13..15 now set the gate pins #1/3/5/7 as documented (previously it was #1/2/3/4 due to a code translation error)
      New: gate pins #2/4/6/8 are now set whenever the velocity is >100.
      This way the pins can be used as an accent trigger
