@@ -45,6 +45,7 @@
 #include "seq_record.h"
 #include "seq_live.h"
 #include "seq_groove.h"
+#include "seq_tpd.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -824,6 +825,38 @@ s32 SEQ_FILE_C_Read(char *session)
 	      }
 	    }
 #endif
+	  } else if( strcmp(parameter, "TpdLogoLine") == 0 ) {
+	      int num = get_dec(word);
+	      if( num < 1 || num > 8 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+		DEBUG_MSG("[SEQ_FILE_C] ERROR TpdLogoLine: invalid line number (expect 1..%d)!\n",
+			  1, 8);
+#endif
+		break;
+	      } else {
+		word = strtok_r(NULL, separators, &brkt);
+		if( word == NULL ) {
+		  DEBUG_MSG("[SEQ_FILE_C] ERROR TpdLogoLine %d: missing pattern!\n", num);
+		} else {
+		  int i;
+
+		  u16 mask = 1;
+		  u16 pattern = 0x0000;
+		  for(i=0; i<16; ++i, mask <<= 1) {
+		    if( word[i] == 0 ) {
+		      DEBUG_MSG("[SEQ_FILE_C] ERROR TpdLogoLine %d: missing characters in pattern (expecting 16 chars)!\n", num);
+		      break;
+		    } else if( word[i] == '.' ) {
+		      // no change
+		    } else if( word[i] == '*' ) {
+		      pattern |= mask;
+		    } else {
+		      DEBUG_MSG("[SEQ_FILE_C] ERROR TpdLogoLine %d: invalid character '%c' in pattern, expecting '.' or '*'!\n", num, word[i]);
+		    }
+		  }
+		  SEQ_TPD_LogoSet(num-1, pattern);
+		}
+	      }
 	  } else {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	    // changed error level from 1 to 2 here, since people are sometimes confused about these messages
@@ -1181,6 +1214,26 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
     }
   }
 #endif
+
+  {
+    int i;
+    for(i=0; i<8; ++i) {
+      u16 pattern = SEQ_TPD_LogoGet(i);
+      int j;
+      u16 mask = 1;
+      char buffer[17];
+      for(j=0; j<16; ++j, mask <<= 1) {
+	if( pattern & mask )
+	  buffer[j] = '*';
+	else
+	  buffer[j] = '.';
+      }
+      buffer[j] = 0;
+
+      sprintf(line_buffer, "TpdLogoLine %d  %s\n", i+1, buffer);
+      FLUSH_BUFFER;
+    }
+  }
 
   return status;
 }

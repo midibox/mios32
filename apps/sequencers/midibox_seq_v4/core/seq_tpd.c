@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+
 #include <glcd_font.h>
 
 #include "seq_tpd.h"
@@ -36,6 +37,7 @@ static seq_tpd_mode_t tpd_mode;
 
 #define TPD_TEXT_LENGTH 41
 static char tpd_scroll_text[TPD_TEXT_LENGTH];
+static char tpd_scroll_text_running;
 
 #define TPD_NUM_COL_SR 2 // left/right half
 #define TPD_NUM_ROW_SR 2 // green/red colour
@@ -46,11 +48,21 @@ static u8 tpd_display[TPD_NUM_COL_SR][TPD_NUM_ROW_SR][TPD_NUM_ROWS];
 #define TPD_GREEN 0 // green layer of TPD_NUM_ROW_SR dimension
 #define TPD_RED   1 // red layer of TPD_NUM_ROW_SR dimension
 
+static u16 tpd_logo[8] = { // prints "SEQ+" by default; note: horizontal is mirrored. Logo can be customized in MBSEQ_C.V4
+  0x0000, // from 0x0000,
+  0x04ec, // from 0x3720,
+  0x4a22, // from 0x4452,
+  0xea6c, // from 0x3657,
+  0x4a28, // from 0x1452,
+  0x1ce6, // from 0x6738,
+  0x2001, // from 0x8004,
+  0x1ffe, // from 0x7ff8
+};
 
 /////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_TPD_ScrollTextHandler(void);
+static s32 SEQ_TPD_ScrollTextHandler(s8 static_offset);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -94,6 +106,7 @@ s32 SEQ_TPD_PrintString(char *str)
 
   strncpy(tpd_scroll_text+3, str, TPD_TEXT_LENGTH-3);
   tpd_scroll_text[TPD_TEXT_LENGTH-1] = 0; // to ensure that the text is terminated
+  tpd_scroll_text_running = 1;
 
   return 0; // no error
 }
@@ -117,6 +130,32 @@ s32 SEQ_TPD_LED_Update(void)
     u8 inversion_mask_row = (seq_hwcfg_tpd.enabled == 1) ? 0x00 : 0xff;  // 0x00, 0xFF, 0xFF for tpd modes 1, 2, 3
     u8 inversion_mask_pat = (seq_hwcfg_tpd.enabled == 2) ? 0xff : 0x00;  // 0x00, 0xFF, 0x00 for tpd modes 1, 2, 3
 
+    u8 clear_red = 0;
+    if( tpd_mode == SEQ_TPD_Mode_LogoWithBeat || tpd_mode == SEQ_TPD_Mode_BPM_WithBeat ) {
+      if( SEQ_BPM_IsRunning() ) {
+	u8 flash = 0;
+
+	if( ((seq_core_state.ref_step % (seq_core_steps_per_measure+1)) == 0) ) {
+	  flash = 1;
+	} else if( ((seq_core_state.ref_step % 4) == 0) ) {
+	  // more fine granular selection: if common beat only flash for /16 of PPQN, if measure flash for full beat
+	  u32 ppqn = SEQ_BPM_PPQN_Get();
+	  u32 part = SEQ_BPM_TickGet() % ppqn;
+	  if( part < (ppqn/16) ) {
+	    flash = 1;
+	  }
+	}
+
+	if( flash ) {
+	  if( seq_hwcfg_tpd.rows_sr_red[0] == 0 || seq_hwcfg_tpd.rows_sr_red[1] == 0 ) {
+	    inversion_mask_pat ^= 0xff;
+	  } else {
+	    clear_red = 1;
+	  }
+	}
+      }
+    }
+
     // row selection
     u8 select_pattern = ~(1 << cycle_ctr);
     for(i=0; i<2; ++i) {
@@ -129,8 +168,13 @@ s32 SEQ_TPD_LED_Update(void)
       if( seq_hwcfg_tpd.rows_sr_green[i] )
 	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_green[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_GREEN][cycle_ctr] ^ inversion_mask_pat]);
       
-      if( seq_hwcfg_tpd.rows_sr_red[i] )
-	MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_red[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_RED][cycle_ctr] ^ inversion_mask_pat]);
+      if( seq_hwcfg_tpd.rows_sr_red[i] ) {
+	if( clear_red ) {
+	  MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_red[i] - 1, 0 ^ inversion_mask_pat);
+	} else {
+	  MIOS32_DOUT_SRSet(seq_hwcfg_tpd.rows_sr_red[i] - 1, mios32_dout_reverse_tab[tpd_display[i][TPD_RED][cycle_ctr] ^ inversion_mask_pat]);
+	}
+      }
     }
   }
   
@@ -151,16 +195,12 @@ s32 SEQ_TPD_Handler(void)
 #endif
 
   // text scroll mode?
-  if( tpd_scroll_text[0] ) {
-    return SEQ_TPD_ScrollTextHandler();
-  }
-
-  // clear display
-  {
-    int i;
-    u8 *tpd_display_ptr = (u8 *)&tpd_display[0];
-    for(i=0; i<TPD_NUM_COL_SR*TPD_NUM_ROW_SR*TPD_NUM_ROWS; ++i)
-      *tpd_display_ptr++ = 0;
+  if( tpd_scroll_text_running ) {
+    SEQ_TPD_ScrollTextHandler(-1);
+    if( tpd_scroll_text[0] == 0 ) {
+      tpd_scroll_text_running = 0;
+    }
+    return 0; // no error
   }
 
   // display pattern depending on mode
@@ -171,6 +211,14 @@ s32 SEQ_TPD_Handler(void)
   case SEQ_TPD_Mode_RotatedDotMeterAndPos: {
     u8 horizontal_display = tpd_mode == SEQ_TPD_Mode_RotatedMeterAndPos || tpd_mode == SEQ_TPD_Mode_RotatedDotMeterAndPos;
     u8 dotmeter = tpd_mode == SEQ_TPD_Mode_DotMeterAndPos || tpd_mode == SEQ_TPD_Mode_RotatedDotMeterAndPos;
+
+    // clear display
+    {
+      int i;
+      u8 *tpd_display_ptr = (u8 *)&tpd_display[0];
+      for(i=0; i<TPD_NUM_COL_SR*TPD_NUM_ROW_SR*TPD_NUM_ROWS; ++i)
+	*tpd_display_ptr++ = 0;
+    }
 
     u8 col, row;
     for(col=0; col<TPD_NUM_COL_SR; ++col) {
@@ -215,10 +263,39 @@ s32 SEQ_TPD_Handler(void)
     }
   } break;
 
+  case SEQ_TPD_Mode_Logo:
+  case SEQ_TPD_Mode_LogoWithBeat: { // Logo inversion handled in SEQ_TPD_LED_Update()
+    u8 col, row;
+    for(col=0; col<TPD_NUM_COL_SR; ++col) {
+      u16 *logo_ptr = (u16 *)&tpd_logo[0];
+      for(row=0; row<TPD_NUM_ROWS; ++row) {
+	u8 pattern = (*logo_ptr++) >> (col*8);
+	tpd_display[col][TPD_GREEN][row] = pattern;
+	tpd_display[col][TPD_RED][row] = pattern;
+      }
+    }
+  } break;
+
+  case SEQ_TPD_Mode_BPM:
+  case SEQ_TPD_Mode_BPM_WithBeat: { // beat inversion handled in SEQ_TPD_LED_Update()
+    float bpm = SEQ_BPM_Get();
+    sprintf(tpd_scroll_text, "%3d", (int)bpm);
+    SEQ_TPD_ScrollTextHandler(2);
+  } break;
+
   case SEQ_TPD_Mode_PosAndTrack:
   case SEQ_TPD_Mode_RotatedPosAndTrack:
   default: {
     u8 horizontal_display = tpd_mode == SEQ_TPD_Mode_RotatedPosAndTrack;
+
+    // clear display
+    {
+      int i;
+      u8 *tpd_display_ptr = (u8 *)&tpd_display[0];
+      for(i=0; i<TPD_NUM_COL_SR*TPD_NUM_ROW_SR*TPD_NUM_ROWS; ++i)
+	*tpd_display_ptr++ = 0;
+    }
+
     u8 col, row;
     for(col=0; col<TPD_NUM_COL_SR; ++col) {
       for(row=0; row<TPD_NUM_ROWS; ++row) {
@@ -257,8 +334,9 @@ s32 SEQ_TPD_Handler(void)
 
 /////////////////////////////////////////////////////////////////////////////
 // Print text on TPD
+// if static_offset >= 0: don't scroll, but just display static text (e.g. used in BPM mode)
 /////////////////////////////////////////////////////////////////////////////
-static s32 SEQ_TPD_ScrollTextHandler(void)
+static s32 SEQ_TPD_ScrollTextHandler(s8 static_offset)
 {
   static u32 prev_timestamp = 0;
   static u8 pixel_ctr = 0;
@@ -275,9 +353,13 @@ static s32 SEQ_TPD_ScrollTextHandler(void)
   font_bitmap.height = font[MIOS32_LCD_FONT_HEIGHT_IX];
   font_bitmap.line_offset = font[MIOS32_LCD_FONT_OFFSET_IX];
 
-  if( ++pixel_ctr > font_bitmap.line_offset ) {
-    pixel_ctr = 0;
-    memmove(tpd_scroll_text, tpd_scroll_text+1, TPD_TEXT_LENGTH-1);
+  if( static_offset >= 0 ) {
+    pixel_ctr = static_offset;
+  } else {
+    if( ++pixel_ctr > font_bitmap.line_offset ) {
+      pixel_ctr = 0;
+      memmove(tpd_scroll_text, tpd_scroll_text+1, TPD_TEXT_LENGTH-1);
+    }
   }
 
   // copy 4 characters to temporary 8x32 screen
@@ -326,4 +408,26 @@ static s32 SEQ_TPD_ScrollTextHandler(void)
   }
 
   return 0; // no error
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Sets/Returns Logo pattern
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_TPD_LogoSet(u8 ix, u16 pattern)
+{
+  if( ix >= 8 )
+    return -1; // invalid index
+
+  tpd_logo[ix] = pattern;
+
+  return 0; // no error
+}
+
+s32 SEQ_TPD_LogoGet(u8 ix)
+{
+  if( ix >= 8 )
+    return -1; // invalid index
+
+  return tpd_logo[ix];
 }
