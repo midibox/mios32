@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <math.h>
 #include <seq_midi_out.h>
 #include <seq_bpm.h>
 #include "tasks.h"
@@ -652,8 +653,9 @@ static s32 LCD_Handler(u8 high_prio)
     SEQ_LCD_PrintSpaces(40);
 
     SEQ_LCD_CursorSet(40+31, 0);
-    float bpm = SEQ_BPM_EffectiveGet();
-    SEQ_LCD_PrintFormattedString("%3d.%d BPM", (int)bpm, (int)(10*bpm)%10);
+    float bpmx10 = round(SEQ_BPM_EffectiveGet()*10.0);
+    int bpm_intx10 = (int)bpmx10;
+    SEQ_LCD_PrintFormattedString("%3d.%d BPM", bpm_intx10/10, bpm_intx10 % 10);
 
 
     ///////////////////////////////////////////////////////////////////////////
