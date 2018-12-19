@@ -17,6 +17,7 @@
 
 #include <mios32.h>
 #include <string.h>
+#include <math.h>
 
 #include <glcd_font.h>
 
@@ -278,7 +279,7 @@ s32 SEQ_TPD_Handler(void)
 
   case SEQ_TPD_Mode_BPM:
   case SEQ_TPD_Mode_BPM_WithBeat: { // beat inversion handled in SEQ_TPD_LED_Update()
-    float bpm = SEQ_BPM_Get();
+    float bpm = round(SEQ_BPM_EffectiveGet());
     sprintf(tpd_scroll_text, "%3d", (int)bpm);
     SEQ_TPD_ScrollTextHandler(2);
   } break;
