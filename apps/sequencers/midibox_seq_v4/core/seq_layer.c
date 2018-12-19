@@ -364,7 +364,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
       }
 
       if( handle_vu_meter && velocity ) {
-	seq_layer_vu_meter[drum] = velocity;
+	seq_layer_vu_meter[drum] = (velocity > 8) ? velocity : 1;
       } else {
 	seq_layer_vu_meter[drum] &= 0x7f; // ensure that no static assignment is displayed
       }
@@ -570,7 +570,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	}
 
 	if( handle_vu_meter )
-	  seq_layer_vu_meter[par_layer] = velocity | 0x80;
+	  seq_layer_vu_meter[par_layer] = ((velocity > 8) ? velocity : 8) | 0x80;
       } else {
 	if( !insert_empty_notes && !gate )
 	  velocity = 0;
@@ -587,19 +587,19 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	}
 
 	if( handle_vu_meter )
-	  seq_layer_vu_meter[par_layer] = length | 0x80;
+	  seq_layer_vu_meter[par_layer] = ((length > 8) ? length : 8) | 0x80;
       }
     }
 
     if( handle_vu_meter ) { // only for VU meters
       if( (par_layer=tcc->link_par_layer_probability) ) { // Probability
 	u8 rnd_probability = SEQ_PAR_ProbabilityGet(track, step, instrument, layer_muted);
-	seq_layer_vu_meter[par_layer] = rnd_probability | 0x80;
+	seq_layer_vu_meter[par_layer] = ((rnd_probability > 8) ? rnd_probability : 8) | 0x80;
       }
 
       if( (par_layer=tcc->link_par_layer_delay) ) { // Delay
 	u8 delay = SEQ_PAR_StepDelayGet(track, step, instrument, layer_muted);
-	seq_layer_vu_meter[par_layer] = delay | 0x80;
+	seq_layer_vu_meter[par_layer] = ((delay > 8) ? delay : 8) | 0x80;
       }
 
       if( (par_layer=tcc->link_par_layer_roll) ) { // Roll mode
@@ -666,7 +666,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  }
 
 	  if( handle_vu_meter && note && velocity )
-	    seq_layer_vu_meter[par_layer] = velocity;
+	    seq_layer_vu_meter[par_layer] = ((velocity > 8) ? velocity : 8);
 	} break;
 
         case SEQ_PAR_Type_Chord1:
@@ -728,7 +728,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	  }
 
 	  if( handle_vu_meter && velocity )
-	    seq_layer_vu_meter[par_layer] = velocity;
+	    seq_layer_vu_meter[par_layer] = ((velocity > 8) ? velocity : 8);
 
 	} break;
 
@@ -774,7 +774,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      SEQ_MORPH_EventCC(track, step, e, instrument, par_layer);
 
 	    if( handle_vu_meter )
-	      seq_layer_vu_meter[par_layer] = p->value | 0x80;
+	      seq_layer_vu_meter[par_layer] = ((p->value > 8) ? p->value : 8) | 0x80;
 	  }
 
 	} break;
@@ -811,7 +811,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      SEQ_MORPH_EventPitchBend(track, step, e, instrument, par_layer);
 
 	    if( handle_vu_meter )
-	      seq_layer_vu_meter[par_layer] = p->evnt2 | 0x80;
+	      seq_layer_vu_meter[par_layer] = ((p->evnt2 > 8) ? p->evnt2 : 8) | 0x80;
 	  }
 
 	} break;
@@ -845,7 +845,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      SEQ_MORPH_EventProgramChange(track, step, e, instrument, par_layer);
 
 	    if( handle_vu_meter )
-	      seq_layer_vu_meter[par_layer] = p->evnt1 | 0x80;
+	      seq_layer_vu_meter[par_layer] = ((p->evnt1 > 8) ? p->evnt1 : 8) | 0x80;
 	  }
 
 	} break;
@@ -879,7 +879,7 @@ s32 SEQ_LAYER_GetEvents(u8 track, u16 step, seq_layer_evnt_t layer_events[16], u
 	      SEQ_MORPH_EventAftertouch(track, step, e, instrument, par_layer);
 
 	    if( handle_vu_meter )
-	      seq_layer_vu_meter[par_layer] = p->evnt1 | 0x80;
+	      seq_layer_vu_meter[par_layer] = ((p->evnt1 > 8) ? p->evnt1 : 8) | 0x80;
 	  }
 
 	} break;
