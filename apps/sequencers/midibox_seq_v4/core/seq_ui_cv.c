@@ -132,6 +132,33 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
     case SEQ_UI_ENCODER_GP8:
       ui_selected_item = ITEM_CALIBRATION_2;
+
+      // extra: cycle Min/0/Max offset via GP8 button
+      if( incrementer == 0 ) {
+	u8 mode = SEQ_CV_CaliModeGet();
+	if( mode >= AOUT_NUM_CALI_MODES ) {
+	  u16 *cali_points = SEQ_CV_CaliPointsPtrGet(selected_cv);
+	  if( cali_points != NULL ) {
+	    s32 x = mode - AOUT_NUM_CALI_MODES;
+	    if( x >= AOUT_NUM_CALI_POINTS_X )
+	      x = AOUT_NUM_CALI_POINTS_X-1;
+
+	    u16 cali_mid = AOUT_CaliCfgValueGet();
+	    u16 cali_min = 0;
+	    u16 cali_max = 0xffff;
+
+	    if( cali_points[x] == cali_min )
+	      cali_points[x] = cali_mid;
+	    else if( cali_points[x] == cali_max )
+	      cali_points[x] = cali_min;
+	    else
+	      cali_points[x] = cali_max;	    
+
+	    SEQ_CV_CaliModeSet(selected_cv, SEQ_CV_CaliModeGet()); // this will update the CV pin
+	    ui_store_file_required = 1;
+	  }
+	}
+      }
       break;
 
     case SEQ_UI_ENCODER_GP9:
@@ -246,7 +273,7 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  u16 cali_value = cali_points[x] >> 4; // 16bit -> 12bit
 	  if( SEQ_UI_Var16_Inc(&cali_value, 0, 0xffff, incrementer) >= 0 ) {
 	    if( cali_value >= 0xfff )
-	      cali_value = 0xfff;
+	      cali_value = 0xffff;
 	    else
 	      cali_value <<= 4; // 12bit -> 16bit
 	    cali_points[x] = cali_value;
