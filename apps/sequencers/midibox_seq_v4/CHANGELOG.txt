@@ -54,6 +54,7 @@ MIDIboxSEQ V4.095
    o V4+ AOUT: support for AOUT channel calibration.
      In the CV configuration menu, turn GP ENC #7 until 0V/1V/2V/.../Max will be visible.
      Calibrate the offset of the target value with ENC #8.
+     Press GP #8 to cycle between min/0/max offset of the calibration point.
      Each V has a dedicated calibration value which can be configured this way, the output will be interpolated accordingly.
      Note that with exiting the CV configuration menu the calibration values are stored on SD Card in the MBSEQ_GC.V4 file
      (-> CV_Cali <cv-counting-from-0>).
