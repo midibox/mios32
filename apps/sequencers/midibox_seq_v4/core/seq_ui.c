@@ -3507,10 +3507,11 @@ s32 SEQ_UI_LED_Handler_Periodic()
       // since it's only executed when ui_gp_leds or gp_mask has changed, it doesn't really hurt
 
       u16 modified_gp_leds = ui_gp_leds;
-#if 1
+
       // extra: red LED is lit exclusively for higher contrast
-      modified_gp_leds &= ~pos_marker_mask;
-#endif
+      if( !seq_ui_options.GP_LED_DONT_XOR_POS ) {
+	modified_gp_leds &= ~pos_marker_mask;
+      }
 
       u16 leds_colour1 = !seq_ui_options.SWAP_GP_LED_COLOURS ? modified_gp_leds : pos_marker_mask;
       u16 leds_colour2 = !seq_ui_options.SWAP_GP_LED_COLOURS ? pos_marker_mask : modified_gp_leds;
@@ -3548,10 +3549,11 @@ s32 SEQ_UI_LED_Handler_Periodic()
       // 4 = 40,41      2 = 43,42       3 = 45,44       4 = 47,46
 
       u16 modified_gp_leds = ui_gp_leds;
-#if 1
+
       // extra: red LED is lit exclusively for higher contrast
-      modified_gp_leds &= ~pos_marker_mask;
-#endif
+      if( !seq_ui_options.GP_LED_DONT_XOR_POS ) {
+	modified_gp_leds &= ~pos_marker_mask;
+      }
 
       u16 leds_colour1 = !seq_ui_options.SWAP_GP_LED_COLOURS ? modified_gp_leds : pos_marker_mask;
       u16 leds_colour2 = !seq_ui_options.SWAP_GP_LED_COLOURS ? pos_marker_mask : modified_gp_leds;
