@@ -297,15 +297,19 @@ LED_MIDI_OUT_COMBINED 0   0
 #           SR  Pin
 LED_EDIT    M8B  0
 LED_MUTE    M7C  3
+#LED_PATTERN M8B  2
+#LED_SONG    M8B  4
 LED_PATTERN M8B  3
 LED_SONG    M8B  5
 LED_PHRASE  M7C  2
 
 #           SR  Pin
 LED_SOLO    M2C  1
-LED_FAST    M8A  3
+#LED_FAST    M8A  3
+LED_FAST    M8A  2
 LED_FAST2    0   0
-LED_ALL     M8A  5
+#LED_ALL     M8A  5
+LED_ALL     M8A  4
 
 #           SR  Pin
 LED_GROUP1   0   0
