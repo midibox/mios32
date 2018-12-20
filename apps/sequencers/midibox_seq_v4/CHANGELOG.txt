@@ -75,6 +75,13 @@ MIDIboxSEQ V4.095
 
    o STM32F4 board: orange LED shows SD Card available, red LED any received MIDI IN, blue LED any transmitted MIDI OUT
 
+   o experimental: terminal command "backup" creates a .tar file of the entire SD card.
+     Whenever "backup" is entered, a new bak<incremented-number>.tar file will be created.
+     This file can be downloaded from MIOS Studio (might take a lot of time!) or from a computer by
+     plugging the SD Card into a SD Card reader.
+     .tar files can be unpacked with "tar xfv <filename>" or with other decompression tools (might be 
+     already installed on your computer by default)
+
    o experimental (might be optional in future): show measure and pattern step position in main screen
 
 

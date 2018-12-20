@@ -132,6 +132,9 @@ extern s32 FILE_FindPreviousFile(char *path, char *filename, char *ext_filter, c
 
 extern s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port, u32 ms_delay_between_dumps);
 
+  extern s32 FILE_CreateTar(char *filename, char *src_path, u8 exclude_tar_files, u8 max_depth);
+extern s32 FILE_BackupDiskAutoName(u8 max_depth);
+
 extern s32 FILE_PrintSDCardInfos(void);
 
 extern s32 FILE_SendErrorMessage(s32 error_status);

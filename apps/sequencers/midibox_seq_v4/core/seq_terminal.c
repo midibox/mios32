@@ -788,6 +788,17 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
 	}
 	MUTEX_SDCARD_GIVE;
       }
+    } else if( strcmp(parameter, "backup") == 0 ) {
+      if( seq_ui_backup_req || seq_ui_format_req ) {
+	out("Ongoing session creation - please wait!");
+      } else {
+	MUTEX_SDCARD_TAKE;
+	portENTER_CRITICAL();
+	u8 max_depth = 3;
+	FILE_BackupDiskAutoName(max_depth);
+	portEXIT_CRITICAL();
+	MUTEX_SDCARD_GIVE;
+      }
     } else if( strcmp(parameter, "dbg_record") == 0 ) {
       SEQ_RECORD_DebugActiveNotes();
     } else if( strcmp(parameter, "session") == 0 ) {
@@ -903,6 +914,7 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  saveas <name>:  saves the current session under a new name");
   out("  new <name>:     creates a new session");
   out("  delete <name>:  deletes a session");
+  out("  backup:         creates a .tar file of the entire SD card");
   out("  session:        prints the current session name");
   out("  sessions:       prints all available sessions");
   out("  dbg_record:     prints active notes which are recorded");
