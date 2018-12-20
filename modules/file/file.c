@@ -1502,7 +1502,7 @@ s32 FILE_CreateTar(char *filename, char *src_path, u8 exclude_tar_files, u8 max_
     DEBUG_MSG("[FILE_CreateTar] failed with error code: %d\n", status);
   } else {
 #if DEBUG_VERBOSE_LEVEL >= 1
-    DEBUG_MSG("[FILE_CreateTar] archived %d files in %d directories under %s (%d bytes)\n", num_dirs, num_files, filename, FILE_WriteGetCurrentSize());
+    DEBUG_MSG("[FILE_CreateTar] archived %d files in %d directories under %s (%d bytes)\n", num_files, num_dirs, filename, FILE_WriteGetCurrentSize());
 #endif
   }
 
