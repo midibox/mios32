@@ -199,7 +199,7 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
   },
 
   {//<-------------------------------------->
-    "Swap LED Colours:   GP   Select",
+    "Swap LED Colours:   GP   Select  XOR Pos",
     "",
   },
 
@@ -677,6 +677,12 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	  seq_ui_options.SWAP_SELECT_LED_COLOURS = (incrementer > 0) ? 1 : 0;
 	else
 	  seq_ui_options.SWAP_SELECT_LED_COLOURS ^= 1;
+	ui_store_file_required = 1;
+      } else if(  encoder == SEQ_UI_ENCODER_GP15 || encoder == SEQ_UI_ENCODER_GP16 ) {
+	if( incrementer )
+	  seq_ui_options.GP_LED_DONT_XOR_POS = (incrementer > 0) ? 1 : 0;
+	else
+	  seq_ui_options.GP_LED_DONT_XOR_POS ^= 1;
 	ui_store_file_required = 1;
       }
       return 1;
@@ -1221,10 +1227,12 @@ static s32 LCD_Handler(u8 high_prio)
     if( ui_cursor_flash ) {
       SEQ_LCD_PrintSpaces(20);
     } else {
-      SEQ_LCD_PrintString(seq_ui_options.SWAP_GP_LED_COLOURS ? "On " : "Off");
-      SEQ_LCD_PrintSpaces(2);
-      SEQ_LCD_PrintString(seq_ui_options.SWAP_SELECT_LED_COLOURS ? "On " : "Off");
-      SEQ_LCD_PrintSpaces(2 + 10);
+      SEQ_LCD_PrintString(seq_ui_options.SWAP_GP_LED_COLOURS ? "Swap" : "Norm");
+      SEQ_LCD_PrintSpaces(1);
+      SEQ_LCD_PrintString(seq_ui_options.SWAP_SELECT_LED_COLOURS ? "Swap" : "Norm");
+      SEQ_LCD_PrintSpaces(1 + 3);
+      SEQ_LCD_PrintString(seq_ui_options.GP_LED_DONT_XOR_POS ? "Off" : "On ");
+      SEQ_LCD_PrintSpaces(5);
     }
   } break;
 
