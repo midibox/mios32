@@ -40,6 +40,7 @@
 #include <ff.h>
 #include <diskio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "file.h"
 
@@ -76,10 +77,41 @@ u8 file_copy_percentage;
 
 
 /////////////////////////////////////////////////////////////////////////////
+// Local types
+/////////////////////////////////////////////////////////////////////////////
+
+// from https://www.gnu.org/software/tar/manual/html_node/Standard.html
+typedef struct
+{                              /* byte offset */
+  char name[100];               /*   0 */
+  char mode[8];                 /* 100 */
+  char uid[8];                  /* 108 */
+  char gid[8];                  /* 116 */
+  char size[12];                /* 124 */
+  char mtime[12];               /* 136 */
+  char chksum[8];               /* 148 */
+  char typeflag;                /* 156 */
+  char linkname[100];           /* 157 */
+  char magic[6];                /* 257 */
+  char version[2];              /* 263 */
+  char uname[32];               /* 265 */
+  char gname[32];               /* 297 */
+  char devmajor[8];             /* 329 */
+  char devminor[8];             /* 337 */
+  char prefix[155];             /* 345 */
+  char fill_to_512[12];         /* 500 */
+                                /* 512 */
+} tar_posix_header;
+
+
+/////////////////////////////////////////////////////////////////////////////
 // Local prototypes
 /////////////////////////////////////////////////////////////////////////////
 
 static s32 FILE_MountFS(void);
+
+static s32 FILE_CreateTarRecursive(char *filename, char *src_path, u8 exclude_tar_files, u8 depth, u8 max_depth, u32 *num_dirs, u32 *num_files);
+static s32 FILE_CreateTarHeader(char *filename, char *src_path, u8 is_dir, u32 filesize);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -822,7 +854,7 @@ s32 FILE_Copy(char *src_file, char *dst_file)
 #endif
 	successcount = 0;
 	status = FILE_ERR_READ;
-      } else if( successcount && f_write(&file_write, tmp_buffer, successcount, &successcount_wr) != FR_OK ) {
+      } else if( successcount && (file_dfs_errno=f_write(&file_write, tmp_buffer, successcount, &successcount_wr)) != FR_OK ) {
 #if DEBUG_VERBOSE_LEVEL >= 2
 	DEBUG_MSG("[FILE_Copy] Failed to write sector at position 0x%08x, status: %u\n", file_write.fptr, file_dfs_errno);
 #endif
@@ -1425,6 +1457,288 @@ s32 FILE_SendSyxDump(char *path, mios32_midi_port_t port, u32 ms_delay_between_d
   return num_bytes;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////
+// Creates a tar file (recursively)
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_CreateTar(char *filename, char *src_path, u8 exclude_tar_files, u8 max_depth)
+{
+  s32 status = 0;
+
+  if( !volume_available ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+    DEBUG_MSG("[FILE_CreateTar] ERROR: volume doesn't exist!\n");
+#endif
+    return FILE_ERR_NO_VOLUME;
+  }
+
+  // convert filename to uppercase
+  {
+    char *filename_ptr = filename;
+    while( *filename_ptr != 0 ) {
+      *filename_ptr = toupper((int)*filename_ptr);
+      ++filename_ptr;
+    }
+  }
+
+  // create file
+  if( (status=FILE_WriteOpen(filename, 1)) < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[FILE_CreateTar] ERROR: failed to create %s (error code: %d)!\n", filename, status);
+#endif
+    return status;
+  }
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+  DEBUG_MSG("[FILE_CreateTar] Creating %s for path: %s\n", filename, src_path);
+#endif
+
+  // walk directory
+  u32 num_dirs = 1;
+  u32 num_files = 0;
+  status = FILE_CreateTarRecursive(filename, src_path, exclude_tar_files, 1, max_depth, &num_dirs, &num_files);
+
+  if( status < 0 ) {
+    DEBUG_MSG("[FILE_CreateTar] failed with error code: %d\n", status);
+  } else {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[FILE_CreateTar] archived %d files in %d directories under %s (%d bytes)\n", num_dirs, num_files, filename, FILE_WriteGetCurrentSize());
+#endif
+  }
+
+  // finalize file by adding two dummy all-zero blocks
+  {
+    u8 dummy[512];
+    memset(dummy, 0, 512);
+
+    int i;
+    for(i=0; i<2; ++i) {
+      UINT successcount;  
+      if( (file_dfs_errno=f_write(&file_write, &dummy, 512, &successcount)) != FR_OK || successcount != 512 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[FILE_CreateTar] Failed to write sector at position 0x%08x, status: %u\n", file_write.fptr, file_dfs_errno);
+#endif
+	status = FILE_ERR_WRITE;
+      }
+    }
+  }
+
+  FILE_WriteClose();
+  
+  return status;
+}
+
+
+static s32 FILE_CreateTarHeader(char *filename, char *src_path, u8 is_dir, u32 filesize)
+{
+  s32 status = 0;
+  tar_posix_header *header;
+  header = (tar_posix_header *)&tmp_buffer;
+
+#if TMP_BUFFER_SIZE != 512
+# error "We've a problem here!"
+#endif
+
+  memset(header, 0, sizeof(header));
+
+  strncpy(header->name, &filename[1], strlen(filename)-5); // remove initial / and .tar
+  header->name[strlen(filename)-5] = 0;
+  strcat(header->name, src_path);
+  if( is_dir ) {
+    strcat(header->name, "/");
+  }
+
+  strcpy(header->mode, is_dir ? "000755 " : "000644 ");
+  strcpy(header->uid, "000000 ");
+  strcpy(header->gid, "000000 ");
+
+  // filesize in octal format
+  {
+    int i;
+    for(i=0; i<11; ++i) {
+      header->size[i] = '0' + ((filesize >> 3*(10-i)) & 0x7);
+    }
+    header->size[11] = ' ';
+  }
+
+  strcpy(header->mtime, "00000000000 ");
+  strcat(header->chksum, "        "); // will be calculated once header is complete
+  header->typeflag = is_dir ? '5' : '0';
+  //strcpy(header->linkname, "");
+  strcpy(header->magic, "ustar");
+  strcpy(header->version, "00");
+  strcpy(header->uname, "mios32");
+  strcpy(header->gname, "mios32");
+  strcat(header->devmajor, "000000 ");
+  strcpy(header->devminor, "000000 ");
+  //strcpy(header->prefix, "");
+
+  {
+    u32 chksum = 0;
+    int i;
+    u8 *header_ptr = (u8 *)header;
+    for(i=0; i<512; ++i, header_ptr++) {
+      chksum += *header_ptr;
+    }
+
+    // checksum in octal format
+    for(i=0; i<6; ++i) {
+      header->chksum[i] = '0' + ((chksum >> 3*(5-i)) & 0x7);
+    }
+    header->chksum[6] = 0;
+  }
+
+
+  UINT successcount;  
+  if( (file_dfs_errno=f_write(&file_write, header, 512, &successcount)) != FR_OK || successcount != 512 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[FILE_CreateTarHeader] Failed to write sector at position 0x%08x, status: %u\n", file_write.fptr, file_dfs_errno);
+#endif
+    status = FILE_ERR_WRITE;
+  }
+
+  return status;
+}
+
+static s32 FILE_CreateTarRecursive(char *filename, char *src_path, u8 exclude_tar_files, u8 depth, u8 max_depth, u32 *num_dirs, u32 *num_files)
+{
+  s32 status = 0;
+
+  DIR di;
+  FILINFO de;
+
+  // format from https://www.gnu.org/software/tar/manual/html_node/Standard.html
+
+  if( f_opendir(&di, src_path) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+    DEBUG_MSG("[FILE_CreateTar] ERROR: couldn't open %s directory!\n", src_path);
+#endif
+    return FILE_ERR_NO_DIR;
+  }
+
+  // create header for new directory
+  if( (status=FILE_CreateTarHeader(filename, src_path, 1, 0)) < 0 ) {
+    return status;
+  }
+
+  while( status == 0 && f_readdir(&di, &de) == FR_OK && de.fname[0] != 0 ) {
+    char full_path[13 * (max_depth+1) + 1];
+    sprintf(full_path, "%s/%s", src_path, de.fname);
+
+    if( de.fname[0] && de.fname[0] != '.' ) {
+      if( (de.fattrib & AM_DIR) && !(de.fattrib & AM_HID) ) {
+	*num_dirs += 1;
+
+#if DEBUG_VERBOSE_LEVEL >= 1
+	DEBUG_MSG("[FILE_CreateTar] D %s\n", full_path);
+#endif
+	if( depth >= max_depth ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[FILE_CreateTar] Maximum depth of %d reached - won't go down further!\n", max_depth);
+#endif
+	} else {
+	  status = FILE_CreateTarRecursive(filename, full_path, exclude_tar_files, depth+1, max_depth, num_dirs, num_files);
+	  if( status < 0 )
+	    break;
+	}
+      } else if( !(de.fattrib & AM_DIR) && !(de.fattrib & AM_HID) ) {
+	if( strcasecmp(de.fname, (char *)&filename[1]) == 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[FILE_CreateTar] Skip %s (same file)\n", full_path);
+#endif
+	} else if( exclude_tar_files && strcasestr(de.fname, ".TAR") != 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[FILE_CreateTar] Skip %s\n", full_path);
+#endif
+	} else {
+	  *num_files += 1;
+#if DEBUG_VERBOSE_LEVEL >= 1
+	  DEBUG_MSG("[FILE_CreateTar] F %s (%d bytes)\n", full_path, de.fsize);
+#endif
+
+	  // create header for new file
+	  if( (status=FILE_CreateTarHeader(filename, full_path, 0, de.fsize)) < 0 ) {
+	    return status;
+	  }
+
+	  // copy file
+	  if( (file_dfs_errno=f_open(&file_read, full_path, FA_OPEN_EXISTING | FA_READ)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	    DEBUG_MSG("[FILE_CreateTar] Failed to open %s!\n", full_path);
+#endif
+	    return FILE_ERR_COPY_NO_FILE;
+	  }
+
+	  UINT successcount;
+	  UINT successcount_wr;
+	  u32 num_bytes = 0;
+	  do {
+	    if( (file_dfs_errno=f_read(&file_read, tmp_buffer, TMP_BUFFER_SIZE, &successcount)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[FILE_CreateTar] Failed to read sector at position 0x%08x, status: %u\n", file_read.fptr, file_dfs_errno);
+#endif
+	      successcount = 0;
+	      status = FILE_ERR_READ;
+	    } else if( successcount && (file_dfs_errno=f_write(&file_write, tmp_buffer, successcount, &successcount_wr)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[FILE_CreateTar] Failed to write sector at position 0x%08x, status: %u\n", file_write.fptr, file_dfs_errno);
+#endif
+	      status = FILE_ERR_WRITE;
+	    } else {
+	      num_bytes += successcount_wr;
+	    }
+	  } while( status == 0 && successcount > 0 );
+
+	  if( status >= 0 && (de.fsize % 512) != 0 ) {
+	    // fill remaining space
+	    memset(tmp_buffer, 0, 512);
+	    if( (file_dfs_errno=f_write(&file_write, tmp_buffer, 512 - (de.fsize % 512), &successcount_wr)) != FR_OK ) {
+#if DEBUG_VERBOSE_LEVEL >= 1
+	      DEBUG_MSG("[FILE_CreateTar] Failed to write sector at position 0x%08x, status: %u\n", file_write.fptr, file_dfs_errno);
+#endif
+	      status = FILE_ERR_WRITE;
+	    }
+	  }
+
+	  //f_close(&file_read); // never close read files to avoid "invalid object"
+
+	  if( status < 0 )
+	    break;
+	}
+      }
+    }
+  }
+
+  return status;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+//! This function creates a backup file of the entire disk (except .tar files)
+//! Use this function to automatically determine the next backup file name
+//! Backup files are starting with "bak<number>.tar"
+/////////////////////////////////////////////////////////////////////////////
+s32 FILE_BackupDiskAutoName(u8 max_depth)
+{
+  int i;
+  for(i=1;;++i) {
+    char filename[20];
+    sprintf(filename, "/bak%d.tar", i);
+    s32 status = FILE_FileExists(filename);
+    if( status < 0 ) {
+#if DEBUG_VERBOSE_LEVEL >= 2
+      DEBUG_MSG("[FILE_BackupDiskAutoName] ERROR: during disk access, error code: %d!\n", status);
+#endif
+      return status;
+    }
+
+    if( status == 0 ) {
+      return FILE_CreateTar(filename, "", 1, max_depth);
+    }
+  }
+
+  return 0; // no error
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //! This function prints some useful SD card informations on the MIOS terminal
