@@ -27,8 +27,10 @@ mkdir -p $RELEASE_DIR/hwcfg/wilba
 cp hwcfg/wilba/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/wilba
 mkdir -p $RELEASE_DIR/hwcfg/wilba_tpd
 cp hwcfg/wilba_tpd/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/wilba_tpd
-mkdir -p $RELEASE_DIR/hwcfg/antilog
-cp hwcfg/wilba/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/antilog
+mkdir -p $RELEASE_DIR/hwcfg/midiphy_rh
+cp hwcfg/midiphy_rh/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/midiphy_rh
+mkdir -p $RELEASE_DIR/hwcfg/midiphy_lh
+cp hwcfg/midiphy_lh/MBSEQ_HW.V4 $RELEASE_DIR/hwcfg/midiphy_lh
 cp hwcfg/README.txt $RELEASE_DIR/hwcfg
 
 ###############################################################################
