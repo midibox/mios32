@@ -329,7 +329,7 @@ LED_FOLLOW  0   0
 
 #              SR  Pin
 LED_EXIT       M4B  4
-LED_SELECT     M8A  7
+LED_SELECT     M8A  6
 LED_MENU       M4B  6
 LED_BOOKMARK   M1C  2
 LED_SCRUB       0   0
