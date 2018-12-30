@@ -80,6 +80,7 @@ typedef union {
     u32 UP:1;
     u32 DOWN:1;
     u32 ENC_BTN_FWD_PRESSED:1;
+    u32 TAKE_OVER_SEL_VIEW:1;
   };
 } seq_ui_button_state_t;
 
@@ -203,6 +204,7 @@ typedef union {
     u16 SWAP_SELECT_LED_COLOURS:1;
     u16 GP_LED_DONT_XOR_POS:1;
     u16 INVERT_MUTE_LEDS:1;
+    u16 ALL_FOR_STEP_VIEW_ONLY:1;
   };
 } seq_ui_options_t;
 

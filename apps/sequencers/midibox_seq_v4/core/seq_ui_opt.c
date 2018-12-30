@@ -53,27 +53,28 @@
 #define ITEM_PASTE_CLR_ALL                 9
 #define ITEM_RESTORE_TRACK_SELECTIONS     10
 #define ITEM_MODIFY_PATTERN_BANKS         11
-#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 12
-#define ITEM_PRINT_TRANSPOSED_NOTES       13
-#define ITEM_METRONOME                    14
-#define ITEM_SHADOW_OUT                   15
-#define ITEM_MIDI_REMOTE                  16
-#define ITEM_TRACK_CC                     17
-#define ITEM_RUNTIME_STATUS_OPTIMIZATION  18
-#define ITEM_LIVE_LAYER_MUTE              19
-#define ITEM_INIT_WITH_TRIGGERS           20
-#define ITEM_INIT_CC                      21
-#define ITEM_DRUM_CC                      22
-#define ITEM_TPD_MODE                     23
-#define ITEM_SWAP_GP_LED_COLOURS          24
-#define ITEM_INVERT_MUTE_LEDS             25
-#define ITEM_BLM_ALWAYS_USE_FTS           26
-#define ITEM_BLM_FADERS                   27
-#define ITEM_MIXER_CC1234                 28
-#define ITEM_MENU_SHORTCUTS               29
-#define ITEM_SCREEN_SAVER                 30
+#define ITEM_ALL_FOR_STEP_VIEW_ONLY       12
+#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 13
+#define ITEM_PRINT_TRANSPOSED_NOTES       14
+#define ITEM_METRONOME                    15
+#define ITEM_SHADOW_OUT                   16
+#define ITEM_MIDI_REMOTE                  17
+#define ITEM_TRACK_CC                     18
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  19
+#define ITEM_LIVE_LAYER_MUTE              20
+#define ITEM_INIT_WITH_TRIGGERS           21
+#define ITEM_INIT_CC                      22
+#define ITEM_DRUM_CC                      23
+#define ITEM_TPD_MODE                     24
+#define ITEM_SWAP_GP_LED_COLOURS          25
+#define ITEM_INVERT_MUTE_LEDS             26
+#define ITEM_BLM_ALWAYS_USE_FTS           27
+#define ITEM_BLM_FADERS                   28
+#define ITEM_MIXER_CC1234                 29
+#define ITEM_MENU_SHORTCUTS               30
+#define ITEM_SCREEN_SAVER                 31
 
-#define NUM_OF_ITEMS                      31
+#define NUM_OF_ITEMS                      32
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -135,6 +136,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Allow to change pattern banks",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "ALL Function works on Step View only",
     NULL, // enabled/disabled
   },
 
@@ -396,6 +402,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_ui_options.MODIFY_PATTERN_BANKS = (incrementer > 0) ? 1 : 0;
       else
 	seq_ui_options.MODIFY_PATTERN_BANKS ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_ALL_FOR_STEP_VIEW_ONLY: {
+      if( incrementer )
+	seq_ui_options.ALL_FOR_STEP_VIEW_ONLY = (incrementer > 0) ? 1 : 0;
+      else
+	seq_ui_options.ALL_FOR_STEP_VIEW_ONLY ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -1089,6 +1104,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_MODIFY_PATTERN_BANKS: {
     enabled_value = seq_ui_options.MODIFY_PATTERN_BANKS;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_ALL_FOR_STEP_VIEW_ONLY: {
+    enabled_value = seq_ui_options.ALL_FOR_STEP_VIEW_ONLY;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////
