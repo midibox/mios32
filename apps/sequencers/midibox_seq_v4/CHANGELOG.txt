@@ -6,6 +6,25 @@ Wishlist for future features
 -> see bottom of this document
 
 
+MIDIboxSEQ V4.096
+~~~~~~~~~~~~~~~~~
+
+   o Improved selection handling for midiphy frontpanel:
+       - if you press&hold the Bookm/Step/Track/Param/Trigger/Instr/Mute or Phrase button, and then
+         make a selection with SEL or GP buttons, the selection button will jump back to the previous
+         function
+       - if you press&release these buttons without a selection, the function stays active.
+
+     Example: let's say the track selection is active.
+     Press&Hold Param button, change to a new parameter layer, then release the Param button
+     -> the selection buttons will jump back to track selection.
+
+     If it's desired to permanently control the parameter layer with the selection buttons, just
+     press&release the Param button.
+
+   o New option 13/32 allows to change the steps of the current selected view only
+
+
 MIDIboxSEQ V4.095
 ~~~~~~~~~~~~~~~~~
 

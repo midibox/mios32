@@ -529,6 +529,9 @@ void SEQ_UI_Msg_LivePattern(char *line2)
 /////////////////////////////////////////////////////////////////////////////
 static s32 SEQ_UI_Button_GP(s32 depressed, u32 gp)
 {
+  if( !depressed ) // selection button has been pressed while Bookm/Step/Track/Param/Trigger/Instr/Mute/Phrase button pressed: don't take over new sel view anymore
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 0;
+
   // in MENU page: overrule GP buttons as long as MENU button is pressed/active
   if( seq_ui_button_state.MENU_PRESSED || seq_hwcfg_blm.gp_always_select_menu_page ) {
     if( depressed ) return -1;
@@ -1306,8 +1309,15 @@ static s32 SEQ_UI_Button_Menu(s32 depressed)
 
 static s32 SEQ_UI_Button_Bookmark(s32 depressed)
 {
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_BOOKMARKS;
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.bookmark ) {
@@ -1430,8 +1440,15 @@ static s32 SEQ_UI_Button_Edit(s32 depressed)
 
 static s32 SEQ_UI_Button_Mute(s32 depressed)
 {
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_MUTE;
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   seq_ui_button_state.MUTE_PRESSED = depressed ? 0 : 1;
@@ -1507,8 +1524,15 @@ static s32 SEQ_UI_Button_Song(s32 depressed)
 
 static s32 SEQ_UI_Button_Phrase(s32 depressed)
 {
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_PHRASE;
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   seq_ui_button_state.PHRASE_PRESSED = depressed ? 0 : 1;
@@ -1593,10 +1617,19 @@ static s32 SEQ_UI_Button_StepView(s32 depressed)
 {
   //  static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_stepsel
-  
+
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_STEPS;
-    if( ui_page == SEQ_UI_PAGE_MUTE || SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+
+    if( ui_page == SEQ_UI_PAGE_MUTE || SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG )
+      SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.step_view ) {
@@ -1669,8 +1702,15 @@ static s32 SEQ_UI_Button_StepViewDec(s32 depressed)
 
 static s32 SEQ_UI_Button_TrackSel(s32 depressed)
 {
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRACKS;
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.track_sel ) {
@@ -1774,8 +1814,11 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
   u8 visible_track = SEQ_UI_VisibleTrackGet();
 
   if( selbuttons_available ) {
+    if( !depressed ) // selection button has been pressed while Bookm/Step/Track/Param/Trigger/Instr/Mute/Phrase button pressed: don't take over new sel view anymore
+      seq_ui_button_state.TAKE_OVER_SEL_VIEW = 0;
+
     // for selection buttons of Antilog PCB
-      switch( seq_ui_sel_view ) {
+    switch( seq_ui_sel_view ) {
       case SEQ_UI_SEL_VIEW_BOOKMARKS:
 	SEQ_UI_BOOKMARKS_Button_Handler((seq_ui_button_t)sel_button, depressed);
 	break;
@@ -1831,9 +1874,9 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	if( depressed )
 	  return 0; // no error
 
-	if( seq_ui_button_state.PHRASE_PRESSED || (ui_page == SEQ_UI_PAGE_SONG && ui_selected_item >= 1) ) { // TODO: has to be aligned with #define in seq_ui_song.c
-	  SEQ_UI_SONG_Button_Handler((seq_ui_button_t)sel_button, depressed);
-	} else {
+	//if( seq_ui_button_state.PHRASE_PRESSED || (ui_page == SEQ_UI_PAGE_SONG && ui_selected_item >= 1) ) { // TODO: has to be aligned with #define in seq_ui_song.c
+	//  SEQ_UI_SONG_Button_Handler((seq_ui_button_t)sel_button, depressed);
+	//} else {
 	  ui_selected_phrase = sel_button;
 	  ui_song_edit_pos = ui_selected_phrase << 3;
 
@@ -1841,7 +1884,7 @@ static s32 SEQ_UI_Button_DirectTrack(s32 depressed, u32 sel_button)
 	  SEQ_SONG_PosSet(ui_song_edit_pos);
 	  SEQ_SONG_FetchPos(0, 0);
 	  ui_song_edit_pos = SEQ_SONG_PosGet();
-	}
+	//}
       } break;
       }    
   } else {
@@ -1867,9 +1910,18 @@ static s32 SEQ_UI_Button_ParLayerSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_parsel.c
 
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_PAR;
-    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG )
+      SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.par_layer ) {
@@ -1985,9 +2037,18 @@ static s32 SEQ_UI_Button_TrgLayerSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_trgsel.c
 
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_TRG;
-    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG )
+      SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.trg_layer ) {
@@ -2092,9 +2153,18 @@ static s32 SEQ_UI_Button_InsSel(s32 depressed)
   // static seq_ui_page_t prev_page = SEQ_UI_PAGE_NONE;
   // also used by seq_ui_insel.c
 
+  static seq_ui_sel_view_t prev_sel_view = SEQ_UI_SEL_VIEW_NONE;
+
   if( !depressed ) {
+    prev_sel_view = seq_ui_sel_view;
     seq_ui_sel_view = SEQ_UI_SEL_VIEW_INS;
-    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG ) SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+    seq_ui_button_state.TAKE_OVER_SEL_VIEW = 1;
+
+    if( ui_page == SEQ_UI_PAGE_MUTE || ui_page == SEQ_UI_PAGE_PATTERN || ui_page == SEQ_UI_PAGE_SONG )
+      SEQ_UI_PageSet(SEQ_UI_PAGE_EDIT); // this selection only makes sense in EDIT page
+  } else {
+    if( !seq_ui_button_state.TAKE_OVER_SEL_VIEW )
+      seq_ui_sel_view = prev_sel_view;
   }
 
   if( seq_hwcfg_button_beh.ins_sel ) {

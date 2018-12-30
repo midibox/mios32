@@ -470,9 +470,11 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
       if( SEQ_UI_IsSelectedTrack(track) ) {
 	u16 num_steps = SEQ_PAR_NumStepsGet(track);
 	u16 trg_step = (changed_step & ~(num_steps-1));
+	u16 first_step = seq_ui_options.ALL_FOR_STEP_VIEW_ONLY ? (ui_selected_step_view * 16) : 0;
+	u16 last_step  = seq_ui_options.ALL_FOR_STEP_VIEW_ONLY ? (first_step + 15) : (num_steps-1);
 
 	u16 par_step;
-	for(par_step=0; par_step<num_steps; ++par_step, ++trg_step) {
+	for(par_step=first_step; (par_step <= last_step) && (par_step < num_steps); ++par_step, ++trg_step) {
 	  if( !(seq_ui_button_state.CHANGE_ALL_STEPS || seq_ui_button_state.CHANGE_ALL_STEPS_SAME_VALUE) || (!edit_ramp && par_step == changed_step) || (selected_steps & (1 << (par_step % 16))) ) {
 	    change_gate = trg_step == changed_step;
 
