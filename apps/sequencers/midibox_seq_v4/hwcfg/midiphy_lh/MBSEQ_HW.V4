@@ -295,17 +295,17 @@ LED_MIDI_IN_COMBINED  0   0
 LED_MIDI_OUT_COMBINED 0   0
 
 #           SR  Pin
-LED_EDIT    M8B  1
+LED_EDIT    M8B  0
 LED_MUTE    M7C  3
-LED_PATTERN M8B  3
-LED_SONG    M8B  5
+LED_PATTERN M8B  2
+LED_SONG    M8B  4
 LED_PHRASE  M7C  2
 
 #           SR  Pin
 LED_SOLO    M2C  1
-LED_FAST    M8A  3
+LED_FAST    M8A  2
 LED_FAST2    0   0
-LED_ALL     M8A  5
+LED_ALL     M8A  4
 
 #           SR  Pin
 LED_GROUP1   0   0
@@ -328,9 +328,9 @@ LED_LOOP   M4C  1
 LED_FOLLOW  0   0
 
 #              SR  Pin
-LED_EXIT       M4B  5
-LED_SELECT     M8A  7
-LED_MENU       M4B  7
+LED_EXIT       M4B  4
+LED_SELECT     M8A  6
+LED_MENU       M4B  6
 LED_BOOKMARK   M1C  2
 LED_SCRUB       0   0
 LED_METRONOME  M3C  1
@@ -338,13 +338,13 @@ LED_RECORD     M5C  1
 LED_JAM_LIVE    0   0
 LED_JAM_STEP    0   0
 LED_LIVE       M6C  1
-LED_UTILITY    M8B  7
-LED_COPY       M4A  1
-LED_PASTE      M4A  3
-LED_CLEAR      M4A  5
+LED_UTILITY    M8B  6
+LED_COPY       M4A  0
+LED_PASTE      M4A  2
+LED_CLEAR      M4A  4
 LED_UNDO        0   0
-LED_MOVE       M4A  7
-LED_SCROLL     M8A  1
+LED_MOVE       M4A  6
+LED_SCROLL     M8A  0
 
 #                  SR  Pin
 LED_STEP_VIEW      M1C  3
@@ -359,8 +359,8 @@ LED_TEMPO_PRESET    0   0
 LED_EXT_RESTART     0   0
 
 #         SR  Pin
-LED_DOWN  M4B  1
-LED_UP    M4B  3
+LED_DOWN  M4B  0
+LED_UP    M4B  2
 
 #             SR  Pin
 LED_MIXER      0   0
