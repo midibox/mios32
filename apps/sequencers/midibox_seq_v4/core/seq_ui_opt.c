@@ -49,32 +49,33 @@
 #define ITEM_PATTERN_MIXER_MAP_COUPLING    5
 #define ITEM_SYNC_MUTE                     6
 #define ITEM_SYNC_UNMUTE                   7
-#define ITEM_SELECT_UNMUTED_TRACK          8
-#define ITEM_PASTE_CLR_ALL                 9
-#define ITEM_RESTORE_TRACK_SELECTIONS     10
-#define ITEM_MODIFY_PATTERN_BANKS         11
-#define ITEM_ALL_FOR_STEP_VIEW_ONLY       12
-#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 13
-#define ITEM_PRINT_TRANSPOSED_NOTES       14
-#define ITEM_METRONOME                    15
-#define ITEM_SHADOW_OUT                   16
-#define ITEM_MIDI_REMOTE                  17
-#define ITEM_TRACK_CC                     18
-#define ITEM_RUNTIME_STATUS_OPTIMIZATION  19
-#define ITEM_LIVE_LAYER_MUTE              20
-#define ITEM_INIT_WITH_TRIGGERS           21
-#define ITEM_INIT_CC                      22
-#define ITEM_DRUM_CC                      23
-#define ITEM_TPD_MODE                     24
-#define ITEM_SWAP_GP_LED_COLOURS          25
-#define ITEM_INVERT_MUTE_LEDS             26
-#define ITEM_BLM_ALWAYS_USE_FTS           27
-#define ITEM_BLM_FADERS                   28
-#define ITEM_MIXER_CC1234                 29
-#define ITEM_MENU_SHORTCUTS               30
-#define ITEM_SCREEN_SAVER                 31
+#define ITEM_UNMUTE_ON_PATTERN_CHANGE      8
+#define ITEM_SELECT_UNMUTED_TRACK          9
+#define ITEM_PASTE_CLR_ALL                10
+#define ITEM_RESTORE_TRACK_SELECTIONS     11
+#define ITEM_MODIFY_PATTERN_BANKS         12
+#define ITEM_ALL_FOR_STEP_VIEW_ONLY       13
+#define ITEM_PRINT_AND_MODIFY_WITHOUT_GATES 14
+#define ITEM_PRINT_TRANSPOSED_NOTES       15
+#define ITEM_METRONOME                    16
+#define ITEM_SHADOW_OUT                   17
+#define ITEM_MIDI_REMOTE                  18
+#define ITEM_TRACK_CC                     19
+#define ITEM_RUNTIME_STATUS_OPTIMIZATION  20
+#define ITEM_LIVE_LAYER_MUTE              21
+#define ITEM_INIT_WITH_TRIGGERS           22
+#define ITEM_INIT_CC                      23
+#define ITEM_DRUM_CC                      24
+#define ITEM_TPD_MODE                     25
+#define ITEM_SWAP_GP_LED_COLOURS          26
+#define ITEM_INVERT_MUTE_LEDS             27
+#define ITEM_BLM_ALWAYS_USE_FTS           28
+#define ITEM_BLM_FADERS                   29
+#define ITEM_MIXER_CC1234                 30
+#define ITEM_MENU_SHORTCUTS               31
+#define ITEM_SCREEN_SAVER                 32
 
-#define NUM_OF_ITEMS                      32
+#define NUM_OF_ITEMS                      33
 
 
 static const char *item_text[NUM_OF_ITEMS][2] = {
@@ -116,6 +117,11 @@ static const char *item_text[NUM_OF_ITEMS][2] = {
 
   {//<-------------------------------------->
     "Synchronize UNMUTE to Measure",
+    NULL, // enabled/disabled
+  },
+
+  {//<-------------------------------------->
+    "Unmute tracks on pattern change",
     NULL, // enabled/disabled
   },
 
@@ -375,6 +381,15 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 	seq_core_options.SYNCHED_UNMUTE = (incrementer > 0) ? 1 : 0;
       else
 	seq_core_options.SYNCHED_UNMUTE ^= 1;
+      ui_store_file_required = 1;
+      return 1;
+    } break;
+
+    case ITEM_UNMUTE_ON_PATTERN_CHANGE: {
+      if( incrementer )
+	seq_core_options.UNMUTE_ON_PATTERN_CHANGE = (incrementer > 0) ? 1 : 0;
+      else
+	seq_core_options.UNMUTE_ON_PATTERN_CHANGE ^= 1;
       ui_store_file_required = 1;
       return 1;
     } break;
@@ -972,6 +987,11 @@ static s32 LCD_Handler(u8 high_prio)
   ///////////////////////////////////////////////////////////////////////////
   case ITEM_SYNC_UNMUTE: {
     enabled_value = seq_core_options.SYNCHED_UNMUTE;
+  } break;
+
+  ///////////////////////////////////////////////////////////////////////////
+  case ITEM_UNMUTE_ON_PATTERN_CHANGE: {
+    enabled_value = seq_core_options.UNMUTE_ON_PATTERN_CHANGE;
   } break;
 
   ///////////////////////////////////////////////////////////////////////////

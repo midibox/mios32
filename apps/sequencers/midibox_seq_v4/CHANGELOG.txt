@@ -22,7 +22,9 @@ MIDIboxSEQ V4.096
      If it's desired to permanently control the parameter layer with the selection buttons, just
      press&release the Param button.
 
-   o New option 13/32 allows to change the steps of the current selected view only
+   o New option 9/33 allows to unmute tracks on pattern changes
+
+   o New option 14/33 allows to change the steps of the current selected view only
 
 
 MIDIboxSEQ V4.095
