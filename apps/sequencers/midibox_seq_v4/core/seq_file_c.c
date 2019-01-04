@@ -309,6 +309,10 @@ s32 SEQ_FILE_C_Read(char *session)
 	    s32 value = get_dec_range(word, parameter, 0, 1);
 	    if( value >= 0 )
 	      seq_core_options.SYNCHED_UNMUTE = value;
+	  } else if( strcmp(parameter, "UnmuteOnPatternChange") == 0 ) {
+	    s32 value = get_dec_range(word, parameter, 0, 1);
+	    if( value >= 0 )
+	      seq_core_options.UNMUTE_ON_PATTERN_CHANGE = value;
 	  } else if( strcmp(parameter, "DontResetLatchedPc") == 0 ) {
 	    s32 value = get_dec_range(word, parameter, 0, 1);
 	    if( value >= 0 )
@@ -977,6 +981,9 @@ static s32 SEQ_FILE_C_Write_Hlp(u8 write_to_file)
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "SynchedUnmute %d\n", seq_core_options.SYNCHED_UNMUTE);
+  FLUSH_BUFFER;
+
+  sprintf(line_buffer, "UnmuteOnPatternChange %d\n", seq_core_options.UNMUTE_ON_PATTERN_CHANGE);
   FLUSH_BUFFER;
 
   sprintf(line_buffer, "DontResetLatchedPc %d\n", seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC);

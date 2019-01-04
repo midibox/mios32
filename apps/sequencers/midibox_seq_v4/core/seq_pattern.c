@@ -277,6 +277,16 @@ s32 SEQ_PATTERN_Load(u8 group, seq_pattern_t pattern)
       SEQ_CORE_CancelSustainedNotes(track);
   }
 
+  // optionally unmute loaded tracks
+  if( seq_core_options.UNMUTE_ON_PATTERN_CHANGE ) {
+    u16 pattern = 0xf << (4*group);
+    portENTER_CRITICAL();
+    seq_core_trk_muted &= ~pattern;
+    seq_core_trk_synched_mute &= ~pattern;
+    seq_core_trk_synched_unmute &= ~pattern;
+    portEXIT_CRITICAL();
+  }
+
   // reset latched PB/CC values (because assignments could change)
   if( !seq_core_options.PATTERN_CHANGE_DONT_RESET_LATCHED_PC ) {
     SEQ_LAYER_ResetLatchedValues();
