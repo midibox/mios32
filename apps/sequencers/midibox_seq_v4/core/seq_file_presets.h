@@ -1,6 +1,6 @@
-// $Id$
+// $Id: seq_file_bm.h 1205 2011-05-13 22:06:38Z tk $
 /*
- * Header file for SEQ Label Routines
+ * Header for file functions
  *
  * ==========================================================================
  *
@@ -11,8 +11,9 @@
  * ==========================================================================
  */
 
-#ifndef _SEQ_LABEL_H
-#define _SEQ_LABEL_H
+#ifndef _SEQ_FILE_PRESETS_H
+#define _SEQ_FILE_PRESETS_H
+
 
 /////////////////////////////////////////////////////////////////////////////
 // Global definitions
@@ -28,17 +29,22 @@
 // Prototypes
 /////////////////////////////////////////////////////////////////////////////
 
-extern s32 SEQ_LABEL_Init(u32 mode);
+extern s32 SEQ_FILE_PRESETS_Init(u32 mode);
+extern s32 SEQ_FILE_PRESETS_Load(void);
+extern s32 SEQ_FILE_PRESETS_Unload(void);
 
-extern s32 SEQ_LABEL_NumPresets(void);
-extern s32 SEQ_LABEL_CopyPreset(u8 num, char *dst);
+extern s32 SEQ_FILE_PRESETS_Valid(void);
 
-extern s32 SEQ_LABEL_NumPresetsCategory(void);
-extern s32 SEQ_LABEL_CopyPresetCategory(u8 num, char *dst);
+extern s32 SEQ_FILE_PRESETS_CreateDefaults(void);
 
-extern s32 SEQ_LABEL_NumPresetsDrum(void);
-extern s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst, u8 *note);
+extern s32 SEQ_FILE_PRESETS_TrkLabel_NumGet(void);
+extern s32 SEQ_FILE_PRESETS_TrkLabel_Read(u8 preset_ix, char *dst);
 
+extern s32 SEQ_FILE_PRESETS_TrkCategory_NumGet(void);
+extern s32 SEQ_FILE_PRESETS_TrkCategory_Read(u8 preset_ix, char *dst);
+
+extern s32 SEQ_FILE_PRESETS_TrkDrum_NumGet(void);
+extern s32 SEQ_FILE_PRESETS_TrkDrum_Read(u8 preset_ix, char *dst, u8 *note, u8 init_layer_preset_notes);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -46,4 +52,4 @@ extern s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst, u8 *note);
 /////////////////////////////////////////////////////////////////////////////
 
 
-#endif /* _SEQ_LABEL_H */
+#endif /* _SEQ_FILE_PRESETS_H */

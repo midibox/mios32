@@ -102,8 +102,8 @@ static const u8 seq_layer_preset_table_static[][2] = {
 };
 
 
-// initial drum notes (order must match with preset_dum in seq_label.c)
-static const u8 seq_layer_preset_table_drum_notes[16] = {
+// initial drum notes (can be customized in /PRESETS/TRKDRUMS.V4P)
+static u8 seq_layer_preset_table_drum_notes[16] = {
   0x24, // BD
   0x26, // SD
   0x2a, // CH
@@ -249,6 +249,31 @@ s32 SEQ_LAYER_SendPCBankValues(u8 track, u8 force, u8 send_now)
   }
 
   return 0;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// This function allows to change the default drum note
+/////////////////////////////////////////////////////////////////////////////
+s32 SEQ_LAYER_PresetDrumNoteSet(u8 num, u8 note)
+{
+  if( num >= 16 ) {
+    return -1; // invalid note
+  }
+
+  seq_layer_preset_table_drum_notes[num] = note;
+
+  return 0; // no error
+}
+
+
+s32 SEQ_LAYER_PresetDrumNoteGet(u8 num)
+{
+  if( num >= 16 ) {
+    return -1; // invalid note
+  }
+
+  return seq_layer_preset_table_drum_notes[num];
 }
 
 

@@ -231,8 +231,11 @@ s32 SEQ_MIDIMP_ReadFile(char *path)
 	  for(j=0; j<num_steps; ++j)
 	    SEQ_PAR_Set(track, j, 0, i, 100);
 
-	for(i=0; i<16; ++i)
-	  SEQ_LABEL_CopyPresetDrum(i, (char *)&seq_core_trk[track].name[5*i]);
+	for(i=0; i<16; ++i) {
+	  u8 note = 36;
+	  SEQ_LABEL_CopyPresetDrum(i, (char *)&seq_core_trk[track].name[5*i], &note);
+	  SEQ_LAYER_PresetDrumNoteSet(ui_edit_preset_num_drum, note); // define new default value for drum
+	}
       } else {
 	SEQ_PAR_TrackInit(track, num_steps, seq_midimp_num_layers, 1);
 	SEQ_TRG_TrackInit(track, num_steps, seq_midimp_num_layers, 1);

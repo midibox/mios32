@@ -56,6 +56,7 @@
 #include "seq_file_t.h"
 #include "seq_file_gc.h"
 #include "seq_file_bm.h"
+#include "seq_file_presets.h"
 #include "seq_file_hw.h"
 
 #include "seq_ui.h"
@@ -90,6 +91,7 @@ typedef enum {
   UPLOADING_FILE_GC,
   UPLOADING_FILE_G,
   UPLOADING_FILE_BM,
+  UPLOADING_FILE_PRESETS,
 } uploading_file_t;
 
 static uploading_file_t uploading_file;
@@ -220,7 +222,9 @@ s32 TERMINAL_ParseFilebrowser(mios32_midi_port_t port, char byte)
 static s32 TERMINAL_BrowserUploadCallback(char *filename)
 {
   if( filename ) {
-    // check for MBSEQ_HW.V4
+    size_t len = strlen(filename);
+
+    // check for various filenames
     uploading_file = UPLOADING_FILE_NONE;
     if( strcasecmp(filename, "/mbseq_hw.v4") == 0 )
       uploading_file = UPLOADING_FILE_HW;
@@ -234,6 +238,13 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
       uploading_file = UPLOADING_FILE_G;
     else if( strcasestr(filename, "/mbseq_bm.v4") != NULL )
       uploading_file = UPLOADING_FILE_BM;
+    else if( strcasestr(filename, "/presets/") != 0 &&
+	     filename[len-4] == '.' &&
+	     (filename[len-3] == 'v' || filename[len-3] == 'V') &&
+	     (filename[len-2] == '4') &&
+	     (filename[len-1] == 'p' || filename[len-1] == 'P')
+	     )
+      uploading_file = UPLOADING_FILE_PRESETS;
   } else {
     switch( uploading_file ) {
 
@@ -265,6 +276,10 @@ static s32 TERMINAL_BrowserUploadCallback(char *filename)
       SEQ_FILE_BM_Load(seq_file_session_name, 0); // session
     } break;
 
+    case UPLOADING_FILE_PRESETS: {
+      DEBUG_MSG("AUTOLOAD 'PRESETS/*.V4P'\n");
+      SEQ_FILE_PRESETS_Load();
+    } break;
 
     }
   }
@@ -397,9 +412,11 @@ s32 SEQ_TERMINAL_ParseLine(char *input, void *_output_function)
       out("Mass Storage Device Mode not supported by this application!");
     } else if( strcmp(parameter, "tpd") == 0 ) {
       SEQ_TPD_PrintString(brkt); // easter egg ;-)
+#ifndef MBSEQV4L
     } else if( strcmp(parameter, "lcd") == 0 ) {
       SEQ_LCD_LOGO_ScreenSaver_Disable(); // ensure that screen saver disabled
       SEQ_UI_Msg(SEQ_UI_MSG_USER, 2000, "From MIOS Terminal:", brkt); // could be useful?
+#endif
     } else if( strcmp(parameter, "set") == 0 ) {
       if( (parameter = strtok_r(NULL, separators, &brkt)) ) {
 	if( strcmp(parameter, "router") == 0 ) {
@@ -887,7 +904,9 @@ s32 SEQ_TERMINAL_PrintHelp(void *_output_function)
   out("  bookmarks:      print bookmarks");
   out("  router:         print MIDI router info");
   out("  tpd <string>:   print a scrolled text on the TPD");
+#ifndef MBSEQV4L
   out("  lcd <string>:   print a message on LCD");
+#endif
   out("  set router <node> <in-port> <off|channel|all> <out-port> <off|channel|all>: change router setting");
   out("  set mclk_in  <in-port>  <on|off>: change MIDI IN Clock setting");
   out("  set mclk_out <out-port> <on|off>: change MIDI OUT Clock setting");
