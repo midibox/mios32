@@ -24,7 +24,7 @@
 #else
 #define MIOS32_LCD_BOOT_MSG_LINE1 "MIDIbox SEQ V4.096"
 #endif
-#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2018 T. Klose"
+#define MIOS32_LCD_BOOT_MSG_LINE2 "(C) 2019 T. Klose"
 
 // USB settings
 #ifdef MBSEQV4P
