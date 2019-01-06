@@ -43,6 +43,7 @@
 #include "seq_file_s.h"
 #include "seq_file_m.h"
 #include "seq_file_bm.h"
+#include "seq_file_presets.h"
 
 #include "seq_mixer.h"
 #include "seq_pattern.h"
@@ -118,6 +119,7 @@ s32 SEQ_FILE_Init(u32 mode)
   status |= SEQ_FILE_M_Init(0); // mixer file access
   status |= SEQ_FILE_S_Init(0); // song file access
   status |= SEQ_FILE_BM_Init(0); // bookmarks file access
+  status |= SEQ_FILE_PRESETS_Init(0); // presets file access
 
   return status;
 }
@@ -135,6 +137,8 @@ s32 SEQ_FILE_LoadAllFiles(u8 including_hw)
 
     // ignore status if global setup file doesn't exist
     SEQ_FILE_GC_Load();
+
+    SEQ_FILE_PRESETS_Load();
   }
 
   status |= SEQ_FILE_B_LoadAllBanks(seq_file_session_name);
@@ -180,6 +184,7 @@ s32 SEQ_FILE_UnloadAllFiles(void)
   status |= SEQ_FILE_GC_Unload();
   status |= SEQ_FILE_BM_Unload(0);
   status |= SEQ_FILE_BM_Unload(1);
+  status |= SEQ_FILE_PRESETS_Unload();
   status |= SEQ_FILE_HW_Unload();
 
   // invalidate session

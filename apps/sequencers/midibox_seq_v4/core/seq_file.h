@@ -83,16 +83,22 @@
 #define SEQ_FILE_T_ERR_TRACK           -228 // invalid track number
 
 // used by seq_file_gc.c
-#define SEQ_FILE_GC_ERR_FORMAT         -140 // invalid config file format
-#define SEQ_FILE_GC_ERR_READ           -141 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_GC_ERR_WRITE          -142 // error while writing file (exact error status cannot be determined anymore)
-#define SEQ_FILE_GC_ERR_NO_FILE        -143 // no or invalid config file
+#define SEQ_FILE_GC_ERR_FORMAT         -230 // invalid config file format
+#define SEQ_FILE_GC_ERR_READ           -231 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_GC_ERR_WRITE          -232 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_GC_ERR_NO_FILE        -233 // no or invalid config file
 
 // used by seq_file_bm.c
-#define SEQ_FILE_BM_ERR_FORMAT         -156 // invalid config file format
-#define SEQ_FILE_BM_ERR_READ           -157 // error while reading file (exact error status cannot be determined anymore)
-#define SEQ_FILE_BM_ERR_WRITE          -158 // error while writing file (exact error status cannot be determined anymore)
-#define SEQ_FILE_BM_ERR_NO_FILE        -159 // no or invalid config file
+#define SEQ_FILE_BM_ERR_FORMAT         -246 // invalid config file format
+#define SEQ_FILE_BM_ERR_READ           -247 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_BM_ERR_WRITE          -248 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_BM_ERR_NO_FILE        -249 // no or invalid config file
+
+// used by seq_file_presets.c
+#define SEQ_FILE_PRESETS_ERR_FORMAT    -256 // invalid config file format
+#define SEQ_FILE_PRESETS_ERR_READ      -257 // error while reading file (exact error status cannot be determined anymore)
+#define SEQ_FILE_PRESETS_ERR_WRITE     -258 // error while writing file (exact error status cannot be determined anymore)
+#define SEQ_FILE_PRESETS_ERR_NO_FILE   -259 // no or invalid config file
 
 
 /////////////////////////////////////////////////////////////////////////////

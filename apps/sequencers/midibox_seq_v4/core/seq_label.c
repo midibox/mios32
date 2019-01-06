@@ -18,64 +18,11 @@
 #include <mios32.h>
 #include <string.h>
 
+#include "tasks.h"
+
 #include "seq_label.h"
 
-
-/////////////////////////////////////////////////////////////////////////////
-// Local variables
-/////////////////////////////////////////////////////////////////////////////
-
-static const char preset_categories[][6] = {
-  "     ",
-  "Synth",
-  "Piano",
-  "Bass ",
-  "Drums",
-  "Break",
-  "MBSID",
-  "MBFM ",
-  "Ctrl"
-};
-
-
-static const char preset_labels[][16] = {
-  "               ",
-  "Vintage        ",
-  "Synthline      ",
-  "Bassline       ",
-  "Pads           ",
-  "Chords         ",
-  "Lovely Arps    ",
-  "Electr. Drums  ",
-  "Heavy Beats    ",
-  "Simple Beats   ",
-  "CC Tracks      ",
-  "Experiments    ",
-  "Live Played    ",
-  "Transposer     "
-};
-
-
-// order must match with seq_layer_preset_table_drum_notes in seq_layer.c
-static const char preset_drum[][6] = {
-  " BD  ",
-  " SD  ",
-  " CH  ",
-  " PH  ",
-  " OH  ",
-  " MA  ",
-  " CP  ",
-  " CY  ",
-  " LT  ",
-  " MT  ",
-  " HT  ",
-  " RS  ",
-  " CB  ",
-  "Smp1 ",
-  "Smp2 ",
-  "Smp3 "
-};
-
+#include "seq_file_presets.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -92,7 +39,7 @@ s32 SEQ_LABEL_Init(u32 mode)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LABEL_NumPresets(void)
 {
-  return sizeof(preset_labels) / 16;
+  return SEQ_FILE_PRESETS_TrkLabel_NumGet()+1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -101,11 +48,28 @@ s32 SEQ_LABEL_NumPresets(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LABEL_CopyPreset(u8 num, char *dst)
 {
+  const int max_chars = 15;
+  s32 status = 0;
 
-  if( num < SEQ_LABEL_NumPresets() ) {
-    memcpy(dst, (char *)&preset_labels[num], 15);
-  } else {
-    memcpy(dst, "...............", 15);
+  if( num >= 1 && num <= SEQ_FILE_PRESETS_TrkLabel_NumGet() ) {
+    char str[max_chars+1];
+
+    MUTEX_SDCARD_TAKE;
+    status = SEQ_FILE_PRESETS_TrkLabel_Read(num, str);
+    MUTEX_SDCARD_GIVE;
+
+    if( status > 0 ) {
+      // fill with spaces
+      size_t len = strlen(str);
+      strncpy(dst, str, max_chars);
+      int i;
+      for(i=len; i<max_chars; ++i)
+	dst[i] = ' ';
+    }
+  }
+
+  if( status < 1 ) {
+    memcpy(dst, "               ", max_chars);
   }
 
   return 0; // no error
@@ -117,7 +81,7 @@ s32 SEQ_LABEL_CopyPreset(u8 num, char *dst)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LABEL_NumPresetsCategory(void)
 {
-  return sizeof(preset_categories) / 6;
+  return SEQ_FILE_PRESETS_TrkCategory_NumGet()+1;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -126,10 +90,28 @@ s32 SEQ_LABEL_NumPresetsCategory(void)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LABEL_CopyPresetCategory(u8 num, char *dst)
 {
-  if( num < SEQ_LABEL_NumPresetsCategory() ) {
-    memcpy(dst, (char *)&preset_categories[num], 5);
-  } else {
-    memcpy(dst, ".....", 5);
+  const int max_chars = 5;
+  s32 status = 0;
+
+  if( num >= 1 && num <= SEQ_FILE_PRESETS_TrkCategory_NumGet() ) {
+    char str[max_chars+1];
+
+    MUTEX_SDCARD_TAKE;
+    status = SEQ_FILE_PRESETS_TrkCategory_Read(num, str);
+    MUTEX_SDCARD_GIVE;
+
+    if( status > 0 ) {
+      // fill with spaces
+      size_t len = strlen(str);
+      strncpy(dst, str, max_chars);
+      int i;
+      for(i=len; i<max_chars; ++i)
+	dst[i] = ' ';
+    }
+  }
+
+  if( status < 1 ) {
+    memcpy(dst, "     ", max_chars);
   }
 
   return 0; // no error
@@ -141,19 +123,37 @@ s32 SEQ_LABEL_CopyPresetCategory(u8 num, char *dst)
 /////////////////////////////////////////////////////////////////////////////
 s32 SEQ_LABEL_NumPresetsDrum(void)
 {
-  return sizeof(preset_drum) / 6;
+  return SEQ_FILE_PRESETS_TrkDrum_NumGet();
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // This function copies a preset drum label (5 chars) into the given array
 // Could be loaded from SD-Card later
 /////////////////////////////////////////////////////////////////////////////
-s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst)
+s32 SEQ_LABEL_CopyPresetDrum(u8 num, char *dst, u8 *note)
 {
-  if( num < SEQ_LABEL_NumPresetsDrum() ) {
-    memcpy(dst, (char *)&preset_drum[num], 5);
-  } else {
-    memcpy(dst, ".....", 5);
+  const int max_chars = 5;
+  s32 status = 0;
+
+  if( num >= 0 && num < SEQ_FILE_PRESETS_TrkDrum_NumGet() ) {
+    char str[max_chars+1];
+
+    MUTEX_SDCARD_TAKE;
+    status = SEQ_FILE_PRESETS_TrkDrum_Read(num+1, str, note, 0);
+    MUTEX_SDCARD_GIVE;
+
+    if( status > 0 ) {
+      // fill with spaces
+      size_t len = strlen(str);
+      strncpy(dst, str, max_chars);
+      int i;
+      for(i=len; i<max_chars; ++i)
+	dst[i] = ' ';
+    }
+  }
+
+  if( status < 1 ) {
+    memcpy(dst, "     ", max_chars);
   }
 
   return 0; // no error

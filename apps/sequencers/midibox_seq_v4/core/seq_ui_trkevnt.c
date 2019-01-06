@@ -1476,8 +1476,11 @@ static s32 CopyPreset(u8 track, u8 config)
   if( lc->event_mode == SEQ_EVENT_MODE_Drum ) {
     int i;
 
-    for(i=0; i<16; ++i)
-      SEQ_LABEL_CopyPresetDrum(i, (char *)&seq_core_trk[track].name[5*i]);
+    for(i=0; i<16; ++i) {
+      u8 note = 36;
+      SEQ_LABEL_CopyPresetDrum(i, (char *)&seq_core_trk[track].name[5*i], &note);
+      SEQ_LAYER_PresetDrumNoteSet(i, note); // define new default value for drum
+    }
   } else {
     memset((char *)seq_core_trk[track].name, ' ', 80);
   }

@@ -58,6 +58,7 @@ THUMB_SOURCE    = $(MIDIBOX_SEQ_V4_PATH)/core/app.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_c.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_gc.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_bm.c \
+		$(MIDIBOX_SEQ_V4_PATH)/core/seq_file_presets.c \
 		core/seq_file_hw.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_layer.c \
 		$(MIDIBOX_SEQ_V4_PATH)/core/seq_random.c \

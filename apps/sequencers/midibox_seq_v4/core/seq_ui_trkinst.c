@@ -118,7 +118,14 @@ static s32 Encoder_Handler(seq_ui_encoder_t encoder, s32 incrementer)
 
 	    if( event_mode == SEQ_EVENT_MODE_Drum ) {
 	      if( SEQ_UI_Var8_Inc(&ui_edit_preset_num_drum, 0, SEQ_LABEL_NumPresetsDrum()-1, incrementer) ) {
-		SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument]);
+		u8 note = 36;
+		SEQ_LABEL_CopyPresetDrum(ui_edit_preset_num_drum, (char *)&seq_core_trk[visible_track].name[5*ui_selected_instrument], &note);
+
+		SEQ_LAYER_PresetDrumNoteSet(ui_edit_preset_num_drum, note); // define new default value for drum
+
+		// new: also pass to CC
+		SEQ_CC_Set(visible_track, SEQ_CC_LAY_CONST_A1 + ui_selected_instrument, note);
+		
 		for(pos=4, ui_edit_name_cursor=pos; pos>=0; --pos)
 		  if( seq_core_trk[visible_track].name[5*ui_selected_instrument + pos] == ' ' )
 		    ui_edit_name_cursor = pos;

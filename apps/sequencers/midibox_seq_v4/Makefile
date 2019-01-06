@@ -100,6 +100,7 @@ THUMB_SOURCE    = core/app.c \
 		core/seq_file_gc.c \
 		core/seq_file_t.c \
 		core/seq_file_bm.c \
+		core/seq_file_presets.c \
 		core/seq_file_hw.c \
 		core/seq_layer.c \
 		core/seq_random.c \

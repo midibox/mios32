@@ -22,6 +22,29 @@ MIDIboxSEQ V4.096
      If it's desired to permanently control the parameter layer with the selection buttons, just
      press&release the Param button.
 
+   o It's now possible to customize the list of labels which are used during track/pattern
+     name and category and drum selection. After booting the new firmware, following files
+     will be created in the /PRESETS folder: TRKLABEL.V4P, TRKCATS.V4P and TRKDRUMS.V4P
+
+     Edit these files with the MIOS File browser. Uploaded changes are immediately taken
+     over.
+
+     - TRKLABEL and TRKCATS: are used in MENU->EVNT, "Trk Inst.", "Edit Name" page
+       (Use GP15 to select the Preset)
+
+     - TRKDRUMS is used on the same page when a drum track is edited (instead of a
+       track name we configure instrument names)
+
+       Special treatment: TRKDRUMS.V4P also maps MIDI notes to the drum labels.
+       Whenever a new preset drum is selected, the drum note will be changed accordingly.
+       This allows you to fully customize drum maps.
+
+       The first 16 drums are taken by default whenever a drum track is initialized, and the
+       remaining drums in the list can be optionally selected to replace on of the 16
+       drum instruments.
+
+     - TRKLABEL and TRKCATS are also used when a pattern is saved
+
    o New option 9/33 allows to unmute tracks on pattern changes
 
    o New option 14/33 allows to change the steps of the current selected view only
