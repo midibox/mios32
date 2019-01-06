@@ -293,10 +293,10 @@ static s32 SEQ_FILE_PRESETS_Hlp_Read(const char* filename, u8 preset_ix, char *d
 	      SEQ_LAYER_PresetDrumNoteSet(ix-1, l);
 	    }
 	  }
-
-	  if( ix == preset_ix ) // consider that 0 will return number of all labels
-	    break;
 	}
+
+	if( ix == preset_ix ) // consider that 0 will return number of all labels
+	  break;
       }
     }
   } while( status >= 1 );
