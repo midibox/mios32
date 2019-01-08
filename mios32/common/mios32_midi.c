@@ -227,6 +227,11 @@ s32 MIOS32_MIDI_Init(u32 mode)
     ret |= (1 << 3);
 #endif
 
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+  if( MIOS32_CAN_MIDI_Init(0) < 0 )
+    ret |= (1 << 4);
+#endif
+  
   last_sysex_port = DEFAULT;
   sysex_state.ALL = 0;
 
@@ -289,6 +294,14 @@ s32 MIOS32_MIDI_CheckAvailable(mios32_midi_port_t port)
 #else
       return 0; // IIC_MIDI has been disabled
 #endif
+
+    case MCAN0 ://..15
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+      return MIOS32_CAN_MIDI_CheckAvailable(port & 0xf);
+#else
+      return 0; // IIC_MIDI has been disabled
+#endif
+
   }
 
   return 0; // invalid port
@@ -335,6 +348,9 @@ s32 MIOS32_MIDI_RS_OptimisationSet(mios32_midi_port_t port, u8 enable)
     case SPIM0://..15
       return -1; // not required for SPI
 
+    case MCAN0://..15
+      return -1; // not required for CAN
+      
   }
 
   return -1; // invalid port
@@ -377,6 +393,10 @@ s32 MIOS32_MIDI_RS_OptimisationGet(mios32_midi_port_t port)
 
     case SPIM0://..15
       return -1; // not required for SPI
+      
+    case MCAN0://..15
+      return -1; // not required for CAN
+
   }
 
   return -1; // invalid port
@@ -419,6 +439,10 @@ s32 MIOS32_MIDI_RS_Reset(mios32_midi_port_t port)
 
     case SPIM0://..15
       return -1; // not required for SPI
+      
+    case MCAN0://..15
+      return -1; // not required for CAN
+
   }
 
   return -1; // invalid port
@@ -489,7 +513,14 @@ s32 MIOS32_MIDI_SendPackage_NonBlocking(mios32_midi_port_t port, mios32_midi_pac
 #else
       return -1; // SPI_MIDI has been disabled
 #endif
-      
+
+    case MCAN0://..15
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+      return MIOS32_CAN_MIDI_PackageSend_NonBlocking(package);
+#else
+      return -1; // CAN_MIDI has been disabled
+#endif
+
     default:
       // invalid port
       return -1;
@@ -553,7 +584,14 @@ s32 MIOS32_MIDI_SendPackage(mios32_midi_port_t port, mios32_midi_package_t packa
 #else
       return -1; // SPI_MIDI has been disabled
 #endif
-      
+
+    case MCAN0://..15
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+      return MIOS32_CAN_MIDI_PackageSend(package);
+#else
+      return -1; // CAN_MIDI has been disabled
+#endif
+
     default:
       // invalid port
       return -1;
@@ -699,6 +737,18 @@ s32 MIOS32_MIDI_SendReset(mios32_midi_port_t port)
 s32 MIOS32_MIDI_SendSysEx(mios32_midi_port_t port, u8 *stream, u32 count)
 {
   s32 res;
+#if 0
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+#if defined(MIOS32_CAN_MIDI_SYSEX_DIRECT_STREAM)
+  if((port & 0xf0) == MCAN0){
+    mcan_header_t header;
+    MIOS32_CAN_MIDI_DefaultHeaderInit(&header);
+    header.cable = port & 0x0f;
+    return MIOS32_CAN_MIDI_SysexSend(header, (u8*)stream, count);
+  }
+#endif
+#endif
+#endif
   u32 offset;
   mios32_midi_package_t package;
 
@@ -1234,7 +1284,21 @@ s32 MIOS32_MIDI_Receive_Handler(void *_callback_package)
     }
   }
 #endif
+  
+#if defined(MIOS32_USE_CAN) && defined(MIOS32_USE_CAN_MIDI)
+#if MIOS32_CAN_NUM >= 1
+  {
+    s32 status;
+    //u32 get_ctr = 0;
+    mios32_midi_package_t package;
+    while( (status=MIOS32_CAN_MIDI_PackageReceive(&package)) >= 0 ) {
+      if(status == 1)MIOS32_MIDI_ReceivePackage(MCAN0 + package.cable, package, _callback_package);
+    }
+  }
+#endif
+#endif
 
+  
   // handle all IIC and UART based MIDI packages (round robin, max 10 packages because of possible timeouts)
   {
     typedef struct {
@@ -1401,6 +1465,11 @@ s32 MIOS32_MIDI_Periodic_mS(void)
   status |= MIOS32_SPI_MIDI_Periodic_mS();
 #endif
 
+  #if defined(MIOS32_USE_CAN_MIDI)
+  status |= MIOS32_CAN_MIDI_Periodic_mS();
+#endif
+  ///////////////////////////////////////////////////////////////////////////// End of CAN modification
+  
   // increment timeout counter for incoming packages
   // an incomplete event will be timed out after 1000 ticks (1 second)
   if( sysex_timeout_ctr < 65535 )
