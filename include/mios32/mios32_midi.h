@@ -106,7 +106,7 @@ typedef enum {
   SPIM4 = 0x54,
   SPIM5 = 0x55,
   SPIM6 = 0x56,
-  SPIM7 = 0x57
+  SPIM7 = 0x57,
 
   MCAN0 = 0x60,
   MCAN1 = 0x61,
