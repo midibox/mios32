@@ -19,7 +19,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 // number of CAN interfaces (0..2)
-#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4) || defined(MIOS32_BOARD_MBHP_DIPCOREF4)
+#if defined(MIOS32_BOARD_STM32F4DISCOVERY) || defined(MIOS32_BOARD_MBHP_CORE_STM32F4)
 #ifndef MIOS32_CAN_NUM
 #define MIOS32_CAN_NUM 1
 #else
